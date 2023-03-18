@@ -1,0 +1,81 @@
+get:
+  operationId: getUser
+  summary: Get user by ID.
+  description: Returns the user specified in the request path.
+  parameters:
+    - $ref: '../components/parameters/user_id.yaml'
+  tags:
+    - Users
+  security:
+    - OAuth2:
+        - user.read
+  responses:
+    '200':
+      description: The user object if exists.
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/user.yaml'
+    '401':
+      $ref: '../components/responses/401.yaml'
+    '403':
+      $ref: '../components/responses/403.yaml'
+    '404':
+      $ref: '../components/responses/404.yaml'
+    default:
+      $ref: '../components/responses/default.yaml'
+patch:
+  operationId: updateUser
+  summary: Update a user by its ID.
+  description: Updates an existing user by its ID.
+  parameters:
+    - $ref: '../components/parameters/user_id.yaml'
+  tags:
+    - Users
+  security:
+    - OAuth2:
+        - user
+  requestBody:
+    $ref: '../components/request_bodies/user_patch.yaml'
+  responses:
+    '200':
+      description: The updated user object.
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/user.yaml'
+    '400':
+      $ref: '../components/responses/400.yaml'
+    '401':
+      $ref: '../components/responses/401.yaml'
+    '403':
+      $ref: '../components/responses/403.yaml'
+    '404':
+      $ref: '../components/responses/404.yaml'
+    default:
+      $ref: '../components/responses/default.yaml'
+delete:
+  operationId: deleteUser
+  summary: Delete user by its ID.
+  description: Deletes the user specified in the request path.
+  parameters:
+    - $ref: '../components/parameters/user_id.yaml'
+    - $ref: '../components/parameters/force.yaml'
+  tags:
+    - Users
+  security:
+    - OAuth2:
+        - admin
+  responses:
+    '204':
+      $ref: '../components/responses/204.yaml'
+    '400':
+      $ref: '../components/responses/400.yaml'
+    '401':
+      $ref: '../components/responses/401.yaml'
+    '403':
+      $ref: '../components/responses/403.yaml'
+    '404':
+      $ref: '../components/responses/404.yaml'
+    default:
+      $ref: '../components/responses/default.yaml'

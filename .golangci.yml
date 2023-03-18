@@ -1,0 +1,81 @@
+run:
+  skip-dirs:
+    - internal/transport/http/gen
+
+linters:
+  disable-all: true
+  enable:
+    # default
+    - errcheck
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - typecheck
+    - unused
+    # custom enabled
+    - contextcheck
+    - errname
+    - errorlint
+    - exportloopref
+    - goconst
+    - gocritic
+    - gofmt
+    - gosec
+    - importas
+    - makezero
+    - noctx
+    - prealloc
+    - revive
+linters-settings:
+  goconst:
+    ignore-tests: true
+  goimports:
+    local-prefixes: github.com/opcotech/elemo
+  importas:
+    no-extra-aliases: true
+    alias:
+      # 3rd party
+      - pkg: github.com/deepmap/oapi-codegen/pkg/types
+        alias: oapiTypes
+      - pkg: github.com/deepmap/oapi-codegen/pkg/chi-middleware
+        alias: oapiMiddleware
+      - pkg: github.com/go-oauth2/oauth2/v4/errors
+        alias: authErrors
+      - pkg: github.com/go-oauth2/oauth2/v4/server
+        alias: authServer
+      - pkg: github.com/go-oauth2/oauth2/v4/manage
+        alias: authManager
+      - pkg: github.com/gabor-boros/go-oauth2-pg
+        alias: authStore
+      - pkg: go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp
+        alias: otlptrace
+      - pkg: go.opentelemetry.io/otel/sdk/trace
+        alias: sdktrace
+      - pkg: go.opentelemetry.io/otel/semconv/v1.17.0
+        alias: semconv
+      - pkg: github.com/slok/go-http-metrics/metrics/prometheus
+        alias: httpMetricsProm
+      - pkg: github.com/slok/go-http-metrics/middleware
+        alias: httpMetricsMiddleware
+      - pkg: github.com/slok/go-http-metrics/middleware/std
+        alias: httpMetricsMiddlewareStd
+      # internal
+      - pkg: github.com/opcotech/elemo/internal/transport/http
+        alias: elemoHttp
+      - pkg: github.com/opcotech/elemo/internal/license
+        alias: elemoLicense
+      - pkg: github.com/opcotech/elemo/internal/testutil/container
+        alias: testContainer
+      - pkg: github.com/opcotech/elemo/internal/testutil/repository
+        alias: testRepo
+      - pkg: github.com/opcotech/elemo/internal/testutil/model
+        alias: testModel
+      - pkg: github.com/opcotech/elemo/internal/testutil/license
+        alias: testLicense
+      - pkg: github.com/opcotech/elemo/internal/testutil/mock
+        alias: testMock
+      - pkg: github.com/opcotech/elemo/internal/testutil/http
+        alias: testHttp
+      - pkg: github.com/opcotech/elemo/internal/testutil/config
+        alias: testConfig

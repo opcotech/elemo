@@ -1,0 +1,8 @@
+package: gen
+generate:
+  chi-server: true
+  strict-server: true
+  models: true
+  embedded-spec: true
+compatibility:
+  always-prefix-enum-values: true

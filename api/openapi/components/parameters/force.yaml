@@ -1,0 +1,9 @@
+name: force
+description: >-
+  Force the operation. If set to true, the operation will be performed regardless its consequences. In case of
+  some resources, this flag will call the delete operation on the resource instead of updating its status.
+in: query
+required: false
+schema:
+  type: boolean
+  default: false

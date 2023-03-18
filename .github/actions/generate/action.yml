@@ -1,0 +1,12 @@
+name: Generate
+description: Generate code needed for the project
+
+runs:
+  using: composite
+  steps:
+    - name: Generate prerequisites
+      shell: bash
+      run: |
+          npm install -g @apidevtools/swagger-cli
+          go install github.com/deepmap/oapi-codegen/cmd/oapi-codegen@latest
+          make generate && make dep

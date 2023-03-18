@@ -1,0 +1,16 @@
+get:
+  operationId: getSystemVersion
+  summary: Get application version.
+  description: Returns the version information and build details.
+  tags:
+    - System
+  security: [ ]
+  responses:
+    '200':
+      description: Version information and build details of the system.
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/system_version_info.yaml'
+    default:
+      $ref: '../components/responses/default.yaml'

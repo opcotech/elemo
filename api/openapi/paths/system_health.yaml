@@ -1,0 +1,18 @@
+get:
+  operationId: getSystemHealth
+  summary: Get system status.
+  description: Returns the system health, listing all components and their status.
+  tags:
+    - System
+  security: [ ]
+  responses:
+    '200':
+      description: The server can reply to health requests.
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/system_health.yaml'
+          example:
+            database: healthy
+    default:
+      $ref: '../components/responses/default.yaml'

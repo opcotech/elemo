@@ -1,0 +1,36 @@
+labelPRBasedOnFilePath:
+  api:
+    - api/**/*
+    - internal/controller/well_known.go
+    - internal/server/**/*
+  auth:
+    - internal/auth/**/*
+    - internal/controller/auth.go
+    - internal/service/auth.go
+    - internal/service/client.go
+    - internal/service/identity_provider.go
+    - internal/service/session.go
+    - internal/service/token.go
+  build:
+    - build/**/*
+  ci:
+    - ci/**/*
+  configs:
+    - configs/**/*
+    - internal/config/**/*
+  deployments:
+    - deploy/**/*
+  front-end:
+    - web/**/*
+  legal:
+    - LICENSE
+    - web/LICENSE
+    - assets/license-decisions.yml
+  license:
+    - internal/license/**/*
+    - tool/generate-key/**/*
+    - tool/generate-license/**/*
+    - tool/validate-license/**/*
+  policy:
+    - assets/bundles/*
+    - assets/policies/**/*

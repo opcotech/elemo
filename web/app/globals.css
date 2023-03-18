@@ -1,0 +1,85 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+#__next {
+  display: contents;
+}
+
+/* Eliminate Next.js 13 nested layout rendering issues. */
+[data-nextjs-scroll-focus-boundary] {
+  display: contents;
+}
+
+img,
+video {
+  max-width: unset;
+  height: auto;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  @apply font-heading leading-tight tracking-tight;
+}
+
+h1 {
+  @apply text-5xl;
+}
+
+h2 {
+  @apply text-3xl;
+}
+
+h3 {
+  @apply text-2xl;
+}
+
+h4 {
+  @apply text-xl;
+}
+
+h5 {
+  @apply text-lg;
+}
+
+h6 {
+  @apply text-base;
+}
+
+th {
+  @apply font-medium;
+}
+
+.link {
+  @apply cursor-pointer underline-offset-4 text-gray-600 hover:text-gray-900;
+}
+
+.link.decorated {
+  @apply underline decoration-dashed hover:decoration-solid;
+}
+
+.max-h-modal {
+  max-height: 70vh;
+}
+
+/* Align the datepicker icon on Chrome and MS Edge */
+@supports (not (-webkit-hyphens: none)) and (not (-moz-appearance: none)) and (list-style-type: '*') {
+  .inverse-datepicker::-webkit-calendar-picker-indicator {
+    position: absolute;
+    left: 0.75em;
+  }
+
+  .inverse-datepicker::-webkit-datetime-edit {
+    position: relative;
+    left: 1.25em;
+  }
+
+  .inverse-datepicker::-webkit-datetime-edit-fields-wrapper {
+    position: relative;
+    left: 0.5em;
+  }
+}

@@ -1,0 +1,7 @@
+description: Status of the user.
+type: string
+enum:
+  - active
+  - pending
+  - inactive
+  - deleted

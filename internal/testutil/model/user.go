@@ -1,0 +1,38 @@
+package model
+
+import (
+	"strings"
+
+	"github.com/opcotech/elemo/internal/model"
+	"github.com/opcotech/elemo/internal/pkg/password"
+	"github.com/opcotech/elemo/internal/testutil"
+)
+
+// NewUser creates a new user with random values. It does not create the db
+// record.
+func NewUser() *model.User {
+	user, err := model.NewUser(
+		strings.ToLower(testutil.GenerateRandomString(10)),
+		testutil.GenerateEmail(10),
+		password.HashPassword(testutil.GenerateRandomString(10)),
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	user.FirstName = testutil.GenerateRandomString(5)
+	user.LastName = testutil.GenerateRandomString(5)
+	user.Picture = imageURL
+	user.Title = "Senior Test User"
+	user.Bio = "I am a test user."
+	user.Phone = "+1234567890"
+	user.Address = "1234 Main St, Anytown, USA"
+	user.Links = []string{"https://example.com/"}
+	user.Languages = []model.Language{
+		model.LanguageHU,
+		model.LanguageEN,
+		model.LanguageES,
+	}
+
+	return user
+}
