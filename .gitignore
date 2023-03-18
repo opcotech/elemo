@@ -1,0 +1,19 @@
+# Editors
+.idea/
+.vscode/
+.fleet/
+
+# Coverage data
+.coverage.out
+.coverage.*.out
+coverage.html
+
+# Generated files
+bin/
+**/*.gen/
+**/*.gen.*
+api/openapi/openapi.final.yaml
+
+# Misc
+tmp/
+TODO.*

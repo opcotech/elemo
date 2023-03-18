@@ -1,0 +1,25 @@
+# See https://redocly.com/docs/cli/configuration/
+
+apis:
+  elemo@0.1.0:
+    root: ./api/openapi/openapi.final.yaml
+
+extends:
+  - recommended
+
+rules:
+  assert/operation-description:
+    subject:
+      type: Operation
+      property: description
+    assertions:
+      defined: true
+      minLength: 15
+
+theme:
+  openapi:
+    generateCodeSamples:
+      languages:
+        - lang: curl
+        - lang: Python
+        - lang: Go

@@ -1,0 +1,38 @@
+# Editors
+.idea/
+.vscode/
+.fleet/
+
+# Coverage data
+.coverage.out
+.coverage.*.out
+coverage.html
+
+# Generated files
+bin/
+
+# Configuration files
+.github/
+.editorconfig
+.codeclimate.yml
+cliff.toml
+
+# Misc
+api/
+build/
+deploy/
+tmp/
+TODO
+CHANGELOG.md
+LICENSE
+README.md
+
+# Helper tools and scripts
+tools/
+scripts/
+
+# Test files
+tests/
+
+# Monorepo specific files
+web/
