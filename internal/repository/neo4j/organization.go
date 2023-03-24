@@ -80,7 +80,7 @@ func (r *OrganizationRepository) Create(ctx context.Context, owner model.ID, org
 	CREATE (o:` + organization.ID.Label() + ` { id: $id, name: $name, email: $email, logo: $logo, website: $website,
 		status: $status, created_at: datetime($created_at)
 	}),
-	(u)-[:` + membershipID.Label() + ` {id: $membership_id, created_at: $created_at}]->(o)`
+	(u)-[:` + membershipID.Label() + ` {id: $membership_id, created_at: datetime($created_at)}]->(o)`
 
 	params := map[string]interface{}{
 		"id":            organization.ID.String(),

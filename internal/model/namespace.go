@@ -18,13 +18,13 @@ var (
 // Namespace represents a namespace of an organization. A namespace is a
 // logical grouping of Projects and Documents.
 type Namespace struct {
-	ID          ID         `validate:"required,dive"`
-	Name        string     `validate:"required,min=3,max=120"`
-	Description string     `validate:"omitempty,min=5,max=500"`
-	Projects    []ID       `validate:"omitempty,dive"`
-	Documents   []ID       `validate:"omitempty,dive"`
-	CreatedAt   *time.Time `validate:"omitempty"`
-	UpdatedAt   *time.Time `validate:"omitempty"`
+	ID          ID         `json:"id" validate:"required,dive"`
+	Name        string     `json:"name" validate:"required,min=3,max=120"`
+	Description string     `json:"description" validate:"omitempty,min=5,max=500"`
+	Projects    []ID       `json:"projects" validate:"omitempty,dive"`
+	Documents   []ID       `json:"documents" validate:"omitempty,dive"`
+	CreatedAt   *time.Time `json:"created_at" validate:"omitempty"`
+	UpdatedAt   *time.Time `json:"updated_at" validate:"omitempty"`
 }
 
 func (n *Namespace) Validate() error {

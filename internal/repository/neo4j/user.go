@@ -109,7 +109,7 @@ func (r *UserRepository) Create(ctx context.Context, user *model.User) error {
 		address: $address, links: $links, created_at: datetime($created_at) }
 	WITH u, $languages AS languages
 	UNWIND $languages AS language
-	MERGE (l:` + languageIDType + ` { code: language }) CREATE (u)-[:` + EdgeKindSpeaks.String() + ` {created_at: $created_at}]->(l)
+	MERGE (l:` + languageIDType + ` { code: language }) CREATE (u)-[:` + EdgeKindSpeaks.String() + ` {created_at: datetime($created_at)}]->(l)
 	`
 
 	params := map[string]any{

@@ -84,11 +84,11 @@ func (r *TodoRepository) Create(ctx context.Context, todo *model.Todo) error {
 			id: $id, title: $title, description: $description, priority: $priority, completed: $completed,
 			due_date: datetime($due_date), created_at: datetime($created_at)
 		}),
-		(t)-[:` + ownerRelID.Label() + ` {id: $owned_rel_id, created_at: $created_at}]->(o),
-		(t)<-[:` + creatorRelID.Label() + ` {id: $created_rel_id, created_at: $created_at}]-(c),
-		(o)-[:` + ownerPermID.Label() + ` {id: $owner_perm_id, kind: $owner_perm_kind, created_at: $created_at}]->(t)
+		(t)-[:` + ownerRelID.Label() + ` {id: $owned_rel_id, created_at: datetime($created_at)}]->(o),
+		(t)<-[:` + creatorRelID.Label() + ` {id: $created_rel_id, created_at: datetime($created_at)}]-(c),
+		(o)-[:` + ownerPermID.Label() + ` {id: $owner_perm_id, kind: $owner_perm_kind, created_at: datetime($created_at)}]->(t)
 	MERGE (c)-[rel:` + creatorPermID.Label() + `]->(t)
-	ON CREATE SET rel += {id: $creator_perm_id, kind: $creator_perm_kind, created_at: $created_at}`
+	ON CREATE SET rel += {id: $creator_perm_id, kind: $creator_perm_kind, created_at: datetime($created_at)}`
 
 	params := map[string]any{
 		"id":                todo.ID.String(),
