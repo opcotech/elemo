@@ -100,7 +100,6 @@ func TestNewProject(t *testing.T) {
 				Status:    ProjectStatusActive,
 				Teams:     make([]ID, 0),
 				Documents: make([]ID, 0),
-				Issues:    make([]ID, 0),
 			},
 		},
 		{

@@ -96,7 +96,7 @@ func (r *NamespaceRepository) Get(ctx context.Context, id model.ID) (*model.Name
 
 	cypher := `
 	MATCH (ns:` + id.Label() + ` {id: $id})
-	OPTIONAL MATCH (p:` + model.ProjectIDType + `)-[:` + EdgeKindBelongsTo.String() + `]->(ns)
+	OPTIONAL MATCH (p:` + model.ProjectIDType + `)<-[:` + EdgeKindHasProject.String() + `]-(ns)
 	OPTIONAL MATCH (d:` + model.DocumentIDType + `)-[:` + EdgeKindBelongsTo.String() + `]->(ns)
 	RETURN ns, collect(p.id) as p, collect(d.id) as d`
 
@@ -118,7 +118,7 @@ func (r *NamespaceRepository) GetAll(ctx context.Context, orgID model.ID, offset
 
 	cypher := `
 	MATCH (org:` + orgID.Label() + ` {id: $org_id})-[:` + EdgeKindHasNamespace.String() + `]->(ns:` + model.NamespaceIDType + `)
-	OPTIONAL MATCH (p:` + model.ProjectIDType + `)-[:` + EdgeKindBelongsTo.String() + `]->(ns)
+	OPTIONAL MATCH (p:` + model.ProjectIDType + `)<-[:` + EdgeKindHasProject.String() + `]-(ns)
 	OPTIONAL MATCH (d:` + model.DocumentIDType + `)-[:` + EdgeKindBelongsTo.String() + `]->(ns)
 	RETURN ns, collect(p.id) as p, collect(d.id) as d
 	ORDER BY ns.created_at
@@ -145,7 +145,7 @@ func (r *NamespaceRepository) Update(ctx context.Context, id model.ID, patch map
 	cypher := `
 	MATCH (ns:` + id.Label() + ` {id: $id}) SET ns += $patch, ns.updated_at = $updated_at
 	WITH ns
-	OPTIONAL MATCH (p:` + model.ProjectIDType + `)-[:` + EdgeKindBelongsTo.String() + `]->(ns)
+	OPTIONAL MATCH (p:` + model.ProjectIDType + `)<-[:` + EdgeKindHasProject.String() + `]->(ns)
 	OPTIONAL MATCH (d:` + model.DocumentIDType + `)-[:` + EdgeKindBelongsTo.String() + `]->(ns)
 	RETURN ns, collect(p.id) as p, collect(d.id) as d`
 

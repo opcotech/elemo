@@ -6,6 +6,7 @@ const (
 	EdgeKindHasPermission EdgeKind = iota + 1 // a subject has permission on a resource
 	EdgeKindHasTeam                           // an organization or project has a team
 	EdgeKindHasNamespace                      // an organization has a namespace
+	EdgeKindHasProject                        // a namespace has a project
 	EdgeKindBelongsTo                         // a resource belongs to another
 	EdgeKindKindOf                            // a resource is a kind of another
 	EdgeKindHasComment                        // a resource has a comment
@@ -30,6 +31,7 @@ var (
 		"HAS_PERMISSION": EdgeKindHasPermission,
 		"HAS_TEAM":       EdgeKindHasTeam,
 		"HAS_NAMESPACE":  EdgeKindHasNamespace,
+		"HAS_PROJECT":    EdgeKindHasProject,
 		"BELONGS_TO":     EdgeKindBelongsTo,
 		"KIND_OF":        EdgeKindKindOf,
 		"HAS_COMMENT":    EdgeKindHasComment,
@@ -44,6 +46,7 @@ var (
 		EdgeKindHasPermission: "HAS_PERMISSION",
 		EdgeKindHasTeam:       "HAS_TEAM",
 		EdgeKindHasNamespace:  "HAS_NAMESPACE",
+		EdgeKindHasProject:    "HAS_PROJECT",
 		EdgeKindBelongsTo:     "BELONGS_TO",
 		EdgeKindKindOf:        "KIND_OF",
 		EdgeKindHasComment:    "HAS_COMMENT",

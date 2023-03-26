@@ -57,17 +57,16 @@ func (s *ProjectStatus) UnmarshalText(text []byte) error {
 
 // Project represents a project that is used to group tasks together.
 type Project struct {
-	ID          ID            `validate:"required,dive"`
-	Key         string        `validate:"required,alpha,min=3,max=6"`
-	Name        string        `validate:"required,min=3,max=120"`
-	Description string        `validate:"omitempty,min=10,max=500"`
-	Logo        string        `validate:"omitempty,url"`
-	Status      ProjectStatus `validate:"required"`
-	Teams       []ID          `validate:"omitempty,dive"`
-	Documents   []ID          `validate:"omitempty,dive"`
-	Issues      []ID          `validate:"omitempty,dive"`
-	CreatedAt   *time.Time    `validate:"omitempty"`
-	UpdatedAt   *time.Time    `validate:"omitempty"`
+	ID          ID            `json:"id" validate:"required,dive"`
+	Key         string        `json:"key" validate:"required,alpha,min=3,max=6"`
+	Name        string        `json:"name" validate:"required,min=3,max=120"`
+	Description string        `json:"description" validate:"omitempty,min=10,max=500"`
+	Logo        string        `json:"logo" validate:"omitempty,url"`
+	Status      ProjectStatus `json:"status" validate:"required"`
+	Teams       []ID          `json:"teams" validate:"omitempty,dive"`
+	Documents   []ID          `json:"documents" validate:"omitempty,dive"`
+	CreatedAt   *time.Time    `json:"created_at" validate:"omitempty"`
+	UpdatedAt   *time.Time    `json:"updated_at" validate:"omitempty"`
 }
 
 func (p *Project) Validate() error {
@@ -87,11 +86,6 @@ func (p *Project) Validate() error {
 			return errors.Join(ErrInvalidProjectDetails, err)
 		}
 	}
-	for _, issue := range p.Issues {
-		if err := issue.Validate(); err != nil {
-			return errors.Join(ErrInvalidProjectDetails, err)
-		}
-	}
 	return nil
 }
 
@@ -104,7 +98,6 @@ func NewProject(key, name string) (*Project, error) {
 		Status:    ProjectStatusActive,
 		Teams:     make([]ID, 0),
 		Documents: make([]ID, 0),
-		Issues:    make([]ID, 0),
 	}
 
 	if err := project.Validate(); err != nil {
