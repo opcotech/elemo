@@ -148,7 +148,7 @@ func (r *ProjectRepository) GetAll(ctx context.Context, namespaceID model.ID, of
 	OPTIONAL MATCH (d:` + model.DocumentIDType + `)-[:` + EdgeKindBelongsTo.String() + `]->(p)
 	OPTIONAL MATCH (p)-[:` + EdgeKindHasTeam.String() + `]->(t:` + model.RoleIDType + `)
 	RETURN p, d, t
-	ORDER BY p.created_at
+	ORDER BY p.created_at DESC
 	SKIP $offset LIMIT $limit`
 
 	params := map[string]any{

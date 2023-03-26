@@ -135,6 +135,7 @@ func (r *OrganizationRepository) GetAll(ctx context.Context, offset, limit int) 
 	OPTIONAL MATCH (o)-[:` + EdgeKindHasNamespace.String() + `]->(n:` + model.NamespaceIDType + `)
 	OPTIONAL MATCH (o)-[:` + EdgeKindHasTeam.String() + `]->(t:` + model.RoleIDType + `)
 	RETURN o, collect(u.id) AS m, collect(n.id) AS n, collect(t.id) AS t
+	ORDER BY o.created_at DESC
 	SKIP $offset LIMIT $limit`
 
 	params := map[string]any{

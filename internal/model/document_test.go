@@ -11,7 +11,7 @@ import (
 func TestNewDocument(t *testing.T) {
 	type args struct {
 		name   string
-		fileID ID
+		fileID string
 		owner  ID
 	}
 	tests := []struct {
@@ -24,21 +24,21 @@ func TestNewDocument(t *testing.T) {
 			name: "create document with valid details",
 			args: args{
 				name:   "test",
-				fileID: ID{inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, label: "File"},
+				fileID: "file_id",
 				owner:  ID{inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, label: "User"},
 			},
 			want: &Document{
-				ID:      ID{inner: xid.NilID(), label: DocumentIDType},
-				Name:    "test",
-				FileID:  ID{inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, label: "File"},
-				OwnedBy: ID{inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, label: "User"},
+				ID:        ID{inner: xid.NilID(), label: DocumentIDType},
+				Name:      "test",
+				FileID:    "file_id",
+				CreatedBy: ID{inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, label: "User"},
 			},
 		},
 		{
 			name: "create document with invalid name",
 			args: args{
 				name:   "t",
-				fileID: ID{inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, label: "File"},
+				fileID: "file_id",
 			},
 			wantErr: ErrInvalidDocumentDetails,
 		},
@@ -46,7 +46,7 @@ func TestNewDocument(t *testing.T) {
 			name: "create document with empty name",
 			args: args{
 				name:   "",
-				fileID: ID{inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, label: "File"},
+				fileID: "file_id",
 			},
 			wantErr: ErrInvalidDocumentDetails,
 		},
@@ -54,7 +54,7 @@ func TestNewDocument(t *testing.T) {
 			name: "create document with nil owner",
 			args: args{
 				name:   "test",
-				fileID: ID{inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, label: "File"},
+				fileID: "file_id",
 			},
 			wantErr: ErrInvalidDocumentDetails,
 		},
@@ -78,7 +78,7 @@ func TestDocument_Validate(t *testing.T) {
 		ID      ID
 		Name    string
 		Excerpt string
-		FileID  ID
+		FileID  string
 		OwnedBy ID
 	}
 	tests := []struct {
@@ -91,7 +91,7 @@ func TestDocument_Validate(t *testing.T) {
 			fields: fields{
 				ID:      ID{inner: xid.NilID(), label: DocumentIDType},
 				Name:    "test",
-				FileID:  ID{inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, label: "File"},
+				FileID:  "file_id",
 				OwnedBy: ID{inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, label: "User"},
 			},
 		},
@@ -100,7 +100,7 @@ func TestDocument_Validate(t *testing.T) {
 			fields: fields{
 				ID:      ID{inner: xid.NilID(), label: DocumentIDType},
 				Name:    "t",
-				FileID:  ID{inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, label: "File"},
+				FileID:  "file_id",
 				OwnedBy: ID{inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, label: "User"},
 			},
 			wantErr: ErrInvalidDocumentDetails,
@@ -110,7 +110,7 @@ func TestDocument_Validate(t *testing.T) {
 			fields: fields{
 				ID:      ID{inner: xid.NilID(), label: DocumentIDType},
 				Name:    "",
-				FileID:  ID{inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, label: "File"},
+				FileID:  "file_id",
 				OwnedBy: ID{inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, label: "User"},
 			},
 			wantErr: ErrInvalidDocumentDetails,
@@ -120,7 +120,7 @@ func TestDocument_Validate(t *testing.T) {
 			fields: fields{
 				ID:      ID{inner: xid.NilID(), label: DocumentIDType},
 				Name:    "test",
-				FileID:  ID{inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, label: "File"},
+				FileID:  "file_id",
 				OwnedBy: ID{},
 			},
 			wantErr: ErrInvalidDocumentDetails,
@@ -130,7 +130,7 @@ func TestDocument_Validate(t *testing.T) {
 			fields: fields{
 				ID:      ID{inner: xid.NilID(), label: DocumentIDType},
 				Name:    "test",
-				FileID:  ID{},
+				FileID:  "",
 				OwnedBy: ID{inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, label: "User"},
 			},
 			wantErr: ErrInvalidDocumentDetails,
@@ -140,7 +140,7 @@ func TestDocument_Validate(t *testing.T) {
 			fields: fields{
 				ID:      ID{},
 				Name:    "test",
-				FileID:  ID{inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, label: "File"},
+				FileID:  "file_id",
 				OwnedBy: ID{inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, label: "User"},
 			},
 			wantErr: ErrInvalidDocumentDetails,
@@ -151,7 +151,7 @@ func TestDocument_Validate(t *testing.T) {
 				ID:      ID{inner: xid.NilID(), label: DocumentIDType},
 				Name:    "test",
 				Excerpt: "t",
-				FileID:  ID{inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, label: "File"},
+				FileID:  "file_id",
 				OwnedBy: ID{inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, label: "User"},
 			},
 			wantErr: ErrInvalidDocumentDetails,
@@ -160,11 +160,11 @@ func TestDocument_Validate(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			d := &Document{
-				ID:      tt.fields.ID,
-				Name:    tt.fields.Name,
-				Excerpt: tt.fields.Excerpt,
-				FileID:  tt.fields.FileID,
-				OwnedBy: tt.fields.OwnedBy,
+				ID:        tt.fields.ID,
+				Name:      tt.fields.Name,
+				Excerpt:   tt.fields.Excerpt,
+				FileID:    tt.fields.FileID,
+				CreatedBy: tt.fields.OwnedBy,
 			}
 			err := d.Validate()
 			require.ErrorIs(t, err, tt.wantErr)

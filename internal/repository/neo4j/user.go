@@ -171,7 +171,7 @@ func (r *UserRepository) GetAll(ctx context.Context, offset, limit int) ([]*mode
 	OPTIONAL MATCH (u)-[p:` + EdgeKindHasPermission.String() + `]->()
 	OPTIONAL MATCH (u)-[r:` + EdgeKindCreated.String() + `]->(d:` + model.DocumentIDType + `)
 	RETURN u, collect(DISTINCT l.code) AS l, collect(DISTINCT p.id) AS p, collect(DISTINCT d.id) AS d
-	ORDER BY u.created_at
+	ORDER BY u.created_at DESC
 	SKIP $offset LIMIT $limit`
 
 	params := map[string]any{

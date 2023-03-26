@@ -20,13 +20,13 @@ var (
 // pointer to a file in the static file storage, editable by users with the
 // appropriate permissions on the front-end.
 type Document struct {
-	ID        ID         `validate:"required,dive"`
-	Name      string     `validate:"required,min=3,max=120"`
-	Excerpt   string     `validate:"omitempty,min=10,max=500"`
-	FileID    ID         `validate:"required,dive"`
-	OwnedBy   ID         `validate:"required,dive"`
-	CreatedAt *time.Time `validate:"omitempty"`
-	UpdatedAt *time.Time `validate:"omitempty"`
+	ID        ID         `json:"id" validate:"required,dive"`
+	Name      string     `json:"name" validate:"required,min=3,max=120"`
+	Excerpt   string     `json:"excerpt" validate:"omitempty,min=10,max=500"`
+	FileID    string     `json:"file_id" validate:"required"`
+	CreatedBy ID         `json:"created_by" validate:"required,dive"`
+	CreatedAt *time.Time `json:"created_at" validate:"omitempty"`
+	UpdatedAt *time.Time `json:"updated_at" validate:"omitempty"`
 }
 
 func (d *Document) Validate() error {
@@ -36,22 +36,19 @@ func (d *Document) Validate() error {
 	if err := d.ID.Validate(); err != nil {
 		return errors.Join(ErrInvalidDocumentDetails, err)
 	}
-	if err := d.FileID.Validate(); err != nil {
-		return errors.Join(ErrInvalidDocumentDetails, err)
-	}
-	if err := d.OwnedBy.Validate(); err != nil {
+	if err := d.CreatedBy.Validate(); err != nil {
 		return errors.Join(ErrInvalidDocumentDetails, err)
 	}
 	return nil
 }
 
 // NewDocument creates a new Document.
-func NewDocument(name string, fileID ID, createdBy ID) (*Document, error) {
+func NewDocument(name string, fileID string, createdBy ID) (*Document, error) {
 	document := &Document{
-		ID:      MustNewNilID(DocumentIDType),
-		Name:    name,
-		FileID:  fileID,
-		OwnedBy: createdBy,
+		ID:        MustNewNilID(DocumentIDType),
+		Name:      name,
+		FileID:    fileID,
+		CreatedBy: createdBy,
 	}
 
 	if err := document.Validate(); err != nil {

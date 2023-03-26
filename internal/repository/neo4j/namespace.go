@@ -121,7 +121,7 @@ func (r *NamespaceRepository) GetAll(ctx context.Context, orgID model.ID, offset
 	OPTIONAL MATCH (p:` + model.ProjectIDType + `)<-[:` + EdgeKindHasProject.String() + `]-(ns)
 	OPTIONAL MATCH (d:` + model.DocumentIDType + `)-[:` + EdgeKindBelongsTo.String() + `]->(ns)
 	RETURN ns, collect(p.id) as p, collect(d.id) as d
-	ORDER BY ns.created_at
+	ORDER BY ns.created_at DESC
 	SKIP $offset LIMIT $limit`
 
 	params := map[string]any{

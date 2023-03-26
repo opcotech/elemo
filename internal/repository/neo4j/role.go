@@ -134,7 +134,7 @@ func (r *RoleRepository) GetAllBelongsTo(ctx context.Context, id model.ID, offse
 	OPTIONAL MATCH (r)<-[:` + EdgeKindMemberOf.String() + `]-(u:` + model.UserIDType + `)
 	OPTIONAL MATCH (r)-[p:` + EdgeKindHasPermission.String() + `]->()
 	RETURN r, collect(u.id) AS m, collect(p.id) AS p
-	ORDER BY r.created_at
+	ORDER BY r.created_at DESC
 	SKIP $offset LIMIT $limit`
 
 	params := map[string]any{

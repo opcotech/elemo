@@ -142,14 +142,15 @@ func (r *TodoRepository) Get(ctx context.Context, id model.ID) (*model.Todo, err
 }
 
 func (r *TodoRepository) GetByOwner(ctx context.Context, ownerID model.ID, completed *bool) ([]*model.Todo, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.TodoRepository/GetByOwner")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.TodoRepository/GetByCreator")
 	defer span.End()
 
 	cypher := `
 	MATCH (t:` + model.TodoIDType + `)-[:` + EdgeKindBelongsTo.String() + `]->(o:` + ownerID.Label() + ` {id: $owner_id})
 	WHERE $completed IS NULL OR t.completed = $completed
 	OPTIONAL MATCH (t)<-[:` + EdgeKindCreated.String() + `]-(c)
-	RETURN t, o.id as o, c.id as c`
+	RETURN t, o.id as o, c.id as c
+	ORDER BY t.created_at DESC`
 
 	params := map[string]any{
 		"owner_id":  ownerID.String(),

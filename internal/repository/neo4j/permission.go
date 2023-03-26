@@ -125,7 +125,7 @@ func (r *PermissionRepository) GetBySubject(ctx context.Context, id model.ID) ([
 	cypher := `
 	MATCH (s:` + id.Label() + ` {id: $id})-[p:` + EdgeKindHasPermission.String() + `]->(t)
 	RETURN s, p, t
-	`
+	ORDER BY p.created_at DESC`
 
 	params := map[string]any{
 		"id": id.String(),
@@ -148,7 +148,7 @@ func (r *PermissionRepository) GetByTarget(ctx context.Context, id model.ID) ([]
 	cypher := `
 	MATCH (s)-[p:` + EdgeKindHasPermission.String() + `]->(t:` + id.Label() + ` {id: $id})
 	RETURN s, p, t
-	`
+	ORDER BY p.created_at DESC`
 
 	params := map[string]any{
 		"id": id.String(),
