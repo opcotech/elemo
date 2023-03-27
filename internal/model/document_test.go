@@ -32,6 +32,7 @@ func TestNewDocument(t *testing.T) {
 				Name:      "test",
 				FileID:    "file_id",
 				CreatedBy: ID{inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, label: "User"},
+				Labels:    make([]ID, 0),
 			},
 		},
 		{
@@ -80,6 +81,7 @@ func TestDocument_Validate(t *testing.T) {
 		Excerpt string
 		FileID  string
 		OwnedBy ID
+		Labels  []ID
 	}
 	tests := []struct {
 		name    string
@@ -156,6 +158,19 @@ func TestDocument_Validate(t *testing.T) {
 			},
 			wantErr: ErrInvalidDocumentDetails,
 		},
+		{
+			name: "validate document with invalid labels",
+			fields: fields{
+				ID:      ID{inner: xid.NilID(), label: "Invalid"},
+				Name:    "test",
+				FileID:  "file_id",
+				OwnedBy: ID{inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, label: "User"},
+				Labels: []ID{
+					{},
+				},
+			},
+			wantErr: ErrInvalidDocumentDetails,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -165,6 +180,7 @@ func TestDocument_Validate(t *testing.T) {
 				Excerpt:   tt.fields.Excerpt,
 				FileID:    tt.fields.FileID,
 				CreatedBy: tt.fields.OwnedBy,
+				Labels:    tt.fields.Labels,
 			}
 			err := d.Validate()
 			require.ErrorIs(t, err, tt.wantErr)

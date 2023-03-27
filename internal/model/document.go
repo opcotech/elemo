@@ -25,6 +25,7 @@ type Document struct {
 	Excerpt   string     `json:"excerpt" validate:"omitempty,min=10,max=500"`
 	FileID    string     `json:"file_id" validate:"required"`
 	CreatedBy ID         `json:"created_by" validate:"required,dive"`
+	Labels    []ID       `json:"labels" validate:"omitempty,dive"`
 	CreatedAt *time.Time `json:"created_at" validate:"omitempty"`
 	UpdatedAt *time.Time `json:"updated_at" validate:"omitempty"`
 }
@@ -39,6 +40,11 @@ func (d *Document) Validate() error {
 	if err := d.CreatedBy.Validate(); err != nil {
 		return errors.Join(ErrInvalidDocumentDetails, err)
 	}
+	for _, label := range d.Labels {
+		if err := label.Validate(); err != nil {
+			return errors.Join(ErrInvalidDocumentDetails, err)
+		}
+	}
 	return nil
 }
 
@@ -49,6 +55,7 @@ func NewDocument(name string, fileID string, createdBy ID) (*Document, error) {
 		Name:      name,
 		FileID:    fileID,
 		CreatedBy: createdBy,
+		Labels:    make([]ID, 0),
 	}
 
 	if err := document.Validate(); err != nil {

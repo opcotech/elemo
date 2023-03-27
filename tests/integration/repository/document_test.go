@@ -85,6 +85,11 @@ func TestDocumentRepository_Get(t *testing.T) {
 		neo4j.WithDatabase(db),
 	)
 
+	labelRepo, err := neo4j.NewLabelRepository(
+		neo4j.WithDatabase(db),
+	)
+	require.NoError(t, err)
+
 	user := prepareUser(t)
 	err = userRepo.Create(ctx, user)
 	require.NoError(t, err)
@@ -97,6 +102,15 @@ func TestDocumentRepository_Get(t *testing.T) {
 	err = documentRepo.Create(ctx, organization.ID, document)
 	require.NoError(t, err)
 
+	label, err := model.NewLabel("label")
+	require.NoError(t, err)
+
+	err = labelRepo.Create(ctx, label)
+	require.NoError(t, err)
+
+	err = labelRepo.AttachTo(ctx, label.ID, document.ID)
+	require.NoError(t, err)
+
 	got, err := documentRepo.Get(ctx, document.ID)
 	require.NoError(t, err)
 
@@ -105,6 +119,7 @@ func TestDocumentRepository_Get(t *testing.T) {
 	assert.Equal(t, document.Excerpt, got.Excerpt)
 	assert.Equal(t, document.FileID, got.FileID)
 	assert.Equal(t, document.CreatedBy, got.CreatedBy)
+	assert.ElementsMatch(t, []model.ID{label.ID}, got.Labels)
 	assert.WithinDuration(t, *document.CreatedAt, *got.CreatedAt, 1*time.Second)
 	assert.Nil(t, got.UpdatedAt)
 }

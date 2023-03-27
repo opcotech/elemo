@@ -23,7 +23,7 @@ type DocumentRepository struct {
 	*repository
 }
 
-func (r *DocumentRepository) scan(dp, cp string) func(rec *neo4j.Record) (*model.Document, error) {
+func (r *DocumentRepository) scan(dp, cp, lp string) func(rec *neo4j.Record) (*model.Document, error) {
 	return func(rec *neo4j.Record) (*model.Document, error) {
 		doc := new(model.Document)
 
@@ -43,6 +43,10 @@ func (r *DocumentRepository) scan(dp, cp string) func(rec *neo4j.Record) (*model
 
 		doc.ID, _ = model.NewIDFromString(val.GetProperties()["id"].(string), model.DocumentIDType)
 		doc.CreatedBy, _ = model.NewIDFromString(createdBy, model.UserIDType)
+
+		if doc.Labels, err = ParseIDsFromRecord(rec, lp, model.LabelIDType); err != nil {
+			return nil, err
+		}
 
 		if err := doc.Validate(); err != nil {
 			return nil, err
@@ -104,13 +108,14 @@ func (r *DocumentRepository) Get(ctx context.Context, id model.ID) (*model.Docum
 
 	cypher := `
 	MATCH (d:` + id.Label() + ` {id: $id}), (d)<-[:` + EdgeKindCreated.String() + `]-(c:` + model.UserIDType + `)
-	RETURN d, c.id AS c`
+	OPTIONAL MATCH (d)-[:` + EdgeKindHasLabel.String() + `]->(l:` + model.LabelIDType + `)
+	RETURN d, c.id AS c, collect(l.id) AS l`
 
 	params := map[string]any{
 		"id": id.String(),
 	}
 
-	doc, err := ExecuteReadAndReadSingle(ctx, r.db, cypher, params, r.scan("d", "c"))
+	doc, err := ExecuteReadAndReadSingle(ctx, r.db, cypher, params, r.scan("d", "c", "l"))
 	if err != nil {
 		return nil, errors.Join(ErrDocumentRead, err)
 	}
@@ -124,7 +129,8 @@ func (r *DocumentRepository) GetByCreator(ctx context.Context, createdBy model.I
 
 	cypher := `
 	MATCH (d)<-[:` + EdgeKindCreated.String() + `]-(c:` + createdBy.Label() + ` {id: $id})
-	RETURN d, c.id AS c
+	OPTIONAL MATCH (d)-[:` + EdgeKindHasLabel.String() + `]->(l:` + model.LabelIDType + `)
+	RETURN d, c.id AS c, collect(l.id) AS l
 	ORDER BY d.created_at DESC
 	SKIP $offset LIMIT $limit`
 
@@ -134,7 +140,7 @@ func (r *DocumentRepository) GetByCreator(ctx context.Context, createdBy model.I
 		"limit":  limit,
 	}
 
-	docs, err := ExecuteReadAndReadAll(ctx, r.db, cypher, params, r.scan("d", "c"))
+	docs, err := ExecuteReadAndReadAll(ctx, r.db, cypher, params, r.scan("d", "c", "l"))
 	if err != nil {
 		return nil, errors.Join(ErrDocumentRead, err)
 	}
@@ -150,7 +156,8 @@ func (r *DocumentRepository) GetAllBelongsTo(ctx context.Context, belongsTo mode
 	MATCH
 		(d)-[:` + EdgeKindBelongsTo.String() + `]->(b:` + belongsTo.Label() + ` {id: $id}),
 		(c:` + model.UserIDType + `)-[` + EdgeKindCreated.String() + `]->(d)
-	RETURN d, c.id AS c
+	OPTIONAL MATCH (d)-[:` + EdgeKindHasLabel.String() + `]->(l:` + model.LabelIDType + `)
+	RETURN d, c.id AS c, collect(l.id) AS l
 	ORDER BY d.created_at DESC
 	SKIP $offset LIMIT $limit`
 
@@ -160,7 +167,7 @@ func (r *DocumentRepository) GetAllBelongsTo(ctx context.Context, belongsTo mode
 		"limit":  limit,
 	}
 
-	docs, err := ExecuteReadAndReadAll(ctx, r.db, cypher, params, r.scan("d", "c"))
+	docs, err := ExecuteReadAndReadAll(ctx, r.db, cypher, params, r.scan("d", "c", "l"))
 	if err != nil {
 		return nil, errors.Join(ErrDocumentRead, err)
 	}
@@ -177,7 +184,8 @@ func (r *DocumentRepository) Update(ctx context.Context, id model.ID, patch map[
 	SET d += $patch, d.updated_at = datetime($updated_at)
 	WITH d
 	MATCH (c:` + model.UserIDType + `)-[` + EdgeKindCreated.String() + `]->(d)
-	RETURN d, c.id AS c`
+	OPTIONAL MATCH (d)-[:` + EdgeKindHasLabel.String() + `]->(l:` + model.LabelIDType + `)
+	RETURN d, c.id AS c, collect(l.id) AS l`
 
 	params := map[string]any{
 		"id":         id.String(),
@@ -185,7 +193,7 @@ func (r *DocumentRepository) Update(ctx context.Context, id model.ID, patch map[
 		"updated_at": time.Now().Format(time.RFC3339Nano),
 	}
 
-	doc, err := ExecuteReadAndReadSingle(ctx, r.db, cypher, params, r.scan("d", "c"))
+	doc, err := ExecuteReadAndReadSingle(ctx, r.db, cypher, params, r.scan("d", "c", "l"))
 	if err != nil {
 		return nil, errors.Join(ErrDocumentUpdate, err)
 	}
