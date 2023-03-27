@@ -18,7 +18,7 @@ func TestEdgeKind_String(t *testing.T) {
 		{"BELONGS_TO", EdgeKindBelongsTo, "BELONGS_TO"},
 		{"KIND_OF", EdgeKindKindOf, "KIND_OF"},
 		{"HAS_COMMENT", EdgeKindHasComment, "HAS_COMMENT"},
-		{"LABELS", EdgeKindLabels, "LABELS"},
+		{"HAS_LABEL", EdgeKindHasLabel, "HAS_LABEL"},
 		{"ASSIGNED_TO", EdgeKindAssignedTo, "ASSIGNED_TO"},
 		{"MEMBER_OF", EdgeKindMemberOf, "MEMBER_OF"},
 		{"CREATED", EdgeKindCreated, "CREATED"},

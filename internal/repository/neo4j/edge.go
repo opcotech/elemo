@@ -10,7 +10,7 @@ const (
 	EdgeKindBelongsTo                         // a resource belongs to another
 	EdgeKindKindOf                            // a resource is a kind of another
 	EdgeKindHasComment                        // a resource has a comment
-	EdgeKindLabels                            // a resource is labeled by a label
+	EdgeKindHasLabel                          // a resource is labeled by a label
 	EdgeKindAssignedTo                        // a user is assigned to a resource
 	EdgeKindMemberOf                          // a user is a member of a team
 	EdgeKindCreated                           // a user created a resource
@@ -35,7 +35,7 @@ var (
 		"BELONGS_TO":     EdgeKindBelongsTo,
 		"KIND_OF":        EdgeKindKindOf,
 		"HAS_COMMENT":    EdgeKindHasComment,
-		"LABELS":         EdgeKindLabels,
+		"HAS_LABEL":      EdgeKindHasLabel,
 		"ASSIGNED_TO":    EdgeKindAssignedTo,
 		"MEMBER_OF":      EdgeKindMemberOf,
 		"CREATED":        EdgeKindCreated,
@@ -50,7 +50,7 @@ var (
 		EdgeKindBelongsTo:     "BELONGS_TO",
 		EdgeKindKindOf:        "KIND_OF",
 		EdgeKindHasComment:    "HAS_COMMENT",
-		EdgeKindLabels:        "LABELS",
+		EdgeKindHasLabel:      "HAS_LABEL",
 		EdgeKindAssignedTo:    "ASSIGNED_TO",
 		EdgeKindMemberOf:      "MEMBER_OF",
 		EdgeKindCreated:       "CREATED",

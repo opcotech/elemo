@@ -19,11 +19,11 @@ var (
 // information about it. For example, a label can be used to indicate the
 // environment a resource belongs to.
 type Label struct {
-	ID          ID         `validate:"required,dive"`
-	Name        string     `validate:"required,min=3,max=120"`
-	Description string     `validate:"omitempty,min=5,max=500"`
-	CreatedAt   *time.Time `validate:"omitempty"`
-	UpdatedAt   *time.Time `validate:"omitempty"`
+	ID          ID         `json:"id" validate:"required,dive"`
+	Name        string     `json:"name" validate:"required,min=3,max=120"`
+	Description string     `json:"description" validate:"omitempty,min=5,max=500"`
+	CreatedAt   *time.Time `json:"created_at" validate:"omitempty"`
+	UpdatedAt   *time.Time `json:"updated_at" validate:"omitempty"`
 }
 
 func (l *Label) Validate() error {
