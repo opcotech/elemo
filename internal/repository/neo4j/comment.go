@@ -102,7 +102,7 @@ func (r *CommentRepository) Get(ctx context.Context, id model.ID) (*model.Commen
 	defer span.End()
 
 	cypher := `
-	MATCH (c:` + id.Label() + ` {id: $id}), (c)<-[:` + EdgeKindCommented.String() + `]-(o:` + model.UserIDType + `)
+	MATCH (c:` + id.Label() + ` {id: $id})<-[:` + EdgeKindCommented.String() + `]-(o:` + model.UserIDType + `)
 	RETURN c, o.id AS o`
 
 	params := map[string]any{
@@ -143,20 +143,20 @@ func (r *CommentRepository) GetAllBelongsTo(ctx context.Context, belongsTo model
 	return docs, nil
 }
 
-func (r *CommentRepository) Update(ctx context.Context, id model.ID, patch map[string]any) (*model.Comment, error) {
+func (r *CommentRepository) Update(ctx context.Context, id model.ID, content string) (*model.Comment, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.CommentRepository/Update")
 	defer span.End()
 
 	cypher := `
 	MATCH (c:` + id.Label() + ` {id: $id})
-	SET c += $patch, c.updated_at = datetime($updated_at)
+	SET c.content = $content, c.updated_at = datetime($updated_at)
 	WITH c
 	MATCH (o:` + model.UserIDType + `)-[:` + EdgeKindCommented.String() + `]->(c)
 	RETURN c, o.id AS o`
 
 	params := map[string]any{
 		"id":         id.String(),
-		"patch":      patch,
+		"content":    content,
 		"updated_at": time.Now().Format(time.RFC3339Nano),
 	}
 

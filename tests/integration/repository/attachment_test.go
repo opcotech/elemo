@@ -14,7 +14,7 @@ import (
 	"github.com/opcotech/elemo/internal/repository/neo4j"
 )
 
-func TestCommentRepository_Create(t *testing.T) {
+func TestAttachmentRepository_Create(t *testing.T) {
 	ctx := context.Background()
 
 	db, closer := newNeo4jDatabase(t)
@@ -38,7 +38,7 @@ func TestCommentRepository_Create(t *testing.T) {
 		neo4j.WithDatabase(db),
 	)
 
-	commentRepo, err := neo4j.NewCommentRepository(
+	attachmentRepo, err := neo4j.NewAttachmentRepository(
 		neo4j.WithDatabase(db),
 	)
 	require.NoError(t, err)
@@ -55,18 +55,18 @@ func TestCommentRepository_Create(t *testing.T) {
 	err = documentRepo.Create(ctx, organization.ID, document)
 	require.NoError(t, err)
 
-	comment, err := model.NewComment("this is a test comment from a user", user.ID)
+	attachment, err := model.NewAttachment("test attachment", "file_id", user.ID)
 	require.NoError(t, err)
 
-	err = commentRepo.Create(ctx, document.ID, comment)
+	err = attachmentRepo.Create(ctx, document.ID, attachment)
 	require.NoError(t, err)
 
-	assert.NotEqual(t, model.ID{}, comment.ID)
-	assert.NotNil(t, comment.CreatedAt)
-	assert.Nil(t, comment.UpdatedAt)
+	assert.NotEqual(t, model.ID{}, attachment.ID)
+	assert.NotNil(t, attachment.CreatedAt)
+	assert.Nil(t, attachment.UpdatedAt)
 }
 
-func TestCommentRepository_Get(t *testing.T) {
+func TestAttachmentRepository_Get(t *testing.T) {
 	ctx := context.Background()
 
 	db, closer := newNeo4jDatabase(t)
@@ -90,7 +90,7 @@ func TestCommentRepository_Get(t *testing.T) {
 		neo4j.WithDatabase(db),
 	)
 
-	commentRepo, err := neo4j.NewCommentRepository(
+	attachmentRepo, err := neo4j.NewAttachmentRepository(
 		neo4j.WithDatabase(db),
 	)
 	require.NoError(t, err)
@@ -107,22 +107,23 @@ func TestCommentRepository_Get(t *testing.T) {
 	err = documentRepo.Create(ctx, organization.ID, document)
 	require.NoError(t, err)
 
-	comment, err := model.NewComment("this is a test comment from a user", user.ID)
+	attachment, err := model.NewAttachment("test attachment", "file_id", user.ID)
 	require.NoError(t, err)
 
-	err = commentRepo.Create(ctx, document.ID, comment)
+	err = attachmentRepo.Create(ctx, document.ID, attachment)
 	require.NoError(t, err)
 
-	got, err := commentRepo.Get(ctx, comment.ID)
+	got, err := attachmentRepo.Get(ctx, attachment.ID)
 	require.NoError(t, err)
 
-	assert.Equal(t, comment.ID, got.ID)
-	assert.Equal(t, comment.Content, got.Content)
-	assert.WithinDuration(t, *comment.CreatedAt, *got.CreatedAt, 1*time.Second)
+	assert.Equal(t, attachment.ID, got.ID)
+	assert.Equal(t, attachment.Name, got.Name)
+	assert.Equal(t, attachment.FileID, got.FileID)
+	assert.WithinDuration(t, *attachment.CreatedAt, *got.CreatedAt, 1*time.Second)
 	assert.Nil(t, got.UpdatedAt)
 }
 
-func TestCommentRepository_GetAllBelongsTo(t *testing.T) {
+func TestAttachmentRepository_GetAllBelongsTo(t *testing.T) {
 	ctx := context.Background()
 
 	db, closer := newNeo4jDatabase(t)
@@ -146,7 +147,7 @@ func TestCommentRepository_GetAllBelongsTo(t *testing.T) {
 		neo4j.WithDatabase(db),
 	)
 
-	commentRepo, err := neo4j.NewCommentRepository(
+	attachmentRepo, err := neo4j.NewAttachmentRepository(
 		neo4j.WithDatabase(db),
 	)
 	require.NoError(t, err)
@@ -163,35 +164,35 @@ func TestCommentRepository_GetAllBelongsTo(t *testing.T) {
 	err = documentRepo.Create(ctx, organization.ID, document)
 	require.NoError(t, err)
 
-	comment, err := model.NewComment("this is a test comment from a user", user.ID)
+	attachment, err := model.NewAttachment("test attachment", "file_id", user.ID)
 	require.NoError(t, err)
 
-	require.NoError(t, commentRepo.Create(ctx, document.ID, comment))
-	require.NoError(t, commentRepo.Create(ctx, document.ID, comment))
-	require.NoError(t, commentRepo.Create(ctx, document.ID, comment))
+	require.NoError(t, attachmentRepo.Create(ctx, document.ID, attachment))
+	require.NoError(t, attachmentRepo.Create(ctx, document.ID, attachment))
+	require.NoError(t, attachmentRepo.Create(ctx, document.ID, attachment))
 
-	got, err := commentRepo.GetAllBelongsTo(ctx, document.ID, 0, 10)
+	got, err := attachmentRepo.GetAllBelongsTo(ctx, document.ID, 0, 10)
 	require.NoError(t, err)
 	assert.Len(t, got, 3)
 
-	got, err = commentRepo.GetAllBelongsTo(ctx, document.ID, 0, 2)
+	got, err = attachmentRepo.GetAllBelongsTo(ctx, document.ID, 0, 2)
 	require.NoError(t, err)
 	assert.Len(t, got, 2)
 
-	got, err = commentRepo.GetAllBelongsTo(ctx, document.ID, 1, 1)
+	got, err = attachmentRepo.GetAllBelongsTo(ctx, document.ID, 1, 1)
 	require.NoError(t, err)
 	assert.Len(t, got, 1)
 
-	got, err = commentRepo.GetAllBelongsTo(ctx, document.ID, 2, 2)
+	got, err = attachmentRepo.GetAllBelongsTo(ctx, document.ID, 2, 2)
 	require.NoError(t, err)
 	assert.Len(t, got, 1)
 
-	got, err = commentRepo.GetAllBelongsTo(ctx, document.ID, 3, 1)
+	got, err = attachmentRepo.GetAllBelongsTo(ctx, document.ID, 3, 1)
 	require.NoError(t, err)
 	assert.Len(t, got, 0)
 }
 
-func TestCommentRepository_Update(t *testing.T) {
+func TestAttachmentRepository_Update(t *testing.T) {
 	ctx := context.Background()
 
 	db, closer := newNeo4jDatabase(t)
@@ -215,7 +216,7 @@ func TestCommentRepository_Update(t *testing.T) {
 		neo4j.WithDatabase(db),
 	)
 
-	commentRepo, err := neo4j.NewCommentRepository(
+	attachmentRepo, err := neo4j.NewAttachmentRepository(
 		neo4j.WithDatabase(db),
 	)
 	require.NoError(t, err)
@@ -232,23 +233,23 @@ func TestCommentRepository_Update(t *testing.T) {
 	err = documentRepo.Create(ctx, organization.ID, document)
 	require.NoError(t, err)
 
-	comment, err := model.NewComment("this is a test comment from a user", user.ID)
+	attachment, err := model.NewAttachment("test attachment", "file_id", user.ID)
 	require.NoError(t, err)
 
-	err = commentRepo.Create(ctx, document.ID, comment)
+	err = attachmentRepo.Create(ctx, document.ID, attachment)
 	require.NoError(t, err)
 
-	newContent := "this is an updated comment"
-	updated, err := commentRepo.Update(ctx, comment.ID, newContent)
+	newName := "test name"
+	updated, err := attachmentRepo.Update(ctx, attachment.ID, newName)
 	require.NoError(t, err)
 
-	assert.Equal(t, comment.ID, updated.ID)
-	assert.Equal(t, newContent, updated.Content)
-	assert.WithinDuration(t, *comment.CreatedAt, *updated.CreatedAt, 1*time.Second)
+	assert.Equal(t, attachment.ID, updated.ID)
+	assert.Equal(t, newName, updated.Name)
+	assert.WithinDuration(t, *attachment.CreatedAt, *updated.CreatedAt, 1*time.Second)
 	assert.NotNil(t, updated.UpdatedAt)
 }
 
-func TestCommentRepository_Delete(t *testing.T) {
+func TestAttachmentRepository_Delete(t *testing.T) {
 	ctx := context.Background()
 
 	db, closer := newNeo4jDatabase(t)
@@ -272,7 +273,7 @@ func TestCommentRepository_Delete(t *testing.T) {
 		neo4j.WithDatabase(db),
 	)
 
-	commentRepo, err := neo4j.NewCommentRepository(
+	attachmentRepo, err := neo4j.NewAttachmentRepository(
 		neo4j.WithDatabase(db),
 	)
 	require.NoError(t, err)
@@ -289,15 +290,15 @@ func TestCommentRepository_Delete(t *testing.T) {
 	err = documentRepo.Create(ctx, organization.ID, document)
 	require.NoError(t, err)
 
-	comment, err := model.NewComment("this is a test comment from a user", user.ID)
+	attachment, err := model.NewAttachment("test attachment", "file_id", user.ID)
 	require.NoError(t, err)
 
-	err = commentRepo.Create(ctx, document.ID, comment)
+	err = attachmentRepo.Create(ctx, document.ID, attachment)
 	require.NoError(t, err)
 
-	err = commentRepo.Delete(ctx, comment.ID)
+	err = attachmentRepo.Delete(ctx, attachment.ID)
 	require.NoError(t, err)
 
-	_, err = commentRepo.Get(ctx, comment.ID)
+	_, err = attachmentRepo.Get(ctx, attachment.ID)
 	require.Error(t, err)
 }

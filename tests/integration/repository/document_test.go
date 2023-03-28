@@ -95,6 +95,11 @@ func TestDocumentRepository_Get(t *testing.T) {
 	)
 	require.NoError(t, err)
 
+	attachmentRepo, err := neo4j.NewAttachmentRepository(
+		neo4j.WithDatabase(db),
+	)
+	require.NoError(t, err)
+
 	user := prepareUser(t)
 	err = userRepo.Create(ctx, user)
 	require.NoError(t, err)
@@ -122,6 +127,12 @@ func TestDocumentRepository_Get(t *testing.T) {
 	err = commentRepo.Create(ctx, document.ID, comment)
 	require.NoError(t, err)
 
+	attachment, err := model.NewAttachment("attachment", "file_id", user.ID)
+	require.NoError(t, err)
+
+	err = attachmentRepo.Create(ctx, document.ID, attachment)
+	require.NoError(t, err)
+
 	got, err := documentRepo.Get(ctx, document.ID)
 	require.NoError(t, err)
 
@@ -132,6 +143,7 @@ func TestDocumentRepository_Get(t *testing.T) {
 	assert.Equal(t, document.CreatedBy, got.CreatedBy)
 	assert.ElementsMatch(t, []model.ID{label.ID}, got.Labels)
 	assert.ElementsMatch(t, []model.ID{comment.ID}, got.Comments)
+	assert.ElementsMatch(t, []model.ID{attachment.ID}, got.Attachments)
 	assert.WithinDuration(t, *document.CreatedAt, *got.CreatedAt, 1*time.Second)
 	assert.Nil(t, got.UpdatedAt)
 }
