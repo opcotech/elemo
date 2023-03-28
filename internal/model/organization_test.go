@@ -157,6 +157,9 @@ func TestOrganization_Validate(t *testing.T) {
 		Email       string
 		Description string
 		Status      OrganizationStatus
+		Namespaces  []ID
+		Members     []ID
+		Teams       []ID
 	}
 	tests := []struct {
 		name    string
@@ -166,39 +169,96 @@ func TestOrganization_Validate(t *testing.T) {
 		{
 			name: "valid organization",
 			fields: fields{
-				ID:     ID{inner: xid.NilID(), label: OrganizationIDType},
-				Name:   "test",
-				Email:  "test@example.com",
-				Status: OrganizationStatusActive,
+				ID:         ID{inner: xid.NilID(), label: OrganizationIDType},
+				Name:       "test",
+				Email:      "test@example.com",
+				Status:     OrganizationStatusActive,
+				Namespaces: make([]ID, 0),
+				Members:    make([]ID, 0),
+				Teams:      make([]ID, 0),
 			},
 		},
 		{
 			name: "invalid organization id",
 			fields: fields{
-				ID:     ID{inner: xid.NilID(), label: ""},
-				Name:   "test",
-				Email:  "test@example.com",
-				Status: OrganizationStatusActive,
+				ID:         ID{inner: xid.NilID(), label: ""},
+				Name:       "test",
+				Email:      "test@example.com",
+				Status:     OrganizationStatusActive,
+				Namespaces: make([]ID, 0),
+				Members:    make([]ID, 0),
+				Teams:      make([]ID, 0),
 			},
 			wantErr: ErrInvalidOrganizationDetails,
 		},
 		{
 			name: "invalid organization email",
 			fields: fields{
-				ID:     ID{inner: xid.NilID(), label: ""},
-				Name:   "test",
-				Email:  "test.com",
-				Status: OrganizationStatusActive,
+				ID:         ID{inner: xid.NilID(), label: ""},
+				Name:       "test",
+				Email:      "test.com",
+				Status:     OrganizationStatusActive,
+				Namespaces: make([]ID, 0),
+				Members:    make([]ID, 0),
+				Teams:      make([]ID, 0),
 			},
 			wantErr: ErrInvalidOrganizationDetails,
 		},
 		{
 			name: "invalid organization status",
 			fields: fields{
-				ID:     ID{inner: xid.NilID(), label: ""},
+				ID:         ID{inner: xid.NilID(), label: ""},
+				Name:       "test",
+				Email:      "test@example.com",
+				Status:     OrganizationStatus(0),
+				Namespaces: make([]ID, 0),
+				Members:    make([]ID, 0),
+				Teams:      make([]ID, 0),
+			},
+			wantErr: ErrInvalidOrganizationDetails,
+		},
+		{
+			name: "invalid namespaces",
+			fields: fields{
+				ID:     ID{inner: xid.NilID(), label: OrganizationIDType},
 				Name:   "test",
 				Email:  "test@example.com",
-				Status: OrganizationStatus(0),
+				Status: OrganizationStatusActive,
+				Namespaces: []ID{
+					{},
+				},
+				Members: make([]ID, 0),
+				Teams:   make([]ID, 0),
+			},
+			wantErr: ErrInvalidOrganizationDetails,
+		},
+		{
+			name: "invalid members",
+			fields: fields{
+				ID:         ID{inner: xid.NilID(), label: OrganizationIDType},
+				Name:       "test",
+				Email:      "test@example.com",
+				Status:     OrganizationStatusActive,
+				Namespaces: make([]ID, 0),
+				Members: []ID{
+					{},
+				},
+				Teams: make([]ID, 0),
+			},
+			wantErr: ErrInvalidOrganizationDetails,
+		},
+		{
+			name: "invalid teams",
+			fields: fields{
+				ID:         ID{inner: xid.NilID(), label: OrganizationIDType},
+				Name:       "test",
+				Email:      "test@example.com",
+				Status:     OrganizationStatusActive,
+				Namespaces: make([]ID, 0),
+				Members:    make([]ID, 0),
+				Teams: []ID{
+					{},
+				},
 			},
 			wantErr: ErrInvalidOrganizationDetails,
 		},
@@ -206,10 +266,13 @@ func TestOrganization_Validate(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			o := &Organization{
-				ID:     tt.fields.ID,
-				Name:   tt.fields.Name,
-				Email:  tt.fields.Email,
-				Status: tt.fields.Status,
+				ID:         tt.fields.ID,
+				Name:       tt.fields.Name,
+				Email:      tt.fields.Email,
+				Status:     tt.fields.Status,
+				Namespaces: tt.fields.Namespaces,
+				Members:    tt.fields.Members,
+				Teams:      tt.fields.Teams,
 			}
 			require.ErrorIs(t, o.Validate(), tt.wantErr)
 		})

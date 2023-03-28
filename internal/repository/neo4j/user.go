@@ -145,7 +145,7 @@ func (r *UserRepository) Get(ctx context.Context, id model.ID) (*model.User, err
 	cypher := `MATCH (u:` + model.UserIDType + ` {id: toString($id)})
 	OPTIONAL MATCH (u)-[:` + EdgeKindSpeaks.String() + `]->(l:` + languageIDType + `)
 	OPTIONAL MATCH (u)-[p:` + EdgeKindHasPermission.String() + `]->()
-	OPTIONAL MATCH (u)-[r:` + EdgeKindCreated.String() + `]->(d:` + model.DocumentIDType + `)
+	OPTIONAL MATCH (u)<-[r:` + EdgeKindBelongsTo.String() + `]-(d:` + model.DocumentIDType + `)
 	RETURN u, collect(DISTINCT l.code) AS l, collect(DISTINCT p.id) AS p, collect(DISTINCT d.id) AS d`
 
 	params := map[string]any{
@@ -169,7 +169,7 @@ func (r *UserRepository) GetAll(ctx context.Context, offset, limit int) ([]*mode
 	MATCH (u:` + model.UserIDType + `)
 	OPTIONAL MATCH (u)-[:` + EdgeKindSpeaks.String() + `]->(l:` + languageIDType + `)
 	OPTIONAL MATCH (u)-[p:` + EdgeKindHasPermission.String() + `]->()
-	OPTIONAL MATCH (u)-[r:` + EdgeKindCreated.String() + `]->(d:` + model.DocumentIDType + `)
+	OPTIONAL MATCH (u)<-[r:` + EdgeKindBelongsTo.String() + `]-(d:` + model.DocumentIDType + `)
 	RETURN u, collect(DISTINCT l.code) AS l, collect(DISTINCT p.id) AS p, collect(DISTINCT d.id) AS d
 	ORDER BY u.created_at DESC
 	SKIP $offset LIMIT $limit`
@@ -242,7 +242,7 @@ func (r *UserRepository) Update(ctx context.Context, id model.ID, patch map[stri
 	getUpdatedCypher := `
 	MATCH (u:` + id.Label() + ` {id: $id})-[:` + EdgeKindSpeaks.String() + `]->(l:` + languageIDType + `)
 	OPTIONAL MATCH (u)-[p:` + EdgeKindHasPermission.String() + `]->()
-	OPTIONAL MATCH (u)-[r:` + EdgeKindCreated.String() + `]->(d:` + model.DocumentIDType + `)
+	OPTIONAL MATCH (u)<-[r:` + EdgeKindBelongsTo.String() + `]-(d:` + model.DocumentIDType + `)
 	RETURN u, collect(DISTINCT l.code) AS l, collect(DISTINCT p.id) AS p, collect(DISTINCT d.id) AS d`
 
 	getUpdatedParams := map[string]any{"id": id.String()}

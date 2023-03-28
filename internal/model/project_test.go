@@ -140,6 +140,8 @@ func TestProject_Validate(t *testing.T) {
 		Name        string
 		Description string
 		Status      ProjectStatus
+		Teams       []ID
+		Documents   []ID
 	}
 	tests := []struct {
 		name    string
@@ -154,6 +156,8 @@ func TestProject_Validate(t *testing.T) {
 				Name:        "test",
 				Description: "Test description",
 				Status:      ProjectStatusActive,
+				Teams:       make([]ID, 0),
+				Documents:   make([]ID, 0),
 			},
 		},
 		{
@@ -164,6 +168,8 @@ func TestProject_Validate(t *testing.T) {
 				Name:        "test",
 				Description: "Test description",
 				Status:      ProjectStatusActive,
+				Teams:       make([]ID, 0),
+				Documents:   make([]ID, 0),
 			},
 			wantErr: ErrInvalidProjectDetails,
 		},
@@ -175,6 +181,8 @@ func TestProject_Validate(t *testing.T) {
 				Name:        "test",
 				Description: "Test description",
 				Status:      ProjectStatusActive,
+				Teams:       make([]ID, 0),
+				Documents:   make([]ID, 0),
 			},
 			wantErr: ErrInvalidProjectDetails,
 		},
@@ -186,6 +194,8 @@ func TestProject_Validate(t *testing.T) {
 				Name:        "t",
 				Description: "Test description",
 				Status:      ProjectStatusActive,
+				Teams:       make([]ID, 0),
+				Documents:   make([]ID, 0),
 			},
 			wantErr: ErrInvalidProjectDetails,
 		},
@@ -197,6 +207,8 @@ func TestProject_Validate(t *testing.T) {
 				Name:        "test",
 				Description: "Test",
 				Status:      ProjectStatusActive,
+				Teams:       make([]ID, 0),
+				Documents:   make([]ID, 0),
 			},
 			wantErr: ErrInvalidProjectDetails,
 		},
@@ -208,6 +220,38 @@ func TestProject_Validate(t *testing.T) {
 				Name:        "test",
 				Description: "Test description",
 				Status:      ProjectStatus(0),
+				Teams:       make([]ID, 0),
+				Documents:   make([]ID, 0),
+			},
+			wantErr: ErrInvalidProjectDetails,
+		},
+		{
+			name: "invalid project teams",
+			fields: fields{
+				ID:          ID{inner: xid.NilID(), label: OrganizationIDType},
+				Key:         "test",
+				Name:        "test",
+				Description: "Test description",
+				Status:      ProjectStatusActive,
+				Teams: []ID{
+					{},
+				},
+				Documents: make([]ID, 0),
+			},
+			wantErr: ErrInvalidProjectDetails,
+		},
+		{
+			name: "invalid project documents",
+			fields: fields{
+				ID:          ID{inner: xid.NilID(), label: OrganizationIDType},
+				Key:         "test",
+				Name:        "test",
+				Description: "Test description",
+				Status:      ProjectStatusActive,
+				Teams:       make([]ID, 0),
+				Documents: []ID{
+					{},
+				},
 			},
 			wantErr: ErrInvalidProjectDetails,
 		},
@@ -220,6 +264,8 @@ func TestProject_Validate(t *testing.T) {
 				Name:        tt.fields.Name,
 				Description: tt.fields.Description,
 				Status:      tt.fields.Status,
+				Teams:       tt.fields.Teams,
+				Documents:   tt.fields.Documents,
 			}
 			require.ErrorIs(t, p.Validate(), tt.wantErr)
 		})

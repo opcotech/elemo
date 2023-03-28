@@ -57,6 +57,8 @@ func TestRole_Validate(t *testing.T) {
 		ID          ID
 		Name        string
 		Description string
+		Members     []ID
+		Permissions []ID
 	}
 	tests := []struct {
 		name    string
@@ -69,6 +71,8 @@ func TestRole_Validate(t *testing.T) {
 				ID:          ID{inner: xid.NilID(), label: RoleIDType},
 				Name:        "test",
 				Description: "test description",
+				Members:     make([]ID, 0),
+				Permissions: make([]ID, 0),
 			},
 		},
 		{
@@ -77,6 +81,8 @@ func TestRole_Validate(t *testing.T) {
 				ID:          ID{inner: xid.NilID(), label: ""},
 				Name:        "test",
 				Description: "test description",
+				Members:     make([]ID, 0),
+				Permissions: make([]ID, 0),
 			},
 			wantErr: ErrInvalidRoleDetails,
 		},
@@ -86,6 +92,8 @@ func TestRole_Validate(t *testing.T) {
 				ID:          ID{inner: xid.NilID(), label: RoleIDType},
 				Name:        "t",
 				Description: "test description",
+				Members:     make([]ID, 0),
+				Permissions: make([]ID, 0),
 			},
 			wantErr: ErrInvalidRoleDetails,
 		},
@@ -95,6 +103,8 @@ func TestRole_Validate(t *testing.T) {
 				ID:          ID{inner: xid.NilID(), label: RoleIDType},
 				Name:        "",
 				Description: "test description",
+				Members:     make([]ID, 0),
+				Permissions: make([]ID, 0),
 			},
 			wantErr: ErrInvalidRoleDetails,
 		},
@@ -104,6 +114,34 @@ func TestRole_Validate(t *testing.T) {
 				ID:          ID{inner: xid.NilID(), label: RoleIDType},
 				Name:        "test",
 				Description: "t",
+				Members:     make([]ID, 0),
+				Permissions: make([]ID, 0),
+			},
+			wantErr: ErrInvalidRoleDetails,
+		},
+		{
+			name: "validate role with invalid members",
+			fields: fields{
+				ID:          ID{inner: xid.NilID(), label: RoleIDType},
+				Name:        "test",
+				Description: "test description",
+				Members: []ID{
+					{},
+				},
+				Permissions: make([]ID, 0),
+			},
+			wantErr: ErrInvalidRoleDetails,
+		},
+		{
+			name: "validate role with invalid permissions",
+			fields: fields{
+				ID:          ID{inner: xid.NilID(), label: RoleIDType},
+				Name:        "test",
+				Description: "test description",
+				Members:     make([]ID, 0),
+				Permissions: []ID{
+					{},
+				},
 			},
 			wantErr: ErrInvalidRoleDetails,
 		},
@@ -114,6 +152,8 @@ func TestRole_Validate(t *testing.T) {
 				ID:          tt.fields.ID,
 				Name:        tt.fields.Name,
 				Description: tt.fields.Description,
+				Members:     tt.fields.Members,
+				Permissions: tt.fields.Permissions,
 			}
 			require.ErrorIs(t, r.Validate(), tt.wantErr)
 		})
