@@ -16,6 +16,7 @@ const (
 	EdgeKindCreated                           // a user created a resource
 	EdgeKindInvited                           // a user invited another user
 	EdgeKindSpeaks                            // a user speaks a language
+	EdgeKindCommented
 )
 
 const (
@@ -41,6 +42,7 @@ var (
 		"CREATED":        EdgeKindCreated,
 		"INVITED":        EdgeKindInvited,
 		"SPEAKS":         EdgeKindSpeaks,
+		"COMMENTED":      EdgeKindCommented,
 	}
 	relationKindValues = map[EdgeKind]string{
 		EdgeKindHasPermission: "HAS_PERMISSION",
@@ -56,6 +58,7 @@ var (
 		EdgeKindCreated:       "CREATED",
 		EdgeKindInvited:       "INVITED",
 		EdgeKindSpeaks:        "SPEAKS",
+		EdgeKindCommented:     "COMMENTED",
 	}
 
 	assignedToKindKeys = map[string]AssignedToKind{

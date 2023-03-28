@@ -23,7 +23,7 @@ type DocumentRepository struct {
 	*repository
 }
 
-func (r *DocumentRepository) scan(dp, cp, lp string) func(rec *neo4j.Record) (*model.Document, error) {
+func (r *DocumentRepository) scan(dp, cp, lp, commp string) func(rec *neo4j.Record) (*model.Document, error) {
 	return func(rec *neo4j.Record) (*model.Document, error) {
 		doc := new(model.Document)
 
@@ -45,6 +45,10 @@ func (r *DocumentRepository) scan(dp, cp, lp string) func(rec *neo4j.Record) (*m
 		doc.CreatedBy, _ = model.NewIDFromString(createdBy, model.UserIDType)
 
 		if doc.Labels, err = ParseIDsFromRecord(rec, lp, model.LabelIDType); err != nil {
+			return nil, err
+		}
+
+		if doc.Comments, err = ParseIDsFromRecord(rec, commp, model.CommentIDType); err != nil {
 			return nil, err
 		}
 
@@ -109,13 +113,14 @@ func (r *DocumentRepository) Get(ctx context.Context, id model.ID) (*model.Docum
 	cypher := `
 	MATCH (d:` + id.Label() + ` {id: $id}), (d)<-[:` + EdgeKindCreated.String() + `]-(c:` + model.UserIDType + `)
 	OPTIONAL MATCH (d)-[:` + EdgeKindHasLabel.String() + `]->(l:` + model.LabelIDType + `)
-	RETURN d, c.id AS c, collect(l.id) AS l`
+	OPTIONAL MATCH (d)-[:` + EdgeKindHasComment.String() + `]->(comm:` + model.CommentIDType + `)
+	RETURN d, c.id AS c, collect(l.id) AS l, collect(comm.id) AS comm`
 
 	params := map[string]any{
 		"id": id.String(),
 	}
 
-	doc, err := ExecuteReadAndReadSingle(ctx, r.db, cypher, params, r.scan("d", "c", "l"))
+	doc, err := ExecuteReadAndReadSingle(ctx, r.db, cypher, params, r.scan("d", "c", "l", "comm"))
 	if err != nil {
 		return nil, errors.Join(ErrDocumentRead, err)
 	}
@@ -128,9 +133,10 @@ func (r *DocumentRepository) GetByCreator(ctx context.Context, createdBy model.I
 	defer span.End()
 
 	cypher := `
-	MATCH (d)<-[:` + EdgeKindCreated.String() + `]-(c:` + createdBy.Label() + ` {id: $id})
+	MATCH (d:` + model.DocumentIDType + `)<-[:` + EdgeKindCreated.String() + `]-(c:` + createdBy.Label() + ` {id: $id})
 	OPTIONAL MATCH (d)-[:` + EdgeKindHasLabel.String() + `]->(l:` + model.LabelIDType + `)
-	RETURN d, c.id AS c, collect(l.id) AS l
+	OPTIONAL MATCH (d)-[:` + EdgeKindHasComment.String() + `]->(comm:` + model.CommentIDType + `)
+	RETURN d, c.id AS c, collect(l.id) AS l, collect(comm.id) AS comm
 	ORDER BY d.created_at DESC
 	SKIP $offset LIMIT $limit`
 
@@ -140,7 +146,7 @@ func (r *DocumentRepository) GetByCreator(ctx context.Context, createdBy model.I
 		"limit":  limit,
 	}
 
-	docs, err := ExecuteReadAndReadAll(ctx, r.db, cypher, params, r.scan("d", "c", "l"))
+	docs, err := ExecuteReadAndReadAll(ctx, r.db, cypher, params, r.scan("d", "c", "l", "comm"))
 	if err != nil {
 		return nil, errors.Join(ErrDocumentRead, err)
 	}
@@ -154,10 +160,11 @@ func (r *DocumentRepository) GetAllBelongsTo(ctx context.Context, belongsTo mode
 
 	cypher := `
 	MATCH
-		(d)-[:` + EdgeKindBelongsTo.String() + `]->(b:` + belongsTo.Label() + ` {id: $id}),
+		(d:` + model.DocumentIDType + `)-[:` + EdgeKindBelongsTo.String() + `]->(b:` + belongsTo.Label() + ` {id: $id}),
 		(c:` + model.UserIDType + `)-[` + EdgeKindCreated.String() + `]->(d)
 	OPTIONAL MATCH (d)-[:` + EdgeKindHasLabel.String() + `]->(l:` + model.LabelIDType + `)
-	RETURN d, c.id AS c, collect(l.id) AS l
+	OPTIONAL MATCH (d)-[:` + EdgeKindHasComment.String() + `]->(comm:` + model.CommentIDType + `)
+	RETURN d, c.id AS c, collect(l.id) AS l, collect(comm.id) AS comm
 	ORDER BY d.created_at DESC
 	SKIP $offset LIMIT $limit`
 
@@ -167,7 +174,7 @@ func (r *DocumentRepository) GetAllBelongsTo(ctx context.Context, belongsTo mode
 		"limit":  limit,
 	}
 
-	docs, err := ExecuteReadAndReadAll(ctx, r.db, cypher, params, r.scan("d", "c", "l"))
+	docs, err := ExecuteReadAndReadAll(ctx, r.db, cypher, params, r.scan("d", "c", "l", "comm"))
 	if err != nil {
 		return nil, errors.Join(ErrDocumentRead, err)
 	}
@@ -185,7 +192,8 @@ func (r *DocumentRepository) Update(ctx context.Context, id model.ID, patch map[
 	WITH d
 	MATCH (c:` + model.UserIDType + `)-[` + EdgeKindCreated.String() + `]->(d)
 	OPTIONAL MATCH (d)-[:` + EdgeKindHasLabel.String() + `]->(l:` + model.LabelIDType + `)
-	RETURN d, c.id AS c, collect(l.id) AS l`
+	OPTIONAL MATCH (d)-[:` + EdgeKindHasComment.String() + `]->(comm:` + model.CommentIDType + `)
+	RETURN d, c.id AS c, collect(l.id) AS l, collect(comm.id) AS comm`
 
 	params := map[string]any{
 		"id":         id.String(),
@@ -193,7 +201,7 @@ func (r *DocumentRepository) Update(ctx context.Context, id model.ID, patch map[
 		"updated_at": time.Now().Format(time.RFC3339Nano),
 	}
 
-	doc, err := ExecuteReadAndReadSingle(ctx, r.db, cypher, params, r.scan("d", "c", "l"))
+	doc, err := ExecuteReadAndReadSingle(ctx, r.db, cypher, params, r.scan("d", "c", "l", "comm"))
 	if err != nil {
 		return nil, errors.Join(ErrDocumentUpdate, err)
 	}

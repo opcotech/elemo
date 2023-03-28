@@ -24,6 +24,7 @@ func TestEdgeKind_String(t *testing.T) {
 		{"CREATED", EdgeKindCreated, "CREATED"},
 		{"INVITED", EdgeKindInvited, "INVITED"},
 		{"SPEAKS", EdgeKindSpeaks, "SPEAKS"},
+		{"COMMENTED", EdgeKindCommented, "COMMENTED"},
 	}
 	for _, tt := range tests {
 		tt := tt
