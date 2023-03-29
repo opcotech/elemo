@@ -57,7 +57,7 @@ func (r *CommentRepository) Create(ctx context.Context, belongsTo model.ID, comm
 	defer span.End()
 
 	if err := comment.Validate(); err != nil {
-		return err
+		return errors.Join(ErrCommentCreate, err)
 	}
 
 	createdAt := time.Now()

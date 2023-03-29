@@ -69,7 +69,7 @@ func (r *DocumentRepository) Create(ctx context.Context, belongsTo model.ID, doc
 	defer span.End()
 
 	if err := document.Validate(); err != nil {
-		return err
+		return errors.Join(ErrDocumentCreate, err)
 	}
 
 	createdAt := time.Now()

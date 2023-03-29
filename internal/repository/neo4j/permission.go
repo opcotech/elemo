@@ -66,7 +66,7 @@ func (r *PermissionRepository) Create(ctx context.Context, perm *model.Permissio
 	defer span.End()
 
 	if err := perm.Validate(); err != nil {
-		return err
+		return errors.Join(ErrPermissionCreate, err)
 	}
 
 	perm.ID = model.MustNewID(EdgeKindHasPermission.String())

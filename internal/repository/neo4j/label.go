@@ -53,7 +53,7 @@ func (r *LabelRepository) Create(ctx context.Context, label *model.Label) error 
 	defer span.End()
 
 	if err := label.Validate(); err != nil {
-		return err
+		return errors.Join(ErrLabelCreate, err)
 	}
 
 	createdAt := time.Now()

@@ -65,6 +65,7 @@ type Project struct {
 	Status      ProjectStatus `json:"status" validate:"required,min=1,max=2"`
 	Teams       []ID          `json:"teams" validate:"omitempty,dive"`
 	Documents   []ID          `json:"documents" validate:"omitempty,dive"`
+	Issues      []ID          `json:"issues" validate:"omitempty,dive"`
 	CreatedAt   *time.Time    `json:"created_at" validate:"omitempty"`
 	UpdatedAt   *time.Time    `json:"updated_at" validate:"omitempty"`
 }
@@ -86,6 +87,11 @@ func (p *Project) Validate() error {
 			return errors.Join(ErrInvalidProjectDetails, err)
 		}
 	}
+	for _, issue := range p.Issues {
+		if err := issue.Validate(); err != nil {
+			return errors.Join(ErrInvalidProjectDetails, err)
+		}
+	}
 	return nil
 }
 
@@ -98,6 +104,7 @@ func NewProject(key, name string) (*Project, error) {
 		Status:    ProjectStatusActive,
 		Teams:     make([]ID, 0),
 		Documents: make([]ID, 0),
+		Issues:    make([]ID, 0),
 	}
 
 	if err := project.Validate(); err != nil {

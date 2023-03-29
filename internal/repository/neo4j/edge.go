@@ -3,59 +3,65 @@ package neo4j
 import "errors"
 
 const (
-	EdgeKindHasPermission EdgeKind = iota + 1 // a subject has permission on a resource
-	EdgeKindHasTeam                           // an organization or project has a team
-	EdgeKindHasNamespace                      // an organization has a namespace
-	EdgeKindHasProject                        // a namespace has a project
+	EdgeKindAssignedTo    EdgeKind = iota + 1 // a user is assigned to a resource
 	EdgeKindBelongsTo                         // a resource belongs to another
-	EdgeKindKindOf                            // a resource is a kind of another
+	EdgeKindCommented                         // a user commented a resource
+	EdgeKindCreated                           // a user created a resource
+	EdgeKindHasAttachment                     // a resource has an attachment
 	EdgeKindHasComment                        // a resource has a comment
 	EdgeKindHasLabel                          // a resource is labeled by a label
-	EdgeKindAssignedTo                        // a user is assigned to a resource
-	EdgeKindMemberOf                          // a user is a member of a team
-	EdgeKindCreated                           // a user created a resource
+	EdgeKindHasNamespace                      // an organization has a namespace
+	EdgeKindHasPermission                     // a subject has permission on a resource
+	EdgeKindHasProject                        // a namespace has a project
+	EdgeKindHasTeam                           // an organization or project has a team
 	EdgeKindInvited                           // a user invited another user
+	EdgeKindKindOf                            // a resource is a kind of another
+	EdgeKindMemberOf                          // a user is a member of a team
+	EdgeKindRelatedTo                         // a resource is related to another
 	EdgeKindSpeaks                            // a user speaks a language
-	EdgeKindCommented                         // a user commented a resource
-	EdgeKindHasAttachment                     // a resource has an attachment
+	EdgeKindWatches                           // a user watches a resource
 )
 
 var (
 	ErrInvalidEdgeKind = errors.New("invalid edge kind") // the edge kind is invalid
 
 	relationKindKeys = map[string]EdgeKind{
-		"HAS_PERMISSION": EdgeKindHasPermission,
-		"HAS_TEAM":       EdgeKindHasTeam,
-		"HAS_NAMESPACE":  EdgeKindHasNamespace,
-		"HAS_PROJECT":    EdgeKindHasProject,
+		"ASSIGNED_TO":    EdgeKindAssignedTo,
 		"BELONGS_TO":     EdgeKindBelongsTo,
-		"KIND_OF":        EdgeKindKindOf,
+		"COMMENTED":      EdgeKindCommented,
+		"CREATED":        EdgeKindCreated,
+		"HAS_ATTACHMENT": EdgeKindHasAttachment,
 		"HAS_COMMENT":    EdgeKindHasComment,
 		"HAS_LABEL":      EdgeKindHasLabel,
-		"ASSIGNED_TO":    EdgeKindAssignedTo,
-		"MEMBER_OF":      EdgeKindMemberOf,
-		"CREATED":        EdgeKindCreated,
+		"HAS_NAMESPACE":  EdgeKindHasNamespace,
+		"HAS_PERMISSION": EdgeKindHasPermission,
+		"HAS_PROJECT":    EdgeKindHasProject,
+		"HAS_TEAM":       EdgeKindHasTeam,
 		"INVITED":        EdgeKindInvited,
+		"KIND_OF":        EdgeKindKindOf,
+		"MEMBER_OF":      EdgeKindMemberOf,
+		"RELATED_TO":     EdgeKindRelatedTo,
 		"SPEAKS":         EdgeKindSpeaks,
-		"COMMENTED":      EdgeKindCommented,
-		"HAS_ATTACHMENT": EdgeKindHasAttachment,
+		"WATCHES":        EdgeKindWatches,
 	}
 	relationKindValues = map[EdgeKind]string{
-		EdgeKindHasPermission: "HAS_PERMISSION",
-		EdgeKindHasTeam:       "HAS_TEAM",
-		EdgeKindHasNamespace:  "HAS_NAMESPACE",
-		EdgeKindHasProject:    "HAS_PROJECT",
+		EdgeKindAssignedTo:    "ASSIGNED_TO",
 		EdgeKindBelongsTo:     "BELONGS_TO",
-		EdgeKindKindOf:        "KIND_OF",
+		EdgeKindCommented:     "COMMENTED",
+		EdgeKindCreated:       "CREATED",
+		EdgeKindHasAttachment: "HAS_ATTACHMENT",
 		EdgeKindHasComment:    "HAS_COMMENT",
 		EdgeKindHasLabel:      "HAS_LABEL",
-		EdgeKindAssignedTo:    "ASSIGNED_TO",
-		EdgeKindMemberOf:      "MEMBER_OF",
-		EdgeKindCreated:       "CREATED",
+		EdgeKindHasNamespace:  "HAS_NAMESPACE",
+		EdgeKindHasPermission: "HAS_PERMISSION",
+		EdgeKindHasProject:    "HAS_PROJECT",
+		EdgeKindHasTeam:       "HAS_TEAM",
 		EdgeKindInvited:       "INVITED",
+		EdgeKindKindOf:        "KIND_OF",
+		EdgeKindMemberOf:      "MEMBER_OF",
+		EdgeKindRelatedTo:     "RELATED_TO",
 		EdgeKindSpeaks:        "SPEAKS",
-		EdgeKindCommented:     "COMMENTED",
-		EdgeKindHasAttachment: "HAS_ATTACHMENT",
+		EdgeKindWatches:       "WATCHES",
 	}
 )
 

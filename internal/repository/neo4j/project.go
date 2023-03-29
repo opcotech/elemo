@@ -23,7 +23,7 @@ type ProjectRepository struct {
 	*repository
 }
 
-func (r *ProjectRepository) scan(pp, dp, tp string) func(rec *neo4j.Record) (*model.Project, error) {
+func (r *ProjectRepository) scan(pp, dp, tp, ip string) func(rec *neo4j.Record) (*model.Project, error) {
 	return func(rec *neo4j.Record) (*model.Project, error) {
 		p := new(model.Project)
 
@@ -46,6 +46,10 @@ func (r *ProjectRepository) scan(pp, dp, tp string) func(rec *neo4j.Record) (*mo
 			return nil, err
 		}
 
+		if p.Issues, err = ParseIDsFromRecord(rec, ip, model.IssueIDType); err != nil {
+			return nil, err
+		}
+
 		if err := p.Validate(); err != nil {
 			return nil, err
 		}
@@ -59,7 +63,7 @@ func (r *ProjectRepository) Create(ctx context.Context, namespaceID model.ID, pr
 	defer span.End()
 
 	if err := project.Validate(); err != nil {
-		return err
+		return errors.Join(ErrProjectCreate, err)
 	}
 
 	createdAt := time.Now()
@@ -103,13 +107,14 @@ func (r *ProjectRepository) Get(ctx context.Context, id model.ID) (*model.Projec
 	MATCH (p:` + id.Label() + ` {id: $id})
 	OPTIONAL MATCH (d:` + model.DocumentIDType + `)-[:` + EdgeKindBelongsTo.String() + `]->(p)
 	OPTIONAL MATCH (p)-[:` + EdgeKindHasTeam.String() + `]->(t:` + model.RoleIDType + `)
-	RETURN p, d, t`
+	OPTIONAL MATCH (p)<-[:` + EdgeKindBelongsTo.String() + `]-(i:` + model.IssueIDType + `)
+	RETURN p, d, t, i`
 
 	params := map[string]any{
 		"id": id.String(),
 	}
 
-	project, err := ExecuteReadAndReadSingle(ctx, r.db, cypher, params, r.scan("p", "d", "t"))
+	project, err := ExecuteReadAndReadSingle(ctx, r.db, cypher, params, r.scan("p", "d", "t", "i"))
 	if err != nil {
 		return nil, errors.Join(ErrProjectRead, err)
 	}
@@ -125,13 +130,14 @@ func (r *ProjectRepository) GetByKey(ctx context.Context, key string) (*model.Pr
 	MATCH (p:` + model.ProjectIDType + ` {key: $key})
 	OPTIONAL MATCH (d:` + model.DocumentIDType + `)-[:` + EdgeKindBelongsTo.String() + `]->(p)
 	OPTIONAL MATCH (p)-[:` + EdgeKindHasTeam.String() + `]->(t:` + model.RoleIDType + `)
-	RETURN p, d, t`
+	OPTIONAL MATCH (p)<-[:` + EdgeKindBelongsTo.String() + `]-(i:` + model.IssueIDType + `)
+	RETURN p, d, t, i`
 
 	params := map[string]any{
 		"key": key,
 	}
 
-	project, err := ExecuteReadAndReadSingle(ctx, r.db, cypher, params, r.scan("p", "d", "t"))
+	project, err := ExecuteReadAndReadSingle(ctx, r.db, cypher, params, r.scan("p", "d", "t", "i"))
 	if err != nil {
 		return nil, errors.Join(ErrProjectRead, err)
 	}
@@ -147,7 +153,8 @@ func (r *ProjectRepository) GetAll(ctx context.Context, namespaceID model.ID, of
 	MATCH (:` + namespaceID.Label() + ` {id: $namespace_id})-[:` + EdgeKindHasProject.String() + `]->(p)
 	OPTIONAL MATCH (d:` + model.DocumentIDType + `)-[:` + EdgeKindBelongsTo.String() + `]->(p)
 	OPTIONAL MATCH (p)-[:` + EdgeKindHasTeam.String() + `]->(t:` + model.RoleIDType + `)
-	RETURN p, d, t
+	OPTIONAL MATCH (p)<-[:` + EdgeKindBelongsTo.String() + `]-(i:` + model.IssueIDType + `)
+	RETURN p, d, t, i
 	ORDER BY p.created_at DESC
 	SKIP $offset LIMIT $limit`
 
@@ -157,7 +164,7 @@ func (r *ProjectRepository) GetAll(ctx context.Context, namespaceID model.ID, of
 		"limit":        limit,
 	}
 
-	projects, err := ExecuteReadAndReadAll(ctx, r.db, cypher, params, r.scan("p", "d", "t"))
+	projects, err := ExecuteReadAndReadAll(ctx, r.db, cypher, params, r.scan("p", "d", "t", "i"))
 	if err != nil {
 		return nil, errors.Join(ErrProjectRead, err)
 	}
@@ -175,7 +182,8 @@ func (r *ProjectRepository) Update(ctx context.Context, id model.ID, patch map[s
 	WITH p
 	OPTIONAL MATCH (d:` + model.DocumentIDType + `)-[:` + EdgeKindBelongsTo.String() + `]->(p)
 	OPTIONAL MATCH (p)-[:` + EdgeKindHasTeam.String() + `]->(t:` + model.RoleIDType + `)
-	RETURN p, d, t`
+	OPTIONAL MATCH (p)<-[:` + EdgeKindBelongsTo.String() + `]-(i:` + model.IssueIDType + `)
+	RETURN p, d, t, i`
 
 	params := map[string]any{
 		"id":         id.String(),
@@ -183,7 +191,7 @@ func (r *ProjectRepository) Update(ctx context.Context, id model.ID, patch map[s
 		"updated_at": time.Now().Format(time.RFC3339Nano),
 	}
 
-	project, err := ExecuteReadAndReadSingle(ctx, r.db, cypher, params, r.scan("p", "d", "t"))
+	project, err := ExecuteReadAndReadSingle(ctx, r.db, cypher, params, r.scan("p", "d", "t", "i"))
 	if err != nil {
 		return nil, errors.Join(ErrProjectUpdate, err)
 	}

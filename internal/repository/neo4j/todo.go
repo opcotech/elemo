@@ -63,7 +63,7 @@ func (r *TodoRepository) Create(ctx context.Context, todo *model.Todo) error {
 	defer span.End()
 
 	if err := todo.Validate(); err != nil {
-		return err
+		return errors.Join(ErrTodoCreate, err)
 	}
 
 	createdAt := convert.ToPointer(time.Now())

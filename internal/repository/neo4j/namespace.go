@@ -58,7 +58,7 @@ func (r *NamespaceRepository) Create(ctx context.Context, orgID model.ID, namesp
 	defer span.End()
 
 	if err := namespace.Validate(); err != nil {
-		return err
+		return errors.Join(ErrNamespaceCreate, err)
 	}
 
 	createdAt := time.Now()
