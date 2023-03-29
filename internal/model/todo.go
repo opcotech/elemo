@@ -46,7 +46,7 @@ func (p TodoPriority) String() string {
 
 // MarshalText implements the encoding.TextMarshaler interface.
 func (p TodoPriority) MarshalText() (text []byte, err error) {
-	if p < TodoPriorityNormal || p > TodoPriorityCritical {
+	if p < 1 || p > 4 {
 		return nil, ErrInvalidTodoPriority
 	}
 	return []byte(p.String()), nil

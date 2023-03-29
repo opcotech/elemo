@@ -46,7 +46,7 @@ func (s UserStatus) String() string {
 
 // MarshalText implements the encoding.TextMarshaler interface.
 func (s UserStatus) MarshalText() (text []byte, err error) {
-	if s < UserStatusActive || s > UserStatusDeleted {
+	if s < 1 || s > 4 {
 		return nil, ErrInvalidUserStatus
 	}
 	return []byte(s.String()), nil

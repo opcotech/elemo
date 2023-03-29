@@ -40,7 +40,7 @@ func (s ProjectStatus) String() string {
 
 // MarshalText implements the encoding.TextMarshaler interface.
 func (s ProjectStatus) MarshalText() (text []byte, err error) {
-	if s < ProjectStatusActive || s > ProjectStatusPending {
+	if s < 1 || s > 2 {
 		return nil, ErrInvalidProjectStatus
 	}
 	return []byte(s.String()), nil

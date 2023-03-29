@@ -49,7 +49,7 @@ func (p PermissionKind) String() string {
 
 // MarshalText implements the encoding.TextMarshaler interface.
 func (s PermissionKind) MarshalText() (text []byte, err error) {
-	if s < PermissionKindAll || s > PermissionKindDelete {
+	if s < 1 || s > 5 {
 		return nil, ErrInvalidPermissionKind
 	}
 	return []byte(s.String()), nil
