@@ -38,7 +38,9 @@ func TestAssignmentKind_MarshalText(t *testing.T) {
 		{"kind low", AssignmentKind(0), nil, ErrInvalidAssignmentKind},
 	}
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			gotText, err := tt.a.MarshalText()
 			assert.ErrorIs(t, err, tt.wantErr)
 
@@ -127,7 +129,9 @@ func TestNewAssignment(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			got, err := NewAssignment(tt.args.user, tt.args.resource, tt.args.kind)
 			assert.ErrorIs(t, err, tt.wantErr)
 
@@ -201,7 +205,9 @@ func TestAssignment_Validate(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			a := &Assignment{
 				ID:       tt.fields.ID,
 				Kind:     tt.fields.Kind,
