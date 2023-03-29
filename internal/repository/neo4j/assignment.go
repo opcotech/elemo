@@ -58,7 +58,7 @@ func (r *AssignmentRepository) scan(up, ap, rp string) func(rec *neo4j.Record) (
 }
 
 func (r *AssignmentRepository) Create(ctx context.Context, assignment *model.Assignment) error {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.AttachmentRepository/Create")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.AssignmentRepository/Create")
 	defer span.End()
 
 	if err := assignment.Validate(); err != nil {
@@ -91,7 +91,7 @@ func (r *AssignmentRepository) Create(ctx context.Context, assignment *model.Ass
 }
 
 func (r *AssignmentRepository) Get(ctx context.Context, id model.ID) (*model.Assignment, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.AttachmentRepository/Get")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.AssignmentRepository/Get")
 	defer span.End()
 
 	cypher := `
@@ -111,7 +111,7 @@ func (r *AssignmentRepository) Get(ctx context.Context, id model.ID) (*model.Ass
 }
 
 func (r *AssignmentRepository) GetByUser(ctx context.Context, userID model.ID, offset, limit int) ([]*model.Assignment, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.AttachmentRepository/GetByUser")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.AssignmentRepository/GetByUser")
 	defer span.End()
 
 	cypher := `
@@ -135,7 +135,7 @@ func (r *AssignmentRepository) GetByUser(ctx context.Context, userID model.ID, o
 }
 
 func (r *AssignmentRepository) GetByResource(ctx context.Context, resourceID model.ID, offset, limit int) ([]*model.Assignment, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.AttachmentRepository/GetByResource")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.AssignmentRepository/GetByResource")
 	defer span.End()
 
 	cypher := `
@@ -159,7 +159,7 @@ func (r *AssignmentRepository) GetByResource(ctx context.Context, resourceID mod
 }
 
 func (r *AssignmentRepository) Delete(ctx context.Context, id model.ID) error {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.AttachmentRepository/Delete")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.AssignmentRepository/Delete")
 	defer span.End()
 
 	cypher := `MATCH (u)-[a:` + EdgeKindAssignedTo.String() + ` {id: $id}]->(r) DELETE a`
