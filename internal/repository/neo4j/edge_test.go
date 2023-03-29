@@ -34,21 +34,3 @@ func TestEdgeKind_String(t *testing.T) {
 		})
 	}
 }
-
-func TestAssignedToKind_String(t *testing.T) {
-	tests := []struct {
-		name string
-		s    AssignedToKind
-		want string
-	}{
-		{"assignee", AssignedToKindAssignee, "assignee"},
-		{"reviewer", AssignedToKindReviewer, "reviewer"},
-	}
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			assert.Equal(t, tt.want, tt.s.String())
-		})
-	}
-}

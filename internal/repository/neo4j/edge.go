@@ -20,14 +20,8 @@ const (
 	EdgeKindHasAttachment                     // a resource has an attachment
 )
 
-const (
-	AssignedToKindAssignee AssignedToKind = iota + 1 // a user is assigned as an assignee
-	AssignedToKindReviewer                           // a user is assigned as a reviewer
-)
-
 var (
-	ErrInvalidEdgeKind       = errors.New("invalid edge kind")        // the edge kind is invalid
-	ErrInvalidAssignedToKind = errors.New("invalid assigned to kind") // the assigned to kind is invalid
+	ErrInvalidEdgeKind = errors.New("invalid edge kind") // the edge kind is invalid
 
 	relationKindKeys = map[string]EdgeKind{
 		"HAS_PERMISSION": EdgeKindHasPermission,
@@ -63,15 +57,6 @@ var (
 		EdgeKindCommented:     "COMMENTED",
 		EdgeKindHasAttachment: "HAS_ATTACHMENT",
 	}
-
-	assignedToKindKeys = map[string]AssignedToKind{
-		"assignee": AssignedToKindAssignee,
-		"reviewer": AssignedToKindReviewer,
-	}
-	assignedToKindValues = map[AssignedToKind]string{
-		AssignedToKindAssignee: "assignee",
-		AssignedToKindReviewer: "reviewer",
-	}
 )
 
 // EdgeKind is the kind of relation between two entities.
@@ -80,12 +65,4 @@ type EdgeKind uint8
 // String returns the string representation of the relation kind.
 func (k EdgeKind) String() string {
 	return relationKindValues[k]
-}
-
-// AssignedToKind is the kind of assignment between a user and a resource.
-type AssignedToKind uint8
-
-// String returns the string representation of the relation kind.
-func (k AssignedToKind) String() string {
-	return assignedToKindValues[k]
 }

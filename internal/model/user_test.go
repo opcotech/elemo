@@ -528,7 +528,9 @@ func TestUser_Validate(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			u := &User{
 				ID:          tt.fields.ID,
 				Username:    tt.fields.Username,

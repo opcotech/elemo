@@ -102,7 +102,9 @@ func TestLabel_Validate(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			l := &Label{
 				ID:          tt.fields.ID,
 				Name:        tt.fields.Name,
