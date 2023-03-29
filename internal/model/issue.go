@@ -39,7 +39,6 @@ const (
 
 const (
 	IssuePriorityLow      IssuePriority = iota + 1 // low
-	IssuePriorityNormal                            // normal
 	IssuePriorityMedium                            // medium
 	IssuePriorityHigh                              // high
 	IssuePriorityCritical                          // critical
@@ -55,11 +54,12 @@ const (
 )
 
 var (
-	ErrInvalidIssueKind       = errors.New("invalid issue kind")       // the issue kind is invalid
-	ErrInvalidIssueStatus     = errors.New("invalid issue status")     // the issue status is invalid
-	ErrInvalidIssueResolution = errors.New("invalid issue resolution") // the issue resolution is invalid
-	ErrInvalidIssuePriority   = errors.New("invalid issue priority")   // the issue priority is invalid
-	ErrInvalidIssueDetails    = errors.New("invalid issue details")    // the issue details are invalid
+	ErrInvalidIssueKind         = errors.New("invalid issue kind")          // the issue kind is invalid
+	ErrInvalidIssueStatus       = errors.New("invalid issue status")        // the issue status is invalid
+	ErrInvalidIssueResolution   = errors.New("invalid issue resolution")    // the issue resolution is invalid
+	ErrInvalidIssueRelationKind = errors.New("invalid issue relation kind") // the issue relation kind is invalid
+	ErrInvalidIssuePriority     = errors.New("invalid issue priority")      // the issue priority is invalid
+	ErrInvalidIssueDetails      = errors.New("invalid issue details")       // the issue details are invalid
 
 	issueKindKeys = map[IssueKind]string{
 		IssueKindEpic:  "epic",
@@ -112,14 +112,12 @@ var (
 
 	issuePriorityKeys = map[IssuePriority]string{
 		IssuePriorityLow:      "low",
-		IssuePriorityNormal:   "normal",
 		IssuePriorityMedium:   "medium",
 		IssuePriorityHigh:     "high",
 		IssuePriorityCritical: "critical",
 	}
 	issuePriorityValues = map[string]IssuePriority{
 		"low":      IssuePriorityLow,
-		"normal":   IssuePriorityNormal,
 		"medium":   IssuePriorityMedium,
 		"high":     IssuePriorityHigh,
 		"critical": IssuePriorityCritical,
@@ -254,7 +252,7 @@ func (r IssueRelationKind) String() string {
 // MarshalText implements the encoding.TextMarshaler interface.
 func (r IssueRelationKind) MarshalText() (text []byte, err error) {
 	if r < 1 || r > 6 {
-		return nil, ErrInvalidIssueKind
+		return nil, ErrInvalidIssueRelationKind
 	}
 	return []byte(r.String()), nil
 }
@@ -265,7 +263,7 @@ func (r *IssueRelationKind) UnmarshalText(text []byte) error {
 		*r = v
 		return nil
 	}
-	return ErrInvalidIssueKind
+	return ErrInvalidIssueRelationKind
 }
 
 // IssueRelation represents a relation between two issues.
@@ -353,12 +351,12 @@ func (i *Issue) Validate() error {
 // NewIssue creates a new issue with the given details.
 func NewIssue(numericID uint, title string, kind IssueKind, reportedBy ID) (*Issue, error) {
 	issue := &Issue{
-		ID:          MustNewID(IssueIDType),
+		ID:          MustNewNilID(IssueIDType),
 		NumericID:   numericID,
 		Kind:        kind,
 		Title:       title,
 		Status:      IssueStatusOpen,
-		Priority:    IssuePriorityNormal,
+		Priority:    IssuePriorityMedium,
 		Resolution:  IssueResolutionNone,
 		ReportedBy:  reportedBy,
 		Assignees:   make([]ID, 0),
