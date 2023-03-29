@@ -67,7 +67,7 @@ type User struct {
 	Username    string     `json:"username" validate:"required,lowercase,min=3,max=20,containsany=0123456789abcdefghijklmnopqrstuvwxyz-_"`
 	Email       string     `json:"email" validate:"required,email"`
 	Password    string     `json:"password" validate:"required,min=8"`
-	Status      UserStatus `json:"status" validate:"required"`
+	Status      UserStatus `json:"status" validate:"required,min=1,max=4"`
 	FirstName   string     `json:"first_name" validate:"omitempty,max=50"`
 	LastName    string     `json:"last_name" validate:"omitempty,max=50"`
 	Picture     string     `json:"picture" validate:"omitempty,url"`

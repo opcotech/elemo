@@ -62,7 +62,7 @@ type Organization struct {
 	Email      string             `json:"email" validate:"required,email"`
 	Logo       string             `json:"logo" validate:"omitempty,url"`
 	Website    string             `json:"website" validate:"omitempty,url"`
-	Status     OrganizationStatus `json:"status" validate:"required"`
+	Status     OrganizationStatus `json:"status" validate:"required,min=1,max=2"`
 	Namespaces []ID               `json:"namespaces" validate:"omitempty,dive"`
 	Teams      []ID               `json:"teams" validate:"omitempty,dive"`
 	Members    []ID               `json:"members" validate:"omitempty,dive"`

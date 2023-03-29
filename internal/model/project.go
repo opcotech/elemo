@@ -62,7 +62,7 @@ type Project struct {
 	Name        string        `json:"name" validate:"required,min=3,max=120"`
 	Description string        `json:"description" validate:"omitempty,min=10,max=500"`
 	Logo        string        `json:"logo" validate:"omitempty,url"`
-	Status      ProjectStatus `json:"status" validate:"required"`
+	Status      ProjectStatus `json:"status" validate:"required,min=1,max=2"`
 	Teams       []ID          `json:"teams" validate:"omitempty,dive"`
 	Documents   []ID          `json:"documents" validate:"omitempty,dive"`
 	CreatedAt   *time.Time    `json:"created_at" validate:"omitempty"`

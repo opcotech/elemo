@@ -66,7 +66,7 @@ type Todo struct {
 	ID          ID           `json:"id" validate:"required,dive"`
 	Title       string       `json:"title" validate:"required,min=3,max=120"`
 	Description string       `json:"description" validate:"omitempty,min=10,max=500"`
-	Priority    TodoPriority `json:"priority" validate:"required"`
+	Priority    TodoPriority `json:"priority" validate:"required,min=1,max=4"`
 	Completed   bool         `json:"completed"`
 	OwnedBy     ID           `json:"owned_by" validate:"required,dive"`
 	CreatedBy   ID           `json:"created_by" validate:"required,dive"`
