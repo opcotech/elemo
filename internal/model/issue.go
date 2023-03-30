@@ -51,6 +51,7 @@ const (
 	IssueRelationKindDuplicatedBy                              // duplicated by
 	IssueRelationKindDuplicates                                // duplicates
 	IssueRelationKindRelatedTo                                 // related to
+	IssueRelationKindSubtaskOf                                 // subtask of
 )
 
 var (
@@ -130,6 +131,7 @@ var (
 		IssueRelationKindDuplicatedBy: "duplicated by",
 		IssueRelationKindDuplicates:   "duplicates",
 		IssueRelationKindRelatedTo:    "related to",
+		IssueRelationKindSubtaskOf:    "subtask of",
 	}
 	issueRelationKindValues = map[string]IssueRelationKind{
 		"blocked by":    IssueRelationKindBlockedBy,
@@ -138,6 +140,7 @@ var (
 		"duplicated by": IssueRelationKindDuplicatedBy,
 		"duplicates":    IssueRelationKindDuplicates,
 		"related to":    IssueRelationKindRelatedTo,
+		"subtask of":    IssueRelationKindSubtaskOf,
 	}
 )
 
@@ -251,7 +254,7 @@ func (r IssueRelationKind) String() string {
 
 // MarshalText implements the encoding.TextMarshaler interface.
 func (r IssueRelationKind) MarshalText() (text []byte, err error) {
-	if r < 1 || r > 6 {
+	if r < 1 || r > 7 {
 		return nil, ErrInvalidIssueRelationKind
 	}
 	return []byte(r.String()), nil

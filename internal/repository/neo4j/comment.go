@@ -88,7 +88,7 @@ func (r *CommentRepository) Create(ctx context.Context, belongsTo model.ID, comm
 		"created_by_id":       comment.CreatedBy.String(),
 		"commented_rel_id":    commentedRelID.String(),
 		"comment_perm_rel_id": commentPermRelID.String(),
-		"perm_kind":           model.PermissionKindAll,
+		"perm_kind":           model.PermissionKindAll.String(),
 		"id":                  comment.ID.String(),
 		"content":             comment.Content,
 		"created_at":          createdAt.Format(time.RFC3339Nano),

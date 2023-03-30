@@ -171,6 +171,7 @@ func TestIssueRelationKind_String(t *testing.T) {
 		{"duplicated by", IssueRelationKindDuplicatedBy, "duplicated by"},
 		{"duplicates", IssueRelationKindDuplicates, "duplicates"},
 		{"related to", IssueRelationKindRelatedTo, "related to"},
+		{"subtask of", IssueRelationKindSubtaskOf, "subtask of"},
 	}
 	for _, tt := range tests {
 		tt := tt
@@ -194,6 +195,7 @@ func TestIssueRelationKind_MarshalText(t *testing.T) {
 		{"duplicated by", IssueRelationKindDuplicatedBy, []byte("duplicated by"), nil},
 		{"duplicates", IssueRelationKindDuplicates, []byte("duplicates"), nil},
 		{"related to", IssueRelationKindRelatedTo, []byte("related to"), nil},
+		{"subtask of", IssueRelationKindSubtaskOf, []byte("subtask of"), nil},
 		{"kind high", IssueRelationKind(100), nil, ErrInvalidIssueRelationKind},
 		{"kind low", IssueRelationKind(0), nil, ErrInvalidIssueRelationKind},
 	}
@@ -227,6 +229,7 @@ func TestIssueRelationKind_UnmarshalText(t *testing.T) {
 		{"duplicated by", IssueRelationKindDuplicatedBy, args{[]byte("duplicated by")}, nil},
 		{"duplicates", IssueRelationKindDuplicates, args{[]byte("duplicates")}, nil},
 		{"related to", IssueRelationKindRelatedTo, args{[]byte("related to")}, nil},
+		{"subtask of", IssueRelationKindSubtaskOf, args{[]byte("subtask of")}, nil},
 		{"kind high", IssueRelationKind(100), args{[]byte("kind high")}, ErrInvalidIssueRelationKind},
 		{"kind low", IssueRelationKind(0), args{[]byte("kind low")}, ErrInvalidIssueRelationKind},
 	}

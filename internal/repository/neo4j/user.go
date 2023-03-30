@@ -38,6 +38,7 @@ type UserRepository struct {
 func (r *UserRepository) scan(up, lp, pp, dp string) func(rec *neo4j.Record) (*model.User, error) {
 	return func(rec *neo4j.Record) (*model.User, error) {
 		user := new(model.User)
+		user.Links = make([]string, 0)
 
 		val, _, err := neo4j.GetRecordValue[neo4j.Node](rec, up)
 		if err != nil {
