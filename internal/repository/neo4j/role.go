@@ -59,6 +59,10 @@ func (r *RoleRepository) Create(ctx context.Context, createdBy, belongsTo model.
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.RoleRepository/Create")
 	defer span.End()
 
+	if err := belongsTo.Validate(); err != nil {
+		return errors.Join(ErrRoleCreate, err)
+	}
+
 	if err := role.Validate(); err != nil {
 		return errors.Join(ErrRoleCreate, err)
 	}

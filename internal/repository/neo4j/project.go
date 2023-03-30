@@ -62,6 +62,10 @@ func (r *ProjectRepository) Create(ctx context.Context, namespaceID model.ID, pr
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.ProjectRepository/Create")
 	defer span.End()
 
+	if err := namespaceID.Validate(); err != nil {
+		return errors.Join(ErrProjectCreate, err)
+	}
+
 	if err := project.Validate(); err != nil {
 		return errors.Join(ErrProjectCreate, err)
 	}

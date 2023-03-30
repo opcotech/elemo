@@ -121,6 +121,14 @@ func (r *LabelRepository) AttachTo(ctx context.Context, labelID, attachTo model.
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.LabelRepository/AttachTo")
 	defer span.End()
 
+	if err := attachTo.Validate(); err != nil {
+		return errors.Join(ErrLabelAttach, err)
+	}
+
+	if err := labelID.Validate(); err != nil {
+		return errors.Join(ErrLabelAttach, err)
+	}
+
 	cypher := `
 	MATCH (l:` + labelID.Label() + ` {id: $label_id}), (n:` + attachTo.Label() + ` {id: $node_id})
 	CREATE (n)-[:` + EdgeKindHasLabel.String() + `]->(l)`
@@ -140,6 +148,14 @@ func (r *LabelRepository) AttachTo(ctx context.Context, labelID, attachTo model.
 func (r *LabelRepository) DetachFrom(ctx context.Context, labelID, detachFrom model.ID) error {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.LabelRepository/DetachFrom")
 	defer span.End()
+
+	if err := detachFrom.Validate(); err != nil {
+		return errors.Join(ErrorLabelDetach, err)
+	}
+
+	if err := labelID.Validate(); err != nil {
+		return errors.Join(ErrorLabelDetach, err)
+	}
 
 	cypher := `
 	MATCH (l:` + labelID.Label() + ` {id: $label_id})-[r:` + EdgeKindHasLabel.String() + `]->(n:` + detachFrom.Label() + ` {id: $node_id})

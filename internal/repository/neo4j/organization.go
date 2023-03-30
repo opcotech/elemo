@@ -63,6 +63,10 @@ func (r *OrganizationRepository) Create(ctx context.Context, owner model.ID, org
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.OrganizationRepository/Create")
 	defer span.End()
 
+	if err := owner.Validate(); err != nil {
+		return errors.Join(ErrOrganizationCreate, err)
+	}
+
 	if err := organization.Validate(); err != nil {
 		return errors.Join(ErrOrganizationCreate, err)
 	}
@@ -181,6 +185,14 @@ func (r *OrganizationRepository) AddMember(ctx context.Context, orgID, memberID 
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.OrganizationRepository/AddMember")
 	defer span.End()
 
+	if err := orgID.Validate(); err != nil {
+		return errors.Join(ErrOrganizationAddMember, err)
+	}
+
+	if err := memberID.Validate(); err != nil {
+		return errors.Join(ErrOrganizationAddMember, err)
+	}
+
 	cypher := `
 	MATCH (o:` + orgID.Label() + ` {id: $org_id}), (u:` + memberID.Label() + ` {id: $member_id})
 	MERGE (u)-[m:` + EdgeKindMemberOf.String() + `]->(o)
@@ -204,6 +216,14 @@ func (r *OrganizationRepository) AddMember(ctx context.Context, orgID, memberID 
 func (r *OrganizationRepository) RemoveMember(ctx context.Context, orgID, memberID model.ID) error {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.OrganizationRepository/RemoveMember")
 	defer span.End()
+
+	if err := orgID.Validate(); err != nil {
+		return errors.Join(ErrOrganizationRemoveMember, err)
+	}
+
+	if err := memberID.Validate(); err != nil {
+		return errors.Join(ErrOrganizationRemoveMember, err)
+	}
 
 	cypher := `
 	MATCH (:` + memberID.Label() + ` {id: $member_id})-[r:` + EdgeKindMemberOf.String() + `]->(:` + orgID.Label() + ` {id: $org_id})

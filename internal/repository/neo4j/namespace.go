@@ -57,6 +57,10 @@ func (r *NamespaceRepository) Create(ctx context.Context, orgID model.ID, namesp
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.NamespaceRepository/Create")
 	defer span.End()
 
+	if err := orgID.Validate(); err != nil {
+		return errors.Join(ErrAttachmentCreate, err)
+	}
+
 	if err := namespace.Validate(); err != nil {
 		return errors.Join(ErrNamespaceCreate, err)
 	}

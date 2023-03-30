@@ -56,8 +56,12 @@ func (r *AttachmentRepository) Create(ctx context.Context, belongsTo model.ID, a
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.AttachmentRepository/Create")
 	defer span.End()
 
+	if err := belongsTo.Validate(); err != nil {
+		return errors.Join(ErrAttachmentCreate, err)
+	}
+
 	if err := attachment.Validate(); err != nil {
-		return err
+		return errors.Join(ErrAttachmentCreate, err)
 	}
 
 	createdAt := time.Now()

@@ -65,6 +65,8 @@ func (r *AssignmentRepository) Create(ctx context.Context, assignment *model.Ass
 		return errors.Join(ErrAssignmentCreate, err)
 	}
 
+	watchesRelID := model.MustNewID(EdgeKindWatches.String())
+
 	createdAt := time.Now()
 
 	assignment.ID = model.MustNewID(model.AssignmentIDType)
@@ -72,15 +74,19 @@ func (r *AssignmentRepository) Create(ctx context.Context, assignment *model.Ass
 
 	cypher := `
 	MATCH (u:` + assignment.User.Label() + ` {id: $user_id}), (r:` + assignment.Resource.Label() + ` {id: $resource_id})
-	MERGE (u)-[a:` + EdgeKindAssignedTo.String() + ` {id: $id}]->(r)
-	ON CREATE SET a.kind = $kind, a.created_at = datetime($created_at)`
+	MERGE (u)-[a:` + assignment.ID.Label() + ` {a.kind = $kind}]->(r)
+	ON CREATE SET id: $id, a.created_at = datetime($created_at)
+	WITH u, r
+	MERGE (u)-[w:` + watchesRelID.Label() + `]->(r)
+	ON CREATE SET w = {id: $watches_rel_id, created_at: datetime($created_at)}`
 
 	params := map[string]any{
-		"id":          assignment.ID.String(),
-		"user_id":     assignment.User.String(),
-		"resource_id": assignment.Resource.String(),
-		"kind":        assignment.Kind.String(),
-		"created_at":  assignment.CreatedAt.Format(time.RFC3339Nano),
+		"id":             assignment.ID.String(),
+		"user_id":        assignment.User.String(),
+		"resource_id":    assignment.Resource.String(),
+		"kind":           assignment.Kind.String(),
+		"created_at":     assignment.CreatedAt.Format(time.RFC3339Nano),
+		"watches_rel_id": watchesRelID.String(),
 	}
 
 	if err := ExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {

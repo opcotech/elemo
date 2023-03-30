@@ -68,6 +68,10 @@ func (r *DocumentRepository) Create(ctx context.Context, belongsTo model.ID, doc
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.DocumentRepository/Create")
 	defer span.End()
 
+	if err := belongsTo.Validate(); err != nil {
+		return errors.Join(ErrDocumentCreate, err)
+	}
+
 	if err := document.Validate(); err != nil {
 		return errors.Join(ErrDocumentCreate, err)
 	}

@@ -56,6 +56,10 @@ func (r *CommentRepository) Create(ctx context.Context, belongsTo model.ID, comm
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.CommentRepository/Create")
 	defer span.End()
 
+	if err := belongsTo.Validate(); err != nil {
+		return errors.Join(ErrCommentCreate, err)
+	}
+
 	if err := comment.Validate(); err != nil {
 		return errors.Join(ErrCommentCreate, err)
 	}
