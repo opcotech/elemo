@@ -12,10 +12,13 @@ import (
 )
 
 var (
-	ErrIssueCreate = errors.New("failed to create issue") // the issue could not be created
-	ErrIssueRead   = errors.New("failed to read issue")   // the issue could not be retrieved
-	ErrIssueUpdate = errors.New("failed to update issue") // the issue could not be updated
-	ErrIssueDelete = errors.New("failed to delete issue") // the issue could not be deleted
+	ErrIssueCreate        = errors.New("failed to create issue")              // the issue could not be created
+	ErrIssueRead          = errors.New("failed to read issue")                // the issue could not be retrieved
+	ErrIssueAddWatcher    = errors.New("failed to add watcher to issue")      // the watcher could not be added to the issue
+	ErrIssueGetWatchers   = errors.New("failed to get watchers for issue")    // the watchers could not be retrieved for the issue
+	ErrIssueRemoveWatcher = errors.New("failed to remove watcher from issue") // the watcher could not be removed from the issue
+	ErrIssueUpdate        = errors.New("failed to update issue")              // the issue could not be updated
+	ErrIssueDelete        = errors.New("failed to delete issue")              // the issue could not be deleted
 )
 
 // issueScanParams is a struct for holding the cypher return parameter names
@@ -224,14 +227,61 @@ func (r *IssueRepository) AddWatcher(ctx context.Context, issue model.ID, user m
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.IssueRepository/AddWatcher")
 	defer span.End()
 
-	panic("implement me")
+	if err := issue.Validate(); err != nil {
+		return errors.Join(ErrIssueAddWatcher, err)
+	}
+
+	if err := user.Validate(); err != nil {
+		return errors.Join(ErrIssueAddWatcher, err)
+	}
+
+	watchesRelID := model.MustNewID(EdgeKindWatches.String())
+
+	cypher := `
+	MATCH (i:` + issue.Label() + ` {id: $issue_id}), (u:` + user.Label() + ` {id: $user_id})
+	CREATE (u)-[:` + watchesRelID.Label() + ` {id: $rel_id, created_at: datetime($created_at)}]->(i)`
+
+	params := map[string]any{
+		"issue_id":   issue.String(),
+		"user_id":    user.String(),
+		"rel_id":     watchesRelID.String(),
+		"created_at": time.Now().Format(time.RFC3339Nano),
+	}
+
+	if err := ExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
+		return errors.Join(ErrIssueAddWatcher, err)
+	}
+
+	return nil
 }
 
 func (r *IssueRepository) GetWatchers(ctx context.Context, issue model.ID) ([]*model.User, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.IssueRepository/GetWatchers")
 	defer span.End()
 
-	panic("implement me")
+	if err := issue.Validate(); err != nil {
+		return nil, errors.Join(ErrIssueGetWatchers, err)
+	}
+
+	cypher := `
+	MATCH (i:` + issue.Label() + ` {id: $issue_id})<-[:` + EdgeKindWatches.String() + `]-(u:` + model.UserIDType + `)
+	OPTIONAL MATCH (u)-[:` + EdgeKindSpeaks.String() + `]->(l:` + languageIDType + `)
+	OPTIONAL MATCH (u)-[p:` + EdgeKindHasPermission.String() + `]->()
+	OPTIONAL MATCH (u)<-[r:` + EdgeKindBelongsTo.String() + `]-(d:` + model.DocumentIDType + `)
+	RETURN u, collect(DISTINCT l.code) AS l, collect(DISTINCT p.id) AS p, collect(DISTINCT d.id) AS d`
+
+	params := map[string]any{
+		"issue_id": issue.String(),
+	}
+
+	ur := new(UserRepository)
+	users, err := ExecuteReadAndReadAll(ctx, r.db, cypher, params, ur.scan("u", "l", "p", "d"))
+
+	if err != nil {
+		return nil, errors.Join(ErrIssueGetWatchers, err)
+	}
+
+	return users, nil
 }
 
 func (r *IssueRepository) RemoveWatcher(ctx context.Context, issue model.ID, user model.ID) error {
@@ -248,7 +298,7 @@ func (r *IssueRepository) AddRelation(ctx context.Context, issue model.ID, relat
 	panic("implement me")
 }
 
-func (r *IssueRepository) GetRelations(ctx context.Context, issue model.ID) ([]*model.Issue, error) {
+func (r *IssueRepository) GetRelations(ctx context.Context, issue model.ID) ([]*model.IssueRelation, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.IssueRepository/GetRelations")
 	defer span.End()
 
