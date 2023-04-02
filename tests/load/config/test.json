@@ -1,0 +1,25 @@
+{
+  "scenarios": {
+    "monitoring-smoke": {
+      "executor": "constant-arrival-rate",
+      "rate": 1,
+      "timeUnit": "1s",
+      "duration": "1m",
+      "preAllocatedVUs": 1,
+      "maxVUs": 1,
+      "exec": "monitoring",
+      "startTime": "0s"
+    }
+  },
+  "thresholds": {
+    "http_req_failed": [
+      "rate<0.01"
+    ],
+    "http_req_duration": [
+      "p(99.9)<250"
+    ],
+    "group_duration{group:::system}": [
+      "p(99)<15"
+    ]
+  }
+}
