@@ -441,7 +441,52 @@ func (r *IssueRepository) Update(ctx context.Context, id model.ID, patch map[str
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.IssueRepository/Update")
 	defer span.End()
 
-	panic("implement me")
+	if err := id.Validate(); err != nil {
+		return nil, errors.Join(ErrIssueUpdate, err)
+	}
+
+	cypher := `
+	MATCH (i:` + id.Label() + ` {id: $id})
+	SET i += $patch, i.updated_at = datetime($updated_at)
+	WITH i
+	OPTIONAL MATCH (i)-[:` + EdgeKindRelatedTo.String() + ` {kind: $parent_kind}]->(par:` + model.IssueIDType + `)
+	OPTIONAL MATCH (i)-[:` + EdgeKindRelatedTo.String() + `]->(rel:` + model.IssueIDType + `)
+	OPTIONAL MATCH (i)-[:` + EdgeKindHasComment.String() + `]->(comm:` + model.CommentIDType + `)
+	OPTIONAL MATCH (i)-[:` + EdgeKindHasAttachment.String() + `]->(att:` + model.AttachmentIDType + `)
+	OPTIONAL MATCH (i)<-[:` + EdgeKindWatches.String() + `]-(watch:` + model.UserIDType + `)
+	OPTIONAL MATCH (i)-[:` + EdgeKindHasLabel.String() + `]->(l:` + model.LabelIDType + `)
+	OPTIONAL MATCH (i)<-[:` + EdgeKindCreated.String() + `]-(cr:` + model.UserIDType + `)
+	OPTIONAL MATCH (i)<-[:` + EdgeKindAssignedTo.String() + `]-(assignees:` + model.UserIDType + `)
+	RETURN i, par.id AS par, collect(DISTINCT rel.id) AS rel, collect(DISTINCT comm.id) AS comm,
+		collect(DISTINCT att.id) AS att, collect(DISTINCT watch.id) AS watch, collect(DISTINCT l.id) AS l, cr.id as cr,
+		collect(DISTINCT assignees.id) AS assignees`
+
+	params := map[string]any{
+		"id":          id.String(),
+		"patch":       patch,
+		"parent_kind": model.IssueRelationKindSubtaskOf.String(),
+		"updated_at":  time.Now().Format(time.RFC3339Nano),
+	}
+
+	scanParams := &issueScanParams{
+		issue:       "i",
+		parent:      "par",
+		reportedBy:  "cr",
+		assignees:   "assignees",
+		labels:      "l",
+		comments:    "comm",
+		attachments: "att",
+		watchers:    "watch",
+		relations:   "rel",
+	}
+
+	issue, err := ExecuteReadAndReadSingle(ctx, r.db, cypher, params, r.scan(scanParams))
+	if err != nil {
+		return nil, errors.Join(ErrIssueRead, err)
+	}
+
+	return issue, nil
+
 }
 
 func (r *IssueRepository) Delete(ctx context.Context, id model.ID) error {

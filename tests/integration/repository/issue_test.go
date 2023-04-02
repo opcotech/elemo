@@ -707,7 +707,76 @@ func TestIssueRepository_RemoveRelation(t *testing.T) {
 }
 
 func TestIssueRepository_Update(t *testing.T) {
-	t.Skip("TODO")
+	ctx := context.Background()
+
+	db, closer := newNeo4jDatabase(t)
+	defer func(ctx context.Context, closer func(ctx context.Context) error) {
+		require.NoError(t, closer(ctx))
+	}(ctx, closer)
+
+	defer cleanupNeo4jStore(t, ctx, db)
+
+	userRepo, err := neo4j.NewUserRepository(
+		neo4j.WithDatabase(db),
+	)
+	require.NoError(t, err)
+
+	orgRepo, err := neo4j.NewOrganizationRepository(
+		neo4j.WithDatabase(db),
+	)
+	require.NoError(t, err)
+
+	namespaceRepo, err := neo4j.NewNamespaceRepository(
+		neo4j.WithDatabase(db),
+	)
+	require.NoError(t, err)
+
+	projectRepo, err := neo4j.NewProjectRepository(
+		neo4j.WithDatabase(db),
+	)
+	require.NoError(t, err)
+
+	issueRepo, err := neo4j.NewIssueRepository(
+		neo4j.WithDatabase(db),
+	)
+	require.NoError(t, err)
+
+	user := prepareUser(t)
+	err = userRepo.Create(ctx, user)
+	require.NoError(t, err)
+
+	organization := prepareOrganization(t)
+	err = orgRepo.Create(ctx, user.ID, organization)
+	require.NoError(t, err)
+
+	namespace, err := model.NewNamespace(testutil.GenerateRandomString(10))
+	require.NoError(t, err)
+
+	err = namespaceRepo.Create(ctx, organization.ID, namespace)
+	require.NoError(t, err)
+
+	project := prepareProject(t)
+
+	err = projectRepo.Create(ctx, namespace.ID, project)
+	require.NoError(t, err)
+
+	issue, err := model.NewIssue(1, "My test epic", model.IssueKindEpic, user.ID)
+	require.NoError(t, err)
+
+	err = issueRepo.Create(ctx, project.ID, issue)
+	require.NoError(t, err)
+
+	patch := map[string]any{
+		"title":       "My updated test epic",
+		"description": "My updated test epic description",
+	}
+
+	updated, err := issueRepo.Update(ctx, issue.ID, patch)
+	require.NoError(t, err)
+
+	assert.Equal(t, patch["title"], updated.Title)
+	assert.Equal(t, patch["description"], updated.Description)
+	assert.NotNil(t, updated.UpdatedAt)
 }
 
 func TestIssueRepository_Delete(t *testing.T) {
