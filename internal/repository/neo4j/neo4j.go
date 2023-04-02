@@ -3,6 +3,7 @@ package neo4j
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
 	"go.opentelemetry.io/otel/trace"
@@ -31,9 +32,9 @@ func NewDriver(conf *config.DatabaseConfig) (neo4j.DriverWithContext, error) {
 	driver, err := neo4j.NewDriverWithContext(conf.URL, neo4j.BasicAuth(conf.Username, conf.Password, ""), func(c *neo4j.Config) {
 		c.MaxTransactionRetryTime = conf.MaxTransactionRetryTime
 		c.MaxConnectionPoolSize = conf.MaxConnectionPoolSize
-		c.MaxConnectionLifetime = conf.MaxConnectionLifetime
-		c.ConnectionAcquisitionTimeout = conf.ConnectionAcquisitionTimeout
-		c.SocketConnectTimeout = conf.SocketConnectTimeout
+		c.MaxConnectionLifetime = conf.MaxConnectionLifetime * time.Second
+		c.ConnectionAcquisitionTimeout = conf.ConnectionAcquisitionTimeout * time.Second
+		c.SocketConnectTimeout = conf.SocketConnectTimeout * time.Second
 		c.SocketKeepalive = conf.SocketKeepalive
 		c.FetchSize = conf.FetchSize
 	})
