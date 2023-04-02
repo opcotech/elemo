@@ -1,0 +1,49 @@
+version: "3.8"
+
+volumes:
+  neo4j_data: { }
+
+networks:
+  default:
+    name: elemo-network
+
+services:
+  neo4j:
+    image: neo4j:latest
+    container_name: elemo-neo4j
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+      - "2004:2004"
+    volumes:
+      - neo4j_data:/data
+      - ./neo4j:/conf
+    environment:
+      - NEO4J_AUTH=neo4j/neo4jsecret
+    healthcheck:
+      test: [ "CMD", "cypher-shell", "-u", "neo4j", "-p", "neo4jsecret", "match (n) return count(n)" ]
+      interval: 5s
+      timeout: 5s
+      retries: 3
+
+  elemo:
+    image: elemo-server
+    container_name: elemo-server
+    build:
+      context: ../../
+      dockerfile: build/package/Dockerfile
+    security_opt:
+      - seccomp:unconfined
+    depends_on:
+      neo4j:
+        condition: service_healthy
+    environment:
+      ELEMO_CONFIG: /elemo/configs/development/config.yml
+    ports:
+      - "35478:35478"
+      - "35479:35479"
+    healthcheck:
+      test: "curl -f https://0.0.0.0:35478/api/v1/system/health || exit 1"
+      interval: 5s
+      timeout: 5s
+      retries: 3
