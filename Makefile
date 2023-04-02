@@ -78,11 +78,11 @@ stop.monitoring: ## Halt service
 
 .PHONY: destroy.backend
 destroy.backend: ## Remove service resources
-	docker-compose -f deploy/docker/docker-compose.yml down --rmi local --volumes --remove-orphans
+	docker-compose -f deploy/docker/docker-compose.yml down --rmi local --volumes
 
 .PHONY: destroy.monitoring
 destroy.monitoring: ## Remove service resources
-	docker-compose -f deploy/docker/docker-compose.monitoring.yml down --rmi local --volumes --remove-orphans
+	docker-compose -f deploy/docker/docker-compose.monitoring.yml down --rmi local --volumes
 
 .PHONY: bench
 bench: bench.backend ## Run all benchmarks
