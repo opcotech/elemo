@@ -114,7 +114,7 @@ func (r *OrganizationRepository) Get(ctx context.Context, id model.ID) (*model.O
 	OPTIONAL MATCH (u:` + model.UserIDType + `)-[:` + EdgeKindMemberOf.String() + `]->(o)
 	OPTIONAL MATCH (o)-[:` + EdgeKindHasNamespace.String() + `]->(n:` + model.NamespaceIDType + `)
 	OPTIONAL MATCH (o)-[:` + EdgeKindHasTeam.String() + `]->(t:` + model.RoleIDType + `)
-	RETURN o, collect(u.id) AS m, collect(n.id) AS n, collect(t.id) AS t
+	RETURN o, collect(DISTINCT u.id) AS m, collect(DISTINCT n.id) AS n, collect(DISTINCT t.id) AS t
 	`
 
 	params := map[string]any{
@@ -138,7 +138,7 @@ func (r *OrganizationRepository) GetAll(ctx context.Context, offset, limit int) 
 	OPTIONAL MATCH (u:` + model.UserIDType + `)-[:` + EdgeKindMemberOf.String() + `]->(o)
 	OPTIONAL MATCH (o)-[:` + EdgeKindHasNamespace.String() + `]->(n:` + model.NamespaceIDType + `)
 	OPTIONAL MATCH (o)-[:` + EdgeKindHasTeam.String() + `]->(t:` + model.RoleIDType + `)
-	RETURN o, collect(u.id) AS m, collect(n.id) AS n, collect(t.id) AS t
+	RETURN o, collect(DISTINCT u.id) AS m, collect(DISTINCT n.id) AS n, collect(DISTINCT t.id) AS t
 	ORDER BY o.created_at DESC
 	SKIP $offset LIMIT $limit`
 
@@ -165,7 +165,7 @@ func (r *OrganizationRepository) Update(ctx context.Context, id model.ID, patch 
 	OPTIONAL MATCH (u:` + model.UserIDType + `)-[:` + EdgeKindMemberOf.String() + `]->(o)
 	OPTIONAL MATCH (o)-[:` + EdgeKindHasNamespace.String() + `]->(n:` + model.NamespaceIDType + `)
 	OPTIONAL MATCH (o)-[:` + EdgeKindHasTeam.String() + `]->(t:` + model.RoleIDType + `)
-	RETURN o, collect(u.id) AS m, collect(n.id) AS n, collect(t.id) AS t`
+	RETURN o, collect(DISTINCT u.id) AS m, collect(DISTINCT n.id) AS n, collect(DISTINCT t.id) AS t`
 
 	params := map[string]any{
 		"id":         id.String(),

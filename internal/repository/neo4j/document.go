@@ -123,7 +123,7 @@ func (r *DocumentRepository) Get(ctx context.Context, id model.ID) (*model.Docum
 	OPTIONAL MATCH (d)-[:` + EdgeKindHasLabel.String() + `]->(l:` + model.LabelIDType + `)
 	OPTIONAL MATCH (d)-[:` + EdgeKindHasComment.String() + `]->(comm:` + model.CommentIDType + `)
 	OPTIONAL MATCH (d)-[:` + EdgeKindHasAttachment.String() + `]->(att:` + model.AttachmentIDType + `)
-	RETURN d, c.id AS c, collect(l.id) AS l, collect(comm.id) AS comm, collect(att.id) AS att`
+	RETURN d, c.id AS c, collect(DISTINCT l.id) AS l, collect(DISTINCT comm.id) AS comm, collect(DISTINCT att.id) AS att`
 
 	params := map[string]any{
 		"id": id.String(),
@@ -146,7 +146,7 @@ func (r *DocumentRepository) GetByCreator(ctx context.Context, createdBy model.I
 	OPTIONAL MATCH (d)-[:` + EdgeKindHasLabel.String() + `]->(l:` + model.LabelIDType + `)
 	OPTIONAL MATCH (d)-[:` + EdgeKindHasComment.String() + `]->(comm:` + model.CommentIDType + `)
 	OPTIONAL MATCH (d)-[:` + EdgeKindHasAttachment.String() + `]->(att:` + model.AttachmentIDType + `)
-	RETURN d, c.id AS c, collect(l.id) AS l, collect(comm.id) AS comm, collect(att.id) AS att
+	RETURN d, c.id AS c, collect(DISTINCT l.id) AS l, collect(DISTINCT comm.id) AS comm, collect(DISTINCT att.id) AS att
 	ORDER BY d.created_at DESC
 	SKIP $offset LIMIT $limit`
 
@@ -175,7 +175,7 @@ func (r *DocumentRepository) GetAllBelongsTo(ctx context.Context, belongsTo mode
 	OPTIONAL MATCH (d)-[:` + EdgeKindHasLabel.String() + `]->(l:` + model.LabelIDType + `)
 	OPTIONAL MATCH (d)-[:` + EdgeKindHasComment.String() + `]->(comm:` + model.CommentIDType + `)
 	OPTIONAL MATCH (d)-[:` + EdgeKindHasAttachment.String() + `]->(att:` + model.AttachmentIDType + `)
-	RETURN d, c.id AS c, collect(l.id) AS l, collect(comm.id) AS comm, collect(att.id) AS att
+	RETURN d, c.id AS c, collect(DISTINCT l.id) AS l, collect(DISTINCT comm.id) AS comm, collect(DISTINCT att.id) AS att
 	ORDER BY d.created_at DESC
 	SKIP $offset LIMIT $limit`
 
@@ -205,7 +205,7 @@ func (r *DocumentRepository) Update(ctx context.Context, id model.ID, patch map[
 	OPTIONAL MATCH (d)-[:` + EdgeKindHasLabel.String() + `]->(l:` + model.LabelIDType + `)
 	OPTIONAL MATCH (d)-[:` + EdgeKindHasComment.String() + `]->(comm:` + model.CommentIDType + `)
 	OPTIONAL MATCH (d)-[:` + EdgeKindHasAttachment.String() + `]->(att:` + model.AttachmentIDType + `)
-	RETURN d, c.id AS c, collect(l.id) AS l, collect(comm.id) AS comm, collect(att.id) AS att`
+	RETURN d, c.id AS c, collect(DISTINCT l.id) AS l, collect(DISTINCT comm.id) AS comm, collect(DISTINCT att.id) AS att`
 
 	params := map[string]any{
 		"id":         id.String(),

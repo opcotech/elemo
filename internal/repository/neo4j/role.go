@@ -114,7 +114,7 @@ func (r *RoleRepository) Get(ctx context.Context, id model.ID) (*model.Role, err
 	MATCH (r:` + id.Label() + ` {id: $id})
 	OPTIONAL MATCH (r)<-[:` + EdgeKindMemberOf.String() + `]-(u:` + model.UserIDType + `)
 	OPTIONAL MATCH (r)-[p:` + EdgeKindHasPermission.String() + `]->()
-	RETURN r, collect(u.id) AS m, collect(p.id) AS p
+	RETURN r, collect(DISTINCT u.id) AS m, collect(DISTINCT p.id) AS p
 	`
 
 	params := map[string]any{
@@ -137,7 +137,7 @@ func (r *RoleRepository) GetAllBelongsTo(ctx context.Context, id model.ID, offse
 	MATCH (r:` + model.RoleIDType + `)<-[:` + EdgeKindHasTeam.String() + `]-(:` + id.Label() + ` {id: $id})
 	OPTIONAL MATCH (r)<-[:` + EdgeKindMemberOf.String() + `]-(u:` + model.UserIDType + `)
 	OPTIONAL MATCH (r)-[p:` + EdgeKindHasPermission.String() + `]->()
-	RETURN r, collect(u.id) AS m, collect(p.id) AS p
+	RETURN r, collect(DISTINCT u.id) AS m, collect(DISTINCT p.id) AS p
 	ORDER BY r.created_at DESC
 	SKIP $offset LIMIT $limit`
 
@@ -164,7 +164,7 @@ func (r *RoleRepository) Update(ctx context.Context, id model.ID, patch map[stri
 	WITH r
 	OPTIONAL MATCH (r)<-[:` + EdgeKindMemberOf.String() + `]-(u:` + model.UserIDType + `)
 	OPTIONAL MATCH (r)-[p:` + EdgeKindHasPermission.String() + `]->()
-	RETURN r, collect(u.id) AS m, collect(p.id) AS p`
+	RETURN r, collect(DISTINCT u.id) AS m, collect(DISTINCT p.id) AS p`
 
 	params := map[string]any{
 		"id":         id.String(),

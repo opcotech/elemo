@@ -102,7 +102,7 @@ func (r *NamespaceRepository) Get(ctx context.Context, id model.ID) (*model.Name
 	MATCH (ns:` + id.Label() + ` {id: $id})
 	OPTIONAL MATCH (p:` + model.ProjectIDType + `)<-[:` + EdgeKindHasProject.String() + `]-(ns)
 	OPTIONAL MATCH (d:` + model.DocumentIDType + `)-[:` + EdgeKindBelongsTo.String() + `]->(ns)
-	RETURN ns, collect(p.id) as p, collect(d.id) as d`
+	RETURN ns, collect(DISTINCT p.id) as p, collect(DISTINCT d.id) as d`
 
 	params := map[string]any{
 		"id": id.String(),
@@ -124,7 +124,7 @@ func (r *NamespaceRepository) GetAll(ctx context.Context, orgID model.ID, offset
 	MATCH (org:` + orgID.Label() + ` {id: $org_id})-[:` + EdgeKindHasNamespace.String() + `]->(ns:` + model.NamespaceIDType + `)
 	OPTIONAL MATCH (p:` + model.ProjectIDType + `)<-[:` + EdgeKindHasProject.String() + `]-(ns)
 	OPTIONAL MATCH (d:` + model.DocumentIDType + `)-[:` + EdgeKindBelongsTo.String() + `]->(ns)
-	RETURN ns, collect(p.id) as p, collect(d.id) as d
+	RETURN ns, collect(DISTINCT p.id) as p, collect(DISTINCT d.id) as d
 	ORDER BY ns.created_at DESC
 	SKIP $offset LIMIT $limit`
 
@@ -151,7 +151,7 @@ func (r *NamespaceRepository) Update(ctx context.Context, id model.ID, patch map
 	WITH ns
 	OPTIONAL MATCH (p:` + model.ProjectIDType + `)<-[:` + EdgeKindHasProject.String() + `]->(ns)
 	OPTIONAL MATCH (d:` + model.DocumentIDType + `)-[:` + EdgeKindBelongsTo.String() + `]->(ns)
-	RETURN ns, collect(p.id) as p, collect(d.id) as d`
+	RETURN ns, collect(DISTINCT p.id) as p, collect(DISTINCT d.id) as d`
 
 	params := map[string]any{
 		"id":         id.String(),
