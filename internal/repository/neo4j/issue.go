@@ -12,13 +12,16 @@ import (
 )
 
 var (
-	ErrIssueCreate        = errors.New("failed to create issue")              // the issue could not be created
-	ErrIssueRead          = errors.New("failed to read issue")                // the issue could not be retrieved
-	ErrIssueAddWatcher    = errors.New("failed to add watcher to issue")      // the watcher could not be added to the issue
-	ErrIssueGetWatchers   = errors.New("failed to get watchers for issue")    // the watchers could not be retrieved for the issue
-	ErrIssueRemoveWatcher = errors.New("failed to remove watcher from issue") // the watcher could not be removed from the issue
-	ErrIssueUpdate        = errors.New("failed to update issue")              // the issue could not be updated
-	ErrIssueDelete        = errors.New("failed to delete issue")              // the issue could not be deleted
+	ErrIssueCreate         = errors.New("failed to create issue")               // the issue could not be created
+	ErrIssueRead           = errors.New("failed to read issue")                 // the issue could not be retrieved
+	ErrIssueAddWatcher     = errors.New("failed to add watcher to issue")       // the watcher could not be added to the issue
+	ErrIssueGetWatchers    = errors.New("failed to get watchers for issue")     // the watchers could not be retrieved for the issue
+	ErrIssueRemoveWatcher  = errors.New("failed to remove watcher from issue")  // the watcher could not be removed from the issue
+	ErrIssueAddRelation    = errors.New("failed to add relation to issue")      // the relation could not be added to the issue
+	ErrIssueGetRelations   = errors.New("failed to get relations for issue")    // the relations could not be retrieved for the issue
+	ErrIssueRemoveRelation = errors.New("failed to remove relation from issue") // the relation could not be removed from the issue
+	ErrIssueUpdate         = errors.New("failed to update issue")               // the issue could not be updated
+	ErrIssueDelete         = errors.New("failed to delete issue")               // the issue could not be deleted
 )
 
 // issueScanParams is a struct for holding the cypher return parameter names
@@ -96,6 +99,41 @@ func (r *IssueRepository) scan(params *issueScanParams) func(rec *neo4j.Record) 
 		}
 
 		return issue, nil
+	}
+}
+
+func (r *IssueRepository) scanRelation(ip, rp, tp string) func(rec *neo4j.Record) (*model.IssueRelation, error) {
+	return func(rec *neo4j.Record) (*model.IssueRelation, error) {
+		rel := new(model.IssueRelation)
+
+		val, _, err := neo4j.GetRecordValue[neo4j.Relationship](rec, rp)
+		if err != nil {
+			return nil, err
+		}
+
+		source, err := ParseValueFromRecord[string](rec, ip)
+		if err != nil {
+			return nil, err
+		}
+
+		target, err := ParseValueFromRecord[string](rec, tp)
+		if err != nil {
+			return nil, err
+		}
+
+		if err := ScanIntoStruct(&val, &rel, []string{"id", "source", "target"}); err != nil {
+			return nil, err
+		}
+
+		rel.ID, _ = model.NewIDFromString(val.GetProperties()["id"].(string), EdgeKindRelatedTo.String())
+		rel.Source, _ = model.NewIDFromString(source, model.IssueIDType)
+		rel.Target, _ = model.NewIDFromString(target, model.IssueIDType)
+
+		if err := rel.Validate(); err != nil {
+			return nil, err
+		}
+
+		return rel, nil
 	}
 }
 
@@ -288,28 +326,115 @@ func (r *IssueRepository) RemoveWatcher(ctx context.Context, issue model.ID, use
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.IssueRepository/RemoveWatcher")
 	defer span.End()
 
-	panic("implement me")
+	if err := issue.Validate(); err != nil {
+		return errors.Join(ErrIssueRemoveWatcher, err)
+	}
+
+	if err := user.Validate(); err != nil {
+		return errors.Join(ErrIssueRemoveWatcher, err)
+	}
+
+	cypher := `
+	MATCH (:` + issue.Label() + ` {id: $issue_id})<-[r:` + EdgeKindWatches.String() + `]-(:` + user.Label() + ` {id: $user_id})
+	DELETE r`
+
+	params := map[string]any{
+		"issue_id": issue.String(),
+		"user_id":  user.String(),
+	}
+
+	if err := ExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
+		return errors.Join(ErrIssueRemoveWatcher, err)
+	}
+
+	return nil
 }
 
-func (r *IssueRepository) AddRelation(ctx context.Context, issue model.ID, relation *model.IssueRelation) error {
+func (r *IssueRepository) AddRelation(ctx context.Context, relation *model.IssueRelation) error {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.IssueRepository/AddRelation")
 	defer span.End()
 
-	panic("implement me")
+	if err := relation.Validate(); err != nil {
+		return errors.Join(ErrIssueAddRelation, err)
+	}
+
+	createdAt := time.Now()
+	relation.ID = model.MustNewID(EdgeKindRelatedTo.String())
+	relation.CreatedAt = convert.ToPointer(createdAt)
+	relation.UpdatedAt = nil
+
+	cypher := `
+	MATCH (s:` + relation.Source.Label() + ` {id: $source_id}), (t:` + relation.Target.Label() + ` {id: $target_id})
+	MERGE (s)-[r:` + relation.ID.Label() + ` {kind: $kind}]->(t)
+	ON CREATE SET r.id = $id, r.created_at = datetime($created_at)
+	`
+
+	params := map[string]any{
+		"source_id":  relation.Source.String(),
+		"target_id":  relation.Target.String(),
+		"id":         relation.ID.String(),
+		"kind":       relation.Kind.String(),
+		"created_at": createdAt.Format(time.RFC3339Nano),
+	}
+
+	if err := ExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
+		return errors.Join(ErrIssueAddRelation, err)
+	}
+
+	return nil
 }
 
 func (r *IssueRepository) GetRelations(ctx context.Context, issue model.ID) ([]*model.IssueRelation, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.IssueRepository/GetRelations")
 	defer span.End()
 
-	panic("implement me")
+	if err := issue.Validate(); err != nil {
+		return nil, errors.Join(ErrIssueGetRelations, err)
+	}
+
+	cypher := `
+	MATCH (i:` + issue.Label() + ` {id: $issue_id})-[r:` + EdgeKindRelatedTo.String() + `]-(t)
+	RETURN i.id as i, r, t.id as t`
+
+	params := map[string]any{
+		"issue_id": issue.String(),
+	}
+
+	relations, err := ExecuteReadAndReadAll(ctx, r.db, cypher, params, r.scanRelation("i", "r", "t"))
+	if err != nil {
+		return nil, errors.Join(ErrIssueGetRelations, err)
+	}
+
+	return relations, nil
 }
 
-func (r *IssueRepository) RemoveRelation(ctx context.Context, issue model.ID, relation model.ID) error {
+func (r *IssueRepository) RemoveRelation(ctx context.Context, source, target model.ID, kind model.IssueRelationKind) error {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.IssueRepository/RemoveRelation")
 	defer span.End()
 
-	panic("implement me")
+	if err := source.Validate(); err != nil {
+		return errors.Join(ErrIssueRemoveRelation, err)
+	}
+
+	if err := target.Validate(); err != nil {
+		return errors.Join(ErrIssueRemoveRelation, err)
+	}
+
+	cypher := `
+	MATCH (s:` + source.Label() + ` {id: $source_id})-[r:` + EdgeKindRelatedTo.String() + ` {kind: $kind}]->(t:` + target.Label() + ` {id: $target_id})
+	DELETE r`
+
+	params := map[string]any{
+		"source_id": source.String(),
+		"target_id": target.String(),
+		"kind":      kind.String(),
+	}
+
+	if err := ExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
+		return errors.Join(ErrIssueRemoveRelation, err)
+	}
+
+	return nil
 }
 
 func (r *IssueRepository) Update(ctx context.Context, id model.ID, patch map[string]any) (*model.Issue, error) {

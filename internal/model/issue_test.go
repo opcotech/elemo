@@ -408,6 +408,140 @@ func TestIssueStatus_UnmarshalText(t *testing.T) {
 	}
 }
 
+func TestIssueRelation_Validate(t *testing.T) {
+	tests := []struct {
+		name    string
+		r       IssueRelation
+		wantErr error
+	}{
+		{
+			name: "valid issue relation",
+			r: IssueRelation{
+				ID:     ID{inner: xid.NilID(), label: IssueRelationIDType},
+				Source: ID{inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, label: IssueIDType},
+				Target: ID{inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xc, 0xb, 0xa}, label: IssueIDType},
+				Kind:   IssueRelationKindRelatedTo,
+			},
+		},
+		{
+			name: "invalid issue relation kind",
+			r: IssueRelation{
+				ID:     ID{inner: xid.NilID(), label: IssueRelationIDType},
+				Source: ID{inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, label: IssueIDType},
+				Target: ID{inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xc, 0xb, 0xa}, label: IssueIDType},
+				Kind:   IssueRelationKind(100),
+			},
+			wantErr: ErrInvalidIssueRelationDetails,
+		},
+		{
+			name: "invalid issue relation id",
+			r: IssueRelation{
+				ID:     ID{inner: xid.NilID(), label: ""},
+				Source: ID{inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, label: IssueIDType},
+				Target: ID{inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xc, 0xb, 0xa}, label: IssueIDType},
+				Kind:   IssueRelationKindRelatedTo,
+			},
+			wantErr: ErrInvalidIssueRelationDetails,
+		},
+		{
+			name: "invalid issue relation source",
+			r: IssueRelation{
+				ID:     ID{inner: xid.NilID(), label: IssueRelationIDType},
+				Source: ID{inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, label: ""},
+				Target: ID{inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xc, 0xb, 0xa}, label: IssueIDType},
+				Kind:   IssueRelationKindRelatedTo,
+			},
+			wantErr: ErrInvalidIssueRelationDetails,
+		},
+		{
+			name: "invalid issue relation target",
+			r: IssueRelation{
+				ID:     ID{inner: xid.NilID(), label: IssueRelationIDType},
+				Source: ID{inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, label: IssueIDType},
+				Target: ID{inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xc, 0xb, 0xa}, label: ""},
+				Kind:   IssueRelationKindRelatedTo,
+			},
+			wantErr: ErrInvalidIssueRelationDetails,
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			err := tt.r.Validate()
+			assert.ErrorIs(t, err, tt.wantErr)
+		})
+	}
+}
+
+func TestNewIssueRelation(t *testing.T) {
+	type args struct {
+		source ID
+		target ID
+		kind   IssueRelationKind
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    *IssueRelation
+		wantErr error
+	}{
+		{
+			name: "create new issue relation",
+			args: args{
+				source: ID{inner: xid.NilID(), label: IssueIDType},
+				target: ID{inner: xid.NilID(), label: IssueIDType},
+				kind:   IssueRelationKindRelatedTo,
+			},
+			want: &IssueRelation{
+				ID:     ID{inner: xid.NilID(), label: IssueRelationIDType},
+				Source: ID{inner: xid.NilID(), label: IssueIDType},
+				Target: ID{inner: xid.NilID(), label: IssueIDType},
+				Kind:   IssueRelationKindRelatedTo,
+			},
+		},
+		{
+			name: "invalid issue relation kind",
+			args: args{
+				source: ID{inner: xid.NilID(), label: IssueIDType},
+				target: ID{inner: xid.NilID(), label: IssueIDType},
+				kind:   IssueRelationKind(100),
+			},
+			wantErr: ErrInvalidIssueRelationDetails,
+		},
+		{
+			name: "invalid issue relation source",
+			args: args{
+				source: ID{inner: xid.NilID(), label: ""},
+				target: ID{inner: xid.NilID(), label: IssueIDType},
+				kind:   IssueRelationKindRelatedTo,
+			},
+			wantErr: ErrInvalidIssueRelationDetails,
+		},
+		{
+			name: "invalid issue relation target",
+			args: args{
+				source: ID{inner: xid.NilID(), label: IssueIDType},
+				target: ID{inner: xid.NilID(), label: ""},
+				kind:   IssueRelationKindRelatedTo,
+			},
+			wantErr: ErrInvalidIssueRelationDetails,
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			got, err := NewIssueRelation(tt.args.source, tt.args.target, tt.args.kind)
+			assert.ErrorIs(t, err, tt.wantErr)
+
+			if tt.wantErr == nil {
+				assert.Equal(t, tt.want, got)
+			}
+		})
+	}
+}
+
 func TestNewIssue(t *testing.T) {
 	type args struct {
 		numericID  uint

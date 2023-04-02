@@ -369,19 +369,341 @@ func TestIssueRepository_GetWatchers(t *testing.T) {
 }
 
 func TestIssueRepository_RemoveWatcher(t *testing.T) {
-	t.Skip("TODO")
+	ctx := context.Background()
+
+	db, closer := newNeo4jDatabase(t)
+	defer func(ctx context.Context, closer func(ctx context.Context) error) {
+		require.NoError(t, closer(ctx))
+	}(ctx, closer)
+
+	defer cleanupNeo4jStore(t, ctx, db)
+
+	userRepo, err := neo4j.NewUserRepository(
+		neo4j.WithDatabase(db),
+	)
+	require.NoError(t, err)
+
+	orgRepo, err := neo4j.NewOrganizationRepository(
+		neo4j.WithDatabase(db),
+	)
+	require.NoError(t, err)
+
+	namespaceRepo, err := neo4j.NewNamespaceRepository(
+		neo4j.WithDatabase(db),
+	)
+	require.NoError(t, err)
+
+	projectRepo, err := neo4j.NewProjectRepository(
+		neo4j.WithDatabase(db),
+	)
+	require.NoError(t, err)
+
+	issueRepo, err := neo4j.NewIssueRepository(
+		neo4j.WithDatabase(db),
+	)
+	require.NoError(t, err)
+
+	user := prepareUser(t)
+	err = userRepo.Create(ctx, user)
+	require.NoError(t, err)
+
+	user2 := prepareUser(t)
+	err = userRepo.Create(ctx, user2)
+	require.NoError(t, err)
+
+	organization := prepareOrganization(t)
+	err = orgRepo.Create(ctx, user.ID, organization)
+	require.NoError(t, err)
+
+	namespace, err := model.NewNamespace(testutil.GenerateRandomString(10))
+	require.NoError(t, err)
+
+	err = namespaceRepo.Create(ctx, organization.ID, namespace)
+	require.NoError(t, err)
+
+	project := prepareProject(t)
+
+	err = projectRepo.Create(ctx, namespace.ID, project)
+	require.NoError(t, err)
+
+	issue, err := model.NewIssue(1, "My test epic", model.IssueKindEpic, user.ID)
+	require.NoError(t, err)
+
+	err = issueRepo.Create(ctx, project.ID, issue)
+	require.NoError(t, err)
+
+	err = issueRepo.AddWatcher(ctx, issue.ID, user2.ID)
+	require.NoError(t, err)
+
+	watchers, err := issueRepo.GetWatchers(ctx, issue.ID)
+	require.NoError(t, err)
+
+	assert.Len(t, watchers, 2)
+	assert.ElementsMatch(t, []model.ID{user.ID, user2.ID}, []model.ID{watchers[0].ID, watchers[1].ID})
+
+	err = issueRepo.RemoveWatcher(ctx, issue.ID, user2.ID)
+	require.NoError(t, err)
+
+	watchers, err = issueRepo.GetWatchers(ctx, issue.ID)
+	require.NoError(t, err)
+
+	assert.Len(t, watchers, 1)
+	assert.Equal(t, user.ID, watchers[0].ID)
 }
 
 func TestIssueRepository_AddRelation(t *testing.T) {
-	t.Skip("TODO")
+	ctx := context.Background()
+
+	db, closer := newNeo4jDatabase(t)
+	defer func(ctx context.Context, closer func(ctx context.Context) error) {
+		require.NoError(t, closer(ctx))
+	}(ctx, closer)
+
+	defer cleanupNeo4jStore(t, ctx, db)
+
+	userRepo, err := neo4j.NewUserRepository(
+		neo4j.WithDatabase(db),
+	)
+	require.NoError(t, err)
+
+	orgRepo, err := neo4j.NewOrganizationRepository(
+		neo4j.WithDatabase(db),
+	)
+	require.NoError(t, err)
+
+	namespaceRepo, err := neo4j.NewNamespaceRepository(
+		neo4j.WithDatabase(db),
+	)
+	require.NoError(t, err)
+
+	projectRepo, err := neo4j.NewProjectRepository(
+		neo4j.WithDatabase(db),
+	)
+	require.NoError(t, err)
+
+	issueRepo, err := neo4j.NewIssueRepository(
+		neo4j.WithDatabase(db),
+	)
+	require.NoError(t, err)
+
+	user := prepareUser(t)
+	err = userRepo.Create(ctx, user)
+	require.NoError(t, err)
+
+	organization := prepareOrganization(t)
+	err = orgRepo.Create(ctx, user.ID, organization)
+	require.NoError(t, err)
+
+	namespace, err := model.NewNamespace(testutil.GenerateRandomString(10))
+	require.NoError(t, err)
+
+	err = namespaceRepo.Create(ctx, organization.ID, namespace)
+	require.NoError(t, err)
+
+	project := prepareProject(t)
+
+	err = projectRepo.Create(ctx, namespace.ID, project)
+	require.NoError(t, err)
+
+	issue1, err := model.NewIssue(1, "My test epic", model.IssueKindEpic, user.ID)
+	require.NoError(t, err)
+
+	err = issueRepo.Create(ctx, project.ID, issue1)
+	require.NoError(t, err)
+
+	issue2, err := model.NewIssue(2, "My test issue", model.IssueKindTask, user.ID)
+	require.NoError(t, err)
+
+	err = issueRepo.Create(ctx, project.ID, issue2)
+	require.NoError(t, err)
+
+	relation, err := model.NewIssueRelation(issue2.ID, issue1.ID, model.IssueRelationKindSubtaskOf)
+	require.NoError(t, err)
+
+	err = issueRepo.AddRelation(ctx, relation)
+	require.NoError(t, err)
 }
 
 func TestIssueRepository_GetRelations(t *testing.T) {
-	t.Skip("TODO")
+	ctx := context.Background()
+
+	db, closer := newNeo4jDatabase(t)
+	defer func(ctx context.Context, closer func(ctx context.Context) error) {
+		require.NoError(t, closer(ctx))
+	}(ctx, closer)
+
+	defer cleanupNeo4jStore(t, ctx, db)
+
+	userRepo, err := neo4j.NewUserRepository(
+		neo4j.WithDatabase(db),
+	)
+	require.NoError(t, err)
+
+	orgRepo, err := neo4j.NewOrganizationRepository(
+		neo4j.WithDatabase(db),
+	)
+	require.NoError(t, err)
+
+	namespaceRepo, err := neo4j.NewNamespaceRepository(
+		neo4j.WithDatabase(db),
+	)
+	require.NoError(t, err)
+
+	projectRepo, err := neo4j.NewProjectRepository(
+		neo4j.WithDatabase(db),
+	)
+	require.NoError(t, err)
+
+	issueRepo, err := neo4j.NewIssueRepository(
+		neo4j.WithDatabase(db),
+	)
+	require.NoError(t, err)
+
+	user := prepareUser(t)
+	err = userRepo.Create(ctx, user)
+	require.NoError(t, err)
+
+	organization := prepareOrganization(t)
+	err = orgRepo.Create(ctx, user.ID, organization)
+	require.NoError(t, err)
+
+	namespace, err := model.NewNamespace(testutil.GenerateRandomString(10))
+	require.NoError(t, err)
+
+	err = namespaceRepo.Create(ctx, organization.ID, namespace)
+	require.NoError(t, err)
+
+	project := prepareProject(t)
+
+	err = projectRepo.Create(ctx, namespace.ID, project)
+	require.NoError(t, err)
+
+	issue1, err := model.NewIssue(1, "My test epic", model.IssueKindEpic, user.ID)
+	require.NoError(t, err)
+
+	err = issueRepo.Create(ctx, project.ID, issue1)
+	require.NoError(t, err)
+
+	issue2, err := model.NewIssue(2, "My test issue", model.IssueKindTask, user.ID)
+	require.NoError(t, err)
+
+	err = issueRepo.Create(ctx, project.ID, issue2)
+	require.NoError(t, err)
+
+	relation1, err := model.NewIssueRelation(issue2.ID, issue1.ID, model.IssueRelationKindSubtaskOf)
+	require.NoError(t, err)
+
+	err = issueRepo.AddRelation(ctx, relation1)
+	require.NoError(t, err)
+
+	relation2, err := model.NewIssueRelation(issue2.ID, issue1.ID, model.IssueRelationKindBlocks)
+	require.NoError(t, err)
+
+	err = issueRepo.AddRelation(ctx, relation2)
+	require.NoError(t, err)
+
+	relations, err := issueRepo.GetRelations(ctx, issue1.ID)
+	require.NoError(t, err)
+
+	require.Len(t, relations, 2)
+	assert.Equal(t, []model.ID{relation1.ID, relation2.ID}, []model.ID{relations[0].ID, relations[1].ID})
+
+	relations, err = issueRepo.GetRelations(ctx, issue2.ID)
+	require.NoError(t, err)
+
+	require.Len(t, relations, 2)
+	assert.Equal(t, []model.ID{relation1.ID, relation2.ID}, []model.ID{relations[0].ID, relations[1].ID})
 }
 
 func TestIssueRepository_RemoveRelation(t *testing.T) {
-	t.Skip("TODO")
+	ctx := context.Background()
+
+	db, closer := newNeo4jDatabase(t)
+	defer func(ctx context.Context, closer func(ctx context.Context) error) {
+		require.NoError(t, closer(ctx))
+	}(ctx, closer)
+
+	defer cleanupNeo4jStore(t, ctx, db)
+
+	userRepo, err := neo4j.NewUserRepository(
+		neo4j.WithDatabase(db),
+	)
+	require.NoError(t, err)
+
+	orgRepo, err := neo4j.NewOrganizationRepository(
+		neo4j.WithDatabase(db),
+	)
+	require.NoError(t, err)
+
+	namespaceRepo, err := neo4j.NewNamespaceRepository(
+		neo4j.WithDatabase(db),
+	)
+	require.NoError(t, err)
+
+	projectRepo, err := neo4j.NewProjectRepository(
+		neo4j.WithDatabase(db),
+	)
+	require.NoError(t, err)
+
+	issueRepo, err := neo4j.NewIssueRepository(
+		neo4j.WithDatabase(db),
+	)
+	require.NoError(t, err)
+
+	user := prepareUser(t)
+	err = userRepo.Create(ctx, user)
+	require.NoError(t, err)
+
+	organization := prepareOrganization(t)
+	err = orgRepo.Create(ctx, user.ID, organization)
+	require.NoError(t, err)
+
+	namespace, err := model.NewNamespace(testutil.GenerateRandomString(10))
+	require.NoError(t, err)
+
+	err = namespaceRepo.Create(ctx, organization.ID, namespace)
+	require.NoError(t, err)
+
+	project := prepareProject(t)
+
+	err = projectRepo.Create(ctx, namespace.ID, project)
+	require.NoError(t, err)
+
+	issue1, err := model.NewIssue(1, "My test epic", model.IssueKindEpic, user.ID)
+	require.NoError(t, err)
+
+	err = issueRepo.Create(ctx, project.ID, issue1)
+	require.NoError(t, err)
+
+	issue2, err := model.NewIssue(2, "My test issue", model.IssueKindTask, user.ID)
+	require.NoError(t, err)
+
+	err = issueRepo.Create(ctx, project.ID, issue2)
+	require.NoError(t, err)
+
+	relation1, err := model.NewIssueRelation(issue2.ID, issue1.ID, model.IssueRelationKindSubtaskOf)
+	require.NoError(t, err)
+
+	err = issueRepo.AddRelation(ctx, relation1)
+	require.NoError(t, err)
+
+	relation2, err := model.NewIssueRelation(issue2.ID, issue1.ID, model.IssueRelationKindBlocks)
+	require.NoError(t, err)
+
+	err = issueRepo.AddRelation(ctx, relation2)
+	require.NoError(t, err)
+
+	relations, err := issueRepo.GetRelations(ctx, issue1.ID)
+	require.NoError(t, err)
+	require.Len(t, relations, 2)
+
+	err = issueRepo.RemoveRelation(ctx, relation1.Source, relation1.Target, relation1.Kind)
+	require.NoError(t, err)
+
+	relations, err = issueRepo.GetRelations(ctx, issue1.ID)
+	require.NoError(t, err)
+	require.Len(t, relations, 1)
+
 }
 
 func TestIssueRepository_Update(t *testing.T) {

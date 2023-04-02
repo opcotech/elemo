@@ -8,7 +8,8 @@ import (
 )
 
 const (
-	IssueIDType = "Issue"
+	IssueIDType         = "Issue"
+	IssueRelationIDType = "IssueRelation"
 )
 
 const (
@@ -55,12 +56,13 @@ const (
 )
 
 var (
-	ErrInvalidIssueKind         = errors.New("invalid issue kind")          // the issue kind is invalid
-	ErrInvalidIssueStatus       = errors.New("invalid issue status")        // the issue status is invalid
-	ErrInvalidIssueResolution   = errors.New("invalid issue resolution")    // the issue resolution is invalid
-	ErrInvalidIssueRelationKind = errors.New("invalid issue relation kind") // the issue relation kind is invalid
-	ErrInvalidIssuePriority     = errors.New("invalid issue priority")      // the issue priority is invalid
-	ErrInvalidIssueDetails      = errors.New("invalid issue details")       // the issue details are invalid
+	ErrInvalidIssueKind            = errors.New("invalid issue kind")             // the issue kind is invalid
+	ErrInvalidIssueRelationDetails = errors.New("invalid issue relation details") // the issue relation details are invalid
+	ErrInvalidIssueStatus          = errors.New("invalid issue status")           // the issue status is invalid
+	ErrInvalidIssueResolution      = errors.New("invalid issue resolution")       // the issue resolution is invalid
+	ErrInvalidIssueRelationKind    = errors.New("invalid issue relation kind")    // the issue relation kind is invalid
+	ErrInvalidIssuePriority        = errors.New("invalid issue priority")         // the issue priority is invalid
+	ErrInvalidIssueDetails         = errors.New("invalid issue details")          // the issue details are invalid
 
 	issueKindKeys = map[IssueKind]string{
 		IssueKindEpic:  "epic",
@@ -272,9 +274,28 @@ func (r *IssueRelationKind) UnmarshalText(text []byte) error {
 // IssueRelation represents a relation between two issues.
 type IssueRelation struct {
 	ID        ID                `json:"id" validate:"required,dive"`
-	Kind      IssueRelationKind `json:"kind" validate:"required,min=1,max=3"`
+	Source    ID                `json:"source" validate:"required,dive"`
+	Target    ID                `json:"target" validate:"required,dive"`
+	Kind      IssueRelationKind `json:"kind" validate:"required,min=1,max=7"`
 	CreatedAt *time.Time        `json:"created_at" validate:"omitempty"`
 	UpdatedAt *time.Time        `json:"updated_at" validate:"omitempty"`
+}
+
+// Validate validates the issue relation details.
+func (i *IssueRelation) Validate() error {
+	if err := validate.Struct(i); err != nil {
+		return errors.Join(ErrInvalidIssueRelationDetails, err)
+	}
+	if err := i.ID.Validate(); err != nil {
+		return errors.Join(ErrInvalidIssueRelationDetails, err)
+	}
+	if err := i.Source.Validate(); err != nil {
+		return errors.Join(ErrInvalidIssueRelationDetails, err)
+	}
+	if err := i.Target.Validate(); err != nil {
+		return errors.Join(ErrInvalidIssueRelationDetails, err)
+	}
+	return nil
 }
 
 // Issue represents an issue in the system that can be assigned to a
@@ -349,6 +370,21 @@ func (i *Issue) Validate() error {
 		}
 	}
 	return nil
+}
+
+// NewIssueRelation creates a relation between issues.
+func NewIssueRelation(source, target ID, kind IssueRelationKind) (*IssueRelation, error) {
+	issueRelation := &IssueRelation{
+		ID:     MustNewNilID(IssueRelationIDType),
+		Source: source,
+		Target: target,
+		Kind:   kind,
+	}
+
+	if err := issueRelation.Validate(); err != nil {
+		return nil, err
+	}
+	return issueRelation, nil
 }
 
 // NewIssue creates a new issue with the given details.
