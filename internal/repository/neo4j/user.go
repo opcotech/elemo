@@ -35,7 +35,7 @@ type UserRepository struct {
 }
 
 // scan is a helper function for scanning a user from a Neo4j Record.
-func (r *UserRepository) scan(up, lp, pp, dp string) func(rec *neo4j.Record) (*model.User, error) {
+func (r *UserRepository) scan(up, pp, dp string) func(rec *neo4j.Record) (*model.User, error) {
 	return func(rec *neo4j.Record) (*model.User, error) {
 		user := new(model.User)
 		user.Links = make([]string, 0)
@@ -50,21 +50,6 @@ func (r *UserRepository) scan(up, lp, pp, dp string) func(rec *neo4j.Record) (*m
 		}
 
 		user.ID, _ = model.NewIDFromString(val.GetProperties()["id"].(string), model.UserIDType)
-
-		ln, err := ParseValueFromRecord[[]any](rec, lp)
-		if err != nil {
-			return nil, err
-		}
-
-		user.Languages = make([]model.Language, len(ln))
-		for i, n := range ln {
-			lc := model.Language(0)
-			if err := lc.UnmarshalText([]byte(n.(string))); err != nil {
-				return nil, err
-			}
-
-			user.Languages[i] = lc
-		}
 
 		if user.Permissions, err = ParseIDsFromRecord(rec, pp, EdgeKindHasPermission.String()); err != nil {
 			return nil, err
@@ -105,13 +90,11 @@ func (r *UserRepository) Create(ctx context.Context, user *model.User) error {
 
 	cypher := `
 	MERGE (u:` + user.ID.Label() + ` {id: $id})
-	ON CREATE SET u += { username: $username, email: $email, password: $password, status: $status,
-		first_name: $first_name, last_name: $last_name, picture: $picture, title: $title, bio: $bio, phone: $phone,
-		address: $address, links: $links, created_at: datetime($created_at) }
-	WITH u, $languages AS languages
-	UNWIND $languages AS language
-	MERGE (l:` + languageIDType + ` { code: language }) CREATE (u)-[:` + EdgeKindSpeaks.String() + ` {created_at: datetime($created_at)}]->(l)
-	`
+	ON CREATE SET u += {
+		username: $username, email: $email, password: $password, status: $status, first_name: $first_name,
+		last_name: $last_name, picture: $picture, title: $title, bio: $bio, phone: $phone, address: $address,
+		links: $links, languages: $languages, created_at: datetime($created_at)
+	}`
 
 	params := map[string]any{
 		"id":         user.ID.String(),
@@ -143,17 +126,16 @@ func (r *UserRepository) Get(ctx context.Context, id model.ID) (*model.User, err
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.UserRepository/Get")
 	defer span.End()
 
-	cypher := `MATCH (u:` + model.UserIDType + ` {id: toString($id)})
-	OPTIONAL MATCH (u)-[:` + EdgeKindSpeaks.String() + `]->(l:` + languageIDType + `)
+	cypher := `MATCH (u:` + model.UserIDType + ` {id: $id})
 	OPTIONAL MATCH (u)-[p:` + EdgeKindHasPermission.String() + `]->()
 	OPTIONAL MATCH (u)<-[r:` + EdgeKindBelongsTo.String() + `]-(d:` + model.DocumentIDType + `)
-	RETURN u, collect(DISTINCT l.code) AS l, collect(DISTINCT p.id) AS p, collect(DISTINCT d.id) AS d`
+	RETURN u, collect(DISTINCT p.id) AS p, collect(DISTINCT d.id) AS d`
 
 	params := map[string]any{
 		"id": id.String(),
 	}
 
-	user, err := ExecuteReadAndReadSingle(ctx, r.db, cypher, params, r.scan("u", "l", "p", "d"))
+	user, err := ExecuteReadAndReadSingle(ctx, r.db, cypher, params, r.scan("u", "p", "d"))
 	if err != nil {
 		return nil, errors.Join(ErrUserRead, err)
 	}
@@ -168,10 +150,9 @@ func (r *UserRepository) GetAll(ctx context.Context, offset, limit int) ([]*mode
 
 	cypher := `
 	MATCH (u:` + model.UserIDType + `)
-	OPTIONAL MATCH (u)-[:` + EdgeKindSpeaks.String() + `]->(l:` + languageIDType + `)
 	OPTIONAL MATCH (u)-[p:` + EdgeKindHasPermission.String() + `]->()
 	OPTIONAL MATCH (u)<-[r:` + EdgeKindBelongsTo.String() + `]-(d:` + model.DocumentIDType + `)
-	RETURN u, collect(DISTINCT l.code) AS l, collect(DISTINCT p.id) AS p, collect(DISTINCT d.id) AS d
+	RETURN u, collect(DISTINCT p.id) AS p, collect(DISTINCT d.id) AS d
 	ORDER BY u.created_at DESC
 	SKIP $offset LIMIT $limit`
 
@@ -180,7 +161,7 @@ func (r *UserRepository) GetAll(ctx context.Context, offset, limit int) ([]*mode
 		"limit":  limit,
 	}
 
-	users, err := ExecuteWriteAndReadAll(ctx, r.db, cypher, params, r.scan("u", "l", "p", "d"))
+	users, err := ExecuteWriteAndReadAll(ctx, r.db, cypher, params, r.scan("u", "p", "d"))
 	if err != nil {
 		return nil, errors.Join(ErrUserRead, err)
 	}
@@ -188,66 +169,26 @@ func (r *UserRepository) GetAll(ctx context.Context, offset, limit int) ([]*mode
 	return users, nil
 }
 
-// Update updates a user by its ID with any given patch. The patch data is not
-// typed, so it is up to the caller to ensure that the patch data is valid.
-// This behaviour is intentional, as it allows the caller to extend the user
-// with additional data if needed, however, that data will not be returned if
-// the user model has not been extended.
-//
-// The patch data cannot be used to update relationships. To update a relation
-// use the dedicated repository.
+// Update updates a user by its ID with any given patch.
 func (r *UserRepository) Update(ctx context.Context, id model.ID, patch map[string]any) (*model.User, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.UserRepository/Update")
 	defer span.End()
 
-	cypher := `MATCH (u:` + id.Label() + ` {id: $id}) SET u += $patch SET u.updated_at = datetime($updated_at)`
+	cypher := `
+	MATCH (u:` + id.Label() + ` {id: $id})
+	SET u += $patch, u.updated_at = datetime($updated_at)
+	WITH u
+	OPTIONAL MATCH (u)-[p:` + EdgeKindHasPermission.String() + `]->()
+	OPTIONAL MATCH (u)<-[r:` + EdgeKindBelongsTo.String() + `]-(d:` + model.DocumentIDType + `)
+	RETURN u, collect(DISTINCT p.id) AS p, collect(DISTINCT d.id) AS d
+	`
 	params := map[string]any{
 		"id":         id.String(),
 		"patch":      patch,
 		"updated_at": time.Now().Format(time.RFC3339Nano),
 	}
 
-	if languages, ok := patch["languages"]; ok {
-		cypher += `
-		WITH u, $languages AS languages
-		UNWIND languages AS language
-		MATCH (u:` + id.Label() + ` {id: $id})
-		MERGE (l:` + languageIDType + ` {code: language})
-		MERGE (u)-[nl:` + EdgeKindSpeaks.String() + `]->(l) ON CREATE SET nl.created_at = datetime($created_at)
-		WITH u, languages
-		MATCH (u)-[r:` + EdgeKindSpeaks.String() + `]->(l:` + languageIDType + `) WHERE NOT l.code IN languages
-		DELETE r`
-
-		delete(patch, "languages")
-		params["languages"] = languages
-		params["created_at"] = time.Now().Format(time.RFC3339Nano)
-	}
-
-	params["patch"] = patch
-
-	// Update the user
-	if err := ExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
-		return nil, errors.Join(ErrUserUpdate, err)
-	}
-
-	// Delete dangling languages
-	deleteDanglingCypher := `
-	MATCH (l:` + languageIDType + `) WHERE NOT (l)<-[:` + EdgeKindSpeaks.String() + `]-()
-	DETACH DELETE l`
-
-	if err := ExecuteWriteAndConsume(ctx, r.db, deleteDanglingCypher, nil); err != nil {
-		return nil, errors.Join(ErrUserUpdate, err)
-	}
-
-	// Return the updated user and its languages
-	getUpdatedCypher := `
-	MATCH (u:` + id.Label() + ` {id: $id})-[:` + EdgeKindSpeaks.String() + `]->(l:` + languageIDType + `)
-	OPTIONAL MATCH (u)-[p:` + EdgeKindHasPermission.String() + `]->()
-	OPTIONAL MATCH (u)<-[r:` + EdgeKindBelongsTo.String() + `]-(d:` + model.DocumentIDType + `)
-	RETURN u, collect(DISTINCT l.code) AS l, collect(DISTINCT p.id) AS p, collect(DISTINCT d.id) AS d`
-
-	getUpdatedParams := map[string]any{"id": id.String()}
-	updated, err := ExecuteWriteAndReadSingle(ctx, r.db, getUpdatedCypher, getUpdatedParams, r.scan("u", "l", "p", "d"))
+	updated, err := ExecuteWriteAndReadSingle(ctx, r.db, cypher, params, r.scan("u", "p", "d"))
 	if err != nil {
 		return nil, errors.Join(ErrUserUpdate, err)
 	}

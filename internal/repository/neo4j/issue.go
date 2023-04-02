@@ -313,7 +313,7 @@ func (r *IssueRepository) GetWatchers(ctx context.Context, issue model.ID) ([]*m
 	}
 
 	ur := new(UserRepository)
-	users, err := ExecuteReadAndReadAll(ctx, r.db, cypher, params, ur.scan("u", "l", "p", "d"))
+	users, err := ExecuteReadAndReadAll(ctx, r.db, cypher, params, ur.scan("u", "p", "d"))
 
 	if err != nil {
 		return nil, errors.Join(ErrIssueGetWatchers, err)
