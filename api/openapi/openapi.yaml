@@ -1,0 +1,98 @@
+openapi: 3.0.3
+info:
+  title: Elemo API
+  version: 0.1.0
+  termsOfService: https://elemo.app/terms-of-service
+  license:
+    name: Apache 2.0
+    url: https://elemo.app/license
+  contact:
+    name: Elemo Support
+    email: help@elemo.app
+    url: https://elemo.app/contact
+  x-logo:
+    url: https://elemo.app/static/img/logo.png
+  description: |
+    # Introduction
+
+    The Elemo API allows you to manage users, organizations and other resources within Elemo in a programmatic way. The API is capable of doing all operations that can be executed from the user interface.
+
+    You may use any tool that handles HTTP requests to interact with the API. However, the requests should be made using the HTTPS protocol so that traffic is encrypted.
+
+    You need to obtain an [Access Token](https://en.wikipedia.org/wiki/Access_token) to call most of the API endpoints. The tokens are bound to users, therefore you must have a user in the system as well. Read more about obtaining an access token below.
+
+    ## Requests
+
+    The endpoints have support for the HTTP methods below. Please note that not all endpoints are supporting every HTTP method.
+
+    | Method | Usage                                                                                                                        |
+    |----------|------------------------------------------------------------------------------------------------------------------------------|
+    | `GET`    | Used to retrieve information about one or many resources.                                                                    |
+    | `POST`   | Creates a new resource. The request must include all required attributes.                                                    |
+    | `PUT`    | Updates an existing resource. The request must include all required attributes.                                              |
+    | `PATCH`  | Partially updates an existing resource. The request attributes are not required. Most of the resources are supporting PATCH. |
+    | `DELETE` | Delete a resource from the system. Usually, this is an irreversible action.                                                  |
+
+    ## Authentication
+
+    Authentication is implemented based on the [OAuth 2.0](https://oauth.net/2/) specification supporting the password and authorization code flows. As a rule of thumb, whenever you need to interact with the API use authorization code flow and fallback to password flow if other flows cannot be implemented for any reason.
+
+    After the token obtained, use the token as part of the `Authorization` HTTP header in the format of: `Authorization: Bearer {access_token}`
+
+    ## Pagination
+
+    All endpoints that are returning a list of resources supports and requires pagination. The default page size is `100` items, controlled by the `limit` query parameter. To utilize pagination, you may define `offset` in addition which skips the defined results. Therefore, if `offset` is set to `100`, the endpoint will return the next page's results. Sample request:
+
+    ```shell
+    $ curl -H "Authorization: Bearer {access_token}" https://{site}.elemo.app/api/v1/users?limit=100&offset=100
+    ```
+
+    Although the pagination is very flexible, it defines some constraints:
+
+    * The maximum `limit` cannot be greater than `1000`
+    * The minimum `limit` cannot be less than `1`
+    * The minimum `offset` cannot be less than `0`
+
+    ## Versioning
+
+    ### APIs
+
+    The endpoints are versioned and the version number is part of the path. When the required input or returned output of an endpoint is changed, the current version is being deprecated and a new version of the endpoint is created. Deprecated endpoints are removed when a new major application version is released.
+
+    ### This specification
+
+    In contrast with the APIs, this specification follows semantic versioning.
+tags:
+  - name: System
+    description: API endpoints to interact with system resources.
+servers:
+  - url: https://{site}.elemo.app/api
+    description: Managed production instance.
+    variables:
+      site:
+        description: test
+        default: "example"
+  - url: https://{domain}/api
+    description: Self-hosted instance.
+    variables:
+      domain:
+        description: domain
+        default: "example.com"
+paths:
+  /v1/system/health:
+    $ref: './paths/system_health.yaml'
+  /v1/system/heartbeat:
+    $ref: './paths/system_heartbeat.yaml'
+  /v1/system/version:
+    $ref: './paths/system_version.yaml'
+components:
+  securitySchemes:
+    $ref: './components/security_schemes.yaml'
+  schemas:
+    $ref: './components/schemas.yaml'
+  requestBodies:
+    $ref: './components/request_bodies.yaml'
+  responses:
+    $ref: './components/responses.yaml'
+  parameters:
+    $ref: './components/parameters.yaml'

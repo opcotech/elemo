@@ -1,0 +1,8 @@
+SystemHealth:
+  $ref: './schemas/system_health.yaml'
+SystemHeartbeat:
+  $ref: './schemas/system_heartbeat.yaml'
+SystemVersionInfo:
+  $ref: './schemas/system_version_info.yaml'
+HTTPError:
+  $ref: './schemas/http_error.yaml'

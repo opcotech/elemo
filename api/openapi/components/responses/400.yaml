@@ -1,0 +1,5 @@
+description: Illegal input for operation.
+content:
+  application/json:
+    schema:
+      $ref: '../schemas/http_error.yaml'

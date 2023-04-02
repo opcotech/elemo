@@ -1,0 +1,4 @@
+limit:
+  $ref: './parameters/limit.yaml'
+offset:
+  $ref: './parameters/offset.yaml'

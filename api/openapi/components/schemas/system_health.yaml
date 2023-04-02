@@ -1,0 +1,12 @@
+description: Health of the system components.
+type: object
+properties:
+  database:
+    description: Health of the database.
+    type: string
+    enum:
+      - healthy
+      - unhealthy
+      - unknown
+required:
+  - database

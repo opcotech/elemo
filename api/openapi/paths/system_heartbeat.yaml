@@ -1,0 +1,19 @@
+get:
+  operationId: getSystemHeartbeat
+  summary: Get heartbeat.
+  description: >-
+    Returns HTTP OK response if the server is up and running, however it
+    doesn't mean that the server is healthy.
+  tags:
+    - System
+  security: [ ]
+  responses:
+    '200':
+      description: Response indicating that the server is running.
+      content:
+        text/plain:
+          schema:
+            $ref: '../components/schemas/system_heartbeat.yaml'
+          example: OK
+    default:
+      $ref: '../components/responses/default.yaml'

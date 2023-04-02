@@ -1,0 +1,20 @@
+description: Version information of the system.
+type: object
+properties:
+  version:
+    description: Version of the application.
+    type: string
+  commit:
+    description: Commit hash of the build.
+    type: string
+  date:
+    description: Build date of the application.
+    type: string
+  go_version:
+    description: Go version used to build the application.
+    type: string
+required:
+  - version
+  - commit
+  - date
+  - go_version
