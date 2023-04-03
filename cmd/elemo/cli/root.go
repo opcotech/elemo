@@ -7,7 +7,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"go.opentelemetry.io/otel/trace"
@@ -141,7 +140,7 @@ func initGraphDatabase() (*neo4j.Database, error) {
 	return db, nil
 }
 
-func initRelationalDatabase() (*pg.Database, *pgxpool.Pool, error) {
+func initRelationalDatabase() (*pg.Database, pg.Pool, error) {
 	pool, err := pg.NewPool(context.Background(), &cfg.RelationalDatabase)
 	if err != nil {
 		return nil, nil, err

@@ -13,6 +13,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/opcotech/elemo/internal/model"
+	"github.com/opcotech/elemo/internal/repository/pg"
 	"github.com/opcotech/elemo/internal/service"
 
 	"github.com/go-oauth2/oauth2/v4/server"
@@ -71,10 +72,10 @@ func init() {
 	rootCmd.AddCommand(startCmd)
 }
 
-func initAuthProvider(pool *pgxpool.Pool) (*authServer.Server, error) {
+func initAuthProvider(pool pg.Pool) (*authServer.Server, error) {
 	clientStore, err := authStore.NewClientStore(
 		authStore.WithClientStoreTable(authStore.DefaultClientStoreTable),
-		authStore.WithClientStoreConnPool(pool),
+		authStore.WithClientStoreConnPool(pool.(*pgxpool.Pool)),
 	)
 	if err != nil {
 		return nil, err
@@ -82,7 +83,7 @@ func initAuthProvider(pool *pgxpool.Pool) (*authServer.Server, error) {
 
 	tokenStore, err := authStore.NewTokenStore(
 		authStore.WithTokenStoreTable(authStore.DefaultTokenStoreTable),
-		authStore.WithTokenStoreConnPool(pool),
+		authStore.WithTokenStoreConnPool(pool.(*pgxpool.Pool)),
 	)
 	if err != nil {
 		return nil, err
