@@ -46,7 +46,7 @@ var startCmd = &cobra.Command{
 	Short: "Start the server",
 	Long:  `Starts listening on the specified address.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		logger.Debug("starting server", zap.Any("version", versionInfo))
+		logger.Info("starting server", zap.Any("version", versionInfo))
 
 		graphDB, err := initGraphDatabase()
 		if err != nil {

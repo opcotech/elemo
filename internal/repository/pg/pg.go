@@ -49,21 +49,17 @@ func NewPool(ctx context.Context, conf *config.RelationalDatabaseConfig) (Pool, 
 		return nil, config.ErrNoConfig
 	}
 
-	pool, err := pgxpool.NewWithConfig(ctx, &pgxpool.Config{
-		ConnConfig: &pgx.ConnConfig{
-			Config: pgconn.Config{
-				Host:     conf.Host,
-				Port:     uint16(conf.Port),
-				Database: conf.Database,
-				User:     conf.Username,
-				Password: conf.Password,
-			},
-		},
-		MaxConnLifetime: conf.MaxConnectionLifetime * time.Second,
-		MaxConnIdleTime: conf.MaxConnectionIdleTime * time.Second,
-		MaxConns:        int32(conf.MaxConnections),
-		MinConns:        int32(conf.MinConnections),
-	})
+	poolConf, err := pgxpool.ParseConfig(conf.ConnectionURL())
+	if err != nil {
+		return nil, errors.Join(ErrInvalidPool, err)
+	}
+
+	poolConf.MaxConnLifetime = conf.MaxConnectionLifetime * time.Second
+	poolConf.MaxConnIdleTime = conf.MaxConnectionIdleTime * time.Second
+	poolConf.MaxConns = int32(conf.MaxConnections)
+	poolConf.MinConns = int32(conf.MinConnections)
+
+	pool, err := pgxpool.NewWithConfig(ctx, poolConf)
 	if err != nil {
 		return nil, errors.Join(ErrInvalidPool, err)
 	}

@@ -113,7 +113,7 @@ func initLogger() {
 	cobra.CheckErr(err)
 
 	logger.Debug("root logger configured", zap.String("level", cfg.Log.Level))
-	logger.Debug("config file loaded", log.WithPath(viper.ConfigFileUsed()))
+	logger.Info("config file loaded", log.WithPath(viper.ConfigFileUsed()))
 }
 
 func initGraphDatabase() (*neo4j.Database, error) {
