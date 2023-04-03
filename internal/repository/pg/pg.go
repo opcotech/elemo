@@ -3,6 +3,7 @@ package pg
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/opcotech/elemo/internal/config"
 	"github.com/opcotech/elemo/internal/pkg/log"
+	"github.com/opcotech/elemo/internal/pkg/tracing"
 	"github.com/opcotech/elemo/internal/pkg/validate"
 )
 
@@ -47,7 +49,21 @@ func NewPool(ctx context.Context, conf *config.RelationalDatabaseConfig) (Pool, 
 		return nil, config.ErrNoConfig
 	}
 
-	pool, err := pgxpool.New(ctx, conf.ConnectionURL())
+	pool, err := pgxpool.NewWithConfig(ctx, &pgxpool.Config{
+		ConnConfig: &pgx.ConnConfig{
+			Config: pgconn.Config{
+				Host:     conf.Host,
+				Port:     uint16(conf.Port),
+				Database: conf.Database,
+				User:     conf.Username,
+				Password: conf.Password,
+			},
+		},
+		MaxConnLifetime: conf.MaxConnectionLifetime * time.Second,
+		MaxConnIdleTime: conf.MaxConnectionIdleTime * time.Second,
+		MaxConns:        int32(conf.MaxConnections),
+		MinConns:        int32(conf.MinConnections),
+	})
 	if err != nil {
 		return nil, errors.Join(ErrInvalidPool, err)
 	}
@@ -117,7 +133,10 @@ func (db *Database) Close() error {
 
 // NewDatabase creates a new Postgres database.
 func NewDatabase(opts ...DatabaseOption) (*Database, error) {
-	db := &Database{}
+	db := &Database{
+		logger: log.DefaultLogger(),
+		tracer: tracing.NoopTracer(),
+	}
 
 	for _, opt := range opts {
 		if err := opt(db); err != nil {

@@ -48,14 +48,16 @@ func (c *GraphDatabaseConfig) ConnectionURL() string {
 
 // RelationalDatabaseConfig is the configuration for the relational database.
 type RelationalDatabaseConfig struct {
-	Host           string `mapstructure:"host"`
-	Port           int    `mapstructure:"port"`
-	Username       string `mapstructure:"username"`
-	Password       string `mapstructure:"password"`
-	Database       string `mapstructure:"database"`
-	IsSecure       bool   `mapstructure:"is_secure"`
-	MaxConnections int    `mapstructure:"max_connections"`
-	AcquireTimeout int    `mapstructure:"acquire_timeout"`
+	Host                  string        `mapstructure:"host"`
+	Port                  int           `mapstructure:"port"`
+	Username              string        `mapstructure:"username"`
+	Password              string        `mapstructure:"password"`
+	Database              string        `mapstructure:"database"`
+	IsSecure              bool          `mapstructure:"is_secure"`
+	MaxConnections        int           `mapstructure:"max_connections"`
+	MaxConnectionLifetime time.Duration `mapstructure:"max_connection_lifetime"`
+	MaxConnectionIdleTime time.Duration `mapstructure:"max_connection_idle_time"`
+	MinConnections        int           `mapstructure:"min_connections"`
 }
 
 // ConnectionURL returns the connection URL for the relational database.
