@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"net/http"
 	"sync"
 	"time"
@@ -13,6 +14,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/opcotech/elemo/internal/model"
+	"github.com/opcotech/elemo/internal/pkg/log"
 	"github.com/opcotech/elemo/internal/repository/pg"
 	"github.com/opcotech/elemo/internal/service"
 
@@ -20,6 +22,23 @@ import (
 
 	elemoHttp "github.com/opcotech/elemo/internal/transport/http"
 )
+
+type authStoreLogger struct {
+	logger log.Logger
+}
+
+func (l *authStoreLogger) Log(ctx context.Context, level authStore.LogLevel, msg string, args ...any) {
+	switch level {
+	case authStore.LogLevelDebug:
+		l.logger.Debug(msg, zap.Any("args", args))
+	case authStore.LogLevelInfo:
+		l.logger.Info(msg, zap.Any("args", args))
+	case authStore.LogLevelWarn:
+		l.logger.Warn(msg, zap.Any("args", args))
+	case authStore.LogLevelError:
+		l.logger.Error(msg, zap.Any("args", args))
+	}
+}
 
 // startCmd represents the start command
 var startCmd = &cobra.Command{
@@ -73,9 +92,14 @@ func init() {
 }
 
 func initAuthProvider(pool pg.Pool) (*authServer.Server, error) {
+	storeLogger := &authStoreLogger{
+		logger: logger.Named("auth_store"),
+	}
+
 	clientStore, err := authStore.NewClientStore(
 		authStore.WithClientStoreTable(authStore.DefaultClientStoreTable),
 		authStore.WithClientStoreConnPool(pool.(*pgxpool.Pool)),
+		authStore.WithClientStoreLogger(storeLogger),
 	)
 	if err != nil {
 		return nil, err
@@ -84,6 +108,7 @@ func initAuthProvider(pool pg.Pool) (*authServer.Server, error) {
 	tokenStore, err := authStore.NewTokenStore(
 		authStore.WithTokenStoreTable(authStore.DefaultTokenStoreTable),
 		authStore.WithTokenStoreConnPool(pool.(*pgxpool.Pool)),
+		authStore.WithTokenStoreLogger(storeLogger),
 	)
 	if err != nil {
 		return nil, err
