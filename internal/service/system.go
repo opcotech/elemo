@@ -30,7 +30,7 @@ type SystemService interface {
 	// GetHealth returns a health response.
 	GetHealth(ctx context.Context) (map[model.HealthCheckComponent]model.HealthStatus, error)
 	// GetVersion returns a version response.
-	GetVersion(ctx context.Context) (*model.VersionInfo, error)
+	GetVersion(ctx context.Context) *model.VersionInfo
 }
 
 // systemService is the concrete implementation of SystemService.
@@ -40,22 +40,17 @@ type systemService struct {
 	resources   map[model.HealthCheckComponent]Pingable
 }
 
-func (s *systemService) checkStatus(ctx context.Context, label model.HealthCheckComponent, resource Pingable, response map[model.HealthCheckComponent]model.HealthStatus, errCh chan error, wg *sync.WaitGroup, lock *sync.RWMutex) {
+func (s *systemService) checkStatus(ctx context.Context, name model.HealthCheckComponent, resource Pingable, wg *sync.WaitGroup) (model.HealthStatus, error) {
 	span := trace.SpanFromContext(ctx)
+	span.AddEvent(fmt.Sprintf("Check %s health", name))
+
 	defer wg.Done()
 
-	span.AddEvent(fmt.Sprintf("Check %s health", label))
 	if err := resource.Ping(ctx); err != nil {
-		lock.Lock()
-		defer lock.Unlock()
-		response[label] = model.HealthStatusUnhealthy
-		errCh <- errors.Join(ErrSystemHealthCheck, err)
-		return
+		return model.HealthStatusUnhealthy, errors.Join(ErrSystemHealthCheck, err)
 	}
 
-	lock.Lock()
-	defer lock.Unlock()
-	response[label] = model.HealthStatusHealthy
+	return model.HealthStatusHealthy, nil
 }
 
 func (s *systemService) GetHeartbeat(ctx context.Context) error {
@@ -72,13 +67,22 @@ func (s *systemService) GetHealth(ctx context.Context) (map[model.HealthCheckCom
 	var wg sync.WaitGroup
 	var lock sync.RWMutex
 
-	errCh := make(chan error, 1)
 	response := make(map[model.HealthCheckComponent]model.HealthStatus)
 
-	wg.Add(len(s.resources))
-	for name, resource := range s.resources {
+	for name := range s.resources {
 		response[name] = model.HealthStatusUnknown
-		go s.checkStatus(ctx, name, resource, response, errCh, &wg, &lock)
+	}
+
+	wg.Add(len(s.resources))
+	errCh := make(chan error, len(s.resources))
+
+	for name, resource := range s.resources {
+		status, err := s.checkStatus(ctx, name, resource, &wg)
+		errCh <- err
+
+		lock.Lock()
+		response[name] = status
+		lock.Unlock()
 	}
 
 	wg.Wait()
@@ -87,7 +91,7 @@ func (s *systemService) GetHealth(ctx context.Context) (map[model.HealthCheckCom
 	return response, <-errCh
 }
 
-func (s *systemService) GetVersion(ctx context.Context) (*model.VersionInfo, error) {
+func (s *systemService) GetVersion(ctx context.Context) *model.VersionInfo {
 	_, span := s.tracer.Start(ctx, "core.baseService.system/GetVersion")
 	defer span.End()
 
@@ -96,7 +100,7 @@ func (s *systemService) GetVersion(ctx context.Context) (*model.VersionInfo, err
 		Commit:    s.versionInfo.Commit,
 		Date:      s.versionInfo.Date,
 		GoVersion: s.versionInfo.GoVersion,
-	}, nil
+	}
 }
 
 // NewSystemService creates a new SystemService.

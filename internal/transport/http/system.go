@@ -42,10 +42,7 @@ func (c *systemController) GetSystemVersion(ctx context.Context, _ gen.GetSystem
 	ctx, span := c.tracer.Start(ctx, "transport.http.handler/GetSystemVersion")
 	defer span.End()
 
-	versionInfo, err := c.systemService.GetVersion(ctx)
-	if err != nil {
-		return gen.GetSystemVersionResponseObject(nil), err
-	}
+	versionInfo := c.systemService.GetVersion(ctx)
 
 	return gen.GetSystemVersion200JSONResponse(*versionInfoToDTO(versionInfo)), nil
 }
