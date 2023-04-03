@@ -116,7 +116,7 @@ func Test_systemService_GetHeartbeat(t *testing.T) {
 	span.On("End", []trace.SpanEndOption(nil)).Return()
 
 	tracer := new(mock.Tracer)
-	tracer.On("Start", ctx, "core.baseService.system/GetHeartbeat", []trace.SpanStartOption(nil)).Return(ctx, span)
+	tracer.On("Start", ctx, "service.system/GetHeartbeat", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 	s := &systemService{
 		baseService: &baseService{
@@ -136,7 +136,7 @@ func Test_systemService_GetVersion(t *testing.T) {
 	span.On("End", []trace.SpanEndOption(nil)).Return()
 
 	tracer := new(mock.Tracer)
-	tracer.On("Start", ctx, "core.baseService.system/GetVersion", []trace.SpanStartOption(nil)).Return(ctx, span)
+	tracer.On("Start", ctx, "service.system/GetVersion", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 	s := &systemService{
 		baseService: &baseService{
@@ -180,7 +180,7 @@ func Test_systemService_GetHealth(t *testing.T) {
 					span.On("AddEvent", fmt.Sprintf("Check %s health", model.HealthCheckComponentRelationalDB)).Return()
 
 					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "core.baseService.system/GetHealth", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "service.system/GetHealth", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("SpanFromContext", ctx).Return(span).Twice()
 
 					return &baseService{
@@ -218,7 +218,7 @@ func Test_systemService_GetHealth(t *testing.T) {
 					span.On("AddEvent", fmt.Sprintf("Check %s health", model.HealthCheckComponentRelationalDB)).Return()
 
 					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "core.baseService.system/GetHealth", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "service.system/GetHealth", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("SpanFromContext", ctx).Return(span).Twice()
 
 					return &baseService{

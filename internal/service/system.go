@@ -68,14 +68,14 @@ func (s *systemService) checkStatus(
 }
 
 func (s *systemService) GetHeartbeat(ctx context.Context) error {
-	_, span := s.tracer.Start(ctx, "core.baseService.system/GetHeartbeat")
+	_, span := s.tracer.Start(ctx, "service.system/GetHeartbeat")
 	defer span.End()
 
 	return nil
 }
 
 func (s *systemService) GetHealth(ctx context.Context) (map[model.HealthCheckComponent]model.HealthStatus, error) {
-	ctx, span := s.tracer.Start(ctx, "core.baseService.system/GetHealth")
+	ctx, span := s.tracer.Start(ctx, "service.system/GetHealth")
 	defer span.End()
 
 	var wg sync.WaitGroup
@@ -101,7 +101,7 @@ func (s *systemService) GetHealth(ctx context.Context) (map[model.HealthCheckCom
 }
 
 func (s *systemService) GetVersion(ctx context.Context) *model.VersionInfo {
-	_, span := s.tracer.Start(ctx, "core.baseService.system/GetVersion")
+	_, span := s.tracer.Start(ctx, "service.system/GetVersion")
 	defer span.End()
 
 	return &model.VersionInfo{
