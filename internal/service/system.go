@@ -40,17 +40,31 @@ type systemService struct {
 	resources   map[model.HealthCheckComponent]Pingable
 }
 
-func (s *systemService) checkStatus(ctx context.Context, name model.HealthCheckComponent, resource Pingable, wg *sync.WaitGroup) (model.HealthStatus, error) {
+func (s *systemService) checkStatus(
+	ctx context.Context,
+	name model.HealthCheckComponent,
+	resource Pingable,
+	response map[model.HealthCheckComponent]model.HealthStatus,
+	errCh chan error,
+	wg *sync.WaitGroup,
+	lock *sync.RWMutex,
+) {
 	span := trace.SpanFromContext(ctx)
 	span.AddEvent(fmt.Sprintf("Check %s health", name))
 
 	defer wg.Done()
 
+	status := model.HealthStatusHealthy
+
 	if err := resource.Ping(ctx); err != nil {
-		return model.HealthStatusUnhealthy, errors.Join(ErrSystemHealthCheck, err)
+		status = model.HealthStatusUnhealthy
+		errCh <- errors.Join(ErrSystemHealthCheck, err)
 	}
 
-	return model.HealthStatusHealthy, nil
+	lock.Lock()
+	defer lock.Unlock()
+
+	response[name] = status
 }
 
 func (s *systemService) GetHeartbeat(ctx context.Context) error {
@@ -77,12 +91,7 @@ func (s *systemService) GetHealth(ctx context.Context) (map[model.HealthCheckCom
 	errCh := make(chan error, len(s.resources))
 
 	for name, resource := range s.resources {
-		status, err := s.checkStatus(ctx, name, resource, &wg)
-		errCh <- err
-
-		lock.Lock()
-		response[name] = status
-		lock.Unlock()
+		go s.checkStatus(ctx, name, resource, response, errCh, &wg, &lock)
 	}
 
 	wg.Wait()
