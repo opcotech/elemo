@@ -19,12 +19,12 @@ import (
 func TestIssueRepository_Create(t *testing.T) {
 	ctx := context.Background()
 
-	db, closer := newNeo4jDatabase(t)
+	db, closer := testutil.NewNeo4jDatabase(t, neo4jDBConf)
 	defer func(ctx context.Context, closer func(ctx context.Context) error) {
 		require.NoError(t, closer(ctx))
 	}(ctx, closer)
 
-	defer cleanupNeo4jStore(t, ctx, db)
+	defer testutil.CleanupNeo4jStore(t, ctx, db)
 
 	userRepo, err := neo4j.NewUserRepository(
 		neo4j.WithDatabase(db),
@@ -80,12 +80,12 @@ func TestIssueRepository_Create(t *testing.T) {
 func TestIssueRepository_Get(t *testing.T) {
 	ctx := context.Background()
 
-	db, closer := newNeo4jDatabase(t)
+	db, closer := testutil.NewNeo4jDatabase(t, neo4jDBConf)
 	defer func(ctx context.Context, closer func(ctx context.Context) error) {
 		require.NoError(t, closer(ctx))
 	}(ctx, closer)
 
-	defer cleanupNeo4jStore(t, ctx, db)
+	defer testutil.CleanupNeo4jStore(t, ctx, db)
 
 	userRepo, err := neo4j.NewUserRepository(
 		neo4j.WithDatabase(db),
@@ -229,12 +229,12 @@ func TestIssueRepository_Get(t *testing.T) {
 func TestIssueRepository_AddWatcher(t *testing.T) {
 	ctx := context.Background()
 
-	db, closer := newNeo4jDatabase(t)
+	db, closer := testutil.NewNeo4jDatabase(t, neo4jDBConf)
 	defer func(ctx context.Context, closer func(ctx context.Context) error) {
 		require.NoError(t, closer(ctx))
 	}(ctx, closer)
 
-	defer cleanupNeo4jStore(t, ctx, db)
+	defer testutil.CleanupNeo4jStore(t, ctx, db)
 
 	userRepo, err := neo4j.NewUserRepository(
 		neo4j.WithDatabase(db),
@@ -297,12 +297,13 @@ func TestIssueRepository_AddWatcher(t *testing.T) {
 func TestIssueRepository_GetWatchers(t *testing.T) {
 	ctx := context.Background()
 
-	db, closer := newNeo4jDatabase(t)
+	db, closer := testutil.NewNeo4jDatabase(t, neo4jDBConf)
 	defer func(ctx context.Context, closer func(ctx context.Context) error) {
 		require.NoError(t, closer(ctx))
 	}(ctx, closer)
 
-	defer cleanupNeo4jStore(t, ctx, db)
+	defer testutil.CleanupNeo4jStore(t, ctx, db)
+	testutil.CleanupNeo4jStore(t, ctx, db)
 
 	userRepo, err := neo4j.NewUserRepository(
 		neo4j.WithDatabase(db),
@@ -371,12 +372,12 @@ func TestIssueRepository_GetWatchers(t *testing.T) {
 func TestIssueRepository_RemoveWatcher(t *testing.T) {
 	ctx := context.Background()
 
-	db, closer := newNeo4jDatabase(t)
+	db, closer := testutil.NewNeo4jDatabase(t, neo4jDBConf)
 	defer func(ctx context.Context, closer func(ctx context.Context) error) {
 		require.NoError(t, closer(ctx))
 	}(ctx, closer)
 
-	defer cleanupNeo4jStore(t, ctx, db)
+	defer testutil.CleanupNeo4jStore(t, ctx, db)
 
 	userRepo, err := neo4j.NewUserRepository(
 		neo4j.WithDatabase(db),
@@ -454,12 +455,12 @@ func TestIssueRepository_RemoveWatcher(t *testing.T) {
 func TestIssueRepository_AddRelation(t *testing.T) {
 	ctx := context.Background()
 
-	db, closer := newNeo4jDatabase(t)
+	db, closer := testutil.NewNeo4jDatabase(t, neo4jDBConf)
 	defer func(ctx context.Context, closer func(ctx context.Context) error) {
 		require.NoError(t, closer(ctx))
 	}(ctx, closer)
 
-	defer cleanupNeo4jStore(t, ctx, db)
+	defer testutil.CleanupNeo4jStore(t, ctx, db)
 
 	userRepo, err := neo4j.NewUserRepository(
 		neo4j.WithDatabase(db),
@@ -527,12 +528,13 @@ func TestIssueRepository_AddRelation(t *testing.T) {
 func TestIssueRepository_GetRelations(t *testing.T) {
 	ctx := context.Background()
 
-	db, closer := newNeo4jDatabase(t)
+	db, closer := testutil.NewNeo4jDatabase(t, neo4jDBConf)
 	defer func(ctx context.Context, closer func(ctx context.Context) error) {
 		require.NoError(t, closer(ctx))
 	}(ctx, closer)
 
-	defer cleanupNeo4jStore(t, ctx, db)
+	defer testutil.CleanupNeo4jStore(t, ctx, db)
+	testutil.CleanupNeo4jStore(t, ctx, db)
 
 	userRepo, err := neo4j.NewUserRepository(
 		neo4j.WithDatabase(db),
@@ -618,12 +620,12 @@ func TestIssueRepository_GetRelations(t *testing.T) {
 func TestIssueRepository_RemoveRelation(t *testing.T) {
 	ctx := context.Background()
 
-	db, closer := newNeo4jDatabase(t)
+	db, closer := testutil.NewNeo4jDatabase(t, neo4jDBConf)
 	defer func(ctx context.Context, closer func(ctx context.Context) error) {
 		require.NoError(t, closer(ctx))
 	}(ctx, closer)
 
-	defer cleanupNeo4jStore(t, ctx, db)
+	defer testutil.CleanupNeo4jStore(t, ctx, db)
 
 	userRepo, err := neo4j.NewUserRepository(
 		neo4j.WithDatabase(db),
@@ -709,12 +711,12 @@ func TestIssueRepository_RemoveRelation(t *testing.T) {
 func TestIssueRepository_Update(t *testing.T) {
 	ctx := context.Background()
 
-	db, closer := newNeo4jDatabase(t)
+	db, closer := testutil.NewNeo4jDatabase(t, neo4jDBConf)
 	defer func(ctx context.Context, closer func(ctx context.Context) error) {
 		require.NoError(t, closer(ctx))
 	}(ctx, closer)
 
-	defer cleanupNeo4jStore(t, ctx, db)
+	defer testutil.CleanupNeo4jStore(t, ctx, db)
 
 	userRepo, err := neo4j.NewUserRepository(
 		neo4j.WithDatabase(db),
@@ -782,12 +784,12 @@ func TestIssueRepository_Update(t *testing.T) {
 func TestIssueRepository_Delete(t *testing.T) {
 	ctx := context.Background()
 
-	db, closer := newNeo4jDatabase(t)
+	db, closer := testutil.NewNeo4jDatabase(t, neo4jDBConf)
 	defer func(ctx context.Context, closer func(ctx context.Context) error) {
 		require.NoError(t, closer(ctx))
 	}(ctx, closer)
 
-	defer cleanupNeo4jStore(t, ctx, db)
+	defer testutil.CleanupNeo4jStore(t, ctx, db)
 
 	userRepo, err := neo4j.NewUserRepository(
 		neo4j.WithDatabase(db),

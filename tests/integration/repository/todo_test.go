@@ -13,17 +13,18 @@ import (
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/convert"
 	"github.com/opcotech/elemo/internal/repository/neo4j"
+	"github.com/opcotech/elemo/internal/testutil"
 )
 
 func TestTodoRepository_Create(t *testing.T) {
 	ctx := context.Background()
 
-	db, closer := newNeo4jDatabase(t)
+	db, closer := testutil.NewNeo4jDatabase(t, neo4jDBConf)
 	defer func(ctx context.Context, closer func(ctx context.Context) error) {
 		require.NoError(t, closer(ctx))
 	}(ctx, closer)
 
-	defer cleanupNeo4jStore(t, ctx, db)
+	defer testutil.CleanupNeo4jStore(t, ctx, db)
 
 	userRepo, err := neo4j.NewUserRepository(
 		neo4j.WithDatabase(db),
@@ -56,12 +57,12 @@ func TestTodoRepository_Create(t *testing.T) {
 func TestTodoRepository_Get(t *testing.T) {
 	ctx := context.Background()
 
-	db, closer := newNeo4jDatabase(t)
+	db, closer := testutil.NewNeo4jDatabase(t, neo4jDBConf)
 	defer func(ctx context.Context, closer func(ctx context.Context) error) {
 		require.NoError(t, closer(ctx))
 	}(ctx, closer)
 
-	defer cleanupNeo4jStore(t, ctx, db)
+	defer testutil.CleanupNeo4jStore(t, ctx, db)
 
 	userRepo, err := neo4j.NewUserRepository(
 		neo4j.WithDatabase(db),
@@ -107,12 +108,13 @@ func TestTodoRepository_Get(t *testing.T) {
 func TestTodoRepository_GetByOwner(t *testing.T) {
 	ctx := context.Background()
 
-	db, closer := newNeo4jDatabase(t)
+	db, closer := testutil.NewNeo4jDatabase(t, neo4jDBConf)
 	defer func(ctx context.Context, closer func(ctx context.Context) error) {
 		require.NoError(t, closer(ctx))
 	}(ctx, closer)
 
-	defer cleanupNeo4jStore(t, ctx, db)
+	defer testutil.CleanupNeo4jStore(t, ctx, db)
+	testutil.CleanupNeo4jStore(t, ctx, db)
 
 	userRepo, err := neo4j.NewUserRepository(
 		neo4j.WithDatabase(db),
@@ -160,12 +162,12 @@ func TestTodoRepository_GetByOwner(t *testing.T) {
 func TestTodoRepository_Update(t *testing.T) {
 	ctx := context.Background()
 
-	db, closer := newNeo4jDatabase(t)
+	db, closer := testutil.NewNeo4jDatabase(t, neo4jDBConf)
 	defer func(ctx context.Context, closer func(ctx context.Context) error) {
 		require.NoError(t, closer(ctx))
 	}(ctx, closer)
 
-	defer cleanupNeo4jStore(t, ctx, db)
+	defer testutil.CleanupNeo4jStore(t, ctx, db)
 
 	userRepo, err := neo4j.NewUserRepository(
 		neo4j.WithDatabase(db),
@@ -213,12 +215,12 @@ func TestTodoRepository_Update(t *testing.T) {
 func TestTodoRepository_Delete(t *testing.T) {
 	ctx := context.Background()
 
-	db, closer := newNeo4jDatabase(t)
+	db, closer := testutil.NewNeo4jDatabase(t, neo4jDBConf)
 	defer func(ctx context.Context, closer func(ctx context.Context) error) {
 		require.NoError(t, closer(ctx))
 	}(ctx, closer)
 
-	defer cleanupNeo4jStore(t, ctx, db)
+	defer testutil.CleanupNeo4jStore(t, ctx, db)
 
 	userRepo, err := neo4j.NewUserRepository(
 		neo4j.WithDatabase(db),
