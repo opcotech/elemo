@@ -26,6 +26,21 @@ services:
       timeout: 5s
       retries: 3
 
+  postgres:
+    image: postgres:latest
+    container_name: elemo-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=elemo
+      - POSTGRES_PASSWORD=pgsecret
+      - POSTGRES_DB=elemo
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "elemo" ]
+      interval: 5s
+      timeout: 5s
+      retries: 3
+
   elemo:
     image: elemo-server
     container_name: elemo-server
@@ -36,6 +51,8 @@ services:
       - seccomp:unconfined
     depends_on:
       neo4j:
+        condition: service_healthy
+      postgres:
         condition: service_healthy
     environment:
       ELEMO_CONFIG: /elemo/configs/development/config.yml

@@ -17,9 +17,9 @@ func (m *MockSystemService) GetHeartbeat(ctx context.Context) error {
 	return args.Error(0)
 }
 
-func (m *MockSystemService) GetHealth(ctx context.Context) (map[string]model.HealthStatus, error) {
+func (m *MockSystemService) GetHealth(ctx context.Context) (map[model.HealthCheckComponent]model.HealthStatus, error) {
 	args := m.Called(ctx)
-	return args.Get(0).(map[string]model.HealthStatus), args.Error(1)
+	return args.Get(0).(map[model.HealthCheckComponent]model.HealthStatus), args.Error(1)
 }
 
 func (m *MockSystemService) GetVersion(ctx context.Context) (*model.VersionInfo, error) {

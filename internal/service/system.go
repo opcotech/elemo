@@ -28,7 +28,7 @@ type SystemService interface {
 	// GetHeartbeat returns a heartbeat response.
 	GetHeartbeat(ctx context.Context) error
 	// GetHealth returns a health response.
-	GetHealth(ctx context.Context) (map[string]model.HealthStatus, error)
+	GetHealth(ctx context.Context) (map[model.HealthCheckComponent]model.HealthStatus, error)
 	// GetVersion returns a version response.
 	GetVersion(ctx context.Context) (*model.VersionInfo, error)
 }
@@ -37,23 +37,24 @@ type SystemService interface {
 type systemService struct {
 	*baseService
 	versionInfo *model.VersionInfo
-	resources   map[string]Pingable
+	resources   map[model.HealthCheckComponent]Pingable
 }
 
-func (s *systemService) checkStatus(ctx context.Context, label string, resource Pingable, response map[string]model.HealthStatus, errCh chan error, wg *sync.WaitGroup, lock *sync.RWMutex) {
+func (s *systemService) checkStatus(ctx context.Context, label model.HealthCheckComponent, resource Pingable, response map[model.HealthCheckComponent]model.HealthStatus, errCh chan error, wg *sync.WaitGroup, lock *sync.RWMutex) {
 	span := trace.SpanFromContext(ctx)
-	lock.Lock()
-
 	defer wg.Done()
-	defer lock.Unlock()
 
 	span.AddEvent(fmt.Sprintf("Check %s health", label))
 	if err := resource.Ping(ctx); err != nil {
+		lock.Lock()
+		defer lock.Unlock()
 		response[label] = model.HealthStatusUnhealthy
 		errCh <- errors.Join(ErrSystemHealthCheck, err)
 		return
 	}
 
+	lock.Lock()
+	defer lock.Unlock()
 	response[label] = model.HealthStatusHealthy
 }
 
@@ -64,7 +65,7 @@ func (s *systemService) GetHeartbeat(ctx context.Context) error {
 	return nil
 }
 
-func (s *systemService) GetHealth(ctx context.Context) (map[string]model.HealthStatus, error) {
+func (s *systemService) GetHealth(ctx context.Context) (map[model.HealthCheckComponent]model.HealthStatus, error) {
 	ctx, span := s.tracer.Start(ctx, "core.baseService.system/GetHealth")
 	defer span.End()
 
@@ -72,7 +73,7 @@ func (s *systemService) GetHealth(ctx context.Context) (map[string]model.HealthS
 	var lock sync.RWMutex
 
 	errCh := make(chan error, 1)
-	response := make(map[string]model.HealthStatus)
+	response := make(map[model.HealthCheckComponent]model.HealthStatus)
 
 	wg.Add(len(s.resources))
 	for name, resource := range s.resources {
@@ -99,7 +100,7 @@ func (s *systemService) GetVersion(ctx context.Context) (*model.VersionInfo, err
 }
 
 // NewSystemService creates a new SystemService.
-func NewSystemService(resources map[string]Pingable, version *model.VersionInfo, opts ...Option) (SystemService, error) {
+func NewSystemService(resources map[model.HealthCheckComponent]Pingable, version *model.VersionInfo, opts ...Option) (SystemService, error) {
 	s, err := newService(opts...)
 	if err != nil {
 		return nil, err

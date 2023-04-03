@@ -14,11 +14,12 @@ import (
 )
 
 var (
-	neo4jDBConf = &config.DatabaseConfig{
-		URL:                          "neo4j://localhost:7687", // "neo4j+s://2b7a4bbd.databases.neo4j.io",
+	neo4jDBConf = &config.GraphDatabaseConfig{
+		Host:                         "localhost",
+		Port:                         7687,
 		Username:                     "neo4j",
-		Password:                     "neo4jsecret", // "SPnwwBrw4K-EhqmJQ5sRIzt7XnBs3mFeZVo_xATLh1g",
-		Name:                         "neo4j",       // "neo4j",
+		Password:                     "neo4jsecret",
+		Database:                     "neo4j",
 		MaxTransactionRetryTime:      1,
 		MaxConnectionPoolSize:        100,
 		MaxConnectionLifetime:        1 * time.Hour,
@@ -36,7 +37,7 @@ func newNeo4jDatabase(t *testing.T) (*neo4j.Database, func(ctx context.Context) 
 
 	db, err := neo4j.NewDatabase(
 		neo4j.WithDriver(driver),
-		neo4j.WithDatabaseName(neo4jDBConf.Name),
+		neo4j.WithDatabaseName(neo4jDBConf.Database),
 	)
 	require.NoError(t, err)
 

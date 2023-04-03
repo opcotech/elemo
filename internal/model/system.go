@@ -3,6 +3,11 @@ package model
 import "errors"
 
 const (
+	HealthCheckComponentGraphDB      HealthCheckComponent = "graph_database"      // graph database
+	HealthCheckComponentRelationalDB HealthCheckComponent = "relational_database" // relational database
+)
+
+const (
 	HealthStatusUnknown   HealthStatus = iota // component is in an unknown state
 	HealthStatusHealthy                       // component is healthy
 	HealthStatusUnhealthy                     // component is unhealthy
@@ -22,6 +27,9 @@ var (
 		HealthStatusUnhealthy: "unhealthy",
 	}
 )
+
+// HealthCheckComponent represents a component of the application.
+type HealthCheckComponent string
 
 // HealthStatus is the status of a component.
 type HealthStatus uint8

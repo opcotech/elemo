@@ -2,6 +2,7 @@ package config
 
 import (
 	"errors"
+	"fmt"
 	"time"
 )
 
@@ -19,12 +20,14 @@ type LogConfig struct {
 	Level string `mapstructure:"level"`
 }
 
-// DatabaseConfig is the configuration for the database.
-type DatabaseConfig struct {
-	URL                          string        `mapstructure:"url"`
+// GraphDatabaseConfig is the configuration for the graph database.
+type GraphDatabaseConfig struct {
+	Host                         string        `mapstructure:"host"`
+	Port                         int           `mapstructure:"port"`
 	Username                     string        `mapstructure:"username"`
 	Password                     string        `mapstructure:"password"`
-	Name                         string        `mapstructure:"name"`
+	Database                     string        `mapstructure:"database"`
+	IsSecure                     bool          `mapstructure:"is_secure"`
 	MaxTransactionRetryTime      time.Duration `mapstructure:"max_transaction_retry_time"`
 	MaxConnectionPoolSize        int           `mapstructure:"max_connection_pool_size"`
 	MaxConnectionLifetime        time.Duration `mapstructure:"max_connection_lifetime"`
@@ -32,6 +35,36 @@ type DatabaseConfig struct {
 	SocketConnectTimeout         time.Duration `mapstructure:"socket_connect_timeout"`
 	SocketKeepalive              bool          `mapstructure:"socket_keepalive"`
 	FetchSize                    int           `mapstructure:"fetch_size"`
+}
+
+// ConnectionURL returns the connection URL for the graph database.
+func (c *GraphDatabaseConfig) ConnectionURL() string {
+	if c.IsSecure {
+		return fmt.Sprintf("neo4j+s://%s:%d", c.Host, c.Port)
+	}
+
+	return fmt.Sprintf("neo4j://%s:%d", c.Host, c.Port)
+}
+
+// RelationalDatabaseConfig is the configuration for the relational database.
+type RelationalDatabaseConfig struct {
+	Host           string `mapstructure:"host"`
+	Port           int    `mapstructure:"port"`
+	Username       string `mapstructure:"username"`
+	Password       string `mapstructure:"password"`
+	Database       string `mapstructure:"database"`
+	IsSecure       bool   `mapstructure:"is_secure"`
+	MaxConnections int    `mapstructure:"max_connections"`
+	AcquireTimeout int    `mapstructure:"acquire_timeout"`
+}
+
+// ConnectionURL returns the connection URL for the relational database.
+func (c *RelationalDatabaseConfig) ConnectionURL() string {
+	if c.IsSecure {
+		return fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=require", c.Username, c.Password, c.Host, c.Port, c.Database)
+	}
+
+	return fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=disable", c.Username, c.Password, c.Host, c.Port, c.Database)
 }
 
 // TLSConfig is the configuration for TLS.
@@ -67,11 +100,12 @@ type TracingConfig struct {
 
 // Config is the combined configuration for the service.
 type Config struct {
-	Log           LogConfig      `mapstructure:"log"`
-	License       LicenseConfig  `mapstructure:"license"`
-	Server        ServerConfig   `mapstructure:"server"`
-	MetricsServer ServerConfig   `mapstructure:"metrics_server"`
-	Database      DatabaseConfig `mapstructure:"database"`
-	TLS           TLSConfig      `mapstructure:"tls"`
-	Tracing       TracingConfig  `mapstructure:"tracing"`
+	Log                LogConfig                `mapstructure:"log"`
+	License            LicenseConfig            `mapstructure:"license"`
+	Server             ServerConfig             `mapstructure:"server"`
+	MetricsServer      ServerConfig             `mapstructure:"metrics_server"`
+	GraphDatabase      GraphDatabaseConfig      `mapstructure:"graph_database"`
+	RelationalDatabase RelationalDatabaseConfig `mapstructure:"relational_database"`
+	TLS                TLSConfig                `mapstructure:"tls"`
+	Tracing            TracingConfig            `mapstructure:"tracing"`
 }

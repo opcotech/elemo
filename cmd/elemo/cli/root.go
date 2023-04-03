@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"go.opentelemetry.io/otel/trace"
@@ -14,6 +15,7 @@ import (
 
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/repository/neo4j"
+	"github.com/opcotech/elemo/internal/repository/pg"
 
 	"github.com/opcotech/elemo/internal/config"
 	"github.com/opcotech/elemo/internal/pkg/log"
@@ -115,15 +117,17 @@ func initLogger() {
 	logger.Debug("config file loaded", log.WithPath(viper.ConfigFileUsed()))
 }
 
-func initDatabase() (*neo4j.Database, error) {
-	driver, err := neo4j.NewDriver(&cfg.Database)
+func initGraphDatabase() (*neo4j.Database, error) {
+	driver, err := neo4j.NewDriver(&cfg.GraphDatabase)
 	if err != nil {
 		return nil, err
 	}
 
 	db, err := neo4j.NewDatabase(
 		neo4j.WithDriver(driver),
-		neo4j.WithDatabaseName(cfg.Database.Name),
+		neo4j.WithDatabaseName(cfg.GraphDatabase.Database),
+		neo4j.WithDatabaseLogger(logger.Named("neo4j")),
+		neo4j.WithDatabaseTracer(tracer),
 	)
 	if err != nil {
 		return nil, err
@@ -135,4 +139,27 @@ func initDatabase() (*neo4j.Database, error) {
 	}
 
 	return db, nil
+}
+
+func initRelationalDatabase() (*pg.Database, *pgxpool.Pool, error) {
+	pool, err := pg.NewPool(context.Background(), &cfg.RelationalDatabase)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	db, err := pg.NewDatabase(
+		pg.WithDatabasePool(pool),
+		pg.WithDatabaseLogger(logger.Named("postgres")),
+		pg.WithDatabaseTracer(tracer),
+	)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	err = db.Ping(context.Background())
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return db, pool, nil
 }

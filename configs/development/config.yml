@@ -8,11 +8,6 @@ tls:
   cert_file: "configs/development/cert.gen.pem"
   key_file: "configs/development/key.gen.pem"
 
-metrics_server:
-  address: "0.0.0.0:35479"
-  read_timeout: 10
-  write_timeout: 5
-
 server:
   address: "0.0.0.0:35478"
   cors:
@@ -32,11 +27,12 @@ server:
   read_timeout: 10
   write_timeout: 5
 
-database:
-  url: 'neo4j://neo4j:7687'
-  username: 'neo4j'
-  password: 'neo4jsecret'
-  name: 'neo4j'
+graph_database:
+  host: neo4j
+  port: 7687
+  username: neo4j
+  password: neo4jsecret
+  name: neo4j
   max_transaction_retry_time: 3
   max_connection_pool_size: 100
   max_connection_lifetime: 300
@@ -44,6 +40,20 @@ database:
   socket_connect_timeout: 5
   socket_keepalive: true
   fetch_size: 250
+
+relational_database:
+  host: postgres
+  port: 5432
+  username: elemo
+  password: pgsecret
+  name: elemo
+  max_connections: 100
+  acquire_timeout: 60
+
+metrics_server:
+  address: "0.0.0.0:35479"
+  read_timeout: 10
+  write_timeout: 5
 
 tracing:
   service_name: 'elemo'

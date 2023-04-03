@@ -1,12 +1,20 @@
 description: Health of the system components.
 type: object
 properties:
-  database:
-    description: Health of the database.
+  graph_database:
+    description: Health of the graph database.
+    type: string
+    enum:
+      - healthy
+      - unhealthy
+      - unknown
+  relational_database:
+    description: Health of the relational database.
     type: string
     enum:
       - healthy
       - unhealthy
       - unknown
 required:
-  - database
+  - graph_database
+  - relational_database

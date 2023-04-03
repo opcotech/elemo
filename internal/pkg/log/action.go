@@ -8,7 +8,7 @@ const (
 
 	ActionHTTPRequestHandle Action = iota // handle an HTTP request
 
-	// Database operation actions
+	// GraphDatabase operation actions
 
 	ActionDBCollectionCreate // create a database collection
 	ActionDBDocumentCreate   // create a document in a collection

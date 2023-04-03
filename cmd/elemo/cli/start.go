@@ -5,13 +5,14 @@ import (
 	"sync"
 	"time"
 
+	authStore "github.com/gabor-boros/go-oauth2-pg"
 	authManager "github.com/go-oauth2/oauth2/v4/manage"
 	authServer "github.com/go-oauth2/oauth2/v4/server"
-	authStore "github.com/go-oauth2/oauth2/v4/store"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 
-	"github.com/opcotech/elemo/internal/repository/neo4j"
+	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/service"
 
 	"github.com/go-oauth2/oauth2/v4/server"
@@ -27,21 +28,27 @@ var startCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		logger.Debug("starting server", zap.Any("version", versionInfo))
 
-		database, err := initDatabase()
+		graphDB, err := initGraphDatabase()
 		if err != nil {
-			logger.Fatal("failed to initialize database", zap.Error(err))
+			logger.Fatal("failed to initialize graph database", zap.Error(err))
+		}
+
+		relDB, relDBPool, err := initRelationalDatabase()
+		if err != nil {
+			logger.Fatal("failed to initialize relational database", zap.Error(err))
 		}
 
 		systemService, err := service.NewSystemService(
-			map[string]service.Pingable{
-				"database": database,
+			map[model.HealthCheckComponent]service.Pingable{
+				model.HealthCheckComponentGraphDB:      graphDB,
+				model.HealthCheckComponentRelationalDB: relDB,
 			},
 			versionInfo,
 			service.WithLogger(logger.Named("system_service")),
 			service.WithTracer(tracer),
 		)
 
-		authProvider, err := initAuthProvider(database)
+		authProvider, err := initAuthProvider(relDBPool)
 		if err != nil {
 			logger.Fatal("failed to initialize auth server", zap.Error(err))
 		}
@@ -64,25 +71,19 @@ func init() {
 	rootCmd.AddCommand(startCmd)
 }
 
-func initAuthProvider(db *neo4j.Database) (*authServer.Server, error) {
-	/*clientStore, err := arangoStore.NewClientStore(
-		arangoStore.WithClientStoreDatabase(db),
-		arangoStore.WithClientStoreCollection(string(model.CollectionAuthClients)),
+func initAuthProvider(pool *pgxpool.Pool) (*authServer.Server, error) {
+	clientStore, err := authStore.NewClientStore(
+		authStore.WithClientStoreTable(authStore.DefaultClientStoreTable),
+		authStore.WithClientStoreConnPool(pool),
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	tokenStore, err := arangoStore.NewTokenStore(
-		arangoStore.WithTokenStoreDatabase(db),
-		arangoStore.WithTokenStoreCollection(string(model.CollectionAuthTokens)),
+	tokenStore, err := authStore.NewTokenStore(
+		authStore.WithTokenStoreTable(authStore.DefaultTokenStoreTable),
+		authStore.WithTokenStoreConnPool(pool),
 	)
-	if err != nil {
-		return nil, err
-	}*/
-
-	clientStore := authStore.NewClientStore()
-	tokenStore, err := authStore.NewMemoryTokenStore()
 	if err != nil {
 		return nil, err
 	}
