@@ -10,7 +10,10 @@ export function getSystemHealth() {
     check(res, {
       'status is 200': r => r.status === 200,
       'protocol is HTTP/2': r => r.proto === 'HTTP/2.0',
-      'response body': r => deepEqual(JSON.parse(r.body), {"database": "healthy"}),
+      'response body': r => deepEqual(JSON.parse(r.body), {
+        "graph_database": "healthy",
+        "relational_database": "healthy"
+      }),
     });
   });
 }
