@@ -21,6 +21,9 @@ var (
 	ErrInvalidDriver     = errors.New("invalid driver")     // the driver is invalid
 	ErrInvalidRepository = errors.New("invalid repository") // the repository is invalid
 	ErrMalformedResult   = errors.New("malformed result")   // the result is malformed
+	ErrNoLogger          = errors.New("no logger")          // the logger is missing
+	ErrNoTracer          = errors.New("no tracer")          // the tracer is missing
+	ErrNoDriver          = errors.New("no driver")          // the driver is missing
 )
 
 // boltLogger implements Neo4j's logger interface.
@@ -149,26 +152,41 @@ func NewDatabase(opts ...DatabaseOption) (*Database, error) {
 }
 
 // RepositoryOption configures a repository for a Neo4j repository.
-type RepositoryOption func(*repository)
+type RepositoryOption func(*repository) error
 
 // WithDatabase sets the repository for a repository.
 func WithDatabase(db *Database) RepositoryOption {
-	return func(r *repository) {
+	return func(r *repository) error {
+		if db == nil {
+			return ErrNoDriver
+		}
 		r.db = db
+
+		return nil
 	}
 }
 
 // WithRepositoryLogger sets the logger for a repository.
 func WithRepositoryLogger(logger log.Logger) RepositoryOption {
-	return func(r *repository) {
+	return func(r *repository) error {
+		if logger == nil {
+			return ErrNoLogger
+		}
 		r.logger = logger
+
+		return nil
 	}
 }
 
 // WithRepositoryTracer sets the tracer for a repository.
 func WithRepositoryTracer(tracer trace.Tracer) RepositoryOption {
-	return func(r *repository) {
+	return func(r *repository) error {
+		if tracer == nil {
+			return ErrNoTracer
+		}
 		r.tracer = tracer
+
+		return nil
 	}
 }
 
@@ -187,7 +205,9 @@ func newRepository(opts ...RepositoryOption) (*repository, error) {
 	}
 
 	for _, opt := range opts {
-		opt(r)
+		if err := opt(r); err != nil {
+			return nil, err
+		}
 	}
 
 	if err := validate.Struct(r); err != nil {
