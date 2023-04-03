@@ -23,6 +23,19 @@ var (
 	ErrMalformedResult   = errors.New("malformed result")   // the result is malformed
 )
 
+// boltLogger implements Neo4j's logger interface.
+type boltLogger struct {
+	logger log.Logger
+}
+
+func (l *boltLogger) LogClientMessage(context string, msg string, args ...any) {
+	l.logger.Debug(msg, log.WithDetails(context), log.WithValue(args))
+}
+
+func (l *boltLogger) LogServerMessage(context string, msg string, args ...any) {
+	l.logger.Debug(msg, log.WithDetails(context), log.WithValue(args))
+}
+
 // NewDriver creates a new Neo4j driver.
 func NewDriver(conf *config.GraphDatabaseConfig) (neo4j.DriverWithContext, error) {
 	if conf == nil {
@@ -101,6 +114,9 @@ func (db *Database) GetWriteSession(ctx context.Context) neo4j.SessionWithContex
 		AccessMode:   neo4j.AccessModeWrite,
 		DatabaseName: db.name,
 		FetchSize:    neo4j.FetchDefault,
+		BoltLogger: &boltLogger{
+			logger: db.logger,
+		},
 	})
 }
 

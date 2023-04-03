@@ -56,7 +56,7 @@ func TestWithDatabase(t *testing.T) {
 func TestWith(t *testing.T) {
 	t.Parallel()
 
-	assert.Equal(t, With("details"), zap.String(Field, "details"))
+	assert.Equal(t, WithDetails("details"), zap.String(Field, "details"))
 }
 
 func TestWithDocument(t *testing.T) {

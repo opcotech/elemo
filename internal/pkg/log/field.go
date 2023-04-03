@@ -89,8 +89,8 @@ func WithDatabase(database string) zap.Field {
 	return zap.String(FieldDatabase, database)
 }
 
-// With sets the details field.
-func With(details string) zap.Field {
+// WithDetails sets the details field.
+func WithDetails(details string) zap.Field {
 	return zap.String(Field, details)
 }
 
