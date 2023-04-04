@@ -11,13 +11,6 @@ import (
 	"github.com/opcotech/elemo/internal/pkg/convert"
 )
 
-// User language is a special case _scenario where we need to create a
-// relationship between a user and a language, but the language has no ID.
-// Therefore, we must keep the label name and relationship type in a constant
-// so that we can use it in the cypher query.
-// TODO: This should be changed and the Language should have an ID too, so we
-//
-//	can use the same pattern as the other nodes, and eliminate this shit.
 const (
 	languageIDType = "Language" // label for language nodes
 )
