@@ -28,7 +28,7 @@ func TestUserService_Create(t *testing.T) {
 	s := testService.NewUserService(t, neo4jDBConf)
 
 	user := testModel.NewUser()
-	err := s.Create(context.Background(), user)
+	err := s.Create(ctx, user)
 	require.NoError(t, err)
 
 	assert.NotNil(t, user.ID)
@@ -48,7 +48,7 @@ func TestUserService_Get(t *testing.T) {
 	s := testService.NewUserService(t, neo4jDBConf)
 
 	user := testModel.NewUser()
-	err := s.Create(context.Background(), user)
+	err := s.Create(ctx, user)
 	require.NoError(t, err)
 
 	got, err := s.Get(ctx, user.ID)
@@ -69,7 +69,7 @@ func TestUserService_GetByEmail(t *testing.T) {
 	s := testService.NewUserService(t, neo4jDBConf)
 
 	user := testModel.NewUser()
-	err := s.Create(context.Background(), user)
+	err := s.Create(ctx, user)
 	require.NoError(t, err)
 
 	got, err := s.GetByEmail(ctx, user.Email)
@@ -86,19 +86,17 @@ func TestUserService_GetAll(t *testing.T) {
 		require.NoError(t, closer(ctx))
 	}(ctx, closer)
 	defer testRepo.CleanupNeo4jStore(t, ctx, db)
+	testRepo.CleanupNeo4jStore(t, ctx, db)
 
 	s := testService.NewUserService(t, neo4jDBConf)
 
-	user1 := testModel.NewUser()
-	err := s.Create(context.Background(), user1)
+	err := s.Create(ctx, testModel.NewUser())
 	require.NoError(t, err)
 
-	user2 := testModel.NewUser()
-	err = s.Create(context.Background(), user2)
+	err = s.Create(ctx, testModel.NewUser())
 	require.NoError(t, err)
 
-	user3 := testModel.NewUser()
-	err = s.Create(context.Background(), user3)
+	err = s.Create(ctx, testModel.NewUser())
 	require.NoError(t, err)
 
 	got, err := s.GetAll(ctx, 0, 10)
@@ -134,7 +132,7 @@ func TestUserService_Update(t *testing.T) {
 	s := testService.NewUserService(t, neo4jDBConf)
 
 	user := testModel.NewUser()
-	err := s.Create(context.Background(), user)
+	err := s.Create(ctx, user)
 	require.NoError(t, err)
 
 	patch := map[string]any{
@@ -160,7 +158,7 @@ func TestUserService_Delete(t *testing.T) {
 	s := testService.NewUserService(t, neo4jDBConf)
 
 	user := testModel.NewUser()
-	err := s.Create(context.Background(), user)
+	err := s.Create(ctx, user)
 	require.NoError(t, err)
 
 	// Soft delete
