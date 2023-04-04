@@ -14,7 +14,7 @@ JAVA_EXEC := $(shell which java)
 
 define integration-test
 $(eval COVERAGE_OUT_PART := $(ROOT_DIR)/.coverage.part.$(shell uuidgen).out)
-$(GO_TEST_COVER) -tags "integration" -coverprofile=$(COVERAGE_OUT_PART) -coverpkg=$(1) ./... && \
+$(GO_TEST_COVER) -p 1 -tags "integration" -coverprofile=$(COVERAGE_OUT_PART) -coverpkg=$(1) ./... && \
 	if [ -f $(COVERAGE_OUT_PART) ]; then \
 		cat $(COVERAGE_OUT_PART) >> $(COVERAGE_OUT_INTEGRATION); \
 		rm $(COVERAGE_OUT_PART); \
