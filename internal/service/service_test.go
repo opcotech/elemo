@@ -10,7 +10,6 @@ import (
 	"github.com/opcotech/elemo/internal/pkg/log"
 	"github.com/opcotech/elemo/internal/pkg/tracing"
 	"github.com/opcotech/elemo/internal/testutil/mock"
-	msvc "github.com/opcotech/elemo/internal/testutil/mock/service"
 )
 
 func TestWithLogger(t *testing.T) {
@@ -103,51 +102,6 @@ func TestWithTracer(t *testing.T) {
 	}
 }
 
-func TestWithSystemService(t *testing.T) {
-	type args struct {
-		s SystemService
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-		want    SystemService
-	}{
-		{
-			name: "WithSystemService sets the system service for the baseService",
-			args: args{
-				s: new(msvc.MockSystemService),
-			},
-			want: new(msvc.MockSystemService),
-		},
-		{
-			name: "WithSystemService returns an error if no system service is provided",
-			args: args{
-				s: nil,
-			},
-			wantErr: true,
-		},
-	}
-
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
-			var s baseService
-
-			err := WithSystemService(tt.args.s)(&s)
-			if (err != nil) != tt.wantErr {
-				require.NoError(t, err)
-			}
-
-			if !tt.wantErr {
-				assert.Equal(t, tt.want, s.systemService)
-			}
-		})
-	}
-}
-
 func Test_newService(t *testing.T) {
 	type args struct {
 		opts []Option
@@ -164,13 +118,11 @@ func Test_newService(t *testing.T) {
 				opts: []Option{
 					WithLogger(new(mock.Logger)),
 					WithTracer(new(mock.Tracer)),
-					WithSystemService(new(msvc.MockSystemService)),
 				},
 			},
 			want: &baseService{
-				logger:        new(mock.Logger),
-				tracer:        new(mock.Tracer),
-				systemService: new(msvc.MockSystemService),
+				logger: new(mock.Logger),
+				tracer: new(mock.Tracer),
 			},
 		},
 		{
@@ -178,13 +130,11 @@ func Test_newService(t *testing.T) {
 			args: args{
 				opts: []Option{
 					WithTracer(new(mock.Tracer)),
-					WithSystemService(new(msvc.MockSystemService)),
 				},
 			},
 			want: &baseService{
-				logger:        log.DefaultLogger(),
-				tracer:        new(mock.Tracer),
-				systemService: new(msvc.MockSystemService),
+				logger: log.DefaultLogger(),
+				tracer: new(mock.Tracer),
 			},
 		},
 		{
@@ -192,13 +142,11 @@ func Test_newService(t *testing.T) {
 			args: args{
 				opts: []Option{
 					WithLogger(new(mock.Logger)),
-					WithSystemService(new(msvc.MockSystemService)),
 				},
 			},
 			want: &baseService{
-				logger:        new(mock.Logger),
-				tracer:        tracing.NoopTracer(),
-				systemService: new(msvc.MockSystemService),
+				logger: new(mock.Logger),
+				tracer: tracing.NoopTracer(),
 			},
 		},
 		{
@@ -207,7 +155,6 @@ func Test_newService(t *testing.T) {
 				opts: []Option{
 					WithLogger(nil),
 					WithTracer(new(mock.Tracer)),
-					WithSystemService(new(msvc.MockSystemService)),
 				},
 			},
 			wantErr: ErrNoLogger,
@@ -218,21 +165,9 @@ func Test_newService(t *testing.T) {
 				opts: []Option{
 					WithLogger(new(mock.Logger)),
 					WithTracer(nil),
-					WithSystemService(new(msvc.MockSystemService)),
 				},
 			},
 			wantErr: ErrNoTracer,
-		},
-		{
-			name: "newService returns error if nil system service is provided",
-			args: args{
-				opts: []Option{
-					WithLogger(new(mock.Logger)),
-					WithTracer(new(mock.Tracer)),
-					WithSystemService(nil),
-				},
-			},
-			wantErr: ErrNoSystemService,
 		},
 	}
 	for _, tt := range tests {

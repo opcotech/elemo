@@ -1,4 +1,4 @@
-package service
+package mock
 
 import (
 	"context"
@@ -27,11 +27,11 @@ func (m *MockSystemService) GetVersion(ctx context.Context) *model.VersionInfo {
 	return args.Get(0).(*model.VersionInfo)
 }
 
-type MockPingable struct {
+type PingableResource struct {
 	mock.Mock
 }
 
-func (m *MockPingable) Ping(ctx context.Context) error {
+func (m *PingableResource) Ping(ctx context.Context) error {
 	args := m.Called(ctx)
 	return args.Error(0)
 }

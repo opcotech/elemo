@@ -10,7 +10,7 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"github.com/opcotech/elemo/internal/pkg/log"
-	"github.com/opcotech/elemo/internal/testutil"
+	testHttp "github.com/opcotech/elemo/internal/testutil/http"
 	"github.com/opcotech/elemo/internal/testutil/mock"
 	"github.com/opcotech/elemo/internal/transport/http/gen"
 )
@@ -59,11 +59,11 @@ func TestHTTPError(t *testing.T) {
 
 			ctx := log.WithContext(context.Background(), logger)
 
-			rr := testutil.ExecuteRequest(r, func(w http.ResponseWriter, r *http.Request) {
+			rr := testHttp.ExecuteRequest(r, func(w http.ResponseWriter, r *http.Request) {
 				httpError(ctx, w, tt.args.err, tt.args.status)
 			})
 
-			testutil.CheckResponseCode(t, tt.args.status, rr.Code)
+			testHttp.CheckResponseCode(t, tt.args.status, rr.Code)
 		})
 	}
 }
@@ -121,12 +121,12 @@ func TestHTTPErrorStruct(t *testing.T) {
 
 			ctx := log.WithContext(context.Background(), logger)
 
-			rr := testutil.ExecuteRequest(r, func(w http.ResponseWriter, r *http.Request) {
+			rr := testHttp.ExecuteRequest(r, func(w http.ResponseWriter, r *http.Request) {
 				httpErrorStruct(ctx, w, tt.args.err, &tt.want, tt.args.status)
 			})
 
-			testutil.CheckResponseCode(t, tt.args.status, rr.Code)
-			testutil.CheckResponseBody(t, rr.Body, &tt.want, &gen.HTTPError{})
+			testHttp.CheckResponseCode(t, tt.args.status, rr.Code)
+			testHttp.CheckResponseBody(t, rr.Body, &tt.want, &gen.HTTPError{})
 		})
 	}
 }

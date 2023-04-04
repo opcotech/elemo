@@ -13,17 +13,18 @@ import (
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/repository/neo4j"
 	"github.com/opcotech/elemo/internal/testutil"
+	testRepo "github.com/opcotech/elemo/internal/testutil/repository"
 )
 
 func TestLabelRepository_Create(t *testing.T) {
 	ctx := context.Background()
 
-	db, closer := testutil.NewNeo4jDatabase(t, neo4jDBConf)
+	db, closer := testRepo.NewNeo4jDatabase(t, neo4jDBConf)
 	defer func(ctx context.Context, closer func(ctx context.Context) error) {
 		require.NoError(t, closer(ctx))
 	}(ctx, closer)
 
-	defer testutil.CleanupNeo4jStore(t, ctx, db)
+	defer testRepo.CleanupNeo4jStore(t, ctx, db)
 
 	labelRepo, err := neo4j.NewLabelRepository(
 		neo4j.WithDatabase(db),
@@ -44,12 +45,12 @@ func TestLabelRepository_Create(t *testing.T) {
 func TestLabelRepository_Get(t *testing.T) {
 	ctx := context.Background()
 
-	db, closer := testutil.NewNeo4jDatabase(t, neo4jDBConf)
+	db, closer := testRepo.NewNeo4jDatabase(t, neo4jDBConf)
 	defer func(ctx context.Context, closer func(ctx context.Context) error) {
 		require.NoError(t, closer(ctx))
 	}(ctx, closer)
 
-	defer testutil.CleanupNeo4jStore(t, ctx, db)
+	defer testRepo.CleanupNeo4jStore(t, ctx, db)
 
 	labelRepo, err := neo4j.NewLabelRepository(
 		neo4j.WithDatabase(db),
@@ -75,12 +76,12 @@ func TestLabelRepository_Get(t *testing.T) {
 func TestLabelRepository_Update(t *testing.T) {
 	ctx := context.Background()
 
-	db, closer := testutil.NewNeo4jDatabase(t, neo4jDBConf)
+	db, closer := testRepo.NewNeo4jDatabase(t, neo4jDBConf)
 	defer func(ctx context.Context, closer func(ctx context.Context) error) {
 		require.NoError(t, closer(ctx))
 	}(ctx, closer)
 
-	defer testutil.CleanupNeo4jStore(t, ctx, db)
+	defer testRepo.CleanupNeo4jStore(t, ctx, db)
 
 	labelRepo, err := neo4j.NewLabelRepository(
 		neo4j.WithDatabase(db),
@@ -112,12 +113,12 @@ func TestLabelRepository_Update(t *testing.T) {
 func TestLabelRepository_AttachTo(t *testing.T) {
 	ctx := context.Background()
 
-	db, closer := testutil.NewNeo4jDatabase(t, neo4jDBConf)
+	db, closer := testRepo.NewNeo4jDatabase(t, neo4jDBConf)
 	defer func(ctx context.Context, closer func(ctx context.Context) error) {
 		require.NoError(t, closer(ctx))
 	}(ctx, closer)
 
-	defer testutil.CleanupNeo4jStore(t, ctx, db)
+	defer testRepo.CleanupNeo4jStore(t, ctx, db)
 
 	labelRepo, err := neo4j.NewLabelRepository(
 		neo4j.WithDatabase(db),
@@ -163,12 +164,12 @@ func TestLabelRepository_AttachTo(t *testing.T) {
 func TestLabelRepository_DetachFrom(t *testing.T) {
 	ctx := context.Background()
 
-	db, closer := testutil.NewNeo4jDatabase(t, neo4jDBConf)
+	db, closer := testRepo.NewNeo4jDatabase(t, neo4jDBConf)
 	defer func(ctx context.Context, closer func(ctx context.Context) error) {
 		require.NoError(t, closer(ctx))
 	}(ctx, closer)
 
-	defer testutil.CleanupNeo4jStore(t, ctx, db)
+	defer testRepo.CleanupNeo4jStore(t, ctx, db)
 
 	labelRepo, err := neo4j.NewLabelRepository(
 		neo4j.WithDatabase(db),
@@ -217,12 +218,12 @@ func TestLabelRepository_DetachFrom(t *testing.T) {
 func TestLabelRepository_Delete(t *testing.T) {
 	ctx := context.Background()
 
-	db, closer := testutil.NewNeo4jDatabase(t, neo4jDBConf)
+	db, closer := testRepo.NewNeo4jDatabase(t, neo4jDBConf)
 	defer func(ctx context.Context, closer func(ctx context.Context) error) {
 		require.NoError(t, closer(ctx))
 	}(ctx, closer)
 
-	defer testutil.CleanupNeo4jStore(t, ctx, db)
+	defer testRepo.CleanupNeo4jStore(t, ctx, db)
 
 	labelRepo, err := neo4j.NewLabelRepository(
 		neo4j.WithDatabase(db),

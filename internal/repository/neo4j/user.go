@@ -143,6 +143,28 @@ func (r *UserRepository) Get(ctx context.Context, id model.ID) (*model.User, err
 	return user, nil
 }
 
+// GetByEmail returns a user by its email.
+func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*model.User, error) {
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.UserRepository/GetByEmail")
+	defer span.End()
+
+	cypher := `MATCH (u:` + model.UserIDType + ` {email: $email})
+	OPTIONAL MATCH (u)-[p:` + EdgeKindHasPermission.String() + `]->()
+	OPTIONAL MATCH (u)<-[r:` + EdgeKindBelongsTo.String() + `]-(d:` + model.DocumentIDType + `)
+	RETURN u, collect(DISTINCT p.id) AS p, collect(DISTINCT d.id) AS d`
+
+	params := map[string]any{
+		"email": email,
+	}
+
+	user, err := ExecuteReadAndReadSingle(ctx, r.db, cypher, params, r.scan("u", "p", "d"))
+	if err != nil {
+		return nil, errors.Join(ErrUserRead, err)
+	}
+
+	return user, nil
+}
+
 // GetAll returns all users respecting the given offset and limit.
 func (r *UserRepository) GetAll(ctx context.Context, offset, limit int) ([]*model.User, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.UserRepository/GetAllBelongsTo")

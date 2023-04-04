@@ -1,4 +1,4 @@
-package testutil
+package service
 
 import (
 	"testing"
@@ -9,12 +9,13 @@ import (
 	"github.com/opcotech/elemo/internal/config"
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/service"
+	"github.com/opcotech/elemo/internal/testutil/repository"
 )
 
 // NewSystemService creates a new SystemService for testing.
 func NewSystemService(t *testing.T, neo4jDBConf *config.GraphDatabaseConfig, pgDBConf *config.RelationalDatabaseConfig) service.SystemService {
-	neo4jDB, _ := NewNeo4jDatabase(t, neo4jDBConf)
-	pgDB, _ := NewPGDatabase(t, pgDBConf)
+	neo4jDB, _ := repository.NewNeo4jDatabase(t, neo4jDBConf)
+	pgDB, _ := repository.NewPGDatabase(t, pgDBConf)
 
 	s, err := service.NewSystemService(
 		map[model.HealthCheckComponent]service.Pingable{

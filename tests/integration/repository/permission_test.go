@@ -12,18 +12,18 @@ import (
 
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/repository/neo4j"
-	"github.com/opcotech/elemo/internal/testutil"
+	testRepo "github.com/opcotech/elemo/internal/testutil/repository"
 )
 
 func TestPermissionRepository_Create(t *testing.T) {
 	ctx := context.Background()
 
-	db, closer := testutil.NewNeo4jDatabase(t, neo4jDBConf)
+	db, closer := testRepo.NewNeo4jDatabase(t, neo4jDBConf)
 	defer func(ctx context.Context, closer func(ctx context.Context) error) {
 		require.NoError(t, closer(ctx))
 	}(ctx, closer)
 
-	defer testutil.CleanupNeo4jStore(t, ctx, db)
+	defer testRepo.CleanupNeo4jStore(t, ctx, db)
 
 	userRepo, err := neo4j.NewUserRepository(
 		neo4j.WithDatabase(db),
@@ -58,12 +58,12 @@ func TestPermissionRepository_Create(t *testing.T) {
 func TestPermissionRepository_Get(t *testing.T) {
 	ctx := context.Background()
 
-	db, closer := testutil.NewNeo4jDatabase(t, neo4jDBConf)
+	db, closer := testRepo.NewNeo4jDatabase(t, neo4jDBConf)
 	defer func(ctx context.Context, closer func(ctx context.Context) error) {
 		require.NoError(t, closer(ctx))
 	}(ctx, closer)
 
-	defer testutil.CleanupNeo4jStore(t, ctx, db)
+	defer testRepo.CleanupNeo4jStore(t, ctx, db)
 
 	userRepo, err := neo4j.NewUserRepository(
 		neo4j.WithDatabase(db),
@@ -109,13 +109,13 @@ func TestPermissionRepository_Get(t *testing.T) {
 func TestPermissionRepository_GetBySubject(t *testing.T) {
 	ctx := context.Background()
 
-	db, closer := testutil.NewNeo4jDatabase(t, neo4jDBConf)
+	db, closer := testRepo.NewNeo4jDatabase(t, neo4jDBConf)
 	defer func(ctx context.Context, closer func(ctx context.Context) error) {
 		require.NoError(t, closer(ctx))
 	}(ctx, closer)
 
-	defer testutil.CleanupNeo4jStore(t, ctx, db)
-	testutil.CleanupNeo4jStore(t, ctx, db)
+	defer testRepo.CleanupNeo4jStore(t, ctx, db)
+	testRepo.CleanupNeo4jStore(t, ctx, db)
 
 	userRepo, err := neo4j.NewUserRepository(
 		neo4j.WithDatabase(db),
@@ -168,13 +168,13 @@ func TestPermissionRepository_GetBySubject(t *testing.T) {
 func TestPermissionRepository_GetByTarget(t *testing.T) {
 	ctx := context.Background()
 
-	db, closer := testutil.NewNeo4jDatabase(t, neo4jDBConf)
+	db, closer := testRepo.NewNeo4jDatabase(t, neo4jDBConf)
 	defer func(ctx context.Context, closer func(ctx context.Context) error) {
 		require.NoError(t, closer(ctx))
 	}(ctx, closer)
 
-	defer testutil.CleanupNeo4jStore(t, ctx, db)
-	testutil.CleanupNeo4jStore(t, ctx, db)
+	defer testRepo.CleanupNeo4jStore(t, ctx, db)
+	testRepo.CleanupNeo4jStore(t, ctx, db)
 
 	userRepo, err := neo4j.NewUserRepository(
 		neo4j.WithDatabase(db),
@@ -227,12 +227,12 @@ func TestPermissionRepository_GetByTarget(t *testing.T) {
 func TestPermissionRepository_Update(t *testing.T) {
 	ctx := context.Background()
 
-	db, closer := testutil.NewNeo4jDatabase(t, neo4jDBConf)
+	db, closer := testRepo.NewNeo4jDatabase(t, neo4jDBConf)
 	defer func(ctx context.Context, closer func(ctx context.Context) error) {
 		require.NoError(t, closer(ctx))
 	}(ctx, closer)
 
-	defer testutil.CleanupNeo4jStore(t, ctx, db)
+	defer testRepo.CleanupNeo4jStore(t, ctx, db)
 
 	userRepo, err := neo4j.NewUserRepository(
 		neo4j.WithDatabase(db),
@@ -289,12 +289,12 @@ func TestPermissionRepository_Update(t *testing.T) {
 func TestPermissionRepository_Delete(t *testing.T) {
 	ctx := context.Background()
 
-	db, closer := testutil.NewNeo4jDatabase(t, neo4jDBConf)
+	db, closer := testRepo.NewNeo4jDatabase(t, neo4jDBConf)
 	defer func(ctx context.Context, closer func(ctx context.Context) error) {
 		require.NoError(t, closer(ctx))
 	}(ctx, closer)
 
-	defer testutil.CleanupNeo4jStore(t, ctx, db)
+	defer testRepo.CleanupNeo4jStore(t, ctx, db)
 
 	userRepo, err := neo4j.NewUserRepository(
 		neo4j.WithDatabase(db),

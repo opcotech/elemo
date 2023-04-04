@@ -10,9 +10,11 @@ import (
 )
 
 var (
-	ErrNoLogger        = errors.New("no logger provided")         // no logger provided
-	ErrNoTracer        = errors.New("no tracer provided")         // no tracer provided
-	ErrNoSystemService = errors.New("no system service provided") // no system service provided
+	ErrNoLogger                = errors.New("no logger provided")            // no logger provided
+	ErrNoTracer                = errors.New("no tracer provided")            // no tracer provided
+	ErrNoUserRepository        = errors.New("no user repository provided")   // no user repository provided
+	ErrInvalidPaginationParams = errors.New("invalid pagination parameters") // invalid pagination parameters
+	ErrNoPatchData             = errors.New("no patch data provided")        // no patch data provided
 )
 
 // Option defines a configuration option for the service.
@@ -42,14 +44,14 @@ func WithTracer(tracer trace.Tracer) Option {
 	}
 }
 
-// WithSystemService sets the system baseService for the baseService.
-func WithSystemService(systemService SystemService) Option {
+// WithUserRepository sets the user repository for the baseService.
+func WithUserRepository(userRepo UserRepository) Option {
 	return func(s *baseService) error {
-		if systemService == nil {
-			return ErrNoSystemService
+		if userRepo == nil {
+			return ErrNoUserRepository
 		}
 
-		s.systemService = systemService
+		s.userRepo = userRepo
 		return nil
 	}
 }
@@ -60,7 +62,7 @@ type baseService struct {
 	logger log.Logger
 	tracer trace.Tracer
 
-	systemService SystemService
+	userRepo UserRepository
 }
 
 // newService creates a new baseService and defines the default values. Those

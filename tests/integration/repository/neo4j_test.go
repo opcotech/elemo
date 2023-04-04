@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/opcotech/elemo/internal/config"
-	"github.com/opcotech/elemo/internal/testutil"
+	testRepo "github.com/opcotech/elemo/internal/testutil/repository"
 )
 
 var (
@@ -33,7 +33,7 @@ var (
 func TestNewNeo4jStore(t *testing.T) {
 	ctx := context.Background()
 
-	db, closer := testutil.NewNeo4jDatabase(t, neo4jDBConf)
+	db, closer := testRepo.NewNeo4jDatabase(t, neo4jDBConf)
 	defer func(ctx context.Context, closer func(ctx context.Context) error) {
 		require.NoError(t, closer(ctx))
 	}(ctx, closer)
@@ -44,7 +44,7 @@ func TestNewNeo4jStore(t *testing.T) {
 func TestNeo4jStore_GetReadSession(t *testing.T) {
 	ctx := context.Background()
 
-	db, closer := testutil.NewNeo4jDatabase(t, neo4jDBConf)
+	db, closer := testRepo.NewNeo4jDatabase(t, neo4jDBConf)
 	defer func(ctx context.Context, closer func(ctx context.Context) error) {
 		require.NoError(t, closer(ctx))
 	}(ctx, closer)
@@ -56,7 +56,7 @@ func TestNeo4jStore_GetReadSession(t *testing.T) {
 func TestNeo4jStore_GetWriteSession(t *testing.T) {
 	ctx := context.Background()
 
-	db, closer := testutil.NewNeo4jDatabase(t, neo4jDBConf)
+	db, closer := testRepo.NewNeo4jDatabase(t, neo4jDBConf)
 	defer func(ctx context.Context, closer func(ctx context.Context) error) {
 		require.NoError(t, closer(ctx))
 	}(ctx, closer)
@@ -68,7 +68,7 @@ func TestNeo4jStore_GetWriteSession(t *testing.T) {
 func TestNeo4jStore_Ping(t *testing.T) {
 	ctx := context.Background()
 
-	db, closer := testutil.NewNeo4jDatabase(t, neo4jDBConf)
+	db, closer := testRepo.NewNeo4jDatabase(t, neo4jDBConf)
 	defer func(ctx context.Context, closer func(ctx context.Context) error) {
 		require.NoError(t, closer(ctx))
 	}(ctx, closer)
@@ -79,7 +79,7 @@ func TestNeo4jStore_Ping(t *testing.T) {
 func TestNeo4jStore_Close(t *testing.T) {
 	ctx := context.Background()
 
-	db, closer := testutil.NewNeo4jDatabase(t, neo4jDBConf)
+	db, closer := testRepo.NewNeo4jDatabase(t, neo4jDBConf)
 	require.NoError(t, closer(ctx))
 
 	err := db.Ping(ctx)

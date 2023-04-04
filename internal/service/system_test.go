@@ -12,7 +12,6 @@ import (
 
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/testutil/mock"
-	msvc "github.com/opcotech/elemo/internal/testutil/mock/service"
 )
 
 func TestNewSystemService(t *testing.T) {
@@ -31,7 +30,7 @@ func TestNewSystemService(t *testing.T) {
 			name: "new system service",
 			args: args{
 				resources: map[model.HealthCheckComponent]Pingable{
-					model.HealthCheckComponentGraphDB: new(msvc.MockPingable),
+					model.HealthCheckComponentGraphDB: new(mock.PingableResource),
 				},
 				version: &model.VersionInfo{
 					Version: "1.0.0",
@@ -50,7 +49,7 @@ func TestNewSystemService(t *testing.T) {
 					Version: "1.0.0",
 				},
 				resources: map[model.HealthCheckComponent]Pingable{
-					model.HealthCheckComponentGraphDB: new(msvc.MockPingable),
+					model.HealthCheckComponentGraphDB: new(mock.PingableResource),
 				},
 			},
 		},
@@ -72,7 +71,7 @@ func TestNewSystemService(t *testing.T) {
 			name: "new system service with nil version",
 			args: args{
 				resources: map[model.HealthCheckComponent]Pingable{
-					model.HealthCheckComponentGraphDB: new(msvc.MockPingable),
+					model.HealthCheckComponentGraphDB: new(mock.PingableResource),
 				},
 				version: nil,
 				opts: []Option{
@@ -86,7 +85,7 @@ func TestNewSystemService(t *testing.T) {
 			name: "new system service with invalid options",
 			args: args{
 				resources: map[model.HealthCheckComponent]Pingable{
-					model.HealthCheckComponentGraphDB: new(msvc.MockPingable),
+					model.HealthCheckComponentGraphDB: new(mock.PingableResource),
 				},
 				version: &model.VersionInfo{},
 				opts: []Option{
@@ -116,7 +115,7 @@ func Test_systemService_GetHeartbeat(t *testing.T) {
 	span.On("End", []trace.SpanEndOption(nil)).Return()
 
 	tracer := new(mock.Tracer)
-	tracer.On("Start", ctx, "service.system/GetHeartbeat", []trace.SpanStartOption(nil)).Return(ctx, span)
+	tracer.On("Start", ctx, "service.systemService/GetHeartbeat", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 	s := &systemService{
 		baseService: &baseService{
@@ -136,7 +135,7 @@ func Test_systemService_GetVersion(t *testing.T) {
 	span.On("End", []trace.SpanEndOption(nil)).Return()
 
 	tracer := new(mock.Tracer)
-	tracer.On("Start", ctx, "service.system/GetVersion", []trace.SpanStartOption(nil)).Return(ctx, span)
+	tracer.On("Start", ctx, "service.systemService/GetVersion", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 	s := &systemService{
 		baseService: &baseService{
@@ -180,7 +179,7 @@ func Test_systemService_GetHealth(t *testing.T) {
 					span.On("AddEvent", fmt.Sprintf("Check %s health", model.HealthCheckComponentRelationalDB)).Return()
 
 					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "service.system/GetHealth", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "service.systemService/GetHealth", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("SpanFromContext", ctx).Return(span).Twice()
 
 					return &baseService{
@@ -191,7 +190,7 @@ func Test_systemService_GetHealth(t *testing.T) {
 					Version: "1.0.0",
 				},
 				resources: func(ctx context.Context) map[model.HealthCheckComponent]Pingable {
-					resource := new(msvc.MockPingable)
+					resource := new(mock.PingableResource)
 					resource.On("Ping", ctx).Return(nil).Twice()
 
 					return map[model.HealthCheckComponent]Pingable{
@@ -218,7 +217,7 @@ func Test_systemService_GetHealth(t *testing.T) {
 					span.On("AddEvent", fmt.Sprintf("Check %s health", model.HealthCheckComponentRelationalDB)).Return()
 
 					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "service.system/GetHealth", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "service.systemService/GetHealth", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("SpanFromContext", ctx).Return(span).Twice()
 
 					return &baseService{
@@ -229,7 +228,7 @@ func Test_systemService_GetHealth(t *testing.T) {
 					Version: "1.0.0",
 				},
 				resources: func(ctx context.Context) map[model.HealthCheckComponent]Pingable {
-					resource := new(msvc.MockPingable)
+					resource := new(mock.PingableResource)
 					resource.On("Ping", ctx).Return(errors.New("error")).Twice()
 
 					return map[model.HealthCheckComponent]Pingable{

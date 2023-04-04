@@ -13,6 +13,7 @@ import (
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/repository/neo4j"
 	"github.com/opcotech/elemo/internal/testutil"
+	testRepo "github.com/opcotech/elemo/internal/testutil/repository"
 )
 
 func prepareUser(t *testing.T) *model.User {
@@ -38,12 +39,12 @@ func prepareUser(t *testing.T) *model.User {
 func TestUserRepository_Create(t *testing.T) {
 	ctx := context.Background()
 
-	db, closer := testutil.NewNeo4jDatabase(t, neo4jDBConf)
+	db, closer := testRepo.NewNeo4jDatabase(t, neo4jDBConf)
 	defer func(ctx context.Context, closer func(ctx context.Context) error) {
 		require.NoError(t, closer(ctx))
 	}(ctx, closer)
 
-	defer testutil.CleanupNeo4jStore(t, ctx, db)
+	defer testRepo.CleanupNeo4jStore(t, ctx, db)
 
 	repo, err := neo4j.NewUserRepository(
 		neo4j.WithDatabase(db),
@@ -57,12 +58,12 @@ func TestUserRepository_Create(t *testing.T) {
 func TestUserRepository_Get(t *testing.T) {
 	ctx := context.Background()
 
-	db, closer := testutil.NewNeo4jDatabase(t, neo4jDBConf)
+	db, closer := testRepo.NewNeo4jDatabase(t, neo4jDBConf)
 	defer func(ctx context.Context, closer func(ctx context.Context) error) {
 		require.NoError(t, closer(ctx))
 	}(ctx, closer)
 
-	defer testutil.CleanupNeo4jStore(t, ctx, db)
+	defer testRepo.CleanupNeo4jStore(t, ctx, db)
 
 	repo, err := neo4j.NewUserRepository(
 		neo4j.WithDatabase(db),
@@ -127,16 +128,89 @@ func TestUserRepository_Get(t *testing.T) {
 	assert.Equal(t, 0, len(got.Documents))
 }
 
-func TestUserRepository_GetAll(t *testing.T) {
+func TestUserRepository_GetByEmail(t *testing.T) {
 	ctx := context.Background()
 
-	db, closer := testutil.NewNeo4jDatabase(t, neo4jDBConf)
+	db, closer := testRepo.NewNeo4jDatabase(t, neo4jDBConf)
 	defer func(ctx context.Context, closer func(ctx context.Context) error) {
 		require.NoError(t, closer(ctx))
 	}(ctx, closer)
 
-	defer testutil.CleanupNeo4jStore(t, ctx, db)
-	testutil.CleanupNeo4jStore(t, ctx, db)
+	defer testRepo.CleanupNeo4jStore(t, ctx, db)
+
+	repo, err := neo4j.NewUserRepository(
+		neo4j.WithDatabase(db),
+	)
+	require.NoError(t, err)
+
+	organizationID := model.MustNewID(model.OrganizationIDType)
+	_, err = db.GetWriteSession(ctx).Run(ctx,
+		"CREATE (:"+organizationID.Label()+" {id: $organization_id})",
+		map[string]any{
+			"organization_id": organizationID.String(),
+		},
+	)
+	require.NoError(t, err)
+
+	user := prepareUser(t)
+	err = repo.Create(ctx, user)
+	require.NoError(t, err)
+
+	permRepo, err := neo4j.NewPermissionRepository(
+		neo4j.WithDatabase(db),
+	)
+	require.NoError(t, err)
+
+	readPerm, err := model.NewPermission(user.ID, organizationID, model.PermissionKindRead)
+	require.NoError(t, err)
+
+	writePerm, err := model.NewPermission(user.ID, organizationID, model.PermissionKindWrite)
+	require.NoError(t, err)
+
+	err = permRepo.Create(ctx, readPerm)
+	require.NoError(t, err)
+
+	err = permRepo.Create(ctx, writePerm)
+	require.NoError(t, err)
+
+	got, err := repo.GetByEmail(ctx, user.Email)
+	require.NoError(t, err)
+
+	assert.Equal(t, user.ID, got.ID)
+	assert.Equal(t, user.Username, got.Username)
+	assert.Equal(t, user.Email, got.Email)
+	assert.Equal(t, user.Password, got.Password)
+	assert.Equal(t, user.Status, got.Status)
+	assert.Equal(t, user.FirstName, got.FirstName)
+	assert.Equal(t, user.LastName, got.LastName)
+	assert.Equal(t, user.Picture, got.Picture)
+	assert.Equal(t, user.Title, got.Title)
+	assert.Equal(t, user.Bio, got.Bio)
+	assert.Equal(t, user.Phone, got.Phone)
+	assert.Equal(t, user.Address, got.Address)
+	assert.Equal(t, user.Links, got.Links)
+	assert.ElementsMatch(t, user.Languages, got.Languages)
+	assert.WithinDuration(t, *user.CreatedAt, *got.CreatedAt, 0)
+	assert.Nil(t, got.UpdatedAt)
+
+	permIDs := []model.ID{readPerm.ID, writePerm.ID}
+	for _, perm := range got.Permissions {
+		assert.Contains(t, permIDs, perm)
+	}
+
+	assert.Equal(t, 0, len(got.Documents))
+}
+
+func TestUserRepository_GetAll(t *testing.T) {
+	ctx := context.Background()
+
+	db, closer := testRepo.NewNeo4jDatabase(t, neo4jDBConf)
+	defer func(ctx context.Context, closer func(ctx context.Context) error) {
+		require.NoError(t, closer(ctx))
+	}(ctx, closer)
+
+	defer testRepo.CleanupNeo4jStore(t, ctx, db)
+	testRepo.CleanupNeo4jStore(t, ctx, db)
 
 	repo, err := neo4j.NewUserRepository(
 		neo4j.WithDatabase(db),
@@ -187,12 +261,12 @@ func TestUserRepository_GetAll(t *testing.T) {
 func TestUserRepository_Update(t *testing.T) {
 	ctx := context.Background()
 
-	db, closer := testutil.NewNeo4jDatabase(t, neo4jDBConf)
+	db, closer := testRepo.NewNeo4jDatabase(t, neo4jDBConf)
 	defer func(ctx context.Context, closer func(ctx context.Context) error) {
 		require.NoError(t, closer(ctx))
 	}(ctx, closer)
 
-	defer testutil.CleanupNeo4jStore(t, ctx, db)
+	defer testRepo.CleanupNeo4jStore(t, ctx, db)
 
 	repo, err := neo4j.NewUserRepository(
 		neo4j.WithDatabase(db),
@@ -252,12 +326,12 @@ func TestUserRepository_Update(t *testing.T) {
 func TestUserRepository_Delete(t *testing.T) {
 	ctx := context.Background()
 
-	db, closer := testutil.NewNeo4jDatabase(t, neo4jDBConf)
+	db, closer := testRepo.NewNeo4jDatabase(t, neo4jDBConf)
 	defer func(ctx context.Context, closer func(ctx context.Context) error) {
 		require.NoError(t, closer(ctx))
 	}(ctx, closer)
 
-	defer testutil.CleanupNeo4jStore(t, ctx, db)
+	defer testRepo.CleanupNeo4jStore(t, ctx, db)
 
 	repo, err := neo4j.NewUserRepository(
 		neo4j.WithDatabase(db),

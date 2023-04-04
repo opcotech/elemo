@@ -1,4 +1,4 @@
-package testutil
+package http
 
 import (
 	"crypto/tls"
