@@ -1,0 +1,9 @@
+{
+  "useTabs": false,
+  "singleQuote": true,
+  "trailingComma": "none",
+  "printWidth": 120,
+  "plugins": [],
+  "pluginSearchDirs": ["."],
+  "overrides": []
+}
