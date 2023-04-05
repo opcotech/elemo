@@ -10,6 +10,11 @@ tls:
 
 server:
   address: "127.0.0.1:35478"
+  read_timeout: 10
+  write_timeout: 5
+  request_throttle_limit: 300
+  request_throttle_backlog: 750
+  request_throttle_timeout: 10
   cors:
     enabled: true
     allowed_origins:
@@ -28,8 +33,6 @@ server:
     cookie_name: "elemo_session"
     max_age: 86400
     secure: false
-  read_timeout: 10
-  write_timeout: 5
 
 graph_database:
   host: localhost
@@ -43,7 +46,7 @@ graph_database:
   connection_acquisition_timeout: 60
   socket_connect_timeout: 5
   socket_keepalive: true
-  fetch_size: 250
+  fetch_size: 150
 
 relational_database:
   host: localhost

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"time"
 
 	oapiMiddleware "github.com/deepmap/oapi-codegen/pkg/chi-middleware"
 	"github.com/getkin/kin-openapi/openapi3"
@@ -27,6 +28,10 @@ const (
 	PathRoot    = "/"
 	PathSwagger = "/swagger.json"
 	PathMetrics = "/metrics"
+
+	DefaultRequestThrottleLimit   = 100
+	DefaultRequestThrottleBacklog = 1000
+	DefaultRequestThrottleTimeout = 10 * time.Second
 )
 
 var (
@@ -185,6 +190,21 @@ func NewRouter(strictServer StrictServer, serverConfig *config.ServerConfig, tra
 		},
 	}
 
+	throttleLimit := DefaultRequestThrottleLimit
+	if serverConfig.RequestThrottleLimit > 0 {
+		throttleLimit = serverConfig.RequestThrottleLimit
+	}
+
+	throttleBacklog := DefaultRequestThrottleBacklog
+	if serverConfig.RequestThrottleBacklog > 0 {
+		throttleBacklog = serverConfig.RequestThrottleBacklog
+	}
+
+	throttleTimeout := DefaultRequestThrottleTimeout
+	if serverConfig.RequestThrottleTimeout > 0 {
+		throttleTimeout = serverConfig.RequestThrottleTimeout * time.Second
+	}
+
 	s := gen.NewStrictHandler(strictServer, nil)
 
 	router := chi.NewRouter()
@@ -192,13 +212,15 @@ func NewRouter(strictServer StrictServer, serverConfig *config.ServerConfig, tra
 	router.Use(
 		WithPrometheusMetrics,
 		WithOtelTracer,
-		WithTracedMiddleware(tracer, middleware.RequestID),
-		WithTracedMiddleware(tracer, middleware.RealIP),
-		WithTracedMiddleware(tracer, middleware.AllowContentEncoding("deflate", "gzip")),
-		WithTracedMiddleware(tracer, middleware.Compress(7, "text/html", "text/css", "application/json")),
-		WithTracedMiddleware(tracer, middleware.SetHeader("X-Frame-Options", "sameorigin")),
+		middleware.ThrottleBacklog(throttleLimit, throttleBacklog, throttleTimeout),
+		middleware.RequestID,
+		middleware.RealIP,
+		middleware.AllowContentEncoding("deflate", "gzip"),
+		middleware.Compress(7, "text/html", "text/css", "application/json"),
+		middleware.SetHeader("X-Frame-Options", "sameorigin"),
+		middleware.StripSlashes,
 		WithTracedMiddleware(tracer, WithRequestLogger),
-		WithTracedMiddleware(tracer, middleware.Recoverer),
+		middleware.Recoverer,
 	)
 
 	if serverConfig.CORS.Enabled {

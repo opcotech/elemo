@@ -94,11 +94,14 @@ type SessionConfig struct {
 
 // ServerConfig is the configuration for the HTTP server.
 type ServerConfig struct {
-	Address      string        `mapstructure:"address"`
-	ReadTimeout  time.Duration `mapstructure:"read_timeout"`
-	WriteTimeout time.Duration `mapstructure:"write_timeout"`
-	CORS         CORSConfig    `mapstructure:"cors"`
-	Session      SessionConfig `mapstructure:"session"`
+	Address                string        `mapstructure:"address"`
+	ReadTimeout            time.Duration `mapstructure:"read_timeout"`
+	WriteTimeout           time.Duration `mapstructure:"write_timeout"`
+	RequestThrottleLimit   int           `mapstructure:"request_throttle_limit"`
+	RequestThrottleBacklog int           `mapstructure:"request_throttle_backlog"`
+	RequestThrottleTimeout time.Duration `mapstructure:"request_throttle_timeout"`
+	CORS                   CORSConfig    `mapstructure:"cors"`
+	Session                SessionConfig `mapstructure:"session"`
 }
 
 // TracingConfig is the configuration for the tracing.

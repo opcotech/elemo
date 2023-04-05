@@ -79,7 +79,7 @@
         },
         "textMode": "value_and_name"
       },
-      "pluginVersion": "9.3.6",
+      "pluginVersion": "9.4.7",
       "targets": [
         {
           "datasource": {
@@ -207,7 +207,7 @@
         },
         "textMode": "value_and_name"
       },
-      "pluginVersion": "9.3.6",
+      "pluginVersion": "9.4.7",
       "targets": [
         {
           "datasource": {
@@ -443,7 +443,9 @@
         "defaults": {
           "custom": {
             "align": "auto",
-            "displayMode": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
             "inspect": false
           },
           "mappings": [],
@@ -468,6 +470,7 @@
       "id": 12,
       "options": {
         "footer": {
+          "countRows": false,
           "fields": "",
           "reducer": [
             "sum"
@@ -476,7 +479,7 @@
         },
         "showHeader": true
       },
-      "pluginVersion": "9.3.6",
+      "pluginVersion": "9.4.7",
       "targets": [
         {
           "datasource": {
@@ -486,10 +489,11 @@
           "limit": 10,
           "maxDuration": "",
           "minDuration": "$slow",
+          "operation": "$handler",
           "queryType": "search",
           "refId": "A",
           "service": "elemo",
-          "tags": "http.target=\"$handler\""
+          "tags": ""
         }
       ],
       "title": "Slow queries for handler (max. 10)",
@@ -511,7 +515,8 @@
     }
   ],
   "refresh": "5s",
-  "schemaVersion": 37,
+  "revision": 1,
+  "schemaVersion": 38,
   "style": "dark",
   "tags": [],
   "templating": {
@@ -654,6 +659,6 @@
   "timezone": "utc",
   "title": "Service metrics",
   "uid": "zBdLAY0Vk",
-  "version": 1,
+  "version": 2,
   "weekStart": "monday"
 }
