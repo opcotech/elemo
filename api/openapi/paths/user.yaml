@@ -1,0 +1,26 @@
+get:
+  operationId: getUser
+  summary: Get user by ID.
+  description: Returns the user specified in the request path.
+  parameters:
+    - $ref: '../components/parameters/user_id.yaml'
+  tags:
+    - Users
+  security:
+    - OAuth2:
+        - user.read
+  responses:
+    '200':
+      description: The user object if exists.
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/user.yaml'
+    '401':
+      $ref: '../components/responses/401.yaml'
+    '403':
+      $ref: '../components/responses/403.yaml'
+    '404':
+      $ref: '../components/responses/404.yaml'
+    default:
+      $ref: '../components/responses/default.yaml'

@@ -63,6 +63,8 @@ info:
 
     In contrast with the APIs, this specification follows semantic versioning.
 tags:
+  - name: Users
+    description: API endpoints to interact with users.
   - name: System
     description: API endpoints to interact with system resources.
 servers:
@@ -79,6 +81,8 @@ servers:
         description: domain
         default: "example.com"
 paths:
+  /v1/users/{user_id}:
+    $ref: './paths/user.yaml'
   /v1/system/health:
     $ref: './paths/system_health.yaml'
   /v1/system/heartbeat:

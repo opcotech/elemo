@@ -1,0 +1,6 @@
+name: user_id
+description: Unique ID of the user. The ID may be set to `me` to get the current user.
+in: path
+required: true
+schema:
+  type: string

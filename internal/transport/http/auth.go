@@ -46,13 +46,14 @@ type AuthController interface {
 
 type authController struct {
 	*baseController
+	sessionManager *session.Manager
 }
 
 func (c *authController) Authorize(w http.ResponseWriter, r *http.Request) {
 	ctx, span := c.tracer.Start(r.Context(), "transport.http.handler/Authorize")
 	defer span.End()
 
-	store, err := session.Start(ctx, w, r.WithContext(ctx))
+	store, err := c.sessionManager.Start(ctx, w, r.WithContext(ctx))
 	if err != nil {
 		httpError(ctx, w, err, http.StatusInternalServerError)
 		return
@@ -60,8 +61,11 @@ func (c *authController) Authorize(w http.ResponseWriter, r *http.Request) {
 
 	var form url.Values
 	if v, ok := store.Get("ReturnUri"); ok {
-		form = v.(url.Values)
+		if query, err := url.ParseQuery(v.(string)); err == nil {
+			form = query
+		}
 	}
+
 	r.Form = form
 
 	store.Delete("ReturnUri")
@@ -80,8 +84,7 @@ func (c *authController) Token(w http.ResponseWriter, r *http.Request) {
 	ctx, span := c.tracer.Start(r.Context(), "transport.http.handler/Token")
 	defer span.End()
 
-	err := c.authProvider.HandleTokenRequest(w, r.WithContext(ctx))
-	if err != nil {
+	if err := c.authProvider.HandleTokenRequest(w, r.WithContext(ctx)); err != nil {
 		httpError(ctx, w, err, http.StatusBadRequest)
 		return
 	}
@@ -91,7 +94,7 @@ func (c *authController) UserAuthHandler(w http.ResponseWriter, r *http.Request)
 	ctx, span := c.tracer.Start(r.Context(), "transport.http.handler/UserAuthHandler")
 	defer span.End()
 
-	store, err := session.Start(ctx, w, r.WithContext(ctx))
+	store, err := c.sessionManager.Start(ctx, w, r.WithContext(ctx))
 	if err != nil {
 		return "", err
 	}
@@ -105,7 +108,7 @@ func (c *authController) UserAuthHandler(w http.ResponseWriter, r *http.Request)
 			}
 		}
 
-		store.Set("ReturnUri", r.Form)
+		store.Set("ReturnUri", r.Form.Encode())
 		if err := store.Save(); err != nil {
 			return "", err
 		}
@@ -143,7 +146,7 @@ func (c *authController) ClientAuthHandler(w http.ResponseWriter, r *http.Reques
 	ctx, span := c.tracer.Start(r.Context(), "transport.http.handler/AuthHandler")
 	defer span.End()
 
-	store, err := session.Start(nil, w, r)
+	store, err := c.sessionManager.Start(nil, w, r)
 	if err != nil {
 		httpError(ctx, w, err, http.StatusInternalServerError)
 		return
@@ -173,7 +176,7 @@ func (c *authController) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	ctx, span := c.tracer.Start(r.Context(), "transport.http.handler/LoginHandler")
 	defer span.End()
 
-	store, err := session.Start(r.Context(), w, r)
+	store, err := c.sessionManager.Start(r.Context(), w, r)
 	if err != nil {
 		httpError(ctx, w, err, http.StatusInternalServerError)
 		return
@@ -238,6 +241,12 @@ func NewAuthController(opts ...ControllerOption) (AuthController, error) {
 
 	controller := &authController{
 		baseController: c,
+		sessionManager: session.NewManager(
+			session.SetCookieName(c.conf.Session.CookieName),
+			session.SetCookieLifeTime(c.conf.Session.MaxAge),
+			session.SetSecure(c.conf.Session.Secure),
+			session.SetEnableSIDInHTTPHeader(true),
+		),
 	}
 
 	if controller.userService == nil {

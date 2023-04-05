@@ -85,12 +85,20 @@ type CORSConfig struct {
 	MaxAge           int      `mapstructure:"max_age"`
 }
 
+// SessionConfig is the configuration for the session.
+type SessionConfig struct {
+	CookieName string `mapstructure:"cookie_name"`
+	MaxAge     int    `mapstructure:"max_age"`
+	Secure     bool   `mapstructure:"secure"`
+}
+
 // ServerConfig is the configuration for the HTTP server.
 type ServerConfig struct {
 	Address      string        `mapstructure:"address"`
 	ReadTimeout  time.Duration `mapstructure:"read_timeout"`
 	WriteTimeout time.Duration `mapstructure:"write_timeout"`
 	CORS         CORSConfig    `mapstructure:"cors"`
+	Session      SessionConfig `mapstructure:"session"`
 }
 
 // TracingConfig is the configuration for the tracing.

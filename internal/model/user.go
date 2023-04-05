@@ -64,16 +64,16 @@ func (s *UserStatus) UnmarshalText(text []byte) error {
 // User represents a user in the system.
 type User struct {
 	ID          ID         `json:"id" validate:"required,dive"`
-	Username    string     `json:"username" validate:"required,lowercase,min=3,max=20,containsany=0123456789abcdefghijklmnopqrstuvwxyz-_"`
+	Username    string     `json:"username" validate:"required,lowercase,min=3,max=50,containsany=0123456789abcdefghijklmnopqrstuvwxyz-_"`
 	Email       string     `json:"email" validate:"required,email"`
-	Password    string     `json:"password" validate:"required,min=8"`
+	Password    string     `json:"password" validate:"required,min=8,max=64"`
 	Status      UserStatus `json:"status" validate:"required,min=1,max=4"`
 	FirstName   string     `json:"first_name" validate:"omitempty,max=50"`
 	LastName    string     `json:"last_name" validate:"omitempty,max=50"`
 	Picture     string     `json:"picture" validate:"omitempty,url"`
 	Title       string     `json:"title" validate:"omitempty,min=3,max=50"`
 	Bio         string     `json:"bio" validate:"omitempty,min=10,max=500"`
-	Phone       string     `json:"phone" validate:"omitempty,min=7,max=50"`
+	Phone       string     `json:"phone" validate:"omitempty,min=7,max=16"`
 	Address     string     `json:"address" validate:"omitempty,min=10,max=500"`
 	Links       []string   `json:"links" validate:"omitempty,dive,url"`
 	Languages   []Language `json:"languages" validate:"omitempty,dive"`

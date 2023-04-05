@@ -69,6 +69,7 @@ var startCmd = &cobra.Command{
 		}
 
 		httpServer, err := elemoHttp.NewServer(
+			elemoHttp.WithConfig(cfg.Server),
 			elemoHttp.WithAuthProvider(authProvider),
 			elemoHttp.WithUserService(userService),
 			elemoHttp.WithSystemService(systemService),

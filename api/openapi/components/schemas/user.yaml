@@ -1,0 +1,82 @@
+description: A user in the system.
+type: object
+properties:
+  id:
+    description: Unique ID identifying the given user.
+    type: string
+    readOnly: true
+  username:
+    description: Username of the user.
+    type: string
+    pattern: ^[a-z0-9-_]{3,50}$
+    maxLength: 50
+    minLength: 3
+  first_name:
+    description: First name of the user.
+    type: string
+    maxLength: 50
+    minLength: 1
+  last_name:
+    description: Last name of the user.
+    type: string
+    maxLength: 50
+    minLength: 1
+  email:
+    description: Email address of the user.
+    type: string
+    format: email
+    maxLength: 254
+    minLength: 6
+  title:
+    description: Work title of the user.
+    type: string
+    maxLength: 50
+    minLength: 3
+  password:
+    description: Password of the user.
+    type: string
+    format: password
+    writeOnly: true
+    maxLength: 64
+    minLength: 8
+  picture:
+    description: Profile picture URL of the user.
+    type: string
+    format: uri
+    maxLength: 2000
+  bio:
+    description: Self
+    type: string
+    maxLength: 500
+  address:
+    description: Working address of the user (if not remote).
+    type: string
+    maxLength: 500
+  phone:
+    description: Phone number of the user
+    type: string
+    maxLength: 16
+    minLength: 7
+  links:
+    description: Links to show on profile page.
+    type: array
+    items:
+      type: string
+      format: uri
+  languages:
+    description: Languages of the user.
+    type: array
+    items:
+      $ref: './language.yaml'
+  status:
+    $ref: './user_status.yaml'
+  created_at:
+    description: Date when the user was created.
+    type: string
+    format: date-time
+    readOnly: true
+  updated_at:
+    description: Last date of user modification. If the user has never been modified, the field is not present.
+    type: string
+    format: date-time
+    readOnly: true

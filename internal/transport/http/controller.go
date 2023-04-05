@@ -6,6 +6,7 @@ import (
 	auth "github.com/go-oauth2/oauth2/v4/server"
 	"go.opentelemetry.io/otel/trace"
 
+	"github.com/opcotech/elemo/internal/config"
 	"github.com/opcotech/elemo/internal/pkg/log"
 	"github.com/opcotech/elemo/internal/pkg/tracing"
 	"github.com/opcotech/elemo/internal/service"
@@ -26,6 +27,14 @@ var (
 
 // ControllerOption is a function that can be used to configure a controller.
 type ControllerOption func(*baseController) error
+
+// WithConfig sets the config for the controller.
+func WithConfig(conf config.ServerConfig) ControllerOption {
+	return func(c *baseController) error {
+		c.conf = conf
+		return nil
+	}
+}
 
 // WithLogger sets the logger for the controller.
 func WithLogger(logger log.Logger) ControllerOption {
@@ -95,6 +104,7 @@ func WithUserService(userService service.UserService) ControllerOption {
 // baseController defines the dependencies that are required to be injected
 // into a controller.
 type baseController struct {
+	conf   config.ServerConfig
 	logger log.Logger
 	tracer trace.Tracer
 

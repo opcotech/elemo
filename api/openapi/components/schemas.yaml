@@ -1,3 +1,9 @@
+User:
+  $ref: './schemas/user.yaml'
+UserStatus:
+  $ref: './schemas/user_status.yaml'
+Language:
+  $ref: './schemas/language.yaml'
 SystemHealth:
   $ref: './schemas/system_health.yaml'
 SystemHeartbeat:

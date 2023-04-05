@@ -59,6 +59,7 @@ type server struct {
 	*baseController
 
 	authController   AuthController
+	userController   UserController
 	systemController SystemController
 }
 
@@ -91,6 +92,10 @@ func (s *server) ValidateBearerToken(r *http.Request) (oauth2.TokenInfo, error) 
 
 func (s *server) ValidateTokenHandler(r *http.Request) error {
 	return s.authController.ValidateTokenHandler(r)
+}
+
+func (s *server) GetUser(ctx context.Context, request gen.GetUserRequestObject) (gen.GetUserResponseObject, error) {
+	return s.userController.GetUser(ctx, request)
 }
 
 func (s *server) GetSystemHealth(ctx context.Context, request gen.GetSystemHealthRequestObject) (gen.GetSystemHealthResponseObject, error) {
@@ -139,6 +144,10 @@ func NewServer(opts ...ControllerOption) (StrictServer, error) {
 	}
 
 	if s.authController, err = NewAuthController(opts...); err != nil {
+		return nil, err
+	}
+
+	if s.userController, err = NewUserController(opts...); err != nil {
 		return nil, err
 	}
 

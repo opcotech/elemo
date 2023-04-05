@@ -24,6 +24,10 @@ server:
       - "*"
     allow_credentials: false
     max_age: 86400
+  session:
+    cookie_name: "elemo_session"
+    max_age: 86400
+    secure: false
   read_timeout: 10
   write_timeout: 5
 
