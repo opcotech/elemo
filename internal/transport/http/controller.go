@@ -21,6 +21,7 @@ var (
 	ErrNoTracer        = errors.New("no tracer provided")         // no tracer provided
 	ErrNoAuthProvider  = errors.New("no auth provider provided")  // no auth provider provided
 	ErrNoSystemService = errors.New("no system service provided") // no system service provided
+	ErrNoUserService   = errors.New("no user service provided")   // no user service provided
 )
 
 // ControllerOption is a function that can be used to configure a controller.
@@ -78,6 +79,19 @@ func WithSystemService(systemService service.SystemService) ControllerOption {
 	}
 }
 
+// WithUserService sets the user service for the controller.
+func WithUserService(userService service.UserService) ControllerOption {
+	return func(c *baseController) error {
+		if userService == nil {
+			return ErrNoUserService
+		}
+
+		c.userService = userService
+
+		return nil
+	}
+}
+
 // baseController defines the dependencies that are required to be injected
 // into a controller.
 type baseController struct {
@@ -87,6 +101,7 @@ type baseController struct {
 	authProvider *auth.Server
 
 	systemService service.SystemService
+	userService   service.UserService
 }
 
 // newController creates a new base controller with the given dependencies

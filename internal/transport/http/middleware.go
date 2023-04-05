@@ -19,6 +19,7 @@ import (
 	httpMetricsMiddleware "github.com/slok/go-http-metrics/middleware"
 	httpMetricsMiddlewareStd "github.com/slok/go-http-metrics/middleware/std"
 
+	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/log"
 	"github.com/opcotech/elemo/internal/pkg/tracing"
 )
@@ -131,15 +132,16 @@ func WithRequestLogger(next http.Handler) http.Handler {
 	})
 }
 
-// WithUserKey returns a middleware that adds the user Key to the context,
-// parsed from the Authorization header if present. Otherwise, an empty string
-// is added.
-func WithUserKey(tokenValidator func(r *http.Request) (oauth2.TokenInfo, error)) func(next http.Handler) http.Handler {
+// WithUserID returns a middleware that adds the user ID to the context, parsed
+// from the Authorization header if present. Otherwise, an empty string is
+// added.
+func WithUserID(tokenValidator func(r *http.Request) (oauth2.TokenInfo, error)) func(next http.Handler) http.Handler {
 	return withContextObject(ctxKeyUserID, func(w http.ResponseWriter, r *http.Request) any {
 		if info, _ := tokenValidator(r); info != nil {
-			return info.GetUserID()
+			id, _ := model.NewIDFromString(info.GetUserID(), model.UserIDType)
+			return id
 		}
 
-		return ""
+		return model.MustNewNilID(model.UserIDType)
 	})
 }

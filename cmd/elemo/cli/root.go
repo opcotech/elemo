@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	authStore "github.com/gabor-boros/go-oauth2-pg"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"go.opentelemetry.io/otel/trace"
@@ -40,6 +41,29 @@ var rootCmd = &cobra.Command{
 	Use:   "elemo",
 	Short: "The next-generation project management platform",
 	Long:  `Elemo is a project management platform that is designed to be flexible and easy to use.`,
+}
+
+type authStoreLogger struct {
+	logger log.Logger
+}
+
+func (l *authStoreLogger) Log(ctx context.Context, level authStore.LogLevel, msg string, args ...any) {
+	logArgs := make([]zap.Field, len(args)/2)
+	for i, j := 0, 0; i < len(args)-1; i += 2 {
+		logArgs[j] = zap.Any(args[i].(string), args[i+1])
+		j++
+	}
+
+	switch level {
+	case authStore.LogLevelDebug:
+		l.logger.Debug(msg, logArgs...)
+	case authStore.LogLevelInfo:
+		l.logger.Info(msg, logArgs...)
+	case authStore.LogLevelWarn:
+		l.logger.Warn(msg, logArgs...)
+	case authStore.LogLevelError:
+		l.logger.Error(msg, logArgs...)
+	}
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.

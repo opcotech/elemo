@@ -8,6 +8,8 @@ import (
 
 	"github.com/go-oauth2/oauth2/v4"
 	"github.com/go-session/session"
+
+	"github.com/opcotech/elemo/internal/pkg/password"
 )
 
 const (
@@ -121,22 +123,20 @@ func (c *authController) UserAuthHandler(w http.ResponseWriter, r *http.Request)
 	return uid.(string), nil
 }
 
-func (c *authController) PasswordAuthHandler(ctx context.Context, _, email, password string) (string, error) {
+func (c *authController) PasswordAuthHandler(ctx context.Context, _, email, passwd string) (string, error) {
 	ctx, span := c.tracer.Start(ctx, "transport.http.handler/PasswordAuthHandler")
 	defer span.End()
 
-	/*user, err := c.userService.GetByEmail(ctx, email)
+	user, err := c.userService.GetByEmail(ctx, email)
 	if err != nil {
 		return "", err
 	}
 
-	if !pkg.IsPasswordMatching(user.Password, password) {
-		return "", errors.ErrAuthCredentials
+	if !password.IsPasswordMatching(user.Password, passwd) {
+		return "", ErrAuthCredentials
 	}
 
-	return user.Key, nil*/
-
-	return "", nil
+	return user.ID.String(), nil
 }
 
 func (c *authController) ClientAuthHandler(w http.ResponseWriter, r *http.Request) {
@@ -187,12 +187,12 @@ func (c *authController) LoginHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		key := ""
-		/*if user, err := c.userService.GetByEmail(ctx, r.Form.Get("email")); err == nil {
-			key = user.Key
-		}*/
+		id := ""
+		if user, err := c.userService.GetByEmail(ctx, r.Form.Get("email")); err == nil {
+			id = user.ID.String()
+		}
 
-		store.Set("UserLoginKey", key)
+		store.Set("UserLoginKey", id)
 		if err := store.Save(); err != nil {
 			httpError(ctx, w, err, http.StatusInternalServerError)
 			return
@@ -240,15 +240,13 @@ func NewAuthController(opts ...ControllerOption) (AuthController, error) {
 		baseController: c,
 	}
 
-	/*
-		if controller.userService == nil {
-			return nil, errors.ErrNoUserService
-		}
+	if controller.userService == nil {
+		return nil, ErrNoUserService
+	}
 
-		if controller.authProvider == nil {
-			return nil, errors.ErrNoAuthProvider
-		}
-	*/
+	if controller.authProvider == nil {
+		return nil, ErrNoAuthProvider
+	}
 
 	controller.authProvider.SetUserAuthorizationHandler(controller.UserAuthHandler)
 	controller.authProvider.SetPasswordAuthorizationHandler(controller.PasswordAuthHandler)

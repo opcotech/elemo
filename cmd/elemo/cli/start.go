@@ -14,7 +14,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/opcotech/elemo/internal/model"
-	"github.com/opcotech/elemo/internal/pkg/log"
+	"github.com/opcotech/elemo/internal/repository/neo4j"
 	"github.com/opcotech/elemo/internal/repository/pg"
 	"github.com/opcotech/elemo/internal/service"
 
@@ -22,23 +22,6 @@ import (
 
 	elemoHttp "github.com/opcotech/elemo/internal/transport/http"
 )
-
-type authStoreLogger struct {
-	logger log.Logger
-}
-
-func (l *authStoreLogger) Log(ctx context.Context, level authStore.LogLevel, msg string, args ...any) {
-	switch level {
-	case authStore.LogLevelDebug:
-		l.logger.Debug(msg, zap.Any("args", args))
-	case authStore.LogLevelInfo:
-		l.logger.Info(msg, zap.Any("args", args))
-	case authStore.LogLevelWarn:
-		l.logger.Warn(msg, zap.Any("args", args))
-	case authStore.LogLevelError:
-		l.logger.Error(msg, zap.Any("args", args))
-	}
-}
 
 // startCmd represents the start command
 var startCmd = &cobra.Command{
@@ -58,6 +41,12 @@ var startCmd = &cobra.Command{
 			logger.Fatal("failed to initialize relational database", zap.Error(err))
 		}
 
+		userRepo, err := neo4j.NewUserRepository(
+			neo4j.WithDatabase(graphDB),
+			neo4j.WithRepositoryLogger(logger.Named("user_repository")),
+			neo4j.WithRepositoryTracer(tracer),
+		)
+
 		systemService, err := service.NewSystemService(
 			map[model.HealthCheckComponent]service.Pingable{
 				model.HealthCheckComponentGraphDB:      graphDB,
@@ -68,6 +57,12 @@ var startCmd = &cobra.Command{
 			service.WithTracer(tracer),
 		)
 
+		userService, err := service.NewUserService(
+			service.WithUserRepository(userRepo),
+			service.WithLogger(logger.Named("user_service")),
+			service.WithTracer(tracer),
+		)
+
 		authProvider, err := initAuthProvider(relDBPool)
 		if err != nil {
 			logger.Fatal("failed to initialize auth server", zap.Error(err))
@@ -75,6 +70,7 @@ var startCmd = &cobra.Command{
 
 		httpServer, err := elemoHttp.NewServer(
 			elemoHttp.WithAuthProvider(authProvider),
+			elemoHttp.WithUserService(userService),
 			elemoHttp.WithSystemService(systemService),
 			elemoHttp.WithLogger(logger.Named("http_server")),
 			elemoHttp.WithTracer(tracer),
@@ -105,12 +101,20 @@ func initAuthProvider(pool pg.Pool) (*authServer.Server, error) {
 		return nil, err
 	}
 
+	if err := clientStore.InitTable(context.Background()); err != nil {
+		return nil, err
+	}
+
 	tokenStore, err := authStore.NewTokenStore(
 		authStore.WithTokenStoreTable(authStore.DefaultTokenStoreTable),
 		authStore.WithTokenStoreConnPool(pool.(*pgxpool.Pool)),
 		authStore.WithTokenStoreLogger(storeLogger),
 	)
 	if err != nil {
+		return nil, err
+	}
+
+	if err := tokenStore.InitTable(context.Background()); err != nil {
 		return nil, err
 	}
 
@@ -123,6 +127,7 @@ func initAuthProvider(pool pg.Pool) (*authServer.Server, error) {
 	srv.SetClientInfoHandler(server.ClientFormHandler)
 	srv.SetInternalErrorHandler(srv.InternalErrorHandler)
 	srv.SetResponseErrorHandler(srv.ResponseErrorHandler)
+	srv.SetPreRedirectErrorHandler(srv.PreRedirectErrorHandler)
 
 	return srv, nil
 }

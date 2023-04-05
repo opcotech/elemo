@@ -14,12 +14,19 @@ import (
 	"github.com/go-chi/cors"
 	"github.com/go-oauth2/oauth2/v4"
 	authErrors "github.com/go-oauth2/oauth2/v4/errors"
+	authServer "github.com/go-oauth2/oauth2/v4/server"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/opcotech/elemo/internal/config"
 	"github.com/opcotech/elemo/internal/pkg/log"
 	"github.com/opcotech/elemo/internal/transport/http/gen"
+)
+
+const (
+	PathRoot    = "/"
+	PathSwagger = "/swagger.json"
+	PathMetrics = "/metrics"
 )
 
 var (
@@ -34,7 +41,8 @@ type StrictServer interface {
 	gen.StrictServerInterface
 	AuthController
 	InternalErrorHandler(err error) (re *authErrors.Response)
-	ResponseErrorHandler(re *authErrors.Response)
+	ResponseErrorHandler(r *authErrors.Response)
+	PreRedirectErrorHandler(w http.ResponseWriter, r *authServer.AuthorizeRequest, err error)
 }
 
 // Server is the type alias for the generated server interface.
@@ -43,6 +51,7 @@ type Server interface {
 	AuthController
 	InternalErrorHandler(err error) *authErrors.Response
 	ResponseErrorHandler(r *authErrors.Response)
+	PreRedirectErrorHandler(w http.ResponseWriter, r *authServer.AuthorizeRequest, err error)
 }
 
 // server is the concrete implementation of the ServerInterface.
@@ -105,6 +114,14 @@ func (s *server) ResponseErrorHandler(r *authErrors.Response) {
 		log.WithError(r.Error),
 		log.WithStatus(r.StatusCode),
 		log.WithValue(r.ErrorCode),
+	)
+}
+
+func (s *server) PreRedirectErrorHandler(_ http.ResponseWriter, r *authServer.AuthorizeRequest, err error) {
+	s.logger.Error(err.Error(),
+		log.WithError(err),
+		log.WithUserID(r.UserID),
+		log.WithAuthClientID(r.ClientID),
 	)
 }
 
@@ -187,7 +204,7 @@ func NewRouter(strictServer StrictServer, serverConfig *config.ServerConfig, tra
 
 	router.Group(func(r chi.Router) {
 		r.Use(
-			WithTracedMiddleware(tracer, WithUserKey(strictServer.ValidateBearerToken)),
+			WithTracedMiddleware(tracer, WithUserID(strictServer.ValidateBearerToken)),
 			WithTracedMiddleware(tracer, oapiMiddleware.OapiRequestValidatorWithOptions(swagger, &oapiMiddleware.Options{
 				Options: openapi3filter.Options{
 					AuthenticationFunc: func(ctx context.Context, input *openapi3filter.AuthenticationInput) error {
@@ -205,7 +222,7 @@ func NewRouter(strictServer StrictServer, serverConfig *config.ServerConfig, tra
 			})),
 		)
 
-		r.Handle("/", gen.HandlerFromMux(s, r))
+		r.Handle(PathRoot, gen.HandlerFromMux(s, r))
 	})
 
 	router.Handle(PathAuth, http.HandlerFunc(strictServer.ClientAuthHandler))
@@ -213,7 +230,7 @@ func NewRouter(strictServer StrictServer, serverConfig *config.ServerConfig, tra
 	router.Handle(PathOauthAuthorize, http.HandlerFunc(strictServer.Authorize))
 	router.Handle(PathOauthToken, http.HandlerFunc(strictServer.Token))
 
-	router.Handle("/swagger.json", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	router.Handle(PathSwagger, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, span := tracer.Start(r.Context(), "transport.http.handler/GetSwagger")
 		defer span.End()
 
@@ -237,8 +254,8 @@ func NewMetricsServer(serverConfig *config.ServerConfig, tracer trace.Tracer) (h
 		})))
 	}
 
-	router.Route("/metrics", func(r chi.Router) {
-		r.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	router.Route(PathMetrics, func(r chi.Router) {
+		r.Handle(PathRoot, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx, span := tracer.Start(r.Context(), "transport.http.handler/GetPrometheusMetrics")
 			defer span.End()
 

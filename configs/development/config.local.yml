@@ -1,5 +1,5 @@
 log:
-  level: "debug"
+  level: "info"
 
 license:
   file: "configs/development/license.gen.key"
