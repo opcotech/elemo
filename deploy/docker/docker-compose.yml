@@ -63,7 +63,7 @@ services:
       - "35478:35478"
       - "35479:35479"
     healthcheck:
-      test: "curl -f https://0.0.0.0:35478/api/v1/system/health || exit 1"
+      test: [ "curl", "-f", "-k", "https://0.0.0.0:35478/v1/system/health" ]
       interval: 5s
       timeout: 5s
       retries: 3
