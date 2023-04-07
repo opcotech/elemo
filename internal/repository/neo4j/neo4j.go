@@ -282,7 +282,15 @@ func ExecuteAndConsumeResult(ctx context.Context, tx neo4j.ManagedTransaction, q
 
 // ExecuteWriteAndConsume executes a query and consumes its result.
 func ExecuteWriteAndConsume(ctx context.Context, db *Database, query string, params map[string]any) error {
-	_, err := neo4j.ExecuteWrite(ctx, db.GetWriteSession(ctx), func(tx neo4j.ManagedTransaction) (any, error) {
+	session := db.GetWriteSession(ctx)
+	defer func(ctx context.Context, sess neo4j.SessionWithContext) {
+		err := sess.Close(ctx)
+		if err != nil {
+			log.Error(ctx, err)
+		}
+	}(ctx, session)
+
+	_, err := neo4j.ExecuteWrite(ctx, session, func(tx neo4j.ManagedTransaction) (any, error) {
 		err := ExecuteAndConsumeResult(ctx, tx, query, params)
 		return new(struct{}), err
 	})
@@ -292,7 +300,15 @@ func ExecuteWriteAndConsume(ctx context.Context, db *Database, query string, par
 
 // ExecuteReadAndReadSingle executes a query and reads a single result.
 func ExecuteReadAndReadSingle[T any](ctx context.Context, db *Database, query string, params map[string]any, reader func(record *neo4j.Record) (*T, error)) (*T, error) {
-	return neo4j.ExecuteWrite(ctx, db.GetReadSession(ctx), func(tx neo4j.ManagedTransaction) (*T, error) {
+	session := db.GetReadSession(ctx)
+	defer func(ctx context.Context, sess neo4j.SessionWithContext) {
+		err := sess.Close(ctx)
+		if err != nil {
+			log.Error(ctx, err)
+		}
+	}(ctx, session)
+
+	return neo4j.ExecuteRead(ctx, session, func(tx neo4j.ManagedTransaction) (*T, error) {
 		result, err := tx.Run(ctx, query, params)
 		if err != nil {
 			return nil, err
@@ -304,7 +320,15 @@ func ExecuteReadAndReadSingle[T any](ctx context.Context, db *Database, query st
 
 // ExecuteWriteAndReadSingle executes a query and reads a single result.
 func ExecuteWriteAndReadSingle[T any](ctx context.Context, db *Database, query string, params map[string]any, reader func(record *neo4j.Record) (*T, error)) (*T, error) {
-	return neo4j.ExecuteWrite(ctx, db.GetWriteSession(ctx), func(tx neo4j.ManagedTransaction) (*T, error) {
+	session := db.GetWriteSession(ctx)
+	defer func(ctx context.Context, sess neo4j.SessionWithContext) {
+		err := sess.Close(ctx)
+		if err != nil {
+			log.Error(ctx, err)
+		}
+	}(ctx, session)
+
+	return neo4j.ExecuteWrite(ctx, session, func(tx neo4j.ManagedTransaction) (*T, error) {
 		result, err := tx.Run(ctx, query, params)
 		if err != nil {
 			return nil, err
@@ -316,7 +340,15 @@ func ExecuteWriteAndReadSingle[T any](ctx context.Context, db *Database, query s
 
 // ExecuteReadAndReadAll executes a query and reads all results.
 func ExecuteReadAndReadAll[T any](ctx context.Context, db *Database, query string, params map[string]any, reader func(record *neo4j.Record) (T, error)) ([]T, error) {
-	return neo4j.ExecuteWrite(ctx, db.GetReadSession(ctx), func(tx neo4j.ManagedTransaction) ([]T, error) {
+	session := db.GetReadSession(ctx)
+	defer func(ctx context.Context, sess neo4j.SessionWithContext) {
+		err := sess.Close(ctx)
+		if err != nil {
+			log.Error(ctx, err)
+		}
+	}(ctx, session)
+
+	return neo4j.ExecuteRead(ctx, session, func(tx neo4j.ManagedTransaction) ([]T, error) {
 		result, err := tx.Run(ctx, query, params)
 		if err != nil {
 			return nil, err
@@ -342,7 +374,15 @@ func ExecuteReadAndReadAll[T any](ctx context.Context, db *Database, query strin
 
 // ExecuteWriteAndReadAll executes a query and reads all results.
 func ExecuteWriteAndReadAll[T any](ctx context.Context, db *Database, query string, params map[string]any, reader func(record *neo4j.Record) (T, error)) ([]T, error) {
-	return neo4j.ExecuteWrite(ctx, db.GetWriteSession(ctx), func(tx neo4j.ManagedTransaction) ([]T, error) {
+	session := db.GetWriteSession(ctx)
+	defer func(ctx context.Context, sess neo4j.SessionWithContext) {
+		err := sess.Close(ctx)
+		if err != nil {
+			log.Error(ctx, err)
+		}
+	}(ctx, session)
+
+	return neo4j.ExecuteWrite(ctx, session, func(tx neo4j.ManagedTransaction) ([]T, error) {
 		result, err := tx.Run(ctx, query, params)
 		if err != nil {
 			return nil, err
