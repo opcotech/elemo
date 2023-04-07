@@ -8,7 +8,7 @@ export const metadata = {
 export default function SiteSettingsPage() {
   return (
     <Page title="Site settings">
-      <ContentSkeleton/>
+      <ContentSkeleton />
     </Page>
   );
 }

@@ -9,7 +9,7 @@ export default function TodoDrawer() {
 
   return (
     <Drawer id="showTodos" title="Todos" show={showTodos} toggle={() => toggleDrawer('showTodos')}>
-      <ContentSkeleton/>
+      <ContentSkeleton />
     </Drawer>
   );
 }

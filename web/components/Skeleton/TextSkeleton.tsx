@@ -4,7 +4,7 @@ export interface TextSkeletonProps {
   className?: string;
 }
 
-export default function TextSkeleton({className}: TextSkeletonProps) {
+export default function TextSkeleton({ className }: TextSkeletonProps) {
   return (
     <div role="status" className={concat(className, 'w-full animate-pulse')}>
       <div className="h-2.5 bg-gray-200 rounded-full  w-48 mb-4"></div>

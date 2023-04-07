@@ -17,26 +17,26 @@ const variants: { title: string; variants: AvatarVariant[] }[] = [
   {
     title: 'With images',
     variants: [
-      {size: 'xs', src: 'https://picsum.photos/id/237/100/100'},
-      {size: 'sm', src: 'https://picsum.photos/id/237/100/100'},
-      {size: 'md', src: 'https://picsum.photos/id/237/100/100'},
-      {size: 'lg', src: 'https://picsum.photos/id/237/100/100'},
-      {size: 'xl', src: 'https://picsum.photos/id/237/100/100'}
+      { size: 'xs', src: 'https://picsum.photos/id/237/100/100' },
+      { size: 'sm', src: 'https://picsum.photos/id/237/100/100' },
+      { size: 'md', src: 'https://picsum.photos/id/237/100/100' },
+      { size: 'lg', src: 'https://picsum.photos/id/237/100/100' },
+      { size: 'xl', src: 'https://picsum.photos/id/237/100/100' }
     ]
   },
   {
     title: 'With initials',
     variants: [
-      {size: 'xs', initials: 'TU'},
-      {size: 'sm', initials: 'TU'},
-      {size: 'md', initials: 'TU'},
-      {size: 'lg', initials: 'TU'},
-      {size: 'xl', initials: 'TU'}
+      { size: 'xs', initials: 'TU' },
+      { size: 'sm', initials: 'TU' },
+      { size: 'md', initials: 'TU' },
+      { size: 'lg', initials: 'TU' },
+      { size: 'xl', initials: 'TU' }
     ]
   }
 ];
 
-function AvatarContainer({title, props}: { title: string; props: AvatarVariant }) {
+function AvatarContainer({ title, props }: { title: string; props: AvatarVariant }) {
   return (
     <div className="block">
       <div className={`w-24 h-24 mb-2 flex items-center justify-center`}>
@@ -47,7 +47,7 @@ function AvatarContainer({title, props}: { title: string; props: AvatarVariant }
   );
 }
 
-function AvatarRow({title, variants}: { title: string; variants: AvatarVariant[] }) {
+function AvatarRow({ title, variants }: { title: string; variants: AvatarVariant[] }) {
   return (
     <div id={`#${slugify(title)}`} className="mb-12">
       <h2 className="mb-6">
@@ -55,7 +55,7 @@ function AvatarRow({title, variants}: { title: string; variants: AvatarVariant[]
       </h2>
       <div className="flex flex-row space-x-4 mb-2">
         {variants.map((props, i) => {
-          return <AvatarContainer key={i} title={props.size} props={props}/>;
+          return <AvatarContainer key={i} title={props.size} props={props} />;
         })}
       </div>
     </div>
@@ -66,7 +66,7 @@ export default function AvatarsPage() {
   return (
     <Page title="Avatars">
       {variants.map((row, i) => (
-        <AvatarRow key={i} title={row.title} variants={row.variants}/>
+        <AvatarRow key={i} title={row.title} variants={row.variants} />
       ))}
     </Page>
   );

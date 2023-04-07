@@ -15,7 +15,7 @@ export interface TabProps {
   tabs: TabItem[];
 }
 
-export default function Tab({tabs}: TabProps) {
+export default function Tab({ tabs }: TabProps) {
   return (
     <HeadlessTab.Group>
       <HeadlessTab.List className="block sm:flex mb-6 space-x-2">
@@ -23,7 +23,7 @@ export default function Tab({tabs}: TabProps) {
           <HeadlessTab
             id={`settings-page-tab-${tab.id}`}
             key={tab.name}
-            className={({selected}) =>
+            className={({ selected }) =>
               concat(
                 selected ? 'bg-gray-100 text-gray-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700',
                 'px-3 py-2 font-medium text-sm rounded'

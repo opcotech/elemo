@@ -83,22 +83,22 @@ const spinners: string[][] = [
   ]
 ];
 
-function SpinnerBox({spinner}: { spinner: string }) {
+function SpinnerBox({ spinner }: { spinner: string }) {
   return (
     <div className="block">
       <div className={`w-20 h-20 mb-2 text-${spinner}`}>
-        <Spinner/>
+        <Spinner />
       </div>
       <div className="text-sm text-center">{spinner}</div>
     </div>
   );
 }
 
-function SpinnerRow({spinners}: { spinners: string[] }) {
+function SpinnerRow({ spinners }: { spinners: string[] }) {
   return (
     <div className="flex flex-row space-x-4 mb-2">
       {spinners.map((spinner) => (
-        <SpinnerBox key={spinner} spinner={spinner}/>
+        <SpinnerBox key={spinner} spinner={spinner} />
       ))}
     </div>
   );
@@ -108,7 +108,7 @@ export default function SpinnersPage() {
   return (
     <Page title="Spinners">
       {spinners.map((row, i) => (
-        <SpinnerRow key={i} spinners={row}/>
+        <SpinnerRow key={i} spinners={row} />
       ))}
     </Page>
   );

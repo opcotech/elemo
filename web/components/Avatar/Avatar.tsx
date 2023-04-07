@@ -25,7 +25,7 @@ export interface AvatarProps {
   className?: string;
 }
 
-function AvatarImage({src, className}: { src: string; className?: string }) {
+function AvatarImage({ src, className }: { src: string; className?: string }) {
   return (
     <Image
       className={concat(className, 'rounded-full')}
@@ -39,10 +39,10 @@ function AvatarImage({src, className}: { src: string; className?: string }) {
 }
 
 function AvatarInitials({
-                          initials,
-                          textClassName,
-                          className
-                        }: {
+  initials,
+  textClassName,
+  className
+}: {
   initials: string;
   textClassName: string;
   className?: string;
@@ -54,11 +54,11 @@ function AvatarInitials({
   );
 }
 
-export default function Avatar({size, src, initials, className}: AvatarProps) {
+export default function Avatar({ size, src, initials, className }: AvatarProps) {
   const avatarClasses = concat(className, sizes[size] || sizes.md);
 
   if (src !== undefined && src !== null && src !== '') {
-    return <AvatarImage className={avatarClasses} src={src}/>;
+    return <AvatarImage className={avatarClasses} src={src} />;
   }
 
   return (

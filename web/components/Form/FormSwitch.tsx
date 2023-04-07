@@ -9,7 +9,7 @@ export interface FormSwitchProps {
   onChange?: (checked: boolean) => void;
 }
 
-export default function FormSwitch({label, description, checked = false, onChange}: FormSwitchProps) {
+export default function FormSwitch({ label, description, checked = false, onChange }: FormSwitchProps) {
   return (
     <div className="sm:grid sm:grid-cols-3 sm:items-start sm:gap-4">
       <div className="mt-1 sm:col-start-2 sm:col-span-2 sm:mt-0">

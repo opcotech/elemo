@@ -8,6 +8,6 @@ export interface MessageSliceState {
 
 export const messageSlice: StateCreator<MessageSliceState> = (set) => ({
   messages: [],
-  addMessage: (message) => set((state) => ({messages: [...state.messages, {...message, id: Date.now()}]})),
-  removeMessage: (id: number) => set((state) => ({messages: state.messages.filter((m) => m.id !== id)}))
+  addMessage: (message) => set((state) => ({ messages: [...state.messages, { ...message, id: Date.now() }] })),
+  removeMessage: (id: number) => set((state) => ({ messages: state.messages.filter((m) => m.id !== id) }))
 });

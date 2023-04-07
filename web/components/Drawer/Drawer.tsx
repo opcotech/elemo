@@ -18,7 +18,7 @@ export interface DrawerProps {
   toggle: () => void;
 }
 
-export default function Drawer({id, title, wide, children, show, toggle}: DrawerProps) {
+export default function Drawer({ id, title, wide, children, show, toggle }: DrawerProps) {
   return (
     <Transition.Root show={Boolean(show)} as={Fragment}>
       <Dialog id={id} as="div" className="relative z-30" onClose={toggle}>
@@ -31,7 +31,7 @@ export default function Drawer({id, title, wide, children, show, toggle}: Drawer
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"/>
+          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
         </Transition.Child>
 
         <div className="fixed inset-0 overflow-hidden">

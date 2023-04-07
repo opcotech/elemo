@@ -43,24 +43,23 @@ export default function FormSelect(props: FormSelectProps) {
             id="btn-personal-settings-select-language"
             className="absolute inset-y-0 right-0 flex items-center rounded-r-md px-2 focus:outline-none"
           >
-            <Icon variant="ChevronUpDownIcon" className="h-4 w-4 text-gray-400" aria-hidden="true"/>
+            <Icon variant="ChevronUpDownIcon" className="h-4 w-4 text-gray-400" aria-hidden="true" />
           </Combobox.Button>
 
-          <Combobox.Options
-            className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
+          <Combobox.Options className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
             {props.filteredItems &&
               props.filteredItems.map((item) => (
                 <Combobox.Option
                   key={item.value}
                   value={item}
-                  className={({active}) =>
+                  className={({ active }) =>
                     concat(
                       'relative cursor-default select-none py-2 pl-8 pr-4',
                       active ? 'bg-gray-600 text-white' : 'text-gray-900'
                     )
                   }
                 >
-                  {({active, selected}) => (
+                  {({ active, selected }) => (
                     <>
                       <span className={concat('block truncate', selected ? 'font-medium' : '')}>{item.label}</span>
 
@@ -71,7 +70,7 @@ export default function FormSelect(props: FormSelectProps) {
                             active ? 'text-white' : 'text-gray-600'
                           )}
                         >
-                          <Icon variant="CheckIcon" className="h-5 w-5" aria-hidden="true"/>
+                          <Icon variant="CheckIcon" className="h-5 w-5" aria-hidden="true" />
                         </span>
                       )}
                     </>

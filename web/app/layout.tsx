@@ -27,14 +27,14 @@ const workSans = Work_Sans({
   subsets: ['latin-ext']
 });
 
-export default async function RootLayout({children}: { children: ReactNode }) {
+export default async function RootLayout({ children }: { children: ReactNode }) {
   const session = await getSession(headers().get('cookie') ?? '');
 
   return (
     <html lang="en" className={`h-full ${lato.className} ${workSans.className}`}>
-    <body className={'h-full'}>
-    <SessionProvider session={session}>{children}</SessionProvider>
-    </body>
+      <body className={'h-full'}>
+        <SessionProvider session={session}>{children}</SessionProvider>
+      </body>
     </html>
   );
 }

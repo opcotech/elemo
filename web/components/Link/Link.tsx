@@ -9,20 +9,20 @@ export interface LinkProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
 }
 
 export default function Link({
-                               href = '#',
-                               prefetch = true,
-                               decorated = true,
-                               className,
-                               children,
-                               ...props
-                             }: LinkProps) {
+  href = '#',
+  prefetch = true,
+  decorated = true,
+  className,
+  children,
+  ...props
+}: LinkProps) {
   const Component = href.startsWith('#') ? 'a' : NextLink;
   return (
     <Component
       href={href}
       className={concat(className, decorated ? 'link decorated' : 'link')}
       {...props}
-      {...(!href.startsWith('#') && !prefetch && {prefetch: prefetch})}
+      {...(!href.startsWith('#') && !prefetch && { prefetch: prefetch })}
     >
       {children}
     </Component>

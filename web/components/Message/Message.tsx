@@ -22,7 +22,7 @@ const variantClasses = {
   error: 'text-red-600'
 };
 
-export default function Message({type, title, message, dismissAfter}: Message) {
+export default function Message({ type, title, message, dismissAfter }: Message) {
   const [show, setShow] = useState(true);
   useTimeout(() => setShow(false), dismissAfter && dismissAfter > 0 ? dismissAfter : 5000);
 
@@ -37,8 +37,7 @@ export default function Message({type, title, message, dismissAfter}: Message) {
       leaveFrom="opacity-100"
       leaveTo="opacity-0"
     >
-      <div
-        className="pointer-events-auto w-full max-w-sm overflow-hidden rounded-lg bg-white shadow-lg ring-1 ring-black ring-opacity-5">
+      <div className="pointer-events-auto w-full max-w-sm overflow-hidden rounded-lg bg-white shadow-lg ring-1 ring-black ring-opacity-5">
         <div className="p-4">
           <div className="flex items-start">
             <div className="flex-shrink-0">
@@ -61,7 +60,7 @@ export default function Message({type, title, message, dismissAfter}: Message) {
                   onClick={() => setShow(false)}
                 >
                   <span className="sr-only">Close panel</span>
-                  <Icon variant="XMarkIcon" className="h-5 w-5" aria-hidden="true"/>
+                  <Icon variant="XMarkIcon" className="h-5 w-5" aria-hidden="true" />
                 </button>
               </div>
             )}

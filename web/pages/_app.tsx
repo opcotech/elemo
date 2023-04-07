@@ -20,7 +20,7 @@ const workSans = Work_Sans({
   subsets: ['latin-ext']
 });
 
-export default function App({Component, pageProps: {session, ...pageProps}}: AppProps) {
+export default function App({ Component, pageProps: { session, ...pageProps } }: AppProps) {
   return (
     <>
       <style jsx global>

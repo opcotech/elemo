@@ -6,5 +6,5 @@ import {default as PageSkeleton} from './PageSkeleton';
 import {default as TextSkeleton, type TextSkeletonProps} from './TextSkeleton';
 import {default as VideoSkeleton} from './VideoSkeleton';
 
-export {ContentSkeleton, ImageSkeleton, ListSkeleton, PageSkeleton, TextSkeleton, VideoSkeleton, LineSkeleton};
-export type {ListSkeletonProps, TextSkeletonProps, ImageSkeletonProps, LineSkeletonProps};
+export { ContentSkeleton, ImageSkeleton, ListSkeleton, PageSkeleton, TextSkeleton, VideoSkeleton, LineSkeleton };
+export type { ListSkeletonProps, TextSkeletonProps, ImageSkeletonProps, LineSkeletonProps };

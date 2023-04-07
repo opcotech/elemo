@@ -13,13 +13,13 @@ export interface IconButtonProps {
   children?: ReactNode;
 }
 
-export default function IconButton({icon, disabled, onClick, className, size, children}: IconButtonProps) {
+export default function IconButton({ icon, disabled, onClick, className, size, children }: IconButtonProps) {
   const sizeClass = size ? `h-${size} w-${size}` : 'h-5 w-5';
 
   return (
     <button className={className} disabled={disabled} onClick={onClick}>
       <div className={'relative'}>
-        <Icon variant={icon} className={concat(sizeClass, 'cursor-pointer icon-normal')} aria-hidden="true"/>
+        <Icon variant={icon} className={concat(sizeClass, 'cursor-pointer icon-normal')} aria-hidden="true" />
         {children}
       </div>
     </button>

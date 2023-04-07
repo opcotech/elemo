@@ -7,8 +7,7 @@ interface ElemoUser extends DefaultUser {
 }
 
 declare module 'next-auth' {
-  interface User extends ElemoUser {
-  }
+  interface User extends ElemoUser {}
 
   interface Session extends DefaultSession {
     accessToken?: string;

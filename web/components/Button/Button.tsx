@@ -1,4 +1,4 @@
-import type {ButtonHTMLAttributes, MouseEventHandler, ReactNode} from 'react';
+import type {ButtonHTMLAttributes} from 'react';
 import Spinner from '@/components/Spinner';
 import {concat} from '@/helpers';
 
@@ -23,7 +23,7 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'danger' | 'accent';
 }
 
-export default function Button({className, disabled, loading, variant, size, children, ...props}: ButtonProps) {
+export default function Button({ className, disabled, loading, variant, size, children, ...props }: ButtonProps) {
   return (
     <button
       disabled={disabled || loading}
@@ -35,7 +35,7 @@ export default function Button({className, disabled, loading, variant, size, chi
       )}
       {...props}
     >
-      {loading ? <Spinner className="w-4 h-4 text-white"/> : children}
+      {loading ? <Spinner className="w-4 h-4 text-white" /> : children}
     </button>
   );
 }

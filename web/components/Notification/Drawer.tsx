@@ -14,7 +14,7 @@ export default function NotificationDrawer() {
       show={showNotifications}
       toggle={() => toggleDrawer('showNotifications')}
     >
-      <ContentSkeleton/>
+      <ContentSkeleton />
     </Drawer>
   );
 }

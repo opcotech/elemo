@@ -1,4 +1,4 @@
-import {default as Breadcrumb, type BreadcrumbLink, type BreadcrumbProps} from './Breadcrumb';
+import {type BreadcrumbLink, type BreadcrumbProps, default as Breadcrumb} from './Breadcrumb';
 
 export default Breadcrumb;
-export type {BreadcrumbLink, BreadcrumbProps};
+export type { BreadcrumbLink, BreadcrumbProps };

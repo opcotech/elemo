@@ -9,7 +9,7 @@ export interface PageProps {
   children: ReactNode;
 }
 
-export default function Page({title, className, fullWidth, children}: PageProps): JSX.Element {
+export default function Page({ title, className, fullWidth, children }: PageProps): JSX.Element {
   const containerClass = concat(className, fullWidth ? 'w-full' : 'mx-auto px-4 sm:px-6 lg:px-8');
 
   return (

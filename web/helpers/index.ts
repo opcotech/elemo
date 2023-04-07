@@ -1,1 +1,1 @@
-export {concat, formatErrorMessage, toCapitalCase} from './strings';
+export { concat, formatErrorMessage, toCapitalCase } from './strings';

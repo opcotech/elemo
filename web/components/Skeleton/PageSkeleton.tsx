@@ -8,7 +8,7 @@ export default async function PageSkeleton() {
     <Page>
       <ContentSkeleton>
         <div className={'p-10'}>
-          <TextSkeleton/>
+          <TextSkeleton />
         </div>
       </ContentSkeleton>
     </Page>

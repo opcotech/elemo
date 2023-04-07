@@ -5,7 +5,7 @@ import {useEffect} from 'react';
 import Button from '@/components/Button';
 import Page from '@/components/Page';
 
-export default function Error({error, reset}: { error: Error; reset: () => void }) {
+export default function Error({ error, reset }: { error: Error; reset: () => void }) {
   useEffect(() => {
     console.error(error);
   }, [error]);

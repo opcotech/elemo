@@ -9,8 +9,8 @@
 import {create} from 'zustand';
 import {devtools} from 'zustand/middleware';
 
-import {type DrawerSliceState, drawerSlice} from './store.drawers';
-import {type MessageSliceState, messageSlice} from './store.messages';
+import {drawerSlice, type DrawerSliceState} from './store.drawers';
+import {messageSlice, type MessageSliceState} from './store.messages';
 
 export type StoreState = MessageSliceState & DrawerSliceState;
 

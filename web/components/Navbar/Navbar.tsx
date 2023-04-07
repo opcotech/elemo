@@ -3,7 +3,7 @@
 import {Disclosure, Popover, Transition} from '@headlessui/react';
 import {usePathname} from 'next/navigation';
 import {useSession} from 'next-auth/react';
-import {Fragment, useEffect, useMemo, useState} from 'react';
+import {Fragment, useMemo, useState} from 'react';
 
 import Avatar from '@/components/Avatar';
 import {IconButton} from '@/components/Button';
@@ -26,17 +26,17 @@ export interface UserNavigationItem extends NavigationItem {
 }
 
 const navigation: NavigationItem[] = [
-  {id: 'menu-item-home', label: 'Home', href: '/', prefetch: true},
-  {id: 'menu-item-namespace', label: 'Namespaces', href: '/namespaces', prefetch: true},
-  {id: 'menu-item-projects', label: 'Projects', href: '/projects', prefetch: true},
-  {id: 'menu-item-documents', label: 'Documents', href: '/documents', prefetch: true}
+  { id: 'menu-item-home', label: 'Home', href: '/', prefetch: true },
+  { id: 'menu-item-namespace', label: 'Namespaces', href: '/namespaces', prefetch: true },
+  { id: 'menu-item-projects', label: 'Projects', href: '/projects', prefetch: true },
+  { id: 'menu-item-documents', label: 'Documents', href: '/documents', prefetch: true }
 ];
 
 const userNavigation: UserNavigationItem[] = [
-  {id: 'menu-item-profile', label: 'Profile', href: '/profile', prefetch: true},
-  {id: 'menu-item-settings', label: 'Settings', href: '/settings', prefetch: true},
-  {id: 'menu-item-site-settings', label: 'Site settings', href: '/site-settings', prefetch: true},
-  {id: 'menu-item-logout', label: 'Logout', href: '#', prefetch: false, onClick: logout}
+  { id: 'menu-item-profile', label: 'Profile', href: '/profile', prefetch: true },
+  { id: 'menu-item-settings', label: 'Settings', href: '/settings', prefetch: true },
+  { id: 'menu-item-site-settings', label: 'Site settings', href: '/site-settings', prefetch: true },
+  { id: 'menu-item-logout', label: 'Logout', href: '#', prefetch: false, onClick: logout }
 ];
 
 export default function Navbar() {
@@ -45,7 +45,7 @@ export default function Navbar() {
   const [hasTodos, sethasTodos] = useState(false);
   const [hasNotifications, setHasNotifications] = useState(false);
 
-  const {data: session} = useSession();
+  const { data: session } = useSession();
   const user = session?.user;
 
   const currentPath = '/' + usePathname()?.split('/')[1];
@@ -60,7 +60,7 @@ export default function Navbar() {
 
   return (
     <Disclosure id="navbar" as="nav" className="bg-gray-50 shadow z-20">
-      {({open}) => (
+      {({ open }) => (
         <>
           <div className="px-4 sm:px-6 lg:px-8">
             <div className="flex h-16 justify-between">
@@ -82,7 +82,7 @@ export default function Navbar() {
                         'inline-flex items-center px-1 pt-2 border-b-2 text-sm font-medium'
                       )}
                       aria-current={isCurrent(item.href) ? 'page' : undefined}
-                      {...(!item.prefetch && {prefetch: item.prefetch})}
+                      {...(!item.prefetch && { prefetch: item.prefetch })}
                     >
                       {item.label}
                     </Link>
@@ -98,7 +98,7 @@ export default function Navbar() {
                   }
                 >
                   {hasTodos && (
-                    <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-400 ring-1 ring-white"/>
+                    <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-400 ring-1 ring-white" />
                   )}
                   <span className="sr-only">View todos</span>
                 </IconButton>
@@ -110,7 +110,7 @@ export default function Navbar() {
                   }
                 >
                   {hasNotifications && (
-                    <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-400 ring-1 ring-white"/>
+                    <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-400 ring-1 ring-white" />
                   )}
                   <span className="sr-only">View notifications</span>
                 </IconButton>
@@ -121,7 +121,7 @@ export default function Navbar() {
                     className="flex max-w-xs items-center rounded-full bg-white text-sm focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
                   >
                     <span className="sr-only">Open user menu</span>
-                    <Avatar size="xs" initials={userInitials} src={user?.image}/>
+                    <Avatar size="xs" initials={userInitials} src={user?.image} />
                   </Popover.Button>
                   <Transition
                     as={Fragment}
@@ -132,8 +132,7 @@ export default function Navbar() {
                     leaveFrom="transform opacity-100 scale-100"
                     leaveTo="transform opacity-0 scale-95"
                   >
-                    <Popover.Panel
-                      className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                    <Popover.Panel className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
                       <div className="px-4 py-3">
                         <div className="text-sm font-medium text-gray-800">{user?.name}</div>
                         <div className="text-xs text-gray-500">{user?.email}</div>
@@ -147,7 +146,7 @@ export default function Navbar() {
                               decorated={false}
                               className="block px-4 py-2 text-sm text-gray-700"
                               onClick={item.onClick}
-                              {...(!item.prefetch && {prefetch: item.prefetch})}
+                              {...(!item.prefetch && { prefetch: item.prefetch })}
                             >
                               {item.label}
                             </Link>
@@ -159,13 +158,12 @@ export default function Navbar() {
                 </Popover>
               </div>
               <div className="-mr-2 flex items-center sm:hidden">
-                <Disclosure.Button
-                  className="inline-flex items-center justify-center rounded-md bg-gray-50 p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2">
+                <Disclosure.Button className="inline-flex items-center justify-center rounded-md bg-gray-50 p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2">
                   <span className="sr-only">Open main menu</span>
                   {open ? (
-                    <Icon variant="XMarkIcon" className="block h-6 w-6" aria-hidden="true"/>
+                    <Icon variant="XMarkIcon" className="block h-6 w-6" aria-hidden="true" />
                   ) : (
-                    <Icon variant="Bars3Icon" className="block h-6 w-6" aria-hidden="true"/>
+                    <Icon variant="Bars3Icon" className="block h-6 w-6" aria-hidden="true" />
                   )}
                 </Disclosure.Button>
               </div>
@@ -188,7 +186,7 @@ export default function Navbar() {
                     'block pl-3 pr-4 py-2 border-l-4 text-base font-medium'
                   )}
                   aria-current={isCurrent(item.href) ? 'page' : undefined}
-                  {...(!item.prefetch && {prefetch: item.prefetch})}
+                  {...(!item.prefetch && { prefetch: item.prefetch })}
                 >
                   {item.label}
                 </Disclosure.Button>
@@ -197,7 +195,7 @@ export default function Navbar() {
             <div className="border-t border-gray-200 pt-4 pb-3">
               <div className="flex items-center px-4">
                 <div className="flex-shrink-0">
-                  <Avatar size="sm" initials={userInitials} src={user?.image}/>
+                  <Avatar size="sm" initials={userInitials} src={user?.image} />
                 </div>
                 <div className="ml-3">
                   <div className="text-base font-medium text-gray-800">{user?.name}</div>
@@ -212,7 +210,7 @@ export default function Navbar() {
                     }
                   >
                     {hasTodos && (
-                      <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-400 ring-1 ring-white"/>
+                      <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-400 ring-1 ring-white" />
                     )}
                     <span className="sr-only">View todos</span>
                   </IconButton>
@@ -224,7 +222,7 @@ export default function Navbar() {
                     }
                   >
                     {hasNotifications && (
-                      <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-400 ring-1 ring-white"/>
+                      <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-400 ring-1 ring-white" />
                     )}
                     <span className="sr-only">View notifications</span>
                   </IconButton>
@@ -240,7 +238,7 @@ export default function Navbar() {
                     decorated={false}
                     className="block px-4 py-2 text-base font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-800"
                     onClick={item.onClick}
-                    {...(!item.prefetch && {prefetch: item.prefetch})}
+                    {...(!item.prefetch && { prefetch: item.prefetch })}
                   >
                     {item.label}
                   </Disclosure.Button>

@@ -82,20 +82,20 @@ const colors: string[][] = [
   ]
 ];
 
-function ColorBox({color}: { color: string }) {
+function ColorBox({ color }: { color: string }) {
   return (
     <div className="block">
-      <div className={`w-24 h-24 mb-2 rounded-md shadow bg-${color}`}/>
+      <div className={`w-24 h-24 mb-2 rounded-md shadow bg-${color}`} />
       <div className="text-sm text-center">{color}</div>
     </div>
   );
 }
 
-function ColorRow({colors}: { colors: string[] }) {
+function ColorRow({ colors }: { colors: string[] }) {
   return (
     <div className="flex flex-row space-x-4 mb-2">
       {colors.map((color) => (
-        <ColorBox key={color} color={color}/>
+        <ColorBox key={color} color={color} />
       ))}
     </div>
   );
@@ -105,7 +105,7 @@ export default function ColorsPage() {
   return (
     <Page title="Colors">
       {colors.map((row, i) => (
-        <ColorRow key={i} colors={row}/>
+        <ColorRow key={i} colors={row} />
       ))}
     </Page>
   );

@@ -8,7 +8,7 @@ export const metadata = {
 export default function NamespacesPage() {
   return (
     <Page title="Namespaces">
-      <ContentSkeleton/>
+      <ContentSkeleton />
     </Page>
   );
 }

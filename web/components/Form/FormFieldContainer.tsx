@@ -1,7 +1,7 @@
 import type {FieldErrorsImpl, UseFormRegister} from 'react-hook-form';
 
 import {concat} from '@/helpers';
-import type {ReactNode, KeyboardEvent} from 'react';
+import type {KeyboardEvent, ReactNode} from 'react';
 
 export interface FormCommonProps {
   label: string;
@@ -24,7 +24,7 @@ export interface FormFieldProps {
   children?: ReactNode;
 }
 
-export default function FormFieldContainer({grid = true, name, label, children}: FormFieldProps) {
+export default function FormFieldContainer({ grid = true, name, label, children }: FormFieldProps) {
   return (
     <div className={concat(grid ? 'sm:grid sm:grid-cols-3 sm:items-start sm:gap-4' : '')}>
       <label

@@ -18,14 +18,14 @@ interface ModalProps {
 }
 
 export default function Modal({
-                                state = false,
-                                setState,
-                                className,
-                                modalClassName,
-                                title,
-                                children,
-                                actions
-                              }: ModalProps) {
+  state = false,
+  setState,
+  className,
+  modalClassName,
+  title,
+  children,
+  actions
+}: ModalProps) {
   return (
     <Transition.Root show={state} as={Fragment}>
       <Dialog as="div" className={concat(modalClassName, 'relative z-40')} onClose={setState}>
@@ -38,7 +38,7 @@ export default function Modal({
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"/>
+          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
         </Transition.Child>
 
         <div className="fixed inset-0 z-10 overflow-none">
@@ -69,7 +69,7 @@ export default function Modal({
                         onClick={() => setState(false)}
                       >
                         <span className="sr-only">Close panel</span>
-                        <Icon variant="XMarkIcon" className="h-5 w-5" aria-hidden="true"/>
+                        <Icon variant="XMarkIcon" className="h-5 w-5" aria-hidden="true" />
                       </button>
                     </div>
                   </div>

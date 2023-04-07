@@ -8,7 +8,7 @@ export interface IconProps extends HTMLAttributes<HTMLSpanElement> {
   variant: IconVariant;
 }
 
-export default function Icon({variant, className}: IconProps) {
+export default function Icon({ variant, className }: IconProps) {
   // eslint-disable-next-line import/namespace
   const heroIcon = HeroIcons[variant];
 
@@ -16,5 +16,5 @@ export default function Icon({variant, className}: IconProps) {
     return <></>;
   }
 
-  return <span className="icon">{createElement(heroIcon, {className})}</span>;
+  return <span className="icon">{createElement(heroIcon, { className })}</span>;
 }

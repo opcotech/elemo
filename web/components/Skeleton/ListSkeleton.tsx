@@ -7,7 +7,7 @@ export interface ListSkeletonProps {
   count: number;
 }
 
-export default function ListSkeleton({className, withBorder, fullWidth, count}: ListSkeletonProps) {
+export default function ListSkeleton({ className, withBorder, fullWidth, count }: ListSkeletonProps) {
   return (
     <div
       role="status"
@@ -18,7 +18,7 @@ export default function ListSkeleton({className, withBorder, fullWidth, count}: 
         fullWidth ? 'w-full' : 'max-w-md'
       )}
     >
-      {Array.from({length: count}, (_, i) => (
+      {Array.from({ length: count }, (_, i) => (
         <div key={i} className={`${i > 0 && 'pt-4'} flex justify-between items-center`}>
           <div>
             <div className="h-2.5 bg-gray-300 rounded-full  w-24 mb-2.5"></div>

@@ -3,7 +3,7 @@
 import {signIn, signOut, useSession} from 'next-auth/react';
 
 export default function Home() {
-  const {data: session} = useSession();
+  const { data: session } = useSession();
 
   return (
     <main>
@@ -15,7 +15,7 @@ export default function Home() {
         </>
       ) : (
         <>
-          Not signed in <br/>
+          Not signed in <br />
           <button onClick={() => signIn()}>Sign in</button>
         </>
       )}

@@ -27,7 +27,7 @@ async function getTokenData(credentials: Record<never, string> | undefined): Pro
   };
 
   const tokenResponse = await fetch(`${process.env.ELEMO_BASE_URL}/oauth/token`, {
-    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     method: 'POST',
     body: new URLSearchParams(payload)
   });
@@ -86,7 +86,7 @@ const ElemoCredentialsProvider = Credentials({
 
 async function refreshAccessToken(token: JWT): Promise<JWT> {
   const response = await fetch(`${process.env.ELEMO_BASE_URL}/oauth/token`, {
-    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     method: 'POST',
     body: new URLSearchParams({
       grant_type: 'refresh_token',
@@ -117,7 +117,7 @@ export default NextAuth({
     signIn: '/auth/signin'
   },
   callbacks: {
-    async signIn({user, account}) {
+    async signIn({ user, account }) {
       if (!user || !account) {
         return false;
       }
@@ -129,7 +129,7 @@ export default NextAuth({
       return true;
     },
 
-    async session({session, token}) {
+    async session({ session, token }) {
       return {
         ...session,
         accessToken: token.accessToken,
@@ -137,7 +137,7 @@ export default NextAuth({
         error: token.error
       };
     },
-    async jwt({token, user, account}) {
+    async jwt({ token, user, account }) {
       if (account && user) {
         return {
           accessToken: account.access_token,
@@ -155,7 +155,7 @@ export default NextAuth({
         return refreshAccessToken(token);
       } catch (error) {
         console.error(error);
-        return {...token, error: 'RefreshAccessTokenError'};
+        return { ...token, error: 'RefreshAccessTokenError' };
       }
     }
   },

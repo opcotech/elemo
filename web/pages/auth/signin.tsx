@@ -2,8 +2,8 @@ import Image from 'next/image';
 import {getCsrfToken} from 'next-auth/react';
 import Button from '@/components/Button';
 import type {GetServerSidePropsContext, InferGetServerSidePropsType} from 'next';
-import {useState} from 'react';
 import type {FormEvent} from 'react';
+import {useState} from 'react';
 
 export type SignInErrorTypes =
   | 'Signin'
@@ -32,7 +32,7 @@ const errors: Record<SignInErrorTypes, string> = {
   default: 'Unable to sign in.'
 };
 
-export default function SignInPage({csrfToken, error: err}: InferGetServerSidePropsType<typeof getServerSideProps>) {
+export default function SignInPage({ csrfToken, error: err }: InferGetServerSidePropsType<typeof getServerSideProps>) {
   const error = err && (errors[err] ?? errors.default);
 
   const [submitting, setSubmitting] = useState(false);
@@ -72,7 +72,7 @@ export default function SignInPage({csrfToken, error: err}: InferGetServerSidePr
             )}
             <div className="mt-6">
               <form className="space-y-6" method="POST" action="/api/auth/callback/credentials" onSubmit={handleSubmit}>
-                <input name="csrfToken" type="hidden" defaultValue={csrfToken}/>
+                <input name="csrfToken" type="hidden" defaultValue={csrfToken} />
                 <div>
                   <label htmlFor="username" className="block font-medium leading-6 text-gray-900">
                     Email address

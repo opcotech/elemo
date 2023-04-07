@@ -15,7 +15,7 @@ export interface BreadcrumbProps {
   links?: BreadcrumbLink[];
 }
 
-export default function Breadcrumb({links}: BreadcrumbProps) {
+export default function Breadcrumb({ links }: BreadcrumbProps) {
   links = links || [];
 
   const pathname = usePathname();
@@ -40,7 +40,7 @@ export default function Breadcrumb({links}: BreadcrumbProps) {
             <li>
               <div>
                 <Link href="/" className="text-gray-400 hover:text-gray-500">
-                  <Icon variant={'HomeIcon'} className={'h-5 w-5 flex-shrink-0 text-gray-400'} aria-hidden={true}/>
+                  <Icon variant={'HomeIcon'} className={'h-5 w-5 flex-shrink-0 text-gray-400'} aria-hidden={true} />
                   <span className="sr-only">Home</span>
                 </Link>
               </div>
@@ -54,7 +54,7 @@ export default function Breadcrumb({links}: BreadcrumbProps) {
                     viewBox="0 0 20 20"
                     aria-hidden="true"
                   >
-                    <path d="M5.555 17.776l8-16 .894.448-8 16-.894-.448z"/>
+                    <path d="M5.555 17.776l8-16 .894.448-8 16-.894-.448z" />
                   </svg>
                   <Link
                     href={link.href}

@@ -9,7 +9,7 @@ export const metadata = {
 export default function ProjectsPage() {
   return (
     <>
-      <Breadcrumb/>
+      <Breadcrumb />
       <Page title="Projects">
         <ul>
           <li>

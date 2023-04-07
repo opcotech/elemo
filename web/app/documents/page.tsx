@@ -8,7 +8,7 @@ export const metadata = {
 export default function DocumentsPage() {
   return (
     <Page title="Documents">
-      <ContentSkeleton/>
+      <ContentSkeleton />
     </Page>
   );
 }

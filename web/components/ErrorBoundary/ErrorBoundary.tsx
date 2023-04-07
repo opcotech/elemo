@@ -16,15 +16,15 @@ export interface ErrorBoundaryState {
 export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   constructor(props: ErrorBoundaryProps) {
     super(props);
-    this.state = {hasError: false};
+    this.state = { hasError: false };
   }
 
   static getDerivedStateFromError() {
-    return {hasError: true};
+    return { hasError: true };
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error({error, errorInfo});
+    console.error({ error, errorInfo });
   }
 
   render() {
@@ -36,7 +36,7 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
             <p className={'mb-10'}>
               The application has encountered an error and cannot continue. Please try again later.
             </p>
-            <Button onClick={() => this.setState({hasError: false})}>Try again</Button>
+            <Button onClick={() => this.setState({ hasError: false })}>Try again</Button>
           </div>
         </div>
       );
