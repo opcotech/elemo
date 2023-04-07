@@ -1,7 +1,7 @@
 import {concat, formatErrorMessage} from '@/helpers';
 
 import FormFieldContainer, {type FormCommonProps} from './FormFieldContainer';
-import type {ChangeEvent, ReactNode} from "react";
+import type {ChangeEvent, ReactNode} from 'react';
 
 export interface FormInputProps extends FormCommonProps {
   type: 'text' | 'email' | 'password' | 'number' | 'date' | 'time' | 'datetime-local' | 'tel' | 'url' | 'search';

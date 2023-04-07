@@ -1,15 +1,15 @@
 import {headers} from 'next/headers';
-import SessionProvider from '@/components/session-provider'
+import SessionProvider from '@/components/SessionProvider';
 import {getSession} from '@/lib/session';
-import type {ReactNode} from "react";
+import type {ReactNode} from 'react';
 
-import './globals.css'
-import {Lato, Work_Sans} from "next/font/google";
+import './globals.css';
+import {Lato, Work_Sans} from 'next/font/google';
 
 export const metadata = {
   title: 'Elemo',
-  description: 'The next-generation project management tool',
-}
+  description: 'The next-generation project management tool'
+};
 
 const lato = Lato({
   variable: '--font-lato',
@@ -33,10 +33,8 @@ export default async function RootLayout({children}: { children: ReactNode }) {
   return (
     <html lang="en" className={`h-full ${lato.className} ${workSans.className}`}>
     <body className={'h-full'}>
-    <SessionProvider session={session}>
-      {children}
-    </SessionProvider>
+    <SessionProvider session={session}>{children}</SessionProvider>
     </body>
     </html>
-  )
+  );
 }

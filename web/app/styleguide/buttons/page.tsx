@@ -14,7 +14,7 @@ type ButtonVariant = {
   disabled?: boolean;
 };
 
-const variants: { title: string, variants: ButtonVariant[] }[] = [
+const variants: { title: string; variants: ButtonVariant[] }[] = [
   {
     title: 'Sizes',
     variants: [
@@ -22,7 +22,7 @@ const variants: { title: string, variants: ButtonVariant[] }[] = [
       {size: 'sm', variant: 'primary'},
       {size: 'md', variant: 'primary'},
       {size: 'lg', variant: 'primary'},
-      {size: 'xl', variant: 'primary'},
+      {size: 'xl', variant: 'primary'}
     ]
   },
   {
@@ -31,7 +31,7 @@ const variants: { title: string, variants: ButtonVariant[] }[] = [
       {size: 'md', variant: 'primary'},
       {size: 'md', variant: 'secondary'},
       {size: 'md', variant: 'danger'},
-      {size: 'md', variant: 'accent'},
+      {size: 'md', variant: 'accent'}
     ]
   },
   {
@@ -40,7 +40,7 @@ const variants: { title: string, variants: ButtonVariant[] }[] = [
       {size: 'md', loading: true, variant: 'primary'},
       {size: 'md', loading: true, variant: 'secondary'},
       {size: 'md', loading: true, variant: 'danger'},
-      {size: 'md', loading: true, variant: 'accent'},
+      {size: 'md', loading: true, variant: 'accent'}
     ]
   },
   {
@@ -49,9 +49,9 @@ const variants: { title: string, variants: ButtonVariant[] }[] = [
       {size: 'md', disabled: true, variant: 'primary'},
       {size: 'md', disabled: true, variant: 'secondary'},
       {size: 'md', disabled: true, variant: 'danger'},
-      {size: 'md', disabled: true, variant: 'accent'},
+      {size: 'md', disabled: true, variant: 'accent'}
     ]
-  },
+  }
 ];
 
 function ButtonContainer({title, props}: { title: string; props: ButtonVariant }) {
@@ -67,8 +67,10 @@ function ButtonContainer({title, props}: { title: string; props: ButtonVariant }
 
 function ButtonRow({title, variants}: { title: string; variants: ButtonVariant[] }) {
   return (
-    <div id={`#${slugify(title)}`} className='mb-12'>
-      <h2 className='mb-6'><a href={`#${slugify(title)}`}>{title}</a></h2>
+    <div id={`#${slugify(title)}`} className="mb-12">
+      <h2 className="mb-6">
+        <a href={`#${slugify(title)}`}>{title}</a>
+      </h2>
       <div className="flex flex-row space-x-4 mb-2">
         {variants.map((props, i) => {
           return <ButtonContainer key={i} title={props.size} props={props}/>;

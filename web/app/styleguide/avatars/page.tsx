@@ -13,7 +13,7 @@ type AvatarVariant = {
   initials?: string;
 };
 
-const variants: { title: string, variants: AvatarVariant[] }[] = [
+const variants: { title: string; variants: AvatarVariant[] }[] = [
   {
     title: 'With images',
     variants: [
@@ -21,7 +21,7 @@ const variants: { title: string, variants: AvatarVariant[] }[] = [
       {size: 'sm', src: 'https://picsum.photos/id/237/100/100'},
       {size: 'md', src: 'https://picsum.photos/id/237/100/100'},
       {size: 'lg', src: 'https://picsum.photos/id/237/100/100'},
-      {size: 'xl', src: 'https://picsum.photos/id/237/100/100'},
+      {size: 'xl', src: 'https://picsum.photos/id/237/100/100'}
     ]
   },
   {
@@ -31,9 +31,9 @@ const variants: { title: string, variants: AvatarVariant[] }[] = [
       {size: 'sm', initials: 'TU'},
       {size: 'md', initials: 'TU'},
       {size: 'lg', initials: 'TU'},
-      {size: 'xl', initials: 'TU'},
+      {size: 'xl', initials: 'TU'}
     ]
-  },
+  }
 ];
 
 function AvatarContainer({title, props}: { title: string; props: AvatarVariant }) {
@@ -49,8 +49,10 @@ function AvatarContainer({title, props}: { title: string; props: AvatarVariant }
 
 function AvatarRow({title, variants}: { title: string; variants: AvatarVariant[] }) {
   return (
-    <div id={`#${slugify(title)}`} className='mb-12'>
-      <h2 className='mb-6'><a href={`#${slugify(title)}`}>{title}</a></h2>
+    <div id={`#${slugify(title)}`} className="mb-12">
+      <h2 className="mb-6">
+        <a href={`#${slugify(title)}`}>{title}</a>
+      </h2>
       <div className="flex flex-row space-x-4 mb-2">
         {variants.map((props, i) => {
           return <AvatarContainer key={i} title={props.size} props={props}/>;

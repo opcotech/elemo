@@ -1,6 +1,6 @@
-import NextAuth from "next-auth/next";
-import type {JWT} from "next-auth/jwt";
-import Credentials from "next-auth/providers/credentials";
+import NextAuth from 'next-auth/next';
+import type {JWT} from 'next-auth/jwt';
+import Credentials from 'next-auth/providers/credentials';
 
 interface TokenResponse {
   token_type: string;
@@ -17,20 +17,19 @@ interface UserResponse {
   picture: string;
 }
 
-
 async function getTokenData(credentials: Record<never, string> | undefined): Promise<TokenResponse | null> {
   const payload = {
     ...credentials,
-    client_id: process.env.ELEMO_CLIENT_ID || "",
-    client_secret: process.env.ELEMO_CLIENT_SECRET || "",
-    scope: process.env.ELEMO_AUTH_SCOPES || "",
-    grant_type: "password",
-  }
+    client_id: process.env.ELEMO_CLIENT_ID || '',
+    client_secret: process.env.ELEMO_CLIENT_SECRET || '',
+    scope: process.env.ELEMO_AUTH_SCOPES || '',
+    grant_type: 'password'
+  };
 
   const tokenResponse = await fetch(`${process.env.ELEMO_BASE_URL}/oauth/token`, {
-    headers: {"Content-Type": "application/x-www-form-urlencoded"},
-    method: "POST",
-    body: new URLSearchParams(payload),
+    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+    method: 'POST',
+    body: new URLSearchParams(payload)
   });
 
   const tokenData: TokenResponse = await tokenResponse.json();
@@ -45,8 +44,8 @@ async function getTokenData(credentials: Record<never, string> | undefined): Pro
 async function getUserData(tokenData: TokenResponse): Promise<UserResponse | null> {
   const userResponse = await fetch(`${process.env.ELEMO_BASE_URL}/v1/users/me`, {
     headers: {
-      "Content-Type": "application/json",
-      Authorization: `${tokenData.token_type} ${tokenData.access_token}`,
+      'Content-Type': 'application/json',
+      Authorization: `${tokenData.token_type} ${tokenData.access_token}`
     }
   });
 
@@ -60,7 +59,7 @@ async function getUserData(tokenData: TokenResponse): Promise<UserResponse | nul
 }
 
 const ElemoCredentialsProvider = Credentials({
-  name: "Elemo",
+  name: 'Elemo',
   credentials: {},
   authorize: async (credentials) => {
     const tokenData = await getTokenData(credentials);
@@ -80,44 +79,42 @@ const ElemoCredentialsProvider = Credentials({
       image: userData.picture,
       access_token: tokenData.access_token,
       refresh_token: tokenData.refresh_token,
-      expires_in: tokenData.expires_in,
+      expires_in: tokenData.expires_in
     };
-  },
+  }
 });
 
 async function refreshAccessToken(token: JWT): Promise<JWT> {
   const response = await fetch(`${process.env.ELEMO_BASE_URL}/oauth/token`, {
-    headers: {"Content-Type": "application/x-www-form-urlencoded"},
-    method: "POST",
+    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+    method: 'POST',
     body: new URLSearchParams({
-      grant_type: "refresh_token",
-      refresh_token: token.refreshToken ?? "",
-      client_id: process.env.ELEMO_CLIENT_ID || "",
-      client_secret: process.env.ELEMO_CLIENT_SECRET || "",
-      scope: process.env.ELEMO_AUTH_SCOPES || "",
-    }),
+      grant_type: 'refresh_token',
+      refresh_token: token.refreshToken ?? '',
+      client_id: process.env.ELEMO_CLIENT_ID || '',
+      client_secret: process.env.ELEMO_CLIENT_SECRET || '',
+      scope: process.env.ELEMO_AUTH_SCOPES || ''
+    })
   });
 
   const data = await response.json();
 
   if (!response.ok) {
-    throw new Error(data.error_description ?? data.error ?? "Unknown error");
+    throw new Error(data.error_description ?? data.error ?? 'Unknown error');
   }
 
   return {
     ...token,
     accessToken: data.access_token,
     accessTokenExpires: Date.now() + data.expires_in * 1000,
-    refreshToken: data.refresh_token ?? token.refreshToken,
+    refreshToken: data.refresh_token ?? token.refreshToken
   };
 }
 
 export default NextAuth({
-  providers: [
-    ElemoCredentialsProvider,
-  ],
+  providers: [ElemoCredentialsProvider],
   pages: {
-    signIn: "/auth/signin",
+    signIn: '/auth/signin'
   },
   callbacks: {
     async signIn({user, account}) {
@@ -125,11 +122,11 @@ export default NextAuth({
         return false;
       }
 
-      account.access_token = user.access_token
-      account.refresh_token = user.refresh_token
-      account.expires_in = user.expires_in
+      account.access_token = user.access_token;
+      account.refresh_token = user.refresh_token;
+      account.expires_in = user.expires_in;
 
-      return true
+      return true;
     },
 
     async session({session, token}) {
@@ -137,7 +134,7 @@ export default NextAuth({
         ...session,
         accessToken: token.accessToken,
         user: token.user,
-        error: token.error,
+        error: token.error
       };
     },
     async jwt({token, user, account}) {
@@ -146,7 +143,7 @@ export default NextAuth({
           accessToken: account.access_token,
           accessTokenExpires: (Date.now() + account.expires_in ?? 0) * 1000,
           refreshToken: account.refresh_token,
-          user,
+          user
         };
       }
 
@@ -158,9 +155,9 @@ export default NextAuth({
         return refreshAccessToken(token);
       } catch (error) {
         console.error(error);
-        return {...token, error: "RefreshAccessTokenError"};
+        return {...token, error: 'RefreshAccessTokenError'};
       }
-    },
+    }
   },
-  debug: process.env.NODE_ENV !== "production" && process.env.DEBUG === "true",
+  debug: process.env.NODE_ENV !== 'production' && process.env.DEBUG === 'true'
 });

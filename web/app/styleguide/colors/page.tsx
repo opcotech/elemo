@@ -6,7 +6,7 @@ export const metadata = {
 };
 
 const colors: string[][] = [
-  ['black', "white"],
+  ['black', 'white'],
   ['red-50', 'red-100', 'red-200', 'red-300', 'red-400', 'red-500', 'red-600', 'red-700', 'red-800', 'red-900'],
   [
     'green-50',
@@ -84,7 +84,7 @@ const colors: string[][] = [
 
 function ColorBox({color}: { color: string }) {
   return (
-    <div className='block'>
+    <div className="block">
       <div className={`w-24 h-24 mb-2 rounded-md shadow bg-${color}`}/>
       <div className="text-sm text-center">{color}</div>
     </div>

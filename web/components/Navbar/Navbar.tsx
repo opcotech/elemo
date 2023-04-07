@@ -29,7 +29,7 @@ const navigation: NavigationItem[] = [
   {id: 'menu-item-home', label: 'Home', href: '/', prefetch: true},
   {id: 'menu-item-namespace', label: 'Namespaces', href: '/namespaces', prefetch: true},
   {id: 'menu-item-projects', label: 'Projects', href: '/projects', prefetch: true},
-  {id: 'menu-item-documents', label: 'Documents', href: '/documents', prefetch: true},
+  {id: 'menu-item-documents', label: 'Documents', href: '/documents', prefetch: true}
 ];
 
 const userNavigation: UserNavigationItem[] = [
@@ -91,7 +91,7 @@ export default function Navbar() {
               </div>
               <div className="hidden sm:ml-6 sm:flex sm:items-center">
                 <IconButton
-                  icon='CheckCircleIcon'
+                  icon="CheckCircleIcon"
                   onClick={() => toggleDrawer('showTodos')}
                   className={
                     'mr-2 rounded-full bg-gray-50 p-1 text-gray-600 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2'
@@ -103,7 +103,7 @@ export default function Navbar() {
                   <span className="sr-only">View todos</span>
                 </IconButton>
                 <IconButton
-                  icon='BellIcon'
+                  icon="BellIcon"
                   onClick={() => toggleDrawer('showNotifications')}
                   className={
                     'mr-2 rounded-full bg-gray-50 p-1 text-gray-600 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2'
@@ -121,7 +121,7 @@ export default function Navbar() {
                     className="flex max-w-xs items-center rounded-full bg-white text-sm focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
                   >
                     <span className="sr-only">Open user menu</span>
-                    <Avatar size='xs' initials={userInitials} src={user?.image}/>
+                    <Avatar size="xs" initials={userInitials} src={user?.image}/>
                   </Popover.Button>
                   <Transition
                     as={Fragment}
@@ -205,7 +205,7 @@ export default function Navbar() {
                 </div>
                 <div className="flex flex-1 justify-end">
                   <IconButton
-                    icon='CheckCircleIcon'
+                    icon="CheckCircleIcon"
                     onClick={() => toggleDrawer('showTodos')}
                     className={
                       'mr-2 flex-shrink-0 rounded-full bg-gray-50 p-1 text-gray-600 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2'
@@ -217,7 +217,7 @@ export default function Navbar() {
                     <span className="sr-only">View todos</span>
                   </IconButton>
                   <IconButton
-                    icon='BellIcon'
+                    icon="BellIcon"
                     onClick={() => toggleDrawer('showNotifications')}
                     className={
                       'mr-2 flex-shrink-0 rounded-full bg-gray-50 p-1 text-gray-600 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2'

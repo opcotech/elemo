@@ -85,7 +85,7 @@ const spinners: string[][] = [
 
 function SpinnerBox({spinner}: { spinner: string }) {
   return (
-    <div className='block'>
+    <div className="block">
       <div className={`w-20 h-20 mb-2 text-${spinner}`}>
         <Spinner/>
       </div>

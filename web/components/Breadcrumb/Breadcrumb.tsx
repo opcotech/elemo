@@ -1,18 +1,18 @@
 'use client';
 
-import {usePathname} from "next/navigation";
-import {toCapitalCase} from "@/helpers";
-import Icon from "@/components/Icon";
-import Link from "@/components/Link";
+import {usePathname} from 'next/navigation';
+import {toCapitalCase} from '@/helpers';
+import Icon from '@/components/Icon';
+import Link from '@/components/Link';
 
 export interface BreadcrumbLink {
-  name: string
-  href: string
-  current: boolean
+  name: string;
+  href: string;
+  current: boolean;
 }
 
 export interface BreadcrumbProps {
-  links?: BreadcrumbLink[]
+  links?: BreadcrumbLink[];
 }
 
 export default function Breadcrumb({links}: BreadcrumbProps) {
@@ -25,10 +25,10 @@ export default function Breadcrumb({links}: BreadcrumbProps) {
     for (let i = 1; i < pathSplit?.length; i++) {
       const path = pathSplit.slice(0, i + 1).join('/');
       links.push({
-        name: toCapitalCase(pathSplit[i].replace("-", " ")),
+        name: toCapitalCase(pathSplit[i].replace('-', ' ')),
         href: path,
         current: i === pathSplit.length - 1
-      })
+      });
     }
   }
 
@@ -70,5 +70,5 @@ export default function Breadcrumb({links}: BreadcrumbProps) {
         </nav>
       </div>
     </header>
-  )
+  );
 }
