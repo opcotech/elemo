@@ -25,21 +25,12 @@ export interface UserNavigationItem extends NavigationItem {
   onClick?: () => void;
 }
 
-const navigation: NavigationItem[] = [
-  { id: 'menu-item-home', label: 'Home', href: '/', prefetch: true },
-  { id: 'menu-item-namespace', label: 'Namespaces', href: '/namespaces', prefetch: true },
-  { id: 'menu-item-projects', label: 'Projects', href: '/projects', prefetch: true },
-  { id: 'menu-item-documents', label: 'Documents', href: '/documents', prefetch: true }
-];
+export interface NavbarProps {
+  navigation: NavigationItem[];
+  userNavigation: UserNavigationItem[];
+}
 
-const userNavigation: UserNavigationItem[] = [
-  { id: 'menu-item-profile', label: 'Profile', href: '/profile', prefetch: true },
-  { id: 'menu-item-settings', label: 'Settings', href: '/settings', prefetch: true },
-  { id: 'menu-item-site-settings', label: 'Site settings', href: '/site-settings', prefetch: true },
-  { id: 'menu-item-logout', label: 'Logout', href: '#', prefetch: false, onClick: logout }
-];
-
-export default function Navbar() {
+export default function Navbar({ navigation, userNavigation }: NavbarProps) {
   const toggleDrawer = useStore((state) => state.toggleDrawer);
 
   const [hasTodos, sethasTodos] = useState(false);
