@@ -1,10 +1,10 @@
-import {headers} from 'next/headers';
+import { headers } from 'next/headers';
 import SessionProvider from '@/components/SessionProvider';
-import {getSession} from '@/lib/session';
-import type {ReactNode} from 'react';
+import { getSession } from '@/lib/session';
+import type { ReactNode } from 'react';
 
 import './globals.css';
-import {Lato, Work_Sans} from 'next/font/google';
+import { Lato, Work_Sans } from 'next/font/google';
 
 export const metadata = {
   title: 'Elemo',

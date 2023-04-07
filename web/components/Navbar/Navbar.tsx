@@ -1,17 +1,17 @@
 'use client';
 
-import {Disclosure, Popover, Transition} from '@headlessui/react';
-import {usePathname} from 'next/navigation';
-import {useSession} from 'next-auth/react';
-import {Fragment, useMemo, useState} from 'react';
+import { Disclosure, Popover, Transition } from '@headlessui/react';
+import { usePathname } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+import { Fragment, useMemo, useState } from 'react';
 
 import Avatar from '@/components/Avatar';
-import {IconButton} from '@/components/Button';
+import { IconButton } from '@/components/Button';
 import Icon from '@/components/Icon';
 import Link from '@/components/Link';
-import {concat} from '@/helpers';
-import {getInitials} from '@/helpers/strings';
-import {logout} from '@/lib/session';
+import { concat } from '@/helpers';
+import { getInitials } from '@/helpers/strings';
+import { logout } from '@/lib/session';
 import useStore from '@/store';
 
 export interface NavigationItem {

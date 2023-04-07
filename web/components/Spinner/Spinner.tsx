@@ -1,4 +1,4 @@
-import {concat} from '@/helpers';
+import { concat } from '@/helpers';
 
 export default function Spinner({ className }: { className?: string }) {
   return (

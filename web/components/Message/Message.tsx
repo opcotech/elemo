@@ -1,12 +1,12 @@
 'use client';
 
-import {Transition} from '@headlessui/react';
-import {Fragment, useState} from 'react';
+import { Transition } from '@headlessui/react';
+import { Fragment, useState } from 'react';
 
 import Icon from '@/components/Icon';
-import {concat} from '@/helpers';
+import { concat } from '@/helpers';
 import useTimeout from '@/hooks/useTimeout';
-import type {IconVariant} from '@/types/heroicon';
+import type { IconVariant } from '@/types/heroicon';
 
 const variantIcons = {
   success: 'CheckCircleIcon',

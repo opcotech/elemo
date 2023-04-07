@@ -1,4 +1,4 @@
-import {concat} from '@/helpers';
+import { concat } from '@/helpers';
 
 export default function Divider({ className }: { className?: string }) {
   return (

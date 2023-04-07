@@ -1,7 +1,7 @@
-import {default as NextLink} from 'next/link';
-import type {AnchorHTMLAttributes} from 'react';
+import { default as NextLink } from 'next/link';
+import type { AnchorHTMLAttributes } from 'react';
 
-import {concat} from '@/helpers';
+import { concat } from '@/helpers';
 
 export interface LinkProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
   decorated?: boolean;

@@ -1,7 +1,7 @@
 'use client';
 
 import Drawer from '@/components/Drawer';
-import {ContentSkeleton} from '@/components/Skeleton';
+import { ContentSkeleton } from '@/components/Skeleton';
 import useStore from '@/store';
 
 export default function TodoDrawer() {

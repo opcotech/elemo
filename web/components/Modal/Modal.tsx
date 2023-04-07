@@ -1,11 +1,11 @@
 'use client';
 
-import {Dialog, Transition} from '@headlessui/react';
-import type {Dispatch, SetStateAction} from 'react';
-import {Fragment} from 'react';
+import { Dialog, Transition } from '@headlessui/react';
+import type { Dispatch, SetStateAction } from 'react';
+import { Fragment } from 'react';
 
 import Icon from '@/components/Icon';
-import {concat} from '@/helpers';
+import { concat } from '@/helpers';
 
 interface ModalProps {
   state: boolean;

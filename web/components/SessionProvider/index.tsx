@@ -1,3 +1,3 @@
-import {default as SessionProvider} from './provider';
+import { default as SessionProvider } from './provider';
 
 export default SessionProvider;

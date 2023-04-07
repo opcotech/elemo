@@ -1,8 +1,8 @@
-import type {ReactNode} from 'react';
+import type { ReactNode } from 'react';
 
 import Icon from '@/components/Icon';
-import {concat} from '@/helpers';
-import type {IconVariant} from '@/types/heroicon';
+import { concat } from '@/helpers';
+import type { IconVariant } from '@/types/heroicon';
 
 export interface IconButtonProps {
   icon: IconVariant;

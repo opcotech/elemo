@@ -1,7 +1,7 @@
 'use client';
 
-import {usePathname} from 'next/navigation';
-import {toCapitalCase} from '@/helpers';
+import { usePathname } from 'next/navigation';
+import { toCapitalCase } from '@/helpers';
 import Icon from '@/components/Icon';
 import Link from '@/components/Link';
 

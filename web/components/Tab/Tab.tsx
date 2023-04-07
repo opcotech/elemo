@@ -1,9 +1,9 @@
 'use client';
 
-import {Tab as HeadlessTab} from '@headlessui/react';
-import type {ReactNode} from 'react';
+import { Tab as HeadlessTab } from '@headlessui/react';
+import type { ReactNode } from 'react';
 
-import {concat} from '@/helpers';
+import { concat } from '@/helpers';
 
 export interface TabItem {
   id: string;

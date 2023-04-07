@@ -1,6 +1,6 @@
-import type {ReactNode} from 'react';
+import type { ReactNode } from 'react';
 
-import {concat} from '@/helpers';
+import { concat } from '@/helpers';
 
 export interface PageProps {
   title?: string;

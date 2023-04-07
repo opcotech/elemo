@@ -1,6 +1,6 @@
-import type {ButtonHTMLAttributes} from 'react';
+import type { ButtonHTMLAttributes } from 'react';
 import Spinner from '@/components/Spinner';
-import {concat} from '@/helpers';
+import { concat } from '@/helpers';
 
 const fontSizes = {
   xs: 'text-xs h-7',

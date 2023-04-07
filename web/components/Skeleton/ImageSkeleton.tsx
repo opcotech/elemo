@@ -1,5 +1,5 @@
 import Icon from '@/components/Icon';
-import {concat} from '@/helpers';
+import { concat } from '@/helpers';
 
 export interface ImageSkeletonProps {
   className?: string;

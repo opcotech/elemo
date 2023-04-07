@@ -1,6 +1,6 @@
-import {concat, formatErrorMessage} from '@/helpers';
+import { concat, formatErrorMessage } from '@/helpers';
 
-import FormFieldContainer, {type FormCommonProps} from './FormFieldContainer';
+import FormFieldContainer, { type FormCommonProps } from './FormFieldContainer';
 
 export interface FormTextareaProps extends FormCommonProps {
   rows?: number;

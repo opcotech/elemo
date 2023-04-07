@@ -1,6 +1,6 @@
 import SessionProvider from '@/components/SessionProvider';
-import type {AppProps} from 'next/app';
-import {Lato, Work_Sans} from 'next/font/google';
+import type { AppProps } from 'next/app';
+import { Lato, Work_Sans } from 'next/font/google';
 
 import '@/app/globals.css';
 

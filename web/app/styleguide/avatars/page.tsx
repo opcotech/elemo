@@ -1,6 +1,6 @@
 import Avatar from '@/components/Avatar';
 import Page from '@/components/Page';
-import {slugify} from '@/helpers/strings';
+import { slugify } from '@/helpers/strings';
 
 export const metadata = {
   title: 'Avatars | Styleguide | Elemo',

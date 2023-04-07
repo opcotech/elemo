@@ -1,8 +1,8 @@
 import * as HeroIcons from '@heroicons/react/24/outline';
-import type {HTMLAttributes} from 'react';
-import {createElement} from 'react';
+import type { HTMLAttributes } from 'react';
+import { createElement } from 'react';
 
-import type {IconVariant} from '@/types/heroicon';
+import type { IconVariant } from '@/types/heroicon';
 
 export interface IconProps extends HTMLAttributes<HTMLSpanElement> {
   variant: IconVariant;

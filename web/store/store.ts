@@ -6,11 +6,11 @@
  * cache upon mutations.
  */
 
-import {create} from 'zustand';
-import {devtools} from 'zustand/middleware';
+import { create } from 'zustand';
+import { devtools } from 'zustand/middleware';
 
-import {drawerSlice, type DrawerSliceState} from './store.drawers';
-import {messageSlice, type MessageSliceState} from './store.messages';
+import { drawerSlice, type DrawerSliceState } from './store.drawers';
+import { messageSlice, type MessageSliceState } from './store.messages';
 
 export type StoreState = MessageSliceState & DrawerSliceState;
 

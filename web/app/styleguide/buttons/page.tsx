@@ -1,6 +1,6 @@
 import Button from '@/components/Button';
 import Page from '@/components/Page';
-import {slugify} from '@/helpers/strings';
+import { slugify } from '@/helpers/strings';
 
 export const metadata = {
   title: 'Buttons | Styleguide | Elemo',

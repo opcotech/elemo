@@ -1,6 +1,6 @@
-import {Switch} from '@headlessui/react';
+import { Switch } from '@headlessui/react';
 
-import {concat} from '@/helpers';
+import { concat } from '@/helpers';
 
 export interface FormSwitchProps {
   label: string;

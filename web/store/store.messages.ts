@@ -1,4 +1,4 @@
-import type {StateCreator} from 'zustand';
+import type { StateCreator } from 'zustand';
 
 export interface MessageSliceState {
   messages: Message[];

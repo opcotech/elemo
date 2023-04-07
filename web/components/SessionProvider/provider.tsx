@@ -1,6 +1,6 @@
 'use client';
 
-import {SessionProvider, SessionProviderProps} from 'next-auth/react';
+import { SessionProvider, SessionProviderProps } from 'next-auth/react';
 
 const SESSION_REFETCH_INTERVAL = 60;
 

@@ -1,11 +1,11 @@
 'use client';
 
-import {Dialog, Transition} from '@headlessui/react';
-import type {ReactNode} from 'react';
-import {Fragment} from 'react';
+import { Dialog, Transition } from '@headlessui/react';
+import type { ReactNode } from 'react';
+import { Fragment } from 'react';
 
 import IconButton from '@/components/Button/IconButton';
-import {concat} from '@/helpers';
+import { concat } from '@/helpers';
 
 import ErrorBoundary from '../ErrorBoundary';
 

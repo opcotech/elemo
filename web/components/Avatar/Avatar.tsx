@@ -1,6 +1,6 @@
 import Image from 'next/image';
 
-import {concat} from '@/helpers';
+import { concat } from '@/helpers';
 
 const sizes = {
   xs: 'w-6 h-6',

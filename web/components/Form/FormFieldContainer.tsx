@@ -1,7 +1,7 @@
-import type {FieldErrorsImpl, UseFormRegister} from 'react-hook-form';
+import type { FieldErrorsImpl, UseFormRegister } from 'react-hook-form';
 
-import {concat} from '@/helpers';
-import type {KeyboardEvent, ReactNode} from 'react';
+import { concat } from '@/helpers';
+import type { KeyboardEvent, ReactNode } from 'react';
 
 export interface FormCommonProps {
   label: string;

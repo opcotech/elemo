@@ -1,11 +1,11 @@
-import {Combobox} from '@headlessui/react';
-import type {ReactNode, SetStateAction} from 'react';
-import type {FieldErrorsImpl} from 'react-hook-form/dist/types';
+import { Combobox } from '@headlessui/react';
+import type { ReactNode, SetStateAction } from 'react';
+import type { FieldErrorsImpl } from 'react-hook-form/dist/types';
 
 import Icon from '@/components/Icon';
-import {concat, formatErrorMessage} from '@/helpers';
+import { concat, formatErrorMessage } from '@/helpers';
 
-import FormFieldContainer, {type FormCommonProps} from './FormFieldContainer';
+import FormFieldContainer, { type FormCommonProps } from './FormFieldContainer';
 
 export interface FormSelectItem {
   label: string;

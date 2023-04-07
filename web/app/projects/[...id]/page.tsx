@@ -1,5 +1,5 @@
 import Page from '@/components/Page';
-import {ContentSkeleton} from '@/components/Skeleton';
+import { ContentSkeleton } from '@/components/Skeleton';
 import Breadcrumb from '@/components/Breadcrumb';
 
 export const metadata = {

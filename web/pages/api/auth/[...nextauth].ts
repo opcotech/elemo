@@ -1,5 +1,5 @@
 import NextAuth from 'next-auth/next';
-import type {JWT} from 'next-auth/jwt';
+import type { JWT } from 'next-auth/jwt';
 import Credentials from 'next-auth/providers/credentials';
 
 interface TokenResponse {

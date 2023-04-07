@@ -1,3 +1,3 @@
-import {default as NotificationDrawer} from './Drawer';
+import { default as NotificationDrawer } from './Drawer';
 
 export default NotificationDrawer;

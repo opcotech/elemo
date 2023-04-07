@@ -1,4 +1,4 @@
-import type {DefaultSession, DefaultUser} from 'next-auth';
+import type { DefaultSession, DefaultUser } from 'next-auth';
 
 interface ElemoUser extends DefaultUser {
   access_token: string;

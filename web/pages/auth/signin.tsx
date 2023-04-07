@@ -1,9 +1,9 @@
 import Image from 'next/image';
-import {getCsrfToken} from 'next-auth/react';
+import { getCsrfToken } from 'next-auth/react';
 import Button from '@/components/Button';
-import type {GetServerSidePropsContext, InferGetServerSidePropsType} from 'next';
-import type {FormEvent} from 'react';
-import {useState} from 'react';
+import type { GetServerSidePropsContext, InferGetServerSidePropsType } from 'next';
+import type { FormEvent } from 'react';
+import { useState } from 'react';
 
 export type SignInErrorTypes =
   | 'Signin'
