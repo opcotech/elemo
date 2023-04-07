@@ -10,7 +10,7 @@ export default function Home() {
       <h1 className="text-3xl font-bold underline">Hello world!</h1>
       {session ? (
         <>
-          <p className="text-xl">Welcome {session.user.email}!</p>
+          <p className="text-xl">Welcome {session.user?.email}!</p>
           <button onClick={() => signOut()}>Sign out</button>
         </>
       ) : (

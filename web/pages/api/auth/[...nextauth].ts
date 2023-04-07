@@ -1,42 +1,89 @@
 import NextAuth from "next-auth/next";
-import type {JWT} from "next-auth/jwt/types";
-import type {Provider} from "next-auth/providers";
-import type {Session} from "next-auth/core/types";
+import type {JWT} from "next-auth/jwt";
+import Credentials from "next-auth/providers/credentials";
 
-export const ElemoProvider: Provider = {
-  id: "elemo",
+interface TokenResponse {
+  token_type: string;
+  access_token: string;
+  refresh_token: string;
+  expires_in: number;
+}
+
+interface UserResponse {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  picture: string;
+}
+
+
+async function getTokenData(credentials: Record<never, string> | undefined): Promise<TokenResponse | null> {
+  const payload = {
+    ...credentials,
+    client_id: process.env.ELEMO_CLIENT_ID || "",
+    client_secret: process.env.ELEMO_CLIENT_SECRET || "",
+    scope: process.env.ELEMO_AUTH_SCOPES || "",
+    grant_type: "password",
+  }
+
+  const tokenResponse = await fetch(`${process.env.ELEMO_BASE_URL}/oauth/token`, {
+    headers: {"Content-Type": "application/x-www-form-urlencoded"},
+    method: "POST",
+    body: new URLSearchParams(payload),
+  });
+
+  const tokenData: TokenResponse = await tokenResponse.json();
+
+  if (!tokenResponse.ok || !tokenData) {
+    return null;
+  }
+
+  return tokenData;
+}
+
+async function getUserData(tokenData: TokenResponse): Promise<UserResponse | null> {
+  const userResponse = await fetch(`${process.env.ELEMO_BASE_URL}/v1/users/me`, {
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `${tokenData.token_type} ${tokenData.access_token}`,
+    }
+  });
+
+  const userData: UserResponse = await userResponse.json();
+
+  if (!userResponse.ok || !userData) {
+    return null;
+  }
+
+  return userData;
+}
+
+const ElemoCredentialsProvider = Credentials({
   name: "Elemo",
-  type: "oauth",
-  client: {
-    client_id: process.env.ELEMO_CLIENT_ID,
-    client_secret: process.env.ELEMO_CLIENT_SECRET,
-    token_endpoint_auth_method: "client_secret_post"
-  },
-  authorization: {
-    url: `${process.env.ELEMO_BASE_URL}/oauth/authorize`,
-    params: {
-      scope: process.env.ELEMO_AUTH_SCOPES,
-    },
-  },
-  token: `${process.env.ELEMO_BASE_URL}/oauth/token`,
-  userinfo: `${process.env.ELEMO_BASE_URL}/v1/users/me`,
-  checks: ["pkce", "state", "nonce"],
-  profile: (profile) => {
-    console.log('returning', {
-      id: profile.id,
-      name: `${profile.first_name} ${profile.last_name}`,
-      email: profile.email,
-      image: profile.picture,
-    });
+  credentials: {},
+  authorize: async (credentials) => {
+    const tokenData = await getTokenData(credentials);
+    if (!tokenData) {
+      return null;
+    }
+
+    const userData = await getUserData(tokenData);
+    if (!userData) {
+      return null;
+    }
 
     return {
-      id: profile.id,
-      name: `${profile.first_name} ${profile.last_name}`,
-      email: profile.email,
-      image: profile.picture,
+      id: userData.id,
+      name: `${userData.first_name} ${userData.last_name}`,
+      email: userData.email,
+      image: userData.picture,
+      access_token: tokenData.access_token,
+      refresh_token: tokenData.refresh_token,
+      expires_in: tokenData.expires_in,
     };
   },
-};
+});
 
 async function refreshAccessToken(token: JWT): Promise<JWT> {
   const response = await fetch(`${process.env.ELEMO_BASE_URL}/oauth/token`, {
@@ -67,10 +114,25 @@ async function refreshAccessToken(token: JWT): Promise<JWT> {
 
 export default NextAuth({
   providers: [
-    ElemoProvider,
+    ElemoCredentialsProvider,
   ],
+  pages: {
+    signIn: "/auth/signin",
+  },
   callbacks: {
-    async session({session, token}): Promise<Session> {
+    async signIn({user, account}) {
+      if (!user || !account) {
+        return false;
+      }
+
+      account.access_token = user.access_token
+      account.refresh_token = user.refresh_token
+      account.expires_in = user.expires_in
+
+      return true
+    },
+
+    async session({session, token}) {
       return {
         ...session,
         accessToken: token.accessToken,
@@ -78,11 +140,11 @@ export default NextAuth({
         error: token.error,
       };
     },
-    async jwt({token, user, account}): Promise<JWT> {
+    async jwt({token, user, account}) {
       if (account && user) {
         return {
           accessToken: account.access_token,
-          accessTokenExpires: account.expires_at * 1000,
+          accessTokenExpires: (Date.now() + account.expires_in ?? 0) * 1000,
           refreshToken: account.refresh_token,
           user,
         };
