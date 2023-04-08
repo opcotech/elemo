@@ -85,7 +85,6 @@ func TestHTTPErrorStruct(t *testing.T) {
 				status: http.StatusBadRequest,
 			},
 			want: gen.HTTPError{
-				Code:    403,
 				Message: "Forbidden",
 			},
 		},
@@ -96,7 +95,6 @@ func TestHTTPErrorStruct(t *testing.T) {
 				status: http.StatusInternalServerError,
 			},
 			want: gen.HTTPError{
-				Code:    500,
 				Message: "Server error",
 			},
 		},

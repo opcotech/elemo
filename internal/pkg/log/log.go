@@ -7,13 +7,12 @@ import (
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-)
 
-const (
-	CtxKeyLogger ctxKey = "logger"
+	"github.com/opcotech/elemo/internal/pkg"
 )
 
 var (
+	ErrNoLogger            = errors.New("no logger")             // the logger is missing
 	ErrInvalidLogLevel     = errors.New("invalid log level")     // invalid log level
 	ErrInvalidLoggerConfig = errors.New("invalid logger config") // invalid logger config
 
@@ -83,13 +82,13 @@ func WithContext(ctx context.Context, logger Logger) context.Context {
 		ctxLogger = globalLogger
 	}
 
-	return context.WithValue(ctx, CtxKeyLogger, ctxLogger)
+	return context.WithValue(ctx, pkg.CtxKeyLogger, ctxLogger)
 }
 
 // FromContext returns the logger from the context. If the logger is not
 // found in the context, it returns the global logger.
 func FromContext(ctx context.Context) Logger {
-	if ctxLogger, ok := ctx.Value(CtxKeyLogger).(Logger); ok {
+	if ctxLogger, ok := ctx.Value(pkg.CtxKeyLogger).(Logger); ok {
 		return ctxLogger
 	}
 

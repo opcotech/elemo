@@ -9,12 +9,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/opcotech/elemo/internal/model"
-)
-
-var (
-	ErrSystemHealthCheck = errors.New("system health check failed") // system health check failed
-	ErrNoVersionInfo     = errors.New("no version info provided")   // no version info provided
-	ErrNoResources       = errors.New("no resources provided")      // no resources provided
+	"github.com/opcotech/elemo/internal/pkg/tracing"
 )
 
 // Pingable defines the interface for a driver that can be pinged.
@@ -61,9 +56,12 @@ func (s *systemService) checkStatus(
 		errCh <- errors.Join(ErrSystemHealthCheck, err)
 	}
 
+	span.AddEvent(fmt.Sprintf("Check %s health finished", name),
+		trace.WithAttributes(tracing.WithSystemHealthStatusAttribute(status)),
+	)
+
 	lock.Lock()
 	defer lock.Unlock()
-
 	response[name] = status
 }
 

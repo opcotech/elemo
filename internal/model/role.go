@@ -11,10 +11,6 @@ const (
 	RoleIDType = "Role"
 )
 
-var (
-	ErrInvalidRoleDetails = errors.New("invalid role details") // the role details are invalid
-)
-
 // Role is a group of users. However, permissions are attached to roles
 // separately to avoid infinitely nested permissions.
 type Role struct {

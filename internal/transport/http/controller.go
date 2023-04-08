@@ -1,8 +1,6 @@
 package http
 
 import (
-	"errors"
-
 	auth "github.com/go-oauth2/oauth2/v4/server"
 	"go.opentelemetry.io/otel/trace"
 
@@ -15,14 +13,6 @@ import (
 const (
 	DefaultLimit  = 10 // default limit for pagination
 	DefaultOffset = 0  // default offset for pagination
-)
-
-var (
-	ErrNoLogger        = errors.New("no logger provided")         // no logger provided
-	ErrNoTracer        = errors.New("no tracer provided")         // no tracer provided
-	ErrNoAuthProvider  = errors.New("no auth provider provided")  // no auth provider provided
-	ErrNoSystemService = errors.New("no system service provided") // no system service provided
-	ErrNoUserService   = errors.New("no user service provided")   // no user service provided
 )
 
 // ControllerOption is a function that can be used to configure a controller.

@@ -9,18 +9,12 @@ import (
 
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/convert"
+	"github.com/opcotech/elemo/internal/repository"
 )
 
-var (
-	ErrCommentCreate = errors.New("failed to create comment") // the comment could not be created
-	ErrCommentRead   = errors.New("failed to read comment")   // the comment could not be retrieved
-	ErrCommentUpdate = errors.New("failed to update comment") // the comment could not be updated
-	ErrCommentDelete = errors.New("failed to delete comment") // the comment could not be deleted
-)
-
-// CommentRepository is a repository for managing comments.
+// CommentRepository is a baseRepository for managing comments.
 type CommentRepository struct {
-	*repository
+	*baseRepository
 }
 
 func (r *CommentRepository) scan(cp, op string) func(rec *neo4j.Record) (*model.Comment, error) {
@@ -53,15 +47,15 @@ func (r *CommentRepository) scan(cp, op string) func(rec *neo4j.Record) (*model.
 }
 
 func (r *CommentRepository) Create(ctx context.Context, belongsTo model.ID, comment *model.Comment) error {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.CommentRepository/Create")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.CommentRepository/Create")
 	defer span.End()
 
 	if err := belongsTo.Validate(); err != nil {
-		return errors.Join(ErrCommentCreate, err)
+		return errors.Join(repository.ErrCommentCreate, err)
 	}
 
 	if err := comment.Validate(); err != nil {
-		return errors.Join(ErrCommentCreate, err)
+		return errors.Join(repository.ErrCommentCreate, err)
 	}
 
 	createdAt := time.Now()
@@ -95,14 +89,14 @@ func (r *CommentRepository) Create(ctx context.Context, belongsTo model.ID, comm
 	}
 
 	if err := ExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
-		return errors.Join(ErrCommentCreate, err)
+		return errors.Join(repository.ErrCommentCreate, err)
 	}
 
 	return nil
 }
 
 func (r *CommentRepository) Get(ctx context.Context, id model.ID) (*model.Comment, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.CommentRepository/Get")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.CommentRepository/Get")
 	defer span.End()
 
 	cypher := `
@@ -115,14 +109,14 @@ func (r *CommentRepository) Get(ctx context.Context, id model.ID) (*model.Commen
 
 	doc, err := ExecuteReadAndReadSingle(ctx, r.db, cypher, params, r.scan("c", "o"))
 	if err != nil {
-		return nil, errors.Join(ErrCommentRead, err)
+		return nil, errors.Join(repository.ErrCommentRead, err)
 	}
 
 	return doc, nil
 }
 
 func (r *CommentRepository) GetAllBelongsTo(ctx context.Context, belongsTo model.ID, offset, limit int) ([]*model.Comment, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.CommentRepository/GetAllBelongsTo")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.CommentRepository/GetAllBelongsTo")
 	defer span.End()
 
 	cypher := `
@@ -141,14 +135,14 @@ func (r *CommentRepository) GetAllBelongsTo(ctx context.Context, belongsTo model
 
 	docs, err := ExecuteReadAndReadAll(ctx, r.db, cypher, params, r.scan("c", "o"))
 	if err != nil {
-		return nil, errors.Join(ErrCommentRead, err)
+		return nil, errors.Join(repository.ErrCommentRead, err)
 	}
 
 	return docs, nil
 }
 
 func (r *CommentRepository) Update(ctx context.Context, id model.ID, content string) (*model.Comment, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.CommentRepository/Update")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.CommentRepository/Update")
 	defer span.End()
 
 	cypher := `
@@ -164,16 +158,16 @@ func (r *CommentRepository) Update(ctx context.Context, id model.ID, content str
 		"updated_at": time.Now().Format(time.RFC3339Nano),
 	}
 
-	doc, err := ExecuteReadAndReadSingle(ctx, r.db, cypher, params, r.scan("c", "o"))
+	doc, err := ExecuteWriteAndReadSingle(ctx, r.db, cypher, params, r.scan("c", "o"))
 	if err != nil {
-		return nil, errors.Join(ErrCommentUpdate, err)
+		return nil, errors.Join(repository.ErrCommentUpdate, err)
 	}
 
 	return doc, nil
 }
 
 func (r *CommentRepository) Delete(ctx context.Context, id model.ID) error {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.CommentRepository/Delete")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.CommentRepository/Delete")
 	defer span.End()
 
 	cypher := `MATCH (d:` + id.Label() + ` {id: $id}) DETACH DELETE d`
@@ -182,13 +176,13 @@ func (r *CommentRepository) Delete(ctx context.Context, id model.ID) error {
 	}
 
 	if err := ExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
-		return errors.Join(ErrCommentDelete, err)
+		return errors.Join(repository.ErrCommentDelete, err)
 	}
 
 	return nil
 }
 
-// NewCommentRepository creates a new comment repository.
+// NewCommentRepository creates a new comment baseRepository.
 func NewCommentRepository(opts ...RepositoryOption) (*CommentRepository, error) {
 	baseRepo, err := newRepository(opts...)
 	if err != nil {
@@ -196,6 +190,6 @@ func NewCommentRepository(opts ...RepositoryOption) (*CommentRepository, error) 
 	}
 
 	return &CommentRepository{
-		repository: baseRepo,
+		baseRepository: baseRepo,
 	}, nil
 }

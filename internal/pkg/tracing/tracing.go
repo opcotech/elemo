@@ -2,6 +2,7 @@ package tracing
 
 import (
 	"context"
+	"errors"
 
 	"go.opentelemetry.io/otel"
 	otlptrace "go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
@@ -16,6 +17,7 @@ import (
 )
 
 var (
+	ErrNoTracer        = errors.New("no tracer") // the tracer is missing
 	noopTracerProvider = trace.NewNoopTracerProvider()
 	noopTracer         = noopTracerProvider.Tracer("github.com/opcotech/elemo")
 )

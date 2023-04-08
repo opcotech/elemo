@@ -41,11 +41,23 @@ var startCmd = &cobra.Command{
 			logger.Fatal("failed to initialize relational database", zap.Error(err))
 		}
 
+		permissionRepo, err := neo4j.NewPermissionRepository(
+			neo4j.WithDatabase(graphDB),
+			neo4j.WithRepositoryLogger(logger.Named("permission_repository")),
+			neo4j.WithRepositoryTracer(tracer),
+		)
+		if err != nil {
+			logger.Fatal("failed to initialize permission repository", zap.Error(err))
+		}
+
 		userRepo, err := neo4j.NewUserRepository(
 			neo4j.WithDatabase(graphDB),
 			neo4j.WithRepositoryLogger(logger.Named("user_repository")),
 			neo4j.WithRepositoryTracer(tracer),
 		)
+		if err != nil {
+			logger.Fatal("failed to initialize user repository", zap.Error(err))
+		}
 
 		systemService, err := service.NewSystemService(
 			map[model.HealthCheckComponent]service.Pingable{
@@ -56,12 +68,19 @@ var startCmd = &cobra.Command{
 			service.WithLogger(logger.Named("system_service")),
 			service.WithTracer(tracer),
 		)
+		if err != nil {
+			logger.Fatal("failed to initialize system service", zap.Error(err))
+		}
 
 		userService, err := service.NewUserService(
 			service.WithUserRepository(userRepo),
+			service.WithPermissionRepository(permissionRepo),
 			service.WithLogger(logger.Named("user_service")),
 			service.WithTracer(tracer),
 		)
+		if err != nil {
+			logger.Fatal("failed to initialize user service", zap.Error(err))
+		}
 
 		authProvider, err := initAuthProvider(relDBPool)
 		if err != nil {

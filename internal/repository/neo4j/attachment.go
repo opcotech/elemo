@@ -9,18 +9,12 @@ import (
 
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/convert"
+	"github.com/opcotech/elemo/internal/repository"
 )
 
-var (
-	ErrAttachmentCreate = errors.New("failed to create attachment") // the attachment could not be created
-	ErrAttachmentRead   = errors.New("failed to read attachment")   // the attachment could not be retrieved
-	ErrAttachmentUpdate = errors.New("failed to update attachment") // the attachment could not be updated
-	ErrAttachmentDelete = errors.New("failed to delete attachment") // the attachment could not be deleted
-)
-
-// AttachmentRepository is a repository for managing attachments.
+// AttachmentRepository is a baseRepository for managing attachments.
 type AttachmentRepository struct {
-	*repository
+	*baseRepository
 }
 
 func (r *AttachmentRepository) scan(cp, op string) func(rec *neo4j.Record) (*model.Attachment, error) {
@@ -53,15 +47,15 @@ func (r *AttachmentRepository) scan(cp, op string) func(rec *neo4j.Record) (*mod
 }
 
 func (r *AttachmentRepository) Create(ctx context.Context, belongsTo model.ID, attachment *model.Attachment) error {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.AttachmentRepository/Create")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.AttachmentRepository/Create")
 	defer span.End()
 
 	if err := belongsTo.Validate(); err != nil {
-		return errors.Join(ErrAttachmentCreate, err)
+		return errors.Join(repository.ErrAttachmentCreate, err)
 	}
 
 	if err := attachment.Validate(); err != nil {
-		return errors.Join(ErrAttachmentCreate, err)
+		return errors.Join(repository.ErrAttachmentCreate, err)
 	}
 
 	createdAt := time.Now()
@@ -94,14 +88,14 @@ func (r *AttachmentRepository) Create(ctx context.Context, belongsTo model.ID, a
 	}
 
 	if err := ExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
-		return errors.Join(ErrAttachmentCreate, err)
+		return errors.Join(repository.ErrAttachmentCreate, err)
 	}
 
 	return nil
 }
 
 func (r *AttachmentRepository) Get(ctx context.Context, id model.ID) (*model.Attachment, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.AttachmentRepository/Get")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.AttachmentRepository/Get")
 	defer span.End()
 
 	cypher := `
@@ -114,14 +108,14 @@ func (r *AttachmentRepository) Get(ctx context.Context, id model.ID) (*model.Att
 
 	doc, err := ExecuteReadAndReadSingle(ctx, r.db, cypher, params, r.scan("a", "o"))
 	if err != nil {
-		return nil, errors.Join(ErrAttachmentRead, err)
+		return nil, errors.Join(repository.ErrAttachmentRead, err)
 	}
 
 	return doc, nil
 }
 
 func (r *AttachmentRepository) GetAllBelongsTo(ctx context.Context, belongsTo model.ID, offset, limit int) ([]*model.Attachment, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.AttachmentRepository/GetAllBelongsTo")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.AttachmentRepository/GetAllBelongsTo")
 	defer span.End()
 
 	cypher := `
@@ -140,14 +134,14 @@ func (r *AttachmentRepository) GetAllBelongsTo(ctx context.Context, belongsTo mo
 
 	docs, err := ExecuteReadAndReadAll(ctx, r.db, cypher, params, r.scan("a", "o"))
 	if err != nil {
-		return nil, errors.Join(ErrAttachmentRead, err)
+		return nil, errors.Join(repository.ErrAttachmentRead, err)
 	}
 
 	return docs, nil
 }
 
 func (r *AttachmentRepository) Update(ctx context.Context, id model.ID, name string) (*model.Attachment, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.AttachmentRepository/Update")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.AttachmentRepository/Update")
 	defer span.End()
 
 	cypher := `
@@ -163,16 +157,16 @@ func (r *AttachmentRepository) Update(ctx context.Context, id model.ID, name str
 		"updated_at": time.Now().Format(time.RFC3339Nano),
 	}
 
-	doc, err := ExecuteReadAndReadSingle(ctx, r.db, cypher, params, r.scan("a", "o"))
+	doc, err := ExecuteWriteAndReadSingle(ctx, r.db, cypher, params, r.scan("a", "o"))
 	if err != nil {
-		return nil, errors.Join(ErrAttachmentUpdate, err)
+		return nil, errors.Join(repository.ErrAttachmentUpdate, err)
 	}
 
 	return doc, nil
 }
 
 func (r *AttachmentRepository) Delete(ctx context.Context, id model.ID) error {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.AttachmentRepository/Delete")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.AttachmentRepository/Delete")
 	defer span.End()
 
 	cypher := `MATCH (a:` + id.Label() + ` {id: $id}) DETACH DELETE a`
@@ -181,13 +175,13 @@ func (r *AttachmentRepository) Delete(ctx context.Context, id model.ID) error {
 	}
 
 	if err := ExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
-		return errors.Join(ErrAttachmentDelete, err)
+		return errors.Join(repository.ErrAttachmentDelete, err)
 	}
 
 	return nil
 }
 
-// NewAttachmentRepository creates a new attachment repository.
+// NewAttachmentRepository creates a new attachment baseRepository.
 func NewAttachmentRepository(opts ...RepositoryOption) (*AttachmentRepository, error) {
 	baseRepo, err := newRepository(opts...)
 	if err != nil {
@@ -195,6 +189,6 @@ func NewAttachmentRepository(opts ...RepositoryOption) (*AttachmentRepository, e
 	}
 
 	return &AttachmentRepository{
-		repository: baseRepo,
+		baseRepository: baseRepo,
 	}, nil
 }

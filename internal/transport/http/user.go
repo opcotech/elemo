@@ -2,11 +2,16 @@ package http
 
 import (
 	"context"
+	"errors"
+	"net/http"
 
 	openapiTypes "github.com/deepmap/oapi-codegen/pkg/types"
 
 	"github.com/opcotech/elemo/internal/model"
+	"github.com/opcotech/elemo/internal/pkg"
 	"github.com/opcotech/elemo/internal/pkg/convert"
+	"github.com/opcotech/elemo/internal/repository"
+	"github.com/opcotech/elemo/internal/service"
 	"github.com/opcotech/elemo/internal/transport/http/gen"
 )
 
@@ -29,19 +34,29 @@ func (c *userController) GetUser(ctx context.Context, request gen.GetUserRequest
 
 	if request.UserId == "me" {
 		var ok bool
-		if userID, ok = ctx.Value(ctxKeyUserID).(model.ID); !ok {
-			return gen.GetUser401JSONResponse{}, nil
+		if userID, ok = ctx.Value(pkg.CtxKeyUserID).(model.ID); !ok {
+			return gen.GetUser404JSONResponse{N404JSONResponse: notFound}, nil
 		}
 	} else {
 		if userID, err = model.NewIDFromString(request.UserId, model.UserIDType); err != nil {
-			return gen.GetUserResponseObject(nil), err
+			return gen.GetUser404JSONResponse{N404JSONResponse: notFound}, nil
 		}
 	}
 
-	// TODO: Handle user not found -- return 404
 	user, err := c.userService.Get(ctx, userID)
 	if err != nil {
-		return gen.GetUserResponseObject(nil), err
+		if errors.Is(err, service.ErrNoPermission) {
+			return gen.GetUser401JSONResponse{N401JSONResponse: permissionDenied}, nil
+		}
+		if errors.Is(err, repository.ErrNotFound) {
+			return gen.GetUser404JSONResponse{N404JSONResponse: notFound}, nil
+		}
+		return gen.GetUserdefaultJSONResponse{
+			Body: gen.HTTPError{
+				Message: err.Error(),
+			},
+			StatusCode: http.StatusInternalServerError,
+		}, nil
 	}
 
 	return gen.GetUser200JSONResponse(*userToDTO(user)), nil

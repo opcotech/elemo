@@ -11,10 +11,6 @@ const (
 	CommentIDType = "Comment"
 )
 
-var (
-	ErrInvalidCommentDetails = errors.New("invalid comment details") // the comment details are invalid
-)
-
 // Comment represents a comment on a resource.
 type Comment struct {
 	ID        ID         `json:"id" validate:"required,dive"`

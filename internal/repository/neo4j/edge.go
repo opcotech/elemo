@@ -1,7 +1,5 @@
 package neo4j
 
-import "errors"
-
 const (
 	EdgeKindAssignedTo    EdgeKind = iota + 1 // a user is assigned to a resource
 	EdgeKindBelongsTo                         // a resource belongs to another
@@ -23,27 +21,6 @@ const (
 )
 
 var (
-	ErrInvalidEdgeKind = errors.New("invalid edge kind") // the edge kind is invalid
-
-	relationKindKeys = map[string]EdgeKind{
-		"ASSIGNED_TO":    EdgeKindAssignedTo,
-		"BELONGS_TO":     EdgeKindBelongsTo,
-		"COMMENTED":      EdgeKindCommented,
-		"CREATED":        EdgeKindCreated,
-		"HAS_ATTACHMENT": EdgeKindHasAttachment,
-		"HAS_COMMENT":    EdgeKindHasComment,
-		"HAS_LABEL":      EdgeKindHasLabel,
-		"HAS_NAMESPACE":  EdgeKindHasNamespace,
-		"HAS_PERMISSION": EdgeKindHasPermission,
-		"HAS_PROJECT":    EdgeKindHasProject,
-		"HAS_TEAM":       EdgeKindHasTeam,
-		"INVITED":        EdgeKindInvited,
-		"KIND_OF":        EdgeKindKindOf,
-		"MEMBER_OF":      EdgeKindMemberOf,
-		"RELATED_TO":     EdgeKindRelatedTo,
-		"SPEAKS":         EdgeKindSpeaks,
-		"WATCHES":        EdgeKindWatches,
-	}
 	relationKindValues = map[EdgeKind]string{
 		EdgeKindAssignedTo:    "ASSIGNED_TO",
 		EdgeKindBelongsTo:     "BELONGS_TO",

@@ -1,7 +1,5 @@
 package model
 
-import "errors"
-
 const (
 	HealthCheckComponentGraphDB      HealthCheckComponent = "graph_database"      // graph database
 	HealthCheckComponentRelationalDB HealthCheckComponent = "relational_database" // relational database
@@ -14,8 +12,6 @@ const (
 )
 
 var (
-	ErrInvalidHealthStatus = errors.New("invalid health status") // health status is invalid
-
 	healthStatusKeys = map[string]HealthStatus{
 		"unknown":   HealthStatusUnknown,
 		"healthy":   HealthStatusHealthy,

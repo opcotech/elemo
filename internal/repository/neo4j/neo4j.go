@@ -14,16 +14,7 @@ import (
 	"github.com/opcotech/elemo/internal/pkg/log"
 	"github.com/opcotech/elemo/internal/pkg/tracing"
 	"github.com/opcotech/elemo/internal/pkg/validate"
-)
-
-var (
-	ErrInvalidDatabase   = errors.New("invalid database")   // the database is invalid
-	ErrInvalidDriver     = errors.New("invalid driver")     // the driver is invalid
-	ErrInvalidRepository = errors.New("invalid repository") // the repository is invalid
-	ErrMalformedResult   = errors.New("malformed result")   // the result is malformed
-	ErrNoLogger          = errors.New("no logger")          // the logger is missing
-	ErrNoTracer          = errors.New("no tracer")          // the tracer is missing
-	ErrNoDriver          = errors.New("no driver")          // the driver is missing
+	"github.com/opcotech/elemo/internal/repository"
 )
 
 // boltLogger implements Neo4j's logger interface.
@@ -55,7 +46,7 @@ func NewDriver(conf *config.GraphDatabaseConfig) (neo4j.DriverWithContext, error
 		c.FetchSize = conf.FetchSize
 	})
 	if err != nil {
-		return nil, errors.Join(ErrInvalidDriver, err)
+		return nil, errors.Join(repository.ErrInvalidDriver, err)
 	}
 
 	return driver, nil
@@ -145,20 +136,20 @@ func NewDatabase(opts ...DatabaseOption) (*Database, error) {
 	}
 
 	if err := validate.Struct(db); err != nil {
-		return nil, errors.Join(ErrInvalidDatabase, err)
+		return nil, errors.Join(repository.ErrInvalidDatabase, err)
 	}
 
 	return db, nil
 }
 
-// RepositoryOption configures a repository for a Neo4j repository.
-type RepositoryOption func(*repository) error
+// RepositoryOption configures a baseRepository for a Neo4j baseRepository.
+type RepositoryOption func(*baseRepository) error
 
-// WithDatabase sets the repository for a repository.
+// WithDatabase sets the baseRepository for a baseRepository.
 func WithDatabase(db *Database) RepositoryOption {
-	return func(r *repository) error {
+	return func(r *baseRepository) error {
 		if db == nil {
-			return ErrNoDriver
+			return repository.ErrNoDriver
 		}
 		r.db = db
 
@@ -166,11 +157,11 @@ func WithDatabase(db *Database) RepositoryOption {
 	}
 }
 
-// WithRepositoryLogger sets the logger for a repository.
+// WithRepositoryLogger sets the logger for a baseRepository.
 func WithRepositoryLogger(logger log.Logger) RepositoryOption {
-	return func(r *repository) error {
+	return func(r *baseRepository) error {
 		if logger == nil {
-			return ErrNoLogger
+			return log.ErrNoLogger
 		}
 		r.logger = logger
 
@@ -178,11 +169,11 @@ func WithRepositoryLogger(logger log.Logger) RepositoryOption {
 	}
 }
 
-// WithRepositoryTracer sets the tracer for a repository.
+// WithRepositoryTracer sets the tracer for a baseRepository.
 func WithRepositoryTracer(tracer trace.Tracer) RepositoryOption {
-	return func(r *repository) error {
+	return func(r *baseRepository) error {
 		if tracer == nil {
-			return ErrNoTracer
+			return tracing.ErrNoTracer
 		}
 		r.tracer = tracer
 
@@ -190,16 +181,16 @@ func WithRepositoryTracer(tracer trace.Tracer) RepositoryOption {
 	}
 }
 
-// repository represents a repository for a Neo4j repository.
-type repository struct {
+// baseRepository represents a baseRepository for a Neo4j baseRepository.
+type baseRepository struct {
 	db     *Database    `validate:"required"`
 	logger log.Logger   `validate:"required"`
 	tracer trace.Tracer `validate:"required"`
 }
 
-// newRepository creates a new repository for a Neo4j repository.
-func newRepository(opts ...RepositoryOption) (*repository, error) {
-	r := &repository{
+// newRepository creates a new baseRepository for a Neo4j baseRepository.
+func newRepository(opts ...RepositoryOption) (*baseRepository, error) {
+	r := &baseRepository{
 		logger: log.DefaultLogger(),
 		tracer: tracing.NoopTracer(),
 	}
@@ -211,7 +202,7 @@ func newRepository(opts ...RepositoryOption) (*repository, error) {
 	}
 
 	if err := validate.Struct(r); err != nil {
-		return nil, errors.Join(ErrInvalidRepository, err)
+		return nil, errors.Join(repository.ErrInvalidRepository, err)
 	}
 
 	return r, nil
@@ -244,7 +235,7 @@ func ParseValueFromRecord[T neo4j.RecordValue](record *neo4j.Record, key string)
 
 	value, _, err := neo4j.GetRecordValue[T](record, key)
 	if err != nil {
-		return zero, errors.Join(ErrMalformedResult, err)
+		return zero, errors.Join(repository.ErrMalformedResult, err)
 	}
 
 	return value, nil
@@ -314,7 +305,15 @@ func ExecuteReadAndReadSingle[T any](ctx context.Context, db *Database, query st
 			return nil, err
 		}
 
-		return neo4j.SingleTWithContext(ctx, result, reader)
+		res, err := neo4j.SingleTWithContext(ctx, result, reader)
+		if err != nil {
+			if errors.As(err, &ErrNoMoreRecords) {
+				err = repository.ErrNotFound
+			}
+			return nil, err
+		}
+
+		return res, nil
 	})
 }
 
@@ -334,7 +333,15 @@ func ExecuteWriteAndReadSingle[T any](ctx context.Context, db *Database, query s
 			return nil, err
 		}
 
-		return neo4j.SingleTWithContext(ctx, result, reader)
+		res, err := neo4j.SingleTWithContext(ctx, result, reader)
+		if err != nil {
+			if errors.As(err, &ErrNoMoreRecords) {
+				err = repository.ErrNotFound
+			}
+			return nil, err
+		}
+
+		return res, nil
 	})
 }
 
@@ -365,6 +372,9 @@ func ExecuteReadAndReadAll[T any](ctx context.Context, db *Database, query strin
 		}
 
 		if result.Err() != nil {
+			if errors.As(result.Err(), &ErrNoMoreRecords) {
+				return nil, repository.ErrNotFound
+			}
 			return nil, result.Err()
 		}
 
@@ -399,6 +409,9 @@ func ExecuteWriteAndReadAll[T any](ctx context.Context, db *Database, query stri
 		}
 
 		if result.Err() != nil {
+			if errors.As(result.Err(), &ErrNoMoreRecords) {
+				return nil, repository.ErrNotFound
+			}
 			return nil, result.Err()
 		}
 

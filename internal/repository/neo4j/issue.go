@@ -9,19 +9,7 @@ import (
 
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/convert"
-)
-
-var (
-	ErrIssueCreate         = errors.New("failed to create issue")               // the issue could not be created
-	ErrIssueRead           = errors.New("failed to read issue")                 // the issue could not be retrieved
-	ErrIssueAddWatcher     = errors.New("failed to add watcher to issue")       // the watcher could not be added to the issue
-	ErrIssueGetWatchers    = errors.New("failed to get watchers for issue")     // the watchers could not be retrieved for the issue
-	ErrIssueRemoveWatcher  = errors.New("failed to remove watcher from issue")  // the watcher could not be removed from the issue
-	ErrIssueAddRelation    = errors.New("failed to add relation to issue")      // the relation could not be added to the issue
-	ErrIssueGetRelations   = errors.New("failed to get relations for issue")    // the relations could not be retrieved for the issue
-	ErrIssueRemoveRelation = errors.New("failed to remove relation from issue") // the relation could not be removed from the issue
-	ErrIssueUpdate         = errors.New("failed to update issue")               // the issue could not be updated
-	ErrIssueDelete         = errors.New("failed to delete issue")               // the issue could not be deleted
+	"github.com/opcotech/elemo/internal/repository"
 )
 
 // issueScanParams is a struct for holding the cypher return parameter names
@@ -38,9 +26,9 @@ type issueScanParams struct {
 	relations   string
 }
 
-// IssueRepository is a repository for managing user issues.
+// IssueRepository is a baseRepository for managing user issues.
 type IssueRepository struct {
-	*repository
+	*baseRepository
 }
 
 func (r *IssueRepository) scan(params *issueScanParams) func(rec *neo4j.Record) (*model.Issue, error) {
@@ -138,15 +126,15 @@ func (r *IssueRepository) scanRelation(ip, rp, tp string) func(rec *neo4j.Record
 }
 
 func (r *IssueRepository) Create(ctx context.Context, project model.ID, issue *model.Issue) error {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.IssueRepository/Create")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.IssueRepository/Create")
 	defer span.End()
 
 	if err := project.Validate(); err != nil {
-		return errors.Join(ErrIssueCreate, err)
+		return errors.Join(repository.ErrIssueCreate, err)
 	}
 
 	if err := issue.Validate(); err != nil {
-		return errors.Join(ErrIssueCreate, err)
+		return errors.Join(repository.ErrIssueCreate, err)
 	}
 
 	createdRelID := model.MustNewID(EdgeKindCreated.String())
@@ -208,18 +196,18 @@ func (r *IssueRepository) Create(ctx context.Context, project model.ID, issue *m
 	}
 
 	if err := ExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
-		return errors.Join(ErrIssueCreate, err)
+		return errors.Join(repository.ErrIssueCreate, err)
 	}
 
 	return nil
 }
 
 func (r *IssueRepository) Get(ctx context.Context, id model.ID) (*model.Issue, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.IssueRepository/Read")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.IssueRepository/Read")
 	defer span.End()
 
 	if err := id.Validate(); err != nil {
-		return nil, errors.Join(ErrIssueRead, err)
+		return nil, errors.Join(repository.ErrIssueRead, err)
 	}
 
 	cypher := `
@@ -255,22 +243,22 @@ func (r *IssueRepository) Get(ctx context.Context, id model.ID) (*model.Issue, e
 
 	issue, err := ExecuteReadAndReadSingle(ctx, r.db, cypher, params, r.scan(scanParams))
 	if err != nil {
-		return nil, errors.Join(ErrIssueRead, err)
+		return nil, errors.Join(repository.ErrIssueRead, err)
 	}
 
 	return issue, nil
 }
 
 func (r *IssueRepository) AddWatcher(ctx context.Context, issue model.ID, user model.ID) error {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.IssueRepository/AddWatcher")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.IssueRepository/AddWatcher")
 	defer span.End()
 
 	if err := issue.Validate(); err != nil {
-		return errors.Join(ErrIssueAddWatcher, err)
+		return errors.Join(repository.ErrIssueAddWatcher, err)
 	}
 
 	if err := user.Validate(); err != nil {
-		return errors.Join(ErrIssueAddWatcher, err)
+		return errors.Join(repository.ErrIssueAddWatcher, err)
 	}
 
 	watchesRelID := model.MustNewID(EdgeKindWatches.String())
@@ -287,18 +275,18 @@ func (r *IssueRepository) AddWatcher(ctx context.Context, issue model.ID, user m
 	}
 
 	if err := ExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
-		return errors.Join(ErrIssueAddWatcher, err)
+		return errors.Join(repository.ErrIssueAddWatcher, err)
 	}
 
 	return nil
 }
 
 func (r *IssueRepository) GetWatchers(ctx context.Context, issue model.ID) ([]*model.User, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.IssueRepository/GetWatchers")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.IssueRepository/GetWatchers")
 	defer span.End()
 
 	if err := issue.Validate(); err != nil {
-		return nil, errors.Join(ErrIssueGetWatchers, err)
+		return nil, errors.Join(repository.ErrIssueGetWatchers, err)
 	}
 
 	cypher := `
@@ -312,26 +300,24 @@ func (r *IssueRepository) GetWatchers(ctx context.Context, issue model.ID) ([]*m
 		"issue_id": issue.String(),
 	}
 
-	ur := new(UserRepository)
-	users, err := ExecuteReadAndReadAll(ctx, r.db, cypher, params, ur.scan("u", "p", "d"))
-
+	users, err := ExecuteReadAndReadAll(ctx, r.db, cypher, params, new(UserRepository).scan("u", "p", "d"))
 	if err != nil {
-		return nil, errors.Join(ErrIssueGetWatchers, err)
+		return nil, errors.Join(repository.ErrIssueGetWatchers, err)
 	}
 
 	return users, nil
 }
 
 func (r *IssueRepository) RemoveWatcher(ctx context.Context, issue model.ID, user model.ID) error {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.IssueRepository/RemoveWatcher")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.IssueRepository/RemoveWatcher")
 	defer span.End()
 
 	if err := issue.Validate(); err != nil {
-		return errors.Join(ErrIssueRemoveWatcher, err)
+		return errors.Join(repository.ErrIssueRemoveWatcher, err)
 	}
 
 	if err := user.Validate(); err != nil {
-		return errors.Join(ErrIssueRemoveWatcher, err)
+		return errors.Join(repository.ErrIssueRemoveWatcher, err)
 	}
 
 	cypher := `
@@ -344,18 +330,18 @@ func (r *IssueRepository) RemoveWatcher(ctx context.Context, issue model.ID, use
 	}
 
 	if err := ExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
-		return errors.Join(ErrIssueRemoveWatcher, err)
+		return errors.Join(repository.ErrIssueRemoveWatcher, err)
 	}
 
 	return nil
 }
 
 func (r *IssueRepository) AddRelation(ctx context.Context, relation *model.IssueRelation) error {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.IssueRepository/AddRelation")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.IssueRepository/AddRelation")
 	defer span.End()
 
 	if err := relation.Validate(); err != nil {
-		return errors.Join(ErrIssueAddRelation, err)
+		return errors.Join(repository.ErrIssueAddRelation, err)
 	}
 
 	createdAt := time.Now()
@@ -378,18 +364,18 @@ func (r *IssueRepository) AddRelation(ctx context.Context, relation *model.Issue
 	}
 
 	if err := ExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
-		return errors.Join(ErrIssueAddRelation, err)
+		return errors.Join(repository.ErrIssueAddRelation, err)
 	}
 
 	return nil
 }
 
 func (r *IssueRepository) GetRelations(ctx context.Context, issue model.ID) ([]*model.IssueRelation, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.IssueRepository/GetRelations")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.IssueRepository/GetRelations")
 	defer span.End()
 
 	if err := issue.Validate(); err != nil {
-		return nil, errors.Join(ErrIssueGetRelations, err)
+		return nil, errors.Join(repository.ErrIssueGetRelations, err)
 	}
 
 	cypher := `
@@ -402,22 +388,22 @@ func (r *IssueRepository) GetRelations(ctx context.Context, issue model.ID) ([]*
 
 	relations, err := ExecuteReadAndReadAll(ctx, r.db, cypher, params, r.scanRelation("i", "r", "t"))
 	if err != nil {
-		return nil, errors.Join(ErrIssueGetRelations, err)
+		return nil, errors.Join(repository.ErrIssueGetRelations, err)
 	}
 
 	return relations, nil
 }
 
 func (r *IssueRepository) RemoveRelation(ctx context.Context, source, target model.ID, kind model.IssueRelationKind) error {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.IssueRepository/RemoveRelation")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.IssueRepository/RemoveRelation")
 	defer span.End()
 
 	if err := source.Validate(); err != nil {
-		return errors.Join(ErrIssueRemoveRelation, err)
+		return errors.Join(repository.ErrIssueRemoveRelation, err)
 	}
 
 	if err := target.Validate(); err != nil {
-		return errors.Join(ErrIssueRemoveRelation, err)
+		return errors.Join(repository.ErrIssueRemoveRelation, err)
 	}
 
 	cypher := `
@@ -431,18 +417,18 @@ func (r *IssueRepository) RemoveRelation(ctx context.Context, source, target mod
 	}
 
 	if err := ExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
-		return errors.Join(ErrIssueRemoveRelation, err)
+		return errors.Join(repository.ErrIssueRemoveRelation, err)
 	}
 
 	return nil
 }
 
 func (r *IssueRepository) Update(ctx context.Context, id model.ID, patch map[string]any) (*model.Issue, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.IssueRepository/Update")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.IssueRepository/Update")
 	defer span.End()
 
 	if err := id.Validate(); err != nil {
-		return nil, errors.Join(ErrIssueUpdate, err)
+		return nil, errors.Join(repository.ErrIssueUpdate, err)
 	}
 
 	cypher := `
@@ -480,9 +466,9 @@ func (r *IssueRepository) Update(ctx context.Context, id model.ID, patch map[str
 		relations:   "rel",
 	}
 
-	issue, err := ExecuteReadAndReadSingle(ctx, r.db, cypher, params, r.scan(scanParams))
+	issue, err := ExecuteWriteAndReadSingle(ctx, r.db, cypher, params, r.scan(scanParams))
 	if err != nil {
-		return nil, errors.Join(ErrIssueRead, err)
+		return nil, errors.Join(repository.ErrIssueRead, err)
 	}
 
 	return issue, nil
@@ -490,11 +476,11 @@ func (r *IssueRepository) Update(ctx context.Context, id model.ID, patch map[str
 }
 
 func (r *IssueRepository) Delete(ctx context.Context, id model.ID) error {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.IssueRepository/Delete")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.IssueRepository/Delete")
 	defer span.End()
 
 	if err := id.Validate(); err != nil {
-		return errors.Join(ErrIssueDelete, err)
+		return errors.Join(repository.ErrIssueDelete, err)
 	}
 
 	cypher := `MATCH (i:` + id.Label() + ` {id: $id}) DETACH DELETE i`
@@ -503,13 +489,13 @@ func (r *IssueRepository) Delete(ctx context.Context, id model.ID) error {
 	}
 
 	if err := ExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
-		return errors.Join(ErrIssueDelete, err)
+		return errors.Join(repository.ErrIssueDelete, err)
 	}
 
 	return nil
 }
 
-// NewIssueRepository creates a new issue repository.
+// NewIssueRepository creates a new issue baseRepository.
 func NewIssueRepository(opts ...RepositoryOption) (*IssueRepository, error) {
 	baseRepo, err := newRepository(opts...)
 	if err != nil {
@@ -517,6 +503,6 @@ func NewIssueRepository(opts ...RepositoryOption) (*IssueRepository, error) {
 	}
 
 	return &IssueRepository{
-		repository: baseRepo,
+		baseRepository: baseRepo,
 	}, nil
 }

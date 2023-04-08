@@ -17,9 +17,6 @@ const (
 )
 
 var (
-	ErrInvalidProjectDetails = errors.New("invalid project details") // the project details are invalid
-	ErrInvalidProjectStatus  = errors.New("invalid project status")  // the project status is invalid
-
 	projectStatusKeys = map[string]ProjectStatus{
 		"active":  ProjectStatusActive,
 		"pending": ProjectStatusPending,

@@ -11,10 +11,6 @@ const (
 	LabelIDType = "Label"
 )
 
-var (
-	ErrInvalidLabelDetails = errors.New("invalid label details") // the label details are invalid
-)
-
 // Label is an entity that can be attached to a resource to provide additional
 // information about it. For example, a label can be used to indicate the
 // environment a resource belongs to.

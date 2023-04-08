@@ -8,20 +8,12 @@ import (
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
 
 	"github.com/opcotech/elemo/internal/model"
+	"github.com/opcotech/elemo/internal/repository"
 )
 
-var (
-	ErrRoleCreate       = errors.New("failed to create role")             // role cannot be created
-	ErrRoleRead         = errors.New("failed to read role")               // role cannot be read
-	ErrRoleUpdate       = errors.New("failed to update role")             // role cannot be updated
-	ErrRoleDelete       = errors.New("failed to delete role")             // role cannot be deleted
-	ErrRoleAddMember    = errors.New("failed to add member to role")      // member cannot be added to role
-	ErrRoleRemoveMember = errors.New("failed to remove member from role") // member cannot be removed from role
-)
-
-// RoleRepository is a repository for managing roles.
+// RoleRepository is a baseRepository for managing roles.
 type RoleRepository struct {
-	*repository
+	*baseRepository
 }
 
 func (r *RoleRepository) scan(rp, mp, pp string) func(rec *neo4j.Record) (*model.Role, error) {
@@ -56,15 +48,15 @@ func (r *RoleRepository) scan(rp, mp, pp string) func(rec *neo4j.Record) (*model
 }
 
 func (r *RoleRepository) Create(ctx context.Context, createdBy, belongsTo model.ID, role *model.Role) error {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.RoleRepository/Create")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.RoleRepository/Create")
 	defer span.End()
 
 	if err := belongsTo.Validate(); err != nil {
-		return errors.Join(ErrRoleCreate, err)
+		return errors.Join(repository.ErrRoleCreate, err)
 	}
 
 	if err := role.Validate(); err != nil {
-		return errors.Join(ErrRoleCreate, err)
+		return errors.Join(repository.ErrRoleCreate, err)
 	}
 
 	createdAt := time.Now()
@@ -100,14 +92,14 @@ func (r *RoleRepository) Create(ctx context.Context, createdBy, belongsTo model.
 	}
 
 	if err := ExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
-		return errors.Join(err, ErrRoleCreate)
+		return errors.Join(err, repository.ErrRoleCreate)
 	}
 
 	return nil
 }
 
 func (r *RoleRepository) Get(ctx context.Context, id model.ID) (*model.Role, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.RoleRepository/Get")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.RoleRepository/Get")
 	defer span.End()
 
 	cypher := `
@@ -123,14 +115,14 @@ func (r *RoleRepository) Get(ctx context.Context, id model.ID) (*model.Role, err
 
 	role, err := ExecuteReadAndReadSingle(ctx, r.db, cypher, params, r.scan("r", "m", "p"))
 	if err != nil {
-		return nil, errors.Join(err, ErrRoleRead)
+		return nil, errors.Join(err, repository.ErrRoleRead)
 	}
 
 	return role, nil
 }
 
 func (r *RoleRepository) GetAllBelongsTo(ctx context.Context, id model.ID, offset, limit int) ([]*model.Role, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.RoleRepository/GetAllBelongsTo")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.RoleRepository/GetAllBelongsTo")
 	defer span.End()
 
 	cypher := `
@@ -149,14 +141,14 @@ func (r *RoleRepository) GetAllBelongsTo(ctx context.Context, id model.ID, offse
 
 	roles, err := ExecuteWriteAndReadAll(ctx, r.db, cypher, params, r.scan("r", "m", "p"))
 	if err != nil {
-		return nil, errors.Join(ErrRoleRead, err)
+		return nil, errors.Join(repository.ErrRoleRead, err)
 	}
 
 	return roles, nil
 }
 
 func (r *RoleRepository) Update(ctx context.Context, id model.ID, patch map[string]any) (*model.Role, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.RoleRepository/Update")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.RoleRepository/Update")
 	defer span.End()
 
 	cypher := `
@@ -174,14 +166,14 @@ func (r *RoleRepository) Update(ctx context.Context, id model.ID, patch map[stri
 
 	role, err := ExecuteWriteAndReadSingle(ctx, r.db, cypher, params, r.scan("r", "m", "p"))
 	if err != nil {
-		return nil, errors.Join(err, ErrRoleUpdate)
+		return nil, errors.Join(err, repository.ErrRoleUpdate)
 	}
 
 	return role, nil
 }
 
 func (r *RoleRepository) AddMember(ctx context.Context, roleID, memberID model.ID) error {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.RoleRepository/AddMember")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.RoleRepository/AddMember")
 	defer span.End()
 
 	cypher := `
@@ -198,14 +190,14 @@ func (r *RoleRepository) AddMember(ctx context.Context, roleID, memberID model.I
 	}
 
 	if err := ExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
-		return errors.Join(ErrRoleAddMember, err)
+		return errors.Join(repository.ErrRoleAddMember, err)
 	}
 
 	return nil
 }
 
 func (r *RoleRepository) RemoveMember(ctx context.Context, roleID, memberID model.ID) error {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.RoleRepository/RemoveMember")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.RoleRepository/RemoveMember")
 	defer span.End()
 
 	cypher := `
@@ -218,14 +210,14 @@ func (r *RoleRepository) RemoveMember(ctx context.Context, roleID, memberID mode
 	}
 
 	if err := ExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
-		return errors.Join(ErrRoleRemoveMember, err)
+		return errors.Join(repository.ErrRoleRemoveMember, err)
 	}
 
 	return nil
 }
 
 func (r *RoleRepository) Delete(ctx context.Context, id model.ID) error {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.RoleRepository/Delete")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.RoleRepository/Delete")
 	defer span.End()
 
 	cypher := `MATCH (r:` + id.Label() + ` {id: $id}) DETACH DELETE r`
@@ -234,13 +226,13 @@ func (r *RoleRepository) Delete(ctx context.Context, id model.ID) error {
 	}
 
 	if err := ExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
-		return errors.Join(ErrRoleDelete, err)
+		return errors.Join(repository.ErrRoleDelete, err)
 	}
 
 	return nil
 }
 
-// NewRoleRepository creates a new role repository.
+// NewRoleRepository creates a new role baseRepository.
 func NewRoleRepository(opts ...RepositoryOption) (*RoleRepository, error) {
 	baseRepo, err := newRepository(opts...)
 	if err != nil {
@@ -248,6 +240,6 @@ func NewRoleRepository(opts ...RepositoryOption) (*RoleRepository, error) {
 	}
 
 	return &RoleRepository{
-		repository: baseRepo,
+		baseRepository: baseRepo,
 	}, nil
 }

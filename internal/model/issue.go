@@ -56,14 +56,6 @@ const (
 )
 
 var (
-	ErrInvalidIssueKind            = errors.New("invalid issue kind")             // the issue kind is invalid
-	ErrInvalidIssueRelationDetails = errors.New("invalid issue relation details") // the issue relation details are invalid
-	ErrInvalidIssueStatus          = errors.New("invalid issue status")           // the issue status is invalid
-	ErrInvalidIssueResolution      = errors.New("invalid issue resolution")       // the issue resolution is invalid
-	ErrInvalidIssueRelationKind    = errors.New("invalid issue relation kind")    // the issue relation kind is invalid
-	ErrInvalidIssuePriority        = errors.New("invalid issue priority")         // the issue priority is invalid
-	ErrInvalidIssueDetails         = errors.New("invalid issue details")          // the issue details are invalid
-
 	issueKindKeys = map[IssueKind]string{
 		IssueKindEpic:  "epic",
 		IssueKindStory: "story",

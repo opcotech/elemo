@@ -20,9 +20,6 @@ const (
 )
 
 var (
-	ErrInvalidPermissionDetails = errors.New("invalid permission details") // the permission details are invalid
-	ErrInvalidPermissionKind    = errors.New("invalid permission kind")    // the permission kind is invalid
-
 	permissionKindKeys = map[string]PermissionKind{
 		"*":      PermissionKindAll,
 		"create": PermissionKindCreate,

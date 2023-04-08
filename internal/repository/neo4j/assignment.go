@@ -9,17 +9,12 @@ import (
 
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/convert"
+	"github.com/opcotech/elemo/internal/repository"
 )
 
-var (
-	ErrAssignmentCreate = errors.New("failed to create assignment") // the assignment could not be created
-	ErrAssignmentRead   = errors.New("failed to read assignment")   // the assignment could not be retrieved
-	ErrAssignmentDelete = errors.New("failed to delete assignment") // the assignment could not be deleted
-)
-
-// AssignmentRepository is a repository for managing user assignments.
+// AssignmentRepository is a baseRepository for managing user assignments.
 type AssignmentRepository struct {
-	*repository
+	*baseRepository
 }
 
 func (r *AssignmentRepository) scan(up, ap, rp string) func(rec *neo4j.Record) (*model.Assignment, error) {
@@ -58,11 +53,11 @@ func (r *AssignmentRepository) scan(up, ap, rp string) func(rec *neo4j.Record) (
 }
 
 func (r *AssignmentRepository) Create(ctx context.Context, assignment *model.Assignment) error {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.AssignmentRepository/Create")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.AssignmentRepository/Create")
 	defer span.End()
 
 	if err := assignment.Validate(); err != nil {
-		return errors.Join(ErrAssignmentCreate, err)
+		return errors.Join(repository.ErrAssignmentCreate, err)
 	}
 
 	createdAt := time.Now()
@@ -84,14 +79,14 @@ func (r *AssignmentRepository) Create(ctx context.Context, assignment *model.Ass
 	}
 
 	if err := ExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
-		return errors.Join(ErrAssignmentCreate, err)
+		return errors.Join(repository.ErrAssignmentCreate, err)
 	}
 
 	return nil
 }
 
 func (r *AssignmentRepository) Get(ctx context.Context, id model.ID) (*model.Assignment, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.AssignmentRepository/Get")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.AssignmentRepository/Get")
 	defer span.End()
 
 	cypher := `
@@ -104,14 +99,14 @@ func (r *AssignmentRepository) Get(ctx context.Context, id model.ID) (*model.Ass
 
 	assignment, err := ExecuteReadAndReadSingle(ctx, r.db, cypher, params, r.scan("u", "a", "r"))
 	if err != nil {
-		return nil, errors.Join(ErrAssignmentRead, err)
+		return nil, errors.Join(repository.ErrAssignmentRead, err)
 	}
 
 	return assignment, nil
 }
 
 func (r *AssignmentRepository) GetByUser(ctx context.Context, userID model.ID, offset, limit int) ([]*model.Assignment, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.AssignmentRepository/GetByUser")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.AssignmentRepository/GetByUser")
 	defer span.End()
 
 	cypher := `
@@ -128,14 +123,14 @@ func (r *AssignmentRepository) GetByUser(ctx context.Context, userID model.ID, o
 
 	assignments, err := ExecuteReadAndReadAll(ctx, r.db, cypher, params, r.scan("u", "a", "r"))
 	if err != nil {
-		return nil, errors.Join(ErrAssignmentRead, err)
+		return nil, errors.Join(repository.ErrAssignmentRead, err)
 	}
 
 	return assignments, nil
 }
 
 func (r *AssignmentRepository) GetByResource(ctx context.Context, resourceID model.ID, offset, limit int) ([]*model.Assignment, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.AssignmentRepository/GetByResource")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.AssignmentRepository/GetByResource")
 	defer span.End()
 
 	cypher := `
@@ -152,14 +147,14 @@ func (r *AssignmentRepository) GetByResource(ctx context.Context, resourceID mod
 
 	assignments, err := ExecuteReadAndReadAll(ctx, r.db, cypher, params, r.scan("u", "a", "r"))
 	if err != nil {
-		return nil, errors.Join(ErrAssignmentRead, err)
+		return nil, errors.Join(repository.ErrAssignmentRead, err)
 	}
 
 	return assignments, nil
 }
 
 func (r *AssignmentRepository) Delete(ctx context.Context, id model.ID) error {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.AssignmentRepository/Delete")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.AssignmentRepository/Delete")
 	defer span.End()
 
 	cypher := `MATCH (u)-[a:` + EdgeKindAssignedTo.String() + ` {id: $id}]->(r) DELETE a`
@@ -168,13 +163,13 @@ func (r *AssignmentRepository) Delete(ctx context.Context, id model.ID) error {
 	}
 
 	if err := ExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
-		return errors.Join(ErrAssignmentDelete, err)
+		return errors.Join(repository.ErrAssignmentDelete, err)
 	}
 
 	return nil
 }
 
-// NewAssignmentRepository creates a new assignment repository.
+// NewAssignmentRepository creates a new assignment baseRepository.
 func NewAssignmentRepository(opts ...RepositoryOption) (*AssignmentRepository, error) {
 	baseRepo, err := newRepository(opts...)
 	if err != nil {
@@ -182,6 +177,6 @@ func NewAssignmentRepository(opts ...RepositoryOption) (*AssignmentRepository, e
 	}
 
 	return &AssignmentRepository{
-		repository: baseRepo,
+		baseRepository: baseRepo,
 	}, nil
 }

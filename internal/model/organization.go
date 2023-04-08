@@ -17,9 +17,6 @@ const (
 )
 
 var (
-	ErrInvalidOrganizationDetails = errors.New("invalid organization details") // the organization details are invalid
-	ErrInvalidOrganizationStatus  = errors.New("invalid organization status")  // the organization status is invalid
-
 	organizationStatusKeys = map[string]OrganizationStatus{
 		"active":  OrganizationStatusActive,
 		"deleted": OrganizationStatusDeleted,

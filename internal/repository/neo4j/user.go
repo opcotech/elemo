@@ -9,22 +9,16 @@ import (
 
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/convert"
+	"github.com/opcotech/elemo/internal/repository"
 )
 
 const (
 	languageIDType = "Language" // label for language nodes
 )
 
-var (
-	ErrUserCreate = errors.New("failed to create user") // user cannot be created
-	ErrUserRead   = errors.New("failed to read user")   // user cannot be read
-	ErrUserUpdate = errors.New("failed to update user") // user cannot be updated
-	ErrUserDelete = errors.New("failed to delete user") // user cannot be deleted
-)
-
-// UserRepository is a repository for managing users.
+// UserRepository is a baseRepository for managing users.
 type UserRepository struct {
-	*repository
+	*baseRepository
 }
 
 // scan is a helper function for scanning a user from a Neo4j Record.
@@ -63,11 +57,11 @@ func (r *UserRepository) scan(up, pp, dp string) func(rec *neo4j.Record) (*model
 // Create creates a new user if it does not already exist. Also, create all
 // missing languages and user-language relationships.
 func (r *UserRepository) Create(ctx context.Context, user *model.User) error {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.UserRepository/Create")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.UserRepository/Create")
 	defer span.End()
 
 	if err := user.Validate(); err != nil {
-		return errors.Join(ErrUserCreate, err)
+		return errors.Join(repository.ErrUserCreate, err)
 	}
 
 	createdAt := time.Now()
@@ -108,7 +102,7 @@ func (r *UserRepository) Create(ctx context.Context, user *model.User) error {
 	}
 
 	if err := ExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
-		return errors.Join(err, ErrUserCreate)
+		return errors.Join(err, repository.ErrUserCreate)
 	}
 
 	return nil
@@ -116,7 +110,7 @@ func (r *UserRepository) Create(ctx context.Context, user *model.User) error {
 
 // Get returns a user by its ID.
 func (r *UserRepository) Get(ctx context.Context, id model.ID) (*model.User, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.UserRepository/Get")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.UserRepository/Get")
 	defer span.End()
 
 	cypher := `MATCH (u:` + model.UserIDType + ` {id: $id})
@@ -130,7 +124,10 @@ func (r *UserRepository) Get(ctx context.Context, id model.ID) (*model.User, err
 
 	user, err := ExecuteReadAndReadSingle(ctx, r.db, cypher, params, r.scan("u", "p", "d"))
 	if err != nil {
-		return nil, errors.Join(ErrUserRead, err)
+		if errors.As(err, &ErrNoMoreRecords) {
+			return nil, errors.Join(repository.ErrUserRead, repository.ErrNotFound)
+		}
+		return nil, errors.Join(repository.ErrUserRead, err)
 	}
 
 	return user, nil
@@ -138,7 +135,7 @@ func (r *UserRepository) Get(ctx context.Context, id model.ID) (*model.User, err
 
 // GetByEmail returns a user by its email.
 func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*model.User, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.UserRepository/GetByEmail")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.UserRepository/GetByEmail")
 	defer span.End()
 
 	cypher := `MATCH (u:` + model.UserIDType + ` {email: $email})
@@ -152,7 +149,10 @@ func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*model.U
 
 	user, err := ExecuteReadAndReadSingle(ctx, r.db, cypher, params, r.scan("u", "p", "d"))
 	if err != nil {
-		return nil, errors.Join(ErrUserRead, err)
+		if errors.As(err, &ErrNoMoreRecords) {
+			return nil, errors.Join(repository.ErrUserRead, repository.ErrNotFound)
+		}
+		return nil, errors.Join(repository.ErrUserRead, err)
 	}
 
 	return user, nil
@@ -160,7 +160,7 @@ func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*model.U
 
 // GetAll returns all users respecting the given offset and limit.
 func (r *UserRepository) GetAll(ctx context.Context, offset, limit int) ([]*model.User, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.UserRepository/GetAllBelongsTo")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.UserRepository/GetAllBelongsTo")
 	defer span.End()
 
 	cypher := `
@@ -178,7 +178,10 @@ func (r *UserRepository) GetAll(ctx context.Context, offset, limit int) ([]*mode
 
 	users, err := ExecuteWriteAndReadAll(ctx, r.db, cypher, params, r.scan("u", "p", "d"))
 	if err != nil {
-		return nil, errors.Join(ErrUserRead, err)
+		if errors.As(err, &ErrNoMoreRecords) {
+			return nil, errors.Join(repository.ErrUserRead, repository.ErrNotFound)
+		}
+		return nil, errors.Join(repository.ErrUserRead, err)
 	}
 
 	return users, nil
@@ -186,7 +189,7 @@ func (r *UserRepository) GetAll(ctx context.Context, offset, limit int) ([]*mode
 
 // Update updates a user by its ID with any given patch.
 func (r *UserRepository) Update(ctx context.Context, id model.ID, patch map[string]any) (*model.User, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.UserRepository/Update")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.UserRepository/Update")
 	defer span.End()
 
 	cypher := `
@@ -205,7 +208,10 @@ func (r *UserRepository) Update(ctx context.Context, id model.ID, patch map[stri
 
 	updated, err := ExecuteWriteAndReadSingle(ctx, r.db, cypher, params, r.scan("u", "p", "d"))
 	if err != nil {
-		return nil, errors.Join(ErrUserUpdate, err)
+		if errors.As(err, &ErrNoMoreRecords) {
+			return nil, errors.Join(repository.ErrUserRead, repository.ErrNotFound)
+		}
+		return nil, errors.Join(repository.ErrUserUpdate, err)
 	}
 
 	return updated, nil
@@ -213,7 +219,7 @@ func (r *UserRepository) Update(ctx context.Context, id model.ID, patch map[stri
 
 // Delete deletes a user by its ID.
 func (r *UserRepository) Delete(ctx context.Context, id model.ID) error {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.UserRepository/Delete")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.UserRepository/Delete")
 	defer span.End()
 
 	cypher := `MATCH (u:` + id.Label() + ` {id: $id}) DETACH DELETE u`
@@ -222,13 +228,13 @@ func (r *UserRepository) Delete(ctx context.Context, id model.ID) error {
 	}
 
 	if err := ExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
-		return errors.Join(err, ErrUserDelete)
+		return errors.Join(err, repository.ErrUserDelete)
 	}
 
 	return nil
 }
 
-// NewUserRepository creates a new user repository.
+// NewUserRepository creates a new user baseRepository.
 func NewUserRepository(opts ...RepositoryOption) (*UserRepository, error) {
 	baseRepo, err := newRepository(opts...)
 	if err != nil {
@@ -236,6 +242,6 @@ func NewUserRepository(opts ...RepositoryOption) (*UserRepository, error) {
 	}
 
 	return &UserRepository{
-		repository: baseRepo,
+		baseRepository: baseRepo,
 	}, nil
 }

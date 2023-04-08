@@ -9,20 +9,12 @@ import (
 
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/convert"
+	"github.com/opcotech/elemo/internal/repository"
 )
 
-var (
-	ErrLabelCreate   = errors.New("failed to create label") // the label could not be created
-	ErrLabelRead     = errors.New("failed to read label")   // the label could not be retrieved
-	ErrLabelAttach   = errors.New("failed to attach label") // the label could not be attached
-	ErrorLabelDetach = errors.New("failed to detach label") // the label could not be detached
-	ErrLabelUpdate   = errors.New("failed to update label") // the label could not be updated
-	ErrLabelDelete   = errors.New("failed to delete label") // the label could not be deleted
-)
-
-// LabelRepository is a repository for managing labels.
+// LabelRepository is a baseRepository for managing labels.
 type LabelRepository struct {
-	*repository
+	*baseRepository
 }
 
 func (r *LabelRepository) scan(lp string) func(rec *neo4j.Record) (*model.Label, error) {
@@ -49,11 +41,11 @@ func (r *LabelRepository) scan(lp string) func(rec *neo4j.Record) (*model.Label,
 }
 
 func (r *LabelRepository) Create(ctx context.Context, label *model.Label) error {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.LabelRepository/Create")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.LabelRepository/Create")
 	defer span.End()
 
 	if err := label.Validate(); err != nil {
-		return errors.Join(ErrLabelCreate, err)
+		return errors.Join(repository.ErrLabelCreate, err)
 	}
 
 	createdAt := time.Now()
@@ -71,14 +63,14 @@ func (r *LabelRepository) Create(ctx context.Context, label *model.Label) error 
 	}
 
 	if err := ExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
-		return errors.Join(ErrLabelCreate, err)
+		return errors.Join(repository.ErrLabelCreate, err)
 	}
 
 	return nil
 }
 
 func (r *LabelRepository) Get(ctx context.Context, id model.ID) (*model.Label, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.LabelRepository/Get")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.LabelRepository/Get")
 	defer span.End()
 
 	cypher := `MATCH (l:` + id.Label() + ` {id: $id}) RETURN l`
@@ -88,14 +80,14 @@ func (r *LabelRepository) Get(ctx context.Context, id model.ID) (*model.Label, e
 
 	label, err := ExecuteReadAndReadSingle(ctx, r.db, cypher, params, r.scan("l"))
 	if err != nil {
-		return nil, errors.Join(ErrLabelRead, err)
+		return nil, errors.Join(repository.ErrLabelRead, err)
 	}
 
 	return label, nil
 }
 
 func (r *LabelRepository) Update(ctx context.Context, id model.ID, patch map[string]any) (*model.Label, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.LabelRepository/Update")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.LabelRepository/Update")
 	defer span.End()
 
 	cypher := `
@@ -109,24 +101,24 @@ func (r *LabelRepository) Update(ctx context.Context, id model.ID, patch map[str
 		"updated_at": time.Now().Format(time.RFC3339Nano),
 	}
 
-	label, err := ExecuteReadAndReadSingle(ctx, r.db, cypher, params, r.scan("l"))
+	label, err := ExecuteWriteAndReadSingle(ctx, r.db, cypher, params, r.scan("l"))
 	if err != nil {
-		return nil, errors.Join(ErrLabelUpdate, err)
+		return nil, errors.Join(repository.ErrLabelUpdate, err)
 	}
 
 	return label, nil
 }
 
 func (r *LabelRepository) AttachTo(ctx context.Context, labelID, attachTo model.ID) error {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.LabelRepository/AttachTo")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.LabelRepository/AttachTo")
 	defer span.End()
 
 	if err := attachTo.Validate(); err != nil {
-		return errors.Join(ErrLabelAttach, err)
+		return errors.Join(repository.ErrLabelAttach, err)
 	}
 
 	if err := labelID.Validate(); err != nil {
-		return errors.Join(ErrLabelAttach, err)
+		return errors.Join(repository.ErrLabelAttach, err)
 	}
 
 	cypher := `
@@ -139,22 +131,22 @@ func (r *LabelRepository) AttachTo(ctx context.Context, labelID, attachTo model.
 	}
 
 	if err := ExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
-		return errors.Join(ErrLabelAttach, err)
+		return errors.Join(repository.ErrLabelAttach, err)
 	}
 
 	return nil
 }
 
 func (r *LabelRepository) DetachFrom(ctx context.Context, labelID, detachFrom model.ID) error {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.LabelRepository/DetachFrom")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.LabelRepository/DetachFrom")
 	defer span.End()
 
 	if err := detachFrom.Validate(); err != nil {
-		return errors.Join(ErrorLabelDetach, err)
+		return errors.Join(repository.ErrLabelDetach, err)
 	}
 
 	if err := labelID.Validate(); err != nil {
-		return errors.Join(ErrorLabelDetach, err)
+		return errors.Join(repository.ErrLabelDetach, err)
 	}
 
 	cypher := `
@@ -167,14 +159,14 @@ func (r *LabelRepository) DetachFrom(ctx context.Context, labelID, detachFrom mo
 	}
 
 	if err := ExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
-		return errors.Join(ErrorLabelDetach, err)
+		return errors.Join(repository.ErrLabelDetach, err)
 	}
 
 	return nil
 }
 
 func (r *LabelRepository) Delete(ctx context.Context, id model.ID) error {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.LabelRepository/Delete")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.LabelRepository/Delete")
 	defer span.End()
 
 	cypher := `MATCH (l:` + id.Label() + ` {id: $id}) DETACH DELETE l`
@@ -183,13 +175,13 @@ func (r *LabelRepository) Delete(ctx context.Context, id model.ID) error {
 	}
 
 	if err := ExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
-		return errors.Join(ErrLabelDelete, err)
+		return errors.Join(repository.ErrLabelDelete, err)
 	}
 
 	return nil
 }
 
-// NewLabelRepository creates a new label repository.
+// NewLabelRepository creates a new label baseRepository.
 func NewLabelRepository(opts ...RepositoryOption) (*LabelRepository, error) {
 	baseRepo, err := newRepository(opts...)
 	if err != nil {
@@ -197,6 +189,6 @@ func NewLabelRepository(opts ...RepositoryOption) (*LabelRepository, error) {
 	}
 
 	return &LabelRepository{
-		repository: baseRepo,
+		baseRepository: baseRepo,
 	}, nil
 }

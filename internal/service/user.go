@@ -8,15 +8,6 @@ import (
 	"github.com/opcotech/elemo/internal/pkg/password"
 )
 
-var (
-	ErrUserCreate   = errors.New("failed to create user") // failed to create user
-	ErrUserGet      = errors.New("failed to get user")    // failed to get user
-	ErrUserGetAll   = errors.New("failed to get users")   // failed to get users
-	ErrUserUpdate   = errors.New("failed to update user") // failed to update user
-	ErrUserDelete   = errors.New("failed to delete user") // failed to delete user
-	ErrInvalidEmail = errors.New("invalid email address") // invalid email address
-)
-
 // UserRepository defines the interface for interacting with the user
 // repository.
 type UserRepository interface {
@@ -183,6 +174,10 @@ func NewUserService(opts ...Option) (UserService, error) {
 
 	if svc.userRepo == nil {
 		return nil, ErrNoUserRepository
+	}
+
+	if svc.permissionRepo == nil {
+		return nil, ErrNoPermissionRepository
 	}
 
 	return svc, nil

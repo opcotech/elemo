@@ -11,10 +11,6 @@ const (
 	NamespaceIDType = "Namespace"
 )
 
-var (
-	ErrInvalidNamespaceDetails = errors.New("invalid namespace details") // the namespace details are invalid
-)
-
 // Namespace represents a namespace of an organization. A namespace is a
 // logical grouping of Projects and Documents.
 type Namespace struct {

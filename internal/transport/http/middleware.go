@@ -20,16 +20,10 @@ import (
 	httpMetricsMiddlewareStd "github.com/slok/go-http-metrics/middleware/std"
 
 	"github.com/opcotech/elemo/internal/model"
+	"github.com/opcotech/elemo/internal/pkg"
 	"github.com/opcotech/elemo/internal/pkg/log"
 	"github.com/opcotech/elemo/internal/pkg/tracing"
 )
-
-const (
-	ctxKeyUserID ctxKey = "userID"
-)
-
-// ctxKey is the type alias for the context key.
-type ctxKey string
 
 type ctxCallbackFunc func(w http.ResponseWriter, r *http.Request) any
 
@@ -50,7 +44,7 @@ func getMiddlewareName(fn func(next http.Handler) http.Handler) (string, string)
 	return name, path
 }
 
-func withContextObject(ctxKey ctxKey, cb ctxCallbackFunc) func(next http.Handler) http.Handler {
+func withContextObject(ctxKey pkg.CtxKey, cb ctxCallbackFunc) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			r = r.WithContext(context.WithValue(r.Context(), ctxKey, cb(w, r)))
@@ -61,7 +55,7 @@ func withContextObject(ctxKey ctxKey, cb ctxCallbackFunc) func(next http.Handler
 
 // WithContextObject returns a middleware that adds any value to the context
 // associated with the given key.
-func WithContextObject(key ctxKey, value any) func(next http.Handler) http.Handler {
+func WithContextObject(key pkg.CtxKey, value any) func(next http.Handler) http.Handler {
 	return withContextObject(key, func(w http.ResponseWriter, r *http.Request) any {
 		return value
 	})
@@ -136,7 +130,7 @@ func WithRequestLogger(next http.Handler) http.Handler {
 // from the Authorization header if present. Otherwise, an empty string is
 // added.
 func WithUserID(tokenValidator func(r *http.Request) (oauth2.TokenInfo, error)) func(next http.Handler) http.Handler {
-	return withContextObject(ctxKeyUserID, func(w http.ResponseWriter, r *http.Request) any {
+	return withContextObject(pkg.CtxKeyUserID, func(w http.ResponseWriter, r *http.Request) any {
 		if info, _ := tokenValidator(r); info != nil {
 			id, _ := model.NewIDFromString(info.GetUserID(), model.UserIDType)
 			return id

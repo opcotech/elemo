@@ -157,7 +157,7 @@ func Test_newService(t *testing.T) {
 					WithTracer(new(mock.Tracer)),
 				},
 			},
-			wantErr: ErrNoLogger,
+			wantErr: log.ErrNoLogger,
 		},
 		{
 			name: "newService returns error if nil tracer is provided",
@@ -167,7 +167,7 @@ func Test_newService(t *testing.T) {
 					WithTracer(nil),
 				},
 			},
-			wantErr: ErrNoTracer,
+			wantErr: tracing.ErrNoTracer,
 		},
 	}
 	for _, tt := range tests {

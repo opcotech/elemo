@@ -2,17 +2,20 @@ package tracing
 
 import (
 	"go.opentelemetry.io/otel/attribute"
+
+	"github.com/opcotech/elemo/internal/model"
 )
 
 const (
-	AttributeUserEmail      = "user.email"
-	AttributeQueryLabels    = "query.labels"
-	AttributeQueryID        = "query.id"
-	AttributeQueryLimit     = "query.limit"
-	AttributeQueryOffset    = "query.offset"
-	AttributeQueryDepth     = "query.depth"
-	AttributeQueryPatchLen  = "query.patch_length"
-	AttributeQueryResultLen = "query.result_length"
+	AttributeUserEmail          = "user.email"
+	AttributeQueryLabels        = "query.labels"
+	AttributeQueryID            = "query.id"
+	AttributeQueryLimit         = "query.limit"
+	AttributeQueryOffset        = "query.offset"
+	AttributeQueryDepth         = "query.depth"
+	AttributeQueryPatchLen      = "query.patch_length"
+	AttributeQueryResultLen     = "query.result_length"
+	AttributeSystemHealthStatus = "system.health.status"
 )
 
 // WithUserEmailAttribute adds the user email to the span.
@@ -76,5 +79,13 @@ func WithQueryResultLenAttribute(length int) attribute.KeyValue {
 	return attribute.KeyValue{
 		Key:   AttributeQueryResultLen,
 		Value: attribute.IntValue(length),
+	}
+}
+
+// WithSystemHealthStatusAttribute adds the system health status to the span.
+func WithSystemHealthStatusAttribute(status model.HealthStatus) attribute.KeyValue {
+	return attribute.KeyValue{
+		Key:   AttributeSystemHealthStatus,
+		Value: attribute.StringValue(status.String()),
 	}
 }

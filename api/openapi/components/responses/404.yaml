@@ -1,1 +1,5 @@
 description: Entity not found.
+content:
+  application/json:
+    schema:
+      $ref: '../schemas/http_error.yaml'

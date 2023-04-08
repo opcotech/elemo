@@ -9,18 +9,12 @@ import (
 
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/convert"
+	"github.com/opcotech/elemo/internal/repository"
 )
 
-var (
-	ErrTodoCreate = errors.New("failed to create todo") // todo cannot be created
-	ErrTodoRead   = errors.New("failed to read todo")   // todo cannot be read
-	ErrTodoUpdate = errors.New("failed to update todo") // todo cannot be updated
-	ErrTodoDelete = errors.New("failed to delete todo") // todo cannot be deleted
-)
-
-// TodoRepository is a repository for managing todos.
+// TodoRepository is a baseRepository for managing todos.
 type TodoRepository struct {
-	*repository
+	*baseRepository
 }
 
 func (r *TodoRepository) scan(tp, op, cp string) func(rec *neo4j.Record) (*model.Todo, error) {
@@ -59,11 +53,11 @@ func (r *TodoRepository) scan(tp, op, cp string) func(rec *neo4j.Record) (*model
 }
 
 func (r *TodoRepository) Create(ctx context.Context, todo *model.Todo) error {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.TodoRepository/Create")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.TodoRepository/Create")
 	defer span.End()
 
 	if err := todo.Validate(); err != nil {
-		return errors.Join(ErrTodoCreate, err)
+		return errors.Join(repository.ErrTodoCreate, err)
 	}
 
 	createdAt := convert.ToPointer(time.Now())
@@ -113,14 +107,14 @@ func (r *TodoRepository) Create(ctx context.Context, todo *model.Todo) error {
 	}
 
 	if err := ExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
-		return errors.Join(err, ErrTodoCreate)
+		return errors.Join(err, repository.ErrTodoCreate)
 	}
 
 	return nil
 }
 
 func (r *TodoRepository) Get(ctx context.Context, id model.ID) (*model.Todo, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.TodoRepository/Get")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.TodoRepository/Get")
 	defer span.End()
 
 	cypher := `
@@ -135,14 +129,14 @@ func (r *TodoRepository) Get(ctx context.Context, id model.ID) (*model.Todo, err
 
 	todo, err := ExecuteReadAndReadSingle(ctx, r.db, cypher, params, r.scan("t", "o", "c"))
 	if err != nil {
-		return nil, errors.Join(err, ErrTodoRead)
+		return nil, errors.Join(err, repository.ErrTodoRead)
 	}
 
 	return todo, nil
 }
 
 func (r *TodoRepository) GetByOwner(ctx context.Context, ownerID model.ID, completed *bool) ([]*model.Todo, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.TodoRepository/GetByCreator")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.TodoRepository/GetByCreator")
 	defer span.End()
 
 	cypher := `
@@ -159,14 +153,14 @@ func (r *TodoRepository) GetByOwner(ctx context.Context, ownerID model.ID, compl
 
 	todos, err := ExecuteReadAndReadAll(ctx, r.db, cypher, params, r.scan("t", "o", "c"))
 	if err != nil {
-		return nil, errors.Join(err, ErrTodoRead)
+		return nil, errors.Join(err, repository.ErrTodoRead)
 	}
 
 	return todos, nil
 }
 
 func (r *TodoRepository) Update(ctx context.Context, id model.ID, patch map[string]any) (*model.Todo, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.TodoRepository/Update")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.TodoRepository/Update")
 	defer span.End()
 
 	cypher := `
@@ -183,16 +177,16 @@ func (r *TodoRepository) Update(ctx context.Context, id model.ID, patch map[stri
 		"updated_at": time.Now().Format(time.RFC3339Nano),
 	}
 
-	todo, err := ExecuteReadAndReadSingle(ctx, r.db, cypher, params, r.scan("t", "o", "c"))
+	todo, err := ExecuteWriteAndReadSingle(ctx, r.db, cypher, params, r.scan("t", "o", "c"))
 	if err != nil {
-		return nil, errors.Join(ErrTodoUpdate, err)
+		return nil, errors.Join(repository.ErrTodoUpdate, err)
 	}
 
 	return todo, nil
 }
 
 func (r *TodoRepository) Delete(ctx context.Context, id model.ID) error {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.TodoRepository/Delete")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.TodoRepository/Delete")
 	defer span.End()
 
 	cypher := `MATCH (t:` + id.Label() + ` {id: $id}) DETACH DELETE t`
@@ -201,13 +195,13 @@ func (r *TodoRepository) Delete(ctx context.Context, id model.ID) error {
 	}
 
 	if err := ExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
-		return errors.Join(ErrTodoDelete, err)
+		return errors.Join(repository.ErrTodoDelete, err)
 	}
 
 	return nil
 }
 
-// NewTodoRepository creates a new todo repository.
+// NewTodoRepository creates a new todo baseRepository.
 func NewTodoRepository(opts ...RepositoryOption) (*TodoRepository, error) {
 	baseRepo, err := newRepository(opts...)
 	if err != nil {
@@ -215,6 +209,6 @@ func NewTodoRepository(opts ...RepositoryOption) (*TodoRepository, error) {
 	}
 
 	return &TodoRepository{
-		repository: baseRepo,
+		baseRepository: baseRepo,
 	}, nil
 }

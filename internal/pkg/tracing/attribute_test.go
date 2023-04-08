@@ -5,6 +5,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/otel/attribute"
+
+	"github.com/opcotech/elemo/internal/model"
 )
 
 func TestWithUserEmailAttribute(t *testing.T) {
@@ -61,4 +63,11 @@ func TestWithQueryResultLenAttribute(t *testing.T) {
 
 	attr := attribute.KeyValue{Key: AttributeQueryResultLen, Value: attribute.IntValue(2)}
 	assert.Equal(t, attr, WithQueryResultLenAttribute(2))
+}
+
+func TestWithSystemHealthStatusAttribute(t *testing.T) {
+	t.Parallel()
+
+	attr := attribute.KeyValue{Key: AttributeSystemHealthStatus, Value: attribute.StringValue("healthy")}
+	assert.Equal(t, attr, WithSystemHealthStatusAttribute(model.HealthStatusHealthy))
 }

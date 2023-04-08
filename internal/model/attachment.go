@@ -11,10 +11,6 @@ const (
 	AttachmentIDType = "Attachment"
 )
 
-var (
-	ErrInvalidAttachmentDetails = errors.New("invalid attachment details") // the attachment details are invalid
-)
-
 // Attachment represents an attachment on a resource.
 type Attachment struct {
 	ID        ID         `json:"id" validate:"required,dive"`

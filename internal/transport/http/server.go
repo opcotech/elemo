@@ -34,13 +34,6 @@ const (
 	DefaultRequestThrottleTimeout = 10 * time.Second
 )
 
-var (
-	ErrNoConfig         = errors.New("no config provided")       // no config provided
-	ErrInvalidSwagger   = errors.New("invalid swagger provided") // invalid swagger provided
-	ErrAuthNoPermission = errors.New("no permission")            // no permission
-	ErrAuthCredentials  = errors.New("invalid credentials")      // invalid credentials
-)
-
 // StrictServer is the type alias for the generated server interface.
 type StrictServer interface {
 	gen.StrictServerInterface
@@ -166,7 +159,7 @@ func NewServer(opts ...ControllerOption) (StrictServer, error) {
 // NewRouter creates a new HTTP router for the Server.
 func NewRouter(strictServer StrictServer, serverConfig *config.ServerConfig, tracer trace.Tracer) (http.Handler, error) {
 	if serverConfig == nil {
-		return nil, ErrNoConfig
+		return nil, config.ErrNoConfig
 	}
 
 	swagger, err := gen.GetSwagger()

@@ -9,18 +9,12 @@ import (
 
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/convert"
+	"github.com/opcotech/elemo/internal/repository"
 )
 
-var (
-	ErrProjectCreate = errors.New("failed to create project") // project cannot be created
-	ErrProjectRead   = errors.New("failed to read project")   // project cannot be read
-	ErrProjectUpdate = errors.New("failed to update project") // project cannot be updated
-	ErrProjectDelete = errors.New("failed to delete project") // project cannot be deleted
-)
-
-// ProjectRepository is a repository for managing projects.
+// ProjectRepository is a baseRepository for managing projects.
 type ProjectRepository struct {
-	*repository
+	*baseRepository
 }
 
 func (r *ProjectRepository) scan(pp, dp, tp, ip string) func(rec *neo4j.Record) (*model.Project, error) {
@@ -59,15 +53,15 @@ func (r *ProjectRepository) scan(pp, dp, tp, ip string) func(rec *neo4j.Record) 
 }
 
 func (r *ProjectRepository) Create(ctx context.Context, namespaceID model.ID, project *model.Project) error {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.ProjectRepository/Create")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.ProjectRepository/Create")
 	defer span.End()
 
 	if err := namespaceID.Validate(); err != nil {
-		return errors.Join(ErrProjectCreate, err)
+		return errors.Join(repository.ErrProjectCreate, err)
 	}
 
 	if err := project.Validate(); err != nil {
-		return errors.Join(ErrProjectCreate, err)
+		return errors.Join(repository.ErrProjectCreate, err)
 	}
 
 	createdAt := time.Now()
@@ -97,14 +91,14 @@ func (r *ProjectRepository) Create(ctx context.Context, namespaceID model.ID, pr
 	}
 
 	if err := ExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
-		return errors.Join(ErrProjectCreate, err)
+		return errors.Join(repository.ErrProjectCreate, err)
 	}
 
 	return nil
 }
 
 func (r *ProjectRepository) Get(ctx context.Context, id model.ID) (*model.Project, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.ProjectRepository/Get")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.ProjectRepository/Get")
 	defer span.End()
 
 	cypher := `
@@ -120,14 +114,14 @@ func (r *ProjectRepository) Get(ctx context.Context, id model.ID) (*model.Projec
 
 	project, err := ExecuteReadAndReadSingle(ctx, r.db, cypher, params, r.scan("p", "d", "t", "i"))
 	if err != nil {
-		return nil, errors.Join(ErrProjectRead, err)
+		return nil, errors.Join(repository.ErrProjectRead, err)
 	}
 
 	return project, nil
 }
 
 func (r *ProjectRepository) GetByKey(ctx context.Context, key string) (*model.Project, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.ProjectRepository/GetByKey")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.ProjectRepository/GetByKey")
 	defer span.End()
 
 	cypher := `
@@ -143,14 +137,14 @@ func (r *ProjectRepository) GetByKey(ctx context.Context, key string) (*model.Pr
 
 	project, err := ExecuteReadAndReadSingle(ctx, r.db, cypher, params, r.scan("p", "d", "t", "i"))
 	if err != nil {
-		return nil, errors.Join(ErrProjectRead, err)
+		return nil, errors.Join(repository.ErrProjectRead, err)
 	}
 
 	return project, nil
 }
 
 func (r *ProjectRepository) GetAll(ctx context.Context, namespaceID model.ID, offset, limit int) ([]*model.Project, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.ProjectRepository/GetAll")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.ProjectRepository/GetAll")
 	defer span.End()
 
 	cypher := `
@@ -170,14 +164,14 @@ func (r *ProjectRepository) GetAll(ctx context.Context, namespaceID model.ID, of
 
 	projects, err := ExecuteReadAndReadAll(ctx, r.db, cypher, params, r.scan("p", "d", "t", "i"))
 	if err != nil {
-		return nil, errors.Join(ErrProjectRead, err)
+		return nil, errors.Join(repository.ErrProjectRead, err)
 	}
 
 	return projects, nil
 }
 
 func (r *ProjectRepository) Update(ctx context.Context, id model.ID, patch map[string]any) (*model.Project, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.ProjectRepository/Update")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.ProjectRepository/Update")
 	defer span.End()
 
 	cypher := `
@@ -195,16 +189,16 @@ func (r *ProjectRepository) Update(ctx context.Context, id model.ID, patch map[s
 		"updated_at": time.Now().Format(time.RFC3339Nano),
 	}
 
-	project, err := ExecuteReadAndReadSingle(ctx, r.db, cypher, params, r.scan("p", "d", "t", "i"))
+	project, err := ExecuteWriteAndReadSingle(ctx, r.db, cypher, params, r.scan("p", "d", "t", "i"))
 	if err != nil {
-		return nil, errors.Join(ErrProjectUpdate, err)
+		return nil, errors.Join(repository.ErrProjectUpdate, err)
 	}
 
 	return project, nil
 }
 
 func (r *ProjectRepository) Delete(ctx context.Context, id model.ID) error {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.ProjectRepository/Delete")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.ProjectRepository/Delete")
 	defer span.End()
 
 	cypher := `MATCH (p:` + id.Label() + ` {id: $id}) DETACH DELETE p`
@@ -213,13 +207,13 @@ func (r *ProjectRepository) Delete(ctx context.Context, id model.ID) error {
 	}
 
 	if err := ExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
-		return errors.Join(ErrProjectDelete, err)
+		return errors.Join(repository.ErrProjectDelete, err)
 	}
 
 	return nil
 }
 
-// NewProjectRepository creates a new project repository.
+// NewProjectRepository creates a new project baseRepository.
 func NewProjectRepository(opts ...RepositoryOption) (*ProjectRepository, error) {
 	baseRepo, err := newRepository(opts...)
 	if err != nil {
@@ -227,6 +221,6 @@ func NewProjectRepository(opts ...RepositoryOption) (*ProjectRepository, error) 
 	}
 
 	return &ProjectRepository{
-		repository: baseRepo,
+		baseRepository: baseRepo,
 	}, nil
 }

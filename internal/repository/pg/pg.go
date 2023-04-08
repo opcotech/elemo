@@ -14,14 +14,7 @@ import (
 	"github.com/opcotech/elemo/internal/pkg/log"
 	"github.com/opcotech/elemo/internal/pkg/tracing"
 	"github.com/opcotech/elemo/internal/pkg/validate"
-)
-
-var (
-	ErrInvalidDatabase = errors.New("invalid database") // the database is invalid
-	ErrInvalidPool     = errors.New("invalid pool")     // the pool is invalid
-	ErrNoPool          = errors.New("no pool")          // the pool is nil
-	ErrNoLogger        = errors.New("no logger")        // the logger is nil
-	ErrNoTracer        = errors.New("no tracer")        // the tracer is nil
+	"github.com/opcotech/elemo/internal/repository"
 )
 
 // Pool defines the interface for a database connection pool.
@@ -51,7 +44,7 @@ func NewPool(ctx context.Context, conf *config.RelationalDatabaseConfig) (Pool, 
 
 	poolConf, err := pgxpool.ParseConfig(conf.ConnectionURL())
 	if err != nil {
-		return nil, errors.Join(ErrInvalidPool, err)
+		return nil, errors.Join(repository.ErrInvalidPool, err)
 	}
 
 	poolConf.MaxConnLifetime = conf.MaxConnectionLifetime * time.Second
@@ -61,7 +54,7 @@ func NewPool(ctx context.Context, conf *config.RelationalDatabaseConfig) (Pool, 
 
 	pool, err := pgxpool.NewWithConfig(ctx, poolConf)
 	if err != nil {
-		return nil, errors.Join(ErrInvalidPool, err)
+		return nil, errors.Join(repository.ErrInvalidPool, err)
 	}
 
 	return pool, nil
@@ -74,7 +67,7 @@ type DatabaseOption func(*Database) error
 func WithDatabasePool(pool Pool) DatabaseOption {
 	return func(db *Database) error {
 		if pool == nil {
-			return ErrNoPool
+			return repository.ErrNoPool
 		}
 
 		db.pool = pool
@@ -87,7 +80,7 @@ func WithDatabasePool(pool Pool) DatabaseOption {
 func WithDatabaseLogger(logger log.Logger) DatabaseOption {
 	return func(db *Database) error {
 		if logger == nil {
-			return ErrNoLogger
+			return log.ErrNoLogger
 		}
 
 		db.logger = logger
@@ -100,7 +93,7 @@ func WithDatabaseLogger(logger log.Logger) DatabaseOption {
 func WithDatabaseTracer(tracer trace.Tracer) DatabaseOption {
 	return func(db *Database) error {
 		if tracer == nil {
-			return ErrNoTracer
+			return tracing.ErrNoTracer
 		}
 
 		db.tracer = tracer
@@ -141,7 +134,7 @@ func NewDatabase(opts ...DatabaseOption) (*Database, error) {
 	}
 
 	if err := validate.Struct(db); err != nil {
-		return nil, errors.Join(ErrInvalidDatabase, err)
+		return nil, errors.Join(repository.ErrInvalidDatabase, err)
 	}
 
 	return db, nil

@@ -1,7 +1,5 @@
 package model
 
-import "errors"
-
 const (
 	LanguageAA Language = iota + 1 // ISO Language code of Afar
 	LanguageAB                     // ISO Language code of Abkhazian
@@ -190,8 +188,6 @@ const (
 )
 
 var (
-	ErrInvalidLanguage = errors.New("invalid language code") // Language is not valid
-
 	languageCodeKeys = map[string]Language{
 		"aa": LanguageAA,
 		"ab": LanguageAB,

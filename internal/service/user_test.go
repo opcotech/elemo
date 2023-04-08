@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/opcotech/elemo/internal/model"
+	"github.com/opcotech/elemo/internal/pkg/log"
 	"github.com/opcotech/elemo/internal/pkg/password"
 	"github.com/opcotech/elemo/internal/testutil/mock"
 	testModel "github.com/opcotech/elemo/internal/testutil/model"
@@ -32,13 +33,15 @@ func TestNewUserService(t *testing.T) {
 					WithLogger(new(mock.Logger)),
 					WithTracer(new(mock.Tracer)),
 					WithUserRepository(new(mock.UserRepository)),
+					WithPermissionRepository(new(mock.PermissionRepository)),
 				},
 			},
 			want: &userService{
 				baseService: &baseService{
-					logger:   new(mock.Logger),
-					tracer:   new(mock.Tracer),
-					userRepo: new(mock.UserRepository),
+					logger:         new(mock.Logger),
+					tracer:         new(mock.Tracer),
+					userRepo:       new(mock.UserRepository),
+					permissionRepo: new(mock.PermissionRepository),
 				},
 			},
 		},
@@ -50,7 +53,7 @@ func TestNewUserService(t *testing.T) {
 					WithUserRepository(new(mock.UserRepository)),
 				},
 			},
-			wantErr: ErrNoLogger,
+			wantErr: log.ErrNoLogger,
 		},
 		{
 			name: "new user service with no user repository",

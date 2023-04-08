@@ -8,20 +8,12 @@ import (
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
 
 	"github.com/opcotech/elemo/internal/model"
+	"github.com/opcotech/elemo/internal/repository"
 )
 
-var (
-	ErrOrganizationCreate       = errors.New("failed to create organization")             // organization cannot be created
-	ErrOrganizationRead         = errors.New("failed to read organization")               // organization cannot be read
-	ErrOrganizationUpdate       = errors.New("failed to update organization")             // organization cannot be updated
-	ErrOrganizationAddMember    = errors.New("failed to add member to organization")      // member cannot be added to organization
-	ErrOrganizationRemoveMember = errors.New("failed to remove member from organization") // member cannot be removed from organization
-	ErrOrganizationDelete       = errors.New("failed to delete organization")             // organization cannot be deleted
-)
-
-// OrganizationRepository is a repository for managing organizations.
+// OrganizationRepository is a baseRepository for managing organizations.
 type OrganizationRepository struct {
-	*repository
+	*baseRepository
 }
 
 func (r *OrganizationRepository) scan(op, np, tp, mp string) func(rec *neo4j.Record) (*model.Organization, error) {
@@ -60,15 +52,15 @@ func (r *OrganizationRepository) scan(op, np, tp, mp string) func(rec *neo4j.Rec
 }
 
 func (r *OrganizationRepository) Create(ctx context.Context, owner model.ID, organization *model.Organization) error {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.OrganizationRepository/Create")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.OrganizationRepository/Create")
 	defer span.End()
 
 	if err := owner.Validate(); err != nil {
-		return errors.Join(ErrOrganizationCreate, err)
+		return errors.Join(repository.ErrOrganizationCreate, err)
 	}
 
 	if err := organization.Validate(); err != nil {
-		return errors.Join(ErrOrganizationCreate, err)
+		return errors.Join(repository.ErrOrganizationCreate, err)
 	}
 
 	createdAt := time.Now()
@@ -99,14 +91,14 @@ func (r *OrganizationRepository) Create(ctx context.Context, owner model.ID, org
 	}
 
 	if err := ExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
-		return errors.Join(ErrOrganizationCreate, err)
+		return errors.Join(repository.ErrOrganizationCreate, err)
 	}
 
 	return nil
 }
 
 func (r *OrganizationRepository) Get(ctx context.Context, id model.ID) (*model.Organization, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.OrganizationRepository/Get")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.OrganizationRepository/Get")
 	defer span.End()
 
 	cypher := `
@@ -123,14 +115,14 @@ func (r *OrganizationRepository) Get(ctx context.Context, id model.ID) (*model.O
 
 	org, err := ExecuteReadAndReadSingle(ctx, r.db, cypher, params, r.scan("o", "n", "t", "m"))
 	if err != nil {
-		return nil, errors.Join(ErrOrganizationRead, err)
+		return nil, errors.Join(repository.ErrOrganizationRead, err)
 	}
 
 	return org, nil
 }
 
 func (r *OrganizationRepository) GetAll(ctx context.Context, offset, limit int) ([]*model.Organization, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.OrganizationRepository/GetAllBelongsTo")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.OrganizationRepository/GetAllBelongsTo")
 	defer span.End()
 
 	cypher := `
@@ -149,14 +141,14 @@ func (r *OrganizationRepository) GetAll(ctx context.Context, offset, limit int) 
 
 	orgs, err := ExecuteReadAndReadAll(ctx, r.db, cypher, params, r.scan("o", "n", "t", "m"))
 	if err != nil {
-		return nil, errors.Join(ErrOrganizationRead, err)
+		return nil, errors.Join(repository.ErrOrganizationRead, err)
 	}
 
 	return orgs, nil
 }
 
 func (r *OrganizationRepository) Update(ctx context.Context, id model.ID, patch map[string]any) (*model.Organization, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.OrganizationRepository/Update")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.OrganizationRepository/Update")
 	defer span.End()
 
 	cypher := `
@@ -173,24 +165,24 @@ func (r *OrganizationRepository) Update(ctx context.Context, id model.ID, patch 
 		"updated_at": time.Now().Format(time.RFC3339Nano),
 	}
 
-	org, err := ExecuteReadAndReadSingle(ctx, r.db, cypher, params, r.scan("o", "n", "t", "m"))
+	org, err := ExecuteWriteAndReadSingle(ctx, r.db, cypher, params, r.scan("o", "n", "t", "m"))
 	if err != nil {
-		return nil, errors.Join(ErrOrganizationUpdate, err)
+		return nil, errors.Join(repository.ErrOrganizationUpdate, err)
 	}
 
 	return org, nil
 }
 
 func (r *OrganizationRepository) AddMember(ctx context.Context, orgID, memberID model.ID) error {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.OrganizationRepository/AddMember")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.OrganizationRepository/AddMember")
 	defer span.End()
 
 	if err := orgID.Validate(); err != nil {
-		return errors.Join(ErrOrganizationAddMember, err)
+		return errors.Join(repository.ErrOrganizationAddMember, err)
 	}
 
 	if err := memberID.Validate(); err != nil {
-		return errors.Join(ErrOrganizationAddMember, err)
+		return errors.Join(repository.ErrOrganizationAddMember, err)
 	}
 
 	cypher := `
@@ -207,22 +199,22 @@ func (r *OrganizationRepository) AddMember(ctx context.Context, orgID, memberID 
 	}
 
 	if err := ExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
-		return errors.Join(ErrOrganizationAddMember, err)
+		return errors.Join(repository.ErrOrganizationAddMember, err)
 	}
 
 	return nil
 }
 
 func (r *OrganizationRepository) RemoveMember(ctx context.Context, orgID, memberID model.ID) error {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.OrganizationRepository/RemoveMember")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.OrganizationRepository/RemoveMember")
 	defer span.End()
 
 	if err := orgID.Validate(); err != nil {
-		return errors.Join(ErrOrganizationRemoveMember, err)
+		return errors.Join(repository.ErrOrganizationRemoveMember, err)
 	}
 
 	if err := memberID.Validate(); err != nil {
-		return errors.Join(ErrOrganizationRemoveMember, err)
+		return errors.Join(repository.ErrOrganizationRemoveMember, err)
 	}
 
 	cypher := `
@@ -235,14 +227,14 @@ func (r *OrganizationRepository) RemoveMember(ctx context.Context, orgID, member
 	}
 
 	if err := ExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
-		return errors.Join(ErrOrganizationRemoveMember, err)
+		return errors.Join(repository.ErrOrganizationRemoveMember, err)
 	}
 
 	return nil
 }
 
 func (r *OrganizationRepository) Delete(ctx context.Context, id model.ID) error {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.OrganizationRepository/Delete")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.OrganizationRepository/Delete")
 	defer span.End()
 
 	cypher := `MATCH (o:` + id.Label() + ` {id: $id}), (o)-[r]-() DETACH DELETE o, r`
@@ -251,13 +243,13 @@ func (r *OrganizationRepository) Delete(ctx context.Context, id model.ID) error 
 	}
 
 	if err := ExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
-		return errors.Join(ErrOrganizationDelete, err)
+		return errors.Join(repository.ErrOrganizationDelete, err)
 	}
 
 	return nil
 }
 
-// NewOrganizationRepository creates a new organization repository.
+// NewOrganizationRepository creates a new organization baseRepository.
 func NewOrganizationRepository(opts ...RepositoryOption) (*OrganizationRepository, error) {
 	baseRepo, err := newRepository(opts...)
 	if err != nil {
@@ -265,6 +257,6 @@ func NewOrganizationRepository(opts ...RepositoryOption) (*OrganizationRepositor
 	}
 
 	return &OrganizationRepository{
-		repository: baseRepo,
+		baseRepository: baseRepo,
 	}, nil
 }

@@ -11,10 +11,6 @@ const (
 	DocumentIDType = "Document"
 )
 
-var (
-	ErrInvalidDocumentDetails = errors.New("invalid document details") // the document details are invalid
-)
-
 // Document represents a document in the system that can be associated with a
 // model.Organization, model.Namespace, model.Project, or User. A document is a
 // pointer to a file in the static file storage, editable by users with the

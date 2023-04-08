@@ -9,18 +9,12 @@ import (
 
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/convert"
+	"github.com/opcotech/elemo/internal/repository"
 )
 
-var (
-	ErrPermissionCreate = errors.New("failed to create permission") // permission cannot be created
-	ErrPermissionRead   = errors.New("failed to read permission")   // permission cannot be read
-	ErrPermissionUpdate = errors.New("failed to update permission") // permission cannot be updated
-	ErrPermissionDelete = errors.New("failed to delete permission") // permission cannot be deleted
-)
-
-// PermissionRepository is a repository for managing permissions.
+// PermissionRepository is a baseRepository for managing permissions.
 type PermissionRepository struct {
-	*repository
+	*baseRepository
 }
 
 // scan is a helper function for scanning a permission from a neo4j.Record.
@@ -62,11 +56,11 @@ func (r *PermissionRepository) scan(permParam, subjectParam, targetParam string)
 // Create creates a new permission if it does not already exist between the
 // subject and target. If the permission already exists, no action is taken.
 func (r *PermissionRepository) Create(ctx context.Context, perm *model.Permission) error {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.PermissionRepository/Create")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.PermissionRepository/Create")
 	defer span.End()
 
 	if err := perm.Validate(); err != nil {
-		return errors.Join(ErrPermissionCreate, err)
+		return errors.Join(repository.ErrPermissionCreate, err)
 	}
 
 	perm.ID = model.MustNewID(EdgeKindHasPermission.String())
@@ -87,7 +81,7 @@ func (r *PermissionRepository) Create(ctx context.Context, perm *model.Permissio
 	}
 
 	if err := ExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
-		return errors.Join(err, ErrPermissionCreate)
+		return errors.Join(err, repository.ErrPermissionCreate)
 	}
 
 	return nil
@@ -96,7 +90,7 @@ func (r *PermissionRepository) Create(ctx context.Context, perm *model.Permissio
 // Get returns an existing permission, its subject and target. If the
 // permission does not exist, an error is returned.
 func (r *PermissionRepository) Get(ctx context.Context, id model.ID) (*model.Permission, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.PermissionRepository/Get")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.PermissionRepository/Get")
 	defer span.End()
 
 	cypher := `
@@ -110,7 +104,7 @@ func (r *PermissionRepository) Get(ctx context.Context, id model.ID) (*model.Per
 
 	perm, err := ExecuteWriteAndReadSingle(ctx, r.db, cypher, params, r.scan("p", "s", "t"))
 	if err != nil {
-		return nil, errors.Join(err, ErrPermissionRead)
+		return nil, errors.Join(err, repository.ErrPermissionRead)
 	}
 
 	return perm, nil
@@ -119,7 +113,7 @@ func (r *PermissionRepository) Get(ctx context.Context, id model.ID) (*model.Per
 // GetBySubject returns all permissions for a given subject. If no permissions
 // exist, an empty slice is returned.
 func (r *PermissionRepository) GetBySubject(ctx context.Context, id model.ID) ([]*model.Permission, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.PermissionRepository/GetBySubject")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.PermissionRepository/GetBySubject")
 	defer span.End()
 
 	cypher := `
@@ -133,7 +127,7 @@ func (r *PermissionRepository) GetBySubject(ctx context.Context, id model.ID) ([
 
 	perms, err := ExecuteReadAndReadAll(ctx, r.db, cypher, params, r.scan("p", "s", "t"))
 	if err != nil {
-		return nil, errors.Join(err, ErrPermissionRead)
+		return nil, errors.Join(err, repository.ErrPermissionRead)
 	}
 
 	return perms, nil
@@ -142,7 +136,7 @@ func (r *PermissionRepository) GetBySubject(ctx context.Context, id model.ID) ([
 // GetByTarget returns all permissions for a given target. If no permissions
 // exist, an empty slice is returned.
 func (r *PermissionRepository) GetByTarget(ctx context.Context, id model.ID) ([]*model.Permission, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.PermissionRepository/GetByTarget")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.PermissionRepository/GetByTarget")
 	defer span.End()
 
 	cypher := `
@@ -156,10 +150,51 @@ func (r *PermissionRepository) GetByTarget(ctx context.Context, id model.ID) ([]
 
 	perms, err := ExecuteReadAndReadAll(ctx, r.db, cypher, params, r.scan("p", "s", "t"))
 	if err != nil {
-		return nil, errors.Join(err, ErrPermissionRead)
+		return nil, errors.Join(err, repository.ErrPermissionRead)
 	}
 
 	return perms, nil
+}
+
+func (r *PermissionRepository) HasPermission(ctx context.Context, subject, target model.ID, kind model.PermissionKind) (bool, error) {
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.PermissionRepository/HasPermission")
+	defer span.End()
+
+	return r.HasAnyPermission(ctx, subject, target, kind, model.PermissionKindAll)
+}
+
+func (r *PermissionRepository) HasAnyPermission(ctx context.Context, subject, target model.ID, kinds ...model.PermissionKind) (bool, error) {
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.PermissionRepository/HasAnyPermission")
+	defer span.End()
+
+	permissions := make([]string, len(kinds))
+	for i, kind := range kinds {
+		permissions[i] = kind.String()
+	}
+
+	cypher := `
+	OPTIONAL MATCH (s:` + subject.Label() + ` {id: $subject})-[p:` + EdgeKindHasPermission.String() + `]->(t:` + target.Label() + ` {id: $target})
+	WHERE p.kind IN $permissions
+	RETURN count(p) >= 1 as has_permission`
+
+	params := map[string]any{
+		"subject":     subject.String(),
+		"target":      target.String(),
+		"permissions": permissions,
+	}
+
+	hasPermission, err := ExecuteReadAndReadSingle(ctx, r.db, cypher, params, func(rec *neo4j.Record) (*bool, error) {
+		val, _, err := neo4j.GetRecordValue[bool](rec, "has_permission")
+		if err != nil {
+			return nil, err
+		}
+		return &val, nil
+	})
+	if err != nil {
+		return false, errors.Join(repository.ErrPermissionRead, err)
+	}
+
+	return *hasPermission, nil
 }
 
 // Update updates an existing permission's kind. If the permission does not
@@ -167,7 +202,7 @@ func (r *PermissionRepository) GetByTarget(ctx context.Context, id model.ID) ([]
 // as the one provided, the kind is overwritten and the updated_at timestamp
 // is updated.
 func (r *PermissionRepository) Update(ctx context.Context, id model.ID, kind model.PermissionKind) (*model.Permission, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.PermissionRepository/Update")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.PermissionRepository/Update")
 	defer span.End()
 
 	cypher := `
@@ -184,7 +219,7 @@ func (r *PermissionRepository) Update(ctx context.Context, id model.ID, kind mod
 
 	perm, err := ExecuteWriteAndReadSingle(ctx, r.db, cypher, params, r.scan("p", "s", "t"))
 	if err != nil {
-		return nil, errors.Join(err, ErrPermissionUpdate)
+		return nil, errors.Join(err, repository.ErrPermissionUpdate)
 	}
 
 	return perm, nil
@@ -193,7 +228,7 @@ func (r *PermissionRepository) Update(ctx context.Context, id model.ID, kind mod
 // Delete deletes an existing permission. If the permission does not exist, no
 // errors are returned.
 func (r *PermissionRepository) Delete(ctx context.Context, id model.ID) error {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.PermissionRepository/Delete")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.PermissionRepository/Delete")
 	defer span.End()
 
 	cypher := `MATCH (s)-[p:` + id.Label() + ` {id: $id}]->(t) DELETE p`
@@ -203,13 +238,13 @@ func (r *PermissionRepository) Delete(ctx context.Context, id model.ID) error {
 	}
 
 	if err := ExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
-		return errors.Join(err, ErrPermissionDelete)
+		return errors.Join(err, repository.ErrPermissionDelete)
 	}
 
 	return nil
 }
 
-// NewPermissionRepository creates a new permission repository.
+// NewPermissionRepository creates a new permission baseRepository.
 func NewPermissionRepository(opts ...RepositoryOption) (*PermissionRepository, error) {
 	baseRepo, err := newRepository(opts...)
 	if err != nil {
@@ -217,6 +252,6 @@ func NewPermissionRepository(opts ...RepositoryOption) (*PermissionRepository, e
 	}
 
 	return &PermissionRepository{
-		repository: baseRepo,
+		baseRepository: baseRepo,
 	}, nil
 }

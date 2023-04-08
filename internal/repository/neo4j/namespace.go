@@ -8,18 +8,12 @@ import (
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
 
 	"github.com/opcotech/elemo/internal/model"
+	"github.com/opcotech/elemo/internal/repository"
 )
 
-var (
-	ErrNamespaceCreate = errors.New("failed to create namespace") // the namespace could not be created
-	ErrNamespaceRead   = errors.New("failed to read namespace")   // the namespace could not be retrieved
-	ErrNamespaceUpdate = errors.New("failed to update namespace") // the namespace could not be updated
-	ErrNamespaceDelete = errors.New("failed to delete namespace") // the namespace could not be deleted
-)
-
-// NamespaceRepository is a repository for managing namespaces.
+// NamespaceRepository is a baseRepository for managing namespaces.
 type NamespaceRepository struct {
-	*repository
+	*baseRepository
 }
 
 func (r *NamespaceRepository) scan(nsp, pp, dp string) func(rec *neo4j.Record) (*model.Namespace, error) {
@@ -54,15 +48,15 @@ func (r *NamespaceRepository) scan(nsp, pp, dp string) func(rec *neo4j.Record) (
 }
 
 func (r *NamespaceRepository) Create(ctx context.Context, orgID model.ID, namespace *model.Namespace) error {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.NamespaceRepository/Create")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.NamespaceRepository/Create")
 	defer span.End()
 
 	if err := orgID.Validate(); err != nil {
-		return errors.Join(ErrAttachmentCreate, err)
+		return errors.Join(repository.ErrAttachmentCreate, err)
 	}
 
 	if err := namespace.Validate(); err != nil {
-		return errors.Join(ErrNamespaceCreate, err)
+		return errors.Join(repository.ErrNamespaceCreate, err)
 	}
 
 	createdAt := time.Now()
@@ -88,14 +82,14 @@ func (r *NamespaceRepository) Create(ctx context.Context, orgID model.ID, namesp
 	}
 
 	if err := ExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
-		return errors.Join(ErrNamespaceCreate, err)
+		return errors.Join(repository.ErrNamespaceCreate, err)
 	}
 
 	return nil
 }
 
 func (r *NamespaceRepository) Get(ctx context.Context, id model.ID) (*model.Namespace, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.NamespaceRepository/Get")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.NamespaceRepository/Get")
 	defer span.End()
 
 	cypher := `
@@ -110,14 +104,14 @@ func (r *NamespaceRepository) Get(ctx context.Context, id model.ID) (*model.Name
 
 	ns, err := ExecuteReadAndReadSingle(ctx, r.db, cypher, params, r.scan("ns", "p", "d"))
 	if err != nil {
-		return nil, errors.Join(ErrNamespaceRead, err)
+		return nil, errors.Join(repository.ErrNamespaceRead, err)
 	}
 
 	return ns, nil
 }
 
 func (r *NamespaceRepository) GetAll(ctx context.Context, orgID model.ID, offset, limit int) ([]*model.Namespace, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.NamespaceRepository/GetAll")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.NamespaceRepository/GetAll")
 	defer span.End()
 
 	cypher := `
@@ -136,14 +130,14 @@ func (r *NamespaceRepository) GetAll(ctx context.Context, orgID model.ID, offset
 
 	nss, err := ExecuteReadAndReadAll(ctx, r.db, cypher, params, r.scan("ns", "p", "d"))
 	if err != nil {
-		return nil, errors.Join(ErrNamespaceRead, err)
+		return nil, errors.Join(repository.ErrNamespaceRead, err)
 	}
 
 	return nss, nil
 }
 
 func (r *NamespaceRepository) Update(ctx context.Context, id model.ID, patch map[string]any) (*model.Namespace, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.NamespaceRepository/Update")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.NamespaceRepository/Update")
 	defer span.End()
 
 	cypher := `
@@ -159,16 +153,16 @@ func (r *NamespaceRepository) Update(ctx context.Context, id model.ID, patch map
 		"updated_at": time.Now().Format(time.RFC3339Nano),
 	}
 
-	ns, err := ExecuteReadAndReadSingle(ctx, r.db, cypher, params, r.scan("ns", "p", "d"))
+	ns, err := ExecuteWriteAndReadSingle(ctx, r.db, cypher, params, r.scan("ns", "p", "d"))
 	if err != nil {
-		return nil, errors.Join(ErrNamespaceUpdate, err)
+		return nil, errors.Join(repository.ErrNamespaceUpdate, err)
 	}
 
 	return ns, nil
 }
 
 func (r *NamespaceRepository) Delete(ctx context.Context, id model.ID) error {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.NamespaceRepository/Delete")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.NamespaceRepository/Delete")
 	defer span.End()
 
 	cypher := `
@@ -179,13 +173,13 @@ func (r *NamespaceRepository) Delete(ctx context.Context, id model.ID) error {
 	}
 
 	if err := ExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
-		return errors.Join(ErrNamespaceDelete, err)
+		return errors.Join(repository.ErrNamespaceDelete, err)
 	}
 
 	return nil
 }
 
-// NewNamespaceRepository creates a new namespace repository.
+// NewNamespaceRepository creates a new namespace baseRepository.
 func NewNamespaceRepository(opts ...RepositoryOption) (*NamespaceRepository, error) {
 	baseRepo, err := newRepository(opts...)
 	if err != nil {
@@ -193,6 +187,6 @@ func NewNamespaceRepository(opts ...RepositoryOption) (*NamespaceRepository, err
 	}
 
 	return &NamespaceRepository{
-		repository: baseRepo,
+		baseRepository: baseRepo,
 	}, nil
 }

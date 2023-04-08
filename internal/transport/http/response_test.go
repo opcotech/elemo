@@ -8,6 +8,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/opcotech/elemo/internal/pkg/convert"
 )
 
 func TestWriteJSONResponse(t *testing.T) {
@@ -47,7 +49,7 @@ func TestWriteJSONResponse(t *testing.T) {
 				status:   http.StatusOK,
 			},
 			fields: fields{
-				response: errors.Join(ErrMarshal, fmt.Errorf("json: unsupported type: func()")).Error(),
+				response: errors.Join(convert.ErrMarshal, fmt.Errorf("json: unsupported type: func()")).Error(),
 				status:   http.StatusInternalServerError,
 			},
 		},

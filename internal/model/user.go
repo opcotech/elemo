@@ -19,9 +19,6 @@ const (
 )
 
 var (
-	ErrInvalidUserDetails = errors.New("invalid user details") // the user details are invalid
-	ErrInvalidUserStatus  = errors.New("invalid user status")  // the user status is invalid
-
 	userStatusKeys = map[string]UserStatus{
 		"active":   UserStatusActive,
 		"pending":  UserStatusPending,

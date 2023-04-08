@@ -10,6 +10,8 @@ import (
 
 	"github.com/opcotech/elemo/internal/config"
 	"github.com/opcotech/elemo/internal/pkg/log"
+	"github.com/opcotech/elemo/internal/pkg/tracing"
+	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/testutil/mock"
 )
 
@@ -105,7 +107,7 @@ func TestWithDatabasePool(t *testing.T) {
 			args: args{
 				pool: nil,
 			},
-			wantErr: ErrNoPool,
+			wantErr: repository.ErrNoPool,
 		},
 	}
 	for _, tt := range tests {
@@ -142,7 +144,7 @@ func TestWithDatabaseLogger(t *testing.T) {
 			args: args{
 				logger: nil,
 			},
-			wantErr: ErrNoLogger,
+			wantErr: log.ErrNoLogger,
 		},
 	}
 	for _, tt := range tests {
@@ -179,7 +181,7 @@ func TestWithDatabaseTracer(t *testing.T) {
 			args: args{
 				tracer: nil,
 			},
-			wantErr: ErrNoTracer,
+			wantErr: tracing.ErrNoTracer,
 		},
 	}
 	for _, tt := range tests {
@@ -226,7 +228,7 @@ func TestNewDatabase(t *testing.T) {
 				logger: new(mock.Logger),
 				tracer: new(mock.Tracer),
 			},
-			wantErr: ErrNoPool,
+			wantErr: repository.ErrNoPool,
 		},
 		{
 			name: "create new database with nil logger",
@@ -235,7 +237,7 @@ func TestNewDatabase(t *testing.T) {
 				logger: nil,
 				tracer: new(mock.Tracer),
 			},
-			wantErr: ErrNoLogger,
+			wantErr: log.ErrNoLogger,
 		},
 		{
 			name: "create new database with nil tracer",
@@ -244,7 +246,7 @@ func TestNewDatabase(t *testing.T) {
 				logger: new(mock.Logger),
 				tracer: nil,
 			},
-			wantErr: ErrNoTracer,
+			wantErr: tracing.ErrNoTracer,
 		},
 	}
 	for _, tt := range tests {

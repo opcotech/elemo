@@ -9,18 +9,12 @@ import (
 
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/convert"
+	"github.com/opcotech/elemo/internal/repository"
 )
 
-var (
-	ErrDocumentCreate = errors.New("failed to create document") // the document could not be created
-	ErrDocumentRead   = errors.New("failed to read document")   // the document could not be retrieved
-	ErrDocumentUpdate = errors.New("failed to update document") // the document could not be updated
-	ErrDocumentDelete = errors.New("failed to delete document") // the document could not be deleted
-)
-
-// DocumentRepository is a repository for managing documents.
+// DocumentRepository is a baseRepository for managing documents.
 type DocumentRepository struct {
-	*repository
+	*baseRepository
 }
 
 func (r *DocumentRepository) scan(dp, cp, lp, commp, ap string) func(rec *neo4j.Record) (*model.Document, error) {
@@ -65,15 +59,15 @@ func (r *DocumentRepository) scan(dp, cp, lp, commp, ap string) func(rec *neo4j.
 }
 
 func (r *DocumentRepository) Create(ctx context.Context, belongsTo model.ID, document *model.Document) error {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.DocumentRepository/Create")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.DocumentRepository/Create")
 	defer span.End()
 
 	if err := belongsTo.Validate(); err != nil {
-		return errors.Join(ErrDocumentCreate, err)
+		return errors.Join(repository.ErrDocumentCreate, err)
 	}
 
 	if err := document.Validate(); err != nil {
-		return errors.Join(ErrDocumentCreate, err)
+		return errors.Join(repository.ErrDocumentCreate, err)
 	}
 
 	createdAt := time.Now()
@@ -108,14 +102,14 @@ func (r *DocumentRepository) Create(ctx context.Context, belongsTo model.ID, doc
 	}
 
 	if err := ExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
-		return errors.Join(ErrDocumentCreate, err)
+		return errors.Join(repository.ErrDocumentCreate, err)
 	}
 
 	return nil
 }
 
 func (r *DocumentRepository) Get(ctx context.Context, id model.ID) (*model.Document, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.DocumentRepository/Get")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.DocumentRepository/Get")
 	defer span.End()
 
 	cypher := `
@@ -131,14 +125,14 @@ func (r *DocumentRepository) Get(ctx context.Context, id model.ID) (*model.Docum
 
 	doc, err := ExecuteReadAndReadSingle(ctx, r.db, cypher, params, r.scan("d", "c", "l", "comm", "att"))
 	if err != nil {
-		return nil, errors.Join(ErrDocumentRead, err)
+		return nil, errors.Join(repository.ErrDocumentRead, err)
 	}
 
 	return doc, nil
 }
 
 func (r *DocumentRepository) GetByCreator(ctx context.Context, createdBy model.ID, offset, limit int) ([]*model.Document, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.DocumentRepository/GetByCreator")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.DocumentRepository/GetByCreator")
 	defer span.End()
 
 	cypher := `
@@ -158,14 +152,14 @@ func (r *DocumentRepository) GetByCreator(ctx context.Context, createdBy model.I
 
 	docs, err := ExecuteReadAndReadAll(ctx, r.db, cypher, params, r.scan("d", "c", "l", "comm", "att"))
 	if err != nil {
-		return nil, errors.Join(ErrDocumentRead, err)
+		return nil, errors.Join(repository.ErrDocumentRead, err)
 	}
 
 	return docs, nil
 }
 
 func (r *DocumentRepository) GetAllBelongsTo(ctx context.Context, belongsTo model.ID, offset, limit int) ([]*model.Document, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.DocumentRepository/GetAllBelongsTo")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.DocumentRepository/GetAllBelongsTo")
 	defer span.End()
 
 	cypher := `
@@ -187,14 +181,14 @@ func (r *DocumentRepository) GetAllBelongsTo(ctx context.Context, belongsTo mode
 
 	docs, err := ExecuteReadAndReadAll(ctx, r.db, cypher, params, r.scan("d", "c", "l", "comm", "att"))
 	if err != nil {
-		return nil, errors.Join(ErrDocumentRead, err)
+		return nil, errors.Join(repository.ErrDocumentRead, err)
 	}
 
 	return docs, nil
 }
 
 func (r *DocumentRepository) Update(ctx context.Context, id model.ID, patch map[string]any) (*model.Document, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.DocumentRepository/Update")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.DocumentRepository/Update")
 	defer span.End()
 
 	cypher := `
@@ -213,16 +207,16 @@ func (r *DocumentRepository) Update(ctx context.Context, id model.ID, patch map[
 		"updated_at": time.Now().Format(time.RFC3339Nano),
 	}
 
-	doc, err := ExecuteReadAndReadSingle(ctx, r.db, cypher, params, r.scan("d", "c", "l", "comm", "att"))
+	doc, err := ExecuteWriteAndReadSingle(ctx, r.db, cypher, params, r.scan("d", "c", "l", "comm", "att"))
 	if err != nil {
-		return nil, errors.Join(ErrDocumentUpdate, err)
+		return nil, errors.Join(repository.ErrDocumentUpdate, err)
 	}
 
 	return doc, nil
 }
 
 func (r *DocumentRepository) Delete(ctx context.Context, id model.ID) error {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.DocumentRepository/Delete")
+	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.DocumentRepository/Delete")
 	defer span.End()
 
 	cypher := `MATCH (d:` + id.Label() + ` {id: $id}) DETACH DELETE d`
@@ -231,13 +225,13 @@ func (r *DocumentRepository) Delete(ctx context.Context, id model.ID) error {
 	}
 
 	if err := ExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
-		return errors.Join(ErrDocumentDelete, err)
+		return errors.Join(repository.ErrDocumentDelete, err)
 	}
 
 	return nil
 }
 
-// NewDocumentRepository creates a new document repository.
+// NewDocumentRepository creates a new document baseRepository.
 func NewDocumentRepository(opts ...RepositoryOption) (*DocumentRepository, error) {
 	baseRepo, err := newRepository(opts...)
 	if err != nil {
@@ -245,6 +239,6 @@ func NewDocumentRepository(opts ...RepositoryOption) (*DocumentRepository, error
 	}
 
 	return &DocumentRepository{
-		repository: baseRepo,
+		baseRepository: baseRepo,
 	}, nil
 }

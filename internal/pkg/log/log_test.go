@@ -9,6 +9,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
+	"github.com/opcotech/elemo/internal/pkg"
 	"github.com/opcotech/elemo/internal/testutil/mock"
 )
 
@@ -94,9 +95,9 @@ func TestWithContext(t *testing.T) {
 			got := WithContext(tt.args.ctx, tt.args.logger)
 
 			if tt.args.logger == nil {
-				assert.Equal(t, globalLogger, got.Value(CtxKeyLogger).(Logger))
+				assert.Equal(t, globalLogger, got.Value(pkg.CtxKeyLogger).(Logger))
 			} else {
-				assert.Equal(t, tt.args.logger, got.Value(CtxKeyLogger).(Logger))
+				assert.Equal(t, tt.args.logger, got.Value(pkg.CtxKeyLogger).(Logger))
 			}
 		})
 	}
@@ -115,7 +116,7 @@ func TestFromContext(t *testing.T) {
 		{
 			name: "context with logger",
 			args: args{
-				ctx: context.WithValue(context.Background(), CtxKeyLogger, new(mock.Logger)),
+				ctx: context.WithValue(context.Background(), pkg.CtxKeyLogger, new(mock.Logger)),
 			},
 			want: new(mock.Logger),
 		},
@@ -155,7 +156,7 @@ func TestLog(t *testing.T) {
 			name: "log message",
 			args: args{
 				ctx: func(logger *mock.Logger) context.Context {
-					return context.WithValue(context.Background(), CtxKeyLogger, logger)
+					return context.WithValue(context.Background(), pkg.CtxKeyLogger, logger)
 				},
 				level:   zapcore.DebugLevel,
 				message: "test",
@@ -172,7 +173,7 @@ func TestLog(t *testing.T) {
 			args: args{
 				ctx: func(logger *mock.Logger) context.Context {
 					ctx := context.Background()
-					return context.WithValue(ctx, CtxKeyLogger, logger)
+					return context.WithValue(ctx, pkg.CtxKeyLogger, logger)
 				},
 				level:   zapcore.DebugLevel,
 				message: "test",
@@ -217,7 +218,7 @@ func TestDebug(t *testing.T) {
 			name: "log debug message",
 			args: args{
 				ctx: func(logger *mock.Logger) context.Context {
-					return context.WithValue(context.Background(), CtxKeyLogger, logger)
+					return context.WithValue(context.Background(), pkg.CtxKeyLogger, logger)
 				},
 				message: "test",
 				fields:  []zap.Field{zap.String("test", "test")},
@@ -261,7 +262,7 @@ func TestInfo(t *testing.T) {
 			name: "log info message",
 			args: args{
 				ctx: func(logger *mock.Logger) context.Context {
-					return context.WithValue(context.Background(), CtxKeyLogger, logger)
+					return context.WithValue(context.Background(), pkg.CtxKeyLogger, logger)
 				},
 				message: "test",
 				fields:  []zap.Field{zap.String("test", "test")},
@@ -305,7 +306,7 @@ func TestWarn(t *testing.T) {
 			name: "log warn message",
 			args: args{
 				ctx: func(logger *mock.Logger) context.Context {
-					return context.WithValue(context.Background(), CtxKeyLogger, logger)
+					return context.WithValue(context.Background(), pkg.CtxKeyLogger, logger)
 				},
 				message: "test",
 				fields:  []zap.Field{zap.String("test", "test")},
@@ -349,7 +350,7 @@ func TestError(t *testing.T) {
 			name: "log error message",
 			args: args{
 				ctx: func(logger *mock.Logger) context.Context {
-					return context.WithValue(context.Background(), CtxKeyLogger, logger)
+					return context.WithValue(context.Background(), pkg.CtxKeyLogger, logger)
 				},
 				err:    fmt.Errorf("test"),
 				fields: []zap.Field{zap.String("test", "test")},
@@ -393,7 +394,7 @@ func TestFatal(t *testing.T) {
 			name: "log fatal message",
 			args: args{
 				ctx: func(logger *mock.Logger) context.Context {
-					return context.WithValue(context.Background(), CtxKeyLogger, logger)
+					return context.WithValue(context.Background(), pkg.CtxKeyLogger, logger)
 				},
 				message: "test",
 				fields:  []zap.Field{zap.String("test", "test")},
@@ -437,7 +438,7 @@ func TestPanic(t *testing.T) {
 			name: "log panic message",
 			args: args{
 				ctx: func(logger *mock.Logger) context.Context {
-					return context.WithValue(context.Background(), CtxKeyLogger, logger)
+					return context.WithValue(context.Background(), pkg.CtxKeyLogger, logger)
 				},
 				message: "test",
 				fields:  []zap.Field{zap.String("test", "test")},

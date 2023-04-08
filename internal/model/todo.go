@@ -19,9 +19,6 @@ const (
 )
 
 var (
-	ErrInvalidTodoPriority = errors.New("invalid todo priority") // the todo priority is invalid
-	ErrInvalidTodoDetails  = errors.New("invalid todo details")  // the todo details are invalid
-
 	todoPriorityKeys = map[TodoPriority]string{
 		TodoPriorityNormal:    "normal",
 		TodoPriorityImportant: "important",

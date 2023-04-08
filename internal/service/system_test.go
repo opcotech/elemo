@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/opcotech/elemo/internal/model"
+	"github.com/opcotech/elemo/internal/pkg/log"
 	"github.com/opcotech/elemo/internal/testutil/mock"
 )
 
@@ -92,7 +93,7 @@ func TestNewSystemService(t *testing.T) {
 					WithLogger(nil),
 				},
 			},
-			wantErr: ErrNoLogger,
+			wantErr: log.ErrNoLogger,
 		},
 	}
 	for _, tt := range tests {

@@ -17,9 +17,6 @@ const (
 )
 
 var (
-	ErrInvalidAssignmentKind    = errors.New("invalid assigned to kind")   // the assigned to kind is invalid
-	ErrInvalidAssignmentDetails = errors.New("invalid assignment details") // the assignment details are invalid
-
 	assignmentKindKeys = map[string]AssignmentKind{
 		"assignee": AssignmentKindAssignee,
 		"reviewer": AssignmentKindReviewer,
