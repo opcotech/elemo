@@ -173,14 +173,19 @@ func (r *PermissionRepository) HasAnyPermission(ctx context.Context, subject, ta
 	}
 
 	cypher := `
-	OPTIONAL MATCH (s:` + subject.Label() + ` {id: $subject})-[p:` + EdgeKindHasPermission.String() + `]->(t:` + target.Label() + ` {id: $target})
-	WHERE p.kind IN $permissions
-	RETURN count(p) >= 1 as has_permission`
+	MATCH (s:` + subject.Label() + ` {id: $subject_id})
+	OPTIONAL MATCH (s)-[perm:` + EdgeKindHasPermission.String() + `]->(:` + target.Label() + ` {id: $target_id})
+		WHERE perm.kind IN $permissions
+	OPTIONAL MATCH path=shortestPath((s)-[*]->(:` + model.ResourceTypeResourceType.String() + ` {id: $target_label}))
+		WHERE length(path) > 1 AND any(r IN relationships(path) WHERE type(r) = "` + EdgeKindHasPermission.String() + `" AND r.kind IN $permissions)
+	WITH perm, path
+	RETURN perm IS NOT NULL OR path IS NOT NULL AS has_permission;`
 
 	params := map[string]any{
-		"subject":     subject.String(),
-		"target":      target.String(),
-		"permissions": permissions,
+		"subject_id":   subject.String(),
+		"target_id":    target.String(),
+		"target_label": target.Label(),
+		"permissions":  permissions,
 	}
 
 	hasPermission, err := ExecuteReadAndReadSingle(ctx, r.db, cypher, params, func(rec *neo4j.Record) (*bool, error) {
@@ -195,6 +200,47 @@ func (r *PermissionRepository) HasAnyPermission(ctx context.Context, subject, ta
 	}
 
 	return *hasPermission, nil
+}
+
+// HasAnyRelation returns true if there is a relation between the source and
+// target. If there is no relation, false is returned.
+func (r *PermissionRepository) HasAnyRelation(ctx context.Context, source, target model.ID) (bool, error) {
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.RelationRepository/HasAnyRelation")
+	defer span.End()
+
+	if err := source.Validate(); err != nil {
+		return false, errors.Join(repository.ErrRelationRead, err)
+	}
+
+	if err := target.Validate(); err != nil {
+		return false, errors.Join(repository.ErrRelationRead, err)
+	}
+
+	cypher := `
+	MATCH (s:` + source.Label() + ` {id: $source_id})
+	MATCH (t:` + target.Label() + ` {id: $target_id})
+	MATCH path = shortestPath((s)-[*]-(t))
+	WITH path
+	WHERE length(path) > 1
+	RETURN count(path) > 0 AS has_relation`
+
+	params := map[string]any{
+		"source_id": source.String(),
+		"target_id": target.String(),
+	}
+
+	hasRelation, err := ExecuteReadAndReadSingle(ctx, r.db, cypher, params, func(rec *neo4j.Record) (*bool, error) {
+		val, _, err := neo4j.GetRecordValue[bool](rec, "has_relation")
+		if err != nil {
+			return nil, err
+		}
+		return &val, nil
+	})
+	if err != nil {
+		return false, errors.Join(repository.ErrRelationRead, err)
+	}
+
+	return *hasRelation, nil
 }
 
 // Update updates an existing permission's kind. If the permission does not

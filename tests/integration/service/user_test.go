@@ -29,9 +29,10 @@ func TestUserService_Create(t *testing.T) {
 	defer testRepo.CleanupNeo4jStore(t, ctx, db)
 
 	s := testService.NewUserService(t, neo4jDBConf)
+	owner := testService.NewResourceOwner(t, neo4jDBConf)
 
 	user := testModel.NewUser()
-	err := s.Create(ctx, user)
+	err := s.Create(context.WithValue(ctx, pkg.CtxKeyUserID, owner.ID), user)
 	require.NoError(t, err)
 
 	assert.NotNil(t, user.ID)
@@ -49,9 +50,10 @@ func TestUserService_Get(t *testing.T) {
 	defer testRepo.CleanupNeo4jStore(t, ctx, db)
 
 	s := testService.NewUserService(t, neo4jDBConf)
+	owner := testService.NewResourceOwner(t, neo4jDBConf)
 
 	user := testModel.NewUser()
-	err := s.Create(ctx, user)
+	err := s.Create(context.WithValue(ctx, pkg.CtxKeyUserID, owner.ID), user)
 	require.NoError(t, err)
 
 	got, err := s.Get(ctx, user.ID)
@@ -70,9 +72,10 @@ func TestUserService_GetByEmail(t *testing.T) {
 	defer testRepo.CleanupNeo4jStore(t, ctx, db)
 
 	s := testService.NewUserService(t, neo4jDBConf)
+	owner := testService.NewResourceOwner(t, neo4jDBConf)
 
 	user := testModel.NewUser()
-	err := s.Create(ctx, user)
+	err := s.Create(context.WithValue(ctx, pkg.CtxKeyUserID, owner.ID), user)
 	require.NoError(t, err)
 
 	got, err := s.GetByEmail(ctx, user.Email)
@@ -92,19 +95,21 @@ func TestUserService_GetAll(t *testing.T) {
 	testRepo.CleanupNeo4jStore(t, ctx, db)
 
 	s := testService.NewUserService(t, neo4jDBConf)
+	owner := testService.NewResourceOwner(t, neo4jDBConf)
 
-	err := s.Create(ctx, testModel.NewUser())
+	user := testModel.NewUser()
+	err := s.Create(context.WithValue(ctx, pkg.CtxKeyUserID, owner.ID), user)
 	require.NoError(t, err)
 
-	err = s.Create(ctx, testModel.NewUser())
+	err = s.Create(context.WithValue(ctx, pkg.CtxKeyUserID, owner.ID), testModel.NewUser())
 	require.NoError(t, err)
 
-	err = s.Create(ctx, testModel.NewUser())
+	err = s.Create(context.WithValue(ctx, pkg.CtxKeyUserID, owner.ID), testModel.NewUser())
 	require.NoError(t, err)
 
 	got, err := s.GetAll(ctx, 0, 10)
 	require.NoError(t, err)
-	assert.Len(t, got, 3)
+	assert.Len(t, got, 3+1) // +1 for the owner
 
 	got, err = s.GetAll(ctx, 0, 2)
 	require.NoError(t, err)
@@ -116,9 +121,9 @@ func TestUserService_GetAll(t *testing.T) {
 
 	got, err = s.GetAll(ctx, 2, 2)
 	require.NoError(t, err)
-	assert.Len(t, got, 1)
+	assert.Len(t, got, 1+1) // +1 for the owner
 
-	got, err = s.GetAll(ctx, 3, 2)
+	got, err = s.GetAll(ctx, 3+1, 2) // +1 for the owner
 	require.NoError(t, err)
 	assert.Len(t, got, 0)
 }
@@ -133,9 +138,10 @@ func TestUserService_Update(t *testing.T) {
 	defer testRepo.CleanupNeo4jStore(t, ctx, db)
 
 	s := testService.NewUserService(t, neo4jDBConf)
+	owner := testService.NewResourceOwner(t, neo4jDBConf)
 
 	user := testModel.NewUser()
-	err := s.Create(ctx, user)
+	err := s.Create(context.WithValue(ctx, pkg.CtxKeyUserID, owner.ID), user)
 	require.NoError(t, err)
 
 	patch := map[string]any{
@@ -159,12 +165,14 @@ func TestUserService_Delete(t *testing.T) {
 	defer testRepo.CleanupNeo4jStore(t, ctx, db)
 
 	s := testService.NewUserService(t, neo4jDBConf)
+	owner := testService.NewResourceOwner(t, neo4jDBConf)
 
 	user := testModel.NewUser()
-	require.NoError(t, s.Create(ctx, user))
+	err := s.Create(context.WithValue(ctx, pkg.CtxKeyUserID, owner.ID), user)
+	require.NoError(t, err)
 
 	target := testModel.NewUser()
-	require.NoError(t, s.Create(ctx, target))
+	require.NoError(t, s.Create(context.WithValue(ctx, pkg.CtxKeyUserID, owner.ID), target))
 
 	permRepo, err := neo4j.NewPermissionRepository(
 		neo4j.WithDatabase(db),

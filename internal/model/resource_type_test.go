@@ -13,6 +13,7 @@ func TestResourceType_String(t *testing.T) {
 		rt   ResourceType
 		want string
 	}{
+		{"ResourceType", ResourceTypeResourceType, "ResourceType"},
 		{"Assignment", ResourceTypeAssignment, "Assignment"},
 		{"Attachment", ResourceTypeAttachment, "Attachment"},
 		{"Comment", ResourceTypeComment, "Comment"},
@@ -42,6 +43,7 @@ func TestResourceType_MarshalText(t *testing.T) {
 		want    []byte
 		wantErr error
 	}{
+		{"ResourceType", ResourceTypeResourceType, []byte("ResourceType"), nil},
 		{"Assignment", ResourceTypeAssignment, []byte("Assignment"), nil},
 		{"Attachment", ResourceTypeAttachment, []byte("Attachment"), nil},
 		{"Comment", ResourceTypeComment, []byte("Comment"), nil},
@@ -79,6 +81,7 @@ func TestResourceType_UnmarshalText(t *testing.T) {
 		want    ResourceType
 		wantErr error
 	}{
+		{"ResourceType", []byte("ResourceType"), ResourceTypeResourceType, nil},
 		{"Assignment", []byte("Assignment"), ResourceTypeAssignment, nil},
 		{"Attachment", []byte("Attachment"), ResourceTypeAttachment, nil},
 		{"Comment", []byte("Comment"), ResourceTypeComment, nil},

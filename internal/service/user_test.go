@@ -90,6 +90,8 @@ func TestNewUserService(t *testing.T) {
 }
 
 func TestUserService_Create(t *testing.T) {
+	userID := model.MustNewID(model.ResourceTypeUser)
+
 	type fields struct {
 		baseService func(ctx context.Context, user *model.User) *baseService
 	}
@@ -116,15 +118,22 @@ func TestUserService_Create(t *testing.T) {
 					userRepo := new(mock.UserRepository)
 					userRepo.On("Create", ctx, user).Return(nil)
 
+					permRepo := new(mock.PermissionRepository)
+					permRepo.On("HasAnyPermission", ctx, userID, model.MustNewNilID(model.ResourceTypeUser), []model.PermissionKind{
+						model.PermissionKindCreate,
+						model.PermissionKindAll,
+					}).Return(true, nil)
+
 					return &baseService{
-						logger:   new(mock.Logger),
-						tracer:   tracer,
-						userRepo: userRepo,
+						logger:         new(mock.Logger),
+						tracer:         tracer,
+						userRepo:       userRepo,
+						permissionRepo: permRepo,
 					}
 				},
 			},
 			args: args{
-				ctx:  context.Background(),
+				ctx:  context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
 				user: testModel.NewUser(),
 			},
 		},
@@ -146,7 +155,7 @@ func TestUserService_Create(t *testing.T) {
 				},
 			},
 			args: args{
-				ctx:  context.Background(),
+				ctx:  context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
 				user: &model.User{},
 			},
 			wantErr: ErrUserCreate,
@@ -164,15 +173,22 @@ func TestUserService_Create(t *testing.T) {
 					userRepo := new(mock.UserRepository)
 					userRepo.On("Create", ctx, user).Return(errors.New("error"))
 
+					permRepo := new(mock.PermissionRepository)
+					permRepo.On("HasAnyPermission", ctx, userID, model.MustNewNilID(model.ResourceTypeUser), []model.PermissionKind{
+						model.PermissionKindCreate,
+						model.PermissionKindAll,
+					}).Return(true, nil)
+
 					return &baseService{
-						logger:   new(mock.Logger),
-						tracer:   tracer,
-						userRepo: userRepo,
+						logger:         new(mock.Logger),
+						tracer:         tracer,
+						userRepo:       userRepo,
+						permissionRepo: permRepo,
 					}
 				},
 			},
 			args: args{
-				ctx:  context.Background(),
+				ctx:  context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
 				user: testModel.NewUser(),
 			},
 			wantErr: ErrUserCreate,

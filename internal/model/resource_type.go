@@ -1,7 +1,8 @@
 package model
 
 const (
-	ResourceTypeAssignment    ResourceType = iota + 1 // assignment resource type
+	ResourceTypeResourceType  ResourceType = iota + 1 // resource type resource type
+	ResourceTypeAssignment                            // assignment resource type
 	ResourceTypeAttachment                            // attachment resource type
 	ResourceTypeComment                               // comment resource type
 	ResourceTypeDocument                              // document resource type
@@ -19,6 +20,7 @@ const (
 
 var (
 	resourceTypeKeys = map[string]ResourceType{
+		"ResourceType":  ResourceTypeResourceType,
 		"Assignment":    ResourceTypeAssignment,
 		"Attachment":    ResourceTypeAttachment,
 		"Comment":       ResourceTypeComment,
@@ -35,6 +37,7 @@ var (
 		"User":          ResourceTypeUser,
 	}
 	resourceTypeValues = map[ResourceType]string{
+		ResourceTypeResourceType:  "ResourceType",
 		ResourceTypeAssignment:    "Assignment",
 		ResourceTypeAttachment:    "Attachment",
 		ResourceTypeComment:       "Comment",
@@ -64,7 +67,7 @@ func (t ResourceType) String() string {
 
 // MarshalText implements the encoding.TextMarshaler interface.
 func (t ResourceType) MarshalText() (text []byte, err error) {
-	if t < 1 || t > 14 {
+	if t < 1 || t > 15 {
 		return nil, ErrInvalidResourceType
 	}
 	return []byte(t.String()), nil

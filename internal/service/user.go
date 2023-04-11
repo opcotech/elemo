@@ -61,6 +61,10 @@ func (s *userService) Create(ctx context.Context, user *model.User) error {
 		return errors.Join(ErrUserCreate, err)
 	}
 
+	if !ctxUserPermitted(ctx, s.permissionRepo, model.MustNewNilID(model.ResourceTypeUser), model.PermissionKindCreate) {
+		return ErrNoPermission
+	}
+
 	if err := s.userRepo.Create(ctx, user); err != nil {
 		return errors.Join(ErrUserCreate, err)
 	}
