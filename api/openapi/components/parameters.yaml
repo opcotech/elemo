@@ -1,5 +1,7 @@
 user_id:
   $ref: './parameters/user_id.yaml'
+force:
+  $ref: './parameters/force.yaml'
 limit:
   $ref: './parameters/limit.yaml'
 offset:

@@ -1,2 +1,4 @@
-Placeholder:
-  $ref: './request_bodies/placeholder.yaml'
+UserPost:
+  $ref: './request_bodies/user_post.yaml'
+UserPatch:
+  $ref: './request_bodies/user_patch.yaml'

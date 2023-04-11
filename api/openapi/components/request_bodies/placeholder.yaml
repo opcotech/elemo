@@ -1,9 +1,0 @@
-content:
-  application/json:
-    schema:
-      description: Placeholder
-      type: object
-      properties:
-        name:
-          description: Placeholder.
-          type: string

@@ -1,0 +1,62 @@
+get:
+  operationId: getUsers
+  summary: Get all users.
+  description: >-
+    Return all users within the given limit starting at the optionally
+    defined offset.
+  parameters:
+    - $ref: '../components/parameters/limit.yaml'
+    - $ref: '../components/parameters/offset.yaml'
+  tags:
+    - Users
+  security:
+    - OAuth2:
+        - user.read
+  responses:
+    '200':
+      description: List of users.
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '../components/schemas/user.yaml'
+    '400':
+      $ref: '../components/responses/400.yaml'
+    '401':
+      $ref: '../components/responses/401.yaml'
+    '403':
+      $ref: '../components/responses/403.yaml'
+    default:
+      $ref: '../components/responses/default.yaml'
+post:
+  operationId: createUser
+  summary: Create a new user.
+  description: Creates a new user in the system, then returns its ID.
+  tags:
+    - Users
+  security:
+    - OAuth2:
+        - admin
+  requestBody:
+    $ref: '../components/request_bodies/user_post.yaml'
+  responses:
+    '201':
+      description: Returns the ID of the newly created user.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              user_id:
+                type: string
+            required:
+              - user_id
+    '400':
+      $ref: '../components/responses/400.yaml'
+    '401':
+      $ref: '../components/responses/401.yaml'
+    '403':
+      $ref: '../components/responses/403.yaml'
+    default:
+      $ref: '../components/responses/default.yaml'

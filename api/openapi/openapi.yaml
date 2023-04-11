@@ -81,6 +81,8 @@ servers:
         description: domain
         default: "example.com"
 paths:
+  /v1/users:
+    $ref: './paths/users.yaml'
   /v1/users/{user_id}:
     $ref: './paths/user.yaml'
   /v1/system/health:
