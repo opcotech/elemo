@@ -8,10 +8,6 @@ import (
 )
 
 const (
-	OrganizationIDType = "Organization"
-)
-
-const (
 	OrganizationStatusActive  OrganizationStatus = iota + 1 // active organization
 	OrganizationStatusDeleted                               // deleted organization
 )
@@ -95,7 +91,7 @@ func (o *Organization) Validate() error {
 // NewOrganization creates a new Organization.
 func NewOrganization(name, email string) (*Organization, error) {
 	org := &Organization{
-		ID:         MustNewNilID(OrganizationIDType),
+		ID:         MustNewNilID(ResourceTypeOrganization),
 		Name:       name,
 		Email:      email,
 		Status:     OrganizationStatusActive,

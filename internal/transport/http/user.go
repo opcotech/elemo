@@ -38,7 +38,7 @@ func (c *userController) GetUser(ctx context.Context, request gen.GetUserRequest
 			return gen.GetUser404JSONResponse{N404JSONResponse: notFound}, nil
 		}
 	} else {
-		if userID, err = model.NewIDFromString(request.UserId, model.UserIDType); err != nil {
+		if userID, err = model.NewIDFromString(request.UserId, model.ResourceTypeUser.String()); err != nil {
 			return gen.GetUser404JSONResponse{N404JSONResponse: notFound}, nil
 		}
 	}

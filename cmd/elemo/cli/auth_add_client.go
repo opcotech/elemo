@@ -69,7 +69,7 @@ elemo auth add-client --domain example.com --public`,
 		}
 
 		client := &models.Client{
-			ID:     model.MustNewID("ClientToken").String(),
+			ID:     model.NewRawID(),
 			Secret: uuid.New().String(),
 			Domain: callbackURL,
 			Public: public,

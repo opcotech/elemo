@@ -94,7 +94,7 @@ func TestNewProject(t *testing.T) {
 				name: "Test Project",
 			},
 			want: &Project{
-				ID:        ID{inner: xid.NilID(), label: ProjectIDType},
+				ID:        ID{inner: xid.NilID(), label: ResourceTypeProject},
 				Key:       "test",
 				Name:      "Test Project",
 				Status:    ProjectStatusActive,
@@ -153,7 +153,7 @@ func TestProject_Validate(t *testing.T) {
 		{
 			name: "valid project",
 			fields: fields{
-				ID:          ID{inner: xid.NilID(), label: OrganizationIDType},
+				ID:          ID{inner: xid.NilID(), label: ResourceTypeOrganization},
 				Key:         "test",
 				Name:        "test",
 				Description: "Test description",
@@ -166,7 +166,7 @@ func TestProject_Validate(t *testing.T) {
 		{
 			name: "invalid project id",
 			fields: fields{
-				ID:          ID{inner: xid.NilID(), label: ""},
+				ID:          ID{inner: xid.NilID(), label: ResourceType(0)},
 				Key:         "test",
 				Name:        "test",
 				Description: "Test description",
@@ -180,7 +180,7 @@ func TestProject_Validate(t *testing.T) {
 		{
 			name: "invalid project key",
 			fields: fields{
-				ID:          ID{inner: xid.NilID(), label: ""},
+				ID:          ID{inner: xid.NilID(), label: ResourceType(0)},
 				Key:         "tst",
 				Name:        "test",
 				Description: "Test description",
@@ -194,7 +194,7 @@ func TestProject_Validate(t *testing.T) {
 		{
 			name: "invalid project name",
 			fields: fields{
-				ID:          ID{inner: xid.NilID(), label: ""},
+				ID:          ID{inner: xid.NilID(), label: ResourceType(0)},
 				Key:         "test",
 				Name:        "t",
 				Description: "Test description",
@@ -208,7 +208,7 @@ func TestProject_Validate(t *testing.T) {
 		{
 			name: "invalid project description",
 			fields: fields{
-				ID:          ID{inner: xid.NilID(), label: ""},
+				ID:          ID{inner: xid.NilID(), label: ResourceType(0)},
 				Key:         "test",
 				Name:        "test",
 				Description: "Test",
@@ -222,7 +222,7 @@ func TestProject_Validate(t *testing.T) {
 		{
 			name: "invalid project status",
 			fields: fields{
-				ID:          ID{inner: xid.NilID(), label: ""},
+				ID:          ID{inner: xid.NilID(), label: ResourceType(0)},
 				Key:         "test",
 				Name:        "test",
 				Description: "Test description",
@@ -236,7 +236,7 @@ func TestProject_Validate(t *testing.T) {
 		{
 			name: "invalid project teams",
 			fields: fields{
-				ID:          ID{inner: xid.NilID(), label: OrganizationIDType},
+				ID:          ID{inner: xid.NilID(), label: ResourceTypeOrganization},
 				Key:         "test",
 				Name:        "test",
 				Description: "Test description",
@@ -252,7 +252,7 @@ func TestProject_Validate(t *testing.T) {
 		{
 			name: "invalid project documents",
 			fields: fields{
-				ID:          ID{inner: xid.NilID(), label: OrganizationIDType},
+				ID:          ID{inner: xid.NilID(), label: ResourceTypeOrganization},
 				Key:         "test",
 				Name:        "test",
 				Description: "Test description",
@@ -268,7 +268,7 @@ func TestProject_Validate(t *testing.T) {
 		{
 			name: "invalid project issues",
 			fields: fields{
-				ID:          ID{inner: xid.NilID(), label: OrganizationIDType},
+				ID:          ID{inner: xid.NilID(), label: ResourceTypeOrganization},
 				Key:         "test",
 				Name:        "test",
 				Description: "Test description",

@@ -29,13 +29,13 @@ func (r *NamespaceRepository) scan(nsp, pp, dp string) func(rec *neo4j.Record) (
 			return nil, err
 		}
 
-		ns.ID, _ = model.NewIDFromString(val.GetProperties()["id"].(string), model.NamespaceIDType)
+		ns.ID, _ = model.NewIDFromString(val.GetProperties()["id"].(string), model.ResourceTypeNamespace.String())
 
-		if ns.Projects, err = ParseIDsFromRecord(rec, pp, model.ProjectIDType); err != nil {
+		if ns.Projects, err = ParseIDsFromRecord(rec, pp, model.ResourceTypeProject.String()); err != nil {
 			return nil, err
 		}
 
-		if ns.Documents, err = ParseIDsFromRecord(rec, dp, model.NamespaceIDType); err != nil {
+		if ns.Documents, err = ParseIDsFromRecord(rec, dp, model.ResourceTypeNamespace.String()); err != nil {
 			return nil, err
 		}
 
@@ -61,16 +61,14 @@ func (r *NamespaceRepository) Create(ctx context.Context, orgID model.ID, namesp
 
 	createdAt := time.Now()
 
-	hasNsID := model.MustNewID(EdgeKindHasNamespace.String())
-
-	namespace.ID = model.MustNewID(model.NamespaceIDType)
+	namespace.ID = model.MustNewID(model.ResourceTypeNamespace)
 	namespace.CreatedAt = &createdAt
 	namespace.UpdatedAt = nil
 
 	cypher := `
 	MATCH (org:` + orgID.Label() + ` {id: $org_id})
 	CREATE (ns:` + namespace.ID.Label() + ` {id: $id, name: $name, description: $description, created_at: datetime($created_at)}),
-		(org)-[:` + hasNsID.Label() + ` {id: $has_ns_id, created_at: datetime($created_at)}]->(ns)`
+		(org)-[:` + EdgeKindHasNamespace.String() + ` {id: $has_ns_id, created_at: datetime($created_at)}]->(ns)`
 
 	params := map[string]any{
 		"id":          namespace.ID.String(),
@@ -78,7 +76,7 @@ func (r *NamespaceRepository) Create(ctx context.Context, orgID model.ID, namesp
 		"description": namespace.Description,
 		"created_at":  createdAt.Format(time.RFC3339Nano),
 		"org_id":      orgID.String(),
-		"has_ns_id":   hasNsID.String(),
+		"has_ns_id":   model.NewRawID(),
 	}
 
 	if err := ExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
@@ -94,8 +92,8 @@ func (r *NamespaceRepository) Get(ctx context.Context, id model.ID) (*model.Name
 
 	cypher := `
 	MATCH (ns:` + id.Label() + ` {id: $id})
-	OPTIONAL MATCH (p:` + model.ProjectIDType + `)<-[:` + EdgeKindHasProject.String() + `]-(ns)
-	OPTIONAL MATCH (d:` + model.DocumentIDType + `)-[:` + EdgeKindBelongsTo.String() + `]->(ns)
+	OPTIONAL MATCH (p:` + model.ResourceTypeProject.String() + `)<-[:` + EdgeKindHasProject.String() + `]-(ns)
+	OPTIONAL MATCH (d:` + model.ResourceTypeDocument.String() + `)-[:` + EdgeKindBelongsTo.String() + `]->(ns)
 	RETURN ns, collect(DISTINCT p.id) as p, collect(DISTINCT d.id) as d`
 
 	params := map[string]any{
@@ -115,9 +113,9 @@ func (r *NamespaceRepository) GetAll(ctx context.Context, orgID model.ID, offset
 	defer span.End()
 
 	cypher := `
-	MATCH (org:` + orgID.Label() + ` {id: $org_id})-[:` + EdgeKindHasNamespace.String() + `]->(ns:` + model.NamespaceIDType + `)
-	OPTIONAL MATCH (p:` + model.ProjectIDType + `)<-[:` + EdgeKindHasProject.String() + `]-(ns)
-	OPTIONAL MATCH (d:` + model.DocumentIDType + `)-[:` + EdgeKindBelongsTo.String() + `]->(ns)
+	MATCH (org:` + orgID.Label() + ` {id: $org_id})-[:` + EdgeKindHasNamespace.String() + `]->(ns:` + model.ResourceTypeNamespace.String() + `)
+	OPTIONAL MATCH (p:` + model.ResourceTypeProject.String() + `)<-[:` + EdgeKindHasProject.String() + `]-(ns)
+	OPTIONAL MATCH (d:` + model.ResourceTypeDocument.String() + `)-[:` + EdgeKindBelongsTo.String() + `]->(ns)
 	RETURN ns, collect(DISTINCT p.id) as p, collect(DISTINCT d.id) as d
 	ORDER BY ns.created_at DESC
 	SKIP $offset LIMIT $limit`
@@ -143,8 +141,8 @@ func (r *NamespaceRepository) Update(ctx context.Context, id model.ID, patch map
 	cypher := `
 	MATCH (ns:` + id.Label() + ` {id: $id}) SET ns += $patch, ns.updated_at = $updated_at
 	WITH ns
-	OPTIONAL MATCH (p:` + model.ProjectIDType + `)<-[:` + EdgeKindHasProject.String() + `]->(ns)
-	OPTIONAL MATCH (d:` + model.DocumentIDType + `)-[:` + EdgeKindBelongsTo.String() + `]->(ns)
+	OPTIONAL MATCH (p:` + model.ResourceTypeProject.String() + `)<-[:` + EdgeKindHasProject.String() + `]->(ns)
+	OPTIONAL MATCH (d:` + model.ResourceTypeDocument.String() + `)-[:` + EdgeKindBelongsTo.String() + `]->(ns)
 	RETURN ns, collect(DISTINCT p.id) as p, collect(DISTINCT d.id) as d`
 
 	params := map[string]any{

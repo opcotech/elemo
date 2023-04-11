@@ -14,7 +14,7 @@ import (
 // record.
 func NewUser() *model.User {
 	return &model.User{
-		ID:          model.MustNewID(model.UserIDType),
+		ID:          model.MustNewID(model.ResourceTypeUser),
 		Username:    strings.ToLower(testutil.GenerateRandomString(10)),
 		Email:       testutil.GenerateEmail(10),
 		Password:    password.HashPassword(testutil.GenerateRandomString(10)),

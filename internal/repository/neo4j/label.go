@@ -30,7 +30,7 @@ func (r *LabelRepository) scan(lp string) func(rec *neo4j.Record) (*model.Label,
 			return nil, err
 		}
 
-		l.ID, _ = model.NewIDFromString(val.GetProperties()["id"].(string), model.LabelIDType)
+		l.ID, _ = model.NewIDFromString(val.GetProperties()["id"].(string), model.ResourceTypeLabel.String())
 
 		if err := l.Validate(); err != nil {
 			return nil, err
@@ -50,7 +50,7 @@ func (r *LabelRepository) Create(ctx context.Context, label *model.Label) error 
 
 	createdAt := time.Now()
 
-	label.ID = model.MustNewID(model.LabelIDType)
+	label.ID = model.MustNewID(model.ResourceTypeLabel)
 	label.CreatedAt = convert.ToPointer(createdAt)
 	label.UpdatedAt = nil
 

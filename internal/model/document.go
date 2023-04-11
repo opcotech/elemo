@@ -7,10 +7,6 @@ import (
 	"github.com/opcotech/elemo/internal/pkg/validate"
 )
 
-const (
-	DocumentIDType = "Document"
-)
-
 // Document represents a document in the system that can be associated with a
 // model.Organization, model.Namespace, model.Project, or User. A document is a
 // pointer to a file in the static file storage, editable by users with the
@@ -54,7 +50,7 @@ func (d *Document) Validate() error {
 // NewDocument creates a new Document.
 func NewDocument(name, fileID string, createdBy ID) (*Document, error) {
 	document := &Document{
-		ID:          MustNewNilID(DocumentIDType),
+		ID:          MustNewNilID(ResourceTypeDocument),
 		Name:        name,
 		FileID:      fileID,
 		CreatedBy:   createdBy,

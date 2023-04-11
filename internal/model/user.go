@@ -8,10 +8,6 @@ import (
 )
 
 const (
-	UserIDType = "User"
-)
-
-const (
 	UserStatusActive   UserStatus = iota + 1 // the user is active
 	UserStatusPending                        // the user is invited but not yet active
 	UserStatusInactive                       // the user is inactive
@@ -103,7 +99,7 @@ func (u *User) Validate() error {
 // NewUser returns a new User.
 func NewUser(username, email, password string) (*User, error) {
 	user := &User{
-		ID:          MustNewNilID(UserIDType),
+		ID:          MustNewNilID(ResourceTypeUser),
 		Username:    username,
 		Email:       email,
 		Password:    password,

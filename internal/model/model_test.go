@@ -11,7 +11,7 @@ import (
 func TestID_String(t *testing.T) {
 	type fields struct {
 		inner xid.ID
-		label string
+		label ResourceType
 	}
 	tests := []struct {
 		name   string
@@ -22,7 +22,7 @@ func TestID_String(t *testing.T) {
 			name: "empty",
 			fields: fields{
 				inner: xid.NilID(),
-				label: "",
+				label: ResourceType(0),
 			},
 			want: xid.NilID().String(),
 		},
@@ -30,7 +30,7 @@ func TestID_String(t *testing.T) {
 			name: "with ID",
 			fields: fields{
 				inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc},
-				label: "",
+				label: ResourceType(0),
 			},
 			want: "041061050o3gg28a1c60",
 		},
@@ -51,7 +51,7 @@ func TestID_String(t *testing.T) {
 func TestID_Label(t *testing.T) {
 	type fields struct {
 		inner xid.ID
-		label string
+		label ResourceType
 	}
 	tests := []struct {
 		name   string
@@ -62,7 +62,7 @@ func TestID_Label(t *testing.T) {
 			name: "empty",
 			fields: fields{
 				inner: xid.NilID(),
-				label: "",
+				label: ResourceType(0),
 			},
 			want: "",
 		},
@@ -70,9 +70,9 @@ func TestID_Label(t *testing.T) {
 			name: "with label",
 			fields: fields{
 				inner: xid.NilID(),
-				label: "test",
+				label: ResourceTypeAssignment,
 			},
-			want: "test",
+			want: ResourceTypeAssignment.String(),
 		},
 	}
 	for _, tt := range tests {
@@ -83,48 +83,41 @@ func TestID_Label(t *testing.T) {
 				inner: tt.fields.inner,
 				label: tt.fields.label,
 			}
-			assert.Equalf(t, tt.want, id.Label(), "Label()")
+			assert.Equal(t, tt.want, id.Label())
 		})
 	}
 }
 
 func TestNewID(t *testing.T) {
 	type args struct {
-		typ string
+		typ ResourceType
 	}
 	tests := []struct {
 		name     string
 		args     args
-		wantType string
+		wantType ResourceType
 		wantErr  error
 	}{
 		{
 			name: "empty",
 			args: args{
-				typ: "",
-			},
-			wantErr: ErrInvalidID,
-		},
-		{
-			name: "too short",
-			args: args{
-				typ: "abc",
+				typ: ResourceType(0),
 			},
 			wantErr: ErrInvalidID,
 		},
 		{
 			name: "too long",
 			args: args{
-				typ: "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz",
+				typ: ResourceType(100),
 			},
 			wantErr: ErrInvalidID,
 		},
 		{
 			name: "valid",
 			args: args{
-				typ: "test",
+				typ: ResourceTypeAssignment,
 			},
-			wantType: "test",
+			wantType: ResourceTypeAssignment,
 		},
 	}
 	for _, tt := range tests {
@@ -144,41 +137,34 @@ func TestNewID(t *testing.T) {
 
 func TestMustNewID(t *testing.T) {
 	type args struct {
-		typ string
+		typ ResourceType
 	}
 	tests := []struct {
 		name     string
 		args     args
-		wantType string
+		wantType ResourceType
 		panics   bool
 	}{
 		{
 			name: "empty",
 			args: args{
-				typ: "",
-			},
-			panics: true,
-		},
-		{
-			name: "too short",
-			args: args{
-				typ: "abc",
+				typ: ResourceType(0),
 			},
 			panics: true,
 		},
 		{
 			name: "too long",
 			args: args{
-				typ: "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz",
+				typ: ResourceType(100),
 			},
 			panics: true,
 		},
 		{
 			name: "valid",
 			args: args{
-				typ: "test",
+				typ: ResourceTypeAssignment,
 			},
-			wantType: "test",
+			wantType: ResourceTypeAssignment,
 		},
 	}
 	for _, tt := range tests {
@@ -200,7 +186,7 @@ func TestMustNewID(t *testing.T) {
 
 func TestNewNilID(t *testing.T) {
 	type args struct {
-		typ string
+		typ ResourceType
 	}
 	tests := []struct {
 		name    string
@@ -211,32 +197,25 @@ func TestNewNilID(t *testing.T) {
 		{
 			name: "empty",
 			args: args{
-				typ: "",
-			},
-			wantErr: ErrInvalidID,
-		},
-		{
-			name: "too short",
-			args: args{
-				typ: "abc",
+				typ: ResourceType(0),
 			},
 			wantErr: ErrInvalidID,
 		},
 		{
 			name: "too long",
 			args: args{
-				typ: "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz",
+				typ: ResourceType(100),
 			},
 			wantErr: ErrInvalidID,
 		},
 		{
 			name: "valid",
 			args: args{
-				typ: "test",
+				typ: ResourceTypeAssignment,
 			},
 			want: ID{
 				inner: xid.NilID(),
-				label: "test",
+				label: ResourceTypeAssignment,
 			},
 		},
 	}
@@ -256,7 +235,7 @@ func TestNewNilID(t *testing.T) {
 
 func TestMustNewNilID(t *testing.T) {
 	type args struct {
-		typ string
+		typ ResourceType
 	}
 	tests := []struct {
 		name   string
@@ -267,32 +246,25 @@ func TestMustNewNilID(t *testing.T) {
 		{
 			name: "empty",
 			args: args{
-				typ: "",
-			},
-			panics: true,
-		},
-		{
-			name: "too short",
-			args: args{
-				typ: "abc",
+				typ: ResourceType(0),
 			},
 			panics: true,
 		},
 		{
 			name: "too long",
 			args: args{
-				typ: "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz",
+				typ: ResourceType(100),
 			},
 			panics: true,
 		},
 		{
 			name: "valid",
 			args: args{
-				typ: "test",
+				typ: ResourceTypeAssignment,
 			},
 			want: ID{
 				inner: xid.NilID(),
-				label: "test",
+				label: ResourceTypeAssignment,
 			},
 		},
 	}
@@ -315,7 +287,7 @@ func TestMustNewNilID(t *testing.T) {
 func TestNewIDFromString(t *testing.T) {
 	type args struct {
 		id  string
-		typ string
+		typ ResourceType
 	}
 	tests := []struct {
 		name    string
@@ -327,15 +299,7 @@ func TestNewIDFromString(t *testing.T) {
 			name: "empty",
 			args: args{
 				id:  "",
-				typ: "",
-			},
-			wantErr: ErrInvalidID,
-		},
-		{
-			name: "id too short",
-			args: args{
-				id:  "abc",
-				typ: "abcd",
+				typ: ResourceType(0),
 			},
 			wantErr: ErrInvalidID,
 		},
@@ -343,15 +307,7 @@ func TestNewIDFromString(t *testing.T) {
 			name: "id too long",
 			args: args{
 				id:  "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz",
-				typ: "abcd",
-			},
-			wantErr: ErrInvalidID,
-		},
-		{
-			name: "type too short",
-			args: args{
-				id:  "041061050o3gg28a1c60",
-				typ: "ab",
+				typ: ResourceTypeAssignment,
 			},
 			wantErr: ErrInvalidID,
 		},
@@ -359,7 +315,7 @@ func TestNewIDFromString(t *testing.T) {
 			name: "type too long",
 			args: args{
 				id:  "041061050o3gg28a1c60",
-				typ: "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz",
+				typ: ResourceType(100),
 			},
 			wantErr: ErrInvalidID,
 		},
@@ -367,11 +323,11 @@ func TestNewIDFromString(t *testing.T) {
 			name: "valid",
 			args: args{
 				id:  "041061050o3gg28a1c60",
-				typ: "test",
+				typ: ResourceTypeAssignment,
 			},
 			want: ID{
 				inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc},
-				label: "test",
+				label: ResourceTypeAssignment,
 			},
 		},
 	}
@@ -379,7 +335,7 @@ func TestNewIDFromString(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			got, err := NewIDFromString(tt.args.id, tt.args.typ)
+			got, err := NewIDFromString(tt.args.id, tt.args.typ.String())
 			require.ErrorIs(t, err, tt.wantErr)
 
 			if tt.wantErr == nil {
@@ -392,7 +348,7 @@ func TestNewIDFromString(t *testing.T) {
 func TestID_IsNil(t *testing.T) {
 	type fields struct {
 		inner xid.ID
-		Type  string
+		typ   ResourceType
 	}
 	tests := []struct {
 		name   string
@@ -403,7 +359,7 @@ func TestID_IsNil(t *testing.T) {
 			name: "nil",
 			fields: fields{
 				inner: xid.NilID(),
-				Type:  "abcd",
+				typ:   ResourceTypeAssignment,
 			},
 			want: true,
 		},
@@ -411,7 +367,7 @@ func TestID_IsNil(t *testing.T) {
 			name: "not nil",
 			fields: fields{
 				inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc},
-				Type:  "abcd",
+				typ:   ResourceTypeAssignment,
 			},
 			want: false,
 		},
@@ -422,7 +378,7 @@ func TestID_IsNil(t *testing.T) {
 			t.Parallel()
 			id := ID{
 				inner: tt.fields.inner,
-				label: tt.fields.Type,
+				label: tt.fields.typ,
 			}
 			assert.Equal(t, tt.want, id.IsNil())
 		})

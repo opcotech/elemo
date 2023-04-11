@@ -7,10 +7,6 @@ import (
 	"github.com/opcotech/elemo/internal/pkg/validate"
 )
 
-const (
-	AttachmentIDType = "Attachment"
-)
-
 // Attachment represents an attachment on a resource.
 type Attachment struct {
 	ID        ID         `json:"id" validate:"required,dive"`
@@ -37,7 +33,7 @@ func (c *Attachment) Validate() error {
 // NewAttachment creates a new Attachment.
 func NewAttachment(name, fileID string, createdBy ID) (*Attachment, error) {
 	attachment := &Attachment{
-		ID:        MustNewNilID(AttachmentIDType),
+		ID:        MustNewNilID(ResourceTypeAttachment),
 		Name:      name,
 		FileID:    fileID,
 		CreatedBy: createdBy,

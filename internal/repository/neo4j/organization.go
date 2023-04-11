@@ -29,17 +29,17 @@ func (r *OrganizationRepository) scan(op, np, tp, mp string) func(rec *neo4j.Rec
 			return nil, err
 		}
 
-		org.ID, _ = model.NewIDFromString(val.GetProperties()["id"].(string), model.OrganizationIDType)
+		org.ID, _ = model.NewIDFromString(val.GetProperties()["id"].(string), model.ResourceTypeOrganization.String())
 
-		if org.Namespaces, err = ParseIDsFromRecord(rec, np, model.NamespaceIDType); err != nil {
+		if org.Namespaces, err = ParseIDsFromRecord(rec, np, model.ResourceTypeNamespace.String()); err != nil {
 			return nil, err
 		}
 
-		if org.Teams, err = ParseIDsFromRecord(rec, tp, model.RoleIDType); err != nil {
+		if org.Teams, err = ParseIDsFromRecord(rec, tp, model.ResourceTypeRole.String()); err != nil {
 			return nil, err
 		}
 
-		if org.Members, err = ParseIDsFromRecord(rec, mp, model.UserIDType); err != nil {
+		if org.Members, err = ParseIDsFromRecord(rec, mp, model.ResourceTypeUser.String()); err != nil {
 			return nil, err
 		}
 
@@ -65,9 +65,7 @@ func (r *OrganizationRepository) Create(ctx context.Context, owner model.ID, org
 
 	createdAt := time.Now()
 
-	membershipID := model.MustNewID(EdgeKindMemberOf.String())
-
-	organization.ID = model.MustNewID(model.OrganizationIDType)
+	organization.ID = model.MustNewID(model.ResourceTypeOrganization)
 	organization.CreatedAt = &createdAt
 	organization.UpdatedAt = nil
 
@@ -76,7 +74,7 @@ func (r *OrganizationRepository) Create(ctx context.Context, owner model.ID, org
 	CREATE (o:` + organization.ID.Label() + ` { id: $id, name: $name, email: $email, logo: $logo, website: $website,
 		status: $status, created_at: datetime($created_at)
 	}),
-	(u)-[:` + membershipID.Label() + ` {id: $membership_id, created_at: datetime($created_at)}]->(o)`
+	(u)-[:` + EdgeKindMemberOf.String() + ` {id: $membership_id, created_at: datetime($created_at)}]->(o)`
 
 	params := map[string]interface{}{
 		"id":            organization.ID.String(),
@@ -87,7 +85,7 @@ func (r *OrganizationRepository) Create(ctx context.Context, owner model.ID, org
 		"status":        organization.Status.String(),
 		"created_at":    createdAt.Format(time.RFC3339Nano),
 		"owner_id":      owner.String(),
-		"membership_id": membershipID.String(),
+		"membership_id": model.NewRawID(),
 	}
 
 	if err := ExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
@@ -103,9 +101,9 @@ func (r *OrganizationRepository) Get(ctx context.Context, id model.ID) (*model.O
 
 	cypher := `
 	MATCH (o:` + id.Label() + ` {id: $id})
-	OPTIONAL MATCH (u:` + model.UserIDType + `)-[:` + EdgeKindMemberOf.String() + `]->(o)
-	OPTIONAL MATCH (o)-[:` + EdgeKindHasNamespace.String() + `]->(n:` + model.NamespaceIDType + `)
-	OPTIONAL MATCH (o)-[:` + EdgeKindHasTeam.String() + `]->(t:` + model.RoleIDType + `)
+	OPTIONAL MATCH (u:` + model.ResourceTypeUser.String() + `)-[:` + EdgeKindMemberOf.String() + `]->(o)
+	OPTIONAL MATCH (o)-[:` + EdgeKindHasNamespace.String() + `]->(n:` + model.ResourceTypeNamespace.String() + `)
+	OPTIONAL MATCH (o)-[:` + EdgeKindHasTeam.String() + `]->(t:` + model.ResourceTypeRole.String() + `)
 	RETURN o, collect(DISTINCT u.id) AS m, collect(DISTINCT n.id) AS n, collect(DISTINCT t.id) AS t
 	`
 
@@ -126,10 +124,10 @@ func (r *OrganizationRepository) GetAll(ctx context.Context, offset, limit int) 
 	defer span.End()
 
 	cypher := `
-	MATCH (o:` + model.OrganizationIDType + `)
-	OPTIONAL MATCH (u:` + model.UserIDType + `)-[:` + EdgeKindMemberOf.String() + `]->(o)
-	OPTIONAL MATCH (o)-[:` + EdgeKindHasNamespace.String() + `]->(n:` + model.NamespaceIDType + `)
-	OPTIONAL MATCH (o)-[:` + EdgeKindHasTeam.String() + `]->(t:` + model.RoleIDType + `)
+	MATCH (o:` + model.ResourceTypeOrganization.String() + `)
+	OPTIONAL MATCH (u:` + model.ResourceTypeUser.String() + `)-[:` + EdgeKindMemberOf.String() + `]->(o)
+	OPTIONAL MATCH (o)-[:` + EdgeKindHasNamespace.String() + `]->(n:` + model.ResourceTypeNamespace.String() + `)
+	OPTIONAL MATCH (o)-[:` + EdgeKindHasTeam.String() + `]->(t:` + model.ResourceTypeRole.String() + `)
 	RETURN o, collect(DISTINCT u.id) AS m, collect(DISTINCT n.id) AS n, collect(DISTINCT t.id) AS t
 	ORDER BY o.created_at DESC
 	SKIP $offset LIMIT $limit`
@@ -154,9 +152,9 @@ func (r *OrganizationRepository) Update(ctx context.Context, id model.ID, patch 
 	cypher := `
 	MATCH (o:` + id.Label() + ` {id: $id}) SET o += $patch SET o.updated_at = datetime($updated_at)
 	WITH o
-	OPTIONAL MATCH (u:` + model.UserIDType + `)-[:` + EdgeKindMemberOf.String() + `]->(o)
-	OPTIONAL MATCH (o)-[:` + EdgeKindHasNamespace.String() + `]->(n:` + model.NamespaceIDType + `)
-	OPTIONAL MATCH (o)-[:` + EdgeKindHasTeam.String() + `]->(t:` + model.RoleIDType + `)
+	OPTIONAL MATCH (u:` + model.ResourceTypeUser.String() + `)-[:` + EdgeKindMemberOf.String() + `]->(o)
+	OPTIONAL MATCH (o)-[:` + EdgeKindHasNamespace.String() + `]->(n:` + model.ResourceTypeNamespace.String() + `)
+	OPTIONAL MATCH (o)-[:` + EdgeKindHasTeam.String() + `]->(t:` + model.ResourceTypeRole.String() + `)
 	RETURN o, collect(DISTINCT u.id) AS m, collect(DISTINCT n.id) AS n, collect(DISTINCT t.id) AS t`
 
 	params := map[string]any{
@@ -194,7 +192,7 @@ func (r *OrganizationRepository) AddMember(ctx context.Context, orgID, memberID 
 	params := map[string]any{
 		"org_id":        orgID.String(),
 		"member_id":     memberID.String(),
-		"membership_id": model.MustNewID(EdgeKindMemberOf.String()).String(),
+		"membership_id": model.NewRawID(),
 		"now":           time.Now().Format(time.RFC3339Nano),
 	}
 

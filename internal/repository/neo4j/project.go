@@ -30,17 +30,17 @@ func (r *ProjectRepository) scan(pp, dp, tp, ip string) func(rec *neo4j.Record) 
 			return nil, err
 		}
 
-		p.ID, _ = model.NewIDFromString(val.GetProperties()["id"].(string), model.ProjectIDType)
+		p.ID, _ = model.NewIDFromString(val.GetProperties()["id"].(string), model.ResourceTypeProject.String())
 
-		if p.Documents, err = ParseIDsFromRecord(rec, dp, model.DocumentIDType); err != nil {
+		if p.Documents, err = ParseIDsFromRecord(rec, dp, model.ResourceTypeDocument.String()); err != nil {
 			return nil, err
 		}
 
-		if p.Teams, err = ParseIDsFromRecord(rec, tp, model.RoleIDType); err != nil {
+		if p.Teams, err = ParseIDsFromRecord(rec, tp, model.ResourceTypeRole.String()); err != nil {
 			return nil, err
 		}
 
-		if p.Issues, err = ParseIDsFromRecord(rec, ip, model.IssueIDType); err != nil {
+		if p.Issues, err = ParseIDsFromRecord(rec, ip, model.ResourceTypeIssue.String()); err != nil {
 			return nil, err
 		}
 
@@ -66,7 +66,7 @@ func (r *ProjectRepository) Create(ctx context.Context, namespaceID model.ID, pr
 
 	createdAt := time.Now()
 
-	project.ID = model.MustNewID(model.ProjectIDType)
+	project.ID = model.MustNewID(model.ResourceTypeProject)
 	project.CreatedAt = convert.ToPointer(createdAt)
 	project.UpdatedAt = nil
 
@@ -103,9 +103,9 @@ func (r *ProjectRepository) Get(ctx context.Context, id model.ID) (*model.Projec
 
 	cypher := `
 	MATCH (p:` + id.Label() + ` {id: $id})
-	OPTIONAL MATCH (d:` + model.DocumentIDType + `)-[:` + EdgeKindBelongsTo.String() + `]->(p)
-	OPTIONAL MATCH (p)-[:` + EdgeKindHasTeam.String() + `]->(t:` + model.RoleIDType + `)
-	OPTIONAL MATCH (p)<-[:` + EdgeKindBelongsTo.String() + `]-(i:` + model.IssueIDType + `)
+	OPTIONAL MATCH (d:` + model.ResourceTypeDocument.String() + `)-[:` + EdgeKindBelongsTo.String() + `]->(p)
+	OPTIONAL MATCH (p)-[:` + EdgeKindHasTeam.String() + `]->(t:` + model.ResourceTypeRole.String() + `)
+	OPTIONAL MATCH (p)<-[:` + EdgeKindBelongsTo.String() + `]-(i:` + model.ResourceTypeIssue.String() + `)
 	RETURN p, d, t, i`
 
 	params := map[string]any{
@@ -125,10 +125,10 @@ func (r *ProjectRepository) GetByKey(ctx context.Context, key string) (*model.Pr
 	defer span.End()
 
 	cypher := `
-	MATCH (p:` + model.ProjectIDType + ` {key: $key})
-	OPTIONAL MATCH (d:` + model.DocumentIDType + `)-[:` + EdgeKindBelongsTo.String() + `]->(p)
-	OPTIONAL MATCH (p)-[:` + EdgeKindHasTeam.String() + `]->(t:` + model.RoleIDType + `)
-	OPTIONAL MATCH (p)<-[:` + EdgeKindBelongsTo.String() + `]-(i:` + model.IssueIDType + `)
+	MATCH (p:` + model.ResourceTypeProject.String() + ` {key: $key})
+	OPTIONAL MATCH (d:` + model.ResourceTypeDocument.String() + `)-[:` + EdgeKindBelongsTo.String() + `]->(p)
+	OPTIONAL MATCH (p)-[:` + EdgeKindHasTeam.String() + `]->(t:` + model.ResourceTypeRole.String() + `)
+	OPTIONAL MATCH (p)<-[:` + EdgeKindBelongsTo.String() + `]-(i:` + model.ResourceTypeIssue.String() + `)
 	RETURN p, d, t, i`
 
 	params := map[string]any{
@@ -149,9 +149,9 @@ func (r *ProjectRepository) GetAll(ctx context.Context, namespaceID model.ID, of
 
 	cypher := `
 	MATCH (:` + namespaceID.Label() + ` {id: $namespace_id})-[:` + EdgeKindHasProject.String() + `]->(p)
-	OPTIONAL MATCH (d:` + model.DocumentIDType + `)-[:` + EdgeKindBelongsTo.String() + `]->(p)
-	OPTIONAL MATCH (p)-[:` + EdgeKindHasTeam.String() + `]->(t:` + model.RoleIDType + `)
-	OPTIONAL MATCH (p)<-[:` + EdgeKindBelongsTo.String() + `]-(i:` + model.IssueIDType + `)
+	OPTIONAL MATCH (d:` + model.ResourceTypeDocument.String() + `)-[:` + EdgeKindBelongsTo.String() + `]->(p)
+	OPTIONAL MATCH (p)-[:` + EdgeKindHasTeam.String() + `]->(t:` + model.ResourceTypeRole.String() + `)
+	OPTIONAL MATCH (p)<-[:` + EdgeKindBelongsTo.String() + `]-(i:` + model.ResourceTypeIssue.String() + `)
 	RETURN p, d, t, i
 	ORDER BY p.created_at DESC
 	SKIP $offset LIMIT $limit`
@@ -178,9 +178,9 @@ func (r *ProjectRepository) Update(ctx context.Context, id model.ID, patch map[s
 	MATCH (p:` + id.Label() + ` {id: $id})
 	SET p += $patch, p.updated_at = datetime($updated_at)
 	WITH p
-	OPTIONAL MATCH (d:` + model.DocumentIDType + `)-[:` + EdgeKindBelongsTo.String() + `]->(p)
-	OPTIONAL MATCH (p)-[:` + EdgeKindHasTeam.String() + `]->(t:` + model.RoleIDType + `)
-	OPTIONAL MATCH (p)<-[:` + EdgeKindBelongsTo.String() + `]-(i:` + model.IssueIDType + `)
+	OPTIONAL MATCH (d:` + model.ResourceTypeDocument.String() + `)-[:` + EdgeKindBelongsTo.String() + `]->(p)
+	OPTIONAL MATCH (p)-[:` + EdgeKindHasTeam.String() + `]->(t:` + model.ResourceTypeRole.String() + `)
+	OPTIONAL MATCH (p)<-[:` + EdgeKindBelongsTo.String() + `]-(i:` + model.ResourceTypeIssue.String() + `)
 	RETURN p, d, t, i`
 
 	params := map[string]any{

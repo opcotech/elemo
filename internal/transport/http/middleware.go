@@ -132,10 +132,10 @@ func WithRequestLogger(next http.Handler) http.Handler {
 func WithUserID(tokenValidator func(r *http.Request) (oauth2.TokenInfo, error)) func(next http.Handler) http.Handler {
 	return withContextObject(pkg.CtxKeyUserID, func(w http.ResponseWriter, r *http.Request) any {
 		if info, _ := tokenValidator(r); info != nil {
-			id, _ := model.NewIDFromString(info.GetUserID(), model.UserIDType)
+			id, _ := model.NewIDFromString(info.GetUserID(), model.ResourceTypeUser.String())
 			return id
 		}
 
-		return model.MustNewNilID(model.UserIDType)
+		return model.MustNewNilID(model.ResourceTypeUser)
 	})
 }

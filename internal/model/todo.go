@@ -8,10 +8,6 @@ import (
 )
 
 const (
-	TodoIDType = "Todo"
-)
-
-const (
 	TodoPriorityNormal    TodoPriority = iota + 1 // the todo is normal
 	TodoPriorityImportant                         // the todo is important
 	TodoPriorityUrgent                            // the todo is urgent
@@ -91,7 +87,7 @@ func (t *Todo) Validate() error {
 // NewTodo creates a new todo.
 func NewTodo(title string, ownedBy, createdBy ID) (*Todo, error) {
 	todo := &Todo{
-		ID:        MustNewNilID(TodoIDType),
+		ID:        MustNewNilID(ResourceTypeTodo),
 		Title:     title,
 		Priority:  TodoPriorityNormal,
 		OwnedBy:   ownedBy,

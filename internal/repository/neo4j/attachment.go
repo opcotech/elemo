@@ -35,8 +35,8 @@ func (r *AttachmentRepository) scan(cp, op string) func(rec *neo4j.Record) (*mod
 			return nil, err
 		}
 
-		attachment.ID, _ = model.NewIDFromString(val.GetProperties()["id"].(string), model.AttachmentIDType)
-		attachment.CreatedBy, _ = model.NewIDFromString(createdBy, model.UserIDType)
+		attachment.ID, _ = model.NewIDFromString(val.GetProperties()["id"].(string), model.ResourceTypeAttachment.String())
+		attachment.CreatedBy, _ = model.NewIDFromString(createdBy, model.ResourceTypeUser.String())
 
 		if err := attachment.Validate(); err != nil {
 			return nil, err
@@ -60,10 +60,7 @@ func (r *AttachmentRepository) Create(ctx context.Context, belongsTo model.ID, a
 
 	createdAt := time.Now()
 
-	hasAttachmentRelID := model.MustNewID(EdgeKindHasAttachment.String())
-	attachmentRelID := model.MustNewID(EdgeKindCreated.String())
-
-	attachment.ID = model.MustNewID(model.AttachmentIDType)
+	attachment.ID = model.MustNewID(model.ResourceTypeAttachment)
 	attachment.CreatedAt = convert.ToPointer(createdAt)
 	attachment.UpdatedAt = nil
 
@@ -73,14 +70,14 @@ func (r *AttachmentRepository) Create(ctx context.Context, belongsTo model.ID, a
 		(a:` + attachment.ID.Label() + ` {
 			id: $id, name: $name, file_id: $file_id, created_by: $created_by_id, created_at: datetime($created_at)
 		}),
-		(b)-[:` + hasAttachmentRelID.Label() + ` {id: $has_attachment_rel_id, created_at: datetime($created_at)}]->(a),
-		(o)-[:` + attachmentRelID.Label() + ` {id: $attachment_rel_id, created_at: datetime($created_at)}]->(a)`
+		(b)-[:` + EdgeKindHasAttachment.String() + ` {id: $has_attachment_rel_id, created_at: datetime($created_at)}]->(a),
+		(o)-[:` + EdgeKindCreated.String() + ` {id: $attachment_rel_id, created_at: datetime($created_at)}]->(a)`
 
 	params := map[string]any{
 		"belong_to_id":          belongsTo.String(),
-		"has_attachment_rel_id": hasAttachmentRelID.String(),
+		"has_attachment_rel_id": model.NewRawID(),
 		"created_by_id":         attachment.CreatedBy.String(),
-		"attachment_rel_id":     attachmentRelID.String(),
+		"attachment_rel_id":     model.NewRawID(),
 		"id":                    attachment.ID.String(),
 		"name":                  attachment.Name,
 		"file_id":               attachment.FileID,
@@ -99,7 +96,7 @@ func (r *AttachmentRepository) Get(ctx context.Context, id model.ID) (*model.Att
 	defer span.End()
 
 	cypher := `
-	MATCH (a:` + id.Label() + ` {id: $id})<-[:` + EdgeKindCreated.String() + `]-(o:` + model.UserIDType + `)
+	MATCH (a:` + id.Label() + ` {id: $id})<-[:` + EdgeKindCreated.String() + `]-(o:` + model.ResourceTypeUser.String() + `)
 	RETURN a, o.id AS o`
 
 	params := map[string]any{
@@ -120,8 +117,8 @@ func (r *AttachmentRepository) GetAllBelongsTo(ctx context.Context, belongsTo mo
 
 	cypher := `
 	MATCH
-		(:` + belongsTo.Label() + ` {id: $id})-[:` + EdgeKindHasAttachment.String() + `]->(a:` + model.AttachmentIDType + `),
-		(o:` + model.UserIDType + `)-[:` + EdgeKindCreated.String() + `]->(a)
+		(:` + belongsTo.Label() + ` {id: $id})-[:` + EdgeKindHasAttachment.String() + `]->(a:` + model.ResourceTypeAttachment.String() + `),
+		(o:` + model.ResourceTypeUser.String() + `)-[:` + EdgeKindCreated.String() + `]->(a)
 	RETURN a, o.id AS o
 	ORDER BY a.created_at DESC
 	SKIP $offset LIMIT $limit`
@@ -148,7 +145,7 @@ func (r *AttachmentRepository) Update(ctx context.Context, id model.ID, name str
 	MATCH (a:` + id.Label() + ` {id: $id})
 	SET a.name = $name, a.updated_at = datetime($updated_at)
 	WITH a
-	MATCH (o:` + model.UserIDType + `)-[:` + EdgeKindCreated.String() + `]->(a)
+	MATCH (o:` + model.ResourceTypeUser.String() + `)-[:` + EdgeKindCreated.String() + `]->(a)
 	RETURN a, o.id AS o`
 
 	params := map[string]any{

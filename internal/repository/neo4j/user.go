@@ -36,13 +36,13 @@ func (r *UserRepository) scan(up, pp, dp string) func(rec *neo4j.Record) (*model
 			return nil, err
 		}
 
-		user.ID, _ = model.NewIDFromString(val.GetProperties()["id"].(string), model.UserIDType)
+		user.ID, _ = model.NewIDFromString(val.GetProperties()["id"].(string), model.ResourceTypeUser.String())
 
-		if user.Permissions, err = ParseIDsFromRecord(rec, pp, EdgeKindHasPermission.String()); err != nil {
+		if user.Permissions, err = ParseIDsFromRecord(rec, pp, model.ResourceTypePermission.String()); err != nil {
 			return nil, err
 		}
 
-		if user.Documents, err = ParseIDsFromRecord(rec, dp, model.DocumentIDType); err != nil {
+		if user.Documents, err = ParseIDsFromRecord(rec, dp, model.ResourceTypeDocument.String()); err != nil {
 			return nil, err
 		}
 
@@ -66,7 +66,7 @@ func (r *UserRepository) Create(ctx context.Context, user *model.User) error {
 
 	createdAt := time.Now()
 
-	user.ID = model.MustNewID(model.UserIDType)
+	user.ID = model.MustNewID(model.ResourceTypeUser)
 	user.CreatedAt = convert.ToPointer(createdAt)
 	user.UpdatedAt = nil
 
@@ -113,9 +113,9 @@ func (r *UserRepository) Get(ctx context.Context, id model.ID) (*model.User, err
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.UserRepository/Get")
 	defer span.End()
 
-	cypher := `MATCH (u:` + model.UserIDType + ` {id: $id})
+	cypher := `MATCH (u:` + model.ResourceTypeUser.String() + ` {id: $id})
 	OPTIONAL MATCH (u)-[p:` + EdgeKindHasPermission.String() + `]->()
-	OPTIONAL MATCH (u)<-[r:` + EdgeKindBelongsTo.String() + `]-(d:` + model.DocumentIDType + `)
+	OPTIONAL MATCH (u)<-[r:` + EdgeKindBelongsTo.String() + `]-(d:` + model.ResourceTypeDocument.String() + `)
 	RETURN u, collect(DISTINCT p.id) AS p, collect(DISTINCT d.id) AS d`
 
 	params := map[string]any{
@@ -138,9 +138,9 @@ func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*model.U
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.UserRepository/GetByEmail")
 	defer span.End()
 
-	cypher := `MATCH (u:` + model.UserIDType + ` {email: $email})
+	cypher := `MATCH (u:` + model.ResourceTypeUser.String() + ` {email: $email})
 	OPTIONAL MATCH (u)-[p:` + EdgeKindHasPermission.String() + `]->()
-	OPTIONAL MATCH (u)<-[r:` + EdgeKindBelongsTo.String() + `]-(d:` + model.DocumentIDType + `)
+	OPTIONAL MATCH (u)<-[r:` + EdgeKindBelongsTo.String() + `]-(d:` + model.ResourceTypeDocument.String() + `)
 	RETURN u, collect(DISTINCT p.id) AS p, collect(DISTINCT d.id) AS d`
 
 	params := map[string]any{
@@ -164,9 +164,9 @@ func (r *UserRepository) GetAll(ctx context.Context, offset, limit int) ([]*mode
 	defer span.End()
 
 	cypher := `
-	MATCH (u:` + model.UserIDType + `)
+	MATCH (u:` + model.ResourceTypeUser.String() + `)
 	OPTIONAL MATCH (u)-[p:` + EdgeKindHasPermission.String() + `]->()
-	OPTIONAL MATCH (u)<-[r:` + EdgeKindBelongsTo.String() + `]-(d:` + model.DocumentIDType + `)
+	OPTIONAL MATCH (u)<-[r:` + EdgeKindBelongsTo.String() + `]-(d:` + model.ResourceTypeDocument.String() + `)
 	RETURN u, collect(DISTINCT p.id) AS p, collect(DISTINCT d.id) AS d
 	ORDER BY u.created_at DESC
 	SKIP $offset LIMIT $limit`
@@ -197,7 +197,7 @@ func (r *UserRepository) Update(ctx context.Context, id model.ID, patch map[stri
 	SET u += $patch, u.updated_at = datetime($updated_at)
 	WITH u
 	OPTIONAL MATCH (u)-[p:` + EdgeKindHasPermission.String() + `]->()
-	OPTIONAL MATCH (u)<-[r:` + EdgeKindBelongsTo.String() + `]-(d:` + model.DocumentIDType + `)
+	OPTIONAL MATCH (u)<-[r:` + EdgeKindBelongsTo.String() + `]-(d:` + model.ResourceTypeDocument.String() + `)
 	RETURN u, collect(DISTINCT p.id) AS p, collect(DISTINCT d.id) AS d
 	`
 	params := map[string]any{

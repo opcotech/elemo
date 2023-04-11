@@ -35,18 +35,18 @@ func (r *DocumentRepository) scan(dp, cp, lp, commp, ap string) func(rec *neo4j.
 			return nil, err
 		}
 
-		doc.ID, _ = model.NewIDFromString(val.GetProperties()["id"].(string), model.DocumentIDType)
-		doc.CreatedBy, _ = model.NewIDFromString(createdBy, model.UserIDType)
+		doc.ID, _ = model.NewIDFromString(val.GetProperties()["id"].(string), model.ResourceTypeDocument.String())
+		doc.CreatedBy, _ = model.NewIDFromString(createdBy, model.ResourceTypeUser.String())
 
-		if doc.Labels, err = ParseIDsFromRecord(rec, lp, model.LabelIDType); err != nil {
+		if doc.Labels, err = ParseIDsFromRecord(rec, lp, model.ResourceTypeLabel.String()); err != nil {
 			return nil, err
 		}
 
-		if doc.Comments, err = ParseIDsFromRecord(rec, commp, model.CommentIDType); err != nil {
+		if doc.Comments, err = ParseIDsFromRecord(rec, commp, model.ResourceTypeComment.String()); err != nil {
 			return nil, err
 		}
 
-		if doc.Attachments, err = ParseIDsFromRecord(rec, ap, model.AttachmentIDType); err != nil {
+		if doc.Attachments, err = ParseIDsFromRecord(rec, ap, model.ResourceTypeAttachment.String()); err != nil {
 			return nil, err
 		}
 
@@ -72,10 +72,7 @@ func (r *DocumentRepository) Create(ctx context.Context, belongsTo model.ID, doc
 
 	createdAt := time.Now()
 
-	documentBelongsRelID := model.MustNewID(EdgeKindBelongsTo.String())
-	documentCreatedRelID := model.MustNewID(EdgeKindCreated.String())
-
-	document.ID = model.MustNewID(model.DocumentIDType)
+	document.ID = model.MustNewID(model.ResourceTypeDocument)
 	document.CreatedAt = convert.ToPointer(createdAt)
 	document.UpdatedAt = nil
 
@@ -86,14 +83,14 @@ func (r *DocumentRepository) Create(ctx context.Context, belongsTo model.ID, doc
 			id: $id, name: $name, excerpt: $excerpt, file_id: $file_id, created_by: $created_by_id,
 			created_at: datetime($created_at)
 		}),
-		(d)-[:` + documentBelongsRelID.Label() + ` {id: $belongs_to_rel_id, created_at: datetime($created_at)}]->(b),
-		(o)-[:` + documentCreatedRelID.Label() + ` {id: $created_rel_id, created_at: datetime($created_at)}]->(d)`
+		(d)-[:` + EdgeKindBelongsTo.String() + ` {id: $belongs_to_rel_id, created_at: datetime($created_at)}]->(b),
+		(o)-[:` + EdgeKindCreated.String() + ` {id: $created_rel_id, created_at: datetime($created_at)}]->(d)`
 
 	params := map[string]any{
 		"belong_to_id":      belongsTo.String(),
-		"belongs_to_rel_id": documentBelongsRelID.String(),
+		"belongs_to_rel_id": model.NewRawID(),
 		"created_by_id":     document.CreatedBy.String(),
-		"created_rel_id":    documentCreatedRelID.String(),
+		"created_rel_id":    model.NewRawID(),
 		"id":                document.ID.String(),
 		"name":              document.Name,
 		"excerpt":           document.Excerpt,
@@ -113,10 +110,10 @@ func (r *DocumentRepository) Get(ctx context.Context, id model.ID) (*model.Docum
 	defer span.End()
 
 	cypher := `
-	MATCH (d:` + id.Label() + ` {id: $id}), (d)<-[:` + EdgeKindCreated.String() + `]-(c:` + model.UserIDType + `)
-	OPTIONAL MATCH (d)-[:` + EdgeKindHasLabel.String() + `]->(l:` + model.LabelIDType + `)
-	OPTIONAL MATCH (d)-[:` + EdgeKindHasComment.String() + `]->(comm:` + model.CommentIDType + `)
-	OPTIONAL MATCH (d)-[:` + EdgeKindHasAttachment.String() + `]->(att:` + model.AttachmentIDType + `)
+	MATCH (d:` + id.Label() + ` {id: $id}), (d)<-[:` + EdgeKindCreated.String() + `]-(c:` + model.ResourceTypeUser.String() + `)
+	OPTIONAL MATCH (d)-[:` + EdgeKindHasLabel.String() + `]->(l:` + model.ResourceTypeLabel.String() + `)
+	OPTIONAL MATCH (d)-[:` + EdgeKindHasComment.String() + `]->(comm:` + model.ResourceTypeComment.String() + `)
+	OPTIONAL MATCH (d)-[:` + EdgeKindHasAttachment.String() + `]->(att:` + model.ResourceTypeAttachment.String() + `)
 	RETURN d, c.id AS c, collect(DISTINCT l.id) AS l, collect(DISTINCT comm.id) AS comm, collect(DISTINCT att.id) AS att`
 
 	params := map[string]any{
@@ -136,10 +133,10 @@ func (r *DocumentRepository) GetByCreator(ctx context.Context, createdBy model.I
 	defer span.End()
 
 	cypher := `
-	MATCH (d:` + model.DocumentIDType + `)<-[:` + EdgeKindCreated.String() + `]-(c:` + createdBy.Label() + ` {id: $id})
-	OPTIONAL MATCH (d)-[:` + EdgeKindHasLabel.String() + `]->(l:` + model.LabelIDType + `)
-	OPTIONAL MATCH (d)-[:` + EdgeKindHasComment.String() + `]->(comm:` + model.CommentIDType + `)
-	OPTIONAL MATCH (d)-[:` + EdgeKindHasAttachment.String() + `]->(att:` + model.AttachmentIDType + `)
+	MATCH (d:` + model.ResourceTypeDocument.String() + `)<-[:` + EdgeKindCreated.String() + `]-(c:` + createdBy.Label() + ` {id: $id})
+	OPTIONAL MATCH (d)-[:` + EdgeKindHasLabel.String() + `]->(l:` + model.ResourceTypeLabel.String() + `)
+	OPTIONAL MATCH (d)-[:` + EdgeKindHasComment.String() + `]->(comm:` + model.ResourceTypeComment.String() + `)
+	OPTIONAL MATCH (d)-[:` + EdgeKindHasAttachment.String() + `]->(att:` + model.ResourceTypeAttachment.String() + `)
 	RETURN d, c.id AS c, collect(DISTINCT l.id) AS l, collect(DISTINCT comm.id) AS comm, collect(DISTINCT att.id) AS att
 	ORDER BY d.created_at DESC
 	SKIP $offset LIMIT $limit`
@@ -164,11 +161,11 @@ func (r *DocumentRepository) GetAllBelongsTo(ctx context.Context, belongsTo mode
 
 	cypher := `
 	MATCH
-		(d:` + model.DocumentIDType + `)-[:` + EdgeKindBelongsTo.String() + `]->(b:` + belongsTo.Label() + ` {id: $id}),
-		(c:` + model.UserIDType + `)-[` + EdgeKindCreated.String() + `]->(d)
-	OPTIONAL MATCH (d)-[:` + EdgeKindHasLabel.String() + `]->(l:` + model.LabelIDType + `)
-	OPTIONAL MATCH (d)-[:` + EdgeKindHasComment.String() + `]->(comm:` + model.CommentIDType + `)
-	OPTIONAL MATCH (d)-[:` + EdgeKindHasAttachment.String() + `]->(att:` + model.AttachmentIDType + `)
+		(d:` + model.ResourceTypeDocument.String() + `)-[:` + EdgeKindBelongsTo.String() + `]->(b:` + belongsTo.Label() + ` {id: $id}),
+		(c:` + model.ResourceTypeUser.String() + `)-[` + EdgeKindCreated.String() + `]->(d)
+	OPTIONAL MATCH (d)-[:` + EdgeKindHasLabel.String() + `]->(l:` + model.ResourceTypeLabel.String() + `)
+	OPTIONAL MATCH (d)-[:` + EdgeKindHasComment.String() + `]->(comm:` + model.ResourceTypeComment.String() + `)
+	OPTIONAL MATCH (d)-[:` + EdgeKindHasAttachment.String() + `]->(att:` + model.ResourceTypeAttachment.String() + `)
 	RETURN d, c.id AS c, collect(DISTINCT l.id) AS l, collect(DISTINCT comm.id) AS comm, collect(DISTINCT att.id) AS att
 	ORDER BY d.created_at DESC
 	SKIP $offset LIMIT $limit`
@@ -195,10 +192,10 @@ func (r *DocumentRepository) Update(ctx context.Context, id model.ID, patch map[
 	MATCH (d:` + id.Label() + ` {id: $id})
 	SET d += $patch, d.updated_at = datetime($updated_at)
 	WITH d
-	MATCH (c:` + model.UserIDType + `)-[` + EdgeKindCreated.String() + `]->(d)
-	OPTIONAL MATCH (d)-[:` + EdgeKindHasLabel.String() + `]->(l:` + model.LabelIDType + `)
-	OPTIONAL MATCH (d)-[:` + EdgeKindHasComment.String() + `]->(comm:` + model.CommentIDType + `)
-	OPTIONAL MATCH (d)-[:` + EdgeKindHasAttachment.String() + `]->(att:` + model.AttachmentIDType + `)
+	MATCH (c:` + model.ResourceTypeUser.String() + `)-[` + EdgeKindCreated.String() + `]->(d)
+	OPTIONAL MATCH (d)-[:` + EdgeKindHasLabel.String() + `]->(l:` + model.ResourceTypeLabel.String() + `)
+	OPTIONAL MATCH (d)-[:` + EdgeKindHasComment.String() + `]->(comm:` + model.ResourceTypeComment.String() + `)
+	OPTIONAL MATCH (d)-[:` + EdgeKindHasAttachment.String() + `]->(att:` + model.ResourceTypeAttachment.String() + `)
 	RETURN d, c.id AS c, collect(DISTINCT l.id) AS l, collect(DISTINCT comm.id) AS comm, collect(DISTINCT att.id) AS att`
 
 	params := map[string]any{

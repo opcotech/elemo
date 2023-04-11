@@ -24,7 +24,7 @@ func TestNewNamespace(t *testing.T) {
 				name: "test",
 			},
 			want: &Namespace{
-				ID:        ID{inner: xid.NilID(), label: NamespaceIDType},
+				ID:        ID{inner: xid.NilID(), label: ResourceTypeNamespace},
 				Name:      "test",
 				Projects:  make([]ID, 0),
 				Documents: make([]ID, 0),
@@ -73,7 +73,7 @@ func TestNamespace_Validate(t *testing.T) {
 		{
 			name: "validate namespace with valid details",
 			fields: fields{
-				ID:          ID{inner: xid.NilID(), label: NamespaceIDType},
+				ID:          ID{inner: xid.NilID(), label: ResourceTypeNamespace},
 				Name:        "test",
 				Description: "test description",
 			},
@@ -81,7 +81,7 @@ func TestNamespace_Validate(t *testing.T) {
 		{
 			name: "validate namespace with invalid ID",
 			fields: fields{
-				ID:          ID{inner: xid.NilID(), label: ""},
+				ID:          ID{inner: xid.NilID(), label: ResourceType(0)},
 				Name:        "test",
 				Description: "test description",
 			},
@@ -90,7 +90,7 @@ func TestNamespace_Validate(t *testing.T) {
 		{
 			name: "validate namespace with invalid name",
 			fields: fields{
-				ID:          ID{inner: xid.NilID(), label: NamespaceIDType},
+				ID:          ID{inner: xid.NilID(), label: ResourceTypeNamespace},
 				Name:        "t",
 				Description: "test description",
 			},
@@ -99,7 +99,7 @@ func TestNamespace_Validate(t *testing.T) {
 		{
 			name: "validate namespace with empty name",
 			fields: fields{
-				ID:          ID{inner: xid.NilID(), label: NamespaceIDType},
+				ID:          ID{inner: xid.NilID(), label: ResourceTypeNamespace},
 				Name:        "",
 				Description: "test description",
 			},
@@ -108,7 +108,7 @@ func TestNamespace_Validate(t *testing.T) {
 		{
 			name: "validate namespace with invalid description",
 			fields: fields{
-				ID:          ID{inner: xid.NilID(), label: NamespaceIDType},
+				ID:          ID{inner: xid.NilID(), label: ResourceTypeNamespace},
 				Name:        "test",
 				Description: "t",
 			},

@@ -40,9 +40,9 @@ func (r *TodoRepository) scan(tp, op, cp string) func(rec *neo4j.Record) (*model
 			return nil, err
 		}
 
-		todo.ID, _ = model.NewIDFromString(val.GetProperties()["id"].(string), model.TodoIDType)
-		todo.OwnedBy, _ = model.NewIDFromString(ownerID, model.UserIDType)
-		todo.CreatedBy, _ = model.NewIDFromString(creatorID, model.UserIDType)
+		todo.ID, _ = model.NewIDFromString(val.GetProperties()["id"].(string), model.ResourceTypeTodo.String())
+		todo.OwnedBy, _ = model.NewIDFromString(ownerID, model.ResourceTypeUser.String())
+		todo.CreatedBy, _ = model.NewIDFromString(creatorID, model.ResourceTypeUser.String())
 
 		if err := todo.Validate(); err != nil {
 			return nil, err
@@ -62,12 +62,7 @@ func (r *TodoRepository) Create(ctx context.Context, todo *model.Todo) error {
 
 	createdAt := convert.ToPointer(time.Now())
 
-	ownerRelID := model.MustNewID(EdgeKindBelongsTo.String())
-	ownerPermID := model.MustNewID(EdgeKindHasPermission.String())
-	creatorRelID := model.MustNewID(EdgeKindCreated.String())
-	creatorPermID := model.MustNewID(EdgeKindHasPermission.String())
-
-	todo.ID = model.MustNewID(model.TodoIDType)
+	todo.ID = model.MustNewID(model.ResourceTypeTodo)
 	todo.CreatedAt = createdAt
 	todo.UpdatedAt = nil
 
@@ -78,10 +73,10 @@ func (r *TodoRepository) Create(ctx context.Context, todo *model.Todo) error {
 			id: $id, title: $title, description: $description, priority: $priority, completed: $completed,
 			due_date: datetime($due_date), created_at: datetime($created_at)
 		}),
-		(t)-[:` + ownerRelID.Label() + ` {id: $owned_rel_id, created_at: datetime($created_at)}]->(o),
-		(t)<-[:` + creatorRelID.Label() + ` {id: $created_rel_id, created_at: datetime($created_at)}]-(c),
-		(o)-[:` + ownerPermID.Label() + ` {id: $owner_perm_id, kind: $owner_perm_kind, created_at: datetime($created_at)}]->(t)
-	MERGE (c)-[rel:` + creatorPermID.Label() + `]->(t)
+		(t)-[:` + EdgeKindBelongsTo.String() + ` {id: $owned_rel_id, created_at: datetime($created_at)}]->(o),
+		(t)<-[:` + EdgeKindCreated.String() + ` {id: $created_rel_id, created_at: datetime($created_at)}]-(c),
+		(o)-[:` + EdgeKindHasPermission.String() + ` {id: $owner_perm_id, kind: $owner_perm_kind, created_at: datetime($created_at)}]->(t)
+	MERGE (c)-[rel:` + EdgeKindHasPermission.String() + `]->(t)
 	ON CREATE SET rel += {id: $creator_perm_id, kind: $creator_perm_kind, created_at: datetime($created_at)}`
 
 	params := map[string]any{
@@ -93,12 +88,12 @@ func (r *TodoRepository) Create(ctx context.Context, todo *model.Todo) error {
 		"due_date":          nil,
 		"created_at":        todo.CreatedAt.Format(time.RFC3339Nano),
 		"owner_id":          todo.OwnedBy.String(),
-		"owned_rel_id":      ownerRelID.String(),
-		"owner_perm_id":     ownerPermID.String(),
+		"owned_rel_id":      model.NewRawID(),
+		"owner_perm_id":     model.NewRawID(),
 		"owner_perm_kind":   model.PermissionKindAll.String(),
 		"creator_id":        todo.CreatedBy.String(),
-		"created_rel_id":    creatorRelID.String(),
-		"creator_perm_id":   creatorPermID.String(),
+		"created_rel_id":    model.NewRawID(),
+		"creator_perm_id":   model.NewRawID(),
 		"creator_perm_kind": model.PermissionKindAll.String(),
 	}
 
@@ -140,7 +135,7 @@ func (r *TodoRepository) GetByOwner(ctx context.Context, ownerID model.ID, compl
 	defer span.End()
 
 	cypher := `
-	MATCH (t:` + model.TodoIDType + `)-[:` + EdgeKindBelongsTo.String() + `]->(o:` + ownerID.Label() + ` {id: $owner_id})
+	MATCH (t:` + model.ResourceTypeTodo.String() + `)-[:` + EdgeKindBelongsTo.String() + `]->(o:` + ownerID.Label() + ` {id: $owner_id})
 	WHERE $completed IS NULL OR t.completed = $completed
 	OPTIONAL MATCH (t)<-[:` + EdgeKindCreated.String() + `]-(c)
 	RETURN t, o.id as o, c.id as c

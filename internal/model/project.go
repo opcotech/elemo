@@ -8,10 +8,6 @@ import (
 )
 
 const (
-	ProjectIDType = "Project"
-)
-
-const (
 	ProjectStatusActive  ProjectStatus = iota + 1 // project is active
 	ProjectStatusPending                          // project is pending
 )
@@ -95,7 +91,7 @@ func (p *Project) Validate() error {
 // NewProject creates a new project.
 func NewProject(key, name string) (*Project, error) {
 	project := &Project{
-		ID:        MustNewNilID(ProjectIDType),
+		ID:        MustNewNilID(ResourceTypeProject),
 		Key:       key,
 		Name:      name,
 		Status:    ProjectStatusActive,

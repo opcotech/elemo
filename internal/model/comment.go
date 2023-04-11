@@ -7,10 +7,6 @@ import (
 	"github.com/opcotech/elemo/internal/pkg/validate"
 )
 
-const (
-	CommentIDType = "Comment"
-)
-
 // Comment represents a comment on a resource.
 type Comment struct {
 	ID        ID         `json:"id" validate:"required,dive"`
@@ -36,7 +32,7 @@ func (c *Comment) Validate() error {
 // NewComment creates a new Comment.
 func NewComment(content string, createdBy ID) (*Comment, error) {
 	comment := &Comment{
-		ID:        MustNewNilID(CommentIDType),
+		ID:        MustNewNilID(ResourceTypeComment),
 		Content:   content,
 		CreatedBy: createdBy,
 	}

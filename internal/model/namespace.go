@@ -7,10 +7,6 @@ import (
 	"github.com/opcotech/elemo/internal/pkg/validate"
 )
 
-const (
-	NamespaceIDType = "Namespace"
-)
-
 // Namespace represents a namespace of an organization. A namespace is a
 // logical grouping of Projects and Documents.
 type Namespace struct {
@@ -36,7 +32,7 @@ func (n *Namespace) Validate() error {
 // NewNamespace creates a new Namespace.
 func NewNamespace(name string) (*Namespace, error) {
 	namespace := &Namespace{
-		ID:        MustNewNilID(NamespaceIDType),
+		ID:        MustNewNilID(ResourceTypeNamespace),
 		Name:      name,
 		Projects:  make([]ID, 0),
 		Documents: make([]ID, 0),

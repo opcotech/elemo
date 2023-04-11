@@ -29,13 +29,13 @@ func (r *RoleRepository) scan(rp, mp, pp string) func(rec *neo4j.Record) (*model
 			return nil, err
 		}
 
-		role.ID, _ = model.NewIDFromString(val.GetProperties()["id"].(string), model.RoleIDType)
+		role.ID, _ = model.NewIDFromString(val.GetProperties()["id"].(string), model.ResourceTypeRole.String())
 
-		if role.Members, err = ParseIDsFromRecord(rec, mp, model.UserIDType); err != nil {
+		if role.Members, err = ParseIDsFromRecord(rec, mp, model.ResourceTypeUser.String()); err != nil {
 			return nil, err
 		}
 
-		if role.Permissions, err = ParseIDsFromRecord(rec, pp, EdgeKindHasPermission.String()); err != nil {
+		if role.Permissions, err = ParseIDsFromRecord(rec, pp, model.ResourceTypePermission.String()); err != nil {
 			return nil, err
 		}
 
@@ -61,11 +61,7 @@ func (r *RoleRepository) Create(ctx context.Context, createdBy, belongsTo model.
 
 	createdAt := time.Now()
 
-	permID := model.MustNewID(EdgeKindHasPermission.String())
-	membershipID := model.MustNewID(EdgeKindMemberOf.String())
-	hasTeamID := model.MustNewID(EdgeKindHasTeam.String())
-
-	role.ID = model.MustNewID(model.RoleIDType)
+	role.ID = model.MustNewID(model.ResourceTypeRole)
 	role.CreatedAt = &createdAt
 	role.UpdatedAt = nil
 
@@ -73,18 +69,18 @@ func (r *RoleRepository) Create(ctx context.Context, createdBy, belongsTo model.
 	MATCH (u:` + createdBy.Label() + ` {id: $owner_id}), (b:` + belongsTo.Label() + ` {id: $belongs_to_id})
 	MERGE (r:` + role.ID.Label() + ` {id: $role_id})
 	ON CREATE SET r += { name: $name, description: $description, created_at: datetime($created_at) }
-	CREATE (r)<-[:` + hasTeamID.Label() + ` { id: $has_team_id, created_at: datetime($created_at) }]-(b)
-	CREATE (u)-[:` + membershipID.Label() + ` { id: $membership_id, created_at: datetime($created_at) }]->(r)
-	MERGE (u)-[p:` + permID.Label() + ` {id: $perm_id, kind: $perm_kind}]->(r) ON CREATE SET p.created_at = datetime($created_at)
+	CREATE (r)<-[:` + EdgeKindHasTeam.String() + ` { id: $has_team_id, created_at: datetime($created_at) }]-(b)
+	CREATE (u)-[:` + EdgeKindMemberOf.String() + ` { id: $membership_id, created_at: datetime($created_at) }]->(r)
+	MERGE (u)-[p:` + EdgeKindHasPermission.String() + ` {id: $perm_id, kind: $perm_kind}]->(r) ON CREATE SET p.created_at = datetime($created_at)
 	`
 
 	params := map[string]any{
 		"owner_id":      createdBy.String(),
 		"belongs_to_id": belongsTo.String(),
 		"role_id":       role.ID.String(),
-		"membership_id": membershipID.String(),
-		"has_team_id":   hasTeamID.String(),
-		"perm_id":       permID.String(),
+		"membership_id": model.NewRawID(),
+		"has_team_id":   model.NewRawID(),
+		"perm_id":       model.NewRawID(),
 		"perm_kind":     model.PermissionKindAll.String(),
 		"name":          role.Name,
 		"description":   role.Description,
@@ -104,7 +100,7 @@ func (r *RoleRepository) Get(ctx context.Context, id model.ID) (*model.Role, err
 
 	cypher := `
 	MATCH (r:` + id.Label() + ` {id: $id})
-	OPTIONAL MATCH (r)<-[:` + EdgeKindMemberOf.String() + `]-(u:` + model.UserIDType + `)
+	OPTIONAL MATCH (r)<-[:` + EdgeKindMemberOf.String() + `]-(u:` + model.ResourceTypeUser.String() + `)
 	OPTIONAL MATCH (r)-[p:` + EdgeKindHasPermission.String() + `]->()
 	RETURN r, collect(DISTINCT u.id) AS m, collect(DISTINCT p.id) AS p
 	`
@@ -126,8 +122,8 @@ func (r *RoleRepository) GetAllBelongsTo(ctx context.Context, id model.ID, offse
 	defer span.End()
 
 	cypher := `
-	MATCH (r:` + model.RoleIDType + `)<-[:` + EdgeKindHasTeam.String() + `]-(:` + id.Label() + ` {id: $id})
-	OPTIONAL MATCH (r)<-[:` + EdgeKindMemberOf.String() + `]-(u:` + model.UserIDType + `)
+	MATCH (r:` + model.ResourceTypeRole.String() + `)<-[:` + EdgeKindHasTeam.String() + `]-(:` + id.Label() + ` {id: $id})
+	OPTIONAL MATCH (r)<-[:` + EdgeKindMemberOf.String() + `]-(u:` + model.ResourceTypeUser.String() + `)
 	OPTIONAL MATCH (r)-[p:` + EdgeKindHasPermission.String() + `]->()
 	RETURN r, collect(DISTINCT u.id) AS m, collect(DISTINCT p.id) AS p
 	ORDER BY r.created_at DESC
@@ -154,7 +150,7 @@ func (r *RoleRepository) Update(ctx context.Context, id model.ID, patch map[stri
 	cypher := `
 	MATCH (r:` + id.Label() + ` {id: $id}) SET r += $patch SET r.updated_at = datetime($updated_at)
 	WITH r
-	OPTIONAL MATCH (r)<-[:` + EdgeKindMemberOf.String() + `]-(u:` + model.UserIDType + `)
+	OPTIONAL MATCH (r)<-[:` + EdgeKindMemberOf.String() + `]-(u:` + model.ResourceTypeUser.String() + `)
 	OPTIONAL MATCH (r)-[p:` + EdgeKindHasPermission.String() + `]->()
 	RETURN r, collect(DISTINCT u.id) AS m, collect(DISTINCT p.id) AS p`
 
@@ -185,7 +181,7 @@ func (r *RoleRepository) AddMember(ctx context.Context, roleID, memberID model.I
 	params := map[string]any{
 		"role_id":       roleID.String(),
 		"member_id":     memberID.String(),
-		"membership_id": model.MustNewID(EdgeKindMemberOf.String()).String(),
+		"membership_id": model.NewRawID(),
 		"now":           time.Now().Format(time.RFC3339Nano),
 	}
 

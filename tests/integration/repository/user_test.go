@@ -71,7 +71,7 @@ func TestUserRepository_Get(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	organizationID := model.MustNewID(model.OrganizationIDType)
+	organizationID := model.MustNewID(model.ResourceTypeOrganization)
 	_, err = db.GetWriteSession(ctx).Run(ctx,
 		"CREATE (:"+organizationID.Label()+" {id: $organization_id})",
 		map[string]any{
@@ -144,7 +144,7 @@ func TestUserRepository_GetByEmail(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	organizationID := model.MustNewID(model.OrganizationIDType)
+	organizationID := model.MustNewID(model.ResourceTypeOrganization)
 	_, err = db.GetWriteSession(ctx).Run(ctx,
 		"CREATE (:"+organizationID.Label()+" {id: $organization_id})",
 		map[string]any{

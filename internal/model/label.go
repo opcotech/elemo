@@ -7,10 +7,6 @@ import (
 	"github.com/opcotech/elemo/internal/pkg/validate"
 )
 
-const (
-	LabelIDType = "Label"
-)
-
 // Label is an entity that can be attached to a resource to provide additional
 // information about it. For example, a label can be used to indicate the
 // environment a resource belongs to.
@@ -35,7 +31,7 @@ func (l *Label) Validate() error {
 // NewLabel creates a new Label.
 func NewLabel(name string) (*Label, error) {
 	label := &Label{
-		ID:   MustNewNilID(LabelIDType),
+		ID:   MustNewNilID(ResourceTypeLabel),
 		Name: name,
 	}
 

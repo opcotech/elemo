@@ -24,7 +24,7 @@ func TestNewLabel(t *testing.T) {
 				name: "test",
 			},
 			want: &Label{
-				ID:   ID{inner: xid.NilID(), label: LabelIDType},
+				ID:   ID{inner: xid.NilID(), label: ResourceTypeLabel},
 				Name: "test",
 			},
 		},
@@ -71,7 +71,7 @@ func TestLabel_Validate(t *testing.T) {
 		{
 			name: "validate label with valid details",
 			fields: fields{
-				ID:   ID{inner: xid.NilID(), label: LabelIDType},
+				ID:   ID{inner: xid.NilID(), label: ResourceTypeLabel},
 				Name: "test",
 			},
 		},
@@ -86,7 +86,7 @@ func TestLabel_Validate(t *testing.T) {
 		{
 			name: "validate label with invalid name",
 			fields: fields{
-				ID:   ID{inner: xid.NilID(), label: LabelIDType},
+				ID:   ID{inner: xid.NilID(), label: ResourceTypeLabel},
 				Name: "t",
 			},
 			wantErr: ErrInvalidLabelDetails,
@@ -94,7 +94,7 @@ func TestLabel_Validate(t *testing.T) {
 		{
 			name: "validate label with invalid description",
 			fields: fields{
-				ID:          ID{inner: xid.NilID(), label: LabelIDType},
+				ID:          ID{inner: xid.NilID(), label: ResourceTypeLabel},
 				Name:        "test",
 				Description: "t",
 			},

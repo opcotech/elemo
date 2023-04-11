@@ -25,13 +25,13 @@ func TestNewAttachment(t *testing.T) {
 			args: args{
 				name:   "test",
 				fileID: "file_id",
-				owner:  ID{inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, label: "User"},
+				owner:  ID{inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, label: ResourceTypeUser},
 			},
 			want: &Attachment{
-				ID:        ID{inner: xid.NilID(), label: AttachmentIDType},
+				ID:        ID{inner: xid.NilID(), label: ResourceTypeAttachment},
 				Name:      "test",
 				FileID:    "file_id",
-				CreatedBy: ID{inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, label: "User"},
+				CreatedBy: ID{inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, label: ResourceTypeUser},
 			},
 		},
 		{
@@ -88,36 +88,36 @@ func TestAttachment_Validate(t *testing.T) {
 		{
 			name: "validate attachment with valid details",
 			fields: fields{
-				ID:      ID{inner: xid.NilID(), label: AttachmentIDType},
+				ID:      ID{inner: xid.NilID(), label: ResourceTypeAttachment},
 				Name:    "test",
 				FileID:  "file_id",
-				OwnedBy: ID{inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, label: "User"},
+				OwnedBy: ID{inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, label: ResourceTypeUser},
 			},
 		},
 		{
 			name: "validate attachment with invalid name",
 			fields: fields{
-				ID:      ID{inner: xid.NilID(), label: AttachmentIDType},
+				ID:      ID{inner: xid.NilID(), label: ResourceTypeAttachment},
 				Name:    "t",
 				FileID:  "file_id",
-				OwnedBy: ID{inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, label: "User"},
+				OwnedBy: ID{inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, label: ResourceTypeUser},
 			},
 			wantErr: ErrInvalidAttachmentDetails,
 		},
 		{
 			name: "validate attachment with empty name",
 			fields: fields{
-				ID:      ID{inner: xid.NilID(), label: AttachmentIDType},
+				ID:      ID{inner: xid.NilID(), label: ResourceTypeAttachment},
 				Name:    "",
 				FileID:  "file_id",
-				OwnedBy: ID{inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, label: "User"},
+				OwnedBy: ID{inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, label: ResourceTypeUser},
 			},
 			wantErr: ErrInvalidAttachmentDetails,
 		},
 		{
 			name: "validate attachment with nil owner",
 			fields: fields{
-				ID:      ID{inner: xid.NilID(), label: AttachmentIDType},
+				ID:      ID{inner: xid.NilID(), label: ResourceTypeAttachment},
 				Name:    "test",
 				FileID:  "file_id",
 				OwnedBy: ID{},
@@ -127,10 +127,10 @@ func TestAttachment_Validate(t *testing.T) {
 		{
 			name: "validate attachment with nil file id",
 			fields: fields{
-				ID:      ID{inner: xid.NilID(), label: AttachmentIDType},
+				ID:      ID{inner: xid.NilID(), label: ResourceTypeAttachment},
 				Name:    "test",
 				FileID:  "",
-				OwnedBy: ID{inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, label: "User"},
+				OwnedBy: ID{inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, label: ResourceTypeUser},
 			},
 			wantErr: ErrInvalidAttachmentDetails,
 		},
@@ -140,7 +140,7 @@ func TestAttachment_Validate(t *testing.T) {
 				ID:      ID{},
 				Name:    "test",
 				FileID:  "file_id",
-				OwnedBy: ID{inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, label: "User"},
+				OwnedBy: ID{inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, label: ResourceTypeUser},
 			},
 			wantErr: ErrInvalidAttachmentDetails,
 		},

@@ -8,10 +8,6 @@ import (
 )
 
 const (
-	PermissionIDType = "Permission"
-)
-
-const (
 	PermissionKindAll    PermissionKind = iota + 1 // permission to do everything on a resource
 	PermissionKindCreate                           // permission to create a resource
 	PermissionKindRead                             // permission to read a resource
@@ -92,7 +88,7 @@ func (p *Permission) Validate() error {
 // NewPermission creates a new permission.
 func NewPermission(subject, target ID, kind PermissionKind) (*Permission, error) {
 	permission := &Permission{
-		ID:      MustNewNilID(PermissionIDType),
+		ID:      MustNewNilID(ResourceTypePermission),
 		Kind:    kind,
 		Subject: subject,
 		Target:  target,

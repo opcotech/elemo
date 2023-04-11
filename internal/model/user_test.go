@@ -102,7 +102,7 @@ func TestNewUser(t *testing.T) {
 				password: "super-secret",
 			},
 			want: &User{
-				ID:          ID{inner: xid.NilID(), label: UserIDType},
+				ID:          ID{inner: xid.NilID(), label: ResourceTypeUser},
 				Username:    "test",
 				Email:       "test@example.com",
 				Password:    "super-secret",
@@ -190,7 +190,7 @@ func TestUser_Validate(t *testing.T) {
 		{
 			name: "validate user",
 			fields: fields{
-				ID:          ID{inner: xid.NilID(), label: UserIDType},
+				ID:          ID{inner: xid.NilID(), label: ResourceTypeUser},
 				Username:    "test",
 				Email:       "test@example.com",
 				Password:    "super-secret",
@@ -231,7 +231,7 @@ func TestUser_Validate(t *testing.T) {
 		{
 			name: "validate user with invalid username",
 			fields: fields{
-				ID:          ID{inner: xid.NilID(), label: UserIDType},
+				ID:          ID{inner: xid.NilID(), label: ResourceTypeUser},
 				Username:    "USERNAME",
 				Email:       "test@example.com",
 				Password:    "super-secret",
@@ -252,7 +252,7 @@ func TestUser_Validate(t *testing.T) {
 		{
 			name: "validate user with invalid email",
 			fields: fields{
-				ID:          ID{inner: xid.NilID(), label: UserIDType},
+				ID:          ID{inner: xid.NilID(), label: ResourceTypeUser},
 				Username:    "test",
 				Email:       "example.com",
 				Password:    "super-secret",
@@ -273,7 +273,7 @@ func TestUser_Validate(t *testing.T) {
 		{
 			name: "validate user with invalid password",
 			fields: fields{
-				ID:          ID{inner: xid.NilID(), label: UserIDType},
+				ID:          ID{inner: xid.NilID(), label: ResourceTypeUser},
 				Username:    "test",
 				Email:       "test@example.com",
 				Password:    "secret",
@@ -294,7 +294,7 @@ func TestUser_Validate(t *testing.T) {
 		{
 			name: "validate user with invalid status",
 			fields: fields{
-				ID:          ID{inner: xid.NilID(), label: UserIDType},
+				ID:          ID{inner: xid.NilID(), label: ResourceTypeUser},
 				Username:    "test",
 				Email:       "test@example.com",
 				Password:    "super-secret",
@@ -315,7 +315,7 @@ func TestUser_Validate(t *testing.T) {
 		{
 			name: "validate user with invalid first name",
 			fields: fields{
-				ID:          ID{inner: xid.NilID(), label: UserIDType},
+				ID:          ID{inner: xid.NilID(), label: ResourceTypeUser},
 				Username:    "test",
 				Email:       "test@example.com",
 				Password:    "super-secret",
@@ -336,7 +336,7 @@ func TestUser_Validate(t *testing.T) {
 		{
 			name: "validate user with invalid last name",
 			fields: fields{
-				ID:          ID{inner: xid.NilID(), label: UserIDType},
+				ID:          ID{inner: xid.NilID(), label: ResourceTypeUser},
 				Username:    "test",
 				Email:       "test@example.com",
 				Password:    "super-secret",
@@ -357,7 +357,7 @@ func TestUser_Validate(t *testing.T) {
 		{
 			name: "validate user with invalid picture",
 			fields: fields{
-				ID:          ID{inner: xid.NilID(), label: UserIDType},
+				ID:          ID{inner: xid.NilID(), label: ResourceTypeUser},
 				Username:    "test",
 				Email:       "test@example.com",
 				Password:    "super-secret",
@@ -378,7 +378,7 @@ func TestUser_Validate(t *testing.T) {
 		{
 			name: "validate user with invalid title",
 			fields: fields{
-				ID:          ID{inner: xid.NilID(), label: UserIDType},
+				ID:          ID{inner: xid.NilID(), label: ResourceTypeUser},
 				Username:    "test",
 				Email:       "test@example.com",
 				Password:    "super-secret",
@@ -399,7 +399,7 @@ func TestUser_Validate(t *testing.T) {
 		{
 			name: "validate user with invalid bio",
 			fields: fields{
-				ID:          ID{inner: xid.NilID(), label: UserIDType},
+				ID:          ID{inner: xid.NilID(), label: ResourceTypeUser},
 				Username:    "test",
 				Email:       "test@example.com",
 				Password:    "super-secret",
@@ -420,7 +420,7 @@ func TestUser_Validate(t *testing.T) {
 		{
 			name: "validate user with invalid phone",
 			fields: fields{
-				ID:          ID{inner: xid.NilID(), label: UserIDType},
+				ID:          ID{inner: xid.NilID(), label: ResourceTypeUser},
 				Username:    "test",
 				Email:       "test@example.com",
 				Password:    "super-secret",
@@ -441,7 +441,7 @@ func TestUser_Validate(t *testing.T) {
 		{
 			name: "validate user with invalid address",
 			fields: fields{
-				ID:          ID{inner: xid.NilID(), label: UserIDType},
+				ID:          ID{inner: xid.NilID(), label: ResourceTypeUser},
 				Username:    "test",
 				Email:       "test@example.com",
 				Password:    "super-secret",
@@ -462,7 +462,7 @@ func TestUser_Validate(t *testing.T) {
 		{
 			name: "validate user with invalid links",
 			fields: fields{
-				ID:          ID{inner: xid.NilID(), label: UserIDType},
+				ID:          ID{inner: xid.NilID(), label: ResourceTypeUser},
 				Username:    "test",
 				Email:       "test@example.com",
 				Password:    "super-secret",
@@ -483,7 +483,7 @@ func TestUser_Validate(t *testing.T) {
 		{
 			name: "validate user with invalid documents",
 			fields: fields{
-				ID:        ID{inner: xid.NilID(), label: UserIDType},
+				ID:        ID{inner: xid.NilID(), label: ResourceTypeUser},
 				Username:  "test",
 				Email:     "test@example.com",
 				Password:  "super-secret",
@@ -506,7 +506,7 @@ func TestUser_Validate(t *testing.T) {
 		{
 			name: "validate user with invalid permissions",
 			fields: fields{
-				ID:        ID{inner: xid.NilID(), label: UserIDType},
+				ID:        ID{inner: xid.NilID(), label: ResourceTypeUser},
 				Username:  "test",
 				Email:     "test@example.com",
 				Password:  "super-secret",

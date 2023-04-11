@@ -55,30 +55,30 @@ func (r *IssueRepository) scan(params *issueScanParams) func(rec *neo4j.Record) 
 			return nil, err
 		}
 
-		issue.ID, _ = model.NewIDFromString(val.GetProperties()["id"].(string), model.IssueIDType)
-		issue.ReportedBy, _ = model.NewIDFromString(reportedBy, model.UserIDType)
+		issue.ID, _ = model.NewIDFromString(val.GetProperties()["id"].(string), model.ResourceTypeIssue.String())
+		issue.ReportedBy, _ = model.NewIDFromString(reportedBy, model.ResourceTypeUser.String())
 
 		if parent != "" {
-			parentID, _ := model.NewIDFromString(parent, model.IssueIDType)
+			parentID, _ := model.NewIDFromString(parent, model.ResourceTypeIssue.String())
 			issue.Parent = &parentID
 		}
 
-		if issue.Assignees, err = ParseIDsFromRecord(rec, params.assignees, model.UserIDType); err != nil {
+		if issue.Assignees, err = ParseIDsFromRecord(rec, params.assignees, model.ResourceTypeUser.String()); err != nil {
 			return nil, err
 		}
-		if issue.Labels, err = ParseIDsFromRecord(rec, params.labels, model.LabelIDType); err != nil {
+		if issue.Labels, err = ParseIDsFromRecord(rec, params.labels, model.ResourceTypeLabel.String()); err != nil {
 			return nil, err
 		}
-		if issue.Comments, err = ParseIDsFromRecord(rec, params.comments, model.CommentIDType); err != nil {
+		if issue.Comments, err = ParseIDsFromRecord(rec, params.comments, model.ResourceTypeComment.String()); err != nil {
 			return nil, err
 		}
-		if issue.Attachments, err = ParseIDsFromRecord(rec, params.attachments, model.AttachmentIDType); err != nil {
+		if issue.Attachments, err = ParseIDsFromRecord(rec, params.attachments, model.ResourceTypeAttachment.String()); err != nil {
 			return nil, err
 		}
-		if issue.Watchers, err = ParseIDsFromRecord(rec, params.watchers, model.UserIDType); err != nil {
+		if issue.Watchers, err = ParseIDsFromRecord(rec, params.watchers, model.ResourceTypeUser.String()); err != nil {
 			return nil, err
 		}
-		if issue.Relations, err = ParseIDsFromRecord(rec, params.relations, model.IssueIDType); err != nil {
+		if issue.Relations, err = ParseIDsFromRecord(rec, params.relations, model.ResourceTypeIssue.String()); err != nil {
 			return nil, err
 		}
 
@@ -113,9 +113,9 @@ func (r *IssueRepository) scanRelation(ip, rp, tp string) func(rec *neo4j.Record
 			return nil, err
 		}
 
-		rel.ID, _ = model.NewIDFromString(val.GetProperties()["id"].(string), EdgeKindRelatedTo.String())
-		rel.Source, _ = model.NewIDFromString(source, model.IssueIDType)
-		rel.Target, _ = model.NewIDFromString(target, model.IssueIDType)
+		rel.ID, _ = model.NewIDFromString(val.GetProperties()["id"].(string), model.ResourceTypeIssueRelation.String())
+		rel.Source, _ = model.NewIDFromString(source, model.ResourceTypeIssue.String())
+		rel.Target, _ = model.NewIDFromString(target, model.ResourceTypeIssue.String())
 
 		if err := rel.Validate(); err != nil {
 			return nil, err
@@ -137,13 +137,9 @@ func (r *IssueRepository) Create(ctx context.Context, project model.ID, issue *m
 		return errors.Join(repository.ErrIssueCreate, err)
 	}
 
-	createdRelID := model.MustNewID(EdgeKindCreated.String())
-	watchesRelID := model.MustNewID(EdgeKindWatches.String())
-	belongsToRelID := model.MustNewID(EdgeKindBelongsTo.String())
-
 	createdAt := time.Now()
 
-	issue.ID = model.MustNewID(model.IssueIDType)
+	issue.ID = model.MustNewID(model.ResourceTypeIssue)
 	issue.CreatedAt = convert.ToPointer(createdAt)
 	issue.UpdatedAt = nil
 
@@ -155,9 +151,9 @@ func (r *IssueRepository) Create(ctx context.Context, project model.ID, issue *m
 			priority: $priority, resolution: $resolution, links: $links, due_date: datetime($due_date),
 			created_at: datetime($created_at)
 		}),
-		(u)-[:` + createdRelID.Label() + ` {id: $created_rel_id, created_at: datetime($created_at)}]->(i),
-		(u)-[:` + watchesRelID.Label() + ` {id: $watches_rel_id, created_at: datetime($created_at)}]->(i),
-		(i)-[:` + belongsToRelID.Label() + ` {id: $belongs_to_rel_id, created_at: datetime($created_at)}]->(p)`
+		(u)-[:` + EdgeKindCreated.String() + ` {id: $created_rel_id, created_at: datetime($created_at)}]->(i),
+		(u)-[:` + EdgeKindWatches.String() + ` {id: $watches_rel_id, created_at: datetime($created_at)}]->(i),
+		(i)-[:` + EdgeKindBelongsTo.String() + ` {id: $belongs_to_rel_id, created_at: datetime($created_at)}]->(p)`
 
 	params := map[string]any{
 		"project_id":        project.String(),
@@ -173,9 +169,9 @@ func (r *IssueRepository) Create(ctx context.Context, project model.ID, issue *m
 		"links":             issue.Links,
 		"due_date":          nil,
 		"created_at":        createdAt.Format(time.RFC3339Nano),
-		"created_rel_id":    createdRelID.String(),
-		"watches_rel_id":    watchesRelID.String(),
-		"belongs_to_rel_id": belongsToRelID.String(),
+		"created_rel_id":    model.NewRawID(),
+		"watches_rel_id":    model.NewRawID(),
+		"belongs_to_rel_id": model.NewRawID(),
 	}
 
 	if issue.DueDate != nil {
@@ -183,15 +179,13 @@ func (r *IssueRepository) Create(ctx context.Context, project model.ID, issue *m
 	}
 
 	if issue.Parent != nil {
-		issueRelID := model.MustNewID(EdgeKindRelatedTo.String())
-
 		cypher += `
 		WITH i
 		MATCH (p:` + issue.Parent.Label() + ` {id: $parent_id})
-		CREATE (i)-[:` + issueRelID.Label() + ` {id: $issue_rel_id, kind: $rel_kind, created_at: datetime($created_at)}]->(p)`
+		CREATE (i)-[:` + EdgeKindRelatedTo.String() + ` {id: $issue_rel_id, kind: $rel_kind, created_at: datetime($created_at)}]->(p)`
 
 		params["parent_id"] = issue.Parent.String()
-		params["issue_rel_id"] = issueRelID.String()
+		params["issue_rel_id"] = model.NewRawID()
 		params["rel_kind"] = model.IssueRelationKindSubtaskOf.String()
 	}
 
@@ -212,14 +206,14 @@ func (r *IssueRepository) Get(ctx context.Context, id model.ID) (*model.Issue, e
 
 	cypher := `
 	MATCH (i:` + id.Label() + ` {id: $id})
-	OPTIONAL MATCH (i)-[:` + EdgeKindRelatedTo.String() + ` {kind: $parent_kind}]->(par:` + model.IssueIDType + `)
-	OPTIONAL MATCH (i)-[:` + EdgeKindRelatedTo.String() + `]->(rel:` + model.IssueIDType + `)
-	OPTIONAL MATCH (i)-[:` + EdgeKindHasComment.String() + `]->(comm:` + model.CommentIDType + `)
-	OPTIONAL MATCH (i)-[:` + EdgeKindHasAttachment.String() + `]->(att:` + model.AttachmentIDType + `)
-	OPTIONAL MATCH (i)<-[:` + EdgeKindWatches.String() + `]-(watch:` + model.UserIDType + `)
-	OPTIONAL MATCH (i)-[:` + EdgeKindHasLabel.String() + `]->(l:` + model.LabelIDType + `)
-	OPTIONAL MATCH (i)<-[:` + EdgeKindCreated.String() + `]-(cr:` + model.UserIDType + `)
-	OPTIONAL MATCH (i)<-[:` + EdgeKindAssignedTo.String() + `]-(assignees:` + model.UserIDType + `)
+	OPTIONAL MATCH (i)-[:` + EdgeKindRelatedTo.String() + ` {kind: $parent_kind}]->(par:` + model.ResourceTypeIssue.String() + `)
+	OPTIONAL MATCH (i)-[:` + EdgeKindRelatedTo.String() + `]->(rel:` + model.ResourceTypeIssue.String() + `)
+	OPTIONAL MATCH (i)-[:` + EdgeKindHasComment.String() + `]->(comm:` + model.ResourceTypeComment.String() + `)
+	OPTIONAL MATCH (i)-[:` + EdgeKindHasAttachment.String() + `]->(att:` + model.ResourceTypeAttachment.String() + `)
+	OPTIONAL MATCH (i)<-[:` + EdgeKindWatches.String() + `]-(watch:` + model.ResourceTypeUser.String() + `)
+	OPTIONAL MATCH (i)-[:` + EdgeKindHasLabel.String() + `]->(l:` + model.ResourceTypeLabel.String() + `)
+	OPTIONAL MATCH (i)<-[:` + EdgeKindCreated.String() + `]-(cr:` + model.ResourceTypeUser.String() + `)
+	OPTIONAL MATCH (i)<-[:` + EdgeKindAssignedTo.String() + `]-(assignees:` + model.ResourceTypeUser.String() + `)
 	RETURN i, par.id AS par, collect(DISTINCT rel.id) AS rel, collect(DISTINCT comm.id) AS comm,
 		collect(DISTINCT att.id) AS att, collect(DISTINCT watch.id) AS watch, collect(DISTINCT l.id) AS l, cr.id as cr,
 		collect(DISTINCT assignees.id) AS assignees`
@@ -261,16 +255,14 @@ func (r *IssueRepository) AddWatcher(ctx context.Context, issue model.ID, user m
 		return errors.Join(repository.ErrIssueAddWatcher, err)
 	}
 
-	watchesRelID := model.MustNewID(EdgeKindWatches.String())
-
 	cypher := `
 	MATCH (i:` + issue.Label() + ` {id: $issue_id}), (u:` + user.Label() + ` {id: $user_id})
-	CREATE (u)-[:` + watchesRelID.Label() + ` {id: $rel_id, created_at: datetime($created_at)}]->(i)`
+	CREATE (u)-[:` + EdgeKindWatches.String() + ` {id: $rel_id, created_at: datetime($created_at)}]->(i)`
 
 	params := map[string]any{
 		"issue_id":   issue.String(),
 		"user_id":    user.String(),
-		"rel_id":     watchesRelID.String(),
+		"rel_id":     model.NewRawID(),
 		"created_at": time.Now().Format(time.RFC3339Nano),
 	}
 
@@ -290,10 +282,10 @@ func (r *IssueRepository) GetWatchers(ctx context.Context, issue model.ID) ([]*m
 	}
 
 	cypher := `
-	MATCH (i:` + issue.Label() + ` {id: $issue_id})<-[:` + EdgeKindWatches.String() + `]-(u:` + model.UserIDType + `)
+	MATCH (i:` + issue.Label() + ` {id: $issue_id})<-[:` + EdgeKindWatches.String() + `]-(u:` + model.ResourceTypeUser.String() + `)
 	OPTIONAL MATCH (u)-[:` + EdgeKindSpeaks.String() + `]->(l:` + languageIDType + `)
 	OPTIONAL MATCH (u)-[p:` + EdgeKindHasPermission.String() + `]->()
-	OPTIONAL MATCH (u)<-[r:` + EdgeKindBelongsTo.String() + `]-(d:` + model.DocumentIDType + `)
+	OPTIONAL MATCH (u)<-[r:` + EdgeKindBelongsTo.String() + `]-(d:` + model.ResourceTypeDocument.String() + `)
 	RETURN u, collect(DISTINCT l.code) AS l, collect(DISTINCT p.id) AS p, collect(DISTINCT d.id) AS d`
 
 	params := map[string]any{
@@ -345,13 +337,13 @@ func (r *IssueRepository) AddRelation(ctx context.Context, relation *model.Issue
 	}
 
 	createdAt := time.Now()
-	relation.ID = model.MustNewID(EdgeKindRelatedTo.String())
+	relation.ID = model.MustNewID(model.ResourceTypeIssueRelation)
 	relation.CreatedAt = convert.ToPointer(createdAt)
 	relation.UpdatedAt = nil
 
 	cypher := `
 	MATCH (s:` + relation.Source.Label() + ` {id: $source_id}), (t:` + relation.Target.Label() + ` {id: $target_id})
-	MERGE (s)-[r:` + relation.ID.Label() + ` {kind: $kind}]->(t)
+	MERGE (s)-[r:` + EdgeKindRelatedTo.String() + ` {kind: $kind}]->(t)
 	ON CREATE SET r.id = $id, r.created_at = datetime($created_at)
 	`
 
@@ -435,14 +427,14 @@ func (r *IssueRepository) Update(ctx context.Context, id model.ID, patch map[str
 	MATCH (i:` + id.Label() + ` {id: $id})
 	SET i += $patch, i.updated_at = datetime($updated_at)
 	WITH i
-	OPTIONAL MATCH (i)-[:` + EdgeKindRelatedTo.String() + ` {kind: $parent_kind}]->(par:` + model.IssueIDType + `)
-	OPTIONAL MATCH (i)-[:` + EdgeKindRelatedTo.String() + `]->(rel:` + model.IssueIDType + `)
-	OPTIONAL MATCH (i)-[:` + EdgeKindHasComment.String() + `]->(comm:` + model.CommentIDType + `)
-	OPTIONAL MATCH (i)-[:` + EdgeKindHasAttachment.String() + `]->(att:` + model.AttachmentIDType + `)
-	OPTIONAL MATCH (i)<-[:` + EdgeKindWatches.String() + `]-(watch:` + model.UserIDType + `)
-	OPTIONAL MATCH (i)-[:` + EdgeKindHasLabel.String() + `]->(l:` + model.LabelIDType + `)
-	OPTIONAL MATCH (i)<-[:` + EdgeKindCreated.String() + `]-(cr:` + model.UserIDType + `)
-	OPTIONAL MATCH (i)<-[:` + EdgeKindAssignedTo.String() + `]-(assignees:` + model.UserIDType + `)
+	OPTIONAL MATCH (i)-[:` + EdgeKindRelatedTo.String() + ` {kind: $parent_kind}]->(par:` + model.ResourceTypeIssue.String() + `)
+	OPTIONAL MATCH (i)-[:` + EdgeKindRelatedTo.String() + `]->(rel:` + model.ResourceTypeIssue.String() + `)
+	OPTIONAL MATCH (i)-[:` + EdgeKindHasComment.String() + `]->(comm:` + model.ResourceTypeComment.String() + `)
+	OPTIONAL MATCH (i)-[:` + EdgeKindHasAttachment.String() + `]->(att:` + model.ResourceTypeAttachment.String() + `)
+	OPTIONAL MATCH (i)<-[:` + EdgeKindWatches.String() + `]-(watch:` + model.ResourceTypeUser.String() + `)
+	OPTIONAL MATCH (i)-[:` + EdgeKindHasLabel.String() + `]->(l:` + model.ResourceTypeLabel.String() + `)
+	OPTIONAL MATCH (i)<-[:` + EdgeKindCreated.String() + `]-(cr:` + model.ResourceTypeUser.String() + `)
+	OPTIONAL MATCH (i)<-[:` + EdgeKindAssignedTo.String() + `]-(assignees:` + model.ResourceTypeUser.String() + `)
 	RETURN i, par.id AS par, collect(DISTINCT rel.id) AS rel, collect(DISTINCT comm.id) AS comm,
 		collect(DISTINCT att.id) AS att, collect(DISTINCT watch.id) AS watch, collect(DISTINCT l.id) AS l, cr.id as cr,
 		collect(DISTINCT assignees.id) AS assignees`

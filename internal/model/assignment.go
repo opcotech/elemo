@@ -8,10 +8,6 @@ import (
 )
 
 const (
-	AssignmentIDType = "Assignment"
-)
-
-const (
 	AssignmentKindAssignee AssignmentKind = iota + 1 // a user is assigned as an assignee
 	AssignmentKindReviewer                           // a user is assigned as a reviewer
 )
@@ -81,7 +77,7 @@ func (a *Assignment) Validate() error {
 // NewAssignment creates a new assignment.
 func NewAssignment(user, resource ID, kind AssignmentKind) (*Assignment, error) {
 	assignment := &Assignment{
-		ID:       MustNewNilID(AssignmentIDType),
+		ID:       MustNewNilID(ResourceTypeAssignment),
 		Kind:     kind,
 		User:     user,
 		Resource: resource,

@@ -228,7 +228,7 @@ func TestUserService_Get(t *testing.T) {
 			},
 			args: args{
 				ctx: context.Background(),
-				id:  model.MustNewID(model.UserIDType),
+				id:  model.MustNewID(model.ResourceTypeUser),
 			},
 			want: testModel.NewUser(),
 		},
@@ -277,7 +277,7 @@ func TestUserService_Get(t *testing.T) {
 			},
 			args: args{
 				ctx: context.Background(),
-				id:  model.MustNewID(model.UserIDType),
+				id:  model.MustNewID(model.ResourceTypeUser),
 			},
 			wantErr: ErrUserGet,
 		},
@@ -538,8 +538,8 @@ func TestUserService_GetAll(t *testing.T) {
 }
 
 func TestUserService_Update(t *testing.T) {
-	userID := model.MustNewID(model.UserIDType)
-	otherUserID := model.MustNewID(model.UserIDType)
+	userID := model.MustNewID(model.ResourceTypeUser)
+	otherUserID := model.MustNewID(model.ResourceTypeUser)
 
 	type fields struct {
 		baseService func(ctx context.Context, id model.ID, patch map[string]any, user *model.User) *baseService
@@ -757,7 +757,7 @@ func TestUserService_Update(t *testing.T) {
 }
 
 func TestUserService_Delete(t *testing.T) {
-	userID := model.MustNewID(model.UserIDType)
+	userID := model.MustNewID(model.ResourceTypeUser)
 
 	type fields struct {
 		baseService func(ctx context.Context, id model.ID) *baseService
@@ -808,7 +808,7 @@ func TestUserService_Delete(t *testing.T) {
 			},
 			args: args{
 				ctx:   context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
-				id:    model.MustNewID(model.UserIDType),
+				id:    model.MustNewID(model.ResourceTypeUser),
 				force: false,
 			},
 		},
@@ -841,7 +841,7 @@ func TestUserService_Delete(t *testing.T) {
 			},
 			args: args{
 				ctx:   context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
-				id:    model.MustNewID(model.UserIDType),
+				id:    model.MustNewID(model.ResourceTypeUser),
 				force: true,
 			},
 		},
@@ -880,7 +880,7 @@ func TestUserService_Delete(t *testing.T) {
 			},
 			args: args{
 				ctx:   context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
-				id:    model.MustNewID(model.UserIDType),
+				id:    model.MustNewID(model.ResourceTypeUser),
 				force: false,
 			},
 			wantErr: ErrNoPermission,
@@ -914,7 +914,7 @@ func TestUserService_Delete(t *testing.T) {
 			},
 			args: args{
 				ctx:   context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
-				id:    model.MustNewID(model.UserIDType),
+				id:    model.MustNewID(model.ResourceTypeUser),
 				force: true,
 			},
 			wantErr: ErrNoPermission,
@@ -979,7 +979,7 @@ func TestUserService_Delete(t *testing.T) {
 			},
 			args: args{
 				ctx:   context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
-				id:    model.MustNewID(model.UserIDType),
+				id:    model.MustNewID(model.ResourceTypeUser),
 				force: false,
 			},
 			wantErr: ErrUserDelete,
@@ -1013,7 +1013,7 @@ func TestUserService_Delete(t *testing.T) {
 			},
 			args: args{
 				ctx:   context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
-				id:    model.MustNewID(model.UserIDType),
+				id:    model.MustNewID(model.ResourceTypeUser),
 				force: true,
 			},
 			wantErr: ErrUserDelete,
@@ -1038,7 +1038,7 @@ func TestUserService_Delete(t *testing.T) {
 			},
 			args: args{
 				ctx:   context.Background(),
-				id:    model.MustNewID(model.UserIDType),
+				id:    model.MustNewID(model.ResourceTypeUser),
 				force: false,
 			},
 			wantErr: ErrNoUser,
@@ -1063,7 +1063,7 @@ func TestUserService_Delete(t *testing.T) {
 			},
 			args: args{
 				ctx:   context.Background(),
-				id:    model.MustNewID(model.UserIDType),
+				id:    model.MustNewID(model.ResourceTypeUser),
 				force: true,
 			},
 			wantErr: ErrNoUser,

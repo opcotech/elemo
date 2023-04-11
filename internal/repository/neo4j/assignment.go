@@ -40,7 +40,7 @@ func (r *AssignmentRepository) scan(up, ap, rp string) func(rec *neo4j.Record) (
 			return nil, err
 		}
 
-		a.ID, _ = model.NewIDFromString(val.GetProperties()["id"].(string), model.AssignmentIDType)
+		a.ID, _ = model.NewIDFromString(val.GetProperties()["id"].(string), model.ResourceTypeAssignment.String())
 		a.User, _ = model.NewIDFromString(user.GetProperties()["id"].(string), user.Labels[0])
 		a.Resource, _ = model.NewIDFromString(resource.GetProperties()["id"].(string), resource.Labels[0])
 
@@ -62,7 +62,7 @@ func (r *AssignmentRepository) Create(ctx context.Context, assignment *model.Ass
 
 	createdAt := time.Now()
 
-	assignment.ID = model.MustNewID(model.AssignmentIDType)
+	assignment.ID = model.MustNewID(model.ResourceTypeAssignment)
 	assignment.CreatedAt = convert.ToPointer(createdAt)
 
 	cypher := `

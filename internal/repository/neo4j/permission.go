@@ -41,7 +41,7 @@ func (r *PermissionRepository) scan(permParam, subjectParam, targetParam string)
 			return nil, err
 		}
 
-		parsed.ID, _ = model.NewIDFromString(val.GetProperties()["id"].(string), EdgeKindHasPermission.String())
+		parsed.ID, _ = model.NewIDFromString(val.GetProperties()["id"].(string), model.ResourceTypePermission.String())
 		parsed.Subject, _ = model.NewIDFromString(subject.GetProperties()["id"].(string), subject.Labels[0])
 		parsed.Target, _ = model.NewIDFromString(target.GetProperties()["id"].(string), target.Labels[0])
 
@@ -63,13 +63,13 @@ func (r *PermissionRepository) Create(ctx context.Context, perm *model.Permissio
 		return errors.Join(repository.ErrPermissionCreate, err)
 	}
 
-	perm.ID = model.MustNewID(EdgeKindHasPermission.String())
+	perm.ID = model.MustNewID(model.ResourceTypePermission)
 	perm.CreatedAt = convert.ToPointer(time.Now())
 	perm.UpdatedAt = nil
 
 	cypher := `
 	MATCH (subject:` + perm.Subject.Label() + ` {id: $subject}), (target:` + perm.Target.Label() + ` {id: $target})
-	MERGE (subject)-[p:` + perm.ID.Label() + ` {id: $id, kind: $kind}]->(target) ON CREATE SET p.created_at = datetime($created_at)
+	MERGE (subject)-[p:` + EdgeKindHasPermission.String() + ` {id: $id, kind: $kind}]->(target) ON CREATE SET p.created_at = datetime($created_at)
 	`
 
 	params := map[string]any{
@@ -94,7 +94,7 @@ func (r *PermissionRepository) Get(ctx context.Context, id model.ID) (*model.Per
 	defer span.End()
 
 	cypher := `
-	MATCH (s)-[p:` + id.Label() + ` {id: $id}]->(t)
+	MATCH (s)-[p:` + EdgeKindHasPermission.String() + ` {id: $id}]->(t)
 	RETURN s, p, t
 	`
 
@@ -206,7 +206,7 @@ func (r *PermissionRepository) Update(ctx context.Context, id model.ID, kind mod
 	defer span.End()
 
 	cypher := `
-	MATCH (s)-[p:` + id.Label() + ` {id: $id}]->(t)
+	MATCH (s)-[p:` + EdgeKindHasPermission.String() + ` {id: $id}]->(t)
 	SET p.kind = $kind, p.updated_at = datetime($updated_at)
 	RETURN s, p, t
 	`
@@ -231,7 +231,7 @@ func (r *PermissionRepository) Delete(ctx context.Context, id model.ID) error {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.PermissionRepository/Delete")
 	defer span.End()
 
-	cypher := `MATCH (s)-[p:` + id.Label() + ` {id: $id}]->(t) DELETE p`
+	cypher := `MATCH (s)-[p:` + EdgeKindHasPermission.String() + ` {id: $id}]->(t) DELETE p`
 
 	params := map[string]any{
 		"id": id.String(),

@@ -102,7 +102,7 @@ func TestNewOrganization(t *testing.T) {
 				email: "info@example.com",
 			},
 			want: &Organization{
-				ID:         ID{inner: xid.NilID(), label: OrganizationIDType},
+				ID:         ID{inner: xid.NilID(), label: ResourceTypeOrganization},
 				Name:       "test",
 				Email:      "info@example.com",
 				Status:     OrganizationStatusActive,
@@ -169,7 +169,7 @@ func TestOrganization_Validate(t *testing.T) {
 		{
 			name: "valid organization",
 			fields: fields{
-				ID:         ID{inner: xid.NilID(), label: OrganizationIDType},
+				ID:         ID{inner: xid.NilID(), label: ResourceTypeOrganization},
 				Name:       "test",
 				Email:      "test@example.com",
 				Status:     OrganizationStatusActive,
@@ -181,7 +181,7 @@ func TestOrganization_Validate(t *testing.T) {
 		{
 			name: "invalid organization id",
 			fields: fields{
-				ID:         ID{inner: xid.NilID(), label: ""},
+				ID:         ID{inner: xid.NilID(), label: ResourceType(0)},
 				Name:       "test",
 				Email:      "test@example.com",
 				Status:     OrganizationStatusActive,
@@ -194,7 +194,7 @@ func TestOrganization_Validate(t *testing.T) {
 		{
 			name: "invalid organization email",
 			fields: fields{
-				ID:         ID{inner: xid.NilID(), label: ""},
+				ID:         ID{inner: xid.NilID(), label: ResourceType(0)},
 				Name:       "test",
 				Email:      "test.com",
 				Status:     OrganizationStatusActive,
@@ -207,7 +207,7 @@ func TestOrganization_Validate(t *testing.T) {
 		{
 			name: "invalid organization status",
 			fields: fields{
-				ID:         ID{inner: xid.NilID(), label: ""},
+				ID:         ID{inner: xid.NilID(), label: ResourceType(0)},
 				Name:       "test",
 				Email:      "test@example.com",
 				Status:     OrganizationStatus(0),
@@ -220,7 +220,7 @@ func TestOrganization_Validate(t *testing.T) {
 		{
 			name: "invalid namespaces",
 			fields: fields{
-				ID:     ID{inner: xid.NilID(), label: OrganizationIDType},
+				ID:     ID{inner: xid.NilID(), label: ResourceTypeOrganization},
 				Name:   "test",
 				Email:  "test@example.com",
 				Status: OrganizationStatusActive,
@@ -235,7 +235,7 @@ func TestOrganization_Validate(t *testing.T) {
 		{
 			name: "invalid members",
 			fields: fields{
-				ID:         ID{inner: xid.NilID(), label: OrganizationIDType},
+				ID:         ID{inner: xid.NilID(), label: ResourceTypeOrganization},
 				Name:       "test",
 				Email:      "test@example.com",
 				Status:     OrganizationStatusActive,
@@ -250,7 +250,7 @@ func TestOrganization_Validate(t *testing.T) {
 		{
 			name: "invalid teams",
 			fields: fields{
-				ID:         ID{inner: xid.NilID(), label: OrganizationIDType},
+				ID:         ID{inner: xid.NilID(), label: ResourceTypeOrganization},
 				Name:       "test",
 				Email:      "test@example.com",
 				Status:     OrganizationStatusActive,

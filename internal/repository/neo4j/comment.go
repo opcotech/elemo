@@ -35,8 +35,8 @@ func (r *CommentRepository) scan(cp, op string) func(rec *neo4j.Record) (*model.
 			return nil, err
 		}
 
-		comment.ID, _ = model.NewIDFromString(val.GetProperties()["id"].(string), model.CommentIDType)
-		comment.CreatedBy, _ = model.NewIDFromString(createdBy, model.UserIDType)
+		comment.ID, _ = model.NewIDFromString(val.GetProperties()["id"].(string), model.ResourceTypeComment.String())
+		comment.CreatedBy, _ = model.NewIDFromString(createdBy, model.ResourceTypeUser.String())
 
 		if err := comment.Validate(); err != nil {
 			return nil, err
@@ -60,11 +60,7 @@ func (r *CommentRepository) Create(ctx context.Context, belongsTo model.ID, comm
 
 	createdAt := time.Now()
 
-	hasCommentRelID := model.MustNewID(EdgeKindHasComment.String())
-	commentedRelID := model.MustNewID(EdgeKindCommented.String())
-	commentPermRelID := model.MustNewID(EdgeKindHasPermission.String())
-
-	comment.ID = model.MustNewID(model.CommentIDType)
+	comment.ID = model.MustNewID(model.ResourceTypeComment)
 	comment.CreatedAt = convert.ToPointer(createdAt)
 	comment.UpdatedAt = nil
 
@@ -72,16 +68,16 @@ func (r *CommentRepository) Create(ctx context.Context, belongsTo model.ID, comm
 	MATCH (b:` + belongsTo.Label() + ` {id: $belong_to_id}), (o:` + comment.CreatedBy.Label() + ` {id: $created_by_id})
 	CREATE
 		(c:` + comment.ID.Label() + ` {id: $id, content: $content, created_by: $created_by_id, created_at: datetime($created_at)}),
-		(b)-[:` + hasCommentRelID.Label() + ` {id: $has_comment_rel_id, created_at: datetime($created_at)}]->(c),
-		(o)-[:` + commentedRelID.Label() + ` {id: $commented_rel_id, created_at: datetime($created_at)}]->(c),
-		(o)-[:` + commentPermRelID.Label() + ` {id: $comment_perm_rel_id, kind: $perm_kind, created_at: datetime($created_at)}]->(c)`
+		(b)-[:` + EdgeKindHasComment.String() + ` {id: $has_comment_rel_id, created_at: datetime($created_at)}]->(c),
+		(o)-[:` + EdgeKindCommented.String() + ` {id: $commented_rel_id, created_at: datetime($created_at)}]->(c),
+		(o)-[:` + EdgeKindHasPermission.String() + ` {id: $comment_perm_rel_id, kind: $perm_kind, created_at: datetime($created_at)}]->(c)`
 
 	params := map[string]any{
 		"belong_to_id":        belongsTo.String(),
-		"has_comment_rel_id":  hasCommentRelID.String(),
+		"has_comment_rel_id":  model.NewRawID(),
 		"created_by_id":       comment.CreatedBy.String(),
-		"commented_rel_id":    commentedRelID.String(),
-		"comment_perm_rel_id": commentPermRelID.String(),
+		"commented_rel_id":    model.NewRawID(),
+		"comment_perm_rel_id": model.NewRawID(),
 		"perm_kind":           model.PermissionKindAll.String(),
 		"id":                  comment.ID.String(),
 		"content":             comment.Content,
@@ -100,7 +96,7 @@ func (r *CommentRepository) Get(ctx context.Context, id model.ID) (*model.Commen
 	defer span.End()
 
 	cypher := `
-	MATCH (c:` + id.Label() + ` {id: $id})<-[:` + EdgeKindCommented.String() + `]-(o:` + model.UserIDType + `)
+	MATCH (c:` + id.Label() + ` {id: $id})<-[:` + EdgeKindCommented.String() + `]-(o:` + model.ResourceTypeUser.String() + `)
 	RETURN c, o.id AS o`
 
 	params := map[string]any{
@@ -121,8 +117,8 @@ func (r *CommentRepository) GetAllBelongsTo(ctx context.Context, belongsTo model
 
 	cypher := `
 	MATCH
-		(:` + belongsTo.Label() + ` {id: $id})-[:` + EdgeKindHasComment.String() + `]->(c:` + model.CommentIDType + `),
-		(o:` + model.UserIDType + `)-[:` + EdgeKindCommented.String() + `]->(c)
+		(:` + belongsTo.Label() + ` {id: $id})-[:` + EdgeKindHasComment.String() + `]->(c:` + model.ResourceTypeComment.String() + `),
+		(o:` + model.ResourceTypeUser.String() + `)-[:` + EdgeKindCommented.String() + `]->(c)
 	RETURN c, o.id AS o
 	ORDER BY c.created_at DESC
 	SKIP $offset LIMIT $limit`
@@ -149,7 +145,7 @@ func (r *CommentRepository) Update(ctx context.Context, id model.ID, content str
 	MATCH (c:` + id.Label() + ` {id: $id})
 	SET c.content = $content, c.updated_at = datetime($updated_at)
 	WITH c
-	MATCH (o:` + model.UserIDType + `)-[:` + EdgeKindCommented.String() + `]->(c)
+	MATCH (o:` + model.ResourceTypeUser.String() + `)-[:` + EdgeKindCommented.String() + `]->(c)
 	RETURN c, o.id AS o`
 
 	params := map[string]any{

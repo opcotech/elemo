@@ -8,11 +8,6 @@ import (
 )
 
 const (
-	IssueIDType         = "Issue"
-	IssueRelationIDType = "IssueRelation"
-)
-
-const (
 	IssueKindEpic  IssueKind = iota + 1 // an epic
 	IssueKindStory                      // a story
 	IssueKindTask                       // a task
@@ -367,7 +362,7 @@ func (i *Issue) Validate() error {
 // NewIssueRelation creates a relation between issues.
 func NewIssueRelation(source, target ID, kind IssueRelationKind) (*IssueRelation, error) {
 	issueRelation := &IssueRelation{
-		ID:     MustNewNilID(IssueRelationIDType),
+		ID:     MustNewNilID(ResourceTypeIssueRelation),
 		Source: source,
 		Target: target,
 		Kind:   kind,
@@ -382,7 +377,7 @@ func NewIssueRelation(source, target ID, kind IssueRelationKind) (*IssueRelation
 // NewIssue creates a new issue with the given details.
 func NewIssue(numericID uint, title string, kind IssueKind, reportedBy ID) (*Issue, error) {
 	issue := &Issue{
-		ID:          MustNewNilID(IssueIDType),
+		ID:          MustNewNilID(ResourceTypeIssue),
 		NumericID:   numericID,
 		Kind:        kind,
 		Title:       title,

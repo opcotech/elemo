@@ -7,10 +7,6 @@ import (
 	"github.com/opcotech/elemo/internal/pkg/validate"
 )
 
-const (
-	RoleIDType = "Role"
-)
-
 // Role is a group of users. However, permissions are attached to roles
 // separately to avoid infinitely nested permissions.
 type Role struct {
@@ -46,7 +42,7 @@ func (r *Role) Validate() error {
 // NewRole creates a new Role.
 func NewRole(name string) (*Role, error) {
 	role := &Role{
-		ID:          MustNewNilID(RoleIDType),
+		ID:          MustNewNilID(ResourceTypeRole),
 		Name:        name,
 		Members:     make([]ID, 0),
 		Permissions: make([]ID, 0),
