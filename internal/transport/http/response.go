@@ -16,6 +16,9 @@ var (
 	permissionDenied = gen.N401JSONResponse{
 		Message: "Permission denied",
 	}
+	badRequest = gen.N400JSONResponse{
+		Message: "Bad request",
+	}
 )
 
 func mustWrite(w http.ResponseWriter, data []byte) {

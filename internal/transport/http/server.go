@@ -13,7 +13,6 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
-	"github.com/go-oauth2/oauth2/v4"
 	authErrors "github.com/go-oauth2/oauth2/v4/errors"
 	authServer "github.com/go-oauth2/oauth2/v4/server"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -56,56 +55,9 @@ type Server interface {
 type server struct {
 	*baseController
 
-	authController   AuthController
-	userController   UserController
-	systemController SystemController
-}
-
-func (s *server) Authorize(w http.ResponseWriter, r *http.Request) {
-	s.authController.Authorize(w, r)
-}
-
-func (s *server) Token(w http.ResponseWriter, r *http.Request) {
-	s.authController.Token(w, r)
-}
-
-func (s *server) PasswordAuthHandler(ctx context.Context, clientID, email, password string) (string, error) {
-	return s.authController.PasswordAuthHandler(ctx, clientID, email, password)
-}
-
-func (s *server) UserAuthHandler(w http.ResponseWriter, r *http.Request) (string, error) {
-	return s.authController.UserAuthHandler(w, r)
-}
-
-func (s *server) ClientAuthHandler(w http.ResponseWriter, r *http.Request) {
-	s.authController.ClientAuthHandler(w, r)
-}
-func (s *server) LoginHandler(w http.ResponseWriter, r *http.Request) {
-	s.authController.LoginHandler(w, r)
-}
-
-func (s *server) ValidateBearerToken(r *http.Request) (oauth2.TokenInfo, error) {
-	return s.authController.ValidateBearerToken(r)
-}
-
-func (s *server) ValidateTokenHandler(r *http.Request) error {
-	return s.authController.ValidateTokenHandler(r)
-}
-
-func (s *server) GetUser(ctx context.Context, request gen.GetUserRequestObject) (gen.GetUserResponseObject, error) {
-	return s.userController.GetUser(ctx, request)
-}
-
-func (s *server) GetSystemHealth(ctx context.Context, request gen.GetSystemHealthRequestObject) (gen.GetSystemHealthResponseObject, error) {
-	return s.systemController.GetSystemHealth(ctx, request)
-}
-
-func (s *server) GetSystemHeartbeat(ctx context.Context, request gen.GetSystemHeartbeatRequestObject) (gen.GetSystemHeartbeatResponseObject, error) {
-	return s.systemController.GetSystemHeartbeat(ctx, request)
-}
-
-func (s *server) GetSystemVersion(ctx context.Context, request gen.GetSystemVersionRequestObject) (gen.GetSystemVersionResponseObject, error) {
-	return s.systemController.GetSystemVersion(ctx, request)
+	AuthController
+	UserController
+	SystemController
 }
 
 func (s *server) InternalErrorHandler(err error) *authErrors.Response {
@@ -141,15 +93,15 @@ func NewServer(opts ...ControllerOption) (StrictServer, error) {
 		baseController: c,
 	}
 
-	if s.authController, err = NewAuthController(opts...); err != nil {
+	if s.AuthController, err = NewAuthController(opts...); err != nil {
 		return nil, err
 	}
 
-	if s.userController, err = NewUserController(opts...); err != nil {
+	if s.UserController, err = NewUserController(opts...); err != nil {
 		return nil, err
 	}
 
-	if s.systemController, err = NewSystemController(opts...); err != nil {
+	if s.SystemController, err = NewSystemController(opts...); err != nil {
 		return nil, err
 	}
 
