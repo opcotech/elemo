@@ -12,7 +12,7 @@ import (
 	"github.com/opcotech/elemo/internal/repository"
 )
 
-// DocumentRepository is a baseRepository for managing documents.
+// DocumentRepository is a repository for managing documents.
 type DocumentRepository struct {
 	*baseRepository
 }
@@ -59,7 +59,7 @@ func (r *DocumentRepository) scan(dp, cp, lp, commp, ap string) func(rec *neo4j.
 }
 
 func (r *DocumentRepository) Create(ctx context.Context, belongsTo model.ID, document *model.Document) error {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.DocumentRepository/Create")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.DocumentRepository/Create")
 	defer span.End()
 
 	if err := belongsTo.Validate(); err != nil {
@@ -109,7 +109,7 @@ func (r *DocumentRepository) Create(ctx context.Context, belongsTo model.ID, doc
 }
 
 func (r *DocumentRepository) Get(ctx context.Context, id model.ID) (*model.Document, error) {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.DocumentRepository/Get")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.DocumentRepository/Get")
 	defer span.End()
 
 	cypher := `
@@ -132,7 +132,7 @@ func (r *DocumentRepository) Get(ctx context.Context, id model.ID) (*model.Docum
 }
 
 func (r *DocumentRepository) GetByCreator(ctx context.Context, createdBy model.ID, offset, limit int) ([]*model.Document, error) {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.DocumentRepository/GetByCreator")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.DocumentRepository/GetByCreator")
 	defer span.End()
 
 	cypher := `
@@ -159,7 +159,7 @@ func (r *DocumentRepository) GetByCreator(ctx context.Context, createdBy model.I
 }
 
 func (r *DocumentRepository) GetAllBelongsTo(ctx context.Context, belongsTo model.ID, offset, limit int) ([]*model.Document, error) {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.DocumentRepository/GetAllBelongsTo")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.DocumentRepository/GetAllBelongsTo")
 	defer span.End()
 
 	cypher := `
@@ -188,7 +188,7 @@ func (r *DocumentRepository) GetAllBelongsTo(ctx context.Context, belongsTo mode
 }
 
 func (r *DocumentRepository) Update(ctx context.Context, id model.ID, patch map[string]any) (*model.Document, error) {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.DocumentRepository/Update")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.DocumentRepository/Update")
 	defer span.End()
 
 	cypher := `
@@ -216,7 +216,7 @@ func (r *DocumentRepository) Update(ctx context.Context, id model.ID, patch map[
 }
 
 func (r *DocumentRepository) Delete(ctx context.Context, id model.ID) error {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.DocumentRepository/Delete")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.DocumentRepository/Delete")
 	defer span.End()
 
 	cypher := `MATCH (d:` + id.Label() + ` {id: $id}) DETACH DELETE d`

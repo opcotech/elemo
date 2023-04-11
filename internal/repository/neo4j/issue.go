@@ -26,7 +26,7 @@ type issueScanParams struct {
 	relations   string
 }
 
-// IssueRepository is a baseRepository for managing user issues.
+// IssueRepository is a repository for managing user issues.
 type IssueRepository struct {
 	*baseRepository
 }
@@ -126,7 +126,7 @@ func (r *IssueRepository) scanRelation(ip, rp, tp string) func(rec *neo4j.Record
 }
 
 func (r *IssueRepository) Create(ctx context.Context, project model.ID, issue *model.Issue) error {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.IssueRepository/Create")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.IssueRepository/Create")
 	defer span.End()
 
 	if err := project.Validate(); err != nil {
@@ -203,7 +203,7 @@ func (r *IssueRepository) Create(ctx context.Context, project model.ID, issue *m
 }
 
 func (r *IssueRepository) Get(ctx context.Context, id model.ID) (*model.Issue, error) {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.IssueRepository/Read")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.IssueRepository/Read")
 	defer span.End()
 
 	if err := id.Validate(); err != nil {
@@ -250,7 +250,7 @@ func (r *IssueRepository) Get(ctx context.Context, id model.ID) (*model.Issue, e
 }
 
 func (r *IssueRepository) AddWatcher(ctx context.Context, issue model.ID, user model.ID) error {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.IssueRepository/AddWatcher")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.IssueRepository/AddWatcher")
 	defer span.End()
 
 	if err := issue.Validate(); err != nil {
@@ -282,7 +282,7 @@ func (r *IssueRepository) AddWatcher(ctx context.Context, issue model.ID, user m
 }
 
 func (r *IssueRepository) GetWatchers(ctx context.Context, issue model.ID) ([]*model.User, error) {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.IssueRepository/GetWatchers")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.IssueRepository/GetWatchers")
 	defer span.End()
 
 	if err := issue.Validate(); err != nil {
@@ -309,7 +309,7 @@ func (r *IssueRepository) GetWatchers(ctx context.Context, issue model.ID) ([]*m
 }
 
 func (r *IssueRepository) RemoveWatcher(ctx context.Context, issue model.ID, user model.ID) error {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.IssueRepository/RemoveWatcher")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.IssueRepository/RemoveWatcher")
 	defer span.End()
 
 	if err := issue.Validate(); err != nil {
@@ -337,7 +337,7 @@ func (r *IssueRepository) RemoveWatcher(ctx context.Context, issue model.ID, use
 }
 
 func (r *IssueRepository) AddRelation(ctx context.Context, relation *model.IssueRelation) error {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.IssueRepository/AddRelation")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.IssueRepository/AddRelation")
 	defer span.End()
 
 	if err := relation.Validate(); err != nil {
@@ -371,7 +371,7 @@ func (r *IssueRepository) AddRelation(ctx context.Context, relation *model.Issue
 }
 
 func (r *IssueRepository) GetRelations(ctx context.Context, issue model.ID) ([]*model.IssueRelation, error) {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.IssueRepository/GetRelations")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.IssueRepository/GetRelations")
 	defer span.End()
 
 	if err := issue.Validate(); err != nil {
@@ -395,7 +395,7 @@ func (r *IssueRepository) GetRelations(ctx context.Context, issue model.ID) ([]*
 }
 
 func (r *IssueRepository) RemoveRelation(ctx context.Context, source, target model.ID, kind model.IssueRelationKind) error {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.IssueRepository/RemoveRelation")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.IssueRepository/RemoveRelation")
 	defer span.End()
 
 	if err := source.Validate(); err != nil {
@@ -424,7 +424,7 @@ func (r *IssueRepository) RemoveRelation(ctx context.Context, source, target mod
 }
 
 func (r *IssueRepository) Update(ctx context.Context, id model.ID, patch map[string]any) (*model.Issue, error) {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.IssueRepository/Update")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.IssueRepository/Update")
 	defer span.End()
 
 	if err := id.Validate(); err != nil {
@@ -476,7 +476,7 @@ func (r *IssueRepository) Update(ctx context.Context, id model.ID, patch map[str
 }
 
 func (r *IssueRepository) Delete(ctx context.Context, id model.ID) error {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.IssueRepository/Delete")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.IssueRepository/Delete")
 	defer span.End()
 
 	if err := id.Validate(); err != nil {

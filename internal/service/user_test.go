@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/opcotech/elemo/internal/model"
+	"github.com/opcotech/elemo/internal/pkg"
 	"github.com/opcotech/elemo/internal/pkg/log"
 	"github.com/opcotech/elemo/internal/pkg/password"
 	"github.com/opcotech/elemo/internal/testutil/mock"
@@ -64,6 +65,17 @@ func TestNewUserService(t *testing.T) {
 				},
 			},
 			wantErr: ErrNoUserRepository,
+		},
+		{
+			name: "new user service with no permission repository",
+			args: args{
+				opts: []Option{
+					WithLogger(new(mock.Logger)),
+					WithTracer(new(mock.Tracer)),
+					WithUserRepository(new(mock.UserRepository)),
+				},
+			},
+			wantErr: ErrNoPermissionRepository,
 		},
 	}
 	for _, tt := range tests {
@@ -526,6 +538,9 @@ func TestUserService_GetAll(t *testing.T) {
 }
 
 func TestUserService_Update(t *testing.T) {
+	userID := model.MustNewID(model.UserIDType)
+	otherUserID := model.MustNewID(model.UserIDType)
+
 	type fields struct {
 		baseService func(ctx context.Context, id model.ID, patch map[string]any, user *model.User) *baseService
 	}
@@ -554,21 +569,64 @@ func TestUserService_Update(t *testing.T) {
 					userRepo := new(mock.UserRepository)
 					userRepo.On("Update", ctx, id, patch).Return(user, nil)
 
+					permRepo := new(mock.PermissionRepository)
+					permRepo.On("HasAnyPermission", ctx, id, id, []model.PermissionKind{
+						model.PermissionKindWrite,
+						model.PermissionKindAll,
+					}).Return(true, nil)
+
 					return &baseService{
-						logger:   new(mock.Logger),
-						tracer:   tracer,
-						userRepo: userRepo,
+						logger:         new(mock.Logger),
+						tracer:         tracer,
+						userRepo:       userRepo,
+						permissionRepo: permRepo,
 					}
 				},
 			},
 			args: args{
-				ctx: context.Background(),
-				id:  model.MustNewID(model.UserIDType),
+				ctx: context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
+				id:  userID,
 				patch: map[string]any{
 					"email": "test2@example.com",
 				},
 			},
 			want: testModel.NewUser(),
+		},
+		{
+			name: "update user with no permission",
+			fields: fields{
+				baseService: func(ctx context.Context, id model.ID, patch map[string]any, user *model.User) *baseService {
+					span := new(mock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(mock.Tracer)
+					tracer.On("Start", ctx, "service.userService/Update", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					userRepo := new(mock.UserRepository)
+					userRepo.On("Update", ctx, id, patch).Return(user, nil)
+
+					permRepo := new(mock.PermissionRepository)
+					permRepo.On("HasAnyPermission", ctx, otherUserID, id, []model.PermissionKind{
+						model.PermissionKindWrite,
+						model.PermissionKindAll,
+					}).Return(false, nil)
+
+					return &baseService{
+						logger:         new(mock.Logger),
+						tracer:         tracer,
+						userRepo:       userRepo,
+						permissionRepo: permRepo,
+					}
+				},
+			},
+			args: args{
+				ctx: context.WithValue(context.Background(), pkg.CtxKeyUserID, otherUserID),
+				id:  userID,
+				patch: map[string]any{
+					"email": "test2@example.com",
+				},
+			},
+			wantErr: ErrNoPermission,
 		},
 		{
 			name: "update user with invalid id",
@@ -588,7 +646,7 @@ func TestUserService_Update(t *testing.T) {
 				},
 			},
 			args: args{
-				ctx: context.Background(),
+				ctx: context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
 				id:  model.ID{},
 				patch: map[string]any{
 					"email": "test2@example.com",
@@ -607,15 +665,16 @@ func TestUserService_Update(t *testing.T) {
 					tracer.On("Start", ctx, "service.userService/Update", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					return &baseService{
-						logger:   new(mock.Logger),
-						tracer:   tracer,
-						userRepo: new(mock.UserRepository),
+						logger:         new(mock.Logger),
+						tracer:         tracer,
+						userRepo:       new(mock.UserRepository),
+						permissionRepo: new(mock.PermissionRepository),
 					}
 				},
 			},
 			args: args{
-				ctx:   context.Background(),
-				id:    model.MustNewID(model.UserIDType),
+				ctx:   context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
+				id:    userID,
 				patch: map[string]any{},
 			},
 			wantErr: ErrUserUpdate,
@@ -633,21 +692,54 @@ func TestUserService_Update(t *testing.T) {
 					userRepo := new(mock.UserRepository)
 					userRepo.On("Update", ctx, id, patch).Return(nil, errors.New("error"))
 
+					permRepo := new(mock.PermissionRepository)
+					permRepo.On("HasAnyPermission", ctx, id, id, []model.PermissionKind{
+						model.PermissionKindWrite,
+						model.PermissionKindAll,
+					}).Return(true, nil)
+
 					return &baseService{
-						logger:   new(mock.Logger),
-						tracer:   tracer,
-						userRepo: userRepo,
+						logger:         new(mock.Logger),
+						tracer:         tracer,
+						userRepo:       userRepo,
+						permissionRepo: permRepo,
 					}
 				},
 			},
 			args: args{
-				ctx: context.Background(),
-				id:  model.MustNewID(model.UserIDType),
+				ctx: context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
+				id:  userID,
 				patch: map[string]any{
 					"email": "test2@example.com",
 				},
 			},
 			wantErr: ErrUserUpdate,
+		},
+		{
+			name: "update user with no context user id",
+			fields: fields{
+				baseService: func(ctx context.Context, id model.ID, patch map[string]any, user *model.User) *baseService {
+					span := new(mock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(mock.Tracer)
+					tracer.On("Start", ctx, "service.userService/Update", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					return &baseService{
+						logger:   new(mock.Logger),
+						tracer:   tracer,
+						userRepo: new(mock.UserRepository),
+					}
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  userID,
+				patch: map[string]any{
+					"email": "test@example.com",
+				},
+			},
+			wantErr: ErrNoUser,
 		},
 	}
 	for _, tt := range tests {
@@ -665,6 +757,8 @@ func TestUserService_Update(t *testing.T) {
 }
 
 func TestUserService_Delete(t *testing.T) {
+	userID := model.MustNewID(model.UserIDType)
+
 	type fields struct {
 		baseService func(ctx context.Context, id model.ID) *baseService
 	}
@@ -698,15 +792,22 @@ func TestUserService_Delete(t *testing.T) {
 					userRepo := new(mock.UserRepository)
 					userRepo.On("Update", ctx, id, patch).Return(new(model.User), nil)
 
+					permRepo := new(mock.PermissionRepository)
+					permRepo.On("HasAnyPermission", ctx, userID, id, []model.PermissionKind{
+						model.PermissionKindDelete,
+						model.PermissionKindAll,
+					}).Return(true, nil)
+
 					return &baseService{
-						logger:   new(mock.Logger),
-						tracer:   tracer,
-						userRepo: userRepo,
+						logger:         new(mock.Logger),
+						tracer:         tracer,
+						userRepo:       userRepo,
+						permissionRepo: permRepo,
 					}
 				},
 			},
 			args: args{
-				ctx:   context.Background(),
+				ctx:   context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
 				id:    model.MustNewID(model.UserIDType),
 				force: false,
 			},
@@ -724,18 +825,99 @@ func TestUserService_Delete(t *testing.T) {
 					userRepo := new(mock.UserRepository)
 					userRepo.On("Delete", ctx, id).Return(nil)
 
+					permRepo := new(mock.PermissionRepository)
+					permRepo.On("HasAnyPermission", ctx, userID, id, []model.PermissionKind{
+						model.PermissionKindDelete,
+						model.PermissionKindAll,
+					}).Return(true, nil)
+
 					return &baseService{
-						logger:   new(mock.Logger),
-						tracer:   tracer,
-						userRepo: userRepo,
+						logger:         new(mock.Logger),
+						tracer:         tracer,
+						userRepo:       userRepo,
+						permissionRepo: permRepo,
 					}
 				},
 			},
 			args: args{
-				ctx:   context.Background(),
+				ctx:   context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
 				id:    model.MustNewID(model.UserIDType),
 				force: true,
 			},
+		},
+		{
+			name: "soft delete user with no permission",
+			fields: fields{
+				baseService: func(ctx context.Context, id model.ID) *baseService {
+					patch := map[string]any{
+						"status":   model.UserStatusDeleted.String(),
+						"password": password.UnusablePassword,
+					}
+
+					span := new(mock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return().Twice()
+
+					tracer := new(mock.Tracer)
+					tracer.On("Start", ctx, "service.userService/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "service.userService/Update", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					userRepo := new(mock.UserRepository)
+					userRepo.On("Update", ctx, id, patch).Return(new(model.User), nil)
+
+					permRepo := new(mock.PermissionRepository)
+					permRepo.On("HasAnyPermission", ctx, userID, id, []model.PermissionKind{
+						model.PermissionKindDelete,
+						model.PermissionKindAll,
+					}).Return(false, nil)
+
+					return &baseService{
+						logger:         new(mock.Logger),
+						tracer:         tracer,
+						userRepo:       userRepo,
+						permissionRepo: permRepo,
+					}
+				},
+			},
+			args: args{
+				ctx:   context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
+				id:    model.MustNewID(model.UserIDType),
+				force: false,
+			},
+			wantErr: ErrNoPermission,
+		},
+		{
+			name: "force delete user with no permission",
+			fields: fields{
+				baseService: func(ctx context.Context, id model.ID) *baseService {
+					span := new(mock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(mock.Tracer)
+					tracer.On("Start", ctx, "service.userService/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					userRepo := new(mock.UserRepository)
+					userRepo.On("Delete", ctx, id).Return(nil)
+
+					permRepo := new(mock.PermissionRepository)
+					permRepo.On("HasAnyPermission", ctx, userID, id, []model.PermissionKind{
+						model.PermissionKindDelete,
+						model.PermissionKindAll,
+					}).Return(false, nil)
+
+					return &baseService{
+						logger:         new(mock.Logger),
+						tracer:         tracer,
+						userRepo:       userRepo,
+						permissionRepo: permRepo,
+					}
+				},
+			},
+			args: args{
+				ctx:   context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
+				id:    model.MustNewID(model.UserIDType),
+				force: true,
+			},
+			wantErr: ErrNoPermission,
 		},
 		{
 			name: "delete user with invalid id",
@@ -748,14 +930,15 @@ func TestUserService_Delete(t *testing.T) {
 					tracer.On("Start", ctx, "service.userService/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					return &baseService{
-						logger:   new(mock.Logger),
-						tracer:   tracer,
-						userRepo: new(mock.UserRepository),
+						logger:         new(mock.Logger),
+						tracer:         tracer,
+						userRepo:       new(mock.UserRepository),
+						permissionRepo: new(mock.PermissionRepository),
 					}
 				},
 			},
 			args: args{
-				ctx:   context.Background(),
+				ctx:   context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
 				id:    model.ID{},
 				force: false,
 			},
@@ -780,22 +963,29 @@ func TestUserService_Delete(t *testing.T) {
 					userRepo := new(mock.UserRepository)
 					userRepo.On("Update", ctx, id, patch).Return(nil, errors.New("error"))
 
+					permRepo := new(mock.PermissionRepository)
+					permRepo.On("HasAnyPermission", ctx, userID, id, []model.PermissionKind{
+						model.PermissionKindDelete,
+						model.PermissionKindAll,
+					}).Return(true, nil)
+
 					return &baseService{
-						logger:   new(mock.Logger),
-						tracer:   tracer,
-						userRepo: userRepo,
+						logger:         new(mock.Logger),
+						tracer:         tracer,
+						userRepo:       userRepo,
+						permissionRepo: permRepo,
 					}
 				},
 			},
 			args: args{
-				ctx:   context.Background(),
+				ctx:   context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
 				id:    model.MustNewID(model.UserIDType),
 				force: false,
 			},
 			wantErr: ErrUserDelete,
 		},
 		{
-			name: "force delete user",
+			name: "force delete user with error",
 			fields: fields{
 				baseService: func(ctx context.Context, id model.ID) *baseService {
 					span := new(mock.Span)
@@ -807,10 +997,67 @@ func TestUserService_Delete(t *testing.T) {
 					userRepo := new(mock.UserRepository)
 					userRepo.On("Delete", ctx, id).Return(errors.New("error"))
 
+					permRepo := new(mock.PermissionRepository)
+					permRepo.On("HasAnyPermission", ctx, userID, id, []model.PermissionKind{
+						model.PermissionKindDelete,
+						model.PermissionKindAll,
+					}).Return(true, nil)
+
 					return &baseService{
-						logger:   new(mock.Logger),
-						tracer:   tracer,
-						userRepo: userRepo,
+						logger:         new(mock.Logger),
+						tracer:         tracer,
+						userRepo:       userRepo,
+						permissionRepo: permRepo,
+					}
+				},
+			},
+			args: args{
+				ctx:   context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
+				id:    model.MustNewID(model.UserIDType),
+				force: true,
+			},
+			wantErr: ErrUserDelete,
+		},
+		{
+			name: "soft delete user with no context user id",
+			fields: fields{
+				baseService: func(ctx context.Context, id model.ID) *baseService {
+					span := new(mock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return().Twice()
+
+					tracer := new(mock.Tracer)
+					tracer.On("Start", ctx, "service.userService/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					return &baseService{
+						logger:         new(mock.Logger),
+						tracer:         tracer,
+						userRepo:       new(mock.UserRepository),
+						permissionRepo: new(mock.PermissionRepository),
+					}
+				},
+			},
+			args: args{
+				ctx:   context.Background(),
+				id:    model.MustNewID(model.UserIDType),
+				force: false,
+			},
+			wantErr: ErrNoUser,
+		},
+		{
+			name: "force delete user with no context user id",
+			fields: fields{
+				baseService: func(ctx context.Context, id model.ID) *baseService {
+					span := new(mock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(mock.Tracer)
+					tracer.On("Start", ctx, "service.userService/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					return &baseService{
+						logger:         new(mock.Logger),
+						tracer:         tracer,
+						userRepo:       new(mock.UserRepository),
+						permissionRepo: new(mock.PermissionRepository),
 					}
 				},
 			},
@@ -819,7 +1066,7 @@ func TestUserService_Delete(t *testing.T) {
 				id:    model.MustNewID(model.UserIDType),
 				force: true,
 			},
-			wantErr: ErrUserDelete,
+			wantErr: ErrNoUser,
 		},
 	}
 	for _, tt := range tests {

@@ -60,6 +60,7 @@ var (
 	ErrProjectDelete            = errors.New("failed to delete project")                  // project cannot be deleted
 	ErrProjectRead              = errors.New("failed to read project")                    // project cannot be read
 	ErrProjectUpdate            = errors.New("failed to update project")                  // project cannot be updated
+	ErrRelationRead             = errors.New("failed to read relation")                   // relation cannot be read
 	ErrRoleAddMember            = errors.New("failed to add member to role")              // member cannot be added to role
 	ErrRoleCreate               = errors.New("failed to create role")                     // role cannot be created
 	ErrRoleDelete               = errors.New("failed to delete role")                     // role cannot be deleted

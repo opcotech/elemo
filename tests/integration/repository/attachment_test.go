@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/opcotech/elemo/internal/model"
+	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/repository/neo4j"
 	testRepo "github.com/opcotech/elemo/internal/testutil/repository"
 )
@@ -302,5 +303,5 @@ func TestAttachmentRepository_Delete(t *testing.T) {
 	require.NoError(t, err)
 
 	_, err = attachmentRepo.Get(ctx, attachment.ID)
-	require.Error(t, err)
+	assert.ErrorIs(t, err, repository.ErrNotFound)
 }

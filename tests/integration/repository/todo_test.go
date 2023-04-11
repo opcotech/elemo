@@ -12,6 +12,7 @@ import (
 
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/convert"
+	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/repository/neo4j"
 	testRepo "github.com/opcotech/elemo/internal/testutil/repository"
 )
@@ -256,5 +257,5 @@ func TestTodoRepository_Delete(t *testing.T) {
 	require.NoError(t, err)
 
 	_, err = todoRepo.Get(ctx, todo.ID)
-	require.Error(t, err)
+	assert.ErrorIs(t, err, repository.ErrNotFound)
 }

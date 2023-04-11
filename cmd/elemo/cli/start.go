@@ -50,6 +50,15 @@ var startCmd = &cobra.Command{
 			logger.Fatal("failed to initialize permission repository", zap.Error(err))
 		}
 
+		_, err = neo4j.NewRelationRepository(
+			neo4j.WithDatabase(graphDB),
+			neo4j.WithRepositoryLogger(logger.Named("relation_repository")),
+			neo4j.WithRepositoryTracer(tracer),
+		)
+		if err != nil {
+			logger.Fatal("failed to initialize relation repository", zap.Error(err))
+		}
+
 		userRepo, err := neo4j.NewUserRepository(
 			neo4j.WithDatabase(graphDB),
 			neo4j.WithRepositoryLogger(logger.Named("user_repository")),

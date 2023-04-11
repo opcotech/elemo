@@ -12,7 +12,7 @@ import (
 	"github.com/opcotech/elemo/internal/repository"
 )
 
-// PermissionRepository is a baseRepository for managing permissions.
+// PermissionRepository is a repository for managing permissions.
 type PermissionRepository struct {
 	*baseRepository
 }
@@ -56,7 +56,7 @@ func (r *PermissionRepository) scan(permParam, subjectParam, targetParam string)
 // Create creates a new permission if it does not already exist between the
 // subject and target. If the permission already exists, no action is taken.
 func (r *PermissionRepository) Create(ctx context.Context, perm *model.Permission) error {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.PermissionRepository/Create")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.PermissionRepository/Create")
 	defer span.End()
 
 	if err := perm.Validate(); err != nil {
@@ -90,7 +90,7 @@ func (r *PermissionRepository) Create(ctx context.Context, perm *model.Permissio
 // Get returns an existing permission, its subject and target. If the
 // permission does not exist, an error is returned.
 func (r *PermissionRepository) Get(ctx context.Context, id model.ID) (*model.Permission, error) {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.PermissionRepository/Get")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.PermissionRepository/Get")
 	defer span.End()
 
 	cypher := `
@@ -113,7 +113,7 @@ func (r *PermissionRepository) Get(ctx context.Context, id model.ID) (*model.Per
 // GetBySubject returns all permissions for a given subject. If no permissions
 // exist, an empty slice is returned.
 func (r *PermissionRepository) GetBySubject(ctx context.Context, id model.ID) ([]*model.Permission, error) {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.PermissionRepository/GetBySubject")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.PermissionRepository/GetBySubject")
 	defer span.End()
 
 	cypher := `
@@ -136,7 +136,7 @@ func (r *PermissionRepository) GetBySubject(ctx context.Context, id model.ID) ([
 // GetByTarget returns all permissions for a given target. If no permissions
 // exist, an empty slice is returned.
 func (r *PermissionRepository) GetByTarget(ctx context.Context, id model.ID) ([]*model.Permission, error) {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.PermissionRepository/GetByTarget")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.PermissionRepository/GetByTarget")
 	defer span.End()
 
 	cypher := `
@@ -157,14 +157,14 @@ func (r *PermissionRepository) GetByTarget(ctx context.Context, id model.ID) ([]
 }
 
 func (r *PermissionRepository) HasPermission(ctx context.Context, subject, target model.ID, kind model.PermissionKind) (bool, error) {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.PermissionRepository/HasPermission")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.PermissionRepository/HasPermission")
 	defer span.End()
 
 	return r.HasAnyPermission(ctx, subject, target, kind, model.PermissionKindAll)
 }
 
 func (r *PermissionRepository) HasAnyPermission(ctx context.Context, subject, target model.ID, kinds ...model.PermissionKind) (bool, error) {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.PermissionRepository/HasAnyPermission")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.PermissionRepository/HasAnyPermission")
 	defer span.End()
 
 	permissions := make([]string, len(kinds))
@@ -202,7 +202,7 @@ func (r *PermissionRepository) HasAnyPermission(ctx context.Context, subject, ta
 // as the one provided, the kind is overwritten and the updated_at timestamp
 // is updated.
 func (r *PermissionRepository) Update(ctx context.Context, id model.ID, kind model.PermissionKind) (*model.Permission, error) {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.PermissionRepository/Update")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.PermissionRepository/Update")
 	defer span.End()
 
 	cypher := `
@@ -228,7 +228,7 @@ func (r *PermissionRepository) Update(ctx context.Context, id model.ID, kind mod
 // Delete deletes an existing permission. If the permission does not exist, no
 // errors are returned.
 func (r *PermissionRepository) Delete(ctx context.Context, id model.ID) error {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.PermissionRepository/Delete")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.PermissionRepository/Delete")
 	defer span.End()
 
 	cypher := `MATCH (s)-[p:` + id.Label() + ` {id: $id}]->(t) DELETE p`

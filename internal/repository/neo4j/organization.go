@@ -11,7 +11,7 @@ import (
 	"github.com/opcotech/elemo/internal/repository"
 )
 
-// OrganizationRepository is a baseRepository for managing organizations.
+// OrganizationRepository is a repository for managing organizations.
 type OrganizationRepository struct {
 	*baseRepository
 }
@@ -52,7 +52,7 @@ func (r *OrganizationRepository) scan(op, np, tp, mp string) func(rec *neo4j.Rec
 }
 
 func (r *OrganizationRepository) Create(ctx context.Context, owner model.ID, organization *model.Organization) error {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.OrganizationRepository/Create")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.OrganizationRepository/Create")
 	defer span.End()
 
 	if err := owner.Validate(); err != nil {
@@ -98,7 +98,7 @@ func (r *OrganizationRepository) Create(ctx context.Context, owner model.ID, org
 }
 
 func (r *OrganizationRepository) Get(ctx context.Context, id model.ID) (*model.Organization, error) {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.OrganizationRepository/Get")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.OrganizationRepository/Get")
 	defer span.End()
 
 	cypher := `
@@ -122,7 +122,7 @@ func (r *OrganizationRepository) Get(ctx context.Context, id model.ID) (*model.O
 }
 
 func (r *OrganizationRepository) GetAll(ctx context.Context, offset, limit int) ([]*model.Organization, error) {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.OrganizationRepository/GetAllBelongsTo")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.OrganizationRepository/GetAllBelongsTo")
 	defer span.End()
 
 	cypher := `
@@ -148,7 +148,7 @@ func (r *OrganizationRepository) GetAll(ctx context.Context, offset, limit int) 
 }
 
 func (r *OrganizationRepository) Update(ctx context.Context, id model.ID, patch map[string]any) (*model.Organization, error) {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.OrganizationRepository/Update")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.OrganizationRepository/Update")
 	defer span.End()
 
 	cypher := `
@@ -174,7 +174,7 @@ func (r *OrganizationRepository) Update(ctx context.Context, id model.ID, patch 
 }
 
 func (r *OrganizationRepository) AddMember(ctx context.Context, orgID, memberID model.ID) error {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.OrganizationRepository/AddMember")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.OrganizationRepository/AddMember")
 	defer span.End()
 
 	if err := orgID.Validate(); err != nil {
@@ -206,7 +206,7 @@ func (r *OrganizationRepository) AddMember(ctx context.Context, orgID, memberID 
 }
 
 func (r *OrganizationRepository) RemoveMember(ctx context.Context, orgID, memberID model.ID) error {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.OrganizationRepository/RemoveMember")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.OrganizationRepository/RemoveMember")
 	defer span.End()
 
 	if err := orgID.Validate(); err != nil {
@@ -234,7 +234,7 @@ func (r *OrganizationRepository) RemoveMember(ctx context.Context, orgID, member
 }
 
 func (r *OrganizationRepository) Delete(ctx context.Context, id model.ID) error {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.OrganizationRepository/Delete")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.OrganizationRepository/Delete")
 	defer span.End()
 
 	cypher := `MATCH (o:` + id.Label() + ` {id: $id}), (o)-[r]-() DETACH DELETE o, r`

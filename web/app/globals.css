@@ -55,7 +55,7 @@ th {
 }
 
 .link {
-  @apply cursor-pointer underline-offset-4 text-gray-600 hover:text-gray-900 hover:underline;
+  @apply cursor-pointer underline-offset-4 text-gray-600 hover:text-gray-900;
 }
 
 .link.decorated {

@@ -12,7 +12,7 @@ import (
 	"github.com/opcotech/elemo/internal/repository"
 )
 
-// CommentRepository is a baseRepository for managing comments.
+// CommentRepository is a repository for managing comments.
 type CommentRepository struct {
 	*baseRepository
 }
@@ -47,7 +47,7 @@ func (r *CommentRepository) scan(cp, op string) func(rec *neo4j.Record) (*model.
 }
 
 func (r *CommentRepository) Create(ctx context.Context, belongsTo model.ID, comment *model.Comment) error {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.CommentRepository/Create")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.CommentRepository/Create")
 	defer span.End()
 
 	if err := belongsTo.Validate(); err != nil {
@@ -96,7 +96,7 @@ func (r *CommentRepository) Create(ctx context.Context, belongsTo model.ID, comm
 }
 
 func (r *CommentRepository) Get(ctx context.Context, id model.ID) (*model.Comment, error) {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.CommentRepository/Get")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.CommentRepository/Get")
 	defer span.End()
 
 	cypher := `
@@ -116,7 +116,7 @@ func (r *CommentRepository) Get(ctx context.Context, id model.ID) (*model.Commen
 }
 
 func (r *CommentRepository) GetAllBelongsTo(ctx context.Context, belongsTo model.ID, offset, limit int) ([]*model.Comment, error) {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.CommentRepository/GetAllBelongsTo")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.CommentRepository/GetAllBelongsTo")
 	defer span.End()
 
 	cypher := `
@@ -142,7 +142,7 @@ func (r *CommentRepository) GetAllBelongsTo(ctx context.Context, belongsTo model
 }
 
 func (r *CommentRepository) Update(ctx context.Context, id model.ID, content string) (*model.Comment, error) {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.CommentRepository/Update")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.CommentRepository/Update")
 	defer span.End()
 
 	cypher := `
@@ -167,7 +167,7 @@ func (r *CommentRepository) Update(ctx context.Context, id model.ID, content str
 }
 
 func (r *CommentRepository) Delete(ctx context.Context, id model.ID) error {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.CommentRepository/Delete")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.CommentRepository/Delete")
 	defer span.End()
 
 	cypher := `MATCH (d:` + id.Label() + ` {id: $id}) DETACH DELETE d`

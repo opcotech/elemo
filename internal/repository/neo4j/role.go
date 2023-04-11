@@ -11,7 +11,7 @@ import (
 	"github.com/opcotech/elemo/internal/repository"
 )
 
-// RoleRepository is a baseRepository for managing roles.
+// RoleRepository is a repository for managing roles.
 type RoleRepository struct {
 	*baseRepository
 }
@@ -48,7 +48,7 @@ func (r *RoleRepository) scan(rp, mp, pp string) func(rec *neo4j.Record) (*model
 }
 
 func (r *RoleRepository) Create(ctx context.Context, createdBy, belongsTo model.ID, role *model.Role) error {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.RoleRepository/Create")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.RoleRepository/Create")
 	defer span.End()
 
 	if err := belongsTo.Validate(); err != nil {
@@ -99,7 +99,7 @@ func (r *RoleRepository) Create(ctx context.Context, createdBy, belongsTo model.
 }
 
 func (r *RoleRepository) Get(ctx context.Context, id model.ID) (*model.Role, error) {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.RoleRepository/Get")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.RoleRepository/Get")
 	defer span.End()
 
 	cypher := `
@@ -122,7 +122,7 @@ func (r *RoleRepository) Get(ctx context.Context, id model.ID) (*model.Role, err
 }
 
 func (r *RoleRepository) GetAllBelongsTo(ctx context.Context, id model.ID, offset, limit int) ([]*model.Role, error) {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.RoleRepository/GetAllBelongsTo")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.RoleRepository/GetAllBelongsTo")
 	defer span.End()
 
 	cypher := `
@@ -148,7 +148,7 @@ func (r *RoleRepository) GetAllBelongsTo(ctx context.Context, id model.ID, offse
 }
 
 func (r *RoleRepository) Update(ctx context.Context, id model.ID, patch map[string]any) (*model.Role, error) {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.RoleRepository/Update")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.RoleRepository/Update")
 	defer span.End()
 
 	cypher := `
@@ -173,7 +173,7 @@ func (r *RoleRepository) Update(ctx context.Context, id model.ID, patch map[stri
 }
 
 func (r *RoleRepository) AddMember(ctx context.Context, roleID, memberID model.ID) error {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.RoleRepository/AddMember")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.RoleRepository/AddMember")
 	defer span.End()
 
 	cypher := `
@@ -197,7 +197,7 @@ func (r *RoleRepository) AddMember(ctx context.Context, roleID, memberID model.I
 }
 
 func (r *RoleRepository) RemoveMember(ctx context.Context, roleID, memberID model.ID) error {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.RoleRepository/RemoveMember")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.RoleRepository/RemoveMember")
 	defer span.End()
 
 	cypher := `
@@ -217,7 +217,7 @@ func (r *RoleRepository) RemoveMember(ctx context.Context, roleID, memberID mode
 }
 
 func (r *RoleRepository) Delete(ctx context.Context, id model.ID) error {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.RoleRepository/Delete")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.RoleRepository/Delete")
 	defer span.End()
 
 	cypher := `MATCH (r:` + id.Label() + ` {id: $id}) DETACH DELETE r`

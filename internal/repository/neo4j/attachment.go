@@ -12,7 +12,7 @@ import (
 	"github.com/opcotech/elemo/internal/repository"
 )
 
-// AttachmentRepository is a baseRepository for managing attachments.
+// AttachmentRepository is a repository for managing attachments.
 type AttachmentRepository struct {
 	*baseRepository
 }
@@ -47,7 +47,7 @@ func (r *AttachmentRepository) scan(cp, op string) func(rec *neo4j.Record) (*mod
 }
 
 func (r *AttachmentRepository) Create(ctx context.Context, belongsTo model.ID, attachment *model.Attachment) error {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.AttachmentRepository/Create")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.AttachmentRepository/Create")
 	defer span.End()
 
 	if err := belongsTo.Validate(); err != nil {
@@ -95,7 +95,7 @@ func (r *AttachmentRepository) Create(ctx context.Context, belongsTo model.ID, a
 }
 
 func (r *AttachmentRepository) Get(ctx context.Context, id model.ID) (*model.Attachment, error) {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.AttachmentRepository/Get")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.AttachmentRepository/Get")
 	defer span.End()
 
 	cypher := `
@@ -115,7 +115,7 @@ func (r *AttachmentRepository) Get(ctx context.Context, id model.ID) (*model.Att
 }
 
 func (r *AttachmentRepository) GetAllBelongsTo(ctx context.Context, belongsTo model.ID, offset, limit int) ([]*model.Attachment, error) {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.AttachmentRepository/GetAllBelongsTo")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.AttachmentRepository/GetAllBelongsTo")
 	defer span.End()
 
 	cypher := `
@@ -141,7 +141,7 @@ func (r *AttachmentRepository) GetAllBelongsTo(ctx context.Context, belongsTo mo
 }
 
 func (r *AttachmentRepository) Update(ctx context.Context, id model.ID, name string) (*model.Attachment, error) {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.AttachmentRepository/Update")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.AttachmentRepository/Update")
 	defer span.End()
 
 	cypher := `
@@ -166,7 +166,7 @@ func (r *AttachmentRepository) Update(ctx context.Context, id model.ID, name str
 }
 
 func (r *AttachmentRepository) Delete(ctx context.Context, id model.ID) error {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.AttachmentRepository/Delete")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.AttachmentRepository/Delete")
 	defer span.End()
 
 	cypher := `MATCH (a:` + id.Label() + ` {id: $id}) DETACH DELETE a`

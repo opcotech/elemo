@@ -11,7 +11,7 @@ import (
 	"github.com/opcotech/elemo/internal/repository"
 )
 
-// NamespaceRepository is a baseRepository for managing namespaces.
+// NamespaceRepository is a repository for managing namespaces.
 type NamespaceRepository struct {
 	*baseRepository
 }
@@ -48,7 +48,7 @@ func (r *NamespaceRepository) scan(nsp, pp, dp string) func(rec *neo4j.Record) (
 }
 
 func (r *NamespaceRepository) Create(ctx context.Context, orgID model.ID, namespace *model.Namespace) error {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.NamespaceRepository/Create")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.NamespaceRepository/Create")
 	defer span.End()
 
 	if err := orgID.Validate(); err != nil {
@@ -89,7 +89,7 @@ func (r *NamespaceRepository) Create(ctx context.Context, orgID model.ID, namesp
 }
 
 func (r *NamespaceRepository) Get(ctx context.Context, id model.ID) (*model.Namespace, error) {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.NamespaceRepository/Get")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.NamespaceRepository/Get")
 	defer span.End()
 
 	cypher := `
@@ -111,7 +111,7 @@ func (r *NamespaceRepository) Get(ctx context.Context, id model.ID) (*model.Name
 }
 
 func (r *NamespaceRepository) GetAll(ctx context.Context, orgID model.ID, offset, limit int) ([]*model.Namespace, error) {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.NamespaceRepository/GetAll")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.NamespaceRepository/GetAll")
 	defer span.End()
 
 	cypher := `
@@ -137,7 +137,7 @@ func (r *NamespaceRepository) GetAll(ctx context.Context, orgID model.ID, offset
 }
 
 func (r *NamespaceRepository) Update(ctx context.Context, id model.ID, patch map[string]any) (*model.Namespace, error) {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.NamespaceRepository/Update")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.NamespaceRepository/Update")
 	defer span.End()
 
 	cypher := `
@@ -162,7 +162,7 @@ func (r *NamespaceRepository) Update(ctx context.Context, id model.ID, patch map
 }
 
 func (r *NamespaceRepository) Delete(ctx context.Context, id model.ID) error {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.NamespaceRepository/Delete")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.NamespaceRepository/Delete")
 	defer span.End()
 
 	cypher := `

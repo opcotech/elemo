@@ -12,7 +12,7 @@ import (
 	"github.com/opcotech/elemo/internal/repository"
 )
 
-// TodoRepository is a baseRepository for managing todos.
+// TodoRepository is a repository for managing todos.
 type TodoRepository struct {
 	*baseRepository
 }
@@ -53,7 +53,7 @@ func (r *TodoRepository) scan(tp, op, cp string) func(rec *neo4j.Record) (*model
 }
 
 func (r *TodoRepository) Create(ctx context.Context, todo *model.Todo) error {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.TodoRepository/Create")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.TodoRepository/Create")
 	defer span.End()
 
 	if err := todo.Validate(); err != nil {
@@ -114,7 +114,7 @@ func (r *TodoRepository) Create(ctx context.Context, todo *model.Todo) error {
 }
 
 func (r *TodoRepository) Get(ctx context.Context, id model.ID) (*model.Todo, error) {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.TodoRepository/Get")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.TodoRepository/Get")
 	defer span.End()
 
 	cypher := `
@@ -136,7 +136,7 @@ func (r *TodoRepository) Get(ctx context.Context, id model.ID) (*model.Todo, err
 }
 
 func (r *TodoRepository) GetByOwner(ctx context.Context, ownerID model.ID, completed *bool) ([]*model.Todo, error) {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.TodoRepository/GetByCreator")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.TodoRepository/GetByCreator")
 	defer span.End()
 
 	cypher := `
@@ -160,7 +160,7 @@ func (r *TodoRepository) GetByOwner(ctx context.Context, ownerID model.ID, compl
 }
 
 func (r *TodoRepository) Update(ctx context.Context, id model.ID, patch map[string]any) (*model.Todo, error) {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.TodoRepository/Update")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.TodoRepository/Update")
 	defer span.End()
 
 	cypher := `
@@ -186,7 +186,7 @@ func (r *TodoRepository) Update(ctx context.Context, id model.ID, patch map[stri
 }
 
 func (r *TodoRepository) Delete(ctx context.Context, id model.ID) error {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.TodoRepository/Delete")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.TodoRepository/Delete")
 	defer span.End()
 
 	cypher := `MATCH (t:` + id.Label() + ` {id: $id}) DETACH DELETE t`

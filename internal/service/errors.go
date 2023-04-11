@@ -8,6 +8,7 @@ var (
 	ErrNoPatchData             = errors.New("no patch data provided")            // no patch data provided
 	ErrNoPermission            = errors.New("no permission")                     // no permission
 	ErrNoPermissionRepository  = errors.New("no permission repository provided") // no permission repository provided
+	ErrNoRelationRepository    = errors.New("no relation repository provided")   // no relation repository provided
 	ErrNoResources             = errors.New("no resources provided")             // no resources provided
 	ErrNoUser                  = errors.New("no user provided")                  // no user provided
 	ErrNoUserRepository        = errors.New("no user repository provided")       // no user repository provided

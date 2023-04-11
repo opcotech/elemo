@@ -16,7 +16,7 @@ const (
 	languageIDType = "Language" // label for language nodes
 )
 
-// UserRepository is a baseRepository for managing users.
+// UserRepository is a repository for managing users.
 type UserRepository struct {
 	*baseRepository
 }
@@ -57,7 +57,7 @@ func (r *UserRepository) scan(up, pp, dp string) func(rec *neo4j.Record) (*model
 // Create creates a new user if it does not already exist. Also, create all
 // missing languages and user-language relationships.
 func (r *UserRepository) Create(ctx context.Context, user *model.User) error {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.UserRepository/Create")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.UserRepository/Create")
 	defer span.End()
 
 	if err := user.Validate(); err != nil {
@@ -110,7 +110,7 @@ func (r *UserRepository) Create(ctx context.Context, user *model.User) error {
 
 // Get returns a user by its ID.
 func (r *UserRepository) Get(ctx context.Context, id model.ID) (*model.User, error) {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.UserRepository/Get")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.UserRepository/Get")
 	defer span.End()
 
 	cypher := `MATCH (u:` + model.UserIDType + ` {id: $id})
@@ -135,7 +135,7 @@ func (r *UserRepository) Get(ctx context.Context, id model.ID) (*model.User, err
 
 // GetByEmail returns a user by its email.
 func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*model.User, error) {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.UserRepository/GetByEmail")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.UserRepository/GetByEmail")
 	defer span.End()
 
 	cypher := `MATCH (u:` + model.UserIDType + ` {email: $email})
@@ -160,7 +160,7 @@ func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*model.U
 
 // GetAll returns all users respecting the given offset and limit.
 func (r *UserRepository) GetAll(ctx context.Context, offset, limit int) ([]*model.User, error) {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.UserRepository/GetAllBelongsTo")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.UserRepository/GetAllBelongsTo")
 	defer span.End()
 
 	cypher := `
@@ -189,7 +189,7 @@ func (r *UserRepository) GetAll(ctx context.Context, offset, limit int) ([]*mode
 
 // Update updates a user by its ID with any given patch.
 func (r *UserRepository) Update(ctx context.Context, id model.ID, patch map[string]any) (*model.User, error) {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.UserRepository/Update")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.UserRepository/Update")
 	defer span.End()
 
 	cypher := `
@@ -219,7 +219,7 @@ func (r *UserRepository) Update(ctx context.Context, id model.ID, patch map[stri
 
 // Delete deletes a user by its ID.
 func (r *UserRepository) Delete(ctx context.Context, id model.ID) error {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.UserRepository/Delete")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.UserRepository/Delete")
 	defer span.End()
 
 	cypher := `MATCH (u:` + id.Label() + ` {id: $id}) DETACH DELETE u`

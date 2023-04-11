@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/opcotech/elemo/internal/model"
+	"github.com/opcotech/elemo/internal/pkg"
 	"github.com/opcotech/elemo/internal/pkg/password"
 )
 
@@ -123,6 +124,15 @@ func (s *userService) Update(ctx context.Context, id model.ID, patch map[string]
 		return nil, errors.Join(ErrUserUpdate, err)
 	}
 
+	userID, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID)
+	if !ok {
+		return nil, ErrNoUser
+	}
+
+	if userID != id && !ctxUserPermitted(ctx, s.permissionRepo, id, model.PermissionKindWrite) {
+		return nil, ErrNoPermission
+	}
+
 	if len(patch) == 0 {
 		return nil, errors.Join(ErrUserUpdate, ErrNoPatchData)
 	}
@@ -141,6 +151,15 @@ func (s *userService) Delete(ctx context.Context, id model.ID, force bool) error
 
 	if err := id.Validate(); err != nil {
 		return errors.Join(ErrUserDelete, err)
+	}
+
+	userID, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID)
+	if !ok {
+		return ErrNoUser
+	}
+
+	if userID == id || !ctxUserPermitted(ctx, s.permissionRepo, id, model.PermissionKindDelete) {
+		return ErrNoPermission
 	}
 
 	if force {

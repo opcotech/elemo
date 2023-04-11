@@ -12,7 +12,7 @@ import (
 	"github.com/opcotech/elemo/internal/repository"
 )
 
-// ProjectRepository is a baseRepository for managing projects.
+// ProjectRepository is a repository for managing projects.
 type ProjectRepository struct {
 	*baseRepository
 }
@@ -53,7 +53,7 @@ func (r *ProjectRepository) scan(pp, dp, tp, ip string) func(rec *neo4j.Record) 
 }
 
 func (r *ProjectRepository) Create(ctx context.Context, namespaceID model.ID, project *model.Project) error {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.ProjectRepository/Create")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.ProjectRepository/Create")
 	defer span.End()
 
 	if err := namespaceID.Validate(); err != nil {
@@ -98,7 +98,7 @@ func (r *ProjectRepository) Create(ctx context.Context, namespaceID model.ID, pr
 }
 
 func (r *ProjectRepository) Get(ctx context.Context, id model.ID) (*model.Project, error) {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.ProjectRepository/Get")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.ProjectRepository/Get")
 	defer span.End()
 
 	cypher := `
@@ -121,7 +121,7 @@ func (r *ProjectRepository) Get(ctx context.Context, id model.ID) (*model.Projec
 }
 
 func (r *ProjectRepository) GetByKey(ctx context.Context, key string) (*model.Project, error) {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.ProjectRepository/GetByKey")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.ProjectRepository/GetByKey")
 	defer span.End()
 
 	cypher := `
@@ -144,7 +144,7 @@ func (r *ProjectRepository) GetByKey(ctx context.Context, key string) (*model.Pr
 }
 
 func (r *ProjectRepository) GetAll(ctx context.Context, namespaceID model.ID, offset, limit int) ([]*model.Project, error) {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.ProjectRepository/GetAll")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.ProjectRepository/GetAll")
 	defer span.End()
 
 	cypher := `
@@ -171,7 +171,7 @@ func (r *ProjectRepository) GetAll(ctx context.Context, namespaceID model.ID, of
 }
 
 func (r *ProjectRepository) Update(ctx context.Context, id model.ID, patch map[string]any) (*model.Project, error) {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.ProjectRepository/Update")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.ProjectRepository/Update")
 	defer span.End()
 
 	cypher := `
@@ -198,7 +198,7 @@ func (r *ProjectRepository) Update(ctx context.Context, id model.ID, patch map[s
 }
 
 func (r *ProjectRepository) Delete(ctx context.Context, id model.ID) error {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.ProjectRepository/Delete")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.ProjectRepository/Delete")
 	defer span.End()
 
 	cypher := `MATCH (p:` + id.Label() + ` {id: $id}) DETACH DELETE p`

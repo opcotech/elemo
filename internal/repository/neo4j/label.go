@@ -12,7 +12,7 @@ import (
 	"github.com/opcotech/elemo/internal/repository"
 )
 
-// LabelRepository is a baseRepository for managing labels.
+// LabelRepository is a repository for managing labels.
 type LabelRepository struct {
 	*baseRepository
 }
@@ -41,7 +41,7 @@ func (r *LabelRepository) scan(lp string) func(rec *neo4j.Record) (*model.Label,
 }
 
 func (r *LabelRepository) Create(ctx context.Context, label *model.Label) error {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.LabelRepository/Create")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.LabelRepository/Create")
 	defer span.End()
 
 	if err := label.Validate(); err != nil {
@@ -70,7 +70,7 @@ func (r *LabelRepository) Create(ctx context.Context, label *model.Label) error 
 }
 
 func (r *LabelRepository) Get(ctx context.Context, id model.ID) (*model.Label, error) {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.LabelRepository/Get")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.LabelRepository/Get")
 	defer span.End()
 
 	cypher := `MATCH (l:` + id.Label() + ` {id: $id}) RETURN l`
@@ -87,7 +87,7 @@ func (r *LabelRepository) Get(ctx context.Context, id model.ID) (*model.Label, e
 }
 
 func (r *LabelRepository) Update(ctx context.Context, id model.ID, patch map[string]any) (*model.Label, error) {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.LabelRepository/Update")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.LabelRepository/Update")
 	defer span.End()
 
 	cypher := `
@@ -110,7 +110,7 @@ func (r *LabelRepository) Update(ctx context.Context, id model.ID, patch map[str
 }
 
 func (r *LabelRepository) AttachTo(ctx context.Context, labelID, attachTo model.ID) error {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.LabelRepository/AttachTo")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.LabelRepository/AttachTo")
 	defer span.End()
 
 	if err := attachTo.Validate(); err != nil {
@@ -138,7 +138,7 @@ func (r *LabelRepository) AttachTo(ctx context.Context, labelID, attachTo model.
 }
 
 func (r *LabelRepository) DetachFrom(ctx context.Context, labelID, detachFrom model.ID) error {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.LabelRepository/DetachFrom")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.LabelRepository/DetachFrom")
 	defer span.End()
 
 	if err := detachFrom.Validate(); err != nil {
@@ -166,7 +166,7 @@ func (r *LabelRepository) DetachFrom(ctx context.Context, labelID, detachFrom mo
 }
 
 func (r *LabelRepository) Delete(ctx context.Context, id model.ID) error {
-	ctx, span := r.tracer.Start(ctx, "baseRepository.neo4j.LabelRepository/Delete")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.LabelRepository/Delete")
 	defer span.End()
 
 	cypher := `MATCH (l:` + id.Label() + ` {id: $id}) DETACH DELETE l`
