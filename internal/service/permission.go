@@ -19,8 +19,7 @@ type PermissionRepository interface {
 	GetByTarget(ctx context.Context, id model.ID) ([]*model.Permission, error)
 	Update(ctx context.Context, id model.ID, kind model.PermissionKind) (*model.Permission, error)
 	Delete(ctx context.Context, id model.ID) error
-	HasPermission(ctx context.Context, subject, target model.ID, kind model.PermissionKind) (bool, error)
-	HasAnyPermission(ctx context.Context, subject, target model.ID, kinds ...model.PermissionKind) (bool, error)
+	HasPermission(ctx context.Context, subject, target model.ID, kinds ...model.PermissionKind) (bool, error)
 }
 
 func ctxUserPermitted(ctx context.Context, repo PermissionRepository, target model.ID, permissions ...model.PermissionKind) bool {
@@ -36,7 +35,7 @@ func ctxUserPermitted(ctx context.Context, repo PermissionRepository, target mod
 	}
 
 	span.AddEvent("check permission")
-	hasPerm, err = repo.HasAnyPermission(ctx, userID, target, append(permissions, model.PermissionKindAll)...)
+	hasPerm, err = repo.HasPermission(ctx, userID, target, append(permissions, model.PermissionKindAll)...)
 	if err != nil && !errors.Is(err, repository.ErrPermissionRead) {
 		return false
 	}

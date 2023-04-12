@@ -119,7 +119,7 @@ func TestUserService_Create(t *testing.T) {
 					userRepo.On("Create", ctx, user).Return(nil)
 
 					permRepo := new(mock.PermissionRepository)
-					permRepo.On("HasAnyPermission", ctx, userID, model.MustNewNilID(model.ResourceTypeUser), []model.PermissionKind{
+					permRepo.On("HasPermission", ctx, userID, model.MustNewNilID(model.ResourceTypeUser), []model.PermissionKind{
 						model.PermissionKindCreate,
 						model.PermissionKindAll,
 					}).Return(true, nil)
@@ -174,7 +174,7 @@ func TestUserService_Create(t *testing.T) {
 					userRepo.On("Create", ctx, user).Return(errors.New("error"))
 
 					permRepo := new(mock.PermissionRepository)
-					permRepo.On("HasAnyPermission", ctx, userID, model.MustNewNilID(model.ResourceTypeUser), []model.PermissionKind{
+					permRepo.On("HasPermission", ctx, userID, model.MustNewNilID(model.ResourceTypeUser), []model.PermissionKind{
 						model.PermissionKindCreate,
 						model.PermissionKindAll,
 					}).Return(true, nil)
@@ -586,7 +586,7 @@ func TestUserService_Update(t *testing.T) {
 					userRepo.On("Update", ctx, id, patch).Return(user, nil)
 
 					permRepo := new(mock.PermissionRepository)
-					permRepo.On("HasAnyPermission", ctx, id, id, []model.PermissionKind{
+					permRepo.On("HasPermission", ctx, id, id, []model.PermissionKind{
 						model.PermissionKindWrite,
 						model.PermissionKindAll,
 					}).Return(true, nil)
@@ -622,7 +622,7 @@ func TestUserService_Update(t *testing.T) {
 					userRepo.On("Update", ctx, id, patch).Return(user, nil)
 
 					permRepo := new(mock.PermissionRepository)
-					permRepo.On("HasAnyPermission", ctx, otherUserID, id, []model.PermissionKind{
+					permRepo.On("HasPermission", ctx, otherUserID, id, []model.PermissionKind{
 						model.PermissionKindWrite,
 						model.PermissionKindAll,
 					}).Return(false, nil)
@@ -709,7 +709,7 @@ func TestUserService_Update(t *testing.T) {
 					userRepo.On("Update", ctx, id, patch).Return(nil, errors.New("error"))
 
 					permRepo := new(mock.PermissionRepository)
-					permRepo.On("HasAnyPermission", ctx, id, id, []model.PermissionKind{
+					permRepo.On("HasPermission", ctx, id, id, []model.PermissionKind{
 						model.PermissionKindWrite,
 						model.PermissionKindAll,
 					}).Return(true, nil)
@@ -809,7 +809,7 @@ func TestUserService_Delete(t *testing.T) {
 					userRepo.On("Update", ctx, id, patch).Return(new(model.User), nil)
 
 					permRepo := new(mock.PermissionRepository)
-					permRepo.On("HasAnyPermission", ctx, userID, id, []model.PermissionKind{
+					permRepo.On("HasPermission", ctx, userID, id, []model.PermissionKind{
 						model.PermissionKindDelete,
 						model.PermissionKindAll,
 					}).Return(true, nil)
@@ -842,7 +842,7 @@ func TestUserService_Delete(t *testing.T) {
 					userRepo.On("Delete", ctx, id).Return(nil)
 
 					permRepo := new(mock.PermissionRepository)
-					permRepo.On("HasAnyPermission", ctx, userID, id, []model.PermissionKind{
+					permRepo.On("HasPermission", ctx, userID, id, []model.PermissionKind{
 						model.PermissionKindDelete,
 						model.PermissionKindAll,
 					}).Return(true, nil)
@@ -881,7 +881,7 @@ func TestUserService_Delete(t *testing.T) {
 					userRepo.On("Update", ctx, id, patch).Return(new(model.User), nil)
 
 					permRepo := new(mock.PermissionRepository)
-					permRepo.On("HasAnyPermission", ctx, userID, id, []model.PermissionKind{
+					permRepo.On("HasPermission", ctx, userID, id, []model.PermissionKind{
 						model.PermissionKindDelete,
 						model.PermissionKindAll,
 					}).Return(false, nil)
@@ -915,7 +915,7 @@ func TestUserService_Delete(t *testing.T) {
 					userRepo.On("Delete", ctx, id).Return(nil)
 
 					permRepo := new(mock.PermissionRepository)
-					permRepo.On("HasAnyPermission", ctx, userID, id, []model.PermissionKind{
+					permRepo.On("HasPermission", ctx, userID, id, []model.PermissionKind{
 						model.PermissionKindDelete,
 						model.PermissionKindAll,
 					}).Return(false, nil)
@@ -980,7 +980,7 @@ func TestUserService_Delete(t *testing.T) {
 					userRepo.On("Update", ctx, id, patch).Return(nil, errors.New("error"))
 
 					permRepo := new(mock.PermissionRepository)
-					permRepo.On("HasAnyPermission", ctx, userID, id, []model.PermissionKind{
+					permRepo.On("HasPermission", ctx, userID, id, []model.PermissionKind{
 						model.PermissionKindDelete,
 						model.PermissionKindAll,
 					}).Return(true, nil)
@@ -1014,7 +1014,7 @@ func TestUserService_Delete(t *testing.T) {
 					userRepo.On("Delete", ctx, id).Return(errors.New("error"))
 
 					permRepo := new(mock.PermissionRepository)
-					permRepo.On("HasAnyPermission", ctx, userID, id, []model.PermissionKind{
+					permRepo.On("HasPermission", ctx, userID, id, []model.PermissionKind{
 						model.PermissionKindDelete,
 						model.PermissionKindAll,
 					}).Return(true, nil)

@@ -143,54 +143,6 @@ func TestPermissionRepository_HasPermission(t *testing.T) {
 	permission, err := model.NewPermission(user.ID, organization.ID, model.PermissionKindRead)
 	require.NoError(t, err)
 
-	// Create a new permission
-	err = repo.Create(ctx, permission)
-	require.NoError(t, err)
-
-	hasPermission, err := repo.HasPermission(ctx, permission.Subject, permission.Target, permission.Kind)
-	require.NoError(t, err)
-	assert.True(t, hasPermission)
-
-	hasPermission, err = repo.HasPermission(ctx, permission.Subject, permission.Target, model.PermissionKindDelete)
-	require.NoError(t, err)
-	assert.False(t, hasPermission)
-}
-
-func TestPermissionRepository_HasAnyPermission(t *testing.T) {
-	ctx := context.Background()
-
-	db, closer := testRepo.NewNeo4jDatabase(t, neo4jDBConf)
-	defer func(ctx context.Context, closer func(ctx context.Context) error) {
-		require.NoError(t, closer(ctx))
-	}(ctx, closer)
-
-	defer testRepo.CleanupNeo4jStore(t, ctx, db)
-
-	userRepo, err := neo4j.NewUserRepository(
-		neo4j.WithDatabase(db),
-	)
-	require.NoError(t, err)
-
-	orgRepo, err := neo4j.NewOrganizationRepository(
-		neo4j.WithDatabase(db),
-	)
-	require.NoError(t, err)
-
-	user := prepareUser(t)
-	require.NoError(t, userRepo.Create(ctx, user))
-
-	organization := prepareOrganization(t)
-	err = orgRepo.Create(ctx, user.ID, organization)
-	require.NoError(t, err)
-
-	repo, err := neo4j.NewPermissionRepository(
-		neo4j.WithDatabase(db),
-	)
-	require.NoError(t, err)
-
-	permission, err := model.NewPermission(user.ID, organization.ID, model.PermissionKindRead)
-	require.NoError(t, err)
-
 	err = repo.Create(ctx, permission)
 	require.NoError(t, err)
 
@@ -200,11 +152,11 @@ func TestPermissionRepository_HasAnyPermission(t *testing.T) {
 	err = repo.Create(ctx, permission)
 	require.NoError(t, err)
 
-	hasPermission, err := repo.HasAnyPermission(ctx, user.ID, organization.ID, model.PermissionKindRead)
+	hasPermission, err := repo.HasPermission(ctx, user.ID, organization.ID, model.PermissionKindRead)
 	require.NoError(t, err)
 	assert.True(t, hasPermission)
 
-	hasPermission, err = repo.HasAnyPermission(ctx, user.ID, organization.ID, model.PermissionKindDelete)
+	hasPermission, err = repo.HasPermission(ctx, user.ID, organization.ID, model.PermissionKindDelete)
 	require.NoError(t, err)
 	assert.False(t, hasPermission)
 }

@@ -52,17 +52,13 @@ func NewResourceOwner(t *testing.T, neo4jDBConf *config.GraphDatabaseConfig) *mo
 
 	cypher := `
 	MATCH (u:` + owner.ID.Label() + ` {id: $id})
-	CREATE
-		(rt:` + model.ResourceTypeResourceType.String() + ` {id: $rt_label, system: true, created_at: datetime()}),
-		(r:` + model.ResourceTypeRole.String() + ` {id: "Owner", system: true, created_at: datetime()}),
-		(r)-[:` + neo4j.EdgeKindHasPermission.String() + ` {kind: $perm_kind, created_at: datetime()}]->(rt),
-		(u)-[:` + neo4j.EdgeKindMemberOf.String() + `]->(r)
-	`
+	MATCH (r:` + model.ResourceTypeRole.String() + ` {id: $role_label, system: true})
+	CREATE (u)-[:` + neo4j.EdgeKindMemberOf.String() + `]->(r)`
 
 	params := map[string]any{
-		"id":        owner.ID.String(),
-		"rt_label":  model.ResourceTypeUser.String(),
-		"perm_kind": model.PermissionKindAll.String(),
+		"id":         owner.ID.String(),
+		"role_label": "Owner",
+		"perm_kind":  model.PermissionKindAll.String(),
 	}
 
 	_, err = neo4jDB.GetWriteSession(context.Background()).Run(context.Background(), cypher, params)

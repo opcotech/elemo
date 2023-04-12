@@ -156,45 +156,65 @@ func (r *PermissionRepository) GetByTarget(ctx context.Context, id model.ID) ([]
 	return perms, nil
 }
 
-func (r *PermissionRepository) HasPermission(ctx context.Context, subject, target model.ID, kind model.PermissionKind) (bool, error) {
+// HasPermission returns true if the subject has the given permission on the
+// target. If the permission does not exist, false is returned.
+// TODO: Refactor this code. This is a mess.
+func (r *PermissionRepository) HasPermission(ctx context.Context, subject, target model.ID, kinds ...model.PermissionKind) (bool, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.PermissionRepository/HasPermission")
 	defer span.End()
 
-	return r.HasAnyPermission(ctx, subject, target, kind, model.PermissionKindAll)
-}
-
-func (r *PermissionRepository) HasAnyPermission(ctx context.Context, subject, target model.ID, kinds ...model.PermissionKind) (bool, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.PermissionRepository/HasAnyPermission")
-	defer span.End()
-
+	willCreate := false
 	permissions := make([]string, len(kinds))
 	for i, kind := range kinds {
+		if kind == model.PermissionKindCreate {
+			willCreate = true
+		}
 		permissions[i] = kind.String()
 	}
 
-	cypher := `
-	MATCH (s:` + subject.Label() + ` {id: $subject_id})
-	MATCH (t:` + target.Label() + ` {id: $target_id})
-	MATCH (rt:` + model.ResourceTypeResourceType.String() + ` {id: $target_label})
+	var cypher string
+	if willCreate {
+		cypher = `
+		MATCH (s:` + subject.Label() + ` {id: $subject_id})
+		MATCH (rt:` + model.ResourceTypeResourceType.String() + ` {id: $target_label})
+		OPTIONAL MATCH (s)-[perm:` + EdgeKindHasPermission.String() + `]->(t) WHERE perm.kind IN $permissions
+		WITH s, rt, perm
 
-	OPTIONAL MATCH (s)-[perm:` + EdgeKindHasPermission.String() + `]->(t) WHERE perm.kind IN $permissions
-	WITH s, t, rt, perm
+		OPTIONAL MATCH st=(s)-[:` + EdgeKindHasPermission.String() + `|` + EdgeKindMemberOf.String() + `*..2]->(t)
+		OPTIONAL MATCH srt=(s)-[:` + EdgeKindHasPermission.String() + `|` + EdgeKindMemberOf.String() + `*..2]->(rt)
+		WITH perm, st, srt
+		WHERE any(r IN relationships(srt) WHERE type(r) = "` + EdgeKindHasPermission.String() + `" AND r.kind IN $permissions)
 
-	OPTIONAL MATCH st=shortestPath((s)-[:` + EdgeKindHasPermission.String() + `|` + EdgeKindMemberOf.String() + `*..2]->(t))
-	OPTIONAL MATCH srt=shortestPath((s)-[:` + EdgeKindHasPermission.String() + `|` + EdgeKindMemberOf.String() + `*..2]->(rt))
-	WITH perm, st, srt
-	WHERE (
-		any(r IN relationships(st) WHERE type(r) = "` + EdgeKindHasPermission.String() + `" AND r.kind IN $permissions) OR
-		any(r IN relationships(srt) WHERE type(r) = "` + EdgeKindHasPermission.String() + `" AND r.kind IN $permissions)
-	)
+		RETURN perm IS NOT NULL OR srt IS NOT NULL AS has_permission
+		LIMIT 1`
+	} else {
+		cypher = `
+		MATCH (s:` + subject.Label() + ` {id: $subject_id})
+		MATCH (t:` + target.Label() + ` {id: $target_id})
+		MATCH (rt:` + model.ResourceTypeResourceType.String() + ` {id: $target_label})
+		OPTIONAL MATCH (s)-[perm:` + EdgeKindHasPermission.String() + `]->(t) WHERE perm.kind IN $permissions
+		WITH s, t, rt, perm
 
-	RETURN perm IS NOT NULL OR st IS NOT NULL OR srt IS NOT NULL AS has_permission`
+		OPTIONAL MATCH st=(s)-[:` + EdgeKindHasPermission.String() + `|` + EdgeKindMemberOf.String() + `*..2]->(t)
+		OPTIONAL MATCH srt=(s)-[:` + EdgeKindHasPermission.String() + `|` + EdgeKindMemberOf.String() + `*..2]->(rt)
+		WITH perm, st, srt
+		WHERE (
+			any(r IN relationships(st) WHERE type(r) = "` + EdgeKindHasPermission.String() + `" AND r.kind IN $permissions) OR
+			any(r IN relationships(srt) WHERE type(r) = "` + EdgeKindHasPermission.String() + `" AND r.kind IN $permissions)
+		)
+
+		RETURN perm IS NOT NULL OR st IS NOT NULL OR srt IS NOT NULL AS has_permission
+		LIMIT 1`
+	}
 
 	params := map[string]any{
 		"subject_id":   subject.String(),
-		"target_id":    target.String(),
 		"target_label": target.Label(),
 		"permissions":  permissions,
+	}
+
+	if !willCreate {
+		params["target_id"] = target.String()
 	}
 
 	hasPermission, err := ExecuteReadAndReadSingle(ctx, r.db, cypher, params, func(rec *neo4j.Record) (*bool, error) {
@@ -205,6 +225,9 @@ func (r *PermissionRepository) HasAnyPermission(ctx context.Context, subject, ta
 		return &val, nil
 	})
 	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			return false, nil
+		}
 		return false, errors.Join(repository.ErrPermissionRead, err)
 	}
 
