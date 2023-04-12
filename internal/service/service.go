@@ -34,18 +34,6 @@ func WithTracer(tracer trace.Tracer) Option {
 	}
 }
 
-// WithRelationRepository sets the permission repository for the baseService.
-func WithRelationRepository(relationRepo RelationRepository) Option {
-	return func(s *baseService) error {
-		if relationRepo == nil {
-			return ErrNoRelationRepository
-		}
-
-		s.relationRepo = relationRepo
-		return nil
-	}
-}
-
 // WithPermissionRepository sets the permission repository for the baseService.
 func WithPermissionRepository(permissionRepo PermissionRepository) Option {
 	return func(s *baseService) error {
@@ -78,7 +66,6 @@ type baseService struct {
 
 	userRepo       UserRepository
 	permissionRepo PermissionRepository
-	relationRepo   RelationRepository
 }
 
 // newService creates a new baseService and defines the default values. Those

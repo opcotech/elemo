@@ -119,7 +119,7 @@ test.unit: ## Run unit tests
 test.integration: ## Run integration tests
 	@rm -f $(COVERAGE_OUT_INTEGRATION)
 	@echo "mode: atomic" > $(COVERAGE_OUT_INTEGRATION)
-	$(eval PKGS := $(shell $(GO_EXEC) list ./... | egrep -v "(testutil|tools)" ))
+	$(eval PKGS := $(shell $(GO_EXEC) list ./... | egrep -v "(testutil|tools|http\/gen)" ))
 	@$(foreach var,$(PKGS),$(call integration-test,$(var)))
 
 .PHONY: coverage.combine
