@@ -174,12 +174,21 @@ func (r *PermissionRepository) HasAnyPermission(ctx context.Context, subject, ta
 
 	cypher := `
 	MATCH (s:` + subject.Label() + ` {id: $subject_id})
-	OPTIONAL MATCH (s)-[perm:` + EdgeKindHasPermission.String() + `]->(:` + target.Label() + ` {id: $target_id})
-		WHERE perm.kind IN $permissions
-	OPTIONAL MATCH path=shortestPath((s)-[*]->(:` + model.ResourceTypeResourceType.String() + ` {id: $target_label}))
-		WHERE length(path) > 1 AND any(r IN relationships(path) WHERE type(r) = "` + EdgeKindHasPermission.String() + `" AND r.kind IN $permissions)
-	WITH perm, path
-	RETURN perm IS NOT NULL OR path IS NOT NULL AS has_permission;`
+	MATCH (t:` + target.Label() + ` {id: $target_id})
+	MATCH (rt:` + model.ResourceTypeResourceType.String() + ` {id: $target_label})
+
+	OPTIONAL MATCH (s)-[perm:` + EdgeKindHasPermission.String() + `]->(t) WHERE perm.kind IN $permissions
+	WITH s, t, rt, perm
+
+	OPTIONAL MATCH st=shortestPath((s)-[:` + EdgeKindHasPermission.String() + `|` + EdgeKindMemberOf.String() + `*..2]->(t))
+	OPTIONAL MATCH srt=shortestPath((s)-[:` + EdgeKindHasPermission.String() + `|` + EdgeKindMemberOf.String() + `*..2]->(rt))
+	WITH perm, st, srt
+	WHERE (
+		any(r IN relationships(st) WHERE type(r) = "` + EdgeKindHasPermission.String() + `" AND r.kind IN $permissions) OR
+		any(r IN relationships(srt) WHERE type(r) = "` + EdgeKindHasPermission.String() + `" AND r.kind IN $permissions)
+	)
+
+	RETURN perm IS NOT NULL OR st IS NOT NULL OR srt IS NOT NULL AS has_permission`
 
 	params := map[string]any{
 		"subject_id":   subject.String(),
