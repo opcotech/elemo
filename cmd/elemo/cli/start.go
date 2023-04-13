@@ -31,6 +31,11 @@ var startCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		logger.Info("starting server", zap.Any("version", versionInfo))
 
+		license, err := parseLicense(&cfg.License)
+		if err != nil {
+			logger.Fatal("failed to parse license", zap.Error(err))
+		}
+
 		graphDB, err := initGraphDatabase()
 		if err != nil {
 			logger.Fatal("failed to initialize graph database", zap.Error(err))
@@ -59,6 +64,12 @@ var startCmd = &cobra.Command{
 			logger.Fatal("failed to initialize user repository", zap.Error(err))
 		}
 
+		licenseService, err := service.NewLicenseService(
+			license,
+			service.WithLogger(logger.Named("license_service")),
+			service.WithTracer(tracer),
+		)
+
 		systemService, err := service.NewSystemService(
 			map[model.HealthCheckComponent]service.Pingable{
 				model.HealthCheckComponentGraphDB:      graphDB,
@@ -75,6 +86,7 @@ var startCmd = &cobra.Command{
 		userService, err := service.NewUserService(
 			service.WithUserRepository(userRepo),
 			service.WithPermissionRepository(permissionRepo),
+			service.WithLicenseService(licenseService),
 			service.WithLogger(logger.Named("user_service")),
 			service.WithTracer(tracer),
 		)

@@ -35,6 +35,7 @@ func TestNewUserService(t *testing.T) {
 					WithTracer(new(mock.Tracer)),
 					WithUserRepository(new(mock.UserRepository)),
 					WithPermissionRepository(new(mock.PermissionRepository)),
+					WithLicenseService(new(mock.LicenseService)),
 				},
 			},
 			want: &userService{
@@ -43,6 +44,7 @@ func TestNewUserService(t *testing.T) {
 					tracer:         new(mock.Tracer),
 					userRepo:       new(mock.UserRepository),
 					permissionRepo: new(mock.PermissionRepository),
+					licenseService: new(mock.LicenseService),
 				},
 			},
 		},
@@ -52,6 +54,7 @@ func TestNewUserService(t *testing.T) {
 				opts: []Option{
 					WithLogger(nil),
 					WithUserRepository(new(mock.UserRepository)),
+					WithLicenseService(new(mock.LicenseService)),
 				},
 			},
 			wantErr: log.ErrNoLogger,
@@ -62,6 +65,7 @@ func TestNewUserService(t *testing.T) {
 				opts: []Option{
 					WithLogger(new(mock.Logger)),
 					WithTracer(new(mock.Tracer)),
+					WithLicenseService(new(mock.LicenseService)),
 				},
 			},
 			wantErr: ErrNoUserRepository,
@@ -73,9 +77,22 @@ func TestNewUserService(t *testing.T) {
 					WithLogger(new(mock.Logger)),
 					WithTracer(new(mock.Tracer)),
 					WithUserRepository(new(mock.UserRepository)),
+					WithLicenseService(new(mock.LicenseService)),
 				},
 			},
 			wantErr: ErrNoPermissionRepository,
+		},
+		{
+			name: "new user service with no license service",
+			args: args{
+				opts: []Option{
+					WithLogger(new(mock.Logger)),
+					WithTracer(new(mock.Tracer)),
+					WithUserRepository(new(mock.UserRepository)),
+					WithPermissionRepository(new(mock.PermissionRepository)),
+				},
+			},
+			wantErr: ErrNoLicenseService,
 		},
 	}
 	for _, tt := range tests {

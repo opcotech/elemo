@@ -203,5 +203,9 @@ func NewUserService(opts ...Option) (UserService, error) {
 		return nil, ErrNoPermissionRepository
 	}
 
+	if svc.licenseService == nil {
+		return nil, ErrNoLicenseService
+	}
+
 	return svc, nil
 }

@@ -18,14 +18,14 @@ const (
 	FeatureMultipleAssignees Feature = "multiple_assignees" // allow multiple assignees per task
 	FeatureReleases          Feature = "releases"           // allow releases
 
-	QuotaCustomFields   Quota = "custom_fields"   // number of custom fields
-	QuotaCustomStatuses Quota = "custom_statuses" // number of custom status
-	QuotaSeats          Quota = "seats"           // number of seats
+	QuotaOrganizations Quota = "organizations" // number of organizations
+	QuotaSeats         Quota = "seats"         // number of seats
 )
 
 var (
 	ErrLicenseInvalid          = errors.New("invalid or expired license provided") // license is expired
 	ErrLicenseInvalidSignature = errors.New("invalid license signature")           // license signature is invalid
+	ErrNoLicense               = errors.New("no license provided")                 // no license provided
 
 	// DefaultFeatures is the default set of features for a license.
 	DefaultFeatures = []Feature{
@@ -38,9 +38,8 @@ var (
 
 	// DefaultQuotas is the default set of quotas for a license.
 	DefaultQuotas = map[Quota]int{
-		QuotaCustomFields:   5,
-		QuotaCustomStatuses: 3,
-		QuotaSeats:          5,
+		QuotaOrganizations: 1,
+		QuotaSeats:         5,
 	}
 )
 

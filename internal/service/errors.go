@@ -5,6 +5,7 @@ import "errors"
 var (
 	ErrInvalidEmail            = errors.New("invalid email address")             // invalid email address
 	ErrInvalidPaginationParams = errors.New("invalid pagination parameters")     // invalid pagination parameters
+	ErrNoLicenseService        = errors.New("no license service provided")       // no license service provided
 	ErrNoPatchData             = errors.New("no patch data provided")            // no patch data provided
 	ErrNoPermission            = errors.New("no permission")                     // no permission
 	ErrNoPermissionRepository  = errors.New("no permission repository provided") // no permission repository provided

@@ -102,6 +102,51 @@ func TestWithTracer(t *testing.T) {
 	}
 }
 
+func TestWithLicenseService(t *testing.T) {
+	type args struct {
+		licenseService LicenseService
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+		want    LicenseService
+	}{
+		{
+			name: "set the license service for the baseService",
+			args: args{
+				licenseService: new(mock.LicenseService),
+			},
+			want: new(mock.LicenseService),
+		},
+		{
+			name: "return an error if no license service is provided",
+			args: args{
+				licenseService: nil,
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			var s baseService
+
+			err := WithLicenseService(tt.args.licenseService)(&s)
+			if (err != nil) != tt.wantErr {
+				require.NoError(t, err)
+			}
+
+			if !tt.wantErr {
+				assert.Equal(t, tt.want, s.licenseService)
+			}
+		})
+	}
+}
+
 func Test_newService(t *testing.T) {
 	type args struct {
 		opts []Option

@@ -13,6 +13,8 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
+	"github.com/opcotech/elemo/assets/keys"
+	"github.com/opcotech/elemo/internal/license"
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/repository/neo4j"
 	"github.com/opcotech/elemo/internal/repository/pg"
@@ -120,6 +122,31 @@ func initConfig() {
 	if err = viper.Unmarshal(&cfg); err != nil {
 		cobra.CheckErr(err)
 	}
+}
+
+func parseLicense(licenseConf *config.LicenseConfig) (*license.License, error) {
+	if licenseConf == nil {
+		return nil, license.ErrNoLicense
+	}
+
+	data, err := os.ReadFile(licenseConf.File)
+	if err != nil {
+		return nil, err
+	}
+
+	l, err := license.NewLicense(string(data), keys.PublicKey)
+	if err != nil {
+		return nil, err
+	}
+
+	logger.Info(
+		"license parsed",
+		zap.String("id", l.ID.String()),
+		zap.String("licensee", l.Organization),
+		zap.String("expires_at", l.ExpiresAt.String()),
+	)
+
+	return l, nil
 }
 
 func initTracer() {

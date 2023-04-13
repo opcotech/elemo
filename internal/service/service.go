@@ -58,6 +58,18 @@ func WithUserRepository(userRepo UserRepository) Option {
 	}
 }
 
+// WithLicenseService sets the license service for the baseService.
+func WithLicenseService(licenseService LicenseService) Option {
+	return func(s *baseService) error {
+		if licenseService == nil {
+			return ErrNoLicenseService
+		}
+
+		s.licenseService = licenseService
+		return nil
+	}
+}
+
 // baseService defines the dependencies that are required to interact with the
 // core functionality.
 type baseService struct {
@@ -66,6 +78,8 @@ type baseService struct {
 
 	userRepo       UserRepository
 	permissionRepo PermissionRepository
+
+	licenseService LicenseService
 }
 
 // newService creates a new baseService and defines the default values. Those

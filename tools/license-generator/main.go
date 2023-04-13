@@ -18,9 +18,8 @@ import (
 var (
 	licenseEmail          string
 	licenseOrganization   string
-	licenseSeats          int
-	licenseCustomFields   int
-	licenseCustomStatuses int
+	quotaOrganizations    int
+	quotaSeats            int
 	licenseValidityPeriod int
 	licenseFeatures       []elemoLicense.Feature
 
@@ -47,9 +46,8 @@ func parseFlags() error {
 	features := flag.String("features", defaultLicenseFeatures, "comma-separated features")
 
 	// Quotas
-	flag.IntVar(&licenseCustomFields, "quota-custom-fields", elemoLicense.DefaultQuotas[elemoLicense.QuotaCustomFields], "License custom field quota")
-	flag.IntVar(&licenseCustomStatuses, "quota-custom-statuses", elemoLicense.DefaultQuotas[elemoLicense.QuotaCustomStatuses], "License custom status quota")
-	flag.IntVar(&licenseSeats, "quota-seats", elemoLicense.DefaultQuotas[elemoLicense.QuotaSeats], "License seat quota")
+	flag.IntVar(&quotaOrganizations, "quota-organizations", elemoLicense.DefaultQuotas[elemoLicense.QuotaOrganizations], "License custom status quota")
+	flag.IntVar(&quotaSeats, "quota-seats", elemoLicense.DefaultQuotas[elemoLicense.QuotaSeats], "License seat quota")
 
 	// License keys
 	flag.StringVar(&privateKeyFile, "private-key", "", "The private key to use")
@@ -64,16 +62,12 @@ func parseFlags() error {
 		return errors.New("organization is required")
 	}
 
-	if licenseSeats <= 0 {
+	if quotaOrganizations <= 0 {
+		return errors.New("organizations must be greater than 0")
+	}
+
+	if quotaSeats <= 0 {
 		return errors.New("seats must be greater than 0")
-	}
-
-	if licenseCustomFields < 0 {
-		return errors.New("custom-fields must be greater or equal to 0")
-	}
-
-	if licenseCustomStatuses < 0 {
-		return errors.New("custom-statuses must be greater or equal to 0")
 	}
 
 	if licenseValidityPeriod <= 0 {
@@ -120,11 +114,10 @@ func main() {
 		Organization: licenseOrganization,
 		Features:     licenseFeatures,
 		Quotas: map[elemoLicense.Quota]int{
-			elemoLicense.QuotaCustomFields:   licenseCustomFields,
-			elemoLicense.QuotaCustomStatuses: licenseCustomStatuses,
-			elemoLicense.QuotaSeats:          licenseSeats,
+			elemoLicense.QuotaOrganizations: quotaOrganizations,
+			elemoLicense.QuotaSeats:         quotaSeats,
 		},
-		ExpiresAt: time.Now().AddDate(0, 0, licenseValidityPeriod),
+		ExpiresAt: time.Now().AddDate(0, 0, licenseValidityPeriod).UTC(),
 	})
 	if err != nil {
 		log.Fatal(err)
