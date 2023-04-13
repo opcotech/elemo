@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"flag"
+	"fmt"
 	"log"
 	"os"
 	"strconv"
@@ -106,24 +107,30 @@ func main() {
 		log.Fatal(err)
 	}
 
-	licenseBytes, err := json.Marshal(&elemoLicense.License{
+	license := elemoLicense.License{
 		ID:           xid.New(),
 		Email:        licenseEmail,
 		Organization: licenseOrganization,
 		Features:     licenseFeatures,
 		Quotas:       licenseQuotas,
 		ExpiresAt:    time.Now().AddDate(0, 0, licenseValidityPeriod).UTC(),
-	})
+	}
+
+	if !license.Valid() {
+		log.Fatal(fmt.Sprintf("invalid license: %+v", license))
+	}
+
+	licenseBytes, err := json.Marshal(&license)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	license, err := lk.NewLicense(key, licenseBytes)
+	l, err := lk.NewLicense(key, licenseBytes)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	licenseData, err := license.ToB32String()
+	licenseData, err := l.ToB32String()
 	if err != nil {
 		log.Fatal(err)
 	}
