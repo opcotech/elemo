@@ -84,7 +84,7 @@ func parseFlags() error {
 				return errors.New("invalid quota value")
 			}
 
-			licenseQuotas[quotaKey] = quotaValue
+			licenseQuotas[quotaKey] = uint32(quotaValue)
 		}
 	}
 

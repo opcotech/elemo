@@ -18,82 +18,202 @@ const (
 
 func TestNewLicense(t *testing.T) {
 	publicKey, privateKey := testLicense.GetKeyPair(t)
-
-	license := &License{
-		ID:           xid.New(),
-		Email:        "test@example.com",
-		Organization: "Test",
-		Quotas: map[Quota]int{
-			QuotaSeats: 5,
-		},
-		ExpiresAt: time.Now().AddDate(0, 0, 1).UTC(),
-	}
+	licenseID := xid.New()
+	expiresAt := time.Now().AddDate(0, 0, 1).UTC()
 
 	tests := []struct {
-		name             string
-		license          string
-		validatedLicense *License
-		wantErr          bool
+		name     string
+		license  string
+		expected *License
+		wantErr  bool
 	}{
 		{
 			name: "valid license",
 			license: testLicense.GenerateLicense(t, privateKey, &License{
-				ID:           license.ID,
-				Email:        license.Email,
-				Organization: license.Organization,
-				Quotas:       license.Quotas,
-				ExpiresAt:    license.ExpiresAt,
+				ID:           licenseID,
+				Email:        "test@example.com",
+				Organization: "Test",
+				Quotas:       DefaultQuotas,
+				Features:     DefaultFeatures,
+				ExpiresAt:    expiresAt,
 			}),
-			validatedLicense: license,
+			expected: &License{
+				ID:           licenseID,
+				Email:        "test@example.com",
+				Organization: "Test",
+				Quotas:       DefaultQuotas,
+				Features:     DefaultFeatures,
+				ExpiresAt:    expiresAt,
+			},
 		},
 		{
-			name: "missing JTI field",
+			name: "missing features field",
 			license: testLicense.GenerateLicense(t, privateKey, &License{
-				Email:        license.Email,
-				Organization: license.Organization,
-				Quotas:       license.Quotas,
-				ExpiresAt:    license.ExpiresAt,
+				ID:           licenseID,
+				Email:        "test@example.com",
+				Organization: "Test",
+				Quotas:       DefaultQuotas,
+				ExpiresAt:    expiresAt,
 			}),
 			wantErr: true,
 		},
 		{
 			name: "missing email field",
 			license: testLicense.GenerateLicense(t, privateKey, &License{
-				ID:           license.ID,
-				Organization: license.Organization,
-				Quotas:       license.Quotas,
-				ExpiresAt:    license.ExpiresAt,
+				ID:           licenseID,
+				Organization: "Test",
+				Quotas:       DefaultQuotas,
+				Features:     DefaultFeatures,
+				ExpiresAt:    expiresAt,
 			}),
 			wantErr: true,
 		},
 		{
 			name: "missing organization field",
 			license: testLicense.GenerateLicense(t, privateKey, &License{
-				ID:        license.ID,
-				Email:     license.Email,
-				Quotas:    license.Quotas,
-				ExpiresAt: license.ExpiresAt,
+				ID:        licenseID,
+				Email:     "test@example.com",
+				Quotas:    DefaultQuotas,
+				Features:  DefaultFeatures,
+				ExpiresAt: expiresAt,
 			}),
 			wantErr: true,
 		},
 		{
-			name: "missing seats field",
+			name: "empty users quota",
 			license: testLicense.GenerateLicense(t, privateKey, &License{
-				ID:           license.ID,
-				Email:        license.Email,
-				Organization: license.Organization,
-				Quotas:       map[Quota]int{},
-				ExpiresAt:    license.ExpiresAt,
+				ID:           licenseID,
+				Email:        "test@example.com",
+				Organization: "Test",
+				Quotas: func() map[Quota]uint32 {
+					quotas := make(map[Quota]uint32)
+					for k, v := range DefaultQuotas {
+						quotas[k] = v
+					}
+					quotas[QuotaUsers] = 0
+					return quotas
+				}(),
+				Features:  DefaultFeatures,
+				ExpiresAt: expiresAt,
+			}),
+			wantErr: true,
+		},
+		{
+			name: "empty documents quota",
+			license: testLicense.GenerateLicense(t, privateKey, &License{
+				ID:           licenseID,
+				Email:        "test@example.com",
+				Organization: "Test",
+				Quotas: func() map[Quota]uint32 {
+					quotas := make(map[Quota]uint32)
+					for k, v := range DefaultQuotas {
+						quotas[k] = v
+					}
+					quotas[QuotaDocuments] = 0
+					return quotas
+				}(),
+				ExpiresAt: expiresAt,
+			}),
+			wantErr: true,
+		},
+		{
+			name: "empty namespaces quota",
+			license: testLicense.GenerateLicense(t, privateKey, &License{
+				ID:           licenseID,
+				Email:        "test@example.com",
+				Organization: "Test",
+				Quotas: func() map[Quota]uint32 {
+					quotas := make(map[Quota]uint32)
+					for k, v := range DefaultQuotas {
+						quotas[k] = v
+					}
+					quotas[QuotaNamespaces] = 0
+					return quotas
+				}(),
+				ExpiresAt: expiresAt,
+			}),
+			wantErr: true,
+		},
+		{
+			name: "empty organizations quota",
+			license: testLicense.GenerateLicense(t, privateKey, &License{
+				ID:           licenseID,
+				Email:        "test@example.com",
+				Organization: "Test",
+				Quotas: func() map[Quota]uint32 {
+					quotas := make(map[Quota]uint32)
+					for k, v := range DefaultQuotas {
+						quotas[k] = v
+					}
+					quotas[QuotaOrganizations] = 0
+					return quotas
+				}(),
+				ExpiresAt: expiresAt,
+			}),
+			wantErr: true,
+		},
+		{
+			name: "empty projects quota",
+			license: testLicense.GenerateLicense(t, privateKey, &License{
+				ID:           licenseID,
+				Email:        "test@example.com",
+				Organization: "Test",
+				Quotas: func() map[Quota]uint32 {
+					quotas := make(map[Quota]uint32)
+					for k, v := range DefaultQuotas {
+						quotas[k] = v
+					}
+					quotas[QuotaProjects] = 0
+					return quotas
+				}(),
+				ExpiresAt: expiresAt,
+			}),
+			wantErr: true,
+		},
+		{
+			name: "empty roles quota",
+			license: testLicense.GenerateLicense(t, privateKey, &License{
+				ID:           licenseID,
+				Email:        "test@example.com",
+				Organization: "Test",
+				Quotas: func() map[Quota]uint32 {
+					quotas := make(map[Quota]uint32)
+					for k, v := range DefaultQuotas {
+						quotas[k] = v
+					}
+					quotas[QuotaRoles] = 0
+					return quotas
+				}(),
+				ExpiresAt: expiresAt,
+			}),
+			wantErr: true,
+		},
+		{
+			name: "empty users quota",
+			license: testLicense.GenerateLicense(t, privateKey, &License{
+				ID:           licenseID,
+				Email:        "test@example.com",
+				Organization: "Test",
+				Quotas: func() map[Quota]uint32 {
+					quotas := make(map[Quota]uint32)
+					for k, v := range DefaultQuotas {
+						quotas[k] = v
+					}
+					quotas[QuotaUsers] = 0
+					return quotas
+				}(),
+				ExpiresAt: expiresAt,
 			}),
 			wantErr: true,
 		},
 		{
 			name: "expired license",
 			license: testLicense.GenerateLicense(t, privateKey, &License{
-				ID:           license.ID,
-				Email:        license.Email,
-				Organization: license.Organization,
-				Quotas:       license.Quotas,
+				ID:           licenseID,
+				Email:        "test@example.com",
+				Organization: "Test",
+				Quotas:       DefaultQuotas,
+				Features:     DefaultFeatures,
 				ExpiresAt:    time.Now().AddDate(0, 0, -1),
 			}),
 			wantErr: true,
@@ -110,7 +230,7 @@ func TestNewLicense(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			assert.Equal(t, tt.validatedLicense, got)
+			assert.Equal(t, tt.expected, got)
 		})
 	}
 }
@@ -207,28 +327,28 @@ func TestIsWithinThreshold(t *testing.T) {
 	}{
 		{
 			name: "license is within threshold",
-			license: &License{Quotas: map[Quota]int{
-				QuotaSeats: 5,
+			license: &License{Quotas: map[Quota]uint32{
+				QuotaUsers: 5,
 			}},
-			quota: QuotaSeats,
+			quota: QuotaUsers,
 			value: 4,
 			want:  true,
 		},
 		{
 			name: "license is on the threshold",
-			license: &License{Quotas: map[Quota]int{
-				QuotaSeats: 5,
+			license: &License{Quotas: map[Quota]uint32{
+				QuotaUsers: 5,
 			}},
-			quota: QuotaSeats,
+			quota: QuotaUsers,
 			value: 5,
 			want:  true,
 		},
 		{
 			name: "license is not within threshold",
-			license: &License{Quotas: map[Quota]int{
-				QuotaSeats: 5,
+			license: &License{Quotas: map[Quota]uint32{
+				QuotaUsers: 5,
 			}},
-			quota: QuotaSeats,
+			quota: QuotaUsers,
 			value: 6,
 			want:  false,
 		},

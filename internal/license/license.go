@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	DefaultValidityPeriod = 365 // Default validity period in days
+	DefaultValidityPeriod = 365 // default validity period in days
 
 	FeatureComponents        Feature = "components"         // allow components
 	FeatureCustomStatuses    Feature = "custom_statuses"    // allow custom statuses
@@ -18,8 +18,12 @@ const (
 	FeatureMultipleAssignees Feature = "multiple_assignees" // allow multiple assignees per task
 	FeatureReleases          Feature = "releases"           // allow releases
 
+	QuotaDocuments     Quota = "documents"     // number of documents
+	QuotaNamespaces    Quota = "namespaces"    // number of namespaces
 	QuotaOrganizations Quota = "organizations" // number of organizations
-	QuotaSeats         Quota = "seats"         // number of seats
+	QuotaProjects      Quota = "projects"      // number of projects
+	QuotaRoles         Quota = "roles"         // number of roles
+	QuotaUsers         Quota = "users"         // number of users
 )
 
 var (
@@ -37,9 +41,13 @@ var (
 	}
 
 	// DefaultQuotas is the default set of quotas for a license.
-	DefaultQuotas = map[Quota]int{
+	DefaultQuotas = map[Quota]uint32{
+		QuotaDocuments:     10,
+		QuotaNamespaces:    1,
 		QuotaOrganizations: 1,
-		QuotaSeats:         5,
+		QuotaProjects:      10,
+		QuotaRoles:         5,
+		QuotaUsers:         5,
 	}
 )
 
@@ -58,19 +66,29 @@ type Quota string
 // The license is validated locally by the hardcoded public key. The public key
 // is used to verify the signature of the license key.
 type License struct {
-	ID           xid.ID        `json:"id"`           // license id
-	Email        string        `json:"email"`        // organization email
-	Organization string        `json:"organization"` // organization name
-	Quotas       map[Quota]int `json:"quotas"`       // quotas
-	Features     []Feature     `json:"features"`     // features
-	ExpiresAt    time.Time     `json:"expires_at"`   // expiration time
+	ID           xid.ID           `json:"id"`           // license id
+	Email        string           `json:"email"`        // organization email
+	Organization string           `json:"organization"` // organization name
+	Quotas       map[Quota]uint32 `json:"quotas"`       // quotas
+	Features     []Feature        `json:"features"`     // features
+	ExpiresAt    time.Time        `json:"expires_at"`   // expiration time
 }
 
 // Valid validates the license fields and returns false if any of the
-// required license fields are missing or the license is expired.
+// required license fields are missing, quotas does not meet minimum
+// expectations, or the license is expired.
 func (l *License) Valid() bool {
+	if len(l.Features) == 0 || len(l.Quotas) == 0 {
+		return false
+	}
+
+	for _, quota := range []Quota{QuotaDocuments, QuotaNamespaces, QuotaOrganizations, QuotaProjects, QuotaRoles, QuotaUsers} {
+		if val, ok := l.Quotas[quota]; !ok || val == 0 {
+			return false
+		}
+	}
+
 	return l.ID != xid.NilID() &&
-		l.Quotas[QuotaSeats] > 0 &&
 		l.Email != "" &&
 		l.Organization != "" &&
 		!l.Expired()
@@ -94,7 +112,7 @@ func (l *License) HasFeature(feature Feature) bool {
 
 // WithinThreshold returns true if the given value is within the threshold.
 func (l *License) WithinThreshold(quota Quota, value int) bool {
-	return l.Quotas[quota]-value >= 0
+	return int(l.Quotas[quota])-value >= 0
 }
 
 // NewLicense validates the license key.
