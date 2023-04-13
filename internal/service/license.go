@@ -4,7 +4,24 @@ import (
 	"context"
 
 	"github.com/opcotech/elemo/internal/license"
+	"github.com/opcotech/elemo/internal/repository"
 )
+
+// LicenseRepository defines the interface for retrieving quota information.
+type LicenseRepository interface {
+	// ActiveUserCount returns the number of active users.
+	ActiveUserCount(ctx context.Context) (uint, error)
+	// ActiveOrganizationCount returns the number of active organizations.
+	ActiveOrganizationCount(ctx context.Context) (uint, error)
+	// DocumentCount returns the number of documents.
+	DocumentCount(ctx context.Context) (uint, error)
+	// NamespaceCount returns the number of namespaces.
+	NamespaceCount(ctx context.Context) (uint, error)
+	// ProjectCount returns the number of projects.
+	ProjectCount(ctx context.Context) (uint, error)
+	// RoleCount returns the number of roles.
+	RoleCount(ctx context.Context) (uint, error)
+}
 
 // LicenseService serves the business logic of retrieving license information.
 type LicenseService interface {
@@ -19,7 +36,8 @@ type LicenseService interface {
 // licenseService is the concrete implementation of LicenseService.
 type licenseService struct {
 	*baseService
-	license *license.License
+	licenseRepo LicenseRepository
+	license     *license.License
 }
 
 func (s *licenseService) Expired(ctx context.Context) bool {
@@ -51,7 +69,7 @@ TODO: The license service should have a license repository that returns the
 */
 
 // NewLicenseService returns a new LicenseService.
-func NewLicenseService(l *license.License, opts ...Option) (LicenseService, error) {
+func NewLicenseService(l *license.License, repo LicenseRepository, opts ...Option) (LicenseService, error) {
 	s, err := newService(opts...)
 	if err != nil {
 		return nil, err
@@ -64,6 +82,10 @@ func NewLicenseService(l *license.License, opts ...Option) (LicenseService, erro
 
 	if svc.license == nil {
 		return nil, license.ErrNoLicense
+	}
+
+	if repo == nil {
+		return nil, repository.ErrNoLicenseRepository
 	}
 
 	return svc, nil

@@ -38,6 +38,7 @@ var (
 	ErrLabelDetach              = errors.New("failed to detach label")                    // the label could not be detached
 	ErrLabelRead                = errors.New("failed to read label")                      // the label could not be retrieved
 	ErrLabelUpdate              = errors.New("failed to update label")                    // the label could not be updated
+	ErrNoLicenseRepository      = errors.New("no license repository provided")            // no license repository provided
 	ErrMalformedResult          = errors.New("malformed result")                          // the result is malformed
 	ErrNamespaceCreate          = errors.New("failed to create namespace")                // the namespace could not be created
 	ErrNamespaceDelete          = errors.New("failed to delete namespace")                // the namespace could not be deleted
@@ -60,6 +61,7 @@ var (
 	ErrProjectDelete            = errors.New("failed to delete project")                  // project cannot be deleted
 	ErrProjectRead              = errors.New("failed to read project")                    // project cannot be read
 	ErrProjectUpdate            = errors.New("failed to update project")                  // project cannot be updated
+	ErrReadResourceCount        = errors.New("failed to read resource count")             // the resource count could not be retrieved
 	ErrRelationRead             = errors.New("failed to read relation")                   // relation cannot be read
 	ErrRoleAddMember            = errors.New("failed to add member to role")              // member cannot be added to role
 	ErrRoleCreate               = errors.New("failed to create role")                     // role cannot be created

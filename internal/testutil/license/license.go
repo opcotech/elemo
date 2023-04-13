@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/hyperboloide/lk"
+	"github.com/stretchr/testify/require"
 
 	testConfig "github.com/opcotech/elemo/internal/testutil/config"
 )
@@ -13,14 +14,10 @@ import (
 // GetKeyPair returns the public and private key pair for testing.
 func GetKeyPair(t *testing.T) (public string, private string) {
 	privateKey, err := os.ReadFile(testConfig.RootDir + "/tests/assets/keys/generator.key")
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	publicKey, err := os.ReadFile(testConfig.RootDir + "/tests/assets/keys/generator.pub.key")
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	return string(publicKey), string(privateKey)
 }
@@ -28,24 +25,16 @@ func GetKeyPair(t *testing.T) (public string, private string) {
 // GenerateLicense generates a license for testing.
 func GenerateLicense(t *testing.T, key string, license any) string {
 	pk, err := lk.PrivateKeyFromB32String(key)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	licenseBytes, err := json.Marshal(license)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	licenseData, err := lk.NewLicense(pk, licenseBytes)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	licenseString, err := licenseData.ToB32String()
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	return licenseString
 }

@@ -46,6 +46,12 @@ var startCmd = &cobra.Command{
 			logger.Fatal("failed to initialize relational database", zap.Error(err))
 		}
 
+		licenseRepo, err := neo4j.NewLicenseRepository(
+			neo4j.WithDatabase(graphDB),
+			neo4j.WithRepositoryLogger(logger.Named("license_repository")),
+			neo4j.WithRepositoryTracer(tracer),
+		)
+
 		permissionRepo, err := neo4j.NewPermissionRepository(
 			neo4j.WithDatabase(graphDB),
 			neo4j.WithRepositoryLogger(logger.Named("permission_repository")),
@@ -66,6 +72,7 @@ var startCmd = &cobra.Command{
 
 		licenseService, err := service.NewLicenseService(
 			license,
+			licenseRepo,
 			service.WithLogger(logger.Named("license_service")),
 			service.WithTracer(tracer),
 		)
