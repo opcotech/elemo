@@ -6,6 +6,7 @@ import (
 	"flag"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -18,22 +19,12 @@ import (
 var (
 	licenseEmail          string
 	licenseOrganization   string
-	quotaOrganizations    int
-	quotaSeats            int
 	licenseValidityPeriod int
-	licenseFeatures       []elemoLicense.Feature
+	licenseFeatures       = elemoLicense.DefaultFeatures
+	licenseQuotas         = elemoLicense.DefaultQuotas
 
 	privateKeyFile    string
 	outputLicenseFile string
-
-	defaultLicenseFeatures = func() string {
-		features := make([]string, 0, len(elemoLicense.DefaultFeatures))
-		for _, feature := range elemoLicense.DefaultFeatures {
-			features = append(features, string(feature))
-		}
-
-		return strings.Join(features, ",")
-	}()
 )
 
 func parseFlags() error {
@@ -43,11 +34,10 @@ func parseFlags() error {
 	flag.IntVar(&licenseValidityPeriod, "validity-period", elemoLicense.DefaultValidityPeriod, "License validity period in days")
 
 	// Features
-	features := flag.String("features", defaultLicenseFeatures, "comma-separated features")
+	features := flag.String("features", "", "Comma-separated list of features")
 
 	// Quotas
-	flag.IntVar(&quotaOrganizations, "quota-organizations", elemoLicense.DefaultQuotas[elemoLicense.QuotaOrganizations], "License custom status quota")
-	flag.IntVar(&quotaSeats, "quota-seats", elemoLicense.DefaultQuotas[elemoLicense.QuotaSeats], "License seat quota")
+	quotas := flag.String("quota", "", "Comma-separated key-value pairs of quotas")
 
 	// License keys
 	flag.StringVar(&privateKeyFile, "private-key", "", "The private key to use")
@@ -62,14 +52,6 @@ func parseFlags() error {
 		return errors.New("organization is required")
 	}
 
-	if quotaOrganizations <= 0 {
-		return errors.New("organizations must be greater than 0")
-	}
-
-	if quotaSeats <= 0 {
-		return errors.New("seats must be greater than 0")
-	}
-
 	if licenseValidityPeriod <= 0 {
 		return errors.New("validity period must be greater than 0 days")
 	}
@@ -82,12 +64,28 @@ func parseFlags() error {
 		return errors.New("no output license provided")
 	}
 
-	if *features == "" {
-		return errors.New("no features provided")
+	if *features != "" {
+		licenseFeatures = make([]elemoLicense.Feature, 0)
+		for _, feature := range strings.Split(*features, ",") {
+			licenseFeatures = append(licenseFeatures, elemoLicense.Feature(feature))
+		}
 	}
 
-	for _, feature := range strings.Split(*features, ",") {
-		licenseFeatures = append(licenseFeatures, elemoLicense.Feature(feature))
+	if *quotas != "" {
+		for _, quota := range strings.Split(*quotas, ",") {
+			quotaParts := strings.Split(quota, "=")
+			if len(quotaParts) != 2 {
+				return errors.New("invalid quota format")
+			}
+
+			quotaKey := elemoLicense.Quota(quotaParts[0])
+			quotaValue, err := strconv.Atoi(quotaParts[1])
+			if err != nil {
+				return errors.New("invalid quota value")
+			}
+
+			licenseQuotas[quotaKey] = quotaValue
+		}
 	}
 
 	return nil
@@ -113,11 +111,8 @@ func main() {
 		Email:        licenseEmail,
 		Organization: licenseOrganization,
 		Features:     licenseFeatures,
-		Quotas: map[elemoLicense.Quota]int{
-			elemoLicense.QuotaOrganizations: quotaOrganizations,
-			elemoLicense.QuotaSeats:         quotaSeats,
-		},
-		ExpiresAt: time.Now().AddDate(0, 0, licenseValidityPeriod).UTC(),
+		Quotas:       licenseQuotas,
+		ExpiresAt:    time.Now().AddDate(0, 0, licenseValidityPeriod).UTC(),
 	})
 	if err != nil {
 		log.Fatal(err)

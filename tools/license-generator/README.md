@@ -10,19 +10,15 @@ Usage of license-generator:
   -email string
         License email
   -features string
-        comma-separated features (default "components,custom_statuses,custom_fields,multiple_assignees,releases")
+        Comma-separated list of features
   -license string
         Output license file (default "license.key")
   -organization string
         License organization
   -private-key string
         The private key to use
-  -quota-custom-fields int
-        License custom field quota (default 5)
-  -quota-custom-statuses int
-        License custom status quota (default 3)
-  -quota-seats int
-        License seat quota (default 5)
+  -quota string
+        Comma-separated key-value pairs of quotas
   -validity-period int
         License validity period in days (default 365)
 ```
