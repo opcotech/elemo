@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/opcotech/elemo/internal/license"
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg"
 	"github.com/opcotech/elemo/internal/pkg/password"
@@ -63,6 +64,15 @@ func (s *userService) Create(ctx context.Context, user *model.User) error {
 
 	if !ctxUserPermitted(ctx, s.permissionRepo, model.MustNewNilID(model.ResourceTypeUser), model.PermissionKindCreate) {
 		return ErrNoPermission
+	}
+
+	// If the newly created user is not active, e.g. a company is migrating
+	// ex-employees, do not check the license quota as that only counts
+	// against active users.
+	if user.Status == model.UserStatusActive {
+		if ok, err := s.licenseService.WithinThreshold(ctx, license.QuotaUsers); !ok || err != nil {
+			return ErrQuotaExceeded
+		}
 	}
 
 	if err := s.userRepo.Create(ctx, user); err != nil {
@@ -135,6 +145,15 @@ func (s *userService) Update(ctx context.Context, id model.ID, patch map[string]
 
 	if userID != id && !ctxUserPermitted(ctx, s.permissionRepo, id, model.PermissionKindWrite) {
 		return nil, ErrNoPermission
+	}
+
+	// Check if the user is being activated is within the license quota. It
+	// could be a possible loophole to activate a previously deleted user to
+	// bypass the quota check.
+	if patchStatus, ok := patch["status"]; ok && patchStatus == model.UserStatusActive.String() {
+		if ok, err := s.licenseService.WithinThreshold(ctx, license.QuotaUsers); !ok || err != nil {
+			return nil, ErrQuotaExceeded
+		}
 	}
 
 	if len(patch) == 0 {

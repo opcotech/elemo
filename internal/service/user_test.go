@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/trace"
 
+	"github.com/opcotech/elemo/internal/license"
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg"
 	"github.com/opcotech/elemo/internal/pkg/log"
@@ -141,11 +142,15 @@ func TestUserService_Create(t *testing.T) {
 						model.PermissionKindAll,
 					}).Return(true, nil)
 
+					licenseSvc := new(mock.LicenseService)
+					licenseSvc.On("WithinThreshold", ctx, license.QuotaUsers).Return(true, nil)
+
 					return &baseService{
 						logger:         new(mock.Logger),
 						tracer:         tracer,
 						userRepo:       userRepo,
 						permissionRepo: permRepo,
+						licenseService: licenseSvc,
 					}
 				},
 			},
@@ -196,11 +201,15 @@ func TestUserService_Create(t *testing.T) {
 						model.PermissionKindAll,
 					}).Return(true, nil)
 
+					licenseSvc := new(mock.LicenseService)
+					licenseSvc.On("WithinThreshold", ctx, license.QuotaUsers).Return(true, nil)
+
 					return &baseService{
 						logger:         new(mock.Logger),
 						tracer:         tracer,
 						userRepo:       userRepo,
 						permissionRepo: permRepo,
+						licenseService: licenseSvc,
 					}
 				},
 			},
@@ -209,6 +218,40 @@ func TestUserService_Create(t *testing.T) {
 				user: testModel.NewUser(),
 			},
 			wantErr: ErrUserCreate,
+		},
+		{
+			name: "create user out of quota",
+			fields: fields{
+				baseService: func(ctx context.Context, user *model.User) *baseService {
+					span := new(mock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(mock.Tracer)
+					tracer.On("Start", ctx, "service.userService/Create", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					permRepo := new(mock.PermissionRepository)
+					permRepo.On("HasPermission", ctx, userID, model.MustNewNilID(model.ResourceTypeUser), []model.PermissionKind{
+						model.PermissionKindCreate,
+						model.PermissionKindAll,
+					}).Return(true, nil)
+
+					licenseSvc := new(mock.LicenseService)
+					licenseSvc.On("WithinThreshold", ctx, license.QuotaUsers).Return(false, nil)
+
+					return &baseService{
+						logger:         new(mock.Logger),
+						tracer:         tracer,
+						userRepo:       new(mock.UserRepository),
+						permissionRepo: permRepo,
+						licenseService: licenseSvc,
+					}
+				},
+			},
+			args: args{
+				ctx:  context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
+				user: testModel.NewUser(),
+			},
+			wantErr: ErrQuotaExceeded,
 		},
 	}
 	for _, tt := range tests {
@@ -608,11 +651,15 @@ func TestUserService_Update(t *testing.T) {
 						model.PermissionKindAll,
 					}).Return(true, nil)
 
+					licenseSvc := new(mock.LicenseService)
+					licenseSvc.On("WithinThreshold", ctx, license.QuotaUsers).Return(true, nil)
+
 					return &baseService{
 						logger:         new(mock.Logger),
 						tracer:         tracer,
 						userRepo:       userRepo,
 						permissionRepo: permRepo,
+						licenseService: licenseSvc,
 					}
 				},
 			},
@@ -620,7 +667,8 @@ func TestUserService_Update(t *testing.T) {
 				ctx: context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
 				id:  userID,
 				patch: map[string]any{
-					"email": "test2@example.com",
+					"email":  "test2@example.com",
+					"status": model.UserStatusActive.String(),
 				},
 			},
 			want: testModel.NewUser(),
@@ -731,11 +779,15 @@ func TestUserService_Update(t *testing.T) {
 						model.PermissionKindAll,
 					}).Return(true, nil)
 
+					licenseSvc := new(mock.LicenseService)
+					licenseSvc.On("WithinThreshold", ctx, license.QuotaUsers).Return(true, nil)
+
 					return &baseService{
 						logger:         new(mock.Logger),
 						tracer:         tracer,
 						userRepo:       userRepo,
 						permissionRepo: permRepo,
+						licenseService: licenseSvc,
 					}
 				},
 			},
@@ -747,6 +799,44 @@ func TestUserService_Update(t *testing.T) {
 				},
 			},
 			wantErr: ErrUserUpdate,
+		},
+		{
+			name: "update user out of quota",
+			fields: fields{
+				baseService: func(ctx context.Context, id model.ID, patch map[string]any, user *model.User) *baseService {
+					span := new(mock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(mock.Tracer)
+					tracer.On("Start", ctx, "service.userService/Update", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					permRepo := new(mock.PermissionRepository)
+					permRepo.On("HasPermission", ctx, id, id, []model.PermissionKind{
+						model.PermissionKindWrite,
+						model.PermissionKindAll,
+					}).Return(true, nil)
+
+					licenseSvc := new(mock.LicenseService)
+					licenseSvc.On("WithinThreshold", ctx, license.QuotaUsers).Return(false, nil)
+
+					return &baseService{
+						logger:         new(mock.Logger),
+						tracer:         tracer,
+						userRepo:       new(mock.UserRepository),
+						permissionRepo: permRepo,
+						licenseService: licenseSvc,
+					}
+				},
+			},
+			args: args{
+				ctx: context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
+				id:  userID,
+				patch: map[string]any{
+					"email":  "test2@example.com",
+					"status": model.UserStatusActive.String(),
+				},
+			},
+			wantErr: ErrQuotaExceeded,
 		},
 		{
 			name: "update user with no context user id",

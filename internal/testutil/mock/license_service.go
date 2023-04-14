@@ -12,17 +12,17 @@ type LicenseService struct {
 	mock.Mock
 }
 
-func (l *LicenseService) Expired(ctx context.Context) bool {
+func (l *LicenseService) Expired(ctx context.Context) (bool, error) {
 	args := l.Called(ctx)
-	return args.Bool(0)
+	return args.Bool(0), args.Error(1)
 }
 
-func (l *LicenseService) HasFeature(ctx context.Context, feature elemoLicense.Feature) bool {
+func (l *LicenseService) HasFeature(ctx context.Context, feature elemoLicense.Feature) (bool, error) {
 	args := l.Called(ctx, feature)
-	return args.Bool(0)
+	return args.Bool(0), args.Error(1)
 }
 
-func (l *LicenseService) WithinQuota(ctx context.Context, name elemoLicense.Quota, current int) bool {
-	args := l.Called(ctx, name, current)
-	return args.Bool(0)
+func (l *LicenseService) WithinThreshold(ctx context.Context, name elemoLicense.Quota) (bool, error) {
+	args := l.Called(ctx, name)
+	return args.Bool(0), args.Error(1)
 }

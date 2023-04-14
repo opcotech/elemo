@@ -51,7 +51,7 @@ func TestLicenseRepository_ActiveUserCount(t *testing.T) {
 
 	count, err := licenseRepo.ActiveUserCount(ctx)
 	require.NoError(t, err)
-	require.Equal(t, uint(2), count)
+	require.Equal(t, 2, count)
 }
 
 func TestLicenseRepository_ActiveOrganizationCount(t *testing.T) {
@@ -92,7 +92,7 @@ func TestLicenseRepository_ActiveOrganizationCount(t *testing.T) {
 
 	count, err := licenseRepo.ActiveOrganizationCount(ctx)
 	require.NoError(t, err)
-	require.Equal(t, uint(1), count)
+	require.Equal(t, 1, count)
 }
 
 func TestLicenseRepository_DocumentCount(t *testing.T) {
@@ -129,7 +129,7 @@ func TestLicenseRepository_DocumentCount(t *testing.T) {
 	count, err := licenseRepo.DocumentCount(ctx)
 	require.NoError(t, err)
 
-	require.Equal(t, uint(1), count)
+	require.Equal(t, 1, count)
 }
 
 func TestLicenseRepository_NamespaceCount(t *testing.T) {
@@ -175,7 +175,7 @@ func TestLicenseRepository_NamespaceCount(t *testing.T) {
 	count, err := licenseRepo.NamespaceCount(ctx)
 	require.NoError(t, err)
 
-	require.Equal(t, uint(1), count)
+	require.Equal(t, 1, count)
 }
 
 func TestLicenseRepository_ProjectCount(t *testing.T) {
@@ -229,7 +229,7 @@ func TestLicenseRepository_ProjectCount(t *testing.T) {
 	count, err := licenseRepo.ProjectCount(ctx)
 	require.NoError(t, err)
 
-	require.Equal(t, uint(1), count)
+	require.Equal(t, 1, count)
 }
 
 func TestLicenseRepository_RoleCount(t *testing.T) {
@@ -279,5 +279,5 @@ func TestLicenseRepository_RoleCount(t *testing.T) {
 	count, err := licenseRepo.RoleCount(ctx)
 	require.NoError(t, err)
 
-	require.Equal(t, uint(1), count)
+	require.Equal(t, 1, count)
 }

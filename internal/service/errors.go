@@ -19,4 +19,7 @@ var (
 	ErrUserGet                 = errors.New("failed to get user")                // failed to get user
 	ErrUserGetAll              = errors.New("failed to get users")               // failed to get users
 	ErrUserUpdate              = errors.New("failed to update user")             // failed to update user
+	ErrQuotaUsageGet           = errors.New("failed to get usage of quota")      // failed to get usage of quota
+	ErrQuotaInvalid            = errors.New("invalid quota")                     // invalid quota
+	ErrQuotaExceeded           = errors.New("quota exceeded")                    // quota exceeded
 )
