@@ -9,6 +9,7 @@ import (
 	"github.com/go-oauth2/oauth2/v4"
 	"github.com/go-session/session"
 
+	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/password"
 )
 
@@ -135,7 +136,7 @@ func (c *authController) PasswordAuthHandler(ctx context.Context, _, email, pass
 		return "", err
 	}
 
-	if !password.IsPasswordMatching(user.Password, passwd) {
+	if !password.IsPasswordMatching(user.Password, passwd) || user.Status != model.UserStatusActive {
 		return "", ErrAuthCredentials
 	}
 
