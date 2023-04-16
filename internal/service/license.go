@@ -32,6 +32,8 @@ type LicenseService interface {
 	HasFeature(ctx context.Context, feature license.Feature) (bool, error)
 	// WithinThreshold returns true if the resource usage is within the quota.
 	WithinThreshold(ctx context.Context, name license.Quota) (bool, error)
+	// Ping implements the Pingable interface to check the license validity.
+	Ping(ctx context.Context) error
 }
 
 // licenseService is the concrete implementation of LicenseService.
@@ -84,6 +86,17 @@ func (s *licenseService) WithinThreshold(ctx context.Context, quota license.Quot
 	}
 
 	return s.license.WithinThreshold(quota, count), nil
+}
+
+func (s *licenseService) Ping(ctx context.Context) error {
+	_, span := s.tracer.Start(ctx, "service.licenseService/Ping")
+	defer span.End()
+
+	if expired, err := s.Expired(ctx); expired || err != nil {
+		return license.ErrLicenseInvalid
+	}
+
+	return nil
 }
 
 // NewLicenseService returns a new LicenseService.

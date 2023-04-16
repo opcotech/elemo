@@ -15,6 +15,14 @@ properties:
       - healthy
       - unhealthy
       - unknown
+  license:
+    description: Health of the license based on its validity.
+    type: string
+    enum:
+      - healthy
+      - unhealthy
+      - unknown
 required:
   - graph_database
   - relational_database
+  - license

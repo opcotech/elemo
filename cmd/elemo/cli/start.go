@@ -81,6 +81,7 @@ var startCmd = &cobra.Command{
 			map[model.HealthCheckComponent]service.Pingable{
 				model.HealthCheckComponentGraphDB:      graphDB,
 				model.HealthCheckComponentRelationalDB: relDB,
+				model.HealthCheckComponentLicense:      licenseService,
 			},
 			versionInfo,
 			service.WithLogger(logger.Named("system_service")),

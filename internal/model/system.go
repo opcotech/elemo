@@ -3,6 +3,7 @@ package model
 const (
 	HealthCheckComponentGraphDB      HealthCheckComponent = "graph_database"      // graph database
 	HealthCheckComponentRelationalDB HealthCheckComponent = "relational_database" // relational database
+	HealthCheckComponentLicense      HealthCheckComponent = "license"             // license
 )
 
 const (

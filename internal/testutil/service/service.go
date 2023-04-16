@@ -8,7 +8,9 @@ import (
 
 	"github.com/opcotech/elemo/internal/config"
 	"github.com/opcotech/elemo/internal/model"
+	"github.com/opcotech/elemo/internal/repository/neo4j"
 	"github.com/opcotech/elemo/internal/service"
+	"github.com/opcotech/elemo/internal/testutil"
 	"github.com/opcotech/elemo/internal/testutil/repository"
 )
 
@@ -17,10 +19,22 @@ func NewSystemService(t *testing.T, neo4jDBConf *config.GraphDatabaseConfig, pgD
 	neo4jDB, _ := repository.NewNeo4jDatabase(t, neo4jDBConf)
 	pgDB, _ := repository.NewPGDatabase(t, pgDBConf)
 
+	licenseRepo, err := neo4j.NewLicenseRepository(
+		neo4j.WithDatabase(neo4jDB),
+	)
+	require.NoError(t, err)
+
+	licenseSvc, err := service.NewLicenseService(
+		testutil.ParseLicense(t),
+		licenseRepo,
+	)
+	require.NoError(t, err)
+
 	s, err := service.NewSystemService(
 		map[model.HealthCheckComponent]service.Pingable{
 			model.HealthCheckComponentGraphDB:      neo4jDB,
 			model.HealthCheckComponentRelationalDB: pgDB,
+			model.HealthCheckComponentLicense:      licenseSvc,
 		},
 		&model.VersionInfo{
 			Version:   "0.0.1",

@@ -39,7 +39,8 @@ func TestSystemService_Healthcheck(t *testing.T) {
 	health, err := s.GetHealth(context.Background())
 	require.NoError(t, err)
 
-	assert.Len(t, health, 2)
+	assert.Len(t, health, 3)
 	assert.Equal(t, model.HealthStatusHealthy, health[model.HealthCheckComponentGraphDB])
 	assert.Equal(t, model.HealthStatusHealthy, health[model.HealthCheckComponentRelationalDB])
+	assert.Equal(t, model.HealthStatusHealthy, health[model.HealthCheckComponentLicense])
 }

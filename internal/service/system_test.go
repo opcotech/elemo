@@ -178,6 +178,7 @@ func Test_systemService_GetHealth(t *testing.T) {
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 					span.On("AddEvent", fmt.Sprintf("Check %s health", model.HealthCheckComponentGraphDB)).Return()
 					span.On("AddEvent", fmt.Sprintf("Check %s health", model.HealthCheckComponentRelationalDB)).Return()
+					span.On("AddEvent", fmt.Sprintf("Check %s health", model.HealthCheckComponentLicense)).Return()
 
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "service.systemService/GetHealth", []trace.SpanStartOption(nil)).Return(ctx, span)
@@ -192,11 +193,12 @@ func Test_systemService_GetHealth(t *testing.T) {
 				},
 				resources: func(ctx context.Context) map[model.HealthCheckComponent]Pingable {
 					resource := new(mock.PingableResource)
-					resource.On("Ping", ctx).Return(nil).Twice()
+					resource.On("Ping", ctx).Return(nil).Times(3)
 
 					return map[model.HealthCheckComponent]Pingable{
 						model.HealthCheckComponentGraphDB:      resource,
 						model.HealthCheckComponentRelationalDB: resource,
+						model.HealthCheckComponentLicense:      resource,
 					}
 				},
 			},
@@ -206,6 +208,7 @@ func Test_systemService_GetHealth(t *testing.T) {
 			want: map[model.HealthCheckComponent]model.HealthStatus{
 				model.HealthCheckComponentGraphDB:      model.HealthStatusHealthy,
 				model.HealthCheckComponentRelationalDB: model.HealthStatusHealthy,
+				model.HealthCheckComponentLicense:      model.HealthStatusHealthy,
 			},
 		},
 		{
@@ -216,6 +219,7 @@ func Test_systemService_GetHealth(t *testing.T) {
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 					span.On("AddEvent", fmt.Sprintf("Check %s health", model.HealthCheckComponentGraphDB)).Return()
 					span.On("AddEvent", fmt.Sprintf("Check %s health", model.HealthCheckComponentRelationalDB)).Return()
+					span.On("AddEvent", fmt.Sprintf("Check %s health", model.HealthCheckComponentLicense)).Return()
 
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "service.systemService/GetHealth", []trace.SpanStartOption(nil)).Return(ctx, span)
@@ -230,11 +234,12 @@ func Test_systemService_GetHealth(t *testing.T) {
 				},
 				resources: func(ctx context.Context) map[model.HealthCheckComponent]Pingable {
 					resource := new(mock.PingableResource)
-					resource.On("Ping", ctx).Return(errors.New("error")).Twice()
+					resource.On("Ping", ctx).Return(errors.New("error")).Times(3)
 
 					return map[model.HealthCheckComponent]Pingable{
 						model.HealthCheckComponentGraphDB:      resource,
 						model.HealthCheckComponentRelationalDB: resource,
+						model.HealthCheckComponentLicense:      resource,
 					}
 				},
 			},
@@ -244,6 +249,7 @@ func Test_systemService_GetHealth(t *testing.T) {
 			want: map[model.HealthCheckComponent]model.HealthStatus{
 				model.HealthCheckComponentGraphDB:      model.HealthStatusUnhealthy,
 				model.HealthCheckComponentRelationalDB: model.HealthStatusUnhealthy,
+				model.HealthCheckComponentLicense:      model.HealthStatusUnhealthy,
 			},
 			wantErr: ErrSystemHealthCheck,
 		},
