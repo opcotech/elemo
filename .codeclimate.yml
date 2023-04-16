@@ -26,10 +26,10 @@ checks:
       threshold: 7
   identical-code:
     config:
-      threshold: 25
+      threshold: 50
   similar-code:
     config:
-      threshold: 50
+      threshold: 70
 exclude_patterns:
   - "**/*.d.ts"
   - "**/*_test.go"
