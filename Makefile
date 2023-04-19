@@ -119,7 +119,7 @@ test.unit: ## Run unit tests
 test.integration: ## Run integration tests
 	@rm -f $(COVERAGE_OUT_INTEGRATION)
 	@echo "mode: atomic" > $(COVERAGE_OUT_INTEGRATION)
-	$(eval PKGS := $(shell $(GO_EXEC) list ./... | egrep -v "(testutil|tools|http\/gen)" ))
+	$(eval PKGS := $(shell $(GO_EXEC) list ./... | egrep -v "(testutil|tools|cmd|http\/gen)" ))
 	@$(foreach var,$(PKGS),$(call integration-test,$(var)))
 
 .PHONY: coverage.combine
@@ -127,16 +127,16 @@ coverage.combine:
 	@rm -f $(COVERAGE_OUT)
 	@echo "mode: atomic" > $(COVERAGE_OUT)
 	@for file in $(COVERAGE_OUT_UNIT) $(COVERAGE_OUT_INTEGRATION); do \
-		cat $$file | egrep -v "(mode: atomic|testutil|tools|cmd|server\/graph)" >> $(COVERAGE_OUT); \
+		cat $$file | egrep -v "(mode: atomic|testutil|tools|cmd|http\/gen)" >> $(COVERAGE_OUT); \
 	done
 	@rm -f $(COVERAGE_OUT_UNIT) $(COVERAGE_OUT_INTEGRATION)
 
 .PHONY: coverage.html
-coverage.html: coverage.combine ## Generate html coverage report from previous test run
+coverage.html: ## Generate html coverage report from previous test run
 	$(GO_EXEC) tool cover -html "$(COVERAGE_OUT)" -o "$(COVERAGE_HTML)"
 
 .PHONY: coverage.stats
-coverage.stats: coverage.combine ## Generate coverage stats from previous test run
+coverage.stats: ## Generate coverage stats from previous test run
 	$(GO_EXEC) tool cover -func "$(COVERAGE_OUT)"
 
 .PHONY: changelog
