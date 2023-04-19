@@ -1,8 +1,8 @@
 version: "3.8"
 
 volumes:
-  neo4j_data: { }
-  pg_data: { }
+  neo4j_data: {}
+  pg_data: {}
 
 networks:
   default:
@@ -10,7 +10,7 @@ networks:
 
 services:
   neo4j:
-    image: neo4j:latest
+    image: neo4j:5.6.0
     container_name: elemo-neo4j
     ports:
       - "7474:7474"
@@ -22,7 +22,16 @@ services:
     environment:
       - NEO4J_AUTH=neo4j/neo4jsecret
     healthcheck:
-      test: [ "CMD", "cypher-shell", "-u", "neo4j", "-p", "neo4jsecret", "match (n) return count(n)" ]
+      test:
+        [
+          "CMD",
+          "cypher-shell",
+          "-u",
+          "neo4j",
+          "-p",
+          "neo4jsecret",
+          "match (n) return count(n)",
+        ]
       interval: 5s
       timeout: 5s
       retries: 3
@@ -39,7 +48,7 @@ services:
       - POSTGRES_PASSWORD=pgsecret
       - POSTGRES_DB=elemo
     healthcheck:
-      test: [ "CMD", "pg_isready", "-U", "elemo" ]
+      test: ["CMD", "pg_isready", "-U", "elemo"]
       interval: 5s
       timeout: 5s
       retries: 3
@@ -63,7 +72,7 @@ services:
       - "35478:35478"
       - "35479:35479"
     healthcheck:
-      test: [ "curl", "-f", "-k", "https://0.0.0.0:35478/v1/system/health" ]
+      test: ["curl", "-f", "-k", "https://0.0.0.0:35478/v1/system/health"]
       interval: 5s
       timeout: 5s
       retries: 3

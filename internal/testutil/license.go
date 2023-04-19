@@ -12,7 +12,7 @@ import (
 
 // ParseLicense parses the test license for testing.
 func ParseLicense(t *testing.T) *license.License {
-	data, err := os.ReadFile(testConfig.RootDir + "/tests/assets/keys/license.key")
+	data, err := os.ReadFile(testConfig.RootDir + "/" + testConfig.Conf.License.File)
 	require.NoError(t, err)
 
 	publicKey, err := os.ReadFile(testConfig.RootDir + "/tests/assets/keys/generator.pub.key")

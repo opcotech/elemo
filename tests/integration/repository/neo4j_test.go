@@ -5,29 +5,15 @@ package repository
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/opcotech/elemo/internal/config"
+	testConfig "github.com/opcotech/elemo/internal/testutil/config"
 	testRepo "github.com/opcotech/elemo/internal/testutil/repository"
 )
 
 var (
-	neo4jDBConf = &config.GraphDatabaseConfig{
-		Host:                         "localhost",
-		Port:                         7687,
-		Username:                     "neo4j",
-		Password:                     "neo4jsecret",
-		Database:                     "neo4j",
-		MaxTransactionRetryTime:      1,
-		MaxConnectionPoolSize:        100,
-		MaxConnectionLifetime:        1 * time.Hour,
-		ConnectionAcquisitionTimeout: 1 * time.Minute,
-		SocketConnectTimeout:         1 * time.Minute,
-		SocketKeepalive:              true,
-		FetchSize:                    0,
-	}
+	neo4jDBConf = &testConfig.Conf.GraphDatabase
 )
 
 func TestNewNeo4jStore(t *testing.T) {
