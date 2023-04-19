@@ -24,12 +24,12 @@ checks:
   return-statements:
     config:
       threshold: 7
-  # similar-code:
-  #   config:
-  #     threshold: 5
-  # identical-code:
-  #   config:
-  #     threshold: 3
+  similar-code:
+    config:
+      threshold: 10
+  identical-code:
+    config:
+      threshold: 8
 exclude_patterns:
   - "**/*.d.ts"
   - "**/*_test.go"
