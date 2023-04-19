@@ -78,6 +78,19 @@ func WithSystemService(systemService service.SystemService) ControllerOption {
 	}
 }
 
+// WithLicenseService sets the license service for the controller.
+func WithLicenseService(licenseService service.LicenseService) ControllerOption {
+	return func(c *baseController) error {
+		if licenseService == nil {
+			return ErrNoLicenseService
+		}
+
+		c.licenseService = licenseService
+
+		return nil
+	}
+}
+
 // WithUserService sets the user service for the controller.
 func WithUserService(userService service.UserService) ControllerOption {
 	return func(c *baseController) error {
@@ -100,8 +113,9 @@ type baseController struct {
 
 	authProvider *auth.Server
 
-	systemService service.SystemService
-	userService   service.UserService
+	userService    service.UserService
+	systemService  service.SystemService
+	licenseService service.LicenseService
 }
 
 // newController creates a new base controller with the given dependencies

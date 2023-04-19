@@ -37,6 +37,7 @@ func NewUserService(t *testing.T, neo4jDBConf *config.GraphDatabaseConfig) servi
 	licenseSvc, err := service.NewLicenseService(
 		testutil.ParseLicense(t),
 		licenseRepo,
+		service.WithPermissionRepository(permissionRepo),
 	)
 	require.NoError(t, err)
 
@@ -70,7 +71,7 @@ func NewResourceOwner(t *testing.T, neo4jDBConf *config.GraphDatabaseConfig) *mo
 
 	params := map[string]any{
 		"id":         owner.ID.String(),
-		"role_label": "Owner",
+		"role_label": model.SystemRoleOwner.String(),
 		"perm_kind":  model.PermissionKindAll.String(),
 	}
 

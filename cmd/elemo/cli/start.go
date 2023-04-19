@@ -73,6 +73,7 @@ var startCmd = &cobra.Command{
 		licenseService, err := service.NewLicenseService(
 			license,
 			licenseRepo,
+			service.WithPermissionRepository(permissionRepo),
 			service.WithLogger(logger.Named("license_service")),
 			service.WithTracer(tracer),
 		)
@@ -112,6 +113,7 @@ var startCmd = &cobra.Command{
 			elemoHttp.WithAuthProvider(authProvider),
 			elemoHttp.WithUserService(userService),
 			elemoHttp.WithSystemService(systemService),
+			elemoHttp.WithLicenseService(licenseService),
 			elemoHttp.WithLogger(logger.Named("http_server")),
 			elemoHttp.WithTracer(tracer),
 		)

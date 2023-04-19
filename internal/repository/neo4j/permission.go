@@ -9,6 +9,7 @@ import (
 
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/convert"
+	"github.com/opcotech/elemo/internal/pkg/log"
 	"github.com/opcotech/elemo/internal/repository"
 )
 
@@ -271,6 +272,52 @@ func (r *PermissionRepository) HasAnyRelation(ctx context.Context, source, targe
 	if err != nil {
 		return false, errors.Join(repository.ErrRelationRead, err)
 	}
+
+	return *hasRelation, nil
+}
+
+// HasSystemRole returns true if there is a relation between the source and
+// target that is a system role. If there is no relation, false is returned.
+func (r *PermissionRepository) HasSystemRole(ctx context.Context, source model.ID, targets ...model.SystemRole) (bool, error) {
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.RelationRepository/HasAnyRelation")
+	defer span.End()
+
+	if err := source.Validate(); err != nil {
+		return false, errors.Join(repository.ErrRelationRead, err)
+	}
+
+	if len(targets) == 0 {
+		return false, errors.Join(repository.ErrRelationRead, model.ErrInvalidID)
+	}
+
+	targetIDs := make([]string, len(targets))
+	for i, target := range targets {
+		targetIDs[i] = target.String()
+	}
+
+	cypher := `
+	MATCH path = (s:` + source.Label() + ` {id: $source_id})-[:` + EdgeKindMemberOf.String() + `]-(r:` + model.ResourceTypeRole.String() + ` {system: true})
+	WHERE r.id IN $target_ids
+	RETURN count(path) > 0 AS has_relation
+	LIMIT 1`
+
+	params := map[string]any{
+		"source_id":  source.String(),
+		"target_ids": targetIDs,
+	}
+
+	hasRelation, err := ExecuteReadAndReadSingle(ctx, r.db, cypher, params, func(rec *neo4j.Record) (*bool, error) {
+		val, _, err := neo4j.GetRecordValue[bool](rec, "has_relation")
+		if err != nil {
+			return nil, err
+		}
+		return &val, nil
+	})
+	if err != nil {
+		return false, errors.Join(repository.ErrRelationRead, err)
+	}
+
+	r.logger.Error("has relation", log.WithValue(cypher))
 
 	return *hasRelation, nil
 }

@@ -5,6 +5,8 @@ import (
 	"errors"
 
 	"github.com/opcotech/elemo/internal/license"
+	"github.com/opcotech/elemo/internal/model"
+	"github.com/opcotech/elemo/internal/pkg"
 	"github.com/opcotech/elemo/internal/repository"
 )
 
@@ -32,6 +34,8 @@ type LicenseService interface {
 	HasFeature(ctx context.Context, feature license.Feature) (bool, error)
 	// WithinThreshold returns true if the resource usage is within the quota.
 	WithinThreshold(ctx context.Context, name license.Quota) (bool, error)
+	// GetLicense returns the license.
+	GetLicense(ctx context.Context) (license.License, error)
 	// Ping implements the Pingable interface to check the license validity.
 	Ping(ctx context.Context) error
 }
@@ -88,6 +92,23 @@ func (s *licenseService) WithinThreshold(ctx context.Context, quota license.Quot
 	return s.license.WithinThreshold(quota, count), nil
 }
 
+func (s *licenseService) GetLicense(ctx context.Context) (license.License, error) {
+	ctx, span := s.tracer.Start(ctx, "service.licenseService/GetLicense")
+	defer span.End()
+
+	userID, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID)
+	if !ok {
+		return license.License{}, ErrNoUser
+	}
+
+	hasRole, err := s.permissionRepo.HasSystemRole(ctx, userID, model.SystemRoleOwner, model.SystemRoleAdmin, model.SystemRoleSupport)
+	if !hasRole || err != nil {
+		return license.License{}, ErrNoPermission
+	}
+
+	return *s.license, nil
+}
+
 func (s *licenseService) Ping(ctx context.Context) error {
 	_, span := s.tracer.Start(ctx, "service.licenseService/Ping")
 	defer span.End()
@@ -118,6 +139,10 @@ func NewLicenseService(l *license.License, repo LicenseRepository, opts ...Optio
 
 	if svc.licenseRepo == nil {
 		return nil, repository.ErrNoLicenseRepository
+	}
+
+	if svc.permissionRepo == nil {
+		return nil, ErrNoPermissionRepository
 	}
 
 	return svc, nil

@@ -14,6 +14,7 @@ import (
 	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/repository/neo4j"
 	"github.com/opcotech/elemo/internal/testutil"
+	testModel "github.com/opcotech/elemo/internal/testutil/model"
 	testRepo "github.com/opcotech/elemo/internal/testutil/repository"
 )
 
@@ -399,6 +400,61 @@ func TestPermissionRepository_HasAnyRelation(t *testing.T) {
 	require.NoError(t, err)
 
 	require.True(t, hasRelation)
+}
+
+func TestPermissionRepository_HasSystemRole(t *testing.T) {
+	ctx := context.Background()
+
+	db, closer := testRepo.NewNeo4jDatabase(t, neo4jDBConf)
+	defer func(ctx context.Context, closer func(ctx context.Context) error) {
+		require.NoError(t, closer(ctx))
+	}(ctx, closer)
+
+	defer testRepo.CleanupNeo4jStore(t, ctx, db)
+
+	userRepo, err := neo4j.NewUserRepository(
+		neo4j.WithDatabase(db),
+	)
+	require.NoError(t, err)
+
+	repo, err := neo4j.NewPermissionRepository(
+		neo4j.WithDatabase(db),
+	)
+	require.NoError(t, err)
+
+	owner := testModel.NewUser()
+	err = userRepo.Create(ctx, owner)
+	require.NoError(t, err)
+
+	cypher := `
+	MATCH (u:` + owner.ID.Label() + ` {id: $id})
+	MATCH (r:` + model.ResourceTypeRole.String() + ` {id: $role_label, system: true})
+	CREATE (u)-[:` + neo4j.EdgeKindMemberOf.String() + `]->(r)`
+
+	params := map[string]any{
+		"id":         owner.ID.String(),
+		"role_label": model.SystemRoleOwner.String(),
+		"perm_kind":  model.PermissionKindAll.String(),
+	}
+
+	_, err = db.GetWriteSession(ctx).Run(ctx, cypher, params)
+	require.NoError(t, err)
+
+	hasPerm, err := repo.HasSystemRole(ctx, owner.ID, model.SystemRoleOwner)
+	require.NoError(t, err)
+	assert.True(t, hasPerm)
+
+	hasPerm, err = repo.HasSystemRole(ctx, owner.ID, model.SystemRoleAdmin)
+	require.NoError(t, err)
+	assert.False(t, hasPerm)
+
+	hasPerm, err = repo.HasSystemRole(ctx, owner.ID, model.SystemRoleSupport)
+	require.NoError(t, err)
+	assert.False(t, hasPerm)
+
+	hasPerm, err = repo.HasSystemRole(ctx, owner.ID, model.SystemRoleOwner, model.SystemRoleAdmin, model.SystemRoleSupport)
+	require.NoError(t, err)
+	assert.True(t, hasPerm)
 }
 
 func TestPermissionRepository_Delete(t *testing.T) {

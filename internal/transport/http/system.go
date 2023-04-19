@@ -2,8 +2,13 @@ package http
 
 import (
 	"context"
+	"errors"
 
+	openapiTypes "github.com/deepmap/oapi-codegen/pkg/types"
+
+	"github.com/opcotech/elemo/internal/license"
 	"github.com/opcotech/elemo/internal/model"
+	"github.com/opcotech/elemo/internal/service"
 	"github.com/opcotech/elemo/internal/transport/http/gen"
 )
 
@@ -12,6 +17,7 @@ type SystemController interface {
 	GetSystemHealth(ctx context.Context, request gen.GetSystemHealthRequestObject) (gen.GetSystemHealthResponseObject, error)
 	GetSystemHeartbeat(ctx context.Context, request gen.GetSystemHeartbeatRequestObject) (gen.GetSystemHeartbeatResponseObject, error)
 	GetSystemVersion(ctx context.Context, request gen.GetSystemVersionRequestObject) (gen.GetSystemVersionResponseObject, error)
+	GetSystemLicense(ctx context.Context, request gen.GetSystemLicenseRequestObject) (gen.GetSystemLicenseResponseObject, error)
 }
 
 // systemController is the concrete implementation of SystemController.
@@ -47,6 +53,21 @@ func (c *systemController) GetSystemVersion(ctx context.Context, _ gen.GetSystem
 	return gen.GetSystemVersion200JSONResponse(*versionInfoToDTO(versionInfo)), nil
 }
 
+func (c *systemController) GetSystemLicense(ctx context.Context, _ gen.GetSystemLicenseRequestObject) (gen.GetSystemLicenseResponseObject, error) {
+	ctx, span := c.tracer.Start(ctx, "transport.http.handler/GetSystemLicense")
+	defer span.End()
+
+	l, err := c.licenseService.GetLicense(ctx)
+	if err != nil {
+		if errors.Is(err, service.ErrNoPermission) {
+			return gen.GetSystemLicense401JSONResponse{N401JSONResponse: permissionDenied}, nil
+		}
+		return gen.GetSystemLicenseResponseObject(nil), err
+	}
+
+	return gen.GetSystemLicense200JSONResponse(*licenseToDTO(&l)), nil
+}
+
 // NewSystemController creates a new SystemController.
 func NewSystemController(opts ...ControllerOption) (SystemController, error) {
 	c, err := newController(opts...)
@@ -80,4 +101,36 @@ func versionInfoToDTO(version *model.VersionInfo) *gen.SystemVersionInfo {
 		Date:      version.Date,
 		GoVersion: version.GoVersion,
 	}
+}
+
+func licenseToDTO(l *license.License) *gen.SystemLicense {
+	type licenseQuota = struct {
+		Documents     int `json:"documents"`
+		Namespaces    int `json:"namespaces"`
+		Organizations int `json:"organizations"`
+		Projects      int `json:"projects"`
+		Roles         int `json:"roles"`
+		Users         int `json:"users"`
+	}
+
+	systemLicense := &gen.SystemLicense{
+		Id:           l.ID.String(),
+		Organization: l.Organization,
+		Email:        openapiTypes.Email(l.Email),
+		Quotas: licenseQuota{
+			Documents:     int(l.Quotas[license.QuotaDocuments]),
+			Namespaces:    int(l.Quotas[license.QuotaNamespaces]),
+			Organizations: int(l.Quotas[license.QuotaOrganizations]),
+			Projects:      int(l.Quotas[license.QuotaProjects]),
+			Roles:         int(l.Quotas[license.QuotaRoles]),
+			Users:         int(l.Quotas[license.QuotaUsers]),
+		},
+		ExpiresAt: l.ExpiresAt,
+	}
+
+	for _, feature := range l.Features {
+		systemLicense.Features = append(systemLicense.Features, gen.SystemLicenseFeatures(feature))
+	}
+
+	return systemLicense
 }

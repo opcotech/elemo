@@ -46,6 +46,16 @@ func (p *PermissionRepository) HasPermission(ctx context.Context, subject, targe
 	return args.Bool(0), args.Error(1)
 }
 
+func (p *PermissionRepository) HasAnyRelation(ctx context.Context, source, target model.ID) (bool, error) {
+	args := p.Called(ctx, source, target)
+	return args.Bool(0), args.Error(1)
+}
+
+func (p *PermissionRepository) HasSystemRole(ctx context.Context, source model.ID, targets ...model.SystemRole) (bool, error) {
+	args := p.Called(ctx, source, targets)
+	return args.Bool(0), args.Error(1)
+}
+
 func (p *PermissionRepository) Update(ctx context.Context, id model.ID, kind model.PermissionKind) (*model.Permission, error) {
 	args := p.Called(ctx, id, kind)
 	if args.Get(0) == nil {

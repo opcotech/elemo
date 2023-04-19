@@ -7,6 +7,28 @@ import (
 	"github.com/opcotech/elemo/internal/pkg/validate"
 )
 
+const (
+	SystemRoleOwner   SystemRole = iota + 1 // the owner them of the instance
+	SystemRoleAdmin                         // the administrator team of the instance
+	SystemRoleSupport                       // the support team of the instance
+)
+
+var (
+	systemRoleValues = map[SystemRole]string{
+		SystemRoleOwner:   "Owner",
+		SystemRoleAdmin:   "Admin",
+		SystemRoleSupport: "Support",
+	}
+)
+
+// SystemRole is a special role that is created by the system.
+type SystemRole uint8
+
+// String returns the string representation of the SystemRole.
+func (r SystemRole) String() string {
+	return systemRoleValues[r]
+}
+
 // Role is a group of users. However, permissions are attached to roles
 // separately to avoid infinitely nested permissions.
 type Role struct {

@@ -27,6 +27,11 @@ func (l *LicenseService) WithinThreshold(ctx context.Context, name elemoLicense.
 	return args.Bool(0), args.Error(1)
 }
 
+func (l *LicenseService) GetLicense(ctx context.Context) (elemoLicense.License, error) {
+	args := l.Called(ctx)
+	return args.Get(0).(elemoLicense.License), args.Error(1)
+}
+
 func (l *LicenseService) Ping(ctx context.Context) error {
 	args := l.Called(ctx)
 	return args.Error(0)

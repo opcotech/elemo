@@ -24,9 +24,15 @@ func NewSystemService(t *testing.T, neo4jDBConf *config.GraphDatabaseConfig, pgD
 	)
 	require.NoError(t, err)
 
+	permissionRepo, err := neo4j.NewPermissionRepository(
+		neo4j.WithDatabase(neo4jDB),
+	)
+	require.NoError(t, err)
+
 	licenseSvc, err := service.NewLicenseService(
 		testutil.ParseLicense(t),
 		licenseRepo,
+		service.WithPermissionRepository(permissionRepo),
 	)
 	require.NoError(t, err)
 

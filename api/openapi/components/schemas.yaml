@@ -4,6 +4,8 @@ UserStatus:
   $ref: './schemas/user_status.yaml'
 Language:
   $ref: './schemas/language.yaml'
+SystemLicense:
+  $ref: './schemas/system_license.yaml'
 SystemHealth:
   $ref: './schemas/system_health.yaml'
 SystemHeartbeat:

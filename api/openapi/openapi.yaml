@@ -91,6 +91,8 @@ paths:
     $ref: './paths/system_heartbeat.yaml'
   /v1/system/version:
     $ref: './paths/system_version.yaml'
+  /v1/system/license:
+    $ref: './paths/system_license.yaml'
 components:
   securitySchemes:
     $ref: './components/security_schemes.yaml'
