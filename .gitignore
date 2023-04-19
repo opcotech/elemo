@@ -17,3 +17,4 @@ api/openapi/openapi.final.yaml
 # Misc
 tmp/
 TODO.*
+.DS_Store
