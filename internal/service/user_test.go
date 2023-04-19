@@ -143,6 +143,7 @@ func TestUserService_Create(t *testing.T) {
 					}).Return(true, nil)
 
 					licenseSvc := new(mock.LicenseService)
+					licenseSvc.On("Expired", ctx).Return(false, nil)
 					licenseSvc.On("WithinThreshold", ctx, license.QuotaUsers).Return(true, nil)
 
 					return &baseService{
@@ -169,10 +170,14 @@ func TestUserService_Create(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "service.userService/Create", []trace.SpanStartOption(nil)).Return(ctx, span)
 
+					licenseSvc := new(mock.LicenseService)
+					licenseSvc.On("Expired", ctx).Return(false, nil)
+
 					return &baseService{
-						logger:   new(mock.Logger),
-						tracer:   tracer,
-						userRepo: new(mock.UserRepository),
+						logger:         new(mock.Logger),
+						tracer:         tracer,
+						userRepo:       new(mock.UserRepository),
+						licenseService: licenseSvc,
 					}
 				},
 			},
@@ -202,6 +207,7 @@ func TestUserService_Create(t *testing.T) {
 					}).Return(true, nil)
 
 					licenseSvc := new(mock.LicenseService)
+					licenseSvc.On("Expired", ctx).Return(false, nil)
 					licenseSvc.On("WithinThreshold", ctx, license.QuotaUsers).Return(true, nil)
 
 					return &baseService{
@@ -236,6 +242,7 @@ func TestUserService_Create(t *testing.T) {
 					}).Return(true, nil)
 
 					licenseSvc := new(mock.LicenseService)
+					licenseSvc.On("Expired", ctx).Return(false, nil)
 					licenseSvc.On("WithinThreshold", ctx, license.QuotaUsers).Return(false, nil)
 
 					return &baseService{
@@ -252,6 +259,62 @@ func TestUserService_Create(t *testing.T) {
 				user: testModel.NewUser(),
 			},
 			wantErr: ErrQuotaExceeded,
+		},
+		{
+			name: "create user with expired license",
+			fields: fields{
+				baseService: func(ctx context.Context, user *model.User) *baseService {
+					span := new(mock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(mock.Tracer)
+					tracer.On("Start", ctx, "service.userService/Create", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					licenseSvc := new(mock.LicenseService)
+					licenseSvc.On("Expired", ctx).Return(true, nil)
+
+					return &baseService{
+						logger:         new(mock.Logger),
+						tracer:         tracer,
+						userRepo:       new(mock.UserRepository),
+						permissionRepo: new(mock.PermissionRepository),
+						licenseService: licenseSvc,
+					}
+				},
+			},
+			args: args{
+				ctx:  context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
+				user: testModel.NewUser(),
+			},
+			wantErr: license.ErrLicenseExpired,
+		},
+		{
+			name: "create user with license expired error",
+			fields: fields{
+				baseService: func(ctx context.Context, user *model.User) *baseService {
+					span := new(mock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(mock.Tracer)
+					tracer.On("Start", ctx, "service.userService/Create", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					licenseSvc := new(mock.LicenseService)
+					licenseSvc.On("Expired", ctx).Return(false, errors.New("error"))
+
+					return &baseService{
+						logger:         new(mock.Logger),
+						tracer:         tracer,
+						userRepo:       new(mock.UserRepository),
+						permissionRepo: new(mock.PermissionRepository),
+						licenseService: licenseSvc,
+					}
+				},
+			},
+			args: args{
+				ctx:  context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
+				user: testModel.NewUser(),
+			},
+			wantErr: license.ErrLicenseExpired,
 		},
 	}
 	for _, tt := range tests {
@@ -652,6 +715,7 @@ func TestUserService_Update(t *testing.T) {
 					}).Return(true, nil)
 
 					licenseSvc := new(mock.LicenseService)
+					licenseSvc.On("Expired", ctx).Return(false, nil)
 					licenseSvc.On("WithinThreshold", ctx, license.QuotaUsers).Return(true, nil)
 
 					return &baseService{
@@ -692,11 +756,15 @@ func TestUserService_Update(t *testing.T) {
 						model.PermissionKindAll,
 					}).Return(false, nil)
 
+					licenseSvc := new(mock.LicenseService)
+					licenseSvc.On("Expired", ctx).Return(false, nil)
+
 					return &baseService{
 						logger:         new(mock.Logger),
 						tracer:         tracer,
 						userRepo:       userRepo,
 						permissionRepo: permRepo,
+						licenseService: licenseSvc,
 					}
 				},
 			},
@@ -719,10 +787,14 @@ func TestUserService_Update(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "service.userService/Update", []trace.SpanStartOption(nil)).Return(ctx, span)
 
+					licenseSvc := new(mock.LicenseService)
+					licenseSvc.On("Expired", ctx).Return(false, nil)
+
 					return &baseService{
-						logger:   new(mock.Logger),
-						tracer:   tracer,
-						userRepo: new(mock.UserRepository),
+						logger:         new(mock.Logger),
+						tracer:         tracer,
+						userRepo:       new(mock.UserRepository),
+						licenseService: licenseSvc,
 					}
 				},
 			},
@@ -745,11 +817,15 @@ func TestUserService_Update(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "service.userService/Update", []trace.SpanStartOption(nil)).Return(ctx, span)
 
+					licenseSvc := new(mock.LicenseService)
+					licenseSvc.On("Expired", ctx).Return(false, nil)
+
 					return &baseService{
 						logger:         new(mock.Logger),
 						tracer:         tracer,
 						userRepo:       new(mock.UserRepository),
 						permissionRepo: new(mock.PermissionRepository),
+						licenseService: licenseSvc,
 					}
 				},
 			},
@@ -780,6 +856,7 @@ func TestUserService_Update(t *testing.T) {
 					}).Return(true, nil)
 
 					licenseSvc := new(mock.LicenseService)
+					licenseSvc.On("Expired", ctx).Return(false, nil)
 					licenseSvc.On("WithinThreshold", ctx, license.QuotaUsers).Return(true, nil)
 
 					return &baseService{
@@ -817,6 +894,7 @@ func TestUserService_Update(t *testing.T) {
 					}).Return(true, nil)
 
 					licenseSvc := new(mock.LicenseService)
+					licenseSvc.On("Expired", ctx).Return(false, nil)
 					licenseSvc.On("WithinThreshold", ctx, license.QuotaUsers).Return(false, nil)
 
 					return &baseService{
@@ -848,10 +926,14 @@ func TestUserService_Update(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "service.userService/Update", []trace.SpanStartOption(nil)).Return(ctx, span)
 
+					licenseSvc := new(mock.LicenseService)
+					licenseSvc.On("Expired", ctx).Return(false, nil)
+
 					return &baseService{
-						logger:   new(mock.Logger),
-						tracer:   tracer,
-						userRepo: new(mock.UserRepository),
+						logger:         new(mock.Logger),
+						tracer:         tracer,
+						userRepo:       new(mock.UserRepository),
+						licenseService: licenseSvc,
 					}
 				},
 			},
@@ -863,6 +945,70 @@ func TestUserService_Update(t *testing.T) {
 				},
 			},
 			wantErr: ErrNoUser,
+		},
+		{
+			name: "update user with expired license",
+			fields: fields{
+				baseService: func(ctx context.Context, id model.ID, patch map[string]any, user *model.User) *baseService {
+					span := new(mock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(mock.Tracer)
+					tracer.On("Start", ctx, "service.userService/Update", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					licenseSvc := new(mock.LicenseService)
+					licenseSvc.On("Expired", ctx).Return(true, nil)
+
+					return &baseService{
+						logger:         new(mock.Logger),
+						tracer:         tracer,
+						userRepo:       new(mock.UserRepository),
+						permissionRepo: new(mock.PermissionRepository),
+						licenseService: licenseSvc,
+					}
+				},
+			},
+			args: args{
+				ctx: context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
+				id:  userID,
+				patch: map[string]any{
+					"email":  "test2@example.com",
+					"status": model.UserStatusActive.String(),
+				},
+			},
+			wantErr: license.ErrLicenseExpired,
+		},
+		{
+			name: "update user with expired license error",
+			fields: fields{
+				baseService: func(ctx context.Context, id model.ID, patch map[string]any, user *model.User) *baseService {
+					span := new(mock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(mock.Tracer)
+					tracer.On("Start", ctx, "service.userService/Update", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					licenseSvc := new(mock.LicenseService)
+					licenseSvc.On("Expired", ctx).Return(false, errors.New("test error"))
+
+					return &baseService{
+						logger:         new(mock.Logger),
+						tracer:         tracer,
+						userRepo:       new(mock.UserRepository),
+						permissionRepo: new(mock.PermissionRepository),
+						licenseService: licenseSvc,
+					}
+				},
+			},
+			args: args{
+				ctx: context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
+				id:  userID,
+				patch: map[string]any{
+					"email":  "test2@example.com",
+					"status": model.UserStatusActive.String(),
+				},
+			},
+			wantErr: license.ErrLicenseExpired,
 		},
 	}
 	for _, tt := range tests {
@@ -921,11 +1067,15 @@ func TestUserService_Delete(t *testing.T) {
 						model.PermissionKindAll,
 					}).Return(true, nil)
 
+					licenseSvc := new(mock.LicenseService)
+					licenseSvc.On("Expired", ctx).Return(false, nil)
+
 					return &baseService{
 						logger:         new(mock.Logger),
 						tracer:         tracer,
 						userRepo:       userRepo,
 						permissionRepo: permRepo,
+						licenseService: licenseSvc,
 					}
 				},
 			},
@@ -954,11 +1104,15 @@ func TestUserService_Delete(t *testing.T) {
 						model.PermissionKindAll,
 					}).Return(true, nil)
 
+					licenseSvc := new(mock.LicenseService)
+					licenseSvc.On("Expired", ctx).Return(false, nil)
+
 					return &baseService{
 						logger:         new(mock.Logger),
 						tracer:         tracer,
 						userRepo:       userRepo,
 						permissionRepo: permRepo,
+						licenseService: licenseSvc,
 					}
 				},
 			},
@@ -993,11 +1147,15 @@ func TestUserService_Delete(t *testing.T) {
 						model.PermissionKindAll,
 					}).Return(false, nil)
 
+					licenseSvc := new(mock.LicenseService)
+					licenseSvc.On("Expired", ctx).Return(false, nil)
+
 					return &baseService{
 						logger:         new(mock.Logger),
 						tracer:         tracer,
 						userRepo:       userRepo,
 						permissionRepo: permRepo,
+						licenseService: licenseSvc,
 					}
 				},
 			},
@@ -1027,11 +1185,15 @@ func TestUserService_Delete(t *testing.T) {
 						model.PermissionKindAll,
 					}).Return(false, nil)
 
+					licenseSvc := new(mock.LicenseService)
+					licenseSvc.On("Expired", ctx).Return(false, nil)
+
 					return &baseService{
 						logger:         new(mock.Logger),
 						tracer:         tracer,
 						userRepo:       userRepo,
 						permissionRepo: permRepo,
+						licenseService: licenseSvc,
 					}
 				},
 			},
@@ -1052,11 +1214,15 @@ func TestUserService_Delete(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "service.userService/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
 
+					licenseSvc := new(mock.LicenseService)
+					licenseSvc.On("Expired", ctx).Return(false, nil)
+
 					return &baseService{
 						logger:         new(mock.Logger),
 						tracer:         tracer,
 						userRepo:       new(mock.UserRepository),
 						permissionRepo: new(mock.PermissionRepository),
+						licenseService: licenseSvc,
 					}
 				},
 			},
@@ -1092,11 +1258,15 @@ func TestUserService_Delete(t *testing.T) {
 						model.PermissionKindAll,
 					}).Return(true, nil)
 
+					licenseSvc := new(mock.LicenseService)
+					licenseSvc.On("Expired", ctx).Return(false, nil)
+
 					return &baseService{
 						logger:         new(mock.Logger),
 						tracer:         tracer,
 						userRepo:       userRepo,
 						permissionRepo: permRepo,
+						licenseService: licenseSvc,
 					}
 				},
 			},
@@ -1126,11 +1296,15 @@ func TestUserService_Delete(t *testing.T) {
 						model.PermissionKindAll,
 					}).Return(true, nil)
 
+					licenseSvc := new(mock.LicenseService)
+					licenseSvc.On("Expired", ctx).Return(false, nil)
+
 					return &baseService{
 						logger:         new(mock.Logger),
 						tracer:         tracer,
 						userRepo:       userRepo,
 						permissionRepo: permRepo,
+						licenseService: licenseSvc,
 					}
 				},
 			},
@@ -1151,11 +1325,15 @@ func TestUserService_Delete(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "service.userService/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
 
+					licenseSvc := new(mock.LicenseService)
+					licenseSvc.On("Expired", ctx).Return(false, nil)
+
 					return &baseService{
 						logger:         new(mock.Logger),
 						tracer:         tracer,
 						userRepo:       new(mock.UserRepository),
 						permissionRepo: new(mock.PermissionRepository),
+						licenseService: licenseSvc,
 					}
 				},
 			},
@@ -1176,11 +1354,15 @@ func TestUserService_Delete(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "service.userService/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
 
+					licenseSvc := new(mock.LicenseService)
+					licenseSvc.On("Expired", ctx).Return(false, nil)
+
 					return &baseService{
 						logger:         new(mock.Logger),
 						tracer:         tracer,
 						userRepo:       new(mock.UserRepository),
 						permissionRepo: new(mock.PermissionRepository),
+						licenseService: licenseSvc,
 					}
 				},
 			},

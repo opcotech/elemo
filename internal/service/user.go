@@ -58,6 +58,10 @@ func (s *userService) Create(ctx context.Context, user *model.User) error {
 	ctx, span := s.tracer.Start(ctx, "service.userService/Create")
 	defer span.End()
 
+	if expired, err := s.licenseService.Expired(ctx); expired || err != nil {
+		return license.ErrLicenseExpired
+	}
+
 	if err := user.Validate(); err != nil {
 		return errors.Join(ErrUserCreate, err)
 	}
@@ -134,6 +138,10 @@ func (s *userService) Update(ctx context.Context, id model.ID, patch map[string]
 	ctx, span := s.tracer.Start(ctx, "service.userService/Update")
 	defer span.End()
 
+	if expired, err := s.licenseService.Expired(ctx); expired || err != nil {
+		return nil, license.ErrLicenseExpired
+	}
+
 	if err := id.Validate(); err != nil {
 		return nil, errors.Join(ErrUserUpdate, err)
 	}
@@ -171,6 +179,10 @@ func (s *userService) Update(ctx context.Context, id model.ID, patch map[string]
 func (s *userService) Delete(ctx context.Context, id model.ID, force bool) error {
 	ctx, span := s.tracer.Start(ctx, "service.userService/Delete")
 	defer span.End()
+
+	if expired, err := s.licenseService.Expired(ctx); expired || err != nil {
+		return license.ErrLicenseExpired
+	}
 
 	if err := id.Validate(); err != nil {
 		return errors.Join(ErrUserDelete, err)

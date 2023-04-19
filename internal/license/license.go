@@ -27,6 +27,7 @@ const (
 )
 
 var (
+	ErrLicenseExpired          = errors.New("license expired")                     // license is expired
 	ErrLicenseInvalid          = errors.New("invalid or expired license provided") // license is expired
 	ErrLicenseInvalidSignature = errors.New("invalid license signature")           // license signature is invalid
 	ErrNoLicense               = errors.New("no license provided")                 // no license provided
@@ -146,6 +147,10 @@ func NewLicense(licenseKey, pubKey string) (*License, error) {
 	}
 
 	if !license.Valid() {
+		if license.Expired() {
+			return nil, ErrLicenseExpired
+		}
+
 		return nil, ErrLicenseInvalid
 	}
 
