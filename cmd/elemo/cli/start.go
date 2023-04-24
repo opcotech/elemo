@@ -125,6 +125,9 @@ var startCmd = &cobra.Command{
 			service.WithLogger(logger.Named("todo_service")),
 			service.WithTracer(tracer),
 		)
+		if err != nil {
+			logger.Fatal("failed to initialize todo service", zap.Error(err))
+		}
 
 		authProvider, err := initAuthProvider(relDBPool)
 		if err != nil {
