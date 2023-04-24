@@ -14,7 +14,7 @@ import (
 type TodoRepository interface {
 	Create(ctx context.Context, todo *model.Todo) error
 	Get(ctx context.Context, id model.ID) (*model.Todo, error)
-	GetByOwner(ctx context.Context, ownerID model.ID, completed *bool) ([]*model.Todo, error)
+	GetByOwner(ctx context.Context, ownerID model.ID, offset, limit int, completed *bool) ([]*model.Todo, error)
 	Update(ctx context.Context, id model.ID, patch map[string]any) (*model.Todo, error)
 	Delete(ctx context.Context, id model.ID) error
 }
@@ -33,7 +33,7 @@ type TodoService interface {
 	// parameter is set to true, only completed todos are returned. If the
 	// completed parameter is set to false, only incomplete todos are
 	// returned. If the completed parameter is nil, all todos are returned.
-	GetAll(ctx context.Context, completed *bool) ([]*model.Todo, error)
+	GetAll(ctx context.Context, offset, limit int, completed *bool) ([]*model.Todo, error)
 	// Update updates a todo by its ID. The patch parameter is a map of
 	// fields to update. If the todo does not exist, an error is returned.
 	Update(ctx context.Context, id model.ID, patch map[string]any) (*model.Todo, error)
@@ -96,7 +96,7 @@ func (s *todoService) Get(ctx context.Context, id model.ID) (*model.Todo, error)
 	return todo, nil
 }
 
-func (s *todoService) GetAll(ctx context.Context, completed *bool) ([]*model.Todo, error) {
+func (s *todoService) GetAll(ctx context.Context, offset, limit int, completed *bool) ([]*model.Todo, error) {
 	ctx, span := s.tracer.Start(ctx, "service.todoService/GetAll")
 	defer span.End()
 
@@ -105,7 +105,7 @@ func (s *todoService) GetAll(ctx context.Context, completed *bool) ([]*model.Tod
 		return nil, ErrNoUser
 	}
 
-	todos, err := s.todoRepo.GetByOwner(ctx, userID, completed)
+	todos, err := s.todoRepo.GetByOwner(ctx, userID, offset, limit, completed)
 	if err != nil {
 		return nil, errors.Join(ErrTodoGetAll, err)
 	}

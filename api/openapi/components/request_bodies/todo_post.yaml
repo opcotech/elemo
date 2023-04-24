@@ -6,5 +6,5 @@ content:
         - required:
             - title
             - priority
-            - user_id
+            - owned_by
             - completed

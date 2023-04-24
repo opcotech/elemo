@@ -7,6 +7,13 @@ get:
   parameters:
     - $ref: '../components/parameters/limit.yaml'
     - $ref: '../components/parameters/offset.yaml'
+    - name: completed
+      in: query
+      description: Filter by completed status.
+      required: false
+      allowEmptyValue: true
+      schema:
+        type: boolean
   tags:
     - Todos
   security:
@@ -42,16 +49,11 @@ post:
         - todo
   responses:
     '201':
-      description: Returns the ID of the newly created todo item.
+      description: Returns the newly created todo item.
       content:
         application/json:
           schema:
-            type: object
-            properties:
-              todo_id:
-                type: string
-            required:
-              - todo_id
+            $ref: '../components/schemas/todo.yaml'
     '400':
       $ref: '../components/responses/400.yaml'
     '401':

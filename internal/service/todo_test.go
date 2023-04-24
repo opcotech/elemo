@@ -585,11 +585,12 @@ func TestTodoService_GetAll(t *testing.T) {
 	userID := model.MustNewID(model.ResourceTypeUser)
 
 	type args struct {
-		ctx       context.Context
-		completed *bool
+		ctx           context.Context
+		offset, limit int
+		completed     *bool
 	}
 	type fields struct {
-		baseService func(ctx context.Context, completed *bool, todos []*model.Todo) *baseService
+		baseService func(ctx context.Context, offset, limit int, completed *bool, todos []*model.Todo) *baseService
 	}
 	tests := []struct {
 		name    string
@@ -602,10 +603,12 @@ func TestTodoService_GetAll(t *testing.T) {
 			name: "get all todos",
 			args: args{
 				ctx:       context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
+				offset:    0,
+				limit:     10,
 				completed: nil,
 			},
 			fields: fields{
-				baseService: func(ctx context.Context, completed *bool, todos []*model.Todo) *baseService {
+				baseService: func(ctx context.Context, offset, limit int, completed *bool, todos []*model.Todo) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -613,7 +616,7 @@ func TestTodoService_GetAll(t *testing.T) {
 					tracer.On("Start", ctx, "service.todoService/GetAll", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					todoRepo := new(mock.TodoRepository)
-					todoRepo.On("GetByOwner", ctx, userID, completed).Return(todos, nil)
+					todoRepo.On("GetByOwner", ctx, userID, offset, limit, completed).Return(todos, nil)
 
 					return &baseService{
 						logger:         new(mock.Logger),
@@ -633,10 +636,12 @@ func TestTodoService_GetAll(t *testing.T) {
 			name: "get all completed todos",
 			args: args{
 				ctx:       context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
+				offset:    0,
+				limit:     10,
 				completed: convert.ToPointer(true),
 			},
 			fields: fields{
-				baseService: func(ctx context.Context, completed *bool, todos []*model.Todo) *baseService {
+				baseService: func(ctx context.Context, offset, limit int, completed *bool, todos []*model.Todo) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -644,7 +649,7 @@ func TestTodoService_GetAll(t *testing.T) {
 					tracer.On("Start", ctx, "service.todoService/GetAll", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					todoRepo := new(mock.TodoRepository)
-					todoRepo.On("GetByOwner", ctx, userID, completed).Return(todos, nil)
+					todoRepo.On("GetByOwner", ctx, userID, offset, limit, completed).Return(todos, nil)
 
 					return &baseService{
 						logger:         new(mock.Logger),
@@ -664,10 +669,12 @@ func TestTodoService_GetAll(t *testing.T) {
 			name: "get all active todos",
 			args: args{
 				ctx:       context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
+				offset:    0,
+				limit:     10,
 				completed: convert.ToPointer(false),
 			},
 			fields: fields{
-				baseService: func(ctx context.Context, completed *bool, todos []*model.Todo) *baseService {
+				baseService: func(ctx context.Context, offset, limit int, completed *bool, todos []*model.Todo) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -675,7 +682,7 @@ func TestTodoService_GetAll(t *testing.T) {
 					tracer.On("Start", ctx, "service.todoService/GetAll", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					todoRepo := new(mock.TodoRepository)
-					todoRepo.On("GetByOwner", ctx, userID, completed).Return(todos, nil)
+					todoRepo.On("GetByOwner", ctx, userID, offset, limit, completed).Return(todos, nil)
 
 					return &baseService{
 						logger:         new(mock.Logger),
@@ -695,10 +702,12 @@ func TestTodoService_GetAll(t *testing.T) {
 			name: "get todos with no context user id",
 			args: args{
 				ctx:       context.Background(),
+				offset:    0,
+				limit:     10,
 				completed: nil,
 			},
 			fields: fields{
-				baseService: func(ctx context.Context, completed *bool, todos []*model.Todo) *baseService {
+				baseService: func(ctx context.Context, offset, limit int, completed *bool, todos []*model.Todo) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -720,10 +729,12 @@ func TestTodoService_GetAll(t *testing.T) {
 			name: "get todos with error",
 			args: args{
 				ctx:       context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
+				offset:    0,
+				limit:     10,
 				completed: nil,
 			},
 			fields: fields{
-				baseService: func(ctx context.Context, completed *bool, todos []*model.Todo) *baseService {
+				baseService: func(ctx context.Context, offset, limit int, completed *bool, todos []*model.Todo) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -731,7 +742,7 @@ func TestTodoService_GetAll(t *testing.T) {
 					tracer.On("Start", ctx, "service.todoService/GetAll", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					todoRepo := new(mock.TodoRepository)
-					todoRepo.On("GetByOwner", ctx, userID, completed).Return(nil, errors.New("error"))
+					todoRepo.On("GetByOwner", ctx, userID, offset, limit, completed).Return(nil, errors.New("error"))
 
 					return &baseService{
 						logger:         new(mock.Logger),
@@ -750,9 +761,9 @@ func TestTodoService_GetAll(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			s := &todoService{
-				baseService: tt.fields.baseService(tt.args.ctx, tt.args.completed, tt.want),
+				baseService: tt.fields.baseService(tt.args.ctx, tt.args.offset, tt.args.limit, tt.args.completed, tt.want),
 			}
-			todo, err := s.GetAll(tt.args.ctx, tt.args.completed)
+			todo, err := s.GetAll(tt.args.ctx, tt.args.offset, tt.args.limit, tt.args.completed)
 			require.ErrorIs(t, err, tt.wantErr)
 			assert.Equal(t, tt.want, todo)
 		})

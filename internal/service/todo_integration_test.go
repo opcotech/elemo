@@ -116,15 +116,15 @@ func (s *TodoServiceIntegrationTestSuite) TestGetAll() {
 	s.Require().NoError(s.todoService.Create(s.testUserContext, testModel.NewTodo(s.testUser.ID, s.testUser.ID)))
 	s.Require().NoError(s.todoService.Create(s.testUserContext, testModel.NewTodo(s.testUser.ID, s.testUser.ID)))
 
-	todos, err := s.todoService.GetAll(s.testUserContext, nil)
+	todos, err := s.todoService.GetAll(s.testUserContext, 0, 10, nil)
 	s.Require().NoError(err)
 	s.Assert().Len(todos, 3)
 
-	todos, err = s.todoService.GetAll(s.testUserContext, convert.ToPointer(true))
+	todos, err = s.todoService.GetAll(s.testUserContext, 0, 10, convert.ToPointer(true))
 	s.Require().NoError(err)
 	s.Assert().Len(todos, 1)
 
-	todos, err = s.todoService.GetAll(s.testUserContext, convert.ToPointer(false))
+	todos, err = s.todoService.GetAll(s.testUserContext, 0, 10, convert.ToPointer(false))
 	s.Require().NoError(err)
 	s.Assert().Len(todos, 2)
 }

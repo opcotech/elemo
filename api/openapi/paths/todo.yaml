@@ -16,6 +16,8 @@ get:
         application/json:
           schema:
             $ref: '../components/schemas/todo.yaml'
+    '400':
+      $ref: '../components/responses/400.yaml'
     '401':
       $ref: '../components/responses/401.yaml'
     '403':
@@ -38,8 +40,14 @@ patch:
   requestBody:
     $ref: '../components/request_bodies/todo_patch.yaml'
   responses:
-    '204':
-      $ref: '../components/responses/204.yaml'
+    '200':
+      description: The updated todo item.
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/todo.yaml'
+    '400':
+      $ref: '../components/responses/400.yaml'
     '401':
       $ref: '../components/responses/401.yaml'
     '403':
@@ -62,6 +70,8 @@ delete:
   responses:
     '204':
       $ref: '../components/responses/204.yaml'
+    '400':
+      $ref: '../components/responses/400.yaml'
     '401':
       $ref: '../components/responses/401.yaml'
     '403':

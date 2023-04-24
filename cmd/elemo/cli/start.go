@@ -73,6 +73,15 @@ var startCmd = &cobra.Command{
 			logger.Fatal("failed to initialize user repository", zap.Error(err))
 		}
 
+		todoRepo, err := neo4j.NewTodoRepository(
+			neo4j.WithDatabase(graphDB),
+			neo4j.WithRepositoryLogger(logger.Named("todo_repository")),
+			neo4j.WithRepositoryTracer(tracer),
+		)
+		if err != nil {
+			logger.Fatal("failed to initialize todo repository", zap.Error(err))
+		}
+
 		licenseService, err := service.NewLicenseService(
 			license,
 			licenseRepo,
@@ -109,6 +118,14 @@ var startCmd = &cobra.Command{
 			logger.Fatal("failed to initialize user service", zap.Error(err))
 		}
 
+		todoService, err := service.NewTodoService(
+			service.WithTodoRepository(todoRepo),
+			service.WithPermissionRepository(permissionRepo),
+			service.WithLicenseService(licenseService),
+			service.WithLogger(logger.Named("todo_service")),
+			service.WithTracer(tracer),
+		)
+
 		authProvider, err := initAuthProvider(relDBPool)
 		if err != nil {
 			logger.Fatal("failed to initialize auth server", zap.Error(err))
@@ -118,6 +135,7 @@ var startCmd = &cobra.Command{
 			elemoHttp.WithConfig(cfg.Server),
 			elemoHttp.WithAuthProvider(authProvider),
 			elemoHttp.WithUserService(userService),
+			elemoHttp.WithTodoService(todoService),
 			elemoHttp.WithSystemService(systemService),
 			elemoHttp.WithLicenseService(licenseService),
 			elemoHttp.WithLogger(logger.Named("http_server")),

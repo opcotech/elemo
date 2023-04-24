@@ -130,7 +130,7 @@ func (r *TodoRepository) Get(ctx context.Context, id model.ID) (*model.Todo, err
 	return todo, nil
 }
 
-func (r *TodoRepository) GetByOwner(ctx context.Context, ownerID model.ID, completed *bool) ([]*model.Todo, error) {
+func (r *TodoRepository) GetByOwner(ctx context.Context, ownerID model.ID, offset, limit int, completed *bool) ([]*model.Todo, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.TodoRepository/GetByCreator")
 	defer span.End()
 
@@ -139,10 +139,13 @@ func (r *TodoRepository) GetByOwner(ctx context.Context, ownerID model.ID, compl
 	WHERE $completed IS NULL OR t.completed = $completed
 	OPTIONAL MATCH (t)<-[:` + EdgeKindCreated.String() + `]-(c)
 	RETURN t, o.id as o, c.id as c
-	ORDER BY t.created_at DESC`
+	ORDER BY t.created_at DESC
+	SKIP $offset LIMIT $limit`
 
 	params := map[string]any{
 		"owner_id":  ownerID.String(),
+		"offset":    offset,
+		"limit":     limit,
 		"completed": completed,
 	}
 
