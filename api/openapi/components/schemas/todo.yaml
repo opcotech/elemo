@@ -1,0 +1,43 @@
+description: Todo item belonging to a user.
+type: object
+properties:
+  id:
+    description: Unique identifier of the todo item.
+    type: string
+    readOnly: true
+  title:
+    description: Title of the todo item.
+    type: string
+    minLength: 3
+    maximum: 250
+  description:
+    description: Description of the todo item.
+    type: string
+    maxLength: 500
+  priority:
+    $ref: './todo_priority.yaml'
+  completed:
+    description: Status of the todo item.
+    type: boolean
+    default: false
+  owned_by:
+    description: ID of the user who owns the todo item.
+    type: string
+  created_by:
+    description: ID of the user who created the todo item.
+    type: string
+    readOnly: true
+  due_date:
+    description: Completion due date of the todo item.
+    type: string
+    format: date-time
+  created_at:
+    description: Date when the todo item was created.
+    type: string
+    format: date-time
+    readOnly: true
+  updated_at:
+    description: Last date of todo item modification.
+    type: string
+    format: date-time
+    readOnly: true

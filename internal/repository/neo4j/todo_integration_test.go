@@ -76,15 +76,15 @@ func (s *TodoRepositoryIntegrationTestSuite) TestGetByOwner() {
 	s.Require().NoError(s.TodoRepo.Create(context.Background(), completedTodo))
 	s.Require().NoError(s.TodoRepo.Create(context.Background(), s.todo))
 
-	todos, err := s.TodoRepo.GetByOwner(context.Background(), s.todo.OwnedBy, nil)
+	todos, err := s.TodoRepo.GetByOwner(context.Background(), s.todo.OwnedBy, 0, 10, nil)
 	s.Require().NoError(err)
 	s.Assert().Len(todos, 2)
 
-	todos, err = s.TodoRepo.GetByOwner(context.Background(), s.todo.OwnedBy, convert.ToPointer(false))
+	todos, err = s.TodoRepo.GetByOwner(context.Background(), s.todo.OwnedBy, 0, 10, convert.ToPointer(false))
 	s.Require().NoError(err)
 	s.Assert().Len(todos, 1)
 
-	todos, err = s.TodoRepo.GetByOwner(context.Background(), s.todo.OwnedBy, convert.ToPointer(true))
+	todos, err = s.TodoRepo.GetByOwner(context.Background(), s.todo.OwnedBy, 0, 10, convert.ToPointer(true))
 	s.Require().NoError(err)
 	s.Assert().Len(todos, 1)
 }

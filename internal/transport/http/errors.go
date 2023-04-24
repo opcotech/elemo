@@ -10,6 +10,7 @@ var (
 	ErrNoLicenseService = errors.New("no license service provided") // no license service provided
 	ErrNoLogger         = errors.New("no logger provided")          // no logger provided
 	ErrNoSystemService  = errors.New("no system service provided")  // no system service provided
+	ErrNoTodoService    = errors.New("no todo service provided")    // no todo service provided
 	ErrNoTracer         = errors.New("no tracer provided")          // no tracer provided
 	ErrNoUserService    = errors.New("no user service provided")    // no user service provided
 )

@@ -4,6 +4,10 @@ UserStatus:
   $ref: './schemas/user_status.yaml'
 Language:
   $ref: './schemas/language.yaml'
+Todo:
+  $ref: './schemas/todo.yaml'
+TodoPriority:
+  $ref: './schemas/todo_priority.yaml'
 SystemLicense:
   $ref: './schemas/system_license.yaml'
 SystemHealth:

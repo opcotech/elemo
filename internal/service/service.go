@@ -58,6 +58,18 @@ func WithUserRepository(userRepo UserRepository) Option {
 	}
 }
 
+// WithTodoRepository sets the todo repository for the baseService.
+func WithTodoRepository(todoRepo TodoRepository) Option {
+	return func(s *baseService) error {
+		if todoRepo == nil {
+			return ErrNoTodoRepository
+		}
+
+		s.todoRepo = todoRepo
+		return nil
+	}
+}
+
 // WithLicenseService sets the license service for the baseService.
 func WithLicenseService(licenseService LicenseService) Option {
 	return func(s *baseService) error {
@@ -77,6 +89,7 @@ type baseService struct {
 	tracer trace.Tracer
 
 	userRepo       UserRepository
+	todoRepo       TodoRepository
 	permissionRepo PermissionRepository
 
 	licenseService LicenseService

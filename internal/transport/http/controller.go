@@ -104,6 +104,19 @@ func WithUserService(userService service.UserService) ControllerOption {
 	}
 }
 
+// WithTodoService sets the todo service for the controller.
+func WithTodoService(todoService service.TodoService) ControllerOption {
+	return func(c *baseController) error {
+		if todoService == nil {
+			return ErrNoTodoService
+		}
+
+		c.todoService = todoService
+
+		return nil
+	}
+}
+
 // baseController defines the dependencies that are required to be injected
 // into a controller.
 type baseController struct {
@@ -114,6 +127,7 @@ type baseController struct {
 	authProvider *authServer.Server
 
 	userService    service.UserService
+	todoService    service.TodoService
 	systemService  service.SystemService
 	licenseService service.LicenseService
 }

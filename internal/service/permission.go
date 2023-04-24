@@ -28,7 +28,6 @@ func ctxUserPermitted(ctx context.Context, repo PermissionRepository, target mod
 	span := trace.SpanFromContext(ctx)
 
 	var hasPerm bool
-	var hasRelation bool
 	var err error
 
 	userID, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID)
@@ -43,5 +42,5 @@ func ctxUserPermitted(ctx context.Context, repo PermissionRepository, target mod
 	}
 	span.AddEvent("permission checked")
 
-	return hasPerm || hasRelation
+	return hasPerm
 }
