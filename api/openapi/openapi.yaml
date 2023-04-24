@@ -65,6 +65,8 @@ info:
 tags:
   - name: Users
     description: API endpoints to interact with users.
+  - name: Todos
+    description: API endpoints to interact with todos.
   - name: System
     description: API endpoints to interact with system resources.
 servers:
@@ -85,6 +87,10 @@ paths:
     $ref: './paths/users.yaml'
   /v1/users/{user_id}:
     $ref: './paths/user.yaml'
+  /v1/todos:
+    $ref: './paths/todos.yaml'
+  /v1/todos/{todo_id}:
+    $ref: './paths/todo.yaml'
   /v1/system/health:
     $ref: './paths/system_health.yaml'
   /v1/system/heartbeat:

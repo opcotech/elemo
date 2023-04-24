@@ -2,3 +2,7 @@ UserPost:
   $ref: './request_bodies/user_post.yaml'
 UserPatch:
   $ref: './request_bodies/user_patch.yaml'
+TodoPost:
+  $ref: './request_bodies/todo_post.yaml'
+TodoPatch:
+  $ref: './request_bodies/todo_patch.yaml'

@@ -1,0 +1,72 @@
+get:
+  operationId: getTodo
+  summary: Get todo item by ID.
+  description: Return a todo item by its ID.
+  parameters:
+    - $ref: '../components/parameters/todo_id.yaml'
+  tags:
+    - Todos
+  security:
+    - OAuth2:
+        - todo.read
+  responses:
+    '200':
+      description: The list of todo items belonging to the current user.
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/todo.yaml'
+    '401':
+      $ref: '../components/responses/401.yaml'
+    '403':
+      $ref: '../components/responses/403.yaml'
+    '404':
+      $ref: '../components/responses/404.yaml'
+    default:
+      $ref: '../components/responses/default.yaml'
+patch:
+  operationId: updateTodo
+  summary: Update todo item by ID.
+  description: Updates an existing todo item by its ID.
+  parameters:
+    - $ref: '../components/parameters/todo_id.yaml'
+  tags:
+    - Todos
+  security:
+    - OAuth2:
+        - todo
+  requestBody:
+    $ref: '../components/request_bodies/todo_patch.yaml'
+  responses:
+    '204':
+      $ref: '../components/responses/204.yaml'
+    '401':
+      $ref: '../components/responses/401.yaml'
+    '403':
+      $ref: '../components/responses/403.yaml'
+    '404':
+      $ref: '../components/responses/404.yaml'
+    default:
+      $ref: '../components/responses/default.yaml'
+delete:
+  operationId: deleteTodo
+  summary: Delete todo item by ID.
+  description: Delete a todo item by its ID.
+  parameters:
+    - $ref: '../components/parameters/todo_id.yaml'
+  tags:
+    - Todos
+  security:
+    - OAuth2:
+        - todo
+  responses:
+    '204':
+      $ref: '../components/responses/204.yaml'
+    '401':
+      $ref: '../components/responses/401.yaml'
+    '403':
+      $ref: '../components/responses/403.yaml'
+    '404':
+      $ref: '../components/responses/404.yaml'
+    default:
+      $ref: '../components/responses/default.yaml'
