@@ -102,13 +102,12 @@ jobs:
         uses: actions/download-artifact@master
         with:
           name: "integration-test-results"
-      - name: Combine coverage
-        run: make coverage.combine
       - uses: ./.github/actions/generate
       - name: Upload test results
-        uses: paambaati/codeclimate-action@v3.2.0
+        uses: paambaati/codeclimate-action@v4.0.0
         env:
           CC_TEST_REPORTER_ID: ${{secrets.CC_TEST_REPORTER_ID}}
         with:
+          coverageCommand: make coverage.combine
           prefix: github.com/${{github.repository}}
           coverageLocations: ${{github.workspace}}/.coverage.out:gocov
