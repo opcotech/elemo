@@ -49,11 +49,16 @@ post:
         - todo
   responses:
     '201':
-      description: Returns the newly created todo item.
+      description: Returns the newly created todo item's ID.
       content:
         application/json:
           schema:
-            $ref: '../components/schemas/todo.yaml'
+            type: object
+            properties:
+              todo_id:
+                type: string
+            required:
+              - todo_id
     '400':
       $ref: '../components/responses/400.yaml'
     '401':

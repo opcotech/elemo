@@ -36,12 +36,16 @@ func (c *todoController) CreateTodo(ctx context.Context, request gen.CreateTodoR
 		return gen.CreateTodo400JSONResponse{N400JSONResponse: badRequest}, nil
 	}
 
-	ownerID, err := model.NewIDFromString(request.Body.OwnedBy, model.ResourceTypeTodo.String())
+	ownerID, err := model.NewIDFromString(request.Body.OwnedBy, model.ResourceTypeUser.String())
 	if err != nil {
 		return gen.CreateTodo400JSONResponse{N400JSONResponse: badRequest}, nil
 	}
 
-	todo := createTodoJSONRequestBodyToTodo(request.Body, ownerID, createdBy)
+	todo, err := createTodoJSONRequestBodyToTodo(request.Body, ownerID, createdBy)
+	if err != nil {
+		return gen.CreateTodo400JSONResponse{N400JSONResponse: badRequest}, nil
+	}
+
 	if err := c.todoService.Create(ctx, todo); err != nil {
 		if errors.Is(err, service.ErrNoPermission) {
 			return gen.CreateTodo401JSONResponse{N401JSONResponse: permissionDenied}, nil
@@ -54,7 +58,9 @@ func (c *todoController) CreateTodo(ctx context.Context, request gen.CreateTodoR
 		}, nil
 	}
 
-	return gen.CreateTodo201JSONResponse(todoToDTO(todo)), nil
+	return gen.CreateTodo201JSONResponse{
+		TodoId: todo.ID.String(),
+	}, nil
 }
 
 func (c *todoController) GetTodo(ctx context.Context, request gen.GetTodoRequestObject) (gen.GetTodoResponseObject, error) {
@@ -199,8 +205,9 @@ func NewTodoController(opts ...ControllerOption) (TodoController, error) {
 	return controller, nil
 }
 
-func createTodoJSONRequestBodyToTodo(body *gen.CreateTodoJSONRequestBody, ownedBy, createdBy model.ID) *model.Todo {
-	return &model.Todo{
+func createTodoJSONRequestBodyToTodo(body *gen.CreateTodoJSONRequestBody, ownedBy, createdBy model.ID) (*model.Todo, error) {
+	todo := &model.Todo{
+		ID:          model.MustNewNilID(model.ResourceTypeTodo),
 		Title:       body.Title,
 		Description: pkg.GetDefaultPtr(body.Description, ""),
 		Completed:   body.Completed,
@@ -208,6 +215,16 @@ func createTodoJSONRequestBodyToTodo(body *gen.CreateTodoJSONRequestBody, ownedB
 		CreatedBy:   createdBy,
 		DueDate:     body.DueDate,
 	}
+
+	if body.Priority != "" {
+		if err := todo.Priority.UnmarshalText([]byte(body.Priority)); err != nil {
+			return nil, err
+		}
+	} else {
+		todo.Priority = model.TodoPriorityNormal
+	}
+
+	return todo, nil
 }
 
 func todoToDTO(todo *model.Todo) gen.Todo {
