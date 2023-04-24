@@ -59,13 +59,14 @@ func (s *todoService) Create(ctx context.Context, todo *model.Todo) error {
 		return errors.Join(ErrTodoCreate, err)
 	}
 
-	hasRelation, err := s.permissionRepo.HasAnyRelation(ctx, todo.CreatedBy, todo.OwnedBy)
-	if err != nil {
-		return errors.Join(ErrTodoCreate, err)
-	}
-
-	if !hasRelation {
-		return ErrNoPermission
+	if todo.CreatedBy != todo.OwnedBy {
+		hasRelation, err := s.permissionRepo.HasAnyRelation(ctx, todo.CreatedBy, todo.OwnedBy)
+		if err != nil {
+			return errors.Join(ErrTodoCreate, err)
+		}
+		if !hasRelation {
+			return ErrNoPermission
+		}
 	}
 
 	if err := s.todoRepo.Create(ctx, todo); err != nil {
