@@ -67,7 +67,7 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      ELEMO_CONFIG: /elemo/configs/development/config.yml
+      ELEMO_CONFIG: /elemo/configs/development/config.gen.yml
     ports:
       - "35478:35478"
       - "35479:35479"
