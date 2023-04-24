@@ -57,7 +57,7 @@ log:
   level: "info"
 
 license:
-  file: "configs/development/license${suffix}.gen.key"
+  file: "configs/development/license.gen.key"
 
 tls:
   cert_file: "configs/development/cert${suffix}.gen.pem"
