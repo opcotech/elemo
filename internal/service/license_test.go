@@ -23,7 +23,7 @@ import (
 func TestNewLicenseService(t *testing.T) {
 	type args struct {
 		l    *license.License
-		repo LicenseRepository
+		repo repository.LicenseRepository
 		opts []Option
 	}
 	tests := []struct {
@@ -162,7 +162,7 @@ func TestLicenseService_Expired(t *testing.T) {
 	}
 	type fields struct {
 		baseService func(ctx context.Context) *baseService
-		licenseRepo LicenseRepository
+		licenseRepo repository.LicenseRepository
 		license     *license.License
 	}
 	tests := []struct {
@@ -258,7 +258,7 @@ func TestLicenseService_HasFeature(t *testing.T) {
 	}
 	type fields struct {
 		baseService func(ctx context.Context) *baseService
-		licenseRepo LicenseRepository
+		licenseRepo repository.LicenseRepository
 		license     *license.License
 	}
 	tests := []struct {
@@ -356,7 +356,7 @@ func TestLicenseService_WithinThreshold(t *testing.T) {
 	}
 	type fields struct {
 		baseService func(ctx context.Context) *baseService
-		licenseRepo func(ctx context.Context) LicenseRepository
+		licenseRepo func(ctx context.Context) repository.LicenseRepository
 		license     *license.License
 	}
 	tests := []struct {
@@ -386,7 +386,7 @@ func TestLicenseService_WithinThreshold(t *testing.T) {
 						permissionRepo: new(mock.PermissionRepository),
 					}
 				},
-				licenseRepo: func(ctx context.Context) LicenseRepository {
+				licenseRepo: func(ctx context.Context) repository.LicenseRepository {
 					repo := new(mock.LicenseRepository)
 					repo.On("DocumentCount", ctx).Return(1, nil)
 					return repo
@@ -422,7 +422,7 @@ func TestLicenseService_WithinThreshold(t *testing.T) {
 						permissionRepo: new(mock.PermissionRepository),
 					}
 				},
-				licenseRepo: func(ctx context.Context) LicenseRepository {
+				licenseRepo: func(ctx context.Context) repository.LicenseRepository {
 					repo := new(mock.LicenseRepository)
 					repo.On("NamespaceCount", ctx).Return(1, nil)
 					return repo
@@ -458,7 +458,7 @@ func TestLicenseService_WithinThreshold(t *testing.T) {
 						permissionRepo: new(mock.PermissionRepository),
 					}
 				},
-				licenseRepo: func(ctx context.Context) LicenseRepository {
+				licenseRepo: func(ctx context.Context) repository.LicenseRepository {
 					repo := new(mock.LicenseRepository)
 					repo.On("ActiveOrganizationCount", ctx).Return(1, nil)
 					return repo
@@ -494,7 +494,7 @@ func TestLicenseService_WithinThreshold(t *testing.T) {
 						permissionRepo: new(mock.PermissionRepository),
 					}
 				},
-				licenseRepo: func(ctx context.Context) LicenseRepository {
+				licenseRepo: func(ctx context.Context) repository.LicenseRepository {
 					repo := new(mock.LicenseRepository)
 					repo.On("ProjectCount", ctx).Return(1, nil)
 					return repo
@@ -530,7 +530,7 @@ func TestLicenseService_WithinThreshold(t *testing.T) {
 						permissionRepo: new(mock.PermissionRepository),
 					}
 				},
-				licenseRepo: func(ctx context.Context) LicenseRepository {
+				licenseRepo: func(ctx context.Context) repository.LicenseRepository {
 					repo := new(mock.LicenseRepository)
 					repo.On("RoleCount", ctx).Return(1, nil)
 					return repo
@@ -566,7 +566,7 @@ func TestLicenseService_WithinThreshold(t *testing.T) {
 						permissionRepo: new(mock.PermissionRepository),
 					}
 				},
-				licenseRepo: func(ctx context.Context) LicenseRepository {
+				licenseRepo: func(ctx context.Context) repository.LicenseRepository {
 					repo := new(mock.LicenseRepository)
 					repo.On("ActiveUserCount", ctx).Return(1, nil)
 					return repo
@@ -602,7 +602,7 @@ func TestLicenseService_WithinThreshold(t *testing.T) {
 						permissionRepo: new(mock.PermissionRepository),
 					}
 				},
-				licenseRepo: func(ctx context.Context) LicenseRepository {
+				licenseRepo: func(ctx context.Context) repository.LicenseRepository {
 					return new(mock.LicenseRepository)
 				},
 				license: &license.License{
@@ -637,7 +637,7 @@ func TestLicenseService_WithinThreshold(t *testing.T) {
 						permissionRepo: new(mock.PermissionRepository),
 					}
 				},
-				licenseRepo: func(ctx context.Context) LicenseRepository {
+				licenseRepo: func(ctx context.Context) repository.LicenseRepository {
 					repo := new(mock.LicenseRepository)
 					repo.On("ActiveUserCount", ctx).Return(1, nil)
 					return repo
@@ -675,7 +675,7 @@ func TestLicenseService_WithinThreshold(t *testing.T) {
 						permissionRepo: new(mock.PermissionRepository),
 					}
 				},
-				licenseRepo: func(ctx context.Context) LicenseRepository {
+				licenseRepo: func(ctx context.Context) repository.LicenseRepository {
 					repo := new(mock.LicenseRepository)
 					repo.On("ActiveUserCount", ctx).Return(0, errors.New("error"))
 					return repo
@@ -728,7 +728,7 @@ func TestLicenseService_GetLicense(t *testing.T) {
 	}
 	type fields struct {
 		baseService func(ctx context.Context) *baseService
-		licenseRepo LicenseRepository
+		licenseRepo repository.LicenseRepository
 		license     *license.License
 	}
 	tests := []struct {
@@ -881,7 +881,7 @@ func TestLicenseService_Ping(t *testing.T) {
 	}
 	type fields struct {
 		baseService func(ctx context.Context) *baseService
-		licenseRepo LicenseRepository
+		licenseRepo repository.LicenseRepository
 		license     *license.License
 	}
 	tests := []struct {

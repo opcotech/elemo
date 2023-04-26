@@ -5,6 +5,7 @@ import (
 
 	"github.com/opcotech/elemo/internal/pkg/log"
 	"github.com/opcotech/elemo/internal/pkg/tracing"
+	"github.com/opcotech/elemo/internal/repository"
 )
 
 // Option defines a configuration option for the service.
@@ -35,7 +36,7 @@ func WithTracer(tracer trace.Tracer) Option {
 }
 
 // WithPermissionRepository sets the permission repository for the baseService.
-func WithPermissionRepository(permissionRepo PermissionRepository) Option {
+func WithPermissionRepository(permissionRepo repository.PermissionRepository) Option {
 	return func(s *baseService) error {
 		if permissionRepo == nil {
 			return ErrNoPermissionRepository
@@ -47,7 +48,7 @@ func WithPermissionRepository(permissionRepo PermissionRepository) Option {
 }
 
 // WithUserRepository sets the user repository for the baseService.
-func WithUserRepository(userRepo UserRepository) Option {
+func WithUserRepository(userRepo repository.UserRepository) Option {
 	return func(s *baseService) error {
 		if userRepo == nil {
 			return ErrNoUserRepository
@@ -59,7 +60,7 @@ func WithUserRepository(userRepo UserRepository) Option {
 }
 
 // WithTodoRepository sets the todo repository for the baseService.
-func WithTodoRepository(todoRepo TodoRepository) Option {
+func WithTodoRepository(todoRepo repository.TodoRepository) Option {
 	return func(s *baseService) error {
 		if todoRepo == nil {
 			return ErrNoTodoRepository
@@ -88,9 +89,9 @@ type baseService struct {
 	logger log.Logger
 	tracer trace.Tracer
 
-	userRepo       UserRepository
-	todoRepo       TodoRepository
-	permissionRepo PermissionRepository
+	userRepo       repository.UserRepository
+	todoRepo       repository.TodoRepository
+	permissionRepo repository.PermissionRepository
 
 	licenseService LicenseService
 }

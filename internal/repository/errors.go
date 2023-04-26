@@ -10,6 +10,9 @@ var (
 	ErrAttachmentDelete         = errors.New("failed to delete attachment")               // the attachment could not be deleted
 	ErrAttachmentRead           = errors.New("failed to read attachment")                 // the attachment could not be retrieved
 	ErrAttachmentUpdate         = errors.New("failed to update attachment")               // the attachment could not be updated
+	ErrCacheDelete              = errors.New("failed to delete cache")                    // cache cannot be deleted
+	ErrCacheRead                = errors.New("failed to read cache")                      // cache cannot be read
+	ErrCacheWrite               = errors.New("failed to write cache")                     // cache cannot be written
 	ErrCommentCreate            = errors.New("failed to create comment")                  // the comment could not be created
 	ErrCommentDelete            = errors.New("failed to delete comment")                  // the comment could not be deleted
 	ErrCommentRead              = errors.New("failed to read comment")                    // the comment could not be retrieved
@@ -43,6 +46,7 @@ var (
 	ErrNamespaceDelete          = errors.New("failed to delete namespace")                // the namespace could not be deleted
 	ErrNamespaceRead            = errors.New("failed to read namespace")                  // the namespace could not be retrieved
 	ErrNamespaceUpdate          = errors.New("failed to update namespace")                // the namespace could not be updated
+	ErrNoCacheRepository        = errors.New("no cache repository provided")              // no cache repository provided
 	ErrNoClient                 = errors.New("no client")                                 // the client is missing
 	ErrNoDriver                 = errors.New("no driver")                                 // the driver is missing
 	ErrNoLicenseRepository      = errors.New("no license repository provided")            // no license repository provided
