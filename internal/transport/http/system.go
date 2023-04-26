@@ -88,6 +88,7 @@ func NewSystemController(opts ...ControllerOption) (SystemController, error) {
 
 func healthStatusToDTO(status map[model.HealthCheckComponent]model.HealthStatus) *gen.SystemHealth {
 	return &gen.SystemHealth{
+		CacheDatabase:      gen.SystemHealthCacheDatabase(status[model.HealthCheckComponentCacheDB].String()),
 		GraphDatabase:      gen.SystemHealthGraphDatabase(status[model.HealthCheckComponentGraphDB].String()),
 		RelationalDatabase: gen.SystemHealthRelationalDatabase(status[model.HealthCheckComponentRelationalDB].String()),
 		License:            gen.SystemHealthLicense(status[model.HealthCheckComponentLicense].String()),

@@ -1,6 +1,13 @@
 description: Health of the system components.
 type: object
 properties:
+  cache_database:
+    description: Health of the cache database.
+    type: string
+    enum:
+      - healthy
+      - unhealthy
+      - unknown
   graph_database:
     description: Health of the graph database.
     type: string
@@ -23,6 +30,7 @@ properties:
       - unhealthy
       - unknown
 required:
+  - cache_database
   - graph_database
   - relational_database
   - license
