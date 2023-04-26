@@ -11,6 +11,7 @@ import (
 	"github.com/opcotech/elemo/internal/config"
 	"github.com/opcotech/elemo/internal/repository/neo4j"
 	"github.com/opcotech/elemo/internal/repository/pg"
+	"github.com/opcotech/elemo/internal/repository/redis"
 
 	testConfig "github.com/opcotech/elemo/internal/testutil/config"
 )
@@ -52,7 +53,7 @@ func BootstrapNeo4jDatabase(ctx context.Context, t *testing.T, db *neo4j.Databas
 	}
 }
 
-// CleanupNeo4jStore deletes all nodes and relationships in the database.
+// CleanupNeo4jStore deletes all nodes and relationships from the database.
 func CleanupNeo4jStore(ctx context.Context, t *testing.T, db *neo4j.Database) {
 	_, err := db.GetWriteSession(ctx).Run(ctx, "MATCH (n) WHERE n.system IS NULL OR n.system = false DETACH DELETE n", nil)
 	require.NoError(t, err)
@@ -72,4 +73,26 @@ func NewPgDatabase(t *testing.T, conf *config.RelationalDatabaseConfig) (*pg.Dat
 	require.NoError(t, err)
 
 	return db, db.Close
+}
+
+// NewRedisDatabase creates a new Redis database connection for testing.
+func NewRedisDatabase(t *testing.T, conf *config.CacheDatabaseConfig) (*redis.Database, func() error) {
+	client, err := redis.NewClient(conf)
+	require.NoError(t, err)
+
+	db, err := redis.NewDatabase(
+		redis.WithClient(client),
+	)
+	require.NoError(t, err)
+
+	err = db.Ping(context.Background())
+	require.NoError(t, err)
+
+	return db, db.Close
+}
+
+// CleanupRedisStore deletes all keys from the database.
+func CleanupRedisStore(ctx context.Context, t *testing.T, db *redis.Database) {
+	err := db.GetClient().FlushDB(ctx).Err()
+	require.NoError(t, err)
 }
