@@ -131,7 +131,7 @@ func (r *TodoRepository) Get(ctx context.Context, id model.ID) (*model.Todo, err
 }
 
 func (r *TodoRepository) GetByOwner(ctx context.Context, ownerID model.ID, offset, limit int, completed *bool) ([]*model.Todo, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.TodoRepository/GetByCreator")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.TodoRepository/GetByOwner")
 	defer span.End()
 
 	cypher := `
