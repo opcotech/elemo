@@ -14,8 +14,10 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/opcotech/elemo/internal/model"
+	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/repository/neo4j"
 	"github.com/opcotech/elemo/internal/repository/pg"
+	"github.com/opcotech/elemo/internal/repository/redis"
 	"github.com/opcotech/elemo/internal/service"
 
 	"github.com/go-oauth2/oauth2/v4/server"
@@ -34,6 +36,11 @@ var startCmd = &cobra.Command{
 		license, err := parseLicense(&cfg.License)
 		if err != nil {
 			logger.Fatal("failed to parse license", zap.Error(err))
+		}
+
+		cacheDB, err := initCacheDatabase()
+		if err != nil {
+			logger.Fatal("failed to initialize cache database", zap.Error(err))
 		}
 
 		graphDB, err := initGraphDatabase()
@@ -73,13 +80,26 @@ var startCmd = &cobra.Command{
 			logger.Fatal("failed to initialize user repository", zap.Error(err))
 		}
 
-		todoRepo, err := neo4j.NewTodoRepository(
-			neo4j.WithDatabase(graphDB),
-			neo4j.WithRepositoryLogger(logger.Named("todo_repository")),
-			neo4j.WithRepositoryTracer(tracer),
-		)
-		if err != nil {
-			logger.Fatal("failed to initialize todo repository", zap.Error(err))
+		var todoRepo repository.TodoRepository
+		{
+			repo, err := neo4j.NewTodoRepository(
+				neo4j.WithDatabase(graphDB),
+				neo4j.WithRepositoryLogger(logger.Named("todo_repository")),
+				neo4j.WithRepositoryTracer(tracer),
+			)
+			if err != nil {
+				logger.Fatal("failed to initialize todo repository", zap.Error(err))
+			}
+
+			todoRepo, err = redis.NewCachedTodoRepository(
+				repo,
+				redis.WithDatabase(cacheDB),
+				redis.WithRepositoryLogger(logger.Named("cached_todo_repository")),
+				redis.WithRepositoryTracer(tracer),
+			)
+			if err != nil {
+				logger.Fatal("failed to initialize cached todo repository", zap.Error(err))
+			}
 		}
 
 		licenseService, err := service.NewLicenseService(
@@ -95,6 +115,7 @@ var startCmd = &cobra.Command{
 
 		systemService, err := service.NewSystemService(
 			map[model.HealthCheckComponent]service.Pingable{
+				model.HealthCheckComponentCacheDB:      cacheDB,
 				model.HealthCheckComponentGraphDB:      graphDB,
 				model.HealthCheckComponentRelationalDB: relDB,
 				model.HealthCheckComponentLicense:      licenseService,
