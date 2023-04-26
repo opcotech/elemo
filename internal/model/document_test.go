@@ -25,13 +25,13 @@ func TestNewDocument(t *testing.T) {
 			args: args{
 				name:   "test",
 				fileID: "file_id",
-				owner:  ID{inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, label: ResourceTypeUser},
+				owner:  ID{Inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, Type: ResourceTypeUser},
 			},
 			want: &Document{
-				ID:          ID{inner: xid.NilID(), label: ResourceTypeDocument},
+				ID:          ID{Inner: xid.NilID(), Type: ResourceTypeDocument},
 				Name:        "test",
 				FileID:      "file_id",
-				CreatedBy:   ID{inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, label: ResourceTypeUser},
+				CreatedBy:   ID{Inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, Type: ResourceTypeUser},
 				Labels:      make([]ID, 0),
 				Comments:    make([]ID, 0),
 				Attachments: make([]ID, 0),
@@ -94,36 +94,36 @@ func TestDocument_Validate(t *testing.T) {
 		{
 			name: "validate document with valid details",
 			fields: fields{
-				ID:      ID{inner: xid.NilID(), label: ResourceTypeDocument},
+				ID:      ID{Inner: xid.NilID(), Type: ResourceTypeDocument},
 				Name:    "test",
 				FileID:  "file_id",
-				OwnedBy: ID{inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, label: ResourceTypeUser},
+				OwnedBy: ID{Inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, Type: ResourceTypeUser},
 			},
 		},
 		{
 			name: "validate document with invalid name",
 			fields: fields{
-				ID:      ID{inner: xid.NilID(), label: ResourceTypeDocument},
+				ID:      ID{Inner: xid.NilID(), Type: ResourceTypeDocument},
 				Name:    "t",
 				FileID:  "file_id",
-				OwnedBy: ID{inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, label: ResourceTypeUser},
+				OwnedBy: ID{Inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, Type: ResourceTypeUser},
 			},
 			wantErr: ErrInvalidDocumentDetails,
 		},
 		{
 			name: "validate document with empty name",
 			fields: fields{
-				ID:      ID{inner: xid.NilID(), label: ResourceTypeDocument},
+				ID:      ID{Inner: xid.NilID(), Type: ResourceTypeDocument},
 				Name:    "",
 				FileID:  "file_id",
-				OwnedBy: ID{inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, label: ResourceTypeUser},
+				OwnedBy: ID{Inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, Type: ResourceTypeUser},
 			},
 			wantErr: ErrInvalidDocumentDetails,
 		},
 		{
 			name: "validate document with nil owner",
 			fields: fields{
-				ID:      ID{inner: xid.NilID(), label: ResourceTypeDocument},
+				ID:      ID{Inner: xid.NilID(), Type: ResourceTypeDocument},
 				Name:    "test",
 				FileID:  "file_id",
 				OwnedBy: ID{},
@@ -133,10 +133,10 @@ func TestDocument_Validate(t *testing.T) {
 		{
 			name: "validate document with nil file id",
 			fields: fields{
-				ID:      ID{inner: xid.NilID(), label: ResourceTypeDocument},
+				ID:      ID{Inner: xid.NilID(), Type: ResourceTypeDocument},
 				Name:    "test",
 				FileID:  "",
-				OwnedBy: ID{inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, label: ResourceTypeUser},
+				OwnedBy: ID{Inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, Type: ResourceTypeUser},
 			},
 			wantErr: ErrInvalidDocumentDetails,
 		},
@@ -146,28 +146,28 @@ func TestDocument_Validate(t *testing.T) {
 				ID:      ID{},
 				Name:    "test",
 				FileID:  "file_id",
-				OwnedBy: ID{inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, label: ResourceTypeUser},
+				OwnedBy: ID{Inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, Type: ResourceTypeUser},
 			},
 			wantErr: ErrInvalidDocumentDetails,
 		},
 		{
 			name: "validate document with invalid excerpt",
 			fields: fields{
-				ID:      ID{inner: xid.NilID(), label: ResourceTypeDocument},
+				ID:      ID{Inner: xid.NilID(), Type: ResourceTypeDocument},
 				Name:    "test",
 				Excerpt: "t",
 				FileID:  "file_id",
-				OwnedBy: ID{inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, label: ResourceTypeUser},
+				OwnedBy: ID{Inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, Type: ResourceTypeUser},
 			},
 			wantErr: ErrInvalidDocumentDetails,
 		},
 		{
 			name: "validate document with invalid labels",
 			fields: fields{
-				ID:      ID{inner: xid.NilID(), label: ResourceType(0)},
+				ID:      ID{Inner: xid.NilID(), Type: ResourceType(0)},
 				Name:    "test",
 				FileID:  "file_id",
-				OwnedBy: ID{inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, label: ResourceTypeUser},
+				OwnedBy: ID{Inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, Type: ResourceTypeUser},
 				Labels: []ID{
 					{},
 				},
@@ -177,10 +177,10 @@ func TestDocument_Validate(t *testing.T) {
 		{
 			name: "validate document with invalid labels",
 			fields: fields{
-				ID:      ID{inner: xid.NilID(), label: ResourceType(0)},
+				ID:      ID{Inner: xid.NilID(), Type: ResourceType(0)},
 				Name:    "test",
 				FileID:  "file_id",
-				OwnedBy: ID{inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, label: ResourceTypeUser},
+				OwnedBy: ID{Inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, Type: ResourceTypeUser},
 				Comments: []ID{
 					{},
 				},

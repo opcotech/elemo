@@ -8,7 +8,7 @@ import (
 )
 
 // Label is an entity that can be attached to a resource to provide additional
-// information about it. For example, a label can be used to indicate the
+// information about it. For example, a Type can be used to indicate the
 // environment a resource belongs to.
 type Label struct {
 	ID          ID         `json:"id" validate:"required,dive"`
