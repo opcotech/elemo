@@ -243,6 +243,108 @@ func (r *IssueRepository) Get(ctx context.Context, id model.ID) (*model.Issue, e
 	return issue, nil
 }
 
+func (r *IssueRepository) GetAllForProject(ctx context.Context, projectID model.ID, offset, limit int) ([]*model.Issue, error) {
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.IssueRepository/GetAllForProject")
+	defer span.End()
+
+	if err := projectID.Validate(); err != nil {
+		return nil, errors.Join(repository.ErrIssueRead, err)
+	}
+
+	cypher := `
+	MATCH (i:` + model.ResourceTypeIssue.String() + `)-[:` + EdgeKindBelongsTo.String() + `]->(:` + projectID.Label() + ` {id: $id})
+	OPTIONAL MATCH (i)-[:` + EdgeKindRelatedTo.String() + ` {kind: $parent_kind}]->(par:` + model.ResourceTypeIssue.String() + `)
+	OPTIONAL MATCH (i)-[:` + EdgeKindRelatedTo.String() + `]->(rel:` + model.ResourceTypeIssue.String() + `)
+	OPTIONAL MATCH (i)-[:` + EdgeKindHasComment.String() + `]->(comm:` + model.ResourceTypeComment.String() + `)
+	OPTIONAL MATCH (i)-[:` + EdgeKindHasAttachment.String() + `]->(att:` + model.ResourceTypeAttachment.String() + `)
+	OPTIONAL MATCH (i)<-[:` + EdgeKindWatches.String() + `]-(watch:` + model.ResourceTypeUser.String() + `)
+	OPTIONAL MATCH (i)-[:` + EdgeKindHasLabel.String() + `]->(l:` + model.ResourceTypeLabel.String() + `)
+	OPTIONAL MATCH (i)<-[:` + EdgeKindCreated.String() + `]-(cr:` + model.ResourceTypeUser.String() + `)
+	OPTIONAL MATCH (i)<-[:` + EdgeKindAssignedTo.String() + `]-(assignees:` + model.ResourceTypeUser.String() + `)
+	RETURN i, par.id AS par, collect(DISTINCT rel.id) AS rel, collect(DISTINCT comm.id) AS comm,
+		collect(DISTINCT att.id) AS att, collect(DISTINCT watch.id) AS watch, collect(DISTINCT l.id) AS l, cr.id as cr,
+		collect(DISTINCT assignees.id) AS assignees
+	ORDER BY i.created_at DESC
+	SKIP $offset LIMIT $limit`
+
+	params := map[string]any{
+		"id":          projectID.String(),
+		"parent_kind": model.IssueRelationKindSubtaskOf.String(),
+		"offset":      offset,
+		"limit":       limit,
+	}
+
+	scanParams := &issueScanParams{
+		issue:       "i",
+		parent:      "par",
+		reportedBy:  "cr",
+		assignees:   "assignees",
+		labels:      "l",
+		comments:    "comm",
+		attachments: "att",
+		watchers:    "watch",
+		relations:   "rel",
+	}
+
+	issues, err := ExecuteReadAndReadAll(ctx, r.db, cypher, params, r.scan(scanParams))
+	if err != nil {
+		return nil, errors.Join(repository.ErrIssueRead, err)
+	}
+
+	return issues, nil
+}
+
+func (r *IssueRepository) GetAllForIssue(ctx context.Context, issueID model.ID, offset, limit int) ([]*model.Issue, error) {
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.IssueRepository/GetAllForProject")
+	defer span.End()
+
+	if err := issueID.Validate(); err != nil {
+		return nil, errors.Join(repository.ErrIssueRead, err)
+	}
+
+	cypher := `
+	MATCH (i:` + model.ResourceTypeIssue.String() + `)-[:` + EdgeKindRelatedTo.String() + `]-(:` + issueID.Label() + ` {id: $id})
+	OPTIONAL MATCH (i)-[:` + EdgeKindRelatedTo.String() + ` {kind: $parent_kind}]->(par:` + model.ResourceTypeIssue.String() + `)
+	OPTIONAL MATCH (i)-[:` + EdgeKindRelatedTo.String() + `]->(rel:` + model.ResourceTypeIssue.String() + `)
+	OPTIONAL MATCH (i)-[:` + EdgeKindHasComment.String() + `]->(comm:` + model.ResourceTypeComment.String() + `)
+	OPTIONAL MATCH (i)-[:` + EdgeKindHasAttachment.String() + `]->(att:` + model.ResourceTypeAttachment.String() + `)
+	OPTIONAL MATCH (i)<-[:` + EdgeKindWatches.String() + `]-(watch:` + model.ResourceTypeUser.String() + `)
+	OPTIONAL MATCH (i)-[:` + EdgeKindHasLabel.String() + `]->(l:` + model.ResourceTypeLabel.String() + `)
+	OPTIONAL MATCH (i)<-[:` + EdgeKindCreated.String() + `]-(cr:` + model.ResourceTypeUser.String() + `)
+	OPTIONAL MATCH (i)<-[:` + EdgeKindAssignedTo.String() + `]-(assignees:` + model.ResourceTypeUser.String() + `)
+	RETURN i, par.id AS par, collect(DISTINCT rel.id) AS rel, collect(DISTINCT comm.id) AS comm,
+		collect(DISTINCT att.id) AS att, collect(DISTINCT watch.id) AS watch, collect(DISTINCT l.id) AS l, cr.id as cr,
+		collect(DISTINCT assignees.id) AS assignees
+	ORDER BY i.created_at DESC
+	SKIP $offset LIMIT $limit`
+
+	params := map[string]any{
+		"id":          issueID.String(),
+		"parent_kind": model.IssueRelationKindSubtaskOf.String(),
+		"offset":      offset,
+		"limit":       limit,
+	}
+
+	scanParams := &issueScanParams{
+		issue:       "i",
+		parent:      "par",
+		reportedBy:  "cr",
+		assignees:   "assignees",
+		labels:      "l",
+		comments:    "comm",
+		attachments: "att",
+		watchers:    "watch",
+		relations:   "rel",
+	}
+
+	issues, err := ExecuteReadAndReadAll(ctx, r.db, cypher, params, r.scan(scanParams))
+	if err != nil {
+		return nil, errors.Join(repository.ErrIssueRead, err)
+	}
+
+	return issues, nil
+}
+
 func (r *IssueRepository) AddWatcher(ctx context.Context, issue model.ID, user model.ID) error {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.IssueRepository/AddWatcher")
 	defer span.End()
