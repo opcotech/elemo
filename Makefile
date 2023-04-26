@@ -33,7 +33,7 @@ build: generate dep build.backend  ## Build the project
 
 .PHONY: build.backend
 build.backend: ## Build service
-	docker-compose -f deploy/docker/docker-compose.yml build
+	docker-compose -f deploy/docker/docker-compose.yml build --no-cache
 
 .PHONY: build.monitoring
 build.monitoring: ## Build service
