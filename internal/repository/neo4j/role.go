@@ -117,12 +117,16 @@ func (r *RoleRepository) Get(ctx context.Context, id model.ID) (*model.Role, err
 	return role, nil
 }
 
-func (r *RoleRepository) GetAllBelongsTo(ctx context.Context, id model.ID, offset, limit int) ([]*model.Role, error) {
+func (r *RoleRepository) GetAllBelongsTo(ctx context.Context, belongsTo model.ID, offset, limit int) ([]*model.Role, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.RoleRepository/GetAllBelongsTo")
 	defer span.End()
 
+	if err := belongsTo.Validate(); err != nil {
+		return nil, errors.Join(repository.ErrRoleRead, err)
+	}
+
 	cypher := `
-	MATCH (r:` + model.ResourceTypeRole.String() + `)<-[:` + EdgeKindHasTeam.String() + `]-(:` + id.Label() + ` {id: $id})
+	MATCH (r:` + model.ResourceTypeRole.String() + `)<-[:` + EdgeKindHasTeam.String() + `]-(:` + belongsTo.Label() + ` {id: $id})
 	OPTIONAL MATCH (r)<-[:` + EdgeKindMemberOf.String() + `]-(u:` + model.ResourceTypeUser.String() + `)
 	OPTIONAL MATCH (r)-[p:` + EdgeKindHasPermission.String() + `]->()
 	RETURN r, collect(DISTINCT u.id) AS m, collect(DISTINCT p.id) AS p
@@ -130,12 +134,12 @@ func (r *RoleRepository) GetAllBelongsTo(ctx context.Context, id model.ID, offse
 	SKIP $offset LIMIT $limit`
 
 	params := map[string]any{
-		"id":     id.String(),
+		"id":     belongsTo.String(),
 		"offset": offset,
 		"limit":  limit,
 	}
 
-	roles, err := ExecuteWriteAndReadAll(ctx, r.db, cypher, params, r.scan("r", "m", "p"))
+	roles, err := ExecuteReadAndReadAll(ctx, r.db, cypher, params, r.scan("r", "m", "p"))
 	if err != nil {
 		return nil, errors.Join(repository.ErrRoleRead, err)
 	}
