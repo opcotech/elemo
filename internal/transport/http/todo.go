@@ -115,7 +115,7 @@ func (c *todoController) GetTodos(ctx context.Context, request gen.GetTodosReque
 		}, nil
 	}
 
-	todosDTO := make([]gen.Todo, 0, len(todos))
+	todosDTO := make([]gen.Todo, len(todos))
 	for i, todo := range todos {
 		todosDTO[i] = todoToDTO(todo)
 	}
