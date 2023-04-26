@@ -52,7 +52,7 @@ func (r *CachedUserRepository) GetByEmail(ctx context.Context, email string) (*m
 	var err error
 
 	key := composeCacheKey(model.ResourceTypeUser.String(), "GetByEmail", email)
-	if err = r.cacheRepo.Get(ctx, email, &user); err != nil {
+	if err = r.cacheRepo.Get(ctx, key, &user); err != nil {
 		return nil, err
 	}
 

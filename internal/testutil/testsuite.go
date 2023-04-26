@@ -151,3 +151,9 @@ func (s *RedisContainerIntegrationTestSuite) SetupRedis(ts *ContainerIntegration
 func (s *RedisContainerIntegrationTestSuite) CleanupRedis(ts *ContainerIntegrationTestSuite) {
 	testRepo.CleanupRedisStore(context.Background(), ts.T(), s.RedisDB)
 }
+
+func (s *RedisContainerIntegrationTestSuite) GetKeys(ts *ContainerIntegrationTestSuite, pattern string) []string {
+	keys, err := s.RedisDB.GetClient().Keys(context.Background(), pattern).Result()
+	ts.Require().NoError(err)
+	return keys
+}

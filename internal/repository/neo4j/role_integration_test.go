@@ -70,7 +70,7 @@ func (s *RoleRepositoryIntegrationTestSuite) TestGet() {
 	s.Assert().Nil(role.UpdatedAt)
 }
 
-func (s *RoleRepositoryIntegrationTestSuite) TestGetAll() {
+func (s *RoleRepositoryIntegrationTestSuite) TestGetAllBelongsTo() {
 	s.Require().NoError(s.RoleRepo.Create(context.Background(), s.testUser.ID, s.testOrg.ID, s.role))
 	s.Require().NoError(s.RoleRepo.Create(context.Background(), s.testUser.ID, s.testOrg.ID, testModel.NewRole()))
 	s.Require().NoError(s.RoleRepo.Create(context.Background(), s.testUser.ID, s.testOrg.ID, testModel.NewRole()))
