@@ -102,7 +102,7 @@ func TestWithDatabaseClient(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			db := new(Database)
-			err := WithDatabaseClient(tt.args.client)(db)
+			err := WithClient(tt.args.client)(db)
 			require.ErrorIs(t, err, tt.wantErr)
 			require.Equal(t, tt.want, db.client)
 		})
@@ -241,7 +241,7 @@ func TestNewDatabase(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			db, err := NewDatabase(
-				WithDatabaseClient(tt.args.client),
+				WithClient(tt.args.client),
 				WithDatabaseLogger(tt.args.logger),
 				WithDatabaseTracer(tt.args.tracer),
 			)
@@ -249,6 +249,18 @@ func TestNewDatabase(t *testing.T) {
 			require.Equal(t, tt.want, db)
 		})
 	}
+}
+
+func TestDatabase_GetClient(t *testing.T) {
+	t.Parallel()
+
+	client := new(mock.RedisClient)
+
+	db := &Database{
+		client: client,
+	}
+
+	require.Equal(t, client, db.GetClient())
 }
 
 func TestDatabase_Close(t *testing.T) {

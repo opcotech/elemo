@@ -3,6 +3,7 @@ package redis
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -28,12 +29,9 @@ func NewClient(conf *config.CacheDatabaseConfig) (redis.UniversalClient, error) 
 	}
 
 	return redis.NewClient(&redis.Options{
-		Addr:                  "",
-		Dialer:                nil,
-		OnConnect:             nil,
+		Addr:                  fmt.Sprintf("%s:%d", conf.Host, conf.Port),
 		Username:              conf.Username,
 		Password:              conf.Password,
-		CredentialsProvider:   nil,
 		DB:                    db,
 		MaxRetries:            3,
 		DialTimeout:           conf.DialTimeout * time.Second,
@@ -43,16 +41,16 @@ func NewClient(conf *config.CacheDatabaseConfig) (redis.UniversalClient, error) 
 		PoolSize:              conf.PoolSize,
 		MinIdleConns:          conf.MinIdleConnections,
 		MaxIdleConns:          conf.MaxIdleConnections,
-		ConnMaxIdleTime:       conf.ConnectionMaxIdleTime,
-		ConnMaxLifetime:       conf.ConnectionMaxLifetime,
+		ConnMaxIdleTime:       conf.ConnectionMaxIdleTime * time.Second,
+		ConnMaxLifetime:       conf.ConnectionMaxLifetime * time.Second,
 	}), nil
 }
 
 // DatabaseOption configures a Redis database.
 type DatabaseOption func(*Database) error
 
-// WithDatabaseClient sets the client for a Redis database.
-func WithDatabaseClient(client redis.UniversalClient) DatabaseOption {
+// WithClient sets the client for a Redis database.
+func WithClient(client redis.UniversalClient) DatabaseOption {
 	return func(db *Database) error {
 		if client == nil {
 			return repository.ErrNoClient
@@ -95,6 +93,11 @@ type Database struct {
 	client redis.UniversalClient `validate:"required"`
 	logger log.Logger            `validate:"required"`
 	tracer trace.Tracer          `validate:"required"`
+}
+
+// GetClient returns the database client.
+func (db *Database) GetClient() redis.UniversalClient {
+	return db.client
 }
 
 // Ping checks the database connection.
