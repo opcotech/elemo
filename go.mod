@@ -10,12 +10,14 @@ require (
 	github.com/go-chi/cors v1.2.1
 	github.com/go-oauth2/oauth2/v4 v4.5.2
 	github.com/go-playground/validator/v10 v10.12.0
+	github.com/go-redis/cache/v9 v9.0.0
 	github.com/go-session/session v3.1.2+incompatible
 	github.com/google/uuid v1.3.0
 	github.com/hyperboloide/lk v0.0.0-20230325114855-ce3fecd34798
 	github.com/jackc/pgx/v5 v5.3.1
 	github.com/neo4j/neo4j-go-driver/v5 v5.7.0
 	github.com/prometheus/client_golang v1.15.0
+	github.com/redis/go-redis/v9 v9.0.3
 	github.com/rs/xid v1.5.0
 	github.com/slok/go-http-metrics v0.10.0
 	github.com/spf13/cobra v1.7.0
@@ -87,7 +89,6 @@ require (
 	github.com/prometheus/client_model v0.3.0 // indirect
 	github.com/prometheus/common v0.42.0 // indirect
 	github.com/prometheus/procfs v0.9.0 // indirect
-	github.com/redis/go-redis/v9 v9.0.3 // indirect
 	github.com/sirupsen/logrus v1.9.0 // indirect
 	github.com/spf13/afero v1.9.5 // indirect
 	github.com/spf13/cast v1.5.0 // indirect
@@ -95,6 +96,9 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
 	github.com/subosito/gotenv v1.4.2 // indirect
+	github.com/vmihailenco/go-tinylfu v0.2.2 // indirect
+	github.com/vmihailenco/msgpack/v5 v5.3.4 // indirect
+	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/internal/retry v1.14.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.14.0 // indirect
 	go.opentelemetry.io/otel/metric v0.37.0 // indirect
