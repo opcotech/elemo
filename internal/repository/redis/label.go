@@ -51,7 +51,7 @@ func (r *CachedLabelRepository) GetAll(ctx context.Context, offset, limit int) (
 	var labels []*model.Label
 	var err error
 
-	key := composeCacheKey(model.ResourceTypeAssignment.String(), "GetAll", offset, limit)
+	key := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", offset, limit)
 	if err = r.cacheRepo.Get(ctx, key, &labels); err != nil {
 		return nil, err
 	}
