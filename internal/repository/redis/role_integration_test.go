@@ -58,7 +58,7 @@ func (s *CachedRoleRepositoryIntegrationTestSuite) TearDownSuite() {
 }
 
 func (s *CachedRoleRepositoryIntegrationTestSuite) TestCreate() {
-	s.Require().NoError(s.RoleRepo.Create(context.Background(), s.testUser.ID, s.testOrg.ID, s.role))
+	s.Require().NoError(s.roleRepo.Create(context.Background(), s.testUser.ID, s.testOrg.ID, s.role))
 	s.Assert().NotEqual(model.MustNewNilID(model.ResourceTypeRole), s.role.ID)
 	s.Assert().NotNil(s.role.CreatedAt)
 	s.Assert().Nil(s.role.UpdatedAt)
