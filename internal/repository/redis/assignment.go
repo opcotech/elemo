@@ -89,7 +89,7 @@ func (r *CachedAssignmentRepository) GetByResource(ctx context.Context, resource
 		return assignments, nil
 	}
 
-	if assignments, err = r.assignmentRepo.GetByUser(ctx, resourceID, offset, limit); err != nil {
+	if assignments, err = r.assignmentRepo.GetByResource(ctx, resourceID, offset, limit); err != nil {
 		return nil, err
 	}
 
