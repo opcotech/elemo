@@ -103,7 +103,12 @@ func (r *CachedIssueRepository) GetAllForIssue(ctx context.Context, issueID mode
 }
 
 func (r *CachedIssueRepository) AddWatcher(ctx context.Context, issue model.ID, user model.ID) error {
-	key := composeCacheKey(model.ResourceTypeIssue.String(), "GetWatchers", issue.String())
+	key := composeCacheKey(model.ResourceTypeIssue.String(), issue.String())
+	if err := r.cacheRepo.Delete(ctx, key); err != nil {
+		return err
+	}
+
+	key = composeCacheKey(model.ResourceTypeIssue.String(), "GetWatchers", issue.String())
 	if err := r.cacheRepo.Delete(ctx, key); err != nil {
 		return err
 	}
@@ -146,7 +151,12 @@ func (r *CachedIssueRepository) GetWatchers(ctx context.Context, issue model.ID)
 }
 
 func (r *CachedIssueRepository) RemoveWatcher(ctx context.Context, issue model.ID, user model.ID) error {
-	key := composeCacheKey(model.ResourceTypeIssue.String(), "GetWatchers", issue.String())
+	key := composeCacheKey(model.ResourceTypeIssue.String(), issue.String())
+	if err := r.cacheRepo.Delete(ctx, key); err != nil {
+		return err
+	}
+
+	key = composeCacheKey(model.ResourceTypeIssue.String(), "GetWatchers", issue.String())
 	if err := r.cacheRepo.Delete(ctx, key); err != nil {
 		return err
 	}
@@ -172,7 +182,12 @@ func (r *CachedIssueRepository) AddRelation(ctx context.Context, relation *model
 		issueID = relation.Target
 	}
 
-	key := composeCacheKey(model.ResourceTypeIssue.String(), "GetRelations", issueID.String())
+	key := composeCacheKey(model.ResourceTypeIssue.String(), issueID.String())
+	if err := r.cacheRepo.Delete(ctx, key); err != nil {
+		return err
+	}
+
+	key = composeCacheKey(model.ResourceTypeIssue.String(), "GetRelations", issueID.String())
 	if err := r.cacheRepo.Delete(ctx, key); err != nil {
 		return err
 	}
@@ -222,7 +237,12 @@ func (r *CachedIssueRepository) RemoveRelation(ctx context.Context, source, targ
 		issueID = target
 	}
 
-	key := composeCacheKey(model.ResourceTypeIssue.String(), "GetRelations", issueID.String())
+	key := composeCacheKey(model.ResourceTypeIssue.String(), issueID.String())
+	if err := r.cacheRepo.Delete(ctx, key); err != nil {
+		return err
+	}
+
+	key = composeCacheKey(model.ResourceTypeIssue.String(), "GetRelations", issueID.String())
 	if err := r.cacheRepo.Delete(ctx, key); err != nil {
 		return err
 	}
@@ -263,7 +283,12 @@ func (r *CachedIssueRepository) Update(ctx context.Context, id model.ID, patch m
 }
 
 func (r *CachedIssueRepository) Delete(ctx context.Context, id model.ID) error {
-	key := composeCacheKey(model.ResourceTypeIssue.String(), "GetRelations", id.String())
+	key := composeCacheKey(model.ResourceTypeIssue.String(), id.String())
+	if err := r.cacheRepo.Delete(ctx, key); err != nil {
+		return err
+	}
+
+	key = composeCacheKey(model.ResourceTypeIssue.String(), "GetRelations", id.String())
 	if err := r.cacheRepo.Delete(ctx, key); err != nil {
 		return err
 	}
