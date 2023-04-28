@@ -128,6 +128,11 @@ func (r *CachedDocumentRepository) Update(ctx context.Context, id model.ID, patc
 }
 
 func (r *CachedDocumentRepository) Delete(ctx context.Context, id model.ID) error {
+	key := composeCacheKey(model.ResourceTypeDocument.String(), id.String())
+	if err := r.cacheRepo.Delete(ctx, key); err != nil {
+		return err
+	}
+
 	pattern := composeCacheKey(model.ResourceTypeDocument.String(), "GetAllBelongsTo", "*")
 	if err := r.cacheRepo.DeletePattern(ctx, pattern); err != nil {
 		return err
