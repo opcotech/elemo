@@ -7,6 +7,38 @@ import (
 	"github.com/opcotech/elemo/internal/repository"
 )
 
+func clearIssuesPattern(ctx context.Context, r *baseRepository, pattern ...string) error {
+	return r.DeletePattern(ctx, composeCacheKey(model.ResourceTypeIssue.String(), pattern))
+}
+
+func clearIssuesKey(ctx context.Context, r *baseRepository, id model.ID) error {
+	return r.Delete(ctx, composeCacheKey(model.ResourceTypeIssue.String(), id.String()))
+}
+
+func clearIssueForProject(ctx context.Context, r *baseRepository, projectID model.ID) error {
+	return clearIssuesPattern(ctx, r, "GetAllForProject", projectID.String(), "*")
+}
+
+func clearIssueAllForProject(ctx context.Context, r *baseRepository) error {
+	return clearIssuesPattern(ctx, r, "GetAllForProject", "*")
+}
+
+func clearIssueForIssue(ctx context.Context, r *baseRepository, issueID model.ID) error {
+	return clearIssuesPattern(ctx, r, "GetAllForIssue", issueID.String(), "*")
+}
+
+func clearIssueAllForIssue(ctx context.Context, r *baseRepository) error {
+	return clearIssuesPattern(ctx, r, "GetAllForIssue", "*")
+}
+
+func clearIssueWatchers(ctx context.Context, r *baseRepository, issueID model.ID) error {
+	return clearIssuesPattern(ctx, r, "GetWatchers", issueID.String(), "*")
+}
+
+func clearIssueRelations(ctx context.Context, r *baseRepository, issueID model.ID) error {
+	return clearIssuesPattern(ctx, r, "GetRelations", issueID.String(), "*")
+}
+
 // CachedIssueRepository implements caching on the
 // repository.IssueRepository.
 type CachedIssueRepository struct {
@@ -15,14 +47,12 @@ type CachedIssueRepository struct {
 }
 
 func (r *CachedIssueRepository) Create(ctx context.Context, project model.ID, issue *model.Issue) error {
-	pattern := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForProject", project.String(), "*")
-	if err := r.cacheRepo.DeletePattern(ctx, pattern); err != nil {
+	if err := clearIssueForProject(ctx, r.cacheRepo, project); err != nil {
 		return err
 	}
 
 	if issue.Parent != nil {
-		pattern := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForIssue", (*issue.Parent).String(), "*")
-		if err := r.cacheRepo.DeletePattern(ctx, pattern); err != nil {
+		if err := clearIssueForIssue(ctx, r.cacheRepo, *issue.Parent); err != nil {
 			return err
 		}
 	}
@@ -103,23 +133,19 @@ func (r *CachedIssueRepository) GetAllForIssue(ctx context.Context, issueID mode
 }
 
 func (r *CachedIssueRepository) AddWatcher(ctx context.Context, issue model.ID, user model.ID) error {
-	key := composeCacheKey(model.ResourceTypeIssue.String(), issue.String())
-	if err := r.cacheRepo.Delete(ctx, key); err != nil {
+	if err := clearIssuesKey(ctx, r.cacheRepo, issue); err != nil {
 		return err
 	}
 
-	key = composeCacheKey(model.ResourceTypeIssue.String(), "GetWatchers", issue.String())
-	if err := r.cacheRepo.Delete(ctx, key); err != nil {
+	if err := clearIssueWatchers(ctx, r.cacheRepo, issue); err != nil {
 		return err
 	}
 
-	pattern := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForProject", "*")
-	if err := r.cacheRepo.DeletePattern(ctx, pattern); err != nil {
+	if err := clearIssueAllForIssue(ctx, r.cacheRepo); err != nil {
 		return err
 	}
 
-	pattern = composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForIssue", "*")
-	if err := r.cacheRepo.DeletePattern(ctx, pattern); err != nil {
+	if err := clearIssueAllForProject(ctx, r.cacheRepo); err != nil {
 		return err
 	}
 
@@ -151,23 +177,19 @@ func (r *CachedIssueRepository) GetWatchers(ctx context.Context, issue model.ID)
 }
 
 func (r *CachedIssueRepository) RemoveWatcher(ctx context.Context, issue model.ID, user model.ID) error {
-	key := composeCacheKey(model.ResourceTypeIssue.String(), issue.String())
-	if err := r.cacheRepo.Delete(ctx, key); err != nil {
+	if err := clearIssuesKey(ctx, r.cacheRepo, issue); err != nil {
 		return err
 	}
 
-	key = composeCacheKey(model.ResourceTypeIssue.String(), "GetWatchers", issue.String())
-	if err := r.cacheRepo.Delete(ctx, key); err != nil {
+	if err := clearIssueWatchers(ctx, r.cacheRepo, issue); err != nil {
 		return err
 	}
 
-	pattern := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForProject", "*")
-	if err := r.cacheRepo.DeletePattern(ctx, pattern); err != nil {
+	if err := clearIssueAllForIssue(ctx, r.cacheRepo); err != nil {
 		return err
 	}
 
-	pattern = composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForIssue", "*")
-	if err := r.cacheRepo.DeletePattern(ctx, pattern); err != nil {
+	if err := clearIssueAllForProject(ctx, r.cacheRepo); err != nil {
 		return err
 	}
 
@@ -182,23 +204,19 @@ func (r *CachedIssueRepository) AddRelation(ctx context.Context, relation *model
 		issueID = relation.Target
 	}
 
-	key := composeCacheKey(model.ResourceTypeIssue.String(), issueID.String())
-	if err := r.cacheRepo.Delete(ctx, key); err != nil {
+	if err := clearIssuesKey(ctx, r.cacheRepo, issueID); err != nil {
 		return err
 	}
 
-	key = composeCacheKey(model.ResourceTypeIssue.String(), "GetRelations", issueID.String())
-	if err := r.cacheRepo.Delete(ctx, key); err != nil {
+	if err := clearIssueRelations(ctx, r.cacheRepo, issueID); err != nil {
 		return err
 	}
 
-	pattern := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForProject", "*")
-	if err := r.cacheRepo.DeletePattern(ctx, pattern); err != nil {
+	if err := clearIssueAllForIssue(ctx, r.cacheRepo); err != nil {
 		return err
 	}
 
-	pattern = composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForIssue", "*")
-	if err := r.cacheRepo.DeletePattern(ctx, pattern); err != nil {
+	if err := clearIssueAllForProject(ctx, r.cacheRepo); err != nil {
 		return err
 	}
 
@@ -237,23 +255,19 @@ func (r *CachedIssueRepository) RemoveRelation(ctx context.Context, source, targ
 		issueID = target
 	}
 
-	key := composeCacheKey(model.ResourceTypeIssue.String(), issueID.String())
-	if err := r.cacheRepo.Delete(ctx, key); err != nil {
+	if err := clearIssuesKey(ctx, r.cacheRepo, issueID); err != nil {
 		return err
 	}
 
-	key = composeCacheKey(model.ResourceTypeIssue.String(), "GetRelations", issueID.String())
-	if err := r.cacheRepo.Delete(ctx, key); err != nil {
+	if err := clearIssueRelations(ctx, r.cacheRepo, issueID); err != nil {
 		return err
 	}
 
-	pattern := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForProject", "*")
-	if err := r.cacheRepo.DeletePattern(ctx, pattern); err != nil {
+	if err := clearIssueAllForIssue(ctx, r.cacheRepo); err != nil {
 		return err
 	}
 
-	pattern = composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForIssue", "*")
-	if err := r.cacheRepo.DeletePattern(ctx, pattern); err != nil {
+	if err := clearIssueAllForProject(ctx, r.cacheRepo); err != nil {
 		return err
 	}
 
@@ -283,28 +297,23 @@ func (r *CachedIssueRepository) Update(ctx context.Context, id model.ID, patch m
 }
 
 func (r *CachedIssueRepository) Delete(ctx context.Context, id model.ID) error {
-	key := composeCacheKey(model.ResourceTypeIssue.String(), id.String())
-	if err := r.cacheRepo.Delete(ctx, key); err != nil {
+	if err := clearIssuesKey(ctx, r.cacheRepo, id); err != nil {
 		return err
 	}
 
-	key = composeCacheKey(model.ResourceTypeIssue.String(), "GetRelations", id.String())
-	if err := r.cacheRepo.Delete(ctx, key); err != nil {
+	if err := clearIssueWatchers(ctx, r.cacheRepo, id); err != nil {
 		return err
 	}
 
-	key = composeCacheKey(model.ResourceTypeIssue.String(), "GetWatchers", id.String())
-	if err := r.cacheRepo.Delete(ctx, key); err != nil {
+	if err := clearIssueRelations(ctx, r.cacheRepo, id); err != nil {
 		return err
 	}
 
-	pattern := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForProject", "*")
-	if err := r.cacheRepo.DeletePattern(ctx, pattern); err != nil {
+	if err := clearIssueAllForIssue(ctx, r.cacheRepo); err != nil {
 		return err
 	}
 
-	pattern = composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForIssue", "*")
-	if err := r.cacheRepo.DeletePattern(ctx, pattern); err != nil {
+	if err := clearIssueAllForProject(ctx, r.cacheRepo); err != nil {
 		return err
 	}
 

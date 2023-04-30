@@ -7,6 +7,30 @@ import (
 	"github.com/opcotech/elemo/internal/repository"
 )
 
+func clearDocumentsPattern(ctx context.Context, r *baseRepository, pattern ...string) error {
+	return r.DeletePattern(ctx, composeCacheKey(model.ResourceTypeDocument.String(), pattern))
+}
+
+func clearDocumentsKey(ctx context.Context, r *baseRepository, id model.ID) error {
+	return r.Delete(ctx, composeCacheKey(model.ResourceTypeDocument.String(), id.String()))
+}
+
+func clearDocumentBelongsTo(ctx context.Context, r *baseRepository, belongsToID model.ID) error {
+	return clearDocumentsPattern(ctx, r, "GetAllBelongsTo", belongsToID.String(), "*")
+}
+
+func clearDocumentAllBelongsTo(ctx context.Context, r *baseRepository) error {
+	return clearDocumentsPattern(ctx, r, "GetAllBelongsTo", "*")
+}
+
+func clearDocumentByCreator(ctx context.Context, r *baseRepository, createdByID model.ID) error {
+	return clearDocumentsPattern(ctx, r, "GetByCreator", createdByID.String(), "*")
+}
+
+func clearDocumentAllByCreator(ctx context.Context, r *baseRepository) error {
+	return clearDocumentsPattern(ctx, r, "GetByCreator", "*")
+}
+
 // CachedDocumentRepository implements caching on the
 // repository.DocumentRepository.
 type CachedDocumentRepository struct {
@@ -15,13 +39,11 @@ type CachedDocumentRepository struct {
 }
 
 func (r *CachedDocumentRepository) Create(ctx context.Context, belongsTo model.ID, document *model.Document) error {
-	pattern := composeCacheKey(model.ResourceTypeDocument.String(), "GetAllBelongsTo", belongsTo.String(), "*")
-	if err := r.cacheRepo.DeletePattern(ctx, pattern); err != nil {
+	if err := clearDocumentBelongsTo(ctx, r.cacheRepo, belongsTo); err != nil {
 		return err
 	}
 
-	pattern = composeCacheKey(model.ResourceTypeDocument.String(), "GetByCreator", document.CreatedBy.String(), "*")
-	if err := r.cacheRepo.DeletePattern(ctx, pattern); err != nil {
+	if err := clearDocumentByCreator(ctx, r.cacheRepo, document.CreatedBy); err != nil {
 		return err
 	}
 
@@ -109,18 +131,16 @@ func (r *CachedDocumentRepository) Update(ctx context.Context, id model.ID, patc
 		return nil, err
 	}
 
-	key := composeCacheKey(model.ResourceTypeTodo.String(), id.String())
+	key := composeCacheKey(model.ResourceTypeDocument.String(), id.String())
 	if err = r.cacheRepo.Set(ctx, key, document); err != nil {
 		return nil, err
 	}
 
-	pattern := composeCacheKey(model.ResourceTypeDocument.String(), "GetAllBelongsTo", "*")
-	if err := r.cacheRepo.DeletePattern(ctx, pattern); err != nil {
+	if err := clearDocumentAllBelongsTo(ctx, r.cacheRepo); err != nil {
 		return nil, err
 	}
 
-	pattern = composeCacheKey(model.ResourceTypeDocument.String(), "GetByCreator", document.CreatedBy.String(), "*")
-	if err := r.cacheRepo.DeletePattern(ctx, pattern); err != nil {
+	if err = clearDocumentByCreator(ctx, r.cacheRepo, document.CreatedBy); err != nil {
 		return nil, err
 	}
 
@@ -128,18 +148,15 @@ func (r *CachedDocumentRepository) Update(ctx context.Context, id model.ID, patc
 }
 
 func (r *CachedDocumentRepository) Delete(ctx context.Context, id model.ID) error {
-	key := composeCacheKey(model.ResourceTypeDocument.String(), id.String())
-	if err := r.cacheRepo.Delete(ctx, key); err != nil {
+	if err := clearDocumentsKey(ctx, r.cacheRepo, id); err != nil {
 		return err
 	}
 
-	pattern := composeCacheKey(model.ResourceTypeDocument.String(), "GetAllBelongsTo", "*")
-	if err := r.cacheRepo.DeletePattern(ctx, pattern); err != nil {
+	if err := clearDocumentAllBelongsTo(ctx, r.cacheRepo); err != nil {
 		return err
 	}
 
-	pattern = composeCacheKey(model.ResourceTypeDocument.String(), "GetByCreator", "*")
-	if err := r.cacheRepo.DeletePattern(ctx, pattern); err != nil {
+	if err := clearDocumentAllByCreator(ctx, r.cacheRepo); err != nil {
 		return err
 	}
 

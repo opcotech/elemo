@@ -17,6 +17,13 @@ import (
 	"github.com/opcotech/elemo/internal/repository"
 )
 
+// CacheBackend represents a cache backend.
+type CacheBackend interface {
+	Set(item *cache.Item) error
+	Get(ctx context.Context, key string, dst interface{}) error
+	Delete(ctx context.Context, key string) error
+}
+
 // RepositoryOption configures a baseRepository for a Neo4j baseRepository.
 type RepositoryOption func(*baseRepository) error
 
@@ -59,7 +66,7 @@ func WithRepositoryTracer(tracer trace.Tracer) RepositoryOption {
 // baseRepository represents a baseRepository for a Neo4j baseRepository.
 type baseRepository struct {
 	db     *Database    `validate:"required"`
-	cache  *cache.Cache `validate:"required"`
+	cache  CacheBackend `validate:"required"`
 	logger log.Logger   `validate:"required"`
 	tracer trace.Tracer `validate:"required"`
 }
@@ -148,11 +155,18 @@ func newBaseRepository(opts ...RepositoryOption) (*baseRepository, error) {
 
 // composeCacheKey composes a key using a prefix.
 func composeCacheKey(params ...any) string {
+	sep := ":"
+
 	key := make([]string, len(params))
 	for i, param := range params {
 		if param != nil {
-			key[i] = fmt.Sprintf("%v", param)
+			switch param.(type) {
+			case []string:
+				key[i] = strings.Join(param.([]string), sep)
+			default:
+				key[i] = fmt.Sprintf("%v", param)
+			}
 		}
 	}
-	return strings.Join(key, ":")
+	return strings.Join(key, sep)
 }
