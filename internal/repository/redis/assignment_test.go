@@ -576,43 +576,10 @@ func TestCachedAssignmentRepository_Get(t *testing.T) {
 	}
 }
 
-func TestCachedAssignmentRepository_GetByResource(t *testing.T) {
-	type fields struct {
-		cacheRepo      func(ctx context.Context, resourceID model.ID, offset, limit int) *baseRepository
-		assignmentRepo func(ctx context.Context, resourceID model.ID, offset, limit int) repository.AssignmentRepository
-	}
-	type args struct {
-		ctx        context.Context
-		resourceID model.ID
-		offset     int
-		limit      int
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    []*model.Assignment
-		wantErr error
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			r := &CachedAssignmentRepository{
-				cacheRepo:      tt.fields.cacheRepo(tt.args.ctx, tt.args.resourceID, tt.args.offset, tt.args.limit),
-				assignmentRepo: tt.fields.assignmentRepo(tt.args.ctx, tt.args.resourceID, tt.args.offset, tt.args.limit),
-			}
-			got, err := r.GetByResource(tt.args.ctx, tt.args.resourceID, tt.args.offset, tt.args.limit)
-			assert.ErrorIs(t, err, tt.wantErr)
-			assert.ElementsMatch(t, tt.want, got)
-		})
-	}
-}
-
 func TestCachedAssignmentRepository_GetByUser(t *testing.T) {
 	type fields struct {
-		cacheRepo      func(ctx context.Context, userID model.ID, offset, limit int) *baseRepository
-		assignmentRepo func(ctx context.Context, userID model.ID, offset, limit int) repository.AssignmentRepository
+		cacheRepo      func(ctx context.Context, userID model.ID, offset, limit int, assignments []*model.Assignment) *baseRepository
+		assignmentRepo func(ctx context.Context, userID model.ID, offset, limit int, assignments []*model.Assignment) repository.AssignmentRepository
 	}
 	type args struct {
 		ctx    context.Context
@@ -627,15 +594,508 @@ func TestCachedAssignmentRepository_GetByUser(t *testing.T) {
 		want    []*model.Assignment
 		wantErr error
 	}{
-		// TODO: Add test cases.
+		{
+			name: "get uncached assignments",
+			fields: fields{
+				cacheRepo: func(ctx context.Context, userID model.ID, offset, limit int, assignments []*model.Assignment) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByUser", userID.String(), offset, limit)
+
+					db, err := NewDatabase(
+						WithClient(new(testMock.RedisClient)),
+					)
+					require.NoError(t, err)
+
+					span := new(testMock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(testMock.Tracer)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Set", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					cacheRepo := new(testMock.CacheRepo)
+					cacheRepo.On("Get", ctx, key, mock.Anything).Return(nil, nil)
+					cacheRepo.On("Set", &cache.Item{
+						Ctx:   ctx,
+						Key:   key,
+						Value: assignments,
+					}).Return(nil)
+
+					return &baseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: new(testMock.Logger),
+					}
+				},
+				assignmentRepo: func(ctx context.Context, userID model.ID, offset, limit int, assignments []*model.Assignment) repository.AssignmentRepository {
+					repo := new(testMock.AssignmentRepository)
+					repo.On("GetByUser", ctx, userID, offset, limit).Return(assignments, nil)
+					return repo
+				},
+			},
+			args: args{
+				ctx:    context.Background(),
+				userID: model.MustNewID(model.ResourceTypeUser),
+			},
+			want: []*model.Assignment{
+				{
+					ID:       model.MustNewID(model.ResourceTypeAssignment),
+					Kind:     model.AssignmentKindAssignee,
+					User:     model.MustNewID(model.ResourceTypeUser),
+					Resource: model.MustNewID(model.ResourceTypeDocument),
+				},
+				{
+					ID:       model.MustNewID(model.ResourceTypeAssignment),
+					Kind:     model.AssignmentKindAssignee,
+					User:     model.MustNewID(model.ResourceTypeUser),
+					Resource: model.MustNewID(model.ResourceTypeDocument),
+				},
+			},
+		},
+		{
+			name: "get cached assignments",
+			fields: fields{
+				cacheRepo: func(ctx context.Context, userID model.ID, offset, limit int, assignments []*model.Assignment) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByUser", userID.String(), offset, limit)
+
+					db, err := NewDatabase(
+						WithClient(new(testMock.RedisClient)),
+					)
+					require.NoError(t, err)
+
+					span := new(testMock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(testMock.Tracer)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					cacheRepo := new(testMock.CacheRepo)
+					cacheRepo.On("Get", ctx, key, mock.Anything).Return(assignments, nil)
+
+					return &baseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: new(testMock.Logger),
+					}
+				},
+				assignmentRepo: func(ctx context.Context, userID model.ID, offset, limit int, assignments []*model.Assignment) repository.AssignmentRepository {
+					return new(testMock.AssignmentRepository)
+				},
+			},
+			args: args{
+				ctx:    context.Background(),
+				userID: model.MustNewID(model.ResourceTypeUser),
+			},
+			want: []*model.Assignment{
+				{
+					ID:       model.MustNewID(model.ResourceTypeAssignment),
+					Kind:     model.AssignmentKindAssignee,
+					User:     model.MustNewID(model.ResourceTypeUser),
+					Resource: model.MustNewID(model.ResourceTypeDocument),
+				},
+				{
+					ID:       model.MustNewID(model.ResourceTypeAssignment),
+					Kind:     model.AssignmentKindAssignee,
+					User:     model.MustNewID(model.ResourceTypeUser),
+					Resource: model.MustNewID(model.ResourceTypeDocument),
+				},
+			},
+		},
+		{
+			name: "get uncached assignments error",
+			fields: fields{
+				cacheRepo: func(ctx context.Context, userID model.ID, offset, limit int, assignments []*model.Assignment) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByUser", userID.String(), offset, limit)
+
+					db, err := NewDatabase(
+						WithClient(new(testMock.RedisClient)),
+					)
+					require.NoError(t, err)
+
+					span := new(testMock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(testMock.Tracer)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Set", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					cacheRepo := new(testMock.CacheRepo)
+					cacheRepo.On("Get", ctx, key, mock.Anything).Return(nil, nil)
+
+					return &baseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: new(testMock.Logger),
+					}
+				},
+				assignmentRepo: func(ctx context.Context, userID model.ID, offset, limit int, assignments []*model.Assignment) repository.AssignmentRepository {
+					repo := new(testMock.AssignmentRepository)
+					repo.On("GetByUser", ctx, userID, offset, limit).Return(nil, repository.ErrNotFound)
+					return repo
+				},
+			},
+			args: args{
+				ctx:    context.Background(),
+				userID: model.MustNewID(model.ResourceTypeUser),
+			},
+			wantErr: repository.ErrNotFound,
+		},
+		{
+			name: "get get assignments cache error",
+			fields: fields{
+				cacheRepo: func(ctx context.Context, userID model.ID, offset, limit int, assignments []*model.Assignment) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByUser", userID.String(), offset, limit)
+
+					db, err := NewDatabase(
+						WithClient(new(testMock.RedisClient)),
+					)
+					require.NoError(t, err)
+
+					span := new(testMock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(testMock.Tracer)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Set", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					cacheRepo := new(testMock.CacheRepo)
+					cacheRepo.On("Get", ctx, key, mock.Anything).Return(nil, errors.New("error"))
+
+					return &baseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: new(testMock.Logger),
+					}
+				},
+				assignmentRepo: func(ctx context.Context, userID model.ID, offset, limit int, assignments []*model.Assignment) repository.AssignmentRepository {
+					return new(testMock.AssignmentRepository)
+				},
+			},
+			args: args{
+				ctx:    context.Background(),
+				userID: model.MustNewID(model.ResourceTypeUser),
+			},
+			wantErr: repository.ErrCacheRead,
+		},
+		{
+			name: "get uncached assignments cache set error",
+			fields: fields{
+				cacheRepo: func(ctx context.Context, userID model.ID, offset, limit int, assignments []*model.Assignment) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByUser", userID.String(), offset, limit)
+
+					db, err := NewDatabase(
+						WithClient(new(testMock.RedisClient)),
+					)
+					require.NoError(t, err)
+
+					span := new(testMock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(testMock.Tracer)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Set", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					cacheRepo := new(testMock.CacheRepo)
+					cacheRepo.On("Get", ctx, key, mock.Anything).Return(nil, nil)
+					cacheRepo.On("Set", &cache.Item{
+						Ctx:   ctx,
+						Key:   key,
+						Value: assignments,
+					}).Return(errors.New("error"))
+
+					return &baseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: new(testMock.Logger),
+					}
+				},
+				assignmentRepo: func(ctx context.Context, userID model.ID, offset, limit int, assignments []*model.Assignment) repository.AssignmentRepository {
+					repo := new(testMock.AssignmentRepository)
+					repo.On("GetByUser", ctx, userID, offset, limit).Return(assignments, nil)
+					return repo
+				},
+			},
+			args: args{
+				ctx:    context.Background(),
+				userID: model.MustNewID(model.ResourceTypeUser),
+			},
+			wantErr: repository.ErrCacheWrite,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			r := &CachedAssignmentRepository{
-				cacheRepo:      tt.fields.cacheRepo(tt.args.ctx, tt.args.userID, tt.args.offset, tt.args.limit),
-				assignmentRepo: tt.fields.assignmentRepo(tt.args.ctx, tt.args.userID, tt.args.offset, tt.args.limit),
+				cacheRepo:      tt.fields.cacheRepo(tt.args.ctx, tt.args.userID, tt.args.offset, tt.args.limit, tt.want),
+				assignmentRepo: tt.fields.assignmentRepo(tt.args.ctx, tt.args.userID, tt.args.offset, tt.args.limit, tt.want),
 			}
 			got, err := r.GetByUser(tt.args.ctx, tt.args.userID, tt.args.offset, tt.args.limit)
+			assert.ErrorIs(t, err, tt.wantErr)
+			assert.ElementsMatch(t, tt.want, got)
+		})
+	}
+}
+
+func TestCachedAssignmentRepository_GetByResource(t *testing.T) {
+	type fields struct {
+		cacheRepo      func(ctx context.Context, userID model.ID, offset, limit int, assignments []*model.Assignment) *baseRepository
+		assignmentRepo func(ctx context.Context, userID model.ID, offset, limit int, assignments []*model.Assignment) repository.AssignmentRepository
+	}
+	type args struct {
+		ctx    context.Context
+		userID model.ID
+		offset int
+		limit  int
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    []*model.Assignment
+		wantErr error
+	}{
+		{
+			name: "get uncached assignments",
+			fields: fields{
+				cacheRepo: func(ctx context.Context, userID model.ID, offset, limit int, assignments []*model.Assignment) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByResource", userID.String(), offset, limit)
+
+					db, err := NewDatabase(
+						WithClient(new(testMock.RedisClient)),
+					)
+					require.NoError(t, err)
+
+					span := new(testMock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(testMock.Tracer)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Set", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					cacheRepo := new(testMock.CacheRepo)
+					cacheRepo.On("Get", ctx, key, mock.Anything).Return(nil, nil)
+					cacheRepo.On("Set", &cache.Item{
+						Ctx:   ctx,
+						Key:   key,
+						Value: assignments,
+					}).Return(nil)
+
+					return &baseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: new(testMock.Logger),
+					}
+				},
+				assignmentRepo: func(ctx context.Context, userID model.ID, offset, limit int, assignments []*model.Assignment) repository.AssignmentRepository {
+					repo := new(testMock.AssignmentRepository)
+					repo.On("GetByResource", ctx, userID, offset, limit).Return(assignments, nil)
+					return repo
+				},
+			},
+			args: args{
+				ctx:    context.Background(),
+				userID: model.MustNewID(model.ResourceTypeUser),
+			},
+			want: []*model.Assignment{
+				{
+					ID:       model.MustNewID(model.ResourceTypeAssignment),
+					Kind:     model.AssignmentKindAssignee,
+					User:     model.MustNewID(model.ResourceTypeUser),
+					Resource: model.MustNewID(model.ResourceTypeDocument),
+				},
+				{
+					ID:       model.MustNewID(model.ResourceTypeAssignment),
+					Kind:     model.AssignmentKindAssignee,
+					User:     model.MustNewID(model.ResourceTypeUser),
+					Resource: model.MustNewID(model.ResourceTypeDocument),
+				},
+			},
+		},
+		{
+			name: "get cached assignments",
+			fields: fields{
+				cacheRepo: func(ctx context.Context, userID model.ID, offset, limit int, assignments []*model.Assignment) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByResource", userID.String(), offset, limit)
+
+					db, err := NewDatabase(
+						WithClient(new(testMock.RedisClient)),
+					)
+					require.NoError(t, err)
+
+					span := new(testMock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(testMock.Tracer)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					cacheRepo := new(testMock.CacheRepo)
+					cacheRepo.On("Get", ctx, key, mock.Anything).Return(assignments, nil)
+
+					return &baseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: new(testMock.Logger),
+					}
+				},
+				assignmentRepo: func(ctx context.Context, userID model.ID, offset, limit int, assignments []*model.Assignment) repository.AssignmentRepository {
+					return new(testMock.AssignmentRepository)
+				},
+			},
+			args: args{
+				ctx:    context.Background(),
+				userID: model.MustNewID(model.ResourceTypeUser),
+			},
+			want: []*model.Assignment{
+				{
+					ID:       model.MustNewID(model.ResourceTypeAssignment),
+					Kind:     model.AssignmentKindAssignee,
+					User:     model.MustNewID(model.ResourceTypeUser),
+					Resource: model.MustNewID(model.ResourceTypeDocument),
+				},
+				{
+					ID:       model.MustNewID(model.ResourceTypeAssignment),
+					Kind:     model.AssignmentKindAssignee,
+					User:     model.MustNewID(model.ResourceTypeUser),
+					Resource: model.MustNewID(model.ResourceTypeDocument),
+				},
+			},
+		},
+		{
+			name: "get uncached assignments error",
+			fields: fields{
+				cacheRepo: func(ctx context.Context, userID model.ID, offset, limit int, assignments []*model.Assignment) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByResource", userID.String(), offset, limit)
+
+					db, err := NewDatabase(
+						WithClient(new(testMock.RedisClient)),
+					)
+					require.NoError(t, err)
+
+					span := new(testMock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(testMock.Tracer)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Set", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					cacheRepo := new(testMock.CacheRepo)
+					cacheRepo.On("Get", ctx, key, mock.Anything).Return(nil, nil)
+
+					return &baseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: new(testMock.Logger),
+					}
+				},
+				assignmentRepo: func(ctx context.Context, userID model.ID, offset, limit int, assignments []*model.Assignment) repository.AssignmentRepository {
+					repo := new(testMock.AssignmentRepository)
+					repo.On("GetByResource", ctx, userID, offset, limit).Return(nil, repository.ErrNotFound)
+					return repo
+				},
+			},
+			args: args{
+				ctx:    context.Background(),
+				userID: model.MustNewID(model.ResourceTypeUser),
+			},
+			wantErr: repository.ErrNotFound,
+		},
+		{
+			name: "get get assignments cache error",
+			fields: fields{
+				cacheRepo: func(ctx context.Context, userID model.ID, offset, limit int, assignments []*model.Assignment) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByResource", userID.String(), offset, limit)
+
+					db, err := NewDatabase(
+						WithClient(new(testMock.RedisClient)),
+					)
+					require.NoError(t, err)
+
+					span := new(testMock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(testMock.Tracer)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Set", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					cacheRepo := new(testMock.CacheRepo)
+					cacheRepo.On("Get", ctx, key, mock.Anything).Return(nil, errors.New("error"))
+
+					return &baseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: new(testMock.Logger),
+					}
+				},
+				assignmentRepo: func(ctx context.Context, userID model.ID, offset, limit int, assignments []*model.Assignment) repository.AssignmentRepository {
+					return new(testMock.AssignmentRepository)
+				},
+			},
+			args: args{
+				ctx:    context.Background(),
+				userID: model.MustNewID(model.ResourceTypeUser),
+			},
+			wantErr: repository.ErrCacheRead,
+		},
+		{
+			name: "get uncached assignments cache set error",
+			fields: fields{
+				cacheRepo: func(ctx context.Context, userID model.ID, offset, limit int, assignments []*model.Assignment) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByResource", userID.String(), offset, limit)
+
+					db, err := NewDatabase(
+						WithClient(new(testMock.RedisClient)),
+					)
+					require.NoError(t, err)
+
+					span := new(testMock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(testMock.Tracer)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Set", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					cacheRepo := new(testMock.CacheRepo)
+					cacheRepo.On("Get", ctx, key, mock.Anything).Return(nil, nil)
+					cacheRepo.On("Set", &cache.Item{
+						Ctx:   ctx,
+						Key:   key,
+						Value: assignments,
+					}).Return(errors.New("error"))
+
+					return &baseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: new(testMock.Logger),
+					}
+				},
+				assignmentRepo: func(ctx context.Context, userID model.ID, offset, limit int, assignments []*model.Assignment) repository.AssignmentRepository {
+					repo := new(testMock.AssignmentRepository)
+					repo.On("GetByResource", ctx, userID, offset, limit).Return(assignments, nil)
+					return repo
+				},
+			},
+			args: args{
+				ctx:    context.Background(),
+				userID: model.MustNewID(model.ResourceTypeUser),
+			},
+			wantErr: repository.ErrCacheWrite,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &CachedAssignmentRepository{
+				cacheRepo:      tt.fields.cacheRepo(tt.args.ctx, tt.args.userID, tt.args.offset, tt.args.limit, tt.want),
+				assignmentRepo: tt.fields.assignmentRepo(tt.args.ctx, tt.args.userID, tt.args.offset, tt.args.limit, tt.want),
+			}
+			got, err := r.GetByResource(tt.args.ctx, tt.args.userID, tt.args.offset, tt.args.limit)
 			assert.ErrorIs(t, err, tt.wantErr)
 			assert.ElementsMatch(t, tt.want, got)
 		})
