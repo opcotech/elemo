@@ -14,7 +14,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/hyperboloide/lk v0.0.0-20230325114855-ce3fecd34798
 	github.com/jackc/pgx/v5 v5.3.1
-	github.com/neo4j/neo4j-go-driver/v5 v5.7.0
+	github.com/neo4j/neo4j-go-driver/v5 v5.8.0
 	github.com/prometheus/client_golang v1.15.0
 	github.com/rs/xid v1.5.0
 	github.com/slok/go-http-metrics v0.10.0
@@ -34,7 +34,6 @@ require (
 require (
 	github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
-	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
