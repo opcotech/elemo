@@ -160,9 +160,9 @@ func composeCacheKey(params ...any) string {
 	key := make([]string, len(params))
 	for i, param := range params {
 		if param != nil {
-			switch param.(type) {
+			switch p := param.(type) {
 			case []string:
-				key[i] = strings.Join(param.([]string), sep)
+				key[i] = strings.Join(p, sep)
 			default:
 				key[i] = fmt.Sprintf("%v", param)
 			}
