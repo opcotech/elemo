@@ -7,6 +7,37 @@ import (
 	"github.com/opcotech/elemo/internal/repository"
 )
 
+func clearCommentsKey(ctx context.Context, r *baseRepository, id model.ID) error {
+	return r.Delete(ctx, composeCacheKey(model.ResourceTypeComment.String(), id.String()))
+}
+
+func clearCommentsPattern(ctx context.Context, r *baseRepository, pattern ...string) error {
+	return r.DeletePattern(ctx, composeCacheKey(model.ResourceTypeComment.String(), pattern))
+}
+
+func clearCommentBelongsTo(ctx context.Context, r *baseRepository, resourceID model.ID) error {
+	return clearCommentsPattern(ctx, r, "GetAllBelongsTo", resourceID.String(), "*")
+}
+
+func clearCommentAllBelongsTo(ctx context.Context, r *baseRepository) error {
+	return clearCommentsPattern(ctx, r, "GetAllBelongsTo", "*")
+}
+
+func clearCommentAllCrossCache(ctx context.Context, r *baseRepository) error {
+	deleteFns := []func(context.Context, *baseRepository, ...string) error{
+		clearDocumentsPattern,
+		clearIssuesPattern,
+	}
+
+	for _, fn := range deleteFns {
+		if err := fn(ctx, r, "*"); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // CachedCommentRepository implements caching on the
 // repository.CommentRepository.
 type CachedCommentRepository struct {
@@ -15,8 +46,11 @@ type CachedCommentRepository struct {
 }
 
 func (r *CachedCommentRepository) Create(ctx context.Context, belongsTo model.ID, comment *model.Comment) error {
-	pattern := composeCacheKey(model.ResourceTypeComment.String(), "GetAllBelongsTo", belongsTo.String(), "*")
-	if err := r.cacheRepo.DeletePattern(ctx, pattern); err != nil {
+	if err := clearCommentBelongsTo(ctx, r.cacheRepo, belongsTo); err != nil {
+		return err
+	}
+
+	if err := clearCommentAllCrossCache(ctx, r.cacheRepo); err != nil {
 		return err
 	}
 
@@ -51,7 +85,7 @@ func (r *CachedCommentRepository) GetAllBelongsTo(ctx context.Context, belongsTo
 	var comments []*model.Comment
 	var err error
 
-	key := composeCacheKey(model.ResourceTypeAssignment.String(), "GetAllBelongsTo", belongsTo.String(), offset, limit)
+	key := composeCacheKey(model.ResourceTypeComment.String(), "GetAllBelongsTo", belongsTo.String(), offset, limit)
 	if err = r.cacheRepo.Get(ctx, key, &comments); err != nil {
 		return nil, err
 	}
@@ -94,13 +128,15 @@ func (r *CachedCommentRepository) Update(ctx context.Context, id model.ID, conte
 }
 
 func (r *CachedCommentRepository) Delete(ctx context.Context, id model.ID) error {
-	key := composeCacheKey(model.ResourceTypeComment.String(), id.String())
-	if err := r.cacheRepo.Delete(ctx, key); err != nil {
+	if err := clearCommentsKey(ctx, r.cacheRepo, id); err != nil {
 		return err
 	}
 
-	pattern := composeCacheKey(model.ResourceTypeTodo.String(), "GetAllBelongsTo", "*")
-	if err := r.cacheRepo.DeletePattern(ctx, pattern); err != nil {
+	if err := clearCommentAllBelongsTo(ctx, r.cacheRepo); err != nil {
+		return err
+	}
+
+	if err := clearCommentAllCrossCache(ctx, r.cacheRepo); err != nil {
 		return err
 	}
 
