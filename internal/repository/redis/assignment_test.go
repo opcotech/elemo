@@ -33,70 +33,6 @@ func TestCachedAssignmentRepository_Create(t *testing.T) {
 		wantErr error
 	}{
 		{
-			name: "create new document assignment",
-			fields: fields{
-				cacheRepo: func(ctx context.Context, assignment *model.Assignment) *baseRepository {
-					key1 := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByResource", assignment.Resource.String())
-					key2 := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByUser", assignment.User.String())
-					key3 := composeCacheKey(model.ResourceTypeDocument.String(), assignment.Resource.String())
-
-					byResourceKey := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByResource", assignment.Resource.String(), "*")
-					byUserKey := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByUser", assignment.User.String(), "*")
-					resourceKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
-
-					byResourceKeyResult := new(redis.StringSliceCmd)
-					byResourceKeyResult.SetVal([]string{key1})
-
-					byUserKeyResult := new(redis.StringSliceCmd)
-					byUserKeyResult.SetVal([]string{key2})
-
-					resourceKeyResult := new(redis.StringSliceCmd)
-					resourceKeyResult.SetVal([]string{key3})
-
-					dbClient := new(testMock.RedisClient)
-					dbClient.On("Keys", ctx, byResourceKey).Return(byResourceKeyResult)
-					dbClient.On("Keys", ctx, byUserKey).Return(byUserKeyResult)
-					dbClient.On("Keys", ctx, resourceKey).Return(resourceKeyResult)
-
-					db, err := NewDatabase(
-						WithClient(dbClient),
-					)
-					require.NoError(t, err)
-
-					span := new(testMock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
-
-					tracer := new(testMock.Tracer)
-					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
-
-					cacheRepo := new(testMock.CacheRepo)
-					cacheRepo.On("Delete", ctx, key1).Return(nil)
-					cacheRepo.On("Delete", ctx, key2).Return(nil)
-					cacheRepo.On("Delete", ctx, key3).Return(nil)
-
-					return &baseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: new(testMock.Logger),
-					}
-				},
-				assignmentRepo: func(ctx context.Context, assignment *model.Assignment) repository.AssignmentRepository {
-					repo := new(testMock.AssignmentRepository)
-					repo.On("Create", ctx, assignment).Return(nil)
-					return repo
-				},
-			},
-			args: args{
-				ctx: context.Background(),
-				assignment: &model.Assignment{
-					Kind:     model.AssignmentKindAssignee,
-					User:     model.MustNewID(model.ResourceTypeUser),
-					Resource: model.MustNewID(model.ResourceTypeDocument),
-				},
-			},
-		},
-		{
 			name: "create new issue assignment",
 			fields: fields{
 				cacheRepo: func(ctx context.Context, assignment *model.Assignment) *baseRepository {
@@ -1124,7 +1060,6 @@ func TestCachedAssignmentRepository_Delete(t *testing.T) {
 					key := composeCacheKey(model.ResourceTypeAssignment.String(), id.String())
 					byResourceKey := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByResource", "*")
 					byUserKey := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByUser", "*")
-					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
 					issuesKey := composeCacheKey(model.ResourceTypeIssue.String(), "*")
 
 					byResourceKeyCmd := new(redis.StringSliceCmd)
@@ -1133,16 +1068,12 @@ func TestCachedAssignmentRepository_Delete(t *testing.T) {
 					byUserKeyCmd := new(redis.StringSliceCmd)
 					byUserKeyCmd.SetVal([]string{byUserKey})
 
-					documentsKeyCmd := new(redis.StringSliceCmd)
-					documentsKeyCmd.SetVal([]string{documentsKey})
-
 					issuesKeyCmd := new(redis.StringSliceCmd)
 					issuesKeyCmd.SetVal([]string{issuesKey})
 
 					dbClient := new(testMock.RedisClient)
 					dbClient.On("Keys", ctx, byResourceKey).Return(byResourceKeyCmd)
 					dbClient.On("Keys", ctx, byUserKey).Return(byUserKeyCmd)
-					dbClient.On("Keys", ctx, documentsKey).Return(documentsKeyCmd)
 					dbClient.On("Keys", ctx, issuesKey).Return(issuesKeyCmd)
 
 					db, err := NewDatabase(
@@ -1161,7 +1092,6 @@ func TestCachedAssignmentRepository_Delete(t *testing.T) {
 					cacheRepo.On("Delete", ctx, key).Return(nil)
 					cacheRepo.On("Delete", ctx, byResourceKey).Return(nil)
 					cacheRepo.On("Delete", ctx, byUserKey).Return(nil)
-					cacheRepo.On("Delete", ctx, documentsKey).Return(nil)
 					cacheRepo.On("Delete", ctx, issuesKey).Return(nil)
 
 					return &baseRepository{
@@ -1189,7 +1119,6 @@ func TestCachedAssignmentRepository_Delete(t *testing.T) {
 					key := composeCacheKey(model.ResourceTypeAssignment.String(), id.String())
 					byResourceKey := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByResource", "*")
 					byUserKey := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByUser", "*")
-					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
 					issuesKey := composeCacheKey(model.ResourceTypeIssue.String(), "*")
 
 					byResourceKeyCmd := new(redis.StringSliceCmd)
@@ -1198,16 +1127,12 @@ func TestCachedAssignmentRepository_Delete(t *testing.T) {
 					byUserKeyCmd := new(redis.StringSliceCmd)
 					byUserKeyCmd.SetVal([]string{byUserKey})
 
-					documentsKeyCmd := new(redis.StringSliceCmd)
-					documentsKeyCmd.SetVal([]string{documentsKey})
-
 					issuesKeyCmd := new(redis.StringSliceCmd)
 					issuesKeyCmd.SetVal([]string{issuesKey})
 
 					dbClient := new(testMock.RedisClient)
 					dbClient.On("Keys", ctx, byResourceKey).Return(byResourceKeyCmd)
 					dbClient.On("Keys", ctx, byUserKey).Return(byUserKeyCmd)
-					dbClient.On("Keys", ctx, documentsKey).Return(documentsKeyCmd)
 					dbClient.On("Keys", ctx, issuesKey).Return(issuesKeyCmd)
 
 					db, err := NewDatabase(
@@ -1226,7 +1151,6 @@ func TestCachedAssignmentRepository_Delete(t *testing.T) {
 					cacheRepo.On("Delete", ctx, key).Return(nil)
 					cacheRepo.On("Delete", ctx, byResourceKey).Return(nil)
 					cacheRepo.On("Delete", ctx, byUserKey).Return(nil)
-					cacheRepo.On("Delete", ctx, documentsKey).Return(nil)
 					cacheRepo.On("Delete", ctx, issuesKey).Return(nil)
 
 					return &baseRepository{
@@ -1387,71 +1311,12 @@ func TestCachedAssignmentRepository_Delete(t *testing.T) {
 			wantErr: repository.ErrCacheDelete,
 		},
 		{
-			name: "delete assignment cache by documents key error",
-			fields: fields{
-				cacheRepo: func(ctx context.Context, id model.ID) *baseRepository {
-					key := composeCacheKey(model.ResourceTypeAssignment.String(), id.String())
-					byResourceKey := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByResource", "*")
-					byUserKey := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByUser", "*")
-					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
-
-					byResourceKeyCmd := new(redis.StringSliceCmd)
-					byResourceKeyCmd.SetVal([]string{byResourceKey})
-
-					byUserKeyCmd := new(redis.StringSliceCmd)
-					byUserKeyCmd.SetVal([]string{byUserKey})
-
-					documentsKeyCmd := new(redis.StringSliceCmd)
-					documentsKeyCmd.SetVal([]string{documentsKey})
-
-					dbClient := new(testMock.RedisClient)
-					dbClient.On("Keys", ctx, byResourceKey).Return(byResourceKeyCmd)
-					dbClient.On("Keys", ctx, byUserKey).Return(byUserKeyCmd)
-					dbClient.On("Keys", ctx, documentsKey).Return(documentsKeyCmd)
-
-					db, err := NewDatabase(
-						WithClient(dbClient),
-					)
-					require.NoError(t, err)
-
-					span := new(testMock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
-
-					tracer := new(testMock.Tracer)
-					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
-
-					cacheRepo := new(testMock.CacheRepo)
-					cacheRepo.On("Delete", ctx, key).Return(nil)
-					cacheRepo.On("Delete", ctx, byResourceKey).Return(nil)
-					cacheRepo.On("Delete", ctx, byUserKey).Return(nil)
-					cacheRepo.On("Delete", ctx, documentsKey).Return(repository.ErrCacheDelete)
-
-					return &baseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: new(testMock.Logger),
-					}
-				},
-				assignmentRepo: func(ctx context.Context, id model.ID) repository.AssignmentRepository {
-					return new(testMock.AssignmentRepository)
-				},
-			},
-			args: args{
-				ctx: context.Background(),
-				id:  model.MustNewID(model.ResourceTypeAssignment),
-			},
-			wantErr: repository.ErrCacheDelete,
-		},
-		{
 			name: "delete assignment cache by issues key error",
 			fields: fields{
 				cacheRepo: func(ctx context.Context, id model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeAssignment.String(), id.String())
 					byResourceKey := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByResource", "*")
 					byUserKey := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByUser", "*")
-					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
 					issuesKey := composeCacheKey(model.ResourceTypeIssue.String(), "*")
 
 					byResourceKeyCmd := new(redis.StringSliceCmd)
@@ -1460,16 +1325,12 @@ func TestCachedAssignmentRepository_Delete(t *testing.T) {
 					byUserKeyCmd := new(redis.StringSliceCmd)
 					byUserKeyCmd.SetVal([]string{byUserKey})
 
-					documentsKeyCmd := new(redis.StringSliceCmd)
-					documentsKeyCmd.SetVal([]string{documentsKey})
-
 					issuesKeyCmd := new(redis.StringSliceCmd)
 					issuesKeyCmd.SetVal([]string{issuesKey})
 
 					dbClient := new(testMock.RedisClient)
 					dbClient.On("Keys", ctx, byResourceKey).Return(byResourceKeyCmd)
 					dbClient.On("Keys", ctx, byUserKey).Return(byUserKeyCmd)
-					dbClient.On("Keys", ctx, documentsKey).Return(documentsKeyCmd)
 					dbClient.On("Keys", ctx, issuesKey).Return(issuesKeyCmd)
 
 					db, err := NewDatabase(
@@ -1488,7 +1349,6 @@ func TestCachedAssignmentRepository_Delete(t *testing.T) {
 					cacheRepo.On("Delete", ctx, key).Return(nil)
 					cacheRepo.On("Delete", ctx, byResourceKey).Return(nil)
 					cacheRepo.On("Delete", ctx, byUserKey).Return(nil)
-					cacheRepo.On("Delete", ctx, documentsKey).Return(nil)
 					cacheRepo.On("Delete", ctx, issuesKey).Return(repository.ErrCacheDelete)
 
 					return &baseRepository{

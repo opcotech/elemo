@@ -32,30 +32,20 @@ func clearAssignmentAllByUser(ctx context.Context, r *baseRepository) error {
 }
 
 func clearAssignmentAllCrossCache(ctx context.Context, r *baseRepository, assignment *model.Assignment) error {
-	deleteFns := make([]func(context.Context, *baseRepository, ...string) error, 0)
+	var deleteFn func(ctx context.Context, r *baseRepository, pattern ...string) error
 
 	if assignment == nil {
-		deleteFns = append(deleteFns, clearDocumentsPattern, clearIssuesPattern)
-	}
-
-	if assignment != nil {
+		deleteFn = clearIssuesPattern
+	} else {
 		switch assignment.Resource.Type {
-		case model.ResourceTypeDocument:
-			deleteFns = append(deleteFns, clearDocumentsPattern)
 		case model.ResourceTypeIssue:
-			deleteFns = append(deleteFns, clearIssuesPattern)
+			deleteFn = clearIssuesPattern
 		default:
 			return ErrUnexpectedCachedResource
 		}
 	}
 
-	for _, fn := range deleteFns {
-		if err := fn(ctx, r, "*"); err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return deleteFn(ctx, r, "*")
 }
 
 // CachedAssignmentRepository implements caching on the
