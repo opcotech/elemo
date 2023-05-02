@@ -21,7 +21,7 @@ type CachedAssignmentRepositoryIntegrationTestSuite struct {
 
 	testUser       *model.User
 	testOrg        *model.Organization
-	testDoc        *model.Document
+	testIssue      *model.Issue
 	assignment     *model.Assignment
 	assignmentRepo *redis.CachedAssignmentRepository
 }
@@ -44,10 +44,10 @@ func (s *CachedAssignmentRepositoryIntegrationTestSuite) SetupTest() {
 	s.testOrg = testModel.NewOrganization()
 	s.Require().NoError(s.OrganizationRepo.Create(context.Background(), s.testUser.ID, s.testOrg))
 
-	s.testDoc = testModel.NewDocument(s.testUser.ID)
-	s.Require().NoError(s.DocumentRepo.Create(context.Background(), s.testUser.ID, s.testDoc))
+	s.testIssue = testModel.NewIssue(s.testUser.ID)
+	s.Require().NoError(s.IssueRepo.Create(context.Background(), s.testUser.ID, s.testIssue))
 
-	s.assignment = testModel.NewAssignment(s.testUser.ID, s.testDoc.ID, model.AssignmentKindReviewer)
+	s.assignment = testModel.NewAssignment(s.testUser.ID, s.testIssue.ID, model.AssignmentKindReviewer)
 
 	s.Require().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }
@@ -89,18 +89,18 @@ func (s *CachedAssignmentRepositoryIntegrationTestSuite) TestGet() {
 
 func (s *CachedAssignmentRepositoryIntegrationTestSuite) TestGetByResource() {
 	s.Require().NoError(s.AssignmentRepo.Create(context.Background(), s.assignment))
-	s.Require().NoError(s.AssignmentRepo.Create(context.Background(), testModel.NewAssignment(s.testUser.ID, s.testDoc.ID, model.AssignmentKindReviewer)))
+	s.Require().NoError(s.AssignmentRepo.Create(context.Background(), testModel.NewAssignment(s.testUser.ID, s.testIssue.ID, model.AssignmentKindReviewer)))
 
-	originalAssignments, err := s.AssignmentRepo.GetByResource(context.Background(), s.testDoc.ID, 0, 10)
+	originalAssignments, err := s.AssignmentRepo.GetByResource(context.Background(), s.testIssue.ID, 0, 10)
 	s.Require().NoError(err)
 
-	usingCacheAssignments, err := s.assignmentRepo.GetByResource(context.Background(), s.testDoc.ID, 0, 10)
+	usingCacheAssignments, err := s.assignmentRepo.GetByResource(context.Background(), s.testIssue.ID, 0, 10)
 	s.Require().NoError(err)
 
 	s.Assert().Equal(originalAssignments, usingCacheAssignments)
 	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
 
-	cachedAssignments, err := s.assignmentRepo.GetByResource(context.Background(), s.testDoc.ID, 0, 10)
+	cachedAssignments, err := s.assignmentRepo.GetByResource(context.Background(), s.testIssue.ID, 0, 10)
 	s.Require().NoError(err)
 	s.Assert().Equal(usingCacheAssignments, cachedAssignments)
 
@@ -109,7 +109,7 @@ func (s *CachedAssignmentRepositoryIntegrationTestSuite) TestGetByResource() {
 
 func (s *CachedAssignmentRepositoryIntegrationTestSuite) TestGetByUser() {
 	s.Require().NoError(s.AssignmentRepo.Create(context.Background(), s.assignment))
-	s.Require().NoError(s.AssignmentRepo.Create(context.Background(), testModel.NewAssignment(s.testUser.ID, s.testDoc.ID, model.AssignmentKindReviewer)))
+	s.Require().NoError(s.AssignmentRepo.Create(context.Background(), testModel.NewAssignment(s.testUser.ID, s.testIssue.ID, model.AssignmentKindReviewer)))
 
 	originalAssignments, err := s.AssignmentRepo.GetByUser(context.Background(), s.testUser.ID, 0, 10)
 	s.Require().NoError(err)
