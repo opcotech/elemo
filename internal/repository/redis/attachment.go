@@ -7,6 +7,37 @@ import (
 	"github.com/opcotech/elemo/internal/repository"
 )
 
+func clearAttachmentsKey(ctx context.Context, r *baseRepository, id model.ID) error {
+	return r.Delete(ctx, composeCacheKey(model.ResourceTypeAttachment.String(), id.String()))
+}
+
+func clearAttachmentsPattern(ctx context.Context, r *baseRepository, pattern ...string) error {
+	return r.DeletePattern(ctx, composeCacheKey(model.ResourceTypeAttachment.String(), pattern))
+}
+
+func clearAttachmentBelongsTo(ctx context.Context, r *baseRepository, resourceID model.ID) error {
+	return clearAttachmentsPattern(ctx, r, "GetAllBelongsTo", resourceID.String(), "*")
+}
+
+func clearAttachmentAllBelongsTo(ctx context.Context, r *baseRepository) error {
+	return clearAttachmentsPattern(ctx, r, "GetAllBelongsTo", "*")
+}
+
+func clearAttachmentAllCrossCache(ctx context.Context, r *baseRepository) error {
+	deleteFns := []func(context.Context, *baseRepository, ...string) error{
+		clearDocumentsPattern,
+		clearIssuesPattern,
+	}
+
+	for _, fn := range deleteFns {
+		if err := fn(ctx, r, "*"); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // CachedAttachmentRepository implements caching on the
 // repository.AttachmentRepository.
 type CachedAttachmentRepository struct {
@@ -15,8 +46,11 @@ type CachedAttachmentRepository struct {
 }
 
 func (r *CachedAttachmentRepository) Create(ctx context.Context, belongsTo model.ID, attachment *model.Attachment) error {
-	pattern := composeCacheKey(model.ResourceTypeAttachment.String(), "GetAllBelongsTo", belongsTo.String(), "*")
-	if err := r.cacheRepo.DeletePattern(ctx, pattern); err != nil {
+	if err := clearAttachmentBelongsTo(ctx, r.cacheRepo, belongsTo); err != nil {
+		return err
+	}
+
+	if err := clearAttachmentAllCrossCache(ctx, r.cacheRepo); err != nil {
 		return err
 	}
 
@@ -94,13 +128,15 @@ func (r *CachedAttachmentRepository) Update(ctx context.Context, id model.ID, na
 }
 
 func (r *CachedAttachmentRepository) Delete(ctx context.Context, id model.ID) error {
-	key := composeCacheKey(model.ResourceTypeAttachment.String(), id.String())
-	if err := r.cacheRepo.Delete(ctx, key); err != nil {
+	if err := clearAttachmentsKey(ctx, r.cacheRepo, id); err != nil {
 		return err
 	}
 
-	pattern := composeCacheKey(model.ResourceTypeAttachment.String(), "GetAllBelongsTo", "*")
-	if err := r.cacheRepo.DeletePattern(ctx, pattern); err != nil {
+	if err := clearAttachmentAllBelongsTo(ctx, r.cacheRepo); err != nil {
+		return err
+	}
+
+	if err := clearAttachmentAllCrossCache(ctx, r.cacheRepo); err != nil {
 		return err
 	}
 
