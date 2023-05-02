@@ -85,7 +85,7 @@ func (r *CachedAttachmentRepository) GetAllBelongsTo(ctx context.Context, belong
 	var attachments []*model.Attachment
 	var err error
 
-	key := composeCacheKey(model.ResourceTypeAssignment.String(), "GetAllBelongsTo", belongsTo.String(), offset, limit)
+	key := composeCacheKey(model.ResourceTypeAttachment.String(), "GetAllBelongsTo", belongsTo.String(), offset, limit)
 	if err = r.cacheRepo.Get(ctx, key, &attachments); err != nil {
 		return nil, err
 	}
