@@ -7,12 +7,12 @@ import (
 	"github.com/opcotech/elemo/internal/repository"
 )
 
-func clearAssignmentsPattern(ctx context.Context, r *baseRepository, pattern ...string) error {
-	return r.DeletePattern(ctx, composeCacheKey(model.ResourceTypeAssignment.String(), pattern))
-}
-
 func clearAssignmentsKey(ctx context.Context, r *baseRepository, id model.ID) error {
 	return r.Delete(ctx, composeCacheKey(model.ResourceTypeAssignment.String(), id.String()))
+}
+
+func clearAssignmentsPattern(ctx context.Context, r *baseRepository, pattern ...string) error {
+	return r.DeletePattern(ctx, composeCacheKey(model.ResourceTypeAssignment.String(), pattern))
 }
 
 func clearAssignmentByResource(ctx context.Context, r *baseRepository, resourceID model.ID) error {
