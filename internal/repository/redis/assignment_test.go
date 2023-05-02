@@ -1117,7 +1117,397 @@ func TestCachedAssignmentRepository_Delete(t *testing.T) {
 		args    args
 		wantErr error
 	}{
-		// TODO: Add test cases.
+		{
+			name: "delete assignment success",
+			fields: fields{
+				cacheRepo: func(ctx context.Context, id model.ID) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeAssignment.String(), id.String())
+					byResourceKey := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByResource", "*")
+					byUserKey := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByUser", "*")
+					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
+					issuesKey := composeCacheKey(model.ResourceTypeIssue.String(), "*")
+
+					byResourceKeyCmd := new(redis.StringSliceCmd)
+					byResourceKeyCmd.SetVal([]string{byResourceKey})
+
+					byUserKeyCmd := new(redis.StringSliceCmd)
+					byUserKeyCmd.SetVal([]string{byUserKey})
+
+					documentsKeyCmd := new(redis.StringSliceCmd)
+					documentsKeyCmd.SetVal([]string{documentsKey})
+
+					issuesKeyCmd := new(redis.StringSliceCmd)
+					issuesKeyCmd.SetVal([]string{issuesKey})
+
+					dbClient := new(testMock.RedisClient)
+					dbClient.On("Keys", ctx, byResourceKey).Return(byResourceKeyCmd)
+					dbClient.On("Keys", ctx, byUserKey).Return(byUserKeyCmd)
+					dbClient.On("Keys", ctx, documentsKey).Return(documentsKeyCmd)
+					dbClient.On("Keys", ctx, issuesKey).Return(issuesKeyCmd)
+
+					db, err := NewDatabase(
+						WithClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := new(testMock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(testMock.Tracer)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					cacheRepo := new(testMock.CacheRepo)
+					cacheRepo.On("Delete", ctx, key).Return(nil)
+					cacheRepo.On("Delete", ctx, byResourceKey).Return(nil)
+					cacheRepo.On("Delete", ctx, byUserKey).Return(nil)
+					cacheRepo.On("Delete", ctx, documentsKey).Return(nil)
+					cacheRepo.On("Delete", ctx, issuesKey).Return(nil)
+
+					return &baseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: new(testMock.Logger),
+					}
+				},
+				assignmentRepo: func(ctx context.Context, id model.ID) repository.AssignmentRepository {
+					repo := new(testMock.AssignmentRepository)
+					repo.On("Delete", ctx, id).Return(nil)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeAssignment),
+			},
+		},
+		{
+			name: "delete assignment with assignment deletion error",
+			fields: fields{
+				cacheRepo: func(ctx context.Context, id model.ID) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeAssignment.String(), id.String())
+					byResourceKey := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByResource", "*")
+					byUserKey := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByUser", "*")
+					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
+					issuesKey := composeCacheKey(model.ResourceTypeIssue.String(), "*")
+
+					byResourceKeyCmd := new(redis.StringSliceCmd)
+					byResourceKeyCmd.SetVal([]string{byResourceKey})
+
+					byUserKeyCmd := new(redis.StringSliceCmd)
+					byUserKeyCmd.SetVal([]string{byUserKey})
+
+					documentsKeyCmd := new(redis.StringSliceCmd)
+					documentsKeyCmd.SetVal([]string{documentsKey})
+
+					issuesKeyCmd := new(redis.StringSliceCmd)
+					issuesKeyCmd.SetVal([]string{issuesKey})
+
+					dbClient := new(testMock.RedisClient)
+					dbClient.On("Keys", ctx, byResourceKey).Return(byResourceKeyCmd)
+					dbClient.On("Keys", ctx, byUserKey).Return(byUserKeyCmd)
+					dbClient.On("Keys", ctx, documentsKey).Return(documentsKeyCmd)
+					dbClient.On("Keys", ctx, issuesKey).Return(issuesKeyCmd)
+
+					db, err := NewDatabase(
+						WithClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := new(testMock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(testMock.Tracer)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					cacheRepo := new(testMock.CacheRepo)
+					cacheRepo.On("Delete", ctx, key).Return(nil)
+					cacheRepo.On("Delete", ctx, byResourceKey).Return(nil)
+					cacheRepo.On("Delete", ctx, byUserKey).Return(nil)
+					cacheRepo.On("Delete", ctx, documentsKey).Return(nil)
+					cacheRepo.On("Delete", ctx, issuesKey).Return(nil)
+
+					return &baseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: new(testMock.Logger),
+					}
+				},
+				assignmentRepo: func(ctx context.Context, id model.ID) repository.AssignmentRepository {
+					repo := new(testMock.AssignmentRepository)
+					repo.On("Delete", ctx, id).Return(repository.ErrAssignmentDelete)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeAssignment),
+			},
+			wantErr: repository.ErrAssignmentDelete,
+		},
+		{
+			name: "delete assignment with cache deletion error",
+			fields: fields{
+				cacheRepo: func(ctx context.Context, id model.ID) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeAssignment.String(), id.String())
+
+					dbClient := new(testMock.RedisClient)
+
+					db, err := NewDatabase(
+						WithClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := new(testMock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(testMock.Tracer)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					cacheRepo := new(testMock.CacheRepo)
+					cacheRepo.On("Delete", ctx, key).Return(repository.ErrCacheDelete)
+
+					return &baseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: new(testMock.Logger),
+					}
+				},
+				assignmentRepo: func(ctx context.Context, id model.ID) repository.AssignmentRepository {
+					repo := new(testMock.AssignmentRepository)
+					repo.On("Delete", ctx, id).Return(nil)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeAssignment),
+			},
+			wantErr: repository.ErrCacheDelete,
+		},
+		{
+			name: "delete assignment cache by resource key error",
+			fields: fields{
+				cacheRepo: func(ctx context.Context, id model.ID) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeAssignment.String(), id.String())
+					byResourceKey := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByResource", "*")
+
+					byResourceKeyCmd := new(redis.StringSliceCmd)
+					byResourceKeyCmd.SetVal([]string{byResourceKey})
+
+					dbClient := new(testMock.RedisClient)
+					dbClient.On("Keys", ctx, byResourceKey).Return(byResourceKeyCmd)
+
+					db, err := NewDatabase(
+						WithClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := new(testMock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(testMock.Tracer)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					cacheRepo := new(testMock.CacheRepo)
+					cacheRepo.On("Delete", ctx, key).Return(nil)
+					cacheRepo.On("Delete", ctx, byResourceKey).Return(repository.ErrCacheDelete)
+
+					return &baseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: new(testMock.Logger),
+					}
+				},
+				assignmentRepo: func(ctx context.Context, id model.ID) repository.AssignmentRepository {
+					return new(testMock.AssignmentRepository)
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeAssignment),
+			},
+			wantErr: repository.ErrCacheDelete,
+		},
+		{
+			name: "delete assignment cache by user key error",
+			fields: fields{
+				cacheRepo: func(ctx context.Context, id model.ID) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeAssignment.String(), id.String())
+					byResourceKey := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByResource", "*")
+					byUserKey := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByUser", "*")
+
+					byResourceKeyCmd := new(redis.StringSliceCmd)
+					byResourceKeyCmd.SetVal([]string{byResourceKey})
+
+					byUserKeyCmd := new(redis.StringSliceCmd)
+					byUserKeyCmd.SetVal([]string{byUserKey})
+
+					dbClient := new(testMock.RedisClient)
+					dbClient.On("Keys", ctx, byResourceKey).Return(byResourceKeyCmd)
+					dbClient.On("Keys", ctx, byUserKey).Return(byUserKeyCmd)
+
+					db, err := NewDatabase(
+						WithClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := new(testMock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(testMock.Tracer)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					cacheRepo := new(testMock.CacheRepo)
+					cacheRepo.On("Delete", ctx, key).Return(nil)
+					cacheRepo.On("Delete", ctx, byResourceKey).Return(nil)
+					cacheRepo.On("Delete", ctx, byUserKey).Return(repository.ErrCacheDelete)
+					return &baseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: new(testMock.Logger),
+					}
+				},
+				assignmentRepo: func(ctx context.Context, id model.ID) repository.AssignmentRepository {
+					return new(testMock.AssignmentRepository)
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeAssignment),
+			},
+			wantErr: repository.ErrCacheDelete,
+		},
+		{
+			name: "delete assignment cache by documents key error",
+			fields: fields{
+				cacheRepo: func(ctx context.Context, id model.ID) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeAssignment.String(), id.String())
+					byResourceKey := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByResource", "*")
+					byUserKey := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByUser", "*")
+					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
+
+					byResourceKeyCmd := new(redis.StringSliceCmd)
+					byResourceKeyCmd.SetVal([]string{byResourceKey})
+
+					byUserKeyCmd := new(redis.StringSliceCmd)
+					byUserKeyCmd.SetVal([]string{byUserKey})
+
+					documentsKeyCmd := new(redis.StringSliceCmd)
+					documentsKeyCmd.SetVal([]string{documentsKey})
+
+					dbClient := new(testMock.RedisClient)
+					dbClient.On("Keys", ctx, byResourceKey).Return(byResourceKeyCmd)
+					dbClient.On("Keys", ctx, byUserKey).Return(byUserKeyCmd)
+					dbClient.On("Keys", ctx, documentsKey).Return(documentsKeyCmd)
+
+					db, err := NewDatabase(
+						WithClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := new(testMock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(testMock.Tracer)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					cacheRepo := new(testMock.CacheRepo)
+					cacheRepo.On("Delete", ctx, key).Return(nil)
+					cacheRepo.On("Delete", ctx, byResourceKey).Return(nil)
+					cacheRepo.On("Delete", ctx, byUserKey).Return(nil)
+					cacheRepo.On("Delete", ctx, documentsKey).Return(repository.ErrCacheDelete)
+
+					return &baseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: new(testMock.Logger),
+					}
+				},
+				assignmentRepo: func(ctx context.Context, id model.ID) repository.AssignmentRepository {
+					return new(testMock.AssignmentRepository)
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeAssignment),
+			},
+			wantErr: repository.ErrCacheDelete,
+		},
+		{
+			name: "delete assignment cache by issues key error",
+			fields: fields{
+				cacheRepo: func(ctx context.Context, id model.ID) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeAssignment.String(), id.String())
+					byResourceKey := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByResource", "*")
+					byUserKey := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByUser", "*")
+					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
+					issuesKey := composeCacheKey(model.ResourceTypeIssue.String(), "*")
+
+					byResourceKeyCmd := new(redis.StringSliceCmd)
+					byResourceKeyCmd.SetVal([]string{byResourceKey})
+
+					byUserKeyCmd := new(redis.StringSliceCmd)
+					byUserKeyCmd.SetVal([]string{byUserKey})
+
+					documentsKeyCmd := new(redis.StringSliceCmd)
+					documentsKeyCmd.SetVal([]string{documentsKey})
+
+					issuesKeyCmd := new(redis.StringSliceCmd)
+					issuesKeyCmd.SetVal([]string{issuesKey})
+
+					dbClient := new(testMock.RedisClient)
+					dbClient.On("Keys", ctx, byResourceKey).Return(byResourceKeyCmd)
+					dbClient.On("Keys", ctx, byUserKey).Return(byUserKeyCmd)
+					dbClient.On("Keys", ctx, documentsKey).Return(documentsKeyCmd)
+					dbClient.On("Keys", ctx, issuesKey).Return(issuesKeyCmd)
+
+					db, err := NewDatabase(
+						WithClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := new(testMock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(testMock.Tracer)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					cacheRepo := new(testMock.CacheRepo)
+					cacheRepo.On("Delete", ctx, key).Return(nil)
+					cacheRepo.On("Delete", ctx, byResourceKey).Return(nil)
+					cacheRepo.On("Delete", ctx, byUserKey).Return(nil)
+					cacheRepo.On("Delete", ctx, documentsKey).Return(nil)
+					cacheRepo.On("Delete", ctx, issuesKey).Return(repository.ErrCacheDelete)
+
+					return &baseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: new(testMock.Logger),
+					}
+				},
+				assignmentRepo: func(ctx context.Context, id model.ID) repository.AssignmentRepository {
+					return new(testMock.AssignmentRepository)
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeAssignment),
+			},
+			wantErr: repository.ErrCacheDelete,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
