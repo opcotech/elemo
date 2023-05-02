@@ -12,6 +12,36 @@ type RedisClient struct {
 	mock.Mock
 }
 
+func (r *RedisClient) ZRankWithScore(ctx context.Context, key, member string) *redis.RankWithScoreCmd {
+	args := r.Called(ctx, key, member)
+	return args.Get(0).(*redis.RankWithScoreCmd)
+}
+
+func (r *RedisClient) ZRevRankWithScore(ctx context.Context, key, member string) *redis.RankWithScoreCmd {
+	args := r.Called(ctx, key, member)
+	return args.Get(0).(*redis.RankWithScoreCmd)
+}
+
+func (r *RedisClient) ClientInfo(ctx context.Context) *redis.ClientInfoCmd {
+	args := r.Called(ctx)
+	return args.Get(0).(*redis.ClientInfoCmd)
+}
+
+func (r *RedisClient) FCallRO(ctx context.Context, function string, keys []string, args ...interface{}) *redis.Cmd {
+	call := r.Called(ctx, function, keys, args)
+	return call.Get(0).(*redis.Cmd)
+}
+
+func (r *RedisClient) ClusterMyShardID(ctx context.Context) *redis.StringCmd {
+	args := r.Called(ctx)
+	return args.Get(0).(*redis.StringCmd)
+}
+
+func (r *RedisClient) ModuleLoadex(ctx context.Context, conf *redis.ModuleLoadexConfig) *redis.StringCmd {
+	args := r.Called(ctx, conf)
+	return args.Get(0).(*redis.StringCmd)
+}
+
 func (r *RedisClient) Pipeline() redis.Pipeliner {
 	args := r.Called()
 	return args.Get(0).(redis.Pipeliner)
