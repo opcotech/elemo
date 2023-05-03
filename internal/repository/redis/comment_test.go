@@ -266,7 +266,9 @@ func TestCachedCommentRepository_Create(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			r := &CachedCommentRepository{
 				cacheRepo:   tt.fields.cacheRepo(tt.args.ctx, tt.args.belongsTo, tt.args.comment),
 				commentRepo: tt.fields.commentRepo(tt.args.ctx, tt.args.belongsTo, tt.args.comment),
@@ -510,7 +512,9 @@ func TestCachedCommentRepository_Get(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			var want *model.Comment
 			if tt.want != nil {
 				want = tt.want(tt.args.id)
@@ -774,7 +778,9 @@ func TestCachedCommentRepository_GetAllBelongsTo(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			r := &CachedCommentRepository{
 				cacheRepo:   tt.fields.cacheRepo(tt.args.ctx, tt.args.belongsTo, tt.args.offset, tt.args.limit, tt.want),
 				commentRepo: tt.fields.commentRepo(tt.args.ctx, tt.args.belongsTo, tt.args.offset, tt.args.limit, tt.want),
@@ -782,6 +788,240 @@ func TestCachedCommentRepository_GetAllBelongsTo(t *testing.T) {
 			got, err := r.GetAllBelongsTo(tt.args.ctx, tt.args.belongsTo, tt.args.offset, tt.args.limit)
 			assert.ErrorIs(t, err, tt.wantErr)
 			assert.ElementsMatch(t, tt.want, got)
+		})
+	}
+}
+
+func TestCachedCommentRepository_Update(t *testing.T) {
+	type fields struct {
+		cacheRepo   func(ctx context.Context, id model.ID, comment *model.Comment) *baseRepository
+		commentRepo func(ctx context.Context, id model.ID, comment *model.Comment) repository.CommentRepository
+	}
+	type args struct {
+		ctx     context.Context
+		id      model.ID
+		content string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    *model.Comment
+		wantErr error
+	}{
+		{
+			name: "update comment",
+			fields: fields{
+				cacheRepo: func(ctx context.Context, id model.ID, comment *model.Comment) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeComment.String(), id.String())
+					belongsToKey := composeCacheKey(model.ResourceTypeComment.String(), "GetAllBelongsTo", "*")
+
+					belongsToKeyCmd := new(redis.StringSliceCmd)
+					belongsToKeyCmd.SetVal([]string{belongsToKey})
+
+					dbClient := new(testMock.RedisClient)
+					dbClient.On("Keys", ctx, belongsToKey).Return(belongsToKeyCmd, nil)
+					dbClient.On("Set", &cache.Item{
+						Ctx:   ctx,
+						Key:   key,
+						Value: comment,
+					}).Return(new(redis.StatusCmd))
+
+					db, err := NewDatabase(
+						WithClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := new(testMock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(testMock.Tracer)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Set", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					cacheRepo := new(testMock.CacheRepo)
+					cacheRepo.On("Delete", ctx, belongsToKey).Return(nil)
+					cacheRepo.On("Set", &cache.Item{
+						Ctx:   ctx,
+						Key:   key,
+						Value: comment,
+					}).Return(nil)
+
+					return &baseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: new(testMock.Logger),
+					}
+				},
+				commentRepo: func(ctx context.Context, id model.ID, comment *model.Comment) repository.CommentRepository {
+					repo := new(testMock.CommentRepository)
+					repo.On("Update", ctx, id, comment.Content).Return(comment, nil)
+					return repo
+				},
+			},
+			args: args{
+				ctx:     context.Background(),
+				id:      model.MustNewID(model.ResourceTypeComment),
+				content: "new content",
+			},
+			want: &model.Comment{
+				ID:        model.MustNewID(model.ResourceTypeComment),
+				Content:   "new content",
+				CreatedBy: model.MustNewID(model.ResourceTypeUser),
+			},
+		},
+		{
+			name: "update comment with error",
+			fields: fields{
+				cacheRepo: func(ctx context.Context, id model.ID, comment *model.Comment) *baseRepository {
+					db, err := NewDatabase(
+						WithClient(new(testMock.RedisClient)),
+					)
+					require.NoError(t, err)
+
+					return &baseRepository{
+						db:     db,
+						cache:  new(testMock.CacheRepo),
+						tracer: new(testMock.Tracer),
+						logger: new(testMock.Logger),
+					}
+				},
+				commentRepo: func(ctx context.Context, id model.ID, comment *model.Comment) repository.CommentRepository {
+					repo := new(testMock.CommentRepository)
+					repo.On("Update", ctx, id, "new content").Return(nil, repository.ErrNotFound)
+					return repo
+				},
+			},
+			args: args{
+				ctx:     context.Background(),
+				id:      model.MustNewID(model.ResourceTypeComment),
+				content: "new content",
+			},
+			wantErr: repository.ErrNotFound,
+		},
+		{
+			name: "update comment set cache error",
+			fields: fields{
+				cacheRepo: func(ctx context.Context, id model.ID, comment *model.Comment) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeComment.String(), id.String())
+
+					dbClient := new(testMock.RedisClient)
+					dbClient.On("Set", &cache.Item{
+						Ctx:   ctx,
+						Key:   key,
+						Value: comment,
+					}).Return(new(redis.StatusCmd))
+
+					db, err := NewDatabase(
+						WithClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := new(testMock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(testMock.Tracer)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Set", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					cacheRepo := new(testMock.CacheRepo)
+					cacheRepo.On("Set", &cache.Item{
+						Ctx:   ctx,
+						Key:   key,
+						Value: comment,
+					}).Return(errors.New("error"))
+
+					return &baseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: new(testMock.Logger),
+					}
+				},
+				commentRepo: func(ctx context.Context, id model.ID, comment *model.Comment) repository.CommentRepository {
+					repo := new(testMock.CommentRepository)
+					repo.On("Update", ctx, id, "new content").Return(comment, nil)
+					return repo
+				},
+			},
+			args: args{
+				ctx:     context.Background(),
+				id:      model.MustNewID(model.ResourceTypeComment),
+				content: "new content",
+			},
+			wantErr: repository.ErrCacheWrite,
+		},
+		{
+			name: "update comment delete cache error",
+			fields: fields{
+				cacheRepo: func(ctx context.Context, id model.ID, comment *model.Comment) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeComment.String(), id.String())
+					belongsToKey := composeCacheKey(model.ResourceTypeComment.String(), "GetAllBelongsTo", "*")
+
+					belongsToKeyCmd := new(redis.StringSliceCmd)
+					belongsToKeyCmd.SetVal([]string{belongsToKey})
+
+					dbClient := new(testMock.RedisClient)
+					dbClient.On("Keys", ctx, belongsToKey).Return(belongsToKeyCmd, nil)
+					dbClient.On("Set", &cache.Item{
+						Ctx:   ctx,
+						Key:   key,
+						Value: comment,
+					}).Return(new(redis.StatusCmd))
+
+					db, err := NewDatabase(
+						WithClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := new(testMock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(testMock.Tracer)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Set", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					cacheRepo := new(testMock.CacheRepo)
+					cacheRepo.On("Delete", ctx, belongsToKey).Return(errors.New("error"))
+					cacheRepo.On("Set", &cache.Item{
+						Ctx:   ctx,
+						Key:   key,
+						Value: comment,
+					}).Return(nil)
+
+					return &baseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: new(testMock.Logger),
+					}
+				},
+				commentRepo: func(ctx context.Context, id model.ID, comment *model.Comment) repository.CommentRepository {
+					repo := new(testMock.CommentRepository)
+					repo.On("Update", ctx, id, "new content").Return(comment, nil)
+					return repo
+				},
+			},
+			args: args{
+				ctx:     context.Background(),
+				id:      model.MustNewID(model.ResourceTypeComment),
+				content: "new content",
+			},
+			wantErr: repository.ErrCacheDelete,
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			r := &CachedCommentRepository{
+				cacheRepo:   tt.fields.cacheRepo(tt.args.ctx, tt.args.id, tt.want),
+				commentRepo: tt.fields.commentRepo(tt.args.ctx, tt.args.id, tt.want),
+			}
+			got, err := r.Update(tt.args.ctx, tt.args.id, tt.args.content)
+			assert.ErrorIs(t, err, tt.wantErr)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
@@ -1120,7 +1360,9 @@ func TestCachedCommentRepository_Delete(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			r := &CachedCommentRepository{
 				cacheRepo:   tt.fields.cacheRepo(tt.args.ctx, tt.args.id),
 				commentRepo: tt.fields.commentRepo(tt.args.ctx, tt.args.id),

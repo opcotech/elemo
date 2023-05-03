@@ -119,8 +119,7 @@ func (r *CachedAttachmentRepository) Update(ctx context.Context, id model.ID, na
 		return nil, err
 	}
 
-	pattern := composeCacheKey(model.ResourceTypeAttachment.String(), "GetAllBelongsTo", "*")
-	if err := r.cacheRepo.DeletePattern(ctx, pattern); err != nil {
+	if err = clearAttachmentAllBelongsTo(ctx, r.cacheRepo); err != nil {
 		return nil, err
 	}
 

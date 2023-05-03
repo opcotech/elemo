@@ -114,13 +114,12 @@ func (r *CachedCommentRepository) Update(ctx context.Context, id model.ID, conte
 		return nil, err
 	}
 
-	key := composeCacheKey(model.ResourceTypeTodo.String(), id.String())
+	key := composeCacheKey(model.ResourceTypeComment.String(), id.String())
 	if err = r.cacheRepo.Set(ctx, key, comment); err != nil {
 		return nil, err
 	}
 
-	pattern := composeCacheKey(model.ResourceTypeTodo.String(), "GetAllBelongsTo", "*")
-	if err := r.cacheRepo.DeletePattern(ctx, pattern); err != nil {
+	if err := clearCommentAllBelongsTo(ctx, r.cacheRepo); err != nil {
 		return nil, err
 	}
 

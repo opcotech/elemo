@@ -249,7 +249,9 @@ func TestCachedAssignmentRepository_Create(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			r := &CachedAssignmentRepository{
 				cacheRepo:      tt.fields.cacheRepo(tt.args.ctx, tt.args.assignment),
 				assignmentRepo: tt.fields.assignmentRepo(tt.args.ctx, tt.args.assignment),
@@ -495,7 +497,9 @@ func TestCachedAssignmentRepository_Get(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			var want *model.Assignment
 			if tt.want != nil {
 				want = tt.want(tt.args.id)
@@ -763,7 +767,9 @@ func TestCachedAssignmentRepository_GetByUser(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			r := &CachedAssignmentRepository{
 				cacheRepo:      tt.fields.cacheRepo(tt.args.ctx, tt.args.userID, tt.args.offset, tt.args.limit, tt.want),
 				assignmentRepo: tt.fields.assignmentRepo(tt.args.ctx, tt.args.userID, tt.args.offset, tt.args.limit, tt.want),
@@ -1026,7 +1032,9 @@ func TestCachedAssignmentRepository_GetByResource(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			r := &CachedAssignmentRepository{
 				cacheRepo:      tt.fields.cacheRepo(tt.args.ctx, tt.args.userID, tt.args.offset, tt.args.limit, tt.want),
 				assignmentRepo: tt.fields.assignmentRepo(tt.args.ctx, tt.args.userID, tt.args.offset, tt.args.limit, tt.want),
@@ -1370,7 +1378,9 @@ func TestCachedAssignmentRepository_Delete(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			r := &CachedAssignmentRepository{
 				cacheRepo:      tt.fields.cacheRepo(tt.args.ctx, tt.args.id),
 				assignmentRepo: tt.fields.assignmentRepo(tt.args.ctx, tt.args.id),
