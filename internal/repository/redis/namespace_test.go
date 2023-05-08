@@ -61,7 +61,7 @@ func TestCachedNamespaceRepository_Create(t *testing.T) {
 					tracer := new(testMock.Tracer)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(testMock.CacheRepo)
+					cacheRepo := new(testMock.CacheRepository)
 					cacheRepo.On("Delete", ctx, organizationKey).Return(nil)
 					cacheRepo.On("Delete", ctx, getAllKey).Return(nil)
 
@@ -118,7 +118,7 @@ func TestCachedNamespaceRepository_Create(t *testing.T) {
 					tracer := new(testMock.Tracer)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(testMock.CacheRepo)
+					cacheRepo := new(testMock.CacheRepository)
 					cacheRepo.On("Delete", ctx, organizationKey).Return(nil)
 					cacheRepo.On("Delete", ctx, getAllKey).Return(nil)
 
@@ -176,7 +176,7 @@ func TestCachedNamespaceRepository_Create(t *testing.T) {
 					tracer := new(testMock.Tracer)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(testMock.CacheRepo)
+					cacheRepo := new(testMock.CacheRepository)
 					cacheRepo.On("Delete", ctx, getAllKey).Return(repository.ErrCacheDelete)
 
 					return &baseRepository{
@@ -231,7 +231,7 @@ func TestCachedNamespaceRepository_Create(t *testing.T) {
 					tracer := new(testMock.Tracer)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(testMock.CacheRepo)
+					cacheRepo := new(testMock.CacheRepository)
 					cacheRepo.On("Delete", ctx, getAllKey).Return(nil)
 					cacheRepo.On("Delete", ctx, organizationKey).Return(repository.ErrCacheDelete)
 
@@ -308,7 +308,7 @@ func TestCachedNamespaceRepository_Get(t *testing.T) {
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Set", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(testMock.CacheRepo)
+					cacheRepo := new(testMock.CacheRepository)
 					cacheRepo.On("Get", ctx, key, mock.Anything).Return(nil, nil)
 					cacheRepo.On("Set", &cache.Item{
 						Ctx:   ctx,
@@ -360,7 +360,7 @@ func TestCachedNamespaceRepository_Get(t *testing.T) {
 					tracer := new(testMock.Tracer)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(testMock.CacheRepo)
+					cacheRepo := new(testMock.CacheRepository)
 					cacheRepo.On("Get", ctx, key, mock.Anything).Return(namespace, nil)
 
 					return &baseRepository{
@@ -405,7 +405,7 @@ func TestCachedNamespaceRepository_Get(t *testing.T) {
 					tracer := new(testMock.Tracer)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(testMock.CacheRepo)
+					cacheRepo := new(testMock.CacheRepository)
 					cacheRepo.On("Get", ctx, key, mock.Anything).Return(nil, nil)
 
 					return &baseRepository{
@@ -444,7 +444,7 @@ func TestCachedNamespaceRepository_Get(t *testing.T) {
 					tracer := new(testMock.Tracer)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(testMock.CacheRepo)
+					cacheRepo := new(testMock.CacheRepository)
 					cacheRepo.On("Get", ctx, key, mock.Anything).Return(nil, errors.New("error"))
 
 					return &baseRepository{
@@ -482,7 +482,7 @@ func TestCachedNamespaceRepository_Get(t *testing.T) {
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Set", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(testMock.CacheRepo)
+					cacheRepo := new(testMock.CacheRepository)
 					cacheRepo.On("Get", ctx, key, mock.Anything).Return(nil, nil)
 					cacheRepo.On("Set", &cache.Item{
 						Ctx:   ctx,
@@ -566,7 +566,7 @@ func TestCachedNamespaceRepository_GetAll(t *testing.T) {
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Set", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(testMock.CacheRepo)
+					cacheRepo := new(testMock.CacheRepository)
 					cacheRepo.On("Get", ctx, key, mock.Anything).Return(nil, nil)
 					cacheRepo.On("Set", &cache.Item{
 						Ctx:   ctx,
@@ -625,7 +625,7 @@ func TestCachedNamespaceRepository_GetAll(t *testing.T) {
 					tracer := new(testMock.Tracer)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(testMock.CacheRepo)
+					cacheRepo := new(testMock.CacheRepository)
 					cacheRepo.On("Get", ctx, key, mock.Anything).Return(namespaces, nil)
 
 					return &baseRepository{
@@ -678,7 +678,7 @@ func TestCachedNamespaceRepository_GetAll(t *testing.T) {
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Set", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(testMock.CacheRepo)
+					cacheRepo := new(testMock.CacheRepository)
 					cacheRepo.On("Get", ctx, key, mock.Anything).Return(nil, nil)
 
 					return &baseRepository{
@@ -718,7 +718,7 @@ func TestCachedNamespaceRepository_GetAll(t *testing.T) {
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Set", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(testMock.CacheRepo)
+					cacheRepo := new(testMock.CacheRepository)
 					cacheRepo.On("Get", ctx, key, mock.Anything).Return(nil, errors.New("error"))
 
 					return &baseRepository{
@@ -756,7 +756,7 @@ func TestCachedNamespaceRepository_GetAll(t *testing.T) {
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Set", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(testMock.CacheRepo)
+					cacheRepo := new(testMock.CacheRepository)
 					cacheRepo.On("Get", ctx, key, mock.Anything).Return(nil, nil)
 					cacheRepo.On("Set", &cache.Item{
 						Ctx:   ctx,
@@ -846,7 +846,7 @@ func TestCachedNamespaceRepository_Update(t *testing.T) {
 					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Set", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(testMock.CacheRepo)
+					cacheRepo := new(testMock.CacheRepository)
 					cacheRepo.On("Delete", ctx, getAllKey).Return(nil)
 					cacheRepo.On("Set", &cache.Item{
 						Ctx:   ctx,
@@ -894,7 +894,7 @@ func TestCachedNamespaceRepository_Update(t *testing.T) {
 
 					return &baseRepository{
 						db:     db,
-						cache:  new(testMock.CacheRepo),
+						cache:  new(testMock.CacheRepository),
 						tracer: new(testMock.Tracer),
 						logger: new(testMock.Logger),
 					}
@@ -939,7 +939,7 @@ func TestCachedNamespaceRepository_Update(t *testing.T) {
 					tracer := new(testMock.Tracer)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Set", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(testMock.CacheRepo)
+					cacheRepo := new(testMock.CacheRepository)
 					cacheRepo.On("Set", &cache.Item{
 						Ctx:   ctx,
 						Key:   key,
@@ -999,7 +999,7 @@ func TestCachedNamespaceRepository_Update(t *testing.T) {
 					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Set", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(testMock.CacheRepo)
+					cacheRepo := new(testMock.CacheRepository)
 					cacheRepo.On("Delete", ctx, getAllKey).Return(errors.New("error"))
 					cacheRepo.On("Set", &cache.Item{
 						Ctx:   ctx,
@@ -1092,7 +1092,7 @@ func TestCachedNamespaceRepository_Delete(t *testing.T) {
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(testMock.CacheRepo)
+					cacheRepo := new(testMock.CacheRepository)
 					cacheRepo.On("Delete", ctx, key).Return(nil)
 					cacheRepo.On("Delete", ctx, getAllKey).Return(nil)
 					cacheRepo.On("Delete", ctx, organizationKey).Return(nil)
@@ -1145,7 +1145,7 @@ func TestCachedNamespaceRepository_Delete(t *testing.T) {
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(testMock.CacheRepo)
+					cacheRepo := new(testMock.CacheRepository)
 					cacheRepo.On("Delete", ctx, key).Return(nil)
 					cacheRepo.On("Delete", ctx, getAllKey).Return(nil)
 					cacheRepo.On("Delete", ctx, organizationKey).Return(nil)
@@ -1188,7 +1188,7 @@ func TestCachedNamespaceRepository_Delete(t *testing.T) {
 					tracer := new(testMock.Tracer)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(testMock.CacheRepo)
+					cacheRepo := new(testMock.CacheRepository)
 					cacheRepo.On("Delete", ctx, key).Return(repository.ErrCacheDelete)
 
 					return &baseRepository{
@@ -1235,7 +1235,7 @@ func TestCachedNamespaceRepository_Delete(t *testing.T) {
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(testMock.CacheRepo)
+					cacheRepo := new(testMock.CacheRepository)
 					cacheRepo.On("Delete", ctx, key).Return(nil)
 					cacheRepo.On("Delete", ctx, getAllKey).Return(repository.ErrCacheDelete)
 
@@ -1286,7 +1286,7 @@ func TestCachedNamespaceRepository_Delete(t *testing.T) {
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(testMock.CacheRepo)
+					cacheRepo := new(testMock.CacheRepository)
 					cacheRepo.On("Delete", ctx, key).Return(nil)
 					cacheRepo.On("Delete", ctx, getAllKey).Return(nil)
 					cacheRepo.On("Delete", ctx, organizationKey).Return(repository.ErrCacheDelete)
