@@ -60,6 +60,8 @@ linters-settings:
         alias: httpMetricsMiddleware
       - pkg: github.com/slok/go-http-metrics/middleware/std
         alias: httpMetricsMiddlewareStd
+      - pkg: github.com/neo4j/neo4j-go-driver/v5/neo4j/config
+        alias: neo4jConfig
       # internal
       - pkg: github.com/opcotech/elemo/internal/transport/http
         alias: elemoHttp

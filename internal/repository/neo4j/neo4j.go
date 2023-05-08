@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
+	neo4jConfig "github.com/neo4j/neo4j-go-driver/v5/neo4j/config"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/opcotech/elemo/internal/config"
@@ -36,7 +37,7 @@ func NewDriver(conf *config.GraphDatabaseConfig) (neo4j.DriverWithContext, error
 		return nil, config.ErrNoConfig
 	}
 
-	driver, err := neo4j.NewDriverWithContext(conf.ConnectionURL(), neo4j.BasicAuth(conf.Username, conf.Password, ""), func(c *neo4j.Config) {
+	driver, err := neo4j.NewDriverWithContext(conf.ConnectionURL(), neo4j.BasicAuth(conf.Username, conf.Password, ""), func(c *neo4jConfig.Config) {
 		c.MaxTransactionRetryTime = conf.MaxTransactionRetryTime * time.Second
 		c.MaxConnectionPoolSize = conf.MaxConnectionPoolSize
 		c.MaxConnectionLifetime = conf.MaxConnectionLifetime * time.Second
