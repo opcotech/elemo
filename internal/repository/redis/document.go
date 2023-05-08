@@ -31,6 +31,22 @@ func clearDocumentAllByCreator(ctx context.Context, r *baseRepository) error {
 	return clearDocumentsPattern(ctx, r, "GetByCreator", "*")
 }
 
+func clearDocumentAllCrossCache(ctx context.Context, r *baseRepository) error {
+	deleteFns := []func(context.Context, *baseRepository, ...string) error{
+		clearNamespacesPattern,
+		clearProjectsPattern,
+		clearUsersPattern,
+	}
+
+	for _, fn := range deleteFns {
+		if err := fn(ctx, r, "*"); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // CachedDocumentRepository implements caching on the
 // repository.DocumentRepository.
 type CachedDocumentRepository struct {
@@ -44,6 +60,10 @@ func (r *CachedDocumentRepository) Create(ctx context.Context, belongsTo model.I
 	}
 
 	if err := clearDocumentByCreator(ctx, r.cacheRepo, document.CreatedBy); err != nil {
+		return err
+	}
+
+	if err := clearDocumentAllCrossCache(ctx, r.cacheRepo); err != nil {
 		return err
 	}
 
@@ -78,7 +98,7 @@ func (r *CachedDocumentRepository) GetByCreator(ctx context.Context, createdBy m
 	var documents []*model.Document
 	var err error
 
-	key := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByCreator", createdBy.String(), offset, limit)
+	key := composeCacheKey(model.ResourceTypeDocument.String(), "GetByCreator", createdBy.String(), offset, limit)
 	if err = r.cacheRepo.Get(ctx, key, &documents); err != nil {
 		return nil, err
 	}
@@ -87,7 +107,7 @@ func (r *CachedDocumentRepository) GetByCreator(ctx context.Context, createdBy m
 		return documents, nil
 	}
 
-	if documents, err = r.documentRepo.GetAllBelongsTo(ctx, createdBy, offset, limit); err != nil {
+	if documents, err = r.documentRepo.GetByCreator(ctx, createdBy, offset, limit); err != nil {
 		return nil, err
 	}
 
@@ -102,7 +122,7 @@ func (r *CachedDocumentRepository) GetAllBelongsTo(ctx context.Context, belongsT
 	var documents []*model.Document
 	var err error
 
-	key := composeCacheKey(model.ResourceTypeAssignment.String(), "GetAllBelongsTo", belongsTo.String(), offset, limit)
+	key := composeCacheKey(model.ResourceTypeDocument.String(), "GetAllBelongsTo", belongsTo.String(), offset, limit)
 	if err = r.cacheRepo.Get(ctx, key, &documents); err != nil {
 		return nil, err
 	}
@@ -157,6 +177,10 @@ func (r *CachedDocumentRepository) Delete(ctx context.Context, id model.ID) erro
 	}
 
 	if err := clearDocumentAllByCreator(ctx, r.cacheRepo); err != nil {
+		return err
+	}
+
+	if err := clearDocumentAllCrossCache(ctx, r.cacheRepo); err != nil {
 		return err
 	}
 

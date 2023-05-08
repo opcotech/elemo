@@ -77,7 +77,7 @@ func (r *OrganizationRepository) Create(ctx context.Context, owner model.ID, org
 	(u)-[:` + EdgeKindMemberOf.String() + ` {id: $membership_id, created_at: datetime($created_at)}]->(o),
 	(u)-[:` + EdgeKindHasPermission.String() + `{id: $permission_id, created_at: datetime($created_at), kind: $permission_kind}]->(o)`
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"id":              organization.ID.String(),
 		"name":            organization.Name,
 		"email":           organization.Email,

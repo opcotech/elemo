@@ -7,6 +7,32 @@ import (
 	"github.com/opcotech/elemo/internal/repository"
 )
 
+func clearNamespacesPattern(ctx context.Context, r *baseRepository, pattern ...string) error {
+	return r.DeletePattern(ctx, composeCacheKey(model.ResourceTypeNamespace.String(), pattern))
+}
+
+func clearNamespacesKey(ctx context.Context, r *baseRepository, id model.ID) error {
+	return r.Delete(ctx, composeCacheKey(model.ResourceTypeNamespace.String(), id.String()))
+}
+
+func clearNamespacesAllGetAll(ctx context.Context, r *baseRepository) error {
+	return clearNamespacesPattern(ctx, r, "GetAll", "*")
+}
+
+func clearNamespaceAllCrossCache(ctx context.Context, r *baseRepository) error {
+	deleteFns := []func(context.Context, *baseRepository, ...string) error{
+		clearOrganizationsPattern,
+	}
+
+	for _, fn := range deleteFns {
+		if err := fn(ctx, r, "*"); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // CachedNamespaceRepository implements caching on the
 // repository.NamespaceRepository.
 type CachedNamespaceRepository struct {
@@ -15,8 +41,10 @@ type CachedNamespaceRepository struct {
 }
 
 func (r *CachedNamespaceRepository) Create(ctx context.Context, orgID model.ID, namespace *model.Namespace) error {
-	pattern := composeCacheKey(model.ResourceTypeNamespace.String(), "GetAll", orgID.String(), "*")
-	if err := r.cacheRepo.DeletePattern(ctx, pattern); err != nil {
+	if err := clearNamespacesAllGetAll(ctx, r.cacheRepo); err != nil {
+		return err
+	}
+	if err := clearNamespaceAllCrossCache(ctx, r.cacheRepo); err != nil {
 		return err
 	}
 
@@ -73,10 +101,7 @@ func (r *CachedNamespaceRepository) GetAll(ctx context.Context, orgID model.ID, 
 }
 
 func (r *CachedNamespaceRepository) Update(ctx context.Context, id model.ID, patch map[string]any) (*model.Namespace, error) {
-	var namespace *model.Namespace
-	var err error
-
-	namespace, err = r.namespaceRepo.Update(ctx, id, patch)
+	namespace, err := r.namespaceRepo.Update(ctx, id, patch)
 	if err != nil {
 		return nil, err
 	}
@@ -86,8 +111,7 @@ func (r *CachedNamespaceRepository) Update(ctx context.Context, id model.ID, pat
 		return nil, err
 	}
 
-	pattern := composeCacheKey(model.ResourceTypeNamespace.String(), "GetAll", "*")
-	if err := r.cacheRepo.DeletePattern(ctx, pattern); err != nil {
+	if err := clearNamespacesAllGetAll(ctx, r.cacheRepo); err != nil {
 		return nil, err
 	}
 
@@ -95,13 +119,15 @@ func (r *CachedNamespaceRepository) Update(ctx context.Context, id model.ID, pat
 }
 
 func (r *CachedNamespaceRepository) Delete(ctx context.Context, id model.ID) error {
-	key := composeCacheKey(model.ResourceTypeNamespace.String(), id.String())
-	if err := r.cacheRepo.Delete(ctx, key); err != nil {
+	if err := clearNamespacesKey(ctx, r.cacheRepo, id); err != nil {
 		return err
 	}
 
-	pattern := composeCacheKey(model.ResourceTypeNamespace.String(), "GetAll", "*")
-	if err := r.cacheRepo.DeletePattern(ctx, pattern); err != nil {
+	if err := clearNamespacesAllGetAll(ctx, r.cacheRepo); err != nil {
+		return err
+	}
+
+	if err := clearNamespaceAllCrossCache(ctx, r.cacheRepo); err != nil {
 		return err
 	}
 

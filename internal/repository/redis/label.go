@@ -7,6 +7,33 @@ import (
 	"github.com/opcotech/elemo/internal/repository"
 )
 
+func clearLabelsPattern(ctx context.Context, r *baseRepository, pattern ...string) error {
+	return r.DeletePattern(ctx, composeCacheKey(model.ResourceTypeLabel.String(), pattern))
+}
+
+func clearLabelsKey(ctx context.Context, r *baseRepository, id model.ID) error {
+	return r.Delete(ctx, composeCacheKey(model.ResourceTypeLabel.String(), id.String()))
+}
+
+func clearLabelAllGetAll(ctx context.Context, r *baseRepository) error {
+	return clearLabelsPattern(ctx, r, "GetAll", "*")
+}
+
+func clearLabelAllCrossCache(ctx context.Context, r *baseRepository) error {
+	deleteFns := []func(context.Context, *baseRepository, ...string) error{
+		clearDocumentsPattern,
+		clearIssuesPattern,
+	}
+
+	for _, fn := range deleteFns {
+		if err := fn(ctx, r, "*"); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // CachedLabelRepository implements caching on the
 // repository.LabelRepository.
 type CachedLabelRepository struct {
@@ -15,8 +42,10 @@ type CachedLabelRepository struct {
 }
 
 func (r *CachedLabelRepository) Create(ctx context.Context, label *model.Label) error {
-	pattern := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
-	if err := r.cacheRepo.DeletePattern(ctx, pattern); err != nil {
+	if err := clearLabelAllGetAll(ctx, r.cacheRepo); err != nil {
+		return err
+	}
+	if err := clearLabelAllCrossCache(ctx, r.cacheRepo); err != nil {
 		return err
 	}
 
@@ -72,21 +101,17 @@ func (r *CachedLabelRepository) GetAll(ctx context.Context, offset, limit int) (
 }
 
 func (r *CachedLabelRepository) Update(ctx context.Context, id model.ID, patch map[string]any) (*model.Label, error) {
-	var label *model.Label
-	var err error
-
-	label, err = r.labelRepo.Update(ctx, id, patch)
+	label, err := r.labelRepo.Update(ctx, id, patch)
 	if err != nil {
 		return nil, err
 	}
 
 	key := composeCacheKey(model.ResourceTypeLabel.String(), id.String())
-	if err = r.cacheRepo.Set(ctx, key, label); err != nil {
+	if err := r.cacheRepo.Set(ctx, key, label); err != nil {
 		return nil, err
 	}
 
-	pattern := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
-	if err := r.cacheRepo.DeletePattern(ctx, pattern); err != nil {
+	if err := clearLabelAllGetAll(ctx, r.cacheRepo); err != nil {
 		return nil, err
 	}
 
@@ -94,13 +119,15 @@ func (r *CachedLabelRepository) Update(ctx context.Context, id model.ID, patch m
 }
 
 func (r *CachedLabelRepository) AttachTo(ctx context.Context, labelID, attachTo model.ID) error {
-	key := composeCacheKey(model.ResourceTypeLabel.String(), labelID.String())
-	if err := r.cacheRepo.Delete(ctx, key); err != nil {
+	if err := clearLabelsKey(ctx, r.cacheRepo, labelID); err != nil {
 		return err
 	}
 
-	pattern := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
-	if err := r.cacheRepo.DeletePattern(ctx, pattern); err != nil {
+	if err := clearLabelAllGetAll(ctx, r.cacheRepo); err != nil {
+		return err
+	}
+
+	if err := clearLabelAllCrossCache(ctx, r.cacheRepo); err != nil {
 		return err
 	}
 
@@ -108,13 +135,15 @@ func (r *CachedLabelRepository) AttachTo(ctx context.Context, labelID, attachTo 
 }
 
 func (r *CachedLabelRepository) DetachFrom(ctx context.Context, labelID, detachFrom model.ID) error {
-	key := composeCacheKey(model.ResourceTypeLabel.String(), labelID.String())
-	if err := r.cacheRepo.Delete(ctx, key); err != nil {
+	if err := clearLabelsKey(ctx, r.cacheRepo, labelID); err != nil {
 		return err
 	}
 
-	pattern := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
-	if err := r.cacheRepo.DeletePattern(ctx, pattern); err != nil {
+	if err := clearLabelAllGetAll(ctx, r.cacheRepo); err != nil {
+		return err
+	}
+
+	if err := clearLabelAllCrossCache(ctx, r.cacheRepo); err != nil {
 		return err
 	}
 
@@ -122,13 +151,15 @@ func (r *CachedLabelRepository) DetachFrom(ctx context.Context, labelID, detachF
 }
 
 func (r *CachedLabelRepository) Delete(ctx context.Context, id model.ID) error {
-	key := composeCacheKey(model.ResourceTypeLabel.String(), id.String())
-	if err := r.cacheRepo.Delete(ctx, key); err != nil {
+	if err := clearLabelsKey(ctx, r.cacheRepo, id); err != nil {
 		return err
 	}
 
-	pattern := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
-	if err := r.cacheRepo.DeletePattern(ctx, pattern); err != nil {
+	if err := clearLabelAllGetAll(ctx, r.cacheRepo); err != nil {
+		return err
+	}
+
+	if err := clearLabelAllCrossCache(ctx, r.cacheRepo); err != nil {
 		return err
 	}
 

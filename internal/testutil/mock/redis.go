@@ -27,7 +27,7 @@ func (r *RedisClient) ClientInfo(ctx context.Context) *redis.ClientInfoCmd {
 	return args.Get(0).(*redis.ClientInfoCmd)
 }
 
-func (r *RedisClient) FCallRO(ctx context.Context, function string, keys []string, args ...interface{}) *redis.Cmd {
+func (r *RedisClient) FCallRO(ctx context.Context, function string, keys []string, args ...any) *redis.Cmd {
 	call := r.Called(ctx, function, keys, args)
 	return call.Get(0).(*redis.Cmd)
 }
@@ -72,12 +72,12 @@ func (r *RedisClient) CommandList(ctx context.Context, filter *redis.FilterBy) *
 	return args.Get(0).(*redis.StringSliceCmd)
 }
 
-func (r *RedisClient) CommandGetKeys(ctx context.Context, commands ...interface{}) *redis.StringSliceCmd {
+func (r *RedisClient) CommandGetKeys(ctx context.Context, commands ...any) *redis.StringSliceCmd {
 	args := r.Called(ctx, commands)
 	return args.Get(0).(*redis.StringSliceCmd)
 }
 
-func (r *RedisClient) CommandGetKeysAndFlags(ctx context.Context, commands ...interface{}) *redis.KeyFlagsCmd {
+func (r *RedisClient) CommandGetKeysAndFlags(ctx context.Context, commands ...any) *redis.KeyFlagsCmd {
 	args := r.Called(ctx, commands)
 	return args.Get(0).(*redis.KeyFlagsCmd)
 }
@@ -87,7 +87,7 @@ func (r *RedisClient) ClientGetName(ctx context.Context) *redis.StringCmd {
 	return args.Get(0).(*redis.StringCmd)
 }
 
-func (r *RedisClient) Echo(ctx context.Context, message interface{}) *redis.StringCmd {
+func (r *RedisClient) Echo(ctx context.Context, message any) *redis.StringCmd {
 	args := r.Called(ctx, message)
 	return args.Get(0).(*redis.StringCmd)
 }
@@ -297,7 +297,7 @@ func (r *RedisClient) GetRange(ctx context.Context, key string, start, end int64
 	return args.Get(0).(*redis.StringCmd)
 }
 
-func (r *RedisClient) GetSet(ctx context.Context, key string, value interface{}) *redis.StringCmd {
+func (r *RedisClient) GetSet(ctx context.Context, key string, value any) *redis.StringCmd {
 	args := r.Called(ctx, key, value)
 	return args.Get(0).(*redis.StringCmd)
 }
@@ -332,37 +332,37 @@ func (r *RedisClient) MGet(ctx context.Context, keys ...string) *redis.SliceCmd 
 	return args.Get(0).(*redis.SliceCmd)
 }
 
-func (r *RedisClient) MSet(ctx context.Context, values ...interface{}) *redis.StatusCmd {
+func (r *RedisClient) MSet(ctx context.Context, values ...any) *redis.StatusCmd {
 	args := r.Called(ctx, values)
 	return args.Get(0).(*redis.StatusCmd)
 }
 
-func (r *RedisClient) MSetNX(ctx context.Context, values ...interface{}) *redis.BoolCmd {
+func (r *RedisClient) MSetNX(ctx context.Context, values ...any) *redis.BoolCmd {
 	args := r.Called(ctx, values)
 	return args.Get(0).(*redis.BoolCmd)
 }
 
-func (r *RedisClient) Set(ctx context.Context, key string, value interface{}, expiration time.Duration) *redis.StatusCmd {
+func (r *RedisClient) Set(ctx context.Context, key string, value any, expiration time.Duration) *redis.StatusCmd {
 	args := r.Called(ctx, key, value, expiration)
 	return args.Get(0).(*redis.StatusCmd)
 }
 
-func (r *RedisClient) SetArgs(ctx context.Context, key string, value interface{}, a redis.SetArgs) *redis.StatusCmd {
+func (r *RedisClient) SetArgs(ctx context.Context, key string, value any, a redis.SetArgs) *redis.StatusCmd {
 	args := r.Called(ctx, key, value, a)
 	return args.Get(0).(*redis.StatusCmd)
 }
 
-func (r *RedisClient) SetEx(ctx context.Context, key string, value interface{}, expiration time.Duration) *redis.StatusCmd {
+func (r *RedisClient) SetEx(ctx context.Context, key string, value any, expiration time.Duration) *redis.StatusCmd {
 	args := r.Called(ctx, key, value, expiration)
 	return args.Get(0).(*redis.StatusCmd)
 }
 
-func (r *RedisClient) SetNX(ctx context.Context, key string, value interface{}, expiration time.Duration) *redis.BoolCmd {
+func (r *RedisClient) SetNX(ctx context.Context, key string, value any, expiration time.Duration) *redis.BoolCmd {
 	args := r.Called(ctx, key, value, expiration)
 	return args.Get(0).(*redis.BoolCmd)
 }
 
-func (r *RedisClient) SetXX(ctx context.Context, key string, value interface{}, expiration time.Duration) *redis.BoolCmd {
+func (r *RedisClient) SetXX(ctx context.Context, key string, value any, expiration time.Duration) *redis.BoolCmd {
 	args := r.Called(ctx, key, value, expiration)
 	return args.Get(0).(*redis.BoolCmd)
 }
@@ -428,7 +428,7 @@ func (r *RedisClient) BitPosSpan(ctx context.Context, key string, bit int8, star
 	return args.Get(0).(*redis.IntCmd)
 }
 
-func (r *RedisClient) BitField(ctx context.Context, key string, args ...interface{}) *redis.IntSliceCmd {
+func (r *RedisClient) BitField(ctx context.Context, key string, args ...any) *redis.IntSliceCmd {
 	call := r.Called(ctx, key, args)
 	return call.Get(0).(*redis.IntSliceCmd)
 }
@@ -503,17 +503,17 @@ func (r *RedisClient) HMGet(ctx context.Context, key string, fields ...string) *
 	return args.Get(0).(*redis.SliceCmd)
 }
 
-func (r *RedisClient) HSet(ctx context.Context, key string, values ...interface{}) *redis.IntCmd {
+func (r *RedisClient) HSet(ctx context.Context, key string, values ...any) *redis.IntCmd {
 	args := r.Called(ctx, key, values)
 	return args.Get(0).(*redis.IntCmd)
 }
 
-func (r *RedisClient) HMSet(ctx context.Context, key string, values ...interface{}) *redis.BoolCmd {
+func (r *RedisClient) HMSet(ctx context.Context, key string, values ...any) *redis.BoolCmd {
 	args := r.Called(ctx, key, values)
 	return args.Get(0).(*redis.BoolCmd)
 }
 
-func (r *RedisClient) HSetNX(ctx context.Context, key, field string, value interface{}) *redis.BoolCmd {
+func (r *RedisClient) HSetNX(ctx context.Context, key, field string, value any) *redis.BoolCmd {
 	args := r.Called(ctx, key, field, value)
 	return args.Get(0).(*redis.BoolCmd)
 }
@@ -563,17 +563,17 @@ func (r *RedisClient) LIndex(ctx context.Context, key string, index int64) *redi
 	return args.Get(0).(*redis.StringCmd)
 }
 
-func (r *RedisClient) LInsert(ctx context.Context, key, op string, pivot, value interface{}) *redis.IntCmd {
+func (r *RedisClient) LInsert(ctx context.Context, key, op string, pivot, value any) *redis.IntCmd {
 	args := r.Called(ctx, key, op, pivot, value)
 	return args.Get(0).(*redis.IntCmd)
 }
 
-func (r *RedisClient) LInsertBefore(ctx context.Context, key string, pivot, value interface{}) *redis.IntCmd {
+func (r *RedisClient) LInsertBefore(ctx context.Context, key string, pivot, value any) *redis.IntCmd {
 	args := r.Called(ctx, key, pivot, value)
 	return args.Get(0).(*redis.IntCmd)
 }
 
-func (r *RedisClient) LInsertAfter(ctx context.Context, key string, pivot, value interface{}) *redis.IntCmd {
+func (r *RedisClient) LInsertAfter(ctx context.Context, key string, pivot, value any) *redis.IntCmd {
 	args := r.Called(ctx, key, pivot, value)
 	return args.Get(0).(*redis.IntCmd)
 }
@@ -608,12 +608,12 @@ func (r *RedisClient) LPosCount(ctx context.Context, key string, value string, c
 	return call.Get(0).(*redis.IntSliceCmd)
 }
 
-func (r *RedisClient) LPush(ctx context.Context, key string, values ...interface{}) *redis.IntCmd {
+func (r *RedisClient) LPush(ctx context.Context, key string, values ...any) *redis.IntCmd {
 	args := r.Called(ctx, key, values)
 	return args.Get(0).(*redis.IntCmd)
 }
 
-func (r *RedisClient) LPushX(ctx context.Context, key string, values ...interface{}) *redis.IntCmd {
+func (r *RedisClient) LPushX(ctx context.Context, key string, values ...any) *redis.IntCmd {
 	args := r.Called(ctx, key, values)
 	return args.Get(0).(*redis.IntCmd)
 }
@@ -623,12 +623,12 @@ func (r *RedisClient) LRange(ctx context.Context, key string, start, stop int64)
 	return args.Get(0).(*redis.StringSliceCmd)
 }
 
-func (r *RedisClient) LRem(ctx context.Context, key string, count int64, value interface{}) *redis.IntCmd {
+func (r *RedisClient) LRem(ctx context.Context, key string, count int64, value any) *redis.IntCmd {
 	args := r.Called(ctx, key, count, value)
 	return args.Get(0).(*redis.IntCmd)
 }
 
-func (r *RedisClient) LSet(ctx context.Context, key string, index int64, value interface{}) *redis.StatusCmd {
+func (r *RedisClient) LSet(ctx context.Context, key string, index int64, value any) *redis.StatusCmd {
 	args := r.Called(ctx, key, index, value)
 	return args.Get(0).(*redis.StatusCmd)
 }
@@ -653,12 +653,12 @@ func (r *RedisClient) RPopLPush(ctx context.Context, source, destination string)
 	return args.Get(0).(*redis.StringCmd)
 }
 
-func (r *RedisClient) RPush(ctx context.Context, key string, values ...interface{}) *redis.IntCmd {
+func (r *RedisClient) RPush(ctx context.Context, key string, values ...any) *redis.IntCmd {
 	args := r.Called(ctx, key, values)
 	return args.Get(0).(*redis.IntCmd)
 }
 
-func (r *RedisClient) RPushX(ctx context.Context, key string, values ...interface{}) *redis.IntCmd {
+func (r *RedisClient) RPushX(ctx context.Context, key string, values ...any) *redis.IntCmd {
 	args := r.Called(ctx, key, values)
 	return args.Get(0).(*redis.IntCmd)
 }
@@ -673,7 +673,7 @@ func (r *RedisClient) BLMove(ctx context.Context, source, destination, srcpos, d
 	return args.Get(0).(*redis.StringCmd)
 }
 
-func (r *RedisClient) SAdd(ctx context.Context, key string, members ...interface{}) *redis.IntCmd {
+func (r *RedisClient) SAdd(ctx context.Context, key string, members ...any) *redis.IntCmd {
 	args := r.Called(ctx, key, members)
 	return args.Get(0).(*redis.IntCmd)
 }
@@ -708,12 +708,12 @@ func (r *RedisClient) SInterStore(ctx context.Context, destination string, keys 
 	return args.Get(0).(*redis.IntCmd)
 }
 
-func (r *RedisClient) SIsMember(ctx context.Context, key string, member interface{}) *redis.BoolCmd {
+func (r *RedisClient) SIsMember(ctx context.Context, key string, member any) *redis.BoolCmd {
 	args := r.Called(ctx, key, member)
 	return args.Get(0).(*redis.BoolCmd)
 }
 
-func (r *RedisClient) SMIsMember(ctx context.Context, key string, members ...interface{}) *redis.BoolSliceCmd {
+func (r *RedisClient) SMIsMember(ctx context.Context, key string, members ...any) *redis.BoolSliceCmd {
 	args := r.Called(ctx, key, members)
 	return args.Get(0).(*redis.BoolSliceCmd)
 }
@@ -728,7 +728,7 @@ func (r *RedisClient) SMembersMap(ctx context.Context, key string) *redis.String
 	return args.Get(0).(*redis.StringStructMapCmd)
 }
 
-func (r *RedisClient) SMove(ctx context.Context, source, destination string, member interface{}) *redis.BoolCmd {
+func (r *RedisClient) SMove(ctx context.Context, source, destination string, member any) *redis.BoolCmd {
 	args := r.Called(ctx, source, destination, member)
 	return args.Get(0).(*redis.BoolCmd)
 }
@@ -753,7 +753,7 @@ func (r *RedisClient) SRandMemberN(ctx context.Context, key string, count int64)
 	return args.Get(0).(*redis.StringSliceCmd)
 }
 
-func (r *RedisClient) SRem(ctx context.Context, key string, members ...interface{}) *redis.IntCmd {
+func (r *RedisClient) SRem(ctx context.Context, key string, members ...any) *redis.IntCmd {
 	args := r.Called(ctx, key, members)
 	return args.Get(0).(*redis.IntCmd)
 }
@@ -1078,7 +1078,7 @@ func (r *RedisClient) ZRank(ctx context.Context, key, member string) *redis.IntC
 	return args.Get(0).(*redis.IntCmd)
 }
 
-func (r *RedisClient) ZRem(ctx context.Context, key string, members ...interface{}) *redis.IntCmd {
+func (r *RedisClient) ZRem(ctx context.Context, key string, members ...any) *redis.IntCmd {
 	args := r.Called(ctx, key, members)
 	return args.Get(0).(*redis.IntCmd)
 }
@@ -1173,7 +1173,7 @@ func (r *RedisClient) ZDiffStore(ctx context.Context, destination string, keys .
 	return args.Get(0).(*redis.IntCmd)
 }
 
-func (r *RedisClient) PFAdd(ctx context.Context, key string, els ...interface{}) *redis.IntCmd {
+func (r *RedisClient) PFAdd(ctx context.Context, key string, els ...any) *redis.IntCmd {
 	args := r.Called(ctx, key, els)
 	return args.Get(0).(*redis.IntCmd)
 }
@@ -1348,22 +1348,22 @@ func (r *RedisClient) MemoryUsage(ctx context.Context, key string, samples ...in
 	return args.Get(0).(*redis.IntCmd)
 }
 
-func (r *RedisClient) Eval(ctx context.Context, script string, keys []string, args ...interface{}) *redis.Cmd {
+func (r *RedisClient) Eval(ctx context.Context, script string, keys []string, args ...any) *redis.Cmd {
 	call := r.Called(ctx, script, keys, args)
 	return call.Get(0).(*redis.Cmd)
 }
 
-func (r *RedisClient) EvalSha(ctx context.Context, sha1 string, keys []string, args ...interface{}) *redis.Cmd {
+func (r *RedisClient) EvalSha(ctx context.Context, sha1 string, keys []string, args ...any) *redis.Cmd {
 	call := r.Called(ctx, sha1, keys, args)
 	return call.Get(0).(*redis.Cmd)
 }
 
-func (r *RedisClient) EvalRO(ctx context.Context, script string, keys []string, args ...interface{}) *redis.Cmd {
+func (r *RedisClient) EvalRO(ctx context.Context, script string, keys []string, args ...any) *redis.Cmd {
 	call := r.Called(ctx, script, keys, args)
 	return call.Get(0).(*redis.Cmd)
 }
 
-func (r *RedisClient) EvalShaRO(ctx context.Context, sha1 string, keys []string, args ...interface{}) *redis.Cmd {
+func (r *RedisClient) EvalShaRO(ctx context.Context, sha1 string, keys []string, args ...any) *redis.Cmd {
 	call := r.Called(ctx, sha1, keys, args)
 	return call.Get(0).(*redis.Cmd)
 }
@@ -1438,22 +1438,22 @@ func (r *RedisClient) FunctionStats(ctx context.Context) *redis.FunctionStatsCmd
 	return args.Get(0).(*redis.FunctionStatsCmd)
 }
 
-func (r *RedisClient) FCall(ctx context.Context, function string, keys []string, args ...interface{}) *redis.Cmd {
+func (r *RedisClient) FCall(ctx context.Context, function string, keys []string, args ...any) *redis.Cmd {
 	call := r.Called(ctx, function, keys, args)
 	return call.Get(0).(*redis.Cmd)
 }
 
-func (r *RedisClient) FCallRo(ctx context.Context, function string, keys []string, args ...interface{}) *redis.Cmd {
+func (r *RedisClient) FCallRo(ctx context.Context, function string, keys []string, args ...any) *redis.Cmd {
 	call := r.Called(ctx, function, keys, args)
 	return call.Get(0).(*redis.Cmd)
 }
 
-func (r *RedisClient) Publish(ctx context.Context, channel string, message interface{}) *redis.IntCmd {
+func (r *RedisClient) Publish(ctx context.Context, channel string, message any) *redis.IntCmd {
 	args := r.Called(ctx, channel, message)
 	return args.Get(0).(*redis.IntCmd)
 }
 
-func (r *RedisClient) SPublish(ctx context.Context, channel string, message interface{}) *redis.IntCmd {
+func (r *RedisClient) SPublish(ctx context.Context, channel string, message any) *redis.IntCmd {
 	args := r.Called(ctx, channel, message)
 	return args.Get(0).(*redis.IntCmd)
 }
@@ -1643,7 +1643,7 @@ func (r *RedisClient) GeoHash(ctx context.Context, key string, members ...string
 	return args.Get(0).(*redis.StringSliceCmd)
 }
 
-func (r *RedisClient) ACLDryRun(ctx context.Context, username string, command ...interface{}) *redis.StringCmd {
+func (r *RedisClient) ACLDryRun(ctx context.Context, username string, command ...any) *redis.StringCmd {
 	args := r.Called(ctx, username, command)
 	return args.Get(0).(*redis.StringCmd)
 }
@@ -1657,7 +1657,7 @@ func (r *RedisClient) Watch(ctx context.Context, fn func(*redis.Tx) error, keys 
 	return args.Error(0)
 }
 
-func (r *RedisClient) Do(ctx context.Context, args ...interface{}) *redis.Cmd {
+func (r *RedisClient) Do(ctx context.Context, args ...any) *redis.Cmd {
 	call := r.Called(ctx, args)
 	return call.Get(0).(*redis.Cmd)
 }

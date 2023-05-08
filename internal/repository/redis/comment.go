@@ -16,6 +16,17 @@ func clearCommentsPattern(ctx context.Context, r *baseRepository, pattern ...str
 }
 
 func clearCommentBelongsTo(ctx context.Context, r *baseRepository, resourceID model.ID) error {
+	switch resourceID.Type {
+	case model.ResourceTypeDocument:
+		if err := clearDocumentsPattern(ctx, r, "*"); err != nil {
+			return err
+		}
+	case model.ResourceTypeIssue:
+		if err := clearIssuesPattern(ctx, r, "*"); err != nil {
+			return err
+		}
+	}
+
 	return clearCommentsPattern(ctx, r, "GetAllBelongsTo", resourceID.String(), "*")
 }
 
@@ -49,11 +60,6 @@ func (r *CachedCommentRepository) Create(ctx context.Context, belongsTo model.ID
 	if err := clearCommentBelongsTo(ctx, r.cacheRepo, belongsTo); err != nil {
 		return err
 	}
-
-	if err := clearCommentAllCrossCache(ctx, r.cacheRepo); err != nil {
-		return err
-	}
-
 	return r.commentRepo.Create(ctx, belongsTo, comment)
 }
 

@@ -7,6 +7,18 @@ import (
 	"github.com/opcotech/elemo/internal/repository"
 )
 
+func clearOrganizationsPattern(ctx context.Context, r *baseRepository, pattern ...string) error {
+	return r.DeletePattern(ctx, composeCacheKey(model.ResourceTypeOrganization.String(), pattern))
+}
+
+func clearOrganizationsKey(ctx context.Context, r *baseRepository, id model.ID) error {
+	return r.Delete(ctx, composeCacheKey(model.ResourceTypeOrganization.String(), id.String()))
+}
+
+func clearOrganizationAllGetAll(ctx context.Context, r *baseRepository) error {
+	return clearOrganizationsPattern(ctx, r, "GetAll", "*")
+}
+
 // CachedOrganizationRepository implements caching on the
 // repository.OrganizationRepository.
 type CachedOrganizationRepository struct {
@@ -15,8 +27,7 @@ type CachedOrganizationRepository struct {
 }
 
 func (r *CachedOrganizationRepository) Create(ctx context.Context, owner model.ID, organization *model.Organization) error {
-	pattern := composeCacheKey(model.ResourceTypeOrganization.String(), "GetAll", "*")
-	if err := r.cacheRepo.DeletePattern(ctx, pattern); err != nil {
+	if err := clearOrganizationAllGetAll(ctx, r.cacheRepo); err != nil {
 		return err
 	}
 
@@ -85,8 +96,7 @@ func (r *CachedOrganizationRepository) Update(ctx context.Context, id model.ID, 
 		return nil, err
 	}
 
-	pattern := composeCacheKey(model.ResourceTypeOrganization.String(), "GetAll", "*")
-	if err := r.cacheRepo.DeletePattern(ctx, pattern); err != nil {
+	if err := clearOrganizationAllGetAll(ctx, r.cacheRepo); err != nil {
 		return nil, err
 	}
 
@@ -94,13 +104,11 @@ func (r *CachedOrganizationRepository) Update(ctx context.Context, id model.ID, 
 }
 
 func (r *CachedOrganizationRepository) AddMember(ctx context.Context, orgID, memberID model.ID) error {
-	key := composeCacheKey(model.ResourceTypeOrganization.String(), orgID.String())
-	if err := r.cacheRepo.Delete(ctx, key); err != nil {
+	if err := clearOrganizationsKey(ctx, r.cacheRepo, orgID); err != nil {
 		return err
 	}
 
-	pattern := composeCacheKey(model.ResourceTypeOrganization.String(), "GetAll", "*")
-	if err := r.cacheRepo.DeletePattern(ctx, pattern); err != nil {
+	if err := clearOrganizationAllGetAll(ctx, r.cacheRepo); err != nil {
 		return err
 	}
 
@@ -108,13 +116,11 @@ func (r *CachedOrganizationRepository) AddMember(ctx context.Context, orgID, mem
 }
 
 func (r *CachedOrganizationRepository) RemoveMember(ctx context.Context, orgID, memberID model.ID) error {
-	key := composeCacheKey(model.ResourceTypeOrganization.String(), orgID.String())
-	if err := r.cacheRepo.Delete(ctx, key); err != nil {
+	if err := clearOrganizationsKey(ctx, r.cacheRepo, orgID); err != nil {
 		return err
 	}
 
-	pattern := composeCacheKey(model.ResourceTypeOrganization.String(), "GetAll", "*")
-	if err := r.cacheRepo.DeletePattern(ctx, pattern); err != nil {
+	if err := clearOrganizationAllGetAll(ctx, r.cacheRepo); err != nil {
 		return err
 	}
 
@@ -122,13 +128,11 @@ func (r *CachedOrganizationRepository) RemoveMember(ctx context.Context, orgID, 
 }
 
 func (r *CachedOrganizationRepository) Delete(ctx context.Context, id model.ID) error {
-	key := composeCacheKey(model.ResourceTypeOrganization.String(), id.String())
-	if err := r.cacheRepo.Delete(ctx, key); err != nil {
+	if err := clearOrganizationsKey(ctx, r.cacheRepo, id); err != nil {
 		return err
 	}
 
-	pattern := composeCacheKey(model.ResourceTypeOrganization.String(), "GetAll", "*")
-	if err := r.cacheRepo.DeletePattern(ctx, pattern); err != nil {
+	if err := clearOrganizationAllGetAll(ctx, r.cacheRepo); err != nil {
 		return err
 	}
 

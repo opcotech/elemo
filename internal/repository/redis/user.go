@@ -7,6 +7,37 @@ import (
 	"github.com/opcotech/elemo/internal/repository"
 )
 
+func clearUsersPattern(ctx context.Context, r *baseRepository, pattern ...string) error {
+	return r.DeletePattern(ctx, composeCacheKey(model.ResourceTypeUser.String(), pattern))
+}
+
+func clearUsersKey(ctx context.Context, r *baseRepository, id model.ID) error {
+	return r.Delete(ctx, composeCacheKey(model.ResourceTypeUser.String(), id.String()))
+}
+
+func clearUsersByEmail(ctx context.Context, r *baseRepository, email string) error {
+	return r.Delete(ctx, composeCacheKey(model.ResourceTypeUser.String(), "GetByEmail", email))
+}
+
+func clearUserAll(ctx context.Context, r *baseRepository) error {
+	return clearUsersPattern(ctx, r, "GetAll", "*")
+}
+
+func clearUserAllCrossCache(ctx context.Context, r *baseRepository) error {
+	deleteFns := []func(context.Context, *baseRepository, ...string) error{
+		clearOrganizationsPattern,
+		clearRolesPattern,
+	}
+
+	for _, fn := range deleteFns {
+		if err := fn(ctx, r, "*"); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // CachedUserRepository implements caching on the
 // repository.UserRepository.
 type CachedUserRepository struct {
@@ -15,8 +46,11 @@ type CachedUserRepository struct {
 }
 
 func (r *CachedUserRepository) Create(ctx context.Context, user *model.User) error {
-	pattern := composeCacheKey(model.ResourceTypeUser.String(), "GetAll", "*")
-	if err := r.cacheRepo.DeletePattern(ctx, pattern); err != nil {
+	if err := clearUserAll(ctx, r.cacheRepo); err != nil {
+		return err
+	}
+
+	if err := clearUserAllCrossCache(ctx, r.cacheRepo); err != nil {
 		return err
 	}
 
@@ -75,7 +109,7 @@ func (r *CachedUserRepository) GetAll(ctx context.Context, offset, limit int) ([
 	var users []*model.User
 	var err error
 
-	key := composeCacheKey(model.ResourceTypeAssignment.String(), "GetAll", offset, limit)
+	key := composeCacheKey(model.ResourceTypeUser.String(), "GetAll", offset, limit)
 	if err = r.cacheRepo.Get(ctx, key, &users); err != nil {
 		return nil, err
 	}
@@ -109,13 +143,11 @@ func (r *CachedUserRepository) Update(ctx context.Context, id model.ID, patch ma
 		return nil, err
 	}
 
-	pattern := composeCacheKey(model.ResourceTypeUser.String(), "GetAll", "*")
-	if err := r.cacheRepo.DeletePattern(ctx, pattern); err != nil {
+	if err = clearUsersByEmail(ctx, r.cacheRepo, user.Email); err != nil {
 		return nil, err
 	}
 
-	pattern = composeCacheKey(model.ResourceTypeUser.String(), "GetByEmail", user.Email, "*")
-	if err := r.cacheRepo.DeletePattern(ctx, pattern); err != nil {
+	if err = clearUserAll(ctx, r.cacheRepo); err != nil {
 		return nil, err
 	}
 
@@ -123,18 +155,19 @@ func (r *CachedUserRepository) Update(ctx context.Context, id model.ID, patch ma
 }
 
 func (r *CachedUserRepository) Delete(ctx context.Context, id model.ID) error {
-	key := composeCacheKey(model.ResourceTypeUser.String(), id.String())
-	if err := r.cacheRepo.Delete(ctx, key); err != nil {
+	if err := clearUsersKey(ctx, r.cacheRepo, id); err != nil {
 		return err
 	}
 
-	pattern := composeCacheKey(model.ResourceTypeUser.String(), "GetAll", "*")
-	if err := r.cacheRepo.DeletePattern(ctx, pattern); err != nil {
+	if err := clearUsersByEmail(ctx, r.cacheRepo, "*"); err != nil {
 		return err
 	}
 
-	pattern = composeCacheKey(model.ResourceTypeUser.String(), "GetByEmail", "*")
-	if err := r.cacheRepo.DeletePattern(ctx, pattern); err != nil {
+	if err := clearUserAll(ctx, r.cacheRepo); err != nil {
+		return err
+	}
+
+	if err := clearUserAllCrossCache(ctx, r.cacheRepo); err != nil {
 		return err
 	}
 

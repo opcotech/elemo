@@ -39,6 +39,20 @@ func clearIssueRelations(ctx context.Context, r *baseRepository, issueID model.I
 	return clearIssuesPattern(ctx, r, "GetRelations", issueID.String(), "*")
 }
 
+func clearIssueAllCrossCache(ctx context.Context, r *baseRepository) error {
+	deleteFns := []func(context.Context, *baseRepository, ...string) error{
+		clearProjectsPattern,
+	}
+
+	for _, fn := range deleteFns {
+		if err := fn(ctx, r, "*"); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // CachedIssueRepository implements caching on the
 // repository.IssueRepository.
 type CachedIssueRepository struct {
@@ -314,6 +328,10 @@ func (r *CachedIssueRepository) Delete(ctx context.Context, id model.ID) error {
 	}
 
 	if err := clearIssueAllForProject(ctx, r.cacheRepo); err != nil {
+		return err
+	}
+
+	if err := clearIssueAllCrossCache(ctx, r.cacheRepo); err != nil {
 		return err
 	}
 

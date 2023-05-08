@@ -7,6 +7,36 @@ import (
 	"github.com/opcotech/elemo/internal/repository"
 )
 
+func clearProjectsPattern(ctx context.Context, r *baseRepository, pattern ...string) error {
+	return r.DeletePattern(ctx, composeCacheKey(model.ResourceTypeProject.String(), pattern))
+}
+
+func clearProjectsKey(ctx context.Context, r *baseRepository, id model.ID) error {
+	return r.Delete(ctx, composeCacheKey(model.ResourceTypeProject.String(), id.String()))
+}
+
+func clearProjectsByKey(ctx context.Context, r *baseRepository, id model.ID) error {
+	return clearProjectsPattern(ctx, r, "GetByKey", id.String(), "*")
+}
+
+func clearProjectsAllGetAll(ctx context.Context, r *baseRepository) error {
+	return clearProjectsPattern(ctx, r, "GetAllBelongsTo", "*")
+}
+
+func clearProjectsAllCrossCache(ctx context.Context, r *baseRepository) error {
+	deleteFns := []func(context.Context, *baseRepository, ...string) error{
+		clearNamespacesPattern,
+	}
+
+	for _, fn := range deleteFns {
+		if err := fn(ctx, r, "*"); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // CachedProjectRepository implements caching on the
 // repository.ProjectRepository.
 type CachedProjectRepository struct {
@@ -15,8 +45,10 @@ type CachedProjectRepository struct {
 }
 
 func (r *CachedProjectRepository) Create(ctx context.Context, namespaceID model.ID, project *model.Project) error {
-	pattern := composeCacheKey(model.ResourceTypeProject.String(), "GetAll", namespaceID.String(), "*")
-	if err := r.cacheRepo.DeletePattern(ctx, pattern); err != nil {
+	if err := clearProjectsAllGetAll(ctx, r.cacheRepo); err != nil {
+		return err
+	}
+	if err := clearProjectsAllCrossCache(ctx, r.cacheRepo); err != nil {
 		return err
 	}
 
@@ -96,26 +128,21 @@ func (r *CachedProjectRepository) GetAll(ctx context.Context, namespaceID model.
 }
 
 func (r *CachedProjectRepository) Update(ctx context.Context, id model.ID, patch map[string]any) (*model.Project, error) {
-	var project *model.Project
-	var err error
-
-	project, err = r.projectRepo.Update(ctx, id, patch)
+	project, err := r.projectRepo.Update(ctx, id, patch)
 	if err != nil {
 		return nil, err
 	}
 
 	key := composeCacheKey(model.ResourceTypeProject.String(), id.String())
-	if err = r.cacheRepo.Set(ctx, key, project); err != nil {
+	if err := r.cacheRepo.Set(ctx, key, project); err != nil {
 		return nil, err
 	}
 
-	pattern := composeCacheKey(model.ResourceTypeProject.String(), "GetAll", "*")
-	if err := r.cacheRepo.DeletePattern(ctx, pattern); err != nil {
+	if err := clearProjectsByKey(ctx, r.cacheRepo, id); err != nil {
 		return nil, err
 	}
 
-	pattern = composeCacheKey(model.ResourceTypeProject.String(), "GetByKey", project.Key, "*")
-	if err := r.cacheRepo.DeletePattern(ctx, pattern); err != nil {
+	if err := clearProjectsAllGetAll(ctx, r.cacheRepo); err != nil {
 		return nil, err
 	}
 
@@ -123,18 +150,15 @@ func (r *CachedProjectRepository) Update(ctx context.Context, id model.ID, patch
 }
 
 func (r *CachedProjectRepository) Delete(ctx context.Context, id model.ID) error {
-	key := composeCacheKey(model.ResourceTypeProject.String(), id.String())
-	if err := r.cacheRepo.Delete(ctx, key); err != nil {
+	if err := clearProjectsKey(ctx, r.cacheRepo, id); err != nil {
 		return err
 	}
 
-	pattern := composeCacheKey(model.ResourceTypeProject.String(), "GetAll", "*")
-	if err := r.cacheRepo.DeletePattern(ctx, pattern); err != nil {
+	if err := clearProjectsByKey(ctx, r.cacheRepo, id); err != nil {
 		return err
 	}
 
-	pattern = composeCacheKey(model.ResourceTypeProject.String(), "GetByKey", "*")
-	if err := r.cacheRepo.DeletePattern(ctx, pattern); err != nil {
+	if err := clearProjectsAllGetAll(ctx, r.cacheRepo); err != nil {
 		return err
 	}
 

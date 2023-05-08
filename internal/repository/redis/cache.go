@@ -20,7 +20,7 @@ import (
 // CacheBackend represents a cache backend.
 type CacheBackend interface {
 	Set(item *cache.Item) error
-	Get(ctx context.Context, key string, dst interface{}) error
+	Get(ctx context.Context, key string, dst any) error
 	Delete(ctx context.Context, key string) error
 }
 
