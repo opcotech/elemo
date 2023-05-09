@@ -19,6 +19,10 @@ func clearUsersByEmail(ctx context.Context, r *baseRepository, email string) err
 	return r.Delete(ctx, composeCacheKey(model.ResourceTypeUser.String(), "GetByEmail", email))
 }
 
+func clearUsersAllByEmail(ctx context.Context, r *baseRepository) error {
+	return clearUsersPattern(ctx, r, "GetByEmail", "*")
+}
+
 func clearUserAll(ctx context.Context, r *baseRepository) error {
 	return clearUsersPattern(ctx, r, "GetAll", "*")
 }
@@ -49,7 +53,6 @@ func (r *CachedUserRepository) Create(ctx context.Context, user *model.User) err
 	if err := clearUserAll(ctx, r.cacheRepo); err != nil {
 		return err
 	}
-
 	if err := clearUserAllCrossCache(ctx, r.cacheRepo); err != nil {
 		return err
 	}
@@ -159,7 +162,7 @@ func (r *CachedUserRepository) Delete(ctx context.Context, id model.ID) error {
 		return err
 	}
 
-	if err := clearUsersByEmail(ctx, r.cacheRepo, "*"); err != nil {
+	if err := clearUsersAllByEmail(ctx, r.cacheRepo); err != nil {
 		return err
 	}
 
