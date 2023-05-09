@@ -49,6 +49,9 @@ func (r *CachedRoleRepository) Create(ctx context.Context, createdBy, belongsTo 
 	if err := clearRolesBelongsTo(ctx, r.cacheRepo, belongsTo); err != nil {
 		return err
 	}
+	if err := clearRoleAllCrossCache(ctx, r.cacheRepo); err != nil {
+		return err
+	}
 
 	return r.roleRepo.Create(ctx, createdBy, belongsTo, role)
 }
