@@ -154,11 +154,9 @@ func (r *CachedLabelRepository) Delete(ctx context.Context, id model.ID) error {
 	if err := clearLabelsKey(ctx, r.cacheRepo, id); err != nil {
 		return err
 	}
-
 	if err := clearLabelAllGetAll(ctx, r.cacheRepo); err != nil {
 		return err
 	}
-
 	if err := clearLabelAllCrossCache(ctx, r.cacheRepo); err != nil {
 		return err
 	}
