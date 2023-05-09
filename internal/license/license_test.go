@@ -19,7 +19,7 @@ const (
 func TestNewLicense(t *testing.T) {
 	publicKey, privateKey := testLicense.GetKeyPair(t)
 	licenseID := xid.New()
-	expiresAt := time.Now().AddDate(0, 0, 1).UTC()
+	expiresAt := time.Now().UTC().AddDate(0, 0, 1)
 
 	tests := []struct {
 		name     string
@@ -214,7 +214,7 @@ func TestNewLicense(t *testing.T) {
 				Organization: "Test",
 				Quotas:       DefaultQuotas,
 				Features:     DefaultFeatures,
-				ExpiresAt:    time.Now().AddDate(0, 0, -1),
+				ExpiresAt:    time.Now().UTC().AddDate(0, 0, -1),
 			}),
 			wantErr: true,
 		},

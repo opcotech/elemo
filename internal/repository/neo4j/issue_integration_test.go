@@ -218,7 +218,7 @@ func (s *IssueRepositoryIntegrationTestSuite) TestRemoveRelation() {
 func (s *IssueRepositoryIntegrationTestSuite) TestUpdate() {
 	s.Require().NoError(s.IssueRepo.Create(context.Background(), s.testProject.ID, s.issue))
 
-	dueDate := time.Now().Add(1 * time.Hour)
+	dueDate := time.Now().UTC().Add(1 * time.Hour)
 	patch := map[string]any{
 		"title":       "New title",
 		"description": "New description",

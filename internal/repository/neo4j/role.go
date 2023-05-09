@@ -59,7 +59,7 @@ func (r *RoleRepository) Create(ctx context.Context, createdBy, belongsTo model.
 		return errors.Join(repository.ErrRoleCreate, err)
 	}
 
-	createdAt := time.Now()
+	createdAt := time.Now().UTC()
 
 	role.ID = model.MustNewID(model.ResourceTypeRole)
 	role.CreatedAt = &createdAt
@@ -161,7 +161,7 @@ func (r *RoleRepository) Update(ctx context.Context, id model.ID, patch map[stri
 	params := map[string]any{
 		"id":         id.String(),
 		"patch":      patch,
-		"updated_at": time.Now().Format(time.RFC3339Nano),
+		"updated_at": time.Now().UTC().Format(time.RFC3339Nano),
 	}
 
 	role, err := ExecuteWriteAndReadSingle(ctx, r.db, cypher, params, r.scan("r", "m", "p"))
@@ -186,7 +186,7 @@ func (r *RoleRepository) AddMember(ctx context.Context, roleID, memberID model.I
 		"role_id":       roleID.String(),
 		"member_id":     memberID.String(),
 		"membership_id": model.NewRawID(),
-		"now":           time.Now().Format(time.RFC3339Nano),
+		"now":           time.Now().UTC().Format(time.RFC3339Nano),
 	}
 
 	if err := ExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {

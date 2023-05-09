@@ -59,7 +59,7 @@ func (r *NamespaceRepository) Create(ctx context.Context, orgID model.ID, namesp
 		return errors.Join(repository.ErrNamespaceCreate, err)
 	}
 
-	createdAt := time.Now()
+	createdAt := time.Now().UTC()
 
 	namespace.ID = model.MustNewID(model.ResourceTypeNamespace)
 	namespace.CreatedAt = &createdAt
@@ -148,7 +148,7 @@ func (r *NamespaceRepository) Update(ctx context.Context, id model.ID, patch map
 	params := map[string]any{
 		"id":         id.String(),
 		"patch":      patch,
-		"updated_at": time.Now().Format(time.RFC3339Nano),
+		"updated_at": time.Now().UTC().Format(time.RFC3339Nano),
 	}
 
 	ns, err := ExecuteWriteAndReadSingle(ctx, r.db, cypher, params, r.scan("ns", "p", "d"))

@@ -60,7 +60,7 @@ func (r *AssignmentRepository) Create(ctx context.Context, assignment *model.Ass
 		return errors.Join(repository.ErrAssignmentCreate, err)
 	}
 
-	createdAt := time.Now()
+	createdAt := time.Now().UTC()
 
 	assignment.ID = model.MustNewID(model.ResourceTypeAssignment)
 	assignment.CreatedAt = convert.ToPointer(createdAt)

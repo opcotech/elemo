@@ -97,7 +97,7 @@ func (l *License) Valid() bool {
 
 // Expired returns true if the license is expired.
 func (l *License) Expired() bool {
-	return l.ExpiresAt.Before(time.Now())
+	return l.ExpiresAt.Before(time.Now().UTC())
 }
 
 // HasFeature returns true if the license has the given feature.

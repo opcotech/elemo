@@ -112,7 +112,7 @@ func main() {
 		Organization: licenseOrganization,
 		Features:     licenseFeatures,
 		Quotas:       licenseQuotas,
-		ExpiresAt:    time.Now().AddDate(0, 0, licenseValidityPeriod).UTC(),
+		ExpiresAt:    time.Now().UTC().AddDate(0, 0, licenseValidityPeriod),
 	}
 
 	if !license.Valid() {

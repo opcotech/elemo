@@ -137,7 +137,7 @@ func (r *IssueRepository) Create(ctx context.Context, project model.ID, issue *m
 		return errors.Join(repository.ErrIssueCreate, err)
 	}
 
-	createdAt := time.Now()
+	createdAt := time.Now().UTC()
 
 	issue.ID = model.MustNewID(model.ResourceTypeIssue)
 	issue.CreatedAt = convert.ToPointer(createdAt)
@@ -365,7 +365,7 @@ func (r *IssueRepository) AddWatcher(ctx context.Context, issue model.ID, user m
 		"issue_id":   issue.String(),
 		"user_id":    user.String(),
 		"rel_id":     model.NewRawID(),
-		"created_at": time.Now().Format(time.RFC3339Nano),
+		"created_at": time.Now().UTC().Format(time.RFC3339Nano),
 	}
 
 	if err := ExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
@@ -438,7 +438,7 @@ func (r *IssueRepository) AddRelation(ctx context.Context, relation *model.Issue
 		return errors.Join(repository.ErrIssueAddRelation, err)
 	}
 
-	createdAt := time.Now()
+	createdAt := time.Now().UTC()
 	relation.ID = model.MustNewID(model.ResourceTypeIssueRelation)
 	relation.CreatedAt = convert.ToPointer(createdAt)
 	relation.UpdatedAt = nil
@@ -545,7 +545,7 @@ func (r *IssueRepository) Update(ctx context.Context, id model.ID, patch map[str
 		"id":          id.String(),
 		"patch":       patch,
 		"parent_kind": model.IssueRelationKindSubtaskOf.String(),
-		"updated_at":  time.Now().Format(time.RFC3339Nano),
+		"updated_at":  time.Now().UTC().Format(time.RFC3339Nano),
 	}
 
 	scanParams := &issueScanParams{

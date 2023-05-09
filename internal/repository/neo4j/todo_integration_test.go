@@ -92,7 +92,7 @@ func (s *TodoRepositoryIntegrationTestSuite) TestGetByOwner() {
 func (s *TodoRepositoryIntegrationTestSuite) TestUpdate() {
 	s.Require().NoError(s.TodoRepo.Create(context.Background(), s.todo))
 
-	dueDate := time.Now().Add(1 * time.Hour)
+	dueDate := time.Now().UTC().Add(1 * time.Hour)
 	patch := map[string]any{
 		"title":       "New title",
 		"description": "New description",

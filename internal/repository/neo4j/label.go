@@ -48,7 +48,7 @@ func (r *LabelRepository) Create(ctx context.Context, label *model.Label) error 
 		return errors.Join(repository.ErrLabelCreate, err)
 	}
 
-	createdAt := time.Now()
+	createdAt := time.Now().UTC()
 
 	label.ID = model.MustNewID(model.ResourceTypeLabel)
 	label.CreatedAt = convert.ToPointer(createdAt)
@@ -121,7 +121,7 @@ func (r *LabelRepository) Update(ctx context.Context, id model.ID, patch map[str
 	params := map[string]any{
 		"id":         id.String(),
 		"patch":      patch,
-		"updated_at": time.Now().Format(time.RFC3339Nano),
+		"updated_at": time.Now().UTC().Format(time.RFC3339Nano),
 	}
 
 	label, err := ExecuteWriteAndReadSingle(ctx, r.db, cypher, params, r.scan("l"))

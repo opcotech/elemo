@@ -16,7 +16,7 @@ func NewTodo(owner, creator model.ID) *model.Todo {
 	}
 
 	todo.Description = testutil.GenerateRandomString(10)
-	todo.DueDate = convert.ToPointer(time.Now().Add(24 * time.Hour))
+	todo.DueDate = convert.ToPointer(time.Now().UTC().Add(24 * time.Hour))
 
 	return todo
 }

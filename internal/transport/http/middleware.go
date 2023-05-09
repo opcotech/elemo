@@ -106,7 +106,7 @@ func WithRequestLogger(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		wrappedWriter := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
 
-		currentTime := time.Now()
+		currentTime := time.Now().UTC()
 		defer func(ctx context.Context, w middleware.WrapResponseWriter, r *http.Request, t time.Time) {
 			log.Info(ctx, "serve http request",
 				log.WithProtocol(r.Proto),

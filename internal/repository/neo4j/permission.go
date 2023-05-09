@@ -64,7 +64,7 @@ func (r *PermissionRepository) Create(ctx context.Context, perm *model.Permissio
 	}
 
 	perm.ID = model.MustNewID(model.ResourceTypePermission)
-	perm.CreatedAt = convert.ToPointer(time.Now())
+	perm.CreatedAt = convert.ToPointer(time.Now().UTC())
 	perm.UpdatedAt = nil
 
 	cypher := `
@@ -336,7 +336,7 @@ func (r *PermissionRepository) Update(ctx context.Context, id model.ID, kind mod
 	params := map[string]any{
 		"id":         id.String(),
 		"kind":       kind.String(),
-		"updated_at": time.Now().Format(time.RFC3339Nano),
+		"updated_at": time.Now().UTC().Format(time.RFC3339Nano),
 	}
 
 	perm, err := ExecuteWriteAndReadSingle(ctx, r.db, cypher, params, r.scan("p", "s", "t"))
