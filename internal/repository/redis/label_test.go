@@ -1122,12 +1122,12 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 			fields: fields{
 				cacheRepo: func(ctx context.Context, id, attachTo model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), id.String())
-					byBelongsTo := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
 					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
 					issuesKey := composeCacheKey(model.ResourceTypeIssue.String(), "*")
 
-					byBelongsToCmd := new(redis.StringSliceCmd)
-					byBelongsToCmd.SetVal([]string{byBelongsTo})
+					getAllKeyCmd := new(redis.StringSliceCmd)
+					getAllKeyCmd.SetVal([]string{getAllKey})
 
 					documentsKeyCmd := new(redis.StringSliceCmd)
 					documentsKeyCmd.SetVal([]string{documentsKey})
@@ -1136,7 +1136,7 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 					issuesKeyCmd.SetVal([]string{issuesKey})
 
 					dbClient := new(testMock.RedisClient)
-					dbClient.On("Keys", ctx, byBelongsTo).Return(byBelongsToCmd)
+					dbClient.On("Keys", ctx, getAllKey).Return(getAllKeyCmd)
 					dbClient.On("Keys", ctx, documentsKey).Return(documentsKeyCmd)
 					dbClient.On("Keys", ctx, issuesKey).Return(issuesKeyCmd)
 
@@ -1154,7 +1154,7 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 
 					cacheRepo := new(testMock.CacheRepository)
 					cacheRepo.On("Delete", ctx, key).Return(nil)
-					cacheRepo.On("Delete", ctx, byBelongsTo).Return(nil)
+					cacheRepo.On("Delete", ctx, getAllKey).Return(nil)
 					cacheRepo.On("Delete", ctx, documentsKey).Return(nil)
 					cacheRepo.On("Delete", ctx, issuesKey).Return(nil)
 
@@ -1182,12 +1182,12 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 			fields: fields{
 				cacheRepo: func(ctx context.Context, id, attachTo model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), id.String())
-					byBelongsTo := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
 					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
 					issuesKey := composeCacheKey(model.ResourceTypeIssue.String(), "*")
 
-					byBelongsToCmd := new(redis.StringSliceCmd)
-					byBelongsToCmd.SetVal([]string{byBelongsTo})
+					getAllKeyCmd := new(redis.StringSliceCmd)
+					getAllKeyCmd.SetVal([]string{getAllKey})
 
 					documentsKeyCmd := new(redis.StringSliceCmd)
 					documentsKeyCmd.SetVal([]string{documentsKey})
@@ -1196,7 +1196,7 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 					issuesKeyCmd.SetVal([]string{issuesKey})
 
 					dbClient := new(testMock.RedisClient)
-					dbClient.On("Keys", ctx, byBelongsTo).Return(byBelongsToCmd)
+					dbClient.On("Keys", ctx, getAllKey).Return(getAllKeyCmd)
 					dbClient.On("Keys", ctx, documentsKey).Return(documentsKeyCmd)
 					dbClient.On("Keys", ctx, issuesKey).Return(issuesKeyCmd)
 
@@ -1214,7 +1214,7 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 
 					cacheRepo := new(testMock.CacheRepository)
 					cacheRepo.On("Delete", ctx, key).Return(nil)
-					cacheRepo.On("Delete", ctx, byBelongsTo).Return(nil)
+					cacheRepo.On("Delete", ctx, getAllKey).Return(nil)
 					cacheRepo.On("Delete", ctx, documentsKey).Return(nil)
 					cacheRepo.On("Delete", ctx, issuesKey).Return(nil)
 
@@ -1285,13 +1285,13 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 			fields: fields{
 				cacheRepo: func(ctx context.Context, id, attachTo model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), id.String())
-					byBelongsTo := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
 
-					byBelongsToCmd := new(redis.StringSliceCmd)
-					byBelongsToCmd.SetVal([]string{byBelongsTo})
+					getAllKeyCmd := new(redis.StringSliceCmd)
+					getAllKeyCmd.SetVal([]string{getAllKey})
 
 					dbClient := new(testMock.RedisClient)
-					dbClient.On("Keys", ctx, byBelongsTo).Return(byBelongsToCmd)
+					dbClient.On("Keys", ctx, getAllKey).Return(getAllKeyCmd)
 
 					db, err := NewDatabase(
 						WithClient(dbClient),
@@ -1307,7 +1307,7 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 
 					cacheRepo := new(testMock.CacheRepository)
 					cacheRepo.On("Delete", ctx, key).Return(nil)
-					cacheRepo.On("Delete", ctx, byBelongsTo).Return(repository.ErrCacheDelete)
+					cacheRepo.On("Delete", ctx, getAllKey).Return(repository.ErrCacheDelete)
 
 					return &baseRepository{
 						db:     db,
@@ -1327,23 +1327,22 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 			},
 			wantErr: repository.ErrCacheDelete,
 		},
-
 		{
 			name: "delete label cache by document key error",
 			fields: fields{
 				cacheRepo: func(ctx context.Context, id, attachTo model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), id.String())
-					byBelongsTo := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
 					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
 
-					byBelongsToCmd := new(redis.StringSliceCmd)
-					byBelongsToCmd.SetVal([]string{byBelongsTo})
+					getAllKeyCmd := new(redis.StringSliceCmd)
+					getAllKeyCmd.SetVal([]string{getAllKey})
 
 					documentsKeyCmd := new(redis.StringSliceCmd)
 					documentsKeyCmd.SetVal([]string{documentsKey})
 
 					dbClient := new(testMock.RedisClient)
-					dbClient.On("Keys", ctx, byBelongsTo).Return(byBelongsToCmd)
+					dbClient.On("Keys", ctx, getAllKey).Return(getAllKeyCmd)
 					dbClient.On("Keys", ctx, documentsKey).Return(documentsKeyCmd)
 
 					db, err := NewDatabase(
@@ -1360,7 +1359,7 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 
 					cacheRepo := new(testMock.CacheRepository)
 					cacheRepo.On("Delete", ctx, key).Return(nil)
-					cacheRepo.On("Delete", ctx, byBelongsTo).Return(nil)
+					cacheRepo.On("Delete", ctx, getAllKey).Return(nil)
 					cacheRepo.On("Delete", ctx, documentsKey).Return(repository.ErrCacheDelete)
 
 					return &baseRepository{
@@ -1386,12 +1385,12 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 			fields: fields{
 				cacheRepo: func(ctx context.Context, id, attachTo model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), id.String())
-					byBelongsTo := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
 					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
 					issuesKey := composeCacheKey(model.ResourceTypeIssue.String(), "*")
 
-					byBelongsToCmd := new(redis.StringSliceCmd)
-					byBelongsToCmd.SetVal([]string{byBelongsTo})
+					getAllKeyCmd := new(redis.StringSliceCmd)
+					getAllKeyCmd.SetVal([]string{getAllKey})
 
 					documentsKeyCmd := new(redis.StringSliceCmd)
 					documentsKeyCmd.SetVal([]string{documentsKey})
@@ -1400,7 +1399,7 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 					issuesKeyCmd.SetVal([]string{issuesKey})
 
 					dbClient := new(testMock.RedisClient)
-					dbClient.On("Keys", ctx, byBelongsTo).Return(byBelongsToCmd)
+					dbClient.On("Keys", ctx, getAllKey).Return(getAllKeyCmd)
 					dbClient.On("Keys", ctx, documentsKey).Return(documentsKeyCmd)
 					dbClient.On("Keys", ctx, issuesKey).Return(issuesKeyCmd)
 
@@ -1418,7 +1417,7 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 
 					cacheRepo := new(testMock.CacheRepository)
 					cacheRepo.On("Delete", ctx, key).Return(nil)
-					cacheRepo.On("Delete", ctx, byBelongsTo).Return(nil)
+					cacheRepo.On("Delete", ctx, getAllKey).Return(nil)
 					cacheRepo.On("Delete", ctx, documentsKey).Return(nil)
 					cacheRepo.On("Delete", ctx, issuesKey).Return(repository.ErrCacheDelete)
 
@@ -1476,12 +1475,12 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 			fields: fields{
 				cacheRepo: func(ctx context.Context, id, detachFrom model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), id.String())
-					byBelongsTo := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
 					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
 					issuesKey := composeCacheKey(model.ResourceTypeIssue.String(), "*")
 
-					byBelongsToCmd := new(redis.StringSliceCmd)
-					byBelongsToCmd.SetVal([]string{byBelongsTo})
+					getAllKeyCmd := new(redis.StringSliceCmd)
+					getAllKeyCmd.SetVal([]string{getAllKey})
 
 					documentsKeyCmd := new(redis.StringSliceCmd)
 					documentsKeyCmd.SetVal([]string{documentsKey})
@@ -1490,7 +1489,7 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 					issuesKeyCmd.SetVal([]string{issuesKey})
 
 					dbClient := new(testMock.RedisClient)
-					dbClient.On("Keys", ctx, byBelongsTo).Return(byBelongsToCmd)
+					dbClient.On("Keys", ctx, getAllKey).Return(getAllKeyCmd)
 					dbClient.On("Keys", ctx, documentsKey).Return(documentsKeyCmd)
 					dbClient.On("Keys", ctx, issuesKey).Return(issuesKeyCmd)
 
@@ -1508,7 +1507,7 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 
 					cacheRepo := new(testMock.CacheRepository)
 					cacheRepo.On("Delete", ctx, key).Return(nil)
-					cacheRepo.On("Delete", ctx, byBelongsTo).Return(nil)
+					cacheRepo.On("Delete", ctx, getAllKey).Return(nil)
 					cacheRepo.On("Delete", ctx, documentsKey).Return(nil)
 					cacheRepo.On("Delete", ctx, issuesKey).Return(nil)
 
@@ -1536,12 +1535,12 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 			fields: fields{
 				cacheRepo: func(ctx context.Context, id, detachFrom model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), id.String())
-					byBelongsTo := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
 					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
 					issuesKey := composeCacheKey(model.ResourceTypeIssue.String(), "*")
 
-					byBelongsToCmd := new(redis.StringSliceCmd)
-					byBelongsToCmd.SetVal([]string{byBelongsTo})
+					getAllKeyCmd := new(redis.StringSliceCmd)
+					getAllKeyCmd.SetVal([]string{getAllKey})
 
 					documentsKeyCmd := new(redis.StringSliceCmd)
 					documentsKeyCmd.SetVal([]string{documentsKey})
@@ -1550,7 +1549,7 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 					issuesKeyCmd.SetVal([]string{issuesKey})
 
 					dbClient := new(testMock.RedisClient)
-					dbClient.On("Keys", ctx, byBelongsTo).Return(byBelongsToCmd)
+					dbClient.On("Keys", ctx, getAllKey).Return(getAllKeyCmd)
 					dbClient.On("Keys", ctx, documentsKey).Return(documentsKeyCmd)
 					dbClient.On("Keys", ctx, issuesKey).Return(issuesKeyCmd)
 
@@ -1568,7 +1567,7 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 
 					cacheRepo := new(testMock.CacheRepository)
 					cacheRepo.On("Delete", ctx, key).Return(nil)
-					cacheRepo.On("Delete", ctx, byBelongsTo).Return(nil)
+					cacheRepo.On("Delete", ctx, getAllKey).Return(nil)
 					cacheRepo.On("Delete", ctx, documentsKey).Return(nil)
 					cacheRepo.On("Delete", ctx, issuesKey).Return(nil)
 
@@ -1639,13 +1638,13 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 			fields: fields{
 				cacheRepo: func(ctx context.Context, id, detachFrom model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), id.String())
-					byBelongsTo := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
 
-					byBelongsToCmd := new(redis.StringSliceCmd)
-					byBelongsToCmd.SetVal([]string{byBelongsTo})
+					getAllKeyCmd := new(redis.StringSliceCmd)
+					getAllKeyCmd.SetVal([]string{getAllKey})
 
 					dbClient := new(testMock.RedisClient)
-					dbClient.On("Keys", ctx, byBelongsTo).Return(byBelongsToCmd)
+					dbClient.On("Keys", ctx, getAllKey).Return(getAllKeyCmd)
 
 					db, err := NewDatabase(
 						WithClient(dbClient),
@@ -1661,7 +1660,7 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 
 					cacheRepo := new(testMock.CacheRepository)
 					cacheRepo.On("Delete", ctx, key).Return(nil)
-					cacheRepo.On("Delete", ctx, byBelongsTo).Return(repository.ErrCacheDelete)
+					cacheRepo.On("Delete", ctx, getAllKey).Return(repository.ErrCacheDelete)
 
 					return &baseRepository{
 						db:     db,
@@ -1681,23 +1680,22 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 			},
 			wantErr: repository.ErrCacheDelete,
 		},
-
 		{
 			name: "delete label cache by document key error",
 			fields: fields{
 				cacheRepo: func(ctx context.Context, id, detachFrom model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), id.String())
-					byBelongsTo := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
 					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
 
-					byBelongsToCmd := new(redis.StringSliceCmd)
-					byBelongsToCmd.SetVal([]string{byBelongsTo})
+					getAllKeyCmd := new(redis.StringSliceCmd)
+					getAllKeyCmd.SetVal([]string{getAllKey})
 
 					documentsKeyCmd := new(redis.StringSliceCmd)
 					documentsKeyCmd.SetVal([]string{documentsKey})
 
 					dbClient := new(testMock.RedisClient)
-					dbClient.On("Keys", ctx, byBelongsTo).Return(byBelongsToCmd)
+					dbClient.On("Keys", ctx, getAllKey).Return(getAllKeyCmd)
 					dbClient.On("Keys", ctx, documentsKey).Return(documentsKeyCmd)
 
 					db, err := NewDatabase(
@@ -1714,7 +1712,7 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 
 					cacheRepo := new(testMock.CacheRepository)
 					cacheRepo.On("Delete", ctx, key).Return(nil)
-					cacheRepo.On("Delete", ctx, byBelongsTo).Return(nil)
+					cacheRepo.On("Delete", ctx, getAllKey).Return(nil)
 					cacheRepo.On("Delete", ctx, documentsKey).Return(repository.ErrCacheDelete)
 
 					return &baseRepository{
@@ -1740,12 +1738,12 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 			fields: fields{
 				cacheRepo: func(ctx context.Context, id, detachFrom model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), id.String())
-					byBelongsTo := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
 					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
 					issuesKey := composeCacheKey(model.ResourceTypeIssue.String(), "*")
 
-					byBelongsToCmd := new(redis.StringSliceCmd)
-					byBelongsToCmd.SetVal([]string{byBelongsTo})
+					getAllKeyCmd := new(redis.StringSliceCmd)
+					getAllKeyCmd.SetVal([]string{getAllKey})
 
 					documentsKeyCmd := new(redis.StringSliceCmd)
 					documentsKeyCmd.SetVal([]string{documentsKey})
@@ -1754,7 +1752,7 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 					issuesKeyCmd.SetVal([]string{issuesKey})
 
 					dbClient := new(testMock.RedisClient)
-					dbClient.On("Keys", ctx, byBelongsTo).Return(byBelongsToCmd)
+					dbClient.On("Keys", ctx, getAllKey).Return(getAllKeyCmd)
 					dbClient.On("Keys", ctx, documentsKey).Return(documentsKeyCmd)
 					dbClient.On("Keys", ctx, issuesKey).Return(issuesKeyCmd)
 
@@ -1772,7 +1770,7 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 
 					cacheRepo := new(testMock.CacheRepository)
 					cacheRepo.On("Delete", ctx, key).Return(nil)
-					cacheRepo.On("Delete", ctx, byBelongsTo).Return(nil)
+					cacheRepo.On("Delete", ctx, getAllKey).Return(nil)
 					cacheRepo.On("Delete", ctx, documentsKey).Return(nil)
 					cacheRepo.On("Delete", ctx, issuesKey).Return(repository.ErrCacheDelete)
 
@@ -1829,12 +1827,12 @@ func TestCachedLabelRepository_Delete(t *testing.T) {
 			fields: fields{
 				cacheRepo: func(ctx context.Context, id model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), id.String())
-					byBelongsTo := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
 					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
 					issuesKey := composeCacheKey(model.ResourceTypeIssue.String(), "*")
 
-					byBelongsToCmd := new(redis.StringSliceCmd)
-					byBelongsToCmd.SetVal([]string{byBelongsTo})
+					getAllKeyCmd := new(redis.StringSliceCmd)
+					getAllKeyCmd.SetVal([]string{getAllKey})
 
 					documentsKeyCmd := new(redis.StringSliceCmd)
 					documentsKeyCmd.SetVal([]string{documentsKey})
@@ -1843,7 +1841,7 @@ func TestCachedLabelRepository_Delete(t *testing.T) {
 					issuesKeyCmd.SetVal([]string{issuesKey})
 
 					dbClient := new(testMock.RedisClient)
-					dbClient.On("Keys", ctx, byBelongsTo).Return(byBelongsToCmd)
+					dbClient.On("Keys", ctx, getAllKey).Return(getAllKeyCmd)
 					dbClient.On("Keys", ctx, documentsKey).Return(documentsKeyCmd)
 					dbClient.On("Keys", ctx, issuesKey).Return(issuesKeyCmd)
 
@@ -1861,7 +1859,7 @@ func TestCachedLabelRepository_Delete(t *testing.T) {
 
 					cacheRepo := new(testMock.CacheRepository)
 					cacheRepo.On("Delete", ctx, key).Return(nil)
-					cacheRepo.On("Delete", ctx, byBelongsTo).Return(nil)
+					cacheRepo.On("Delete", ctx, getAllKey).Return(nil)
 					cacheRepo.On("Delete", ctx, documentsKey).Return(nil)
 					cacheRepo.On("Delete", ctx, issuesKey).Return(nil)
 
@@ -1888,12 +1886,12 @@ func TestCachedLabelRepository_Delete(t *testing.T) {
 			fields: fields{
 				cacheRepo: func(ctx context.Context, id model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), id.String())
-					byBelongsTo := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
 					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
 					issuesKey := composeCacheKey(model.ResourceTypeIssue.String(), "*")
 
-					byBelongsToCmd := new(redis.StringSliceCmd)
-					byBelongsToCmd.SetVal([]string{byBelongsTo})
+					getAllKeyCmd := new(redis.StringSliceCmd)
+					getAllKeyCmd.SetVal([]string{getAllKey})
 
 					documentsKeyCmd := new(redis.StringSliceCmd)
 					documentsKeyCmd.SetVal([]string{documentsKey})
@@ -1902,7 +1900,7 @@ func TestCachedLabelRepository_Delete(t *testing.T) {
 					issuesKeyCmd.SetVal([]string{issuesKey})
 
 					dbClient := new(testMock.RedisClient)
-					dbClient.On("Keys", ctx, byBelongsTo).Return(byBelongsToCmd)
+					dbClient.On("Keys", ctx, getAllKey).Return(getAllKeyCmd)
 					dbClient.On("Keys", ctx, documentsKey).Return(documentsKeyCmd)
 					dbClient.On("Keys", ctx, issuesKey).Return(issuesKeyCmd)
 
@@ -1920,7 +1918,7 @@ func TestCachedLabelRepository_Delete(t *testing.T) {
 
 					cacheRepo := new(testMock.CacheRepository)
 					cacheRepo.On("Delete", ctx, key).Return(nil)
-					cacheRepo.On("Delete", ctx, byBelongsTo).Return(nil)
+					cacheRepo.On("Delete", ctx, getAllKey).Return(nil)
 					cacheRepo.On("Delete", ctx, documentsKey).Return(nil)
 					cacheRepo.On("Delete", ctx, issuesKey).Return(nil)
 
@@ -1989,13 +1987,13 @@ func TestCachedLabelRepository_Delete(t *testing.T) {
 			fields: fields{
 				cacheRepo: func(ctx context.Context, id model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), id.String())
-					byBelongsTo := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
 
-					byBelongsToCmd := new(redis.StringSliceCmd)
-					byBelongsToCmd.SetVal([]string{byBelongsTo})
+					getAllKeyCmd := new(redis.StringSliceCmd)
+					getAllKeyCmd.SetVal([]string{getAllKey})
 
 					dbClient := new(testMock.RedisClient)
-					dbClient.On("Keys", ctx, byBelongsTo).Return(byBelongsToCmd)
+					dbClient.On("Keys", ctx, getAllKey).Return(getAllKeyCmd)
 
 					db, err := NewDatabase(
 						WithClient(dbClient),
@@ -2011,7 +2009,7 @@ func TestCachedLabelRepository_Delete(t *testing.T) {
 
 					cacheRepo := new(testMock.CacheRepository)
 					cacheRepo.On("Delete", ctx, key).Return(nil)
-					cacheRepo.On("Delete", ctx, byBelongsTo).Return(repository.ErrCacheDelete)
+					cacheRepo.On("Delete", ctx, getAllKey).Return(repository.ErrCacheDelete)
 
 					return &baseRepository{
 						db:     db,
@@ -2030,23 +2028,22 @@ func TestCachedLabelRepository_Delete(t *testing.T) {
 			},
 			wantErr: repository.ErrCacheDelete,
 		},
-
 		{
 			name: "delete label cache by document key error",
 			fields: fields{
 				cacheRepo: func(ctx context.Context, id model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), id.String())
-					byBelongsTo := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
 					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
 
-					byBelongsToCmd := new(redis.StringSliceCmd)
-					byBelongsToCmd.SetVal([]string{byBelongsTo})
+					getAllKeyCmd := new(redis.StringSliceCmd)
+					getAllKeyCmd.SetVal([]string{getAllKey})
 
 					documentsKeyCmd := new(redis.StringSliceCmd)
 					documentsKeyCmd.SetVal([]string{documentsKey})
 
 					dbClient := new(testMock.RedisClient)
-					dbClient.On("Keys", ctx, byBelongsTo).Return(byBelongsToCmd)
+					dbClient.On("Keys", ctx, getAllKey).Return(getAllKeyCmd)
 					dbClient.On("Keys", ctx, documentsKey).Return(documentsKeyCmd)
 
 					db, err := NewDatabase(
@@ -2063,7 +2060,7 @@ func TestCachedLabelRepository_Delete(t *testing.T) {
 
 					cacheRepo := new(testMock.CacheRepository)
 					cacheRepo.On("Delete", ctx, key).Return(nil)
-					cacheRepo.On("Delete", ctx, byBelongsTo).Return(nil)
+					cacheRepo.On("Delete", ctx, getAllKey).Return(nil)
 					cacheRepo.On("Delete", ctx, documentsKey).Return(repository.ErrCacheDelete)
 
 					return &baseRepository{
@@ -2088,12 +2085,12 @@ func TestCachedLabelRepository_Delete(t *testing.T) {
 			fields: fields{
 				cacheRepo: func(ctx context.Context, id model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), id.String())
-					byBelongsTo := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
 					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
 					issuesKey := composeCacheKey(model.ResourceTypeIssue.String(), "*")
 
-					byBelongsToCmd := new(redis.StringSliceCmd)
-					byBelongsToCmd.SetVal([]string{byBelongsTo})
+					getAllKeyCmd := new(redis.StringSliceCmd)
+					getAllKeyCmd.SetVal([]string{getAllKey})
 
 					documentsKeyCmd := new(redis.StringSliceCmd)
 					documentsKeyCmd.SetVal([]string{documentsKey})
@@ -2102,7 +2099,7 @@ func TestCachedLabelRepository_Delete(t *testing.T) {
 					issuesKeyCmd.SetVal([]string{issuesKey})
 
 					dbClient := new(testMock.RedisClient)
-					dbClient.On("Keys", ctx, byBelongsTo).Return(byBelongsToCmd)
+					dbClient.On("Keys", ctx, getAllKey).Return(getAllKeyCmd)
 					dbClient.On("Keys", ctx, documentsKey).Return(documentsKeyCmd)
 					dbClient.On("Keys", ctx, issuesKey).Return(issuesKeyCmd)
 
@@ -2120,7 +2117,7 @@ func TestCachedLabelRepository_Delete(t *testing.T) {
 
 					cacheRepo := new(testMock.CacheRepository)
 					cacheRepo.On("Delete", ctx, key).Return(nil)
-					cacheRepo.On("Delete", ctx, byBelongsTo).Return(nil)
+					cacheRepo.On("Delete", ctx, getAllKey).Return(nil)
 					cacheRepo.On("Delete", ctx, documentsKey).Return(nil)
 					cacheRepo.On("Delete", ctx, issuesKey).Return(repository.ErrCacheDelete)
 

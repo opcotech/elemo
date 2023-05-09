@@ -62,7 +62,7 @@ func (r *CachedOrganizationRepository) GetAll(ctx context.Context, offset, limit
 	var organizations []*model.Organization
 	var err error
 
-	key := composeCacheKey(model.ResourceTypeAssignment.String(), "GetAll", offset, limit)
+	key := composeCacheKey(model.ResourceTypeOrganization.String(), "GetAll", offset, limit)
 	if err = r.cacheRepo.Get(ctx, key, &organizations); err != nil {
 		return nil, err
 	}

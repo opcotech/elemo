@@ -1257,7 +1257,6 @@ func TestCachedAttachmentRepository_Delete(t *testing.T) {
 			},
 			wantErr: repository.ErrCacheDelete,
 		},
-
 		{
 			name: "delete attachment cache by document key error",
 			fields: fields{
