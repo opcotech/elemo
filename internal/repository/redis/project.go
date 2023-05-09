@@ -20,7 +20,7 @@ func clearProjectsByKey(ctx context.Context, r *baseRepository, id model.ID) err
 }
 
 func clearProjectsAllGetAll(ctx context.Context, r *baseRepository) error {
-	return clearProjectsPattern(ctx, r, "GetAllBelongsTo", "*")
+	return clearProjectsPattern(ctx, r, "GetAll", "*")
 }
 
 func clearProjectsAllCrossCache(ctx context.Context, r *baseRepository) error {
@@ -84,7 +84,7 @@ func (r *CachedProjectRepository) GetByKey(ctx context.Context, key string) (*mo
 	var err error
 
 	cacheKey := composeCacheKey(model.ResourceTypeProject.String(), "GetByKey", key)
-	if err = r.cacheRepo.Get(ctx, key, &project); err != nil {
+	if err = r.cacheRepo.Get(ctx, cacheKey, &project); err != nil {
 		return nil, err
 	}
 
@@ -107,7 +107,7 @@ func (r *CachedProjectRepository) GetAll(ctx context.Context, namespaceID model.
 	var projects []*model.Project
 	var err error
 
-	key := composeCacheKey(model.ResourceTypeAssignment.String(), "GetAll", namespaceID.String(), offset, limit)
+	key := composeCacheKey(model.ResourceTypeProject.String(), "GetAll", namespaceID.String(), offset, limit)
 	if err = r.cacheRepo.Get(ctx, key, &projects); err != nil {
 		return nil, err
 	}
@@ -159,6 +159,10 @@ func (r *CachedProjectRepository) Delete(ctx context.Context, id model.ID) error
 	}
 
 	if err := clearProjectsAllGetAll(ctx, r.cacheRepo); err != nil {
+		return err
+	}
+
+	if err := clearProjectsAllCrossCache(ctx, r.cacheRepo); err != nil {
 		return err
 	}
 

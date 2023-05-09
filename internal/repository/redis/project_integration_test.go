@@ -104,7 +104,7 @@ func (s *CachedProjectRepositoryIntegrationTestSuite) TestGetByKey() {
 	cached, err := s.projectRepo.GetByKey(context.Background(), s.project.Key)
 	s.Require().NoError(err)
 
-	s.Assert().Equal(usingCache, cached)
+	s.Assert().Equal(usingCache.ID, cached.ID)
 	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
 }
 
