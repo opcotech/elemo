@@ -2023,19 +2023,1524 @@ func TestCachedIssueRepository_GetWatchers(t *testing.T) {
 }
 
 func TestCachedIssueRepository_RemoveWatcher(t *testing.T) {
-	t.Skip("not implemented")
+	type fields struct {
+		cacheRepo func(ctx context.Context, id, watcher model.ID) *baseRepository
+		issueRepo func(ctx context.Context, id, watcher model.ID) repository.IssueRepository
+	}
+	type args struct {
+		ctx     context.Context
+		id      model.ID
+		watcher model.ID
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr error
+	}{
+		{
+			name: "remove issue watcher",
+			fields: fields{
+				cacheRepo: func(ctx context.Context, id, watcher model.ID) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), id.String())
+					watchersKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetWatchers", id.String(), "*")
+
+					allForIssueKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForIssue", "*")
+					allForProjectKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForProject", "*")
+
+					watchersKeyResult := new(redis.StringSliceCmd)
+					watchersKeyResult.SetVal([]string{watchersKey})
+
+					allForIssueKeyResult := new(redis.StringSliceCmd)
+					allForIssueKeyResult.SetVal([]string{allForIssueKey})
+
+					allForProjectKeyResult := new(redis.StringSliceCmd)
+					allForProjectKeyResult.SetVal([]string{allForProjectKey})
+
+					dbClient := new(testMock.RedisClient)
+					dbClient.On("Keys", ctx, watchersKey).Return(watchersKeyResult)
+					dbClient.On("Keys", ctx, allForIssueKey).Return(allForIssueKeyResult)
+					dbClient.On("Keys", ctx, allForProjectKey).Return(allForProjectKeyResult)
+
+					db, err := NewDatabase(
+						WithClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := new(testMock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(testMock.Tracer)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo.On("Delete", ctx, key).Return(nil)
+					cacheRepo.On("Delete", ctx, watchersKey).Return(nil)
+					cacheRepo.On("Delete", ctx, allForIssueKey).Return(nil)
+					cacheRepo.On("Delete", ctx, allForProjectKey).Return(nil)
+
+					return &baseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: new(testMock.Logger),
+					}
+				},
+				issueRepo: func(ctx context.Context, id, watcher model.ID) repository.IssueRepository {
+					repo := new(testMock.IssueRepository)
+					repo.On("RemoveWatcher", ctx, id, watcher).Return(nil)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeIssue),
+			},
+		},
+		{
+			name: "remove issue watcher with deletion error",
+			fields: fields{
+				cacheRepo: func(ctx context.Context, id, watcher model.ID) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), id.String())
+					watchersKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetWatchers", id.String(), "*")
+
+					allForIssueKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForIssue", "*")
+					allForProjectKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForProject", "*")
+
+					watchersKeyResult := new(redis.StringSliceCmd)
+					watchersKeyResult.SetVal([]string{watchersKey})
+
+					allForIssueKeyResult := new(redis.StringSliceCmd)
+					allForIssueKeyResult.SetVal([]string{allForIssueKey})
+
+					allForProjectKeyResult := new(redis.StringSliceCmd)
+					allForProjectKeyResult.SetVal([]string{allForProjectKey})
+
+					dbClient := new(testMock.RedisClient)
+					dbClient.On("Keys", ctx, watchersKey).Return(watchersKeyResult)
+					dbClient.On("Keys", ctx, allForIssueKey).Return(allForIssueKeyResult)
+					dbClient.On("Keys", ctx, allForProjectKey).Return(allForProjectKeyResult)
+
+					db, err := NewDatabase(
+						WithClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := new(testMock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(testMock.Tracer)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo.On("Delete", ctx, key).Return(nil)
+					cacheRepo.On("Delete", ctx, watchersKey).Return(nil)
+					cacheRepo.On("Delete", ctx, allForIssueKey).Return(nil)
+					cacheRepo.On("Delete", ctx, allForProjectKey).Return(nil)
+
+					return &baseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: new(testMock.Logger),
+					}
+				},
+				issueRepo: func(ctx context.Context, id, watcher model.ID) repository.IssueRepository {
+					repo := new(testMock.IssueRepository)
+					repo.On("RemoveWatcher", ctx, id, watcher).Return(repository.ErrNotFound)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeIssue),
+			},
+			wantErr: repository.ErrNotFound,
+		},
+		{
+			name: "remove issue watcher with clear cache error",
+			fields: fields{
+				cacheRepo: func(ctx context.Context, id, watcher model.ID) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), id.String())
+
+					db, err := NewDatabase(
+						WithClient(new(testMock.RedisClient)),
+					)
+					require.NoError(t, err)
+
+					span := new(testMock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(testMock.Tracer)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo.On("Delete", ctx, key).Return(repository.ErrCacheDelete)
+
+					return &baseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: new(testMock.Logger),
+					}
+				},
+				issueRepo: func(ctx context.Context, id, watcher model.ID) repository.IssueRepository {
+					repo := new(testMock.IssueRepository)
+					repo.On("RemoveWatcher", ctx, id, watcher).Return(nil)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeIssue),
+			},
+			wantErr: repository.ErrCacheDelete,
+		},
+		{
+			name: "remove issue watcher with clear watchers cache error",
+			fields: fields{
+				cacheRepo: func(ctx context.Context, id, watcher model.ID) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), id.String())
+					watchersKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetWatchers", id.String(), "*")
+
+					watchersKeyResult := new(redis.StringSliceCmd)
+					watchersKeyResult.SetVal([]string{watchersKey})
+
+					dbClient := new(testMock.RedisClient)
+					dbClient.On("Keys", ctx, watchersKey).Return(watchersKeyResult)
+
+					db, err := NewDatabase(
+						WithClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := new(testMock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(testMock.Tracer)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo.On("Delete", ctx, key).Return(nil)
+					cacheRepo.On("Delete", ctx, watchersKey).Return(repository.ErrCacheDelete)
+
+					return &baseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: new(testMock.Logger),
+					}
+				},
+				issueRepo: func(ctx context.Context, id, watcher model.ID) repository.IssueRepository {
+					repo := new(testMock.IssueRepository)
+					repo.On("RemoveWatcher", ctx, id, watcher).Return(nil)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeIssue),
+			},
+			wantErr: repository.ErrCacheDelete,
+		},
+		{
+			name: "remove issue watcher with clear for issue cache error",
+			fields: fields{
+				cacheRepo: func(ctx context.Context, id, watcher model.ID) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), id.String())
+					watchersKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetWatchers", id.String(), "*")
+
+					allForIssueKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForIssue", "*")
+
+					watchersKeyResult := new(redis.StringSliceCmd)
+					watchersKeyResult.SetVal([]string{watchersKey})
+
+					allForIssueKeyResult := new(redis.StringSliceCmd)
+					allForIssueKeyResult.SetVal([]string{allForIssueKey})
+
+					dbClient := new(testMock.RedisClient)
+					dbClient.On("Keys", ctx, watchersKey).Return(watchersKeyResult)
+					dbClient.On("Keys", ctx, allForIssueKey).Return(allForIssueKeyResult)
+
+					db, err := NewDatabase(
+						WithClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := new(testMock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(testMock.Tracer)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo.On("Delete", ctx, key).Return(nil)
+					cacheRepo.On("Delete", ctx, watchersKey).Return(nil)
+					cacheRepo.On("Delete", ctx, allForIssueKey).Return(repository.ErrCacheDelete)
+
+					return &baseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: new(testMock.Logger),
+					}
+				},
+				issueRepo: func(ctx context.Context, id, watcher model.ID) repository.IssueRepository {
+					repo := new(testMock.IssueRepository)
+					repo.On("RemoveWatcher", ctx, id, watcher).Return(nil)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeIssue),
+			},
+			wantErr: repository.ErrCacheDelete,
+		},
+		{
+			name: "remove issue watcher with clear for project cache error",
+			fields: fields{
+				cacheRepo: func(ctx context.Context, id, watcher model.ID) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), id.String())
+					watchersKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetWatchers", id.String(), "*")
+
+					allForIssueKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForIssue", "*")
+					allForProjectKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForProject", "*")
+
+					watchersKeyResult := new(redis.StringSliceCmd)
+					watchersKeyResult.SetVal([]string{watchersKey})
+
+					allForIssueKeyResult := new(redis.StringSliceCmd)
+					allForIssueKeyResult.SetVal([]string{allForIssueKey})
+
+					allForProjectKeyResult := new(redis.StringSliceCmd)
+					allForProjectKeyResult.SetVal([]string{allForProjectKey})
+
+					dbClient := new(testMock.RedisClient)
+					dbClient.On("Keys", ctx, watchersKey).Return(watchersKeyResult)
+					dbClient.On("Keys", ctx, allForIssueKey).Return(allForIssueKeyResult)
+					dbClient.On("Keys", ctx, allForProjectKey).Return(allForProjectKeyResult)
+
+					db, err := NewDatabase(
+						WithClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := new(testMock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(testMock.Tracer)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo.On("Delete", ctx, key).Return(nil)
+					cacheRepo.On("Delete", ctx, watchersKey).Return(nil)
+					cacheRepo.On("Delete", ctx, allForIssueKey).Return(nil)
+					cacheRepo.On("Delete", ctx, allForProjectKey).Return(repository.ErrCacheDelete)
+
+					return &baseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: new(testMock.Logger),
+					}
+				},
+				issueRepo: func(ctx context.Context, id, watcher model.ID) repository.IssueRepository {
+					repo := new(testMock.IssueRepository)
+					repo.On("RemoveWatcher", ctx, id, watcher).Return(nil)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeIssue),
+			},
+			wantErr: repository.ErrCacheDelete,
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			r := &CachedIssueRepository{
+				cacheRepo: tt.fields.cacheRepo(tt.args.ctx, tt.args.id, tt.args.watcher),
+				issueRepo: tt.fields.issueRepo(tt.args.ctx, tt.args.id, tt.args.watcher),
+			}
+			err := r.RemoveWatcher(tt.args.ctx, tt.args.id, tt.args.watcher)
+			require.ErrorIs(t, err, tt.wantErr)
+		})
+	}
 }
 
 func TestCachedIssueRepository_AddRelation(t *testing.T) {
-	t.Skip("not implemented")
+	type fields struct {
+		cacheRepo func(ctx context.Context, relation *model.IssueRelation) *baseRepository
+		issueRepo func(ctx context.Context, relation *model.IssueRelation) repository.IssueRepository
+	}
+	type args struct {
+		ctx      context.Context
+		relation *model.IssueRelation
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr error
+	}{
+		{
+			name: "add issue relation",
+			fields: fields{
+				cacheRepo: func(ctx context.Context, relation *model.IssueRelation) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), relation.Source.String())
+					relationsKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetRelations", relation.Source.String(), "*")
+
+					allForIssueKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForIssue", "*")
+					allForProjectKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForProject", "*")
+
+					relationsKeyResult := new(redis.StringSliceCmd)
+					relationsKeyResult.SetVal([]string{relationsKey})
+
+					allForIssueKeyResult := new(redis.StringSliceCmd)
+					allForIssueKeyResult.SetVal([]string{allForIssueKey})
+
+					allForProjectKeyResult := new(redis.StringSliceCmd)
+					allForProjectKeyResult.SetVal([]string{allForProjectKey})
+
+					dbClient := new(testMock.RedisClient)
+					dbClient.On("Keys", ctx, relationsKey).Return(relationsKeyResult)
+					dbClient.On("Keys", ctx, allForIssueKey).Return(allForIssueKeyResult)
+					dbClient.On("Keys", ctx, allForProjectKey).Return(allForProjectKeyResult)
+
+					db, err := NewDatabase(
+						WithClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := new(testMock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(testMock.Tracer)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo.On("Delete", ctx, key).Return(nil)
+					cacheRepo.On("Delete", ctx, relationsKey).Return(nil)
+					cacheRepo.On("Delete", ctx, allForIssueKey).Return(nil)
+					cacheRepo.On("Delete", ctx, allForProjectKey).Return(nil)
+
+					return &baseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: new(testMock.Logger),
+					}
+				},
+				issueRepo: func(ctx context.Context, relation *model.IssueRelation) repository.IssueRepository {
+					repo := new(testMock.IssueRepository)
+					repo.On("AddRelation", ctx, relation).Return(nil)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				relation: &model.IssueRelation{
+					Source: model.MustNewID(model.ResourceTypeIssue),
+					Target: model.MustNewID(model.ResourceTypeIssue),
+					Kind:   model.IssueRelationKindBlocks,
+				},
+			},
+		},
+		{
+			name: "add issue relation non-issue relation",
+			fields: fields{
+				cacheRepo: func(ctx context.Context, relation *model.IssueRelation) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), relation.Target.String())
+					relationsKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetRelations", relation.Target.String(), "*")
+
+					allForIssueKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForIssue", "*")
+					allForProjectKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForProject", "*")
+
+					relationsKeyResult := new(redis.StringSliceCmd)
+					relationsKeyResult.SetVal([]string{relationsKey})
+
+					allForIssueKeyResult := new(redis.StringSliceCmd)
+					allForIssueKeyResult.SetVal([]string{allForIssueKey})
+
+					allForProjectKeyResult := new(redis.StringSliceCmd)
+					allForProjectKeyResult.SetVal([]string{allForProjectKey})
+
+					dbClient := new(testMock.RedisClient)
+					dbClient.On("Keys", ctx, relationsKey).Return(relationsKeyResult)
+					dbClient.On("Keys", ctx, allForIssueKey).Return(allForIssueKeyResult)
+					dbClient.On("Keys", ctx, allForProjectKey).Return(allForProjectKeyResult)
+
+					db, err := NewDatabase(
+						WithClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := new(testMock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(testMock.Tracer)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo.On("Delete", ctx, key).Return(nil)
+					cacheRepo.On("Delete", ctx, relationsKey).Return(nil)
+					cacheRepo.On("Delete", ctx, allForIssueKey).Return(nil)
+					cacheRepo.On("Delete", ctx, allForProjectKey).Return(nil)
+
+					return &baseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: new(testMock.Logger),
+					}
+				},
+				issueRepo: func(ctx context.Context, relation *model.IssueRelation) repository.IssueRepository {
+					repo := new(testMock.IssueRepository)
+					repo.On("AddRelation", ctx, relation).Return(nil)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				relation: &model.IssueRelation{
+					Source: model.MustNewID(model.ResourceTypeDocument),
+					Target: model.MustNewID(model.ResourceTypeIssue),
+					Kind:   model.IssueRelationKindBlocks,
+				},
+			},
+		},
+		{
+			name: "add issue relation with deletion error",
+			fields: fields{
+				cacheRepo: func(ctx context.Context, relation *model.IssueRelation) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), relation.Source.String())
+					relationsKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetRelations", relation.Source.String(), "*")
+
+					allForIssueKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForIssue", "*")
+					allForProjectKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForProject", "*")
+
+					relationsKeyResult := new(redis.StringSliceCmd)
+					relationsKeyResult.SetVal([]string{relationsKey})
+
+					allForIssueKeyResult := new(redis.StringSliceCmd)
+					allForIssueKeyResult.SetVal([]string{allForIssueKey})
+
+					allForProjectKeyResult := new(redis.StringSliceCmd)
+					allForProjectKeyResult.SetVal([]string{allForProjectKey})
+
+					dbClient := new(testMock.RedisClient)
+					dbClient.On("Keys", ctx, relationsKey).Return(relationsKeyResult)
+					dbClient.On("Keys", ctx, allForIssueKey).Return(allForIssueKeyResult)
+					dbClient.On("Keys", ctx, allForProjectKey).Return(allForProjectKeyResult)
+
+					db, err := NewDatabase(
+						WithClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := new(testMock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(testMock.Tracer)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo.On("Delete", ctx, key).Return(nil)
+					cacheRepo.On("Delete", ctx, relationsKey).Return(nil)
+					cacheRepo.On("Delete", ctx, allForIssueKey).Return(nil)
+					cacheRepo.On("Delete", ctx, allForProjectKey).Return(nil)
+
+					return &baseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: new(testMock.Logger),
+					}
+				},
+				issueRepo: func(ctx context.Context, relation *model.IssueRelation) repository.IssueRepository {
+					repo := new(testMock.IssueRepository)
+					repo.On("AddRelation", ctx, relation).Return(repository.ErrNotFound)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				relation: &model.IssueRelation{
+					Source: model.MustNewID(model.ResourceTypeIssue),
+					Target: model.MustNewID(model.ResourceTypeIssue),
+					Kind:   model.IssueRelationKindBlocks,
+				},
+			},
+			wantErr: repository.ErrNotFound,
+		},
+		{
+			name: "add issue relation with clear cache error",
+			fields: fields{
+				cacheRepo: func(ctx context.Context, relation *model.IssueRelation) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), relation.Source.String())
+
+					db, err := NewDatabase(
+						WithClient(new(testMock.RedisClient)),
+					)
+					require.NoError(t, err)
+
+					span := new(testMock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(testMock.Tracer)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo.On("Delete", ctx, key).Return(repository.ErrCacheDelete)
+
+					return &baseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: new(testMock.Logger),
+					}
+				},
+				issueRepo: func(ctx context.Context, relation *model.IssueRelation) repository.IssueRepository {
+					repo := new(testMock.IssueRepository)
+					repo.On("AddRelation", ctx, relation).Return(nil)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				relation: &model.IssueRelation{
+					Source: model.MustNewID(model.ResourceTypeIssue),
+					Target: model.MustNewID(model.ResourceTypeIssue),
+					Kind:   model.IssueRelationKindBlocks,
+				},
+			},
+			wantErr: repository.ErrCacheDelete,
+		},
+		{
+			name: "add issue relation with clear relations cache error",
+			fields: fields{
+				cacheRepo: func(ctx context.Context, relation *model.IssueRelation) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), relation.Source.String())
+					relationsKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetRelations", relation.Source.String(), "*")
+
+					relationsKeyResult := new(redis.StringSliceCmd)
+					relationsKeyResult.SetVal([]string{relationsKey})
+
+					dbClient := new(testMock.RedisClient)
+					dbClient.On("Keys", ctx, relationsKey).Return(relationsKeyResult)
+
+					db, err := NewDatabase(
+						WithClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := new(testMock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(testMock.Tracer)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo.On("Delete", ctx, key).Return(nil)
+					cacheRepo.On("Delete", ctx, relationsKey).Return(repository.ErrCacheDelete)
+
+					return &baseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: new(testMock.Logger),
+					}
+				},
+				issueRepo: func(ctx context.Context, relation *model.IssueRelation) repository.IssueRepository {
+					repo := new(testMock.IssueRepository)
+					repo.On("AddRelation", ctx, relation).Return(nil)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				relation: &model.IssueRelation{
+					Source: model.MustNewID(model.ResourceTypeIssue),
+					Target: model.MustNewID(model.ResourceTypeIssue),
+					Kind:   model.IssueRelationKindBlocks,
+				},
+			},
+			wantErr: repository.ErrCacheDelete,
+		},
+		{
+			name: "add issue relation with clear for issue cache error",
+			fields: fields{
+				cacheRepo: func(ctx context.Context, relation *model.IssueRelation) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), relation.Source.String())
+					relationsKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetRelations", relation.Source.String(), "*")
+
+					allForIssueKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForIssue", "*")
+
+					relationsKeyResult := new(redis.StringSliceCmd)
+					relationsKeyResult.SetVal([]string{relationsKey})
+
+					allForIssueKeyResult := new(redis.StringSliceCmd)
+					allForIssueKeyResult.SetVal([]string{allForIssueKey})
+
+					dbClient := new(testMock.RedisClient)
+					dbClient.On("Keys", ctx, relationsKey).Return(relationsKeyResult)
+					dbClient.On("Keys", ctx, allForIssueKey).Return(allForIssueKeyResult)
+
+					db, err := NewDatabase(
+						WithClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := new(testMock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(testMock.Tracer)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo.On("Delete", ctx, key).Return(nil)
+					cacheRepo.On("Delete", ctx, relationsKey).Return(nil)
+					cacheRepo.On("Delete", ctx, allForIssueKey).Return(repository.ErrCacheDelete)
+
+					return &baseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: new(testMock.Logger),
+					}
+				},
+				issueRepo: func(ctx context.Context, relation *model.IssueRelation) repository.IssueRepository {
+					repo := new(testMock.IssueRepository)
+					repo.On("AddRelation", ctx, relation).Return(nil)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				relation: &model.IssueRelation{
+					Source: model.MustNewID(model.ResourceTypeIssue),
+					Target: model.MustNewID(model.ResourceTypeIssue),
+					Kind:   model.IssueRelationKindBlocks,
+				},
+			},
+			wantErr: repository.ErrCacheDelete,
+		},
+		{
+			name: "add issue relation with clear for project cache error",
+			fields: fields{
+				cacheRepo: func(ctx context.Context, relation *model.IssueRelation) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), relation.Source.String())
+					relationsKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetRelations", relation.Source.String(), "*")
+
+					allForIssueKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForIssue", "*")
+					allForProjectKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForProject", "*")
+
+					relationsKeyResult := new(redis.StringSliceCmd)
+					relationsKeyResult.SetVal([]string{relationsKey})
+
+					allForIssueKeyResult := new(redis.StringSliceCmd)
+					allForIssueKeyResult.SetVal([]string{allForIssueKey})
+
+					allForProjectKeyResult := new(redis.StringSliceCmd)
+					allForProjectKeyResult.SetVal([]string{allForProjectKey})
+
+					dbClient := new(testMock.RedisClient)
+					dbClient.On("Keys", ctx, relationsKey).Return(relationsKeyResult)
+					dbClient.On("Keys", ctx, allForIssueKey).Return(allForIssueKeyResult)
+					dbClient.On("Keys", ctx, allForProjectKey).Return(allForProjectKeyResult)
+
+					db, err := NewDatabase(
+						WithClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := new(testMock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(testMock.Tracer)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo.On("Delete", ctx, key).Return(nil)
+					cacheRepo.On("Delete", ctx, relationsKey).Return(nil)
+					cacheRepo.On("Delete", ctx, allForIssueKey).Return(nil)
+					cacheRepo.On("Delete", ctx, allForProjectKey).Return(repository.ErrCacheDelete)
+
+					return &baseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: new(testMock.Logger),
+					}
+				},
+				issueRepo: func(ctx context.Context, relation *model.IssueRelation) repository.IssueRepository {
+					repo := new(testMock.IssueRepository)
+					repo.On("AddRelation", ctx, relation).Return(nil)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				relation: &model.IssueRelation{
+					Source: model.MustNewID(model.ResourceTypeIssue),
+					Target: model.MustNewID(model.ResourceTypeIssue),
+					Kind:   model.IssueRelationKindBlocks,
+				},
+			},
+			wantErr: repository.ErrCacheDelete,
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			r := &CachedIssueRepository{
+				cacheRepo: tt.fields.cacheRepo(tt.args.ctx, tt.args.relation),
+				issueRepo: tt.fields.issueRepo(tt.args.ctx, tt.args.relation),
+			}
+			err := r.AddRelation(tt.args.ctx, tt.args.relation)
+			require.ErrorIs(t, err, tt.wantErr)
+		})
+	}
 }
 
 func TestCachedIssueRepository_GetRelations(t *testing.T) {
-	t.Skip("not implemented")
+	type fields struct {
+		cacheRepo func(ctx context.Context, id model.ID, relations []*model.IssueRelation) *baseRepository
+		issueRepo func(ctx context.Context, id model.ID, relations []*model.IssueRelation) repository.IssueRepository
+	}
+	type args struct {
+		ctx context.Context
+		id  model.ID
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    []*model.IssueRelation
+		wantErr error
+	}{
+		{
+			name: "get issue relations",
+			fields: fields{
+				cacheRepo: func(ctx context.Context, id model.ID, relations []*model.IssueRelation) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), "GetRelations", id.String())
+
+					db, err := NewDatabase(
+						WithClient(new(testMock.RedisClient)),
+					)
+					require.NoError(t, err)
+
+					span := new(testMock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(testMock.Tracer)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Set", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo.On("Get", ctx, key, mock.Anything).Return(nil, nil)
+					cacheRepo.On("Set", &cache.Item{
+						Ctx:   ctx,
+						Key:   key,
+						Value: relations,
+					}).Return(nil)
+
+					return &baseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: new(testMock.Logger),
+					}
+				},
+				issueRepo: func(ctx context.Context, id model.ID, relations []*model.IssueRelation) repository.IssueRepository {
+					repo := new(testMock.IssueRepository)
+					repo.On("GetRelations", ctx, id).Return(relations, nil)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeIssue),
+			},
+			want: []*model.IssueRelation{
+				{
+					ID:     model.MustNewID(model.ResourceTypeIssueRelation),
+					Source: model.MustNewID(model.ResourceTypeIssue),
+					Target: model.MustNewID(model.ResourceTypeIssue),
+					Kind:   model.IssueRelationKindBlocks,
+				},
+				{
+					ID:     model.MustNewID(model.ResourceTypeIssueRelation),
+					Source: model.MustNewID(model.ResourceTypeIssue),
+					Target: model.MustNewID(model.ResourceTypeIssue),
+					Kind:   model.IssueRelationKindBlocks,
+				},
+			},
+		},
+		{
+			name: "get issue relations with error",
+			fields: fields{
+				cacheRepo: func(ctx context.Context, id model.ID, relations []*model.IssueRelation) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), "GetRelations", id.String())
+
+					db, err := NewDatabase(
+						WithClient(new(testMock.RedisClient)),
+					)
+					require.NoError(t, err)
+
+					span := new(testMock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(testMock.Tracer)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Set", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo.On("Get", ctx, key, mock.Anything).Return(nil, nil)
+
+					return &baseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: new(testMock.Logger),
+					}
+				},
+				issueRepo: func(ctx context.Context, id model.ID, relations []*model.IssueRelation) repository.IssueRepository {
+					repo := new(testMock.IssueRepository)
+					repo.On("GetRelations", ctx, id).Return(nil, repository.ErrNotFound)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeIssue),
+			},
+			wantErr: repository.ErrNotFound,
+		},
+		{
+			name: "get issue relations from cache",
+			fields: fields{
+				cacheRepo: func(ctx context.Context, id model.ID, relations []*model.IssueRelation) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), "GetRelations", id.String())
+
+					db, err := NewDatabase(
+						WithClient(new(testMock.RedisClient)),
+					)
+					require.NoError(t, err)
+
+					span := new(testMock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(testMock.Tracer)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Set", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo.On("Get", ctx, key, mock.Anything).Return(relations, nil)
+
+					return &baseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: new(testMock.Logger),
+					}
+				},
+				issueRepo: func(ctx context.Context, id model.ID, relations []*model.IssueRelation) repository.IssueRepository {
+					return new(testMock.IssueRepository)
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeIssue),
+			},
+			want: []*model.IssueRelation{
+				{
+					ID:     model.MustNewID(model.ResourceTypeIssueRelation),
+					Source: model.MustNewID(model.ResourceTypeIssue),
+					Target: model.MustNewID(model.ResourceTypeIssue),
+					Kind:   model.IssueRelationKindBlocks,
+				},
+				{
+					ID:     model.MustNewID(model.ResourceTypeIssueRelation),
+					Source: model.MustNewID(model.ResourceTypeIssue),
+					Target: model.MustNewID(model.ResourceTypeIssue),
+					Kind:   model.IssueRelationKindBlocks,
+				},
+			},
+		},
+		{
+			name: "get issue relations with cache set error",
+			fields: fields{
+				cacheRepo: func(ctx context.Context, id model.ID, relations []*model.IssueRelation) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), "GetRelations", id.String())
+
+					db, err := NewDatabase(
+						WithClient(new(testMock.RedisClient)),
+					)
+					require.NoError(t, err)
+
+					span := new(testMock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(testMock.Tracer)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Set", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo.On("Get", ctx, key, mock.Anything).Return(nil, nil)
+					cacheRepo.On("Set", &cache.Item{
+						Ctx:   ctx,
+						Key:   key,
+						Value: relations,
+					}).Return(repository.ErrCacheWrite)
+
+					return &baseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: new(testMock.Logger),
+					}
+				},
+				issueRepo: func(ctx context.Context, id model.ID, relations []*model.IssueRelation) repository.IssueRepository {
+					repo := new(testMock.IssueRepository)
+					repo.On("GetRelations", ctx, id).Return(relations, nil)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeIssue),
+			},
+			want: []*model.IssueRelation{
+				{
+					ID:     model.MustNewID(model.ResourceTypeIssueRelation),
+					Source: model.MustNewID(model.ResourceTypeIssue),
+					Target: model.MustNewID(model.ResourceTypeIssue),
+					Kind:   model.IssueRelationKindBlocks,
+				},
+				{
+					ID:     model.MustNewID(model.ResourceTypeIssueRelation),
+					Source: model.MustNewID(model.ResourceTypeIssue),
+					Target: model.MustNewID(model.ResourceTypeIssue),
+					Kind:   model.IssueRelationKindBlocks,
+				},
+			},
+			wantErr: repository.ErrCacheWrite,
+		},
+		{
+			name: "get issue relations with get cache error",
+			fields: fields{
+				cacheRepo: func(ctx context.Context, id model.ID, relations []*model.IssueRelation) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), "GetRelations", id.String())
+
+					db, err := NewDatabase(
+						WithClient(new(testMock.RedisClient)),
+					)
+					require.NoError(t, err)
+
+					span := new(testMock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(testMock.Tracer)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Set", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo.On("Get", ctx, key, mock.Anything).Return(nil, repository.ErrCacheRead)
+
+					return &baseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: new(testMock.Logger),
+					}
+				},
+				issueRepo: func(ctx context.Context, id model.ID, relations []*model.IssueRelation) repository.IssueRepository {
+					return new(testMock.IssueRepository)
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeIssue),
+			},
+			want: []*model.IssueRelation{
+				{
+					ID:     model.MustNewID(model.ResourceTypeIssueRelation),
+					Source: model.MustNewID(model.ResourceTypeIssue),
+					Target: model.MustNewID(model.ResourceTypeIssue),
+					Kind:   model.IssueRelationKindBlocks,
+				},
+				{
+					ID:     model.MustNewID(model.ResourceTypeIssueRelation),
+					Source: model.MustNewID(model.ResourceTypeIssue),
+					Target: model.MustNewID(model.ResourceTypeIssue),
+					Kind:   model.IssueRelationKindBlocks,
+				},
+			},
+			wantErr: repository.ErrCacheRead,
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			r := &CachedIssueRepository{
+				cacheRepo: tt.fields.cacheRepo(tt.args.ctx, tt.args.id, tt.want),
+				issueRepo: tt.fields.issueRepo(tt.args.ctx, tt.args.id, tt.want),
+			}
+			got, err := r.GetRelations(tt.args.ctx, tt.args.id)
+			require.ErrorIs(t, err, tt.wantErr)
+			if tt.wantErr == nil {
+				require.Equal(t, tt.want, got)
+			}
+		})
+	}
 }
 
 func TestCachedIssueRepository_RemoveRelation(t *testing.T) {
-	t.Skip("not implemented")
+	type fields struct {
+		cacheRepo func(ctx context.Context, source, target model.ID, kind model.IssueRelationKind) *baseRepository
+		issueRepo func(ctx context.Context, source, target model.ID, kind model.IssueRelationKind) repository.IssueRepository
+	}
+	type args struct {
+		ctx    context.Context
+		source model.ID
+		target model.ID
+		kind   model.IssueRelationKind
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr error
+	}{
+		{
+			name: "remove issue relation",
+			fields: fields{
+				cacheRepo: func(ctx context.Context, source, target model.ID, kind model.IssueRelationKind) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), source.String())
+					relationsKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetRelations", source.String(), "*")
+
+					allForIssueKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForIssue", "*")
+					allForProjectKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForProject", "*")
+
+					relationsKeyResult := new(redis.StringSliceCmd)
+					relationsKeyResult.SetVal([]string{relationsKey})
+
+					allForIssueKeyResult := new(redis.StringSliceCmd)
+					allForIssueKeyResult.SetVal([]string{allForIssueKey})
+
+					allForProjectKeyResult := new(redis.StringSliceCmd)
+					allForProjectKeyResult.SetVal([]string{allForProjectKey})
+
+					dbClient := new(testMock.RedisClient)
+					dbClient.On("Keys", ctx, relationsKey).Return(relationsKeyResult)
+					dbClient.On("Keys", ctx, allForIssueKey).Return(allForIssueKeyResult)
+					dbClient.On("Keys", ctx, allForProjectKey).Return(allForProjectKeyResult)
+
+					db, err := NewDatabase(
+						WithClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := new(testMock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(testMock.Tracer)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo.On("Delete", ctx, key).Return(nil)
+					cacheRepo.On("Delete", ctx, relationsKey).Return(nil)
+					cacheRepo.On("Delete", ctx, allForIssueKey).Return(nil)
+					cacheRepo.On("Delete", ctx, allForProjectKey).Return(nil)
+
+					return &baseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: new(testMock.Logger),
+					}
+				},
+				issueRepo: func(ctx context.Context, source, target model.ID, kind model.IssueRelationKind) repository.IssueRepository {
+					repo := new(testMock.IssueRepository)
+					repo.On("RemoveRelation", ctx, source, target, kind).Return(nil)
+					return repo
+				},
+			},
+			args: args{
+				ctx:    context.Background(),
+				source: model.MustNewID(model.ResourceTypeIssue),
+				target: model.MustNewID(model.ResourceTypeIssue),
+				kind:   model.IssueRelationKindBlocks,
+			},
+		},
+		{
+			name: "remove issue relation non-issue relation",
+			fields: fields{
+				cacheRepo: func(ctx context.Context, source, target model.ID, kind model.IssueRelationKind) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), target.String())
+					relationsKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetRelations", target.String(), "*")
+
+					allForIssueKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForIssue", "*")
+					allForProjectKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForProject", "*")
+
+					relationsKeyResult := new(redis.StringSliceCmd)
+					relationsKeyResult.SetVal([]string{relationsKey})
+
+					allForIssueKeyResult := new(redis.StringSliceCmd)
+					allForIssueKeyResult.SetVal([]string{allForIssueKey})
+
+					allForProjectKeyResult := new(redis.StringSliceCmd)
+					allForProjectKeyResult.SetVal([]string{allForProjectKey})
+
+					dbClient := new(testMock.RedisClient)
+					dbClient.On("Keys", ctx, relationsKey).Return(relationsKeyResult)
+					dbClient.On("Keys", ctx, allForIssueKey).Return(allForIssueKeyResult)
+					dbClient.On("Keys", ctx, allForProjectKey).Return(allForProjectKeyResult)
+
+					db, err := NewDatabase(
+						WithClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := new(testMock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(testMock.Tracer)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo.On("Delete", ctx, key).Return(nil)
+					cacheRepo.On("Delete", ctx, relationsKey).Return(nil)
+					cacheRepo.On("Delete", ctx, allForIssueKey).Return(nil)
+					cacheRepo.On("Delete", ctx, allForProjectKey).Return(nil)
+
+					return &baseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: new(testMock.Logger),
+					}
+				},
+				issueRepo: func(ctx context.Context, source, target model.ID, kind model.IssueRelationKind) repository.IssueRepository {
+					repo := new(testMock.IssueRepository)
+					repo.On("RemoveRelation", ctx, source, target, kind).Return(nil)
+					return repo
+				},
+			},
+			args: args{
+				ctx:    context.Background(),
+				source: model.MustNewID(model.ResourceTypeDocument),
+				target: model.MustNewID(model.ResourceTypeIssue),
+				kind:   model.IssueRelationKindBlocks,
+			},
+		},
+		{
+			name: "remove issue relation with deletion error",
+			fields: fields{
+				cacheRepo: func(ctx context.Context, source, target model.ID, kind model.IssueRelationKind) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), source.String())
+					relationsKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetRelations", source.String(), "*")
+
+					allForIssueKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForIssue", "*")
+					allForProjectKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForProject", "*")
+
+					relationsKeyResult := new(redis.StringSliceCmd)
+					relationsKeyResult.SetVal([]string{relationsKey})
+
+					allForIssueKeyResult := new(redis.StringSliceCmd)
+					allForIssueKeyResult.SetVal([]string{allForIssueKey})
+
+					allForProjectKeyResult := new(redis.StringSliceCmd)
+					allForProjectKeyResult.SetVal([]string{allForProjectKey})
+
+					dbClient := new(testMock.RedisClient)
+					dbClient.On("Keys", ctx, relationsKey).Return(relationsKeyResult)
+					dbClient.On("Keys", ctx, allForIssueKey).Return(allForIssueKeyResult)
+					dbClient.On("Keys", ctx, allForProjectKey).Return(allForProjectKeyResult)
+
+					db, err := NewDatabase(
+						WithClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := new(testMock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(testMock.Tracer)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo.On("Delete", ctx, key).Return(nil)
+					cacheRepo.On("Delete", ctx, relationsKey).Return(nil)
+					cacheRepo.On("Delete", ctx, allForIssueKey).Return(nil)
+					cacheRepo.On("Delete", ctx, allForProjectKey).Return(nil)
+
+					return &baseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: new(testMock.Logger),
+					}
+				},
+				issueRepo: func(ctx context.Context, source, target model.ID, kind model.IssueRelationKind) repository.IssueRepository {
+					repo := new(testMock.IssueRepository)
+					repo.On("RemoveRelation", ctx, source, target, kind).Return(repository.ErrNotFound)
+					return repo
+				},
+			},
+			args: args{
+				ctx:    context.Background(),
+				source: model.MustNewID(model.ResourceTypeIssue),
+				target: model.MustNewID(model.ResourceTypeIssue),
+				kind:   model.IssueRelationKindBlocks,
+			},
+			wantErr: repository.ErrNotFound,
+		},
+		{
+			name: "remove issue relation with clear cache error",
+			fields: fields{
+				cacheRepo: func(ctx context.Context, source, target model.ID, kind model.IssueRelationKind) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), source.String())
+
+					db, err := NewDatabase(
+						WithClient(new(testMock.RedisClient)),
+					)
+					require.NoError(t, err)
+
+					span := new(testMock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(testMock.Tracer)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo.On("Delete", ctx, key).Return(repository.ErrCacheDelete)
+
+					return &baseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: new(testMock.Logger),
+					}
+				},
+				issueRepo: func(ctx context.Context, source, target model.ID, kind model.IssueRelationKind) repository.IssueRepository {
+					repo := new(testMock.IssueRepository)
+					repo.On("RemoveRelation", ctx, source, target, kind).Return(nil)
+					return repo
+				},
+			},
+			args: args{
+				ctx:    context.Background(),
+				source: model.MustNewID(model.ResourceTypeIssue),
+				target: model.MustNewID(model.ResourceTypeIssue),
+				kind:   model.IssueRelationKindBlocks,
+			},
+			wantErr: repository.ErrCacheDelete,
+		},
+		{
+			name: "remove issue relation with clear relations cache error",
+			fields: fields{
+				cacheRepo: func(ctx context.Context, source, target model.ID, kind model.IssueRelationKind) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), source.String())
+					relationsKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetRelations", source.String(), "*")
+
+					relationsKeyResult := new(redis.StringSliceCmd)
+					relationsKeyResult.SetVal([]string{relationsKey})
+
+					dbClient := new(testMock.RedisClient)
+					dbClient.On("Keys", ctx, relationsKey).Return(relationsKeyResult)
+
+					db, err := NewDatabase(
+						WithClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := new(testMock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(testMock.Tracer)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo.On("Delete", ctx, key).Return(nil)
+					cacheRepo.On("Delete", ctx, relationsKey).Return(repository.ErrCacheDelete)
+
+					return &baseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: new(testMock.Logger),
+					}
+				},
+				issueRepo: func(ctx context.Context, source, target model.ID, kind model.IssueRelationKind) repository.IssueRepository {
+					repo := new(testMock.IssueRepository)
+					repo.On("RemoveRelation", ctx, source, target, kind).Return(nil)
+					return repo
+				},
+			},
+			args: args{
+				ctx:    context.Background(),
+				source: model.MustNewID(model.ResourceTypeIssue),
+				target: model.MustNewID(model.ResourceTypeIssue),
+				kind:   model.IssueRelationKindBlocks,
+			},
+			wantErr: repository.ErrCacheDelete,
+		},
+		{
+			name: "remove issue relation with clear for issue cache error",
+			fields: fields{
+				cacheRepo: func(ctx context.Context, source, target model.ID, kind model.IssueRelationKind) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), source.String())
+					relationsKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetRelations", source.String(), "*")
+
+					allForIssueKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForIssue", "*")
+
+					relationsKeyResult := new(redis.StringSliceCmd)
+					relationsKeyResult.SetVal([]string{relationsKey})
+
+					allForIssueKeyResult := new(redis.StringSliceCmd)
+					allForIssueKeyResult.SetVal([]string{allForIssueKey})
+
+					dbClient := new(testMock.RedisClient)
+					dbClient.On("Keys", ctx, relationsKey).Return(relationsKeyResult)
+					dbClient.On("Keys", ctx, allForIssueKey).Return(allForIssueKeyResult)
+
+					db, err := NewDatabase(
+						WithClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := new(testMock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(testMock.Tracer)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo.On("Delete", ctx, key).Return(nil)
+					cacheRepo.On("Delete", ctx, relationsKey).Return(nil)
+					cacheRepo.On("Delete", ctx, allForIssueKey).Return(repository.ErrCacheDelete)
+
+					return &baseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: new(testMock.Logger),
+					}
+				},
+				issueRepo: func(ctx context.Context, source, target model.ID, kind model.IssueRelationKind) repository.IssueRepository {
+					repo := new(testMock.IssueRepository)
+					repo.On("RemoveRelation", ctx, source, target, kind).Return(nil)
+					return repo
+				},
+			},
+			args: args{
+				ctx:    context.Background(),
+				source: model.MustNewID(model.ResourceTypeIssue),
+				target: model.MustNewID(model.ResourceTypeIssue),
+				kind:   model.IssueRelationKindBlocks,
+			},
+			wantErr: repository.ErrCacheDelete,
+		},
+		{
+			name: "remove issue relation with clear for project cache error",
+			fields: fields{
+				cacheRepo: func(ctx context.Context, source, target model.ID, kind model.IssueRelationKind) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), source.String())
+					relationsKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetRelations", source.String(), "*")
+
+					allForIssueKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForIssue", "*")
+					allForProjectKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForProject", "*")
+
+					relationsKeyResult := new(redis.StringSliceCmd)
+					relationsKeyResult.SetVal([]string{relationsKey})
+
+					allForIssueKeyResult := new(redis.StringSliceCmd)
+					allForIssueKeyResult.SetVal([]string{allForIssueKey})
+
+					allForProjectKeyResult := new(redis.StringSliceCmd)
+					allForProjectKeyResult.SetVal([]string{allForProjectKey})
+
+					dbClient := new(testMock.RedisClient)
+					dbClient.On("Keys", ctx, relationsKey).Return(relationsKeyResult)
+					dbClient.On("Keys", ctx, allForIssueKey).Return(allForIssueKeyResult)
+					dbClient.On("Keys", ctx, allForProjectKey).Return(allForProjectKeyResult)
+
+					db, err := NewDatabase(
+						WithClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := new(testMock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(testMock.Tracer)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo.On("Delete", ctx, key).Return(nil)
+					cacheRepo.On("Delete", ctx, relationsKey).Return(nil)
+					cacheRepo.On("Delete", ctx, allForIssueKey).Return(nil)
+					cacheRepo.On("Delete", ctx, allForProjectKey).Return(repository.ErrCacheDelete)
+
+					return &baseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: new(testMock.Logger),
+					}
+				},
+				issueRepo: func(ctx context.Context, source, target model.ID, kind model.IssueRelationKind) repository.IssueRepository {
+					repo := new(testMock.IssueRepository)
+					repo.On("RemoveRelation", ctx, source, target, kind).Return(nil)
+					return repo
+				},
+			},
+			args: args{
+				ctx:    context.Background(),
+				source: model.MustNewID(model.ResourceTypeIssue),
+				target: model.MustNewID(model.ResourceTypeIssue),
+				kind:   model.IssueRelationKindBlocks,
+			},
+			wantErr: repository.ErrCacheDelete,
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			r := &CachedIssueRepository{
+				cacheRepo: tt.fields.cacheRepo(tt.args.ctx, tt.args.source, tt.args.target, tt.args.kind),
+				issueRepo: tt.fields.issueRepo(tt.args.ctx, tt.args.source, tt.args.target, tt.args.kind),
+			}
+			err := r.RemoveRelation(tt.args.ctx, tt.args.source, tt.args.target, tt.args.kind)
+			require.ErrorIs(t, err, tt.wantErr)
+		})
+	}
 }
 
 func TestCachedIssueRepository_Update(t *testing.T) {
