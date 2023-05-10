@@ -71,6 +71,10 @@ func (r *CachedIssueRepository) Create(ctx context.Context, project model.ID, is
 		}
 	}
 
+	if err := clearIssueAllCrossCache(ctx, r.cacheRepo); err != nil {
+		return err
+	}
+
 	return r.issueRepo.Create(ctx, project, issue)
 }
 
@@ -302,8 +306,13 @@ func (r *CachedIssueRepository) Update(ctx context.Context, id model.ID, patch m
 		return nil, err
 	}
 
-	pattern := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllBelongsTo", "*")
-	if err := r.cacheRepo.DeletePattern(ctx, pattern); err != nil {
+	if issue.Parent != nil {
+		if err := clearIssueForIssue(ctx, r.cacheRepo, *issue.Parent); err != nil {
+			return nil, err
+		}
+	}
+
+	if err := clearIssueAllCrossCache(ctx, r.cacheRepo); err != nil {
 		return nil, err
 	}
 

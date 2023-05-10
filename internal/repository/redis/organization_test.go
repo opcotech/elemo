@@ -1078,7 +1078,7 @@ func TestCachedOrganizationRepository_AddMember(t *testing.T) {
 			args: args{
 				ctx:      context.Background(),
 				id:       model.MustNewID(model.ResourceTypeOrganization),
-				memberID: model.MustNewID(model.ResourceTypeDocument),
+				memberID: model.MustNewID(model.ResourceTypeUser),
 			},
 		},
 		{
@@ -1126,7 +1126,7 @@ func TestCachedOrganizationRepository_AddMember(t *testing.T) {
 			args: args{
 				ctx:      context.Background(),
 				id:       model.MustNewID(model.ResourceTypeOrganization),
-				memberID: model.MustNewID(model.ResourceTypeDocument),
+				memberID: model.MustNewID(model.ResourceTypeUser),
 			},
 			wantErr: repository.ErrOrganizationDelete,
 		},
@@ -1168,7 +1168,7 @@ func TestCachedOrganizationRepository_AddMember(t *testing.T) {
 			args: args{
 				ctx:      context.Background(),
 				id:       model.MustNewID(model.ResourceTypeOrganization),
-				memberID: model.MustNewID(model.ResourceTypeDocument),
+				memberID: model.MustNewID(model.ResourceTypeUser),
 			},
 			wantErr: repository.ErrCacheDelete,
 		},
@@ -1215,7 +1215,7 @@ func TestCachedOrganizationRepository_AddMember(t *testing.T) {
 			args: args{
 				ctx:      context.Background(),
 				id:       model.MustNewID(model.ResourceTypeOrganization),
-				memberID: model.MustNewID(model.ResourceTypeDocument),
+				memberID: model.MustNewID(model.ResourceTypeUser),
 			},
 			wantErr: repository.ErrCacheDelete,
 		},
@@ -1295,7 +1295,7 @@ func TestCachedOrganizationRepository_RemoveMember(t *testing.T) {
 			args: args{
 				ctx:      context.Background(),
 				id:       model.MustNewID(model.ResourceTypeOrganization),
-				memberID: model.MustNewID(model.ResourceTypeDocument),
+				memberID: model.MustNewID(model.ResourceTypeUser),
 			},
 		},
 		{
@@ -1343,7 +1343,7 @@ func TestCachedOrganizationRepository_RemoveMember(t *testing.T) {
 			args: args{
 				ctx:      context.Background(),
 				id:       model.MustNewID(model.ResourceTypeOrganization),
-				memberID: model.MustNewID(model.ResourceTypeDocument),
+				memberID: model.MustNewID(model.ResourceTypeUser),
 			},
 			wantErr: repository.ErrOrganizationDelete,
 		},
@@ -1385,7 +1385,7 @@ func TestCachedOrganizationRepository_RemoveMember(t *testing.T) {
 			args: args{
 				ctx:      context.Background(),
 				id:       model.MustNewID(model.ResourceTypeOrganization),
-				memberID: model.MustNewID(model.ResourceTypeDocument),
+				memberID: model.MustNewID(model.ResourceTypeUser),
 			},
 			wantErr: repository.ErrCacheDelete,
 		},
@@ -1432,7 +1432,7 @@ func TestCachedOrganizationRepository_RemoveMember(t *testing.T) {
 			args: args{
 				ctx:      context.Background(),
 				id:       model.MustNewID(model.ResourceTypeOrganization),
-				memberID: model.MustNewID(model.ResourceTypeDocument),
+				memberID: model.MustNewID(model.ResourceTypeUser),
 			},
 			wantErr: repository.ErrCacheDelete,
 		},
