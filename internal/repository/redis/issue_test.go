@@ -1383,11 +1383,643 @@ func TestCachedIssueRepository_GetAllForIssue(t *testing.T) {
 }
 
 func TestCachedIssueRepository_AddWatcher(t *testing.T) {
-	t.Skip("not implemented")
+	type fields struct {
+		cacheRepo func(ctx context.Context, id, watcher model.ID) *baseRepository
+		issueRepo func(ctx context.Context, id, watcher model.ID) repository.IssueRepository
+	}
+	type args struct {
+		ctx     context.Context
+		id      model.ID
+		watcher model.ID
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr error
+	}{
+		{
+			name: "add watcher",
+			fields: fields{
+				cacheRepo: func(ctx context.Context, id, watcher model.ID) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), id.String())
+					watchersKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetWatchers", id.String(), "*")
+					allForIssueKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForIssue", "*")
+					allForProjectKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForProject", "*")
+
+					watchersKeyResult := new(redis.StringSliceCmd)
+					watchersKeyResult.SetVal([]string{watchersKey})
+
+					allForIssueKeyResult := new(redis.StringSliceCmd)
+					allForIssueKeyResult.SetVal([]string{allForIssueKey})
+
+					allForProjectKeyResult := new(redis.StringSliceCmd)
+					allForProjectKeyResult.SetVal([]string{allForProjectKey})
+
+					dbClient := new(testMock.RedisClient)
+					dbClient.On("Keys", ctx, watchersKey).Return(watchersKeyResult)
+					dbClient.On("Keys", ctx, allForIssueKey).Return(allForIssueKeyResult)
+					dbClient.On("Keys", ctx, allForProjectKey).Return(allForProjectKeyResult)
+
+					db, err := NewDatabase(
+						WithClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := new(testMock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(testMock.Tracer)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo.On("Delete", ctx, key).Return(nil)
+					cacheRepo.On("Delete", ctx, watchersKey).Return(nil)
+					cacheRepo.On("Delete", ctx, allForIssueKey).Return(nil)
+					cacheRepo.On("Delete", ctx, allForProjectKey).Return(nil)
+
+					return &baseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: new(testMock.Logger),
+					}
+				},
+				issueRepo: func(ctx context.Context, id, watcher model.ID) repository.IssueRepository {
+					repo := new(testMock.IssueRepository)
+					repo.On("AddWatcher", ctx, id, watcher).Return(nil)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeIssue),
+			},
+		},
+		{
+			name: "add watcher with deletion error",
+			fields: fields{
+				cacheRepo: func(ctx context.Context, id, watcher model.ID) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), id.String())
+					watchersKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetWatchers", id.String(), "*")
+					allForIssueKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForIssue", "*")
+					allForProjectKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForProject", "*")
+
+					watchersKeyResult := new(redis.StringSliceCmd)
+					watchersKeyResult.SetVal([]string{watchersKey})
+
+					allForIssueKeyResult := new(redis.StringSliceCmd)
+					allForIssueKeyResult.SetVal([]string{allForIssueKey})
+
+					allForProjectKeyResult := new(redis.StringSliceCmd)
+					allForProjectKeyResult.SetVal([]string{allForProjectKey})
+
+					dbClient := new(testMock.RedisClient)
+					dbClient.On("Keys", ctx, watchersKey).Return(watchersKeyResult)
+					dbClient.On("Keys", ctx, allForIssueKey).Return(allForIssueKeyResult)
+					dbClient.On("Keys", ctx, allForProjectKey).Return(allForProjectKeyResult)
+
+					db, err := NewDatabase(
+						WithClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := new(testMock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(testMock.Tracer)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo.On("Delete", ctx, key).Return(nil)
+					cacheRepo.On("Delete", ctx, watchersKey).Return(nil)
+					cacheRepo.On("Delete", ctx, allForIssueKey).Return(nil)
+					cacheRepo.On("Delete", ctx, allForProjectKey).Return(nil)
+
+					return &baseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: new(testMock.Logger),
+					}
+				},
+				issueRepo: func(ctx context.Context, id, watcher model.ID) repository.IssueRepository {
+					repo := new(testMock.IssueRepository)
+					repo.On("AddWatcher", ctx, id, watcher).Return(repository.ErrNotFound)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeIssue),
+			},
+			wantErr: repository.ErrNotFound,
+		},
+		{
+			name: "add watcher with clear cache error",
+			fields: fields{
+				cacheRepo: func(ctx context.Context, id, watcher model.ID) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), id.String())
+
+					db, err := NewDatabase(
+						WithClient(new(testMock.RedisClient)),
+					)
+					require.NoError(t, err)
+
+					span := new(testMock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(testMock.Tracer)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo.On("Delete", ctx, key).Return(repository.ErrCacheDelete)
+
+					return &baseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: new(testMock.Logger),
+					}
+				},
+				issueRepo: func(ctx context.Context, id, watcher model.ID) repository.IssueRepository {
+					repo := new(testMock.IssueRepository)
+					repo.On("AddWatcher", ctx, id, watcher).Return(nil)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeIssue),
+			},
+			wantErr: repository.ErrCacheDelete,
+		},
+		{
+			name: "add watcher with clear watchers cache error",
+			fields: fields{
+				cacheRepo: func(ctx context.Context, id, watcher model.ID) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), id.String())
+					watchersKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetWatchers", id.String(), "*")
+
+					watchersKeyResult := new(redis.StringSliceCmd)
+					watchersKeyResult.SetVal([]string{watchersKey})
+
+					dbClient := new(testMock.RedisClient)
+					dbClient.On("Keys", ctx, watchersKey).Return(watchersKeyResult)
+
+					db, err := NewDatabase(
+						WithClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := new(testMock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(testMock.Tracer)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo.On("Delete", ctx, key).Return(nil)
+					cacheRepo.On("Delete", ctx, watchersKey).Return(repository.ErrCacheDelete)
+
+					return &baseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: new(testMock.Logger),
+					}
+				},
+				issueRepo: func(ctx context.Context, id, watcher model.ID) repository.IssueRepository {
+					repo := new(testMock.IssueRepository)
+					repo.On("AddWatcher", ctx, id, watcher).Return(nil)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeIssue),
+			},
+			wantErr: repository.ErrCacheDelete,
+		},
+
+		{
+			name: "add watcher with clear for issue cache error",
+			fields: fields{
+				cacheRepo: func(ctx context.Context, id, watcher model.ID) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), id.String())
+					watchersKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetWatchers", id.String(), "*")
+					allForIssueKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForIssue", "*")
+
+					watchersKeyResult := new(redis.StringSliceCmd)
+					watchersKeyResult.SetVal([]string{watchersKey})
+
+					allForIssueKeyResult := new(redis.StringSliceCmd)
+					allForIssueKeyResult.SetVal([]string{allForIssueKey})
+
+					dbClient := new(testMock.RedisClient)
+					dbClient.On("Keys", ctx, watchersKey).Return(watchersKeyResult)
+					dbClient.On("Keys", ctx, allForIssueKey).Return(allForIssueKeyResult)
+
+					db, err := NewDatabase(
+						WithClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := new(testMock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(testMock.Tracer)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo.On("Delete", ctx, key).Return(nil)
+					cacheRepo.On("Delete", ctx, watchersKey).Return(nil)
+					cacheRepo.On("Delete", ctx, allForIssueKey).Return(repository.ErrCacheDelete)
+
+					return &baseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: new(testMock.Logger),
+					}
+				},
+				issueRepo: func(ctx context.Context, id, watcher model.ID) repository.IssueRepository {
+					repo := new(testMock.IssueRepository)
+					repo.On("AddWatcher", ctx, id, watcher).Return(nil)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeIssue),
+			},
+			wantErr: repository.ErrCacheDelete,
+		},
+		{
+			name: "add watcher with clear for project cache error",
+			fields: fields{
+				cacheRepo: func(ctx context.Context, id, watcher model.ID) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), id.String())
+					watchersKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetWatchers", id.String(), "*")
+					allForIssueKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForIssue", "*")
+					allForProjectKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForProject", "*")
+
+					watchersKeyResult := new(redis.StringSliceCmd)
+					watchersKeyResult.SetVal([]string{watchersKey})
+
+					allForIssueKeyResult := new(redis.StringSliceCmd)
+					allForIssueKeyResult.SetVal([]string{allForIssueKey})
+
+					allForProjectKeyResult := new(redis.StringSliceCmd)
+					allForProjectKeyResult.SetVal([]string{allForProjectKey})
+
+					dbClient := new(testMock.RedisClient)
+					dbClient.On("Keys", ctx, watchersKey).Return(watchersKeyResult)
+					dbClient.On("Keys", ctx, allForIssueKey).Return(allForIssueKeyResult)
+					dbClient.On("Keys", ctx, allForProjectKey).Return(allForProjectKeyResult)
+
+					db, err := NewDatabase(
+						WithClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := new(testMock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(testMock.Tracer)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo.On("Delete", ctx, key).Return(nil)
+					cacheRepo.On("Delete", ctx, watchersKey).Return(nil)
+					cacheRepo.On("Delete", ctx, allForIssueKey).Return(nil)
+					cacheRepo.On("Delete", ctx, allForProjectKey).Return(repository.ErrCacheDelete)
+
+					return &baseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: new(testMock.Logger),
+					}
+				},
+				issueRepo: func(ctx context.Context, id, watcher model.ID) repository.IssueRepository {
+					repo := new(testMock.IssueRepository)
+					repo.On("AddWatcher", ctx, id, watcher).Return(nil)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeIssue),
+			},
+			wantErr: repository.ErrCacheDelete,
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			r := &CachedIssueRepository{
+				cacheRepo: tt.fields.cacheRepo(tt.args.ctx, tt.args.id, tt.args.watcher),
+				issueRepo: tt.fields.issueRepo(tt.args.ctx, tt.args.id, tt.args.watcher),
+			}
+			err := r.AddWatcher(tt.args.ctx, tt.args.id, tt.args.watcher)
+			require.ErrorIs(t, err, tt.wantErr)
+		})
+	}
 }
 
 func TestCachedIssueRepository_GetWatchers(t *testing.T) {
-	t.Skip("not implemented")
+	type fields struct {
+		cacheRepo func(ctx context.Context, id model.ID, watchers []*model.User) *baseRepository
+		issueRepo func(ctx context.Context, id model.ID, watchers []*model.User) repository.IssueRepository
+	}
+	type args struct {
+		ctx context.Context
+		id  model.ID
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    []*model.User
+		wantErr error
+	}{
+		{
+			name: "get issue watchers",
+			fields: fields{
+				cacheRepo: func(ctx context.Context, id model.ID, watchers []*model.User) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), "GetWatchers", id.String())
+
+					db, err := NewDatabase(
+						WithClient(new(testMock.RedisClient)),
+					)
+					require.NoError(t, err)
+
+					span := new(testMock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(testMock.Tracer)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Set", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo.On("Get", ctx, key, mock.Anything).Return(nil, nil)
+					cacheRepo.On("Set", &cache.Item{
+						Ctx:   ctx,
+						Key:   key,
+						Value: watchers,
+					}).Return(nil)
+
+					return &baseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: new(testMock.Logger),
+					}
+				},
+				issueRepo: func(ctx context.Context, id model.ID, watchers []*model.User) repository.IssueRepository {
+					repo := new(testMock.IssueRepository)
+					repo.On("GetWatchers", ctx, id).Return(watchers, nil)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeIssue),
+			},
+			want: []*model.User{
+				{
+					ID:       model.MustNewID(model.ResourceTypeUser),
+					Username: "test-user",
+					Email:    "test@example.com",
+				},
+				{
+					ID:       model.MustNewID(model.ResourceTypeUser),
+					Username: "test-user",
+					Email:    "test@example.com",
+				},
+			},
+		},
+		{
+			name: "get issue watchers with error",
+			fields: fields{
+				cacheRepo: func(ctx context.Context, id model.ID, watchers []*model.User) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), "GetWatchers", id.String())
+
+					db, err := NewDatabase(
+						WithClient(new(testMock.RedisClient)),
+					)
+					require.NoError(t, err)
+
+					span := new(testMock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(testMock.Tracer)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Set", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo.On("Get", ctx, key, mock.Anything).Return(nil, nil)
+
+					return &baseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: new(testMock.Logger),
+					}
+				},
+				issueRepo: func(ctx context.Context, id model.ID, watchers []*model.User) repository.IssueRepository {
+					repo := new(testMock.IssueRepository)
+					repo.On("GetWatchers", ctx, id).Return(nil, repository.ErrNotFound)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeIssue),
+			},
+			wantErr: repository.ErrNotFound,
+		},
+		{
+			name: "get issue watchers from cache",
+			fields: fields{
+				cacheRepo: func(ctx context.Context, id model.ID, watchers []*model.User) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), "GetWatchers", id.String())
+
+					db, err := NewDatabase(
+						WithClient(new(testMock.RedisClient)),
+					)
+					require.NoError(t, err)
+
+					span := new(testMock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(testMock.Tracer)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Set", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo.On("Get", ctx, key, mock.Anything).Return(watchers, nil)
+
+					return &baseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: new(testMock.Logger),
+					}
+				},
+				issueRepo: func(ctx context.Context, id model.ID, watchers []*model.User) repository.IssueRepository {
+					return new(testMock.IssueRepository)
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeIssue),
+			},
+			want: []*model.User{
+				{
+					ID:       model.MustNewID(model.ResourceTypeUser),
+					Username: "test-user",
+					Email:    "test@example.com",
+					Status:   model.UserStatusActive,
+				},
+				{
+					ID:       model.MustNewID(model.ResourceTypeUser),
+					Username: "test-user",
+					Email:    "test@example.com",
+					Status:   model.UserStatusActive,
+				},
+			},
+		},
+		{
+			name: "get issue watchers with cache set error",
+			fields: fields{
+				cacheRepo: func(ctx context.Context, id model.ID, watchers []*model.User) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), "GetWatchers", id.String())
+
+					db, err := NewDatabase(
+						WithClient(new(testMock.RedisClient)),
+					)
+					require.NoError(t, err)
+
+					span := new(testMock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(testMock.Tracer)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Set", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo.On("Get", ctx, key, mock.Anything).Return(nil, nil)
+					cacheRepo.On("Set", &cache.Item{
+						Ctx:   ctx,
+						Key:   key,
+						Value: watchers,
+					}).Return(repository.ErrCacheWrite)
+
+					return &baseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: new(testMock.Logger),
+					}
+				},
+				issueRepo: func(ctx context.Context, id model.ID, watchers []*model.User) repository.IssueRepository {
+					repo := new(testMock.IssueRepository)
+					repo.On("GetWatchers", ctx, id).Return(watchers, nil)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeIssue),
+			},
+			want: []*model.User{
+				{
+					ID:       model.MustNewID(model.ResourceTypeUser),
+					Username: "test-user",
+					Email:    "test@example.com",
+				},
+				{
+					ID:       model.MustNewID(model.ResourceTypeUser),
+					Username: "test-user",
+					Email:    "test@example.com",
+				},
+			},
+			wantErr: repository.ErrCacheWrite,
+		},
+		{
+			name: "get issue watchers with get cache error",
+			fields: fields{
+				cacheRepo: func(ctx context.Context, id model.ID, watchers []*model.User) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), "GetWatchers", id.String())
+
+					db, err := NewDatabase(
+						WithClient(new(testMock.RedisClient)),
+					)
+					require.NoError(t, err)
+
+					span := new(testMock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(testMock.Tracer)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/Set", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo.On("Get", ctx, key, mock.Anything).Return(nil, repository.ErrCacheRead)
+
+					return &baseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: new(testMock.Logger),
+					}
+				},
+				issueRepo: func(ctx context.Context, id model.ID, watchers []*model.User) repository.IssueRepository {
+					return new(testMock.IssueRepository)
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeIssue),
+			},
+			want: []*model.User{
+				{
+					ID:       model.MustNewID(model.ResourceTypeUser),
+					Username: "test-user",
+					Email:    "test@example.com",
+				},
+				{
+					ID:       model.MustNewID(model.ResourceTypeUser),
+					Username: "test-user",
+					Email:    "test@example.com",
+				},
+			},
+			wantErr: repository.ErrCacheRead,
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			r := &CachedIssueRepository{
+				cacheRepo: tt.fields.cacheRepo(tt.args.ctx, tt.args.id, tt.want),
+				issueRepo: tt.fields.issueRepo(tt.args.ctx, tt.args.id, tt.want),
+			}
+			got, err := r.GetWatchers(tt.args.ctx, tt.args.id)
+			require.ErrorIs(t, err, tt.wantErr)
+			if tt.wantErr == nil {
+				require.Equal(t, tt.want, got)
+			}
+		})
+	}
 }
 
 func TestCachedIssueRepository_RemoveWatcher(t *testing.T) {
