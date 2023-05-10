@@ -62,22 +62,48 @@ var startCmd = &cobra.Command{
 			logger.Fatal("failed to initialize license repository", zap.Error(err))
 		}
 
-		permissionRepo, err := neo4j.NewPermissionRepository(
-			neo4j.WithDatabase(graphDB),
-			neo4j.WithRepositoryLogger(logger.Named("permission_repository")),
-			neo4j.WithRepositoryTracer(tracer),
-		)
-		if err != nil {
-			logger.Fatal("failed to initialize permission repository", zap.Error(err))
+		var permissionRepo repository.PermissionRepository
+		{
+			repo, err := neo4j.NewPermissionRepository(
+				neo4j.WithDatabase(graphDB),
+				neo4j.WithRepositoryLogger(logger.Named("permission_repository")),
+				neo4j.WithRepositoryTracer(tracer),
+			)
+			if err != nil {
+				logger.Fatal("failed to initialize permission repository", zap.Error(err))
+			}
+
+			permissionRepo, err = redis.NewCachedPermissionRepository(
+				repo,
+				redis.WithDatabase(cacheDB),
+				redis.WithRepositoryLogger(logger.Named("cached_permission_repository")),
+				redis.WithRepositoryTracer(tracer),
+			)
+			if err != nil {
+				logger.Fatal("failed to initialize cached permission repository", zap.Error(err))
+			}
 		}
 
-		userRepo, err := neo4j.NewUserRepository(
-			neo4j.WithDatabase(graphDB),
-			neo4j.WithRepositoryLogger(logger.Named("user_repository")),
-			neo4j.WithRepositoryTracer(tracer),
-		)
-		if err != nil {
-			logger.Fatal("failed to initialize user repository", zap.Error(err))
+		var userRepo repository.UserRepository
+		{
+			repo, err := neo4j.NewUserRepository(
+				neo4j.WithDatabase(graphDB),
+				neo4j.WithRepositoryLogger(logger.Named("user_repository")),
+				neo4j.WithRepositoryTracer(tracer),
+			)
+			if err != nil {
+				logger.Fatal("failed to initialize user repository", zap.Error(err))
+			}
+
+			userRepo, err = redis.NewCachedUserRepository(
+				repo,
+				redis.WithDatabase(cacheDB),
+				redis.WithRepositoryLogger(logger.Named("cached_user_repository")),
+				redis.WithRepositoryTracer(tracer),
+			)
+			if err != nil {
+				logger.Fatal("failed to initialize cached user repository", zap.Error(err))
+			}
 		}
 
 		var todoRepo repository.TodoRepository
