@@ -60,7 +60,7 @@ func (r *TodoRepository) Create(ctx context.Context, todo *model.Todo) error {
 		return errors.Join(repository.ErrTodoCreate, err)
 	}
 
-	createdAt := convert.ToPointer(time.Now())
+	createdAt := convert.ToPointer(time.Now().UTC())
 
 	todo.ID = model.MustNewID(model.ResourceTypeTodo)
 	todo.CreatedAt = createdAt
@@ -131,7 +131,7 @@ func (r *TodoRepository) Get(ctx context.Context, id model.ID) (*model.Todo, err
 }
 
 func (r *TodoRepository) GetByOwner(ctx context.Context, ownerID model.ID, offset, limit int, completed *bool) ([]*model.Todo, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.TodoRepository/GetByCreator")
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.TodoRepository/GetByOwner")
 	defer span.End()
 
 	cypher := `
@@ -172,7 +172,7 @@ func (r *TodoRepository) Update(ctx context.Context, id model.ID, patch map[stri
 	params := map[string]any{
 		"id":         id.String(),
 		"patch":      patch,
-		"updated_at": time.Now().Format(time.RFC3339Nano),
+		"updated_at": time.Now().UTC().Format(time.RFC3339Nano),
 	}
 
 	todo, err := ExecuteWriteAndReadSingle(ctx, r.db, cypher, params, r.scan("t", "o", "c"))

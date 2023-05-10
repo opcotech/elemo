@@ -10,6 +10,9 @@ var (
 	ErrAttachmentDelete         = errors.New("failed to delete attachment")               // the attachment could not be deleted
 	ErrAttachmentRead           = errors.New("failed to read attachment")                 // the attachment could not be retrieved
 	ErrAttachmentUpdate         = errors.New("failed to update attachment")               // the attachment could not be updated
+	ErrCacheDelete              = errors.New("failed to delete cache")                    // cache cannot be deleted
+	ErrCacheRead                = errors.New("failed to read cache")                      // cache cannot be read
+	ErrCacheWrite               = errors.New("failed to write cache")                     // cache cannot be written
 	ErrCommentCreate            = errors.New("failed to create comment")                  // the comment could not be created
 	ErrCommentDelete            = errors.New("failed to delete comment")                  // the comment could not be deleted
 	ErrCommentRead              = errors.New("failed to read comment")                    // the comment could not be retrieved
@@ -38,13 +41,15 @@ var (
 	ErrLabelDetach              = errors.New("failed to detach label")                    // the label could not be detached
 	ErrLabelRead                = errors.New("failed to read label")                      // the label could not be retrieved
 	ErrLabelUpdate              = errors.New("failed to update label")                    // the label could not be updated
-	ErrNoLicenseRepository      = errors.New("no license repository provided")            // no license repository provided
 	ErrMalformedResult          = errors.New("malformed result")                          // the result is malformed
 	ErrNamespaceCreate          = errors.New("failed to create namespace")                // the namespace could not be created
 	ErrNamespaceDelete          = errors.New("failed to delete namespace")                // the namespace could not be deleted
 	ErrNamespaceRead            = errors.New("failed to read namespace")                  // the namespace could not be retrieved
 	ErrNamespaceUpdate          = errors.New("failed to update namespace")                // the namespace could not be updated
+	ErrNoCacheRepository        = errors.New("no cache repository provided")              // no cache repository provided
+	ErrNoClient                 = errors.New("no client")                                 // the client is missing
 	ErrNoDriver                 = errors.New("no driver")                                 // the driver is missing
+	ErrNoLicenseRepository      = errors.New("no license repository provided")            // no license repository provided
 	ErrNoPool                   = errors.New("no pool")                                   // the pool is nil
 	ErrNotFound                 = errors.New("resource not found")                        // the resource was not found
 	ErrOrganizationAddMember    = errors.New("failed to add member to organization")      // member cannot be added to organization

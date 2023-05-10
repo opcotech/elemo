@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	ErrNoConfig = errors.New("no config provided") // no configuration provided
+	ErrInvalidConfig = errors.New("invalid config")     // invalid configuration
+	ErrNoConfig      = errors.New("no config provided") // no configuration provided
 )
 
 // LicenseConfig is the configuration for the license.
@@ -18,6 +19,33 @@ type LicenseConfig struct {
 // LogConfig is the configuration for the logger.
 type LogConfig struct {
 	Level string `mapstructure:"level"`
+}
+
+// CacheDatabaseConfig is the configuration for the cache database.
+type CacheDatabaseConfig struct {
+	Host                  string        `mapstructure:"host"`
+	Port                  int           `mapstructure:"port"`
+	Username              string        `mapstructure:"username"`
+	Password              string        `mapstructure:"password"`
+	Database              string        `mapstructure:"database"`
+	IsSecure              bool          `mapstructure:"is_secure"`
+	DialTimeout           time.Duration `mapstructure:"dial_timeout"`
+	ReadTimeout           time.Duration `mapstructure:"read_timeout"`
+	WriteTimeout          time.Duration `mapstructure:"write_timeout"`
+	PoolSize              int           `mapstructure:"pool_size"`
+	MaxIdleConnections    int           `mapstructure:"max_idle_connections"`
+	MinIdleConnections    int           `mapstructure:"min_idle_connections"`
+	ConnectionMaxIdleTime time.Duration `mapstructure:"connection_max_idle_time"`
+	ConnectionMaxLifetime time.Duration `mapstructure:"connection_max_lifetime"`
+}
+
+// ConnectionURL returns the connection URL for the cache database.
+func (c *CacheDatabaseConfig) ConnectionURL() string {
+	if c.IsSecure {
+		return fmt.Sprintf("redis://%s:%s@%s:%d/%s?sslmode=require", c.Username, c.Password, c.Host, c.Port, c.Database)
+	}
+
+	return fmt.Sprintf("redis://%s:%s@%s:%d/%s?sslmode=disable", c.Username, c.Password, c.Host, c.Port, c.Database)
 }
 
 // GraphDatabaseConfig is the configuration for the graph database.
@@ -119,6 +147,7 @@ type Config struct {
 	MetricsServer      ServerConfig             `mapstructure:"metrics_server"`
 	GraphDatabase      GraphDatabaseConfig      `mapstructure:"graph_database"`
 	RelationalDatabase RelationalDatabaseConfig `mapstructure:"relational_database"`
+	CacheDatabase      CacheDatabaseConfig      `mapstructure:"cache_database"`
 	TLS                TLSConfig                `mapstructure:"tls"`
 	Tracing            TracingConfig            `mapstructure:"tracing"`
 }

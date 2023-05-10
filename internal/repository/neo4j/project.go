@@ -64,7 +64,7 @@ func (r *ProjectRepository) Create(ctx context.Context, namespaceID model.ID, pr
 		return errors.Join(repository.ErrProjectCreate, err)
 	}
 
-	createdAt := time.Now()
+	createdAt := time.Now().UTC()
 
 	project.ID = model.MustNewID(model.ResourceTypeProject)
 	project.CreatedAt = convert.ToPointer(createdAt)
@@ -186,7 +186,7 @@ func (r *ProjectRepository) Update(ctx context.Context, id model.ID, patch map[s
 	params := map[string]any{
 		"id":         id.String(),
 		"patch":      patch,
-		"updated_at": time.Now().Format(time.RFC3339Nano),
+		"updated_at": time.Now().UTC().Format(time.RFC3339Nano),
 	}
 
 	project, err := ExecuteWriteAndReadSingle(ctx, r.db, cypher, params, r.scan("p", "d", "t", "i"))

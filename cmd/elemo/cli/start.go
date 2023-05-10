@@ -14,8 +14,10 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/opcotech/elemo/internal/model"
+	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/repository/neo4j"
 	"github.com/opcotech/elemo/internal/repository/pg"
+	"github.com/opcotech/elemo/internal/repository/redis"
 	"github.com/opcotech/elemo/internal/service"
 
 	"github.com/go-oauth2/oauth2/v4/server"
@@ -34,6 +36,11 @@ var startCmd = &cobra.Command{
 		license, err := parseLicense(&cfg.License)
 		if err != nil {
 			logger.Fatal("failed to parse license", zap.Error(err))
+		}
+
+		cacheDB, err := initCacheDatabase()
+		if err != nil {
+			logger.Fatal("failed to initialize cache database", zap.Error(err))
 		}
 
 		graphDB, err := initGraphDatabase()
@@ -55,31 +62,70 @@ var startCmd = &cobra.Command{
 			logger.Fatal("failed to initialize license repository", zap.Error(err))
 		}
 
-		permissionRepo, err := neo4j.NewPermissionRepository(
-			neo4j.WithDatabase(graphDB),
-			neo4j.WithRepositoryLogger(logger.Named("permission_repository")),
-			neo4j.WithRepositoryTracer(tracer),
-		)
-		if err != nil {
-			logger.Fatal("failed to initialize permission repository", zap.Error(err))
+		var permissionRepo repository.PermissionRepository
+		{
+			repo, err := neo4j.NewPermissionRepository(
+				neo4j.WithDatabase(graphDB),
+				neo4j.WithRepositoryLogger(logger.Named("permission_repository")),
+				neo4j.WithRepositoryTracer(tracer),
+			)
+			if err != nil {
+				logger.Fatal("failed to initialize permission repository", zap.Error(err))
+			}
+
+			permissionRepo, err = redis.NewCachedPermissionRepository(
+				repo,
+				redis.WithDatabase(cacheDB),
+				redis.WithRepositoryLogger(logger.Named("cached_permission_repository")),
+				redis.WithRepositoryTracer(tracer),
+			)
+			if err != nil {
+				logger.Fatal("failed to initialize cached permission repository", zap.Error(err))
+			}
 		}
 
-		userRepo, err := neo4j.NewUserRepository(
-			neo4j.WithDatabase(graphDB),
-			neo4j.WithRepositoryLogger(logger.Named("user_repository")),
-			neo4j.WithRepositoryTracer(tracer),
-		)
-		if err != nil {
-			logger.Fatal("failed to initialize user repository", zap.Error(err))
+		var userRepo repository.UserRepository
+		{
+			repo, err := neo4j.NewUserRepository(
+				neo4j.WithDatabase(graphDB),
+				neo4j.WithRepositoryLogger(logger.Named("user_repository")),
+				neo4j.WithRepositoryTracer(tracer),
+			)
+			if err != nil {
+				logger.Fatal("failed to initialize user repository", zap.Error(err))
+			}
+
+			userRepo, err = redis.NewCachedUserRepository(
+				repo,
+				redis.WithDatabase(cacheDB),
+				redis.WithRepositoryLogger(logger.Named("cached_user_repository")),
+				redis.WithRepositoryTracer(tracer),
+			)
+			if err != nil {
+				logger.Fatal("failed to initialize cached user repository", zap.Error(err))
+			}
 		}
 
-		todoRepo, err := neo4j.NewTodoRepository(
-			neo4j.WithDatabase(graphDB),
-			neo4j.WithRepositoryLogger(logger.Named("todo_repository")),
-			neo4j.WithRepositoryTracer(tracer),
-		)
-		if err != nil {
-			logger.Fatal("failed to initialize todo repository", zap.Error(err))
+		var todoRepo repository.TodoRepository
+		{
+			repo, err := neo4j.NewTodoRepository(
+				neo4j.WithDatabase(graphDB),
+				neo4j.WithRepositoryLogger(logger.Named("todo_repository")),
+				neo4j.WithRepositoryTracer(tracer),
+			)
+			if err != nil {
+				logger.Fatal("failed to initialize todo repository", zap.Error(err))
+			}
+
+			todoRepo, err = redis.NewCachedTodoRepository(
+				repo,
+				redis.WithDatabase(cacheDB),
+				redis.WithRepositoryLogger(logger.Named("cached_todo_repository")),
+				redis.WithRepositoryTracer(tracer),
+			)
+			if err != nil {
+				logger.Fatal("failed to initialize cached todo repository", zap.Error(err))
+			}
 		}
 
 		licenseService, err := service.NewLicenseService(
@@ -95,6 +141,7 @@ var startCmd = &cobra.Command{
 
 		systemService, err := service.NewSystemService(
 			map[model.HealthCheckComponent]service.Pingable{
+				model.HealthCheckComponentCacheDB:      cacheDB,
 				model.HealthCheckComponentGraphDB:      graphDB,
 				model.HealthCheckComponentRelationalDB: relDB,
 				model.HealthCheckComponentLicense:      licenseService,

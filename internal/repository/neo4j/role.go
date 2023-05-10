@@ -59,7 +59,7 @@ func (r *RoleRepository) Create(ctx context.Context, createdBy, belongsTo model.
 		return errors.Join(repository.ErrRoleCreate, err)
 	}
 
-	createdAt := time.Now()
+	createdAt := time.Now().UTC()
 
 	role.ID = model.MustNewID(model.ResourceTypeRole)
 	role.CreatedAt = &createdAt
@@ -117,12 +117,16 @@ func (r *RoleRepository) Get(ctx context.Context, id model.ID) (*model.Role, err
 	return role, nil
 }
 
-func (r *RoleRepository) GetAllBelongsTo(ctx context.Context, id model.ID, offset, limit int) ([]*model.Role, error) {
+func (r *RoleRepository) GetAllBelongsTo(ctx context.Context, belongsTo model.ID, offset, limit int) ([]*model.Role, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.RoleRepository/GetAllBelongsTo")
 	defer span.End()
 
+	if err := belongsTo.Validate(); err != nil {
+		return nil, errors.Join(repository.ErrRoleRead, err)
+	}
+
 	cypher := `
-	MATCH (r:` + model.ResourceTypeRole.String() + `)<-[:` + EdgeKindHasTeam.String() + `]-(:` + id.Label() + ` {id: $id})
+	MATCH (r:` + model.ResourceTypeRole.String() + `)<-[:` + EdgeKindHasTeam.String() + `]-(:` + belongsTo.Label() + ` {id: $id})
 	OPTIONAL MATCH (r)<-[:` + EdgeKindMemberOf.String() + `]-(u:` + model.ResourceTypeUser.String() + `)
 	OPTIONAL MATCH (r)-[p:` + EdgeKindHasPermission.String() + `]->()
 	RETURN r, collect(DISTINCT u.id) AS m, collect(DISTINCT p.id) AS p
@@ -130,12 +134,12 @@ func (r *RoleRepository) GetAllBelongsTo(ctx context.Context, id model.ID, offse
 	SKIP $offset LIMIT $limit`
 
 	params := map[string]any{
-		"id":     id.String(),
+		"id":     belongsTo.String(),
 		"offset": offset,
 		"limit":  limit,
 	}
 
-	roles, err := ExecuteWriteAndReadAll(ctx, r.db, cypher, params, r.scan("r", "m", "p"))
+	roles, err := ExecuteReadAndReadAll(ctx, r.db, cypher, params, r.scan("r", "m", "p"))
 	if err != nil {
 		return nil, errors.Join(repository.ErrRoleRead, err)
 	}
@@ -157,7 +161,7 @@ func (r *RoleRepository) Update(ctx context.Context, id model.ID, patch map[stri
 	params := map[string]any{
 		"id":         id.String(),
 		"patch":      patch,
-		"updated_at": time.Now().Format(time.RFC3339Nano),
+		"updated_at": time.Now().UTC().Format(time.RFC3339Nano),
 	}
 
 	role, err := ExecuteWriteAndReadSingle(ctx, r.db, cypher, params, r.scan("r", "m", "p"))
@@ -182,7 +186,7 @@ func (r *RoleRepository) AddMember(ctx context.Context, roleID, memberID model.I
 		"role_id":       roleID.String(),
 		"member_id":     memberID.String(),
 		"membership_id": model.NewRawID(),
-		"now":           time.Now().Format(time.RFC3339Nano),
+		"now":           time.Now().UTC().Format(time.RFC3339Nano),
 	}
 
 	if err := ExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {

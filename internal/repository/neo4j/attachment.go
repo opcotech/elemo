@@ -58,7 +58,7 @@ func (r *AttachmentRepository) Create(ctx context.Context, belongsTo model.ID, a
 		return errors.Join(repository.ErrAttachmentCreate, err)
 	}
 
-	createdAt := time.Now()
+	createdAt := time.Now().UTC()
 
 	attachment.ID = model.MustNewID(model.ResourceTypeAttachment)
 	attachment.CreatedAt = convert.ToPointer(createdAt)
@@ -151,7 +151,7 @@ func (r *AttachmentRepository) Update(ctx context.Context, id model.ID, name str
 	params := map[string]any{
 		"id":         id.String(),
 		"name":       name,
-		"updated_at": time.Now().Format(time.RFC3339Nano),
+		"updated_at": time.Now().UTC().Format(time.RFC3339Nano),
 	}
 
 	doc, err := ExecuteWriteAndReadSingle(ctx, r.db, cypher, params, r.scan("a", "o"))

@@ -120,6 +120,5 @@ func (s *AttachmentRepositoryIntegrationTestSuite) TestDelete() {
 }
 
 func TestAttachmentRepositoryIntegrationTestSuite(t *testing.T) {
-	t.Parallel()
 	suite.Run(t, new(AttachmentRepositoryIntegrationTestSuite))
 }

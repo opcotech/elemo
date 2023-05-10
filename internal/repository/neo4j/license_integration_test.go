@@ -94,6 +94,5 @@ func (s *LicenseRepositoryIntegrationTestSuite) TestRoleCount() {
 }
 
 func TestLicenseRepositoryIntegrationTestSuite(t *testing.T) {
-	t.Parallel()
 	suite.Run(t, new(LicenseRepositoryIntegrationTestSuite))
 }

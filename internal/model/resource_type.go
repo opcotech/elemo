@@ -8,7 +8,7 @@ const (
 	ResourceTypeDocument                              // document resource type
 	ResourceTypeIssue                                 // issue resource type
 	ResourceTypeIssueRelation                         // issue relation resource type
-	ResourceTypeLabel                                 // label resource type
+	ResourceTypeLabel                                 // Type resource type
 	ResourceTypeNamespace                             // namespace resource type
 	ResourceTypeOrganization                          // organization resource type
 	ResourceTypePermission                            // permission resource type

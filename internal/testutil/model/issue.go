@@ -25,7 +25,7 @@ func NewIssue(reportedBy model.ID) *model.Issue {
 		"https://example.com/" + testutil.GenerateRandomString(10),
 		"https://example.com/" + testutil.GenerateRandomString(10),
 	}
-	issue.DueDate = convert.ToPointer(time.Now().Add(24 * time.Hour))
+	issue.DueDate = convert.ToPointer(time.Now().UTC().Add(24 * time.Hour))
 
 	return issue
 }

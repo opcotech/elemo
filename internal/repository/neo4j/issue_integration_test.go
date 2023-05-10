@@ -91,6 +91,56 @@ func (s *IssueRepositoryIntegrationTestSuite) TestGet() {
 	s.Assert().Nil(issue.UpdatedAt)
 }
 
+func (s *IssueRepositoryIntegrationTestSuite) TestGetAllForProject() {
+	s.Require().NoError(s.IssueRepo.Create(context.Background(), s.testProject.ID, s.issue))
+	s.Require().NoError(s.IssueRepo.Create(context.Background(), s.testProject.ID, testModel.NewIssue(s.testUser.ID)))
+	s.Require().NoError(s.IssueRepo.Create(context.Background(), s.testProject.ID, testModel.NewIssue(s.testUser.ID)))
+
+	issues, err := s.IssueRepo.GetAllForProject(context.Background(), s.testProject.ID, 0, 10)
+	s.Require().NoError(err)
+	s.Assert().Len(issues, 3)
+
+	issues, err = s.IssueRepo.GetAllForProject(context.Background(), s.testProject.ID, 1, 2)
+	s.Require().NoError(err)
+	s.Assert().Len(issues, 2)
+
+	issues, err = s.IssueRepo.GetAllForProject(context.Background(), s.testProject.ID, 2, 2)
+	s.Require().NoError(err)
+	s.Assert().Len(issues, 1)
+
+	issues, err = s.IssueRepo.GetAllForProject(context.Background(), s.testProject.ID, 3, 2)
+	s.Require().NoError(err)
+	s.Assert().Len(issues, 0)
+}
+
+func (s *IssueRepositoryIntegrationTestSuite) TestGetAllForIssue() {
+	s.Require().NoError(s.IssueRepo.Create(context.Background(), s.testProject.ID, s.issue))
+
+	relatedIssue1 := testModel.NewIssue(s.testUser.ID)
+	relatedIssue1.Parent = &s.issue.ID
+	s.Require().NoError(s.IssueRepo.Create(context.Background(), s.testProject.ID, relatedIssue1))
+
+	relatedIssue2 := testModel.NewIssue(s.testUser.ID)
+	s.Require().NoError(s.IssueRepo.Create(context.Background(), s.testProject.ID, relatedIssue2))
+
+	relation, err := model.NewIssueRelation(s.issue.ID, relatedIssue2.ID, model.IssueRelationKindBlocks)
+	s.Require().NoError(err)
+
+	s.Require().NoError(s.IssueRepo.AddRelation(context.Background(), relation))
+
+	issues, err := s.IssueRepo.GetAllForIssue(context.Background(), s.issue.ID, 0, 10)
+	s.Require().NoError(err)
+	s.Assert().Len(issues, 2)
+
+	issues, err = s.IssueRepo.GetAllForIssue(context.Background(), s.issue.ID, 1, 2)
+	s.Require().NoError(err)
+	s.Assert().Len(issues, 1)
+
+	issues, err = s.IssueRepo.GetAllForIssue(context.Background(), s.issue.ID, 2, 2)
+	s.Require().NoError(err)
+	s.Assert().Len(issues, 0)
+}
+
 func (s *IssueRepositoryIntegrationTestSuite) TestAddWatcher() {
 	s.Require().NoError(s.IssueRepo.Create(context.Background(), s.testProject.ID, s.issue))
 
@@ -168,7 +218,7 @@ func (s *IssueRepositoryIntegrationTestSuite) TestRemoveRelation() {
 func (s *IssueRepositoryIntegrationTestSuite) TestUpdate() {
 	s.Require().NoError(s.IssueRepo.Create(context.Background(), s.testProject.ID, s.issue))
 
-	dueDate := time.Now().Add(1 * time.Hour)
+	dueDate := time.Now().UTC().Add(1 * time.Hour)
 	patch := map[string]any{
 		"title":       "New title",
 		"description": "New description",
@@ -212,6 +262,5 @@ func (s *IssueRepositoryIntegrationTestSuite) TestDelete() {
 }
 
 func TestIssueRepositoryIntegrationTestSuite(t *testing.T) {
-	t.Parallel()
 	suite.Run(t, new(IssueRepositoryIntegrationTestSuite))
 }

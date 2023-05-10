@@ -41,14 +41,16 @@ function generateConfigFile() {
   if [[ "${host}" == "docker" ]]; then
     host="0.0.0.0"
     local suffix=""
+    local redis_host="redis"
     local neo4j_host="neo4j"
     local postgres_host="postgres"
     local otel_collector_host="otel_collector"
   else
     local suffix=".local"
-    local neo4j_host="127.0.0.1"
-    local postgres_host="127.0.0.1"
-    local otel_collector_host="127.0.0.1"
+    local redis_host=host
+    local neo4j_host=host
+    local postgres_host=host
+    local otel_collector_host=host
   fi
 
 
@@ -88,6 +90,21 @@ server:
     cookie_name: "elemo_session"
     max_age: 86400
     secure: false
+
+cache_database:
+  host: ${redis_host}
+  port: 6379
+  username: ""
+  password: ""
+  database: "0"
+  dial_timeout: 3
+  read_timeout: 2
+  write_timeout: 2
+  pool_size: 100
+  max_idle_connections: 25
+  min_idle_connections:  5
+  connection_max_idle_time: 250
+  connection_max_lifetime: 300
 
 graph_database:
   host: ${neo4j_host}

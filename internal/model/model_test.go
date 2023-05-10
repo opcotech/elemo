@@ -40,8 +40,8 @@ func TestID_String(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			id := ID{
-				inner: tt.fields.inner,
-				label: tt.fields.label,
+				Inner: tt.fields.inner,
+				Type:  tt.fields.label,
 			}
 			assert.Equal(t, tt.want, id.String())
 		})
@@ -67,7 +67,7 @@ func TestID_Label(t *testing.T) {
 			want: "",
 		},
 		{
-			name: "with label",
+			name: "with Type",
 			fields: fields{
 				inner: xid.NilID(),
 				label: ResourceTypeAssignment,
@@ -80,8 +80,8 @@ func TestID_Label(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			id := ID{
-				inner: tt.fields.inner,
-				label: tt.fields.label,
+				Inner: tt.fields.inner,
+				Type:  tt.fields.label,
 			}
 			assert.Equal(t, tt.want, id.Label())
 		})
@@ -128,8 +128,8 @@ func TestNewID(t *testing.T) {
 			require.ErrorIs(t, err, tt.wantErr)
 
 			if tt.wantErr == nil {
-				assert.NotEqual(t, xid.NilID(), got.inner)
-				assert.Equal(t, tt.wantType, got.label)
+				assert.NotEqual(t, xid.NilID(), got.Inner)
+				assert.Equal(t, tt.wantType, got.Type)
 			}
 		})
 	}
@@ -177,8 +177,8 @@ func TestMustNewID(t *testing.T) {
 				})
 			} else {
 				got := MustNewID(tt.args.typ)
-				assert.Equal(t, tt.wantType, got.label)
-				assert.NotNil(t, got.inner)
+				assert.Equal(t, tt.wantType, got.Type)
+				assert.NotNil(t, got.Inner)
 			}
 		})
 	}
@@ -214,8 +214,8 @@ func TestNewNilID(t *testing.T) {
 				typ: ResourceTypeAssignment,
 			},
 			want: ID{
-				inner: xid.NilID(),
-				label: ResourceTypeAssignment,
+				Inner: xid.NilID(),
+				Type:  ResourceTypeAssignment,
 			},
 		},
 	}
@@ -263,8 +263,8 @@ func TestMustNewNilID(t *testing.T) {
 				typ: ResourceTypeAssignment,
 			},
 			want: ID{
-				inner: xid.NilID(),
-				label: ResourceTypeAssignment,
+				Inner: xid.NilID(),
+				Type:  ResourceTypeAssignment,
 			},
 		},
 	}
@@ -326,8 +326,8 @@ func TestNewIDFromString(t *testing.T) {
 				typ: ResourceTypeAssignment,
 			},
 			want: ID{
-				inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc},
-				label: ResourceTypeAssignment,
+				Inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc},
+				Type:  ResourceTypeAssignment,
 			},
 		},
 	}
@@ -377,8 +377,8 @@ func TestID_IsNil(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			id := ID{
-				inner: tt.fields.inner,
-				label: tt.fields.typ,
+				Inner: tt.fields.inner,
+				Type:  tt.fields.typ,
 			}
 			assert.Equal(t, tt.want, id.IsNil())
 		})

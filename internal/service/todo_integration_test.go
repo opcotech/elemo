@@ -164,6 +164,5 @@ func (s *TodoServiceIntegrationTestSuite) TestDelete() {
 }
 
 func TestTodoServiceIntegrationTestSuite(t *testing.T) {
-	t.Parallel()
 	suite.Run(t, new(TodoServiceIntegrationTestSuite))
 }

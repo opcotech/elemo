@@ -19,24 +19,24 @@ func TestNewLabel(t *testing.T) {
 		wantErr error
 	}{
 		{
-			name: "create label with valid details",
+			name: "create Type with valid details",
 			args: args{
 				name: "test",
 			},
 			want: &Label{
-				ID:   ID{inner: xid.NilID(), label: ResourceTypeLabel},
+				ID:   ID{Inner: xid.NilID(), Type: ResourceTypeLabel},
 				Name: "test",
 			},
 		},
 		{
-			name: "create label with invalid name",
+			name: "create Type with invalid name",
 			args: args{
 				name: "t",
 			},
 			wantErr: ErrInvalidLabelDetails,
 		},
 		{
-			name: "create label with empty name",
+			name: "create Type with empty name",
 			args: args{
 				name: "",
 			},
@@ -69,14 +69,14 @@ func TestLabel_Validate(t *testing.T) {
 		wantErr error
 	}{
 		{
-			name: "validate label with valid details",
+			name: "validate Type with valid details",
 			fields: fields{
-				ID:   ID{inner: xid.NilID(), label: ResourceTypeLabel},
+				ID:   ID{Inner: xid.NilID(), Type: ResourceTypeLabel},
 				Name: "test",
 			},
 		},
 		{
-			name: "validate label with invalid ID",
+			name: "validate Type with invalid ID",
 			fields: fields{
 				ID:   ID{},
 				Name: "test",
@@ -84,17 +84,17 @@ func TestLabel_Validate(t *testing.T) {
 			wantErr: ErrInvalidLabelDetails,
 		},
 		{
-			name: "validate label with invalid name",
+			name: "validate Type with invalid name",
 			fields: fields{
-				ID:   ID{inner: xid.NilID(), label: ResourceTypeLabel},
+				ID:   ID{Inner: xid.NilID(), Type: ResourceTypeLabel},
 				Name: "t",
 			},
 			wantErr: ErrInvalidLabelDetails,
 		},
 		{
-			name: "validate label with invalid description",
+			name: "validate Type with invalid description",
 			fields: fields{
-				ID:          ID{inner: xid.NilID(), label: ResourceTypeLabel},
+				ID:          ID{Inner: xid.NilID(), Type: ResourceTypeLabel},
 				Name:        "test",
 				Description: "t",
 			},

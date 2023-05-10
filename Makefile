@@ -33,7 +33,7 @@ build: generate dep build.backend  ## Build the project
 
 .PHONY: build.backend
 build.backend: ## Build service
-	docker-compose -f deploy/docker/docker-compose.yml build
+	docker-compose -f deploy/docker/docker-compose.yml build --no-cache
 
 .PHONY: build.monitoring
 build.monitoring: ## Build service
@@ -108,7 +108,7 @@ test.unit: ## Run unit tests
 .PHONY: test.integration
 test.integration: ## Run integration tests
 	@rm -f $(COVERAGE_OUT_INTEGRATION)
-	@$(GO_TEST_COVER) -run=Integration -coverprofile=$(COVERAGE_OUT_INTEGRATION) ./...
+	@$(GO_TEST_COVER) -timeout 3600s -run=Integration -coverprofile=$(COVERAGE_OUT_INTEGRATION) ./...
 
 .PHONY: coverage.combine
 coverage.combine:

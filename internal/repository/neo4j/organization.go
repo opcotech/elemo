@@ -63,7 +63,7 @@ func (r *OrganizationRepository) Create(ctx context.Context, owner model.ID, org
 		return errors.Join(repository.ErrOrganizationCreate, err)
 	}
 
-	createdAt := time.Now()
+	createdAt := time.Now().UTC()
 
 	organization.ID = model.MustNewID(model.ResourceTypeOrganization)
 	organization.CreatedAt = &createdAt
@@ -77,7 +77,7 @@ func (r *OrganizationRepository) Create(ctx context.Context, owner model.ID, org
 	(u)-[:` + EdgeKindMemberOf.String() + ` {id: $membership_id, created_at: datetime($created_at)}]->(o),
 	(u)-[:` + EdgeKindHasPermission.String() + `{id: $permission_id, created_at: datetime($created_at), kind: $permission_kind}]->(o)`
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"id":              organization.ID.String(),
 		"name":            organization.Name,
 		"email":           organization.Email,
@@ -163,7 +163,7 @@ func (r *OrganizationRepository) Update(ctx context.Context, id model.ID, patch 
 	params := map[string]any{
 		"id":         id.String(),
 		"patch":      patch,
-		"updated_at": time.Now().Format(time.RFC3339Nano),
+		"updated_at": time.Now().UTC().Format(time.RFC3339Nano),
 	}
 
 	org, err := ExecuteWriteAndReadSingle(ctx, r.db, cypher, params, r.scan("o", "n", "t", "m"))
@@ -196,7 +196,7 @@ func (r *OrganizationRepository) AddMember(ctx context.Context, orgID, memberID 
 		"org_id":        orgID.String(),
 		"member_id":     memberID.String(),
 		"membership_id": model.NewRawID(),
-		"now":           time.Now().Format(time.RFC3339Nano),
+		"now":           time.Now().UTC().Format(time.RFC3339Nano),
 	}
 
 	if err := ExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {

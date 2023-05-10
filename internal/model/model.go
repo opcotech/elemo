@@ -6,15 +6,15 @@ import (
 	"github.com/rs/xid"
 )
 
-// ID represents a unique identifier for a resource, combining a resource label
+// ID represents a unique identifier for a resource, combining a resource Type
 // and a unique identifier.
 type ID struct {
-	inner xid.ID
-	label ResourceType
+	Inner xid.ID
+	Type  ResourceType
 }
 
 func (id ID) Validate() error {
-	if id.label < 1 || id.label > 15 {
+	if id.Type < 1 || id.Type > 15 {
 		return ErrInvalidID
 	}
 	return nil
@@ -24,22 +24,22 @@ func (id ID) Validate() error {
 // the string representation. This is to allow for the ID to be used as a
 // label or flag in a database or log aggregation system.
 func (id ID) String() string {
-	return id.inner.String()
+	return id.Inner.String()
 }
 
-// Label returns the label of the ID.
+// Label returns the Type of the ID.
 func (id ID) Label() string {
-	return id.label.String()
+	return id.Type.String()
 }
 
 // IsNil returns true if the ID is nil.
 func (id ID) IsNil() bool {
-	return id.inner == xid.NilID()
+	return id.Inner == xid.NilID()
 }
 
 // NewID creates a new ID.
 func NewID(typ ResourceType) (ID, error) {
-	id := ID{inner: xid.New(), label: typ}
+	id := ID{Inner: xid.New(), Type: typ}
 
 	if err := id.Validate(); err != nil {
 		return ID{}, err
@@ -60,7 +60,7 @@ func MustNewID(typ ResourceType) ID {
 
 // NewNilID creates a new ID with a nil xid.ID.
 func NewNilID(typ ResourceType) (ID, error) {
-	id := ID{inner: xid.NilID(), label: typ}
+	id := ID{Inner: xid.NilID(), Type: typ}
 
 	if err := id.Validate(); err != nil {
 		return ID{}, err
@@ -99,7 +99,7 @@ func NewIDFromString(id, typ string) (ID, error) {
 		return ID{}, errors.Join(ErrInvalidID, err)
 	}
 
-	newID.inner = parsed
+	newID.Inner = parsed
 	return newID, nil
 }
 

@@ -8,11 +8,13 @@ import (
 
 	"github.com/opcotech/elemo/internal/repository/neo4j"
 	"github.com/opcotech/elemo/internal/repository/pg"
+	"github.com/opcotech/elemo/internal/repository/redis"
 	testContainer "github.com/opcotech/elemo/internal/testutil/container"
 	testRepo "github.com/opcotech/elemo/internal/testutil/repository"
 )
 
-// ContainerIntegrationTestSuite is a test suite which uses a container to run tests.
+// ContainerIntegrationTestSuite is a test suite which uses a container to run
+// tests.
 type ContainerIntegrationTestSuite struct {
 	suite.Suite
 
@@ -36,8 +38,8 @@ func (s *ContainerIntegrationTestSuite) CleanupContainers() {
 	}
 }
 
-// Neo4jContainerIntegrationTestSuite is a test suite which sets up a Neo4j container to
-// run tests.
+// Neo4jContainerIntegrationTestSuite is a test suite which sets up a Neo4j
+// container to run tests.
 type Neo4jContainerIntegrationTestSuite struct {
 	Neo4jDB *neo4j.Database
 
@@ -118,8 +120,8 @@ func (s *Neo4jContainerIntegrationTestSuite) CleanupNeo4j(ts *ContainerIntegrati
 	testRepo.CleanupNeo4jStore(context.Background(), ts.T(), s.Neo4jDB)
 }
 
-// PgContainerIntegrationTestSuite is a test suite which sets up a Postgres container to
-// run tests.
+// PgContainerIntegrationTestSuite is a test suite which sets up a Postgres
+// container to run tests.
 type PgContainerIntegrationTestSuite struct {
 	PostgresDB *pg.Database
 }
@@ -129,4 +131,29 @@ func (s *PgContainerIntegrationTestSuite) SetupPg(ts *ContainerIntegrationTestSu
 	ts.AddContainer(pgC)
 
 	s.PostgresDB, _ = testRepo.NewPgDatabase(ts.T(), pgDBConf)
+}
+
+// RedisContainerIntegrationTestSuite is a test suite which sets up a Redis
+// container to run tests.
+type RedisContainerIntegrationTestSuite struct {
+	RedisDB *redis.Database
+
+	CachedTodoRepo *redis.CachedTodoRepository
+}
+
+func (s *RedisContainerIntegrationTestSuite) SetupRedis(ts *ContainerIntegrationTestSuite, name string) {
+	redisC, redisConf := testContainer.NewRedisContainer(context.Background(), ts.T(), name)
+	ts.AddContainer(redisC)
+
+	s.RedisDB, _ = testRepo.NewRedisDatabase(ts.T(), redisConf)
+}
+
+func (s *RedisContainerIntegrationTestSuite) CleanupRedis(ts *ContainerIntegrationTestSuite) {
+	testRepo.CleanupRedisStore(context.Background(), ts.T(), s.RedisDB)
+}
+
+func (s *RedisContainerIntegrationTestSuite) GetKeys(ts *ContainerIntegrationTestSuite, pattern string) []string {
+	keys, err := s.RedisDB.GetClient().Keys(context.Background(), pattern).Result()
+	ts.Require().NoError(err)
+	return keys
 }

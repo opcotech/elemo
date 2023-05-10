@@ -82,6 +82,5 @@ func (s *LicenseServiceIntegrationTestSuite) TestPing() {
 }
 
 func TestLicenseServiceIntegrationTestSuite(t *testing.T) {
-	t.Parallel()
 	suite.Run(t, new(LicenseServiceIntegrationTestSuite))
 }

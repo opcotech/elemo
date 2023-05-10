@@ -6,6 +6,44 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestCacheDatabaseConfig_ConnectionURL(t *testing.T) {
+	tests := []struct {
+		name string
+		c    *CacheDatabaseConfig
+		want string
+	}{
+		{
+			name: "secure connection",
+			c: &CacheDatabaseConfig{
+				Host:     "localhost",
+				Port:     6379,
+				Username: "user",
+				Password: "secret",
+				IsSecure: true,
+			},
+			want: "redis://user:secret@localhost:6379/?sslmode=require",
+		},
+		{
+			name: "unsecure connection",
+			c: &CacheDatabaseConfig{
+				Host:     "localhost",
+				Port:     6379,
+				Username: "user",
+				Password: "secret",
+				IsSecure: false,
+			},
+			want: "redis://user:secret@localhost:6379/?sslmode=disable",
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			assert.Equal(t, tt.want, tt.c.ConnectionURL())
+		})
+	}
+}
+
 func TestGraphDatabaseConfig_ConnectionURL(t *testing.T) {
 	tests := []struct {
 		name string

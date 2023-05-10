@@ -17,7 +17,7 @@ var (
 	ErrInvalidIssueRelationKind    = errors.New("invalid issue relation kind")    // the issue relation kind is invalid
 	ErrInvalidIssueResolution      = errors.New("invalid issue resolution")       // the issue resolution is invalid
 	ErrInvalidIssueStatus          = errors.New("invalid issue status")           // the issue status is invalid
-	ErrInvalidLabelDetails         = errors.New("invalid label details")          // the label details are invalid
+	ErrInvalidLabelDetails         = errors.New("invalid Type details")           // the Type details are invalid
 	ErrInvalidLanguage             = errors.New("invalid language code")          // Language is not valid
 	ErrInvalidNamespaceDetails     = errors.New("invalid namespace details")      // the namespace details are invalid
 	ErrInvalidOrganizationDetails  = errors.New("invalid organization details")   // the organization details are invalid

@@ -75,6 +75,5 @@ func (s *SystemServiceIntegrationTestSuite) TestGetVersion() {
 }
 
 func TestSystemServiceIntegrationTestSuite(t *testing.T) {
-	t.Parallel()
 	suite.Run(t, new(SystemServiceIntegrationTestSuite))
 }

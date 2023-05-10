@@ -18,6 +18,7 @@ import (
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/repository/neo4j"
 	"github.com/opcotech/elemo/internal/repository/pg"
+	"github.com/opcotech/elemo/internal/repository/redis"
 
 	"github.com/opcotech/elemo/internal/config"
 	"github.com/opcotech/elemo/internal/pkg/log"
@@ -167,6 +168,28 @@ func initLogger() {
 	logger.Info("config file loaded", log.WithPath(viper.ConfigFileUsed()))
 }
 
+func initCacheDatabase() (*redis.Database, error) {
+	client, err := redis.NewClient(&cfg.CacheDatabase)
+	if err != nil {
+		return nil, err
+	}
+
+	db, err := redis.NewDatabase(
+		redis.WithClient(client),
+		redis.WithDatabaseLogger(logger.Named("redis")),
+		redis.WithDatabaseTracer(tracer),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := db.Ping(context.Background()); err != nil {
+		return nil, err
+	}
+
+	return db, nil
+}
+
 func initGraphDatabase() (*neo4j.Database, error) {
 	driver, err := neo4j.NewDriver(&cfg.GraphDatabase)
 	if err != nil {
@@ -183,8 +206,7 @@ func initGraphDatabase() (*neo4j.Database, error) {
 		return nil, err
 	}
 
-	err = db.Ping(context.Background())
-	if err != nil {
+	if err := db.Ping(context.Background()); err != nil {
 		return nil, err
 	}
 
@@ -206,8 +228,7 @@ func initRelationalDatabase() (*pg.Database, pg.Pool, error) {
 		return nil, nil, err
 	}
 
-	err = db.Ping(context.Background())
-	if err != nil {
+	if err := db.Ping(context.Background()); err != nil {
 		return nil, nil, err
 	}
 

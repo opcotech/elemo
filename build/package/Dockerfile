@@ -36,6 +36,8 @@ RUN go build -ldflags "-s -w" -o /usr/bin/elemo cmd/elemo/main.go
 
 FROM gcr.io/distroless/static-debian11:nonroot AS production
 
+ENV TZ UTC
+
 COPY --chown=nonroot:nonroot assets /elemo/assets
 COPY --chown=nonroot:nonroot configs /elemo/configs
 COPY --from=build /usr/bin/elemo /elemo/bin/elemo

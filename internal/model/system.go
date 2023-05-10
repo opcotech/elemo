@@ -1,6 +1,7 @@
 package model
 
 const (
+	HealthCheckComponentCacheDB      HealthCheckComponent = "cache_database"      // cache database
 	HealthCheckComponentGraphDB      HealthCheckComponent = "graph_database"      // graph database
 	HealthCheckComponentRelationalDB HealthCheckComponent = "relational_database" // relational database
 	HealthCheckComponentLicense      HealthCheckComponent = "license"             // license

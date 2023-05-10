@@ -107,7 +107,7 @@ func (c *userController) GetUsers(ctx context.Context, request gen.GetUsersReque
 		}, nil
 	}
 
-	usersDTO := make([]gen.User, 0, len(users))
+	usersDTO := make([]gen.User, len(users))
 	for i, user := range users {
 		usersDTO[i] = userToDTO(user)
 	}

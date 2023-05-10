@@ -70,7 +70,7 @@ func (r *DocumentRepository) Create(ctx context.Context, belongsTo model.ID, doc
 		return errors.Join(repository.ErrDocumentCreate, err)
 	}
 
-	createdAt := time.Now()
+	createdAt := time.Now().UTC()
 
 	document.ID = model.MustNewID(model.ResourceTypeDocument)
 	document.CreatedAt = convert.ToPointer(createdAt)
@@ -201,7 +201,7 @@ func (r *DocumentRepository) Update(ctx context.Context, id model.ID, patch map[
 	params := map[string]any{
 		"id":         id.String(),
 		"patch":      patch,
-		"updated_at": time.Now().Format(time.RFC3339Nano),
+		"updated_at": time.Now().UTC().Format(time.RFC3339Nano),
 	}
 
 	doc, err := ExecuteWriteAndReadSingle(ctx, r.db, cypher, params, r.scan("d", "c", "l", "comm", "att"))

@@ -45,6 +45,19 @@ var (
 			Reuse:   true,
 		}
 	}
+
+	redisContainerRequest = func(name string) testcontainers.GenericContainerRequest {
+		return testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
+				Image:        "redis:7.0",
+				Name:         name + "-redis",
+				ExposedPorts: []string{"6379/tcp"},
+				WaitingFor:   wait.ForLog("* Ready to accept connections"),
+			},
+			Started: true,
+			Reuse:   true,
+		}
+	}
 )
 
 // NewNeo4jContainer creates a new test container for the Neo4j image.
@@ -100,6 +113,34 @@ func NewPgContainer(ctx context.Context, t *testing.T, name string) (testcontain
 		Password:       "pgsecret",
 		Database:       "elemo",
 		MaxConnections: 100,
+	}
+
+	return container, conf
+}
+
+// NewRedisContainer creates a new test container for the Redis image.
+func NewRedisContainer(ctx context.Context, t *testing.T, name string) (testcontainers.Container, *config.CacheDatabaseConfig) {
+	container, err := testcontainers.GenericContainer(ctx, redisContainerRequest(name))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	host, err := container.Host(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	port, err := container.MappedPort(ctx, "6379/tcp")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	conf := &config.CacheDatabaseConfig{
+		Host:     host,
+		Port:     port.Int(),
+		Username: "",
+		Password: "",
+		Database: "0",
 	}
 
 	return container, conf

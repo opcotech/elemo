@@ -122,6 +122,5 @@ func (s *NamespaceRepositoryIntegrationTestSuite) TestDelete() {
 }
 
 func TestNamespaceRepositoryIntegrationTestSuite(t *testing.T) {
-	t.Parallel()
 	suite.Run(t, new(NamespaceRepositoryIntegrationTestSuite))
 }

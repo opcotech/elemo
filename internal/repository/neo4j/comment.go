@@ -58,7 +58,7 @@ func (r *CommentRepository) Create(ctx context.Context, belongsTo model.ID, comm
 		return errors.Join(repository.ErrCommentCreate, err)
 	}
 
-	createdAt := time.Now()
+	createdAt := time.Now().UTC()
 
 	comment.ID = model.MustNewID(model.ResourceTypeComment)
 	comment.CreatedAt = convert.ToPointer(createdAt)
@@ -151,7 +151,7 @@ func (r *CommentRepository) Update(ctx context.Context, id model.ID, content str
 	params := map[string]any{
 		"id":         id.String(),
 		"content":    content,
-		"updated_at": time.Now().Format(time.RFC3339Nano),
+		"updated_at": time.Now().UTC().Format(time.RFC3339Nano),
 	}
 
 	doc, err := ExecuteWriteAndReadSingle(ctx, r.db, cypher, params, r.scan("c", "o"))

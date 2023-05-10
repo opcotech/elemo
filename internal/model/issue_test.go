@@ -417,18 +417,18 @@ func TestIssueRelation_Validate(t *testing.T) {
 		{
 			name: "valid issue relation",
 			r: IssueRelation{
-				ID:     ID{inner: xid.NilID(), label: ResourceTypeIssueRelation},
-				Source: ID{inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, label: ResourceTypeIssue},
-				Target: ID{inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xc, 0xb, 0xa}, label: ResourceTypeIssue},
+				ID:     ID{Inner: xid.NilID(), Type: ResourceTypeIssueRelation},
+				Source: ID{Inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, Type: ResourceTypeIssue},
+				Target: ID{Inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xc, 0xb, 0xa}, Type: ResourceTypeIssue},
 				Kind:   IssueRelationKindRelatedTo,
 			},
 		},
 		{
 			name: "invalid issue relation kind",
 			r: IssueRelation{
-				ID:     ID{inner: xid.NilID(), label: ResourceTypeIssueRelation},
-				Source: ID{inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, label: ResourceTypeIssue},
-				Target: ID{inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xc, 0xb, 0xa}, label: ResourceTypeIssue},
+				ID:     ID{Inner: xid.NilID(), Type: ResourceTypeIssueRelation},
+				Source: ID{Inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, Type: ResourceTypeIssue},
+				Target: ID{Inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xc, 0xb, 0xa}, Type: ResourceTypeIssue},
 				Kind:   IssueRelationKind(100),
 			},
 			wantErr: ErrInvalidIssueRelationDetails,
@@ -436,9 +436,9 @@ func TestIssueRelation_Validate(t *testing.T) {
 		{
 			name: "invalid issue relation id",
 			r: IssueRelation{
-				ID:     ID{inner: xid.NilID(), label: ResourceType(0)},
-				Source: ID{inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, label: ResourceTypeIssue},
-				Target: ID{inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xc, 0xb, 0xa}, label: ResourceTypeIssue},
+				ID:     ID{Inner: xid.NilID(), Type: ResourceType(0)},
+				Source: ID{Inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, Type: ResourceTypeIssue},
+				Target: ID{Inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xc, 0xb, 0xa}, Type: ResourceTypeIssue},
 				Kind:   IssueRelationKindRelatedTo,
 			},
 			wantErr: ErrInvalidIssueRelationDetails,
@@ -446,9 +446,9 @@ func TestIssueRelation_Validate(t *testing.T) {
 		{
 			name: "invalid issue relation source",
 			r: IssueRelation{
-				ID:     ID{inner: xid.NilID(), label: ResourceTypeIssueRelation},
-				Source: ID{inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, label: ResourceType(0)},
-				Target: ID{inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xc, 0xb, 0xa}, label: ResourceTypeIssue},
+				ID:     ID{Inner: xid.NilID(), Type: ResourceTypeIssueRelation},
+				Source: ID{Inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, Type: ResourceType(0)},
+				Target: ID{Inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xc, 0xb, 0xa}, Type: ResourceTypeIssue},
 				Kind:   IssueRelationKindRelatedTo,
 			},
 			wantErr: ErrInvalidIssueRelationDetails,
@@ -456,9 +456,9 @@ func TestIssueRelation_Validate(t *testing.T) {
 		{
 			name: "invalid issue relation target",
 			r: IssueRelation{
-				ID:     ID{inner: xid.NilID(), label: ResourceTypeIssueRelation},
-				Source: ID{inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, label: ResourceTypeIssue},
-				Target: ID{inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xc, 0xb, 0xa}, label: ResourceType(0)},
+				ID:     ID{Inner: xid.NilID(), Type: ResourceTypeIssueRelation},
+				Source: ID{Inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, Type: ResourceTypeIssue},
+				Target: ID{Inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xc, 0xb, 0xa}, Type: ResourceType(0)},
 				Kind:   IssueRelationKindRelatedTo,
 			},
 			wantErr: ErrInvalidIssueRelationDetails,
@@ -489,22 +489,22 @@ func TestNewIssueRelation(t *testing.T) {
 		{
 			name: "create new issue relation",
 			args: args{
-				source: ID{inner: xid.NilID(), label: ResourceTypeIssue},
-				target: ID{inner: xid.NilID(), label: ResourceTypeIssue},
+				source: ID{Inner: xid.NilID(), Type: ResourceTypeIssue},
+				target: ID{Inner: xid.NilID(), Type: ResourceTypeIssue},
 				kind:   IssueRelationKindRelatedTo,
 			},
 			want: &IssueRelation{
-				ID:     ID{inner: xid.NilID(), label: ResourceTypeIssueRelation},
-				Source: ID{inner: xid.NilID(), label: ResourceTypeIssue},
-				Target: ID{inner: xid.NilID(), label: ResourceTypeIssue},
+				ID:     ID{Inner: xid.NilID(), Type: ResourceTypeIssueRelation},
+				Source: ID{Inner: xid.NilID(), Type: ResourceTypeIssue},
+				Target: ID{Inner: xid.NilID(), Type: ResourceTypeIssue},
 				Kind:   IssueRelationKindRelatedTo,
 			},
 		},
 		{
 			name: "invalid issue relation kind",
 			args: args{
-				source: ID{inner: xid.NilID(), label: ResourceTypeIssue},
-				target: ID{inner: xid.NilID(), label: ResourceTypeIssue},
+				source: ID{Inner: xid.NilID(), Type: ResourceTypeIssue},
+				target: ID{Inner: xid.NilID(), Type: ResourceTypeIssue},
 				kind:   IssueRelationKind(100),
 			},
 			wantErr: ErrInvalidIssueRelationDetails,
@@ -512,8 +512,8 @@ func TestNewIssueRelation(t *testing.T) {
 		{
 			name: "invalid issue relation source",
 			args: args{
-				source: ID{inner: xid.NilID(), label: ResourceType(0)},
-				target: ID{inner: xid.NilID(), label: ResourceTypeIssue},
+				source: ID{Inner: xid.NilID(), Type: ResourceType(0)},
+				target: ID{Inner: xid.NilID(), Type: ResourceTypeIssue},
 				kind:   IssueRelationKindRelatedTo,
 			},
 			wantErr: ErrInvalidIssueRelationDetails,
@@ -521,8 +521,8 @@ func TestNewIssueRelation(t *testing.T) {
 		{
 			name: "invalid issue relation target",
 			args: args{
-				source: ID{inner: xid.NilID(), label: ResourceTypeIssue},
-				target: ID{inner: xid.NilID(), label: ResourceType(0)},
+				source: ID{Inner: xid.NilID(), Type: ResourceTypeIssue},
+				target: ID{Inner: xid.NilID(), Type: ResourceType(0)},
 				kind:   IssueRelationKindRelatedTo,
 			},
 			wantErr: ErrInvalidIssueRelationDetails,
@@ -561,17 +561,17 @@ func TestNewIssue(t *testing.T) {
 				numericID:  1,
 				title:      "title",
 				kind:       IssueKindEpic,
-				reportedBy: ID{inner: xid.NilID(), label: ResourceTypeUser},
+				reportedBy: ID{Inner: xid.NilID(), Type: ResourceTypeUser},
 			},
 			want: &Issue{
-				ID:          ID{inner: xid.NilID(), label: ResourceTypeIssue},
+				ID:          ID{Inner: xid.NilID(), Type: ResourceTypeIssue},
 				NumericID:   1,
 				Kind:        IssueKindEpic,
 				Title:       "title",
 				Status:      IssueStatusOpen,
 				Priority:    IssuePriorityMedium,
 				Resolution:  IssueResolutionNone,
-				ReportedBy:  ID{inner: xid.NilID(), label: ResourceTypeUser},
+				ReportedBy:  ID{Inner: xid.NilID(), Type: ResourceTypeUser},
 				Assignees:   make([]ID, 0),
 				Labels:      make([]ID, 0),
 				Comments:    make([]ID, 0),
@@ -587,7 +587,7 @@ func TestNewIssue(t *testing.T) {
 				numericID:  0,
 				title:      "title",
 				kind:       IssueKindEpic,
-				reportedBy: ID{inner: xid.NilID(), label: ResourceTypeUser},
+				reportedBy: ID{Inner: xid.NilID(), Type: ResourceTypeUser},
 			},
 			wantErr: ErrInvalidIssueDetails,
 		},
@@ -597,7 +597,7 @@ func TestNewIssue(t *testing.T) {
 				numericID:  1,
 				title:      "",
 				kind:       IssueKindEpic,
-				reportedBy: ID{inner: xid.NilID(), label: ResourceTypeUser},
+				reportedBy: ID{Inner: xid.NilID(), Type: ResourceTypeUser},
 			},
 			wantErr: ErrInvalidIssueDetails,
 		},
@@ -607,7 +607,7 @@ func TestNewIssue(t *testing.T) {
 				numericID:  1,
 				title:      "title",
 				kind:       IssueKind(100),
-				reportedBy: ID{inner: xid.NilID(), label: ResourceTypeUser},
+				reportedBy: ID{Inner: xid.NilID(), Type: ResourceTypeUser},
 			},
 			wantErr: ErrInvalidIssueDetails,
 		},
@@ -617,7 +617,7 @@ func TestNewIssue(t *testing.T) {
 				numericID:  1,
 				title:      "title",
 				kind:       IssueKindEpic,
-				reportedBy: ID{inner: xid.NilID(), label: ResourceType(0)},
+				reportedBy: ID{Inner: xid.NilID(), Type: ResourceType(0)},
 			},
 			wantErr: ErrInvalidIssueDetails,
 		},
@@ -667,7 +667,7 @@ func TestIssue_Validate(t *testing.T) {
 		{
 			name: "valid issue",
 			fields: fields{
-				ID:          ID{inner: xid.NilID(), label: ResourceTypeIssue},
+				ID:          ID{Inner: xid.NilID(), Type: ResourceTypeIssue},
 				NumericID:   1,
 				Kind:        IssueKindEpic,
 				Title:       "title",
@@ -675,7 +675,7 @@ func TestIssue_Validate(t *testing.T) {
 				Status:      IssueStatusOpen,
 				Priority:    IssuePriorityMedium,
 				Resolution:  IssueResolutionNone,
-				ReportedBy:  ID{inner: xid.NilID(), label: ResourceTypeUser},
+				ReportedBy:  ID{Inner: xid.NilID(), Type: ResourceTypeUser},
 				Assignees:   make([]ID, 0),
 				Labels:      make([]ID, 0),
 				Comments:    make([]ID, 0),
@@ -688,7 +688,7 @@ func TestIssue_Validate(t *testing.T) {
 		{
 			name: "invalid issue id",
 			fields: fields{
-				ID:          ID{inner: xid.NilID(), label: ResourceType(0)},
+				ID:          ID{Inner: xid.NilID(), Type: ResourceType(0)},
 				NumericID:   1,
 				Kind:        IssueKindEpic,
 				Title:       "title",
@@ -696,7 +696,7 @@ func TestIssue_Validate(t *testing.T) {
 				Status:      IssueStatusOpen,
 				Priority:    IssuePriorityMedium,
 				Resolution:  IssueResolutionNone,
-				ReportedBy:  ID{inner: xid.NilID(), label: ResourceTypeUser},
+				ReportedBy:  ID{Inner: xid.NilID(), Type: ResourceTypeUser},
 				Assignees:   make([]ID, 0),
 				Labels:      make([]ID, 0),
 				Comments:    make([]ID, 0),
@@ -710,7 +710,7 @@ func TestIssue_Validate(t *testing.T) {
 		{
 			name: "invalid issue numeric id",
 			fields: fields{
-				ID:          ID{inner: xid.NilID(), label: ResourceTypeIssue},
+				ID:          ID{Inner: xid.NilID(), Type: ResourceTypeIssue},
 				NumericID:   0,
 				Kind:        IssueKindEpic,
 				Title:       "title",
@@ -718,7 +718,7 @@ func TestIssue_Validate(t *testing.T) {
 				Status:      IssueStatusOpen,
 				Priority:    IssuePriorityMedium,
 				Resolution:  IssueResolutionNone,
-				ReportedBy:  ID{inner: xid.NilID(), label: ResourceTypeUser},
+				ReportedBy:  ID{Inner: xid.NilID(), Type: ResourceTypeUser},
 				Assignees:   make([]ID, 0),
 				Labels:      make([]ID, 0),
 				Comments:    make([]ID, 0),
@@ -732,7 +732,7 @@ func TestIssue_Validate(t *testing.T) {
 		{
 			name: "invalid issue kind",
 			fields: fields{
-				ID:          ID{inner: xid.NilID(), label: ResourceTypeIssue},
+				ID:          ID{Inner: xid.NilID(), Type: ResourceTypeIssue},
 				NumericID:   1,
 				Kind:        IssueKind(100),
 				Title:       "title",
@@ -740,7 +740,7 @@ func TestIssue_Validate(t *testing.T) {
 				Status:      IssueStatusOpen,
 				Priority:    IssuePriorityMedium,
 				Resolution:  IssueResolutionNone,
-				ReportedBy:  ID{inner: xid.NilID(), label: ResourceTypeUser},
+				ReportedBy:  ID{Inner: xid.NilID(), Type: ResourceTypeUser},
 				Assignees:   make([]ID, 0),
 				Labels:      make([]ID, 0),
 				Comments:    make([]ID, 0),
@@ -754,7 +754,7 @@ func TestIssue_Validate(t *testing.T) {
 		{
 			name: "invalid issue title",
 			fields: fields{
-				ID:          ID{inner: xid.NilID(), label: ResourceTypeIssue},
+				ID:          ID{Inner: xid.NilID(), Type: ResourceTypeIssue},
 				NumericID:   1,
 				Kind:        IssueKindEpic,
 				Title:       "",
@@ -762,7 +762,7 @@ func TestIssue_Validate(t *testing.T) {
 				Status:      IssueStatusOpen,
 				Priority:    IssuePriorityMedium,
 				Resolution:  IssueResolutionNone,
-				ReportedBy:  ID{inner: xid.NilID(), label: ResourceTypeUser},
+				ReportedBy:  ID{Inner: xid.NilID(), Type: ResourceTypeUser},
 				Assignees:   make([]ID, 0),
 				Labels:      make([]ID, 0),
 				Comments:    make([]ID, 0),
@@ -776,7 +776,7 @@ func TestIssue_Validate(t *testing.T) {
 		{
 			name: "invalid issue description",
 			fields: fields{
-				ID:          ID{inner: xid.NilID(), label: ResourceTypeIssue},
+				ID:          ID{Inner: xid.NilID(), Type: ResourceTypeIssue},
 				NumericID:   1,
 				Kind:        IssueKindEpic,
 				Title:       "title",
@@ -784,7 +784,7 @@ func TestIssue_Validate(t *testing.T) {
 				Status:      IssueStatusOpen,
 				Priority:    IssuePriorityMedium,
 				Resolution:  IssueResolutionNone,
-				ReportedBy:  ID{inner: xid.NilID(), label: ResourceTypeUser},
+				ReportedBy:  ID{Inner: xid.NilID(), Type: ResourceTypeUser},
 				Assignees:   make([]ID, 0),
 				Labels:      make([]ID, 0),
 				Comments:    make([]ID, 0),
@@ -798,7 +798,7 @@ func TestIssue_Validate(t *testing.T) {
 		{
 			name: "invalid issue status",
 			fields: fields{
-				ID:          ID{inner: xid.NilID(), label: ResourceTypeIssue},
+				ID:          ID{Inner: xid.NilID(), Type: ResourceTypeIssue},
 				NumericID:   1,
 				Kind:        IssueKindEpic,
 				Title:       "title",
@@ -806,7 +806,7 @@ func TestIssue_Validate(t *testing.T) {
 				Status:      IssueStatus(100),
 				Priority:    IssuePriorityMedium,
 				Resolution:  IssueResolutionNone,
-				ReportedBy:  ID{inner: xid.NilID(), label: ResourceTypeUser},
+				ReportedBy:  ID{Inner: xid.NilID(), Type: ResourceTypeUser},
 				Assignees:   make([]ID, 0),
 				Labels:      make([]ID, 0),
 				Comments:    make([]ID, 0),
@@ -820,7 +820,7 @@ func TestIssue_Validate(t *testing.T) {
 		{
 			name: "invalid issue priority",
 			fields: fields{
-				ID:          ID{inner: xid.NilID(), label: ResourceTypeIssue},
+				ID:          ID{Inner: xid.NilID(), Type: ResourceTypeIssue},
 				NumericID:   1,
 				Kind:        IssueKindEpic,
 				Title:       "title",
@@ -828,7 +828,7 @@ func TestIssue_Validate(t *testing.T) {
 				Status:      IssueStatusOpen,
 				Priority:    IssuePriority(100),
 				Resolution:  IssueResolutionNone,
-				ReportedBy:  ID{inner: xid.NilID(), label: ResourceTypeUser},
+				ReportedBy:  ID{Inner: xid.NilID(), Type: ResourceTypeUser},
 				Assignees:   make([]ID, 0),
 				Labels:      make([]ID, 0),
 				Comments:    make([]ID, 0),
@@ -842,7 +842,7 @@ func TestIssue_Validate(t *testing.T) {
 		{
 			name: "invalid issue resolution",
 			fields: fields{
-				ID:          ID{inner: xid.NilID(), label: ResourceTypeIssue},
+				ID:          ID{Inner: xid.NilID(), Type: ResourceTypeIssue},
 				NumericID:   1,
 				Kind:        IssueKindEpic,
 				Title:       "title",
@@ -850,7 +850,7 @@ func TestIssue_Validate(t *testing.T) {
 				Status:      IssueStatusOpen,
 				Priority:    IssuePriorityMedium,
 				Resolution:  IssueResolution(100),
-				ReportedBy:  ID{inner: xid.NilID(), label: ResourceTypeUser},
+				ReportedBy:  ID{Inner: xid.NilID(), Type: ResourceTypeUser},
 				Assignees:   make([]ID, 0),
 				Labels:      make([]ID, 0),
 				Comments:    make([]ID, 0),
@@ -864,7 +864,7 @@ func TestIssue_Validate(t *testing.T) {
 		{
 			name: "invalid issue reported by",
 			fields: fields{
-				ID:          ID{inner: xid.NilID(), label: ResourceTypeIssue},
+				ID:          ID{Inner: xid.NilID(), Type: ResourceTypeIssue},
 				NumericID:   1,
 				Kind:        IssueKindEpic,
 				Title:       "title",
@@ -872,7 +872,7 @@ func TestIssue_Validate(t *testing.T) {
 				Status:      IssueStatusOpen,
 				Priority:    IssuePriorityMedium,
 				Resolution:  IssueResolutionNone,
-				ReportedBy:  ID{inner: xid.NilID(), label: ResourceType(0)},
+				ReportedBy:  ID{Inner: xid.NilID(), Type: ResourceType(0)},
 				Assignees:   make([]ID, 0),
 				Labels:      make([]ID, 0),
 				Comments:    make([]ID, 0),
@@ -886,7 +886,7 @@ func TestIssue_Validate(t *testing.T) {
 		{
 			name: "invalid issue assignees",
 			fields: fields{
-				ID:          ID{inner: xid.NilID(), label: ResourceTypeIssue},
+				ID:          ID{Inner: xid.NilID(), Type: ResourceTypeIssue},
 				NumericID:   1,
 				Kind:        IssueKindEpic,
 				Title:       "title",
@@ -894,7 +894,7 @@ func TestIssue_Validate(t *testing.T) {
 				Status:      IssueStatusOpen,
 				Priority:    IssuePriorityMedium,
 				Resolution:  IssueResolutionNone,
-				ReportedBy:  ID{inner: xid.NilID(), label: ResourceTypeUser},
+				ReportedBy:  ID{Inner: xid.NilID(), Type: ResourceTypeUser},
 				Assignees: []ID{
 					{},
 				},
@@ -910,7 +910,7 @@ func TestIssue_Validate(t *testing.T) {
 		{
 			name: "invalid issue labels",
 			fields: fields{
-				ID:          ID{inner: xid.NilID(), label: ResourceTypeIssue},
+				ID:          ID{Inner: xid.NilID(), Type: ResourceTypeIssue},
 				NumericID:   1,
 				Kind:        IssueKindEpic,
 				Title:       "title",
@@ -918,7 +918,7 @@ func TestIssue_Validate(t *testing.T) {
 				Status:      IssueStatusOpen,
 				Priority:    IssuePriorityMedium,
 				Resolution:  IssueResolutionNone,
-				ReportedBy:  ID{inner: xid.NilID(), label: ResourceTypeUser},
+				ReportedBy:  ID{Inner: xid.NilID(), Type: ResourceTypeUser},
 				Assignees:   make([]ID, 0),
 				Labels: []ID{
 					{},
@@ -934,7 +934,7 @@ func TestIssue_Validate(t *testing.T) {
 		{
 			name: "invalid issue comments",
 			fields: fields{
-				ID:          ID{inner: xid.NilID(), label: ResourceTypeIssue},
+				ID:          ID{Inner: xid.NilID(), Type: ResourceTypeIssue},
 				NumericID:   1,
 				Kind:        IssueKindEpic,
 				Title:       "title",
@@ -942,7 +942,7 @@ func TestIssue_Validate(t *testing.T) {
 				Status:      IssueStatusOpen,
 				Priority:    IssuePriorityMedium,
 				Resolution:  IssueResolutionNone,
-				ReportedBy:  ID{inner: xid.NilID(), label: ResourceTypeUser},
+				ReportedBy:  ID{Inner: xid.NilID(), Type: ResourceTypeUser},
 				Assignees:   make([]ID, 0),
 				Labels:      make([]ID, 0),
 				Comments: []ID{
@@ -958,7 +958,7 @@ func TestIssue_Validate(t *testing.T) {
 		{
 			name: "invalid issue attachments",
 			fields: fields{
-				ID:          ID{inner: xid.NilID(), label: ResourceTypeIssue},
+				ID:          ID{Inner: xid.NilID(), Type: ResourceTypeIssue},
 				NumericID:   1,
 				Kind:        IssueKindEpic,
 				Title:       "title",
@@ -966,7 +966,7 @@ func TestIssue_Validate(t *testing.T) {
 				Status:      IssueStatusOpen,
 				Priority:    IssuePriorityMedium,
 				Resolution:  IssueResolutionNone,
-				ReportedBy:  ID{inner: xid.NilID(), label: ResourceTypeUser},
+				ReportedBy:  ID{Inner: xid.NilID(), Type: ResourceTypeUser},
 				Assignees:   make([]ID, 0),
 				Labels:      make([]ID, 0),
 				Comments:    make([]ID, 0),
@@ -982,7 +982,7 @@ func TestIssue_Validate(t *testing.T) {
 		{
 			name: "invalid issue watchers",
 			fields: fields{
-				ID:          ID{inner: xid.NilID(), label: ResourceTypeIssue},
+				ID:          ID{Inner: xid.NilID(), Type: ResourceTypeIssue},
 				NumericID:   1,
 				Kind:        IssueKindEpic,
 				Title:       "title",
@@ -990,7 +990,7 @@ func TestIssue_Validate(t *testing.T) {
 				Status:      IssueStatusOpen,
 				Priority:    IssuePriorityMedium,
 				Resolution:  IssueResolutionNone,
-				ReportedBy:  ID{inner: xid.NilID(), label: ResourceTypeUser},
+				ReportedBy:  ID{Inner: xid.NilID(), Type: ResourceTypeUser},
 				Assignees:   make([]ID, 0),
 				Labels:      make([]ID, 0),
 				Comments:    make([]ID, 0),
@@ -1006,7 +1006,7 @@ func TestIssue_Validate(t *testing.T) {
 		{
 			name: "invalid issue relations",
 			fields: fields{
-				ID:          ID{inner: xid.NilID(), label: ResourceTypeIssue},
+				ID:          ID{Inner: xid.NilID(), Type: ResourceTypeIssue},
 				NumericID:   1,
 				Kind:        IssueKindEpic,
 				Title:       "title",
@@ -1014,7 +1014,7 @@ func TestIssue_Validate(t *testing.T) {
 				Status:      IssueStatusOpen,
 				Priority:    IssuePriorityMedium,
 				Resolution:  IssueResolutionNone,
-				ReportedBy:  ID{inner: xid.NilID(), label: ResourceTypeUser},
+				ReportedBy:  ID{Inner: xid.NilID(), Type: ResourceTypeUser},
 				Assignees:   make([]ID, 0),
 				Labels:      make([]ID, 0),
 				Comments:    make([]ID, 0),
@@ -1030,7 +1030,7 @@ func TestIssue_Validate(t *testing.T) {
 		{
 			name: "invalid issue links",
 			fields: fields{
-				ID:          ID{inner: xid.NilID(), label: ResourceTypeIssue},
+				ID:          ID{Inner: xid.NilID(), Type: ResourceTypeIssue},
 				NumericID:   1,
 				Kind:        IssueKindEpic,
 				Title:       "title",
@@ -1038,7 +1038,7 @@ func TestIssue_Validate(t *testing.T) {
 				Status:      IssueStatusOpen,
 				Priority:    IssuePriorityMedium,
 				Resolution:  IssueResolutionNone,
-				ReportedBy:  ID{inner: xid.NilID(), label: ResourceTypeUser},
+				ReportedBy:  ID{Inner: xid.NilID(), Type: ResourceTypeUser},
 				Assignees:   make([]ID, 0),
 				Labels:      make([]ID, 0),
 				Comments:    make([]ID, 0),

@@ -64,7 +64,7 @@ func (r *UserRepository) Create(ctx context.Context, user *model.User) error {
 		return errors.Join(repository.ErrUserCreate, err)
 	}
 
-	createdAt := time.Now()
+	createdAt := time.Now().UTC()
 
 	user.ID = model.MustNewID(model.ResourceTypeUser)
 	user.CreatedAt = convert.ToPointer(createdAt)
@@ -203,7 +203,7 @@ func (r *UserRepository) Update(ctx context.Context, id model.ID, patch map[stri
 	params := map[string]any{
 		"id":         id.String(),
 		"patch":      patch,
-		"updated_at": time.Now().Format(time.RFC3339Nano),
+		"updated_at": time.Now().UTC().Format(time.RFC3339Nano),
 	}
 
 	updated, err := ExecuteWriteAndReadSingle(ctx, r.db, cypher, params, r.scan("u", "p", "d"))

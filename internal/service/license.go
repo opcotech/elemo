@@ -10,22 +10,6 @@ import (
 	"github.com/opcotech/elemo/internal/repository"
 )
 
-// LicenseRepository defines the interface for retrieving quota information.
-type LicenseRepository interface {
-	// ActiveUserCount returns the number of active users.
-	ActiveUserCount(ctx context.Context) (int, error)
-	// ActiveOrganizationCount returns the number of active organizations.
-	ActiveOrganizationCount(ctx context.Context) (int, error)
-	// DocumentCount returns the number of documents.
-	DocumentCount(ctx context.Context) (int, error)
-	// NamespaceCount returns the number of namespaces.
-	NamespaceCount(ctx context.Context) (int, error)
-	// ProjectCount returns the number of projects.
-	ProjectCount(ctx context.Context) (int, error)
-	// RoleCount returns the number of roles.
-	RoleCount(ctx context.Context) (int, error)
-}
-
 // LicenseService serves the business logic of retrieving license information.
 type LicenseService interface {
 	// Expired returns true if the license has expired.
@@ -43,7 +27,7 @@ type LicenseService interface {
 // licenseService is the concrete implementation of LicenseService.
 type licenseService struct {
 	*baseService
-	licenseRepo LicenseRepository
+	licenseRepo repository.LicenseRepository
 	license     *license.License
 }
 
@@ -121,7 +105,7 @@ func (s *licenseService) Ping(ctx context.Context) error {
 }
 
 // NewLicenseService returns a new LicenseService.
-func NewLicenseService(l *license.License, repo LicenseRepository, opts ...Option) (LicenseService, error) {
+func NewLicenseService(l *license.License, repo repository.LicenseRepository, opts ...Option) (LicenseService, error) {
 	s, err := newService(opts...)
 	if err != nil {
 		return nil, err
