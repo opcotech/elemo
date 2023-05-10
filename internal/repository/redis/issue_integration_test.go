@@ -71,6 +71,12 @@ func (s *CachedIssueRepositoryIntegrationTestSuite) TestCreate() {
 	s.Assert().NotNil(s.issue.CreatedAt)
 	s.Assert().Nil(s.issue.UpdatedAt)
 
+	s.issue.Parent = nil
+	s.Require().NoError(s.issueRepo.Create(context.Background(), s.testProject.ID, s.issue))
+	s.Assert().NotEqual(model.MustNewNilID(model.ResourceTypeIssue), s.issue.ID)
+	s.Assert().NotNil(s.issue.CreatedAt)
+	s.Assert().Nil(s.issue.UpdatedAt)
+
 	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }
 
@@ -284,6 +290,5 @@ func (s *CachedIssueRepositoryIntegrationTestSuite) TestDelete() {
 }
 
 func TestCachedIssueRepositoryIntegrationTestSuite(t *testing.T) {
-	t.Parallel()
 	suite.Run(t, new(CachedIssueRepositoryIntegrationTestSuite))
 }

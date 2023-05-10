@@ -144,6 +144,5 @@ func (s *CachedAssignmentRepositoryIntegrationTestSuite) TestDelete() {
 }
 
 func TestCachedAssignmentRepositoryIntegrationTestSuite(t *testing.T) {
-	t.Parallel()
 	suite.Run(t, new(CachedAssignmentRepositoryIntegrationTestSuite))
 }

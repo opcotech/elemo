@@ -144,6 +144,5 @@ func (s *CachedOrganizationRepositoryIntegrationTestSuite) TestDelete() {
 }
 
 func TestCachedOrganizationRepositoryIntegrationTestSuite(t *testing.T) {
-	t.Parallel()
 	suite.Run(t, new(CachedOrganizationRepositoryIntegrationTestSuite))
 }

@@ -144,6 +144,5 @@ func (s *CachedNamespaceRepositoryIntegrationTestSuite) TestDelete() {
 }
 
 func TestCachedNamespaceRepositoryIntegrationTestSuite(t *testing.T) {
-	t.Parallel()
 	suite.Run(t, new(CachedNamespaceRepositoryIntegrationTestSuite))
 }

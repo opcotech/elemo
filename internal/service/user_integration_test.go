@@ -212,6 +212,5 @@ func (s *UserServiceIntegrationTestSuite) TestDelete() {
 }
 
 func TestUserServiceIntegrationTestSuite(t *testing.T) {
-	t.Parallel()
 	suite.Run(t, new(UserServiceIntegrationTestSuite))
 }

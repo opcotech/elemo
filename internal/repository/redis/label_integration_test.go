@@ -179,6 +179,5 @@ func (s *CachedLabelRepositoryIntegrationTestSuite) TestDelete() {
 }
 
 func TestCachedLabelRepositoryIntegrationTestSuite(t *testing.T) {
-	t.Parallel()
 	suite.Run(t, new(CachedLabelRepositoryIntegrationTestSuite))
 }

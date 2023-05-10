@@ -146,6 +146,5 @@ func (s *LabelRepositoryIntegrationTestSuite) TestDelete() {
 }
 
 func TestLabelRepositoryIntegrationTestSuite(t *testing.T) {
-	t.Parallel()
 	suite.Run(t, new(LabelRepositoryIntegrationTestSuite))
 }

@@ -262,6 +262,5 @@ func (s *IssueRepositoryIntegrationTestSuite) TestDelete() {
 }
 
 func TestIssueRepositoryIntegrationTestSuite(t *testing.T) {
-	t.Parallel()
 	suite.Run(t, new(IssueRepositoryIntegrationTestSuite))
 }

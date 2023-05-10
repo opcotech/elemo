@@ -182,6 +182,5 @@ func (s *PermissionRepositoryIntegrationTestSuite) TestDelete() {
 }
 
 func TestPermissionRepositoryIntegrationTestSuite(t *testing.T) {
-	t.Parallel()
 	suite.Run(t, new(PermissionRepositoryIntegrationTestSuite))
 }

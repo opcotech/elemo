@@ -221,6 +221,5 @@ func (s *CachedPermissionRepositoryIntegrationTestSuite) TestHasSystemRole() {
 }
 
 func TestCachedPermissionRepositoryIntegrationTestSuite(t *testing.T) {
-	t.Parallel()
 	suite.Run(t, new(CachedPermissionRepositoryIntegrationTestSuite))
 }

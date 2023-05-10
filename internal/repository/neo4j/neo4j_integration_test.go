@@ -49,6 +49,5 @@ func (s *Neo4jRepositoryIntegrationTestSuite) Test_Z_Close() { // The test suite
 }
 
 func TestNeo4jRepositoryIntegrationTestSuite(t *testing.T) {
-	t.Parallel()
 	suite.Run(t, new(Neo4jRepositoryIntegrationTestSuite))
 }

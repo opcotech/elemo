@@ -167,6 +167,5 @@ func (s *CachedDocumentRepositoryIntegrationTestSuite) TestDelete() {
 }
 
 func TestCachedDocumentRepositoryIntegrationTestSuite(t *testing.T) {
-	t.Parallel()
 	suite.Run(t, new(CachedDocumentRepositoryIntegrationTestSuite))
 }

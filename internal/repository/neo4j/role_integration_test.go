@@ -155,6 +155,5 @@ func (s *RoleRepositoryIntegrationTestSuite) TestDelete() {
 }
 
 func TestRoleRepositoryIntegrationTestSuite(t *testing.T) {
-	t.Parallel()
 	suite.Run(t, new(RoleRepositoryIntegrationTestSuite))
 }

@@ -157,6 +157,5 @@ func (s *OrganizationRepositoryIntegrationTestSuite) TestDelete() {
 }
 
 func TestOrganizationRepositoryIntegrationTestSuite(t *testing.T) {
-	t.Parallel()
 	suite.Run(t, new(OrganizationRepositoryIntegrationTestSuite))
 }
