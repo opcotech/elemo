@@ -6,6 +6,17 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestRedisConfig_Address(t *testing.T) {
+	t.Parallel()
+
+	conf := RedisConfig{
+		Host: "localhost",
+		Port: 6379,
+	}
+
+	assert.Equal(t, "localhost:6379", conf.Address())
+}
+
 func TestCacheDatabaseConfig_ConnectionURL(t *testing.T) {
 	tests := []struct {
 		name string
@@ -15,24 +26,29 @@ func TestCacheDatabaseConfig_ConnectionURL(t *testing.T) {
 		{
 			name: "secure connection",
 			c: &CacheDatabaseConfig{
-				Host:     "localhost",
-				Port:     6379,
-				Username: "user",
-				Password: "secret",
-				IsSecure: true,
+				RedisConfig: RedisConfig{
+					Host:     "localhost",
+					Port:     6379,
+					Username: "user",
+					Password: "secret",
+					IsSecure: true,
+				},
 			},
-			want: "redis://user:secret@localhost:6379/?sslmode=require",
+			want: "redis://user:secret@localhost:6379/0?sslmode=require",
 		},
 		{
 			name: "unsecure connection",
 			c: &CacheDatabaseConfig{
-				Host:     "localhost",
-				Port:     6379,
-				Username: "user",
-				Password: "secret",
-				IsSecure: false,
+				RedisConfig: RedisConfig{
+					Host:     "localhost",
+					Port:     6379,
+					Database: 0,
+					Username: "user",
+					Password: "secret",
+					IsSecure: false,
+				},
 			},
-			want: "redis://user:secret@localhost:6379/?sslmode=disable",
+			want: "redis://user:secret@localhost:6379/0?sslmode=disable",
 		},
 	}
 	for _, tt := range tests {

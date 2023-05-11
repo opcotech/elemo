@@ -91,12 +91,33 @@ server:
     max_age: 86400
     is_secure: false
 
+worker:
+  concurrency: 10
+  strict_priority: false
+  shutdown_timeout: 10
+  health_check_interval: 15
+  delayed_task_check_interval: 15
+  group_grace_period:  5
+  group_max_delay: 60
+  group_max_size: 5
+  log_level: "info"
+  broker:
+    host: ${redis_host}
+    port: 6379
+    username: ""
+    password: ""
+    database: 0
+    dial_timeout: 3
+    read_timeout: 2
+    write_timeout: 2
+    pool_size: 100
+
 cache_database:
   host: ${redis_host}
   port: 6379
   username: ""
   password: ""
-  database: "0"
+  database: 0
   dial_timeout: 3
   read_timeout: 2
   write_timeout: 2
