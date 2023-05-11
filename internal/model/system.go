@@ -5,6 +5,7 @@ const (
 	HealthCheckComponentGraphDB      HealthCheckComponent = "graph_database"      // graph database
 	HealthCheckComponentRelationalDB HealthCheckComponent = "relational_database" // relational database
 	HealthCheckComponentLicense      HealthCheckComponent = "license"             // license
+	HealthCheckComponentMessageQueue HealthCheckComponent = "message_queue"       // message_queue
 )
 
 const (
