@@ -165,7 +165,7 @@ EOF
 }
 
 generateCert "docker"
-generateCert "192.168.0.23"
+generateCert "127.0.0.1"
 generateSigningKey
 generateLicenseKey
 generateConfigFile "docker"
