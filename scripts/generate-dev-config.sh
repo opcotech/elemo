@@ -89,7 +89,7 @@ server:
   session:
     cookie_name: "elemo_session"
     max_age: 86400
-    secure: false
+    is_secure: false
 
 cache_database:
   host: ${redis_host}
@@ -144,7 +144,7 @@ EOF
 }
 
 generateCert "docker"
-generateCert "127.0.0.1"
+generateCert "192.168.0.23"
 generateSigningKey
 generateLicenseKey
 generateConfigFile "docker"

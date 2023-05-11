@@ -32,7 +32,22 @@ server:
   session:
     cookie_name: "elemo_session"
     max_age: 86400
-    secure: false
+    is_secure: false
+
+cache_database:
+  host: 127.0.0.1
+  port: 6379
+  username: ""
+  password: ""
+  database: "0"
+  dial_timeout: 3
+  read_timeout: 2
+  write_timeout: 2
+  pool_size: 100
+  max_idle_connections: 25
+  min_idle_connections:  5
+  connection_max_idle_time: 250
+  connection_max_lifetime: 300
 
 graph_database:
   host: 127.0.0.1
