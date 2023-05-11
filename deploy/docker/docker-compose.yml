@@ -56,12 +56,16 @@ services:
       timeout: 5s
       retries: 3
 
-  elemo:
+  elemo-server:
     image: elemo-server
     container_name: elemo-server
     build:
       context: ../../
       dockerfile: build/package/Dockerfile
+    entrypoint:
+      - /elemo/bin/elemo
+      - start
+      - server
     security_opt:
       - seccomp:unconfined
     depends_on:
@@ -76,8 +80,3 @@ services:
     ports:
       - "35478:35478"
       - "35479:35479"
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "-k", "https://0.0.0.0:35478/v1/system/health" ]
-      interval: 5s
-      timeout: 5s
-      retries: 3
