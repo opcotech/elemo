@@ -153,6 +153,8 @@ type WorkerConfig struct {
 	GroupMaxDelay            time.Duration `mapstructure:"group_max_delay"`
 	GroupMaxSize             int           `mapstructure:"group_max_size"`
 	LogLevel                 string        `mapstructure:"log_level"`
+	RateLimit                float64       `mapstructure:"rate_limit"`
+	RateLimitBurst           int           `mapstructure:"rate_limit_burst"`
 	Broker                   RedisConfig   `mapstructure:"broker"`
 }
 
@@ -165,14 +167,15 @@ type TracingConfig struct {
 
 // Config is the combined configuration for the service.
 type Config struct {
-	Log                LogConfig                `mapstructure:"log"`
-	License            LicenseConfig            `mapstructure:"license"`
-	Server             ServerConfig             `mapstructure:"server"`
-	MetricsServer      ServerConfig             `mapstructure:"metrics_server"`
-	Worker             WorkerConfig             `mapstructure:"worker"`
-	GraphDatabase      GraphDatabaseConfig      `mapstructure:"graph_database"`
-	RelationalDatabase RelationalDatabaseConfig `mapstructure:"relational_database"`
-	CacheDatabase      CacheDatabaseConfig      `mapstructure:"cache_database"`
-	TLS                TLSConfig                `mapstructure:"tls"`
-	Tracing            TracingConfig            `mapstructure:"tracing"`
+	Log                 LogConfig                `mapstructure:"log"`
+	License             LicenseConfig            `mapstructure:"license"`
+	Server              ServerConfig             `mapstructure:"server"`
+	MetricsServer       ServerConfig             `mapstructure:"metrics_server"`
+	Worker              WorkerConfig             `mapstructure:"worker"`
+	WorkerMetricsServer ServerConfig             `mapstructure:"worker_metrics_server"`
+	GraphDatabase       GraphDatabaseConfig      `mapstructure:"graph_database"`
+	RelationalDatabase  RelationalDatabaseConfig `mapstructure:"relational_database"`
+	CacheDatabase       CacheDatabaseConfig      `mapstructure:"cache_database"`
+	TLS                 TLSConfig                `mapstructure:"tls"`
+	Tracing             TracingConfig            `mapstructure:"tracing"`
 }

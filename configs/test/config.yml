@@ -44,6 +44,8 @@ worker:
   group_max_delay: 60
   group_max_size: 5
   log_level: "info"
+  rate_limit: 15
+  rate_limit_burst: 30
   broker:
     host: 127.0.0.1
     port: 6379
@@ -97,6 +99,11 @@ relational_database:
 
 metrics_server:
   address: "127.0.0.1:35479"
+  read_timeout: 10
+  write_timeout: 5
+
+worker_metrics_server:
+  address: "127.0.0.1:35480"
   read_timeout: 10
   write_timeout: 5
 

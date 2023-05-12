@@ -101,6 +101,8 @@ worker:
   group_max_delay: 60
   group_max_size: 5
   log_level: "info"
+    rate_limit: 120
+    rate_limit_burst: 175
   broker:
     host: ${redis_host}
     port: 6379
@@ -154,6 +156,11 @@ relational_database:
 
 metrics_server:
   address: "${host}:35479"
+  read_timeout: 10
+  write_timeout: 5
+
+worker_metrics_server:
+  address: "${host}:35480"
   read_timeout: 10
   write_timeout: 5
 
