@@ -7,8 +7,7 @@ import (
 )
 
 var (
-	ErrInvalidConfig = errors.New("invalid config")     // invalid configuration
-	ErrNoConfig      = errors.New("no config provided") // no configuration provided
+	ErrNoConfig = errors.New("no config provided") // no configuration provided
 )
 
 // LicenseConfig is the configuration for the license.
