@@ -3,6 +3,7 @@ package tracing
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"go.opentelemetry.io/otel"
 	otlptrace "go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
@@ -23,7 +24,7 @@ var (
 )
 
 // NewTracerProvider creates a new tracer provider.
-func NewTracerProvider(ctx context.Context, version *model.VersionInfo, cfg *config.TracingConfig) (trace.TracerProvider, error) {
+func NewTracerProvider(ctx context.Context, version *model.VersionInfo, service string, cfg *config.TracingConfig) (trace.TracerProvider, error) {
 	exporter, err := otlptrace.New(
 		ctx,
 		otlptrace.WithEndpoint(cfg.CollectorEndpoint),
@@ -36,7 +37,7 @@ func NewTracerProvider(ctx context.Context, version *model.VersionInfo, cfg *con
 	tracerProvider := sdktrace.NewTracerProvider(
 		sdktrace.WithResource(resource.NewWithAttributes(
 			semconv.SchemaURL,
-			semconv.ServiceNameKey.String(cfg.ServiceName),
+			semconv.ServiceNameKey.String(fmt.Sprintf("%s-%s", cfg.ServiceName, service)),
 			semconv.ServiceVersionKey.String(version.Version),
 		)),
 		sdktrace.WithSampler(sdktrace.ParentBased(sdktrace.TraceIDRatioBased(cfg.TraceRatio))),

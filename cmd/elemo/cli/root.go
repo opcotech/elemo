@@ -90,7 +90,6 @@ func init() {
 
 func initHook() {
 	initConfig()
-	initTracer()
 	initLogger()
 }
 
@@ -150,10 +149,10 @@ func parseLicense(licenseConf *config.LicenseConfig) (*license.License, error) {
 	return l, nil
 }
 
-func initTracer() {
+func initTracer(service string) {
 	var err error
 
-	tracerProvider, err = tracing.NewTracerProvider(context.Background(), versionInfo, &cfg.Tracing)
+	tracerProvider, err = tracing.NewTracerProvider(context.Background(), versionInfo, service, &cfg.Tracing)
 	cobra.CheckErr(err)
 
 	tracer = tracerProvider.Tracer("github.com/opcotech/elemo")

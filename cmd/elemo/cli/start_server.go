@@ -15,11 +15,11 @@ import (
 
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/repository"
-	"github.com/opcotech/elemo/internal/repository/asynq"
 	"github.com/opcotech/elemo/internal/repository/neo4j"
 	"github.com/opcotech/elemo/internal/repository/pg"
 	"github.com/opcotech/elemo/internal/repository/redis"
 	"github.com/opcotech/elemo/internal/service"
+	"github.com/opcotech/elemo/internal/transport/asynq"
 
 	"github.com/go-oauth2/oauth2/v4/server"
 
@@ -32,6 +32,8 @@ var startServerCmd = &cobra.Command{
 	Short: "Start the server",
 	Long:  `Starts listening on the specified address.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		initTracer("server")
+
 		logger.Info("starting server", zap.Any("version", versionInfo))
 
 		license, err := parseLicense(&cfg.License)
@@ -63,7 +65,7 @@ var startServerCmd = &cobra.Command{
 			logger.Fatal("failed to initialize message queue", zap.Error(err))
 		}
 		defer func(messageQueue *asynq.Client) {
-			err := messageQueue.Close()
+			err := messageQueue.Close(context.Background())
 			if err != nil {
 				logger.Error("failed to close message queue", zap.Error(err))
 			}
@@ -212,7 +214,7 @@ var startServerCmd = &cobra.Command{
 			logger.Fatal("failed to initialize http server", zap.Error(err))
 		}
 
-		startServers(httpServer)
+		startHTTPServers(httpServer)
 	},
 }
 
@@ -283,7 +285,7 @@ func startHTTPServer(server elemoHttp.StrictServer) error {
 	return s.ListenAndServeTLS(cfg.TLS.CertFile, cfg.TLS.KeyFile)
 }
 
-func startMetricsServer() error {
+func startHTTPMetricsServer() error {
 	router, err := elemoHttp.NewMetricsServer(&cfg.MetricsServer, tracer)
 	if err != nil {
 		logger.Fatal("failed to initialize metrics router", zap.Error(err))
@@ -301,7 +303,7 @@ func startMetricsServer() error {
 	return s.ListenAndServeTLS(cfg.TLS.CertFile, cfg.TLS.KeyFile)
 }
 
-func startServers(server elemoHttp.StrictServer) {
+func startHTTPServers(server elemoHttp.StrictServer) {
 	wg := new(sync.WaitGroup)
 	wg.Add(2)
 
@@ -312,7 +314,7 @@ func startServers(server elemoHttp.StrictServer) {
 	}(wg)
 
 	go func(wg *sync.WaitGroup) {
-		err := startMetricsServer()
+		err := startHTTPMetricsServer()
 		logger.Fatal("failed to start HTTP metrics server", zap.Error(err))
 		wg.Done()
 	}(wg)
