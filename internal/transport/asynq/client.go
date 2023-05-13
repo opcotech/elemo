@@ -75,6 +75,11 @@ func (c *Client) Enqueue(ctx context.Context, task *asynq.Task, opts ...asynq.Op
 	return info, nil
 }
 
+// GetTaskInfo returns the task info for the given task ID in a queue.
+func (c *Client) GetTaskInfo(queue string, id string) (*asynq.TaskInfo, error) {
+	return c.inspector.GetTaskInfo(queue, id)
+}
+
 // Ping sends a sample task to the worker and waits for it to finish. If the
 // task is not completed within 5 seconds, the task is canceled.
 func (c *Client) Ping(ctx context.Context) error {
@@ -92,8 +97,13 @@ func (c *Client) Ping(ctx context.Context) error {
 	}
 
 	for info.State != asynq.TaskStateCompleted {
-		if info, err = c.inspector.GetTaskInfo(info.Queue, info.ID); err != nil {
-			return errors.Join(ErrReceiveTask, err)
+		select {
+		case <-ctx.Done():
+			return errors.Join(ErrReceiveTask, ctx.Err())
+		default:
+			if info, err = c.GetTaskInfo(info.Queue, info.ID); err != nil {
+				return errors.Join(ErrReceiveTask, err)
+			}
 		}
 	}
 

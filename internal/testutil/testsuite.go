@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/suite"
 	"github.com/testcontainers/testcontainers-go"
 
+	"github.com/opcotech/elemo/internal/config"
 	"github.com/opcotech/elemo/internal/repository/neo4j"
 	"github.com/opcotech/elemo/internal/repository/pg"
 	"github.com/opcotech/elemo/internal/repository/redis"
@@ -136,16 +137,18 @@ func (s *PgContainerIntegrationTestSuite) SetupPg(ts *ContainerIntegrationTestSu
 // RedisContainerIntegrationTestSuite is a test suite which sets up a Redis
 // container to run tests.
 type RedisContainerIntegrationTestSuite struct {
-	RedisDB *redis.Database
+	RedisDB   *redis.Database
+	RedisConf *config.CacheDatabaseConfig
 
 	CachedTodoRepo *redis.CachedTodoRepository
 }
 
 func (s *RedisContainerIntegrationTestSuite) SetupRedis(ts *ContainerIntegrationTestSuite, name string) {
-	redisC, redisConf := testContainer.NewRedisContainer(context.Background(), ts.T(), name)
+	var redisC testcontainers.Container
+	redisC, s.RedisConf = testContainer.NewRedisContainer(context.Background(), ts.T(), name)
 	ts.AddContainer(redisC)
 
-	s.RedisDB, _ = testRepo.NewRedisDatabase(ts.T(), redisConf)
+	s.RedisDB, _ = testRepo.NewRedisDatabase(ts.T(), s.RedisConf)
 }
 
 func (s *RedisContainerIntegrationTestSuite) CleanupRedis(ts *ContainerIntegrationTestSuite) {

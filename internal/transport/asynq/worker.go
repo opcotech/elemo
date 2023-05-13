@@ -82,6 +82,11 @@ func (w *Worker) Start() error {
 	return w.server.Run(w)
 }
 
+// Shutdown gracefully shuts down the async worker.
+func (w *Worker) Shutdown() {
+	w.server.Shutdown()
+}
+
 // NewWorker returns a new async worker. Before creating a worker, the rate
 // limiter should be initialized first, otherwise the worker will not be able
 // to start and will return an error.
@@ -98,9 +103,11 @@ func NewWorker(opts ...WorkerOption) (*Worker, error) {
 		}
 	}
 
-	var logLevel asynq.LogLevel
-	if err := logLevel.Set(w.conf.LogLevel); err != nil {
-		return nil, log.ErrInvalidLogLevel
+	logLevel := asynq.InfoLevel
+	if w.conf.LogLevel != "" {
+		if err := logLevel.Set(w.conf.LogLevel); err != nil {
+			return nil, log.ErrInvalidLogLevel
+		}
 	}
 
 	if rateLimiter == nil {

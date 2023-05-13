@@ -15,8 +15,12 @@ import (
 )
 
 func TestSetRateLimiter(t *testing.T) {
-	t.Parallel()
+	original := rateLimiter
+	defer func() {
+		rateLimiter = original
+	}()
 
+	rateLimiter = nil
 	require.Nil(t, rateLimiter)
 
 	// Set rate limiter.
