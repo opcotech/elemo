@@ -48,6 +48,8 @@ elemo auth add-client --domain example.com --public`,
 			logger.Fatal("callback-url is required")
 		}
 
+		initTracer("cli-auth-add-client")
+
 		_, relDBPool, err := initRelationalDatabase()
 		if err != nil {
 			logger.Fatal("failed to initialize relational database", zap.Error(err))
