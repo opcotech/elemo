@@ -2,7 +2,6 @@ package redis
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	"github.com/go-redis/cache/v9"
@@ -452,7 +451,7 @@ func TestCachedAttachmentRepository_Get(t *testing.T) {
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					cacheRepo := new(testMock.CacheRepository)
-					cacheRepo.On("Get", ctx, key, mock.Anything).Return(nil, errors.New("error"))
+					cacheRepo.On("Get", ctx, key, mock.Anything).Return(nil, assert.AnError)
 
 					return &baseRepository{
 						db:     db,
@@ -495,7 +494,7 @@ func TestCachedAttachmentRepository_Get(t *testing.T) {
 						Ctx:   ctx,
 						Key:   key,
 						Value: attachment,
-					}).Return(errors.New("error"))
+					}).Return(assert.AnError)
 
 					return &baseRepository{
 						db:     db,
@@ -722,7 +721,7 @@ func TestCachedAttachmentRepository_GetAllBelongsTo(t *testing.T) {
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Set", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					cacheRepo := new(testMock.CacheRepository)
-					cacheRepo.On("Get", ctx, key, mock.Anything).Return(nil, errors.New("error"))
+					cacheRepo.On("Get", ctx, key, mock.Anything).Return(nil, assert.AnError)
 
 					return &baseRepository{
 						db:     db,
@@ -765,7 +764,7 @@ func TestCachedAttachmentRepository_GetAllBelongsTo(t *testing.T) {
 						Ctx:   ctx,
 						Key:   key,
 						Value: attachments,
-					}).Return(errors.New("error"))
+					}).Return(assert.AnError)
 
 					return &baseRepository{
 						db:     db,
@@ -939,7 +938,7 @@ func TestCachedAttachmentRepository_Update(t *testing.T) {
 						Ctx:   ctx,
 						Key:   key,
 						Value: attachment,
-					}).Return(errors.New("error"))
+					}).Return(assert.AnError)
 
 					return &baseRepository{
 						db:     db,
@@ -992,7 +991,7 @@ func TestCachedAttachmentRepository_Update(t *testing.T) {
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Set", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					cacheRepo := new(testMock.CacheRepository)
-					cacheRepo.On("Delete", ctx, belongsToKey).Return(errors.New("error"))
+					cacheRepo.On("Delete", ctx, belongsToKey).Return(assert.AnError)
 					cacheRepo.On("Set", &cache.Item{
 						Ctx:   ctx,
 						Key:   key,

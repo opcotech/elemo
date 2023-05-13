@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -23,16 +22,11 @@ func NewClient(conf *config.CacheDatabaseConfig) (redis.UniversalClient, error) 
 		return nil, config.ErrNoConfig
 	}
 
-	db, err := strconv.Atoi(conf.Database)
-	if err != nil {
-		return nil, config.ErrInvalidConfig
-	}
-
 	return redis.NewClient(&redis.Options{
 		Addr:                  fmt.Sprintf("%s:%d", conf.Host, conf.Port),
 		Username:              conf.Username,
 		Password:              conf.Password,
-		DB:                    db,
+		DB:                    conf.RedisConfig.Database,
 		MaxRetries:            3,
 		DialTimeout:           conf.DialTimeout * time.Second,
 		ReadTimeout:           conf.ReadTimeout * time.Second,

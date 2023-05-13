@@ -63,6 +63,8 @@ linters-settings:
       - pkg: github.com/neo4j/neo4j-go-driver/v5/neo4j/config
         alias: neo4jConfig
       # internal
+      - pkg: github.com/opcotech/elemo/internal/transport/asynq
+        alias: elemoAsynq
       - pkg: github.com/opcotech/elemo/internal/transport/http
         alias: elemoHttp
       - pkg: github.com/opcotech/elemo/internal/license

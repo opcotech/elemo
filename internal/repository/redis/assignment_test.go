@@ -2,7 +2,6 @@ package redis
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	"github.com/go-redis/cache/v9"
@@ -168,7 +167,7 @@ func TestCachedAssignmentRepository_Create(t *testing.T) {
 					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					cacheRepo := new(testMock.CacheRepository)
-					cacheRepo.On("Delete", ctx, key1).Return(errors.New("error"))
+					cacheRepo.On("Delete", ctx, key1).Return(assert.AnError)
 
 					return &baseRepository{
 						db:     db,
@@ -222,7 +221,7 @@ func TestCachedAssignmentRepository_Create(t *testing.T) {
 					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					cacheRepo := new(testMock.CacheRepository)
-					cacheRepo.On("Delete", ctx, key1).Return(errors.New("error"))
+					cacheRepo.On("Delete", ctx, key1).Return(assert.AnError)
 
 					return &baseRepository{
 						db:     db,
@@ -431,7 +430,7 @@ func TestCachedAssignmentRepository_Get(t *testing.T) {
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					cacheRepo := new(testMock.CacheRepository)
-					cacheRepo.On("Get", ctx, key, mock.Anything).Return(nil, errors.New("error"))
+					cacheRepo.On("Get", ctx, key, mock.Anything).Return(nil, assert.AnError)
 
 					return &baseRepository{
 						db:     db,
@@ -474,7 +473,7 @@ func TestCachedAssignmentRepository_Get(t *testing.T) {
 						Ctx:   ctx,
 						Key:   key,
 						Value: assignment,
-					}).Return(errors.New("error"))
+					}).Return(assert.AnError)
 
 					return &baseRepository{
 						db:     db,
@@ -701,7 +700,7 @@ func TestCachedAssignmentRepository_GetByUser(t *testing.T) {
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Set", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					cacheRepo := new(testMock.CacheRepository)
-					cacheRepo.On("Get", ctx, key, mock.Anything).Return(nil, errors.New("error"))
+					cacheRepo.On("Get", ctx, key, mock.Anything).Return(nil, assert.AnError)
 
 					return &baseRepository{
 						db:     db,
@@ -744,7 +743,7 @@ func TestCachedAssignmentRepository_GetByUser(t *testing.T) {
 						Ctx:   ctx,
 						Key:   key,
 						Value: assignments,
-					}).Return(errors.New("error"))
+					}).Return(assert.AnError)
 
 					return &baseRepository{
 						db:     db,
@@ -966,7 +965,7 @@ func TestCachedAssignmentRepository_GetByResource(t *testing.T) {
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Set", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					cacheRepo := new(testMock.CacheRepository)
-					cacheRepo.On("Get", ctx, key, mock.Anything).Return(nil, errors.New("error"))
+					cacheRepo.On("Get", ctx, key, mock.Anything).Return(nil, assert.AnError)
 
 					return &baseRepository{
 						db:     db,
@@ -1009,7 +1008,7 @@ func TestCachedAssignmentRepository_GetByResource(t *testing.T) {
 						Ctx:   ctx,
 						Key:   key,
 						Value: assignments,
-					}).Return(errors.New("error"))
+					}).Return(assert.AnError)
 
 					return &baseRepository{
 						db:     db,

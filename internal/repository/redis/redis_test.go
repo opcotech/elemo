@@ -28,16 +28,18 @@ func TestNewClient(t *testing.T) {
 			name: "create new redis client",
 			args: args{
 				conf: &config.CacheDatabaseConfig{
-					Host:                  "localhost",
-					Port:                  6379,
-					Username:              "default",
-					Password:              "redisSecret",
-					Database:              "0",
-					IsSecure:              false,
-					DialTimeout:           10,
-					ReadTimeout:           10,
-					WriteTimeout:          10,
-					PoolSize:              10,
+					RedisConfig: config.RedisConfig{
+						Host:         "localhost",
+						Port:         6379,
+						Username:     "default",
+						Password:     "redisSecret",
+						Database:     0,
+						IsSecure:     false,
+						DialTimeout:  10,
+						ReadTimeout:  10,
+						WriteTimeout: 10,
+						PoolSize:     10,
+					},
 					MaxIdleConnections:    10,
 					MinIdleConnections:    10,
 					ConnectionMaxIdleTime: 10,
@@ -51,15 +53,6 @@ func TestNewClient(t *testing.T) {
 				conf: nil,
 			},
 			wantErr: config.ErrNoConfig,
-		},
-		{
-			name: "create new redis client with invalid config",
-			args: args{
-				conf: &config.CacheDatabaseConfig{
-					Database: "invalid",
-				},
-			},
-			wantErr: config.ErrInvalidConfig,
 		},
 	}
 	for _, tt := range tests {

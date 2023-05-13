@@ -136,11 +136,13 @@ func NewRedisContainer(ctx context.Context, t *testing.T, name string) (testcont
 	}
 
 	conf := &config.CacheDatabaseConfig{
-		Host:     host,
-		Port:     port.Int(),
-		Username: "",
-		Password: "",
-		Database: "0",
+		RedisConfig: config.RedisConfig{
+			Host:     host,
+			Port:     port.Int(),
+			Username: "",
+			Password: "",
+			Database: 0,
+		},
 	}
 
 	return container, conf

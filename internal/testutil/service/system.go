@@ -12,10 +12,11 @@ import (
 	"github.com/opcotech/elemo/internal/service"
 	"github.com/opcotech/elemo/internal/testutil"
 	"github.com/opcotech/elemo/internal/testutil/repository"
+	"github.com/opcotech/elemo/internal/transport/asynq"
 )
 
 // NewSystemService creates a new SystemService for testing.
-func NewSystemService(t *testing.T, neo4jDBConf *config.GraphDatabaseConfig, pgDBConf *config.RelationalDatabaseConfig) service.SystemService {
+func NewSystemService(t *testing.T, neo4jDBConf *config.GraphDatabaseConfig, pgDBConf *config.RelationalDatabaseConfig, workerConf *config.WorkerConfig) service.SystemService {
 	neo4jDB, _ := repository.NewNeo4jDatabase(t, neo4jDBConf)
 	pgDB, _ := repository.NewPgDatabase(t, pgDBConf)
 
@@ -36,11 +37,17 @@ func NewSystemService(t *testing.T, neo4jDBConf *config.GraphDatabaseConfig, pgD
 	)
 	require.NoError(t, err)
 
+	queueClient, err := asynq.NewClient(
+		asynq.WithClientConfig(workerConf),
+	)
+	require.NoError(t, err)
+
 	s, err := service.NewSystemService(
 		map[model.HealthCheckComponent]service.Pingable{
 			model.HealthCheckComponentGraphDB:      neo4jDB,
 			model.HealthCheckComponentRelationalDB: pgDB,
 			model.HealthCheckComponentLicense:      licenseSvc,
+			model.HealthCheckComponentMessageQueue: queueClient,
 		},
 		&model.VersionInfo{
 			Version:   "0.0.1",

@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -264,7 +263,7 @@ func TestTodoService_Create(t *testing.T) {
 					tracer.On("Start", ctx, "service.todoService/Create", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					licenseSvc := new(mock.LicenseService)
-					licenseSvc.On("Expired", ctx).Return(false, errors.New("error"))
+					licenseSvc.On("Expired", ctx).Return(false, assert.AnError)
 
 					todoRepo := new(mock.TodoRepository)
 					todoRepo.On("Create", ctx, todo).Return(nil)
@@ -298,7 +297,7 @@ func TestTodoService_Create(t *testing.T) {
 					licenseSvc.On("Expired", ctx).Return(false, nil)
 
 					todoRepo := new(mock.TodoRepository)
-					todoRepo.On("Create", ctx, todo).Return(errors.New("error"))
+					todoRepo.On("Create", ctx, todo).Return(assert.AnError)
 
 					return &baseService{
 						logger:         new(mock.Logger),
@@ -363,7 +362,7 @@ func TestTodoService_Create(t *testing.T) {
 					licenseSvc.On("Expired", ctx).Return(false, nil)
 
 					permRepo := new(mock.PermissionRepository)
-					permRepo.On("HasAnyRelation", ctx, peerID, userID).Return(false, errors.New("error"))
+					permRepo.On("HasAnyRelation", ctx, peerID, userID).Return(false, assert.AnError)
 
 					todoRepo := new(mock.TodoRepository)
 					todoRepo.On("Create", ctx, todo).Return(nil)
@@ -494,7 +493,7 @@ func TestTodoService_Get(t *testing.T) {
 					permRepo.On("HasPermission", ctx, userID, id, []model.PermissionKind{
 						model.PermissionKindRead,
 						model.PermissionKindAll,
-					}).Return(false, errors.New("error"))
+					}).Return(false, assert.AnError)
 
 					return &baseService{
 						logger:         new(mock.Logger),
@@ -528,7 +527,7 @@ func TestTodoService_Get(t *testing.T) {
 					}).Return(true, nil)
 
 					todoRepo := new(mock.TodoRepository)
-					todoRepo.On("Get", ctx, id).Return(nil, errors.New("error"))
+					todoRepo.On("Get", ctx, id).Return(nil, assert.AnError)
 
 					return &baseService{
 						logger:         new(mock.Logger),
@@ -742,7 +741,7 @@ func TestTodoService_GetAll(t *testing.T) {
 					tracer.On("Start", ctx, "service.todoService/GetAll", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					todoRepo := new(mock.TodoRepository)
-					todoRepo.On("GetByOwner", ctx, userID, offset, limit, completed).Return(nil, errors.New("error"))
+					todoRepo.On("GetByOwner", ctx, userID, offset, limit, completed).Return(nil, assert.AnError)
 
 					return &baseService{
 						logger:         new(mock.Logger),
@@ -890,7 +889,7 @@ func TestTodoService_Update(t *testing.T) {
 					permRepo.On("HasPermission", ctx, userID, id, []model.PermissionKind{
 						model.PermissionKindWrite,
 						model.PermissionKindAll,
-					}).Return(false, errors.New("error"))
+					}).Return(false, assert.AnError)
 
 					return &baseService{
 						logger:         new(mock.Logger),
@@ -930,7 +929,7 @@ func TestTodoService_Update(t *testing.T) {
 					}).Return(true, nil)
 
 					todoRepo := new(mock.TodoRepository)
-					todoRepo.On("Update", ctx, id, patch).Return(nil, errors.New("error"))
+					todoRepo.On("Update", ctx, id, patch).Return(nil, assert.AnError)
 
 					return &baseService{
 						logger:         new(mock.Logger),
@@ -1023,7 +1022,7 @@ func TestTodoService_Update(t *testing.T) {
 					tracer.On("Start", ctx, "service.todoService/Update", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					licenseSvc := new(mock.LicenseService)
-					licenseSvc.On("Expired", ctx).Return(false, errors.New("error"))
+					licenseSvc.On("Expired", ctx).Return(false, assert.AnError)
 
 					return &baseService{
 						logger:         new(mock.Logger),
@@ -1161,7 +1160,7 @@ func TestTodoService_Delete(t *testing.T) {
 					permRepo.On("HasPermission", ctx, userID, id, []model.PermissionKind{
 						model.PermissionKindDelete,
 						model.PermissionKindAll,
-					}).Return(false, errors.New("error"))
+					}).Return(false, assert.AnError)
 
 					return &baseService{
 						logger:         new(mock.Logger),
@@ -1198,7 +1197,7 @@ func TestTodoService_Delete(t *testing.T) {
 					}).Return(true, nil)
 
 					todoRepo := new(mock.TodoRepository)
-					todoRepo.On("Delete", ctx, id).Return(errors.New("error"))
+					todoRepo.On("Delete", ctx, id).Return(assert.AnError)
 
 					return &baseService{
 						logger:         new(mock.Logger),
@@ -1282,7 +1281,7 @@ func TestTodoService_Delete(t *testing.T) {
 					tracer.On("Start", ctx, "service.todoService/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					licenseSvc := new(mock.LicenseService)
-					licenseSvc.On("Expired", ctx).Return(false, errors.New("error"))
+					licenseSvc.On("Expired", ctx).Return(false, assert.AnError)
 
 					return &baseService{
 						logger:         new(mock.Logger),

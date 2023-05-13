@@ -43,4 +43,3 @@ COPY --chown=nonroot:nonroot configs /elemo/configs
 COPY --from=build /usr/bin/elemo /elemo/bin/elemo
 
 WORKDIR /elemo
-ENTRYPOINT ["/elemo/bin/elemo", "start"]

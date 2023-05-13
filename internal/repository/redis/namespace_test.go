@@ -2,7 +2,6 @@ package redis
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	"github.com/go-redis/cache/v9"
@@ -445,7 +444,7 @@ func TestCachedNamespaceRepository_Get(t *testing.T) {
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					cacheRepo := new(testMock.CacheRepository)
-					cacheRepo.On("Get", ctx, key, mock.Anything).Return(nil, errors.New("error"))
+					cacheRepo.On("Get", ctx, key, mock.Anything).Return(nil, assert.AnError)
 
 					return &baseRepository{
 						db:     db,
@@ -488,7 +487,7 @@ func TestCachedNamespaceRepository_Get(t *testing.T) {
 						Ctx:   ctx,
 						Key:   key,
 						Value: namespace,
-					}).Return(errors.New("error"))
+					}).Return(assert.AnError)
 
 					return &baseRepository{
 						db:     db,
@@ -719,7 +718,7 @@ func TestCachedNamespaceRepository_GetAll(t *testing.T) {
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Set", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					cacheRepo := new(testMock.CacheRepository)
-					cacheRepo.On("Get", ctx, key, mock.Anything).Return(nil, errors.New("error"))
+					cacheRepo.On("Get", ctx, key, mock.Anything).Return(nil, assert.AnError)
 
 					return &baseRepository{
 						db:     db,
@@ -762,7 +761,7 @@ func TestCachedNamespaceRepository_GetAll(t *testing.T) {
 						Ctx:   ctx,
 						Key:   key,
 						Value: namespaces,
-					}).Return(errors.New("error"))
+					}).Return(assert.AnError)
 
 					return &baseRepository{
 						db:     db,
@@ -944,7 +943,7 @@ func TestCachedNamespaceRepository_Update(t *testing.T) {
 						Ctx:   ctx,
 						Key:   key,
 						Value: namespace,
-					}).Return(errors.New("error"))
+					}).Return(assert.AnError)
 
 					return &baseRepository{
 						db:     db,
@@ -1000,7 +999,7 @@ func TestCachedNamespaceRepository_Update(t *testing.T) {
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Set", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					cacheRepo := new(testMock.CacheRepository)
-					cacheRepo.On("Delete", ctx, getAllKey).Return(errors.New("error"))
+					cacheRepo.On("Delete", ctx, getAllKey).Return(assert.AnError)
 					cacheRepo.On("Set", &cache.Item{
 						Ctx:   ctx,
 						Key:   key,

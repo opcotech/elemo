@@ -1,7 +1,6 @@
 package log
 
 import (
-	"errors"
 	"testing"
 	"time"
 
@@ -94,7 +93,7 @@ func TestWithEndpoints(t *testing.T) {
 func TestWithError(t *testing.T) {
 	t.Parallel()
 
-	err := errors.New("error")
+	err := assert.AnError
 	assert.Equal(t, WithError(err), zap.Error(err))
 }
 

@@ -89,14 +89,37 @@ server:
   session:
     cookie_name: "elemo_session"
     max_age: 86400
-    secure: false
+    is_secure: false
+
+worker:
+  concurrency: 10
+  strict_priority: false
+  shutdown_timeout: 10
+  health_check_interval: 15
+  delayed_task_check_interval: 15
+  group_grace_period:  5
+  group_max_delay: 60
+  group_max_size: 5
+  log_level: "info"
+    rate_limit: 120
+    rate_limit_burst: 175
+  broker:
+    host: ${redis_host}
+    port: 6379
+    username: ""
+    password: ""
+    database: 0
+    dial_timeout: 3
+    read_timeout: 2
+    write_timeout: 2
+    pool_size: 100
 
 cache_database:
   host: ${redis_host}
   port: 6379
   username: ""
   password: ""
-  database: "0"
+  database: 0
   dial_timeout: 3
   read_timeout: 2
   write_timeout: 2
@@ -133,6 +156,11 @@ relational_database:
 
 metrics_server:
   address: "${host}:35479"
+  read_timeout: 10
+  write_timeout: 5
+
+worker_metrics_server:
+  address: "${host}:35480"
   read_timeout: 10
   write_timeout: 5
 

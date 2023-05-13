@@ -56,12 +56,16 @@ services:
       timeout: 5s
       retries: 3
 
-  elemo:
+  elemo-server:
     image: elemo-server
     container_name: elemo-server
     build:
       context: ../../
       dockerfile: build/package/Dockerfile
+    entrypoint:
+      - /elemo/bin/elemo
+      - start
+      - server
     security_opt:
       - seccomp:unconfined
     depends_on:
@@ -76,8 +80,29 @@ services:
     ports:
       - "35478:35478"
       - "35479:35479"
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "-k", "https://0.0.0.0:35478/v1/system/health" ]
-      interval: 5s
-      timeout: 5s
-      retries: 3
+
+  elemo-worker:
+    image: elemo-server
+    container_name: elemo-worker
+    build:
+      context: ../../
+      dockerfile: build/package/Dockerfile
+    entrypoint:
+      - /elemo/bin/elemo
+      - start
+      - worker
+    security_opt:
+      - seccomp:unconfined
+    depends_on:
+      redis:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      elemo-server:
+        condition: service_started
+    environment:
+      ELEMO_CONFIG: /elemo/configs/development/config.gen.yml
+    ports:
+      - "35480:35480"

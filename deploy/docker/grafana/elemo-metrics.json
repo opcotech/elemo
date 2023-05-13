@@ -25,10 +25,23 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 1,
+  "id": 2,
   "links": [],
   "liveNow": false,
   "panels": [
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 20,
+      "panels": [],
+      "title": "Service stats",
+      "type": "row"
+    },
     {
       "datasource": {
         "type": "prometheus",
@@ -62,7 +75,7 @@
         "h": 5,
         "w": 16,
         "x": 0,
-        "y": 0
+        "y": 1
       },
       "id": 4,
       "options": {
@@ -87,7 +100,7 @@
             "uid": "prometheus"
           },
           "editorMode": "builder",
-          "expr": "histogram_quantile(0.25, sum by(le) (rate(http_request_duration_seconds_bucket{service=\"elemo\", handler=~\"$handler\"}[$__rate_interval]))) * 1000",
+          "expr": "histogram_quantile(0.25, sum by(le) (rate(http_request_duration_seconds_bucket{job=\"elemo-server\", handler=~\"$handler\"}[$__rate_interval]))) * 1000",
           "hide": false,
           "legendFormat": "p25",
           "range": true,
@@ -99,7 +112,7 @@
             "uid": "prometheus"
           },
           "editorMode": "builder",
-          "expr": "histogram_quantile(0.5, sum by(le) (rate(http_request_duration_seconds_bucket{service=\"elemo\", handler=~\"$handler\"}[$__rate_interval]))) * 1000",
+          "expr": "histogram_quantile(0.5, sum by(le) (rate(http_request_duration_seconds_bucket{job=\"elemo-server\", handler=~\"$handler\"}[$__rate_interval]))) * 1000",
           "hide": false,
           "legendFormat": "p50",
           "range": true,
@@ -111,7 +124,7 @@
             "uid": "prometheus"
           },
           "editorMode": "builder",
-          "expr": "histogram_quantile(0.75, sum by(le) (rate(http_request_duration_seconds_bucket{service=\"elemo\", handler=~\"$handler\"}[$__rate_interval]))) * 1000",
+          "expr": "histogram_quantile(0.75, sum by(le) (rate(http_request_duration_seconds_bucket{job=\"elemo-server\", handler=~\"$handler\"}[$__rate_interval]))) * 1000",
           "hide": false,
           "legendFormat": "p75",
           "range": true,
@@ -123,7 +136,7 @@
             "uid": "prometheus"
           },
           "editorMode": "builder",
-          "expr": "histogram_quantile(0.9, sum by(le) (rate(http_request_duration_seconds_bucket{service=\"elemo\", handler=~\"$handler\"}[$__rate_interval]))) * 1000",
+          "expr": "histogram_quantile(0.9, sum by(le) (rate(http_request_duration_seconds_bucket{job=\"elemo-server\", handler=~\"$handler\"}[$__rate_interval]))) * 1000",
           "hide": false,
           "legendFormat": "p90",
           "range": true,
@@ -135,7 +148,7 @@
             "uid": "prometheus"
           },
           "editorMode": "builder",
-          "expr": "histogram_quantile(0.99, sum by(le) (rate(http_request_duration_seconds_bucket{service=\"elemo\", handler=~\"$handler\"}[$__rate_interval]))) * 1000",
+          "expr": "histogram_quantile(0.99, sum by(le) (rate(http_request_duration_seconds_bucket{job=\"elemo-server\", handler=~\"$handler\"}[$__rate_interval]))) * 1000",
           "hide": false,
           "legendFormat": "p99",
           "range": true,
@@ -147,7 +160,7 @@
             "uid": "prometheus"
           },
           "editorMode": "builder",
-          "expr": "histogram_quantile(0.999, sum by(le) (rate(http_request_duration_seconds_bucket{service=\"elemo\", handler=~\"$handler\"}[$__rate_interval]))) * 1000",
+          "expr": "histogram_quantile(0.999, sum by(le) (rate(http_request_duration_seconds_bucket{job=\"elemo-server\", handler=~\"$handler\"}[$__rate_interval]))) * 1000",
           "hide": false,
           "legendFormat": "p99.9",
           "range": true,
@@ -190,7 +203,7 @@
         "h": 5,
         "w": 8,
         "x": 16,
-        "y": 0
+        "y": 1
       },
       "id": 14,
       "options": {
@@ -216,7 +229,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum by(code) (rate(http_request_duration_seconds_count{service=\"elemo\", handler=~\"$handler\", code=~\"4..\"}[$__rate_interval]))",
+          "expr": "sum by(code) (rate(http_request_duration_seconds_count{job=\"elemo-server\", handler=~\"$handler\", code=~\"4..\"}[$__rate_interval]))",
           "hide": false,
           "instant": false,
           "legendFormat": "{{code}}",
@@ -229,7 +242,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "sum by(code) (rate(http_request_duration_seconds_count{service=\"elemo\", handler=~\"$handler\", code=~\"5..\"}[$__rate_interval]))",
+          "expr": "sum by(code) (rate(http_request_duration_seconds_count{job=\"elemo-server\", handler=~\"$handler\", code=~\"5..\"}[$__rate_interval]))",
           "hide": false,
           "legendFormat": "{{code}}",
           "range": true,
@@ -300,7 +313,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 5
+        "y": 6
       },
       "id": 6,
       "options": {
@@ -322,7 +335,7 @@
             "uid": "prometheus"
           },
           "editorMode": "builder",
-          "expr": "sum by(code) (rate(http_request_duration_seconds_count{service=\"elemo\", handler=~\"$handler\"}[$__rate_interval]))",
+          "expr": "sum by(code) (rate(http_request_duration_seconds_count{job=\"elemo-server\", handler=~\"$handler\"}[$__rate_interval]))",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
@@ -362,7 +375,8 @@
             "lineWidth": 1,
             "pointSize": 5,
             "scaleDistribution": {
-              "type": "linear"
+              "log": 2,
+              "type": "symlog"
             },
             "showPoints": "auto",
             "spanNulls": false,
@@ -399,7 +413,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 5
+        "y": 6
       },
       "id": 10,
       "options": {
@@ -424,7 +438,7 @@
             "uid": "prometheus"
           },
           "editorMode": "builder",
-          "expr": "sum by(handler) (http_requests_inflight{service=\"elemo\", handler=~\"$handler\"})",
+          "expr": "sum by(handler) (http_requests_inflight{job=\"elemo-server\", handler=~\"$handler\"})",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
@@ -465,7 +479,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 13
+        "y": 14
       },
       "id": 12,
       "options": {
@@ -492,7 +506,7 @@
           "operation": "$handler",
           "queryType": "search",
           "refId": "A",
-          "service": "elemo",
+          "service": "elemo-worker",
           "tags": ""
         }
       ],
@@ -512,6 +526,387 @@
         }
       ],
       "type": "table"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 22
+      },
+      "id": 22,
+      "panels": [],
+      "title": "Worker stats",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 5,
+            "gradientMode": "opacity",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 23
+      },
+      "id": 26,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum by(task_type) (rate(worker_processed_tasks_total{job=\"elemo-worker\"}[$__rate_interval]))",
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Processed tasks",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [],
+          "thresholds": {
+            "mode": "percentage",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "#EAB839",
+                "value": 45
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 23
+      },
+      "id": 29,
+      "options": {
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "pluginVersion": "9.4.7",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "builder",
+          "exemplar": false,
+          "expr": "sum(rate(worker_processed_tasks_total{job=\"elemo-worker\"}[$__rate_interval]))",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "Total",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "builder",
+          "exemplar": false,
+          "expr": "sum by(task_type) (rate(worker_processed_tasks_total{job=\"elemo-worker\"}[$__rate_interval]))",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "{{task_type}}",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "title": "Worker tasks load",
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 5,
+            "gradientMode": "opacity",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 31
+      },
+      "id": 27,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "builder",
+          "expr": "sum by(task_type) (rate(worker_in_progress_tasks{job=\"elemo-worker\"}[$__rate_interval]))",
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "In progress tasks",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineStyle": {
+              "fill": "solid"
+            },
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "log": 2,
+              "type": "symlog"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "dashed"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "percentage",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "#EAB839",
+                "value": 2
+              },
+              {
+                "color": "red",
+                "value": 5
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 31
+      },
+      "id": 28,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum by(task_type) (rate(worker_failed_tasks_total{job=\"elemo-worker\"}[$__rate_interval]))",
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Failed tasks",
+      "type": "timeseries"
     }
   ],
   "refresh": "5s",
@@ -620,7 +1015,7 @@
           "type": "prometheus",
           "uid": "prometheus"
         },
-        "definition": "http_request_duration_seconds_count{service=\"elemo\"}",
+        "definition": "http_request_duration_seconds_count{job=\"elemo-server\"}",
         "hide": 0,
         "includeAll": true,
         "label": "",
@@ -628,7 +1023,7 @@
         "name": "handler",
         "options": [],
         "query": {
-          "query": "http_request_duration_seconds_count{service=\"elemo\"}",
+          "query": "http_request_duration_seconds_count{job=\"elemo-server\"}",
           "refId": "StandardVariableQuery"
         },
         "refresh": 1,
@@ -640,7 +1035,7 @@
     ]
   },
   "time": {
-    "from": "now-3h",
+    "from": "now-5m",
     "to": "now"
   },
   "timepicker": {
