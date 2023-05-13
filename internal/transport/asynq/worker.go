@@ -32,6 +32,10 @@ type WorkerOption func(*Worker) error
 // WithWorkerConfig sets the config for the worker.
 func WithWorkerConfig(conf *config.WorkerConfig) WorkerOption {
 	return func(w *Worker) error {
+		if conf == nil {
+			return config.ErrNoConfig
+		}
+
 		w.conf = conf
 		return nil
 	}
