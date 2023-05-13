@@ -81,9 +81,6 @@ func (c *Client) Ping(ctx context.Context) error {
 	ctx, span := c.tracer.Start(ctx, "transport.asynq.Client/Ping")
 	defer span.End()
 
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
-	defer cancel()
-
 	task, err := NewSystemHealthCheckTask()
 	if err != nil {
 		return err

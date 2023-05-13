@@ -3,6 +3,7 @@ package http
 import (
 	"context"
 	"errors"
+	"time"
 
 	oapiTypes "github.com/deepmap/oapi-codegen/pkg/types"
 
@@ -29,11 +30,10 @@ func (c *systemController) GetSystemHealth(ctx context.Context, _ gen.GetSystemH
 	ctx, span := c.tracer.Start(ctx, "transport.http.handler/GetSystemHealth")
 	defer span.End()
 
-	health, err := c.systemService.GetHealth(ctx)
-	if err != nil {
-		return gen.GetSystemHealthResponseObject(nil), err
-	}
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
 
+	health, _ := c.systemService.GetHealth(ctx)
 	return gen.GetSystemHealth200JSONResponse(*healthStatusToDTO(health)), nil
 }
 

@@ -166,7 +166,7 @@ func NewRouter(strictServer StrictServer, serverConfig *config.ServerConfig, tra
 		middleware.RequestID,
 		middleware.RealIP,
 		middleware.AllowContentEncoding("deflate", "gzip"),
-		middleware.Compress(7, "text/html", "text/css", "application/json"),
+		middleware.Compress(5, "text/html", "text/css", "application/json"),
 		middleware.SetHeader("X-Frame-Options", "sameorigin"),
 		middleware.StripSlashes,
 		WithTracedMiddleware(tracer, WithRequestLogger),
