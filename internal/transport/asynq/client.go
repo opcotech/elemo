@@ -18,20 +18,25 @@ type ClientOption func(*Client) error
 
 // WithClientConfig sets the config for the worker.
 func WithClientConfig(conf *config.WorkerConfig) ClientOption {
-	return func(w *Client) error {
-		w.conf = conf
+	return func(c *Client) error {
+		if conf == nil {
+			return config.ErrNoConfig
+		}
+
+		c.conf = conf
+
 		return nil
 	}
 }
 
 // WithClientLogger sets the logger for the worker.
 func WithClientLogger(logger log.Logger) ClientOption {
-	return func(w *Client) error {
+	return func(c *Client) error {
 		if logger == nil {
 			return log.ErrNoLogger
 		}
 
-		w.logger = logger
+		c.logger = logger
 
 		return nil
 	}
@@ -39,13 +44,12 @@ func WithClientLogger(logger log.Logger) ClientOption {
 
 // WithClientTracer sets the tracer for the worker.
 func WithClientTracer(tracer trace.Tracer) ClientOption {
-	return func(w *Client) error {
+	return func(c *Client) error {
 		if tracer == nil {
 			return tracing.ErrNoTracer
 		}
 
-		w.tracer = tracer
-
+		c.tracer = tracer
 		return nil
 	}
 }
@@ -76,6 +80,9 @@ func (c *Client) Enqueue(ctx context.Context, task *asynq.Task, opts ...asynq.Op
 func (c *Client) Ping(ctx context.Context) error {
 	ctx, span := c.tracer.Start(ctx, "transport.asynq.Client/Ping")
 	defer span.End()
+
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
 
 	task, err := NewSystemHealthCheckTask()
 	if err != nil {
