@@ -13,6 +13,7 @@ properties:
   description:
     description: Description of the todo item.
     type: string
+    minimum: 10
     maxLength: 500
   priority:
     $ref: './todo_priority.yaml'

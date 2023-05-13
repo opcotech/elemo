@@ -5,7 +5,7 @@ export interface DrawerSliceState {
   toggleDrawer: (drawer: keyof Drawers) => void;
 }
 
-export const drawerSlice: StateCreator<DrawerSliceState> = (set) => ({
+export const createDrawerSlice: StateCreator<DrawerSliceState> = (set) => ({
   drawers: {
     showTodos: false,
     showNotifications: false
