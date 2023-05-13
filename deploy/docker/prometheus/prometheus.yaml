@@ -6,9 +6,17 @@ scrape_configs:
   - job_name: 'prometheus'
     static_configs:
       - targets: [ 'localhost:9090' ]
-  - job_name: 'elemo'
+  - job_name: 'elemo-server'
     scheme: https
     tls_config:
       insecure_skip_verify: true
     static_configs:
-      - targets: [ 'elemo:35479' ]
+      - targets:
+        - 'elemo-server:35479'
+  - job_name: 'elemo-worker'
+    scheme: https
+    tls_config:
+      insecure_skip_verify: true
+    static_configs:
+      - targets:
+        - 'elemo-worker:35480'

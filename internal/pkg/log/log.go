@@ -71,6 +71,48 @@ func DefaultLogger() Logger {
 	return globalLogger
 }
 
+// SimpleLogger is used to log the message where only arguments are available.
+type SimpleLogger struct {
+	logger Logger
+}
+
+func (l *SimpleLogger) log(level zapcore.Level, args ...interface{}) {
+	message := args[len(args)-1].(string)
+
+	logArgs := make([]zap.Field, (len(args)-1)/2)
+	for i, j := 1, 0; i < len(args)-1; i += 2 {
+		logArgs[j] = zap.Any(args[i].(string), args[i+1])
+		j++
+	}
+
+	l.logger.Log(level, message, logArgs...)
+}
+
+func (l *SimpleLogger) Debug(args ...interface{}) {
+	l.log(zap.DebugLevel, args...)
+}
+
+func (l *SimpleLogger) Info(args ...interface{}) {
+	l.log(zap.InfoLevel, args...)
+}
+
+func (l *SimpleLogger) Warn(args ...interface{}) {
+	l.log(zap.WarnLevel, args...)
+}
+
+func (l *SimpleLogger) Error(args ...interface{}) {
+	l.log(zap.ErrorLevel, args...)
+}
+
+func (l *SimpleLogger) Fatal(args ...interface{}) {
+	l.log(zap.FatalLevel, args...)
+}
+
+// NewSimpleLogger returns a new SimpleLogger.
+func NewSimpleLogger(logger Logger) *SimpleLogger {
+	return &SimpleLogger{logger: logger}
+}
+
 // WithContext returns a new context with the logger. If the logger is not
 // provided, it returns the context with the global logger assigned.
 func WithContext(ctx context.Context, logger Logger) context.Context {

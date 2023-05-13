@@ -29,8 +29,16 @@ properties:
       - healthy
       - unhealthy
       - unknown
+  message_queue:
+    description: Health of the message queue.
+    type: string
+    enum:
+      - healthy
+      - unhealthy
+      - unknown
 required:
   - cache_database
   - graph_database
   - relational_database
   - license
+  - message_queue

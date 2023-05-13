@@ -92,6 +92,7 @@ func healthStatusToDTO(status map[model.HealthCheckComponent]model.HealthStatus)
 		GraphDatabase:      gen.SystemHealthGraphDatabase(status[model.HealthCheckComponentGraphDB].String()),
 		RelationalDatabase: gen.SystemHealthRelationalDatabase(status[model.HealthCheckComponentRelationalDB].String()),
 		License:            gen.SystemHealthLicense(status[model.HealthCheckComponentLicense].String()),
+		MessageQueue:       gen.SystemHealthMessageQueue(status[model.HealthCheckComponentMessageQueue].String()),
 	}
 }
 
