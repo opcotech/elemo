@@ -15,7 +15,8 @@ import (
 var startWorkerCmd = &cobra.Command{
 	Use:   "worker",
 	Short: "Start the worker",
-	Long:  `Starts listening on the specified address.`,
+	Long: `Starts the worker processes and listens for prometheus metrics on the
+configured port.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		initTracer("worker")
 
