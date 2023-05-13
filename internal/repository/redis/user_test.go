@@ -2,11 +2,11 @@ package redis
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	"github.com/go-redis/cache/v9"
 	"github.com/redis/go-redis/v9"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/trace"
@@ -597,7 +597,7 @@ func TestCachedUserRepository_Get(t *testing.T) {
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					cacheRepo := new(testMock.CacheRepository)
-					cacheRepo.On("Get", ctx, key, mock.Anything).Return(nil, errors.New("error"))
+					cacheRepo.On("Get", ctx, key, mock.Anything).Return(nil, assert.AnError)
 
 					return &baseRepository{
 						db:     db,
@@ -640,7 +640,7 @@ func TestCachedUserRepository_Get(t *testing.T) {
 						Ctx:   ctx,
 						Key:   key,
 						Value: user,
-					}).Return(errors.New("error"))
+					}).Return(assert.AnError)
 
 					return &baseRepository{
 						db:     db,
@@ -875,7 +875,7 @@ func TestCachedUserRepository_GetByEmail(t *testing.T) {
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					cacheRepo := new(testMock.CacheRepository)
-					cacheRepo.On("Get", ctx, key, mock.Anything).Return(nil, errors.New("error"))
+					cacheRepo.On("Get", ctx, key, mock.Anything).Return(nil, assert.AnError)
 
 					return &baseRepository{
 						db:     db,
@@ -918,7 +918,7 @@ func TestCachedUserRepository_GetByEmail(t *testing.T) {
 						Ctx:   ctx,
 						Key:   key,
 						Value: user,
-					}).Return(errors.New("error"))
+					}).Return(assert.AnError)
 
 					return &baseRepository{
 						db:     db,
@@ -1195,7 +1195,7 @@ func TestCachedUserRepository_GetAll(t *testing.T) {
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Set", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					cacheRepo := new(testMock.CacheRepository)
-					cacheRepo.On("Get", ctx, key, mock.Anything).Return(nil, errors.New("error"))
+					cacheRepo.On("Get", ctx, key, mock.Anything).Return(nil, assert.AnError)
 
 					return &baseRepository{
 						db:     db,
@@ -1239,7 +1239,7 @@ func TestCachedUserRepository_GetAll(t *testing.T) {
 						Ctx:   ctx,
 						Key:   key,
 						Value: users,
-					}).Return(errors.New("error"))
+					}).Return(assert.AnError)
 
 					return &baseRepository{
 						db:     db,
@@ -1440,7 +1440,7 @@ func TestCachedUserRepository_Update(t *testing.T) {
 						Ctx:   ctx,
 						Key:   key,
 						Value: user,
-					}).Return(errors.New("error"))
+					}).Return(assert.AnError)
 
 					return &baseRepository{
 						db:     db,
@@ -1496,7 +1496,7 @@ func TestCachedUserRepository_Update(t *testing.T) {
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Set", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					cacheRepo := new(testMock.CacheRepository)
-					cacheRepo.On("Delete", ctx, byEmailKey).Return(errors.New("error"))
+					cacheRepo.On("Delete", ctx, byEmailKey).Return(assert.AnError)
 					cacheRepo.On("Set", &cache.Item{
 						Ctx:   ctx,
 						Key:   key,
@@ -1582,7 +1582,7 @@ func TestCachedUserRepository_Update(t *testing.T) {
 
 					cacheRepo := new(testMock.CacheRepository)
 					cacheRepo.On("Delete", ctx, byEmailKey).Return(nil)
-					cacheRepo.On("Delete", ctx, getAllKey).Return(errors.New("error"))
+					cacheRepo.On("Delete", ctx, getAllKey).Return(assert.AnError)
 					cacheRepo.On("Set", &cache.Item{
 						Ctx:   ctx,
 						Key:   key,

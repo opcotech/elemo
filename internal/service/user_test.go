@@ -198,7 +198,7 @@ func TestUserService_Create(t *testing.T) {
 					tracer.On("Start", ctx, "service.userService/Create", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					userRepo := new(mock.UserRepository)
-					userRepo.On("Create", ctx, user).Return(errors.New("error"))
+					userRepo.On("Create", ctx, user).Return(assert.AnError)
 
 					permRepo := new(mock.PermissionRepository)
 					permRepo.On("HasPermission", ctx, userID, model.MustNewNilID(model.ResourceTypeUser), []model.PermissionKind{
@@ -299,7 +299,7 @@ func TestUserService_Create(t *testing.T) {
 					tracer.On("Start", ctx, "service.userService/Create", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					licenseSvc := new(mock.LicenseService)
-					licenseSvc.On("Expired", ctx).Return(false, errors.New("error"))
+					licenseSvc.On("Expired", ctx).Return(false, assert.AnError)
 
 					return &baseService{
 						logger:         new(mock.Logger),
@@ -405,7 +405,7 @@ func TestUserService_Get(t *testing.T) {
 					tracer.On("Start", ctx, "service.userService/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					userRepo := new(mock.UserRepository)
-					userRepo.On("Get", ctx, id).Return(nil, errors.New("error"))
+					userRepo.On("Get", ctx, id).Return(nil, assert.AnError)
 
 					return &baseService{
 						logger:   new(mock.Logger),
@@ -510,7 +510,7 @@ func TestUserService_GetByEmail(t *testing.T) {
 					tracer.On("Start", ctx, "service.userService/GetByEmail", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					userRepo := new(mock.UserRepository)
-					userRepo.On("GetByEmail", ctx, email).Return(nil, errors.New("error"))
+					userRepo.On("GetByEmail", ctx, email).Return(nil, assert.AnError)
 
 					return &baseService{
 						logger:   new(mock.Logger),
@@ -645,7 +645,7 @@ func TestUserService_GetAll(t *testing.T) {
 					tracer.On("Start", ctx, "service.userService/GetAll", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					userRepo := new(mock.UserRepository)
-					userRepo.On("GetAll", ctx, offset, limit).Return(nil, errors.New("error"))
+					userRepo.On("GetAll", ctx, offset, limit).Return(nil, assert.AnError)
 
 					return &baseService{
 						logger:   new(mock.Logger),
@@ -847,7 +847,7 @@ func TestUserService_Update(t *testing.T) {
 					tracer.On("Start", ctx, "service.userService/Update", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					userRepo := new(mock.UserRepository)
-					userRepo.On("Update", ctx, id, patch).Return(nil, errors.New("error"))
+					userRepo.On("Update", ctx, id, patch).Return(nil, assert.AnError)
 
 					permRepo := new(mock.PermissionRepository)
 					permRepo.On("HasPermission", ctx, id, id, []model.PermissionKind{
@@ -1250,7 +1250,7 @@ func TestUserService_Delete(t *testing.T) {
 					tracer.On("Start", ctx, "service.userService/Update", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					userRepo := new(mock.UserRepository)
-					userRepo.On("Update", ctx, id, patch).Return(nil, errors.New("error"))
+					userRepo.On("Update", ctx, id, patch).Return(nil, assert.AnError)
 
 					permRepo := new(mock.PermissionRepository)
 					permRepo.On("HasPermission", ctx, userID, id, []model.PermissionKind{
@@ -1288,7 +1288,7 @@ func TestUserService_Delete(t *testing.T) {
 					tracer.On("Start", ctx, "service.userService/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					userRepo := new(mock.UserRepository)
-					userRepo.On("Delete", ctx, id).Return(errors.New("error"))
+					userRepo.On("Delete", ctx, id).Return(assert.AnError)
 
 					permRepo := new(mock.PermissionRepository)
 					permRepo.On("HasPermission", ctx, userID, id, []model.PermissionKind{

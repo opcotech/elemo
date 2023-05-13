@@ -2,9 +2,9 @@ package pg
 
 import (
 	"context"
-	"errors"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/trace"
 
@@ -311,7 +311,7 @@ func TestDatabase_Ping(t *testing.T) {
 			fields: fields{
 				pool: func(ctx context.Context) Pool {
 					p := new(mock.PGPool)
-					p.On("Ping", ctx).Return(errors.New("error"))
+					p.On("Ping", ctx).Return(assert.AnError)
 					return p
 				},
 			},

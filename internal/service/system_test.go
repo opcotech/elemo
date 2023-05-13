@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"testing"
 
@@ -179,6 +178,7 @@ func Test_systemService_GetHealth(t *testing.T) {
 					span.On("AddEvent", fmt.Sprintf("Check %s health", model.HealthCheckComponentGraphDB)).Return()
 					span.On("AddEvent", fmt.Sprintf("Check %s health", model.HealthCheckComponentRelationalDB)).Return()
 					span.On("AddEvent", fmt.Sprintf("Check %s health", model.HealthCheckComponentLicense)).Return()
+					span.On("AddEvent", fmt.Sprintf("Check %s health", model.HealthCheckComponentMessageQueue)).Return()
 
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "service.systemService/GetHealth", []trace.SpanStartOption(nil)).Return(ctx, span)
@@ -193,12 +193,13 @@ func Test_systemService_GetHealth(t *testing.T) {
 				},
 				resources: func(ctx context.Context) map[model.HealthCheckComponent]Pingable {
 					resource := new(mock.PingableResource)
-					resource.On("Ping", ctx).Return(nil).Times(3)
+					resource.On("Ping", ctx).Return(nil).Times(4)
 
 					return map[model.HealthCheckComponent]Pingable{
 						model.HealthCheckComponentGraphDB:      resource,
 						model.HealthCheckComponentRelationalDB: resource,
 						model.HealthCheckComponentLicense:      resource,
+						model.HealthCheckComponentMessageQueue: resource,
 					}
 				},
 			},
@@ -209,6 +210,7 @@ func Test_systemService_GetHealth(t *testing.T) {
 				model.HealthCheckComponentGraphDB:      model.HealthStatusHealthy,
 				model.HealthCheckComponentRelationalDB: model.HealthStatusHealthy,
 				model.HealthCheckComponentLicense:      model.HealthStatusHealthy,
+				model.HealthCheckComponentMessageQueue: model.HealthStatusHealthy,
 			},
 		},
 		{
@@ -220,6 +222,7 @@ func Test_systemService_GetHealth(t *testing.T) {
 					span.On("AddEvent", fmt.Sprintf("Check %s health", model.HealthCheckComponentGraphDB)).Return()
 					span.On("AddEvent", fmt.Sprintf("Check %s health", model.HealthCheckComponentRelationalDB)).Return()
 					span.On("AddEvent", fmt.Sprintf("Check %s health", model.HealthCheckComponentLicense)).Return()
+					span.On("AddEvent", fmt.Sprintf("Check %s health", model.HealthCheckComponentMessageQueue)).Return()
 
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "service.systemService/GetHealth", []trace.SpanStartOption(nil)).Return(ctx, span)
@@ -234,12 +237,13 @@ func Test_systemService_GetHealth(t *testing.T) {
 				},
 				resources: func(ctx context.Context) map[model.HealthCheckComponent]Pingable {
 					resource := new(mock.PingableResource)
-					resource.On("Ping", ctx).Return(errors.New("error")).Times(3)
+					resource.On("Ping", ctx).Return(assert.AnError).Times(4)
 
 					return map[model.HealthCheckComponent]Pingable{
 						model.HealthCheckComponentGraphDB:      resource,
 						model.HealthCheckComponentRelationalDB: resource,
 						model.HealthCheckComponentLicense:      resource,
+						model.HealthCheckComponentMessageQueue: resource,
 					}
 				},
 			},
@@ -250,6 +254,7 @@ func Test_systemService_GetHealth(t *testing.T) {
 				model.HealthCheckComponentGraphDB:      model.HealthStatusUnhealthy,
 				model.HealthCheckComponentRelationalDB: model.HealthStatusUnhealthy,
 				model.HealthCheckComponentLicense:      model.HealthStatusUnhealthy,
+				model.HealthCheckComponentMessageQueue: model.HealthStatusUnhealthy,
 			},
 			wantErr: ErrSystemHealthCheck,
 		},

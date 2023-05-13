@@ -2,11 +2,11 @@ package service
 
 import (
 	"context"
-	"errors"
 	"testing"
 	"time"
 
 	"github.com/rs/xid"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/trace"
 
@@ -677,7 +677,7 @@ func TestLicenseService_WithinThreshold(t *testing.T) {
 				},
 				licenseRepo: func(ctx context.Context) repository.LicenseRepository {
 					repo := new(mock.LicenseRepository)
-					repo.On("ActiveUserCount", ctx).Return(0, errors.New("error"))
+					repo.On("ActiveUserCount", ctx).Return(0, assert.AnError)
 					return repo
 				},
 				license: &license.License{
@@ -844,7 +844,7 @@ func TestLicenseService_GetLicense(t *testing.T) {
 						model.SystemRoleOwner,
 						model.SystemRoleAdmin,
 						model.SystemRoleSupport,
-					}).Return(false, errors.New("error"))
+					}).Return(false, assert.AnError)
 
 					return &baseService{
 						logger:         new(mock.Logger),
