@@ -30,6 +30,7 @@ export default function TodoItem({
   description,
   priority,
   completed,
+  due_date,
   loading,
   editing,
   deleting,
@@ -88,6 +89,11 @@ export default function TodoItem({
           </p>
           {description && (
             <p className={concat('text-sm text-gray-500', completed ? 'line-through' : '')}>{description}</p>
+          )}
+          {due_date && (
+            <p className={concat('text-sm pt-2 text-gray-500', completed ? 'line-through' : '')}>
+              {new Date(due_date).toLocaleDateString()}
+            </p>
           )}
         </div>
         <div className="space-x-2">
