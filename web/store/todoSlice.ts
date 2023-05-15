@@ -46,7 +46,7 @@ export const createTodoSlice: StateCreator<TodoSliceState & Partial<MessageSlice
       get().addMessage?.({
         type: 'success',
         title: 'Todo Created',
-        message: `Todo "${todo.title}" created successfully`
+        message: `Todo "${data.todo_id}" created successfully`
       });
     } catch (e) {
       get().addMessage?.({
@@ -64,7 +64,7 @@ export const createTodoSlice: StateCreator<TodoSliceState & Partial<MessageSlice
       get().addMessage?.({
         type: 'success',
         title: 'Todo updated',
-        message: `Todo "${todo.title}" updated successfully.`
+        message: `Todo "${id}" updated successfully.`
       });
     } catch (e) {
       get().addMessage?.({
@@ -81,7 +81,7 @@ export const createTodoSlice: StateCreator<TodoSliceState & Partial<MessageSlice
       get().addMessage?.({
         type: 'success',
         title: 'Todo deleted',
-        message: `Todo with ID "${id}" deleted successfully.`
+        message: `Todo "${id}" deleted successfully.`
       });
     } catch (e) {
       get().addMessage?.({
