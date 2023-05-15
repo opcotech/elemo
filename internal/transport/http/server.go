@@ -174,13 +174,13 @@ func NewRouter(strictServer StrictServer, serverConfig *config.ServerConfig, tra
 	)
 
 	if serverConfig.CORS.Enabled {
-		router.Use(WithTracedMiddleware(tracer, cors.Handler(cors.Options{
+		router.Use(cors.Handler(cors.Options{
 			AllowedOrigins:   serverConfig.CORS.AllowedOrigins,
 			AllowedMethods:   serverConfig.CORS.AllowedMethods,
 			AllowedHeaders:   serverConfig.CORS.AllowedHeaders,
 			AllowCredentials: serverConfig.CORS.AllowCredentials,
 			MaxAge:           serverConfig.CORS.MaxAge,
-		})))
+		}))
 	}
 
 	router.Group(func(r chi.Router) {

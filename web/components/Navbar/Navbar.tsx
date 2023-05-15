@@ -1,16 +1,16 @@
 'use client';
 
-import {Disclosure, Popover, Transition} from '@headlessui/react';
-import {usePathname} from 'next/navigation';
-import {useSession} from 'next-auth/react';
-import {Fragment, useMemo, useState} from 'react';
+import { Disclosure, Popover, Transition } from '@headlessui/react';
+import { usePathname } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 
 import Avatar from '@/components/Avatar';
-import {IconButton} from '@/components/Button';
+import { IconButton } from '@/components/Button';
 import Icon from '@/components/Icon';
 import Link from '@/components/Link';
-import {concat} from '@/helpers';
-import {getInitials} from '@/helpers/strings';
+import { concat } from '@/helpers';
+import { getInitials } from '@/helpers/strings';
 import useStore from '@/store';
 
 export interface NavigationItem {
@@ -31,8 +31,11 @@ export interface NavbarProps {
 
 export default function Navbar({ navigation, userNavigation }: NavbarProps) {
   const toggleDrawer = useStore((state) => state.toggleDrawer);
+  const todos = useStore((state) => state.todos);
+  const fetchTodos = useStore((state) => state.fetchTodos);
+  const fetchedTodos = useStore((state) => state.fetchedTodos);
 
-  const [hasTodos, sethasTodos] = useState(false);
+  const [hasTodos, setHasTodos] = useState(false);
   const [hasNotifications, setHasNotifications] = useState(false);
 
   const { data: session } = useSession();
@@ -47,6 +50,13 @@ export default function Navbar({ navigation, userNavigation }: NavbarProps) {
   function isCurrent(path: string) {
     return path === currentPath;
   }
+
+  useEffect(() => {
+    if (!fetchedTodos) {
+      fetchTodos();
+    }
+    setHasTodos(todos.length > 0);
+  }, [todos, fetchTodos, fetchedTodos]);
 
   return (
     <Disclosure id="navbar" as="nav" className="bg-gray-50 shadow z-20">

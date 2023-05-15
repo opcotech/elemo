@@ -229,13 +229,15 @@ func createTodoJSONRequestBodyToTodo(body *gen.CreateTodoJSONRequestBody, ownedB
 
 func todoToDTO(todo *model.Todo) gen.Todo {
 	return gen.Todo{
-		Id:        convert.ToPointer(todo.ID.String()),
-		Title:     &todo.Title,
-		Completed: &todo.Completed,
-		OwnedBy:   convert.ToPointer(todo.OwnedBy.String()),
-		CreatedBy: convert.ToPointer(todo.CreatedBy.String()),
-		DueDate:   todo.DueDate,
-		CreatedAt: todo.CreatedAt,
-		UpdatedAt: todo.UpdatedAt,
+		Id:          convert.ToPointer(todo.ID.String()),
+		Title:       &todo.Title,
+		Completed:   &todo.Completed,
+		Priority:    convert.ToPointer(gen.TodoPriority(todo.Priority.String())),
+		Description: &todo.Description,
+		OwnedBy:     convert.ToPointer(todo.OwnedBy.String()),
+		CreatedBy:   convert.ToPointer(todo.CreatedBy.String()),
+		DueDate:     todo.DueDate,
+		CreatedAt:   todo.CreatedAt,
+		UpdatedAt:   todo.UpdatedAt,
 	}
 }

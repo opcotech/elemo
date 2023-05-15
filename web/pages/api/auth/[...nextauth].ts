@@ -1,6 +1,7 @@
 import NextAuth from 'next-auth/next';
 import type { JWT } from 'next-auth/jwt';
 import Credentials from 'next-auth/providers/credentials';
+import client, { setToken } from '@/lib/api';
 
 interface TokenResponse {
   token_type: string;
@@ -26,7 +27,7 @@ async function getTokenData(credentials: Record<never, string> | undefined): Pro
     grant_type: 'password'
   };
 
-  const tokenResponse = await fetch(`${process.env.ELEMO_BASE_URL}/oauth/token`, {
+  const tokenResponse = await fetch(`${process.env.NEXT_PUBLIC_ELEMO_BASE_URL}/oauth/token`, {
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     method: 'POST',
     body: new URLSearchParams(payload)
@@ -42,20 +43,22 @@ async function getTokenData(credentials: Record<never, string> | undefined): Pro
 }
 
 async function getUserData(tokenData: TokenResponse): Promise<UserResponse | null> {
-  const userResponse = await fetch(`${process.env.ELEMO_BASE_URL}/v1/users/me`, {
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `${tokenData.token_type} ${tokenData.access_token}`
-    }
-  });
+  setToken(tokenData.access_token);
 
-  const userData: UserResponse = await userResponse.json();
+  const res = await client.v1.getUser('me');
+  const userResponse = await res.json();
 
-  if (!userResponse.ok || !userData) {
+  if (!res.ok) {
     return null;
   }
 
-  return userData;
+  return {
+    id: userResponse.id!,
+    first_name: userResponse.first_name!,
+    last_name: userResponse.last_name!,
+    email: userResponse.email!,
+    picture: userResponse.picture || ''
+  };
 }
 
 const ElemoCredentialsProvider = Credentials({
@@ -66,6 +69,8 @@ const ElemoCredentialsProvider = Credentials({
     if (!tokenData) {
       return null;
     }
+
+    setToken(tokenData.access_token);
 
     const userData = await getUserData(tokenData);
     if (!userData) {
@@ -85,7 +90,7 @@ const ElemoCredentialsProvider = Credentials({
 });
 
 async function refreshAccessToken(token: JWT): Promise<JWT> {
-  const response = await fetch(`${process.env.ELEMO_BASE_URL}/oauth/token`, {
+  const response = await fetch(`${process.env.NEXT_PUBLIC_ELEMO_BASE_URL}/oauth/token`, {
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     method: 'POST',
     body: new URLSearchParams({
@@ -102,6 +107,8 @@ async function refreshAccessToken(token: JWT): Promise<JWT> {
   if (!response.ok) {
     throw new Error(data.error_description ?? data.error ?? 'Unknown error');
   }
+
+  setToken(data.access_token);
 
   return {
     ...token,

@@ -80,6 +80,7 @@ server:
       - "GET"
       - "POST"
       - "PUT"
+      - "PATCH"
       - "DELETE"
       - "OPTIONS"
     allowed_headers:
