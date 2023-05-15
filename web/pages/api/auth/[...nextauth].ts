@@ -46,7 +46,7 @@ async function getUserData(tokenData: TokenResponse): Promise<UserResponse | nul
   setToken(tokenData.access_token);
 
   const res = await client.v1.getUser('me');
-  const userResponse = await res.json()
+  const userResponse = await res.json();
 
   if (!res.ok) {
     return null;
@@ -57,8 +57,8 @@ async function getUserData(tokenData: TokenResponse): Promise<UserResponse | nul
     first_name: userResponse.first_name!,
     last_name: userResponse.last_name!,
     email: userResponse.email!,
-    picture: userResponse.picture || '',
-  }
+    picture: userResponse.picture || ''
+  };
 }
 
 const ElemoCredentialsProvider = Credentials({
