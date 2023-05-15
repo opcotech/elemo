@@ -1,7 +1,6 @@
 'use client';
 
-import { memo, useCallback, useEffect, useState } from 'react';
-import { useSession } from 'next-auth/react';
+import { memo, useCallback, useState } from 'react';
 import Drawer from '@/components/Drawer';
 import { ListSkeleton } from '@/components/Skeleton';
 import useStore from '@/store';
@@ -22,9 +21,7 @@ export default function TodoDrawer() {
   const toggleDrawer = useStore((state) => state.toggleDrawer);
 
   const todos = useStore((state) => state.todos);
-  const fetchTodos = useStore((state) => state.fetchTodos);
   const fetchingTodos = useStore((state) => state.fetchingTodos);
-  const fetchedTodos = useStore((state) => state.fetchedTodos);
   const updateTodo = useStore((state) => state.updateTodo);
 
   const [state, setState] = useState<TodoDrawerState>({
@@ -32,11 +29,6 @@ export default function TodoDrawer() {
     deleting: [],
     loading: []
   });
-
-  useEffect(() => {
-    if (!drawers.showTodos || todos.length > 0 || fetchedTodos) return;
-    fetchTodos();
-  }, [drawers.showTodos, todos, fetchTodos, fetchedTodos]);
 
   const setLoading = useCallback(
     (id: string, loading: boolean) =>
