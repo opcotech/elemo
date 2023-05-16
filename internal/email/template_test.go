@@ -5,7 +5,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/opcotech/elemo/internal/pkg/validate"
 	"github.com/opcotech/elemo/internal/testutil"
 )
 
@@ -14,10 +13,6 @@ type testTemplateData struct {
 	FirstName    string `validate:"omitempty"`
 	ServerURL    string `validate:"required,url"`
 	SupportEmail string `validate:"required,email"`
-}
-
-func (d *testTemplateData) Validate() error {
-	return validate.Struct(d)
 }
 
 func (d *testTemplateData) Get() interface{} {

@@ -10,6 +10,17 @@ var (
 	ErrNoConfig = errors.New("no config provided") // no configuration provided
 )
 
+// SMTPConfig is the configuration for the SMTP server used for sending
+// notification emails.
+type SMTPConfig struct {
+	Host               string `mapstructure:"host"`
+	Port               int    `mapstructure:"port"`
+	Username           string `mapstructure:"username"`
+	Password           string `mapstructure:"password"`
+	UseTLS             bool   `mapstructure:"use_tls"`
+	InsecureSkipVerify bool   `mapstructure:"insecure_skip_verify"`
+}
+
 // LicenseConfig is the configuration for the license.
 type LicenseConfig struct {
 	File string `mapstructure:"file"`
@@ -139,6 +150,7 @@ type ServerConfig struct {
 	RequestThrottleTimeout time.Duration `mapstructure:"request_throttle_timeout"`
 	CORS                   CORSConfig    `mapstructure:"cors"`
 	Session                SessionConfig `mapstructure:"session"`
+	TLS                    TLSConfig     `mapstructure:"tls"`
 }
 
 // WorkerConfig is the configuration for the async worker.
@@ -175,6 +187,6 @@ type Config struct {
 	GraphDatabase       GraphDatabaseConfig      `mapstructure:"graph_database"`
 	RelationalDatabase  RelationalDatabaseConfig `mapstructure:"relational_database"`
 	CacheDatabase       CacheDatabaseConfig      `mapstructure:"cache_database"`
-	TLS                 TLSConfig                `mapstructure:"tls"`
 	Tracing             TracingConfig            `mapstructure:"tracing"`
+	SMTP                SMTPConfig               `mapstructure:"smtp"`
 }

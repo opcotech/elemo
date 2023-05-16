@@ -282,7 +282,7 @@ func startHTTPServer(server elemoHttp.StrictServer) error {
 		WriteTimeout:      cfg.Server.WriteTimeout * time.Second,
 	}
 
-	return s.ListenAndServeTLS(cfg.TLS.CertFile, cfg.TLS.KeyFile)
+	return s.ListenAndServeTLS(cfg.Server.TLS.CertFile, cfg.Server.TLS.KeyFile)
 }
 
 func startHTTPMetricsServer() error {
@@ -300,7 +300,7 @@ func startHTTPMetricsServer() error {
 		WriteTimeout:      cfg.MetricsServer.WriteTimeout * time.Second,
 	}
 
-	return s.ListenAndServeTLS(cfg.TLS.CertFile, cfg.TLS.KeyFile)
+	return s.ListenAndServeTLS(cfg.MetricsServer.TLS.CertFile, cfg.MetricsServer.TLS.KeyFile)
 }
 
 func startHTTPServers(server elemoHttp.StrictServer) {
