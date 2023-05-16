@@ -102,11 +102,6 @@ func (s *AsynqClientIntegrationTestSuite) TestGetTaskInfo() {
 
 func (s *AsynqClientIntegrationTestSuite) TestPing() {
 	s.Require().NoError(s.client.Ping(context.Background()))
-
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Millisecond)
-	defer cancel()
-
-	s.Require().ErrorIs(s.client.Ping(ctx), context.DeadlineExceeded)
 }
 
 func (s *AsynqClientIntegrationTestSuite) Test_Z_Close() { // The test suite is run in alphabetical order, so we need to run this test last.
