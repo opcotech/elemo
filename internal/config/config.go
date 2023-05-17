@@ -10,15 +10,19 @@ var (
 	ErrNoConfig = errors.New("no config provided") // no configuration provided
 )
 
+// TemplateConfig is the configuration for template files.
+type TemplateConfig struct {
+	Directory string `mapstructure:"directory"`
+}
+
 // SMTPConfig is the configuration for the SMTP server used for sending
 // notification emails.
 type SMTPConfig struct {
-	Host               string `mapstructure:"host"`
-	Port               int    `mapstructure:"port"`
-	Username           string `mapstructure:"username"`
-	Password           string `mapstructure:"password"`
-	UseTLS             bool   `mapstructure:"use_tls"`
-	InsecureSkipVerify bool   `mapstructure:"insecure_skip_verify"`
+	Host        string `mapstructure:"host"`
+	Port        int    `mapstructure:"port"`
+	Username    string `mapstructure:"username"`
+	Password    string `mapstructure:"password"`
+	FromAddress string `mapstructure:"from_address"`
 }
 
 // LicenseConfig is the configuration for the license.
@@ -189,4 +193,5 @@ type Config struct {
 	CacheDatabase       CacheDatabaseConfig      `mapstructure:"cache_database"`
 	Tracing             TracingConfig            `mapstructure:"tracing"`
 	SMTP                SMTPConfig               `mapstructure:"smtp"`
+	Template            TemplateConfig           `mapstructure:"template"`
 }

@@ -40,6 +40,7 @@ ENV TZ UTC
 
 COPY --chown=nonroot:nonroot assets /elemo/assets
 COPY --chown=nonroot:nonroot configs /elemo/configs
+COPY --chown=nonroot:nonroot templates /elemo/templates
 COPY --from=build /usr/bin/elemo /elemo/bin/elemo
 
 WORKDIR /elemo
