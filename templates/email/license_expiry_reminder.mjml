@@ -18,11 +18,11 @@
     <mj-section padding-top="10px">
       <mj-column width="100%">
         <mj-text>
-          <p>Hello&nbsp;{{ if eq .FirstName "" }}{{ .FirstName }}{{ else }}{{ .Username }}{{ end }},</p>
+          <p>Hello&nbsp;{{ if ne .FirstName "" }}{{ .FirstName }}{{ else }}{{ .Username }}{{ end }},</p>
 
           <p>The license for {{ .ServerURL }} expires at
             <span>
-              <strong>{{ .License.ExpiresAt.String() }} UTC</strong>
+              <strong>{{ .LicenseExpiresAt }}</strong>
             </span>
             .
           </p>
@@ -37,19 +37,19 @@
         <mj-table font-weight="300" font-size="16px" color="#616161" line-height="24px">
           <tr style="text-align: left">
             <th>License ID:</th>
-            <td>{{ .License.ID.String() }}</td>
+            <td>{{ .LicenseID }}</td>
           </tr>
           <tr style="text-align: left">
             <th>Licensee:</th>
-            <td>{{ .License.Organization }}</td>
+            <td>{{ .LicenseOrganization }}</td>
           </tr>
           <tr style="text-align: left">
             <th>Licensee Email:</th>
-            <td>{{ .License.Email }}</td>
+            <td>{{ .LicenseEmail }}</td>
           </tr>
           <tr style="text-align: left">
-            <th>License ID:</th>
-            <td>{{ .License.ExpiresAt.String() }} UTC</td>
+            <th>License Expiry:</th>
+            <td>{{ .LicenseExpiresAt }}</td>
           </tr>
         </mj-table>
       </mj-column>

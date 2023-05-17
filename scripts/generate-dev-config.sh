@@ -45,12 +45,14 @@ function generateConfigFile() {
     local neo4j_host="neo4j"
     local postgres_host="postgres"
     local otel_collector_host="otel_collector"
+    local smtp_host="smtp"
   else
     local suffix=".local"
     local redis_host=host
     local neo4j_host=host
     local postgres_host=host
     local otel_collector_host=host
+    local smtp_host=host
   fi
 
 
@@ -60,10 +62,6 @@ log:
 
 license:
   file: "configs/development/license.gen.key"
-
-tls:
-  cert_file: "configs/development/cert${suffix}.gen.pem"
-  key_file: "configs/development/key${suffix}.gen.pem"
 
 server:
   address: "${host}:35478"
@@ -91,6 +89,9 @@ server:
     cookie_name: "elemo_session"
     max_age: 86400
     is_secure: false
+  tls:
+    cert_file: "configs/development/cert${suffix}.gen.pem"
+    key_file: "configs/development/key${suffix}.gen.pem"
 
 worker:
   concurrency: 10
@@ -159,15 +160,35 @@ metrics_server:
   address: "${host}:35479"
   read_timeout: 10
   write_timeout: 5
+  tls:
+    cert_file: "configs/development/cert${suffix}.gen.pem"
+    key_file: "configs/development/key${suffix}.gen.pem"
 
 worker_metrics_server:
   address: "${host}:35480"
   read_timeout: 10
   write_timeout: 5
+  tls:
+    cert_file: "configs/development/cert${suffix}.gen.pem"
+    key_file: "configs/development/key${suffix}.gen.pem"
+
+smtp:
+  host: "${smtp_host}"
+  port: 1025
+  username: "elemo"
+  password: "smtpsecret"
+  from_address: "no-reply@elemo.app"
+  support_address: "support@elemo.app"
+  reply_to_address: "support@elemo.app"
+  hostname: "elemo.local"
+  connection_timeout: 10
+  enable_auth: false
+  skip_tls_verify: true
+  security_protocol: ""
 
 tracing:
-  service_name: 'elemo'
-  collector_endpoint: '${otel_collector_host}:4318'
+  service_name: "elemo"
+  collector_endpoint: "${otel_collector_host}:4318"
   trace_ratio: 0.75
 EOF
 }

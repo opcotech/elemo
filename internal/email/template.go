@@ -16,9 +16,8 @@ type TemplateData interface {
 // Template is a struct that represents the data needed to render
 // an email template.
 type Template struct {
-	EmailMimeType string       `validate:"required"`
-	Path          string       `validate:"required,filepath"`
-	Data          TemplateData `validate:"required"`
+	Path string       `validate:"required,filepath"`
+	Data TemplateData `validate:"required"`
 }
 
 // Validate validates the password reset email template.
@@ -29,22 +28,16 @@ func (t *Template) Validate() error {
 	return nil
 }
 
-// MimeType returns the email's mime type.
-func (t *Template) MimeType() string {
-	return t.EmailMimeType
-}
-
-// Body returns the rendered email body.
-func (t *Template) Body() (string, error) {
+// Render returns the rendered template.
+func (t *Template) Render() (string, error) {
 	return emailBody[*template.Template](t.Path, t.Data.Get(), template.ParseFiles)
 }
 
 // NewTemplate returns a new email template.
 func NewTemplate(emailMimeType, path string, data TemplateData) (*Template, error) {
 	t := &Template{
-		EmailMimeType: emailMimeType,
-		Path:          path,
-		Data:          data,
+		Path: path,
+		Data: data,
 	}
 	if err := t.Validate(); err != nil {
 		return nil, err

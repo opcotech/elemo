@@ -18,11 +18,18 @@ type TemplateConfig struct {
 // SMTPConfig is the configuration for the SMTP server used for sending
 // notification emails.
 type SMTPConfig struct {
-	Host        string `mapstructure:"host"`
-	Port        int    `mapstructure:"port"`
-	Username    string `mapstructure:"username"`
-	Password    string `mapstructure:"password"`
-	FromAddress string `mapstructure:"from_address"`
+	Host              string        `mapstructure:"host"`
+	Port              int           `mapstructure:"port"`
+	Username          string        `mapstructure:"username"`
+	Password          string        `mapstructure:"password"`
+	Hostname          string        `mapstructure:"hostname"`
+	ConnectionTimeout time.Duration `mapstructure:"connection_timeout"`
+	EnableAuth        bool          `mapstructure:"enable_auth"`
+	SkipTLSVerify     bool          `mapstructure:"skip_tls_verify"`
+	SecurityProtocol  string        `mapstructure:"security_protocol"`
+	FromAddress       string        `mapstructure:"from_address"`
+	ReplyToAddress    string        `mapstructure:"reply_to_address"`
+	SupportAddress    string        `mapstructure:"support_address"`
 }
 
 // LicenseConfig is the configuration for the license.

@@ -44,8 +44,7 @@ func TestNewTemplate(t *testing.T) {
 				},
 			},
 			want: &Template{
-				EmailMimeType: MimeTypeHTML,
-				Path:          "/test.html",
+				Path: "/test.html",
 				Data: &testTemplateData{
 					Username:     "test-user",
 					FirstName:    "Test",
@@ -53,20 +52,6 @@ func TestNewTemplate(t *testing.T) {
 					SupportEmail: "info@example.com",
 				},
 			},
-		},
-		{
-			name: "invalid mime type",
-			args: args{
-				emailMimeType: "",
-				path:          "/test.html",
-				data: &testTemplateData{
-					Username:     "test-user",
-					FirstName:    "Test",
-					ServerURL:    "https://example.com",
-					SupportEmail: "info@example.com",
-				},
-			},
-			wantErr: ErrTemplateInvalid,
 		},
 		{
 			name: "invalid path",
@@ -140,20 +125,6 @@ func TestTemplate_Validate(t *testing.T) {
 			},
 		},
 		{
-			name: "invalid mime type",
-			fields: fields{
-				EmailMimeType: "",
-				Path:          "/test.html",
-				Data: &testTemplateData{
-					Username:     "test-user",
-					FirstName:    "Test",
-					ServerURL:    "https://example.com",
-					SupportEmail: "info@example.com",
-				},
-			},
-			wantErr: ErrTemplateInvalid,
-		},
-		{
 			name: "invalid path",
 			fields: fields{
 				EmailMimeType: MimeTypeHTML,
@@ -194,31 +165,13 @@ func TestTemplate_Validate(t *testing.T) {
 			t.Parallel()
 
 			tmpl := &Template{
-				EmailMimeType: tt.fields.EmailMimeType,
-				Path:          tt.fields.Path,
-				Data:          tt.fields.Data,
+				Path: tt.fields.Path,
+				Data: tt.fields.Data,
 			}
 
 			assert.ErrorIs(t, tmpl.Validate(), tt.wantErr)
 		})
 	}
-}
-
-func TestTemplate_MimeType(t *testing.T) {
-	t.Parallel()
-
-	tmpl := &Template{
-		Data: &testTemplateData{
-			Username:     "test",
-			FirstName:    "",
-			ServerURL:    "https://example.com",
-			SupportEmail: "info@example.com",
-		},
-		Path:          "/email/welcome.html",
-		EmailMimeType: MimeTypeHTML,
-	}
-
-	assert.Equal(t, MimeTypeHTML, tmpl.MimeType())
 }
 
 func TestTemplate_Body(t *testing.T) {
@@ -273,12 +226,11 @@ func TestTemplate_Body(t *testing.T) {
 			t.Parallel()
 
 			tmpl := &Template{
-				EmailMimeType: tt.fields.EmailMimeType,
-				Path:          tt.fields.Path,
-				Data:          tt.fields.Data,
+				Path: tt.fields.Path,
+				Data: tt.fields.Data,
 			}
 
-			got, err := tmpl.Body()
+			got, err := tmpl.Render()
 
 			assert.ErrorIs(t, err, tt.wantErr)
 			assert.Equal(t, tt.want, got)

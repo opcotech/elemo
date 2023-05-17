@@ -18,7 +18,7 @@
     <mj-section padding-top="10px">
       <mj-column width="100%">
         <mj-text>
-          <p>Hello&nbsp;{{ if eq .FirstName "" }}{{ .FirstName }}{{ else }}{{ .Username }}{{ end }},</p>
+          <p>Hello&nbsp;{{ if ne .FirstName "" }}{{ .FirstName }}{{ else }}{{ .Username }}{{ end }},</p>
 
           <p>
             Welcome to Elemo, the next-generation project management platform! We are excited to have you on board. We

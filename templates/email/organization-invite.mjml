@@ -18,7 +18,7 @@
     <mj-section padding-top="10px">
       <mj-column width="100%">
         <mj-text>
-          <p>Hello&nbsp;{{ if eq .FirstName "" }}{{ .FirstName }}{{ else }}{{ .Username }}{{ end }},</p>
+          <p>Hello&nbsp;{{ if ne .FirstName "" }}{{ .FirstName }}{{ else }}{{ .Username }}{{ end }},</p>
 
           <p>
             You are invited to join<strong>{{ .OrganizationName }}</strong>. If you wish to accept the invitation,
