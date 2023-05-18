@@ -12,13 +12,13 @@ type SMTPAuth struct {
 	mock.Mock
 }
 
-func (S *SMTPAuth) Start(server *smtp.ServerInfo) (proto string, toServer []byte, err error) {
-	args := S.Called(server)
+func (a *SMTPAuth) Start(server *smtp.ServerInfo) (proto string, toServer []byte, err error) {
+	args := a.Called(server)
 	return args.String(0), args.Get(1).([]byte), args.Error(2)
 }
 
-func (S *SMTPAuth) Next(fromServer []byte, more bool) (toServer []byte, err error) {
-	args := S.Called(fromServer, more)
+func (a *SMTPAuth) Next(fromServer []byte, more bool) (toServer []byte, err error) {
+	args := a.Called(fromServer, more)
 	return args.Get(0).([]byte), args.Error(1)
 }
 

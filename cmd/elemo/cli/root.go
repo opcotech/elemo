@@ -224,7 +224,7 @@ func initSMTPClient(smtpConf *config.SMTPConfig) (*elemoSMTP.Client, error) {
 
 	address := fmt.Sprintf("%s:%d", smtpConf.Host, smtpConf.Port)
 	tlsConf := &tls.Config{
-		InsecureSkipVerify: smtpConf.SkipTLSVerify,
+		InsecureSkipVerify: smtpConf.SkipTLSVerify, //nolint:gosec
 		ServerName:         smtpConf.Host,
 	}
 
