@@ -34,7 +34,7 @@ func (t *Template) Render() (string, error) {
 }
 
 // NewTemplate returns a new email template.
-func NewTemplate(emailMimeType, path string, data TemplateData) (*Template, error) {
+func NewTemplate(path string, data TemplateData) (*Template, error) {
 	t := &Template{
 		Path: path,
 		Data: data,

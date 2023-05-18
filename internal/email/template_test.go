@@ -21,9 +21,8 @@ func (d *testTemplateData) Get() interface{} {
 
 func TestNewTemplate(t *testing.T) {
 	type args struct {
-		emailMimeType string
-		path          string
-		data          TemplateData
+		path string
+		data TemplateData
 	}
 	tests := []struct {
 		name    string
@@ -34,8 +33,7 @@ func TestNewTemplate(t *testing.T) {
 		{
 			name: "valid email template",
 			args: args{
-				emailMimeType: MimeTypeHTML,
-				path:          "/test.html",
+				path: "/test.html",
 				data: &testTemplateData{
 					Username:     "test-user",
 					FirstName:    "Test",
@@ -56,8 +54,7 @@ func TestNewTemplate(t *testing.T) {
 		{
 			name: "invalid path",
 			args: args{
-				emailMimeType: MimeTypeHTML,
-				path:          "",
+				path: "",
 				data: &testTemplateData{
 					Username:     "test-user",
 					FirstName:    "Test",
@@ -70,8 +67,7 @@ func TestNewTemplate(t *testing.T) {
 		{
 			name: "invalid data",
 			args: args{
-				emailMimeType: MimeTypeHTML,
-				path:          "/test.html",
+				path: "/test.html",
 				data: &testTemplateData{
 					Username: "",
 				},
@@ -81,9 +77,8 @@ func TestNewTemplate(t *testing.T) {
 		{
 			name: "invalid data type",
 			args: args{
-				emailMimeType: MimeTypeHTML,
-				path:          "/test.html",
-				data:          nil,
+				path: "/test.html",
+				data: nil,
 			},
 			wantErr: ErrTemplateInvalid,
 		},
@@ -93,7 +88,7 @@ func TestNewTemplate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			got, err := NewTemplate(tt.args.emailMimeType, tt.args.path, tt.args.data)
+			got, err := NewTemplate(tt.args.path, tt.args.data)
 			assert.ErrorIs(t, err, tt.wantErr)
 			assert.Equal(t, tt.want, got)
 		})
