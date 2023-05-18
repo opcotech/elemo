@@ -7,14 +7,13 @@ import (
 	"github.com/go-redis/cache/v9"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/password"
 	"github.com/opcotech/elemo/internal/repository"
-	testMock "github.com/opcotech/elemo/internal/testutil/mock"
+	"github.com/opcotech/elemo/internal/testutil/mock"
 )
 
 func TestCachedUserRepository_Create(t *testing.T) {
@@ -49,7 +48,7 @@ func TestCachedUserRepository_Create(t *testing.T) {
 					rolesKeyResult := new(redis.StringSliceCmd)
 					rolesKeyResult.SetVal([]string{rolesKey})
 
-					dbClient := new(testMock.RedisClient)
+					dbClient := new(mock.RedisClient)
 					dbClient.On("Keys", ctx, getAllKey).Return(getAllKeyResult)
 					dbClient.On("Keys", ctx, organizationsKey).Return(organizationsKeyResult)
 					dbClient.On("Keys", ctx, rolesKey).Return(rolesKeyResult)
@@ -59,13 +58,13 @@ func TestCachedUserRepository_Create(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					span := new(testMock.Span)
+					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
-					tracer := new(testMock.Tracer)
+					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo := new(mock.CacheRepository)
 					cacheRepo.On("Delete", ctx, getAllKey).Return(nil)
 					cacheRepo.On("Delete", ctx, organizationsKey).Return(nil)
 					cacheRepo.On("Delete", ctx, rolesKey).Return(nil)
@@ -74,11 +73,11 @@ func TestCachedUserRepository_Create(t *testing.T) {
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(testMock.Logger),
+						logger: new(mock.Logger),
 					}
 				},
 				userRepo: func(ctx context.Context, user *model.User) repository.UserRepository {
-					repo := new(testMock.UserRepository)
+					repo := new(mock.UserRepository)
 					repo.On("Create", ctx, user).Return(nil)
 					return repo
 				},
@@ -122,7 +121,7 @@ func TestCachedUserRepository_Create(t *testing.T) {
 					rolesKeyResult := new(redis.StringSliceCmd)
 					rolesKeyResult.SetVal([]string{rolesKey})
 
-					dbClient := new(testMock.RedisClient)
+					dbClient := new(mock.RedisClient)
 					dbClient.On("Keys", ctx, getAllKey).Return(getAllKeyResult)
 					dbClient.On("Keys", ctx, organizationsKey).Return(organizationsKeyResult)
 					dbClient.On("Keys", ctx, rolesKey).Return(rolesKeyResult)
@@ -132,13 +131,13 @@ func TestCachedUserRepository_Create(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					span := new(testMock.Span)
+					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
-					tracer := new(testMock.Tracer)
+					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo := new(mock.CacheRepository)
 					cacheRepo.On("Delete", ctx, getAllKey).Return(nil)
 					cacheRepo.On("Delete", ctx, organizationsKey).Return(nil)
 					cacheRepo.On("Delete", ctx, rolesKey).Return(nil)
@@ -147,11 +146,11 @@ func TestCachedUserRepository_Create(t *testing.T) {
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(testMock.Logger),
+						logger: new(mock.Logger),
 					}
 				},
 				userRepo: func(ctx context.Context, user *model.User) repository.UserRepository {
-					repo := new(testMock.UserRepository)
+					repo := new(mock.UserRepository)
 					repo.On("Create", ctx, user).Return(repository.ErrUserCreate)
 					return repo
 				},
@@ -196,7 +195,7 @@ func TestCachedUserRepository_Create(t *testing.T) {
 					rolesKeyResult := new(redis.StringSliceCmd)
 					rolesKeyResult.SetVal([]string{rolesKey})
 
-					dbClient := new(testMock.RedisClient)
+					dbClient := new(mock.RedisClient)
 					dbClient.On("Keys", ctx, rolesKey).Return(rolesKeyResult)
 					dbClient.On("Keys", ctx, organizationsKey).Return(organizationsKeyResult)
 					dbClient.On("Keys", ctx, getAllKey).Return(getAllKeyResult)
@@ -206,13 +205,13 @@ func TestCachedUserRepository_Create(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					span := new(testMock.Span)
+					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
-					tracer := new(testMock.Tracer)
+					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo := new(mock.CacheRepository)
 					cacheRepo.On("Delete", ctx, rolesKey).Return(nil)
 					cacheRepo.On("Delete", ctx, organizationsKey).Return(nil)
 					cacheRepo.On("Delete", ctx, getAllKey).Return(repository.ErrCacheDelete)
@@ -221,11 +220,11 @@ func TestCachedUserRepository_Create(t *testing.T) {
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(testMock.Logger),
+						logger: new(mock.Logger),
 					}
 				},
 				userRepo: func(ctx context.Context, user *model.User) repository.UserRepository {
-					return new(testMock.UserRepository)
+					return new(mock.UserRepository)
 				},
 			},
 			args: args{
@@ -264,7 +263,7 @@ func TestCachedUserRepository_Create(t *testing.T) {
 					organizationsKeyResult := new(redis.StringSliceCmd)
 					organizationsKeyResult.SetVal([]string{organizationsKey})
 
-					dbClient := new(testMock.RedisClient)
+					dbClient := new(mock.RedisClient)
 					dbClient.On("Keys", ctx, getAllKey).Return(getAllKeyResult)
 					dbClient.On("Keys", ctx, organizationsKey).Return(organizationsKeyResult)
 
@@ -273,13 +272,13 @@ func TestCachedUserRepository_Create(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					span := new(testMock.Span)
+					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
-					tracer := new(testMock.Tracer)
+					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo := new(mock.CacheRepository)
 					cacheRepo.On("Delete", ctx, getAllKey).Return(nil)
 					cacheRepo.On("Delete", ctx, organizationsKey).Return(repository.ErrCacheDelete)
 
@@ -287,11 +286,11 @@ func TestCachedUserRepository_Create(t *testing.T) {
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(testMock.Logger),
+						logger: new(mock.Logger),
 					}
 				},
 				userRepo: func(ctx context.Context, user *model.User) repository.UserRepository {
-					return new(testMock.UserRepository)
+					return new(mock.UserRepository)
 				},
 			},
 			args: args{
@@ -334,7 +333,7 @@ func TestCachedUserRepository_Create(t *testing.T) {
 					rolesKeyResult := new(redis.StringSliceCmd)
 					rolesKeyResult.SetVal([]string{rolesKey})
 
-					dbClient := new(testMock.RedisClient)
+					dbClient := new(mock.RedisClient)
 					dbClient.On("Keys", ctx, getAllKey).Return(getAllKeyResult)
 					dbClient.On("Keys", ctx, organizationsKey).Return(organizationsKeyResult)
 					dbClient.On("Keys", ctx, rolesKey).Return(rolesKeyResult)
@@ -344,13 +343,13 @@ func TestCachedUserRepository_Create(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					span := new(testMock.Span)
+					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
-					tracer := new(testMock.Tracer)
+					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo := new(mock.CacheRepository)
 					cacheRepo.On("Delete", ctx, getAllKey).Return(nil)
 					cacheRepo.On("Delete", ctx, organizationsKey).Return(nil)
 					cacheRepo.On("Delete", ctx, rolesKey).Return(repository.ErrCacheDelete)
@@ -359,11 +358,11 @@ func TestCachedUserRepository_Create(t *testing.T) {
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(testMock.Logger),
+						logger: new(mock.Logger),
 					}
 				},
 				userRepo: func(ctx context.Context, user *model.User) repository.UserRepository {
-					return new(testMock.UserRepository)
+					return new(mock.UserRepository)
 				},
 			},
 			args: args{
@@ -427,18 +426,18 @@ func TestCachedUserRepository_Get(t *testing.T) {
 					key := composeCacheKey(model.ResourceTypeUser.String(), id.String())
 
 					db, err := NewDatabase(
-						WithClient(new(testMock.RedisClient)),
+						WithClient(new(mock.RedisClient)),
 					)
 					require.NoError(t, err)
 
-					span := new(testMock.Span)
+					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
-					tracer := new(testMock.Tracer)
+					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Set", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo := new(mock.CacheRepository)
 					cacheRepo.On("Get", ctx, key, mock.Anything).Return(nil, nil)
 					cacheRepo.On("Set", &cache.Item{
 						Ctx:   ctx,
@@ -450,11 +449,11 @@ func TestCachedUserRepository_Get(t *testing.T) {
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(testMock.Logger),
+						logger: new(mock.Logger),
 					}
 				},
 				userRepo: func(ctx context.Context, id model.ID, user *model.User) repository.UserRepository {
-					repo := new(testMock.UserRepository)
+					repo := new(mock.UserRepository)
 					repo.On("Get", ctx, id).Return(user, nil)
 					return repo
 				},
@@ -491,28 +490,28 @@ func TestCachedUserRepository_Get(t *testing.T) {
 					key := composeCacheKey(model.ResourceTypeUser.String(), id.String())
 
 					db, err := NewDatabase(
-						WithClient(new(testMock.RedisClient)),
+						WithClient(new(mock.RedisClient)),
 					)
 					require.NoError(t, err)
 
-					span := new(testMock.Span)
+					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
-					tracer := new(testMock.Tracer)
+					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo := new(mock.CacheRepository)
 					cacheRepo.On("Get", ctx, key, mock.Anything).Return(user, nil)
 
 					return &baseRepository{
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(testMock.Logger),
+						logger: new(mock.Logger),
 					}
 				},
 				userRepo: func(ctx context.Context, id model.ID, user *model.User) repository.UserRepository {
-					return new(testMock.UserRepository)
+					return new(mock.UserRepository)
 				},
 			},
 			args: args{
@@ -547,28 +546,28 @@ func TestCachedUserRepository_Get(t *testing.T) {
 					key := composeCacheKey(model.ResourceTypeUser.String(), id.String())
 
 					db, err := NewDatabase(
-						WithClient(new(testMock.RedisClient)),
+						WithClient(new(mock.RedisClient)),
 					)
 					require.NoError(t, err)
 
-					span := new(testMock.Span)
+					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
-					tracer := new(testMock.Tracer)
+					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo := new(mock.CacheRepository)
 					cacheRepo.On("Get", ctx, key, mock.Anything).Return(nil, nil)
 
 					return &baseRepository{
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(testMock.Logger),
+						logger: new(mock.Logger),
 					}
 				},
 				userRepo: func(ctx context.Context, id model.ID, user *model.User) repository.UserRepository {
-					repo := new(testMock.UserRepository)
+					repo := new(mock.UserRepository)
 					repo.On("Get", ctx, id).Return(nil, repository.ErrNotFound)
 					return repo
 				},
@@ -586,28 +585,28 @@ func TestCachedUserRepository_Get(t *testing.T) {
 					key := composeCacheKey(model.ResourceTypeUser.String(), id.String())
 
 					db, err := NewDatabase(
-						WithClient(new(testMock.RedisClient)),
+						WithClient(new(mock.RedisClient)),
 					)
 					require.NoError(t, err)
 
-					span := new(testMock.Span)
+					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
-					tracer := new(testMock.Tracer)
+					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo := new(mock.CacheRepository)
 					cacheRepo.On("Get", ctx, key, mock.Anything).Return(nil, assert.AnError)
 
 					return &baseRepository{
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(testMock.Logger),
+						logger: new(mock.Logger),
 					}
 				},
 				userRepo: func(ctx context.Context, id model.ID, user *model.User) repository.UserRepository {
-					return new(testMock.UserRepository)
+					return new(mock.UserRepository)
 				},
 			},
 			args: args{
@@ -623,18 +622,18 @@ func TestCachedUserRepository_Get(t *testing.T) {
 					key := composeCacheKey(model.ResourceTypeUser.String(), id.String())
 
 					db, err := NewDatabase(
-						WithClient(new(testMock.RedisClient)),
+						WithClient(new(mock.RedisClient)),
 					)
 					require.NoError(t, err)
 
-					span := new(testMock.Span)
+					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
-					tracer := new(testMock.Tracer)
+					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Set", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo := new(mock.CacheRepository)
 					cacheRepo.On("Get", ctx, key, mock.Anything).Return(nil, nil)
 					cacheRepo.On("Set", &cache.Item{
 						Ctx:   ctx,
@@ -646,11 +645,11 @@ func TestCachedUserRepository_Get(t *testing.T) {
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(testMock.Logger),
+						logger: new(mock.Logger),
 					}
 				},
 				userRepo: func(ctx context.Context, id model.ID, user *model.User) repository.UserRepository {
-					repo := new(testMock.UserRepository)
+					repo := new(mock.UserRepository)
 					repo.On("Get", ctx, id).Return(user, nil)
 					return repo
 				},
@@ -705,18 +704,18 @@ func TestCachedUserRepository_GetByEmail(t *testing.T) {
 					key := composeCacheKey(model.ResourceTypeUser.String(), "GetByEmail", email)
 
 					db, err := NewDatabase(
-						WithClient(new(testMock.RedisClient)),
+						WithClient(new(mock.RedisClient)),
 					)
 					require.NoError(t, err)
 
-					span := new(testMock.Span)
+					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
-					tracer := new(testMock.Tracer)
+					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Set", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo := new(mock.CacheRepository)
 					cacheRepo.On("Get", ctx, key, mock.Anything).Return(nil, nil)
 					cacheRepo.On("Set", &cache.Item{
 						Ctx:   ctx,
@@ -728,11 +727,11 @@ func TestCachedUserRepository_GetByEmail(t *testing.T) {
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(testMock.Logger),
+						logger: new(mock.Logger),
 					}
 				},
 				userRepo: func(ctx context.Context, email string, user *model.User) repository.UserRepository {
-					repo := new(testMock.UserRepository)
+					repo := new(mock.UserRepository)
 					repo.On("GetByEmail", ctx, email).Return(user, nil)
 					return repo
 				},
@@ -769,28 +768,28 @@ func TestCachedUserRepository_GetByEmail(t *testing.T) {
 					key := composeCacheKey(model.ResourceTypeUser.String(), "GetByEmail", email)
 
 					db, err := NewDatabase(
-						WithClient(new(testMock.RedisClient)),
+						WithClient(new(mock.RedisClient)),
 					)
 					require.NoError(t, err)
 
-					span := new(testMock.Span)
+					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
-					tracer := new(testMock.Tracer)
+					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo := new(mock.CacheRepository)
 					cacheRepo.On("Get", ctx, key, mock.Anything).Return(user, nil)
 
 					return &baseRepository{
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(testMock.Logger),
+						logger: new(mock.Logger),
 					}
 				},
 				userRepo: func(ctx context.Context, email string, user *model.User) repository.UserRepository {
-					return new(testMock.UserRepository)
+					return new(mock.UserRepository)
 				},
 			},
 			args: args{
@@ -825,28 +824,28 @@ func TestCachedUserRepository_GetByEmail(t *testing.T) {
 					key := composeCacheKey(model.ResourceTypeUser.String(), "GetByEmail", email)
 
 					db, err := NewDatabase(
-						WithClient(new(testMock.RedisClient)),
+						WithClient(new(mock.RedisClient)),
 					)
 					require.NoError(t, err)
 
-					span := new(testMock.Span)
+					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
-					tracer := new(testMock.Tracer)
+					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo := new(mock.CacheRepository)
 					cacheRepo.On("Get", ctx, key, mock.Anything).Return(nil, nil)
 
 					return &baseRepository{
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(testMock.Logger),
+						logger: new(mock.Logger),
 					}
 				},
 				userRepo: func(ctx context.Context, email string, user *model.User) repository.UserRepository {
-					repo := new(testMock.UserRepository)
+					repo := new(mock.UserRepository)
 					repo.On("GetByEmail", ctx, email).Return(nil, repository.ErrNotFound)
 					return repo
 				},
@@ -864,28 +863,28 @@ func TestCachedUserRepository_GetByEmail(t *testing.T) {
 					key := composeCacheKey(model.ResourceTypeUser.String(), "GetByEmail", email)
 
 					db, err := NewDatabase(
-						WithClient(new(testMock.RedisClient)),
+						WithClient(new(mock.RedisClient)),
 					)
 					require.NoError(t, err)
 
-					span := new(testMock.Span)
+					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
-					tracer := new(testMock.Tracer)
+					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo := new(mock.CacheRepository)
 					cacheRepo.On("Get", ctx, key, mock.Anything).Return(nil, assert.AnError)
 
 					return &baseRepository{
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(testMock.Logger),
+						logger: new(mock.Logger),
 					}
 				},
 				userRepo: func(ctx context.Context, email string, user *model.User) repository.UserRepository {
-					return new(testMock.UserRepository)
+					return new(mock.UserRepository)
 				},
 			},
 			args: args{
@@ -901,18 +900,18 @@ func TestCachedUserRepository_GetByEmail(t *testing.T) {
 					key := composeCacheKey(model.ResourceTypeUser.String(), "GetByEmail", email)
 
 					db, err := NewDatabase(
-						WithClient(new(testMock.RedisClient)),
+						WithClient(new(mock.RedisClient)),
 					)
 					require.NoError(t, err)
 
-					span := new(testMock.Span)
+					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
-					tracer := new(testMock.Tracer)
+					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Set", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo := new(mock.CacheRepository)
 					cacheRepo.On("Get", ctx, key, mock.Anything).Return(nil, nil)
 					cacheRepo.On("Set", &cache.Item{
 						Ctx:   ctx,
@@ -924,11 +923,11 @@ func TestCachedUserRepository_GetByEmail(t *testing.T) {
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(testMock.Logger),
+						logger: new(mock.Logger),
 					}
 				},
 				userRepo: func(ctx context.Context, email string, user *model.User) repository.UserRepository {
-					repo := new(testMock.UserRepository)
+					repo := new(mock.UserRepository)
 					repo.On("GetByEmail", ctx, email).Return(user, nil)
 					return repo
 				},
@@ -984,18 +983,18 @@ func TestCachedUserRepository_GetAll(t *testing.T) {
 					key := composeCacheKey(model.ResourceTypeUser.String(), "GetAll", offset, limit)
 
 					db, err := NewDatabase(
-						WithClient(new(testMock.RedisClient)),
+						WithClient(new(mock.RedisClient)),
 					)
 					require.NoError(t, err)
 
-					span := new(testMock.Span)
+					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
-					tracer := new(testMock.Tracer)
+					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Set", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo := new(mock.CacheRepository)
 					cacheRepo.On("Get", ctx, key, mock.Anything).Return(nil, nil)
 					cacheRepo.On("Set", &cache.Item{
 						Ctx:   ctx,
@@ -1007,11 +1006,11 @@ func TestCachedUserRepository_GetAll(t *testing.T) {
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(testMock.Logger),
+						logger: new(mock.Logger),
 					}
 				},
 				userRepo: func(ctx context.Context, offset, limit int, users []*model.User) repository.UserRepository {
-					repo := new(testMock.UserRepository)
+					repo := new(mock.UserRepository)
 					repo.On("GetAll", ctx, offset, limit).Return(users, nil)
 					return repo
 				},
@@ -1067,28 +1066,28 @@ func TestCachedUserRepository_GetAll(t *testing.T) {
 					key := composeCacheKey(model.ResourceTypeUser.String(), "GetAll", offset, limit)
 
 					db, err := NewDatabase(
-						WithClient(new(testMock.RedisClient)),
+						WithClient(new(mock.RedisClient)),
 					)
 					require.NoError(t, err)
 
-					span := new(testMock.Span)
+					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
-					tracer := new(testMock.Tracer)
+					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo := new(mock.CacheRepository)
 					cacheRepo.On("Get", ctx, key, mock.Anything).Return(users, nil)
 
 					return &baseRepository{
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(testMock.Logger),
+						logger: new(mock.Logger),
 					}
 				},
 				userRepo: func(ctx context.Context, offset, limit int, users []*model.User) repository.UserRepository {
-					return new(testMock.UserRepository)
+					return new(mock.UserRepository)
 				},
 			},
 			args: args{
@@ -1142,29 +1141,29 @@ func TestCachedUserRepository_GetAll(t *testing.T) {
 					key := composeCacheKey(model.ResourceTypeUser.String(), "GetAll", offset, limit)
 
 					db, err := NewDatabase(
-						WithClient(new(testMock.RedisClient)),
+						WithClient(new(mock.RedisClient)),
 					)
 					require.NoError(t, err)
 
-					span := new(testMock.Span)
+					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
-					tracer := new(testMock.Tracer)
+					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Set", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo := new(mock.CacheRepository)
 					cacheRepo.On("Get", ctx, key, mock.Anything).Return(nil, nil)
 
 					return &baseRepository{
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(testMock.Logger),
+						logger: new(mock.Logger),
 					}
 				},
 				userRepo: func(ctx context.Context, offset, limit int, users []*model.User) repository.UserRepository {
-					repo := new(testMock.UserRepository)
+					repo := new(mock.UserRepository)
 					repo.On("GetAll", ctx, offset, limit).Return(nil, repository.ErrNotFound)
 					return repo
 				},
@@ -1183,29 +1182,29 @@ func TestCachedUserRepository_GetAll(t *testing.T) {
 					key := composeCacheKey(model.ResourceTypeUser.String(), "GetAll", offset, limit)
 
 					db, err := NewDatabase(
-						WithClient(new(testMock.RedisClient)),
+						WithClient(new(mock.RedisClient)),
 					)
 					require.NoError(t, err)
 
-					span := new(testMock.Span)
+					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
-					tracer := new(testMock.Tracer)
+					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Set", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo := new(mock.CacheRepository)
 					cacheRepo.On("Get", ctx, key, mock.Anything).Return(nil, assert.AnError)
 
 					return &baseRepository{
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(testMock.Logger),
+						logger: new(mock.Logger),
 					}
 				},
 				userRepo: func(ctx context.Context, offset, limit int, users []*model.User) repository.UserRepository {
-					return new(testMock.UserRepository)
+					return new(mock.UserRepository)
 				},
 			},
 			args: args{
@@ -1222,18 +1221,18 @@ func TestCachedUserRepository_GetAll(t *testing.T) {
 					key := composeCacheKey(model.ResourceTypeUser.String(), "GetAll", offset, limit)
 
 					db, err := NewDatabase(
-						WithClient(new(testMock.RedisClient)),
+						WithClient(new(mock.RedisClient)),
 					)
 					require.NoError(t, err)
 
-					span := new(testMock.Span)
+					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
-					tracer := new(testMock.Tracer)
+					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Set", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo := new(mock.CacheRepository)
 					cacheRepo.On("Get", ctx, key, mock.Anything).Return(nil, nil)
 					cacheRepo.On("Set", &cache.Item{
 						Ctx:   ctx,
@@ -1245,11 +1244,11 @@ func TestCachedUserRepository_GetAll(t *testing.T) {
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(testMock.Logger),
+						logger: new(mock.Logger),
 					}
 				},
 				userRepo: func(ctx context.Context, offset, limit int, users []*model.User) repository.UserRepository {
-					repo := new(testMock.UserRepository)
+					repo := new(mock.UserRepository)
 					repo.On("GetAll", ctx, offset, limit).Return(users, nil)
 					return repo
 				},
@@ -1308,7 +1307,7 @@ func TestCachedUserRepository_Update(t *testing.T) {
 					getAllKeyCmd := new(redis.StringSliceCmd)
 					getAllKeyCmd.SetVal([]string{getAllKey})
 
-					dbClient := new(testMock.RedisClient)
+					dbClient := new(mock.RedisClient)
 					dbClient.On("Delete", ctx, byEmailKey).Return(byEmailKeyCmd, nil)
 					dbClient.On("Keys", ctx, getAllKey).Return(getAllKeyCmd, nil)
 					dbClient.On("Set", &cache.Item{
@@ -1322,15 +1321,15 @@ func TestCachedUserRepository_Update(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					span := new(testMock.Span)
+					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
-					tracer := new(testMock.Tracer)
+					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Set", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo := new(mock.CacheRepository)
 					cacheRepo.On("Delete", ctx, byEmailKey).Return(nil)
 					cacheRepo.On("Delete", ctx, getAllKey).Return(nil)
 					cacheRepo.On("Set", &cache.Item{
@@ -1343,11 +1342,11 @@ func TestCachedUserRepository_Update(t *testing.T) {
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(testMock.Logger),
+						logger: new(mock.Logger),
 					}
 				},
 				userRepo: func(ctx context.Context, id model.ID, patch map[string]any, user *model.User) repository.UserRepository {
-					repo := new(testMock.UserRepository)
+					repo := new(mock.UserRepository)
 					repo.On("Update", ctx, id, patch).Return(user, nil)
 					return repo
 				},
@@ -1384,19 +1383,19 @@ func TestCachedUserRepository_Update(t *testing.T) {
 			fields: fields{
 				cacheRepo: func(ctx context.Context, id model.ID, user *model.User) *baseRepository {
 					db, err := NewDatabase(
-						WithClient(new(testMock.RedisClient)),
+						WithClient(new(mock.RedisClient)),
 					)
 					require.NoError(t, err)
 
 					return &baseRepository{
 						db:     db,
-						cache:  new(testMock.CacheRepository),
-						tracer: new(testMock.Tracer),
-						logger: new(testMock.Logger),
+						cache:  new(mock.CacheRepository),
+						tracer: new(mock.Tracer),
+						logger: new(mock.Logger),
 					}
 				},
 				userRepo: func(ctx context.Context, id model.ID, patch map[string]any, user *model.User) repository.UserRepository {
-					repo := new(testMock.UserRepository)
+					repo := new(mock.UserRepository)
 					repo.On("Update", ctx, id, patch).Return(nil, repository.ErrNotFound)
 					return repo
 				},
@@ -1417,7 +1416,7 @@ func TestCachedUserRepository_Update(t *testing.T) {
 				cacheRepo: func(ctx context.Context, id model.ID, user *model.User) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeUser.String(), id.String())
 
-					dbClient := new(testMock.RedisClient)
+					dbClient := new(mock.RedisClient)
 					dbClient.On("Set", &cache.Item{
 						Ctx:   ctx,
 						Key:   key,
@@ -1429,13 +1428,13 @@ func TestCachedUserRepository_Update(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					span := new(testMock.Span)
+					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
-					tracer := new(testMock.Tracer)
+					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Set", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo := new(mock.CacheRepository)
 					cacheRepo.On("Set", &cache.Item{
 						Ctx:   ctx,
 						Key:   key,
@@ -1446,11 +1445,11 @@ func TestCachedUserRepository_Update(t *testing.T) {
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(testMock.Logger),
+						logger: new(mock.Logger),
 					}
 				},
 				userRepo: func(ctx context.Context, id model.ID, patch map[string]any, user *model.User) repository.UserRepository {
-					repo := new(testMock.UserRepository)
+					repo := new(mock.UserRepository)
 					repo.On("Update", ctx, id, patch).Return(user, nil)
 					return repo
 				},
@@ -1475,7 +1474,7 @@ func TestCachedUserRepository_Update(t *testing.T) {
 					byEmailKeyCmd := new(redis.StringCmd)
 					byEmailKeyCmd.SetVal(byEmailKey)
 
-					dbClient := new(testMock.RedisClient)
+					dbClient := new(mock.RedisClient)
 					dbClient.On("Delete", byEmailKey).Return(byEmailKeyCmd, nil)
 					dbClient.On("Set", &cache.Item{
 						Ctx:   ctx,
@@ -1488,14 +1487,14 @@ func TestCachedUserRepository_Update(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					span := new(testMock.Span)
+					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
-					tracer := new(testMock.Tracer)
+					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Set", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo := new(mock.CacheRepository)
 					cacheRepo.On("Delete", ctx, byEmailKey).Return(assert.AnError)
 					cacheRepo.On("Set", &cache.Item{
 						Ctx:   ctx,
@@ -1507,11 +1506,11 @@ func TestCachedUserRepository_Update(t *testing.T) {
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(testMock.Logger),
+						logger: new(mock.Logger),
 					}
 				},
 				userRepo: func(ctx context.Context, id model.ID, patch map[string]any, user *model.User) repository.UserRepository {
-					repo := new(testMock.UserRepository)
+					repo := new(mock.UserRepository)
 					repo.On("Update", ctx, id, patch).Return(user, nil)
 					return repo
 				},
@@ -1558,7 +1557,7 @@ func TestCachedUserRepository_Update(t *testing.T) {
 					getAllKeyCmd := new(redis.StringSliceCmd)
 					getAllKeyCmd.SetVal([]string{getAllKey})
 
-					dbClient := new(testMock.RedisClient)
+					dbClient := new(mock.RedisClient)
 					dbClient.On("Delete", byEmailKey).Return(byEmailKeyCmd, nil)
 					dbClient.On("Keys", ctx, getAllKey).Return(getAllKeyCmd, nil)
 					dbClient.On("Set", &cache.Item{
@@ -1572,15 +1571,15 @@ func TestCachedUserRepository_Update(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					span := new(testMock.Span)
+					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
-					tracer := new(testMock.Tracer)
+					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Set", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo := new(mock.CacheRepository)
 					cacheRepo.On("Delete", ctx, byEmailKey).Return(nil)
 					cacheRepo.On("Delete", ctx, getAllKey).Return(assert.AnError)
 					cacheRepo.On("Set", &cache.Item{
@@ -1593,11 +1592,11 @@ func TestCachedUserRepository_Update(t *testing.T) {
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(testMock.Logger),
+						logger: new(mock.Logger),
 					}
 				},
 				userRepo: func(ctx context.Context, id model.ID, patch map[string]any, user *model.User) repository.UserRepository {
-					repo := new(testMock.UserRepository)
+					repo := new(mock.UserRepository)
 					repo.On("Update", ctx, id, patch).Return(user, nil)
 					return repo
 				},
@@ -1686,7 +1685,7 @@ func TestCachedUserRepository_Delete(t *testing.T) {
 					rolesKeyCmd := new(redis.StringSliceCmd)
 					rolesKeyCmd.SetVal([]string{rolesKey})
 
-					dbClient := new(testMock.RedisClient)
+					dbClient := new(mock.RedisClient)
 					dbClient.On("Keys", ctx, byEmailKey).Return(byEmailKeyCmd)
 					dbClient.On("Keys", ctx, getAllKey).Return(getAllKeyCmd)
 					dbClient.On("Keys", ctx, organizationsKey).Return(organizationsKeyCmd)
@@ -1697,14 +1696,14 @@ func TestCachedUserRepository_Delete(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					span := new(testMock.Span)
+					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
-					tracer := new(testMock.Tracer)
+					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo := new(mock.CacheRepository)
 					cacheRepo.On("Delete", ctx, key).Return(nil)
 					cacheRepo.On("Delete", ctx, byEmailKey).Return(nil)
 					cacheRepo.On("Delete", ctx, getAllKey).Return(nil)
@@ -1715,11 +1714,11 @@ func TestCachedUserRepository_Delete(t *testing.T) {
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(testMock.Logger),
+						logger: new(mock.Logger),
 					}
 				},
 				userRepo: func(ctx context.Context, id model.ID) repository.UserRepository {
-					repo := new(testMock.UserRepository)
+					repo := new(mock.UserRepository)
 					repo.On("Delete", ctx, id).Return(nil)
 					return repo
 				},
@@ -1751,7 +1750,7 @@ func TestCachedUserRepository_Delete(t *testing.T) {
 					rolesKeyCmd := new(redis.StringSliceCmd)
 					rolesKeyCmd.SetVal([]string{rolesKey})
 
-					dbClient := new(testMock.RedisClient)
+					dbClient := new(mock.RedisClient)
 					dbClient.On("Keys", ctx, byEmailKey).Return(byEmailKeyCmd)
 					dbClient.On("Keys", ctx, getAllKey).Return(getAllKeyCmd)
 					dbClient.On("Keys", ctx, organizationsKey).Return(organizationsKeyCmd)
@@ -1762,14 +1761,14 @@ func TestCachedUserRepository_Delete(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					span := new(testMock.Span)
+					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
-					tracer := new(testMock.Tracer)
+					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo := new(mock.CacheRepository)
 					cacheRepo.On("Delete", ctx, key).Return(nil)
 					cacheRepo.On("Delete", ctx, byEmailKey).Return(nil)
 					cacheRepo.On("Delete", ctx, getAllKey).Return(nil)
@@ -1780,11 +1779,11 @@ func TestCachedUserRepository_Delete(t *testing.T) {
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(testMock.Logger),
+						logger: new(mock.Logger),
 					}
 				},
 				userRepo: func(ctx context.Context, id model.ID) repository.UserRepository {
-					repo := new(testMock.UserRepository)
+					repo := new(mock.UserRepository)
 					repo.On("Delete", ctx, id).Return(repository.ErrUserDelete)
 					return repo
 				},
@@ -1801,31 +1800,31 @@ func TestCachedUserRepository_Delete(t *testing.T) {
 				cacheRepo: func(ctx context.Context, id model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeUser.String(), id.String())
 
-					dbClient := new(testMock.RedisClient)
+					dbClient := new(mock.RedisClient)
 
 					db, err := NewDatabase(
 						WithClient(dbClient),
 					)
 					require.NoError(t, err)
 
-					span := new(testMock.Span)
+					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
-					tracer := new(testMock.Tracer)
+					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo := new(mock.CacheRepository)
 					cacheRepo.On("Delete", ctx, key).Return(repository.ErrCacheDelete)
 
 					return &baseRepository{
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(testMock.Logger),
+						logger: new(mock.Logger),
 					}
 				},
 				userRepo: func(ctx context.Context, id model.ID) repository.UserRepository {
-					repo := new(testMock.UserRepository)
+					repo := new(mock.UserRepository)
 					repo.On("Delete", ctx, id).Return(nil)
 					return repo
 				},
@@ -1846,7 +1845,7 @@ func TestCachedUserRepository_Delete(t *testing.T) {
 					byEmailKeyCmd := new(redis.StringSliceCmd)
 					byEmailKeyCmd.SetVal([]string{byEmailKey})
 
-					dbClient := new(testMock.RedisClient)
+					dbClient := new(mock.RedisClient)
 					dbClient.On("Keys", ctx, byEmailKey).Return(byEmailKeyCmd)
 
 					db, err := NewDatabase(
@@ -1854,14 +1853,14 @@ func TestCachedUserRepository_Delete(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					span := new(testMock.Span)
+					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
-					tracer := new(testMock.Tracer)
+					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo := new(mock.CacheRepository)
 					cacheRepo.On("Delete", ctx, key).Return(nil)
 					cacheRepo.On("Delete", ctx, byEmailKey).Return(repository.ErrCacheDelete)
 
@@ -1869,11 +1868,11 @@ func TestCachedUserRepository_Delete(t *testing.T) {
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(testMock.Logger),
+						logger: new(mock.Logger),
 					}
 				},
 				userRepo: func(ctx context.Context, id model.ID) repository.UserRepository {
-					return new(testMock.UserRepository)
+					return new(mock.UserRepository)
 				},
 			},
 			args: args{
@@ -1896,7 +1895,7 @@ func TestCachedUserRepository_Delete(t *testing.T) {
 					getAllKeyCmd := new(redis.StringSliceCmd)
 					getAllKeyCmd.SetVal([]string{getAllKey})
 
-					dbClient := new(testMock.RedisClient)
+					dbClient := new(mock.RedisClient)
 					dbClient.On("Keys", ctx, byEmailKey).Return(byEmailKeyCmd)
 					dbClient.On("Keys", ctx, getAllKey).Return(getAllKeyCmd)
 
@@ -1905,14 +1904,14 @@ func TestCachedUserRepository_Delete(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					span := new(testMock.Span)
+					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
-					tracer := new(testMock.Tracer)
+					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo := new(mock.CacheRepository)
 					cacheRepo.On("Delete", ctx, key).Return(nil)
 					cacheRepo.On("Delete", ctx, byEmailKey).Return(nil)
 					cacheRepo.On("Delete", ctx, getAllKey).Return(repository.ErrCacheDelete)
@@ -1921,11 +1920,11 @@ func TestCachedUserRepository_Delete(t *testing.T) {
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(testMock.Logger),
+						logger: new(mock.Logger),
 					}
 				},
 				userRepo: func(ctx context.Context, id model.ID) repository.UserRepository {
-					return new(testMock.UserRepository)
+					return new(mock.UserRepository)
 				},
 			},
 			args: args{
@@ -1952,7 +1951,7 @@ func TestCachedUserRepository_Delete(t *testing.T) {
 					organizationsKeyCmd := new(redis.StringSliceCmd)
 					organizationsKeyCmd.SetVal([]string{organizationsKey})
 
-					dbClient := new(testMock.RedisClient)
+					dbClient := new(mock.RedisClient)
 					dbClient.On("Keys", ctx, byEmailKey).Return(byEmailKeyCmd)
 					dbClient.On("Keys", ctx, getAllKey).Return(getAllKeyCmd)
 					dbClient.On("Keys", ctx, organizationsKey).Return(organizationsKeyCmd)
@@ -1962,14 +1961,14 @@ func TestCachedUserRepository_Delete(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					span := new(testMock.Span)
+					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
-					tracer := new(testMock.Tracer)
+					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo := new(mock.CacheRepository)
 					cacheRepo.On("Delete", ctx, key).Return(nil)
 					cacheRepo.On("Delete", ctx, byEmailKey).Return(nil)
 					cacheRepo.On("Delete", ctx, getAllKey).Return(nil)
@@ -1979,11 +1978,11 @@ func TestCachedUserRepository_Delete(t *testing.T) {
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(testMock.Logger),
+						logger: new(mock.Logger),
 					}
 				},
 				userRepo: func(ctx context.Context, id model.ID) repository.UserRepository {
-					return new(testMock.UserRepository)
+					return new(mock.UserRepository)
 				},
 			},
 			args: args{
@@ -2014,7 +2013,7 @@ func TestCachedUserRepository_Delete(t *testing.T) {
 					rolesKeyCmd := new(redis.StringSliceCmd)
 					rolesKeyCmd.SetVal([]string{rolesKey})
 
-					dbClient := new(testMock.RedisClient)
+					dbClient := new(mock.RedisClient)
 					dbClient.On("Keys", ctx, byEmailKey).Return(byEmailKeyCmd)
 					dbClient.On("Keys", ctx, getAllKey).Return(getAllKeyCmd)
 					dbClient.On("Keys", ctx, organizationsKey).Return(organizationsKeyCmd)
@@ -2025,14 +2024,14 @@ func TestCachedUserRepository_Delete(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					span := new(testMock.Span)
+					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
-					tracer := new(testMock.Tracer)
+					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo := new(mock.CacheRepository)
 					cacheRepo.On("Delete", ctx, key).Return(nil)
 					cacheRepo.On("Delete", ctx, byEmailKey).Return(nil)
 					cacheRepo.On("Delete", ctx, getAllKey).Return(nil)
@@ -2043,11 +2042,11 @@ func TestCachedUserRepository_Delete(t *testing.T) {
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(testMock.Logger),
+						logger: new(mock.Logger),
 					}
 				},
 				userRepo: func(ctx context.Context, id model.ID) repository.UserRepository {
-					return new(testMock.UserRepository)
+					return new(mock.UserRepository)
 				},
 			},
 			args: args{
