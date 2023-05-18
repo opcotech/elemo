@@ -214,6 +214,8 @@ func initRelationalDatabase() (*pg.Database, pg.Pool, error) {
 	return db, pool, nil
 }
 
+// initSMTPClient initializes the SMTP client.
+// nolint:unused
 func initSMTPClient(smtpConf *config.SMTPConfig) (*elemoSMTP.Client, error) {
 	var conn net.Conn
 	var err error
