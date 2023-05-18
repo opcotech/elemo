@@ -25,7 +25,7 @@ labelPRBasedOnFilePath:
   legal:
     - LICENSE
     - web/LICENSE
-    - assets/license-decisions.yml
+    - .license-decisions.yml
   license:
     - internal/license/**/*
     - tool/generate-key/**/*
