@@ -10,7 +10,7 @@ updates:
   - package-ecosystem: "gomod"
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
     commit-message:
       prefix: chore
       include: scope
@@ -20,7 +20,7 @@ updates:
   - package-ecosystem: "npm"
     directory: "/web/"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
     commit-message:
       prefix: chore
       include: scope
@@ -30,7 +30,7 @@ updates:
   - package-ecosystem: "github-actions"
     directory: /
     schedule:
-      interval: "weekly"
+      interval: "monthly"
     commit-message:
       prefix: ci
       include: scope
