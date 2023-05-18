@@ -46,7 +46,7 @@ func WithWrappedClient(wrapped WrappedClient) Option {
 		if wrapped == nil {
 			return ErrNoSMTPClient
 		}
-		c.Client = wrapped
+		c.client = wrapped
 		return nil
 	}
 }
@@ -58,7 +58,7 @@ func WithConfig(cfg *config.SMTPConfig) Option {
 		if cfg == nil {
 			return config.ErrNoConfig
 		}
-		c.Config = cfg
+		c.config = cfg
 		return nil
 	}
 }
@@ -70,7 +70,7 @@ func WithLogger(logger log.Logger) Option {
 		if logger == nil {
 			return log.ErrNoLogger
 		}
-		c.Logger = logger
+		c.logger = logger
 		return nil
 	}
 }
@@ -82,26 +82,26 @@ func WithTracer(tracer trace.Tracer) Option {
 		if tracer == nil {
 			return tracing.ErrNoTracer
 		}
-		c.Tracer = tracer
+		c.tracer = tracer
 		return nil
 	}
 }
 
 // Client is the simplified SMTP client used for sending notification emails.
 type Client struct {
-	Client WrappedClient      `validate:"required"`
-	Config *config.SMTPConfig `validate:"required"`
-	Logger log.Logger         `validate:"required"`
-	Tracer trace.Tracer       `validate:"required"`
+	client WrappedClient      `validate:"required"`
+	config *config.SMTPConfig `validate:"required"`
+	logger log.Logger         `validate:"required"`
+	tracer trace.Tracer       `validate:"required"`
 }
 
 // Authenticate initiates the SMTP handshake and authenticates the client.
 func (c *Client) Authenticate(ctx context.Context) error {
-	_, span := c.Tracer.Start(ctx, "smtp.Client/ComposeMessage")
+	_, span := c.tracer.Start(ctx, "smtp.Client/Authenticate")
 	defer span.End()
 
-	auth := smtp.PlainAuth("", c.Config.Username, c.Config.Password, c.Config.Host)
-	if err := c.Client.Auth(auth); err != nil {
+	auth := smtp.PlainAuth("", c.config.Username, c.config.Password, c.config.Host)
+	if err := c.client.Auth(auth); err != nil {
 		return errors.Join(ErrAuthFailed, err)
 	}
 
@@ -110,10 +110,7 @@ func (c *Client) Authenticate(ctx context.Context) error {
 
 // composeMessage composes an email message with the given subject and body,
 // then returns the message.
-func (c *Client) composeMessage(ctx context.Context, subject, to string, template *email.Template) (*gomail.Message, error) {
-	_, span := c.Tracer.Start(ctx, "smtp.Client/ComposeMessage")
-	defer span.End()
-
+func (c *Client) composeMessage(_ context.Context, subject, to string, template *email.Template) (*gomail.Message, error) {
 	if err := validate.Struct(template); err != nil {
 		return nil, errors.Join(ErrComposeEmail, err)
 	}
@@ -124,10 +121,10 @@ func (c *Client) composeMessage(ctx context.Context, subject, to string, templat
 	}
 
 	headers := map[string][]string{
-		"From":                      {c.Config.FromAddress},
+		"From":                      {c.config.FromAddress},
 		"To":                        {to},
 		"Subject":                   {subject},
-		"Reply-To":                  {c.Config.ReplyToAddress},
+		"Reply-To":                  {c.config.ReplyToAddress},
 		"Content-Transfer-Encoding": {"8bit"},
 		"Auto-Submitted":            {"auto-generated"},
 		"Precedence":                {"bulk"},
@@ -142,7 +139,7 @@ func (c *Client) composeMessage(ctx context.Context, subject, to string, templat
 
 // SendEmail sends an email with the given subject and body to the recipient.
 func (c *Client) SendEmail(ctx context.Context, subject, to string, template *email.Template) error {
-	_, span := c.Tracer.Start(ctx, "smtp.Client/SendEmail")
+	_, span := c.tracer.Start(ctx, "smtp.Client/SendEmail")
 	defer span.End()
 
 	message, err := c.composeMessage(ctx, subject, to, template)
@@ -150,20 +147,23 @@ func (c *Client) SendEmail(ctx context.Context, subject, to string, template *em
 		return errors.Join(ErrComposeEmail, err)
 	}
 
-	if err := c.Client.Mail(c.Config.FromAddress); err != nil {
+	if err := c.client.Mail(c.config.FromAddress); err != nil {
 		return errors.Join(ErrComposeEmail, err)
 	}
 
-	if err := c.Client.Rcpt(to); err != nil {
+	if err := c.client.Rcpt(to); err != nil {
 		return errors.Join(ErrComposeEmail, err)
 	}
 
-	w, err := c.Client.Data()
+	w, err := c.client.Data()
 	if err != nil {
 		return errors.Join(ErrComposeEmail, err)
 	}
 
-	if _, err := message.WriteTo(w); err != nil {
+	if wrote, err := message.WriteTo(w); err != nil || wrote == 0 {
+		if err == nil {
+			err = ErrNoBytesWritten
+		}
 		return errors.Join(ErrComposeEmail, err)
 	}
 
@@ -177,8 +177,8 @@ func (c *Client) SendEmail(ctx context.Context, subject, to string, template *em
 // NewClient returns a new Client.
 func NewClient(opts ...Option) (*Client, error) {
 	c := &Client{
-		Logger: log.DefaultLogger(),
-		Tracer: tracing.NoopTracer(),
+		logger: log.DefaultLogger(),
+		tracer: tracing.NoopTracer(),
 	}
 
 	for _, opt := range opts {
