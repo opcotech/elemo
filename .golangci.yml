@@ -69,6 +69,8 @@ linters-settings:
         alias: elemoHttp
       - pkg: github.com/opcotech/elemo/internal/license
         alias: elemoLicense
+      - pkg: github.com/opcotech/elemo/internal/pkg/smtp
+        alias: elemoSMTP
       - pkg: github.com/opcotech/elemo/internal/testutil/container
         alias: testContainer
       - pkg: github.com/opcotech/elemo/internal/testutil/repository
