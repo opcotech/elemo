@@ -83,36 +83,6 @@
     :why:
     :versions: []
     :when: 2022-11-02 21:58:20.530206000 Z
-- - :permit
-  - 0BSD
-  - :who: gabor@opcotech.com
-    :why:
-    :versions: []
-    :when: 2022-12-05 07:08:35.333188000 Z
-- - :permit
-  - Public Domain
-  - :who: gabor@opcotech.com
-    :why:
-    :versions: []
-    :when: 2022-12-05 07:09:35.925375000 Z
-- - :permit
-  - CC-BY-4.0
-  - :who: gabor@opcotech.com
-    :why:
-    :versions: []
-    :when: 2022-12-05 07:11:57.318344000 Z
-- - :permit
-  - CC0-1.0
-  - :who: gabor@opcotech.com
-    :why:
-    :versions: []
-    :when: 2022-12-05 07:12:34.236265000 Z
-- - :permit
-  - Python-2.0
-  - :who: gabor@opcotech.com
-    :why:
-    :versions: []
-    :when: 2022-12-05 07:40:56.058052000 Z
 - - :approve
   - github.com/spf13/afero
   - :who: gabor@opcotech.com
