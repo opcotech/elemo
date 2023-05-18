@@ -56,6 +56,19 @@ services:
       timeout: 5s
       retries: 3
 
+  smtp:
+    image: maildev/maildev:2.0.5
+    container_name: elemo-smtp
+    command:
+      - maildev
+      - --log-mail-contents
+    ports:
+      - "1025:1025"
+      - "1080:1080"
+    environment:
+      MAILDEV_WEB_USER: elemo
+      MAILDEV_WEB_PASS: smtpsecret
+
   elemo-server:
     image: elemo-server
     container_name: elemo-server
@@ -75,6 +88,8 @@ services:
         condition: service_healthy
       postgres:
         condition: service_healthy
+      smtp:
+        condition: service_started
     environment:
       ELEMO_CONFIG: /elemo/configs/development/config.gen.yml
     ports:
@@ -101,6 +116,8 @@ services:
       postgres:
         condition: service_healthy
       elemo-server:
+        condition: service_started
+      smtp:
         condition: service_started
     environment:
       ELEMO_CONFIG: /elemo/configs/development/config.gen.yml

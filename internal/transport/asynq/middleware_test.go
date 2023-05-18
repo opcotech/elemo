@@ -6,12 +6,11 @@ import (
 
 	"github.com/hibiken/asynq"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/time/rate"
 
-	testMock "github.com/opcotech/elemo/internal/testutil/mock"
+	"github.com/opcotech/elemo/internal/testutil/mock"
 )
 
 func TestSetRateLimiter(t *testing.T) {
@@ -46,10 +45,10 @@ func TestWithMetricsExporter(t *testing.T) {
 
 	ctx := context.Background()
 
-	span := new(testMock.Span)
+	span := new(mock.Span)
 	span.On("End", []trace.SpanEndOption(nil)).Return()
 
-	tracer := new(testMock.Tracer)
+	tracer := new(mock.Tracer)
 	tracer.On("Start", ctx, "transport.asynq.middleware/WithMetricsExporter", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 	assert.NoError(t,
@@ -80,16 +79,16 @@ func TestWithRateLimiter(t *testing.T) {
 			name: "return handler if rate limiter is allowed",
 			args: args{
 				tracer: func() trace.Tracer {
-					span := new(testMock.Span)
+					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
-					tracer := new(testMock.Tracer)
+					tracer := new(mock.Tracer)
 					tracer.On("Start", mock.Anything, "transport.asynq.middleware/WithRateLimiter", []trace.SpanStartOption(nil)).Return(context.Background(), span)
 
 					return tracer
 				}(),
 				limiter: func() RateLimiter {
-					limiter := new(testMock.RateLimiter)
+					limiter := new(mock.RateLimiter)
 					limiter.On("Allow").Return(true)
 					return limiter
 				}(),
@@ -100,16 +99,16 @@ func TestWithRateLimiter(t *testing.T) {
 			name: "return error if rate limiter is not allowed",
 			args: args{
 				tracer: func() trace.Tracer {
-					span := new(testMock.Span)
+					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
-					tracer := new(testMock.Tracer)
+					tracer := new(mock.Tracer)
 					tracer.On("Start", mock.Anything, "transport.asynq.middleware/WithRateLimiter", []trace.SpanStartOption(nil)).Return(context.Background(), span)
 
 					return tracer
 				}(),
 				limiter: func() RateLimiter {
-					limiter := new(testMock.RateLimiter)
+					limiter := new(mock.RateLimiter)
 					limiter.On("Allow").Return(false)
 					return limiter
 				}(),

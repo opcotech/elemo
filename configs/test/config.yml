@@ -107,6 +107,20 @@ worker_metrics_server:
   read_timeout: 10
   write_timeout: 5
 
+smtp:
+  host: 127.0.0.1
+  port: 1025
+  username: elemo
+  password: smtpsecret
+  from_address: no-reply@elemo.app
+  support_address: support@elemo.app
+  reply_to_address: support@elemo.app
+  hostname: "dev.elemo.app"
+  connection_timeout: 10
+  enable_auth: false
+  skip_tls_verify: true
+  security_protocol: ""
+
 tracing:
   service_name: "elemo"
   collector_endpoint: "127.0.0.1:4318"

@@ -10,7 +10,7 @@ import (
 
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/repository"
-	testMock "github.com/opcotech/elemo/internal/testutil/mock"
+	"github.com/opcotech/elemo/internal/testutil/mock"
 )
 
 func TestCachedPermissionRepository_Create(t *testing.T) {
@@ -41,7 +41,7 @@ func TestCachedPermissionRepository_Create(t *testing.T) {
 					usersKeyResult := new(redis.StringSliceCmd)
 					usersKeyResult.SetVal([]string{usersKey})
 
-					dbClient := new(testMock.RedisClient)
+					dbClient := new(mock.RedisClient)
 					dbClient.On("Keys", ctx, rolesKey).Return(rolesKeyResult)
 					dbClient.On("Keys", ctx, usersKey).Return(usersKeyResult)
 
@@ -50,13 +50,13 @@ func TestCachedPermissionRepository_Create(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					span := new(testMock.Span)
+					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
-					tracer := new(testMock.Tracer)
+					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo := new(mock.CacheRepository)
 					cacheRepo.On("Delete", ctx, usersKey).Return(nil)
 					cacheRepo.On("Delete", ctx, rolesKey).Return(nil)
 
@@ -64,11 +64,11 @@ func TestCachedPermissionRepository_Create(t *testing.T) {
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(testMock.Logger),
+						logger: new(mock.Logger),
 					}
 				},
 				permissionRepo: func(ctx context.Context, permission *model.Permission) repository.PermissionRepository {
-					repo := new(testMock.PermissionRepository)
+					repo := new(mock.PermissionRepository)
 					repo.On("Create", ctx, permission).Return(nil)
 					return repo
 				},
@@ -96,7 +96,7 @@ func TestCachedPermissionRepository_Create(t *testing.T) {
 					usersKeyResult := new(redis.StringSliceCmd)
 					usersKeyResult.SetVal([]string{usersKey})
 
-					dbClient := new(testMock.RedisClient)
+					dbClient := new(mock.RedisClient)
 					dbClient.On("Keys", ctx, rolesKey).Return(rolesKeyResult)
 					dbClient.On("Keys", ctx, usersKey).Return(usersKeyResult)
 
@@ -105,13 +105,13 @@ func TestCachedPermissionRepository_Create(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					span := new(testMock.Span)
+					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
-					tracer := new(testMock.Tracer)
+					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo := new(mock.CacheRepository)
 					cacheRepo.On("Delete", ctx, usersKey).Return(nil)
 					cacheRepo.On("Delete", ctx, rolesKey).Return(nil)
 
@@ -119,11 +119,11 @@ func TestCachedPermissionRepository_Create(t *testing.T) {
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(testMock.Logger),
+						logger: new(mock.Logger),
 					}
 				},
 				permissionRepo: func(ctx context.Context, permission *model.Permission) repository.PermissionRepository {
-					repo := new(testMock.PermissionRepository)
+					repo := new(mock.PermissionRepository)
 					repo.On("Create", ctx, permission).Return(repository.ErrPermissionCreate)
 					return repo
 				},
@@ -152,7 +152,7 @@ func TestCachedPermissionRepository_Create(t *testing.T) {
 					usersKeyResult := new(redis.StringSliceCmd)
 					usersKeyResult.SetVal([]string{usersKey})
 
-					dbClient := new(testMock.RedisClient)
+					dbClient := new(mock.RedisClient)
 					dbClient.On("Keys", ctx, usersKey).Return(usersKeyResult)
 					dbClient.On("Keys", ctx, rolesKey).Return(rolesKeyResult)
 
@@ -161,24 +161,24 @@ func TestCachedPermissionRepository_Create(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					span := new(testMock.Span)
+					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
-					tracer := new(testMock.Tracer)
+					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo := new(mock.CacheRepository)
 					cacheRepo.On("Delete", ctx, rolesKey).Return(repository.ErrCacheDelete)
 
 					return &baseRepository{
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(testMock.Logger),
+						logger: new(mock.Logger),
 					}
 				},
 				permissionRepo: func(ctx context.Context, permission *model.Permission) repository.PermissionRepository {
-					return new(testMock.PermissionRepository)
+					return new(mock.PermissionRepository)
 				},
 			},
 			args: args{
@@ -205,7 +205,7 @@ func TestCachedPermissionRepository_Create(t *testing.T) {
 					usersKeyResult := new(redis.StringSliceCmd)
 					usersKeyResult.SetVal([]string{usersKey})
 
-					dbClient := new(testMock.RedisClient)
+					dbClient := new(mock.RedisClient)
 					dbClient.On("Keys", ctx, usersKey).Return(usersKeyResult)
 					dbClient.On("Keys", ctx, rolesKey).Return(rolesKeyResult)
 
@@ -214,13 +214,13 @@ func TestCachedPermissionRepository_Create(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					span := new(testMock.Span)
+					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
-					tracer := new(testMock.Tracer)
+					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo := new(mock.CacheRepository)
 					cacheRepo.On("Delete", ctx, rolesKey).Return(nil)
 					cacheRepo.On("Delete", ctx, usersKey).Return(repository.ErrCacheDelete)
 
@@ -228,11 +228,11 @@ func TestCachedPermissionRepository_Create(t *testing.T) {
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(testMock.Logger),
+						logger: new(mock.Logger),
 					}
 				},
 				permissionRepo: func(ctx context.Context, permission *model.Permission) repository.PermissionRepository {
-					return new(testMock.PermissionRepository)
+					return new(mock.PermissionRepository)
 				},
 			},
 			args: args{
@@ -282,19 +282,19 @@ func TestCachedPermissionRepository_Get(t *testing.T) {
 			fields: fields{
 				cacheRepo: func(ctx context.Context, id model.ID, permission *model.Permission) *baseRepository {
 					db, err := NewDatabase(
-						WithClient(new(testMock.RedisClient)),
+						WithClient(new(mock.RedisClient)),
 					)
 					require.NoError(t, err)
 
 					return &baseRepository{
 						db:     db,
-						cache:  new(testMock.CacheRepository),
-						tracer: new(testMock.Tracer),
-						logger: new(testMock.Logger),
+						cache:  new(mock.CacheRepository),
+						tracer: new(mock.Tracer),
+						logger: new(mock.Logger),
 					}
 				},
 				permissionRepo: func(ctx context.Context, id model.ID, permission *model.Permission) repository.PermissionRepository {
-					repo := new(testMock.PermissionRepository)
+					repo := new(mock.PermissionRepository)
 					repo.On("Get", ctx, id).Return(permission, nil)
 					return repo
 				},
@@ -315,19 +315,19 @@ func TestCachedPermissionRepository_Get(t *testing.T) {
 			fields: fields{
 				cacheRepo: func(ctx context.Context, id model.ID, permission *model.Permission) *baseRepository {
 					db, err := NewDatabase(
-						WithClient(new(testMock.RedisClient)),
+						WithClient(new(mock.RedisClient)),
 					)
 					require.NoError(t, err)
 
 					return &baseRepository{
 						db:     db,
-						cache:  new(testMock.CacheRepository),
-						tracer: new(testMock.Tracer),
-						logger: new(testMock.Logger),
+						cache:  new(mock.CacheRepository),
+						tracer: new(mock.Tracer),
+						logger: new(mock.Logger),
 					}
 				},
 				permissionRepo: func(ctx context.Context, id model.ID, permission *model.Permission) repository.PermissionRepository {
-					repo := new(testMock.PermissionRepository)
+					repo := new(mock.PermissionRepository)
 					repo.On("Get", ctx, id).Return(nil, repository.ErrNotFound)
 					return repo
 				},
@@ -375,19 +375,19 @@ func TestCachedPermissionRepository_GetBySubject(t *testing.T) {
 			fields: fields{
 				cacheRepo: func(ctx context.Context, id model.ID, permissions []*model.Permission) *baseRepository {
 					db, err := NewDatabase(
-						WithClient(new(testMock.RedisClient)),
+						WithClient(new(mock.RedisClient)),
 					)
 					require.NoError(t, err)
 
 					return &baseRepository{
 						db:     db,
-						cache:  new(testMock.CacheRepository),
-						tracer: new(testMock.Tracer),
-						logger: new(testMock.Logger),
+						cache:  new(mock.CacheRepository),
+						tracer: new(mock.Tracer),
+						logger: new(mock.Logger),
 					}
 				},
 				permissionRepo: func(ctx context.Context, id model.ID, permissions []*model.Permission) repository.PermissionRepository {
-					repo := new(testMock.PermissionRepository)
+					repo := new(mock.PermissionRepository)
 					repo.On("GetBySubject", ctx, id).Return(permissions, nil)
 					return repo
 				},
@@ -410,19 +410,19 @@ func TestCachedPermissionRepository_GetBySubject(t *testing.T) {
 			fields: fields{
 				cacheRepo: func(ctx context.Context, id model.ID, permissions []*model.Permission) *baseRepository {
 					db, err := NewDatabase(
-						WithClient(new(testMock.RedisClient)),
+						WithClient(new(mock.RedisClient)),
 					)
 					require.NoError(t, err)
 
 					return &baseRepository{
 						db:     db,
-						cache:  new(testMock.CacheRepository),
-						tracer: new(testMock.Tracer),
-						logger: new(testMock.Logger),
+						cache:  new(mock.CacheRepository),
+						tracer: new(mock.Tracer),
+						logger: new(mock.Logger),
 					}
 				},
 				permissionRepo: func(ctx context.Context, id model.ID, permissions []*model.Permission) repository.PermissionRepository {
-					repo := new(testMock.PermissionRepository)
+					repo := new(mock.PermissionRepository)
 					repo.On("GetBySubject", ctx, id).Return(nil, repository.ErrNotFound)
 					return repo
 				},
@@ -470,19 +470,19 @@ func TestCachedPermissionRepository_GetByTarget(t *testing.T) {
 			fields: fields{
 				cacheRepo: func(ctx context.Context, id model.ID, permissions []*model.Permission) *baseRepository {
 					db, err := NewDatabase(
-						WithClient(new(testMock.RedisClient)),
+						WithClient(new(mock.RedisClient)),
 					)
 					require.NoError(t, err)
 
 					return &baseRepository{
 						db:     db,
-						cache:  new(testMock.CacheRepository),
-						tracer: new(testMock.Tracer),
-						logger: new(testMock.Logger),
+						cache:  new(mock.CacheRepository),
+						tracer: new(mock.Tracer),
+						logger: new(mock.Logger),
 					}
 				},
 				permissionRepo: func(ctx context.Context, id model.ID, permissions []*model.Permission) repository.PermissionRepository {
-					repo := new(testMock.PermissionRepository)
+					repo := new(mock.PermissionRepository)
 					repo.On("GetByTarget", ctx, id).Return(permissions, nil)
 					return repo
 				},
@@ -505,19 +505,19 @@ func TestCachedPermissionRepository_GetByTarget(t *testing.T) {
 			fields: fields{
 				cacheRepo: func(ctx context.Context, id model.ID, permissions []*model.Permission) *baseRepository {
 					db, err := NewDatabase(
-						WithClient(new(testMock.RedisClient)),
+						WithClient(new(mock.RedisClient)),
 					)
 					require.NoError(t, err)
 
 					return &baseRepository{
 						db:     db,
-						cache:  new(testMock.CacheRepository),
-						tracer: new(testMock.Tracer),
-						logger: new(testMock.Logger),
+						cache:  new(mock.CacheRepository),
+						tracer: new(mock.Tracer),
+						logger: new(mock.Logger),
 					}
 				},
 				permissionRepo: func(ctx context.Context, id model.ID, permissions []*model.Permission) repository.PermissionRepository {
-					repo := new(testMock.PermissionRepository)
+					repo := new(mock.PermissionRepository)
 					repo.On("GetByTarget", ctx, id).Return(nil, repository.ErrNotFound)
 					return repo
 				},
@@ -574,7 +574,7 @@ func TestCachedPermissionRepository_Update(t *testing.T) {
 					usersKeyResult := new(redis.StringSliceCmd)
 					usersKeyResult.SetVal([]string{usersKey})
 
-					dbClient := new(testMock.RedisClient)
+					dbClient := new(mock.RedisClient)
 					dbClient.On("Keys", ctx, rolesKey).Return(rolesKeyResult)
 					dbClient.On("Keys", ctx, usersKey).Return(usersKeyResult)
 
@@ -583,13 +583,13 @@ func TestCachedPermissionRepository_Update(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					span := new(testMock.Span)
+					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
-					tracer := new(testMock.Tracer)
+					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo := new(mock.CacheRepository)
 					cacheRepo.On("Delete", ctx, usersKey).Return(nil)
 					cacheRepo.On("Delete", ctx, rolesKey).Return(nil)
 
@@ -597,11 +597,11 @@ func TestCachedPermissionRepository_Update(t *testing.T) {
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(testMock.Logger),
+						logger: new(mock.Logger),
 					}
 				},
 				permissionRepo: func(ctx context.Context, id model.ID, kind model.PermissionKind, permission *model.Permission) repository.PermissionRepository {
-					repo := new(testMock.PermissionRepository)
+					repo := new(mock.PermissionRepository)
 					repo.On("Update", ctx, id, kind).Return(permission, nil)
 					return repo
 				},
@@ -631,7 +631,7 @@ func TestCachedPermissionRepository_Update(t *testing.T) {
 					usersKeyResult := new(redis.StringSliceCmd)
 					usersKeyResult.SetVal([]string{usersKey})
 
-					dbClient := new(testMock.RedisClient)
+					dbClient := new(mock.RedisClient)
 					dbClient.On("Keys", ctx, rolesKey).Return(rolesKeyResult)
 					dbClient.On("Keys", ctx, usersKey).Return(usersKeyResult)
 
@@ -640,13 +640,13 @@ func TestCachedPermissionRepository_Update(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					span := new(testMock.Span)
+					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
-					tracer := new(testMock.Tracer)
+					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo := new(mock.CacheRepository)
 					cacheRepo.On("Delete", ctx, usersKey).Return(nil)
 					cacheRepo.On("Delete", ctx, rolesKey).Return(nil)
 
@@ -654,11 +654,11 @@ func TestCachedPermissionRepository_Update(t *testing.T) {
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(testMock.Logger),
+						logger: new(mock.Logger),
 					}
 				},
 				permissionRepo: func(ctx context.Context, id model.ID, kind model.PermissionKind, permission *model.Permission) repository.PermissionRepository {
-					repo := new(testMock.PermissionRepository)
+					repo := new(mock.PermissionRepository)
 					repo.On("Update", ctx, id, kind).Return(nil, repository.ErrNotFound)
 					return repo
 				},
@@ -679,7 +679,7 @@ func TestCachedPermissionRepository_Update(t *testing.T) {
 					rolesKeyResult := new(redis.StringSliceCmd)
 					rolesKeyResult.SetVal([]string{rolesKey})
 
-					dbClient := new(testMock.RedisClient)
+					dbClient := new(mock.RedisClient)
 					dbClient.On("Keys", ctx, rolesKey).Return(rolesKeyResult)
 
 					db, err := NewDatabase(
@@ -687,24 +687,24 @@ func TestCachedPermissionRepository_Update(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					span := new(testMock.Span)
+					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
-					tracer := new(testMock.Tracer)
+					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo := new(mock.CacheRepository)
 					cacheRepo.On("Delete", ctx, rolesKey).Return(repository.ErrCacheDelete)
 
 					return &baseRepository{
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(testMock.Logger),
+						logger: new(mock.Logger),
 					}
 				},
 				permissionRepo: func(ctx context.Context, id model.ID, kind model.PermissionKind, permission *model.Permission) repository.PermissionRepository {
-					return new(testMock.PermissionRepository)
+					return new(mock.PermissionRepository)
 				},
 			},
 			args: args{
@@ -727,7 +727,7 @@ func TestCachedPermissionRepository_Update(t *testing.T) {
 					usersKeyResult := new(redis.StringSliceCmd)
 					usersKeyResult.SetVal([]string{usersKey})
 
-					dbClient := new(testMock.RedisClient)
+					dbClient := new(mock.RedisClient)
 					dbClient.On("Keys", ctx, rolesKey).Return(rolesKeyResult)
 					dbClient.On("Keys", ctx, usersKey).Return(usersKeyResult)
 
@@ -736,13 +736,13 @@ func TestCachedPermissionRepository_Update(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					span := new(testMock.Span)
+					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
-					tracer := new(testMock.Tracer)
+					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo := new(mock.CacheRepository)
 					cacheRepo.On("Delete", ctx, usersKey).Return(nil)
 					cacheRepo.On("Delete", ctx, rolesKey).Return(repository.ErrCacheDelete)
 
@@ -750,11 +750,11 @@ func TestCachedPermissionRepository_Update(t *testing.T) {
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(testMock.Logger),
+						logger: new(mock.Logger),
 					}
 				},
 				permissionRepo: func(ctx context.Context, id model.ID, kind model.PermissionKind, permission *model.Permission) repository.PermissionRepository {
-					return new(testMock.PermissionRepository)
+					return new(mock.PermissionRepository)
 				},
 			},
 			args: args{
@@ -808,7 +808,7 @@ func TestCachedPermissionRepository_Delete(t *testing.T) {
 					usersKeyResult := new(redis.StringSliceCmd)
 					usersKeyResult.SetVal([]string{usersKey})
 
-					dbClient := new(testMock.RedisClient)
+					dbClient := new(mock.RedisClient)
 					dbClient.On("Keys", ctx, rolesKey).Return(rolesKeyResult)
 					dbClient.On("Keys", ctx, usersKey).Return(usersKeyResult)
 
@@ -817,13 +817,13 @@ func TestCachedPermissionRepository_Delete(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					span := new(testMock.Span)
+					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
-					tracer := new(testMock.Tracer)
+					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo := new(mock.CacheRepository)
 					cacheRepo.On("Delete", ctx, usersKey).Return(nil)
 					cacheRepo.On("Delete", ctx, rolesKey).Return(nil)
 
@@ -831,11 +831,11 @@ func TestCachedPermissionRepository_Delete(t *testing.T) {
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(testMock.Logger),
+						logger: new(mock.Logger),
 					}
 				},
 				permissionRepo: func(ctx context.Context, id model.ID) repository.PermissionRepository {
-					repo := new(testMock.PermissionRepository)
+					repo := new(mock.PermissionRepository)
 					repo.On("Delete", ctx, id).Return(nil)
 					return repo
 				},
@@ -858,7 +858,7 @@ func TestCachedPermissionRepository_Delete(t *testing.T) {
 					usersKeyResult := new(redis.StringSliceCmd)
 					usersKeyResult.SetVal([]string{usersKey})
 
-					dbClient := new(testMock.RedisClient)
+					dbClient := new(mock.RedisClient)
 					dbClient.On("Keys", ctx, rolesKey).Return(rolesKeyResult)
 					dbClient.On("Keys", ctx, usersKey).Return(usersKeyResult)
 
@@ -867,13 +867,13 @@ func TestCachedPermissionRepository_Delete(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					span := new(testMock.Span)
+					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
-					tracer := new(testMock.Tracer)
+					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo := new(mock.CacheRepository)
 					cacheRepo.On("Delete", ctx, usersKey).Return(nil)
 					cacheRepo.On("Delete", ctx, rolesKey).Return(nil)
 
@@ -881,11 +881,11 @@ func TestCachedPermissionRepository_Delete(t *testing.T) {
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(testMock.Logger),
+						logger: new(mock.Logger),
 					}
 				},
 				permissionRepo: func(ctx context.Context, id model.ID) repository.PermissionRepository {
-					repo := new(testMock.PermissionRepository)
+					repo := new(mock.PermissionRepository)
 					repo.On("Delete", ctx, id).Return(repository.ErrNotFound)
 					return repo
 				},
@@ -905,7 +905,7 @@ func TestCachedPermissionRepository_Delete(t *testing.T) {
 					rolesKeyResult := new(redis.StringSliceCmd)
 					rolesKeyResult.SetVal([]string{rolesKey})
 
-					dbClient := new(testMock.RedisClient)
+					dbClient := new(mock.RedisClient)
 					dbClient.On("Keys", ctx, rolesKey).Return(rolesKeyResult)
 
 					db, err := NewDatabase(
@@ -913,24 +913,24 @@ func TestCachedPermissionRepository_Delete(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					span := new(testMock.Span)
+					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
-					tracer := new(testMock.Tracer)
+					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo := new(mock.CacheRepository)
 					cacheRepo.On("Delete", ctx, rolesKey).Return(repository.ErrCacheDelete)
 
 					return &baseRepository{
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(testMock.Logger),
+						logger: new(mock.Logger),
 					}
 				},
 				permissionRepo: func(ctx context.Context, id model.ID) repository.PermissionRepository {
-					return new(testMock.PermissionRepository)
+					return new(mock.PermissionRepository)
 				},
 			},
 			args: args{
@@ -952,7 +952,7 @@ func TestCachedPermissionRepository_Delete(t *testing.T) {
 					usersKeyResult := new(redis.StringSliceCmd)
 					usersKeyResult.SetVal([]string{usersKey})
 
-					dbClient := new(testMock.RedisClient)
+					dbClient := new(mock.RedisClient)
 					dbClient.On("Keys", ctx, rolesKey).Return(rolesKeyResult)
 					dbClient.On("Keys", ctx, usersKey).Return(usersKeyResult)
 
@@ -961,13 +961,13 @@ func TestCachedPermissionRepository_Delete(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					span := new(testMock.Span)
+					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
-					tracer := new(testMock.Tracer)
+					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(testMock.CacheRepository)
+					cacheRepo := new(mock.CacheRepository)
 					cacheRepo.On("Delete", ctx, usersKey).Return(nil)
 					cacheRepo.On("Delete", ctx, rolesKey).Return(repository.ErrCacheDelete)
 
@@ -975,11 +975,11 @@ func TestCachedPermissionRepository_Delete(t *testing.T) {
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(testMock.Logger),
+						logger: new(mock.Logger),
 					}
 				},
 				permissionRepo: func(ctx context.Context, id model.ID) repository.PermissionRepository {
-					return new(testMock.PermissionRepository)
+					return new(mock.PermissionRepository)
 				},
 			},
 			args: args{
@@ -1026,19 +1026,19 @@ func TestCachedPermissionRepository_HasPermission(t *testing.T) {
 			fields: fields{
 				cacheRepo: func(ctx context.Context, subject, target model.ID, hasPermission bool) *baseRepository {
 					db, err := NewDatabase(
-						WithClient(new(testMock.RedisClient)),
+						WithClient(new(mock.RedisClient)),
 					)
 					require.NoError(t, err)
 
 					return &baseRepository{
 						db:     db,
-						cache:  new(testMock.CacheRepository),
-						tracer: new(testMock.Tracer),
-						logger: new(testMock.Logger),
+						cache:  new(mock.CacheRepository),
+						tracer: new(mock.Tracer),
+						logger: new(mock.Logger),
 					}
 				},
 				permissionRepo: func(ctx context.Context, subject, target model.ID, hasPermission bool, kinds []model.PermissionKind) repository.PermissionRepository {
-					repo := new(testMock.PermissionRepository)
+					repo := new(mock.PermissionRepository)
 					repo.On("HasPermission", ctx, subject, target, kinds).Return(hasPermission, nil)
 					return repo
 				},
@@ -1058,19 +1058,19 @@ func TestCachedPermissionRepository_HasPermission(t *testing.T) {
 			fields: fields{
 				cacheRepo: func(ctx context.Context, subject, target model.ID, hasPermission bool) *baseRepository {
 					db, err := NewDatabase(
-						WithClient(new(testMock.RedisClient)),
+						WithClient(new(mock.RedisClient)),
 					)
 					require.NoError(t, err)
 
 					return &baseRepository{
 						db:     db,
-						cache:  new(testMock.CacheRepository),
-						tracer: new(testMock.Tracer),
-						logger: new(testMock.Logger),
+						cache:  new(mock.CacheRepository),
+						tracer: new(mock.Tracer),
+						logger: new(mock.Logger),
 					}
 				},
 				permissionRepo: func(ctx context.Context, subject, target model.ID, hasPermission bool, kinds []model.PermissionKind) repository.PermissionRepository {
-					repo := new(testMock.PermissionRepository)
+					repo := new(mock.PermissionRepository)
 					repo.On("HasPermission", ctx, subject, target, kinds).Return(hasPermission, nil)
 					return repo
 				},
@@ -1090,19 +1090,19 @@ func TestCachedPermissionRepository_HasPermission(t *testing.T) {
 			fields: fields{
 				cacheRepo: func(ctx context.Context, subject, target model.ID, hasPermission bool) *baseRepository {
 					db, err := NewDatabase(
-						WithClient(new(testMock.RedisClient)),
+						WithClient(new(mock.RedisClient)),
 					)
 					require.NoError(t, err)
 
 					return &baseRepository{
 						db:     db,
-						cache:  new(testMock.CacheRepository),
-						tracer: new(testMock.Tracer),
-						logger: new(testMock.Logger),
+						cache:  new(mock.CacheRepository),
+						tracer: new(mock.Tracer),
+						logger: new(mock.Logger),
 					}
 				},
 				permissionRepo: func(ctx context.Context, subject, target model.ID, hasPermission bool, kinds []model.PermissionKind) repository.PermissionRepository {
-					repo := new(testMock.PermissionRepository)
+					repo := new(mock.PermissionRepository)
 					repo.On("HasPermission", ctx, subject, target, kinds).Return(false, repository.ErrPermissionRead)
 					return repo
 				},
@@ -1155,19 +1155,19 @@ func TestCachedPermissionRepository_HasAnyRelation(t *testing.T) {
 			fields: fields{
 				cacheRepo: func(ctx context.Context, subject, target model.ID, hasAnyRelation bool) *baseRepository {
 					db, err := NewDatabase(
-						WithClient(new(testMock.RedisClient)),
+						WithClient(new(mock.RedisClient)),
 					)
 					require.NoError(t, err)
 
 					return &baseRepository{
 						db:     db,
-						cache:  new(testMock.CacheRepository),
-						tracer: new(testMock.Tracer),
-						logger: new(testMock.Logger),
+						cache:  new(mock.CacheRepository),
+						tracer: new(mock.Tracer),
+						logger: new(mock.Logger),
 					}
 				},
 				permissionRepo: func(ctx context.Context, subject, target model.ID, hasAnyRelation bool) repository.PermissionRepository {
-					repo := new(testMock.PermissionRepository)
+					repo := new(mock.PermissionRepository)
 					repo.On("HasAnyRelation", ctx, subject, target).Return(hasAnyRelation, nil)
 					return repo
 				},
@@ -1184,19 +1184,19 @@ func TestCachedPermissionRepository_HasAnyRelation(t *testing.T) {
 			fields: fields{
 				cacheRepo: func(ctx context.Context, subject, target model.ID, hasAnyRelation bool) *baseRepository {
 					db, err := NewDatabase(
-						WithClient(new(testMock.RedisClient)),
+						WithClient(new(mock.RedisClient)),
 					)
 					require.NoError(t, err)
 
 					return &baseRepository{
 						db:     db,
-						cache:  new(testMock.CacheRepository),
-						tracer: new(testMock.Tracer),
-						logger: new(testMock.Logger),
+						cache:  new(mock.CacheRepository),
+						tracer: new(mock.Tracer),
+						logger: new(mock.Logger),
 					}
 				},
 				permissionRepo: func(ctx context.Context, subject, target model.ID, hasAnyRelation bool) repository.PermissionRepository {
-					repo := new(testMock.PermissionRepository)
+					repo := new(mock.PermissionRepository)
 					repo.On("HasAnyRelation", ctx, subject, target).Return(hasAnyRelation, nil)
 					return repo
 				},
@@ -1213,19 +1213,19 @@ func TestCachedPermissionRepository_HasAnyRelation(t *testing.T) {
 			fields: fields{
 				cacheRepo: func(ctx context.Context, subject, target model.ID, hasAnyRelation bool) *baseRepository {
 					db, err := NewDatabase(
-						WithClient(new(testMock.RedisClient)),
+						WithClient(new(mock.RedisClient)),
 					)
 					require.NoError(t, err)
 
 					return &baseRepository{
 						db:     db,
-						cache:  new(testMock.CacheRepository),
-						tracer: new(testMock.Tracer),
-						logger: new(testMock.Logger),
+						cache:  new(mock.CacheRepository),
+						tracer: new(mock.Tracer),
+						logger: new(mock.Logger),
 					}
 				},
 				permissionRepo: func(ctx context.Context, subject, target model.ID, hasAnyRelation bool) repository.PermissionRepository {
-					repo := new(testMock.PermissionRepository)
+					repo := new(mock.PermissionRepository)
 					repo.On("HasAnyRelation", ctx, subject, target).Return(false, repository.ErrPermissionRead)
 					return repo
 				},
@@ -1275,19 +1275,19 @@ func TestCachedPermissionRepository_HasSystemRole(t *testing.T) {
 			fields: fields{
 				cacheRepo: func(ctx context.Context, source model.ID, hasSystemRole bool) *baseRepository {
 					db, err := NewDatabase(
-						WithClient(new(testMock.RedisClient)),
+						WithClient(new(mock.RedisClient)),
 					)
 					require.NoError(t, err)
 
 					return &baseRepository{
 						db:     db,
-						cache:  new(testMock.CacheRepository),
-						tracer: new(testMock.Tracer),
-						logger: new(testMock.Logger),
+						cache:  new(mock.CacheRepository),
+						tracer: new(mock.Tracer),
+						logger: new(mock.Logger),
 					}
 				},
 				permissionRepo: func(ctx context.Context, source model.ID, hasSystemRole bool, roles []model.SystemRole) repository.PermissionRepository {
-					repo := new(testMock.PermissionRepository)
+					repo := new(mock.PermissionRepository)
 					repo.On("HasSystemRole", ctx, source, roles).Return(hasSystemRole, nil)
 					return repo
 				},
@@ -1307,19 +1307,19 @@ func TestCachedPermissionRepository_HasSystemRole(t *testing.T) {
 			fields: fields{
 				cacheRepo: func(ctx context.Context, source model.ID, hasSystemRole bool) *baseRepository {
 					db, err := NewDatabase(
-						WithClient(new(testMock.RedisClient)),
+						WithClient(new(mock.RedisClient)),
 					)
 					require.NoError(t, err)
 
 					return &baseRepository{
 						db:     db,
-						cache:  new(testMock.CacheRepository),
-						tracer: new(testMock.Tracer),
-						logger: new(testMock.Logger),
+						cache:  new(mock.CacheRepository),
+						tracer: new(mock.Tracer),
+						logger: new(mock.Logger),
 					}
 				},
 				permissionRepo: func(ctx context.Context, source model.ID, hasSystemRole bool, roles []model.SystemRole) repository.PermissionRepository {
-					repo := new(testMock.PermissionRepository)
+					repo := new(mock.PermissionRepository)
 					repo.On("HasSystemRole", ctx, source, roles).Return(hasSystemRole, nil)
 					return repo
 				},
@@ -1339,19 +1339,19 @@ func TestCachedPermissionRepository_HasSystemRole(t *testing.T) {
 			fields: fields{
 				cacheRepo: func(ctx context.Context, source model.ID, hasSystemRole bool) *baseRepository {
 					db, err := NewDatabase(
-						WithClient(new(testMock.RedisClient)),
+						WithClient(new(mock.RedisClient)),
 					)
 					require.NoError(t, err)
 
 					return &baseRepository{
 						db:     db,
-						cache:  new(testMock.CacheRepository),
-						tracer: new(testMock.Tracer),
-						logger: new(testMock.Logger),
+						cache:  new(mock.CacheRepository),
+						tracer: new(mock.Tracer),
+						logger: new(mock.Logger),
 					}
 				},
 				permissionRepo: func(ctx context.Context, source model.ID, hasSystemRole bool, roles []model.SystemRole) repository.PermissionRepository {
-					repo := new(testMock.PermissionRepository)
+					repo := new(mock.PermissionRepository)
 					repo.On("HasSystemRole", ctx, source, roles).Return(false, repository.ErrPermissionRead)
 					return repo
 				},

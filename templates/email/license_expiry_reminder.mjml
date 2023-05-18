@@ -1,0 +1,84 @@
+<mjml>
+  <mj-head>
+    <mj-title>{{ .Subject }}</mj-title>
+    <mj-font name="Work Sans" href="https://fonts.googleapis.com/css?family=Work+Sans:300,500"></mj-font>
+    <mj-attributes>
+      <mj-all font-family="Work Sans, Helvetica, sans-serif"></mj-all>
+      <mj-text font-weight="300" font-size="16px" color="#616161" line-height="24px"></mj-text>
+      <mj-section padding="0px"></mj-section>
+    </mj-attributes>
+  </mj-head>
+  <mj-body>
+    <mj-section padding="20px 0">
+      <mj-column>
+        <mj-image width="120px" alt="Logo" href="https://www.opcotech.com/images/logo.png"
+                  src="https://www.opcotech.com/images/logo.png"></mj-image>
+      </mj-column>
+    </mj-section>
+    <mj-section padding-top="10px">
+      <mj-column width="100%">
+        <mj-text>
+          <p>Hello&nbsp;{{ if ne .FirstName "" }}{{ .FirstName }}{{ else }}{{ .Username }}{{ end }},</p>
+
+          <p>The license for {{ .ServerURL }} expires at
+            <span>
+              <strong>{{ .LicenseExpiresAt }}</strong>
+            </span>
+            .
+          </p>
+
+          <p>You can renew the license anytime by sending an email to
+            <a href="mailto:{{ .RenewEmail }}">{{ .RenewEmail }}</a>
+            and we get in touch with you about the details. Please find your license details below.
+          </p>
+        </mj-text>
+      </mj-column>
+      <mj-column width="100%">
+        <mj-table font-weight="300" font-size="16px" color="#616161" line-height="24px">
+          <tr style="text-align: left">
+            <th>License ID:</th>
+            <td>{{ .LicenseID }}</td>
+          </tr>
+          <tr style="text-align: left">
+            <th>Licensee:</th>
+            <td>{{ .LicenseOrganization }}</td>
+          </tr>
+          <tr style="text-align: left">
+            <th>Licensee Email:</th>
+            <td>{{ .LicenseEmail }}</td>
+          </tr>
+          <tr style="text-align: left">
+            <th>License Expiry:</th>
+            <td>{{ .LicenseExpiresAt }}</td>
+          </tr>
+        </mj-table>
+      </mj-column>
+      <mj-column width="100%">
+        <mj-text>
+          <p>This process will be simplified soon, so you can renew licenses on your own. Until then, thank you for your
+            patience.
+          </p>
+
+          <p>
+            Sincerely,
+            <br/>
+            the Elemo team
+          </p>
+        </mj-text>
+      </mj-column>
+    </mj-section>
+    <mj-section>
+      <mj-column width="100%">
+        <mj-divider border-width="1px" border-color="#E0E0E0"></mj-divider>
+      </mj-column>
+    </mj-section>
+    <mj-section>
+      <mj-column>
+        <mj-text font-size="10px" line-height="15px">This email is an automated notification, which is unable to receive
+          replies. We are happy to help you with any questions or concerns you may have. Please contact us directly via
+          <a href="mailto:{{ .SupportEmail }}">{{ .SupportEmail }}</a>.
+        </mj-text>
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>

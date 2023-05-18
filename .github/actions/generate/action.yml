@@ -9,4 +9,4 @@ runs:
       run: |
           npm install -g @apidevtools/swagger-cli
           go install github.com/deepmap/oapi-codegen/cmd/oapi-codegen@latest
-          make generate && make dep
+          make generate.openapi && make dep

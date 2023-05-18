@@ -64,7 +64,7 @@ func startWorkerMetricsServer() error {
 		WriteTimeout:      cfg.WorkerMetricsServer.WriteTimeout * time.Second,
 	}
 
-	return s.ListenAndServeTLS(cfg.TLS.CertFile, cfg.TLS.KeyFile)
+	return s.ListenAndServeTLS(cfg.WorkerMetricsServer.TLS.CertFile, cfg.WorkerMetricsServer.TLS.KeyFile)
 }
 
 func startWorkerServers(worker *asynq.Worker) {

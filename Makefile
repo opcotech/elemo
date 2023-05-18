@@ -40,13 +40,17 @@ build.monitoring: ## Build service
 	docker-compose -f deploy/docker/docker-compose.monitoring.yml build
 
 .PHONY: generate
-generate: generate.openapi ## Generate code
+generate: generate.openapi generate.email ## Generate code
 
 .PHONY: generate.openapi
 generate.openapi: ## Generate http server code from openapi spec
 	mkdir -p $(OPENAPI_GEN_SERVER_DIR)
 	swagger-cli bundle $(OPENAPI_DIR)/openapi.yaml --outfile $(OPENAPI_DIR)/openapi.final.yaml --type yaml
 	oapi-codegen -config $(OPENAPI_DIR)/generator.config.yml -o $(OPENAPI_GEN_SERVER_DIR)/server.gen.go $(OPENAPI_DIR)/openapi.final.yaml
+
+.PHONY: generate.email
+generate.email: ## Generate email templates
+	mjml --config.minify=true --config.minifyOptions='{"minifyCSS": true}' --config.validationLevel=strict -r $(ROOT_DIR)/templates/email/*.mjml -o $(ROOT_DIR)/templates/email
 
 .PHONY: start.backend
 start.backend: ## Start service

@@ -2,10 +2,14 @@ package cli
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
+	"net"
+	"net/smtp"
 	"os"
 	"strings"
+	"time"
 
 	authStore "github.com/gabor-boros/go-oauth2-pg"
 	"github.com/spf13/cobra"
@@ -16,6 +20,7 @@ import (
 	"github.com/opcotech/elemo/assets/keys"
 	"github.com/opcotech/elemo/internal/license"
 	"github.com/opcotech/elemo/internal/model"
+	elemoSMTP "github.com/opcotech/elemo/internal/pkg/smtp"
 	"github.com/opcotech/elemo/internal/repository/neo4j"
 	"github.com/opcotech/elemo/internal/repository/pg"
 	"github.com/opcotech/elemo/internal/repository/redis"
@@ -124,31 +129,6 @@ func initConfig() {
 	}
 }
 
-func parseLicense(licenseConf *config.LicenseConfig) (*license.License, error) {
-	if licenseConf == nil {
-		return nil, license.ErrNoLicense
-	}
-
-	data, err := os.ReadFile(licenseConf.File)
-	if err != nil {
-		return nil, err
-	}
-
-	l, err := license.NewLicense(string(data), keys.PublicKey)
-	if err != nil {
-		return nil, err
-	}
-
-	logger.Info(
-		"license parsed",
-		zap.String("id", l.ID.String()),
-		zap.String("licensee", l.Organization),
-		zap.String("expires_at", l.ExpiresAt.String()),
-	)
-
-	return l, nil
-}
-
 func initTracer(service string) {
 	var err error
 
@@ -232,4 +212,89 @@ func initRelationalDatabase() (*pg.Database, pg.Pool, error) {
 	}
 
 	return db, pool, nil
+}
+
+// initSMTPClient initializes the SMTP client.
+// nolint:unused
+func initSMTPClient(smtpConf *config.SMTPConfig) (*elemoSMTP.Client, error) {
+	var conn net.Conn
+	var err error
+
+	dialer := net.Dialer{
+		Timeout: smtpConf.ConnectionTimeout * time.Second,
+	}
+
+	address := fmt.Sprintf("%s:%d", smtpConf.Host, smtpConf.Port)
+	tlsConf := &tls.Config{
+		InsecureSkipVerify: smtpConf.SkipTLSVerify, //nolint:gosec
+		ServerName:         smtpConf.Host,
+	}
+
+	if smtpConf.SecurityProtocol == "TLS" {
+		if conn, err = tls.DialWithDialer(&dialer, "tcp", address, tlsConf); err != nil {
+			return nil, err
+		}
+	} else {
+		if conn, err = dialer.Dial("tcp", address); err != nil {
+			return nil, err
+		}
+	}
+
+	baseClient, err := smtp.NewClient(conn, smtpConf.Host)
+	if err != nil {
+		return nil, err
+	}
+
+	if err = baseClient.Hello(smtpConf.Hostname); err != nil {
+		return nil, err
+	}
+
+	if smtpConf.SecurityProtocol == "STARTTLS" {
+		if err = baseClient.StartTLS(tlsConf); err != nil {
+			return nil, err
+		}
+	}
+
+	client, err := elemoSMTP.NewClient(
+		elemoSMTP.WithWrappedClient(baseClient),
+		elemoSMTP.WithConfig(smtpConf),
+		elemoSMTP.WithLogger(logger.Named("smtp")),
+		elemoSMTP.WithTracer(tracer),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	if smtpConf.EnableAuth {
+		if err = client.Authenticate(context.Background()); err != nil {
+			return nil, err
+		}
+	}
+
+	return client, nil
+}
+
+func parseLicense(licenseConf *config.LicenseConfig) (*license.License, error) {
+	if licenseConf == nil {
+		return nil, license.ErrNoLicense
+	}
+
+	data, err := os.ReadFile(licenseConf.File)
+	if err != nil {
+		return nil, err
+	}
+
+	l, err := license.NewLicense(string(data), keys.PublicKey)
+	if err != nil {
+		return nil, err
+	}
+
+	logger.Info(
+		"license parsed",
+		zap.String("id", l.ID.String()),
+		zap.String("licensee", l.Organization),
+		zap.String("expires_at", l.ExpiresAt.String()),
+	)
+
+	return l, nil
 }

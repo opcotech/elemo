@@ -1,0 +1,68 @@
+<mjml>
+  <mj-head>
+    <mj-title>{{ .Subject }}</mj-title>
+    <mj-font name="Work Sans" href="https://fonts.googleapis.com/css?family=Work+Sans:300,500"></mj-font>
+    <mj-attributes>
+      <mj-all font-family="Work Sans, Helvetica, sans-serif"></mj-all>
+      <mj-text font-weight="300" font-size="16px" color="#616161" line-height="24px"></mj-text>
+      <mj-section padding="0px"></mj-section>
+    </mj-attributes>
+  </mj-head>
+  <mj-body>
+    <mj-section padding="20px 0">
+      <mj-column>
+        <mj-image width="120px" alt="Logo" href="https://www.opcotech.com/images/logo.png"
+                  src="https://www.opcotech.com/images/logo.png"></mj-image>
+      </mj-column>
+    </mj-section>
+    <mj-section padding-top="10px">
+      <mj-column width="100%">
+        <mj-text>
+          <p>Hello&nbsp;{{ if ne .FirstName "" }}{{ .FirstName }}{{ else }}{{ .Username }}{{ end }},</p>
+
+          <p>
+            Welcome to Elemo, the next-generation project management platform! We are excited to have you on board. We
+            believe Elemo will help you deliver the next greatest project you are working on.
+          </p>
+
+          <p>
+            We are here to help you on your way and to ensure you gain the very best out of the platform. If you need
+            any help during your journey, join our growing community on
+          </p>
+
+          <ul>
+            <li>Discourse (<a href="https://discourse.elemo.app" alt="Discourse">join</a>)
+            </li>
+            <li>Discord (<a href="https://discord.gg/NN7NUbRASA" alt="Discord invitation">join</a>)
+            </li>
+            <li>or visit our
+              <a href="https://blog.elemo.app" alt="Blog">Blog</a>
+            </li>
+          </ul>
+
+          <p>To sign in to your instance, navigate to&nbsp;<a href="mailto:{{ .LoginURL }}">{{ .LoginURL }}</a>.
+          </p>
+
+          <p>
+            We wish you having fun,
+            <br/>
+            the Elemo team
+          </p>
+        </mj-text>
+      </mj-column>
+    </mj-section>
+    <mj-section>
+      <mj-column width="100%">
+        <mj-divider border-width="1px" border-color="#E0E0E0"></mj-divider>
+      </mj-column>
+    </mj-section>
+    <mj-section>
+      <mj-column>
+        <mj-text font-size="10px" line-height="15px">This email is an automated notification, which is unable to receive
+          replies. We are happy to help you with any questions or concerns you may have. Please contact us directly via
+          <a href="mailto:{{ .SupportEmail }}">{{ .SupportEmail }}</a>.
+        </mj-text>
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>

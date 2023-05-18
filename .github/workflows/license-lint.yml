@@ -26,13 +26,11 @@ jobs:
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: '2.6.10'
+      - uses: ./.github/actions/generate
       - name: Prerequisites
         run: |
           sudo apt-get install jq
           pip install yq flict
           gem install license_finder
-          npm install -g @apidevtools/swagger-cli
-          go install github.com/deepmap/oapi-codegen/cmd/oapi-codegen@latest
-          make generate
       - name: Lint licenses
         run: make lint.license

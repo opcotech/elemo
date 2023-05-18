@@ -6,13 +6,12 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zapcore"
 
 	"github.com/opcotech/elemo/internal/pkg"
 	"github.com/opcotech/elemo/internal/pkg/log"
-	testMock "github.com/opcotech/elemo/internal/testutil/mock"
+	"github.com/opcotech/elemo/internal/testutil/mock"
 )
 
 func TestWithContextObject(t *testing.T) {
@@ -29,7 +28,7 @@ func TestWithContextObject(t *testing.T) {
 }
 
 func TestWithRequestLogger(t *testing.T) {
-	logger := new(testMock.Logger)
+	logger := new(mock.Logger)
 	logger.On("Log", zapcore.InfoLevel, "serve http request", mock.Anything).Return()
 
 	ctx := log.WithContext(context.Background(), logger)
