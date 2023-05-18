@@ -3,7 +3,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(realpath "$(dirname "${BASH_SOURCE[0]:-$0}")/../")"
-LICENSE_DECISIONS_FILE="${ROOT_DIR}/assets/license-decisions.yml"
+LICENSE_DECISIONS_FILE="${ROOT_DIR}/.license-decisions.yml"
 
 # The following licenses are not included in the SPDX license list, but are
 # used by some of the dependencies. We need to add them to the license
