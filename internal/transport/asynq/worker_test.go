@@ -1,8 +1,12 @@
 package asynq
 
 import (
+	"context"
+	"reflect"
 	"testing"
 
+	"github.com/hibiken/asynq"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/trace"
 
@@ -48,6 +52,60 @@ func TestWithWorkerConfig(t *testing.T) {
 			require.ErrorIs(t, err, tt.wantErr)
 			if tt.wantErr == nil {
 				require.Equal(t, tt.want, worker)
+			}
+		})
+	}
+}
+
+func TestWithWorkerTaskHandler(t *testing.T) {
+	handler := asynq.HandlerFunc(func(ctx context.Context, task *asynq.Task) error {
+		return nil
+	})
+
+	type args struct {
+		taskType TaskType
+		handler  asynq.Handler
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    *Worker
+		wantErr error
+	}{
+		{
+			name: "create new option with handler",
+			args: args{
+				taskType: TaskTypeSystemHealthCheck,
+				handler:  handler,
+			},
+			want: &Worker{
+				handlers: map[TaskType]asynq.Handler{
+					TaskTypeSystemHealthCheck: handler,
+				},
+			},
+		},
+		{
+			name: "create new option with nil handler",
+			args: args{
+				taskType: TaskTypeSystemHealthCheck,
+				handler:  nil,
+			},
+			wantErr: ErrNoTaskHandler,
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			worker := new(Worker)
+			worker.handlers = make(map[TaskType]asynq.Handler)
+
+			err := WithWorkerTaskHandler(tt.args.taskType, tt.args.handler)(worker)
+			require.ErrorIs(t, err, tt.wantErr)
+			if tt.wantErr == nil {
+				for k, v := range tt.want.handlers {
+					assert.Equal(t, reflect.ValueOf(v).Pointer(), reflect.ValueOf(worker.handlers[k]).Pointer())
+				}
 			}
 		})
 	}
