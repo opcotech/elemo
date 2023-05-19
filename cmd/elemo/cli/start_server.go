@@ -34,8 +34,6 @@ var startServerCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		initTracer("server")
 
-		logger.Info("starting server", zap.Any("version", versionInfo))
-
 		license, err := parseLicense(&cfg.License)
 		if err != nil {
 			logger.Fatal("failed to parse license", zap.Error(err))
@@ -214,7 +212,22 @@ var startServerCmd = &cobra.Command{
 			logger.Fatal("failed to initialize http server", zap.Error(err))
 		}
 
-		startHTTPServers(httpServer)
+		systemLicenseExpiryTask, err := asynq.NewSystemLicenseExpiryTask(license)
+		if err != nil {
+			logger.Fatal("failed to initialize system license expiry task", zap.Error(err))
+		}
+
+		taskScheduler, err := asynq.NewScheduler(
+			asynq.WithSchedulerTask("@every 1m", systemLicenseExpiryTask),
+			asynq.WithSchedulerConfig(&cfg.Worker),
+			asynq.WithSchedulerLogger(logger.Named("task_scheduler")),
+			asynq.WithSchedulerTracer(tracer),
+		)
+		if err != nil {
+			logger.Fatal("failed to initialize scheduler", zap.Error(err))
+		}
+
+		startHTTPServers(httpServer, taskScheduler)
 	},
 }
 
@@ -285,6 +298,11 @@ func startHTTPServer(server elemoHttp.StrictServer) error {
 	return s.ListenAndServeTLS(cfg.Server.TLS.CertFile, cfg.Server.TLS.KeyFile)
 }
 
+func startSchedulerServer(scheduler *asynq.Scheduler) error {
+	logger.Info("starting task scheduler")
+	return scheduler.Start()
+}
+
 func startHTTPMetricsServer() error {
 	router, err := elemoHttp.NewMetricsServer(&cfg.MetricsServer, tracer)
 	if err != nil {
@@ -303,9 +321,15 @@ func startHTTPMetricsServer() error {
 	return s.ListenAndServeTLS(cfg.MetricsServer.TLS.CertFile, cfg.MetricsServer.TLS.KeyFile)
 }
 
-func startHTTPServers(server elemoHttp.StrictServer) {
+func startHTTPServers(server elemoHttp.StrictServer, taskScheduler *asynq.Scheduler) {
 	wg := new(sync.WaitGroup)
-	wg.Add(2)
+	wg.Add(3)
+
+	go func(wg *sync.WaitGroup) {
+		err := startSchedulerServer(taskScheduler)
+		logger.Fatal("failed to start task scheduler", zap.Error(err))
+		wg.Done()
+	}(wg)
 
 	go func(wg *sync.WaitGroup) {
 		err := startHTTPServer(server)
