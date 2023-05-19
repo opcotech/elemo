@@ -8,8 +8,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/zap"
 	"golang.org/x/time/rate"
 
+	"github.com/opcotech/elemo/internal/pkg"
+	"github.com/opcotech/elemo/internal/pkg/log"
 	"github.com/opcotech/elemo/internal/testutil/mock"
 )
 
@@ -127,6 +130,92 @@ func TestWithRateLimiter(t *testing.T) {
 
 			wrapped := WithRateLimiter(tt.args.tracer, tt.args.limiter)(handler)
 			err := wrapped.ProcessTask(context.Background(), new(asynq.Task))
+
+			assert.ErrorIs(t, err, tt.wantErr)
+		})
+	}
+}
+
+func TestWithErrorLogger(t *testing.T) {
+	type fields struct {
+		ctx    context.Context
+		task   *asynq.Task
+		logger func(ctx context.Context, task *asynq.Task) log.Logger
+	}
+	type args struct {
+		tracer func(ctx context.Context) trace.Tracer
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr error
+	}{
+		{
+			name: "no error during processing",
+			fields: fields{
+				ctx:  context.Background(),
+				task: asynq.NewTask("test:task", []byte("hello")),
+				logger: func(ctx context.Context, task *asynq.Task) log.Logger {
+					return new(mock.Logger)
+				},
+			},
+			args: args{
+				tracer: func(ctx context.Context) trace.Tracer {
+					span := new(mock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(mock.Tracer)
+					tracer.On("Start", ctx, "transport.asynq.middleware/WithErrorLogger", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					return tracer
+				},
+			},
+		},
+		{
+			name: "log error if error occurred during processing",
+			fields: fields{
+				ctx:  context.Background(),
+				task: asynq.NewTask("test:task", []byte("hello")),
+				logger: func(ctx context.Context, task *asynq.Task) log.Logger {
+					logger := new(mock.Logger)
+					logger.On("Log", zap.ErrorLevel, assert.AnError.Error(), []zap.Field{
+						log.WithKey(task.Type()),
+						log.WithInput(string(task.Payload())),
+						log.WithError(assert.AnError),
+					}).Return()
+
+					return logger
+				},
+			},
+			args: args{
+				tracer: func(ctx context.Context) trace.Tracer {
+					span := new(mock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(mock.Tracer)
+					tracer.On("Start", ctx, "transport.asynq.middleware/WithErrorLogger", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					return tracer
+				},
+			},
+			wantErr: assert.AnError,
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			handler := asynq.HandlerFunc(func(ctx context.Context, task *asynq.Task) error {
+				return tt.wantErr
+			})
+
+			ctx := tt.fields.ctx
+			ctx = context.WithValue(ctx, pkg.CtxKeyLogger, tt.fields.logger(ctx, tt.fields.task))
+
+			wrapped := WithErrorLogger(tt.args.tracer(ctx))(handler)
+			err := wrapped.ProcessTask(ctx, tt.fields.task)
 
 			assert.ErrorIs(t, err, tt.wantErr)
 		})
