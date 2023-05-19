@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 
+	"github.com/opcotech/elemo/internal/service"
 	"github.com/opcotech/elemo/internal/transport/asynq"
 )
 
@@ -20,15 +21,48 @@ configured port.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		initTracer("worker")
 
-		logger.Info("starting worker", zap.Any("version", versionInfo))
-
 		if _, err := parseLicense(&cfg.License); err != nil {
 			logger.Fatal("failed to parse license", zap.Error(err))
 		}
 
-		asynq.SetRateLimiter(cfg.Worker.RateLimit, cfg.Worker.RateLimitBurst)
+		smtpClient, err := initSMTPClient(&cfg.SMTP)
+		if err != nil {
+			logger.Fatal("failed to initialize SMTP client", zap.Error(err))
+		}
 
+		emailService, err := service.NewEmailService(
+			smtpClient,
+			cfg.Template.Directory,
+			&cfg.SMTP,
+			service.WithLogger(logger.Named("email_service")),
+			service.WithTracer(tracer),
+		)
+		if err != nil {
+			logger.Fatal("failed to initialize email service", zap.Error(err))
+		}
+		_ = emailService
+
+		systemHealthCheckHandler, err := asynq.NewSystemHealthCheckTaskHandler(
+			asynq.WithTaskLogger(logger.Named("system_health_check_task")),
+			asynq.WithTaskTracer(tracer),
+		)
+		if err != nil {
+			logger.Fatal("failed to initialize system health check task handler", zap.Error(err))
+		}
+
+		systemLicenseExpiryTaskHandler, err := asynq.NewSystemLicenseExpiryTaskHandler(
+			asynq.WithTaskEmailService(emailService),
+			asynq.WithTaskLogger(logger.Named("system_license_expiry_task")),
+			asynq.WithTaskTracer(tracer),
+		)
+		if err != nil {
+			logger.Fatal("failed to initialize system license expiry task handler", zap.Error(err))
+		}
+
+		asynq.SetRateLimiter(cfg.Worker.RateLimit, cfg.Worker.RateLimitBurst)
 		worker, err := asynq.NewWorker(
+			asynq.WithWorkerTaskHandler(asynq.TaskTypeSystemHealthCheck, systemHealthCheckHandler),
+			asynq.WithWorkerTaskHandler(asynq.TaskTypeSystemLicenseExpiry, systemLicenseExpiryTaskHandler),
 			asynq.WithWorkerConfig(&cfg.Worker),
 			asynq.WithWorkerLogger(logger.Named("worker")),
 			asynq.WithWorkerTracer(tracer),
@@ -46,6 +80,7 @@ func init() {
 }
 
 func startWorkerServer(worker *asynq.Worker) error {
+	logger.Info("starting worker server")
 	return worker.Start()
 }
 
@@ -55,7 +90,7 @@ func startWorkerMetricsServer() error {
 		logger.Fatal("failed to initialize metrics router", zap.Error(err))
 	}
 
-	logger.Info("starting HTTP metrics server", zap.String("address", cfg.MetricsServer.Address))
+	logger.Info("starting worker metrics server", zap.String("address", cfg.MetricsServer.Address))
 	s := &http.Server{
 		Addr:              cfg.WorkerMetricsServer.Address,
 		Handler:           router,

@@ -175,7 +175,7 @@ worker_metrics_server:
 smtp:
   host: "${smtp_host}"
   port: 1025
-  username: "elemo"
+  username: "no-reply@elemo.app"
   password: "smtpsecret"
   from_address: "no-reply@elemo.app"
   support_address: "support@elemo.app"

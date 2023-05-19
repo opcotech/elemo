@@ -4,8 +4,6 @@ package email
 // reset email template.
 type LicenseExpiryTemplateData struct {
 	Subject             string `validate:"required,min=3,max=50"`
-	Username            string `validate:"required,min=3,max=50"`
-	FirstName           string `validate:"omitempty,max=50"`
 	LicenseID           string `validate:"required"`
 	LicenseEmail        string `validate:"required,email"`
 	LicenseOrganization string `validate:"required"`

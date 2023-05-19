@@ -39,12 +39,16 @@ func (s *AsynqClientIntegrationTestSuite) SetupSuite() {
 	)
 	s.Require().NoError(err)
 
+	systemHealthCheckTaskHandler, err := elemoAsynq.NewSystemHealthCheckTaskHandler()
+	s.Require().NoError(err)
+
 	elemoAsynq.SetRateLimiter(0, 0)
 	s.worker, err = elemoAsynq.NewWorker(
 		elemoAsynq.WithWorkerConfig(&config.WorkerConfig{
 			Concurrency: 10,
 			Broker:      s.RedisConf.RedisConfig,
 		}),
+		elemoAsynq.WithWorkerTaskHandler(elemoAsynq.TaskTypeSystemHealthCheck, systemHealthCheckTaskHandler),
 	)
 	s.Require().NoError(err)
 

@@ -1,11 +1,14 @@
 package mock
 
 import (
+	"context"
 	"crypto/tls"
 	"io"
 	"net/smtp"
 
 	"github.com/stretchr/testify/mock"
+
+	"github.com/opcotech/elemo/internal/email"
 )
 
 type SMTPAuth struct {
@@ -88,5 +91,14 @@ func (n *NetSMTPClient) Noop() error {
 
 func (n *NetSMTPClient) Quit() error {
 	args := n.Called()
+	return args.Error(0)
+}
+
+type SMTPClient struct {
+	mock.Mock
+}
+
+func (s *SMTPClient) SendEmail(ctx context.Context, subject, to string, template *email.Template) error {
+	args := s.Called(ctx, subject, to, template)
 	return args.Error(0)
 }

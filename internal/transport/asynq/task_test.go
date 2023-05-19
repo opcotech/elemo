@@ -18,11 +18,8 @@ func TestTaskType_String(t *testing.T) {
 		t    TaskType
 		want string
 	}{
-		{
-			name: "health check task",
-			t:    TaskTypeSystemHealthCheck,
-			want: "system:health_check",
-		},
+		{"health check task", TaskTypeSystemHealthCheck, "system:health_check"},
+		{"license expiry task", TaskTypeSystemLicenseExpiry, "system:license_expiry"},
 	}
 	for _, tt := range tests {
 		tt := tt

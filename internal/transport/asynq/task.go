@@ -1,19 +1,29 @@
 package asynq
 
 import (
+	"time"
+
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/opcotech/elemo/internal/pkg/log"
 	"github.com/opcotech/elemo/internal/pkg/tracing"
+	"github.com/opcotech/elemo/internal/service"
 )
 
 const (
-	TaskTypeSystemHealthCheck TaskType = iota + 1 // Health check task type.
+	DefaultTaskTimeout   = 5 * time.Second // The default task timeout.
+	DefaultTaskRetention = 5 * time.Minute // The default task retention.
+)
+
+const (
+	TaskTypeSystemHealthCheck   TaskType = iota + 1 // Health check task type.
+	TaskTypeSystemLicenseExpiry                     // License expiry task type.
 )
 
 var (
 	taskTypeValues = map[TaskType]string{
-		TaskTypeSystemHealthCheck: "system:health_check",
+		TaskTypeSystemHealthCheck:   "system:health_check",
+		TaskTypeSystemLicenseExpiry: "system:license_expiry",
 	}
 )
 
@@ -27,6 +37,18 @@ func (t TaskType) String() string {
 
 // TaskOption is a function that can be used to configure a task handler.
 type TaskOption func(*baseTaskHandler) error
+
+// WithTaskEmailService sets the email service for the worker.
+func WithTaskEmailService(emailService service.EmailService) TaskOption {
+	return func(t *baseTaskHandler) error {
+		if emailService == nil {
+			return ErrNoEmailService
+		}
+
+		t.emailService = emailService
+		return nil
+	}
+}
 
 // WithTaskLogger sets the logger for the task handler.
 func WithTaskLogger(logger log.Logger) TaskOption {
@@ -58,6 +80,8 @@ func WithTaskTracer(tracer trace.Tracer) TaskOption {
 type baseTaskHandler struct {
 	logger log.Logger
 	tracer trace.Tracer
+
+	emailService service.EmailService
 }
 
 // newBaseTaskHandler creates a new base task handler.

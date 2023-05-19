@@ -41,6 +41,18 @@ func WithWorkerConfig(conf *config.WorkerConfig) WorkerOption {
 	}
 }
 
+// WithWorkerTaskHandler sets a task handler for the worker.
+func WithWorkerTaskHandler(taskType TaskType, handler asynq.Handler) WorkerOption {
+	return func(w *Worker) error {
+		if handler == nil {
+			return ErrNoTaskHandler
+		}
+
+		w.handlers[taskType] = handler
+		return nil
+	}
+}
+
 // WithWorkerLogger sets the logger for the worker.
 func WithWorkerLogger(logger log.Logger) WorkerOption {
 	return func(w *Worker) error {
@@ -75,6 +87,8 @@ type Worker struct {
 
 	*asynq.ServeMux
 	server *asynq.Server
+
+	handlers map[TaskType]asynq.Handler
 }
 
 // Start starts the async worker.
@@ -94,6 +108,7 @@ func NewWorker(opts ...WorkerOption) (*Worker, error) {
 	w := &Worker{
 		logger:   log.DefaultLogger(),
 		tracer:   tracing.NoopTracer(),
+		handlers: make(map[TaskType]asynq.Handler),
 		ServeMux: asynq.NewServeMux(),
 	}
 
@@ -102,7 +117,6 @@ func NewWorker(opts ...WorkerOption) (*Worker, error) {
 			return nil, err
 		}
 	}
-
 	logLevel := asynq.InfoLevel
 	if w.conf.LogLevel != "" {
 		if err := logLevel.Set(w.conf.LogLevel); err != nil {
@@ -147,17 +161,13 @@ func NewWorker(opts ...WorkerOption) (*Worker, error) {
 		},
 	)
 
-	systemHealthCheckHandler, err := NewSystemHealthCheckTaskHandler(
-		WithTaskLogger(w.logger.Named("health_check")),
-		WithTaskTracer(w.tracer),
-	)
-	if err != nil {
-		return nil, err
-	}
-
 	w.Use(WithMetricsExporter(w.tracer))
 	w.Use(WithRateLimiter(w.tracer, rateLimiter))
-	w.Handle(TaskTypeSystemHealthCheck.String(), systemHealthCheckHandler)
+	w.Use(WithErrorLogger(w.tracer))
+
+	for taskType, handler := range w.handlers {
+		w.Handle(taskType.String(), handler)
+	}
 
 	return w, nil
 }

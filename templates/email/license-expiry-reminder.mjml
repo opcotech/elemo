@@ -18,7 +18,7 @@
     <mj-section padding-top="10px">
       <mj-column width="100%">
         <mj-text>
-          <p>Hello&nbsp;{{ if ne .FirstName "" }}{{ .FirstName }}{{ else }}{{ .Username }}{{ end }},</p>
+          <p>Hello&nbsp;{{ .LicenseOrganization }} team,</p>
 
           <p>The license for {{ .ServerURL }} expires at
             <span>
