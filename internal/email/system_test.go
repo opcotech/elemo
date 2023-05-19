@@ -22,8 +22,6 @@ func TestLicenseExpiryTemplateData_Get(t *testing.T) {
 
 	data := &LicenseExpiryTemplateData{
 		Subject:             "License is about to expire",
-		Username:            "test-user",
-		FirstName:           "Test",
 		LicenseID:           l.ID.String(),
 		LicenseEmail:        l.Email,
 		LicenseOrganization: l.Organization,
