@@ -3,6 +3,7 @@ package service
 import "errors"
 
 var (
+	ErrEmailSend               = errors.New("failed to send email")              // failed to send email
 	ErrInvalidEmail            = errors.New("invalid email address")             // invalid email address
 	ErrInvalidPaginationParams = errors.New("invalid pagination parameters")     // invalid pagination parameters
 	ErrNoLicenseService        = errors.New("no license service provided")       // no license service provided
