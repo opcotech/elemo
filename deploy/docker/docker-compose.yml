@@ -57,17 +57,11 @@ services:
       retries: 3
 
   smtp:
-    image: maildev/maildev:2.0.5
+    image: mailhog/mailhog:v1.0.1
     container_name: elemo-smtp
-    command:
-      - maildev
-      - --log-mail-contents
     ports:
       - "1025:1025"
-      - "1080:1080"
-    environment:
-      MAILDEV_WEB_USER: elemo
-      MAILDEV_WEB_PASS: smtpsecret
+      - "8025:8025"
 
   elemo-server:
     image: elemo-server
