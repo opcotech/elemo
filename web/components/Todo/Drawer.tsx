@@ -118,7 +118,9 @@ export default function TodoDrawer() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1, transition: { delay: 0.025 } }}
               exit={{ opacity: 0 }}
-              className={'flex px-2 py-2 cursor-pointer rounded-md text-gray-500 hover:text-gray-600 bg-gray-50 hover:bg-gray-100'}
+              className={
+                'flex px-2 py-2 cursor-pointer rounded-md text-gray-500 hover:text-gray-600 bg-gray-50 hover:bg-gray-100'
+              }
               onClick={handleNewTodoFormOpen}
             >
               <IconButton icon={'PlusCircleIcon'} />
