@@ -45,6 +45,7 @@ const CREATE_TODO_SCHEMA = z.object({
 export interface NewTodoFormProps {
   editing: Todo | undefined;
   onCancel: () => void;
+  onHide: () => void;
 }
 
 export default function NewTodoForm(props: NewTodoFormProps) {
@@ -70,6 +71,7 @@ export default function NewTodoForm(props: NewTodoFormProps) {
     clearErrors,
     setValue,
     getValues,
+    setFocus,
     formState: { errors }
   } = useForm<Todo>({
     resolver: zodResolver(CREATE_TODO_SCHEMA)
@@ -80,7 +82,7 @@ export default function NewTodoForm(props: NewTodoFormProps) {
     setDate(new Date());
     reset();
     clearErrors();
-    props = { editing: undefined, onCancel: props.onCancel };
+    props = { editing: undefined, onCancel: props.onCancel, onHide: props.onHide };
   }
 
   async function onSubmit(todo: Todo) {
@@ -99,6 +101,11 @@ export default function NewTodoForm(props: NewTodoFormProps) {
 
   function handleCancel() {
     props.onCancel();
+    resetFormState();
+  }
+
+  function handleHide() {
+    props.onHide();
     resetFormState();
   }
 
@@ -126,12 +133,13 @@ export default function NewTodoForm(props: NewTodoFormProps) {
   }, [props.editing?.priority, props.editing?.due_date]);
 
   useEffect(() => {
+    setFocus('title');
     setValue('title', props.editing?.title || getValues('title'));
     setValue('description', props.editing?.description || getValues('description'));
     setValue('priority', priority || getValues('priority'));
     setValue('completed', false || getValues('completed'));
     setValue('due_date', date?.toISOString() || getValues('due_date'));
-  }, [props.editing?.title, props.editing?.description, priority, date, setValue, getValues]);
+  }, [props.editing?.title, props.editing?.description, priority, date, setValue, getValues, setFocus]);
 
   return (
     <form id="form-add-todo-item" action="web/components/todo#" className="relative" onSubmit={handleSubmit(onSubmit)}>
@@ -202,6 +210,11 @@ export default function NewTodoForm(props: NewTodoFormProps) {
             {isEditing && (
               <Link className={'ml-3 text-sm'} onClick={handleCancel}>
                 Cancel
+              </Link>
+            )}
+            {!isEditing && (
+              <Link className={'ml-3 text-sm'} onClick={handleHide}>
+                Hide
               </Link>
             )}
           </div>
