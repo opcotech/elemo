@@ -1,9 +1,8 @@
 'use client';
 
-import { unknown, z } from 'zod';
+import { z } from 'zod';
 import { Listbox, Transition } from '@headlessui/react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import type { ChangeEvent } from 'react';
 import { Fragment, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
@@ -60,9 +59,6 @@ export default function NewTodoForm(props: NewTodoFormProps) {
   const todoId = props.editing?.id || undefined;
 
   const [priority, setPriority] = useState<TodoPriority>(props.editing?.priority || PRIORITY_ORDER[0]);
-  const [date, setDate] = useState<Date | undefined>(
-    props.editing?.due_date ? new Date(props.editing?.due_date) : undefined
-  );
 
   const {
     register,
@@ -79,7 +75,6 @@ export default function NewTodoForm(props: NewTodoFormProps) {
 
   function resetFormState() {
     setPriority(PRIORITY_ORDER[0]);
-    setDate(new Date());
     reset();
     clearErrors();
     props = { editing: undefined, onCancel: props.onCancel, onHide: props.onHide };
@@ -87,6 +82,9 @@ export default function NewTodoForm(props: NewTodoFormProps) {
 
   async function onSubmit(todo: Todo) {
     setLoading(true);
+
+    // Fix the due_date field format
+    todo = { ...todo, due_date: new Date(todo.due_date || '').toISOString() };
 
     if (!todoId) {
       await createTodo({ ...todo, owned_by: session!.user!.id });
@@ -114,32 +112,20 @@ export default function NewTodoForm(props: NewTodoFormProps) {
     setValue('priority', priority);
   }
 
-  function handleDateChange(e: ChangeEvent<HTMLInputElement>) {
-    if (!e.target.value) {
-      setDate(undefined);
-      setValue('due_date', undefined);
-      return;
-    }
-
-    const date = new Date(e.target.value);
-    setDate(date);
-    setValue('due_date', date.toISOString());
-  }
-
   // Set default values for form fields even when editing
   useEffect(() => {
     setPriority(props.editing?.priority || PRIORITY_ORDER[0]);
-    setDate(props.editing?.due_date ? new Date(props.editing?.due_date) : new Date());
   }, [props.editing?.priority, props.editing?.due_date]);
 
   useEffect(() => {
+    console.log("useEffect", props.editing?.title, props.editing?.description, priority, props.editing?.due_date)
     setFocus('title');
     setValue('title', props.editing?.title || getValues('title'));
     setValue('description', props.editing?.description || getValues('description'));
     setValue('priority', priority || getValues('priority'));
     setValue('completed', false || getValues('completed'));
-    setValue('due_date', date?.toISOString() || getValues('due_date'));
-  }, [props.editing?.title, props.editing?.description, priority, date, setValue, getValues, setFocus]);
+    setValue('due_date', props.editing?.due_date?.split('T')[0] || getValues('due_date'));
+  }, [props.editing?.title, props.editing?.description, priority, setValue, getValues, setFocus, props.editing?.due_date]);
 
   return (
     <form id="form-add-todo-item" action="web/components/todo#" className="relative" onSubmit={handleSubmit(onSubmit)}>
@@ -277,12 +263,10 @@ export default function NewTodoForm(props: NewTodoFormProps) {
             <input
               id="due_date"
               type="date"
-              name="due_date"
               className="relative inverse-datepicker inline-flex items-center whitespace-nowrap rounded-full border-none bg-gray-50 py-2 px-2 text-sm text-gray-900 hover:bg-gray-100 sm:px-3 focus:ring-0"
               autoComplete="off"
-              onChange={handleDateChange}
               aria-invalid={errors.due_date ? 'true' : 'false'}
-              value={date?.toISOString().split('T')[0]}
+              {...register('due_date')}
               min={new Date().toISOString().split('T')[0]}
             />
           </div>
