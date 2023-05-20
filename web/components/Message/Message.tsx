@@ -24,7 +24,7 @@ const variantClasses = {
 
 export default function Message({ type, title, message, dismissAfter }: Message) {
   const [show, setShow] = useState(true);
-  useTimeout(() => setShow(false), dismissAfter && dismissAfter > 0 ? dismissAfter : 5000);
+  useTimeout(() => setShow(false), dismissAfter && dismissAfter > 0 ? dismissAfter : 2500);
 
   return (
     <Transition
