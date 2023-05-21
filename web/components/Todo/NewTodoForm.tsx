@@ -84,7 +84,11 @@ export default function NewTodoForm(props: NewTodoFormProps) {
     setLoading(true);
 
     // Fix the due_date field format
-    todo = { ...todo, due_date: new Date(todo.due_date || '').toISOString() };
+    if (todo.due_date) {
+      todo = { ...todo, due_date: new Date(todo.due_date).toISOString() };
+    } else {
+      todo = { ...todo, due_date: null };
+    }
 
     if (!todoId) {
       await createTodo({ ...todo, owned_by: session!.user!.id });
