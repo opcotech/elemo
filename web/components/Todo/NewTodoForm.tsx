@@ -122,14 +122,22 @@ export default function NewTodoForm(props: NewTodoFormProps) {
   }, [props.editing?.priority, props.editing?.due_date]);
 
   useEffect(() => {
-    console.log("useEffect", props.editing?.title, props.editing?.description, priority, props.editing?.due_date)
+    console.log('useEffect', props.editing?.title, props.editing?.description, priority, props.editing?.due_date);
     setFocus('title');
     setValue('title', props.editing?.title || getValues('title'));
     setValue('description', props.editing?.description || getValues('description'));
     setValue('priority', priority || getValues('priority'));
     setValue('completed', false || getValues('completed'));
     setValue('due_date', props.editing?.due_date?.split('T')[0] || getValues('due_date'));
-  }, [props.editing?.title, props.editing?.description, priority, setValue, getValues, setFocus, props.editing?.due_date]);
+  }, [
+    props.editing?.title,
+    props.editing?.description,
+    priority,
+    setValue,
+    getValues,
+    setFocus,
+    props.editing?.due_date
+  ]);
 
   return (
     <form id="form-add-todo-item" action="web/components/todo#" className="relative" onSubmit={handleSubmit(onSubmit)}>
