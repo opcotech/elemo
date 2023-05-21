@@ -32,6 +32,7 @@ properties:
     description: Completion due date of the todo item.
     type: string
     format: date-time
+    nullable: true
   created_at:
     description: Date when the todo item was created.
     type: string

@@ -38,6 +38,19 @@ export default function TodoItem({
   handleUpdateTodo,
   handleDeleteTodo
 }: TodoItemProps) {
+  const dueDateClass = () => {
+    const today = new Date();
+    const dueDate = new Date(due_date!);
+
+    if (dueDate < today) {
+      return 'text-red-600';
+    } else if (dueDate.getDate() - today.getDate() <= 3) {
+      return 'text-yellow-600';
+    }
+
+    return '';
+  };
+
   const priorityClass = PRIORITY_CLASSES[priority || 'normal'];
   const interactive = !editing && !deleting && !loading;
   const deleteTodo = useStore((state) => state.deleteTodo);
@@ -91,7 +104,7 @@ export default function TodoItem({
             <p className={concat('text-sm text-gray-500', completed ? 'line-through' : '')}>{description}</p>
           )}
           {due_date && (
-            <p className={concat('text-sm pt-2 text-gray-500', completed ? 'line-through' : '')}>
+            <p className={concat('text-xs pt-2 text-gray-500', completed ? 'line-through' : '', dueDateClass())}>
               {new Date(due_date).toLocaleDateString()}
             </p>
           )}

@@ -1,4 +1,3 @@
-import { signOut } from 'next-auth/react';
 import type { Session } from 'next-auth';
 
 export async function getSession(cookie: string): Promise<Session | null> {

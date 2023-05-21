@@ -1,12 +1,14 @@
 'use client';
 
-import { memo, useCallback, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import Drawer from '@/components/Drawer';
 import { ListSkeleton } from '@/components/Skeleton';
 import useStore from '@/store';
 import TodoItem from './TodoItem';
 import { UpdateTodoParams } from '@/store/todoSlice';
 import NewTodoForm from './NewTodoForm';
+import { IconButton } from '@/components/Button';
 
 const MemoizedTodoItem = memo(TodoItem);
 
@@ -17,6 +19,10 @@ export interface TodoDrawerState {
 }
 
 export default function TodoDrawer() {
+  const todosRendered = useRef(false);
+
+  const [showNewTodoForm, setShowNewTodoForm] = useState(false);
+
   const drawers = useStore((state) => state.drawers);
   const toggleDrawer = useStore((state) => state.toggleDrawer);
 
@@ -29,6 +35,10 @@ export default function TodoDrawer() {
     deleting: [],
     loading: []
   });
+
+  useEffect(() => {
+    todosRendered.current = true;
+  }, []);
 
   const setLoading = useCallback(
     (id: string, loading: boolean) =>
@@ -49,6 +59,7 @@ export default function TodoDrawer() {
   );
 
   const handleEdit = useCallback((id: string, editing: boolean) => {
+    setShowNewTodoForm(true);
     setState((state) => ({
       ...state,
       editing: editing ? id : undefined
@@ -71,13 +82,52 @@ export default function TodoDrawer() {
     [setLoading]
   );
 
+  const handleNewTodoFormOpen = useCallback(() => {
+    setShowNewTodoForm(true);
+  }, []);
+
+  const handleNewTodoFormClose = useCallback(() => {
+    setShowNewTodoForm(false);
+    setState((state) => ({
+      ...state,
+      editing: undefined
+    }));
+  }, []);
+
+  const handleDrawerClose = useCallback(() => {
+    handleNewTodoFormClose();
+    toggleDrawer('showTodos');
+  }, [toggleDrawer, handleNewTodoFormClose]);
+
   return (
-    <Drawer id="showTodos" title="Todos" show={drawers.showTodos} toggle={() => toggleDrawer('showTodos')}>
+    <Drawer id="showTodos" title="Todos" show={drawers.showTodos} toggle={handleDrawerClose}>
       <div className="mb-6">
-        <NewTodoForm
-          editing={todos.find((t) => t.id === state.editing)}
-          onCancel={() => handleEdit(state.editing!, false)}
-        />
+        <AnimatePresence>
+          {showNewTodoForm ? (
+            <AnimatePresence>
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <NewTodoForm
+                  editing={todos.find((t) => t.id === state.editing)}
+                  onCancel={() => handleEdit(state.editing!, false)}
+                  onHide={handleNewTodoFormClose}
+                />
+              </motion.div>
+            </AnimatePresence>
+          ) : (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1, transition: { delay: 0.025 } }}
+              exit={{ opacity: 0 }}
+              className={
+                'flex px-2 py-2 cursor-pointer rounded-md text-gray-500 hover:text-gray-600 bg-gray-50 hover:bg-gray-100'
+              }
+              onClick={handleNewTodoFormOpen}
+            >
+              <IconButton icon={'PlusCircleIcon'} />
+              <p className={'ml-2'}>Add new todo</p>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {todos.length === 0 && fetchingTodos && <ListSkeleton count={5} />}
@@ -85,7 +135,7 @@ export default function TodoDrawer() {
       <ul className="divide-y divide-gray-200">
         {todos.length === 0 && !fetchingTodos && <li className="text-center text-gray-500">No todos found.</li>}
 
-        {todos.map((item) => (
+        {todos.map((item, i) => (
           <MemoizedTodoItem
             key={item.id}
             {...item}
