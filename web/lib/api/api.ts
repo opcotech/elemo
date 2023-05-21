@@ -323,7 +323,7 @@ export interface Todo {
    * Completion due date of the todo item.
    * @format date-time
    */
-  due_date?: string;
+  due_date?: string | null;
   /**
    * Date when the todo item was created.
    * @format date-time
