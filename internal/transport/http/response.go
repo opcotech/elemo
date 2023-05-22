@@ -6,18 +6,18 @@ import (
 	"net/http"
 
 	"github.com/opcotech/elemo/internal/pkg/convert"
-	"github.com/opcotech/elemo/internal/transport/http/gen"
+	"github.com/opcotech/elemo/internal/transport/http/api"
 )
 
 var (
-	notFound = gen.N404JSONResponse{
+	notFound = api.N404JSONResponse{
 		Message: "The requested resource was not found",
 	}
-	permissionDenied = gen.N401JSONResponse{
-		Message: "Permission denied",
+	permissionDenied = api.N403JSONResponse{
+		Message: "The requested operation is forbidden",
 	}
-	badRequest = gen.N400JSONResponse{
-		Message: "Bad request",
+	badRequest = api.N400JSONResponse{
+		Message: "The provided input is invalid",
 	}
 )
 

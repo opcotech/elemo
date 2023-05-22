@@ -2,7 +2,7 @@
 
 apis:
   elemo@0.1.0:
-    root: ./api/openapi/openapi.final.yaml
+    root: ./api/openapi/openapi.yaml
 
 extends:
   - recommended

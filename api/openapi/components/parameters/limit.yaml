@@ -1,9 +1,0 @@
-name: limit
-description: Maximum number of results to return.
-in: query
-required: false
-schema:
-  type: integer
-  maximum: 1000
-  minimum: 1
-  default: 100

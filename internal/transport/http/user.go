@@ -3,7 +3,6 @@ package http
 import (
 	"context"
 	"errors"
-	"net/http"
 
 	oapiTypes "github.com/deepmap/oapi-codegen/pkg/types"
 
@@ -13,16 +12,16 @@ import (
 	"github.com/opcotech/elemo/internal/pkg/password"
 	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/service"
-	"github.com/opcotech/elemo/internal/transport/http/gen"
+	"github.com/opcotech/elemo/internal/transport/http/api"
 )
 
 // UserController is a controller for user endpoints.
 type UserController interface {
-	CreateUser(ctx context.Context, request gen.CreateUserRequestObject) (gen.CreateUserResponseObject, error)
-	GetUser(ctx context.Context, request gen.GetUserRequestObject) (gen.GetUserResponseObject, error)
-	GetUsers(ctx context.Context, request gen.GetUsersRequestObject) (gen.GetUsersResponseObject, error)
-	UpdateUser(ctx context.Context, request gen.UpdateUserRequestObject) (gen.UpdateUserResponseObject, error)
-	DeleteUser(ctx context.Context, request gen.DeleteUserRequestObject) (gen.DeleteUserResponseObject, error)
+	V1UsersCreate(ctx context.Context, request api.V1UsersCreateRequestObject) (api.V1UsersCreateResponseObject, error)
+	V1UserGet(ctx context.Context, request api.V1UserGetRequestObject) (api.V1UserGetResponseObject, error)
+	V1UsersGet(ctx context.Context, request api.V1UsersGetRequestObject) (api.V1UsersGetResponseObject, error)
+	V1UserUpdate(ctx context.Context, request api.V1UserUpdateRequestObject) (api.V1UserUpdateResponseObject, error)
+	V1UserDelete(ctx context.Context, request api.V1UserDeleteRequestObject) (api.V1UserDeleteResponseObject, error)
 }
 
 // userController is the concrete implementation of UserController.
@@ -30,98 +29,91 @@ type userController struct {
 	*baseController
 }
 
-func (c *userController) CreateUser(ctx context.Context, request gen.CreateUserRequestObject) (gen.CreateUserResponseObject, error) {
-	ctx, span := c.tracer.Start(ctx, "transport.http.handler/CreateUser")
+func (c *userController) V1UsersCreate(ctx context.Context, request api.V1UsersCreateRequestObject) (api.V1UsersCreateResponseObject, error) {
+	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1UsersCreate")
 	defer span.End()
 
 	user, err := createUserJSONRequestBodyToUser(request.Body)
 	if err != nil {
-		return gen.CreateUser400JSONResponse{N400JSONResponse: badRequest}, nil
+		return api.V1UsersCreate400JSONResponse{N400JSONResponse: badRequest}, nil
 	}
 
 	if err := c.userService.Create(ctx, user); err != nil {
 		if errors.Is(err, service.ErrNoPermission) {
-			return gen.CreateUser401JSONResponse{N401JSONResponse: permissionDenied}, nil
+			return api.V1UsersCreate403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		}
-		return gen.CreateUserdefaultJSONResponse{
-			Body: gen.HTTPError{
+		return api.V1UsersCreate500JSONResponse{
+			N500JSONResponse: api.N500JSONResponse{
 				Message: err.Error(),
 			},
-			StatusCode: http.StatusInternalServerError,
 		}, nil
 	}
 
-	return gen.CreateUser201JSONResponse{
-		UserId: user.ID.String(),
-	}, nil
+	return api.V1UsersCreate201JSONResponse{N201JSONResponse: api.N201JSONResponse{
+		Id: user.ID.String(),
+	}}, nil
 }
 
-func (c *userController) GetUser(ctx context.Context, request gen.GetUserRequestObject) (gen.GetUserResponseObject, error) {
-	ctx, span := c.tracer.Start(ctx, "transport.http.handler/GetUser")
+func (c *userController) V1UserGet(ctx context.Context, request api.V1UserGetRequestObject) (api.V1UserGetResponseObject, error) {
+	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1UserGet")
 	defer span.End()
 
 	var userID model.ID
 	var err error
 
-	if request.UserId == "me" {
+	if request.Id == "me" {
 		var ok bool
 		if userID, ok = ctx.Value(pkg.CtxKeyUserID).(model.ID); !ok {
-			return gen.GetUser404JSONResponse{N404JSONResponse: notFound}, nil
+			return api.V1UserGet404JSONResponse{N404JSONResponse: notFound}, nil
 		}
 	} else {
-		if userID, err = model.NewIDFromString(request.UserId, model.ResourceTypeUser.String()); err != nil {
-			return gen.GetUser404JSONResponse{N404JSONResponse: notFound}, nil
+		if userID, err = model.NewIDFromString(request.Id, model.ResourceTypeUser.String()); err != nil {
+			return api.V1UserGet404JSONResponse{N404JSONResponse: notFound}, nil
 		}
 	}
 
 	user, err := c.userService.Get(ctx, userID)
 	if err != nil {
 		if errors.Is(err, service.ErrNoPermission) {
-			return gen.GetUser401JSONResponse{N401JSONResponse: permissionDenied}, nil
+			return api.V1UserGet403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		}
 		if errors.Is(err, repository.ErrNotFound) {
-			return gen.GetUser404JSONResponse{N404JSONResponse: notFound}, nil
+			return api.V1UserGet404JSONResponse{N404JSONResponse: notFound}, nil
 		}
-		return gen.GetUserdefaultJSONResponse{
-			Body: gen.HTTPError{
-				Message: err.Error(),
-			},
-			StatusCode: http.StatusInternalServerError,
-		}, nil
+		return api.V1UserGet500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+			Message: err.Error(),
+		}}, nil
 	}
 
-	return gen.GetUser200JSONResponse(userToDTO(user)), nil
+	return api.V1UserGet200JSONResponse(userToDTO(user)), nil
 }
 
-func (c *userController) GetUsers(ctx context.Context, request gen.GetUsersRequestObject) (gen.GetUsersResponseObject, error) {
-	ctx, span := c.tracer.Start(ctx, "transport.http.handler/GetUsers")
+func (c *userController) V1UsersGet(ctx context.Context, request api.V1UsersGetRequestObject) (api.V1UsersGetResponseObject, error) {
+	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1UsersGet")
 	defer span.End()
 
 	users, err := c.userService.GetAll(ctx, pkg.GetDefaultPtr(request.Params.Offset, DefaultOffset), pkg.GetDefaultPtr(request.Params.Limit, DefaultLimit))
 	if err != nil {
-		return gen.GetUsersdefaultJSONResponse{
-			Body: gen.HTTPError{
-				Message: err.Error(),
-			},
-			StatusCode: http.StatusInternalServerError,
-		}, nil
+		return api.V1UsersGet500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+			Message: err.Error(),
+		}}, nil
 	}
 
-	usersDTO := make([]gen.User, len(users))
+	usersDTO := make([]api.User, len(users))
 	for i, user := range users {
 		usersDTO[i] = userToDTO(user)
 	}
 
-	return gen.GetUsers200JSONResponse(usersDTO), nil
+	return api.V1UsersGet200JSONResponse(usersDTO), nil
 }
 
-func (c *userController) UpdateUser(ctx context.Context, request gen.UpdateUserRequestObject) (gen.UpdateUserResponseObject, error) {
-	ctx, span := c.tracer.Start(ctx, "transport.http.handler/UpdateUser")
+func (c *userController) V1UserUpdate(ctx context.Context, request api.V1UserUpdateRequestObject) (api.V1UserUpdateResponseObject, error) {
+	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1UserUpdate")
 	defer span.End()
 
-	userID, err := model.NewIDFromString(request.UserId, model.ResourceTypeUser.String())
+	userID, err := model.NewIDFromString(request.Id, model.ResourceTypeUser.String())
 	if err != nil {
-		return gen.UpdateUser404JSONResponse{N404JSONResponse: notFound}, nil
+		return api.V1UserUpdate404JSONResponse{N404JSONResponse: notFound}, nil
 	}
 
 	if request.Body.Password != nil {
@@ -130,53 +122,47 @@ func (c *userController) UpdateUser(ctx context.Context, request gen.UpdateUserR
 
 	patch := make(map[string]any)
 	if err := convert.AnyToAny(request.Body, &patch); err != nil {
-		return gen.UpdateUser400JSONResponse{N400JSONResponse: badRequest}, nil
+		return api.V1UserUpdate400JSONResponse{N400JSONResponse: badRequest}, nil
 	}
 
 	user, err := c.userService.Update(ctx, userID, patch)
 	if err != nil {
 		if errors.Is(err, service.ErrNoPermission) {
-			return gen.UpdateUser401JSONResponse{N401JSONResponse: permissionDenied}, nil
+			return api.V1UserUpdate403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		}
 		if errors.Is(err, repository.ErrNotFound) {
-			return gen.UpdateUser404JSONResponse{N404JSONResponse: notFound}, nil
+			return api.V1UserUpdate404JSONResponse{N404JSONResponse: notFound}, nil
 		}
-		return gen.UpdateUserdefaultJSONResponse{
-			Body: gen.HTTPError{
-				Message: err.Error(),
-			},
-			StatusCode: http.StatusInternalServerError,
-		}, nil
+		return api.V1UserUpdate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+			Message: err.Error(),
+		}}, nil
 	}
 
-	return gen.UpdateUser200JSONResponse(userToDTO(user)), nil
+	return api.V1UserUpdate200JSONResponse(userToDTO(user)), nil
 }
 
-func (c *userController) DeleteUser(ctx context.Context, request gen.DeleteUserRequestObject) (gen.DeleteUserResponseObject, error) {
-	ctx, span := c.tracer.Start(ctx, "transport.http.handler/DeleteUser")
+func (c *userController) V1UserDelete(ctx context.Context, request api.V1UserDeleteRequestObject) (api.V1UserDeleteResponseObject, error) {
+	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1UserDelete")
 	defer span.End()
 
-	userID, err := model.NewIDFromString(request.UserId, model.ResourceTypeUser.String())
+	userID, err := model.NewIDFromString(request.Id, model.ResourceTypeUser.String())
 	if err != nil {
-		return gen.DeleteUser400JSONResponse{N400JSONResponse: badRequest}, nil
+		return api.V1UserDelete404JSONResponse{N404JSONResponse: notFound}, nil
 	}
 
 	if err := c.userService.Delete(ctx, userID, pkg.GetDefaultPtr(request.Params.Force, false)); err != nil {
 		if errors.Is(err, service.ErrNoPermission) {
-			return gen.DeleteUser401JSONResponse{N401JSONResponse: permissionDenied}, nil
+			return api.V1UserDelete403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		}
 		if errors.Is(err, repository.ErrNotFound) {
-			return gen.DeleteUser404JSONResponse{N404JSONResponse: notFound}, nil
+			return api.V1UserDelete404JSONResponse{N404JSONResponse: notFound}, nil
 		}
-		return gen.DeleteUserdefaultJSONResponse{
-			Body: gen.HTTPError{
-				Message: err.Error(),
-			},
-			StatusCode: http.StatusInternalServerError,
-		}, nil
+		return api.V1UserDelete500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+			Message: err.Error(),
+		}}, nil
 	}
 
-	return gen.DeleteUser204JSONResponse{}, nil
+	return api.V1UserDelete204Response{}, nil
 }
 
 // NewUserController creates a new UserController.
@@ -197,27 +183,27 @@ func NewUserController(opts ...ControllerOption) (UserController, error) {
 	return controller, nil
 }
 
-func userToDTO(user *model.User) gen.User {
-	u := gen.User{
-		Id:        convert.ToPointer(user.ID.String()),
+func userToDTO(user *model.User) api.User {
+	u := api.User{
+		Id:        user.ID.String(),
 		Address:   &user.Address,
 		Bio:       &user.Bio,
-		Email:     convert.ToPointer(oapiTypes.Email(user.Email)),
+		Email:     oapiTypes.Email(user.Email),
 		FirstName: &user.FirstName,
 		LastName:  &user.LastName,
 		Links:     &user.Links,
-		Username:  &user.Username,
+		Username:  user.Username,
 		Phone:     &user.Phone,
 		Picture:   &user.Picture,
-		Status:    convert.ToPointer(gen.UserStatus(user.Status.String())),
+		Status:    api.UserStatus(user.Status.String()),
 		Title:     &user.Title,
-		CreatedAt: user.CreatedAt,
+		CreatedAt: *user.CreatedAt,
 		UpdatedAt: user.UpdatedAt,
 	}
 
-	languages := make([]gen.Language, len(user.Languages))
+	languages := make([]api.Language, len(user.Languages))
 	for i, language := range user.Languages {
-		languages[i] = gen.Language(language.String())
+		languages[i] = api.Language(language.String())
 	}
 
 	u.Languages = &languages
@@ -225,33 +211,21 @@ func userToDTO(user *model.User) gen.User {
 	return u
 }
 
-func createUserJSONRequestBodyToUser(body *gen.CreateUserJSONRequestBody) (*model.User, error) {
+func createUserJSONRequestBodyToUser(body *api.V1UsersCreateJSONRequestBody) (*model.User, error) {
 	user := &model.User{
 		ID:        model.MustNewNilID(model.ResourceTypeUser),
 		Username:  body.Username,
-		FirstName: body.FirstName,
-		LastName:  body.LastName,
+		FirstName: pkg.GetDefaultPtr(body.FirstName, ""),
+		LastName:  pkg.GetDefaultPtr(body.LastName, ""),
 		Email:     string(body.Email),
+		Password:  password.HashPassword(body.Password),
 		Title:     pkg.GetDefaultPtr(body.Title, ""),
 		Picture:   pkg.GetDefaultPtr(body.Picture, ""),
 		Bio:       pkg.GetDefaultPtr(body.Bio, ""),
 		Address:   pkg.GetDefaultPtr(body.Address, ""),
 		Phone:     pkg.GetDefaultPtr(body.Phone, ""),
 		Links:     pkg.GetDefaultPtr(body.Links, make([]string, 0)),
-	}
-
-	if body.Password != nil {
-		user.Password = password.HashPassword(*body.Password)
-	} else {
-		user.Password = password.UnusablePassword
-	}
-
-	if body.Status != nil {
-		if err := user.Status.UnmarshalText([]byte(*body.Status)); err != nil {
-			return nil, err
-		}
-	} else {
-		user.Status = model.UserStatusActive
+		Status:    model.UserStatusActive,
 	}
 
 	if body.Languages != nil {

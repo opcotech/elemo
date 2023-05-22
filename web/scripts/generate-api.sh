@@ -1,11 +1,10 @@
 #!/bin/bash
 
 ROOT_DIR="$(realpath "$(dirname "${BASH_SOURCE[0]:-$0}")/../")"
-OPENAPI_PATH="${ROOT_DIR}/../api/openapi/openapi.final.yaml"
+OPENAPI_PATH="${ROOT_DIR}/../api/openapi/openapi.yaml"
 API_PATH="${ROOT_DIR}/lib/api"
 
 npx swagger-typescript-api \
-  --add-readonly \
   --responses \
   --extract-enums \
   --extract-response-error \

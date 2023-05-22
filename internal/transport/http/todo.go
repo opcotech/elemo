@@ -3,23 +3,23 @@ package http
 import (
 	"context"
 	"errors"
-	"net/http"
+	"time"
 
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg"
 	"github.com/opcotech/elemo/internal/pkg/convert"
 	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/service"
-	"github.com/opcotech/elemo/internal/transport/http/gen"
+	"github.com/opcotech/elemo/internal/transport/http/api"
 )
 
 // TodoController is the controller for the todo endpoints.
 type TodoController interface {
-	GetTodos(ctx context.Context, request gen.GetTodosRequestObject) (gen.GetTodosResponseObject, error)
-	CreateTodo(ctx context.Context, request gen.CreateTodoRequestObject) (gen.CreateTodoResponseObject, error)
-	DeleteTodo(ctx context.Context, request gen.DeleteTodoRequestObject) (gen.DeleteTodoResponseObject, error)
-	GetTodo(ctx context.Context, request gen.GetTodoRequestObject) (gen.GetTodoResponseObject, error)
-	UpdateTodo(ctx context.Context, request gen.UpdateTodoRequestObject) (gen.UpdateTodoResponseObject, error)
+	V1TodosCreate(ctx context.Context, request api.V1TodosCreateRequestObject) (api.V1TodosCreateResponseObject, error)
+	V1TodoGet(ctx context.Context, request api.V1TodoGetRequestObject) (api.V1TodoGetResponseObject, error)
+	V1TodosGet(ctx context.Context, request api.V1TodosGetRequestObject) (api.V1TodosGetResponseObject, error)
+	V1TodoUpdate(ctx context.Context, request api.V1TodoUpdateRequestObject) (api.V1TodoUpdateResponseObject, error)
+	V1TodoDelete(ctx context.Context, request api.V1TodoDeleteRequestObject) (api.V1TodoDeleteResponseObject, error)
 }
 
 // todoController is the concrete implementation of TodoController.
@@ -27,72 +27,68 @@ type todoController struct {
 	*baseController
 }
 
-func (c *todoController) CreateTodo(ctx context.Context, request gen.CreateTodoRequestObject) (gen.CreateTodoResponseObject, error) {
-	ctx, span := c.tracer.Start(ctx, "transport.http.handler/CreateTodo")
+func (c *todoController) V1TodosCreate(ctx context.Context, request api.V1TodosCreateRequestObject) (api.V1TodosCreateResponseObject, error) {
+	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1TodosCreate")
 	defer span.End()
 
 	createdBy, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID)
 	if !ok {
-		return gen.CreateTodo400JSONResponse{N400JSONResponse: badRequest}, nil
+		return api.V1TodosCreate400JSONResponse{N400JSONResponse: badRequest}, nil
 	}
 
 	ownerID, err := model.NewIDFromString(request.Body.OwnedBy, model.ResourceTypeUser.String())
 	if err != nil {
-		return gen.CreateTodo400JSONResponse{N400JSONResponse: badRequest}, nil
+		return api.V1TodosCreate400JSONResponse{N400JSONResponse: badRequest}, nil
 	}
 
 	todo, err := createTodoJSONRequestBodyToTodo(request.Body, ownerID, createdBy)
 	if err != nil {
-		return gen.CreateTodo400JSONResponse{N400JSONResponse: badRequest}, nil
+		return api.V1TodosCreate400JSONResponse{N400JSONResponse: badRequest}, nil
 	}
 
 	if err := c.todoService.Create(ctx, todo); err != nil {
 		if errors.Is(err, service.ErrNoPermission) {
-			return gen.CreateTodo401JSONResponse{N401JSONResponse: permissionDenied}, nil
+			return api.V1TodosCreate403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		}
-		return gen.CreateTododefaultJSONResponse{
-			Body: gen.HTTPError{
+		return api.V1TodosCreate500JSONResponse{
+			N500JSONResponse: api.N500JSONResponse{
 				Message: err.Error(),
 			},
-			StatusCode: http.StatusInternalServerError,
 		}, nil
 	}
 
-	return gen.CreateTodo201JSONResponse{
-		TodoId: todo.ID.String(),
-	}, nil
+	return api.V1TodosCreate201JSONResponse{N201JSONResponse: api.N201JSONResponse{
+		Id: todo.ID.String(),
+	}}, nil
 }
 
-func (c *todoController) GetTodo(ctx context.Context, request gen.GetTodoRequestObject) (gen.GetTodoResponseObject, error) {
-	ctx, span := c.tracer.Start(ctx, "transport.http.handler/GetTodo")
+func (c *todoController) V1TodoGet(ctx context.Context, request api.V1TodoGetRequestObject) (api.V1TodoGetResponseObject, error) {
+	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1TodoGet")
 	defer span.End()
 
-	todoID, err := model.NewIDFromString(request.TodoId, model.ResourceTypeTodo.String())
+	todoID, err := model.NewIDFromString(request.Id, model.ResourceTypeTodo.String())
 	if err != nil {
-		return gen.GetTodo400JSONResponse{N400JSONResponse: badRequest}, nil
+		return api.V1TodoGet400JSONResponse{N400JSONResponse: badRequest}, nil
 	}
 
 	todo, err := c.todoService.Get(ctx, todoID)
 	if err != nil {
 		if errors.Is(err, service.ErrNoPermission) {
-			return gen.GetTodo401JSONResponse{N401JSONResponse: permissionDenied}, nil
+			return api.V1TodoGet403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		}
 		if errors.Is(err, repository.ErrNotFound) {
-			return gen.GetTodo404JSONResponse{N404JSONResponse: notFound}, nil
+			return api.V1TodoGet404JSONResponse{N404JSONResponse: notFound}, nil
 		}
-		return gen.GetTododefaultJSONResponse{
-			Body: gen.HTTPError{
-				Message: err.Error(),
-			},
-			StatusCode: http.StatusInternalServerError,
-		}, nil
+		return api.V1TodoGet500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+			Message: err.Error(),
+		}}, nil
 	}
 
-	return gen.GetTodo200JSONResponse(todoToDTO(todo)), nil
+	return api.V1TodoGet200JSONResponse(todoToDTO(todo)), nil
 }
 
-func (c *todoController) GetTodos(ctx context.Context, request gen.GetTodosRequestObject) (gen.GetTodosResponseObject, error) {
-	ctx, span := c.tracer.Start(ctx, "transport.http.handler/GetTodos")
+func (c *todoController) V1TodosGet(ctx context.Context, request api.V1TodosGetRequestObject) (api.V1TodosGetResponseObject, error) {
+	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1TodosGet")
 	defer span.End()
 
 	todos, err := c.todoService.GetAll(ctx,
@@ -102,85 +98,84 @@ func (c *todoController) GetTodos(ctx context.Context, request gen.GetTodosReque
 	)
 	if err != nil {
 		if errors.Is(err, service.ErrNoPermission) {
-			return gen.GetTodos401JSONResponse{N401JSONResponse: permissionDenied}, nil
+			return api.V1TodosGet403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		}
-		if errors.Is(err, repository.ErrNotFound) {
-			return gen.GetTodos404JSONResponse{N404JSONResponse: notFound}, nil
-		}
-		return gen.GetTodosdefaultJSONResponse{
-			Body: gen.HTTPError{
-				Message: err.Error(),
-			},
-			StatusCode: http.StatusInternalServerError,
-		}, nil
+		return api.V1TodosGet500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+			Message: err.Error(),
+		}}, nil
 	}
 
-	todosDTO := make([]gen.Todo, len(todos))
+	todosDTO := make([]api.Todo, len(todos))
 	for i, todo := range todos {
 		todosDTO[i] = todoToDTO(todo)
 	}
 
-	return gen.GetTodos200JSONResponse(todosDTO), nil
+	return api.V1TodosGet200JSONResponse(todosDTO), nil
 }
 
-func (c *todoController) UpdateTodo(ctx context.Context, request gen.UpdateTodoRequestObject) (gen.UpdateTodoResponseObject, error) {
-	ctx, span := c.tracer.Start(ctx, "transport.http.handler/UpdateTodo")
+func (c *todoController) V1TodoUpdate(ctx context.Context, request api.V1TodoUpdateRequestObject) (api.V1TodoUpdateResponseObject, error) {
+	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1TodoUpdate")
 	defer span.End()
 
-	todoID, err := model.NewIDFromString(request.TodoId, model.ResourceTypeTodo.String())
+	todoID, err := model.NewIDFromString(request.Id, model.ResourceTypeTodo.String())
 	if err != nil {
-		return gen.UpdateTodo400JSONResponse{N400JSONResponse: badRequest}, nil
+		return api.V1TodoUpdate400JSONResponse{N400JSONResponse: badRequest}, nil
 	}
 
 	patch := make(map[string]any)
 	if err := convert.AnyToAny(request.Body, &patch); err != nil {
-		return gen.UpdateTodo400JSONResponse{N400JSONResponse: badRequest}, nil
+		return api.V1TodoUpdate400JSONResponse{N400JSONResponse: badRequest}, nil
+	}
+
+	if dueDate, ok := patch["due_date"]; ok && dueDate != nil {
+		if dueDate == "" {
+			patch["due_date"] = nil
+		} else {
+			patch["due_date"], err = time.Parse(time.RFC3339, dueDate.(string))
+			if err != nil {
+				return api.V1TodoUpdate400JSONResponse{N400JSONResponse: badRequest}, nil
+			}
+		}
 	}
 
 	todo, err := c.todoService.Update(ctx, todoID, patch)
 	if err != nil {
 		if errors.Is(err, service.ErrNoPermission) {
-			return gen.UpdateTodo401JSONResponse{N401JSONResponse: permissionDenied}, nil
+			return api.V1TodoUpdate403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		}
 		if errors.Is(err, repository.ErrNotFound) {
-			return gen.UpdateTodo404JSONResponse{N404JSONResponse: notFound}, nil
+			return api.V1TodoUpdate404JSONResponse{N404JSONResponse: notFound}, nil
 		}
-		return gen.UpdateTododefaultJSONResponse{
-			Body: gen.HTTPError{
-				Message: err.Error(),
-			},
-			StatusCode: http.StatusInternalServerError,
-		}, nil
+		return api.V1TodoUpdate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+			Message: err.Error(),
+		}}, nil
 	}
 
-	return gen.UpdateTodo200JSONResponse(todoToDTO(todo)), nil
+	return api.V1TodoUpdate200JSONResponse(todoToDTO(todo)), nil
 }
 
-func (c *todoController) DeleteTodo(ctx context.Context, request gen.DeleteTodoRequestObject) (gen.DeleteTodoResponseObject, error) {
-	ctx, span := c.tracer.Start(ctx, "transport.http.handler/DeleteTodo")
+func (c *todoController) V1TodoDelete(ctx context.Context, request api.V1TodoDeleteRequestObject) (api.V1TodoDeleteResponseObject, error) {
+	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1TodoDelete")
 	defer span.End()
 
-	todoID, err := model.NewIDFromString(request.TodoId, model.ResourceTypeTodo.String())
+	todoID, err := model.NewIDFromString(request.Id, model.ResourceTypeTodo.String())
 	if err != nil {
-		return gen.DeleteTodo400JSONResponse{N400JSONResponse: badRequest}, nil
+		return api.V1TodoDelete404JSONResponse{N404JSONResponse: notFound}, nil
 	}
 
 	if err := c.todoService.Delete(ctx, todoID); err != nil {
 		if errors.Is(err, service.ErrNoPermission) {
-			return gen.DeleteTodo401JSONResponse{N401JSONResponse: permissionDenied}, nil
+			return api.V1TodoDelete403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		}
 		if errors.Is(err, repository.ErrNotFound) {
-			return gen.DeleteTodo404JSONResponse{N404JSONResponse: notFound}, nil
+			return api.V1TodoDelete404JSONResponse{N404JSONResponse: notFound}, nil
 		}
-		return gen.DeleteTododefaultJSONResponse{
-			Body: gen.HTTPError{
-				Message: err.Error(),
-			},
-			StatusCode: http.StatusInternalServerError,
-		}, nil
+		return api.V1TodoDelete500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+			Message: err.Error(),
+		}}, nil
 	}
 
-	return gen.DeleteTodo204JSONResponse{}, nil
+	return api.V1TodoDelete204Response{}, nil
 }
 
 // NewTodoController creates a new TodoController.
@@ -205,39 +200,35 @@ func NewTodoController(opts ...ControllerOption) (TodoController, error) {
 	return controller, nil
 }
 
-func createTodoJSONRequestBodyToTodo(body *gen.CreateTodoJSONRequestBody, ownedBy, createdBy model.ID) (*model.Todo, error) {
+func createTodoJSONRequestBodyToTodo(body *api.V1TodosCreateJSONRequestBody, ownedBy, createdBy model.ID) (*model.Todo, error) {
 	todo := &model.Todo{
 		ID:          model.MustNewNilID(model.ResourceTypeTodo),
 		Title:       body.Title,
 		Description: pkg.GetDefaultPtr(body.Description, ""),
-		Completed:   body.Completed,
+		Completed:   false,
 		OwnedBy:     ownedBy,
 		CreatedBy:   createdBy,
 		DueDate:     body.DueDate,
 	}
 
-	if body.Priority != "" {
-		if err := todo.Priority.UnmarshalText([]byte(body.Priority)); err != nil {
-			return nil, err
-		}
-	} else {
-		todo.Priority = model.TodoPriorityNormal
+	if err := todo.Priority.UnmarshalText([]byte(body.Priority)); err != nil {
+		return nil, err
 	}
 
 	return todo, nil
 }
 
-func todoToDTO(todo *model.Todo) gen.Todo {
-	return gen.Todo{
-		Id:          convert.ToPointer(todo.ID.String()),
-		Title:       &todo.Title,
-		Completed:   &todo.Completed,
-		Priority:    convert.ToPointer(gen.TodoPriority(todo.Priority.String())),
+func todoToDTO(todo *model.Todo) api.Todo {
+	return api.Todo{
+		Id:          todo.ID.String(),
+		Title:       todo.Title,
+		Completed:   todo.Completed,
+		Priority:    api.TodoPriority(todo.Priority.String()),
 		Description: &todo.Description,
-		OwnedBy:     convert.ToPointer(todo.OwnedBy.String()),
-		CreatedBy:   convert.ToPointer(todo.CreatedBy.String()),
+		OwnedBy:     todo.OwnedBy.String(),
+		CreatedBy:   todo.CreatedBy.String(),
 		DueDate:     todo.DueDate,
-		CreatedAt:   todo.CreatedAt,
+		CreatedAt:   *todo.CreatedAt,
 		UpdatedAt:   todo.UpdatedAt,
 	}
 }

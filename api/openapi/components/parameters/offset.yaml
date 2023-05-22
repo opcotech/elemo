@@ -1,9 +1,0 @@
-name: offset
-description: Results to skip when paginating through a result set.
-in: query
-required: false
-allowEmptyValue: false
-schema:
-  type: integer
-  minimum: 0
-  default: 0

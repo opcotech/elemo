@@ -20,7 +20,7 @@ import (
 
 	"github.com/opcotech/elemo/internal/config"
 	"github.com/opcotech/elemo/internal/pkg/log"
-	"github.com/opcotech/elemo/internal/transport/http/gen"
+	"github.com/opcotech/elemo/internal/transport/http/api"
 )
 
 const (
@@ -35,7 +35,7 @@ const (
 
 // StrictServer is the type alias for the generated server interface.
 type StrictServer interface {
-	gen.StrictServerInterface
+	api.StrictServerInterface
 	AuthController
 	InternalErrorHandler(err error) (re *authErrors.Response)
 	ResponseErrorHandler(r *authErrors.Response)
@@ -44,7 +44,7 @@ type StrictServer interface {
 
 // Server is the type alias for the generated server interface.
 type Server interface {
-	gen.ServerInterface
+	api.ServerInterface
 	AuthController
 	InternalErrorHandler(err error) *authErrors.Response
 	ResponseErrorHandler(r *authErrors.Response)
@@ -119,7 +119,7 @@ func NewRouter(strictServer StrictServer, serverConfig *config.ServerConfig, tra
 		return nil, config.ErrNoConfig
 	}
 
-	swagger, err := gen.GetSwagger()
+	swagger, err := api.GetSwagger()
 	if err != nil {
 		return nil, errors.Join(ErrInvalidSwagger, err)
 	}
@@ -155,7 +155,7 @@ func NewRouter(strictServer StrictServer, serverConfig *config.ServerConfig, tra
 		throttleTimeout = serverConfig.RequestThrottleTimeout * time.Second
 	}
 
-	s := gen.NewStrictHandler(strictServer, nil)
+	s := api.NewStrictHandler(strictServer, nil)
 
 	router := chi.NewRouter()
 
@@ -203,7 +203,7 @@ func NewRouter(strictServer StrictServer, serverConfig *config.ServerConfig, tra
 			})),
 		)
 
-		r.Handle(PathRoot, gen.HandlerFromMux(s, r))
+		r.Handle(PathRoot, api.HandlerFromMux(s, r))
 	})
 
 	router.Handle(PathAuth, http.HandlerFunc(strictServer.ClientAuthHandler))

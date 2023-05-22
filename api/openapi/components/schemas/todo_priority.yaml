@@ -1,7 +1,0 @@
-description: Priority of a todo item.
-type: string
-enum:
-  - normal
-  - important
-  - urgent
-  - critical

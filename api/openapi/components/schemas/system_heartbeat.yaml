@@ -1,4 +1,0 @@
-description: Heartbeat response of the system.
-type: string
-enum:
-  - OK
