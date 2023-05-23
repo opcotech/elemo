@@ -754,7 +754,7 @@ export type V1OrganizationMembersRemoveData = any;
 
 export type V1SystemHealthData = SystemHealth;
 
-export enum User6 {
+export enum User7 {
   OK = 'OK'
 }
 
@@ -1393,10 +1393,7 @@ export class Client<SecurityDataType extends unknown> extends HttpClient<Securit
         priority: TodoPriority;
         /** ID of the user who owns the todo item. */
         owned_by: string;
-        /**
-         * Completion due date of the todo item.
-         * @format date-time
-         */
+        /** Completion due date of the todo item. */
         due_date?: string;
       },
       params: RequestParams = {}
@@ -1541,6 +1538,7 @@ export class Client<SecurityDataType extends unknown> extends HttpClient<Securit
  * @name V1OrganizationsCreate
  * @summary Create organization
  * @request POST:/v1/organizations
+ * @secure
  * @response `201` `{
   \** ID of the newly created resource. *\
     id: string,
@@ -1595,6 +1593,7 @@ export class Client<SecurityDataType extends unknown> extends HttpClient<Securit
         path: `/v1/organizations`,
         method: 'POST',
         body: data,
+        secure: true,
         ...params
       }),
 
@@ -1652,6 +1651,7 @@ export class Client<SecurityDataType extends unknown> extends HttpClient<Securit
      * @name V1OrganizationUpdate
      * @summary Update organization
      * @request PATCH:/v1/organizations/{id}
+     * @secure
      * @response `200` `V1OrganizationUpdateData` OK
      * @response `400` `HTTPError`
      * @response `401` `HTTPError`
@@ -1700,6 +1700,7 @@ export class Client<SecurityDataType extends unknown> extends HttpClient<Securit
         path: `/v1/organizations/${id}`,
         method: 'PATCH',
         body: data,
+        secure: true,
         ...params
       }),
 
@@ -1733,6 +1734,7 @@ export class Client<SecurityDataType extends unknown> extends HttpClient<Securit
  * @name V1OrganizationMembersAdd
  * @summary Add organization member
  * @request POST:/v1/organizations/{id}/members
+ * @secure
  * @response `201` `{
   \** ID of the newly created resource. *\
     id: string,
@@ -1755,6 +1757,7 @@ export class Client<SecurityDataType extends unknown> extends HttpClient<Securit
         path: `/v1/organizations/${id}/members`,
         method: 'POST',
         body: data,
+        secure: true,
         type: ContentType.Json,
         ...params
       }),
