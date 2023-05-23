@@ -937,8 +937,8 @@ type ServerInterface interface {
 	// (POST /v1/organizations/{id}/members)
 	V1OrganizationMembersAdd(w http.ResponseWriter, r *http.Request, id Id)
 	// Remove organization member
-	// (DELETE /v1/organizations/{org_id}/members/{user_id})
-	V1OrganizationMembersRemove(w http.ResponseWriter, r *http.Request, orgId string, userId string)
+	// (DELETE /v1/organizations/{id}/members/{user_id})
+	V1OrganizationMembersRemove(w http.ResponseWriter, r *http.Request, id Id, userId string)
 	// Get system health
 	// (GET /v1/system/health)
 	V1SystemHealth(w http.ResponseWriter, r *http.Request)
@@ -1204,12 +1204,12 @@ func (siw *ServerInterfaceWrapper) V1OrganizationMembersRemove(w http.ResponseWr
 
 	var err error
 
-	// ------------- Path parameter "org_id" -------------
-	var orgId string
+	// ------------- Path parameter "id" -------------
+	var id Id
 
-	err = runtime.BindStyledParameterWithLocation("simple", false, "org_id", runtime.ParamLocationPath, chi.URLParam(r, "org_id"), &orgId)
+	err = runtime.BindStyledParameterWithLocation("simple", false, "id", runtime.ParamLocationPath, chi.URLParam(r, "id"), &id)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "org_id", Err: err})
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
 		return
 	}
 
@@ -1225,7 +1225,7 @@ func (siw *ServerInterfaceWrapper) V1OrganizationMembersRemove(w http.ResponseWr
 	ctx = context.WithValue(ctx, Oauth2Scopes, []string{"organization"})
 
 	var handler http.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.V1OrganizationMembersRemove(w, r, orgId, userId)
+		siw.Handler.V1OrganizationMembersRemove(w, r, id, userId)
 	})
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1729,7 +1729,7 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Post(options.BaseURL+"/v1/organizations/{id}/members", wrapper.V1OrganizationMembersAdd)
 	})
 	r.Group(func(r chi.Router) {
-		r.Delete(options.BaseURL+"/v1/organizations/{org_id}/members/{user_id}", wrapper.V1OrganizationMembersRemove)
+		r.Delete(options.BaseURL+"/v1/organizations/{id}/members/{user_id}", wrapper.V1OrganizationMembersRemove)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/v1/system/health", wrapper.V1SystemHealth)
@@ -2202,7 +2202,7 @@ func (response V1OrganizationMembersAdd500JSONResponse) VisitV1OrganizationMembe
 }
 
 type V1OrganizationMembersRemoveRequestObject struct {
-	OrgId  string `json:"org_id"`
+	Id     Id     `json:"id"`
 	UserId string `json:"user_id"`
 }
 
@@ -2973,7 +2973,7 @@ type StrictServerInterface interface {
 	// (POST /v1/organizations/{id}/members)
 	V1OrganizationMembersAdd(ctx context.Context, request V1OrganizationMembersAddRequestObject) (V1OrganizationMembersAddResponseObject, error)
 	// Remove organization member
-	// (DELETE /v1/organizations/{org_id}/members/{user_id})
+	// (DELETE /v1/organizations/{id}/members/{user_id})
 	V1OrganizationMembersRemove(ctx context.Context, request V1OrganizationMembersRemoveRequestObject) (V1OrganizationMembersRemoveResponseObject, error)
 	// Get system health
 	// (GET /v1/system/health)
@@ -3252,10 +3252,10 @@ func (sh *strictHandler) V1OrganizationMembersAdd(w http.ResponseWriter, r *http
 }
 
 // V1OrganizationMembersRemove operation middleware
-func (sh *strictHandler) V1OrganizationMembersRemove(w http.ResponseWriter, r *http.Request, orgId string, userId string) {
+func (sh *strictHandler) V1OrganizationMembersRemove(w http.ResponseWriter, r *http.Request, id Id, userId string) {
 	var request V1OrganizationMembersRemoveRequestObject
 
-	request.OrgId = orgId
+	request.Id = id
 	request.UserId = userId
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
@@ -3753,21 +3753,20 @@ var swaggerSpec = []string{
 	"/epQi97Ya8m4l+SlUyTfCOPdzUTr2u49hJA4Dm4oJJ31Rgev2NpSGqyxuZUp2NwCLFfvf2wJ2chsrLYa",
 	"N1rLPMKFnBV36zaSmjD8cgsNYwHc1uTYm3+vH4XzG1NfTjxua+N2vVtSVmg477KUMhjiei4r1l8lmr/a",
 	"rneg9TZygDFz4naO76NmjGpHmGu0JPHunGgVSZvucRut2eqgH0ZRLV6N505GwrMt5PMwihbV55afIQFM",
-	"Pq6+dLRENoq2SFptv8IiHw9Ufz/df34hp3zxIpECqyVXv/+udxnfkrYGuWxZHxssj3bNLdX4o6e9dz87",
-	"Rq7cs/yGQS5NqBu9OkxpWJENloaFFTxuQ24rGZaQWwrHgu5cploWropa/NqsFak7/uLsamW3BJNCKd0p",
-	"KmduIdno325cXuGzdl8XlxetKDbm2jDFIlKJQZstaVxccm+uc22cpd7LtiK8YOFd5kZcXsjixNOiUSmr",
-	"isbKDJnNtl5J5kGvR97+g3ArGi7wbOPsNIzpMGErqexGWUtowy7NbpZQ3iBxkUf69h8tF3/cO1VjbwJr",
-	"KOodAKxz1otbQLwsC3v+2PICKC1FMvcu/TCSMIFx/6jKYGtnQHWDwT3LeTHQCjf9QWOQLT6wT9z17PSK",
-	"+tdqofLwyWObU6XLDzSaRe73zKBioAfTRFXR/zJKGxnJ9WdGNEm8rM56Yb9/ElkYrSadT2CUBzkw6mz8",
-	"xc0yQbXtG+l+CfGKD9g/yPEUFh9/i8dSD+0mVinHLZqlFE9P2FHsNj2uqpUetwrw9mdU3reNH8+mLCOX",
-	"nEmtYqOvsjY+gAJ4K0PCAL08bHrcrW3HPZ/aSxfhKpeM+vfG+AmC9nG0nc2552Mjq5kfg6J3o6Lv52zI",
-	"njoae4FHm4xsfwxUfSv8+lHIvrICKjjuLmpptxzlzXtrdxMuuZFFZaqU7bsoQhhq+s/JhbqDo6Bv1+9Y",
-	"eTwDe5yCyYX8eHHE9Q7kMkOEQLb3Hb2PvD/6jpaHS3zHgglBbb1v6im6IqzKV8RokC3M0liz4Qql/fKJ",
-	"OcmF4QnqjNMAk49OgyoB3UsGh0WzTDoec50ewGq0CY6XpWZvtChykK3XABuGNX6rqX2SrSFBS9h9z17p",
-	"+/LGgEeHYQO97y4NaVH59+mQrjIW23uk1afIrx8F7CvrFsdy72Pk+InDtnPIX7EGPCJZWTVOuNCGCvtJ",
-	"1Xq5QFsRT9AJplRxOnT3vFSfcHH3qZbngU2emeLToW23x+3EEtXaCmQimVIurtuQsK9a0XC3wNRHdO2v",
-	"MazqluMCVjauXRW/ViFbF9lenMl7mzbi30lQXDyD24PFHm9Xl0W43vVD5/Zxl/e2eub67Pr/AwAA///H",
-	"8KBtkZUAAA==",
+	"Pq6+dLRENoq2SFptv8IiHw9Ufz/df34hp3zxIpECqyVXv/+udxnfkrYGuWxZHxssj7Wae/ezY+LK/cpv",
+	"GODShLqRq4OUhgXZYFlYWMHjFuS2UmEJuaVgbKM3O6uVz5Lv0BZK4k4/RnvmBNtG43bj8kqdtfusuLz4",
+	"RLEx14YpFpFqzm26vXGRyL25srVxlnoT24rVgsV1mRRxeUGKExmLRqU8KhorM2Q2+3klmQe9Hnn7D8Kt",
+	"aLhAsI170zCmw4StpLIbZS2hDbs0u1lCeYPERV7n23+0XMRx71SNvQmsoagXkF/nPBe3cnhZD/Y8sOUF",
+	"UFqKZO5dwmEkYQLj8FGVUdbOgOpGgXuW82KgFW7zg8YEW3xSn7jr2ekV2a/VQuVhkMc2p0qXHzA0i87v",
+	"mUHFQA+miaoi/GWUNjKS689waJJ4WZb1Qnv/ZLAwWk06n8AoD3KA09n4C5hlwmjbN8v9kt4VH5R/kOMi",
+	"LAb+Fo+JHtp1q1KAWzRLKZ6esKPYbXp8VCsFbhXg7c+MvG8NP54VWUYuOSNaxUZfZW18IATwVoZoAXp5",
+	"+PO4g9qOez61ly7CVS4Z9e9x8RP27ONoO5tzz8c4VjM/BinvRkXfz1mNPQU09kKNNhnZ/lim+nb39aOQ",
+	"fWUFVHDcXZzSbjnKm/DW7iZcsiGLytQl23dRhDD885+Tm3QHRzPfrt+x8rgE9jgFkwv58WJ76x3IZYYI",
+	"gWzvO3ofXX/0HS0Pl/iOBROC2nrf1FN0RVGVr4jRIFsopbGGwhUu++UMc5ILwxPUGacBJgOdBlVCuJec",
+	"DYtmmXQ85h49gNVoExwva8zeMFHkBFuvATYMa/xWU/tEWkOClrD7nr3S92UF/6PDsIHed5d4tKj8+3RI",
+	"VxmL7T3S6tPg148C9pV1i2O593Fw/OSgFaY64X7FmuyIZGUVN+FCGyrsJ07r6fttRTVBJ5hSxenQ3btS",
+	"fVLF3W9angc2eWaKT3m23ea2E0tUayuQiWRKubhuQ8K+akXD3cpSH9G1v8awqluOC1jZuHZVjFqFbF1k",
+	"e3Em720ah39HQHERDG4PFnu8XV2m4HrXD4Lbx13e2+qZ67Pr/w8AAP//iZkN2iGVAAA=",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

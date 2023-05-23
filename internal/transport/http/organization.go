@@ -232,7 +232,7 @@ func (c *organizationController) V1OrganizationMembersRemove(ctx context.Context
 	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1OrganizationMembersRemove")
 	defer span.End()
 
-	organizationID, err := model.NewIDFromString(request.OrgId, model.ResourceTypeOrganization.String())
+	organizationID, err := model.NewIDFromString(request.Id, model.ResourceTypeOrganization.String())
 	if err != nil {
 		return api.V1OrganizationMembersRemove400JSONResponse{N400JSONResponse: badRequest}, nil
 	}

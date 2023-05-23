@@ -754,7 +754,7 @@ export type V1OrganizationMembersRemoveData = any;
 
 export type V1SystemHealthData = SystemHealth;
 
-export enum User7 {
+export enum User4 {
   OK = 'OK'
 }
 
@@ -1768,7 +1768,7 @@ export class Client<SecurityDataType extends unknown> extends HttpClient<Securit
      * @tags Organizations, Users
      * @name V1OrganizationMembersRemove
      * @summary Remove organization member
-     * @request DELETE:/v1/organizations/{org_id}/members/{user_id}
+     * @request DELETE:/v1/organizations/{id}/members/{user_id}
      * @secure
      * @response `204` `V1OrganizationMembersRemoveData` No Content
      * @response `400` `HTTPError`
@@ -1777,9 +1777,9 @@ export class Client<SecurityDataType extends unknown> extends HttpClient<Securit
      * @response `404` `HTTPError`
      * @response `500` `HTTPError`
      */
-    v1OrganizationMembersRemove: (orgId: string, userId: string, params: RequestParams = {}) =>
+    v1OrganizationMembersRemove: (id: string, userId: string, params: RequestParams = {}) =>
       this.request<V1OrganizationMembersRemoveData, HTTPError>({
-        path: `/v1/organizations/${orgId}/members/${userId}`,
+        path: `/v1/organizations/${id}/members/${userId}`,
         method: 'DELETE',
         secure: true,
         ...params

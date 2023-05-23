@@ -42,8 +42,8 @@ export interface OrganizationState {
   fetchingOrganizationMembers: boolean;
   fetchedOrganizationMembers: boolean;
   fetchOrganizationMembers: (id: string) => Promise<void>;
-  addOrganizationMember: (org_id: string, user_id: string) => Promise<void>;
-  removeOrganizationMember: (org_id: string, user_id: string) => Promise<void>;
+  addOrganizationMember: (id: string, user_id: string) => Promise<void>;
+  removeOrganizationMember: (id: string, user_id: string) => Promise<void>;
 }
 
 export const createOrganizationSlice: StateCreator<OrganizationState & Partial<MessageSliceState>> = (set, get) => ({
@@ -182,9 +182,9 @@ export const createOrganizationSlice: StateCreator<OrganizationState & Partial<M
       });
     }
   },
-  addOrganizationMember: async (org_id: string, user_id: string) => {
+  addOrganizationMember: async (id: string, user_id: string) => {
     try {
-      const res = await client.v1.v1OrganizationMembersAdd(org_id, { user_id }, { type: ContentType.Json });
+      const res = await client.v1.v1OrganizationMembersAdd(id, { user_id }, { type: ContentType.Json });
       await res.json();
       get().addMessage?.({
         type: 'success',
@@ -194,7 +194,7 @@ export const createOrganizationSlice: StateCreator<OrganizationState & Partial<M
 
       // Refetch organization members, this could be optimized by just adding the new member
       // to the existing list if the addition would return the new member.
-      await get().fetchOrganizationMembers(org_id);
+      await get().fetchOrganizationMembers(id);
     } catch (e) {
       get().addMessage?.({
         type: 'error',
@@ -203,9 +203,9 @@ export const createOrganizationSlice: StateCreator<OrganizationState & Partial<M
       });
     }
   },
-  removeOrganizationMember: async (org_id: string, user_id: string) => {
+  removeOrganizationMember: async (id: string, user_id: string) => {
     try {
-      const res = await client.v1.v1OrganizationMembersRemove(org_id, user_id, { type: ContentType.Json });
+      const res = await client.v1.v1OrganizationMembersRemove(id, user_id, { type: ContentType.Json });
       await res.json();
       get().addMessage?.({
         type: 'success',

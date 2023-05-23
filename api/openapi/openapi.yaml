@@ -1721,15 +1721,9 @@ paths:
                   example: 9bsv0s46s6s002p9ltq0
               required:
                 - user_id
-  '/v1/organizations/{org_id}/members/{user_id}':
+  '/v1/organizations/{id}/members/{user_id}':
     parameters:
-      - in: path
-        name: org_id
-        description: ID of the organization.
-        schema:
-          type: string
-          example: 9bsv0s46s6s002p9ltq0
-        required: true
+      - $ref: '#/components/parameters/id'
       - schema:
           type: string
           example: 9bsv0s46s6s002p9ltq0
