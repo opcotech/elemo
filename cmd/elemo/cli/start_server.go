@@ -100,6 +100,28 @@ var startServerCmd = &cobra.Command{
 			}
 		}
 
+		var organizationRepo repository.OrganizationRepository
+		{
+			repo, err := neo4j.NewOrganizationRepository(
+				neo4j.WithDatabase(graphDB),
+				neo4j.WithRepositoryLogger(logger.Named("organization_repository")),
+				neo4j.WithRepositoryTracer(tracer),
+			)
+			if err != nil {
+				logger.Fatal("failed to initialize organization repository", zap.Error(err))
+			}
+
+			organizationRepo, err = redis.NewCachedOrganizationRepository(
+				repo,
+				redis.WithDatabase(cacheDB),
+				redis.WithRepositoryLogger(logger.Named("cached_organization_repository")),
+				redis.WithRepositoryTracer(tracer),
+			)
+			if err != nil {
+				logger.Fatal("failed to initialize cached organization repository", zap.Error(err))
+			}
+		}
+
 		var userRepo repository.UserRepository
 		{
 			repo, err := neo4j.NewUserRepository(
@@ -171,6 +193,18 @@ var startServerCmd = &cobra.Command{
 			logger.Fatal("failed to initialize system service", zap.Error(err))
 		}
 
+		organizationService, err := service.NewOrganizationService(
+			service.WithOrganizationRepository(organizationRepo),
+			service.WithUserRepository(userRepo),
+			service.WithPermissionRepository(permissionRepo),
+			service.WithLicenseService(licenseService),
+			service.WithLogger(logger.Named("organization_service")),
+			service.WithTracer(tracer),
+		)
+		if err != nil {
+			logger.Fatal("failed to initialize organization service", zap.Error(err))
+		}
+
 		userService, err := service.NewUserService(
 			service.WithUserRepository(userRepo),
 			service.WithPermissionRepository(permissionRepo),
@@ -201,6 +235,7 @@ var startServerCmd = &cobra.Command{
 		httpServer, err := elemoHttp.NewServer(
 			elemoHttp.WithConfig(cfg.Server),
 			elemoHttp.WithAuthProvider(authProvider),
+			elemoHttp.WithOrganizationService(organizationService),
 			elemoHttp.WithUserService(userService),
 			elemoHttp.WithTodoService(todoService),
 			elemoHttp.WithSystemService(systemService),

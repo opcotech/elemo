@@ -67,6 +67,8 @@ tags:
     description: System resources.
   - name: Todos
     description: User todo items.
+  - name: Organizations
+    description: Organizations in the system.
   - name: Users
     description: Users in the system.
 servers:
@@ -113,6 +115,7 @@ components:
         id:
           type: string
           description: Unique identifier of the user.
+          example: 9bsv0s46s6s002p9ltq0
         username:
           type: string
           description: The unique username of the user.
@@ -188,7 +191,6 @@ components:
           type: array
           description: Languages of the user.
           uniqueItems: true
-          nullable: true
           items:
             $ref: '#/components/schemas/Language'
         status:
@@ -227,10 +229,133 @@ components:
         - deleted
       example: active
       description: Status of the user.
+      title: UserStatus
+    Organization:
+      title: Organization
+      x-stoplight:
+        id: 2jl1m1bg4a8hm
+      type: object
+      description: An organization in the system.
+      properties:
+        id:
+          type: string
+          description: Unique identifier of the organization.
+          example: 9bsv0s46s6s002p9ltq0
+        name:
+          type: string
+          description: Name of the organization.
+          maxLength: 120
+          example: ACME Inc.
+          x-stoplight:
+            id: wqv71ymlibg4c
+          minLength: 1
+        email:
+          type: string
+          format: email
+          example: info@example.com
+          minLength: 6
+          maxLength: 254
+          description: Email address of the organization.
+        logo:
+          type: string
+          description: Logo of the organization.
+          format: uri
+          example: 'https://example.com/static/logo.png'
+          maxLength: 2000
+          x-stoplight:
+            id: qtf590lkupgyn
+          nullable: true
+        website:
+          type: string
+          description: Work title of the user.
+          x-stoplight:
+            id: 0c8propi2z2ja
+          format: uri
+          example: 'https://example.com'
+          maxLength: 2000
+          nullable: true
+        status:
+          $ref: '#/components/schemas/OrganizationStatus'
+        members:
+          type: array
+          x-stoplight:
+            id: zcr499g29x7fs
+          description: IDs of the users in the organization.
+          uniqueItems: true
+          items:
+            x-stoplight:
+              id: ta6sdcik39lfc
+            type: string
+            example: 9bsv0s46s6s002p9ltq0
+        teams:
+          type: array
+          x-stoplight:
+            id: p1c9pg6tjsipu
+          description: IDs of the teams in the organization.
+          uniqueItems: true
+          items:
+            x-stoplight:
+              id: x09xht43dei6d
+            type: string
+            example: 9bsv0s46s6s002p9ltq0
+        namespaces:
+          type: array
+          x-stoplight:
+            id: ovy6hmlupke74
+          description: IDs of the namespaces in the organization.
+          uniqueItems: true
+          items:
+            x-stoplight:
+              id: c44rmtja3bb40
+            type: string
+            example: 9bsv0s46s6s002p9ltq0
+        created_at:
+          type: string
+          format: date-time
+          description: Date when the organization was created.
+        updated_at:
+          type: string
+          format: date-time
+          description: Date when the organization was updated.
+          nullable: true
+      required:
+        - id
+        - name
+        - email
+        - logo
+        - website
+        - status
+        - members
+        - teams
+        - namespaces
+        - created_at
+        - updated_at
+    OrganizationStatus:
+      type: string
+      x-stoplight:
+        id: j2a8b1awr15zm
+      enum:
+        - active
+        - deleted
+      example: active
+      description: Status of the organization.
+      title: OrganizationStatus
     Todo:
       title: Todo
       type: object
       description: A todo item belonging to a user.
+      x-examples:
+        Example 1:
+          id: 9bsv0s46s6s002p9ltq0
+          title: Do something great
+          description: I'll make the world a better place today.
+          priority: normal
+          completed: true
+          owned_by: string
+          created_by: string
+          due_date: null
+          created_at: '2019-08-24T14:15:22Z'
+          updated_at: null
       properties:
         id:
           type: string
@@ -248,7 +373,6 @@ components:
           maxLength: 500
           example: I'll make the world a better place today.
           description: Description of the todo item.
-          nullable: true
         priority:
           $ref: '#/components/schemas/TodoPriority'
         completed:
@@ -286,18 +410,17 @@ components:
         - due_date
         - created_at
         - updated_at
-      x-examples:
-        Example 1:
-          id: 9bsv0s46s6s002p9ltq0
-          title: Do something great
-          description: I'll make the world a better place today.
-          priority: normal
-          completed: true
-          owned_by: string
-          created_by: string
-          due_date: null
-          created_at: '2019-08-24T14:15:22Z'
-          updated_at: null
+    TodoPriority:
+      type: string
+      enum:
+        - normal
+        - important
+        - urgent
+        - critical
+      example: urgent
+      minLength: 6
+      maxLength: 9
+      description: Priority of the todo item.
     SystemHealth:
       title: SystemHealth
       type: object
@@ -660,17 +783,6 @@ components:
         - za
         - zh
         - zu
-    TodoPriority:
-      type: string
-      enum:
-        - normal
-        - important
-        - urgent
-        - critical
-      example: urgent
-      minLength: 6
-      maxLength: 9
-      description: Priority of the todo item.
   examples: {}
   securitySchemes:
     oauth2:
@@ -1029,7 +1141,6 @@ components:
                 description: ID of the user who owns the todo item.
               due_date:
                 type: string
-                format: date-time
                 description: Completion due date of the todo item.
             required:
               - title
@@ -1064,6 +1175,85 @@ components:
               due_date:
                 type: string
                 description: Completion due date of the todo item.
+    OrganizationCreate:
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              name:
+                type: string
+                description: Name of the organization.
+                maxLength: 120
+                example: ACME Inc.
+                x-stoplight:
+                  id: ga5x9vomawm42
+                minLength: 1
+              email:
+                type: string
+                format: email
+                example: info@example.com
+                minLength: 6
+                maxLength: 254
+                description: Email address of the organization.
+              logo:
+                type: string
+                description: Logo of the organization.
+                format: uri
+                example: 'https://example.com/static/logo.png'
+                maxLength: 2000
+                x-stoplight:
+                  id: 0afomzvkqgpf8
+              website:
+                type: string
+                description: Work title of the user.
+                x-stoplight:
+                  id: vbosyixrp2v3s
+                format: uri
+                example: 'https://example.com'
+                maxLength: 2000
+            required:
+              - name
+              - email
+    OrganizationPatch:
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              name:
+                type: string
+                description: Name of the organization.
+                maxLength: 120
+                example: ACME Inc.
+                x-stoplight:
+                  id: rxuc1suz7qe7b
+                minLength: 1
+              email:
+                type: string
+                format: email
+                example: info@example.com
+                minLength: 6
+                maxLength: 254
+                description: Email address of the organization.
+              logo:
+                type: string
+                description: Logo of the organization.
+                format: uri
+                example: 'https://example.com/static/logo.png'
+                maxLength: 2000
+                x-stoplight:
+                  id: 7pfylo9edl14u
+              website:
+                type: string
+                description: Work title of the user.
+                x-stoplight:
+                  id: znr4tfb8hfopr
+                format: uri
+                example: 'https://example.com'
+                maxLength: 2000
+              status:
+                $ref: '#/components/schemas/OrganizationStatus'
 paths:
   /v1/users:
     get:
@@ -1077,7 +1267,7 @@ paths:
             application/json:
               schema:
                 type: array
-                nullable: true
+                uniqueItems: true
                 items:
                   $ref: '#/components/schemas/User'
         '401':
@@ -1128,6 +1318,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/400'
         '401':
           $ref: '#/components/responses/401'
         '403':
@@ -1147,6 +1339,8 @@ paths:
       responses:
         '204':
           description: No Content
+        '400':
+          $ref: '#/components/responses/400'
         '401':
           $ref: '#/components/responses/401'
         '403':
@@ -1200,7 +1394,6 @@ paths:
               schema:
                 type: array
                 uniqueItems: true
-                nullable: true
                 items:
                   $ref: '#/components/schemas/Todo'
         '401':
@@ -1281,6 +1474,8 @@ paths:
       responses:
         '204':
           description: No Content
+        '400':
+          $ref: '#/components/responses/400'
         '401':
           $ref: '#/components/responses/401'
         '403':
@@ -1323,6 +1518,239 @@ paths:
       security:
         - oauth2:
             - todo
+  /v1/organizations:
+    get:
+      summary: Get organizations
+      tags:
+        - Organizations
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                uniqueItems: true
+                items:
+                  $ref: '#/components/schemas/Organization'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '500':
+          $ref: '#/components/responses/500'
+      operationId: v1OrganizationsGet
+      description: Returns the list of organizations in the system.
+      security:
+        - oauth2:
+            - organization.read
+      parameters:
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/limit'
+    post:
+      summary: Create organization
+      operationId: v1OrganizationsCreate
+      responses:
+        '201':
+          $ref: '#/components/responses/201'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '500':
+          $ref: '#/components/responses/500'
+      description: Create a new organization.
+      tags:
+        - Organizations
+      requestBody:
+        $ref: '#/components/requestBodies/OrganizationCreate'
+  '/v1/organizations/{id}':
+    parameters:
+      - $ref: '#/components/parameters/id'
+    get:
+      summary: Get organization
+      tags:
+        - Organizations
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Organization'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '500':
+          $ref: '#/components/responses/500'
+      operationId: v1OrganizationGet
+      security:
+        - oauth2:
+            - organization.read
+      description: Returns the given organization by its ID.
+    delete:
+      summary: Delete organization
+      operationId: v1OrganizationDelete
+      responses:
+        '204':
+          description: No Content
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '500':
+          $ref: '#/components/responses/500'
+      description: Delete the organization by its ID.
+      security:
+        - oauth2:
+            - organization
+      tags:
+        - Organizations
+      parameters:
+        - $ref: '#/components/parameters/force'
+    patch:
+      summary: Update organization
+      operationId: v1OrganizationUpdate
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Organization'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '500':
+          $ref: '#/components/responses/500'
+      description: Update the organization by its ID.
+      tags:
+        - Organizations
+      requestBody:
+        $ref: '#/components/requestBodies/OrganizationPatch'
+  '/v1/organizations/{id}/members':
+    parameters:
+      - $ref: '#/components/parameters/id'
+    get:
+      summary: Get organization members
+      tags:
+        - Organizations
+        - Users
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                uniqueItems: true
+                items:
+                  $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '500':
+          $ref: '#/components/responses/500'
+      operationId: v1OrganizationMembersGet
+      security:
+        - oauth2:
+            - organization.read
+            - user.read
+      description: Return the users that are members of the organization.
+    post:
+      summary: Add organization member
+      operationId: v1OrganizationMembersAdd
+      responses:
+        '201':
+          $ref: '#/components/responses/201'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '500':
+          $ref: '#/components/responses/500'
+      description: Add an existing user to an organization.
+      tags:
+        - Organizations
+        - Users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_id:
+                  type: string
+                  x-stoplight:
+                    id: ug2r19m97qovi
+                  description: ID of the user to add.
+                  example: 9bsv0s46s6s002p9ltq0
+              required:
+                - user_id
+  '/v1/organizations/{org_id}/members/{user_id}':
+    parameters:
+      - in: path
+        name: org_id
+        description: ID of the organization.
+        schema:
+          type: string
+          example: 9bsv0s46s6s002p9ltq0
+        required: true
+      - schema:
+          type: string
+          example: 9bsv0s46s6s002p9ltq0
+        name: user_id
+        in: path
+        required: true
+        description: ID of the user.
+    delete:
+      summary: Remove organization member
+      operationId: v1OrganizationMembersRemove
+      responses:
+        '204':
+          description: No Content
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '500':
+          $ref: '#/components/responses/500'
+      description: Removes a member from the organization
+      security:
+        - oauth2:
+            - organization
+      tags:
+        - Organizations
+        - Users
   /v1/system/health:
     get:
       summary: Get system health
@@ -1357,22 +1785,6 @@ paths:
           $ref: '#/components/responses/500'
       operationId: v1SystemHeartbeat
       description: Returns 200 OK if the service is reachable.
-  /v1/system/version:
-    get:
-      summary: Get system version
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SystemVersion'
-        '500':
-          $ref: '#/components/responses/500'
-      operationId: v1SystemVersion
-      description: Returns the version information of the system.
-      tags:
-        - System
   /v1/system/license:
     get:
       summary: Get license info
@@ -1393,3 +1805,19 @@ paths:
       description: Return the license information. The license information is only available to entitled users.
       security:
         - oauth2: []
+  /v1/system/version:
+    get:
+      summary: Get system version
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemVersion'
+        '500':
+          $ref: '#/components/responses/500'
+      operationId: v1SystemVersion
+      description: Returns the version information of the system.
+      tags:
+        - System

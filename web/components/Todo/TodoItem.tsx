@@ -5,7 +5,7 @@ import IconButton from '@/components/Button/IconButton';
 import Icon from '@/components/Icon';
 import { concat } from '@/helpers';
 import { TodoPriority, Todo } from '@/lib/api';
-import { UpdateTodoParams } from '@/store/todoSlice';
+import { UpdateTodoInput } from '@/store/todoSlice';
 import useStore from '@/store';
 
 const PRIORITY_CLASSES: Record<TodoPriority, string> = {
@@ -19,7 +19,7 @@ export interface TodoItemProps extends Todo {
   loading: boolean;
   editing: boolean;
   deleting: boolean;
-  handleUpdateTodo: (id: string, todo: UpdateTodoParams) => void;
+  handleUpdateTodo: (id: string, todo: UpdateTodoInput) => void;
   handleEditTodo: (id: string, editing: boolean) => void;
   handleDeleteTodo: (id: string, deleting: boolean, timer?: NodeJS.Timer) => void;
 }

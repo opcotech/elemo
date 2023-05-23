@@ -201,14 +201,20 @@ func NewTodoController(opts ...ControllerOption) (TodoController, error) {
 }
 
 func createTodoJSONRequestBodyToTodo(body *api.V1TodosCreateJSONRequestBody, ownedBy, createdBy model.ID) (*model.Todo, error) {
-	todo := &model.Todo{
-		ID:          model.MustNewNilID(model.ResourceTypeTodo),
-		Title:       body.Title,
-		Description: pkg.GetDefaultPtr(body.Description, ""),
-		Completed:   false,
-		OwnedBy:     ownedBy,
-		CreatedBy:   createdBy,
-		DueDate:     body.DueDate,
+	todo, err := model.NewTodo(body.Title, ownedBy, createdBy)
+	if err != nil {
+		return nil, err
+	}
+
+	todo.Description = pkg.GetDefaultPtr(body.Description, "")
+
+	if body.DueDate != nil && *body.DueDate != "" {
+		dueDate, err := time.Parse(time.RFC3339, *body.DueDate)
+		if err != nil {
+			return nil, err
+		}
+
+		todo.DueDate = &dueDate
 	}
 
 	if err := todo.Priority.UnmarshalText([]byte(body.Priority)); err != nil {
@@ -224,7 +230,7 @@ func todoToDTO(todo *model.Todo) api.Todo {
 		Title:       todo.Title,
 		Completed:   todo.Completed,
 		Priority:    api.TodoPriority(todo.Priority.String()),
-		Description: &todo.Description,
+		Description: todo.Description,
 		OwnedBy:     todo.OwnedBy.String(),
 		CreatedBy:   todo.CreatedBy.String(),
 		DueDate:     todo.DueDate,

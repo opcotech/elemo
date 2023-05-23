@@ -64,11 +64,11 @@ func (c *userController) V1UserGet(ctx context.Context, request api.V1UserGetReq
 	if request.Id == "me" {
 		var ok bool
 		if userID, ok = ctx.Value(pkg.CtxKeyUserID).(model.ID); !ok {
-			return api.V1UserGet404JSONResponse{N404JSONResponse: notFound}, nil
+			return api.V1UserGet400JSONResponse{N400JSONResponse: badRequest}, nil
 		}
 	} else {
 		if userID, err = model.NewIDFromString(request.Id, model.ResourceTypeUser.String()); err != nil {
-			return api.V1UserGet404JSONResponse{N404JSONResponse: notFound}, nil
+			return api.V1UserGet400JSONResponse{N400JSONResponse: badRequest}, nil
 		}
 	}
 
@@ -94,6 +94,9 @@ func (c *userController) V1UsersGet(ctx context.Context, request api.V1UsersGetR
 
 	users, err := c.userService.GetAll(ctx, pkg.GetDefaultPtr(request.Params.Offset, DefaultOffset), pkg.GetDefaultPtr(request.Params.Limit, DefaultLimit))
 	if err != nil {
+		if errors.Is(err, service.ErrNoPermission) {
+			return api.V1UsersGet403JSONResponse{N403JSONResponse: permissionDenied}, nil
+		}
 		return api.V1UsersGet500JSONResponse{N500JSONResponse: api.N500JSONResponse{
 			Message: err.Error(),
 		}}, nil
@@ -183,6 +186,35 @@ func NewUserController(opts ...ControllerOption) (UserController, error) {
 	return controller, nil
 }
 
+func createUserJSONRequestBodyToUser(body *api.V1UsersCreateJSONRequestBody) (*model.User, error) {
+	user, err := model.NewUser(body.Username, string(body.Email), password.HashPassword(body.Password))
+	if err != nil {
+		return nil, err
+	}
+
+	user.FirstName = pkg.GetDefaultPtr(body.FirstName, "")
+	user.LastName = pkg.GetDefaultPtr(body.LastName, "")
+	user.Title = pkg.GetDefaultPtr(body.Title, "")
+	user.Picture = pkg.GetDefaultPtr(body.Picture, "")
+	user.Bio = pkg.GetDefaultPtr(body.Bio, "")
+	user.Address = pkg.GetDefaultPtr(body.Address, "")
+	user.Phone = pkg.GetDefaultPtr(body.Phone, "")
+	user.Links = pkg.GetDefaultPtr(body.Links, make([]string, 0))
+
+	if body.Languages != nil {
+		user.Languages = make([]model.Language, len(*body.Languages))
+		for i, language := range *body.Languages {
+			var lang model.Language
+			if err := lang.UnmarshalText([]byte(language)); err != nil {
+				return nil, err
+			}
+			user.Languages[i] = lang
+		}
+	}
+
+	return user, nil
+}
+
 func userToDTO(user *model.User) api.User {
 	u := api.User{
 		Id:        user.ID.String(),
@@ -197,47 +229,14 @@ func userToDTO(user *model.User) api.User {
 		Picture:   &user.Picture,
 		Status:    api.UserStatus(user.Status.String()),
 		Title:     &user.Title,
+		Languages: make([]api.Language, len(user.Languages)),
 		CreatedAt: *user.CreatedAt,
 		UpdatedAt: user.UpdatedAt,
 	}
 
-	languages := make([]api.Language, len(user.Languages))
 	for i, language := range user.Languages {
-		languages[i] = api.Language(language.String())
+		u.Languages[i] = api.Language(language.String())
 	}
-
-	u.Languages = &languages
 
 	return u
-}
-
-func createUserJSONRequestBodyToUser(body *api.V1UsersCreateJSONRequestBody) (*model.User, error) {
-	user := &model.User{
-		ID:        model.MustNewNilID(model.ResourceTypeUser),
-		Username:  body.Username,
-		FirstName: pkg.GetDefaultPtr(body.FirstName, ""),
-		LastName:  pkg.GetDefaultPtr(body.LastName, ""),
-		Email:     string(body.Email),
-		Password:  password.HashPassword(body.Password),
-		Title:     pkg.GetDefaultPtr(body.Title, ""),
-		Picture:   pkg.GetDefaultPtr(body.Picture, ""),
-		Bio:       pkg.GetDefaultPtr(body.Bio, ""),
-		Address:   pkg.GetDefaultPtr(body.Address, ""),
-		Phone:     pkg.GetDefaultPtr(body.Phone, ""),
-		Links:     pkg.GetDefaultPtr(body.Links, make([]string, 0)),
-		Status:    model.UserStatusActive,
-	}
-
-	if body.Languages != nil {
-		user.Languages = make([]model.Language, len(*body.Languages))
-		for i, language := range *body.Languages {
-			var lang model.Language
-			if err := lang.UnmarshalText([]byte(language)); err != nil {
-				return nil, err
-			}
-			user.Languages[i] = lang
-		}
-	}
-
-	return user, nil
 }
