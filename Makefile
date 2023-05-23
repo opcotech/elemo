@@ -8,7 +8,7 @@ COVERAGE_OUT_INTEGRATION := $(ROOT_DIR)/.coverage.integration.out
 COVERAGE_HTML := $(ROOT_DIR)/coverage.html
 GO_EXEC := $(shell which go)
 GO_TEST_COVER := $(GO_EXEC) test -json -race -shuffle=on -cover -covermode=atomic
-GO_TEST_IGNORE := "testutil|tools|cmd|http\/gen"
+GO_TEST_IGNORE := "testutil|tools|cmd|http\/api"
 
 default: build
 
