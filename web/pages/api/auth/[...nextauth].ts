@@ -45,7 +45,7 @@ async function getTokenData(credentials: Record<never, string> | undefined): Pro
 async function getUserData(tokenData: TokenResponse): Promise<UserResponse | null> {
   setToken(tokenData.access_token);
 
-  const res = await client.v1.getUser('me');
+  const res = await client.v1.v1UserGet('me');
   const userResponse = await res.json();
 
   if (!res.ok) {

@@ -1,5 +1,0 @@
-description: Forbidden request.
-content:
-  application/json:
-    schema:
-      $ref: '../schemas/http_error.yaml'

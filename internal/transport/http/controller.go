@@ -91,6 +91,19 @@ func WithLicenseService(licenseService service.LicenseService) ControllerOption 
 	}
 }
 
+// WithOrganizationService sets the organization service for the controller.
+func WithOrganizationService(organizationService service.OrganizationService) ControllerOption {
+	return func(c *baseController) error {
+		if organizationService == nil {
+			return ErrNoOrganizationService
+		}
+
+		c.organizationService = organizationService
+
+		return nil
+	}
+}
+
 // WithUserService sets the user service for the controller.
 func WithUserService(userService service.UserService) ControllerOption {
 	return func(c *baseController) error {
@@ -126,10 +139,11 @@ type baseController struct {
 
 	authProvider *authServer.Server
 
-	userService    service.UserService
-	todoService    service.TodoService
-	systemService  service.SystemService
-	licenseService service.LicenseService
+	organizationService service.OrganizationService
+	userService         service.UserService
+	todoService         service.TodoService
+	systemService       service.SystemService
+	licenseService      service.LicenseService
 }
 
 // newController creates a new base controller with the given dependencies

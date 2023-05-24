@@ -1,14 +1,14 @@
 ROOT_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 API_DIR:=$(ROOT_DIR)/api
 OPENAPI_DIR:=$(API_DIR)/openapi
-OPENAPI_GEN_SERVER_DIR:=$(ROOT_DIR)/internal/transport/http/gen
+OPENAPI_GEN_SERVER_DIR:=$(ROOT_DIR)/internal/transport/http/api
 COVERAGE_OUT := $(ROOT_DIR)/.coverage.out
 COVERAGE_OUT_UNIT := $(ROOT_DIR)/.coverage.unit.out
 COVERAGE_OUT_INTEGRATION := $(ROOT_DIR)/.coverage.integration.out
 COVERAGE_HTML := $(ROOT_DIR)/coverage.html
 GO_EXEC := $(shell which go)
 GO_TEST_COVER := $(GO_EXEC) test -json -race -shuffle=on -cover -covermode=atomic
-GO_TEST_IGNORE := "testutil|tools|cmd|http\/gen"
+GO_TEST_IGNORE := "testutil|tools|cmd|http\/api"
 
 default: build
 
@@ -45,8 +45,7 @@ generate: generate.openapi generate.email ## Generate code
 .PHONY: generate.openapi
 generate.openapi: ## Generate http server code from openapi spec
 	mkdir -p $(OPENAPI_GEN_SERVER_DIR)
-	swagger-cli bundle $(OPENAPI_DIR)/openapi.yaml --outfile $(OPENAPI_DIR)/openapi.final.yaml --type yaml
-	oapi-codegen -config $(OPENAPI_DIR)/generator.config.yml -o $(OPENAPI_GEN_SERVER_DIR)/server.gen.go $(OPENAPI_DIR)/openapi.final.yaml
+	oapi-codegen -config $(OPENAPI_DIR)/generator.config.yml -o $(OPENAPI_GEN_SERVER_DIR)/server.go $(OPENAPI_DIR)/openapi.yaml
 
 .PHONY: generate.email
 generate.email: ## Generate email templates

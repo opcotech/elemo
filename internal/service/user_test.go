@@ -188,6 +188,44 @@ func TestUserService_Create(t *testing.T) {
 			wantErr: ErrUserCreate,
 		},
 		{
+			name: "create user with no permission",
+			fields: fields{
+				baseService: func(ctx context.Context, user *model.User) *baseService {
+					span := new(mock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(mock.Tracer)
+					tracer.On("Start", ctx, "service.userService/Create", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					userRepo := new(mock.UserRepository)
+					userRepo.On("Create", ctx, user).Return(nil)
+
+					permRepo := new(mock.PermissionRepository)
+					permRepo.On("HasPermission", ctx, userID, model.MustNewNilID(model.ResourceTypeUser), []model.PermissionKind{
+						model.PermissionKindCreate,
+						model.PermissionKindAll,
+					}).Return(false, nil)
+
+					licenseSvc := new(mock.LicenseService)
+					licenseSvc.On("Expired", ctx).Return(false, nil)
+					licenseSvc.On("WithinThreshold", ctx, license.QuotaUsers).Return(true, nil)
+
+					return &baseService{
+						logger:         new(mock.Logger),
+						tracer:         tracer,
+						userRepo:       userRepo,
+						permissionRepo: permRepo,
+						licenseService: licenseSvc,
+					}
+				},
+			},
+			args: args{
+				ctx:  context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
+				user: testModel.NewUser(),
+			},
+			wantErr: ErrNoPermission,
+		},
+		{
 			name: "create user with error",
 			fields: fields{
 				baseService: func(ctx context.Context, user *model.User) *baseService {
@@ -1121,6 +1159,64 @@ func TestUserService_Delete(t *testing.T) {
 				id:    model.MustNewID(model.ResourceTypeUser),
 				force: true,
 			},
+		},
+		{
+			name: "delete user with license expired",
+			fields: fields{
+				baseService: func(ctx context.Context, id model.ID) *baseService {
+					span := new(mock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(mock.Tracer)
+					tracer.On("Start", ctx, "service.userService/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					licenseSvc := new(mock.LicenseService)
+					licenseSvc.On("Expired", ctx).Return(true, nil)
+
+					return &baseService{
+						logger:         new(mock.Logger),
+						tracer:         tracer,
+						userRepo:       new(mock.UserRepository),
+						permissionRepo: new(mock.PermissionRepository),
+						licenseService: licenseSvc,
+					}
+				},
+			},
+			args: args{
+				ctx:   context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
+				id:    model.MustNewID(model.ResourceTypeUser),
+				force: true,
+			},
+			wantErr: license.ErrLicenseExpired,
+		},
+		{
+			name: "delete user with license expired error",
+			fields: fields{
+				baseService: func(ctx context.Context, id model.ID) *baseService {
+					span := new(mock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(mock.Tracer)
+					tracer.On("Start", ctx, "service.userService/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					licenseSvc := new(mock.LicenseService)
+					licenseSvc.On("Expired", ctx).Return(false, assert.AnError)
+
+					return &baseService{
+						logger:         new(mock.Logger),
+						tracer:         tracer,
+						userRepo:       new(mock.UserRepository),
+						permissionRepo: new(mock.PermissionRepository),
+						licenseService: licenseSvc,
+					}
+				},
+			},
+			args: args{
+				ctx:   context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
+				id:    model.MustNewID(model.ResourceTypeUser),
+				force: true,
+			},
+			wantErr: license.ErrLicenseExpired,
 		},
 		{
 			name: "soft delete user with no permission",

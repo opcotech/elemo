@@ -12,7 +12,6 @@ coverage.html
 bin/
 **/*.gen/
 **/*.gen.*
-api/openapi/openapi.final.yaml
 
 # Misc
 tmp/

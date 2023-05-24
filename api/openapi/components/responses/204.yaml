@@ -1,7 +1,0 @@
-description: Empty response indicating the successful operation.
-content:
-  application/json:
-    schema:
-      type: string
-      nullable: true
-    example:

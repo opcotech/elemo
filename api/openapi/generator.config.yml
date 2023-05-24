@@ -1,4 +1,4 @@
-package: gen
+package: api
 generate:
   chi-server: true
   strict-server: true

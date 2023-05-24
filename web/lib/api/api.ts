@@ -9,95 +9,382 @@
  * ---------------------------------------------------------------
  */
 
-/** A user in the system. */
+/**
+ * User
+ * A user in the system.
+ */
 export interface User {
-  /** Unique ID identifying the given user. */
-  readonly id?: string;
   /**
-   * Username of the user.
+   * Unique identifier of the user.
+   * @example "9bsv0s46s6s002p9ltq0"
+   */
+  id: string;
+  /**
+   * The unique username of the user.
    * @minLength 3
    * @maxLength 50
    * @pattern ^[a-z0-9-_]{3,50}$
+   * @example "test-user"
    */
-  username?: string;
+  username: string;
   /**
    * First name of the user.
    * @minLength 1
    * @maxLength 50
+   * @example "Test"
    */
-  first_name?: string;
+  first_name: string | null;
   /**
    * Last name of the user.
    * @minLength 1
    * @maxLength 50
+   * @example "User"
    */
-  last_name?: string;
+  last_name: string | null;
   /**
    * Email address of the user.
    * @format email
    * @minLength 6
    * @maxLength 254
+   * @example "user@example.com"
    */
-  email?: string;
+  email: string;
+  /**
+   * Profile picture of the user.
+   * @format uri
+   * @maxLength 2000
+   * @example "https://example.com/users/my-user.png"
+   */
+  picture: string | null;
   /**
    * Work title of the user.
    * @minLength 3
    * @maxLength 50
+   * @example "Senior Software Engineer"
    */
-  title?: string;
+  title: string | null;
   /**
-   * Password of the user.
-   * @format password
-   * @minLength 8
-   * @maxLength 64
-   */
-  password?: string;
-  /**
-   * Profile picture URL of the user.
-   * @format uri
-   * @maxLength 2000
-   */
-  picture?: string;
-  /**
-   * Self
+   * Self description of the user.
    * @maxLength 500
+   * @example "I'm working smart on software."
    */
-  bio?: string;
+  bio: string | null;
   /**
-   * Working address of the user (if not remote).
+   * Working address of the user.
    * @maxLength 500
+   * @example "Remote"
    */
-  address?: string;
+  address: string | null;
   /**
-   * Phone number of the user
+   * Phone number of the user.
    * @minLength 7
    * @maxLength 16
+   * @example "+15555551234"
    */
-  phone?: string;
-  /** Links to show on profile page. */
-  links?: string[];
-  /** Languages of the user. */
-  languages?: Language[];
+  phone: string | null;
+  /**
+   * Links to show on profile page.
+   * @uniqueItems true
+   */
+  links: string[] | null;
+  /**
+   * Languages of the user.
+   * @uniqueItems true
+   */
+  languages: Language[];
   /** Status of the user. */
-  status?: UserStatus;
+  status: UserStatus;
   /**
    * Date when the user was created.
    * @format date-time
    */
-  readonly created_at?: string;
+  created_at: string;
   /**
-   * Last date of user modification. If the user has never been modified, the field is not present.
+   * Date when the user was updated.
    * @format date-time
    */
-  readonly updated_at?: string;
+  updated_at: string | null;
 }
 
-/** Status of the user. */
+/**
+ * UserStatus
+ * Status of the user.
+ * @example "active"
+ */
 export enum UserStatus {
   Active = 'active',
   Pending = 'pending',
   Inactive = 'inactive',
   Deleted = 'deleted'
+}
+
+/**
+ * Organization
+ * An organization in the system.
+ */
+export interface Organization {
+  /**
+   * Unique identifier of the organization.
+   * @example "9bsv0s46s6s002p9ltq0"
+   */
+  id: string;
+  /**
+   * Name of the organization.
+   * @minLength 1
+   * @maxLength 120
+   * @example "ACME Inc."
+   */
+  name: string;
+  /**
+   * Email address of the organization.
+   * @format email
+   * @minLength 6
+   * @maxLength 254
+   * @example "info@example.com"
+   */
+  email: string;
+  /**
+   * Logo of the organization.
+   * @format uri
+   * @maxLength 2000
+   * @example "https://example.com/static/logo.png"
+   */
+  logo: string | null;
+  /**
+   * Work title of the user.
+   * @format uri
+   * @maxLength 2000
+   * @example "https://example.com"
+   */
+  website: string | null;
+  /** Status of the organization. */
+  status: OrganizationStatus;
+  /**
+   * IDs of the users in the organization.
+   * @uniqueItems true
+   */
+  members: string[];
+  /**
+   * IDs of the teams in the organization.
+   * @uniqueItems true
+   */
+  teams: string[];
+  /**
+   * IDs of the namespaces in the organization.
+   * @uniqueItems true
+   */
+  namespaces: string[];
+  /**
+   * Date when the organization was created.
+   * @format date-time
+   */
+  created_at: string;
+  /**
+   * Date when the organization was updated.
+   * @format date-time
+   */
+  updated_at: string | null;
+}
+
+/**
+ * OrganizationStatus
+ * Status of the organization.
+ * @example "active"
+ */
+export enum OrganizationStatus {
+  Active = 'active',
+  Deleted = 'deleted'
+}
+
+/**
+ * Todo
+ * A todo item belonging to a user.
+ */
+export interface Todo {
+  /**
+   * Unique identifier of the todo .
+   * @example "9bsv0s46s6s002p9ltq0"
+   */
+  id: string;
+  /**
+   * Title of the todo item.
+   * @minLength 3
+   * @maxLength 250
+   * @example "Do something great"
+   */
+  title: string;
+  /**
+   * Description of the todo item.
+   * @minLength 10
+   * @maxLength 500
+   * @example "I'll make the world a better place today."
+   */
+  description: string;
+  /** Priority of the todo item. */
+  priority: TodoPriority;
+  /**
+   * Status of the todo item.
+   * @default true
+   */
+  completed: boolean;
+  /** ID of the user who owns the todo item. */
+  owned_by: string;
+  /** ID of the user who created the todo item. */
+  created_by: string;
+  /**
+   * Completion due date of the todo item.
+   * @format date-time
+   */
+  due_date: string | null;
+  /**
+   * Date when the todo item was created.
+   * @format date-time
+   */
+  created_at: string;
+  /**
+   * Date when the todo item was updated.
+   * @format date-time
+   */
+  updated_at: string | null;
+}
+
+/**
+ * Priority of the todo item.
+ * @minLength 6
+ * @maxLength 9
+ * @example "urgent"
+ */
+export enum TodoPriority {
+  Normal = 'normal',
+  Important = 'important',
+  Urgent = 'urgent',
+  Critical = 'critical'
+}
+
+/** SystemHealth */
+export interface SystemHealth {
+  /**
+   * Health of the cache database.
+   * @minLength 7
+   * @maxLength 9
+   */
+  cache_database: SystemHealthCacheDatabase;
+  /**
+   * Health of the graph database.
+   * @minLength 7
+   * @maxLength 9
+   */
+  graph_database: SystemHealthGraphDatabase;
+  /**
+   * Health of the relational database.
+   * @minLength 7
+   * @maxLength 9
+   */
+  relational_database: SystemHealthRelationalDatabase;
+  /**
+   * Health of the license.
+   * @minLength 7
+   * @maxLength 9
+   */
+  license: SystemHealthLicense;
+  /**
+   * Health of the message queue.
+   * @minLength 7
+   * @maxLength 9
+   */
+  message_queue: SystemHealthMessageQueue;
+}
+
+/** SystemVersion */
+export interface SystemVersion {
+  /**
+   * Version of the application.
+   * @pattern ^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$
+   */
+  version: string;
+  /**
+   * Commit hash of the build.
+   * @pattern ^[0-9a-f]{5,40}$
+   */
+  commit: string;
+  /**
+   * Build date and time of the application.
+   * @format date-time
+   */
+  date: string;
+  /**
+   * Go version used to build the application.
+   * @pattern ^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$
+   */
+  go_version: string;
+}
+
+/** SystemLicense */
+export interface SystemLicense {
+  /** Unique ID identifying the license. */
+  id: string;
+  /** Name of the organization the license belongs to. */
+  organization: string;
+  /**
+   * Email address of the licensee.
+   * @format email
+   * @minLength 6
+   * @maxLength 254
+   * @example "info@example.com"
+   */
+  email: string;
+  /** Quotas available for the license. */
+  quotas: {
+    /**
+     * Number of documents can exist in the system.
+     * @min 1
+     */
+    documents: number;
+    /**
+     * Number of namespaces can exist in the system.
+     * @min 1
+     */
+    namespaces: number;
+    /**
+     * Number of organizations active can exist in the system.
+     * @min 1
+     */
+    organizations: number;
+    /**
+     * Number of projects can exist in the system.
+     * @min 1
+     */
+    projects: number;
+    /**
+     * Number of roles can exist in the system.
+     * @min 1
+     */
+    roles: number;
+    /**
+     * Number of active or pending users can exist in the system.
+     * @min 1
+     */
+    users: number;
+  };
+  /**
+   * Features enabled by the license.
+   * @uniqueItems true
+   */
+  features: SystemLicenseFeatures[];
+  /**
+   * Date and time when the license expires.
+   * @format date-time
+   */
+  expires_at: string;
+}
+
+/**
+ * HTTPError
+ * HTTP error description.
+ */
+export interface HTTPError {
+  /** Description of the error. */
+  message: string;
 }
 
 /**
@@ -292,146 +579,59 @@ export enum Language {
   Zu = 'zu'
 }
 
-/** Todo item belonging to a user. */
-export interface Todo {
-  /** Unique identifier of the todo item. */
-  readonly id?: string;
-  /**
-   * Title of the todo item.
-   * @max 250
-   * @minLength 3
-   */
-  title?: string;
-  /**
-   * Description of the todo item.
-   * @min 10
-   * @maxLength 500
-   */
-  description?: string;
-  /** Priority of a todo item. */
-  priority?: TodoPriority;
-  /**
-   * Status of the todo item.
-   * @default false
-   */
-  completed?: boolean;
-  /** ID of the user who owns the todo item. */
-  owned_by?: string;
-  /** ID of the user who created the todo item. */
-  readonly created_by?: string;
-  /**
-   * Completion due date of the todo item.
-   * @format date-time
-   */
-  due_date?: string | null;
-  /**
-   * Date when the todo item was created.
-   * @format date-time
-   */
-  readonly created_at?: string;
-  /**
-   * Last date of todo item modification.
-   * @format date-time
-   */
-  readonly updated_at?: string;
+/**
+ * Health of the cache database.
+ * @minLength 7
+ * @maxLength 9
+ */
+export enum SystemHealthCacheDatabase {
+  Healthy = 'healthy',
+  Unhealthy = 'unhealthy',
+  Unknown = 'unknown'
 }
 
-/** Priority of a todo item. */
-export enum TodoPriority {
-  Normal = 'normal',
-  Important = 'important',
-  Urgent = 'urgent',
-  Critical = 'critical'
+/**
+ * Health of the graph database.
+ * @minLength 7
+ * @maxLength 9
+ */
+export enum SystemHealthGraphDatabase {
+  Healthy = 'healthy',
+  Unhealthy = 'unhealthy',
+  Unknown = 'unknown'
 }
 
-/** Registered license. */
-export interface SystemLicense {
-  /** Unique ID identifying the license. */
-  id: string;
-  /** Organization name. */
-  organization: string;
-  /**
-   * Username of the user.
-   * @format email
-   * @minLength 6
-   * @maxLength 254
-   */
-  email: string;
-  /** Quotas available for the license. */
-  quotas: {
-    /**
-     * Number of documents can exist in the system.
-     * @min 1
-     */
-    documents: number;
-    /**
-     * Number of namespaces can exist in the system.
-     * @min 1
-     */
-    namespaces: number;
-    /**
-     * Number of organizations active can exist in the system.
-     * @min 1
-     */
-    organizations: number;
-    /**
-     * Number of projects can exist in the system.
-     * @min 1
-     */
-    projects: number;
-    /**
-     * Number of roles can exist in the system.
-     * @min 1
-     */
-    roles: number;
-    /**
-     * Number of active or pending users can exist in the system.
-     * @min 1
-     */
-    users: number;
-  };
-  /** Features enabled for the license. */
-  features: SystemLicenseFeatures[];
-  /**
-   * Date when the license expires.
-   * @format date-time
-   */
-  expires_at: string;
+/**
+ * Health of the relational database.
+ * @minLength 7
+ * @maxLength 9
+ */
+export enum SystemHealthRelationalDatabase {
+  Healthy = 'healthy',
+  Unhealthy = 'unhealthy',
+  Unknown = 'unknown'
 }
 
-/** Health of the system components. */
-export interface SystemHealth {
-  /** Health of the cache database. */
-  cache_database: SystemHealthCacheDatabase;
-  /** Health of the graph database. */
-  graph_database: SystemHealthGraphDatabase;
-  /** Health of the relational database. */
-  relational_database: SystemHealthRelationalDatabase;
-  /** Health of the license based on its validity. */
-  license: SystemHealthLicense;
-  /** Health of the message queue. */
-  message_queue: SystemHealthMessageQueue;
+/**
+ * Health of the license.
+ * @minLength 7
+ * @maxLength 9
+ */
+export enum SystemHealthLicense {
+  Healthy = 'healthy',
+  Unhealthy = 'unhealthy',
+  Unknown = 'unknown'
 }
 
-/** Heartbeat response of the system. */
-export enum SystemHeartbeat {
-  OK = 'OK'
-}
-
-/** Version information of the system. */
-export interface SystemVersionInfo {
-  /** Version of the application. */
-  version: string;
-  /** Commit hash of the build. */
-  commit: string;
-  /** Build date of the application. */
-  date: string;
-  /** Go version used to build the application. */
-  go_version: string;
-}
-
-export interface HTTPError {
-  message: string;
+/**
+ * Health of the message queue.
+ * @minLength 7
+ * @maxLength 9
+ */
+export enum SystemHealthMessageQueue {
+  Healthy = 'healthy',
+  Unhealthy = 'unhealthy',
+  Unknown = 'unknown'
 }
 
 export enum SystemLicenseFeatures {
@@ -442,112 +642,129 @@ export enum SystemLicenseFeatures {
   Releases = 'releases'
 }
 
-/** Health of the cache database. */
-export enum SystemHealthCacheDatabase {
-  Healthy = 'healthy',
-  Unhealthy = 'unhealthy',
-  Unknown = 'unknown'
-}
-
-/** Health of the graph database. */
-export enum SystemHealthGraphDatabase {
-  Healthy = 'healthy',
-  Unhealthy = 'unhealthy',
-  Unknown = 'unknown'
-}
-
-/** Health of the relational database. */
-export enum SystemHealthRelationalDatabase {
-  Healthy = 'healthy',
-  Unhealthy = 'unhealthy',
-  Unknown = 'unknown'
-}
-
-/** Health of the license based on its validity. */
-export enum SystemHealthLicense {
-  Healthy = 'healthy',
-  Unhealthy = 'unhealthy',
-  Unknown = 'unknown'
-}
-
-/** Health of the message queue. */
-export enum SystemHealthMessageQueue {
-  Healthy = 'healthy',
-  Unhealthy = 'unhealthy',
-  Unknown = 'unknown'
-}
-
-export interface GetUsersParams {
+export interface V1UsersGetParams {
   /**
-   * Maximum number of results to return.
+   * Number of resources to skip.
+   * @min 0
+   * @default 0
+   */
+  offset?: number;
+  /**
+   * Number of resources to return.
    * @min 1
    * @max 1000
    * @default 100
    */
   limit?: number;
-  /**
-   * Results to skip when paginating through a result set.
-   * @min 0
-   * @default 0
-   */
-  offset?: number;
 }
 
-export type GetUsersData = User[];
+/** @uniqueItems true */
+export type V1UsersGetData = User[];
 
-export interface CreateUserData {
-  user_id: string;
-}
+export type V1UserGetData = User;
 
-export type GetUserData = User;
-
-export type UpdateUserData = User;
-
-export interface DeleteUserParams {
-  /**
-   * Force the operation. If set to true, the operation will be performed regardless its consequences. In case of some resources, this flag will call the delete operation on the resource instead of updating its status.
-   * @default false
-   */
+export interface V1UserDeleteParams {
+  /** Irreversibly delete the user. */
   force?: boolean;
-  /** Unique ID of the user. The ID may be set to `me` to get the current user. */
-  userId: string;
+  /**
+   * ID of the resource.
+   * @example "9bsv0s46s6s002p9ltq0"
+   */
+  id: string;
 }
 
-export interface GetTodosParams {
+export type V1UserDeleteData = any;
+
+export type V1UserUpdateData = User;
+
+export interface V1TodosGetParams {
   /**
-   * Maximum number of results to return.
+   * Number of resources to skip.
+   * @min 0
+   * @default 0
+   */
+  offset?: number;
+  /**
+   * Number of resources to return.
    * @min 1
    * @max 1000
    * @default 100
    */
   limit?: number;
-  /**
-   * Results to skip when paginating through a result set.
-   * @min 0
-   * @default 0
-   */
-  offset?: number;
-  /** Filter by completed status. */
+  /** Completion status of the items. */
   completed?: boolean;
 }
 
-export type GetTodosData = Todo[];
+/** @uniqueItems true */
+export type V1TodosGetData = Todo[];
 
-export interface CreateTodoData {
-  todo_id: string;
+export type V1TodoGetData = Todo;
+
+export type V1TodoDeleteData = any;
+
+export type V1TodoUpdateData = Todo;
+
+export interface V1OrganizationsGetParams {
+  /**
+   * Number of resources to skip.
+   * @min 0
+   * @default 0
+   */
+  offset?: number;
+  /**
+   * Number of resources to return.
+   * @min 1
+   * @max 1000
+   * @default 100
+   */
+  limit?: number;
 }
 
-export type GetTodoData = Todo;
+/** @uniqueItems true */
+export type V1OrganizationsGetData = Organization[];
 
-export type UpdateTodoData = Todo;
+export type V1OrganizationGetData = Organization;
 
-export type GetSystemHealthData = SystemHealth;
+export interface V1OrganizationDeleteParams {
+  /** Irreversibly delete the user. */
+  force?: boolean;
+  /**
+   * ID of the resource.
+   * @example "9bsv0s46s6s002p9ltq0"
+   */
+  id: string;
+}
 
-export type GetSystemHeartbeatData = SystemHeartbeat;
+export type V1OrganizationDeleteData = any;
 
-export type GetSystemVersionData = SystemVersionInfo;
+export type V1OrganizationUpdateData = Organization;
 
-export type GetSystemLicenseData = SystemLicense;
+/** @uniqueItems true */
+export type V1OrganizationMembersGetData = User[];
+
+export interface V1OrganizationMembersAddPayload {
+  /**
+   * ID of the user to add.
+   * @example "9bsv0s46s6s002p9ltq0"
+   */
+  user_id: string;
+}
+
+export type V1OrganizationMembersRemoveData = any;
+
+export type V1SystemHealthData = SystemHealth;
+
+export enum User4 {
+  OK = 'OK'
+}
+
+export enum V1SystemHeartbeatData {
+  OK = 'OK'
+}
+
+export type V1SystemLicenseData = SystemLicense;
+
+export type V1SystemVersionData = SystemVersion;
 
 export type QueryParamsType = Record<string | number, any>;
 export type ResponseFormat = keyof Omit<Body, 'body' | 'bodyUsed'>;
@@ -820,21 +1037,20 @@ export class HttpClient<SecurityDataType = unknown> {
 export class Client<SecurityDataType extends unknown> extends HttpClient<SecurityDataType> {
   v1 = {
     /**
-     * @description Return all users within the given limit starting at the optionally defined offset.
+     * @description Returns the paginated list of users
      *
      * @tags Users
-     * @name GetUsers
-     * @summary Get all users.
+     * @name V1UsersGet
+     * @summary Get all users
      * @request GET:/v1/users
      * @secure
-     * @response `200` `GetUsersData` List of users.
-     * @response `400` `HTTPError`
+     * @response `200` `V1UsersGetData` OK
      * @response `401` `HTTPError`
      * @response `403` `HTTPError`
-     * @response `default` `HTTPError`
+     * @response `500` `HTTPError`
      */
-    getUsers: (query: GetUsersParams, params: RequestParams = {}) =>
-      this.request<GetUsersData, HTTPError>({
+    v1UsersGet: (query: V1UsersGetParams, params: RequestParams = {}) =>
+      this.request<V1UsersGetData, HTTPError>({
         path: `/v1/users`,
         method: 'GET',
         query: query,
@@ -843,21 +1059,115 @@ export class Client<SecurityDataType extends unknown> extends HttpClient<Securit
       }),
 
     /**
-     * @description Creates a new user in the system, then returns its ID.
-     *
-     * @tags Users
-     * @name CreateUser
-     * @summary Create a new user.
-     * @request POST:/v1/users
-     * @secure
-     * @response `201` `CreateUserData` Returns the ID of the newly created user.
-     * @response `400` `HTTPError`
-     * @response `401` `HTTPError`
-     * @response `403` `HTTPError`
-     * @response `default` `HTTPError`
-     */
-    createUser: (data: User, params: RequestParams = {}) =>
-      this.request<CreateUserData, HTTPError>({
+ * @description Create a new user.
+ *
+ * @name V1UsersCreate
+ * @summary Create new user
+ * @request POST:/v1/users
+ * @secure
+ * @response `201` `{
+  \** ID of the newly created resource. *\
+    id: string,
+
+}`
+ * @response `400` `HTTPError`
+ * @response `401` `HTTPError`
+ * @response `403` `HTTPError`
+ * @response `500` `HTTPError`
+ */
+    v1UsersCreate: (
+      data: {
+        /**
+         * The unique username of the user.
+         * @minLength 3
+         * @maxLength 50
+         * @pattern ^[a-z0-9-_]{3,50}$
+         * @example "test-user"
+         */
+        username: string;
+        /**
+         * First name of the user.
+         * @minLength 1
+         * @maxLength 50
+         * @example "Test"
+         */
+        first_name?: string | null;
+        /**
+         * Last name of the user.
+         * @minLength 1
+         * @maxLength 50
+         * @example "User"
+         */
+        last_name?: string | null;
+        /**
+         * Email address of the user.
+         * @format email
+         * @minLength 6
+         * @maxLength 254
+         * @example "user@example.com"
+         */
+        email: string;
+        /**
+         * Password of the user.
+         * @format password
+         * @minLength 8
+         * @maxLength 64
+         * @example "super-secret"
+         */
+        password: string;
+        /**
+         * Profile picture of the user.
+         * @format uri
+         * @maxLength 2000
+         * @example "https://example.com/users/my-user.png"
+         */
+        picture?: string | null;
+        /**
+         * Work title of the user.
+         * @minLength 3
+         * @maxLength 50
+         * @example "Senior Software Engineer"
+         */
+        title?: string | null;
+        /**
+         * Self description of the user.
+         * @maxLength 500
+         * @example "I'm working smart on software."
+         */
+        bio?: string | null;
+        /**
+         * Working address of the user.
+         * @maxLength 500
+         * @example "Remote"
+         */
+        address?: string | null;
+        /**
+         * Phone number of the user.
+         * @minLength 7
+         * @maxLength 16
+         * @example "+15555551234"
+         */
+        phone?: string | null;
+        /**
+         * Links to show on profile page.
+         * @uniqueItems true
+         */
+        links?: string[] | null;
+        /**
+         * Languages of the user.
+         * @uniqueItems true
+         */
+        languages?: Language[] | null;
+      },
+      params: RequestParams = {}
+    ) =>
+      this.request<
+        {
+          /** ID of the newly created resource. */
+          id: string;
+        },
+        HTTPError
+      >({
         path: `/v1/users`,
         method: 'POST',
         body: data,
@@ -866,62 +1176,88 @@ export class Client<SecurityDataType extends unknown> extends HttpClient<Securit
       }),
 
     /**
-     * @description Returns the user specified in the request path.
+     * @description Return the requested user by its ID.
      *
      * @tags Users
-     * @name GetUser
-     * @summary Get user by ID.
-     * @request GET:/v1/users/{user_id}
+     * @name V1UserGet
+     * @summary Get user
+     * @request GET:/v1/users/{id}
      * @secure
-     * @response `200` `GetUserData` The user object if exists.
+     * @response `200` `V1UserGetData` OK
+     * @response `400` `HTTPError`
      * @response `401` `HTTPError`
      * @response `403` `HTTPError`
      * @response `404` `HTTPError`
-     * @response `default` `HTTPError`
+     * @response `500` `HTTPError`
      */
-    getUser: (userId: string, params: RequestParams = {}) =>
-      this.request<GetUserData, HTTPError>({
-        path: `/v1/users/${userId}`,
+    v1UserGet: (id: string, params: RequestParams = {}) =>
+      this.request<V1UserGetData, HTTPError>({
+        path: `/v1/users/${id}`,
         method: 'GET',
         secure: true,
         ...params
       }),
 
     /**
-     * @description Updates an existing user by its ID.
+     * @description Delete a user by its ID. The user is not deleted irreversibly until the "force" parameter is set to true.
      *
-     * @tags Users
-     * @name UpdateUser
-     * @summary Update a user by its ID.
-     * @request PATCH:/v1/users/{user_id}
+     * @name V1UserDelete
+     * @summary Delete the user with the given ID.
+     * @request DELETE:/v1/users/{id}
      * @secure
-     * @response `200` `UpdateUserData` The updated user object.
+     * @response `204` `V1UserDeleteData` No Content
      * @response `400` `HTTPError`
      * @response `401` `HTTPError`
      * @response `403` `HTTPError`
      * @response `404` `HTTPError`
-     * @response `default` `HTTPError`
+     * @response `500` `HTTPError`
      */
-    updateUser: (
-      userId: string,
+    v1UserDelete: ({ id, ...query }: V1UserDeleteParams, params: RequestParams = {}) =>
+      this.request<V1UserDeleteData, HTTPError>({
+        path: `/v1/users/${id}`,
+        method: 'DELETE',
+        query: query,
+        secure: true,
+        ...params
+      }),
+
+    /**
+     * @description Update the given user.
+     *
+     * @name V1UserUpdate
+     * @summary Update user
+     * @request PATCH:/v1/users/{id}
+     * @secure
+     * @response `200` `V1UserUpdateData` OK
+     * @response `400` `HTTPError`
+     * @response `401` `HTTPError`
+     * @response `403` `HTTPError`
+     * @response `404` `HTTPError`
+     * @response `500` `HTTPError`
+     */
+    v1UserUpdate: (
+      id: string,
       data: {
         /**
-         * Username of the user.
+         * The unique username of the user.
          * @minLength 3
          * @maxLength 50
          * @pattern ^[a-z0-9-_]{3,50}$
+         * @example "test-user"
          */
         username?: string;
         /**
          * First name of the user.
          * @minLength 1
          * @maxLength 50
+         * @example "Test"
          */
         first_name?: string;
         /**
          * Last name of the user.
          * @minLength 1
          * @maxLength 50
+         * @example "User"
          */
         last_name?: string;
         /**
@@ -929,54 +1265,67 @@ export class Client<SecurityDataType extends unknown> extends HttpClient<Securit
          * @format email
          * @minLength 6
          * @maxLength 254
+         * @example "user@example.com"
          */
         email?: string;
-        /**
-         * Work title of the user.
-         * @minLength 3
-         * @maxLength 50
-         */
-        title?: string;
         /**
          * Password of the user.
          * @format password
          * @minLength 8
          * @maxLength 64
+         * @example "super-secret"
          */
         password?: string;
         /**
-         * Profile picture URL of the user.
+         * Profile picture of the user.
          * @format uri
          * @maxLength 2000
+         * @example "https://example.com/users/my-user.png"
          */
         picture?: string;
         /**
-         * Self
+         * Work title of the user.
+         * @minLength 3
+         * @maxLength 50
+         * @example "Senior Software Engineer"
+         */
+        title?: string;
+        /**
+         * Self description of the user.
          * @maxLength 500
+         * @example "I'm working smart on software."
          */
         bio?: string;
         /**
-         * Working address of the user (if not remote).
+         * Working address of the user.
          * @maxLength 500
+         * @example "Remote"
          */
         address?: string;
         /**
-         * Phone number of the user
+         * Phone number of the user.
          * @minLength 7
          * @maxLength 16
+         * @example "+15555551234"
          */
         phone?: string;
-        /** Links to show on profile page. */
+        /**
+         * Links to show on profile page.
+         * @uniqueItems true
+         */
         links?: string[];
-        /** Languages of the user. */
+        /**
+         * Languages of the user.
+         * @uniqueItems true
+         */
         languages?: Language[];
         /** Status of the user. */
         status?: UserStatus;
       },
       params: RequestParams = {}
     ) =>
-      this.request<UpdateUserData, HTTPError>({
-        path: `/v1/users/${userId}`,
+      this.request<V1UserUpdateData, HTTPError>({
+        path: `/v1/users/${id}`,
         method: 'PATCH',
         body: data,
         secure: true,
@@ -984,45 +1333,21 @@ export class Client<SecurityDataType extends unknown> extends HttpClient<Securit
       }),
 
     /**
-     * @description Deletes the user specified in the request path.
-     *
-     * @tags Users
-     * @name DeleteUser
-     * @summary Delete user by its ID.
-     * @request DELETE:/v1/users/{user_id}
-     * @secure
-     * @response `204` `string | null`
-     * @response `400` `HTTPError`
-     * @response `401` `HTTPError`
-     * @response `403` `HTTPError`
-     * @response `404` `HTTPError`
-     * @response `default` `HTTPError`
-     */
-    deleteUser: ({ userId, ...query }: DeleteUserParams, params: RequestParams = {}) =>
-      this.request<string | null, HTTPError>({
-        path: `/v1/users/${userId}`,
-        method: 'DELETE',
-        query: query,
-        secure: true,
-        ...params
-      }),
-
-    /**
-     * @description Return all todo items within the given limit starting at the optionally defined offset for the current user.
+     * @description Returns all todo items belonging to the current user.
      *
      * @tags Todos
-     * @name GetTodos
-     * @summary Get user's todo items.
+     * @name V1TodosGet
+     * @summary Get todo item
      * @request GET:/v1/todos
      * @secure
-     * @response `200` `GetTodosData` The list of todo items belonging to the current user.
+     * @response `200` `V1TodosGetData` OK
      * @response `401` `HTTPError`
      * @response `403` `HTTPError`
      * @response `404` `HTTPError`
-     * @response `default` `HTTPError`
+     * @response `500` `HTTPError`
      */
-    getTodos: (query: GetTodosParams, params: RequestParams = {}) =>
-      this.request<GetTodosData, HTTPError>({
+    v1TodosGet: (query: V1TodosGetParams, params: RequestParams = {}) =>
+      this.request<V1TodosGetData, HTTPError>({
         path: `/v1/todos`,
         method: 'GET',
         query: query,
@@ -1031,21 +1356,55 @@ export class Client<SecurityDataType extends unknown> extends HttpClient<Securit
       }),
 
     /**
-     * @description Creates a new todo item.
-     *
-     * @tags Todos
-     * @name CreateTodo
-     * @summary Create a new todo item.
-     * @request POST:/v1/todos
-     * @secure
-     * @response `201` `CreateTodoData` Returns the newly created todo item's ID.
-     * @response `400` `HTTPError`
-     * @response `401` `HTTPError`
-     * @response `403` `HTTPError`
-     * @response `default` `HTTPError`
-     */
-    createTodo: (data: Todo, params: RequestParams = {}) =>
-      this.request<CreateTodoData, HTTPError>({
+ * @description Create a new todo item.
+ *
+ * @tags Todos
+ * @name V1TodosCreate
+ * @summary Create todo item
+ * @request POST:/v1/todos
+ * @secure
+ * @response `201` `{
+  \** ID of the newly created resource. *\
+    id: string,
+
+}`
+ * @response `400` `HTTPError`
+ * @response `401` `HTTPError`
+ * @response `403` `HTTPError`
+ * @response `500` `HTTPError`
+ */
+    v1TodosCreate: (
+      data: {
+        /**
+         * Title of the todo item.
+         * @minLength 3
+         * @maxLength 250
+         * @example "Do something great"
+         */
+        title: string;
+        /**
+         * Description of the todo item.
+         * @minLength 10
+         * @maxLength 500
+         * @example "I'll make the world a better place today."
+         */
+        description?: string;
+        /** Priority of the todo item. */
+        priority: TodoPriority;
+        /** ID of the user who owns the todo item. */
+        owned_by: string;
+        /** Completion due date of the todo item. */
+        due_date?: string;
+      },
+      params: RequestParams = {}
+    ) =>
+      this.request<
+        {
+          /** ID of the newly created resource. */
+          id: string;
+        },
+        HTTPError
+      >({
         path: `/v1/todos`,
         method: 'POST',
         body: data,
@@ -1054,46 +1413,96 @@ export class Client<SecurityDataType extends unknown> extends HttpClient<Securit
       }),
 
     /**
-     * @description Return a todo item by its ID.
+     * @description Return a todo item based on the todo id belonging to the current user.
      *
      * @tags Todos
-     * @name GetTodo
-     * @summary Get todo item by ID.
-     * @request GET:/v1/todos/{todo_id}
+     * @name V1TodoGet
+     * @summary Get todo item
+     * @request GET:/v1/todos/{id}
      * @secure
-     * @response `200` `GetTodoData` The list of todo items belonging to the current user.
+     * @response `200` `V1TodoGetData` OK
      * @response `400` `HTTPError`
      * @response `401` `HTTPError`
      * @response `403` `HTTPError`
      * @response `404` `HTTPError`
-     * @response `default` `HTTPError`
+     * @response `500` `HTTPError`
      */
-    getTodo: (todoId: string, params: RequestParams = {}) =>
-      this.request<GetTodoData, HTTPError>({
-        path: `/v1/todos/${todoId}`,
+    v1TodoGet: (id: string, params: RequestParams = {}) =>
+      this.request<V1TodoGetData, HTTPError>({
+        path: `/v1/todos/${id}`,
         method: 'GET',
         secure: true,
         ...params
       }),
 
     /**
-     * @description Updates an existing todo item by its ID.
+     * @description Delete todo by its ID.
      *
      * @tags Todos
-     * @name UpdateTodo
-     * @summary Update todo item by ID.
-     * @request PATCH:/v1/todos/{todo_id}
+     * @name V1TodoDelete
+     * @summary Delete todo item
+     * @request DELETE:/v1/todos/{id}
      * @secure
-     * @response `200` `UpdateTodoData` The updated todo item.
+     * @response `204` `V1TodoDeleteData` No Content
      * @response `400` `HTTPError`
      * @response `401` `HTTPError`
      * @response `403` `HTTPError`
      * @response `404` `HTTPError`
-     * @response `default` `HTTPError`
+     * @response `500` `HTTPError`
      */
-    updateTodo: (todoId: string, data: Todo, params: RequestParams = {}) =>
-      this.request<UpdateTodoData, HTTPError>({
-        path: `/v1/todos/${todoId}`,
+    v1TodoDelete: (id: string, params: RequestParams = {}) =>
+      this.request<V1TodoDeleteData, HTTPError>({
+        path: `/v1/todos/${id}`,
+        method: 'DELETE',
+        secure: true,
+        ...params
+      }),
+
+    /**
+     * @description Update the given todo
+     *
+     * @tags Todos
+     * @name V1TodoUpdate
+     * @summary Update todo
+     * @request PATCH:/v1/todos/{id}
+     * @secure
+     * @response `200` `V1TodoUpdateData` OK
+     * @response `400` `HTTPError`
+     * @response `401` `HTTPError`
+     * @response `403` `HTTPError`
+     * @response `404` `HTTPError`
+     * @response `500` `HTTPError`
+     */
+    v1TodoUpdate: (
+      id: string,
+      data: {
+        /**
+         * Title of the todo item.
+         * @minLength 3
+         * @maxLength 250
+         * @example "Do something great"
+         */
+        title?: string;
+        /**
+         * Description of the todo item.
+         * @minLength 10
+         * @maxLength 500
+         * @example "I'll make the world a better place today."
+         */
+        description?: string;
+        /** Priority of the todo item. */
+        priority?: TodoPriority;
+        /** Completion status of the todo item. */
+        completed?: boolean;
+        /** ID of the user who owns the todo item. */
+        owned_by?: string;
+        /** Completion due date of the todo item. */
+        due_date?: string;
+      },
+      params: RequestParams = {}
+    ) =>
+      this.request<V1TodoUpdateData, HTTPError>({
+        path: `/v1/todos/${id}`,
         method: 'PATCH',
         body: data,
         secure: true,
@@ -1101,98 +1510,349 @@ export class Client<SecurityDataType extends unknown> extends HttpClient<Securit
       }),
 
     /**
-     * @description Delete a todo item by its ID.
+     * @description Returns the list of organizations in the system.
      *
-     * @tags Todos
-     * @name DeleteTodo
-     * @summary Delete todo item by ID.
-     * @request DELETE:/v1/todos/{todo_id}
+     * @tags Organizations
+     * @name V1OrganizationsGet
+     * @summary Get organizations
+     * @request GET:/v1/organizations
      * @secure
-     * @response `204` `string | null`
+     * @response `200` `V1OrganizationsGetData` OK
+     * @response `401` `HTTPError`
+     * @response `403` `HTTPError`
+     * @response `500` `HTTPError`
+     */
+    v1OrganizationsGet: (query: V1OrganizationsGetParams, params: RequestParams = {}) =>
+      this.request<V1OrganizationsGetData, HTTPError>({
+        path: `/v1/organizations`,
+        method: 'GET',
+        query: query,
+        secure: true,
+        ...params
+      }),
+
+    /**
+ * @description Create a new organization.
+ *
+ * @tags Organizations
+ * @name V1OrganizationsCreate
+ * @summary Create organization
+ * @request POST:/v1/organizations
+ * @secure
+ * @response `201` `{
+  \** ID of the newly created resource. *\
+    id: string,
+
+}`
+ * @response `400` `HTTPError`
+ * @response `401` `HTTPError`
+ * @response `403` `HTTPError`
+ * @response `500` `HTTPError`
+ */
+    v1OrganizationsCreate: (
+      data: {
+        /**
+         * Name of the organization.
+         * @minLength 1
+         * @maxLength 120
+         * @example "ACME Inc."
+         */
+        name: string;
+        /**
+         * Email address of the organization.
+         * @format email
+         * @minLength 6
+         * @maxLength 254
+         * @example "info@example.com"
+         */
+        email: string;
+        /**
+         * Logo of the organization.
+         * @format uri
+         * @maxLength 2000
+         * @example "https://example.com/static/logo.png"
+         */
+        logo?: string;
+        /**
+         * Work title of the user.
+         * @format uri
+         * @maxLength 2000
+         * @example "https://example.com"
+         */
+        website?: string;
+      },
+      params: RequestParams = {}
+    ) =>
+      this.request<
+        {
+          /** ID of the newly created resource. */
+          id: string;
+        },
+        HTTPError
+      >({
+        path: `/v1/organizations`,
+        method: 'POST',
+        body: data,
+        secure: true,
+        ...params
+      }),
+
+    /**
+     * @description Returns the given organization by its ID.
+     *
+     * @tags Organizations
+     * @name V1OrganizationGet
+     * @summary Get organization
+     * @request GET:/v1/organizations/{id}
+     * @secure
+     * @response `200` `V1OrganizationGetData` OK
      * @response `400` `HTTPError`
      * @response `401` `HTTPError`
      * @response `403` `HTTPError`
      * @response `404` `HTTPError`
-     * @response `default` `HTTPError`
+     * @response `500` `HTTPError`
      */
-    deleteTodo: (todoId: string, params: RequestParams = {}) =>
-      this.request<string | null, HTTPError>({
-        path: `/v1/todos/${todoId}`,
+    v1OrganizationGet: (id: string, params: RequestParams = {}) =>
+      this.request<V1OrganizationGetData, HTTPError>({
+        path: `/v1/organizations/${id}`,
+        method: 'GET',
+        secure: true,
+        ...params
+      }),
+
+    /**
+     * @description Delete the organization by its ID.
+     *
+     * @tags Organizations
+     * @name V1OrganizationDelete
+     * @summary Delete organization
+     * @request DELETE:/v1/organizations/{id}
+     * @secure
+     * @response `204` `V1OrganizationDeleteData` No Content
+     * @response `400` `HTTPError`
+     * @response `401` `HTTPError`
+     * @response `403` `HTTPError`
+     * @response `404` `HTTPError`
+     * @response `500` `HTTPError`
+     */
+    v1OrganizationDelete: ({ id, ...query }: V1OrganizationDeleteParams, params: RequestParams = {}) =>
+      this.request<V1OrganizationDeleteData, HTTPError>({
+        path: `/v1/organizations/${id}`,
+        method: 'DELETE',
+        query: query,
+        secure: true,
+        ...params
+      }),
+
+    /**
+     * @description Update the organization by its ID.
+     *
+     * @tags Organizations
+     * @name V1OrganizationUpdate
+     * @summary Update organization
+     * @request PATCH:/v1/organizations/{id}
+     * @secure
+     * @response `200` `V1OrganizationUpdateData` OK
+     * @response `400` `HTTPError`
+     * @response `401` `HTTPError`
+     * @response `403` `HTTPError`
+     * @response `404` `HTTPError`
+     * @response `500` `HTTPError`
+     */
+    v1OrganizationUpdate: (
+      id: string,
+      data: {
+        /**
+         * Name of the organization.
+         * @minLength 1
+         * @maxLength 120
+         * @example "ACME Inc."
+         */
+        name?: string;
+        /**
+         * Email address of the organization.
+         * @format email
+         * @minLength 6
+         * @maxLength 254
+         * @example "info@example.com"
+         */
+        email?: string;
+        /**
+         * Logo of the organization.
+         * @format uri
+         * @maxLength 2000
+         * @example "https://example.com/static/logo.png"
+         */
+        logo?: string;
+        /**
+         * Work title of the user.
+         * @format uri
+         * @maxLength 2000
+         * @example "https://example.com"
+         */
+        website?: string;
+        /** Status of the organization. */
+        status?: OrganizationStatus;
+      },
+      params: RequestParams = {}
+    ) =>
+      this.request<V1OrganizationUpdateData, HTTPError>({
+        path: `/v1/organizations/${id}`,
+        method: 'PATCH',
+        body: data,
+        secure: true,
+        ...params
+      }),
+
+    /**
+     * @description Return the users that are members of the organization.
+     *
+     * @tags Organizations, Users
+     * @name V1OrganizationMembersGet
+     * @summary Get organization members
+     * @request GET:/v1/organizations/{id}/members
+     * @secure
+     * @response `200` `V1OrganizationMembersGetData` OK
+     * @response `400` `HTTPError`
+     * @response `401` `HTTPError`
+     * @response `403` `HTTPError`
+     * @response `404` `HTTPError`
+     * @response `500` `HTTPError`
+     */
+    v1OrganizationMembersGet: (id: string, params: RequestParams = {}) =>
+      this.request<V1OrganizationMembersGetData, HTTPError>({
+        path: `/v1/organizations/${id}/members`,
+        method: 'GET',
+        secure: true,
+        ...params
+      }),
+
+    /**
+ * @description Add an existing user to an organization.
+ *
+ * @tags Organizations, Users
+ * @name V1OrganizationMembersAdd
+ * @summary Add organization member
+ * @request POST:/v1/organizations/{id}/members
+ * @secure
+ * @response `201` `{
+  \** ID of the newly created resource. *\
+    id: string,
+
+}`
+ * @response `400` `HTTPError`
+ * @response `401` `HTTPError`
+ * @response `403` `HTTPError`
+ * @response `404` `HTTPError`
+ * @response `500` `HTTPError`
+ */
+    v1OrganizationMembersAdd: (id: string, data: V1OrganizationMembersAddPayload, params: RequestParams = {}) =>
+      this.request<
+        {
+          /** ID of the newly created resource. */
+          id: string;
+        },
+        HTTPError
+      >({
+        path: `/v1/organizations/${id}/members`,
+        method: 'POST',
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        ...params
+      }),
+
+    /**
+     * @description Removes a member from the organization
+     *
+     * @tags Organizations, Users
+     * @name V1OrganizationMembersRemove
+     * @summary Remove organization member
+     * @request DELETE:/v1/organizations/{id}/members/{user_id}
+     * @secure
+     * @response `204` `V1OrganizationMembersRemoveData` No Content
+     * @response `400` `HTTPError`
+     * @response `401` `HTTPError`
+     * @response `403` `HTTPError`
+     * @response `404` `HTTPError`
+     * @response `500` `HTTPError`
+     */
+    v1OrganizationMembersRemove: (id: string, userId: string, params: RequestParams = {}) =>
+      this.request<V1OrganizationMembersRemoveData, HTTPError>({
+        path: `/v1/organizations/${id}/members/${userId}`,
         method: 'DELETE',
         secure: true,
         ...params
       }),
 
     /**
-     * @description Returns the system health, listing all components and their status.
+     * @description Returns the health of registered components.
      *
      * @tags System
-     * @name GetSystemHealth
-     * @summary Get system status.
+     * @name V1SystemHealth
+     * @summary Get system health
      * @request GET:/v1/system/health
-     * @response `200` `GetSystemHealthData` The server can reply to health requests.
-     * @response `default` `HTTPError`
+     * @response `200` `V1SystemHealthData` OK
+     * @response `500` `HTTPError`
      */
-    getSystemHealth: (params: RequestParams = {}) =>
-      this.request<GetSystemHealthData, HTTPError>({
+    v1SystemHealth: (params: RequestParams = {}) =>
+      this.request<V1SystemHealthData, HTTPError>({
         path: `/v1/system/health`,
         method: 'GET',
         ...params
       }),
 
     /**
-     * @description Returns HTTP OK response if the server is up and running, however it doesn't mean that the server is healthy.
+     * @description Returns 200 OK if the service is reachable.
      *
      * @tags System
-     * @name GetSystemHeartbeat
-     * @summary Get heartbeat.
+     * @name V1SystemHeartbeat
+     * @summary Get heartbeat
      * @request GET:/v1/system/heartbeat
-     * @response `200` `GetSystemHeartbeatData` Response indicating that the server is running.
-     * @response `default` `HTTPError`
+     * @response `200` `V1SystemHeartbeatData` OK
+     * @response `500` `HTTPError`
      */
-    getSystemHeartbeat: (params: RequestParams = {}) =>
-      this.request<GetSystemHeartbeatData, HTTPError>({
+    v1SystemHeartbeat: (params: RequestParams = {}) =>
+      this.request<V1SystemHeartbeatData, HTTPError>({
         path: `/v1/system/heartbeat`,
         method: 'GET',
         ...params
       }),
 
     /**
-     * @description Returns the version information and build details.
+     * @description Return the license information. The license information is only available to entitled users.
      *
      * @tags System
-     * @name GetSystemVersion
-     * @summary Get application version.
-     * @request GET:/v1/system/version
-     * @response `200` `GetSystemVersionData` Version information and build details of the system.
-     * @response `default` `HTTPError`
+     * @name V1SystemLicense
+     * @summary Get license info
+     * @request GET:/v1/system/license
+     * @secure
+     * @response `200` `V1SystemLicenseData` OK
+     * @response `403` `HTTPError`
+     * @response `500` `HTTPError`
      */
-    getSystemVersion: (params: RequestParams = {}) =>
-      this.request<GetSystemVersionData, HTTPError>({
-        path: `/v1/system/version`,
+    v1SystemLicense: (params: RequestParams = {}) =>
+      this.request<V1SystemLicenseData, HTTPError>({
+        path: `/v1/system/license`,
         method: 'GET',
+        secure: true,
         ...params
       }),
 
     /**
-     * @description Returns the registered license information.
+     * @description Returns the version information of the system.
      *
      * @tags System
-     * @name GetSystemLicense
-     * @summary Get the registered license.
-     * @request GET:/v1/system/license
-     * @secure
-     * @response `200` `GetSystemLicenseData` The registered license.
-     * @response `401` `HTTPError`
-     * @response `403` `HTTPError`
-     * @response `404` `HTTPError`
-     * @response `default` `HTTPError`
+     * @name V1SystemVersion
+     * @summary Get system version
+     * @request GET:/v1/system/version
+     * @response `200` `V1SystemVersionData` OK
+     * @response `500` `HTTPError`
      */
-    getSystemLicense: (params: RequestParams = {}) =>
-      this.request<GetSystemLicenseData, HTTPError>({
-        path: `/v1/system/license`,
+    v1SystemVersion: (params: RequestParams = {}) =>
+      this.request<V1SystemVersionData, HTTPError>({
+        path: `/v1/system/version`,
         method: 'GET',
-        secure: true,
         ...params
       })
   };

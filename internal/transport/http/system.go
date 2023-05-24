@@ -10,15 +10,15 @@ import (
 	"github.com/opcotech/elemo/internal/license"
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/service"
-	"github.com/opcotech/elemo/internal/transport/http/gen"
+	"github.com/opcotech/elemo/internal/transport/http/api"
 )
 
 // SystemController is a controller for system endpoints.
 type SystemController interface {
-	GetSystemHealth(ctx context.Context, request gen.GetSystemHealthRequestObject) (gen.GetSystemHealthResponseObject, error)
-	GetSystemHeartbeat(ctx context.Context, request gen.GetSystemHeartbeatRequestObject) (gen.GetSystemHeartbeatResponseObject, error)
-	GetSystemVersion(ctx context.Context, request gen.GetSystemVersionRequestObject) (gen.GetSystemVersionResponseObject, error)
-	GetSystemLicense(ctx context.Context, request gen.GetSystemLicenseRequestObject) (gen.GetSystemLicenseResponseObject, error)
+	V1SystemHealth(ctx context.Context, request api.V1SystemHealthRequestObject) (api.V1SystemHealthResponseObject, error)
+	V1SystemHeartbeat(ctx context.Context, request api.V1SystemHeartbeatRequestObject) (api.V1SystemHeartbeatResponseObject, error)
+	V1SystemVersion(ctx context.Context, request api.V1SystemVersionRequestObject) (api.V1SystemVersionResponseObject, error)
+	V1SystemLicense(ctx context.Context, request api.V1SystemLicenseRequestObject) (api.V1SystemLicenseResponseObject, error)
 }
 
 // systemController is the concrete implementation of SystemController.
@@ -26,7 +26,7 @@ type systemController struct {
 	*baseController
 }
 
-func (c *systemController) GetSystemHealth(ctx context.Context, _ gen.GetSystemHealthRequestObject) (gen.GetSystemHealthResponseObject, error) {
+func (c *systemController) V1SystemHealth(ctx context.Context, _ api.V1SystemHealthRequestObject) (api.V1SystemHealthResponseObject, error) {
 	ctx, span := c.tracer.Start(ctx, "transport.http.handler/GetSystemHealth")
 	defer span.End()
 
@@ -34,38 +34,38 @@ func (c *systemController) GetSystemHealth(ctx context.Context, _ gen.GetSystemH
 	defer cancel()
 
 	health, _ := c.systemService.GetHealth(ctx)
-	return gen.GetSystemHealth200JSONResponse(*healthStatusToDTO(health)), nil
+	return api.V1SystemHealth200JSONResponse(*healthStatusToDTO(health)), nil
 }
 
-func (c *systemController) GetSystemHeartbeat(ctx context.Context, _ gen.GetSystemHeartbeatRequestObject) (gen.GetSystemHeartbeatResponseObject, error) {
+func (c *systemController) V1SystemHeartbeat(ctx context.Context, _ api.V1SystemHeartbeatRequestObject) (api.V1SystemHeartbeatResponseObject, error) {
 	_, span := c.tracer.Start(ctx, "transport.http.handler/GetSystemHeartbeat")
 	defer span.End()
 
-	return gen.GetSystemHeartbeat200TextResponse(gen.SystemHeartbeatOK), nil
+	return api.V1SystemHeartbeat200TextResponse("OK"), nil
 }
 
-func (c *systemController) GetSystemVersion(ctx context.Context, _ gen.GetSystemVersionRequestObject) (gen.GetSystemVersionResponseObject, error) {
+func (c *systemController) V1SystemVersion(ctx context.Context, _ api.V1SystemVersionRequestObject) (api.V1SystemVersionResponseObject, error) {
 	ctx, span := c.tracer.Start(ctx, "transport.http.handler/GetSystemVersion")
 	defer span.End()
 
 	versionInfo := c.systemService.GetVersion(ctx)
 
-	return gen.GetSystemVersion200JSONResponse(*versionInfoToDTO(versionInfo)), nil
+	return api.V1SystemVersion200JSONResponse(*versionInfoToDTO(versionInfo)), nil
 }
 
-func (c *systemController) GetSystemLicense(ctx context.Context, _ gen.GetSystemLicenseRequestObject) (gen.GetSystemLicenseResponseObject, error) {
+func (c *systemController) V1SystemLicense(ctx context.Context, _ api.V1SystemLicenseRequestObject) (api.V1SystemLicenseResponseObject, error) {
 	ctx, span := c.tracer.Start(ctx, "transport.http.handler/GetSystemLicense")
 	defer span.End()
 
 	l, err := c.licenseService.GetLicense(ctx)
 	if err != nil {
 		if errors.Is(err, service.ErrNoPermission) {
-			return gen.GetSystemLicense401JSONResponse{N401JSONResponse: permissionDenied}, nil
+			return api.V1SystemLicense403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		}
-		return gen.GetSystemLicenseResponseObject(nil), err
+		return api.V1SystemLicenseResponseObject(nil), err
 	}
 
-	return gen.GetSystemLicense200JSONResponse(*licenseToDTO(&l)), nil
+	return api.V1SystemLicense200JSONResponse(*licenseToDTO(&l)), nil
 }
 
 // NewSystemController creates a new SystemController.
@@ -86,26 +86,29 @@ func NewSystemController(opts ...ControllerOption) (SystemController, error) {
 	return controller, nil
 }
 
-func healthStatusToDTO(status map[model.HealthCheckComponent]model.HealthStatus) *gen.SystemHealth {
-	return &gen.SystemHealth{
-		CacheDatabase:      gen.SystemHealthCacheDatabase(status[model.HealthCheckComponentCacheDB].String()),
-		GraphDatabase:      gen.SystemHealthGraphDatabase(status[model.HealthCheckComponentGraphDB].String()),
-		RelationalDatabase: gen.SystemHealthRelationalDatabase(status[model.HealthCheckComponentRelationalDB].String()),
-		License:            gen.SystemHealthLicense(status[model.HealthCheckComponentLicense].String()),
-		MessageQueue:       gen.SystemHealthMessageQueue(status[model.HealthCheckComponentMessageQueue].String()),
+func healthStatusToDTO(status map[model.HealthCheckComponent]model.HealthStatus) *api.SystemHealth {
+	return &api.SystemHealth{
+		CacheDatabase:      api.SystemHealthCacheDatabase(status[model.HealthCheckComponentCacheDB].String()),
+		GraphDatabase:      api.SystemHealthGraphDatabase(status[model.HealthCheckComponentGraphDB].String()),
+		RelationalDatabase: api.SystemHealthRelationalDatabase(status[model.HealthCheckComponentRelationalDB].String()),
+		License:            api.SystemHealthLicense(status[model.HealthCheckComponentLicense].String()),
+		MessageQueue:       api.SystemHealthMessageQueue(status[model.HealthCheckComponentMessageQueue].String()),
 	}
 }
 
-func versionInfoToDTO(version *model.VersionInfo) *gen.SystemVersionInfo {
-	return &gen.SystemVersionInfo{
+func versionInfoToDTO(version *model.VersionInfo) *api.SystemVersion {
+	// The date is set by ldflags, so it's always in the same format.
+	date, _ := time.Parse(time.RFC3339, version.Date)
+
+	return &api.SystemVersion{
 		Version:   version.Version,
 		Commit:    version.Commit,
-		Date:      version.Date,
+		Date:      date,
 		GoVersion: version.GoVersion,
 	}
 }
 
-func licenseToDTO(l *license.License) *gen.SystemLicense {
+func licenseToDTO(l *license.License) *api.SystemLicense {
 	type licenseQuota = struct {
 		Documents     int `json:"documents"`
 		Namespaces    int `json:"namespaces"`
@@ -115,7 +118,7 @@ func licenseToDTO(l *license.License) *gen.SystemLicense {
 		Users         int `json:"users"`
 	}
 
-	systemLicense := &gen.SystemLicense{
+	systemLicense := &api.SystemLicense{
 		Id:           l.ID.String(),
 		Organization: l.Organization,
 		Email:        oapiTypes.Email(l.Email),
@@ -131,7 +134,7 @@ func licenseToDTO(l *license.License) *gen.SystemLicense {
 	}
 
 	for _, feature := range l.Features {
-		systemLicense.Features = append(systemLicense.Features, gen.SystemLicenseFeatures(feature))
+		systemLicense.Features = append(systemLicense.Features, api.SystemLicenseFeatures(feature))
 	}
 
 	return systemLicense

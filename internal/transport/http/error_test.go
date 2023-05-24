@@ -12,7 +12,7 @@ import (
 	"github.com/opcotech/elemo/internal/pkg/log"
 	testHttp "github.com/opcotech/elemo/internal/testutil/http"
 	"github.com/opcotech/elemo/internal/testutil/mock"
-	"github.com/opcotech/elemo/internal/transport/http/gen"
+	"github.com/opcotech/elemo/internal/transport/http/api"
 )
 
 func TestHTTPError(t *testing.T) {
@@ -76,7 +76,7 @@ func TestHTTPErrorStruct(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want gen.HTTPError
+		want api.HTTPError
 	}{
 		{
 			name: "HTTP error with status 400",
@@ -84,7 +84,7 @@ func TestHTTPErrorStruct(t *testing.T) {
 				err:    errors.New("bad request"),
 				status: http.StatusBadRequest,
 			},
-			want: gen.HTTPError{
+			want: api.HTTPError{
 				Message: "Forbidden",
 			},
 		},
@@ -94,7 +94,7 @@ func TestHTTPErrorStruct(t *testing.T) {
 				err:    errors.New("internal server error"),
 				status: http.StatusInternalServerError,
 			},
-			want: gen.HTTPError{
+			want: api.HTTPError{
 				Message: "Server error",
 			},
 		},
@@ -124,7 +124,7 @@ func TestHTTPErrorStruct(t *testing.T) {
 			})
 
 			testHttp.CheckResponseCode(t, tt.args.status, rr.Code)
-			testHttp.CheckResponseBody(t, rr.Body, &tt.want, &gen.HTTPError{})
+			testHttp.CheckResponseBody(t, rr.Body, &tt.want, &api.HTTPError{})
 		})
 	}
 }

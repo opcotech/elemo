@@ -91,7 +91,7 @@ export default function NewTodoForm(props: NewTodoFormProps) {
     }
 
     if (!todoId) {
-      await createTodo({ ...todo, owned_by: session!.user!.id });
+      await createTodo({ ...todo, owned_by: session!.user!.id, due_date: todo.due_date || undefined });
     } else {
       await updateTodo(todoId, todo);
       handleCancel();

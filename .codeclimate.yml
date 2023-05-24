@@ -44,6 +44,6 @@ exclude_patterns:
   - "cmd/"
   - "configs/"
   - "internal/testutil/"
-  - "internal/transport/http/gen"
+  - "internal/transport/http/api"
   - "tests/"
   - "tools/"

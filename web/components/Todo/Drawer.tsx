@@ -6,7 +6,7 @@ import Drawer from '@/components/Drawer';
 import { ListSkeleton } from '@/components/Skeleton';
 import useStore from '@/store';
 import TodoItem from './TodoItem';
-import { UpdateTodoParams } from '@/store/todoSlice';
+import { UpdateTodoInput } from '@/store/todoSlice';
 import NewTodoForm from './NewTodoForm';
 import { IconButton } from '@/components/Button';
 
@@ -50,7 +50,7 @@ export default function TodoDrawer() {
   );
 
   const handleUpdate = useCallback(
-    async (id: string, todo: UpdateTodoParams) => {
+    async (id: string, todo: UpdateTodoInput) => {
       setLoading(id, true);
       await updateTodo(id, todo);
       setLoading(id, false);

@@ -1,6 +1,6 @@
 import type { StateCreator } from 'zustand';
-import client, { ContentType, CreateTodoData, GetTodosData, TodoPriority, getErrorMessage } from '@/lib/api';
-import type { Todo, GetTodosParams, UpdateTodoData } from '@/lib/api';
+import client, { ContentType, TodoPriority, getErrorMessage, V1TodosGetParams, V1TodoUpdateData } from '@/lib/api';
+import type { Todo } from '@/lib/api';
 import type { MessageSliceState } from './messageSlice';
 
 const PRIORITY_MAP = {
@@ -11,12 +11,25 @@ const PRIORITY_MAP = {
   [TodoPriority.Critical]: 1
 };
 
-type OmittedTodoFields = 'id' | 'created_at' | 'updated_at';
-export type CreateTodoParams = Omit<Todo, OmittedTodoFields | 'completed'>;
-export type UpdateTodoParams = Omit<Todo, OmittedTodoFields | 'created_by' | 'owned_by'>;
+export type CreateTodoInput = {
+  title: string;
+  description?: string | undefined;
+  priority: TodoPriority;
+  owned_by: string;
+  due_date?: string | undefined;
+};
 
-export function sortTodos(items: GetTodosData): GetTodosData {
-  return Object.assign([] as GetTodosData, items).sort((a, b) => {
+export type UpdateTodoInput = {
+  title?: string;
+  description?: string;
+  priority?: TodoPriority;
+  completed?: boolean;
+  owned_by?: string;
+  due_date?: string | null;
+};
+
+export function sortTodos(items: Todo[]): Todo[] {
+  return Object.assign([] as Todo[], items).sort((a, b) => {
     if (a.completed && !b.completed) {
       return 1;
     }
@@ -29,7 +42,7 @@ export function sortTodos(items: GetTodosData): GetTodosData {
       return a.due_date > b.due_date ? 1 : -1;
     }
 
-    return PRIORITY_MAP[a.priority!] - PRIORITY_MAP[b.priority!];
+    return PRIORITY_MAP[a.priority] - PRIORITY_MAP[b.priority];
   });
 }
 
@@ -37,9 +50,9 @@ export interface TodoSliceState {
   todos: Todo[];
   fetchingTodos: boolean;
   fetchedTodos: boolean;
-  fetchTodos: (params?: GetTodosParams) => Promise<void>;
-  createTodo: (todo: CreateTodoParams) => Promise<void>;
-  updateTodo: (id: string, todo: UpdateTodoData) => Promise<void>;
+  fetchTodos: (params?: V1TodosGetParams) => Promise<void>;
+  createTodo: (todo: CreateTodoInput) => Promise<void>;
+  updateTodo: (id: string, todo: UpdateTodoInput) => Promise<void>;
   deleteTodo: (id: string) => Promise<void>;
 }
 
@@ -47,32 +60,61 @@ export const createTodoSlice: StateCreator<TodoSliceState & Partial<MessageSlice
   todos: [],
   fetchingTodos: false,
   fetchedTodos: false,
-  fetchTodos: async (params?: GetTodosParams): Promise<void> => {
+  fetchTodos: async (params: V1TodosGetParams = {}): Promise<void> => {
     set({ fetchingTodos: true });
-    const res = await client.v1.getTodos(params || {});
-    const todos: GetTodosData = await res.json();
-
-    if (!res.ok) {
+    try {
+      const res = await client.v1.v1TodosGet(params);
+      const todos: Todo[] = await res.json();
+      set({ todos: sortTodos(todos) });
+      set({ fetchingTodos: false, fetchedTodos: true });
+    } catch (e) {
       set({ fetchingTodos: false });
-      return get().addMessage?.({
+      get().addMessage?.({
         type: 'error',
         title: 'Failed to fetch todos',
-        message: res.error.message
+        message: getErrorMessage(e)
       });
     }
-
-    set({ todos: sortTodos(todos) });
-    set({ fetchingTodos: false, fetchedTodos: true });
   },
-  createTodo: async (todo: CreateTodoParams): Promise<void> => {
+  createTodo: async (todo: CreateTodoInput): Promise<void> => {
     try {
-      const res = await client.v1.createTodo({ ...todo, completed: false }, { type: ContentType.Json });
-      const data: CreateTodoData = await res.json();
-      set((state) => ({ todos: sortTodos([...state.todos, { ...todo, id: data.todo_id }]) }));
+      const res = await client.v1.v1TodosCreate(
+        {
+          title: todo.title,
+          description: todo.description === '' ? undefined : todo.description,
+          priority: todo.priority,
+          owned_by: todo.owned_by,
+          due_date: todo.due_date || ''
+        },
+        { type: ContentType.Json }
+      );
+
+      const data: { id: string } = await res.json();
+
+      // NOTE: This is an ugly hack, the API should return the created todo
+      // instead of just the ID.
+      set((state) => ({
+        todos: sortTodos([
+          {
+            id: data.id,
+            title: todo.title,
+            description: todo.description || '',
+            priority: todo.priority,
+            owned_by: todo.owned_by,
+            due_date: todo.due_date || null,
+            completed: false,
+            created_by: todo.owned_by,
+            created_at: new Date().toISOString(),
+            updated_at: null
+          },
+          ...state.todos
+        ])
+      }));
+
       get().addMessage?.({
         type: 'success',
         title: 'Todo Created',
-        message: `Todo "${data.todo_id}" created successfully`
+        message: `Todo "${data.id}" created successfully`
       });
     } catch (e) {
       get().addMessage?.({
@@ -82,10 +124,21 @@ export const createTodoSlice: StateCreator<TodoSliceState & Partial<MessageSlice
       });
     }
   },
-  updateTodo: async (id: string, todo: UpdateTodoParams): Promise<void> => {
+  updateTodo: async (id: string, todo: UpdateTodoInput): Promise<void> => {
     try {
-      const res = await client.v1.updateTodo(id, todo, { type: ContentType.Json });
-      const updated: UpdateTodoData = await res.json();
+      const res = await client.v1.v1TodoUpdate(
+        id,
+        {
+          title: todo.title,
+          description: todo.description,
+          priority: todo.priority,
+          completed: todo.completed,
+          owned_by: todo.owned_by,
+          due_date: todo.due_date === null ? '' : todo.due_date
+        },
+        { type: ContentType.Json }
+      );
+      const updated: V1TodoUpdateData = await res.json();
       set((state) => ({ todos: sortTodos(state.todos.map((todo) => (todo.id === id ? updated : todo))) }));
       get().addMessage?.({
         type: 'success',
@@ -102,7 +155,7 @@ export const createTodoSlice: StateCreator<TodoSliceState & Partial<MessageSlice
   },
   deleteTodo: async (id: string): Promise<void> => {
     try {
-      await client.v1.deleteTodo(id, { type: ContentType.Json });
+      await client.v1.v1TodoDelete(id);
       set((state) => ({ todos: state.todos.filter((todo) => todo.id !== id) }));
       get().addMessage?.({
         type: 'success',
