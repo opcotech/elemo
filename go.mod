@@ -19,7 +19,7 @@ require (
 	github.com/jackc/pgx/v5 v5.3.1
 	github.com/neo4j/neo4j-go-driver/v5 v5.8.1
 	github.com/prometheus/client_golang v1.15.1
-	github.com/redis/go-redis/v9 v9.0.4
+	github.com/redis/go-redis/v9 v9.0.5
 	github.com/rs/xid v1.5.0
 	github.com/slok/go-http-metrics v0.10.0
 	github.com/spf13/cobra v1.7.0
