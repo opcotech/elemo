@@ -1,0 +1,14 @@
+{
+  "name": "elemo-client",
+  "version": "0.1.0",
+  "license": "Apache-2.0",
+  "private": true,
+  "scripts": {
+    "build": "tsc --project ."
+  },
+  "dependencies": {
+    "@types/node": "20.2.3",
+    "form-data": "^4.0.0",
+    "typescript": "5.0.4"
+  }
+}
