@@ -18,7 +18,7 @@ export function FormTextarea(props: FormTextareaProps) {
             ? 'text-red-800 border-red-300 focus:border-red-500 focus:ring-red-500'
             : 'border-gray-300 focus:border-gray-500 focus:ring-gray-500',
           props.disabled ? 'opacity-70 bg-gray-50 cursor-not-allowed' : '',
-          'block w-full rounded-md sm:text-sm'
+          'form-textarea block w-full rounded-md sm:text-sm'
         )}
         style={{ minHeight: '8rem' }}
         rows={props.rows}
