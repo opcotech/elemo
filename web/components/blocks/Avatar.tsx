@@ -22,11 +22,11 @@ export interface AvatarProps extends AvatarImageProps, AvatarInitialsProps {
   size: keyof typeof SIZES;
 }
 
-export function Avatar({ size = 'md', initials = 'N/A', alt = 'Avatar', src, className }: AvatarProps) {
+export function Avatar({ size = 'md', initials = 'N/A', alt = 'Avatar', src, grayscale, className }: AvatarProps) {
   const avatarClasses = concat(className, SIZES[size]);
 
   if (src !== undefined && src !== null && src !== '') {
-    return <AvatarImage className={avatarClasses} src={src} alt={alt} />;
+    return <AvatarImage className={avatarClasses} src={src} alt={alt} grayscale={grayscale} />;
   }
 
   return <AvatarInitials className={avatarClasses} textClassName={FONT_SIZES[size]} initials={initials} />;
@@ -36,11 +36,19 @@ export interface AvatarImageProps {
   src: string;
   className?: string;
   alt?: string;
+  grayscale?: boolean;
 }
 
-function AvatarImage({ src, alt, className }: AvatarImageProps) {
+function AvatarImage({ src, alt, grayscale, className }: AvatarImageProps) {
   return (
-    <Image className={concat(className, 'rounded-full')} priority src={src} width={100} height={100} alt={alt || ''} />
+    <Image
+      className={concat(className, 'rounded-full', grayscale ? 'grayscale' : undefined)}
+      priority
+      src={src}
+      width={100}
+      height={100}
+      alt={alt || 'Avatar'}
+    />
   );
 }
 

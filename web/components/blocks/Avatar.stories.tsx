@@ -29,6 +29,16 @@ export const WithImage: Story = {
   }
 };
 
+export const WithGrayscaleImage: Story = {
+  args: {
+    size: 'md',
+    src: 'https://picsum.photos/id/433/100/100',
+    initials: 'JD',
+    alt: 'John Doe Avatar',
+    grayscale: true
+  }
+};
+
 export const NoImage: Story = {
   args: {
     size: 'md',
