@@ -9,7 +9,7 @@ const FAKE_SESSION: Session = {
     id: '1',
     name: 'John Doe',
     email: 'john.doe@example.com',
-    image: 'https://picsum.photos/id/433/100/100?w=256&q=75',
+    image: 'https://picsum.photos/id/433/100/100',
     access_token: '',
     refresh_token: '',
     expires_in: 3600
