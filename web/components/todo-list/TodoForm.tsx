@@ -11,7 +11,6 @@ import { Icon } from '@/components/blocks/Icon';
 import { Link } from '@/components/blocks/Link';
 import { concat, formatErrorMessage, toCapitalCase } from '@/lib/helpers';
 import useStore from '@/store';
-import { useSession } from 'next-auth/react';
 import { $Todo, Todo, TodoPriority } from '@/lib/api';
 
 const PRIORITY_ORDER: TodoPriority[] = [
@@ -50,9 +49,7 @@ export interface NewTodoFormProps {
   onHide: () => void;
 }
 
-export default function NewTodoForm(props: NewTodoFormProps) {
-  const { data: session } = useSession();
-
+export function TodoForm(props: NewTodoFormProps) {
   const [loading, setLoading] = useState(false);
 
   const createTodo = useStore((state) => state.createTodo);
@@ -97,7 +94,6 @@ export default function NewTodoForm(props: NewTodoFormProps) {
       await createTodo({
         ...todo,
         description: todo.description?.trim() || undefined,
-        owned_by: session!.user!.id,
         due_date: todo.due_date || undefined
       });
     } else {

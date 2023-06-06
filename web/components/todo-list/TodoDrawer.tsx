@@ -4,11 +4,11 @@ import { useCallback, useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import useStore from '@/store';
 import { Drawer } from '@/components/blocks/Drawer';
-import { TodoList } from './TodoList';
 import { Button } from '@/components/blocks/Button';
-import NewTodoForm from '@/components/todo-list/NewTodoForm';
 import { UpdateTodoParams } from '@/store/todoSlice';
 import { ListSkeleton } from '@/components/blocks/Skeleton/ListSkeleton';
+import { TodoForm } from './TodoForm';
+import { TodoList } from './TodoList';
 
 type TodoListState = {
   editing?: string;
@@ -35,7 +35,7 @@ export function TodoDrawer() {
   });
 
   useEffect(() => {
-    if (show && !fetchingTodos && todos.length === 0) fetchTodos();
+    if (show && !fetchingTodos && todos === undefined) fetchTodos();
   }, [show, fetchingTodos, fetchTodos, todos]);
 
   const setLoading = useCallback(
@@ -99,13 +99,13 @@ export function TodoDrawer() {
 
   return (
     <Drawer id="todos" title="Todo list" show={show} toggle={handleDrawerClose}>
-      <div className="my-4">
+      <div className="mt-4 mb-8">
         <AnimatePresence>
           {showNewTodoForm ? (
             <AnimatePresence>
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                <NewTodoForm
-                  editing={todos.find((t) => t.id === state.editing)}
+                <TodoForm
+                  editing={todos?.find((t) => t.id === state.editing)}
                   onCancel={() => handleEdit(state.editing!, false)}
                   onHide={handleNewTodoFormClose}
                 />
@@ -129,11 +129,11 @@ export function TodoDrawer() {
       </div>
 
       <div className="px-3">
-        {fetchingTodos ? (
+        {fetchingTodos && todos === undefined ? (
           <ListSkeleton count={5} fullWidth />
         ) : (
           <TodoList
-            todos={todos}
+            todos={todos || []}
             editing={state.editing}
             deleting={state.deleting}
             loading={state.loading}

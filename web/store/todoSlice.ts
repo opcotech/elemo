@@ -1,6 +1,7 @@
 import { getErrorMessage, Todo, TodoPriority, TodosService } from '@/lib/api';
 import { StateCreator } from 'zustand/esm';
 import { MessageSliceState } from '@/store/messageSlice';
+import { getSession } from 'next-auth/react';
 
 const PRIORITY_MAP = {
   null: 4,
@@ -34,7 +35,7 @@ export type UpdateTodoParams = {
 };
 
 export interface TodoSliceState {
-  todos: Todo[];
+  todos: Todo[] | undefined;
   fetchingTodos: boolean;
   fetchTodos: (params?: FetchTodosParams) => Promise<void>;
   createTodo: (todo: CreateTodoParams) => Promise<void>;
@@ -78,6 +79,9 @@ export const createTodoSlice: StateCreator<TodoSliceState & Partial<MessageSlice
   createTodo: async (todo: CreateTodoParams) => {
     let data: { id: string };
 
+    const session = await getSession();
+    todo = { ...todo, owned_by: session!.user!.id };
+
     try {
       data = await TodosService.v1TodosCreate(todo);
       get().addMessage?.({ type: 'success', title: 'Todo Created', message: `Todo "${data.id}" created successfully` });
@@ -99,7 +103,7 @@ export const createTodoSlice: StateCreator<TodoSliceState & Partial<MessageSlice
           created_at: new Date().toISOString(),
           updated_at: null
         },
-        ...state.todos
+        ...(state.todos || [])
       ])
     }));
   },
@@ -113,7 +117,7 @@ export const createTodoSlice: StateCreator<TodoSliceState & Partial<MessageSlice
       return get().addMessage?.({ type: 'error', title: 'Failed to update todo', message: getErrorMessage(e) });
     }
 
-    set((state) => ({ todos: sortTodos(state.todos.map((todo) => (todo.id === id ? updated : todo))) }));
+    set((state) => ({ todos: sortTodos((state.todos || []).map((todo) => (todo.id === id ? updated : todo))) }));
   },
   deleteTodo: async (id: string) => {
     try {
@@ -123,6 +127,6 @@ export const createTodoSlice: StateCreator<TodoSliceState & Partial<MessageSlice
       return get().addMessage?.({ type: 'error', title: 'Failed to delete todo', message: getErrorMessage(e) });
     }
 
-    set((state) => ({ todos: sortTodos(state.todos.filter((todo) => todo.id !== id)) }));
+    set((state) => ({ todos: sortTodos((state.todos || []).filter((todo) => todo.id !== id)) }));
   }
 });
