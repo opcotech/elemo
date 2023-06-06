@@ -49,7 +49,7 @@ export function OrganizationListItem({ organization, canView, canEdit, canDelete
             {organization.members.length}&nbsp;{organization.members.length === 1 ? 'member' : 'members'}
           </p>
         </div>
-        {canView && (canEdit || canDelete) && (
+        {canView && ((canEdit && organization.status !== OrganizationStatus.DELETED) || canDelete) && (
           <Menu as="div" className="relative flex-none">
             <Menu.Button className="-m-2.5 block p-2.5 text-gray-500 hover:text-gray-900">
               <span className="sr-only">Open options</span>
