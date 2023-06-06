@@ -2,12 +2,19 @@ import { Lato, Work_Sans } from 'next/font/google';
 import { MessageArea } from '@/components/MessageArea';
 import { Navbar, NavigationItem, UserNavigationItem } from '@/components/navigation/Navbar';
 import { NotificationDrawer } from '@/components/notifications';
-import { TodoDrawer } from '@/components/todo-list';
+import { TodoDrawer } from '@/components/todos';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import Provider from '@/components/Provider';
 
 import '../globals.css';
 import useStore from '@/store';
+
+export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
+export const metadata = {
+  title: 'Elemo',
+  description: 'The next-generation project management tool'
+};
 
 const lato = Lato({
   variable: '--font-lato',
@@ -24,11 +31,6 @@ const workSans = Work_Sans({
   display: 'swap',
   subsets: ['latin-ext']
 });
-
-export const metadata = {
-  title: 'Elemo',
-  description: 'The next-generation project management tool'
-};
 
 const navigation: NavigationItem[] = [
   { id: 'menu-item-home', label: 'Home', href: '/', prefetch: true },
