@@ -783,7 +783,7 @@ components:
         - za
         - zh
         - zu
-  examples: {}
+  examples: { }
   securitySchemes:
     oauth2:
       type: oauth2
@@ -1286,6 +1286,8 @@ paths:
             - user.read
     post:
       summary: Create new user
+      tags:
+        - Users
       operationId: v1UsersCreate
       responses:
         '201':
@@ -1335,6 +1337,8 @@ paths:
             - user.read
     delete:
       summary: Delete the user with the given ID.
+      tags:
+        - Users
       operationId: v1UserDelete
       responses:
         '204':
@@ -1357,6 +1361,8 @@ paths:
             - user
     patch:
       summary: Update user
+      tags:
+        - Users
       operationId: v1UserUpdate
       responses:
         '200':
@@ -1768,7 +1774,7 @@ paths:
           $ref: '#/components/responses/500'
       operationId: v1SystemHealth
       description: Returns the health of registered components.
-      security: []
+      security: [ ]
       tags:
         - System
   /v1/system/heartbeat:
@@ -1789,7 +1795,7 @@ paths:
           $ref: '#/components/responses/500'
       operationId: v1SystemHeartbeat
       description: Returns 200 OK if the service is reachable.
-      security: []
+      security: [ ]
   /v1/system/license:
     get:
       summary: Get license info
@@ -1809,7 +1815,7 @@ paths:
       operationId: v1SystemLicense
       description: Return the license information. The license information is only available to entitled users.
       security:
-        - oauth2: []
+        - oauth2: [ ]
   /v1/system/version:
     get:
       summary: Get system version
@@ -1824,6 +1830,6 @@ paths:
           $ref: '#/components/responses/500'
       operationId: v1SystemVersion
       description: Returns the version information of the system.
-      security: []
+      security: [ ]
       tags:
         - System
