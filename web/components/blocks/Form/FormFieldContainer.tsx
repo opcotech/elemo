@@ -19,15 +19,15 @@ export interface FormCommonProps {
 
 export function FormFieldContainer({ grid = true, name, label, required, children }: FormCommonProps) {
   return (
-    <div className={concat(grid ? 'sm:grid sm:grid-cols-5 sm:items-start sm:gap-4' : '')}>
+    <div className={concat(grid ? 'sm:grid sm:grid-cols-12 sm:items-start sm:gap-3' : '')}>
       <label
         htmlFor={name}
-        className={concat(grid ? '' : 'mb-2', 'block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2')}
+        className={concat(grid ? '' : 'mb-2', 'block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2 sm:col-span-3')}
       >
         {label}
         {required && <span className="text-xs text-red-500 ml-0.5">*</span>}
       </label>
-      <div className="sm:col-span-4 sm:mt-0">{children}</div>
+      <div className="sm:col-span-9 sm:mt-0">{children}</div>
     </div>
   );
 }
