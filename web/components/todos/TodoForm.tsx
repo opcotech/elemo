@@ -146,7 +146,7 @@ export function TodoForm(props: NewTodoFormProps) {
   ]);
 
   return (
-    <form id="form-add-todo-item" action="web/components/todo#" className="relative" onSubmit={handleSubmit(onSubmit)}>
+    <form id="form-add-todo-item" action={'#'} className="relative" onSubmit={handleSubmit(onSubmit)}>
       <div
         className={
           'overflow-hidden rounded-lg border border-gray-300 shadow-sm focus-within:border-gray-500 focus-within:ring-1 focus-within:ring-gray-500'
