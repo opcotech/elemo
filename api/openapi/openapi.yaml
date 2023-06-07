@@ -233,7 +233,7 @@ components:
     Organization:
       title: Organization
       x-stoplight:
-        id: 2jl1m1bg4a8hm
+        id: z1rrbujd80hjp
       type: object
       description: An organization in the system.
       properties:
@@ -247,7 +247,7 @@ components:
           maxLength: 120
           example: ACME Inc.
           x-stoplight:
-            id: wqv71ymlibg4c
+            id: yy9zxfxsf02b8
           minLength: 1
         email:
           type: string
@@ -263,13 +263,13 @@ components:
           example: 'https://example.com/static/logo.png'
           maxLength: 2000
           x-stoplight:
-            id: qtf590lkupgyn
+            id: 363za1829kvz2
           nullable: true
         website:
           type: string
           description: Work title of the user.
           x-stoplight:
-            id: 0c8propi2z2ja
+            id: 3gzd49jcoiepc
           format: uri
           example: 'https://example.com'
           maxLength: 2000
@@ -279,34 +279,34 @@ components:
         members:
           type: array
           x-stoplight:
-            id: zcr499g29x7fs
+            id: qcx2c1zz24gbz
           description: IDs of the users in the organization.
           uniqueItems: true
           items:
             x-stoplight:
-              id: ta6sdcik39lfc
+              id: 3dhda4rb3888u
             type: string
             example: 9bsv0s46s6s002p9ltq0
         teams:
           type: array
           x-stoplight:
-            id: p1c9pg6tjsipu
+            id: fv0uklile0hbh
           description: IDs of the teams in the organization.
           uniqueItems: true
           items:
             x-stoplight:
-              id: x09xht43dei6d
+              id: j91k3a8g25oef
             type: string
             example: 9bsv0s46s6s002p9ltq0
         namespaces:
           type: array
           x-stoplight:
-            id: ovy6hmlupke74
+            id: 3tb0x551si38h
           description: IDs of the namespaces in the organization.
           uniqueItems: true
           items:
             x-stoplight:
-              id: c44rmtja3bb40
+              id: b9e9wiu9ztc7q
             type: string
             example: 9bsv0s46s6s002p9ltq0
         created_at:
@@ -333,7 +333,7 @@ components:
     OrganizationStatus:
       type: string
       x-stoplight:
-        id: j2a8b1awr15zm
+        id: f15m16eoglug3
       enum:
         - active
         - deleted
@@ -957,7 +957,16 @@ components:
                 maxLength: 64
                 minLength: 8
                 example: super-secret
-                description: Password of the user.
+                description: Password of the user. Required together with the new_password field.
+              new_password:
+                type: string
+                format: password
+                maxLength: 64
+                minLength: 8
+                example: super-secret
+                description: New password of the user.
+                x-stoplight:
+                  id: 3m3c4msatdwhh
               picture:
                 type: string
                 description: Profile picture of the user.
@@ -1187,7 +1196,7 @@ components:
                 maxLength: 120
                 example: ACME Inc.
                 x-stoplight:
-                  id: ga5x9vomawm42
+                  id: dvatgsspa7c6a
                 minLength: 1
               email:
                 type: string
@@ -1203,12 +1212,12 @@ components:
                 example: 'https://example.com/static/logo.png'
                 maxLength: 2000
                 x-stoplight:
-                  id: 0afomzvkqgpf8
+                  id: 3wenoi74ep2ev
               website:
                 type: string
                 description: Work title of the user.
                 x-stoplight:
-                  id: vbosyixrp2v3s
+                  id: wwrpgkk29bqie
                 format: uri
                 example: 'https://example.com'
                 maxLength: 2000
@@ -1227,7 +1236,7 @@ components:
                 maxLength: 120
                 example: ACME Inc.
                 x-stoplight:
-                  id: rxuc1suz7qe7b
+                  id: iciux3rn6pyei
                 minLength: 1
               email:
                 type: string
@@ -1243,12 +1252,12 @@ components:
                 example: 'https://example.com/static/logo.png'
                 maxLength: 2000
                 x-stoplight:
-                  id: 7pfylo9edl14u
+                  id: nwkg9ayfi1a95
               website:
                 type: string
                 description: Work title of the user.
                 x-stoplight:
-                  id: znr4tfb8hfopr
+                  id: g9rw8u1ihf4u4
                 format: uri
                 example: 'https://example.com'
                 maxLength: 2000
@@ -1722,7 +1731,7 @@ paths:
                 user_id:
                   type: string
                   x-stoplight:
-                    id: ug2r19m97qovi
+                    id: cxznnrrcb7fva
                   description: ID of the user to add.
                   example: 9bsv0s46s6s002p9ltq0
               required:

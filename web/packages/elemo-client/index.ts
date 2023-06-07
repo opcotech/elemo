@@ -30,7 +30,6 @@ export { $TodoPriority } from './schemas/$TodoPriority';
 export { $User } from './schemas/$User';
 export { $UserStatus } from './schemas/$UserStatus';
 
-export { DefaultService } from './services/DefaultService';
 export { OrganizationsService } from './services/OrganizationsService';
 export { SystemService } from './services/SystemService';
 export { TodosService } from './services/TodosService';
