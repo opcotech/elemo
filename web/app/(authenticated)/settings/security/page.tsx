@@ -1,10 +1,18 @@
+import { UsersService } from '@/lib/api';
 import { ChangePasswordForm } from '@/components/settings/ChangePasswordForm';
 
 export const metadata = {
   title: 'Security settings | Elemo'
 };
 
-export default function SecuritySettings() {
+async function getData() {
+  const user = await UsersService.v1UserGet('me');
+  return { user };
+}
+
+export default async function SecuritySettings() {
+  const { user } = await getData();
+
   return (
     <div className="space-y-8 divide-y divide-gray-100">
       <section>
@@ -14,7 +22,7 @@ export default function SecuritySettings() {
         </p>
 
         <div className="mt-10 space-y-6 text-sm leading-6">
-          <ChangePasswordForm />
+          <ChangePasswordForm userId={user.id} />
         </div>
       </section>
     </div>

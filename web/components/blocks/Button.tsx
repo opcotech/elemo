@@ -19,9 +19,15 @@ const INDICATOR_SIZES = {
 };
 
 const VARIANTS = {
-  primary: 'bg-blue-500 text-white hover:bg-blue-600 disabled:bg-blue-500 focus:ring-blue-500',
-  secondary: 'bg-gray-500 text-white hover:bg-gray-600 disabled:bg-gray-500 focus:ring-gray-500',
-  accent: 'bg-green-500 text-white hover:bg-green-600 disabled:bg-green-500 focus:ring-green-500'
+  primary:
+    'bg-blue-500 text-white hover:bg-blue-600 disabled:bg-blue-500 focus:ring-blue-500 focus:ring-2 focus:ring-offset-2',
+  secondary:
+    'bg-gray-500 text-white hover:bg-gray-600 disabled:bg-gray-500 focus:ring-gray-500 focus:ring-2 focus:ring-offset-2',
+  accent:
+    'bg-green-500 text-white hover:bg-green-600 disabled:bg-green-500 focus:ring-green-500 focus:ring-2 focus:ring-offset-2',
+  ghost:
+    'bg-transparent text-gray-500 hover:bg-gray-100 disabled:bg-transparent focus:ring-gray-500 shadow-none focus:ring-2 focus:ring-offset-2',
+  link: 'text-blue-500 hover:text-blue-600 disabled:text-blue-500 shadow-none rounded-none focus:ring-0'
 };
 
 interface ButtonProps extends HTMLAttributes<HTMLButtonElement> {
@@ -58,7 +64,7 @@ export const Button = ({
         icon
           ? 'rounded-full p-0.5 text-gray-600 hover:text-black focus:ring-gray-600'
           : `${VARIANTS[variant]} ${SIZES[size]} rounded-md shadow-sm`,
-        'inline-flex items-center justify-center disabled:opacity-75 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2'
+        'inline-flex items-center justify-center disabled:opacity-75 disabled:cursor-not-allowed focus:outline-none'
       )}
     >
       {loading ? (

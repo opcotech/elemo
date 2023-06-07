@@ -12,6 +12,7 @@ export interface FormCommonProps {
   disabled?: boolean;
   register: UseFormRegister<any>;
   errors: Partial<FieldErrorsImpl>;
+  errorField?: string;
   children?: ReactNode;
   className?: string;
   onKeyDown?: (event: KeyboardEvent<HTMLInputElement>) => void;

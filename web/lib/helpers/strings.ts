@@ -16,7 +16,7 @@ export function concat(...arr: (string | undefined)[]): string {
  */
 export function formatErrorMessage(field: string, message?: string): string {
   if (!message) {
-    return `Unknown error.`;
+    return `The value of the field is invalid.`;
   }
 
   return message.replace('String', `The ${field}`) + '.';

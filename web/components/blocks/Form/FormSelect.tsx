@@ -13,9 +13,8 @@ export interface FormSelectProps extends FormCommonProps {
   multiple?: boolean;
   options: FormSelectOption[];
   selectedOptions: FormSelectOption | FormSelectOption[] | undefined;
-  setSelectedOptions: (value: SetStateAction<FormSelectOption | FormSelectOption[] | undefined>) => void;
+  setSelectedOptions: (value: SetStateAction<any>) => void;
   setFilter: (value: SetStateAction<string>) => void;
-
   placeholder?: string;
   required?: boolean;
   children?: ReactNode;
@@ -50,7 +49,7 @@ export function FormSelect(props: FormSelectProps) {
               props.disabled ? 'opacity-70 bg-gray-50 cursor-not-allowed' : '',
               'form-input w-full rounded-md border bg-white py-2 pl-3 pr-10 shadow-sm focus:outline-none focus:ring-1 sm:text-sm'
             )}
-            aria-disabled={props.disabled ? 'true' : 'false'}
+            aria-disabled={props.disabled}
             onChange={(event) => props.setFilter(event.target.value)}
             displayValue={displaySelected}
             placeholder={props.placeholder}
