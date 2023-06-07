@@ -1,6 +1,10 @@
 import { ChangePasswordForm } from '@/components/settings/ChangePasswordForm';
 
-export default function SecuritySettingsPage() {
+export const metadata = {
+  title: 'Security settings | Elemo'
+};
+
+export default function SecuritySettings() {
   return (
     <div className="space-y-8 divide-y divide-gray-100">
       <section>
