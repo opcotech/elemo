@@ -77,9 +77,9 @@ const ElemoCredentialsProvider = Credentials({
       name: `${userData.first_name} ${userData.last_name}`,
       email: userData.email,
       image: userData.picture,
-      access_token: tokenData.access_token,
-      refresh_token: tokenData.refresh_token,
-      expires_in: tokenData.expires_in
+      accessToken: tokenData.access_token,
+      accessTokenExpiresIn: tokenData.expires_in,
+      refreshToken: tokenData.refresh_token
     };
   }
 });
@@ -90,7 +90,7 @@ async function refreshAccessToken(token: JWT): Promise<JWT> {
     method: 'POST',
     body: new URLSearchParams({
       grant_type: 'refresh_token',
-      refresh_token: token.refreshToken ?? '',
+      refresh_token: token.user?.refreshToken ?? '',
       client_id: process.env.ELEMO_CLIENT_ID || '',
       client_secret: process.env.ELEMO_CLIENT_SECRET || '',
       scope: process.env.ELEMO_AUTH_SCOPES || ''
@@ -106,10 +106,18 @@ async function refreshAccessToken(token: JWT): Promise<JWT> {
   OpenAPI.TOKEN = data.access_token;
 
   return {
-    ...token,
-    accessToken: data.access_token,
-    accessTokenExpires: Date.now() + data.expires_in * 1000,
-    refreshToken: data.refresh_token ?? token.refreshToken
+    ...{
+      ...token,
+      user: {
+        id: token.user?.id ?? '',
+        name: token.user?.name ?? '',
+        email: token.user?.email ?? '',
+        image: token.user?.image ?? '',
+        accessToken: data.access_token,
+        accessTokenExpiresIn: Date.now() + data.expires_in * 1000,
+        refreshToken: data.refresh_token ?? token.user?.refreshToken
+      }
+    }
   };
 }
 
@@ -127,32 +135,25 @@ export const authOptions: NextAuthOptions = {
         return false;
       }
 
-      account.access_token = user.access_token;
+      /*account.access_token = user.access_token;
       account.refresh_token = user.refresh_token;
-      account.expires_in = user.expires_in;
+      account.expires_in = user.expires_in;*/
 
       return true;
     },
-
     async session({ session, token }) {
       return {
         ...session,
-        accessToken: token.accessToken,
         user: token.user,
         error: token.error
       };
     },
     async jwt({ token, user, account }) {
       if (account && user) {
-        return {
-          accessToken: account.access_token,
-          accessTokenExpires: (Date.now() + account.expires_in ?? 0) * 1000,
-          refreshToken: account.refresh_token,
-          user
-        };
+        return { user };
       }
 
-      if (token.accessTokenExpires && Date.now() < token.accessTokenExpires) {
+      if (Date.now() < (token.user?.accessTokenExpiresIn ?? 0)) {
         return token;
       }
 

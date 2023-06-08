@@ -16,7 +16,7 @@ OpenAPI.TOKEN = async (): Promise<string> => {
     session = await getSession();
   }
 
-  return session?.accessToken || '';
+  return session?.user?.accessToken || '';
 };
 
 export function getErrorMessage(e: unknown) {

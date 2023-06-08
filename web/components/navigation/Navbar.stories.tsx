@@ -10,11 +10,10 @@ const FAKE_SESSION: Session = {
     name: 'John Doe',
     email: 'john.doe@example.com',
     image: 'https://picsum.photos/id/433/100/100',
-    access_token: '',
-    refresh_token: '',
-    expires_in: 3600
+    accessToken: '',
+    refreshToken: '',
+    accessTokenExpiresIn: 3600
   },
-  accessToken: '',
   expires: new Date().toISOString()
 };
 
