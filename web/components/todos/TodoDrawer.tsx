@@ -92,13 +92,8 @@ export function TodoDrawer() {
     }));
   }, []);
 
-  const handleDrawerClose = useCallback(() => {
-    handleNewTodoFormClose();
-    toggleDrawer();
-  }, [toggleDrawer, handleNewTodoFormClose]);
-
   return (
-    <Drawer id="todos" title="Todo list" show={show} toggle={handleDrawerClose}>
+    <Drawer id="todos" title="Todo list" show={show} toggle={toggleDrawer}>
       <div className="mt-4 mb-8">
         <AnimatePresence>
           {showNewTodoForm ? (
