@@ -27,7 +27,7 @@ const VARIANTS = {
     'bg-green-500 text-white hover:bg-green-600 disabled:bg-green-500 focus:ring-green-500 focus:ring-2 focus:ring-offset-2',
   ghost:
     'bg-transparent text-gray-500 hover:bg-gray-100 disabled:bg-transparent focus:ring-gray-500 shadow-none focus:ring-2 focus:ring-offset-2',
-  link: 'text-blue-500 hover:text-blue-600 disabled:text-blue-500 shadow-none rounded-none focus:ring-0'
+  link: 'text-blue-500 hover:text-blue-600 disabled:text-blue-500 focus:ring-0'
 };
 
 interface ButtonProps extends HTMLAttributes<HTMLButtonElement> {
@@ -63,7 +63,8 @@ export const Button = ({
         className,
         icon
           ? 'rounded-full p-0.5 text-gray-600 hover:text-black focus:ring-gray-600'
-          : `${VARIANTS[variant]} ${SIZES[size]} rounded-md shadow-sm`,
+          : `${VARIANTS[variant]} ${SIZES[size]}`,
+        icon || variant == 'link' ? 'rounded-none shadow-none' : 'rounded-md shadow-sm',
         'inline-flex items-center justify-center disabled:opacity-75 disabled:cursor-not-allowed focus:outline-none'
       )}
     >
