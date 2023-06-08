@@ -24,7 +24,18 @@ export default async function Settings() {
         <p className="mt-1 text-sm leading-6 text-gray-500">This information will be displayed on your profile.</p>
 
         <div className="mt-10 space-y-6 text-sm leading-6">
-          <UpdateUserProfileForm userId={user.id} defaultValues={user} />
+          <UpdateUserProfileForm
+            userId={user.id}
+            defaultValues={{
+              username: user.username,
+              first_name: user.first_name || undefined,
+              last_name: user.last_name || undefined,
+              picture: user.picture || undefined,
+              title: user.title || undefined,
+              bio: user.bio || undefined,
+              languages: user.languages
+            }}
+          />
         </div>
       </section>
 
@@ -35,7 +46,14 @@ export default async function Settings() {
         </p>
 
         <div className="mt-10 space-y-6 text-sm leading-6">
-          <UpdateUserContactForm userId={user.id} defaultValues={user} />
+          <UpdateUserContactForm
+            userId={user.id}
+            defaultValues={{
+              email: user.email,
+              phone: user.phone || undefined,
+              links: user.links || undefined
+            }}
+          />
         </div>
       </section>
 
@@ -46,7 +64,12 @@ export default async function Settings() {
         </p>
 
         <div className="mt-10 space-y-6 text-sm leading-6">
-          <UpdateUserAddressForm userId={user.id} defaultValues={user} />
+          <UpdateUserAddressForm
+            userId={user.id}
+            defaultValues={{
+              address: user.address || undefined
+            }}
+          />
         </div>
       </section>
     </div>
