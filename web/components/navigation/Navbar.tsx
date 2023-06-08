@@ -60,24 +60,22 @@ export function Navbar({ navigation, userNavigation, hasTodos, hasNotifications 
                 </div>
                 <div className="hidden sm:-my-px sm:ml-6 lg:ml-10 sm:flex sm:space-x-4">
                   {navigation.map((item) => (
-                    <>
-                      <Link
-                        id={item.id}
-                        key={item.id}
-                        href={item.href}
-                        decorated={false}
-                        className={concat(
-                          isCurrent(item.href)
-                            ? 'border-blue-500 text-blue-500'
-                            : 'border-transparent  hover:border-gray-300',
-                          'inline-flex items-center px-1 pt-2 border-b-2 text-sm font-medium'
-                        )}
-                        aria-current={isCurrent(item.href) ? 'page' : undefined}
-                        {...(!item.prefetch && { prefetch: item.prefetch })}
-                      >
-                        {item.label}
-                      </Link>
-                    </>
+                    <Link
+                      id={item.id}
+                      key={item.id}
+                      href={item.href}
+                      decorated={false}
+                      className={concat(
+                        isCurrent(item.href)
+                          ? 'border-blue-500 text-blue-500'
+                          : 'border-transparent  hover:border-gray-300',
+                        'inline-flex items-center px-1 pt-2 border-b-2 text-sm font-medium'
+                      )}
+                      aria-current={isCurrent(item.href) ? 'page' : undefined}
+                      {...(!item.prefetch && { prefetch: item.prefetch })}
+                    >
+                      {item.label}
+                    </Link>
                   ))}
                 </div>
               </div>
