@@ -84,6 +84,7 @@ export function UpdateUserProfileForm({ userId, defaultValues }: UpdateUserProfi
         });
 
   async function selectLanguages(languages: FormSelectOption[]) {
+    console.log('languages', languages);
     setSelectedLanguages(languages);
     setValue(
       'languages',

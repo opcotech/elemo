@@ -7,8 +7,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
 import { Button } from '@/components/blocks/Button';
 import { FormInput } from '@/components/blocks/Form/FormInput';
-import { Icon } from '@/components/blocks/Icon';
 import useStore from '@/store';
+import { Badge } from '@/components/blocks/Badge';
 
 type UpdateUserContactData = {
   email: string;
@@ -116,21 +116,11 @@ export function UpdateUserContactForm({ userId, defaultValues }: UpdateUserConta
           addonClassName={'hover:bg-gray-50'}
         >
           {links && (
-            <ul className="px-2 mt-4">
-              {links.map((link: string) => (
-                <li key={link} className="py-1 flex items-center">
-                  <span className="flex text-sm font-medium text-gray-900 pr-2">{link}</span>
-                  <button onClick={() => handleRemoveLink(link)}>
-                    <Icon
-                      size={'xs'}
-                      variant="XMarkIcon"
-                      className="flex font-medium cursor-pointer text-red-600"
-                      aria-hidden="true"
-                    />
-                  </button>
-                </li>
+            <div className="flex mt-4 space-x-2">
+              {links.map((link: string, i: number) => (
+                <Badge key={i} title={link} className={'mb-2'} dismissible onDismiss={() => handleRemoveLink(link)} />
               ))}
-            </ul>
+            </div>
           )}
         </FormInput>
       </div>

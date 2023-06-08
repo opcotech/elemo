@@ -3,6 +3,7 @@ import type { ReactNode, SetStateAction } from 'react';
 import { concat, formatErrorMessage } from '@/lib/helpers';
 import { type FormCommonProps, FormFieldContainer } from './FormFieldContainer';
 import { Icon } from '@/components/blocks/Icon';
+import { Badge } from '@/components/blocks/Badge';
 
 export interface FormSelectOption {
   label: string;
@@ -24,12 +25,13 @@ export function FormSelect(props: FormSelectProps) {
   const error = props.errors[props.name];
 
   const displaySelected = (value?: FormSelectOption): string => {
-    if (props.multiple && props.selectedOptions instanceof Array) {
-      return [...(props.selectedOptions as FormSelectOption[])].map((item) => item.label).join(', ');
-    }
-
-    return value?.label || '';
+    return props.multiple ? '' : value?.label || '';
   };
+
+  function dismissSelection(item: FormSelectOption) {
+    if (!props.multiple) return;
+    props.setSelectedOptions((props.selectedOptions as FormSelectOption[]).filter((i) => i.value !== item.value));
+  }
 
   return (
     <FormFieldContainer {...props}>
@@ -107,6 +109,20 @@ export function FormSelect(props: FormSelectProps) {
           </Combobox.Options>
         </div>
       </Combobox>
+
+      {props.multiple && props.selectedOptions && (
+        <div className="flex mt-2 space-x-2">
+          {(props.selectedOptions as FormSelectOption[]).map((item) => (
+            <Badge
+              key={item.value}
+              title={item.label}
+              className={'mb-2'}
+              dismissible
+              onDismiss={() => dismissSelection(item)}
+            />
+          ))}
+        </div>
+      )}
 
       {error && (
         <p id={`${props.name}-error`} className="mt-2 text-sm text-red-600">
