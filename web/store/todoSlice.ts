@@ -62,7 +62,7 @@ export function sortTodos(items: Todo[]): Todo[] {
 }
 
 export const createTodoSlice: StateCreator<TodoSliceState & Partial<MessageSliceState>> = (set, get) => ({
-  todos: [],
+  todos: undefined,
   fetchingTodos: false,
   fetchTodos: async ({ offset = 0, limit = 100, completed }: FetchTodosParams = {}) => {
     let todos: Todo[] = [];
