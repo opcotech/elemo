@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/Shopify/gomail v0.0.0-20220729171026-0784ece65e69
 	github.com/deepmap/oapi-codegen v1.12.4
-	github.com/gabor-boros/go-oauth2-pg v0.0.0-20230405055320-79dc335c0b7e
+	github.com/gabor-boros/go-oauth2-pg v0.0.0-20230608073400-a93883d73d34
 	github.com/getkin/kin-openapi v0.117.0
 	github.com/go-chi/chi/v5 v5.0.8
 	github.com/go-chi/cors v1.2.1
