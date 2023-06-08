@@ -15,7 +15,9 @@ export const Sample: Story = {
   args: {
     title: 'Sample',
     size: 'md',
-    variant: 'neutral'
+    variant: 'neutral',
+    dismissible: false,
+    onDismiss: () => alert('Dismissed!')
   }
 };
 
@@ -56,5 +58,15 @@ export const Danger: Story = {
     title: 'Sample',
     size: 'md',
     variant: 'danger'
+  }
+};
+
+export const Dismissible: Story = {
+  args: {
+    title: 'Sample',
+    size: 'md',
+    variant: 'neutral',
+    dismissible: true,
+    onDismiss: () => alert('Dismissed!')
   }
 };
