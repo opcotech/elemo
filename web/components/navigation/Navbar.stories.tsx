@@ -13,7 +13,7 @@ const FAKE_SESSION: Session = {
     image: 'https://picsum.photos/id/433/100/100',
     accessToken: '',
     refreshToken: '',
-    accessTokenExpiresIn: 3600
+    accessTokenExpiresAt: 3600
   },
   expires: new Date().toISOString()
 };

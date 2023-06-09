@@ -78,7 +78,7 @@ const ElemoCredentialsProvider = Credentials({
       email: userData.email,
       image: userData.picture,
       accessToken: tokenData.access_token,
-      accessTokenExpiresIn: tokenData.expires_in,
+      accessTokenExpiresAt: Date.now() + tokenData.expires_in * 1000,
       refreshToken: tokenData.refresh_token
     };
   }
@@ -114,7 +114,7 @@ async function refreshAccessToken(token: JWT): Promise<JWT> {
         email: token.user?.email ?? '',
         image: token.user?.image ?? '',
         accessToken: data.access_token,
-        accessTokenExpiresIn: Date.now() + data.expires_in * 1000,
+        accessTokenExpiresAt: Date.now() + data.expires_in * 1000,
         refreshToken: data.refresh_token ?? token.user?.refreshToken
       }
     }
@@ -135,10 +135,6 @@ export const authOptions: NextAuthOptions = {
         return false;
       }
 
-      /*account.access_token = user.access_token;
-      account.refresh_token = user.refresh_token;
-      account.expires_in = user.expires_in;*/
-
       return true;
     },
     async session({ session, token }) {
@@ -153,7 +149,7 @@ export const authOptions: NextAuthOptions = {
         return { user };
       }
 
-      if (Date.now() < (token.user?.accessTokenExpiresIn ?? 0)) {
+      if (Date.now() < (token.user?.accessTokenExpiresAt ?? 0)) {
         return token;
       }
 

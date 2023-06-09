@@ -2,7 +2,7 @@ import type { DefaultSession, DefaultUser } from 'next-auth';
 
 interface ElemoUser extends DefaultUser {
   accessToken: string;
-  accessTokenExpiresIn: number;
+  accessTokenExpiresAt: number;
   refreshToken: string;
 }
 
