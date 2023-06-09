@@ -1,6 +1,8 @@
 import { UsersService } from '@/lib/api';
 import { ChangePasswordForm } from '@/components/settings/ChangePasswordForm';
 
+export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
 export const metadata = {
   title: 'Security settings | Elemo'
 };
