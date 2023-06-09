@@ -4,21 +4,24 @@ import { concat } from '@/lib/helpers';
 
 export interface FormSwitchProps {
   label: string;
+  name?: string;
   description?: string;
   checked?: boolean;
   disabled?: boolean;
+  grid?: boolean;
   onChange?: (checked: boolean) => void;
 }
 
-export function FormSwitch({ label, description, checked, disabled, onChange }: FormSwitchProps) {
+export function FormSwitch({ label, name, description, checked, disabled, grid = true, onChange }: FormSwitchProps) {
   return (
-    <div className="sm:grid sm:grid-cols-3 sm:items-start sm:gap-4">
-      <div className="mt-1 sm:col-start-2 sm:col-span-2 sm:mt-0">
+    <div className={concat(grid ? 'sm:grid sm:grid-cols-12 sm:items-start sm:gap-3' : '')}>
+      <div className={concat(grid ? 'mt-1 sm:col-span-9 sm:col-start-4 sm:mt-0' : '')}>
         <Switch.Group
           as="div"
           className={concat('flex space-x-6 justify-between', description ? 'items-start' : 'items-center')}
         >
           <Switch
+            name={name}
             onChange={onChange}
             disabled={disabled}
             className={concat(

@@ -69,7 +69,8 @@ export const $User = {
       description: `Working address of the user.`,
       isRequired: true,
       isNullable: true,
-      maxLength: 500
+      maxLength: 500,
+      minLength: 3
     },
     phone: {
       type: 'string',

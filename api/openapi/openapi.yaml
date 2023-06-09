@@ -166,6 +166,7 @@ components:
           nullable: true
         address:
           type: string
+          minLength: 3
           maxLength: 500
           example: Remote
           description: Working address of the user.
@@ -986,6 +987,7 @@ components:
                 example: I'm working smart on software.
               address:
                 type: string
+                minLength: 3
                 maxLength: 500
                 example: Remote
                 description: Working address of the user.
@@ -1093,6 +1095,7 @@ components:
                 nullable: true
               address:
                 type: string
+                minLength: 3
                 maxLength: 500
                 example: Remote
                 description: Working address of the user.

@@ -7,13 +7,19 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/blocks/Button';
 import { FormInput } from '@/components/blocks/Form/FormInput';
 import useStore from '@/store';
+import { FormSwitch } from '@/components/blocks/Form/FormSwitch';
+import { useState } from 'react';
 
 type UpdateUserAddressData = {
   address?: string;
 };
 
 const UPDATE_ADDRESS_SCHEMA = z.object({
-  address: z.string().max($User.properties.address.maxLength, 'Address is too long').optional()
+  address: z
+    .string()
+    .min($User.properties.address.minLength, 'Address is too short')
+    .max($User.properties.address.maxLength, 'Address is too long')
+    .optional()
 });
 
 export interface UpdateUserAddressFormProps {
@@ -23,9 +29,13 @@ export interface UpdateUserAddressFormProps {
 
 export function UpdateUserAddressForm({ userId, defaultValues }: UpdateUserAddressFormProps) {
   const addMessage = useStore((state) => state.addMessage);
+  const [previousAddress, setPreviousAddress] = useState<string | undefined>(defaultValues?.address);
+  const [isRemote, setIsRemote] = useState(defaultValues?.address === 'Remote');
 
   const {
     register,
+    setValue,
+    getValues,
     handleSubmit,
     reset,
     formState: { errors, isSubmitting }
@@ -33,6 +43,19 @@ export function UpdateUserAddressForm({ userId, defaultValues }: UpdateUserAddre
     defaultValues,
     resolver: zodResolver(UPDATE_ADDRESS_SCHEMA)
   });
+
+  async function onIsRemoteChange() {
+    setIsRemote(!isRemote);
+
+    // If the previous value was remote, set the address to the previous address
+    // Otherwise, set the address to remote.
+    if (!isRemote) {
+      setPreviousAddress(getValues('address'));
+      setValue('address', 'Remote');
+    } else {
+      setValue('address', previousAddress);
+    }
+  }
 
   async function onSubmit(data: UpdateUserAddressData) {
     try {
@@ -52,9 +75,19 @@ export function UpdateUserAddressForm({ userId, defaultValues }: UpdateUserAddre
           name="address"
           label="Address"
           placeholder="Remote"
+          disabled={isRemote}
           register={register}
           errors={errors}
           required={!UPDATE_ADDRESS_SCHEMA.shape.address.isOptional()}
+        />
+        <FormSwitch
+          label="Working remotely"
+          description={
+            'If you are working remotely, your address won&apos;t be displayed on' +
+            'your profile and your location will be set to Remote.'
+          }
+          checked={isRemote}
+          onChange={onIsRemoteChange}
         />
       </div>
       <div className="pt-5 flex justify-end">

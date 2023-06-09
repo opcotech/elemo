@@ -67,7 +67,7 @@ type User struct {
 	Title       string     `json:"title" validate:"omitempty,min=3,max=50"`
 	Bio         string     `json:"bio" validate:"omitempty,min=10,max=500"`
 	Phone       string     `json:"phone" validate:"omitempty,min=7,max=16"`
-	Address     string     `json:"address" validate:"omitempty,min=10,max=500"`
+	Address     string     `json:"address" validate:"omitempty,min=3,max=500"`
 	Links       []string   `json:"links" validate:"omitempty,dive,url"`
 	Languages   []Language `json:"languages" validate:"omitempty,dive"`
 	Documents   []ID       `json:"documents" validate:"omitempty,dive"`

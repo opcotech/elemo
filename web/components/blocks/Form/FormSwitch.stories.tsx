@@ -10,8 +10,10 @@ const meta: Meta<typeof FormSwitch> = {
   tags: ['autodocs'],
   args: {
     label: 'Label',
+    name: 'switch',
     description: 'A description to help the user.',
-    disabled: false
+    disabled: false,
+    grid: false
   }
 };
 
