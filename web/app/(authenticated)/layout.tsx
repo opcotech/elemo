@@ -7,10 +7,7 @@ import ErrorBoundary from '@/components/ErrorBoundary';
 import Provider from '@/components/Provider';
 
 import '../globals.css';
-import useStore from '@/store';
 
-export const dynamic = 'force-dynamic';
-export const fetchCache = 'force-no-store';
 export const metadata = {
   title: 'Elemo',
   description: 'The next-generation project management tool'
@@ -45,39 +42,18 @@ const userNavigation: UserNavigationItem[] = [
   { id: 'menu-item-logout', label: 'Logout', href: '/api/auth/signout', prefetch: false }
 ];
 
-async function getData() {
-  await Promise.any([useStore.getState().fetchTodos()]);
-
-  const todos = useStore.getState().todos || [];
-  const notifications: any[] = [];
-
-  return {
-    todos,
-    hasTodos: todos.filter((t) => !t.completed).length > 0,
-    notifications,
-    hasNotifications: notifications.length > 0
-  };
-}
-
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const { todos, hasTodos, notifications, hasNotifications } = await getData();
-
   return (
     <html lang="en" className={`h-full ${lato.className} ${workSans.className}`}>
       <body className={'h-full'}>
         <ErrorBoundary>
           <Provider>
-            <Navbar
-              navigation={navigation}
-              userNavigation={userNavigation}
-              hasTodos={hasTodos}
-              hasNotifications={hasNotifications}
-            />
+            <Navbar navigation={navigation} userNavigation={userNavigation} />
 
             {children}
 
             <TodoDrawer />
-            <NotificationDrawer notifications={notifications} />
+            <NotificationDrawer />
             <MessageArea />
           </Provider>
         </ErrorBoundary>

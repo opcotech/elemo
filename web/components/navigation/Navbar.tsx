@@ -1,6 +1,6 @@
 'use client';
 
-import { Fragment, useMemo } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { Disclosure, Popover, Transition } from '@headlessui/react';
 import { useSession } from 'next-auth/react';
@@ -25,15 +25,22 @@ export interface UserNavigationItem extends NavigationItem {
 export interface NavbarProps {
   navigation: NavigationItem[];
   userNavigation: UserNavigationItem[];
-  hasTodos: boolean;
-  hasNotifications: boolean;
 }
 
-export function Navbar({ navigation, userNavigation, hasTodos, hasNotifications }: NavbarProps) {
-  const [toggleTodoDrawer, toggleNotificationDrawer] = useStore((state) => [
-    () => state.toggleDrawer('todos'),
-    () => state.toggleDrawer('notifications')
-  ]);
+export function Navbar({ navigation, userNavigation }: NavbarProps) {
+  const [hasTodos, setHasTodos] = useState(false);
+  const [hasNotifications, setHasNotifications] = useState(false);
+
+  const [todos, notifications, fetchingTodos, fetchTodos, toggleTodoDrawer, toggleNotificationDrawer] = useStore(
+    (state) => [
+      state.todos,
+      undefined,
+      state.fetchingTodos,
+      state.fetchTodos,
+      () => state.toggleDrawer('todos'),
+      () => state.toggleDrawer('notifications')
+    ]
+  );
 
   const { data: session } = useSession();
   const user = session?.user;
@@ -47,6 +54,14 @@ export function Navbar({ navigation, userNavigation, hasTodos, hasNotifications 
   const userInitials = useMemo(() => {
     return getInitials(user?.name);
   }, [user?.name]);
+
+  useEffect(() => {
+    if (!fetchingTodos && !todos) fetchTodos();
+  }, [fetchingTodos, fetchTodos, todos]);
+
+  useEffect(() => {
+    if (todos) setHasTodos(todos.some((t) => !t.completed));
+  }, [todos]);
 
   return (
     <Disclosure id="navbar" as="nav" className="bg-gray-50 shadow-sm z-20">
