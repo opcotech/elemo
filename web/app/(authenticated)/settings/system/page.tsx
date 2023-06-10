@@ -2,7 +2,6 @@ import { toCapitalCase } from '@/lib/helpers';
 import { ApiError, SystemLicense, SystemService, SystemVersion } from '@/lib/api';
 
 export const dynamic = 'force-dynamic';
-export const fetchCache = 'force-no-store';
 export const metadata = {
   title: 'System settings | Elemo'
 };

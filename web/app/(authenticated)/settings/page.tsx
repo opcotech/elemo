@@ -4,7 +4,6 @@ import { UpdateUserContactForm } from '@/components/settings/UpdateUserContactFo
 import { UpdateUserAddressForm } from '@/components/settings/UpdateUserAddressForm';
 
 export const dynamic = 'force-dynamic';
-export const fetchCache = 'force-no-store';
 export const metadata = {
   title: 'Settings | Elemo'
 };
