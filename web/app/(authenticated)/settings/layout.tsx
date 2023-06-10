@@ -14,7 +14,7 @@ const sidebarItems: NavigationItem[] = [
 
 export default async function SettingsLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="max-w-6xl mx-auto py-20 lg:flex lg:gap-x-8">
+    <div className="max-w-6xl mx-auto py-16 lg:flex lg:gap-x-8">
       <Sidebar className="lg:w-1/5 lg:py-2 lg:px-2" navigation={sidebarItems} />
       <main className="lg:w-4/5 py-2 px-2">{children}</main>
     </div>
