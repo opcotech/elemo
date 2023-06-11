@@ -92,8 +92,6 @@ github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSs
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/dchest/uniuri v0.0.0-20220929095258-3027df40b6ce h1:uHEdbpdf5QdO6Koxr10tA+p85JPbLHzwG3+uGysF0WY=
-github.com/deepmap/oapi-codegen v1.13.0 h1:cnFHelhsRQbYvanCUAbRSn/ZpkUb1HPRlQcu8YqSORQ=
-github.com/deepmap/oapi-codegen v1.13.0/go.mod h1:Amy7tbubKY9qkZOXqymI3Z6xSbndmu+atMJheLdyg44=
 github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f h1:lO4WD4F/rVNCu3HqELle0jiPLLBs70cWOduZpkS1E78=
 github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f/go.mod h1:cuUVRXasLTGF7a8hSLbxyZXjz+1KgoB3wDUb6vlszIc=
 github.com/docker/distribution v2.8.2+incompatible h1:T3de5rq0dB1j30rp0sA2rER+m322EBzniBPB6ZIzuh8=
@@ -122,6 +120,8 @@ github.com/fsnotify/fsnotify v1.6.0 h1:n+5WquG0fcWoWp6xPWfHdbskMCQaFnG6PfBrh1Ky4
 github.com/fsnotify/fsnotify v1.6.0/go.mod h1:sl3t1tCWJFWoRz9R8WJCbQihKKwmorjAbSClcnxKAGw=
 github.com/gabor-boros/go-oauth2-pg v0.0.0-20230608073400-a93883d73d34 h1:eqC5gBVrXoCkIkznqg9MrjNsIugdMWZxFdABkJPXXaM=
 github.com/gabor-boros/go-oauth2-pg v0.0.0-20230608073400-a93883d73d34/go.mod h1:h4MbeHI2p8He//uP9FnbxIYivjGMqkTvKnQZitSuBWU=
+github.com/gabor-boros/oapi-codegen v0.0.0-20230610171610-c23376c09f10 h1:ApXfsx7fFczxV4NKvL3gigEZe6Eyop7T+Z+LGd10YEQ=
+github.com/gabor-boros/oapi-codegen v0.0.0-20230610171610-c23376c09f10/go.mod h1:ncDiT8OPVSa/QY0Gkv+Sqz+DB5rm+pmvyeMW5WwjeCA=
 github.com/gabriel-vasile/mimetype v1.4.2 h1:w5qFW6JKBz9Y393Y4q372O9A7cUSequkh1Q7OhCmWKU=
 github.com/gabriel-vasile/mimetype v1.4.2/go.mod h1:zApsH/mKG4w07erKIaJPFiX0Tsq9BFQgN3qGY5GnNgA=
 github.com/gavv/httpexpect v2.0.0+incompatible h1:1X9kcRshkSKEjNJJxX9Y9mQ5BRfbxU5kORdjhlA1yX8=
