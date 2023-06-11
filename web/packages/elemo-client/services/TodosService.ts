@@ -57,7 +57,7 @@ export class TodosService {
             /**
              * Description of the todo item.
              */
-            description?: string;
+            description?: string | null;
             priority: TodoPriority;
             /**
              * ID of the user who owns the todo item.
@@ -66,7 +66,7 @@ export class TodosService {
             /**
              * Completion due date of the todo item.
              */
-            due_date?: string;
+            due_date?: string | null;
         },
     ): CancelablePromise<{
         /**
@@ -158,7 +158,7 @@ export class TodosService {
             /**
              * Description of the todo item.
              */
-            description?: string;
+            description?: string | null;
             priority?: TodoPriority;
             /**
              * Completion status of the todo item.
@@ -171,7 +171,7 @@ export class TodosService {
             /**
              * Completion due date of the todo item.
              */
-            due_date?: string;
+            due_date?: string | null;
         },
     ): CancelablePromise<Todo> {
         return __request(OpenAPI, {

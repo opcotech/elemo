@@ -12,6 +12,7 @@ import { Link } from '@/components/blocks/Link';
 import { concat, formatErrorMessage, toCapitalCase } from '@/lib/helpers';
 import useStore from '@/store';
 import { $Todo, Todo, TodoPriority } from '@/lib/api';
+import { normalizeData } from '@/lib/helpers/schema';
 
 const PRIORITY_ORDER: TodoPriority[] = [
   TodoPriority.NORMAL,
@@ -40,7 +41,7 @@ const CREATE_TODO_SCHEMA = z.object({
     .or(z.literal('')),
   completed: z.boolean().default(false),
   priority: z.enum([PRIORITY_ORDER[0], ...PRIORITY_ORDER.slice(1)]).default(TodoPriority.NORMAL),
-  due_date: z.string().optional()
+  due_date: z.string().optional().or(z.literal(''))
 });
 
 export interface NewTodoFormProps {
@@ -91,16 +92,9 @@ export function TodoForm(props: NewTodoFormProps) {
     }
 
     if (!todoId) {
-      await createTodo({
-        ...todo,
-        description: todo.description?.trim() || undefined,
-        due_date: todo.due_date || undefined
-      });
+      await createTodo(normalizeData(todo, CREATE_TODO_SCHEMA));
     } else {
-      await updateTodo(todoId, {
-        ...todo,
-        description: todo.description?.trim() || undefined
-      });
+      await updateTodo(todoId, normalizeData(todo, CREATE_TODO_SCHEMA));
       handleCancel();
     }
 

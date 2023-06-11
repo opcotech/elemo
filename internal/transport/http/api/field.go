@@ -1,25 +1,42 @@
 package api
 
 import (
+	"reflect"
+
 	"github.com/goccy/go-json"
 
 	"github.com/opcotech/elemo/internal/pkg/convert"
 )
 
+const nullProtectedValueTag = "null_protected_value"
+
+type protected[T any] struct {
+	Value *T `json:"null_protected_value"`
+}
+
+// Optional is a wrapper type for optional fields in the JSON API.
 type Optional[T any] struct {
 	Defined bool `json:"defined"`
-	Value   *T   `json:"value,omitempty"`
+	Value   *T   `json:"value"`
 }
 
 // MarshalJSON is implemented by deferring to the wrapped type (T).
 func (o Optional[T]) MarshalJSON() ([]byte, error) {
-	if o.Defined && o.Value == nil {
-		var zero T
-		o.Value = &zero
-	}
 	if !o.Defined {
 		return []byte("null"), nil
 	}
+
+	if reflect.ValueOf(o.Value).Kind() == reflect.Ptr && o.Value == nil {
+		return json.Marshal(protected[T]{
+			Value: o.Value,
+		})
+	}
+
+	if o.Value == nil {
+		var zero T
+		o.Value = &zero
+	}
+
 	return json.Marshal(o.Value)
 }
 
@@ -43,6 +60,13 @@ func ConvertRequestToMap(input any) (map[string]any, error) {
 	for k, v := range res {
 		if v == nil {
 			delete(res, k)
+		}
+
+		// Refill the value if it is a pointer to a zero value
+		if reflect.ValueOf(v).Kind() == reflect.Map {
+			if nullProtected, ok := v.(map[string]any)[nullProtectedValueTag]; ok {
+				res[k] = nullProtected
+			}
 		}
 	}
 

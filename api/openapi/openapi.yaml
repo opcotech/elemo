@@ -1165,6 +1165,9 @@ components:
                 maxLength: 500
                 example: I'll make the world a better place today.
                 description: Description of the todo item.
+                nullable: true
+                x-go-type: Optional[string]
+                x-go-type-skip-optional-pointer: true
               priority:
                 $ref: '#/components/schemas/TodoPriority'
               owned_by:
@@ -1172,7 +1175,11 @@ components:
                 description: ID of the user who owns the todo item.
               due_date:
                 type: string
+                format: date-time
                 description: Completion due date of the todo item.
+                nullable: true
+                x-go-type: Optional[*time.Time]
+                x-go-type-skip-optional-pointer: true
             required:
               - title
               - priority
@@ -1195,6 +1202,9 @@ components:
                 maxLength: 500
                 example: I'll make the world a better place today.
                 description: Description of the todo item.
+                nullable: true
+                x-go-type: Optional[string]
+                x-go-type-skip-optional-pointer: true
               priority:
                 $ref: '#/components/schemas/TodoPriority'
               completed:
@@ -1205,7 +1215,11 @@ components:
                 description: ID of the user who owns the todo item.
               due_date:
                 type: string
+                format: date-time
                 description: Completion due date of the todo item.
+                nullable: true
+                x-go-type: Optional[*time.Time]
+                x-go-type-skip-optional-pointer: true
     OrganizationCreate:
       content:
         application/json:

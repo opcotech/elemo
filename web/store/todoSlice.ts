@@ -19,15 +19,15 @@ export type FetchTodosParams = {
 
 export type CreateTodoParams = {
   title: string;
-  description?: string;
+  description?: string | null;
   priority: TodoPriority;
   owned_by: string;
-  due_date?: string;
+  due_date?: string | null;
 };
 
 export type UpdateTodoParams = {
   title?: string;
-  description?: string;
+  description?: string | null;
   priority?: TodoPriority;
   completed?: boolean;
   owned_by?: string;
@@ -111,7 +111,7 @@ export const createTodoSlice: StateCreator<TodoSliceState & Partial<MessageSlice
     let updated: Todo;
 
     try {
-      updated = await TodosService.v1TodoUpdate(id, { ...todo, due_date: todo.due_date || '' });
+      updated = await TodosService.v1TodoUpdate(id, todo);
       get().addMessage?.({ type: 'success', title: 'Todo updated', message: `Todo "${id}" updated successfully.` });
     } catch (e) {
       return get().addMessage?.({ type: 'error', title: 'Failed to update todo', message: getErrorMessage(e) });
