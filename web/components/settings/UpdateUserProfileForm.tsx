@@ -11,6 +11,7 @@ import { Button } from '@/components/blocks/Button';
 import { FormInput } from '@/components/blocks/Form/FormInput';
 import { FormTextarea } from '@/components/blocks/Form/FormTextarea';
 import useStore from '@/store';
+import { normalizeData } from '@/lib/helpers/schema';
 
 type UpdateUserProfileData = {
   username: string;
@@ -31,13 +32,21 @@ const UPDATE_PROFILE_SCHEMA = z.object({
     .string()
     .min($User.properties.first_name.minLength, 'First name is too short')
     .max($User.properties.first_name.maxLength, 'First name is too long')
-    .optional(),
+    .optional()
+    .or(z.literal('')),
   last_name: z
     .string()
     .min($User.properties.last_name.minLength, 'Last name is too short')
     .max($User.properties.last_name.maxLength, 'Last name is too long')
-    .optional(),
-  bio: z.string().max($User.properties.bio.maxLength, 'Bio is too long').optional(),
+    .optional()
+    .or(z.literal('')),
+  title: z
+    .string()
+    .min($User.properties.title.minLength, 'Title is too short')
+    .max($User.properties.title.maxLength, 'Title is too long')
+    .optional()
+    .or(z.literal('')),
+  bio: z.string().max($User.properties.bio.maxLength, 'Bio is too long').optional().or(z.literal('')),
   languages: z.array(z.string()).optional()
 });
 
@@ -94,7 +103,7 @@ export function UpdateUserProfileForm({ userId, defaultValues }: UpdateUserProfi
 
   async function onSubmit(data: UpdateUserProfileData) {
     try {
-      await UsersService.v1UserUpdate(userId, data);
+      await UsersService.v1UserUpdate(userId, normalizeData(data, UPDATE_PROFILE_SCHEMA));
       addMessage({ type: 'success', title: 'Profile updated', message: 'Your profile has been updated successfully.' });
     } catch (e) {
       addMessage({ type: 'error', title: 'Failed to update profile', message: getErrorMessage(e) });
@@ -132,6 +141,15 @@ export function UpdateUserProfileForm({ userId, defaultValues }: UpdateUserProfi
           register={register}
           errors={errors}
           required={!UPDATE_PROFILE_SCHEMA.shape.last_name.isOptional()}
+        />
+        <FormInput
+          type="text"
+          name="title"
+          label="Title"
+          placeholder="Senior Software Engineer"
+          register={register}
+          errors={errors}
+          required={!UPDATE_PROFILE_SCHEMA.shape.title.isOptional()}
         />
         <FormTextarea
           name="bio"

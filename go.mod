@@ -2,6 +2,8 @@ module github.com/opcotech/elemo
 
 go 1.20
 
+replace github.com/deepmap/oapi-codegen => github.com/gabor-boros/oapi-codegen v0.0.0-20230610171610-c23376c09f10
+
 require (
 	github.com/Shopify/gomail v0.0.0-20220729171026-0784ece65e69
 	github.com/deepmap/oapi-codegen v1.13.0
@@ -13,6 +15,7 @@ require (
 	github.com/go-playground/validator/v10 v10.14.1
 	github.com/go-redis/cache/v9 v9.0.0
 	github.com/go-session/session v3.1.2+incompatible
+	github.com/goccy/go-json v0.10.2
 	github.com/google/uuid v1.3.0
 	github.com/hibiken/asynq v0.24.1
 	github.com/hyperboloide/lk v0.0.0-20230325114855-ce3fecd34798
@@ -64,7 +67,6 @@ require (
 	github.com/go-openapi/swag v0.22.3 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
-	github.com/goccy/go-json v0.10.2 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
 	github.com/golang/protobuf v1.5.3 // indirect

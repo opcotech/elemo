@@ -1,12 +1,13 @@
 package main
 
 import (
-	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
 	"log"
 	"os"
+
+	"github.com/goccy/go-json"
 
 	"github.com/hyperboloide/lk"
 

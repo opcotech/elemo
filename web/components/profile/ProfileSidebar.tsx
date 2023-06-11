@@ -66,17 +66,21 @@ export function ProfileSidebar({ user, isCurrentUser }: ProfileSidebarProps) {
           )}
         </dl>
       </section>
-      <Divider className={'pb-4'} />
-      <section className={'my-4'}>
-        <dl className={'space-y-3'}>
-          <div className="px-4 sm:px-0">
-            <dt className="text-sm font-medium leading-6 text-gray-900">Address</dt>
-            <dd className="mt-0.5 text-sm leading-6 text-gray-700 sm:mt-1">
-              <p>{user.address ? user.address : 'No address set.'}</p>
-            </dd>
-          </div>
-        </dl>
-      </section>
+      {user.address && (
+        <>
+          <Divider className={'pb-4'} />
+          <section className={'my-4'}>
+            <dl className={'space-y-3'}>
+              <div className="px-4 sm:px-0">
+                <dt className="text-sm font-medium leading-6 text-gray-900">Address</dt>
+                <dd className="mt-0.5 text-sm leading-6 text-gray-700 sm:mt-1">
+                  <p>{user.address ? user.address : 'No address set.'}</p>
+                </dd>
+              </div>
+            </dl>
+          </section>
+        </>
+      )}
       {user.languages.length > 0 && (
         <>
           <Divider className={'pb-4'} />
@@ -113,25 +117,29 @@ export function ProfileSidebar({ user, isCurrentUser }: ProfileSidebarProps) {
           </section>
         </>
       )}
-      <Divider className={'pb-4'} />
-      <section className={'mt-4'}>
-        <dl className={'space-y-3'}>
-          <div className="px-4 sm:px-0">
-            <dt className="text-sm font-medium leading-6 text-gray-900">Links</dt>
-            <dd className="mt-0.5 text-sm leading-6 text-gray-700 sm:mt-1">
-              <ul className={'list-disc list-inside'}>
-                {user.links?.map((link) => (
-                  <li key={link}>
-                    <Link href={link} className={'-ml-1'}>
-                      {link}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </dd>
-          </div>
-        </dl>
-      </section>
+      {user.links && user.links.length > 0 && (
+        <>
+          <Divider className={'pb-4'} />
+          <section className={'mt-4'}>
+            <dl className={'space-y-3'}>
+              <div className="px-4 sm:px-0">
+                <dt className="text-sm font-medium leading-6 text-gray-900">Links</dt>
+                <dd className="mt-0.5 text-sm leading-6 text-gray-700 sm:mt-1">
+                  <ul className={'list-disc list-inside'}>
+                    {user.links?.map((link) => (
+                      <li key={link}>
+                        <Link href={link} className={'-ml-1'}>
+                          {link}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </dd>
+              </div>
+            </dl>
+          </section>
+        </>
+      )}
     </aside>
   );
 }

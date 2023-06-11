@@ -119,8 +119,8 @@ func (c *userController) V1UserUpdate(ctx context.Context, request api.V1UserUpd
 		return api.V1UserUpdate404JSONResponse{N404JSONResponse: notFound}, nil
 	}
 
-	patch := make(map[string]any)
-	if err := convert.AnyToAny(request.Body, &patch); err != nil {
+	patch, err := api.ConvertRequestToMap(request.Body)
+	if err != nil {
 		return api.V1UserUpdate400JSONResponse{N400JSONResponse: badRequest}, nil
 	}
 

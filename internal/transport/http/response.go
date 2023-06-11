@@ -1,9 +1,10 @@
 package http
 
 import (
-	"encoding/json"
 	"errors"
 	"net/http"
+
+	"github.com/goccy/go-json"
 
 	"github.com/opcotech/elemo/internal/pkg/convert"
 	"github.com/opcotech/elemo/internal/transport/http/api"

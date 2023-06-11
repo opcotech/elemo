@@ -9,6 +9,7 @@ import { Button } from '@/components/blocks/Button';
 import { FormInput } from '@/components/blocks/Form/FormInput';
 import useStore from '@/store';
 import { Badge } from '@/components/blocks/Badge';
+import { normalizeData } from '@/lib/helpers/schema';
 
 type UpdateUserContactData = {
   email: string;
@@ -18,7 +19,7 @@ type UpdateUserContactData = {
 
 const UPDATE_CONTACT_SCHEMA = z.object({
   email: z.string().email('Invalid email address'),
-  phone: z.string().max($User.properties.phone.maxLength, 'Phone number is too long').optional(),
+  phone: z.string().max($User.properties.phone.maxLength, 'Phone number is too long').optional().or(z.literal('')),
   links: z.array(z.string().url('Invalid URL')).optional()
 });
 
@@ -64,7 +65,7 @@ export function UpdateUserContactForm({ userId, defaultValues }: UpdateUserConta
 
   async function onSubmit(data: UpdateUserContactData) {
     try {
-      await UsersService.v1UserUpdate(userId, data);
+      await UsersService.v1UserUpdate(userId, normalizeData(data, UPDATE_CONTACT_SCHEMA));
       addMessage({
         type: 'success',
         title: 'Contact info updated',

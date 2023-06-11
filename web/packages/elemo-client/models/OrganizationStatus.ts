@@ -6,6 +6,6 @@
  * Status of the organization.
  */
 export enum OrganizationStatus {
-  ACTIVE = 'active',
-  DELETED = 'deleted'
+    ACTIVE = 'active',
+    DELETED = 'deleted',
 }

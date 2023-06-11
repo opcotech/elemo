@@ -1,9 +1,10 @@
 package license
 
 import (
-	"encoding/json"
 	"os"
 	"testing"
+
+	"github.com/goccy/go-json"
 
 	"github.com/hyperboloide/lk"
 	"github.com/stretchr/testify/require"

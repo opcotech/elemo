@@ -939,12 +939,18 @@ components:
                 minLength: 1
                 maxLength: 50
                 example: Test
+                nullable: true
+                x-go-type: Optional[string]
+                x-go-type-skip-optional-pointer: true
               last_name:
                 type: string
                 description: Last name of the user.
                 example: User
                 minLength: 1
                 maxLength: 50
+                nullable: true
+                x-go-type: Optional[string]
+                x-go-type-skip-optional-pointer: true
               email:
                 type: string
                 format: email
@@ -966,37 +972,50 @@ components:
                 minLength: 8
                 example: super-secret
                 description: New password of the user.
-                x-stoplight:
-                  id: 3m3c4msatdwhh
               picture:
                 type: string
                 description: Profile picture of the user.
                 format: uri
                 example: 'https://example.com/users/my-user.png'
                 maxLength: 2000
+                nullable: true
+                x-go-type: Optional[string]
+                x-go-type-skip-optional-pointer: true
               title:
                 type: string
                 description: Work title of the user.
                 example: Senior Software Engineer
                 minLength: 3
                 maxLength: 50
+                nullable: true
+                x-go-type: Optional[string]
+                x-go-type-skip-optional-pointer: true
               bio:
                 type: string
                 description: Self description of the user.
                 maxLength: 500
                 example: I'm working smart on software.
+                nullable: true
+                x-go-type: Optional[string]
+                x-go-type-skip-optional-pointer: true
               address:
                 type: string
                 minLength: 3
                 maxLength: 500
                 example: Remote
                 description: Working address of the user.
+                nullable: true
+                x-go-type: Optional[string]
+                x-go-type-skip-optional-pointer: true
               phone:
                 type: string
                 example: '+15555551234'
                 minLength: 7
                 maxLength: 16
                 description: Phone number of the user.
+                nullable: true
+                x-go-type: Optional[string]
+                x-go-type-skip-optional-pointer: true
               links:
                 type: array
                 description: Links to show on profile page.

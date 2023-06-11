@@ -9,6 +9,7 @@ import { FormInput } from '@/components/blocks/Form/FormInput';
 import useStore from '@/store';
 import { FormSwitch } from '@/components/blocks/Form/FormSwitch';
 import { useState } from 'react';
+import { normalizeData } from '@/lib/helpers/schema';
 
 type UpdateUserAddressData = {
   address?: string;
@@ -20,6 +21,7 @@ const UPDATE_ADDRESS_SCHEMA = z.object({
     .min($User.properties.address.minLength, 'Address is too short')
     .max($User.properties.address.maxLength, 'Address is too long')
     .optional()
+    .or(z.literal(''))
 });
 
 export interface UpdateUserAddressFormProps {
@@ -59,7 +61,7 @@ export function UpdateUserAddressForm({ userId, defaultValues }: UpdateUserAddre
 
   async function onSubmit(data: UpdateUserAddressData) {
     try {
-      await UsersService.v1UserUpdate(userId, data);
+      await UsersService.v1UserUpdate(userId, normalizeData(data, UPDATE_ADDRESS_SCHEMA));
       addMessage({ type: 'success', title: 'Address updated', message: 'Your address has been updated successfully.' });
     } catch (e) {
       addMessage({ type: 'error', title: 'Failed to update address', message: getErrorMessage(e) });
