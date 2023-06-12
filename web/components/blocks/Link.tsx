@@ -20,6 +20,7 @@ export function Link({ href = '#', prefetch = true, decorated = true, className,
    *   - https://github.com/vercel/next.js/issues/42991#issuecomment-1567610032
    * */
   // const Component = href.startsWith('#') ? 'a' : NextLink;
+  // {...(!href.startsWith('#') && !prefetch && { prefetch: prefetch })}
   const Component = 'a';
 
   return (
@@ -31,7 +32,6 @@ export function Link({ href = '#', prefetch = true, decorated = true, className,
         className
       )}
       {...props}
-      {...(!href.startsWith('#') && !prefetch && { prefetch: prefetch })}
     >
       {children}
     </Component>
