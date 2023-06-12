@@ -6,7 +6,6 @@ import (
 
 	"github.com/opcotech/elemo/internal/license"
 	"github.com/opcotech/elemo/internal/model"
-	"github.com/opcotech/elemo/internal/pkg"
 	"github.com/opcotech/elemo/internal/repository"
 )
 
@@ -80,13 +79,7 @@ func (s *licenseService) GetLicense(ctx context.Context) (license.License, error
 	ctx, span := s.tracer.Start(ctx, "service.licenseService/GetLicense")
 	defer span.End()
 
-	userID, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID)
-	if !ok {
-		return license.License{}, ErrNoUser
-	}
-
-	hasRole, err := s.permissionRepo.HasSystemRole(ctx, userID, model.SystemRoleOwner, model.SystemRoleAdmin, model.SystemRoleSupport)
-	if !hasRole || err != nil {
+	if !s.permissionService.CtxUserHasSystemRole(ctx, model.SystemRoleOwner, model.SystemRoleAdmin, model.SystemRoleSupport) {
 		return license.License{}, ErrNoPermission
 	}
 
@@ -125,8 +118,8 @@ func NewLicenseService(l *license.License, repo repository.LicenseRepository, op
 		return nil, repository.ErrNoLicenseRepository
 	}
 
-	if svc.permissionRepo == nil {
-		return nil, ErrNoPermissionRepository
+	if svc.permissionService == nil {
+		return nil, ErrNoPermissionService
 	}
 
 	return svc, nil

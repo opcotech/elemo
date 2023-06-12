@@ -156,6 +156,30 @@ func (r *PermissionRepository) GetByTarget(ctx context.Context, id model.ID) ([]
 	return perms, nil
 }
 
+// GetBySubjectAndTarget returns all permissions for a given target that the
+// source has. If no permissions exist, an empty slice is returned.
+func (r *PermissionRepository) GetBySubjectAndTarget(ctx context.Context, source, target model.ID) ([]*model.Permission, error) {
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.PermissionRepository/GetBySubjectAndTarget")
+	defer span.End()
+
+	cypher := `
+	MATCH (s:` + source.Label() + ` {id: $source})-[p:` + EdgeKindHasPermission.String() + `]->(t:` + target.Label() + ` {id: $target})
+	RETURN s, p, t
+	ORDER BY p.created_at DESC`
+
+	params := map[string]any{
+		"source": source.String(),
+		"target": target.String(),
+	}
+
+	perms, err := ExecuteReadAndReadAll(ctx, r.db, cypher, params, r.scan("p", "s", "t"))
+	if err != nil {
+		return nil, errors.Join(err, repository.ErrPermissionRead)
+	}
+
+	return perms, nil
+}
+
 // HasPermission returns true if the subject has the given permission on the
 // target. If the permission does not exist, false is returned.
 // TODO: Refactor this code. This is a mess.

@@ -50,7 +50,7 @@ func (s *todoService) Create(ctx context.Context, todo *model.Todo) error {
 	}
 
 	if todo.CreatedBy != todo.OwnedBy {
-		hasRelation, err := s.permissionRepo.HasAnyRelation(ctx, todo.CreatedBy, todo.OwnedBy)
+		hasRelation, err := s.permissionService.HasAnyRelation(ctx, todo.CreatedBy, todo.OwnedBy)
 		if err != nil {
 			return errors.Join(ErrTodoCreate, err)
 		}
@@ -74,7 +74,7 @@ func (s *todoService) Get(ctx context.Context, id model.ID) (*model.Todo, error)
 		return nil, errors.Join(ErrTodoGet, err)
 	}
 
-	if !ctxUserPermitted(ctx, s.permissionRepo, id, model.PermissionKindRead) {
+	if !s.permissionService.CtxUserHasPermission(ctx, id, model.PermissionKindRead) {
 		return nil, ErrNoPermission
 	}
 
@@ -115,7 +115,7 @@ func (s *todoService) Update(ctx context.Context, id model.ID, patch map[string]
 		return nil, errors.Join(ErrTodoUpdate, err)
 	}
 
-	if !ctxUserPermitted(ctx, s.permissionRepo, id, model.PermissionKindWrite) {
+	if !s.permissionService.CtxUserHasPermission(ctx, id, model.PermissionKindWrite) {
 		return nil, ErrNoPermission
 	}
 
@@ -139,7 +139,7 @@ func (s *todoService) Delete(ctx context.Context, id model.ID) error {
 		return errors.Join(ErrTodoDelete, err)
 	}
 
-	if !ctxUserPermitted(ctx, s.permissionRepo, id, model.PermissionKindDelete) {
+	if !s.permissionService.CtxUserHasPermission(ctx, id, model.PermissionKindDelete) {
 		return ErrNoPermission
 	}
 
@@ -165,8 +165,8 @@ func NewTodoService(opts ...Option) (TodoService, error) {
 		return nil, ErrNoTodoRepository
 	}
 
-	if svc.permissionRepo == nil {
-		return nil, ErrNoPermissionRepository
+	if svc.permissionService == nil {
+		return nil, ErrNoPermissionService
 	}
 
 	if svc.licenseService == nil {

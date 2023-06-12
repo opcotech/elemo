@@ -40,14 +40,14 @@ func TestNewLicenseService(t *testing.T) {
 				opts: []Option{
 					WithLogger(new(mock.Logger)),
 					WithTracer(new(mock.Tracer)),
-					WithPermissionRepository(new(mock.PermissionRepository)),
+					WithPermissionService(new(mock.PermissionService)),
 				},
 			},
 			want: &licenseService{
 				baseService: &baseService{
-					logger:         new(mock.Logger),
-					tracer:         new(mock.Tracer),
-					permissionRepo: new(mock.PermissionRepository),
+					logger:            new(mock.Logger),
+					tracer:            new(mock.Tracer),
+					permissionService: new(mock.PermissionService),
 				},
 				licenseRepo: new(mock.LicenseRepository),
 				license:     new(license.License),
@@ -61,7 +61,7 @@ func TestNewLicenseService(t *testing.T) {
 				opts: []Option{
 					WithLogger(new(mock.Logger)),
 					WithTracer(new(mock.Tracer)),
-					WithPermissionRepository(new(mock.PermissionRepository)),
+					WithPermissionService(new(mock.PermissionService)),
 				},
 			},
 			wantErr: license.ErrNoLicense,
@@ -74,13 +74,13 @@ func TestNewLicenseService(t *testing.T) {
 				opts: []Option{
 					WithLogger(new(mock.Logger)),
 					WithTracer(new(mock.Tracer)),
-					WithPermissionRepository(new(mock.PermissionRepository)),
+					WithPermissionService(new(mock.PermissionService)),
 				},
 			},
 			wantErr: repository.ErrNoLicenseRepository,
 		},
 		{
-			name: "new license service with no permission repository",
+			name: "new license service with no permission service",
 			args: args{
 				l:    new(license.License),
 				repo: new(mock.LicenseRepository),
@@ -89,7 +89,7 @@ func TestNewLicenseService(t *testing.T) {
 					WithTracer(new(mock.Tracer)),
 				},
 			},
-			wantErr: ErrNoPermissionRepository,
+			wantErr: ErrNoPermissionService,
 		},
 		{
 			name: "new license service with invalid options",
@@ -99,10 +99,10 @@ func TestNewLicenseService(t *testing.T) {
 				opts: []Option{
 					WithLogger(new(mock.Logger)),
 					WithTracer(new(mock.Tracer)),
-					WithPermissionRepository(nil),
+					WithPermissionService(nil),
 				},
 			},
-			wantErr: ErrNoPermissionRepository,
+			wantErr: ErrNoPermissionService,
 		},
 		{
 			name: "new license service with no logger",
@@ -111,14 +111,14 @@ func TestNewLicenseService(t *testing.T) {
 				repo: new(mock.LicenseRepository),
 				opts: []Option{
 					WithTracer(new(mock.Tracer)),
-					WithPermissionRepository(new(mock.PermissionRepository)),
+					WithPermissionService(new(mock.PermissionService)),
 				},
 			},
 			want: &licenseService{
 				baseService: &baseService{
-					logger:         log.DefaultLogger(),
-					tracer:         new(mock.Tracer),
-					permissionRepo: new(mock.PermissionRepository),
+					logger:            log.DefaultLogger(),
+					tracer:            new(mock.Tracer),
+					permissionService: new(mock.PermissionService),
 				},
 				licenseRepo: new(mock.LicenseRepository),
 				license:     new(license.License),
@@ -131,14 +131,14 @@ func TestNewLicenseService(t *testing.T) {
 				repo: new(mock.LicenseRepository),
 				opts: []Option{
 					WithLogger(new(mock.Logger)),
-					WithPermissionRepository(new(mock.PermissionRepository)),
+					WithPermissionService(new(mock.PermissionService)),
 				},
 			},
 			want: &licenseService{
 				baseService: &baseService{
-					logger:         new(mock.Logger),
-					tracer:         tracing.NoopTracer(),
-					permissionRepo: new(mock.PermissionRepository),
+					logger:            new(mock.Logger),
+					tracer:            tracing.NoopTracer(),
+					permissionService: new(mock.PermissionService),
 				},
 				licenseRepo: new(mock.LicenseRepository),
 				license:     new(license.License),
@@ -186,9 +186,9 @@ func TestLicenseService_Expired(t *testing.T) {
 					tracer.On("Start", ctx, "service.licenseService/Expired", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					return &baseService{
-						logger:         new(mock.Logger),
-						tracer:         tracer,
-						permissionRepo: new(mock.PermissionRepository),
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						permissionService: new(mock.PermissionService),
 					}
 				},
 				licenseRepo: new(mock.LicenseRepository),
@@ -217,9 +217,9 @@ func TestLicenseService_Expired(t *testing.T) {
 					tracer.On("Start", ctx, "service.licenseService/Expired", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					return &baseService{
-						logger:         new(mock.Logger),
-						tracer:         tracer,
-						permissionRepo: new(mock.PermissionRepository),
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						permissionService: new(mock.PermissionService),
 					}
 				},
 				licenseRepo: new(mock.LicenseRepository),
@@ -283,9 +283,9 @@ func TestLicenseService_HasFeature(t *testing.T) {
 					tracer.On("Start", ctx, "service.licenseService/HasFeature", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					return &baseService{
-						logger:         new(mock.Logger),
-						tracer:         tracer,
-						permissionRepo: new(mock.PermissionRepository),
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						permissionService: new(mock.PermissionService),
 					}
 				},
 				licenseRepo: new(mock.LicenseRepository),
@@ -315,9 +315,9 @@ func TestLicenseService_HasFeature(t *testing.T) {
 					tracer.On("Start", ctx, "service.licenseService/HasFeature", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					return &baseService{
-						logger:         new(mock.Logger),
-						tracer:         tracer,
-						permissionRepo: new(mock.PermissionRepository),
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						permissionService: new(mock.PermissionService),
 					}
 				},
 				licenseRepo: new(mock.LicenseRepository),
@@ -381,9 +381,9 @@ func TestLicenseService_WithinThreshold(t *testing.T) {
 					tracer.On("Start", ctx, "service.licenseService/WithinThreshold", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					return &baseService{
-						logger:         new(mock.Logger),
-						tracer:         tracer,
-						permissionRepo: new(mock.PermissionRepository),
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						permissionService: new(mock.PermissionService),
 					}
 				},
 				licenseRepo: func(ctx context.Context) repository.LicenseRepository {
@@ -417,9 +417,9 @@ func TestLicenseService_WithinThreshold(t *testing.T) {
 					tracer.On("Start", ctx, "service.licenseService/WithinThreshold", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					return &baseService{
-						logger:         new(mock.Logger),
-						tracer:         tracer,
-						permissionRepo: new(mock.PermissionRepository),
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						permissionService: new(mock.PermissionService),
 					}
 				},
 				licenseRepo: func(ctx context.Context) repository.LicenseRepository {
@@ -453,9 +453,9 @@ func TestLicenseService_WithinThreshold(t *testing.T) {
 					tracer.On("Start", ctx, "service.licenseService/WithinThreshold", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					return &baseService{
-						logger:         new(mock.Logger),
-						tracer:         tracer,
-						permissionRepo: new(mock.PermissionRepository),
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						permissionService: new(mock.PermissionService),
 					}
 				},
 				licenseRepo: func(ctx context.Context) repository.LicenseRepository {
@@ -489,9 +489,9 @@ func TestLicenseService_WithinThreshold(t *testing.T) {
 					tracer.On("Start", ctx, "service.licenseService/WithinThreshold", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					return &baseService{
-						logger:         new(mock.Logger),
-						tracer:         tracer,
-						permissionRepo: new(mock.PermissionRepository),
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						permissionService: new(mock.PermissionService),
 					}
 				},
 				licenseRepo: func(ctx context.Context) repository.LicenseRepository {
@@ -525,9 +525,9 @@ func TestLicenseService_WithinThreshold(t *testing.T) {
 					tracer.On("Start", ctx, "service.licenseService/WithinThreshold", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					return &baseService{
-						logger:         new(mock.Logger),
-						tracer:         tracer,
-						permissionRepo: new(mock.PermissionRepository),
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						permissionService: new(mock.PermissionService),
 					}
 				},
 				licenseRepo: func(ctx context.Context) repository.LicenseRepository {
@@ -561,9 +561,9 @@ func TestLicenseService_WithinThreshold(t *testing.T) {
 					tracer.On("Start", ctx, "service.licenseService/WithinThreshold", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					return &baseService{
-						logger:         new(mock.Logger),
-						tracer:         tracer,
-						permissionRepo: new(mock.PermissionRepository),
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						permissionService: new(mock.PermissionService),
 					}
 				},
 				licenseRepo: func(ctx context.Context) repository.LicenseRepository {
@@ -597,9 +597,9 @@ func TestLicenseService_WithinThreshold(t *testing.T) {
 					tracer.On("Start", ctx, "service.licenseService/WithinThreshold", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					return &baseService{
-						logger:         new(mock.Logger),
-						tracer:         tracer,
-						permissionRepo: new(mock.PermissionRepository),
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						permissionService: new(mock.PermissionService),
 					}
 				},
 				licenseRepo: func(ctx context.Context) repository.LicenseRepository {
@@ -632,9 +632,9 @@ func TestLicenseService_WithinThreshold(t *testing.T) {
 					tracer.On("Start", ctx, "service.licenseService/WithinThreshold", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					return &baseService{
-						logger:         new(mock.Logger),
-						tracer:         tracer,
-						permissionRepo: new(mock.PermissionRepository),
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						permissionService: new(mock.PermissionService),
 					}
 				},
 				licenseRepo: func(ctx context.Context) repository.LicenseRepository {
@@ -670,9 +670,9 @@ func TestLicenseService_WithinThreshold(t *testing.T) {
 					tracer.On("Start", ctx, "service.licenseService/WithinThreshold", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					return &baseService{
-						logger:         new(mock.Logger),
-						tracer:         tracer,
-						permissionRepo: new(mock.PermissionRepository),
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						permissionService: new(mock.PermissionService),
 					}
 				},
 				licenseRepo: func(ctx context.Context) repository.LicenseRepository {
@@ -751,48 +751,23 @@ func TestLicenseService_GetLicense(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "service.licenseService/GetLicense", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					permissionRepo := new(mock.PermissionRepository)
-					permissionRepo.On("HasSystemRole", ctx, userID, []model.SystemRole{
+					permissionSvc := new(mock.PermissionService)
+					permissionSvc.On("CtxUserHasSystemRole", ctx, []model.SystemRole{
 						model.SystemRoleOwner,
 						model.SystemRoleAdmin,
 						model.SystemRoleSupport,
 					}).Return(true, nil)
 
 					return &baseService{
-						logger:         new(mock.Logger),
-						tracer:         tracer,
-						permissionRepo: permissionRepo,
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						permissionService: permissionSvc,
 					}
 				},
 				licenseRepo: new(mock.LicenseRepository),
 				license:     expectedLicense,
 			},
 			want: *expectedLicense,
-		},
-		{
-			name: "get license no context user",
-			args: args{
-				ctx: context.Background(),
-			},
-			fields: fields{
-				baseService: func(ctx context.Context) *baseService {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
-
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "service.licenseService/GetLicense", []trace.SpanStartOption(nil)).Return(ctx, span)
-
-					return &baseService{
-						logger:         new(mock.Logger),
-						tracer:         tracer,
-						permissionRepo: new(mock.PermissionRepository),
-					}
-				},
-				licenseRepo: new(mock.LicenseRepository),
-				license:     expectedLicense,
-			},
-			want:    license.License{},
-			wantErr: ErrNoUser,
 		},
 		{
 			name: "get license context user no permission",
@@ -807,17 +782,17 @@ func TestLicenseService_GetLicense(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "service.licenseService/GetLicense", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					permissionRepo := new(mock.PermissionRepository)
-					permissionRepo.On("HasSystemRole", ctx, userID, []model.SystemRole{
+					permissionSvc := new(mock.PermissionService)
+					permissionSvc.On("CtxUserHasSystemRole", ctx, []model.SystemRole{
 						model.SystemRoleOwner,
 						model.SystemRoleAdmin,
 						model.SystemRoleSupport,
 					}).Return(false, nil)
 
 					return &baseService{
-						logger:         new(mock.Logger),
-						tracer:         tracer,
-						permissionRepo: permissionRepo,
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						permissionService: permissionSvc,
 					}
 				},
 				licenseRepo: new(mock.LicenseRepository),
@@ -839,17 +814,17 @@ func TestLicenseService_GetLicense(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "service.licenseService/GetLicense", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					permissionRepo := new(mock.PermissionRepository)
-					permissionRepo.On("HasSystemRole", ctx, userID, []model.SystemRole{
+					permissionSvc := new(mock.PermissionService)
+					permissionSvc.On("CtxUserHasSystemRole", ctx, []model.SystemRole{
 						model.SystemRoleOwner,
 						model.SystemRoleAdmin,
 						model.SystemRoleSupport,
 					}).Return(false, assert.AnError)
 
 					return &baseService{
-						logger:         new(mock.Logger),
-						tracer:         tracer,
-						permissionRepo: permissionRepo,
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						permissionService: permissionSvc,
 					}
 				},
 				licenseRepo: new(mock.LicenseRepository),
@@ -905,9 +880,9 @@ func TestLicenseService_Ping(t *testing.T) {
 					tracer.On("Start", ctx, "service.licenseService/Expired", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					return &baseService{
-						logger:         new(mock.Logger),
-						tracer:         tracer,
-						permissionRepo: new(mock.PermissionRepository),
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						permissionService: new(mock.PermissionService),
 					}
 				},
 				licenseRepo: new(mock.LicenseRepository),
@@ -936,9 +911,9 @@ func TestLicenseService_Ping(t *testing.T) {
 					tracer.On("Start", ctx, "service.licenseService/Expired", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					return &baseService{
-						logger:         new(mock.Logger),
-						tracer:         tracer,
-						permissionRepo: new(mock.PermissionRepository),
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						permissionService: new(mock.PermissionService),
 					}
 				},
 				licenseRepo: new(mock.LicenseRepository),

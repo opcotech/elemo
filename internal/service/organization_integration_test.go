@@ -35,17 +35,20 @@ func (s *OrganizationServiceIntegrationTestSuite) SetupSuite() {
 	container := reflect.TypeOf(s).Elem().String()
 	s.SetupNeo4j(&s.ContainerIntegrationTestSuite, container)
 
+	permissionService, err := service.NewPermissionService(s.PermissionRepo)
+	s.Require().NoError(err)
+
 	licenseService, err := service.NewLicenseService(
 		testutil.ParseLicense(s.T()),
 		s.LicenseRepo,
-		service.WithPermissionRepository(s.PermissionRepo),
+		service.WithPermissionService(permissionService),
 	)
 	s.Require().NoError(err)
 
 	s.organizationService, err = service.NewOrganizationService(
 		service.WithUserRepository(s.UserRepo),
 		service.WithOrganizationRepository(s.OrganizationRepo),
-		service.WithPermissionRepository(s.PermissionRepo),
+		service.WithPermissionService(permissionService),
 		service.WithLicenseService(licenseService),
 	)
 	s.Require().NoError(err)

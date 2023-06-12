@@ -41,6 +41,14 @@ func (p *PermissionRepository) GetByTarget(ctx context.Context, id model.ID) ([]
 	return args.Get(0).([]*model.Permission), args.Error(1)
 }
 
+func (p *PermissionRepository) GetBySubjectAndTarget(ctx context.Context, subject, target model.ID) ([]*model.Permission, error) {
+	args := p.Called(ctx, subject, target)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*model.Permission), args.Error(1)
+}
+
 func (p *PermissionRepository) HasPermission(ctx context.Context, subject, target model.ID, kinds ...model.PermissionKind) (bool, error) {
 	args := p.Called(ctx, subject, target, kinds)
 	return args.Bool(0), args.Error(1)

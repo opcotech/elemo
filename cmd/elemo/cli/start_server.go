@@ -166,10 +166,19 @@ var startServerCmd = &cobra.Command{
 			}
 		}
 
+		permissionSvc, err := service.NewPermissionService(
+			permissionRepo,
+			service.WithLogger(logger.Named("permission_service")),
+			service.WithTracer(tracer),
+		)
+		if err != nil {
+			logger.Fatal("failed to initialize permission service", zap.Error(err))
+		}
+
 		licenseService, err := service.NewLicenseService(
 			license,
 			licenseRepo,
-			service.WithPermissionRepository(permissionRepo),
+			service.WithPermissionService(permissionSvc),
 			service.WithLogger(logger.Named("license_service")),
 			service.WithTracer(tracer),
 		)
@@ -196,7 +205,7 @@ var startServerCmd = &cobra.Command{
 		organizationService, err := service.NewOrganizationService(
 			service.WithOrganizationRepository(organizationRepo),
 			service.WithUserRepository(userRepo),
-			service.WithPermissionRepository(permissionRepo),
+			service.WithPermissionService(permissionSvc),
 			service.WithLicenseService(licenseService),
 			service.WithLogger(logger.Named("organization_service")),
 			service.WithTracer(tracer),
@@ -207,7 +216,7 @@ var startServerCmd = &cobra.Command{
 
 		userService, err := service.NewUserService(
 			service.WithUserRepository(userRepo),
-			service.WithPermissionRepository(permissionRepo),
+			service.WithPermissionService(permissionSvc),
 			service.WithLicenseService(licenseService),
 			service.WithLogger(logger.Named("user_service")),
 			service.WithTracer(tracer),
@@ -218,7 +227,7 @@ var startServerCmd = &cobra.Command{
 
 		todoService, err := service.NewTodoService(
 			service.WithTodoRepository(todoRepo),
-			service.WithPermissionRepository(permissionRepo),
+			service.WithPermissionService(permissionSvc),
 			service.WithLicenseService(licenseService),
 			service.WithLogger(logger.Named("todo_service")),
 			service.WithTracer(tracer),

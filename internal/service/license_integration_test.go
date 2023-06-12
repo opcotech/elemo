@@ -32,11 +32,13 @@ func (s *LicenseServiceIntegrationTestSuite) SetupSuite() {
 
 	s.license = testutil.ParseLicense(s.T())
 
-	var err error
+	permissionService, err := service.NewPermissionService(s.PermissionRepo)
+	s.Require().NoError(err)
+
 	s.licenseService, err = service.NewLicenseService(
 		s.license,
 		s.LicenseRepo,
-		service.WithPermissionRepository(s.PermissionRepo),
+		service.WithPermissionService(permissionService),
 	)
 	s.Require().NoError(err)
 }

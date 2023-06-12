@@ -34,17 +34,17 @@ func TestNewTodoService(t *testing.T) {
 					WithLogger(new(mock.Logger)),
 					WithTracer(new(mock.Tracer)),
 					WithTodoRepository(new(mock.TodoRepository)),
-					WithPermissionRepository(new(mock.PermissionRepository)),
+					WithPermissionService(new(mock.PermissionService)),
 					WithLicenseService(new(mock.LicenseService)),
 				},
 			},
 			want: &todoService{
 				baseService: &baseService{
-					logger:         new(mock.Logger),
-					tracer:         new(mock.Tracer),
-					todoRepo:       new(mock.TodoRepository),
-					permissionRepo: new(mock.PermissionRepository),
-					licenseService: new(mock.LicenseService),
+					logger:            new(mock.Logger),
+					tracer:            new(mock.Tracer),
+					todoRepo:          new(mock.TodoRepository),
+					permissionService: new(mock.PermissionService),
+					licenseService:    new(mock.LicenseService),
 				},
 			},
 		},
@@ -80,7 +80,7 @@ func TestNewTodoService(t *testing.T) {
 					WithLicenseService(new(mock.LicenseService)),
 				},
 			},
-			wantErr: ErrNoPermissionRepository,
+			wantErr: ErrNoPermissionService,
 		},
 		{
 			name: "new todo service with no license service",
@@ -89,7 +89,7 @@ func TestNewTodoService(t *testing.T) {
 					WithLogger(new(mock.Logger)),
 					WithTracer(new(mock.Tracer)),
 					WithTodoRepository(new(mock.TodoRepository)),
-					WithPermissionRepository(new(mock.PermissionRepository)),
+					WithPermissionService(new(mock.PermissionService)),
 				},
 			},
 			wantErr: ErrNoLicenseService,
@@ -144,11 +144,11 @@ func TestTodoService_Create(t *testing.T) {
 					todoRepo.On("Create", ctx, todo).Return(nil)
 
 					return &baseService{
-						logger:         new(mock.Logger),
-						tracer:         tracer,
-						todoRepo:       todoRepo,
-						permissionRepo: new(mock.PermissionRepository),
-						licenseService: licenseSvc,
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						todoRepo:          todoRepo,
+						permissionService: new(mock.PermissionService),
+						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -170,18 +170,18 @@ func TestTodoService_Create(t *testing.T) {
 					licenseSvc := new(mock.LicenseService)
 					licenseSvc.On("Expired", ctx).Return(false, nil)
 
-					permRepo := new(mock.PermissionRepository)
-					permRepo.On("HasAnyRelation", ctx, peerID, userID).Return(true, nil)
+					permSvc := new(mock.PermissionService)
+					permSvc.On("HasAnyRelation", ctx, peerID, userID).Return(true, nil)
 
 					todoRepo := new(mock.TodoRepository)
 					todoRepo.On("Create", ctx, todo).Return(nil)
 
 					return &baseService{
-						logger:         new(mock.Logger),
-						tracer:         tracer,
-						todoRepo:       todoRepo,
-						permissionRepo: permRepo,
-						licenseService: licenseSvc,
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						todoRepo:          todoRepo,
+						permissionService: permSvc,
+						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -207,11 +207,11 @@ func TestTodoService_Create(t *testing.T) {
 					todoRepo.On("Create", ctx, todo).Return(nil)
 
 					return &baseService{
-						logger:         new(mock.Logger),
-						tracer:         tracer,
-						todoRepo:       todoRepo,
-						permissionRepo: new(mock.PermissionRepository),
-						licenseService: licenseSvc,
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						todoRepo:          todoRepo,
+						permissionService: new(mock.PermissionService),
+						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -238,11 +238,11 @@ func TestTodoService_Create(t *testing.T) {
 					todoRepo.On("Create", ctx, todo).Return(nil)
 
 					return &baseService{
-						logger:         new(mock.Logger),
-						tracer:         tracer,
-						todoRepo:       todoRepo,
-						permissionRepo: new(mock.PermissionRepository),
-						licenseService: licenseSvc,
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						todoRepo:          todoRepo,
+						permissionService: new(mock.PermissionService),
+						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -269,11 +269,11 @@ func TestTodoService_Create(t *testing.T) {
 					todoRepo.On("Create", ctx, todo).Return(nil)
 
 					return &baseService{
-						logger:         new(mock.Logger),
-						tracer:         tracer,
-						todoRepo:       todoRepo,
-						permissionRepo: new(mock.PermissionRepository),
-						licenseService: licenseSvc,
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						todoRepo:          todoRepo,
+						permissionService: new(mock.PermissionService),
+						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -300,11 +300,11 @@ func TestTodoService_Create(t *testing.T) {
 					todoRepo.On("Create", ctx, todo).Return(assert.AnError)
 
 					return &baseService{
-						logger:         new(mock.Logger),
-						tracer:         tracer,
-						todoRepo:       todoRepo,
-						permissionRepo: new(mock.PermissionRepository),
-						licenseService: licenseSvc,
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						todoRepo:          todoRepo,
+						permissionService: new(mock.PermissionService),
+						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -327,18 +327,18 @@ func TestTodoService_Create(t *testing.T) {
 					licenseSvc := new(mock.LicenseService)
 					licenseSvc.On("Expired", ctx).Return(false, nil)
 
-					permRepo := new(mock.PermissionRepository)
-					permRepo.On("HasAnyRelation", ctx, peerID, userID).Return(false, nil)
+					permSvc := new(mock.PermissionService)
+					permSvc.On("HasAnyRelation", ctx, peerID, userID).Return(false, nil)
 
 					todoRepo := new(mock.TodoRepository)
 					todoRepo.On("Create", ctx, todo).Return(nil)
 
 					return &baseService{
-						logger:         new(mock.Logger),
-						tracer:         tracer,
-						todoRepo:       todoRepo,
-						permissionRepo: permRepo,
-						licenseService: licenseSvc,
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						todoRepo:          todoRepo,
+						permissionService: permSvc,
+						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -361,18 +361,18 @@ func TestTodoService_Create(t *testing.T) {
 					licenseSvc := new(mock.LicenseService)
 					licenseSvc.On("Expired", ctx).Return(false, nil)
 
-					permRepo := new(mock.PermissionRepository)
-					permRepo.On("HasAnyRelation", ctx, peerID, userID).Return(false, assert.AnError)
+					permSvc := new(mock.PermissionService)
+					permSvc.On("HasAnyRelation", ctx, peerID, userID).Return(false, assert.AnError)
 
 					todoRepo := new(mock.TodoRepository)
 					todoRepo.On("Create", ctx, todo).Return(nil)
 
 					return &baseService{
-						logger:         new(mock.Logger),
-						tracer:         tracer,
-						todoRepo:       todoRepo,
-						permissionRepo: permRepo,
-						licenseService: licenseSvc,
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						todoRepo:          todoRepo,
+						permissionService: permSvc,
+						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -424,21 +424,20 @@ func TestTodoService_Get(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "service.todoService/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					permRepo := new(mock.PermissionRepository)
-					permRepo.On("HasPermission", ctx, userID, id, []model.PermissionKind{
+					permSvc := new(mock.PermissionService)
+					permSvc.On("CtxUserHasPermission", ctx, id, []model.PermissionKind{
 						model.PermissionKindRead,
-						model.PermissionKindAll,
 					}).Return(true, nil)
 
 					todoRepo := new(mock.TodoRepository)
 					todoRepo.On("Get", ctx, id).Return(todo, nil)
 
 					return &baseService{
-						logger:         new(mock.Logger),
-						tracer:         tracer,
-						todoRepo:       todoRepo,
-						permissionRepo: permRepo,
-						licenseService: new(mock.LicenseService),
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						todoRepo:          todoRepo,
+						permissionService: permSvc,
+						licenseService:    new(mock.LicenseService),
 					}
 				},
 			},
@@ -458,18 +457,17 @@ func TestTodoService_Get(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "service.todoService/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					permRepo := new(mock.PermissionRepository)
-					permRepo.On("HasPermission", ctx, userID, id, []model.PermissionKind{
+					permSvc := new(mock.PermissionService)
+					permSvc.On("CtxUserHasPermission", ctx, id, []model.PermissionKind{
 						model.PermissionKindRead,
-						model.PermissionKindAll,
 					}).Return(false, nil)
 
 					return &baseService{
-						logger:         new(mock.Logger),
-						tracer:         tracer,
-						todoRepo:       new(mock.TodoRepository),
-						permissionRepo: permRepo,
-						licenseService: new(mock.LicenseService),
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						todoRepo:          new(mock.TodoRepository),
+						permissionService: permSvc,
+						licenseService:    new(mock.LicenseService),
 					}
 				},
 			},
@@ -489,18 +487,17 @@ func TestTodoService_Get(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "service.todoService/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					permRepo := new(mock.PermissionRepository)
-					permRepo.On("HasPermission", ctx, userID, id, []model.PermissionKind{
+					permSvc := new(mock.PermissionService)
+					permSvc.On("CtxUserHasPermission", ctx, id, []model.PermissionKind{
 						model.PermissionKindRead,
-						model.PermissionKindAll,
 					}).Return(false, assert.AnError)
 
 					return &baseService{
-						logger:         new(mock.Logger),
-						tracer:         tracer,
-						todoRepo:       new(mock.TodoRepository),
-						permissionRepo: permRepo,
-						licenseService: new(mock.LicenseService),
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						todoRepo:          new(mock.TodoRepository),
+						permissionService: permSvc,
+						licenseService:    new(mock.LicenseService),
 					}
 				},
 			},
@@ -520,21 +517,20 @@ func TestTodoService_Get(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "service.todoService/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					permRepo := new(mock.PermissionRepository)
-					permRepo.On("HasPermission", ctx, userID, id, []model.PermissionKind{
+					permSvc := new(mock.PermissionService)
+					permSvc.On("CtxUserHasPermission", ctx, id, []model.PermissionKind{
 						model.PermissionKindRead,
-						model.PermissionKindAll,
 					}).Return(true, nil)
 
 					todoRepo := new(mock.TodoRepository)
 					todoRepo.On("Get", ctx, id).Return(nil, assert.AnError)
 
 					return &baseService{
-						logger:         new(mock.Logger),
-						tracer:         tracer,
-						todoRepo:       todoRepo,
-						permissionRepo: permRepo,
-						licenseService: new(mock.LicenseService),
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						todoRepo:          todoRepo,
+						permissionService: permSvc,
+						licenseService:    new(mock.LicenseService),
 					}
 				},
 			},
@@ -555,11 +551,11 @@ func TestTodoService_Get(t *testing.T) {
 					tracer.On("Start", ctx, "service.todoService/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					return &baseService{
-						logger:         new(mock.Logger),
-						tracer:         tracer,
-						todoRepo:       new(mock.TodoRepository),
-						permissionRepo: new(mock.PermissionRepository),
-						licenseService: new(mock.LicenseService),
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						todoRepo:          new(mock.TodoRepository),
+						permissionService: new(mock.PermissionService),
+						licenseService:    new(mock.LicenseService),
 					}
 				},
 			},
@@ -618,11 +614,11 @@ func TestTodoService_GetAll(t *testing.T) {
 					todoRepo.On("GetByOwner", ctx, userID, offset, limit, completed).Return(todos, nil)
 
 					return &baseService{
-						logger:         new(mock.Logger),
-						tracer:         tracer,
-						todoRepo:       todoRepo,
-						permissionRepo: new(mock.PermissionRepository),
-						licenseService: new(mock.LicenseService),
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						todoRepo:          todoRepo,
+						permissionService: new(mock.PermissionService),
+						licenseService:    new(mock.LicenseService),
 					}
 				},
 			},
@@ -651,11 +647,11 @@ func TestTodoService_GetAll(t *testing.T) {
 					todoRepo.On("GetByOwner", ctx, userID, offset, limit, completed).Return(todos, nil)
 
 					return &baseService{
-						logger:         new(mock.Logger),
-						tracer:         tracer,
-						todoRepo:       todoRepo,
-						permissionRepo: new(mock.PermissionRepository),
-						licenseService: new(mock.LicenseService),
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						todoRepo:          todoRepo,
+						permissionService: new(mock.PermissionService),
+						licenseService:    new(mock.LicenseService),
 					}
 				},
 			},
@@ -684,11 +680,11 @@ func TestTodoService_GetAll(t *testing.T) {
 					todoRepo.On("GetByOwner", ctx, userID, offset, limit, completed).Return(todos, nil)
 
 					return &baseService{
-						logger:         new(mock.Logger),
-						tracer:         tracer,
-						todoRepo:       todoRepo,
-						permissionRepo: new(mock.PermissionRepository),
-						licenseService: new(mock.LicenseService),
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						todoRepo:          todoRepo,
+						permissionService: new(mock.PermissionService),
+						licenseService:    new(mock.LicenseService),
 					}
 				},
 			},
@@ -714,11 +710,11 @@ func TestTodoService_GetAll(t *testing.T) {
 					tracer.On("Start", ctx, "service.todoService/GetAll", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					return &baseService{
-						logger:         new(mock.Logger),
-						tracer:         tracer,
-						todoRepo:       new(mock.TodoRepository),
-						permissionRepo: new(mock.PermissionRepository),
-						licenseService: new(mock.LicenseService),
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						todoRepo:          new(mock.TodoRepository),
+						permissionService: new(mock.PermissionService),
+						licenseService:    new(mock.LicenseService),
 					}
 				},
 			},
@@ -744,11 +740,11 @@ func TestTodoService_GetAll(t *testing.T) {
 					todoRepo.On("GetByOwner", ctx, userID, offset, limit, completed).Return(nil, assert.AnError)
 
 					return &baseService{
-						logger:         new(mock.Logger),
-						tracer:         tracer,
-						todoRepo:       todoRepo,
-						permissionRepo: new(mock.PermissionRepository),
-						licenseService: new(mock.LicenseService),
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						todoRepo:          todoRepo,
+						permissionService: new(mock.PermissionService),
+						licenseService:    new(mock.LicenseService),
 					}
 				},
 			},
@@ -808,21 +804,20 @@ func TestTodoService_Update(t *testing.T) {
 					licenseSvc := new(mock.LicenseService)
 					licenseSvc.On("Expired", ctx).Return(false, nil)
 
-					permRepo := new(mock.PermissionRepository)
-					permRepo.On("HasPermission", ctx, userID, id, []model.PermissionKind{
+					permSvc := new(mock.PermissionService)
+					permSvc.On("CtxUserHasPermission", ctx, id, []model.PermissionKind{
 						model.PermissionKindWrite,
-						model.PermissionKindAll,
 					}).Return(true, nil)
 
 					todoRepo := new(mock.TodoRepository)
 					todoRepo.On("Update", ctx, id, patch).Return(todo, nil)
 
 					return &baseService{
-						logger:         new(mock.Logger),
-						tracer:         tracer,
-						todoRepo:       todoRepo,
-						permissionRepo: permRepo,
-						licenseService: licenseSvc,
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						todoRepo:          todoRepo,
+						permissionService: permSvc,
+						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -848,18 +843,17 @@ func TestTodoService_Update(t *testing.T) {
 					licenseSvc := new(mock.LicenseService)
 					licenseSvc.On("Expired", ctx).Return(false, nil)
 
-					permRepo := new(mock.PermissionRepository)
-					permRepo.On("HasPermission", ctx, userID, id, []model.PermissionKind{
+					permSvc := new(mock.PermissionService)
+					permSvc.On("CtxUserHasPermission", ctx, id, []model.PermissionKind{
 						model.PermissionKindWrite,
-						model.PermissionKindAll,
 					}).Return(false, nil)
 
 					return &baseService{
-						logger:         new(mock.Logger),
-						tracer:         tracer,
-						todoRepo:       new(mock.TodoRepository),
-						permissionRepo: permRepo,
-						licenseService: licenseSvc,
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						todoRepo:          new(mock.TodoRepository),
+						permissionService: permSvc,
+						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -885,18 +879,17 @@ func TestTodoService_Update(t *testing.T) {
 					licenseSvc := new(mock.LicenseService)
 					licenseSvc.On("Expired", ctx).Return(false, nil)
 
-					permRepo := new(mock.PermissionRepository)
-					permRepo.On("HasPermission", ctx, userID, id, []model.PermissionKind{
+					permSvc := new(mock.PermissionService)
+					permSvc.On("CtxUserHasPermission", ctx, id, []model.PermissionKind{
 						model.PermissionKindWrite,
-						model.PermissionKindAll,
 					}).Return(false, assert.AnError)
 
 					return &baseService{
-						logger:         new(mock.Logger),
-						tracer:         tracer,
-						todoRepo:       new(mock.TodoRepository),
-						permissionRepo: permRepo,
-						licenseService: licenseSvc,
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						todoRepo:          new(mock.TodoRepository),
+						permissionService: permSvc,
+						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -922,21 +915,20 @@ func TestTodoService_Update(t *testing.T) {
 					licenseSvc := new(mock.LicenseService)
 					licenseSvc.On("Expired", ctx).Return(false, nil)
 
-					permRepo := new(mock.PermissionRepository)
-					permRepo.On("HasPermission", ctx, userID, id, []model.PermissionKind{
+					permSvc := new(mock.PermissionService)
+					permSvc.On("CtxUserHasPermission", ctx, id, []model.PermissionKind{
 						model.PermissionKindWrite,
-						model.PermissionKindAll,
 					}).Return(true, nil)
 
 					todoRepo := new(mock.TodoRepository)
 					todoRepo.On("Update", ctx, id, patch).Return(nil, assert.AnError)
 
 					return &baseService{
-						logger:         new(mock.Logger),
-						tracer:         tracer,
-						todoRepo:       todoRepo,
-						permissionRepo: permRepo,
-						licenseService: licenseSvc,
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						todoRepo:          todoRepo,
+						permissionService: permSvc,
+						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -963,11 +955,11 @@ func TestTodoService_Update(t *testing.T) {
 					licenseSvc.On("Expired", ctx).Return(false, nil)
 
 					return &baseService{
-						logger:         new(mock.Logger),
-						tracer:         tracer,
-						todoRepo:       new(mock.TodoRepository),
-						permissionRepo: new(mock.PermissionRepository),
-						licenseService: licenseSvc,
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						todoRepo:          new(mock.TodoRepository),
+						permissionService: new(mock.PermissionService),
+						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -994,11 +986,11 @@ func TestTodoService_Update(t *testing.T) {
 					licenseSvc.On("Expired", ctx).Return(true, nil)
 
 					return &baseService{
-						logger:         new(mock.Logger),
-						tracer:         tracer,
-						todoRepo:       new(mock.TodoRepository),
-						permissionRepo: new(mock.PermissionRepository),
-						licenseService: licenseSvc,
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						todoRepo:          new(mock.TodoRepository),
+						permissionService: new(mock.PermissionService),
+						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -1025,11 +1017,11 @@ func TestTodoService_Update(t *testing.T) {
 					licenseSvc.On("Expired", ctx).Return(false, assert.AnError)
 
 					return &baseService{
-						logger:         new(mock.Logger),
-						tracer:         tracer,
-						todoRepo:       new(mock.TodoRepository),
-						permissionRepo: new(mock.PermissionRepository),
-						licenseService: licenseSvc,
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						todoRepo:          new(mock.TodoRepository),
+						permissionService: new(mock.PermissionService),
+						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -1085,21 +1077,20 @@ func TestTodoService_Delete(t *testing.T) {
 					licenseSvc := new(mock.LicenseService)
 					licenseSvc.On("Expired", ctx).Return(false, nil)
 
-					permRepo := new(mock.PermissionRepository)
-					permRepo.On("HasPermission", ctx, userID, id, []model.PermissionKind{
+					permSvc := new(mock.PermissionService)
+					permSvc.On("CtxUserHasPermission", ctx, id, []model.PermissionKind{
 						model.PermissionKindDelete,
-						model.PermissionKindAll,
 					}).Return(true, nil)
 
 					todoRepo := new(mock.TodoRepository)
 					todoRepo.On("Delete", ctx, id).Return(nil)
 
 					return &baseService{
-						logger:         new(mock.Logger),
-						tracer:         tracer,
-						todoRepo:       todoRepo,
-						permissionRepo: permRepo,
-						licenseService: licenseSvc,
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						todoRepo:          todoRepo,
+						permissionService: permSvc,
+						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -1122,18 +1113,17 @@ func TestTodoService_Delete(t *testing.T) {
 					licenseSvc := new(mock.LicenseService)
 					licenseSvc.On("Expired", ctx).Return(false, nil)
 
-					permRepo := new(mock.PermissionRepository)
-					permRepo.On("HasPermission", ctx, userID, id, []model.PermissionKind{
+					permSvc := new(mock.PermissionService)
+					permSvc.On("CtxUserHasPermission", ctx, id, []model.PermissionKind{
 						model.PermissionKindDelete,
-						model.PermissionKindAll,
 					}).Return(false, nil)
 
 					return &baseService{
-						logger:         new(mock.Logger),
-						tracer:         tracer,
-						todoRepo:       new(mock.TodoRepository),
-						permissionRepo: permRepo,
-						licenseService: licenseSvc,
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						todoRepo:          new(mock.TodoRepository),
+						permissionService: permSvc,
+						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -1156,18 +1146,17 @@ func TestTodoService_Delete(t *testing.T) {
 					licenseSvc := new(mock.LicenseService)
 					licenseSvc.On("Expired", ctx).Return(false, nil)
 
-					permRepo := new(mock.PermissionRepository)
-					permRepo.On("HasPermission", ctx, userID, id, []model.PermissionKind{
+					permSvc := new(mock.PermissionService)
+					permSvc.On("CtxUserHasPermission", ctx, id, []model.PermissionKind{
 						model.PermissionKindDelete,
-						model.PermissionKindAll,
 					}).Return(false, assert.AnError)
 
 					return &baseService{
-						logger:         new(mock.Logger),
-						tracer:         tracer,
-						todoRepo:       new(mock.TodoRepository),
-						permissionRepo: permRepo,
-						licenseService: licenseSvc,
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						todoRepo:          new(mock.TodoRepository),
+						permissionService: permSvc,
+						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -1190,21 +1179,20 @@ func TestTodoService_Delete(t *testing.T) {
 					licenseSvc := new(mock.LicenseService)
 					licenseSvc.On("Expired", ctx).Return(false, nil)
 
-					permRepo := new(mock.PermissionRepository)
-					permRepo.On("HasPermission", ctx, userID, id, []model.PermissionKind{
+					permSvc := new(mock.PermissionService)
+					permSvc.On("CtxUserHasPermission", ctx, id, []model.PermissionKind{
 						model.PermissionKindDelete,
-						model.PermissionKindAll,
 					}).Return(true, nil)
 
 					todoRepo := new(mock.TodoRepository)
 					todoRepo.On("Delete", ctx, id).Return(assert.AnError)
 
 					return &baseService{
-						logger:         new(mock.Logger),
-						tracer:         tracer,
-						todoRepo:       todoRepo,
-						permissionRepo: permRepo,
-						licenseService: licenseSvc,
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						todoRepo:          todoRepo,
+						permissionService: permSvc,
+						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -1228,11 +1216,11 @@ func TestTodoService_Delete(t *testing.T) {
 					licenseSvc.On("Expired", ctx).Return(false, nil)
 
 					return &baseService{
-						logger:         new(mock.Logger),
-						tracer:         tracer,
-						todoRepo:       new(mock.TodoRepository),
-						permissionRepo: new(mock.PermissionRepository),
-						licenseService: licenseSvc,
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						todoRepo:          new(mock.TodoRepository),
+						permissionService: new(mock.PermissionService),
+						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -1256,11 +1244,11 @@ func TestTodoService_Delete(t *testing.T) {
 					licenseSvc.On("Expired", ctx).Return(true, nil)
 
 					return &baseService{
-						logger:         new(mock.Logger),
-						tracer:         tracer,
-						todoRepo:       new(mock.TodoRepository),
-						permissionRepo: new(mock.PermissionRepository),
-						licenseService: licenseSvc,
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						todoRepo:          new(mock.TodoRepository),
+						permissionService: new(mock.PermissionService),
+						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -1284,11 +1272,11 @@ func TestTodoService_Delete(t *testing.T) {
 					licenseSvc.On("Expired", ctx).Return(false, assert.AnError)
 
 					return &baseService{
-						logger:         new(mock.Logger),
-						tracer:         tracer,
-						todoRepo:       new(mock.TodoRepository),
-						permissionRepo: new(mock.PermissionRepository),
-						licenseService: licenseSvc,
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						todoRepo:          new(mock.TodoRepository),
+						permissionService: new(mock.PermissionService),
+						licenseService:    licenseSvc,
 					}
 				},
 			},

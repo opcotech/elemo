@@ -54,6 +54,10 @@ func (c *CachedPermissionRepository) GetByTarget(ctx context.Context, id model.I
 	return c.permissionRepo.GetByTarget(ctx, id)
 }
 
+func (c *CachedPermissionRepository) GetBySubjectAndTarget(ctx context.Context, source, target model.ID) ([]*model.Permission, error) {
+	return c.permissionRepo.GetBySubjectAndTarget(ctx, source, target)
+}
+
 func (c *CachedPermissionRepository) Update(ctx context.Context, id model.ID, kind model.PermissionKind) (*model.Permission, error) {
 	if err := clearPermissionAllCrossCache(ctx, c.cacheRepo); err != nil {
 		return nil, err

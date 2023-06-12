@@ -56,7 +56,7 @@ func (s organizationService) Create(ctx context.Context, owner model.ID, organiz
 		return errors.Join(ErrOrganizationCreate, err)
 	}
 
-	if !ctxUserPermitted(ctx, s.permissionRepo, model.MustNewNilID(model.ResourceTypeOrganization), model.PermissionKindCreate) {
+	if !s.permissionService.CtxUserHasPermission(ctx, model.MustNewNilID(model.ResourceTypeOrganization), model.PermissionKindCreate) {
 		return ErrNoPermission
 	}
 
@@ -120,7 +120,7 @@ func (s organizationService) Update(ctx context.Context, id model.ID, patch map[
 		return nil, errors.Join(ErrOrganizationUpdate, err)
 	}
 
-	if !ctxUserPermitted(ctx, s.permissionRepo, id, model.PermissionKindWrite) {
+	if !s.permissionService.CtxUserHasPermission(ctx, id, model.PermissionKindWrite) {
 		return nil, ErrNoPermission
 	}
 
@@ -157,7 +157,7 @@ func (s organizationService) Delete(ctx context.Context, id model.ID, force bool
 		return errors.Join(ErrOrganizationDelete, err)
 	}
 
-	if !ctxUserPermitted(ctx, s.permissionRepo, id, model.PermissionKindDelete) {
+	if !s.permissionService.CtxUserHasPermission(ctx, id, model.PermissionKindDelete) {
 		return ErrNoPermission
 	}
 
@@ -194,7 +194,7 @@ func (s organizationService) AddMember(ctx context.Context, orgID, memberID mode
 		return errors.Join(ErrOrganizationMemberAdd, err)
 	}
 
-	if !ctxUserPermitted(ctx, s.permissionRepo, orgID, model.PermissionKindWrite) {
+	if !s.permissionService.CtxUserHasPermission(ctx, orgID, model.PermissionKindWrite) {
 		return ErrNoPermission
 	}
 
@@ -246,7 +246,7 @@ func (s organizationService) RemoveMember(ctx context.Context, orgID, memberID m
 		return errors.Join(ErrOrganizationMemberRemove, err)
 	}
 
-	if !ctxUserPermitted(ctx, s.permissionRepo, orgID, model.PermissionKindWrite) {
+	if !s.permissionService.CtxUserHasPermission(ctx, orgID, model.PermissionKindWrite) {
 		return ErrNoPermission
 	}
 
@@ -277,8 +277,8 @@ func NewOrganizationService(opts ...Option) (OrganizationService, error) {
 		return nil, ErrNoUserRepository
 	}
 
-	if svc.permissionRepo == nil {
-		return nil, ErrNoPermissionRepository
+	if svc.permissionService == nil {
+		return nil, ErrNoPermissionService
 	}
 
 	if svc.licenseService == nil {

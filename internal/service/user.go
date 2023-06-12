@@ -55,7 +55,7 @@ func (s *userService) Create(ctx context.Context, user *model.User) error {
 		return errors.Join(ErrUserCreate, err)
 	}
 
-	if !ctxUserPermitted(ctx, s.permissionRepo, model.MustNewNilID(model.ResourceTypeUser), model.PermissionKindCreate) {
+	if !s.permissionService.CtxUserHasPermission(ctx, model.MustNewNilID(model.ResourceTypeUser), model.PermissionKindCreate) {
 		return ErrNoPermission
 	}
 
@@ -140,7 +140,7 @@ func (s *userService) Update(ctx context.Context, id model.ID, patch map[string]
 		return nil, ErrNoUser
 	}
 
-	if userID != id && !ctxUserPermitted(ctx, s.permissionRepo, id, model.PermissionKindWrite) {
+	if userID != id && !s.permissionService.CtxUserHasPermission(ctx, id, model.PermissionKindWrite) {
 		return nil, ErrNoPermission
 	}
 
@@ -182,7 +182,7 @@ func (s *userService) Delete(ctx context.Context, id model.ID, force bool) error
 		return ErrNoUser
 	}
 
-	if userID == id || !ctxUserPermitted(ctx, s.permissionRepo, id, model.PermissionKindDelete) {
+	if userID == id || !s.permissionService.CtxUserHasPermission(ctx, id, model.PermissionKindDelete) {
 		return ErrNoPermission
 	}
 
@@ -219,8 +219,8 @@ func NewUserService(opts ...Option) (UserService, error) {
 		return nil, ErrNoUserRepository
 	}
 
-	if svc.permissionRepo == nil {
-		return nil, ErrNoPermissionRepository
+	if svc.permissionService == nil {
+		return nil, ErrNoPermissionService
 	}
 
 	if svc.licenseService == nil {

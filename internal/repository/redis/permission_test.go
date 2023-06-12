@@ -544,6 +544,104 @@ func TestCachedPermissionRepository_GetByTarget(t *testing.T) {
 	}
 }
 
+func TestCachedPermissionRepository_GetBySubjectAndTarget(t *testing.T) {
+	type fields struct {
+		cacheRepo      func(ctx context.Context, subject, target model.ID, permissions []*model.Permission) *baseRepository
+		permissionRepo func(ctx context.Context, subject, target model.ID, permissions []*model.Permission) repository.PermissionRepository
+	}
+	type args struct {
+		ctx     context.Context
+		subject model.ID
+		target  model.ID
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    []*model.Permission
+		wantErr error
+	}{
+		{
+			name: "get permission for target",
+			fields: fields{
+				cacheRepo: func(ctx context.Context, subject, target model.ID, permissions []*model.Permission) *baseRepository {
+					db, err := NewDatabase(
+						WithClient(new(mock.RedisClient)),
+					)
+					require.NoError(t, err)
+
+					return &baseRepository{
+						db:     db,
+						cache:  new(mock.CacheRepository),
+						tracer: new(mock.Tracer),
+						logger: new(mock.Logger),
+					}
+				},
+				permissionRepo: func(ctx context.Context, subject, target model.ID, permissions []*model.Permission) repository.PermissionRepository {
+					repo := new(mock.PermissionRepository)
+					repo.On("GetBySubjectAndTarget", ctx, subject, target).Return(permissions, nil)
+					return repo
+				},
+			},
+			args: args{
+				ctx:     context.Background(),
+				subject: model.MustNewID(model.ResourceTypeUser),
+				target:  model.MustNewID(model.ResourceTypeOrganization),
+			},
+			want: []*model.Permission{
+				{
+					ID:      model.MustNewID(model.ResourceTypePermission),
+					Kind:    model.PermissionKindRead,
+					Subject: model.MustNewID(model.ResourceTypeUser),
+					Target:  model.MustNewID(model.ResourceTypeProject),
+				},
+			},
+		},
+		{
+			name: "get permission for target with error",
+			fields: fields{
+				cacheRepo: func(ctx context.Context, subject, target model.ID, permissions []*model.Permission) *baseRepository {
+					db, err := NewDatabase(
+						WithClient(new(mock.RedisClient)),
+					)
+					require.NoError(t, err)
+
+					return &baseRepository{
+						db:     db,
+						cache:  new(mock.CacheRepository),
+						tracer: new(mock.Tracer),
+						logger: new(mock.Logger),
+					}
+				},
+				permissionRepo: func(ctx context.Context, subject, target model.ID, permissions []*model.Permission) repository.PermissionRepository {
+					repo := new(mock.PermissionRepository)
+					repo.On("GetBySubjectAndTarget", ctx, subject, target).Return(nil, repository.ErrNotFound)
+					return repo
+				},
+			},
+			args: args{
+				ctx:     context.Background(),
+				subject: model.MustNewID(model.ResourceTypeUser),
+				target:  model.MustNewID(model.ResourceTypeOrganization),
+			},
+			wantErr: repository.ErrNotFound,
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			r := &CachedPermissionRepository{
+				cacheRepo:      tt.fields.cacheRepo(tt.args.ctx, tt.args.subject, tt.args.target, tt.want),
+				permissionRepo: tt.fields.permissionRepo(tt.args.ctx, tt.args.subject, tt.args.target, tt.want),
+			}
+			got, err := r.GetBySubjectAndTarget(tt.args.ctx, tt.args.subject, tt.args.target)
+			require.ErrorIs(t, err, tt.wantErr)
+			require.Equal(t, tt.want, got)
+		})
+	}
+}
+
 func TestCachedPermissionRepository_Update(t *testing.T) {
 	type fields struct {
 		cacheRepo      func(ctx context.Context, id model.ID, kind model.PermissionKind) *baseRepository

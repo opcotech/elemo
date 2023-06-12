@@ -35,18 +35,18 @@ func TestNewOrganizationService(t *testing.T) {
 					WithTracer(new(mock.Tracer)),
 					WithUserRepository(new(mock.UserRepository)),
 					WithOrganizationRepository(new(mock.OrganizationRepository)),
-					WithPermissionRepository(new(mock.PermissionRepository)),
+					WithPermissionService(new(mock.PermissionService)),
 					WithLicenseService(new(mock.LicenseService)),
 				},
 			},
 			want: &organizationService{
 				baseService: &baseService{
-					logger:           new(mock.Logger),
-					tracer:           new(mock.Tracer),
-					userRepo:         new(mock.UserRepository),
-					organizationRepo: new(mock.OrganizationRepository),
-					permissionRepo:   new(mock.PermissionRepository),
-					licenseService:   new(mock.LicenseService),
+					logger:            new(mock.Logger),
+					tracer:            new(mock.Tracer),
+					userRepo:          new(mock.UserRepository),
+					organizationRepo:  new(mock.OrganizationRepository),
+					permissionService: new(mock.PermissionService),
+					licenseService:    new(mock.LicenseService),
 				},
 			},
 		},
@@ -58,7 +58,7 @@ func TestNewOrganizationService(t *testing.T) {
 					WithTracer(new(mock.Tracer)),
 					WithUserRepository(new(mock.UserRepository)),
 					WithOrganizationRepository(new(mock.OrganizationRepository)),
-					WithPermissionRepository(new(mock.PermissionRepository)),
+					WithPermissionService(new(mock.PermissionService)),
 					WithLicenseService(new(mock.LicenseService)),
 				},
 			},
@@ -71,7 +71,7 @@ func TestNewOrganizationService(t *testing.T) {
 					WithLogger(new(mock.Logger)),
 					WithTracer(new(mock.Tracer)),
 					WithUserRepository(new(mock.UserRepository)),
-					WithPermissionRepository(new(mock.PermissionRepository)),
+					WithPermissionService(new(mock.PermissionService)),
 					WithLicenseService(new(mock.LicenseService)),
 				},
 			},
@@ -88,7 +88,7 @@ func TestNewOrganizationService(t *testing.T) {
 					WithLicenseService(new(mock.LicenseService)),
 				},
 			},
-			wantErr: ErrNoPermissionRepository,
+			wantErr: ErrNoPermissionService,
 		},
 		{
 			name: "new organization service with no license service",
@@ -98,7 +98,7 @@ func TestNewOrganizationService(t *testing.T) {
 					WithTracer(new(mock.Tracer)),
 					WithUserRepository(new(mock.UserRepository)),
 					WithOrganizationRepository(new(mock.OrganizationRepository)),
-					WithPermissionRepository(new(mock.PermissionRepository)),
+					WithPermissionService(new(mock.PermissionService)),
 				},
 			},
 			wantErr: ErrNoLicenseService,
@@ -110,7 +110,7 @@ func TestNewOrganizationService(t *testing.T) {
 					WithLogger(new(mock.Logger)),
 					WithTracer(new(mock.Tracer)),
 					WithOrganizationRepository(new(mock.OrganizationRepository)),
-					WithPermissionRepository(new(mock.PermissionRepository)),
+					WithPermissionService(new(mock.PermissionService)),
 					WithLicenseService(new(mock.LicenseService)),
 				},
 			},
@@ -158,10 +158,9 @@ func TestOrganizationService_Create(t *testing.T) {
 					organizationRepo := new(mock.OrganizationRepository)
 					organizationRepo.On("Create", ctx, userID, organization).Return(nil)
 
-					permRepo := new(mock.PermissionRepository)
-					permRepo.On("HasPermission", ctx, userID, model.MustNewNilID(model.ResourceTypeOrganization), []model.PermissionKind{
+					permSvc := new(mock.PermissionService)
+					permSvc.On("CtxUserHasPermission", ctx, model.MustNewNilID(model.ResourceTypeOrganization), []model.PermissionKind{
 						model.PermissionKindCreate,
-						model.PermissionKindAll,
 					}).Return(true, nil)
 
 					licenseSvc := new(mock.LicenseService)
@@ -169,11 +168,11 @@ func TestOrganizationService_Create(t *testing.T) {
 					licenseSvc.On("WithinThreshold", ctx, license.QuotaOrganizations).Return(true, nil)
 
 					return &baseService{
-						logger:           new(mock.Logger),
-						tracer:           tracer,
-						organizationRepo: organizationRepo,
-						permissionRepo:   permRepo,
-						licenseService:   licenseSvc,
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						organizationRepo:  organizationRepo,
+						permissionService: permSvc,
+						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -193,10 +192,9 @@ func TestOrganizationService_Create(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "service.organizationService/Create", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					permRepo := new(mock.PermissionRepository)
-					permRepo.On("HasPermission", ctx, userID, model.MustNewNilID(model.ResourceTypeOrganization), []model.PermissionKind{
+					permSvc := new(mock.PermissionService)
+					permSvc.On("CtxUserHasPermission", ctx, model.MustNewNilID(model.ResourceTypeOrganization), []model.PermissionKind{
 						model.PermissionKindCreate,
-						model.PermissionKindAll,
 					}).Return(false, nil)
 
 					licenseSvc := new(mock.LicenseService)
@@ -204,11 +202,11 @@ func TestOrganizationService_Create(t *testing.T) {
 					licenseSvc.On("WithinThreshold", ctx, license.QuotaOrganizations).Return(true, nil)
 
 					return &baseService{
-						logger:           new(mock.Logger),
-						tracer:           tracer,
-						organizationRepo: new(mock.OrganizationRepository),
-						permissionRepo:   permRepo,
-						licenseService:   licenseSvc,
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						organizationRepo:  new(mock.OrganizationRepository),
+						permissionService: permSvc,
+						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -229,10 +227,9 @@ func TestOrganizationService_Create(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "service.organizationService/Create", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					permRepo := new(mock.PermissionRepository)
-					permRepo.On("HasPermission", ctx, userID, model.MustNewNilID(model.ResourceTypeOrganization), []model.PermissionKind{
+					permSvc := new(mock.PermissionService)
+					permSvc.On("CtxUserHasPermission", ctx, model.MustNewNilID(model.ResourceTypeOrganization), []model.PermissionKind{
 						model.PermissionKindCreate,
-						model.PermissionKindAll,
 					}).Return(false, assert.AnError)
 
 					licenseSvc := new(mock.LicenseService)
@@ -240,11 +237,11 @@ func TestOrganizationService_Create(t *testing.T) {
 					licenseSvc.On("WithinThreshold", ctx, license.QuotaOrganizations).Return(true, nil)
 
 					return &baseService{
-						logger:           new(mock.Logger),
-						tracer:           tracer,
-						organizationRepo: new(mock.OrganizationRepository),
-						permissionRepo:   permRepo,
-						licenseService:   licenseSvc,
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						organizationRepo:  new(mock.OrganizationRepository),
+						permissionService: permSvc,
+						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -296,10 +293,9 @@ func TestOrganizationService_Create(t *testing.T) {
 					organizationRepo := new(mock.OrganizationRepository)
 					organizationRepo.On("Create", ctx, userID, organization).Return(assert.AnError)
 
-					permRepo := new(mock.PermissionRepository)
-					permRepo.On("HasPermission", ctx, userID, model.MustNewNilID(model.ResourceTypeOrganization), []model.PermissionKind{
+					permSvc := new(mock.PermissionService)
+					permSvc.On("CtxUserHasPermission", ctx, model.MustNewNilID(model.ResourceTypeOrganization), []model.PermissionKind{
 						model.PermissionKindCreate,
-						model.PermissionKindAll,
 					}).Return(true, nil)
 
 					licenseSvc := new(mock.LicenseService)
@@ -307,11 +303,11 @@ func TestOrganizationService_Create(t *testing.T) {
 					licenseSvc.On("WithinThreshold", ctx, license.QuotaOrganizations).Return(true, nil)
 
 					return &baseService{
-						logger:           new(mock.Logger),
-						tracer:           tracer,
-						organizationRepo: organizationRepo,
-						permissionRepo:   permRepo,
-						licenseService:   licenseSvc,
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						organizationRepo:  organizationRepo,
+						permissionService: permSvc,
+						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -332,10 +328,9 @@ func TestOrganizationService_Create(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "service.organizationService/Create", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					permRepo := new(mock.PermissionRepository)
-					permRepo.On("HasPermission", ctx, userID, model.MustNewNilID(model.ResourceTypeOrganization), []model.PermissionKind{
+					permSvc := new(mock.PermissionService)
+					permSvc.On("CtxUserHasPermission", ctx, model.MustNewNilID(model.ResourceTypeOrganization), []model.PermissionKind{
 						model.PermissionKindCreate,
-						model.PermissionKindAll,
 					}).Return(true, nil)
 
 					licenseSvc := new(mock.LicenseService)
@@ -343,11 +338,11 @@ func TestOrganizationService_Create(t *testing.T) {
 					licenseSvc.On("WithinThreshold", ctx, license.QuotaOrganizations).Return(false, nil)
 
 					return &baseService{
-						logger:           new(mock.Logger),
-						tracer:           tracer,
-						organizationRepo: new(mock.OrganizationRepository),
-						permissionRepo:   permRepo,
-						licenseService:   licenseSvc,
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						organizationRepo:  new(mock.OrganizationRepository),
+						permissionService: permSvc,
+						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -372,11 +367,11 @@ func TestOrganizationService_Create(t *testing.T) {
 					licenseSvc.On("Expired", ctx).Return(true, nil)
 
 					return &baseService{
-						logger:           new(mock.Logger),
-						tracer:           tracer,
-						organizationRepo: new(mock.OrganizationRepository),
-						permissionRepo:   new(mock.PermissionRepository),
-						licenseService:   licenseSvc,
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						organizationRepo:  new(mock.OrganizationRepository),
+						permissionService: new(mock.PermissionService),
+						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -401,11 +396,11 @@ func TestOrganizationService_Create(t *testing.T) {
 					licenseSvc.On("Expired", ctx).Return(false, assert.AnError)
 
 					return &baseService{
-						logger:           new(mock.Logger),
-						tracer:           tracer,
-						organizationRepo: new(mock.OrganizationRepository),
-						permissionRepo:   new(mock.PermissionRepository),
-						licenseService:   licenseSvc,
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						organizationRepo:  new(mock.OrganizationRepository),
+						permissionService: new(mock.PermissionService),
+						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -704,10 +699,9 @@ func TestOrganizationService_Update(t *testing.T) {
 					organizationRepo := new(mock.OrganizationRepository)
 					organizationRepo.On("Update", ctx, id, patch).Return(organization, nil)
 
-					permRepo := new(mock.PermissionRepository)
-					permRepo.On("HasPermission", ctx, userID, id, []model.PermissionKind{
+					permSvc := new(mock.PermissionService)
+					permSvc.On("CtxUserHasPermission", ctx, id, []model.PermissionKind{
 						model.PermissionKindWrite,
-						model.PermissionKindAll,
 					}).Return(true, nil)
 
 					licenseSvc := new(mock.LicenseService)
@@ -715,11 +709,11 @@ func TestOrganizationService_Update(t *testing.T) {
 					licenseSvc.On("WithinThreshold", ctx, license.QuotaOrganizations).Return(true, nil)
 
 					return &baseService{
-						logger:           new(mock.Logger),
-						tracer:           tracer,
-						organizationRepo: organizationRepo,
-						permissionRepo:   permRepo,
-						licenseService:   licenseSvc,
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						organizationRepo:  organizationRepo,
+						permissionService: permSvc,
+						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -746,21 +740,20 @@ func TestOrganizationService_Update(t *testing.T) {
 					organizationRepo := new(mock.OrganizationRepository)
 					organizationRepo.On("Update", ctx, id, patch).Return(organization, nil)
 
-					permRepo := new(mock.PermissionRepository)
-					permRepo.On("HasPermission", ctx, otherOrganizationID, id, []model.PermissionKind{
+					permSvc := new(mock.PermissionService)
+					permSvc.On("CtxUserHasPermission", ctx, id, []model.PermissionKind{
 						model.PermissionKindWrite,
-						model.PermissionKindAll,
 					}).Return(false, nil)
 
 					licenseSvc := new(mock.LicenseService)
 					licenseSvc.On("Expired", ctx).Return(false, nil)
 
 					return &baseService{
-						logger:           new(mock.Logger),
-						tracer:           tracer,
-						organizationRepo: organizationRepo,
-						permissionRepo:   permRepo,
-						licenseService:   licenseSvc,
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						organizationRepo:  organizationRepo,
+						permissionService: permSvc,
+						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -813,21 +806,20 @@ func TestOrganizationService_Update(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "service.organizationService/Update", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					permRepo := new(mock.PermissionRepository)
-					permRepo.On("HasPermission", ctx, userID, id, []model.PermissionKind{
+					permSvc := new(mock.PermissionService)
+					permSvc.On("CtxUserHasPermission", ctx, id, []model.PermissionKind{
 						model.PermissionKindWrite,
-						model.PermissionKindAll,
 					}).Return(true, nil)
 
 					licenseSvc := new(mock.LicenseService)
 					licenseSvc.On("Expired", ctx).Return(false, nil)
 
 					return &baseService{
-						logger:           new(mock.Logger),
-						tracer:           tracer,
-						organizationRepo: new(mock.OrganizationRepository),
-						permissionRepo:   permRepo,
-						licenseService:   licenseSvc,
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						organizationRepo:  new(mock.OrganizationRepository),
+						permissionService: permSvc,
+						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -851,10 +843,9 @@ func TestOrganizationService_Update(t *testing.T) {
 					organizationRepo := new(mock.OrganizationRepository)
 					organizationRepo.On("Update", ctx, id, patch).Return(nil, assert.AnError)
 
-					permRepo := new(mock.PermissionRepository)
-					permRepo.On("HasPermission", ctx, userID, id, []model.PermissionKind{
+					permSvc := new(mock.PermissionService)
+					permSvc.On("CtxUserHasPermission", ctx, id, []model.PermissionKind{
 						model.PermissionKindWrite,
-						model.PermissionKindAll,
 					}).Return(true, nil)
 
 					licenseSvc := new(mock.LicenseService)
@@ -862,11 +853,11 @@ func TestOrganizationService_Update(t *testing.T) {
 					licenseSvc.On("WithinThreshold", ctx, license.QuotaOrganizations).Return(true, nil)
 
 					return &baseService{
-						logger:           new(mock.Logger),
-						tracer:           tracer,
-						organizationRepo: organizationRepo,
-						permissionRepo:   permRepo,
-						licenseService:   licenseSvc,
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						organizationRepo:  organizationRepo,
+						permissionService: permSvc,
+						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -889,10 +880,9 @@ func TestOrganizationService_Update(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "service.organizationService/Update", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					permRepo := new(mock.PermissionRepository)
-					permRepo.On("HasPermission", ctx, userID, id, []model.PermissionKind{
+					permSvc := new(mock.PermissionService)
+					permSvc.On("CtxUserHasPermission", ctx, id, []model.PermissionKind{
 						model.PermissionKindWrite,
-						model.PermissionKindAll,
 					}).Return(true, nil)
 
 					licenseSvc := new(mock.LicenseService)
@@ -900,11 +890,11 @@ func TestOrganizationService_Update(t *testing.T) {
 					licenseSvc.On("WithinThreshold", ctx, license.QuotaOrganizations).Return(false, nil)
 
 					return &baseService{
-						logger:           new(mock.Logger),
-						tracer:           tracer,
-						organizationRepo: new(mock.OrganizationRepository),
-						permissionRepo:   permRepo,
-						licenseService:   licenseSvc,
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						organizationRepo:  new(mock.OrganizationRepository),
+						permissionService: permSvc,
+						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -932,11 +922,11 @@ func TestOrganizationService_Update(t *testing.T) {
 					licenseSvc.On("Expired", ctx).Return(true, nil)
 
 					return &baseService{
-						logger:           new(mock.Logger),
-						tracer:           tracer,
-						organizationRepo: new(mock.OrganizationRepository),
-						permissionRepo:   new(mock.PermissionRepository),
-						licenseService:   licenseSvc,
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						organizationRepo:  new(mock.OrganizationRepository),
+						permissionService: new(mock.PermissionService),
+						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -964,11 +954,11 @@ func TestOrganizationService_Update(t *testing.T) {
 					licenseSvc.On("Expired", ctx).Return(false, errors.New("test error"))
 
 					return &baseService{
-						logger:           new(mock.Logger),
-						tracer:           tracer,
-						organizationRepo: new(mock.OrganizationRepository),
-						permissionRepo:   new(mock.PermissionRepository),
-						licenseService:   licenseSvc,
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						organizationRepo:  new(mock.OrganizationRepository),
+						permissionService: new(mock.PermissionService),
+						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -1032,21 +1022,20 @@ func TestOrganizationService_Delete(t *testing.T) {
 					organizationRepo := new(mock.OrganizationRepository)
 					organizationRepo.On("Update", ctx, id, patch).Return(new(model.Organization), nil)
 
-					permRepo := new(mock.PermissionRepository)
-					permRepo.On("HasPermission", ctx, userID, id, []model.PermissionKind{
+					permSvc := new(mock.PermissionService)
+					permSvc.On("CtxUserHasPermission", ctx, id, []model.PermissionKind{
 						model.PermissionKindDelete,
-						model.PermissionKindAll,
 					}).Return(true, nil)
 
 					licenseSvc := new(mock.LicenseService)
 					licenseSvc.On("Expired", ctx).Return(false, nil)
 
 					return &baseService{
-						logger:           new(mock.Logger),
-						tracer:           tracer,
-						organizationRepo: organizationRepo,
-						permissionRepo:   permRepo,
-						licenseService:   licenseSvc,
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						organizationRepo:  organizationRepo,
+						permissionService: permSvc,
+						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -1069,21 +1058,20 @@ func TestOrganizationService_Delete(t *testing.T) {
 					organizationRepo := new(mock.OrganizationRepository)
 					organizationRepo.On("Delete", ctx, id).Return(nil)
 
-					permRepo := new(mock.PermissionRepository)
-					permRepo.On("HasPermission", ctx, userID, id, []model.PermissionKind{
+					permSvc := new(mock.PermissionService)
+					permSvc.On("CtxUserHasPermission", ctx, id, []model.PermissionKind{
 						model.PermissionKindDelete,
-						model.PermissionKindAll,
 					}).Return(true, nil)
 
 					licenseSvc := new(mock.LicenseService)
 					licenseSvc.On("Expired", ctx).Return(false, nil)
 
 					return &baseService{
-						logger:           new(mock.Logger),
-						tracer:           tracer,
-						organizationRepo: organizationRepo,
-						permissionRepo:   permRepo,
-						licenseService:   licenseSvc,
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						organizationRepo:  organizationRepo,
+						permissionService: permSvc,
+						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -1107,11 +1095,11 @@ func TestOrganizationService_Delete(t *testing.T) {
 					licenseSvc.On("Expired", ctx).Return(true, nil)
 
 					return &baseService{
-						logger:           new(mock.Logger),
-						tracer:           tracer,
-						organizationRepo: new(mock.OrganizationRepository),
-						permissionRepo:   new(mock.PermissionRepository),
-						licenseService:   licenseSvc,
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						organizationRepo:  new(mock.OrganizationRepository),
+						permissionService: new(mock.PermissionService),
+						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -1136,11 +1124,11 @@ func TestOrganizationService_Delete(t *testing.T) {
 					licenseSvc.On("Expired", ctx).Return(false, assert.AnError)
 
 					return &baseService{
-						logger:           new(mock.Logger),
-						tracer:           tracer,
-						organizationRepo: new(mock.OrganizationRepository),
-						permissionRepo:   new(mock.PermissionRepository),
-						licenseService:   licenseSvc,
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						organizationRepo:  new(mock.OrganizationRepository),
+						permissionService: new(mock.PermissionService),
+						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -1169,21 +1157,20 @@ func TestOrganizationService_Delete(t *testing.T) {
 					organizationRepo := new(mock.OrganizationRepository)
 					organizationRepo.On("Update", ctx, id, patch).Return(new(model.Organization), nil)
 
-					permRepo := new(mock.PermissionRepository)
-					permRepo.On("HasPermission", ctx, userID, id, []model.PermissionKind{
+					permSvc := new(mock.PermissionService)
+					permSvc.On("CtxUserHasPermission", ctx, id, []model.PermissionKind{
 						model.PermissionKindDelete,
-						model.PermissionKindAll,
 					}).Return(false, nil)
 
 					licenseSvc := new(mock.LicenseService)
 					licenseSvc.On("Expired", ctx).Return(false, nil)
 
 					return &baseService{
-						logger:           new(mock.Logger),
-						tracer:           tracer,
-						organizationRepo: organizationRepo,
-						permissionRepo:   permRepo,
-						licenseService:   licenseSvc,
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						organizationRepo:  organizationRepo,
+						permissionService: permSvc,
+						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -1207,21 +1194,20 @@ func TestOrganizationService_Delete(t *testing.T) {
 					organizationRepo := new(mock.OrganizationRepository)
 					organizationRepo.On("Delete", ctx, id).Return(nil)
 
-					permRepo := new(mock.PermissionRepository)
-					permRepo.On("HasPermission", ctx, userID, id, []model.PermissionKind{
+					permSvc := new(mock.PermissionService)
+					permSvc.On("CtxUserHasPermission", ctx, id, []model.PermissionKind{
 						model.PermissionKindDelete,
-						model.PermissionKindAll,
 					}).Return(false, nil)
 
 					licenseSvc := new(mock.LicenseService)
 					licenseSvc.On("Expired", ctx).Return(false, nil)
 
 					return &baseService{
-						logger:           new(mock.Logger),
-						tracer:           tracer,
-						organizationRepo: organizationRepo,
-						permissionRepo:   permRepo,
-						licenseService:   licenseSvc,
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						organizationRepo:  organizationRepo,
+						permissionService: permSvc,
+						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -1246,11 +1232,11 @@ func TestOrganizationService_Delete(t *testing.T) {
 					licenseSvc.On("Expired", ctx).Return(false, nil)
 
 					return &baseService{
-						logger:           new(mock.Logger),
-						tracer:           tracer,
-						organizationRepo: new(mock.OrganizationRepository),
-						permissionRepo:   new(mock.PermissionRepository),
-						licenseService:   licenseSvc,
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						organizationRepo:  new(mock.OrganizationRepository),
+						permissionService: new(mock.PermissionService),
+						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -1279,21 +1265,20 @@ func TestOrganizationService_Delete(t *testing.T) {
 					organizationRepo := new(mock.OrganizationRepository)
 					organizationRepo.On("Update", ctx, id, patch).Return(nil, assert.AnError)
 
-					permRepo := new(mock.PermissionRepository)
-					permRepo.On("HasPermission", ctx, userID, id, []model.PermissionKind{
+					permSvc := new(mock.PermissionService)
+					permSvc.On("CtxUserHasPermission", ctx, id, []model.PermissionKind{
 						model.PermissionKindDelete,
-						model.PermissionKindAll,
 					}).Return(true, nil)
 
 					licenseSvc := new(mock.LicenseService)
 					licenseSvc.On("Expired", ctx).Return(false, nil)
 
 					return &baseService{
-						logger:           new(mock.Logger),
-						tracer:           tracer,
-						organizationRepo: organizationRepo,
-						permissionRepo:   permRepo,
-						licenseService:   licenseSvc,
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						organizationRepo:  organizationRepo,
+						permissionService: permSvc,
+						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -1317,21 +1302,20 @@ func TestOrganizationService_Delete(t *testing.T) {
 					organizationRepo := new(mock.OrganizationRepository)
 					organizationRepo.On("Delete", ctx, id).Return(assert.AnError)
 
-					permRepo := new(mock.PermissionRepository)
-					permRepo.On("HasPermission", ctx, userID, id, []model.PermissionKind{
+					permSvc := new(mock.PermissionService)
+					permSvc.On("CtxUserHasPermission", ctx, id, []model.PermissionKind{
 						model.PermissionKindDelete,
-						model.PermissionKindAll,
 					}).Return(true, nil)
 
 					licenseSvc := new(mock.LicenseService)
 					licenseSvc.On("Expired", ctx).Return(false, nil)
 
 					return &baseService{
-						logger:           new(mock.Logger),
-						tracer:           tracer,
-						organizationRepo: organizationRepo,
-						permissionRepo:   permRepo,
-						licenseService:   licenseSvc,
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						organizationRepo:  organizationRepo,
+						permissionService: permSvc,
+						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -1386,10 +1370,9 @@ func TestOrganizationService_AddMember(t *testing.T) {
 					organizationRepo := new(mock.OrganizationRepository)
 					organizationRepo.On("AddMember", ctx, organization, userID).Return(nil)
 
-					permRepo := new(mock.PermissionRepository)
-					permRepo.On("HasPermission", ctx, userID, model.MustNewNilID(model.ResourceTypeOrganization), []model.PermissionKind{
+					permSvc := new(mock.PermissionService)
+					permSvc.On("CtxUserHasPermission", ctx, model.MustNewNilID(model.ResourceTypeOrganization), []model.PermissionKind{
 						model.PermissionKindWrite,
-						model.PermissionKindAll,
 					}).Return(true, nil)
 
 					licenseSvc := new(mock.LicenseService)
@@ -1397,11 +1380,11 @@ func TestOrganizationService_AddMember(t *testing.T) {
 					licenseSvc.On("WithinThreshold", ctx, license.QuotaOrganizations).Return(true, nil)
 
 					return &baseService{
-						logger:           new(mock.Logger),
-						tracer:           tracer,
-						organizationRepo: organizationRepo,
-						permissionRepo:   permRepo,
-						licenseService:   licenseSvc,
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						organizationRepo:  organizationRepo,
+						permissionService: permSvc,
+						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -1421,10 +1404,9 @@ func TestOrganizationService_AddMember(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "service.organizationService/AddMember", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					permRepo := new(mock.PermissionRepository)
-					permRepo.On("HasPermission", ctx, userID, model.MustNewNilID(model.ResourceTypeOrganization), []model.PermissionKind{
+					permSvc := new(mock.PermissionService)
+					permSvc.On("CtxUserHasPermission", ctx, model.MustNewNilID(model.ResourceTypeOrganization), []model.PermissionKind{
 						model.PermissionKindWrite,
-						model.PermissionKindAll,
 					}).Return(false, nil)
 
 					licenseSvc := new(mock.LicenseService)
@@ -1432,11 +1414,11 @@ func TestOrganizationService_AddMember(t *testing.T) {
 					licenseSvc.On("WithinThreshold", ctx, license.QuotaOrganizations).Return(true, nil)
 
 					return &baseService{
-						logger:           new(mock.Logger),
-						tracer:           tracer,
-						organizationRepo: new(mock.OrganizationRepository),
-						permissionRepo:   permRepo,
-						licenseService:   licenseSvc,
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						organizationRepo:  new(mock.OrganizationRepository),
+						permissionService: permSvc,
+						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -1457,10 +1439,9 @@ func TestOrganizationService_AddMember(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "service.organizationService/AddMember", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					permRepo := new(mock.PermissionRepository)
-					permRepo.On("HasPermission", ctx, userID, model.MustNewNilID(model.ResourceTypeOrganization), []model.PermissionKind{
+					permSvc := new(mock.PermissionService)
+					permSvc.On("CtxUserHasPermission", ctx, model.MustNewNilID(model.ResourceTypeOrganization), []model.PermissionKind{
 						model.PermissionKindWrite,
-						model.PermissionKindAll,
 					}).Return(false, assert.AnError)
 
 					licenseSvc := new(mock.LicenseService)
@@ -1468,11 +1449,11 @@ func TestOrganizationService_AddMember(t *testing.T) {
 					licenseSvc.On("WithinThreshold", ctx, license.QuotaOrganizations).Return(true, nil)
 
 					return &baseService{
-						logger:           new(mock.Logger),
-						tracer:           tracer,
-						organizationRepo: new(mock.OrganizationRepository),
-						permissionRepo:   permRepo,
-						licenseService:   licenseSvc,
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						organizationRepo:  new(mock.OrganizationRepository),
+						permissionService: permSvc,
+						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -1493,21 +1474,20 @@ func TestOrganizationService_AddMember(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "service.organizationService/AddMember", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					permRepo := new(mock.PermissionRepository)
-					permRepo.On("HasPermission", ctx, userID, model.MustNewNilID(model.ResourceTypeOrganization), []model.PermissionKind{
+					permSvc := new(mock.PermissionService)
+					permSvc.On("CtxUserHasPermission", ctx, model.MustNewNilID(model.ResourceTypeOrganization), []model.PermissionKind{
 						model.PermissionKindWrite,
-						model.PermissionKindAll,
 					}).Return(true, nil)
 
 					licenseSvc := new(mock.LicenseService)
 					licenseSvc.On("Expired", ctx).Return(false, nil)
 
 					return &baseService{
-						logger:           new(mock.Logger),
-						tracer:           tracer,
-						organizationRepo: new(mock.OrganizationRepository),
-						permissionRepo:   permRepo,
-						licenseService:   licenseSvc,
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						organizationRepo:  new(mock.OrganizationRepository),
+						permissionService: permSvc,
+						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -1528,21 +1508,20 @@ func TestOrganizationService_AddMember(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "service.organizationService/AddMember", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					permRepo := new(mock.PermissionRepository)
-					permRepo.On("HasPermission", ctx, userID, model.MustNewNilID(model.ResourceTypeOrganization), []model.PermissionKind{
+					permSvc := new(mock.PermissionService)
+					permSvc.On("CtxUserHasPermission", ctx, model.MustNewNilID(model.ResourceTypeOrganization), []model.PermissionKind{
 						model.PermissionKindWrite,
-						model.PermissionKindAll,
 					}).Return(true, nil)
 
 					licenseSvc := new(mock.LicenseService)
 					licenseSvc.On("Expired", ctx).Return(false, nil)
 
 					return &baseService{
-						logger:           new(mock.Logger),
-						tracer:           tracer,
-						organizationRepo: new(mock.OrganizationRepository),
-						permissionRepo:   permRepo,
-						licenseService:   licenseSvc,
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						organizationRepo:  new(mock.OrganizationRepository),
+						permissionService: permSvc,
+						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -1566,10 +1545,9 @@ func TestOrganizationService_AddMember(t *testing.T) {
 					organizationRepo := new(mock.OrganizationRepository)
 					organizationRepo.On("AddMember", ctx, organization, userID).Return(assert.AnError)
 
-					permRepo := new(mock.PermissionRepository)
-					permRepo.On("HasPermission", ctx, userID, model.MustNewNilID(model.ResourceTypeOrganization), []model.PermissionKind{
+					permSvc := new(mock.PermissionService)
+					permSvc.On("CtxUserHasPermission", ctx, model.MustNewNilID(model.ResourceTypeOrganization), []model.PermissionKind{
 						model.PermissionKindWrite,
-						model.PermissionKindAll,
 					}).Return(true, nil)
 
 					licenseSvc := new(mock.LicenseService)
@@ -1577,11 +1555,11 @@ func TestOrganizationService_AddMember(t *testing.T) {
 					licenseSvc.On("WithinThreshold", ctx, license.QuotaOrganizations).Return(true, nil)
 
 					return &baseService{
-						logger:           new(mock.Logger),
-						tracer:           tracer,
-						organizationRepo: organizationRepo,
-						permissionRepo:   permRepo,
-						licenseService:   licenseSvc,
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						organizationRepo:  organizationRepo,
+						permissionService: permSvc,
+						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -1606,11 +1584,11 @@ func TestOrganizationService_AddMember(t *testing.T) {
 					licenseSvc.On("Expired", ctx).Return(false, assert.AnError)
 
 					return &baseService{
-						logger:           new(mock.Logger),
-						tracer:           tracer,
-						organizationRepo: new(mock.OrganizationRepository),
-						permissionRepo:   new(mock.PermissionRepository),
-						licenseService:   licenseSvc,
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						organizationRepo:  new(mock.OrganizationRepository),
+						permissionService: new(mock.PermissionService),
+						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -1846,10 +1824,9 @@ func TestOrganizationService_RemoveMember(t *testing.T) {
 					organizationRepo := new(mock.OrganizationRepository)
 					organizationRepo.On("RemoveMember", ctx, organization, userID).Return(nil)
 
-					permRepo := new(mock.PermissionRepository)
-					permRepo.On("HasPermission", ctx, userID, model.MustNewNilID(model.ResourceTypeOrganization), []model.PermissionKind{
+					permSvc := new(mock.PermissionService)
+					permSvc.On("CtxUserHasPermission", ctx, model.MustNewNilID(model.ResourceTypeOrganization), []model.PermissionKind{
 						model.PermissionKindWrite,
-						model.PermissionKindAll,
 					}).Return(true, nil)
 
 					licenseSvc := new(mock.LicenseService)
@@ -1857,11 +1834,11 @@ func TestOrganizationService_RemoveMember(t *testing.T) {
 					licenseSvc.On("WithinThreshold", ctx, license.QuotaOrganizations).Return(true, nil)
 
 					return &baseService{
-						logger:           new(mock.Logger),
-						tracer:           tracer,
-						organizationRepo: organizationRepo,
-						permissionRepo:   permRepo,
-						licenseService:   licenseSvc,
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						organizationRepo:  organizationRepo,
+						permissionService: permSvc,
+						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -1881,10 +1858,9 @@ func TestOrganizationService_RemoveMember(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "service.organizationService/RemoveMember", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					permRepo := new(mock.PermissionRepository)
-					permRepo.On("HasPermission", ctx, userID, model.MustNewNilID(model.ResourceTypeOrganization), []model.PermissionKind{
+					permSvc := new(mock.PermissionService)
+					permSvc.On("CtxUserHasPermission", ctx, model.MustNewNilID(model.ResourceTypeOrganization), []model.PermissionKind{
 						model.PermissionKindWrite,
-						model.PermissionKindAll,
 					}).Return(false, nil)
 
 					licenseSvc := new(mock.LicenseService)
@@ -1892,11 +1868,11 @@ func TestOrganizationService_RemoveMember(t *testing.T) {
 					licenseSvc.On("WithinThreshold", ctx, license.QuotaOrganizations).Return(true, nil)
 
 					return &baseService{
-						logger:           new(mock.Logger),
-						tracer:           tracer,
-						organizationRepo: new(mock.OrganizationRepository),
-						permissionRepo:   permRepo,
-						licenseService:   licenseSvc,
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						organizationRepo:  new(mock.OrganizationRepository),
+						permissionService: permSvc,
+						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -1917,10 +1893,9 @@ func TestOrganizationService_RemoveMember(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "service.organizationService/RemoveMember", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					permRepo := new(mock.PermissionRepository)
-					permRepo.On("HasPermission", ctx, userID, model.MustNewNilID(model.ResourceTypeOrganization), []model.PermissionKind{
+					permSvc := new(mock.PermissionService)
+					permSvc.On("CtxUserHasPermission", ctx, model.MustNewNilID(model.ResourceTypeOrganization), []model.PermissionKind{
 						model.PermissionKindWrite,
-						model.PermissionKindAll,
 					}).Return(false, assert.AnError)
 
 					licenseSvc := new(mock.LicenseService)
@@ -1928,11 +1903,11 @@ func TestOrganizationService_RemoveMember(t *testing.T) {
 					licenseSvc.On("WithinThreshold", ctx, license.QuotaOrganizations).Return(true, nil)
 
 					return &baseService{
-						logger:           new(mock.Logger),
-						tracer:           tracer,
-						organizationRepo: new(mock.OrganizationRepository),
-						permissionRepo:   permRepo,
-						licenseService:   licenseSvc,
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						organizationRepo:  new(mock.OrganizationRepository),
+						permissionService: permSvc,
+						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -1953,21 +1928,20 @@ func TestOrganizationService_RemoveMember(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "service.organizationService/RemoveMember", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					permRepo := new(mock.PermissionRepository)
-					permRepo.On("HasPermission", ctx, userID, model.MustNewNilID(model.ResourceTypeOrganization), []model.PermissionKind{
+					permSvc := new(mock.PermissionService)
+					permSvc.On("CtxUserHasPermission", ctx, model.MustNewNilID(model.ResourceTypeOrganization), []model.PermissionKind{
 						model.PermissionKindWrite,
-						model.PermissionKindAll,
 					}).Return(true, nil)
 
 					licenseSvc := new(mock.LicenseService)
 					licenseSvc.On("Expired", ctx).Return(false, nil)
 
 					return &baseService{
-						logger:           new(mock.Logger),
-						tracer:           tracer,
-						organizationRepo: new(mock.OrganizationRepository),
-						permissionRepo:   permRepo,
-						licenseService:   licenseSvc,
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						organizationRepo:  new(mock.OrganizationRepository),
+						permissionService: permSvc,
+						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -1988,21 +1962,20 @@ func TestOrganizationService_RemoveMember(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "service.organizationService/RemoveMember", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					permRepo := new(mock.PermissionRepository)
-					permRepo.On("HasPermission", ctx, userID, model.MustNewNilID(model.ResourceTypeOrganization), []model.PermissionKind{
+					permSvc := new(mock.PermissionService)
+					permSvc.On("CtxUserHasPermission", ctx, model.MustNewNilID(model.ResourceTypeOrganization), []model.PermissionKind{
 						model.PermissionKindWrite,
-						model.PermissionKindAll,
 					}).Return(true, nil)
 
 					licenseSvc := new(mock.LicenseService)
 					licenseSvc.On("Expired", ctx).Return(false, nil)
 
 					return &baseService{
-						logger:           new(mock.Logger),
-						tracer:           tracer,
-						organizationRepo: new(mock.OrganizationRepository),
-						permissionRepo:   permRepo,
-						licenseService:   licenseSvc,
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						organizationRepo:  new(mock.OrganizationRepository),
+						permissionService: permSvc,
+						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -2026,10 +1999,9 @@ func TestOrganizationService_RemoveMember(t *testing.T) {
 					organizationRepo := new(mock.OrganizationRepository)
 					organizationRepo.On("RemoveMember", ctx, organization, userID).Return(assert.AnError)
 
-					permRepo := new(mock.PermissionRepository)
-					permRepo.On("HasPermission", ctx, userID, model.MustNewNilID(model.ResourceTypeOrganization), []model.PermissionKind{
+					permSvc := new(mock.PermissionService)
+					permSvc.On("CtxUserHasPermission", ctx, model.MustNewNilID(model.ResourceTypeOrganization), []model.PermissionKind{
 						model.PermissionKindWrite,
-						model.PermissionKindAll,
 					}).Return(true, nil)
 
 					licenseSvc := new(mock.LicenseService)
@@ -2037,11 +2009,11 @@ func TestOrganizationService_RemoveMember(t *testing.T) {
 					licenseSvc.On("WithinThreshold", ctx, license.QuotaOrganizations).Return(true, nil)
 
 					return &baseService{
-						logger:           new(mock.Logger),
-						tracer:           tracer,
-						organizationRepo: organizationRepo,
-						permissionRepo:   permRepo,
-						licenseService:   licenseSvc,
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						organizationRepo:  organizationRepo,
+						permissionService: permSvc,
+						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -2066,11 +2038,11 @@ func TestOrganizationService_RemoveMember(t *testing.T) {
 					licenseSvc.On("Expired", ctx).Return(false, assert.AnError)
 
 					return &baseService{
-						logger:           new(mock.Logger),
-						tracer:           tracer,
-						organizationRepo: new(mock.OrganizationRepository),
-						permissionRepo:   new(mock.PermissionRepository),
-						licenseService:   licenseSvc,
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						organizationRepo:  new(mock.OrganizationRepository),
+						permissionService: new(mock.PermissionService),
+						licenseService:    licenseSvc,
 					}
 				},
 			},
