@@ -40,14 +40,15 @@ export interface AvatarImageProps {
 }
 
 function AvatarImage({ src, alt, grayscale, className }: AvatarImageProps) {
+  const Component = !src.startsWith('/') ? 'img' : Image;
   return (
-    <Image
+    <Component
       className={concat(className, 'rounded-full', grayscale ? 'grayscale' : undefined)}
-      priority
       src={src}
       width={100}
       height={100}
       alt={alt || 'Avatar'}
+      {...(Component !== 'img' && { priority: true })}
     />
   );
 }

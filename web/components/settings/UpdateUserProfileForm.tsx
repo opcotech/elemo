@@ -12,6 +12,8 @@ import { FormInput } from '@/components/blocks/Form/FormInput';
 import { FormTextarea } from '@/components/blocks/Form/FormTextarea';
 import useStore from '@/store';
 import { normalizeData } from '@/lib/helpers/schema';
+import { Avatar } from '@/components/blocks/Avatar';
+import { getInitials } from '@/lib/helpers';
 
 type UpdateUserProfileData = {
   username: string;
@@ -46,6 +48,7 @@ const UPDATE_PROFILE_SCHEMA = z.object({
     .max($User.properties.title.maxLength, 'Title is too long')
     .optional()
     .or(z.literal('')),
+  picture: z.string().url().optional().or(z.literal('')),
   bio: z.string().max($User.properties.bio.maxLength, 'Bio is too long').optional().or(z.literal('')),
   languages: z.array(z.string()).optional()
 });
@@ -75,6 +78,7 @@ export function UpdateUserProfileForm({ userId, defaultValues }: UpdateUserProfi
     register,
     handleSubmit,
     setValue,
+    watch,
     reset,
     formState: { errors, isSubmitting }
   } = useForm<UpdateUserProfileData>({
@@ -114,6 +118,30 @@ export function UpdateUserProfileForm({ userId, defaultValues }: UpdateUserProfi
   return (
     <form action={'#'} onSubmit={handleSubmit(onSubmit)}>
       <div className={'space-y-6'}>
+        <div className={'sm:grid sm:grid-cols-12 sm:items-start sm:gap-3'}>
+          <div className={'mt-1 sm:col-span-9 sm:col-start-4 sm:mt-0'}>
+            <div className={'flex'}>
+              <Avatar
+                size={'xl'}
+                src={watch('picture') || ''}
+                initials={getInitials(`${watch('first_name')} ${watch('last_name')}`)}
+                className={'mt-2 mr-4'}
+              />
+              <div className="sm:col-span-9 sm:mt-0 flex-grow">
+                <FormInput
+                  type="url"
+                  name="picture"
+                  label="Picture"
+                  placeholder="https://example.com/static/images/avatar.png"
+                  grid={false}
+                  register={register}
+                  errors={errors}
+                  required={!UPDATE_PROFILE_SCHEMA.shape.picture.isOptional()}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
         <FormInput
           type="text"
           name="username"

@@ -16,11 +16,6 @@ export interface FormInputProps extends FormCommonProps {
 export function FormInput(props: FormInputProps) {
   const error = props.errors[props.errorField ?? props.name];
 
-  const registerProps = {
-    ...props.register(props.name),
-    onChange: props.onChange
-  };
-
   return (
     <FormFieldContainer {...props}>
       <div className={concat(props.addon ? 'flex' : 'relative', 'rounded-md shadow-sm')}>
@@ -58,8 +53,9 @@ export function FormInput(props: FormInputProps) {
           disabled={props.disabled}
           aria-invalid={error ? 'true' : 'false'}
           aria-describedby={error ? `${props.name}-error` : undefined}
+          {...props.register(props.name)}
           onKeyDown={props.onKeyDown}
-          {...registerProps}
+          onChange={props.onChange ?? props.register(props.name).onChange}
         />
         {props.addon && props.addonPosition === 'right' && (
           <span
