@@ -59,8 +59,8 @@ func (p *PermissionRepository) HasAnyRelation(ctx context.Context, source, targe
 	return args.Bool(0), args.Error(1)
 }
 
-func (p *PermissionRepository) HasSystemRole(ctx context.Context, source model.ID, targets ...model.SystemRole) (bool, error) {
-	args := p.Called(ctx, source, targets)
+func (p *PermissionRepository) HasSystemRole(ctx context.Context, source model.ID, roles ...model.SystemRole) (bool, error) {
+	args := p.Called(ctx, source, roles)
 	return args.Bool(0), args.Error(1)
 }
 

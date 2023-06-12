@@ -17,5 +17,5 @@ type PermissionRepository interface {
 	Delete(ctx context.Context, id model.ID) error
 	HasPermission(ctx context.Context, subject, target model.ID, kinds ...model.PermissionKind) (bool, error)
 	HasAnyRelation(ctx context.Context, source, target model.ID) (bool, error)
-	HasSystemRole(ctx context.Context, source model.ID, targets ...model.SystemRole) (bool, error)
+	HasSystemRole(ctx context.Context, source model.ID, roles ...model.SystemRole) (bool, error)
 }

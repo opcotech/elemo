@@ -689,7 +689,9 @@ func TestClient_SendEmail(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			c := tt.fields.client(tt.args.ctx, tt.args.subject, tt.args.to)
 			err := c.SendEmail(tt.args.ctx, tt.args.subject, tt.args.to, tt.args.template)
 			assert.ErrorIs(t, err, tt.wantErr)

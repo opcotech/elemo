@@ -80,8 +80,8 @@ func (c *CachedPermissionRepository) HasAnyRelation(ctx context.Context, source,
 	return c.permissionRepo.HasAnyRelation(ctx, source, target)
 }
 
-func (c *CachedPermissionRepository) HasSystemRole(ctx context.Context, source model.ID, targets ...model.SystemRole) (bool, error) {
-	return c.permissionRepo.HasSystemRole(ctx, source, targets...)
+func (c *CachedPermissionRepository) HasSystemRole(ctx context.Context, source model.ID, roles ...model.SystemRole) (bool, error) {
+	return c.permissionRepo.HasSystemRole(ctx, source, roles...)
 }
 
 // NewCachedPermissionRepository returns a new CachedPermissionRepository.

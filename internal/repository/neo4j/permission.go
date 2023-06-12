@@ -301,7 +301,7 @@ func (r *PermissionRepository) HasAnyRelation(ctx context.Context, source, targe
 
 // HasSystemRole returns true if there is a relation between the source and
 // target that is a system role. If there is no relation, false is returned.
-func (r *PermissionRepository) HasSystemRole(ctx context.Context, source model.ID, targets ...model.SystemRole) (bool, error) {
+func (r *PermissionRepository) HasSystemRole(ctx context.Context, source model.ID, roles ...model.SystemRole) (bool, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.RelationRepository/HasAnyRelation")
 	defer span.End()
 
@@ -309,13 +309,13 @@ func (r *PermissionRepository) HasSystemRole(ctx context.Context, source model.I
 		return false, errors.Join(repository.ErrRelationRead, err)
 	}
 
-	if len(targets) == 0 {
+	if len(roles) == 0 {
 		return false, errors.Join(repository.ErrRelationRead, model.ErrInvalidID)
 	}
 
-	targetIDs := make([]string, len(targets))
-	for i, target := range targets {
-		targetIDs[i] = target.String()
+	roleIDs := make([]string, len(roles))
+	for i, role := range roles {
+		roleIDs[i] = role.String()
 	}
 
 	cypher := `
@@ -326,7 +326,7 @@ func (r *PermissionRepository) HasSystemRole(ctx context.Context, source model.I
 
 	params := map[string]any{
 		"source_id":  source.String(),
-		"target_ids": targetIDs,
+		"target_ids": roleIDs,
 	}
 
 	hasRelation, err := ExecuteReadAndReadSingle(ctx, r.db, cypher, params, func(rec *neo4j.Record) (*bool, error) {
