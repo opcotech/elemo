@@ -1,4 +1,4 @@
-lockfileVersion: '6.1'
+lockfileVersion: '6.0'
 
 settings:
   autoInstallPeers: true
@@ -78,6 +78,9 @@ importers:
         specifier: ^4.3.8
         version: 4.3.8(react@18.2.0)
     devDependencies:
+      '@playwright/test':
+        specifier: ^1.35.0
+        version: 1.35.0
       '@storybook/addon-a11y':
         specifier: ^7.0.20
         version: 7.0.20(react-dom@18.2.0)(react@18.2.0)
@@ -114,9 +117,15 @@ importers:
       '@tailwindcss/typography':
         specifier: ^0.5.9
         version: 0.5.9(tailwindcss@3.3.2)
+      dotenv:
+        specifier: ^16.1.4
+        version: 16.1.4
       eslint-plugin-storybook:
         specifier: ^0.6.12
         version: 0.6.12(eslint@8.42.0)(typescript@5.1.3)
+      neo4j-driver:
+        specifier: ^5.9.1
+        version: 5.9.1
       storybook:
         specifier: ^7.0.20
         version: 7.0.20
@@ -3126,6 +3135,17 @@ packages:
       picocolors: 1.0.0
       tslib: 2.5.3
     dev: false
+
+  /@playwright/test@1.35.0:
+    resolution: {integrity: sha512-6qXdd5edCBynOwsz1YcNfgX8tNWeuS9fxy5o59D0rvHXxRtjXRebB4gE4vFVfEMXl/z8zTnAzfOs7aQDEs8G4Q==}
+    engines: {node: '>=16'}
+    hasBin: true
+    dependencies:
+      '@types/node': 20.3.0
+      playwright-core: 1.35.0
+    optionalDependencies:
+      fsevents: 2.3.2
+    dev: true
 
   /@pmmmwh/react-refresh-webpack-plugin@0.5.10(react-refresh@0.11.0)(webpack@5.86.0):
     resolution: {integrity: sha512-j0Ya0hCFZPd4x40qLzbhGsh9TMtdb+CJQiso+WxLOPNasohq9cc5SNUcwsZaRH6++Xh91Xkm/xHCkuIiIu0LUA==}
@@ -8717,6 +8737,26 @@ packages:
     resolution: {integrity: sha512-Yd3UES5mWCSqR+qNT93S3UoYUkqAZ9lLg8a7g9rimsWmYGK8cVToA4/sF3RrshdyV3sAGMXVUmpMYOw+dLpOuw==}
     dev: true
 
+  /neo4j-driver-bolt-connection@5.9.1:
+    resolution: {integrity: sha512-y4w7oM6C3LvUi7ZuZyzT0SqfR7dy8XdpAmQjb/h/q3u4UWb7wyK22bi3eSR/5Lam4AJykxHIhrDVQ2s6aZrvZg==}
+    dependencies:
+      buffer: 6.0.3
+      neo4j-driver-core: 5.9.1
+      string_decoder: 1.3.0
+    dev: true
+
+  /neo4j-driver-core@5.9.1:
+    resolution: {integrity: sha512-swn3C7/XLGWEthUNW4+OzOsal/94lamUklY2wb5PpKsO1r+MVT8C9yhMfjXTYoczF2equfDbZ4HD7zT2zpEvuw==}
+    dev: true
+
+  /neo4j-driver@5.9.1:
+    resolution: {integrity: sha512-bA7pcYwctoqUlxlRLP2yaNCM5fc5dOMkgM4YCX5rjROgYP3swmZ4VGc11s4hS/dlNDkMrLtY6ye99eiSJkGRNA==}
+    dependencies:
+      neo4j-driver-bolt-connection: 5.9.1
+      neo4j-driver-core: 5.9.1
+      rxjs: 7.8.1
+    dev: true
+
   /next-auth@4.22.1(next@13.4.5)(react-dom@18.2.0)(react@18.2.0):
     resolution: {integrity: sha512-NTR3f6W7/AWXKw8GSsgSyQcDW6jkslZLH8AiZa5PQ09w1kR8uHtR9rez/E9gAq/o17+p0JYHE8QjF3RoniiObA==}
     peerDependencies:
@@ -9313,6 +9353,12 @@ packages:
     engines: {node: '>=10'}
     dependencies:
       find-up: 5.0.0
+    dev: true
+
+  /playwright-core@1.35.0:
+    resolution: {integrity: sha512-muMXyPmIx/2DPrCHOD1H1ePT01o7OdKxKj2ebmCAYvqhUy+Y1bpal7B0rdoxros7YrXI294JT/DWw2LqyiqTPA==}
+    engines: {node: '>=16'}
+    hasBin: true
     dev: true
 
   /pnp-webpack-plugin@1.7.0(typescript@5.1.3):
@@ -10105,6 +10151,12 @@ packages:
     resolution: {integrity: sha512-5l4VyZR86LZ/lDxZTR6jqL8AFE2S0IFLMP26AbjsLVADxHdhB/c0GUsH+y39UfCi3dzz8OlQuPmnaJOMoDHQBA==}
     dependencies:
       queue-microtask: 1.2.3
+
+  /rxjs@7.8.1:
+    resolution: {integrity: sha512-AA3TVj+0A2iuIoQkWEK/tqFjBq2j+6PO6Y0zJcvzLAFhEFIO3HL0vls9hWLncZbAAbK0mar7oZ4V079I/qPMxg==}
+    dependencies:
+      tslib: 2.5.3
+    dev: true
 
   /safe-buffer@5.1.1:
     resolution: {integrity: sha512-kKvNJn6Mm93gAczWVJg7wH+wGYWNrDHdWvpUmHyEsgCtIwwo3bqPtV4tR5tuPaUhTOo/kvhVwd8XwwOllGYkbg==}

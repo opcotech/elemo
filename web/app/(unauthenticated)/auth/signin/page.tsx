@@ -1,6 +1,10 @@
 import Image from 'next/image';
 import { SignInForm } from '@/components/auth/SignInForm';
 
+export const metadata = {
+  title: 'Sign in | Elemo'
+};
+
 export default function SignInPage() {
   return (
     <div className="flex min-h-full">

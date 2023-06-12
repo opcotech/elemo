@@ -77,7 +77,7 @@ export function SignInForm() {
                 required
                 disabled={submitting}
                 autoComplete="email"
-                defaultValue={'gabor@elemo.app'}
+                placeholder={'you@company.com'}
                 className="block w-full rounded-md border-0 py-1.5 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:leading-6"
               />
             </div>
@@ -95,7 +95,7 @@ export function SignInForm() {
                 required
                 disabled={submitting}
                 autoComplete="current-password"
-                defaultValue={'AppleTree123'}
+                placeholder={'********'}
                 className="block w-full rounded-md border-0 py-1.5 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:leading-6"
               />
             </div>
