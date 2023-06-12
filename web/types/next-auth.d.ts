@@ -1,9 +1,9 @@
 import type { DefaultSession, DefaultUser } from 'next-auth';
 
 interface ElemoUser extends DefaultUser {
-  access_token: string;
-  refresh_token: string;
-  expires_in: number;
+  accessToken: string;
+  accessTokenExpiresAt: number;
+  refreshToken: string;
 }
 
 declare module 'next-auth' {
@@ -11,22 +11,11 @@ declare module 'next-auth' {
 
   interface Session extends DefaultSession {
     user?: User;
-    accessToken?: string;
-  }
-
-  interface Account {
-    access_token: string;
-    refresh_token: string;
-    expires_at: number;
-    expires_in: number;
   }
 }
 
 declare module 'next-auth/jwt' {
   interface JWT {
-    accessToken?: string;
-    accessTokenExpires?: number;
-    refreshToken?: string;
     user?: ElemoUser;
     error?: string;
   }

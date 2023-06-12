@@ -452,7 +452,7 @@ func TestUser_Validate(t *testing.T) {
 				Title:       "Software Engineer",
 				Bio:         "I am a software engineer",
 				Phone:       "+11234567890",
-				Address:     "123",
+				Address:     "ab",
 				Links:       []string{"https://example.com"},
 				Documents:   make([]ID, 0),
 				Permissions: make([]ID, 0),

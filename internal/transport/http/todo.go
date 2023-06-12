@@ -3,11 +3,9 @@ package http
 import (
 	"context"
 	"errors"
-	"time"
 
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg"
-	"github.com/opcotech/elemo/internal/pkg/convert"
 	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/service"
 	"github.com/opcotech/elemo/internal/transport/http/api"
@@ -122,20 +120,9 @@ func (c *todoController) V1TodoUpdate(ctx context.Context, request api.V1TodoUpd
 		return api.V1TodoUpdate400JSONResponse{N400JSONResponse: badRequest}, nil
 	}
 
-	patch := make(map[string]any)
-	if err := convert.AnyToAny(request.Body, &patch); err != nil {
+	patch, err := api.ConvertRequestToMap(request.Body)
+	if err != nil {
 		return api.V1TodoUpdate400JSONResponse{N400JSONResponse: badRequest}, nil
-	}
-
-	if dueDate, ok := patch["due_date"]; ok && dueDate != nil {
-		if dueDate == "" {
-			patch["due_date"] = nil
-		} else {
-			patch["due_date"], err = time.Parse(time.RFC3339, dueDate.(string))
-			if err != nil {
-				return api.V1TodoUpdate400JSONResponse{N400JSONResponse: badRequest}, nil
-			}
-		}
 	}
 
 	todo, err := c.todoService.Update(ctx, todoID, patch)
@@ -206,15 +193,10 @@ func createTodoJSONRequestBodyToTodo(body *api.V1TodosCreateJSONRequestBody, own
 		return nil, err
 	}
 
-	todo.Description = pkg.GetDefaultPtr(body.Description, "")
+	todo.Description = pkg.GetDefaultPtr(body.Description.Value, "")
 
-	if body.DueDate != nil && *body.DueDate != "" {
-		dueDate, err := time.Parse(time.RFC3339, *body.DueDate)
-		if err != nil {
-			return nil, err
-		}
-
-		todo.DueDate = &dueDate
+	if body.DueDate.Value != nil {
+		todo.DueDate = *body.DueDate.Value
 	}
 
 	if err := todo.Priority.UnmarshalText([]byte(body.Priority)); err != nil {

@@ -1,11 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    appDir: true
-  },
   images: {
     dangerouslyAllowSVG: true,
-    domains: ['tailwindui.com', 'github.com', 'images.unsplash.com']
+    domains: ['tailwindui.com', 'github.com', 'images.unsplash.com', 'picsum.photos']
   }
 };
 

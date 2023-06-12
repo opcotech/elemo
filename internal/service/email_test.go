@@ -174,7 +174,7 @@ func TestEmailService_SendAuthPasswordResetEmail(t *testing.T) {
 							Subject:          subject,
 							Username:         user.Username,
 							FirstName:        user.FirstName,
-							PasswordResetURL: path.Join(fmt.Sprintf("https://%s", smtpConf.Hostname), resetPath),
+							PasswordResetURL: fmt.Sprintf("https://%s", path.Join(smtpConf.Hostname, resetPath)),
 							SupportEmail:     smtpConf.SupportAddress,
 						},
 					)
@@ -225,7 +225,7 @@ func TestEmailService_SendAuthPasswordResetEmail(t *testing.T) {
 							Subject:          subject,
 							Username:         user.Username,
 							FirstName:        user.FirstName,
-							PasswordResetURL: path.Join(fmt.Sprintf("https://%s", smtpConf.Hostname), resetPath),
+							PasswordResetURL: fmt.Sprintf("https://%s", path.Join(smtpConf.Hostname, resetPath)),
 							SupportEmail:     smtpConf.SupportAddress,
 						},
 					)
@@ -314,7 +314,7 @@ func TestEmailService_SendOrganizationInvitationEmail(t *testing.T) {
 							Username:         user.Username,
 							FirstName:        user.FirstName,
 							OrganizationName: organization.Name,
-							InvitationURL:    path.Join(fmt.Sprintf("https://%s", smtpConf.Hostname), invitationPath),
+							InvitationURL:    fmt.Sprintf("https://%s", path.Join(smtpConf.Hostname, invitationPath)),
 							SupportEmail:     smtpConf.SupportAddress,
 						},
 					)
@@ -369,7 +369,7 @@ func TestEmailService_SendOrganizationInvitationEmail(t *testing.T) {
 							Username:         user.Username,
 							FirstName:        user.FirstName,
 							OrganizationName: organization.Name,
-							InvitationURL:    path.Join(fmt.Sprintf("https://%s", smtpConf.Hostname), invitationPath),
+							InvitationURL:    fmt.Sprintf("https://%s", path.Join(smtpConf.Hostname, invitationPath)),
 							SupportEmail:     smtpConf.SupportAddress,
 						},
 					)

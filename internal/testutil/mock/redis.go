@@ -12,6 +12,16 @@ type RedisClient struct {
 	mock.Mock
 }
 
+func (r *RedisClient) ACLLog(ctx context.Context, count int64) *redis.ACLLogCmd {
+	args := r.Called(ctx, count)
+	return args.Get(0).(*redis.ACLLogCmd)
+}
+
+func (r *RedisClient) ACLLogReset(ctx context.Context) *redis.StatusCmd {
+	args := r.Called(ctx)
+	return args.Get(0).(*redis.StatusCmd)
+}
+
 func (r *RedisClient) ZRankWithScore(ctx context.Context, key, member string) *redis.RankWithScoreCmd {
 	args := r.Called(ctx, key, member)
 	return args.Get(0).(*redis.RankWithScoreCmd)

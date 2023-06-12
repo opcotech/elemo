@@ -74,7 +74,7 @@ func (s *emailService) SendAuthPasswordResetEmail(ctx context.Context, resetPath
 		Subject:          "Reset your password",
 		Username:         user.Username,
 		FirstName:        user.FirstName,
-		PasswordResetURL: path.Join(fmt.Sprintf("https://%s", s.smtpConf.Hostname), resetPath),
+		PasswordResetURL: fmt.Sprintf("https://%s", path.Join(s.smtpConf.Hostname, resetPath)),
 		SupportEmail:     s.smtpConf.SupportAddress,
 	}
 
@@ -90,7 +90,7 @@ func (s *emailService) SendOrganizationInvitationEmail(ctx context.Context, invi
 		Username:         user.Username,
 		FirstName:        user.FirstName,
 		OrganizationName: organization.Name,
-		InvitationURL:    path.Join(fmt.Sprintf("https://%s", s.smtpConf.Hostname), invitationPath),
+		InvitationURL:    fmt.Sprintf("https://%s", path.Join(s.smtpConf.Hostname, invitationPath)),
 		SupportEmail:     s.smtpConf.SupportAddress,
 	}
 

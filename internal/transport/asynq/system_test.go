@@ -2,9 +2,10 @@ package asynq
 
 import (
 	"context"
-	"encoding/json"
 	"testing"
 	"time"
+
+	"github.com/goccy/go-json"
 
 	"github.com/hibiken/asynq"
 	"github.com/rs/xid"

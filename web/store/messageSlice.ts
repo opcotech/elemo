@@ -1,5 +1,13 @@
 import type { StateCreator } from 'zustand';
 
+type Message = {
+  id: number;
+  title: string;
+  message?: string;
+  type: 'info' | 'success' | 'warning' | 'error';
+  dismissAfter?: number;
+};
+
 export interface MessageSliceState {
   messages: Message[];
   addMessage: (message: Omit<Message, 'id'>) => void;

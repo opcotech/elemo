@@ -53,7 +53,7 @@ generate.email: ## Generate email templates
 
 .PHONY: start.backend
 start.backend: ## Start service
-	docker-compose -f deploy/docker/docker-compose.yml up --build -d
+	docker-compose -f deploy/docker/docker-compose.yml up --build -d --force-recreate
 	docker-compose -f deploy/docker/docker-compose.yml logs -f
 
 .PHONY: start.monitoring

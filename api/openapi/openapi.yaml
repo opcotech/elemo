@@ -166,6 +166,7 @@ components:
           nullable: true
         address:
           type: string
+          minLength: 3
           maxLength: 500
           example: Remote
           description: Working address of the user.
@@ -232,8 +233,7 @@ components:
       title: UserStatus
     Organization:
       title: Organization
-      x-stoplight:
-        id: 2jl1m1bg4a8hm
+
       type: object
       description: An organization in the system.
       properties:
@@ -246,8 +246,7 @@ components:
           description: Name of the organization.
           maxLength: 120
           example: ACME Inc.
-          x-stoplight:
-            id: wqv71ymlibg4c
+
           minLength: 1
         email:
           type: string
@@ -262,14 +261,12 @@ components:
           format: uri
           example: 'https://example.com/static/logo.png'
           maxLength: 2000
-          x-stoplight:
-            id: qtf590lkupgyn
+
           nullable: true
         website:
           type: string
           description: Work title of the user.
-          x-stoplight:
-            id: 0c8propi2z2ja
+
           format: uri
           example: 'https://example.com'
           maxLength: 2000
@@ -278,35 +275,29 @@ components:
           $ref: '#/components/schemas/OrganizationStatus'
         members:
           type: array
-          x-stoplight:
-            id: zcr499g29x7fs
+
           description: IDs of the users in the organization.
           uniqueItems: true
           items:
-            x-stoplight:
-              id: ta6sdcik39lfc
+
             type: string
             example: 9bsv0s46s6s002p9ltq0
         teams:
           type: array
-          x-stoplight:
-            id: p1c9pg6tjsipu
+
           description: IDs of the teams in the organization.
           uniqueItems: true
           items:
-            x-stoplight:
-              id: x09xht43dei6d
+
             type: string
             example: 9bsv0s46s6s002p9ltq0
         namespaces:
           type: array
-          x-stoplight:
-            id: ovy6hmlupke74
+
           description: IDs of the namespaces in the organization.
           uniqueItems: true
           items:
-            x-stoplight:
-              id: c44rmtja3bb40
+
             type: string
             example: 9bsv0s46s6s002p9ltq0
         created_at:
@@ -332,8 +323,7 @@ components:
         - updated_at
     OrganizationStatus:
       type: string
-      x-stoplight:
-        id: j2a8b1awr15zm
+
       enum:
         - active
         - deleted
@@ -783,7 +773,7 @@ components:
         - za
         - zh
         - zu
-  examples: {}
+  examples: { }
   securitySchemes:
     oauth2:
       type: oauth2
@@ -938,12 +928,18 @@ components:
                 minLength: 1
                 maxLength: 50
                 example: Test
+                nullable: true
+                x-go-type: Optional[string]
+                x-go-type-skip-optional-pointer: true
               last_name:
                 type: string
                 description: Last name of the user.
                 example: User
                 minLength: 1
                 maxLength: 50
+                nullable: true
+                x-go-type: Optional[string]
+                x-go-type-skip-optional-pointer: true
               email:
                 type: string
                 format: email
@@ -957,35 +953,58 @@ components:
                 maxLength: 64
                 minLength: 8
                 example: super-secret
-                description: Password of the user.
+                description: Password of the user. Required together with the new_password field.
+              new_password:
+                type: string
+                format: password
+                maxLength: 64
+                minLength: 8
+                example: super-secret
+                description: New password of the user.
               picture:
                 type: string
                 description: Profile picture of the user.
                 format: uri
                 example: 'https://example.com/users/my-user.png'
                 maxLength: 2000
+                nullable: true
+                x-go-type: Optional[string]
+                x-go-type-skip-optional-pointer: true
               title:
                 type: string
                 description: Work title of the user.
                 example: Senior Software Engineer
                 minLength: 3
                 maxLength: 50
+                nullable: true
+                x-go-type: Optional[string]
+                x-go-type-skip-optional-pointer: true
               bio:
                 type: string
                 description: Self description of the user.
                 maxLength: 500
                 example: I'm working smart on software.
+                nullable: true
+                x-go-type: Optional[string]
+                x-go-type-skip-optional-pointer: true
               address:
                 type: string
+                minLength: 3
                 maxLength: 500
                 example: Remote
                 description: Working address of the user.
+                nullable: true
+                x-go-type: Optional[string]
+                x-go-type-skip-optional-pointer: true
               phone:
                 type: string
                 example: '+15555551234'
                 minLength: 7
                 maxLength: 16
                 description: Phone number of the user.
+                nullable: true
+                x-go-type: Optional[string]
+                x-go-type-skip-optional-pointer: true
               links:
                 type: array
                 description: Links to show on profile page.
@@ -1084,6 +1103,7 @@ components:
                 nullable: true
               address:
                 type: string
+                minLength: 3
                 maxLength: 500
                 example: Remote
                 description: Working address of the user.
@@ -1134,6 +1154,9 @@ components:
                 maxLength: 500
                 example: I'll make the world a better place today.
                 description: Description of the todo item.
+                nullable: true
+                x-go-type: Optional[string]
+                x-go-type-skip-optional-pointer: true
               priority:
                 $ref: '#/components/schemas/TodoPriority'
               owned_by:
@@ -1141,7 +1164,11 @@ components:
                 description: ID of the user who owns the todo item.
               due_date:
                 type: string
+                format: date-time
                 description: Completion due date of the todo item.
+                nullable: true
+                x-go-type: Optional[*time.Time]
+                x-go-type-skip-optional-pointer: true
             required:
               - title
               - priority
@@ -1164,6 +1191,9 @@ components:
                 maxLength: 500
                 example: I'll make the world a better place today.
                 description: Description of the todo item.
+                nullable: true
+                x-go-type: Optional[string]
+                x-go-type-skip-optional-pointer: true
               priority:
                 $ref: '#/components/schemas/TodoPriority'
               completed:
@@ -1174,7 +1204,11 @@ components:
                 description: ID of the user who owns the todo item.
               due_date:
                 type: string
+                format: date-time
                 description: Completion due date of the todo item.
+                nullable: true
+                x-go-type: Optional[*time.Time]
+                x-go-type-skip-optional-pointer: true
     OrganizationCreate:
       content:
         application/json:
@@ -1186,8 +1220,7 @@ components:
                 description: Name of the organization.
                 maxLength: 120
                 example: ACME Inc.
-                x-stoplight:
-                  id: ga5x9vomawm42
+
                 minLength: 1
               email:
                 type: string
@@ -1202,13 +1235,11 @@ components:
                 format: uri
                 example: 'https://example.com/static/logo.png'
                 maxLength: 2000
-                x-stoplight:
-                  id: 0afomzvkqgpf8
+
               website:
                 type: string
                 description: Work title of the user.
-                x-stoplight:
-                  id: vbosyixrp2v3s
+
                 format: uri
                 example: 'https://example.com'
                 maxLength: 2000
@@ -1226,8 +1257,7 @@ components:
                 description: Name of the organization.
                 maxLength: 120
                 example: ACME Inc.
-                x-stoplight:
-                  id: rxuc1suz7qe7b
+
                 minLength: 1
               email:
                 type: string
@@ -1242,13 +1272,11 @@ components:
                 format: uri
                 example: 'https://example.com/static/logo.png'
                 maxLength: 2000
-                x-stoplight:
-                  id: 7pfylo9edl14u
+
               website:
                 type: string
                 description: Work title of the user.
-                x-stoplight:
-                  id: znr4tfb8hfopr
+
                 format: uri
                 example: 'https://example.com'
                 maxLength: 2000
@@ -1286,6 +1314,8 @@ paths:
             - user.read
     post:
       summary: Create new user
+      tags:
+        - Users
       operationId: v1UsersCreate
       responses:
         '201':
@@ -1335,6 +1365,8 @@ paths:
             - user.read
     delete:
       summary: Delete the user with the given ID.
+      tags:
+        - Users
       operationId: v1UserDelete
       responses:
         '204':
@@ -1357,6 +1389,8 @@ paths:
             - user
     patch:
       summary: Update user
+      tags:
+        - Users
       operationId: v1UserUpdate
       responses:
         '200':
@@ -1715,8 +1749,7 @@ paths:
               properties:
                 user_id:
                   type: string
-                  x-stoplight:
-                    id: ug2r19m97qovi
+
                   description: ID of the user to add.
                   example: 9bsv0s46s6s002p9ltq0
               required:
@@ -1768,7 +1801,7 @@ paths:
           $ref: '#/components/responses/500'
       operationId: v1SystemHealth
       description: Returns the health of registered components.
-      security: []
+      security: [ ]
       tags:
         - System
   /v1/system/heartbeat:
@@ -1789,7 +1822,7 @@ paths:
           $ref: '#/components/responses/500'
       operationId: v1SystemHeartbeat
       description: Returns 200 OK if the service is reachable.
-      security: []
+      security: [ ]
   /v1/system/license:
     get:
       summary: Get license info
@@ -1809,7 +1842,7 @@ paths:
       operationId: v1SystemLicense
       description: Return the license information. The license information is only available to entitled users.
       security:
-        - oauth2: []
+        - oauth2: [ ]
   /v1/system/version:
     get:
       summary: Get system version
@@ -1824,6 +1857,6 @@ paths:
           $ref: '#/components/responses/500'
       operationId: v1SystemVersion
       description: Returns the version information of the system.
-      security: []
+      security: [ ]
       tags:
         - System

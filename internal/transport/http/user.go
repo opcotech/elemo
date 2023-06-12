@@ -119,13 +119,46 @@ func (c *userController) V1UserUpdate(ctx context.Context, request api.V1UserUpd
 		return api.V1UserUpdate404JSONResponse{N404JSONResponse: notFound}, nil
 	}
 
-	if request.Body.Password != nil {
-		request.Body.Password = convert.ToPointer(password.HashPassword(*request.Body.Password))
+	patch, err := api.ConvertRequestToMap(request.Body)
+	if err != nil {
+		return api.V1UserUpdate400JSONResponse{N400JSONResponse: badRequest}, nil
 	}
 
-	patch := make(map[string]any)
-	if err := convert.AnyToAny(request.Body, &patch); err != nil {
-		return api.V1UserUpdate400JSONResponse{N400JSONResponse: badRequest}, nil
+	if request.Body.Password != nil && request.Body.NewPassword == nil || request.Body.Password == nil && request.Body.NewPassword != nil {
+		return api.V1UserUpdate400JSONResponse{N400JSONResponse: api.N400JSONResponse{
+			Message: "The old password and the new password must be provided together",
+		}}, nil
+	}
+
+	if request.Body.Password != nil && request.Body.NewPassword != nil {
+		user, err := c.userService.Get(ctx, userID)
+		if err != nil {
+			if errors.Is(err, service.ErrNoPermission) {
+				return api.V1UserUpdate403JSONResponse{N403JSONResponse: permissionDenied}, nil
+			}
+			if errors.Is(err, repository.ErrNotFound) {
+				return api.V1UserUpdate404JSONResponse{N404JSONResponse: notFound}, nil
+			}
+			return api.V1UserUpdate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+				Message: err.Error(),
+			}}, nil
+		}
+
+		if !password.IsPasswordMatching(user.Password, *request.Body.Password) {
+			return api.V1UserUpdate400JSONResponse{N400JSONResponse: api.N400JSONResponse{
+				Message: "The provided password is incorrect",
+			}}, nil
+		}
+
+		if password.IsPasswordMatching(user.Password, *request.Body.NewPassword) {
+			return api.V1UserUpdate400JSONResponse{N400JSONResponse: api.N400JSONResponse{
+				Message: "The new password is the same as the old one",
+			}}, nil
+		}
+
+		// Update the patch to use the new password hash for the password field
+		patch["password"] = convert.ToPointer(password.HashPassword(*request.Body.NewPassword))
+		delete(patch, "new_password")
 	}
 
 	user, err := c.userService.Update(ctx, userID, patch)

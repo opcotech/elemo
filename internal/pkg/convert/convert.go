@@ -1,8 +1,9 @@
 package convert
 
 import (
-	"encoding/json"
 	"errors"
+
+	"github.com/goccy/go-json"
 )
 
 var (

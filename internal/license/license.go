@@ -1,9 +1,10 @@
 package license
 
 import (
-	"encoding/json"
 	"errors"
 	"time"
+
+	"github.com/goccy/go-json"
 
 	"github.com/hyperboloide/lk"
 	"github.com/rs/xid"

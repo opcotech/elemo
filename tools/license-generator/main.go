@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"errors"
 	"flag"
 	"log"
@@ -9,6 +8,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/goccy/go-json"
 
 	"github.com/hyperboloide/lk"
 	"github.com/rs/xid"
