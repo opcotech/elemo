@@ -1,7 +1,7 @@
 import dotenv from 'dotenv';
 import neo4j, { type Session } from 'neo4j-driver';
 
-dotenv.config({ path: '.env.test' });
+dotenv.config({ path: '.env.test.local' });
 
 let driver = neo4j.driver(
   process.env.NEO4J_URL || '',
