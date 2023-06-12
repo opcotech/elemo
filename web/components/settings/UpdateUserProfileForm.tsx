@@ -119,27 +119,25 @@ export function UpdateUserProfileForm({ userId, defaultValues }: UpdateUserProfi
     <form action={'#'} onSubmit={handleSubmit(onSubmit)}>
       <div className={'space-y-6'}>
         <div className={'sm:grid sm:grid-cols-12 sm:items-start sm:gap-3'}>
-          <div className={'mt-1 sm:col-span-9 sm:col-start-4 sm:mt-0'}>
-            <div className={'flex'}>
-              <Avatar
-                size={'xl'}
-                src={watch('picture') || ''}
-                initials={getInitials(`${watch('first_name')} ${watch('last_name')}`)}
-                className={'mt-2 mr-4'}
-              />
-              <div className="sm:col-span-9 sm:mt-0 flex-grow">
-                <FormInput
-                  type="url"
-                  name="picture"
-                  label="Picture"
-                  placeholder="https://example.com/static/images/avatar.png"
-                  grid={false}
-                  register={register}
-                  errors={errors}
-                  required={!UPDATE_PROFILE_SCHEMA.shape.picture.isOptional()}
-                />
-              </div>
-            </div>
+          <div className={'mt-1 sm:col-span-3 sm:mt-0'}>
+            <Avatar
+              size={'xl'}
+              src={watch('picture') || ''}
+              initials={getInitials(`${watch('first_name')} ${watch('last_name')}`)}
+              className={'mt-2 mr-4'}
+            />
+          </div>
+          <div className={'mt-1 sm:col-span-9 sm:mt-0'}>
+            <FormInput
+              type="url"
+              name="picture"
+              label="Picture"
+              placeholder="https://example.com/static/images/avatar.png"
+              grid={false}
+              register={register}
+              errors={errors}
+              required={!UPDATE_PROFILE_SCHEMA.shape.picture.isOptional()}
+            />
           </div>
         </div>
         <FormInput
