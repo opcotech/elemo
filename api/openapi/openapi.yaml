@@ -233,8 +233,7 @@ components:
       title: UserStatus
     Organization:
       title: Organization
-      x-stoplight:
-        id: z1rrbujd80hjp
+
       type: object
       description: An organization in the system.
       properties:
@@ -247,8 +246,7 @@ components:
           description: Name of the organization.
           maxLength: 120
           example: ACME Inc.
-          x-stoplight:
-            id: yy9zxfxsf02b8
+
           minLength: 1
         email:
           type: string
@@ -263,14 +261,12 @@ components:
           format: uri
           example: 'https://example.com/static/logo.png'
           maxLength: 2000
-          x-stoplight:
-            id: 363za1829kvz2
+
           nullable: true
         website:
           type: string
           description: Work title of the user.
-          x-stoplight:
-            id: 3gzd49jcoiepc
+
           format: uri
           example: 'https://example.com'
           maxLength: 2000
@@ -279,35 +275,29 @@ components:
           $ref: '#/components/schemas/OrganizationStatus'
         members:
           type: array
-          x-stoplight:
-            id: qcx2c1zz24gbz
+
           description: IDs of the users in the organization.
           uniqueItems: true
           items:
-            x-stoplight:
-              id: 3dhda4rb3888u
+
             type: string
             example: 9bsv0s46s6s002p9ltq0
         teams:
           type: array
-          x-stoplight:
-            id: fv0uklile0hbh
+
           description: IDs of the teams in the organization.
           uniqueItems: true
           items:
-            x-stoplight:
-              id: j91k3a8g25oef
+
             type: string
             example: 9bsv0s46s6s002p9ltq0
         namespaces:
           type: array
-          x-stoplight:
-            id: 3tb0x551si38h
+
           description: IDs of the namespaces in the organization.
           uniqueItems: true
           items:
-            x-stoplight:
-              id: b9e9wiu9ztc7q
+
             type: string
             example: 9bsv0s46s6s002p9ltq0
         created_at:
@@ -333,8 +323,7 @@ components:
         - updated_at
     OrganizationStatus:
       type: string
-      x-stoplight:
-        id: f15m16eoglug3
+
       enum:
         - active
         - deleted
@@ -1231,8 +1220,7 @@ components:
                 description: Name of the organization.
                 maxLength: 120
                 example: ACME Inc.
-                x-stoplight:
-                  id: dvatgsspa7c6a
+
                 minLength: 1
               email:
                 type: string
@@ -1247,13 +1235,11 @@ components:
                 format: uri
                 example: 'https://example.com/static/logo.png'
                 maxLength: 2000
-                x-stoplight:
-                  id: 3wenoi74ep2ev
+
               website:
                 type: string
                 description: Work title of the user.
-                x-stoplight:
-                  id: wwrpgkk29bqie
+
                 format: uri
                 example: 'https://example.com'
                 maxLength: 2000
@@ -1271,8 +1257,7 @@ components:
                 description: Name of the organization.
                 maxLength: 120
                 example: ACME Inc.
-                x-stoplight:
-                  id: iciux3rn6pyei
+
                 minLength: 1
               email:
                 type: string
@@ -1287,13 +1272,11 @@ components:
                 format: uri
                 example: 'https://example.com/static/logo.png'
                 maxLength: 2000
-                x-stoplight:
-                  id: nwkg9ayfi1a95
+
               website:
                 type: string
                 description: Work title of the user.
-                x-stoplight:
-                  id: g9rw8u1ihf4u4
+
                 format: uri
                 example: 'https://example.com'
                 maxLength: 2000
@@ -1766,8 +1749,7 @@ paths:
               properties:
                 user_id:
                   type: string
-                  x-stoplight:
-                    id: cxznnrrcb7fva
+
                   description: ID of the user to add.
                   example: 9bsv0s46s6s002p9ltq0
               required:
