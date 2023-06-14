@@ -1,4 +1,4 @@
-import { UsersService } from '@/lib/api';
+import { UserService } from '@/lib/api';
 import { UpdateUserProfileForm } from '@/components/settings/UpdateUserProfileForm';
 import { UpdateUserContactForm } from '@/components/settings/UpdateUserContactForm';
 import { UpdateUserAddressForm } from '@/components/settings/UpdateUserAddressForm';
@@ -9,7 +9,7 @@ export const metadata = {
 };
 
 async function getData() {
-  const user = await UsersService.v1UserGet('me');
+  const user = await UserService.v1UserGet('me');
   return { user };
 }
 

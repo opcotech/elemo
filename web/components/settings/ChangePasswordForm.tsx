@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { FormInput } from '@/components/blocks/Form/FormInput';
 import { Button } from '@/components/blocks/Button';
-import { getErrorMessage, UsersService } from '@/lib/api';
+import { getErrorMessage, UserService } from '@/lib/api';
 import useStore from '@/store';
 
 type ChangePasswordData = {
@@ -54,7 +54,7 @@ export function ChangePasswordForm({ userId }: ChangePasswordFormProps) {
 
   async function onSubmit(data: ChangePasswordData) {
     try {
-      await UsersService.v1UserUpdate(userId, {
+      await UserService.v1UserUpdate(userId, {
         password: data.oldPassword,
         new_password: data.newPassword
       });

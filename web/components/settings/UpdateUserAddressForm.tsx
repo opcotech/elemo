@@ -1,7 +1,7 @@
 'use client';
 
 import { z } from 'zod';
-import { $User, getErrorMessage, UsersService } from '@/lib/api';
+import { $User, getErrorMessage, UserService } from '@/lib/api';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/blocks/Button';
@@ -61,7 +61,7 @@ export function UpdateUserAddressForm({ userId, defaultValues }: UpdateUserAddre
 
   async function onSubmit(data: UpdateUserAddressData) {
     try {
-      await UsersService.v1UserUpdate(userId, normalizeData(data, UPDATE_ADDRESS_SCHEMA));
+      await UserService.v1UserUpdate(userId, normalizeData(data, UPDATE_ADDRESS_SCHEMA));
       addMessage({ type: 'success', title: 'Address updated', message: 'Your address has been updated successfully.' });
     } catch (e) {
       addMessage({ type: 'error', title: 'Failed to update address', message: getErrorMessage(e) });

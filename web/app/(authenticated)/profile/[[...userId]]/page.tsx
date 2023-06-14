@@ -1,11 +1,11 @@
 import { getServerSession } from 'next-auth';
-import { UsersService } from '@/lib/api';
+import { UserService } from '@/lib/api';
 import { authOptions } from '@/lib/auth';
 import { ProfileSidebar } from '@/components/profile/ProfileSidebar';
 
 export const dynamic = 'force-dynamic';
 export async function generateMetadata({ params: { userId } }: ProfilePageProps) {
-  const user = await UsersService.v1UserGet(userId || 'me');
+  const user = await UserService.v1UserGet(userId || 'me');
 
   return {
     title: `${user.first_name} ${user.last_name} | Profile | Elemo`
@@ -19,7 +19,7 @@ export interface ProfilePageProps {
 }
 
 export async function getData({ params: { userId } }: ProfilePageProps) {
-  const user = await UsersService.v1UserGet(userId || 'me');
+  const user = await UserService.v1UserGet(userId || 'me');
   return { user };
 }
 

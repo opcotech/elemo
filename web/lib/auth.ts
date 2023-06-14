@@ -1,7 +1,7 @@
 import { NextAuthOptions } from 'next-auth';
 import type { JWT } from 'next-auth/jwt';
 import Credentials from 'next-auth/providers/credentials';
-import { OpenAPI, UsersService } from '@/lib/api';
+import { OpenAPI, UserService } from '@/lib/api';
 
 interface TokenResponse {
   token_type: string;
@@ -45,7 +45,7 @@ async function getTokenData(credentials: Record<never, string> | undefined): Pro
 async function getUserData(tokenData: TokenResponse): Promise<UserResponse | null> {
   OpenAPI.TOKEN = tokenData.access_token;
 
-  const user = await UsersService.v1UserGet('me');
+  const user = await UserService.v1UserGet('me');
 
   return {
     id: user.id,

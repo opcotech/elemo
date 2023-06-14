@@ -1,7 +1,7 @@
 'use client';
 
 import { z } from 'zod';
-import { $User, getErrorMessage, UsersService } from '@/lib/api';
+import { $User, getErrorMessage, UserService } from '@/lib/api';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
@@ -65,7 +65,7 @@ export function UpdateUserContactForm({ userId, defaultValues }: UpdateUserConta
 
   async function onSubmit(data: UpdateUserContactData) {
     try {
-      await UsersService.v1UserUpdate(userId, normalizeData(data, UPDATE_CONTACT_SCHEMA));
+      await UserService.v1UserUpdate(userId, normalizeData(data, UPDATE_CONTACT_SCHEMA));
       addMessage({
         type: 'success',
         title: 'Contact info updated',
