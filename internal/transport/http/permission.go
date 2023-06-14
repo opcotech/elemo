@@ -139,7 +139,7 @@ func (c *permissionController) V1PermissionResourceGet(ctx context.Context, requ
 	}
 
 	parts := strings.Split(request.ResourceId, ":")
-	id, err := model.NewIDFromRaw(parts[0], parts[1])
+	id, err := model.NewIDFromString(parts[1], parts[0])
 	if err != nil {
 		return api.V1PermissionResourceGet400JSONResponse{N400JSONResponse: badRequest}, nil
 	}
@@ -172,7 +172,7 @@ func (c *permissionController) V1PermissionHasRelations(ctx context.Context, req
 	defer span.End()
 
 	parts := strings.Split(request.ResourceId, ":")
-	id, err := model.NewIDFromRaw(parts[0], parts[1])
+	id, err := model.NewIDFromString(parts[1], parts[0])
 	if err != nil {
 		return api.V1PermissionHasRelations400JSONResponse{N400JSONResponse: badRequest}, nil
 	}
@@ -220,12 +220,12 @@ func createPermissionJSONRequestBodyToPermission(body *api.V1PermissionsCreateJS
 		return nil, err
 	}
 
-	subject, err := model.NewIDFromRaw(string(body.Subject.ResourceType), body.Subject.Id)
+	subject, err := model.NewIDFromString(body.Subject.Id, string(body.Subject.ResourceType))
 	if err != nil {
 		return nil, err
 	}
 
-	target, err := model.NewIDFromRaw(string(body.Target.ResourceType), body.Target.Id)
+	target, err := model.NewIDFromString(body.Target.Id, string(body.Target.ResourceType))
 	if err != nil {
 		return nil, err
 	}
