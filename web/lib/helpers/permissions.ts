@@ -1,4 +1,4 @@
-import { Permission, PermissionKind } from '@/lib/api';
+import { Permission, PermissionKind, ResourceType } from '@/lib/api';
 
 export type Actions = {
   canView: boolean;
@@ -29,4 +29,8 @@ export function getActions(data: Permission | Permission[]): Actions {
     canDelete,
     canCreate
   };
+}
+
+export function formatResourceId(resourceType: ResourceType, resourceId: string): string {
+  return `${resourceType}:${resourceId}`;
 }
