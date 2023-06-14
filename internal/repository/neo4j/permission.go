@@ -321,7 +321,7 @@ func (r *PermissionRepository) HasSystemRole(ctx context.Context, source model.I
 	cypher := `
 	MATCH path = (s:` + source.Label() + ` {id: $source_id})-[:` + EdgeKindMemberOf.String() + `]->(r:` + model.ResourceTypeRole.String() + ` {system: true})
 	WHERE r.id IN $target_ids
-	RETURN count(path) > 0 AS has_relation
+	RETURN count(path) > 0 AS has_system_role
 	LIMIT 1`
 
 	params := map[string]any{
@@ -329,18 +329,18 @@ func (r *PermissionRepository) HasSystemRole(ctx context.Context, source model.I
 		"target_ids": roleIDs,
 	}
 
-	hasRelation, err := ExecuteReadAndReadSingle(ctx, r.db, cypher, params, func(rec *neo4j.Record) (*bool, error) {
-		val, _, err := neo4j.GetRecordValue[bool](rec, "has_relation")
+	hasSystemRole, err := ExecuteReadAndReadSingle(ctx, r.db, cypher, params, func(rec *neo4j.Record) (*bool, error) {
+		val, _, err := neo4j.GetRecordValue[bool](rec, "has_system_role")
 		if err != nil {
 			return nil, err
 		}
 		return &val, nil
 	})
 	if err != nil {
-		return false, errors.Join(repository.ErrRelationRead, err)
+		return false, errors.Join(repository.ErrSystemRoleRead, err)
 	}
 
-	return *hasRelation, nil
+	return *hasSystemRole, nil
 }
 
 // Update updates an existing permission's kind. If the permission does not

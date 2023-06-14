@@ -249,6 +249,7 @@ var startServerCmd = &cobra.Command{
 			elemoHttp.WithTodoService(todoService),
 			elemoHttp.WithSystemService(systemService),
 			elemoHttp.WithLicenseService(licenseService),
+			elemoHttp.WithPermissionService(permissionSvc),
 			elemoHttp.WithLogger(logger.Named("http_server")),
 			elemoHttp.WithTracer(tracer),
 		)

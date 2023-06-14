@@ -46,7 +46,6 @@ var (
 	ErrNamespaceDelete          = errors.New("failed to delete namespace")                // the namespace could not be deleted
 	ErrNamespaceRead            = errors.New("failed to read namespace")                  // the namespace could not be retrieved
 	ErrNamespaceUpdate          = errors.New("failed to update namespace")                // the namespace could not be updated
-	ErrNoCacheRepository        = errors.New("no cache repository provided")              // no cache repository provided
 	ErrNoClient                 = errors.New("no client")                                 // the client is missing
 	ErrNoDriver                 = errors.New("no driver")                                 // the driver is missing
 	ErrNoLicenseRepository      = errors.New("no license repository provided")            // no license repository provided
@@ -74,6 +73,7 @@ var (
 	ErrRoleRead                 = errors.New("failed to read role")                       // role cannot be read
 	ErrRoleRemoveMember         = errors.New("failed to remove member from role")         // member cannot be removed from role
 	ErrRoleUpdate               = errors.New("failed to update role")                     // role cannot be updated
+	ErrSystemRoleRead           = errors.New("failed to read system role")                // the system role could not be retrieved
 	ErrTodoCreate               = errors.New("failed to create todo")                     // todo cannot be created
 	ErrTodoDelete               = errors.New("failed to delete todo")                     // todo cannot be deleted
 	ErrTodoRead                 = errors.New("failed to read todo")                       // todo cannot be read

@@ -1871,7 +1871,6 @@ paths:
         - Permission
       requestBody:
         $ref: '#/components/requestBodies/PermissionCreate'
-        description: ''
   '/v1/permissions/{id}':
     parameters:
       - $ref: '#/components/parameters/id'
@@ -1942,13 +1941,7 @@ paths:
         - Permission
   '/v1/permissions/resources/{id}':
     parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
-          example: 9bsv0s46s6s002p9ltq0
-        description: ID of the resource.
+      - $ref: '#/components/parameters/id'
     get:
       summary: Get permissions for a resource
       operationId: v1PermissionResourceGet
@@ -1976,13 +1969,7 @@ paths:
         - Permission
   '/v1/permissions/has-relations/{id}':
     parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
-          example: 9bsv0s46s6s002p9ltq0
-        description: ID of the resource.
+      - $ref: '#/components/parameters/id'
     get:
       summary: Check relations to resource
       operationId: v1PermissionHasRelations
