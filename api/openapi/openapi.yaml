@@ -781,6 +781,12 @@ components:
           example: 9bsv0s46s6s002p9ltq0
         kind:
           $ref: '#/components/schemas/PermissionKind'
+        subject:
+          type: string
+          example: 9bsv0s46s6s002p9ltq0
+        target:
+          type: string
+          example: 9bsv0s46s6s002p9ltq0
         created_at:
           type: string
           format: date-time
@@ -793,6 +799,8 @@ components:
       required:
         - id
         - kind
+        - subject
+        - target
         - created_at
         - updated_at
     PermissionKind:
@@ -805,6 +813,25 @@ components:
         - write
         - read
         - delete
+    ResourceType:
+      title: ResourceType
+      type: string
+      enum:
+        - Assignment
+        - Attachment
+        - Comment
+        - Document
+        - Issue
+        - IssueRelation
+        - Label
+        - Namespace
+        - Organization
+        - Permission
+        - Project
+        - ResourceType
+        - Role
+        - Todo
+        - User
   examples: { }
   securitySchemes:
     oauth2:
@@ -933,6 +960,14 @@ components:
         type: string
         example: 9bsv0s46s6s002p9ltq0
       description: ID of the resource.
+    resourceId:
+      name: resourceId
+      in: path
+      required: true
+      schema:
+        type: string
+        example: Todo:9bsv0s46s6s002p9ltq0
+      description: ID of the resource combined with its resource type.
     force:
       name: force
       in: query
@@ -940,16 +975,18 @@ components:
       schema:
         type: boolean
       description: Irreversibly delete the user.
-    role:
-      name: role
+    roles:
+      name: roles
       in: query
-      required: false
+      required: true
       schema:
-        type: string
-        enum:
-          - owner
-          - admin
-          - support
+        type: array
+        items:
+          type: string
+          enum:
+            - Owner
+            - Admin
+            - Support
       description: ID of a role.
   requestBodies:
     UserPatch:
@@ -1328,11 +1365,29 @@ components:
               kind:
                 $ref: '#/components/schemas/PermissionKind'
               subject:
-                type: string
-                example: 9bsv0s46s6s002p9ltq0
+                type: object
+                example: 'user:9bsv0s46s6s002p9ltq0'
+                required:
+                  - resourceType
+                  - id
+                properties:
+                  resourceType:
+                    $ref: '#/components/schemas/ResourceType'
+                  id:
+                    type: string
+                    example: 9bsv0s46s6s002p9ltq0
               target:
-                type: string
-                example: 9bsv0s46s6s002p9ltq0
+                type: object
+                example: 'user:9bsv0s46s6s002p9ltq0'
+                required:
+                  - resourceType
+                  - id
+                properties:
+                  resourceType:
+                    $ref: '#/components/schemas/ResourceType'
+                  id:
+                    type: string
+                    example: 9bsv0s46s6s002p9ltq0
             required:
               - kind
               - subject
@@ -1939,9 +1994,9 @@ paths:
       description: Get a permission by its ID.
       tags:
         - Permission
-  '/v1/permissions/resources/{id}':
+  '/v1/permissions/resources/{resourceId}':
     parameters:
-      - $ref: '#/components/parameters/id'
+      - $ref: '#/components/parameters/resourceId'
     get:
       summary: Get permissions for a resource
       operationId: v1PermissionResourceGet
@@ -1967,9 +2022,9 @@ paths:
       description: Get all permissions the caller have for a given resource.
       tags:
         - Permission
-  '/v1/permissions/has-relations/{id}':
+  '/v1/permissions/has-relations/{resourceId}':
     parameters:
-      - $ref: '#/components/parameters/id'
+      - $ref: '#/components/parameters/resourceId'
     get:
       summary: Check relations to resource
       operationId: v1PermissionHasRelations
@@ -1980,10 +2035,10 @@ paths:
             application/json:
               schema:
                 type: boolean
+        '400':
+          $ref: '#/components/responses/400'
         '401':
           $ref: '#/components/responses/401'
-        '403':
-          $ref: '#/components/responses/403'
         '404':
           $ref: '#/components/responses/404'
         '500':
@@ -2003,17 +2058,17 @@ paths:
             application/json:
               schema:
                 type: boolean
+        '400':
+          $ref: '#/components/responses/400'
         '401':
           $ref: '#/components/responses/401'
-        '403':
-          $ref: '#/components/responses/403'
         '500':
           $ref: '#/components/responses/500'
-      description: 'Check if the user is member of one or more system roles. To query for a role, use the "role" query parameter. To query for multiple roles, separate the roles with commas. An empty or missing "role" parameter will result in an error.'
+      description: 'Check if the user is member of one or more system roles.'
       tags:
         - Permission
       parameters:
-        - $ref: '#/components/parameters/role'
+        - $ref: '#/components/parameters/roles'
   /v1/system/health:
     get:
       summary: Get system health

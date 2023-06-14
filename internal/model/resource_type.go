@@ -1,7 +1,7 @@
 package model
 
 const (
-	ResourceTypeResourceType  ResourceType = iota + 1 // resource type resource type
+	ResourceTypeResourceType  ResourceType = iota + 1 // resource type
 	ResourceTypeAssignment                            // assignment resource type
 	ResourceTypeAttachment                            // attachment resource type
 	ResourceTypeComment                               // comment resource type

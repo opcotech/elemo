@@ -48,6 +48,29 @@ func NewID(typ ResourceType) (ID, error) {
 	return id, nil
 }
 
+// NewIDFromParts creates a new ID from a resource type and a unique identifier.
+func NewIDFromParts(typ ResourceType, id string) (ID, error) {
+	parsed, err := xid.FromString(id)
+	if err != nil {
+		return ID{}, errors.Join(ErrInvalidID, err)
+	}
+
+	return ID{
+		Inner: parsed,
+		Type:  typ,
+	}, nil
+}
+
+// NewIDFromRaw creates a new ID from a raw resource type and a raw xid.ID.
+func NewIDFromRaw(typ string, id string) (ID, error) {
+	var rt ResourceType
+	if err := rt.UnmarshalText([]byte(typ)); err != nil {
+		return ID{}, errors.Join(ErrInvalidID, err)
+	}
+
+	return NewIDFromParts(rt, id)
+}
+
 // MustNewID creates a new ID. It panics if the type is invalid.
 func MustNewID(typ ResourceType) ID {
 	id, err := NewID(typ)

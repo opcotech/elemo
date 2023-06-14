@@ -13,6 +13,14 @@ export const $Permission = {
             type: 'PermissionKind',
             isRequired: true,
         },
+        subject: {
+            type: 'string',
+            isRequired: true,
+        },
+        target: {
+            type: 'string',
+            isRequired: true,
+        },
         created_at: {
             type: 'string',
             description: `Date when the user was created.`,

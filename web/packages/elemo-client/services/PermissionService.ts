@@ -3,6 +3,7 @@
 /* eslint-disable */
 import type { Permission } from '../models/Permission';
 import type { PermissionKind } from '../models/PermissionKind';
+import type { ResourceType } from '../models/ResourceType';
 
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
@@ -20,8 +21,14 @@ export class PermissionService {
     public static v1PermissionsCreate(
         requestBody?: {
             kind: PermissionKind;
-            subject: string;
-            target: string;
+            subject: {
+                resourceType: ResourceType;
+                id: string;
+            };
+            target: {
+                resourceType: ResourceType;
+                id: string;
+            };
         },
     ): CancelablePromise<{
         /**
@@ -129,18 +136,18 @@ export class PermissionService {
     /**
      * Get permissions for a resource
      * Get all permissions the caller have for a given resource.
-     * @param id ID of the resource.
+     * @param resourceId ID of the resource combined with its resource type.
      * @returns Permission OK
      * @throws ApiError
      */
     public static v1PermissionResourceGet(
-        id: string,
+        resourceId: string,
     ): CancelablePromise<Array<Permission>> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/v1/permissions/resources/{id}',
+            url: '/v1/permissions/resources/{resourceId}',
             path: {
-                'id': id,
+                'resourceId': resourceId,
             },
             errors: {
                 400: `Bad request`,
@@ -155,22 +162,22 @@ export class PermissionService {
     /**
      * Check relations to resource
      * Check if the caller has any relations to a given resource.
-     * @param id ID of the resource.
+     * @param resourceId ID of the resource combined with its resource type.
      * @returns boolean OK
      * @throws ApiError
      */
     public static v1PermissionHasRelations(
-        id: string,
+        resourceId: string,
     ): CancelablePromise<boolean> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/v1/permissions/has-relations/{id}',
+            url: '/v1/permissions/has-relations/{resourceId}',
             path: {
-                'id': id,
+                'resourceId': resourceId,
             },
             errors: {
+                400: `Bad request`,
                 401: `Unauthorized request`,
-                403: `Forbidden`,
                 404: `The requested resource not found`,
                 500: `Internal Server Error`,
             },
@@ -179,23 +186,23 @@ export class PermissionService {
 
     /**
      * Check system role assignment
-     * Check if the user is member of one or more system roles. To query for a role, use the "role" query parameter. To query for multiple roles, separate the roles with commas. An empty or missing "role" parameter will result in an error.
-     * @param role ID of a role.
+     * Check if the user is member of one or more system roles.
+     * @param roles ID of a role.
      * @returns boolean OK
      * @throws ApiError
      */
     public static v1PermissionHasSystemRole(
-        role?: 'owner' | 'admin' | 'support',
+        roles: Array<'Owner' | 'Admin' | 'Support'>,
     ): CancelablePromise<boolean> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/v1/permissions/has-system-role',
             query: {
-                'role': role,
+                'roles': roles,
             },
             errors: {
+                400: `Bad request`,
                 401: `Unauthorized request`,
-                403: `Forbidden`,
                 500: `Internal Server Error`,
             },
         });

@@ -209,12 +209,12 @@ func (s *permissionService) CtxUserHasSystemRole(ctx context.Context, roles ...m
 		return false
 	}
 
-	hasPermission, err := s.HasSystemRole(ctx, userID, roles...)
+	hasSystemRole, err := s.HasSystemRole(ctx, userID, roles...)
 	if err != nil {
 		return false
 	}
 
-	return hasPermission
+	return hasSystemRole
 }
 
 func (s *permissionService) HasPermission(ctx context.Context, subject, target model.ID, kinds ...model.PermissionKind) (bool, error) {

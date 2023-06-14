@@ -13,6 +13,8 @@ export type Permission = {
      */
     id: string;
     kind: PermissionKind;
+    subject: string;
+    target: string;
     /**
      * Date when the user was created.
      */
