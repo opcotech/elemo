@@ -2,5 +2,5 @@
 /* tslint:disable */
 /* eslint-disable */
 export const $OrganizationStatus = {
-    type: 'Enum',
+  type: 'Enum'
 } as const;

@@ -1922,6 +1922,8 @@ paths:
         '500':
           $ref: '#/components/responses/500'
       description: Create a new permission for a subject to the given target.
+      security:
+        - oauth2: [ ]
       tags:
         - Permission
       requestBody:
@@ -1950,6 +1952,8 @@ paths:
         '500':
           $ref: '#/components/responses/500'
       description: Update a permission.
+      security:
+        - oauth2: [ ]
       tags:
         - Permission
       requestBody:
@@ -1971,6 +1975,8 @@ paths:
         '500':
           $ref: '#/components/responses/500'
       description: Delete a permission by its ID.
+      security:
+        - oauth2: [ ]
       tags:
         - Permission
     get:
@@ -1992,6 +1998,8 @@ paths:
         '500':
           $ref: '#/components/responses/500'
       description: Get a permission by its ID.
+      security:
+        - oauth2: [ ]
       tags:
         - Permission
   '/v1/permissions/resources/{resourceId}':
@@ -2020,6 +2028,8 @@ paths:
         '500':
           $ref: '#/components/responses/500'
       description: Get all permissions the caller have for a given resource.
+      security:
+        - oauth2: [ ]
       tags:
         - Permission
   '/v1/permissions/has-relations/{resourceId}':
@@ -2044,6 +2054,8 @@ paths:
         '500':
           $ref: '#/components/responses/500'
       description: Check if the caller has any relations to a given resource.
+      security:
+        - oauth2: [ ]
       tags:
         - Permission
   /v1/permissions/has-system-role:
@@ -2065,6 +2077,8 @@ paths:
         '500':
           $ref: '#/components/responses/500'
       description: 'Check if the user is member of one or more system roles.'
+      security:
+        - oauth2: [ ]
       tags:
         - Permission
       parameters:
