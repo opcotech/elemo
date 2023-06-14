@@ -28,6 +28,7 @@ var (
 	ErrInvalidProjectStatus        = errors.New("invalid project status")         // the project status is invalid
 	ErrInvalidResourceType         = errors.New("invalid resource type")          // the resource type is invalid
 	ErrInvalidRoleDetails          = errors.New("invalid role details")           // the role details are invalid
+	ErrInvalidSystemRole           = errors.New("invalid system role")            // the system role is invalid
 	ErrInvalidTodoDetails          = errors.New("invalid todo details")           // the todo details are invalid
 	ErrInvalidTodoPriority         = errors.New("invalid todo priority")          // the todo priority is invalid
 	ErrInvalidUserDetails          = errors.New("invalid user details")           // the user details are invalid

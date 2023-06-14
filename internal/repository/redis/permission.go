@@ -54,6 +54,10 @@ func (c *CachedPermissionRepository) GetByTarget(ctx context.Context, id model.I
 	return c.permissionRepo.GetByTarget(ctx, id)
 }
 
+func (c *CachedPermissionRepository) GetBySubjectAndTarget(ctx context.Context, source, target model.ID) ([]*model.Permission, error) {
+	return c.permissionRepo.GetBySubjectAndTarget(ctx, source, target)
+}
+
 func (c *CachedPermissionRepository) Update(ctx context.Context, id model.ID, kind model.PermissionKind) (*model.Permission, error) {
 	if err := clearPermissionAllCrossCache(ctx, c.cacheRepo); err != nil {
 		return nil, err
@@ -76,8 +80,8 @@ func (c *CachedPermissionRepository) HasAnyRelation(ctx context.Context, source,
 	return c.permissionRepo.HasAnyRelation(ctx, source, target)
 }
 
-func (c *CachedPermissionRepository) HasSystemRole(ctx context.Context, source model.ID, targets ...model.SystemRole) (bool, error) {
-	return c.permissionRepo.HasSystemRole(ctx, source, targets...)
+func (c *CachedPermissionRepository) HasSystemRole(ctx context.Context, source model.ID, roles ...model.SystemRole) (bool, error) {
+	return c.permissionRepo.HasSystemRole(ctx, source, roles...)
 }
 
 // NewCachedPermissionRepository returns a new CachedPermissionRepository.

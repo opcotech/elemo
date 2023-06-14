@@ -123,6 +123,25 @@ func (s *CachedPermissionRepositoryIntegrationTestSuite) TestGetByTarget() {
 	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }
 
+func (s *CachedPermissionRepositoryIntegrationTestSuite) TestGetBySubjectAndTarget() {
+	s.Require().NoError(s.PermissionRepo.Create(context.Background(), s.permission))
+
+	original, err := s.PermissionRepo.GetBySubjectAndTarget(context.Background(), s.permission.Subject, s.permission.Target)
+	s.Require().NoError(err)
+
+	usingCache, err := s.PermissionRepo.GetBySubjectAndTarget(context.Background(), s.permission.Subject, s.permission.Target)
+	s.Require().NoError(err)
+
+	s.Assert().Equal(original, usingCache)
+	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
+
+	cached, err := s.permissionRepo.GetByTarget(context.Background(), s.permission.Target)
+	s.Require().NoError(err)
+
+	s.Assert().Equal(usingCache, cached)
+	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
+}
+
 func (s *CachedPermissionRepositoryIntegrationTestSuite) TestUpdate() {
 	s.Require().NoError(s.PermissionRepo.Create(context.Background(), s.permission))
 

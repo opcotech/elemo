@@ -65,6 +65,19 @@ func WithAuthProvider(authProvider *authServer.Server) ControllerOption {
 	}
 }
 
+// WithPermissionService sets the permission service for the controller.
+func WithPermissionService(permissionService service.PermissionService) ControllerOption {
+	return func(c *baseController) error {
+		if permissionService == nil {
+			return ErrNoPermissionService
+		}
+
+		c.permissionService = permissionService
+
+		return nil
+	}
+}
+
 // WithSystemService sets the system service for the controller.
 func WithSystemService(systemService service.SystemService) ControllerOption {
 	return func(c *baseController) error {
@@ -144,6 +157,7 @@ type baseController struct {
 	todoService         service.TodoService
 	systemService       service.SystemService
 	licenseService      service.LicenseService
+	permissionService   service.PermissionService
 }
 
 // newController creates a new base controller with the given dependencies

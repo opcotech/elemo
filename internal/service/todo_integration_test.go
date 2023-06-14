@@ -35,16 +35,19 @@ func (s *TodoServiceIntegrationTestSuite) SetupSuite() {
 	container := reflect.TypeOf(s).Elem().String()
 	s.SetupNeo4j(&s.ContainerIntegrationTestSuite, container)
 
+	permissionService, err := service.NewPermissionService(s.PermissionRepo)
+	s.Require().NoError(err)
+
 	licenseService, err := service.NewLicenseService(
 		testutil.ParseLicense(s.T()),
 		s.LicenseRepo,
-		service.WithPermissionRepository(s.PermissionRepo),
+		service.WithPermissionService(permissionService),
 	)
 	s.Require().NoError(err)
 
 	s.todoService, err = service.NewTodoService(
 		service.WithTodoRepository(s.TodoRepo),
-		service.WithPermissionRepository(s.PermissionRepo),
+		service.WithPermissionService(permissionService),
 		service.WithLicenseService(licenseService),
 	)
 	s.Require().NoError(err)

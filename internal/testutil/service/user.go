@@ -34,16 +34,21 @@ func NewUserService(t *testing.T, neo4jDBConf *config.GraphDatabaseConfig) servi
 	)
 	require.NoError(t, err)
 
+	permissionSvc, err := service.NewPermissionService(
+		permissionRepo,
+	)
+	require.NoError(t, err)
+
 	licenseSvc, err := service.NewLicenseService(
 		testutil.ParseLicense(t),
 		licenseRepo,
-		service.WithPermissionRepository(permissionRepo),
+		service.WithPermissionService(permissionSvc),
 	)
 	require.NoError(t, err)
 
 	s, err := service.NewUserService(
 		service.WithUserRepository(userRepo),
-		service.WithPermissionRepository(permissionRepo),
+		service.WithPermissionService(permissionSvc),
 		service.WithLicenseService(licenseSvc),
 	)
 	require.NoError(t, err)

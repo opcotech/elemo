@@ -3,54 +3,53 @@
 /* eslint-disable */
 
 export type SystemLicense = {
+  /**
+   * Unique ID identifying the license.
+   */
+  id: string;
+  /**
+   * Name of the organization the license belongs to.
+   */
+  organization: string;
+  /**
+   * Email address of the licensee.
+   */
+  email: string;
+  /**
+   * Quotas available for the license.
+   */
+  quotas: {
     /**
-     * Unique ID identifying the license.
+     * Number of documents can exist in the system.
      */
-    id: string;
+    documents: number;
     /**
-     * Name of the organization the license belongs to.
+     * Number of namespaces can exist in the system.
      */
-    organization: string;
+    namespaces: number;
     /**
-     * Email address of the licensee.
+     * Number of organizations active can exist in the system.
      */
-    email: string;
+    organizations: number;
     /**
-     * Quotas available for the license.
+     * Number of projects can exist in the system.
      */
-    quotas: {
-        /**
-         * Number of documents can exist in the system.
-         */
-        documents: number;
-        /**
-         * Number of namespaces can exist in the system.
-         */
-        namespaces: number;
-        /**
-         * Number of organizations active can exist in the system.
-         */
-        organizations: number;
-        /**
-         * Number of projects can exist in the system.
-         */
-        projects: number;
-        /**
-         * Number of roles can exist in the system.
-         */
-        roles: number;
-        /**
-         * Number of active or pending users can exist in the system.
-         */
-        users: number;
-    };
+    projects: number;
     /**
-     * Features enabled by the license.
+     * Number of roles can exist in the system.
      */
-    features: Array<'components' | 'custom_statuses' | 'custom_fields' | 'multiple_assignees' | 'releases'>;
+    roles: number;
     /**
-     * Date and time when the license expires.
+     * Number of active or pending users can exist in the system.
      */
-    expires_at: string;
+    users: number;
+  };
+  /**
+   * Features enabled by the license.
+   */
+  features: Array<'components' | 'custom_statuses' | 'custom_fields' | 'multiple_assignees' | 'releases'>;
+  /**
+   * Date and time when the license expires.
+   */
+  expires_at: string;
 };
-

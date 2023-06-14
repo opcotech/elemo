@@ -65,12 +65,14 @@ info:
 tags:
   - name: System
     description: System resources.
-  - name: Todos
+  - name: Todo
     description: User todo items.
-  - name: Organizations
+  - name: Organization
     description: Organizations in the system.
-  - name: Users
+  - name: User
     description: Users in the system.
+  - name: Permission
+    description: Permissions in the system.
 servers:
   - url: 'https://{site}.elemo.app/api'
     description: Managed production instance.
@@ -233,7 +235,6 @@ components:
       title: UserStatus
     Organization:
       title: Organization
-
       type: object
       description: An organization in the system.
       properties:
@@ -246,7 +247,6 @@ components:
           description: Name of the organization.
           maxLength: 120
           example: ACME Inc.
-
           minLength: 1
         email:
           type: string
@@ -261,12 +261,10 @@ components:
           format: uri
           example: 'https://example.com/static/logo.png'
           maxLength: 2000
-
           nullable: true
         website:
           type: string
           description: Work title of the user.
-
           format: uri
           example: 'https://example.com'
           maxLength: 2000
@@ -275,29 +273,23 @@ components:
           $ref: '#/components/schemas/OrganizationStatus'
         members:
           type: array
-
           description: IDs of the users in the organization.
           uniqueItems: true
           items:
-
             type: string
             example: 9bsv0s46s6s002p9ltq0
         teams:
           type: array
-
           description: IDs of the teams in the organization.
           uniqueItems: true
           items:
-
             type: string
             example: 9bsv0s46s6s002p9ltq0
         namespaces:
           type: array
-
           description: IDs of the namespaces in the organization.
           uniqueItems: true
           items:
-
             type: string
             example: 9bsv0s46s6s002p9ltq0
         created_at:
@@ -323,7 +315,6 @@ components:
         - updated_at
     OrganizationStatus:
       type: string
-
       enum:
         - active
         - deleted
@@ -773,6 +764,74 @@ components:
         - za
         - zh
         - zu
+    Permission:
+      title: Permission
+      type: object
+      description: A permission in the system.
+      x-examples:
+        example:
+          id: 9bsv0s46s6s002p9ltq0
+          kind: '*'
+          created_at: '2023-01-01T00:00:00Z'
+          updated_at: null
+      properties:
+        id:
+          type: string
+          description: Unique identifier of the user.
+          example: 9bsv0s46s6s002p9ltq0
+        kind:
+          $ref: '#/components/schemas/PermissionKind'
+        subject:
+          type: string
+          example: 9bsv0s46s6s002p9ltq0
+        target:
+          type: string
+          example: 9bsv0s46s6s002p9ltq0
+        created_at:
+          type: string
+          format: date-time
+          description: Date when the user was created.
+        updated_at:
+          type: string
+          format: date-time
+          description: Date when the user was updated.
+          nullable: true
+      required:
+        - id
+        - kind
+        - subject
+        - target
+        - created_at
+        - updated_at
+    PermissionKind:
+      title: PermissionKind
+      type: string
+      description: Kind of a permission.
+      enum:
+        - '*'
+        - create
+        - write
+        - read
+        - delete
+    ResourceType:
+      title: ResourceType
+      type: string
+      enum:
+        - Assignment
+        - Attachment
+        - Comment
+        - Document
+        - Issue
+        - IssueRelation
+        - Label
+        - Namespace
+        - Organization
+        - Permission
+        - Project
+        - ResourceType
+        - Role
+        - Todo
+        - User
   examples: { }
   securitySchemes:
     oauth2:
@@ -901,6 +960,14 @@ components:
         type: string
         example: 9bsv0s46s6s002p9ltq0
       description: ID of the resource.
+    resourceId:
+      name: resourceId
+      in: path
+      required: true
+      schema:
+        type: string
+        example: Todo:9bsv0s46s6s002p9ltq0
+      description: ID of the resource combined with its resource type.
     force:
       name: force
       in: query
@@ -908,6 +975,19 @@ components:
       schema:
         type: boolean
       description: Irreversibly delete the user.
+    roles:
+      name: roles
+      in: query
+      required: true
+      schema:
+        type: array
+        items:
+          type: string
+          enum:
+            - Owner
+            - Admin
+            - Support
+      description: ID of a role.
   requestBodies:
     UserPatch:
       content:
@@ -929,7 +1009,7 @@ components:
                 maxLength: 50
                 example: Test
                 nullable: true
-                x-go-type: Optional[string]
+                x-go-type: 'Optional[string]'
                 x-go-type-skip-optional-pointer: true
               last_name:
                 type: string
@@ -938,7 +1018,7 @@ components:
                 minLength: 1
                 maxLength: 50
                 nullable: true
-                x-go-type: Optional[string]
+                x-go-type: 'Optional[string]'
                 x-go-type-skip-optional-pointer: true
               email:
                 type: string
@@ -968,7 +1048,7 @@ components:
                 example: 'https://example.com/users/my-user.png'
                 maxLength: 2000
                 nullable: true
-                x-go-type: Optional[string]
+                x-go-type: 'Optional[string]'
                 x-go-type-skip-optional-pointer: true
               title:
                 type: string
@@ -977,7 +1057,7 @@ components:
                 minLength: 3
                 maxLength: 50
                 nullable: true
-                x-go-type: Optional[string]
+                x-go-type: 'Optional[string]'
                 x-go-type-skip-optional-pointer: true
               bio:
                 type: string
@@ -985,7 +1065,7 @@ components:
                 maxLength: 500
                 example: I'm working smart on software.
                 nullable: true
-                x-go-type: Optional[string]
+                x-go-type: 'Optional[string]'
                 x-go-type-skip-optional-pointer: true
               address:
                 type: string
@@ -994,7 +1074,7 @@ components:
                 example: Remote
                 description: Working address of the user.
                 nullable: true
-                x-go-type: Optional[string]
+                x-go-type: 'Optional[string]'
                 x-go-type-skip-optional-pointer: true
               phone:
                 type: string
@@ -1003,7 +1083,7 @@ components:
                 maxLength: 16
                 description: Phone number of the user.
                 nullable: true
-                x-go-type: Optional[string]
+                x-go-type: 'Optional[string]'
                 x-go-type-skip-optional-pointer: true
               links:
                 type: array
@@ -1155,7 +1235,7 @@ components:
                 example: I'll make the world a better place today.
                 description: Description of the todo item.
                 nullable: true
-                x-go-type: Optional[string]
+                x-go-type: 'Optional[string]'
                 x-go-type-skip-optional-pointer: true
               priority:
                 $ref: '#/components/schemas/TodoPriority'
@@ -1167,7 +1247,7 @@ components:
                 format: date-time
                 description: Completion due date of the todo item.
                 nullable: true
-                x-go-type: Optional[*time.Time]
+                x-go-type: 'Optional[*time.Time]'
                 x-go-type-skip-optional-pointer: true
             required:
               - title
@@ -1192,7 +1272,7 @@ components:
                 example: I'll make the world a better place today.
                 description: Description of the todo item.
                 nullable: true
-                x-go-type: Optional[string]
+                x-go-type: 'Optional[string]'
                 x-go-type-skip-optional-pointer: true
               priority:
                 $ref: '#/components/schemas/TodoPriority'
@@ -1207,7 +1287,7 @@ components:
                 format: date-time
                 description: Completion due date of the todo item.
                 nullable: true
-                x-go-type: Optional[*time.Time]
+                x-go-type: 'Optional[*time.Time]'
                 x-go-type-skip-optional-pointer: true
     OrganizationCreate:
       content:
@@ -1220,7 +1300,6 @@ components:
                 description: Name of the organization.
                 maxLength: 120
                 example: ACME Inc.
-
                 minLength: 1
               email:
                 type: string
@@ -1235,11 +1314,9 @@ components:
                 format: uri
                 example: 'https://example.com/static/logo.png'
                 maxLength: 2000
-
               website:
                 type: string
                 description: Work title of the user.
-
                 format: uri
                 example: 'https://example.com'
                 maxLength: 2000
@@ -1257,7 +1334,6 @@ components:
                 description: Name of the organization.
                 maxLength: 120
                 example: ACME Inc.
-
                 minLength: 1
               email:
                 type: string
@@ -1272,22 +1348,66 @@ components:
                 format: uri
                 example: 'https://example.com/static/logo.png'
                 maxLength: 2000
-
               website:
                 type: string
                 description: Work title of the user.
-
                 format: uri
                 example: 'https://example.com'
                 maxLength: 2000
               status:
                 $ref: '#/components/schemas/OrganizationStatus'
+    PermissionCreate:
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              kind:
+                $ref: '#/components/schemas/PermissionKind'
+              subject:
+                type: object
+                example: 'user:9bsv0s46s6s002p9ltq0'
+                required:
+                  - resourceType
+                  - id
+                properties:
+                  resourceType:
+                    $ref: '#/components/schemas/ResourceType'
+                  id:
+                    type: string
+                    example: 9bsv0s46s6s002p9ltq0
+              target:
+                type: object
+                example: 'user:9bsv0s46s6s002p9ltq0'
+                required:
+                  - resourceType
+                  - id
+                properties:
+                  resourceType:
+                    $ref: '#/components/schemas/ResourceType'
+                  id:
+                    type: string
+                    example: 9bsv0s46s6s002p9ltq0
+            required:
+              - kind
+              - subject
+              - target
+    PermissionPatch:
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              kind:
+                $ref: '#/components/schemas/PermissionKind'
+            required:
+              - kind
 paths:
   /v1/users:
     get:
       summary: Get all users
       tags:
-        - Users
+        - User
       responses:
         '200':
           description: OK
@@ -1315,7 +1435,7 @@ paths:
     post:
       summary: Create new user
       tags:
-        - Users
+        - User
       operationId: v1UsersCreate
       responses:
         '201':
@@ -1340,7 +1460,7 @@ paths:
     get:
       summary: Get user
       tags:
-        - Users
+        - User
       responses:
         '200':
           description: OK
@@ -1366,7 +1486,7 @@ paths:
     delete:
       summary: Delete the user with the given ID.
       tags:
-        - Users
+        - User
       operationId: v1UserDelete
       responses:
         '204':
@@ -1390,7 +1510,7 @@ paths:
     patch:
       summary: Update user
       tags:
-        - Users
+        - User
       operationId: v1UserUpdate
       responses:
         '200':
@@ -1419,7 +1539,7 @@ paths:
     get:
       summary: Get todo item
       tags:
-        - Todos
+        - Todo
       responses:
         '200':
           description: OK
@@ -1472,14 +1592,14 @@ paths:
       requestBody:
         $ref: '#/components/requestBodies/TodoCreate'
       tags:
-        - Todos
+        - Todo
   '/v1/todos/{id}':
     parameters:
       - $ref: '#/components/parameters/id'
     get:
       summary: Get todo item
       tags:
-        - Todos
+        - Todo
       responses:
         '200':
           description: OK
@@ -1519,7 +1639,7 @@ paths:
         '500':
           $ref: '#/components/responses/500'
       tags:
-        - Todos
+        - Todo
       description: Delete todo by its ID.
       security:
         - oauth2:
@@ -1548,7 +1668,7 @@ paths:
           $ref: '#/components/responses/500'
       description: Update the given todo
       tags:
-        - Todos
+        - Todo
       security:
         - oauth2:
             - todo
@@ -1556,7 +1676,7 @@ paths:
     get:
       summary: Get organizations
       tags:
-        - Organizations
+        - Organization
       responses:
         '200':
           description: OK
@@ -1600,7 +1720,7 @@ paths:
         - oauth2:
             - organization
       tags:
-        - Organizations
+        - Organization
       requestBody:
         $ref: '#/components/requestBodies/OrganizationCreate'
   '/v1/organizations/{id}':
@@ -1609,7 +1729,7 @@ paths:
     get:
       summary: Get organization
       tags:
-        - Organizations
+        - Organization
       responses:
         '200':
           description: OK
@@ -1653,7 +1773,7 @@ paths:
         - oauth2:
             - organization
       tags:
-        - Organizations
+        - Organization
       parameters:
         - $ref: '#/components/parameters/force'
     patch:
@@ -1681,7 +1801,7 @@ paths:
         - oauth2:
             - organization
       tags:
-        - Organizations
+        - Organization
       requestBody:
         $ref: '#/components/requestBodies/OrganizationPatch'
   '/v1/organizations/{id}/members':
@@ -1690,8 +1810,8 @@ paths:
     get:
       summary: Get organization members
       tags:
-        - Organizations
-        - Users
+        - Organization
+        - User
       responses:
         '200':
           description: OK
@@ -1739,8 +1859,8 @@ paths:
         - oauth2:
             - organization
       tags:
-        - Organizations
-        - Users
+        - Organization
+        - User
       requestBody:
         content:
           application/json:
@@ -1749,7 +1869,6 @@ paths:
               properties:
                 user_id:
                   type: string
-
                   description: ID of the user to add.
                   example: 9bsv0s46s6s002p9ltq0
               required:
@@ -1785,8 +1904,185 @@ paths:
         - oauth2:
             - organization
       tags:
-        - Organizations
-        - Users
+        - Organization
+        - User
+  /v1/permissions:
+    post:
+      summary: Create permission
+      operationId: v1PermissionsCreate
+      responses:
+        '201':
+          $ref: '#/components/responses/201'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '500':
+          $ref: '#/components/responses/500'
+      description: Create a new permission for a subject to the given target.
+      security:
+        - oauth2: [ ]
+      tags:
+        - Permission
+      requestBody:
+        $ref: '#/components/requestBodies/PermissionCreate'
+  '/v1/permissions/{id}':
+    parameters:
+      - $ref: '#/components/parameters/id'
+    patch:
+      summary: Update permission
+      operationId: v1PermissionUpdate
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Permission'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '500':
+          $ref: '#/components/responses/500'
+      description: Update a permission.
+      security:
+        - oauth2: [ ]
+      tags:
+        - Permission
+      requestBody:
+        $ref: '#/components/requestBodies/PermissionPatch'
+    delete:
+      summary: Delete permission
+      operationId: v1PermissionDelete
+      responses:
+        '204':
+          description: No Content
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '500':
+          $ref: '#/components/responses/500'
+      description: Delete a permission by its ID.
+      security:
+        - oauth2: [ ]
+      tags:
+        - Permission
+    get:
+      summary: Get permission
+      operationId: v1PermissionGet
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Permission'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '404':
+          $ref: '#/components/responses/404'
+        '500':
+          $ref: '#/components/responses/500'
+      description: Get a permission by its ID.
+      security:
+        - oauth2: [ ]
+      tags:
+        - Permission
+  '/v1/permissions/resources/{resourceId}':
+    parameters:
+      - $ref: '#/components/parameters/resourceId'
+    get:
+      summary: Get permissions for a resource
+      operationId: v1PermissionResourceGet
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Permission'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '500':
+          $ref: '#/components/responses/500'
+      description: Get all permissions the caller have for a given resource.
+      security:
+        - oauth2: [ ]
+      tags:
+        - Permission
+  '/v1/permissions/has-relations/{resourceId}':
+    parameters:
+      - $ref: '#/components/parameters/resourceId'
+    get:
+      summary: Check relations to resource
+      operationId: v1PermissionHasRelations
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: boolean
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '404':
+          $ref: '#/components/responses/404'
+        '500':
+          $ref: '#/components/responses/500'
+      description: Check if the caller has any relations to a given resource.
+      security:
+        - oauth2: [ ]
+      tags:
+        - Permission
+  /v1/permissions/has-system-role:
+    parameters: [ ]
+    get:
+      summary: Check system role assignment
+      operationId: v1PermissionHasSystemRole
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: boolean
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '500':
+          $ref: '#/components/responses/500'
+      description: 'Check if the user is member of one or more system roles.'
+      security:
+        - oauth2: [ ]
+      tags:
+        - Permission
+      parameters:
+        - $ref: '#/components/parameters/roles'
   /v1/system/health:
     get:
       summary: Get system health

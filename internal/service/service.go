@@ -35,18 +35,6 @@ func WithTracer(tracer trace.Tracer) Option {
 	}
 }
 
-// WithPermissionRepository sets the permission repository for the baseService.
-func WithPermissionRepository(permissionRepo repository.PermissionRepository) Option {
-	return func(s *baseService) error {
-		if permissionRepo == nil {
-			return ErrNoPermissionRepository
-		}
-
-		s.permissionRepo = permissionRepo
-		return nil
-	}
-}
-
 // WithOrganizationRepository sets the organization repository for the
 // baseService.
 func WithOrganizationRepository(organizationRepo repository.OrganizationRepository) Option {
@@ -96,6 +84,18 @@ func WithLicenseService(licenseService LicenseService) Option {
 	}
 }
 
+// WithPermissionService sets the permission service for the baseService.
+func WithPermissionService(permissionService PermissionService) Option {
+	return func(s *baseService) error {
+		if permissionService == nil {
+			return ErrNoPermissionService
+		}
+
+		s.permissionService = permissionService
+		return nil
+	}
+}
+
 // baseService defines the dependencies that are required to interact with the
 // core functionality.
 type baseService struct {
@@ -105,9 +105,9 @@ type baseService struct {
 	organizationRepo repository.OrganizationRepository
 	userRepo         repository.UserRepository
 	todoRepo         repository.TodoRepository
-	permissionRepo   repository.PermissionRepository
 
-	licenseService LicenseService
+	licenseService    LicenseService
+	permissionService PermissionService
 }
 
 // newService creates a new baseService and defines the default values. Those

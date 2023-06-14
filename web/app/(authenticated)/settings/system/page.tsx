@@ -13,7 +13,6 @@ async function getData() {
   try {
     license = await SystemService.v1SystemLicense();
   } catch (e) {
-    console.log(e);
     const err = e as ApiError;
     if (err.status !== 403) throw err.message;
   }

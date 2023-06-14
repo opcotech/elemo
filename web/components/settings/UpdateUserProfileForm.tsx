@@ -1,7 +1,7 @@
 'use client';
 
 import { z } from 'zod';
-import { $User, getErrorMessage, Language, UsersService } from '@/lib/api';
+import { $User, getErrorMessage, Language, UserService } from '@/lib/api';
 import { FormSelect, FormSelectOption } from '@/components/blocks/Form/FormSelect';
 import { LANGUAGES } from '@/lib/constants';
 import { useForm } from 'react-hook-form';
@@ -97,7 +97,6 @@ export function UpdateUserProfileForm({ userId, defaultValues }: UpdateUserProfi
         });
 
   async function selectLanguages(languages: FormSelectOption[]) {
-    console.log('languages', languages);
     setSelectedLanguages(languages);
     setValue(
       'languages',
@@ -107,7 +106,7 @@ export function UpdateUserProfileForm({ userId, defaultValues }: UpdateUserProfi
 
   async function onSubmit(data: UpdateUserProfileData) {
     try {
-      await UsersService.v1UserUpdate(userId, normalizeData(data, UPDATE_PROFILE_SCHEMA));
+      await UserService.v1UserUpdate(userId, normalizeData(data, UPDATE_PROFILE_SCHEMA));
       addMessage({ type: 'success', title: 'Profile updated', message: 'Your profile has been updated successfully.' });
     } catch (e) {
       addMessage({ type: 'error', title: 'Failed to update profile', message: getErrorMessage(e) });

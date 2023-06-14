@@ -83,7 +83,6 @@ func MustNewNilID(typ ResourceType) ID {
 // NewIDFromString creates a new ID from a string. The string must be a valid
 // xid string.
 func NewIDFromString(id, typ string) (ID, error) {
-
 	var rt ResourceType
 	if err := rt.UnmarshalText([]byte(typ)); err != nil {
 		return ID{}, errors.Join(ErrInvalidID, err)

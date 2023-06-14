@@ -6,8 +6,8 @@
  * Priority of the todo item.
  */
 export enum TodoPriority {
-    NORMAL = 'normal',
-    IMPORTANT = 'important',
-    URGENT = 'urgent',
-    CRITICAL = 'critical',
+  NORMAL = 'normal',
+  IMPORTANT = 'important',
+  URGENT = 'urgent',
+  CRITICAL = 'critical'
 }

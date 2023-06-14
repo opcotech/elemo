@@ -156,6 +156,30 @@ func (r *PermissionRepository) GetByTarget(ctx context.Context, id model.ID) ([]
 	return perms, nil
 }
 
+// GetBySubjectAndTarget returns all permissions for a given target that the
+// source has. If no permissions exist, an empty slice is returned.
+func (r *PermissionRepository) GetBySubjectAndTarget(ctx context.Context, source, target model.ID) ([]*model.Permission, error) {
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.PermissionRepository/GetBySubjectAndTarget")
+	defer span.End()
+
+	cypher := `
+	MATCH (s:` + source.Label() + ` {id: $source})-[p:` + EdgeKindHasPermission.String() + `]->(t:` + target.Label() + ` {id: $target})
+	RETURN s, p, t
+	ORDER BY p.created_at DESC`
+
+	params := map[string]any{
+		"source": source.String(),
+		"target": target.String(),
+	}
+
+	perms, err := ExecuteReadAndReadAll(ctx, r.db, cypher, params, r.scan("p", "s", "t"))
+	if err != nil {
+		return nil, errors.Join(err, repository.ErrPermissionRead)
+	}
+
+	return perms, nil
+}
+
 // HasPermission returns true if the subject has the given permission on the
 // target. If the permission does not exist, false is returned.
 // TODO: Refactor this code. This is a mess.
@@ -277,7 +301,7 @@ func (r *PermissionRepository) HasAnyRelation(ctx context.Context, source, targe
 
 // HasSystemRole returns true if there is a relation between the source and
 // target that is a system role. If there is no relation, false is returned.
-func (r *PermissionRepository) HasSystemRole(ctx context.Context, source model.ID, targets ...model.SystemRole) (bool, error) {
+func (r *PermissionRepository) HasSystemRole(ctx context.Context, source model.ID, roles ...model.SystemRole) (bool, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.RelationRepository/HasAnyRelation")
 	defer span.End()
 
@@ -285,38 +309,38 @@ func (r *PermissionRepository) HasSystemRole(ctx context.Context, source model.I
 		return false, errors.Join(repository.ErrRelationRead, err)
 	}
 
-	if len(targets) == 0 {
+	if len(roles) == 0 {
 		return false, errors.Join(repository.ErrRelationRead, model.ErrInvalidID)
 	}
 
-	targetIDs := make([]string, len(targets))
-	for i, target := range targets {
-		targetIDs[i] = target.String()
+	roleIDs := make([]string, len(roles))
+	for i, role := range roles {
+		roleIDs[i] = role.String()
 	}
 
 	cypher := `
 	MATCH path = (s:` + source.Label() + ` {id: $source_id})-[:` + EdgeKindMemberOf.String() + `]->(r:` + model.ResourceTypeRole.String() + ` {system: true})
 	WHERE r.id IN $target_ids
-	RETURN count(path) > 0 AS has_relation
+	RETURN count(path) > 0 AS has_system_role
 	LIMIT 1`
 
 	params := map[string]any{
 		"source_id":  source.String(),
-		"target_ids": targetIDs,
+		"target_ids": roleIDs,
 	}
 
-	hasRelation, err := ExecuteReadAndReadSingle(ctx, r.db, cypher, params, func(rec *neo4j.Record) (*bool, error) {
-		val, _, err := neo4j.GetRecordValue[bool](rec, "has_relation")
+	hasSystemRole, err := ExecuteReadAndReadSingle(ctx, r.db, cypher, params, func(rec *neo4j.Record) (*bool, error) {
+		val, _, err := neo4j.GetRecordValue[bool](rec, "has_system_role")
 		if err != nil {
 			return nil, err
 		}
 		return &val, nil
 	})
 	if err != nil {
-		return false, errors.Join(repository.ErrRelationRead, err)
+		return false, errors.Join(repository.ErrSystemRoleRead, err)
 	}
 
-	return *hasRelation, nil
+	return *hasSystemRole, nil
 }
 
 // Update updates an existing permission's kind. If the permission does not

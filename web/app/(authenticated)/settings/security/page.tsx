@@ -1,4 +1,4 @@
-import { UsersService } from '@/lib/api';
+import { UserService } from '@/lib/api';
 import { ChangePasswordForm } from '@/components/settings/ChangePasswordForm';
 
 export const dynamic = 'force-dynamic';
@@ -7,7 +7,7 @@ export const metadata = {
 };
 
 async function getData() {
-  const user = await UsersService.v1UserGet('me');
+  const user = await UserService.v1UserGet('me');
   return { user };
 }
 

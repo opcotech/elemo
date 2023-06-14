@@ -1,4 +1,4 @@
-import { getErrorMessage, Todo, TodoPriority, TodosService } from '@/lib/api';
+import { getErrorMessage, Todo, TodoPriority, TodoService } from '@/lib/api';
 import { StateCreator } from 'zustand/esm';
 import { MessageSliceState } from '@/store/messageSlice';
 import { getSession } from 'next-auth/react';
@@ -69,7 +69,7 @@ export const createTodoSlice: StateCreator<TodoSliceState & Partial<MessageSlice
 
     try {
       set({ fetchingTodos: true });
-      todos = await TodosService.v1TodosGet(offset, limit, completed);
+      todos = await TodoService.v1TodosGet(offset, limit, completed);
     } catch (e) {
       return get().addMessage?.({ type: 'error', title: 'Failed to fetch todos', message: getErrorMessage(e) });
     } finally {
@@ -83,7 +83,7 @@ export const createTodoSlice: StateCreator<TodoSliceState & Partial<MessageSlice
     todo = { ...todo, owned_by: session!.user!.id };
 
     try {
-      data = await TodosService.v1TodosCreate(todo);
+      data = await TodoService.v1TodosCreate(todo);
       get().addMessage?.({ type: 'success', title: 'Todo Created', message: `Todo "${data.id}" created successfully` });
     } catch (e) {
       return get().addMessage?.({ type: 'error', title: 'Failed to create todo', message: getErrorMessage(e) });
@@ -111,7 +111,7 @@ export const createTodoSlice: StateCreator<TodoSliceState & Partial<MessageSlice
     let updated: Todo;
 
     try {
-      updated = await TodosService.v1TodoUpdate(id, todo);
+      updated = await TodoService.v1TodoUpdate(id, todo);
       get().addMessage?.({ type: 'success', title: 'Todo updated', message: `Todo "${id}" updated successfully.` });
     } catch (e) {
       return get().addMessage?.({ type: 'error', title: 'Failed to update todo', message: getErrorMessage(e) });
@@ -121,7 +121,7 @@ export const createTodoSlice: StateCreator<TodoSliceState & Partial<MessageSlice
   },
   deleteTodo: async (id: string) => {
     try {
-      await TodosService.v1TodoDelete(id);
+      await TodoService.v1TodoDelete(id);
       get().addMessage?.({ type: 'success', title: 'Todo deleted', message: `Todo "${id}" deleted successfully.` });
     } catch (e) {
       return get().addMessage?.({ type: 'error', title: 'Failed to delete todo', message: getErrorMessage(e) });

@@ -147,6 +147,51 @@ func TestWithLicenseService(t *testing.T) {
 	}
 }
 
+func TestWithPermissionService(t *testing.T) {
+	type args struct {
+		permissionService PermissionService
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+		want    PermissionService
+	}{
+		{
+			name: "set the permission service for the baseService",
+			args: args{
+				permissionService: new(mock.PermissionService),
+			},
+			want: new(mock.PermissionService),
+		},
+		{
+			name: "return an error if no permission service is provided",
+			args: args{
+				permissionService: nil,
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			var s baseService
+
+			err := WithPermissionService(tt.args.permissionService)(&s)
+			if (err != nil) != tt.wantErr {
+				require.NoError(t, err)
+			}
+
+			if !tt.wantErr {
+				assert.Equal(t, tt.want, s.permissionService)
+			}
+		})
+	}
+}
+
 func Test_newService(t *testing.T) {
 	type args struct {
 		opts []Option

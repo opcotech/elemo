@@ -120,6 +120,16 @@ func (s *PermissionRepositoryIntegrationTestSuite) TestGetByTarget() {
 	s.Assert().Len(permissions, 2) // the owner and the test user
 }
 
+func (s *PermissionRepositoryIntegrationTestSuite) TestGetBySubjectAndTarget() {
+	s.Require().NoError(s.PermissionRepo.Create(context.Background(), s.permission))
+
+	permissions, err := s.PermissionRepo.GetBySubjectAndTarget(context.Background(), s.permission.Subject, s.permission.Target)
+	s.Require().NoError(err)
+
+	s.Assert().Len(permissions, 1)
+	s.Assert().Equal(s.permission.ID, permissions[0].ID)
+}
+
 func (s *PermissionRepositoryIntegrationTestSuite) TestUpdate() {
 	s.Require().NoError(s.PermissionRepo.Create(context.Background(), s.permission))
 
