@@ -48,6 +48,19 @@ func WithOrganizationRepository(organizationRepo repository.OrganizationReposito
 	}
 }
 
+// WithRoleRepository sets the organization repository for the
+// baseService.
+func WithRoleRepository(roleRepo repository.RoleRepository) Option {
+	return func(s *baseService) error {
+		if roleRepo == nil {
+			return ErrNoOrganizationRepository
+		}
+
+		s.roleRepo = roleRepo
+		return nil
+	}
+}
+
 // WithUserRepository sets the user repository for the baseService.
 func WithUserRepository(userRepo repository.UserRepository) Option {
 	return func(s *baseService) error {
@@ -103,8 +116,9 @@ type baseService struct {
 	tracer trace.Tracer
 
 	organizationRepo repository.OrganizationRepository
-	userRepo         repository.UserRepository
+	roleRepo         repository.RoleRepository
 	todoRepo         repository.TodoRepository
+	userRepo         repository.UserRepository
 
 	licenseService    LicenseService
 	permissionService PermissionService

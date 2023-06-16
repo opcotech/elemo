@@ -117,6 +117,19 @@ func WithOrganizationService(organizationService service.OrganizationService) Co
 	}
 }
 
+// WithRoleService sets the role service for the controller.
+func WithRoleService(roleService service.RoleService) ControllerOption {
+	return func(c *baseController) error {
+		if roleService == nil {
+			return ErrNoRoleService
+		}
+
+		c.roleService = roleService
+
+		return nil
+	}
+}
+
 // WithUserService sets the user service for the controller.
 func WithUserService(userService service.UserService) ControllerOption {
 	return func(c *baseController) error {
@@ -153,6 +166,7 @@ type baseController struct {
 	authProvider *authServer.Server
 
 	organizationService service.OrganizationService
+	roleService         service.RoleService
 	userService         service.UserService
 	todoService         service.TodoService
 	systemService       service.SystemService
