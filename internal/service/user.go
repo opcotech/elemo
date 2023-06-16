@@ -48,7 +48,7 @@ func (s *userService) Create(ctx context.Context, user *model.User) error {
 	defer span.End()
 
 	if expired, err := s.licenseService.Expired(ctx); expired || err != nil {
-		return license.ErrLicenseExpired
+		return errors.Join(ErrUserCreate, license.ErrLicenseExpired)
 	}
 
 	if err := user.Validate(); err != nil {
@@ -56,7 +56,7 @@ func (s *userService) Create(ctx context.Context, user *model.User) error {
 	}
 
 	if !s.permissionService.CtxUserHasPermission(ctx, model.MustNewNilID(model.ResourceTypeUser), model.PermissionKindCreate) {
-		return ErrNoPermission
+		return errors.Join(ErrUserCreate, ErrNoPermission)
 	}
 
 	// If the newly created user is not active, e.g. a company is migrating
@@ -64,7 +64,7 @@ func (s *userService) Create(ctx context.Context, user *model.User) error {
 	// against active users.
 	if user.Status == model.UserStatusActive {
 		if ok, err := s.licenseService.WithinThreshold(ctx, license.QuotaUsers); !ok || err != nil {
-			return ErrQuotaExceeded
+			return errors.Join(ErrUserCreate, ErrQuotaExceeded)
 		}
 	}
 
@@ -128,7 +128,7 @@ func (s *userService) Update(ctx context.Context, id model.ID, patch map[string]
 	defer span.End()
 
 	if expired, err := s.licenseService.Expired(ctx); expired || err != nil {
-		return nil, license.ErrLicenseExpired
+		return nil, errors.Join(ErrUserUpdate, license.ErrLicenseExpired)
 	}
 
 	if err := id.Validate(); err != nil {
@@ -137,11 +137,11 @@ func (s *userService) Update(ctx context.Context, id model.ID, patch map[string]
 
 	userID, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID)
 	if !ok {
-		return nil, ErrNoUser
+		return nil, errors.Join(ErrUserUpdate, ErrNoUser)
 	}
 
 	if userID != id && !s.permissionService.CtxUserHasPermission(ctx, id, model.PermissionKindWrite) {
-		return nil, ErrNoPermission
+		return nil, errors.Join(ErrUserUpdate, ErrNoPermission)
 	}
 
 	// Check if the user is being activated is within the license quota. It
@@ -149,7 +149,7 @@ func (s *userService) Update(ctx context.Context, id model.ID, patch map[string]
 	// bypass the quota check.
 	if patchStatus, ok := patch["status"]; ok && patchStatus == model.UserStatusActive.String() {
 		if ok, err := s.licenseService.WithinThreshold(ctx, license.QuotaUsers); !ok || err != nil {
-			return nil, ErrQuotaExceeded
+			return nil, errors.Join(ErrUserUpdate, ErrQuotaExceeded)
 		}
 	}
 
@@ -170,7 +170,7 @@ func (s *userService) Delete(ctx context.Context, id model.ID, force bool) error
 	defer span.End()
 
 	if expired, err := s.licenseService.Expired(ctx); expired || err != nil {
-		return license.ErrLicenseExpired
+		return errors.Join(ErrUserUpdate, license.ErrLicenseExpired)
 	}
 
 	if err := id.Validate(); err != nil {
@@ -179,11 +179,11 @@ func (s *userService) Delete(ctx context.Context, id model.ID, force bool) error
 
 	userID, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID)
 	if !ok {
-		return ErrNoUser
+		return errors.Join(ErrUserUpdate, ErrNoUser)
 	}
 
 	if userID == id || !s.permissionService.CtxUserHasPermission(ctx, id, model.PermissionKindDelete) {
-		return ErrNoPermission
+		return errors.Join(ErrUserUpdate, ErrNoPermission)
 	}
 
 	if force {

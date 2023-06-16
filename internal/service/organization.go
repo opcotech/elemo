@@ -49,7 +49,7 @@ func (s *organizationService) Create(ctx context.Context, owner model.ID, organi
 	defer span.End()
 
 	if expired, err := s.licenseService.Expired(ctx); expired || err != nil {
-		return license.ErrLicenseExpired
+		return errors.Join(ErrOrganizationCreate, license.ErrLicenseExpired)
 	}
 
 	if err := organization.Validate(); err != nil {
@@ -57,7 +57,7 @@ func (s *organizationService) Create(ctx context.Context, owner model.ID, organi
 	}
 
 	if !s.permissionService.CtxUserHasPermission(ctx, model.MustNewNilID(model.ResourceTypeOrganization), model.PermissionKindCreate) {
-		return ErrNoPermission
+		return errors.Join(ErrOrganizationCreate, ErrNoPermission)
 	}
 
 	// If the newly created organization is not active, e.g. a company is
@@ -65,7 +65,7 @@ func (s *organizationService) Create(ctx context.Context, owner model.ID, organi
 	// counts against active organizations.
 	if organization.Status == model.OrganizationStatusActive {
 		if ok, err := s.licenseService.WithinThreshold(ctx, license.QuotaOrganizations); !ok || err != nil {
-			return ErrQuotaExceeded
+			return errors.Join(ErrOrganizationCreate, ErrQuotaExceeded)
 		}
 	}
 
@@ -113,7 +113,7 @@ func (s *organizationService) Update(ctx context.Context, id model.ID, patch map
 	defer span.End()
 
 	if expired, err := s.licenseService.Expired(ctx); expired || err != nil {
-		return nil, license.ErrLicenseExpired
+		return nil, errors.Join(ErrOrganizationUpdate, license.ErrLicenseExpired)
 	}
 
 	if err := id.Validate(); err != nil {
@@ -121,7 +121,7 @@ func (s *organizationService) Update(ctx context.Context, id model.ID, patch map
 	}
 
 	if !s.permissionService.CtxUserHasPermission(ctx, id, model.PermissionKindWrite) {
-		return nil, ErrNoPermission
+		return nil, errors.Join(ErrOrganizationUpdate, ErrNoPermission)
 	}
 
 	// Check if the organization is being activated is within the license
@@ -129,7 +129,7 @@ func (s *organizationService) Update(ctx context.Context, id model.ID, patch map
 	// organization to bypass the quota check.
 	if patchStatus, ok := patch["status"]; ok && patchStatus == model.OrganizationStatusActive.String() {
 		if ok, err := s.licenseService.WithinThreshold(ctx, license.QuotaOrganizations); !ok || err != nil {
-			return nil, ErrQuotaExceeded
+			return nil, errors.Join(ErrOrganizationUpdate, ErrQuotaExceeded)
 		}
 	}
 
@@ -150,7 +150,7 @@ func (s *organizationService) Delete(ctx context.Context, id model.ID, force boo
 	defer span.End()
 
 	if expired, err := s.licenseService.Expired(ctx); expired || err != nil {
-		return license.ErrLicenseExpired
+		return errors.Join(ErrOrganizationDelete, license.ErrLicenseExpired)
 	}
 
 	if err := id.Validate(); err != nil {
@@ -158,7 +158,7 @@ func (s *organizationService) Delete(ctx context.Context, id model.ID, force boo
 	}
 
 	if !s.permissionService.CtxUserHasPermission(ctx, id, model.PermissionKindDelete) {
-		return ErrNoPermission
+		return errors.Join(ErrOrganizationDelete, ErrNoPermission)
 	}
 
 	if force {
@@ -183,7 +183,7 @@ func (s *organizationService) AddMember(ctx context.Context, orgID, memberID mod
 	defer span.End()
 
 	if expired, err := s.licenseService.Expired(ctx); expired || err != nil {
-		return license.ErrLicenseExpired
+		return errors.Join(ErrOrganizationMemberAdd, license.ErrLicenseExpired)
 	}
 
 	if err := orgID.Validate(); err != nil {
@@ -195,7 +195,7 @@ func (s *organizationService) AddMember(ctx context.Context, orgID, memberID mod
 	}
 
 	if !s.permissionService.CtxUserHasPermission(ctx, orgID, model.PermissionKindWrite) {
-		return ErrNoPermission
+		return errors.Join(ErrOrganizationMemberAdd, ErrNoPermission)
 	}
 
 	if err := s.organizationRepo.AddMember(ctx, orgID, memberID); err != nil {
@@ -235,7 +235,7 @@ func (s *organizationService) RemoveMember(ctx context.Context, orgID, memberID 
 	defer span.End()
 
 	if expired, err := s.licenseService.Expired(ctx); expired || err != nil {
-		return license.ErrLicenseExpired
+		return errors.Join(ErrOrganizationMemberRemove, license.ErrLicenseExpired)
 	}
 
 	if err := orgID.Validate(); err != nil {
@@ -247,7 +247,7 @@ func (s *organizationService) RemoveMember(ctx context.Context, orgID, memberID 
 	}
 
 	if !s.permissionService.CtxUserHasPermission(ctx, orgID, model.PermissionKindWrite) {
-		return ErrNoPermission
+		return errors.Join(ErrOrganizationMemberRemove, ErrNoPermission)
 	}
 
 	if err := s.organizationRepo.RemoveMember(ctx, orgID, memberID); err != nil {

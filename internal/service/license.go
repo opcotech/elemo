@@ -80,7 +80,7 @@ func (s *licenseService) GetLicense(ctx context.Context) (license.License, error
 	defer span.End()
 
 	if !s.permissionService.CtxUserHasSystemRole(ctx, model.SystemRoleOwner, model.SystemRoleAdmin, model.SystemRoleSupport) {
-		return license.License{}, ErrNoPermission
+		return license.License{}, errors.Join(ErrLicenseGet, ErrNoPermission)
 	}
 
 	return *s.license, nil
@@ -91,7 +91,7 @@ func (s *licenseService) Ping(ctx context.Context) error {
 	defer span.End()
 
 	if expired, err := s.Expired(ctx); expired || err != nil {
-		return license.ErrLicenseInvalid
+		return errors.Join(ErrLicensePing, license.ErrLicenseInvalid)
 	}
 
 	return nil

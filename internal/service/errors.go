@@ -6,6 +6,8 @@ var (
 	ErrEmailSend                       = errors.New("failed to send email")                           // failed to send email
 	ErrInvalidEmail                    = errors.New("invalid email address")                          // invalid email address
 	ErrInvalidPaginationParams         = errors.New("invalid pagination parameters")                  // invalid pagination parameters
+	ErrLicenseGet                      = errors.New("failed to get license")                          // failed to get license
+	ErrLicensePing                     = errors.New("failed to ping license")                         // failed to ping license
 	ErrNoLicenseService                = errors.New("no license service provided")                    // no license service provided
 	ErrNoOrganizationRepository        = errors.New("no organization repository provided")            // no organization repository provided
 	ErrNoPatchData                     = errors.New("no patch data provided")                         // no patch data provided
