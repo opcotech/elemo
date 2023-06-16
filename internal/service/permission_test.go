@@ -266,8 +266,6 @@ func Test_permissionService_CtxUserCreate(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "service.permissionService/CtxUserCreate", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "service.permissionService/Create", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserHasAnyRelation", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/HasAnyRelation", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "service.permissionService/CtxUserHasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "service.permissionService/HasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "service.permissionService/CtxUserHasPermission", []trace.SpanStartOption(nil)).Return(ctx, span)
@@ -280,7 +278,6 @@ func Test_permissionService_CtxUserCreate(t *testing.T) {
 				},
 				permissionRepo: func(ctx context.Context, userID model.ID, perm *model.Permission) repository.PermissionRepository {
 					repo := new(mock.PermissionRepository)
-					repo.On("HasAnyRelation", ctx, userID, perm.Target).Return(true, nil)
 					repo.On("HasSystemRole", ctx, userID, []model.SystemRole{
 						model.SystemRoleOwner,
 						model.SystemRoleAdmin,
@@ -326,8 +323,6 @@ func Test_permissionService_CtxUserCreate(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "service.permissionService/CtxUserCreate", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "service.permissionService/Create", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserHasAnyRelation", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/HasAnyRelation", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "service.permissionService/CtxUserHasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "service.permissionService/HasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "service.permissionService/CtxUserHasPermission", []trace.SpanStartOption(nil)).Return(ctx, span)
@@ -340,67 +335,6 @@ func Test_permissionService_CtxUserCreate(t *testing.T) {
 				},
 				permissionRepo: func(ctx context.Context, userID model.ID, perm *model.Permission) repository.PermissionRepository {
 					repo := new(mock.PermissionRepository)
-					repo.On("HasAnyRelation", ctx, userID, perm.Target).Return(false, nil)
-					repo.On("HasSystemRole", ctx, userID, []model.SystemRole{
-						model.SystemRoleOwner,
-						model.SystemRoleAdmin,
-					}).Return(false, nil)
-					repo.On("HasPermission", ctx, userID, perm.Target, []model.PermissionKind{
-						model.PermissionKindCreate,
-						model.PermissionKindAll,
-					}).Return(true, nil)
-					repo.On("HasPermission", ctx, userID, perm.Target, []model.PermissionKind{
-						model.PermissionKindWrite,
-						model.PermissionKindAll,
-					}).Return(true, nil)
-					repo.On("HasPermission", ctx, userID, perm.Target, []model.PermissionKind{
-						model.PermissionKindRead,
-						model.PermissionKindAll,
-					}).Return(true, nil)
-					repo.On("HasPermission", ctx, userID, perm.Target, []model.PermissionKind{
-						model.PermissionKindDelete,
-						model.PermissionKindAll,
-					}).Return(true, nil)
-					repo.On("Create", ctx, perm).Return(nil)
-
-					return repo
-				},
-			},
-			args: args{
-				ctx: context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
-				perm: &model.Permission{
-					ID:      model.MustNewID(model.ResourceTypePermission),
-					Kind:    model.PermissionKindCreate,
-					Subject: model.MustNewID(model.ResourceTypeUser),
-					Target:  model.MustNewID(model.ResourceTypeOrganization),
-				},
-			},
-		},
-		{
-			name: "create permission having all permissions and relation",
-			fields: fields{
-				baseService: func(ctx context.Context, userID model.ID, perm *model.Permission) *baseService {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
-
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserCreate", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/Create", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserHasAnyRelation", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/HasAnyRelation", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserHasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/HasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserHasPermission", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/HasPermission", []trace.SpanStartOption(nil)).Return(ctx, span)
-
-					return &baseService{
-						logger: new(mock.Logger),
-						tracer: tracer,
-					}
-				},
-				permissionRepo: func(ctx context.Context, userID model.ID, perm *model.Permission) repository.PermissionRepository {
-					repo := new(mock.PermissionRepository)
-					repo.On("HasAnyRelation", ctx, userID, perm.Target).Return(true, nil)
 					repo.On("HasSystemRole", ctx, userID, []model.SystemRole{
 						model.SystemRoleOwner,
 						model.SystemRoleAdmin,
@@ -446,8 +380,6 @@ func Test_permissionService_CtxUserCreate(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "service.permissionService/CtxUserCreate", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "service.permissionService/Create", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserHasAnyRelation", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/HasAnyRelation", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "service.permissionService/CtxUserHasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "service.permissionService/HasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "service.permissionService/CtxUserHasPermission", []trace.SpanStartOption(nil)).Return(ctx, span)
@@ -460,7 +392,6 @@ func Test_permissionService_CtxUserCreate(t *testing.T) {
 				},
 				permissionRepo: func(ctx context.Context, userID model.ID, perm *model.Permission) repository.PermissionRepository {
 					repo := new(mock.PermissionRepository)
-					repo.On("HasAnyRelation", ctx, userID, perm.Target).Return(false, nil)
 					repo.On("HasSystemRole", ctx, userID, []model.SystemRole{
 						model.SystemRoleOwner,
 						model.SystemRoleAdmin,
@@ -497,7 +428,7 @@ func Test_permissionService_CtxUserCreate(t *testing.T) {
 			},
 		},
 		{
-			name: "create permission having relation but no permission",
+			name: "create permission no permission",
 			fields: fields{
 				baseService: func(ctx context.Context, userID model.ID, perm *model.Permission) *baseService {
 					span := new(mock.Span)
@@ -506,8 +437,6 @@ func Test_permissionService_CtxUserCreate(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "service.permissionService/CtxUserCreate", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "service.permissionService/Create", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserHasAnyRelation", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/HasAnyRelation", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "service.permissionService/CtxUserHasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "service.permissionService/HasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "service.permissionService/CtxUserHasPermission", []trace.SpanStartOption(nil)).Return(ctx, span)
@@ -520,67 +449,6 @@ func Test_permissionService_CtxUserCreate(t *testing.T) {
 				},
 				permissionRepo: func(ctx context.Context, userID model.ID, perm *model.Permission) repository.PermissionRepository {
 					repo := new(mock.PermissionRepository)
-					repo.On("HasAnyRelation", ctx, userID, perm.Target).Return(true, nil)
-					repo.On("HasSystemRole", ctx, userID, []model.SystemRole{
-						model.SystemRoleOwner,
-						model.SystemRoleAdmin,
-					}).Return(false, nil)
-					repo.On("HasPermission", ctx, userID, perm.Target, []model.PermissionKind{
-						model.PermissionKindCreate,
-						model.PermissionKindAll,
-					}).Return(false, nil)
-					repo.On("HasPermission", ctx, userID, perm.Target, []model.PermissionKind{
-						model.PermissionKindWrite,
-						model.PermissionKindAll,
-					}).Return(false, nil)
-					repo.On("HasPermission", ctx, userID, perm.Target, []model.PermissionKind{
-						model.PermissionKindRead,
-						model.PermissionKindAll,
-					}).Return(false, nil)
-					repo.On("HasPermission", ctx, userID, perm.Target, []model.PermissionKind{
-						model.PermissionKindDelete,
-						model.PermissionKindAll,
-					}).Return(false, nil)
-
-					return repo
-				},
-			},
-			args: args{
-				ctx: context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
-				perm: &model.Permission{
-					ID:      model.MustNewID(model.ResourceTypePermission),
-					Kind:    model.PermissionKindCreate,
-					Subject: model.MustNewID(model.ResourceTypeUser),
-					Target:  model.MustNewID(model.ResourceTypeOrganization),
-				},
-			},
-			wantErr: ErrNoPermission,
-		},
-		{
-			name: "create permission no relation or permission or role",
-			fields: fields{
-				baseService: func(ctx context.Context, userID model.ID, perm *model.Permission) *baseService {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
-
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserCreate", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/Create", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserHasAnyRelation", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/HasAnyRelation", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserHasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/HasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserHasPermission", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/HasPermission", []trace.SpanStartOption(nil)).Return(ctx, span)
-
-					return &baseService{
-						logger: new(mock.Logger),
-						tracer: tracer,
-					}
-				},
-				permissionRepo: func(ctx context.Context, userID model.ID, perm *model.Permission) repository.PermissionRepository {
-					repo := new(mock.PermissionRepository)
-					repo.On("HasAnyRelation", ctx, userID, perm.Target).Return(false, nil)
 					repo.On("HasSystemRole", ctx, userID, []model.SystemRole{
 						model.SystemRoleOwner,
 						model.SystemRoleAdmin,
@@ -1499,6 +1367,7 @@ func Test_permissionService_HasPermission(t *testing.T) {
 
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "service.permissionService/HasPermission", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "service.permissionService/HasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					return &baseService{
 						logger: new(mock.Logger),
@@ -1508,6 +1377,7 @@ func Test_permissionService_HasPermission(t *testing.T) {
 				permissionRepo: func(ctx context.Context, subject, target model.ID, kinds []model.PermissionKind) repository.PermissionRepository {
 					repo := new(mock.PermissionRepository)
 					repo.On("HasPermission", ctx, subject, target, append(kinds, model.PermissionKindAll)).Return(true, nil)
+					repo.On("HasSystemRole", ctx, subject, []model.SystemRole{model.SystemRoleOwner}).Return(true, nil)
 					return repo
 				},
 			},
@@ -1515,7 +1385,7 @@ func Test_permissionService_HasPermission(t *testing.T) {
 				ctx:     context.Background(),
 				subject: model.MustNewID(model.ResourceTypeUser),
 				target:  model.MustNewID(model.ResourceTypeOrganization),
-				kinds:   []model.PermissionKind{model.PermissionKindCreate},
+				kinds:   []model.PermissionKind{model.PermissionKindDelete},
 			},
 			want: true,
 		},
@@ -1528,6 +1398,7 @@ func Test_permissionService_HasPermission(t *testing.T) {
 
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "service.permissionService/HasPermission", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "service.permissionService/HasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					return &baseService{
 						logger: new(mock.Logger),
@@ -1537,6 +1408,7 @@ func Test_permissionService_HasPermission(t *testing.T) {
 				permissionRepo: func(ctx context.Context, subject, target model.ID, kinds []model.PermissionKind) repository.PermissionRepository {
 					repo := new(mock.PermissionRepository)
 					repo.On("HasPermission", ctx, subject, target, append(kinds, model.PermissionKindAll)).Return(false, nil)
+					repo.On("HasSystemRole", ctx, subject, []model.SystemRole{model.SystemRoleOwner}).Return(false, nil)
 					return repo
 				},
 			},
@@ -1544,9 +1416,39 @@ func Test_permissionService_HasPermission(t *testing.T) {
 				ctx:     context.Background(),
 				subject: model.MustNewID(model.ResourceTypeUser),
 				target:  model.MustNewID(model.ResourceTypeOrganization),
-				kinds:   []model.PermissionKind{model.PermissionKindCreate},
+				kinds:   []model.PermissionKind{model.PermissionKindDelete},
 			},
 			want: false,
+		},
+		{
+			name: "has permission system role error",
+			fields: fields{
+				baseService: func(ctx context.Context, subject, target model.ID, kinds []model.PermissionKind) *baseService {
+					span := new(mock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(mock.Tracer)
+					tracer.On("Start", ctx, "service.permissionService/HasPermission", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "service.permissionService/HasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					return &baseService{
+						logger: new(mock.Logger),
+						tracer: tracer,
+					}
+				},
+				permissionRepo: func(ctx context.Context, subject, target model.ID, kinds []model.PermissionKind) repository.PermissionRepository {
+					repo := new(mock.PermissionRepository)
+					repo.On("HasSystemRole", ctx, subject, []model.SystemRole{model.SystemRoleOwner}).Return(false, assert.AnError)
+					return repo
+				},
+			},
+			args: args{
+				ctx:     context.Background(),
+				subject: model.MustNewID(model.ResourceTypeUser),
+				target:  model.MustNewID(model.ResourceTypeOrganization),
+				kinds:   []model.PermissionKind{model.PermissionKindDelete},
+			},
+			wantErr: ErrPermissionHasSystemRole,
 		},
 		{
 			name: "has permission with error",
@@ -1557,6 +1459,7 @@ func Test_permissionService_HasPermission(t *testing.T) {
 
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "service.permissionService/HasPermission", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "service.permissionService/HasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					return &baseService{
 						logger: new(mock.Logger),
@@ -1566,6 +1469,7 @@ func Test_permissionService_HasPermission(t *testing.T) {
 				permissionRepo: func(ctx context.Context, subject, target model.ID, kinds []model.PermissionKind) repository.PermissionRepository {
 					repo := new(mock.PermissionRepository)
 					repo.On("HasPermission", ctx, subject, target, append(kinds, model.PermissionKindAll)).Return(false, assert.AnError)
+					repo.On("HasSystemRole", ctx, subject, []model.SystemRole{model.SystemRoleOwner}).Return(false, nil)
 					return repo
 				},
 			},
@@ -1573,7 +1477,7 @@ func Test_permissionService_HasPermission(t *testing.T) {
 				ctx:     context.Background(),
 				subject: model.MustNewID(model.ResourceTypeUser),
 				target:  model.MustNewID(model.ResourceTypeOrganization),
-				kinds:   []model.PermissionKind{model.PermissionKindCreate},
+				kinds:   []model.PermissionKind{model.PermissionKindDelete},
 			},
 			wantErr: ErrPermissionHasPermission,
 		},
@@ -1622,6 +1526,7 @@ func Test_permissionService_CtxUserHasPermission(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "service.permissionService/CtxUserHasPermission", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "service.permissionService/HasPermission", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "service.permissionService/HasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					return &baseService{
 						logger: new(mock.Logger),
@@ -1631,13 +1536,14 @@ func Test_permissionService_CtxUserHasPermission(t *testing.T) {
 				permissionRepo: func(ctx context.Context, subject, target model.ID, kinds []model.PermissionKind) repository.PermissionRepository {
 					repo := new(mock.PermissionRepository)
 					repo.On("HasPermission", ctx, subject, target, append(kinds, model.PermissionKindAll)).Return(true, nil)
+					repo.On("HasSystemRole", ctx, subject, []model.SystemRole{model.SystemRoleOwner}).Return(true, nil)
 					return repo
 				},
 			},
 			args: args{
 				ctx:    context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
 				target: model.MustNewID(model.ResourceTypeOrganization),
-				kinds:  []model.PermissionKind{model.PermissionKindCreate},
+				kinds:  []model.PermissionKind{model.PermissionKindDelete},
 			},
 			want: true,
 		},
@@ -1651,6 +1557,7 @@ func Test_permissionService_CtxUserHasPermission(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "service.permissionService/CtxUserHasPermission", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "service.permissionService/HasPermission", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "service.permissionService/HasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					return &baseService{
 						logger: new(mock.Logger),
@@ -1660,13 +1567,14 @@ func Test_permissionService_CtxUserHasPermission(t *testing.T) {
 				permissionRepo: func(ctx context.Context, subject, target model.ID, kinds []model.PermissionKind) repository.PermissionRepository {
 					repo := new(mock.PermissionRepository)
 					repo.On("HasPermission", ctx, subject, target, append(kinds, model.PermissionKindAll)).Return(false, nil)
+					repo.On("HasSystemRole", ctx, subject, []model.SystemRole{model.SystemRoleOwner}).Return(false, nil)
 					return repo
 				},
 			},
 			args: args{
 				ctx:    context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
 				target: model.MustNewID(model.ResourceTypeOrganization),
-				kinds:  []model.PermissionKind{model.PermissionKindCreate},
+				kinds:  []model.PermissionKind{model.PermissionKindDelete},
 			},
 			want: false,
 		},
@@ -1680,6 +1588,7 @@ func Test_permissionService_CtxUserHasPermission(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "service.permissionService/CtxUserHasPermission", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "service.permissionService/HasPermission", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "service.permissionService/HasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					return &baseService{
 						logger: new(mock.Logger),
@@ -1689,13 +1598,14 @@ func Test_permissionService_CtxUserHasPermission(t *testing.T) {
 				permissionRepo: func(ctx context.Context, subject, target model.ID, kinds []model.PermissionKind) repository.PermissionRepository {
 					repo := new(mock.PermissionRepository)
 					repo.On("HasPermission", ctx, subject, target, append(kinds, model.PermissionKindAll)).Return(false, assert.AnError)
+					repo.On("HasSystemRole", ctx, subject, []model.SystemRole{model.SystemRoleOwner}).Return(true, nil)
 					return repo
 				},
 			},
 			args: args{
 				ctx:    context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
 				target: model.MustNewID(model.ResourceTypeOrganization),
-				kinds:  []model.PermissionKind{model.PermissionKindCreate},
+				kinds:  []model.PermissionKind{model.PermissionKindDelete},
 			},
 			want: false,
 		},
@@ -1722,7 +1632,7 @@ func Test_permissionService_CtxUserHasPermission(t *testing.T) {
 			args: args{
 				ctx:    context.Background(),
 				target: model.MustNewID(model.ResourceTypeOrganization),
-				kinds:  []model.PermissionKind{model.PermissionKindCreate},
+				kinds:  []model.PermissionKind{model.PermissionKindDelete},
 			},
 		},
 	}
@@ -1867,8 +1777,6 @@ func Test_permissionService_CtxUserUpdate(t *testing.T) {
 					tracer.On("Start", ctx, "service.permissionService/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "service.permissionService/CtxUserUpdate", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "service.permissionService/Update", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserHasAnyRelation", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/HasAnyRelation", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "service.permissionService/CtxUserHasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "service.permissionService/HasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "service.permissionService/CtxUserHasPermission", []trace.SpanStartOption(nil)).Return(ctx, span)
@@ -1881,58 +1789,6 @@ func Test_permissionService_CtxUserUpdate(t *testing.T) {
 				},
 				permissionRepo: func(ctx context.Context, userID model.ID, want *model.Permission, kind model.PermissionKind) repository.PermissionRepository {
 					repo := new(mock.PermissionRepository)
-					repo.On("HasAnyRelation", ctx, userID, want.Target).Return(false, nil)
-					repo.On("HasSystemRole", ctx, userID, []model.SystemRole{
-						model.SystemRoleOwner,
-						model.SystemRoleAdmin,
-					}).Return(false, nil)
-					repo.On("HasPermission", ctx, userID, want.Target, []model.PermissionKind{
-						model.PermissionKindWrite,
-						model.PermissionKindAll,
-					}).Return(true, nil)
-					repo.On("Get", ctx, want.ID).Return(want, nil)
-					repo.On("Update", ctx, want.ID, kind).Return(want, nil)
-					return repo
-				},
-			},
-			args: args{
-				ctx:  context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
-				id:   permID,
-				kind: model.PermissionKindCreate,
-			},
-			want: &model.Permission{
-				ID:      permID,
-				Kind:    model.PermissionKindRead,
-				Subject: userID,
-				Target:  model.MustNewNilID(model.ResourceTypeOrganization),
-			},
-		},
-		{
-			name: "update permission with relation",
-			fields: fields{
-				baseService: func(ctx context.Context, userID model.ID, want *model.Permission, kind model.PermissionKind) *baseService {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
-
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "service.permissionService/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserUpdate", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/Update", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserHasAnyRelation", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/HasAnyRelation", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserHasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/HasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserHasPermission", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/HasPermission", []trace.SpanStartOption(nil)).Return(ctx, span)
-
-					return &baseService{
-						logger: new(mock.Logger),
-						tracer: tracer,
-					}
-				},
-				permissionRepo: func(ctx context.Context, userID model.ID, want *model.Permission, kind model.PermissionKind) repository.PermissionRepository {
-					repo := new(mock.PermissionRepository)
-					repo.On("HasAnyRelation", ctx, userID, want.Target).Return(true, nil)
 					repo.On("HasSystemRole", ctx, userID, []model.SystemRole{
 						model.SystemRoleOwner,
 						model.SystemRoleAdmin,
@@ -1969,8 +1825,6 @@ func Test_permissionService_CtxUserUpdate(t *testing.T) {
 					tracer.On("Start", ctx, "service.permissionService/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "service.permissionService/CtxUserUpdate", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "service.permissionService/Update", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserHasAnyRelation", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/HasAnyRelation", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "service.permissionService/CtxUserHasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "service.permissionService/HasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "service.permissionService/CtxUserHasPermission", []trace.SpanStartOption(nil)).Return(ctx, span)
@@ -1983,7 +1837,6 @@ func Test_permissionService_CtxUserUpdate(t *testing.T) {
 				},
 				permissionRepo: func(ctx context.Context, userID model.ID, want *model.Permission, kind model.PermissionKind) repository.PermissionRepository {
 					repo := new(mock.PermissionRepository)
-					repo.On("HasAnyRelation", ctx, userID, want.Target).Return(false, nil)
 					repo.On("HasSystemRole", ctx, userID, []model.SystemRole{
 						model.SystemRoleOwner,
 						model.SystemRoleAdmin,
@@ -2020,8 +1873,6 @@ func Test_permissionService_CtxUserUpdate(t *testing.T) {
 					tracer.On("Start", ctx, "service.permissionService/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "service.permissionService/CtxUserUpdate", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "service.permissionService/Update", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserHasAnyRelation", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/HasAnyRelation", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "service.permissionService/CtxUserHasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "service.permissionService/HasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "service.permissionService/CtxUserHasPermission", []trace.SpanStartOption(nil)).Return(ctx, span)
@@ -2034,7 +1885,6 @@ func Test_permissionService_CtxUserUpdate(t *testing.T) {
 				},
 				permissionRepo: func(ctx context.Context, userID model.ID, want *model.Permission, kind model.PermissionKind) repository.PermissionRepository {
 					repo := new(mock.PermissionRepository)
-					repo.On("HasAnyRelation", ctx, userID, want.Target).Return(true, nil)
 					repo.On("HasSystemRole", ctx, userID, []model.SystemRole{
 						model.SystemRoleOwner,
 						model.SystemRoleAdmin,
@@ -2060,6 +1910,53 @@ func Test_permissionService_CtxUserUpdate(t *testing.T) {
 				Target:  model.MustNewNilID(model.ResourceTypeOrganization),
 			},
 			wantErr: ErrPermissionUpdate,
+		},
+		{
+			name: "update permission with no permission",
+			fields: fields{
+				baseService: func(ctx context.Context, userID model.ID, want *model.Permission, kind model.PermissionKind) *baseService {
+					span := new(mock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(mock.Tracer)
+					tracer.On("Start", ctx, "service.permissionService/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "service.permissionService/CtxUserUpdate", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "service.permissionService/CtxUserHasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "service.permissionService/HasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "service.permissionService/CtxUserHasPermission", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "service.permissionService/HasPermission", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					return &baseService{
+						logger: new(mock.Logger),
+						tracer: tracer,
+					}
+				},
+				permissionRepo: func(ctx context.Context, userID model.ID, want *model.Permission, kind model.PermissionKind) repository.PermissionRepository {
+					repo := new(mock.PermissionRepository)
+					repo.On("HasSystemRole", ctx, userID, []model.SystemRole{
+						model.SystemRoleOwner,
+						model.SystemRoleAdmin,
+					}).Return(false, nil)
+					repo.On("HasPermission", ctx, userID, want.Target, []model.PermissionKind{
+						model.PermissionKindWrite,
+						model.PermissionKindAll,
+					}).Return(false, nil)
+					repo.On("Get", ctx, want.ID).Return(want, nil)
+					return repo
+				},
+			},
+			args: args{
+				ctx:  context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
+				id:   permID,
+				kind: model.PermissionKindCreate,
+			},
+			want: &model.Permission{
+				ID:      permID,
+				Kind:    model.PermissionKindRead,
+				Subject: userID,
+				Target:  model.MustNewNilID(model.ResourceTypeOrganization),
+			},
+			wantErr: ErrNoPermission,
 		},
 		{
 			name: "update permission no permission found",
@@ -2248,7 +2145,7 @@ func Test_permissionService_CtxUserDelete(t *testing.T) {
 		wantErr error
 	}{
 		{
-			name: "delete permission with direct permission",
+			name: "delete permission using permissions",
 			fields: fields{
 				baseService: func(ctx context.Context, userID, id model.ID, perm *model.Permission) *baseService {
 					span := new(mock.Span)
@@ -2258,8 +2155,6 @@ func Test_permissionService_CtxUserDelete(t *testing.T) {
 					tracer.On("Start", ctx, "service.permissionService/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "service.permissionService/CtxUserDelete", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "service.permissionService/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserHasAnyRelation", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/HasAnyRelation", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "service.permissionService/CtxUserHasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "service.permissionService/HasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "service.permissionService/CtxUserHasPermission", []trace.SpanStartOption(nil)).Return(ctx, span)
@@ -2272,10 +2167,8 @@ func Test_permissionService_CtxUserDelete(t *testing.T) {
 				},
 				permissionRepo: func(ctx context.Context, userID, id model.ID, perm *model.Permission) repository.PermissionRepository {
 					repo := new(mock.PermissionRepository)
-					repo.On("HasAnyRelation", ctx, userID, perm.Target).Return(false, nil)
 					repo.On("HasSystemRole", ctx, userID, []model.SystemRole{
 						model.SystemRoleOwner,
-						model.SystemRoleAdmin,
 					}).Return(false, nil)
 					repo.On("HasPermission", ctx, userID, perm.Target, []model.PermissionKind{
 						model.PermissionKindDelete,
@@ -2298,7 +2191,7 @@ func Test_permissionService_CtxUserDelete(t *testing.T) {
 			},
 		},
 		{
-			name: "delete permission with relation",
+			name: "delete permission when no permissions but system role",
 			fields: fields{
 				baseService: func(ctx context.Context, userID, id model.ID, perm *model.Permission) *baseService {
 					span := new(mock.Span)
@@ -2308,8 +2201,6 @@ func Test_permissionService_CtxUserDelete(t *testing.T) {
 					tracer.On("Start", ctx, "service.permissionService/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "service.permissionService/CtxUserDelete", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "service.permissionService/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserHasAnyRelation", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/HasAnyRelation", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "service.permissionService/CtxUserHasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "service.permissionService/HasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "service.permissionService/CtxUserHasPermission", []trace.SpanStartOption(nil)).Return(ctx, span)
@@ -2322,60 +2213,8 @@ func Test_permissionService_CtxUserDelete(t *testing.T) {
 				},
 				permissionRepo: func(ctx context.Context, userID, id model.ID, perm *model.Permission) repository.PermissionRepository {
 					repo := new(mock.PermissionRepository)
-					repo.On("HasAnyRelation", ctx, userID, perm.Target).Return(true, nil)
 					repo.On("HasSystemRole", ctx, userID, []model.SystemRole{
 						model.SystemRoleOwner,
-						model.SystemRoleAdmin,
-					}).Return(false, nil)
-					repo.On("HasPermission", ctx, userID, perm.Target, []model.PermissionKind{
-						model.PermissionKindDelete,
-						model.PermissionKindAll,
-					}).Return(true, nil)
-					repo.On("Get", ctx, perm.ID).Return(perm, nil)
-					repo.On("Delete", ctx, perm.ID).Return(nil)
-					return repo
-				},
-				perm: &model.Permission{
-					ID:      permID,
-					Kind:    model.PermissionKindRead,
-					Subject: userID,
-					Target:  model.MustNewNilID(model.ResourceTypeOrganization),
-				},
-			},
-			args: args{
-				ctx: context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
-				id:  permID,
-			},
-		},
-		{
-			name: "delete permission with system role",
-			fields: fields{
-				baseService: func(ctx context.Context, userID, id model.ID, perm *model.Permission) *baseService {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
-
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "service.permissionService/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserDelete", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserHasAnyRelation", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/HasAnyRelation", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserHasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/HasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserHasPermission", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/HasPermission", []trace.SpanStartOption(nil)).Return(ctx, span)
-
-					return &baseService{
-						logger: new(mock.Logger),
-						tracer: tracer,
-					}
-				},
-				permissionRepo: func(ctx context.Context, userID, id model.ID, perm *model.Permission) repository.PermissionRepository {
-					repo := new(mock.PermissionRepository)
-					repo.On("HasAnyRelation", ctx, userID, perm.Target).Return(false, nil)
-					repo.On("HasSystemRole", ctx, userID, []model.SystemRole{
-						model.SystemRoleOwner,
-						model.SystemRoleAdmin,
 					}).Return(true, nil)
 					repo.On("HasPermission", ctx, userID, perm.Target, []model.PermissionKind{
 						model.PermissionKindDelete,
@@ -2398,58 +2237,7 @@ func Test_permissionService_CtxUserDelete(t *testing.T) {
 			},
 		},
 		{
-			name: "delete permission with error",
-			fields: fields{
-				baseService: func(ctx context.Context, userID, id model.ID, perm *model.Permission) *baseService {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
-
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "service.permissionService/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserDelete", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserHasAnyRelation", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/HasAnyRelation", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserHasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/HasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserHasPermission", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/HasPermission", []trace.SpanStartOption(nil)).Return(ctx, span)
-
-					return &baseService{
-						logger: new(mock.Logger),
-						tracer: tracer,
-					}
-				},
-				permissionRepo: func(ctx context.Context, userID, id model.ID, perm *model.Permission) repository.PermissionRepository {
-					repo := new(mock.PermissionRepository)
-					repo.On("HasAnyRelation", ctx, userID, perm.Target).Return(true, nil)
-					repo.On("HasSystemRole", ctx, userID, []model.SystemRole{
-						model.SystemRoleOwner,
-						model.SystemRoleAdmin,
-					}).Return(true, nil)
-					repo.On("HasPermission", ctx, userID, perm.Target, []model.PermissionKind{
-						model.PermissionKindDelete,
-						model.PermissionKindAll,
-					}).Return(true, nil)
-					repo.On("Get", ctx, perm.ID).Return(perm, nil)
-					repo.On("Delete", ctx, perm.ID).Return(assert.AnError)
-					return repo
-				},
-				perm: &model.Permission{
-					ID:      permID,
-					Kind:    model.PermissionKindRead,
-					Subject: userID,
-					Target:  model.MustNewNilID(model.ResourceTypeOrganization),
-				},
-			},
-			args: args{
-				ctx: context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
-				id:  permID,
-			},
-			wantErr: ErrPermissionDelete,
-		},
-		{
-			name: "delete permission no permission found",
+			name: "delete permission no target found",
 			fields: fields{
 				baseService: func(ctx context.Context, userID, id model.ID, perm *model.Permission) *baseService {
 					span := new(mock.Span)
@@ -2480,7 +2268,53 @@ func Test_permissionService_CtxUserDelete(t *testing.T) {
 				ctx: context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
 				id:  permID,
 			},
-			wantErr: ErrPermissionDelete,
+			wantErr: assert.AnError,
+		},
+		{
+			name: "delete permission with no permissions",
+			fields: fields{
+				baseService: func(ctx context.Context, userID, id model.ID, perm *model.Permission) *baseService {
+					span := new(mock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(mock.Tracer)
+					tracer.On("Start", ctx, "service.permissionService/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "service.permissionService/CtxUserDelete", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "service.permissionService/CtxUserHasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "service.permissionService/HasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "service.permissionService/CtxUserHasPermission", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "service.permissionService/HasPermission", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					return &baseService{
+						logger: new(mock.Logger),
+						tracer: tracer,
+					}
+				},
+				permissionRepo: func(ctx context.Context, userID, id model.ID, perm *model.Permission) repository.PermissionRepository {
+					repo := new(mock.PermissionRepository)
+					repo.On("HasSystemRole", ctx, userID, []model.SystemRole{
+						model.SystemRoleOwner,
+					}).Return(false, nil)
+					repo.On("HasPermission", ctx, userID, perm.Target, []model.PermissionKind{
+						model.PermissionKindDelete,
+						model.PermissionKindAll,
+					}).Return(false, nil)
+					repo.On("Get", ctx, perm.ID).Return(perm, nil)
+					repo.On("Delete", ctx, perm.ID).Return(nil)
+					return repo
+				},
+				perm: &model.Permission{
+					ID:      permID,
+					Kind:    model.PermissionKindRead,
+					Subject: userID,
+					Target:  model.MustNewNilID(model.ResourceTypeOrganization),
+				},
+			},
+			args: args{
+				ctx: context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
+				id:  permID,
+			},
+			wantErr: ErrNoPermission,
 		},
 		{
 			name: "delete permission with no ctx user",
@@ -2511,7 +2345,7 @@ func Test_permissionService_CtxUserDelete(t *testing.T) {
 				ctx: context.Background(),
 				id:  permID,
 			},
-			wantErr: ErrPermissionDelete,
+			wantErr: ErrNoUser,
 		},
 	}
 	for _, tt := range tests {
