@@ -44,7 +44,7 @@ type organizationService struct {
 	*baseService
 }
 
-func (s organizationService) Create(ctx context.Context, owner model.ID, organization *model.Organization) error {
+func (s *organizationService) Create(ctx context.Context, owner model.ID, organization *model.Organization) error {
 	ctx, span := s.tracer.Start(ctx, "service.organizationService/Create")
 	defer span.End()
 
@@ -76,7 +76,7 @@ func (s organizationService) Create(ctx context.Context, owner model.ID, organiz
 	return nil
 }
 
-func (s organizationService) Get(ctx context.Context, id model.ID) (*model.Organization, error) {
+func (s *organizationService) Get(ctx context.Context, id model.ID) (*model.Organization, error) {
 	ctx, span := s.tracer.Start(ctx, "service.organizationService/Get")
 	defer span.End()
 
@@ -92,7 +92,7 @@ func (s organizationService) Get(ctx context.Context, id model.ID) (*model.Organ
 	return organization, nil
 }
 
-func (s organizationService) GetAll(ctx context.Context, offset, limit int) ([]*model.Organization, error) {
+func (s *organizationService) GetAll(ctx context.Context, offset, limit int) ([]*model.Organization, error) {
 	ctx, span := s.tracer.Start(ctx, "service.organizationService/GetAll")
 	defer span.End()
 
@@ -108,7 +108,7 @@ func (s organizationService) GetAll(ctx context.Context, offset, limit int) ([]*
 	return organizations, nil
 }
 
-func (s organizationService) Update(ctx context.Context, id model.ID, patch map[string]any) (*model.Organization, error) {
+func (s *organizationService) Update(ctx context.Context, id model.ID, patch map[string]any) (*model.Organization, error) {
 	ctx, span := s.tracer.Start(ctx, "service.organizationService/Update")
 	defer span.End()
 
@@ -145,7 +145,7 @@ func (s organizationService) Update(ctx context.Context, id model.ID, patch map[
 	return organization, nil
 }
 
-func (s organizationService) Delete(ctx context.Context, id model.ID, force bool) error {
+func (s *organizationService) Delete(ctx context.Context, id model.ID, force bool) error {
 	ctx, span := s.tracer.Start(ctx, "service.organizationService/Delete")
 	defer span.End()
 
@@ -178,7 +178,7 @@ func (s organizationService) Delete(ctx context.Context, id model.ID, force bool
 	return nil
 }
 
-func (s organizationService) AddMember(ctx context.Context, orgID, memberID model.ID) error {
+func (s *organizationService) AddMember(ctx context.Context, orgID, memberID model.ID) error {
 	ctx, span := s.tracer.Start(ctx, "service.organizationService/AddMember")
 	defer span.End()
 
@@ -205,7 +205,7 @@ func (s organizationService) AddMember(ctx context.Context, orgID, memberID mode
 	return nil
 }
 
-func (s organizationService) GetMembers(ctx context.Context, orgID model.ID) ([]*model.User, error) {
+func (s *organizationService) GetMembers(ctx context.Context, orgID model.ID) ([]*model.User, error) {
 	ctx, span := s.tracer.Start(ctx, "service.organizationService/GetMembers")
 	defer span.End()
 
@@ -230,7 +230,7 @@ func (s organizationService) GetMembers(ctx context.Context, orgID model.ID) ([]
 	return members, nil
 }
 
-func (s organizationService) RemoveMember(ctx context.Context, orgID, memberID model.ID) error {
+func (s *organizationService) RemoveMember(ctx context.Context, orgID, memberID model.ID) error {
 	ctx, span := s.tracer.Start(ctx, "service.organizationService/RemoveMember")
 	defer span.End()
 
