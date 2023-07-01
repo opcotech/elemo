@@ -19,7 +19,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/hibiken/asynq v0.24.1
 	github.com/hyperboloide/lk v0.0.0-20230325114855-ce3fecd34798
-	github.com/jackc/pgx/v5 v5.3.1
+	github.com/jackc/pgx/v5 v5.4.1
 	github.com/neo4j/neo4j-go-driver/v5 v5.9.0
 	github.com/prometheus/client_golang v1.15.1
 	github.com/redis/go-redis/v9 v9.0.5
