@@ -18,7 +18,7 @@
     "@headlessui/react": "^1.7.15",
     "@heroicons/react": "^2.0.18",
     "@hookform/resolvers": "^3.1.1",
-    "@storybook/client-api": "^7.0.20",
+    "@storybook/client-api": "^7.0.24",
     "@types/node": "20.3.1",
     "@types/react": "18.2.12",
     "@types/react-dom": "18.2.5",
