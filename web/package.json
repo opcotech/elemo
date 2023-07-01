@@ -56,6 +56,6 @@
     "dotenv": "^16.1.4",
     "eslint-plugin-storybook": "^0.6.12",
     "neo4j-driver": "^5.9.1",
-    "storybook": "^7.0.20"
+    "storybook": "^7.0.24"
   }
 }
