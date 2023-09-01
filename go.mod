@@ -12,7 +12,7 @@ require (
 	github.com/go-chi/chi/v5 v5.0.8
 	github.com/go-chi/cors v1.2.1
 	github.com/go-oauth2/oauth2/v4 v4.5.2
-	github.com/go-playground/validator/v10 v10.14.1
+	github.com/go-playground/validator/v10 v10.15.3
 	github.com/go-redis/cache/v9 v9.0.0
 	github.com/go-session/session v3.1.2+incompatible
 	github.com/goccy/go-json v0.10.2
