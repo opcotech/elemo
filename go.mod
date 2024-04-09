@@ -1,6 +1,6 @@
 module github.com/opcotech/elemo
 
-go 1.20
+go 1.22
 
 replace github.com/deepmap/oapi-codegen => github.com/gabor-boros/oapi-codegen v0.0.0-20230610171610-c23376c09f10
 
