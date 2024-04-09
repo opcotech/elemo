@@ -3,8 +3,6 @@ package asynq
 import (
 	"time"
 
-	"go.opentelemetry.io/otel/trace"
-
 	"github.com/opcotech/elemo/internal/pkg/log"
 	"github.com/opcotech/elemo/internal/pkg/tracing"
 	"github.com/opcotech/elemo/internal/service"
@@ -64,7 +62,7 @@ func WithTaskLogger(logger log.Logger) TaskOption {
 }
 
 // WithTaskTracer sets the tracer for the task handler.
-func WithTaskTracer(tracer trace.Tracer) TaskOption {
+func WithTaskTracer(tracer tracing.Tracer) TaskOption {
 	return func(t *baseTaskHandler) error {
 		if tracer == nil {
 			return tracing.ErrNoTracer
@@ -79,7 +77,7 @@ func WithTaskTracer(tracer trace.Tracer) TaskOption {
 // baseTaskHandler serves as the base type for all task handlers.
 type baseTaskHandler struct {
 	logger log.Logger
-	tracer trace.Tracer
+	tracer tracing.Tracer
 
 	emailService service.EmailService
 }

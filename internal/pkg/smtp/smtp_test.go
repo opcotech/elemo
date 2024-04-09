@@ -30,7 +30,7 @@ func TestNewDatabase(t *testing.T) {
 		client WrappedClient
 		config *config.SMTPConfig
 		logger log.Logger
-		tracer trace.Tracer
+		tracer tracing.Tracer
 	}
 	tests := []struct {
 		name    string
@@ -223,12 +223,12 @@ func TestWithLogger(t *testing.T) {
 
 func TestWithTracer(t *testing.T) {
 	type args struct {
-		tracer trace.Tracer
+		tracer tracing.Tracer
 	}
 	tests := []struct {
 		name    string
 		args    args
-		want    trace.Tracer
+		want    tracing.Tracer
 		wantErr error
 	}{
 		{
@@ -263,7 +263,7 @@ func TestClient_Authenticate(t *testing.T) {
 		client func(auth smtp.Auth) WrappedClient
 		config *config.SMTPConfig
 		logger log.Logger
-		tracer func(ctx context.Context) trace.Tracer
+		tracer func(ctx context.Context) tracing.Tracer
 	}
 	type args struct {
 		ctx context.Context
@@ -288,7 +288,7 @@ func TestClient_Authenticate(t *testing.T) {
 					Password: "password",
 				},
 				logger: new(mock.Logger),
-				tracer: func(ctx context.Context) trace.Tracer {
+				tracer: func(ctx context.Context) tracing.Tracer {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -316,7 +316,7 @@ func TestClient_Authenticate(t *testing.T) {
 					Password: "password",
 				},
 				logger: new(mock.Logger),
-				tracer: func(ctx context.Context) trace.Tracer {
+				tracer: func(ctx context.Context) tracing.Tracer {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 

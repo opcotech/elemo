@@ -50,10 +50,10 @@ func (k *AssignmentKind) UnmarshalText(text []byte) error {
 
 // Assignment is the model of an assignment between a user and a resource.
 type Assignment struct {
-	ID        ID             `json:"id" validate:"required,dive"`
+	ID        ID             `json:"id" validate:"required"`
 	Kind      AssignmentKind `json:"kind" validate:"required,min=1,max=2"`
-	User      ID             `json:"user_id" validate:"required,dive"`
-	Resource  ID             `json:"resource_id" validate:"required,dive"`
+	User      ID             `json:"user_id" validate:"required"`
+	Resource  ID             `json:"resource_id" validate:"required"`
 	CreatedAt *time.Time     `json:"created_at" validate:"omitempty"`
 }
 

@@ -2,7 +2,6 @@ package http
 
 import (
 	authServer "github.com/go-oauth2/oauth2/v4/server"
-	"go.opentelemetry.io/otel/trace"
 
 	"github.com/opcotech/elemo/internal/config"
 	"github.com/opcotech/elemo/internal/pkg/log"
@@ -40,7 +39,7 @@ func WithLogger(logger log.Logger) ControllerOption {
 }
 
 // WithTracer sets the tracer for the controller.
-func WithTracer(tracer trace.Tracer) ControllerOption {
+func WithTracer(tracer tracing.Tracer) ControllerOption {
 	return func(c *baseController) error {
 		if tracer == nil {
 			return ErrNoTracer
@@ -161,7 +160,7 @@ func WithTodoService(todoService service.TodoService) ControllerOption {
 type baseController struct {
 	conf   config.ServerConfig
 	logger log.Logger
-	tracer trace.Tracer
+	tracer tracing.Tracer
 
 	authProvider *authServer.Server
 

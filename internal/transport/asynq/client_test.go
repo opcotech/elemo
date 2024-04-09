@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/otel/trace"
 
 	"github.com/opcotech/elemo/internal/config"
 	"github.com/opcotech/elemo/internal/pkg/log"
@@ -92,12 +91,12 @@ func TestWithClientLogger(t *testing.T) {
 
 func TestWithClientTracer(t *testing.T) {
 	type args struct {
-		tracer trace.Tracer
+		tracer tracing.Tracer
 	}
 	tests := []struct {
 		name    string
 		args    args
-		want    trace.Tracer
+		want    tracing.Tracer
 		wantErr error
 	}{
 		{

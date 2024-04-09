@@ -13,6 +13,7 @@ import (
 
 	"github.com/opcotech/elemo/internal/pkg"
 	"github.com/opcotech/elemo/internal/pkg/log"
+	"github.com/opcotech/elemo/internal/pkg/tracing"
 	"github.com/opcotech/elemo/internal/testutil/mock"
 )
 
@@ -70,7 +71,7 @@ func TestWithMetricsExporter(t *testing.T) {
 
 func TestWithRateLimiter(t *testing.T) {
 	type args struct {
-		tracer  trace.Tracer
+		tracer  tracing.Tracer
 		limiter RateLimiter
 	}
 	tests := []struct {
@@ -81,7 +82,7 @@ func TestWithRateLimiter(t *testing.T) {
 		{
 			name: "return handler if rate limiter is allowed",
 			args: args{
-				tracer: func() trace.Tracer {
+				tracer: func() tracing.Tracer {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -101,7 +102,7 @@ func TestWithRateLimiter(t *testing.T) {
 		{
 			name: "return error if rate limiter is not allowed",
 			args: args{
-				tracer: func() trace.Tracer {
+				tracer: func() tracing.Tracer {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -143,7 +144,7 @@ func TestWithErrorLogger(t *testing.T) {
 		logger func(ctx context.Context, task *asynq.Task) log.Logger
 	}
 	type args struct {
-		tracer func(ctx context.Context) trace.Tracer
+		tracer func(ctx context.Context) tracing.Tracer
 	}
 	tests := []struct {
 		name    string
@@ -161,7 +162,7 @@ func TestWithErrorLogger(t *testing.T) {
 				},
 			},
 			args: args{
-				tracer: func(ctx context.Context) trace.Tracer {
+				tracer: func(ctx context.Context) tracing.Tracer {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -189,7 +190,7 @@ func TestWithErrorLogger(t *testing.T) {
 				},
 			},
 			args: args{
-				tracer: func(ctx context.Context) trace.Tracer {
+				tracer: func(ctx context.Context) tracing.Tracer {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 

@@ -12,6 +12,666 @@ type RedisClient struct {
 	mock.Mock
 }
 
+func (r *RedisClient) TFunctionLoad(ctx context.Context, lib string) *redis.StatusCmd {
+	args := r.Called(ctx, lib)
+	return args.Get(0).(*redis.StatusCmd)
+}
+
+func (r *RedisClient) TFunctionLoadArgs(ctx context.Context, lib string, options *redis.TFunctionLoadOptions) *redis.StatusCmd {
+	args := r.Called(ctx, lib, options)
+	return args.Get(0).(*redis.StatusCmd)
+}
+
+func (r *RedisClient) TFunctionDelete(ctx context.Context, libName string) *redis.StatusCmd {
+	args := r.Called(ctx, libName)
+	return args.Get(0).(*redis.StatusCmd)
+}
+
+func (r *RedisClient) TFunctionList(ctx context.Context) *redis.MapStringInterfaceSliceCmd {
+	args := r.Called(ctx)
+	return args.Get(0).(*redis.MapStringInterfaceSliceCmd)
+}
+
+func (r *RedisClient) TFunctionListArgs(ctx context.Context, options *redis.TFunctionListOptions) *redis.MapStringInterfaceSliceCmd {
+	args := r.Called(ctx, options)
+	return args.Get(0).(*redis.MapStringInterfaceSliceCmd)
+}
+
+func (r *RedisClient) TFCall(ctx context.Context, libName string, funcName string, numKeys int) *redis.Cmd {
+	args := r.Called(ctx, libName, funcName, numKeys)
+	return args.Get(0).(*redis.Cmd)
+}
+
+func (r *RedisClient) TFCallArgs(ctx context.Context, libName string, funcName string, numKeys int, options *redis.TFCallOptions) *redis.Cmd {
+	args := r.Called(ctx, libName, funcName, numKeys, options)
+	return args.Get(0).(*redis.Cmd)
+}
+
+func (r *RedisClient) TFCallASYNC(ctx context.Context, libName string, funcName string, numKeys int) *redis.Cmd {
+	args := r.Called(ctx, libName, funcName, numKeys)
+	return args.Get(0).(*redis.Cmd)
+}
+
+func (r *RedisClient) TFCallASYNCArgs(ctx context.Context, libName string, funcName string, numKeys int, options *redis.TFCallOptions) *redis.Cmd {
+	args := r.Called(ctx, libName, funcName, numKeys, options)
+	return args.Get(0).(*redis.Cmd)
+}
+
+func (r *RedisClient) ObjectFreq(ctx context.Context, key string) *redis.IntCmd {
+	args := r.Called(ctx, key)
+	return args.Get(0).(*redis.IntCmd)
+}
+
+func (r *RedisClient) BFAdd(ctx context.Context, key string, element interface{}) *redis.BoolCmd {
+	args := r.Called(ctx, key, element)
+	return args.Get(0).(*redis.BoolCmd)
+}
+
+func (r *RedisClient) BFCard(ctx context.Context, key string) *redis.IntCmd {
+	args := r.Called(ctx, key)
+	return args.Get(0).(*redis.IntCmd)
+}
+
+func (r *RedisClient) BFExists(ctx context.Context, key string, element interface{}) *redis.BoolCmd {
+	args := r.Called(ctx, key, element)
+	return args.Get(0).(*redis.BoolCmd)
+}
+
+func (r *RedisClient) BFInfo(ctx context.Context, key string) *redis.BFInfoCmd {
+	args := r.Called(ctx, key)
+	return args.Get(0).(*redis.BFInfoCmd)
+}
+
+func (r *RedisClient) BFInfoArg(ctx context.Context, key, option string) *redis.BFInfoCmd {
+	args := r.Called(ctx, key, option)
+	return args.Get(0).(*redis.BFInfoCmd)
+}
+
+func (r *RedisClient) BFInfoCapacity(ctx context.Context, key string) *redis.BFInfoCmd {
+	args := r.Called(ctx, key)
+	return args.Get(0).(*redis.BFInfoCmd)
+}
+
+func (r *RedisClient) BFInfoSize(ctx context.Context, key string) *redis.BFInfoCmd {
+	args := r.Called(ctx, key)
+	return args.Get(0).(*redis.BFInfoCmd)
+}
+
+func (r *RedisClient) BFInfoFilters(ctx context.Context, key string) *redis.BFInfoCmd {
+	args := r.Called(ctx, key)
+	return args.Get(0).(*redis.BFInfoCmd)
+}
+
+func (r *RedisClient) BFInfoItems(ctx context.Context, key string) *redis.BFInfoCmd {
+	args := r.Called(ctx, key)
+	return args.Get(0).(*redis.BFInfoCmd)
+}
+
+func (r *RedisClient) BFInfoExpansion(ctx context.Context, key string) *redis.BFInfoCmd {
+	args := r.Called(ctx, key)
+	return args.Get(0).(*redis.BFInfoCmd)
+}
+
+func (r *RedisClient) BFInsert(ctx context.Context, key string, options *redis.BFInsertOptions, elements ...interface{}) *redis.BoolSliceCmd {
+	args := r.Called(ctx, key, options, elements)
+	return args.Get(0).(*redis.BoolSliceCmd)
+}
+
+func (r *RedisClient) BFMAdd(ctx context.Context, key string, elements ...interface{}) *redis.BoolSliceCmd {
+	args := r.Called(ctx, key, elements)
+	return args.Get(0).(*redis.BoolSliceCmd)
+}
+
+func (r *RedisClient) BFMExists(ctx context.Context, key string, elements ...interface{}) *redis.BoolSliceCmd {
+	args := r.Called(ctx, key, elements)
+	return args.Get(0).(*redis.BoolSliceCmd)
+}
+
+func (r *RedisClient) BFReserve(ctx context.Context, key string, errorRate float64, capacity int64) *redis.StatusCmd {
+	args := r.Called(ctx, key, errorRate, capacity)
+	return args.Get(0).(*redis.StatusCmd)
+}
+
+func (r *RedisClient) BFReserveExpansion(ctx context.Context, key string, errorRate float64, capacity, expansion int64) *redis.StatusCmd {
+	args := r.Called(ctx, key, errorRate, capacity, expansion)
+	return args.Get(0).(*redis.StatusCmd)
+}
+
+func (r *RedisClient) BFReserveNonScaling(ctx context.Context, key string, errorRate float64, capacity int64) *redis.StatusCmd {
+	args := r.Called(ctx, key, errorRate, capacity)
+	return args.Get(0).(*redis.StatusCmd)
+}
+
+func (r *RedisClient) BFReserveWithArgs(ctx context.Context, key string, options *redis.BFReserveOptions) *redis.StatusCmd {
+	args := r.Called(ctx, key, options)
+	return args.Get(0).(*redis.StatusCmd)
+}
+
+func (r *RedisClient) BFScanDump(ctx context.Context, key string, iterator int64) *redis.ScanDumpCmd {
+	args := r.Called(ctx, key, iterator)
+	return args.Get(0).(*redis.ScanDumpCmd)
+}
+
+func (r *RedisClient) BFLoadChunk(ctx context.Context, key string, iterator int64, data interface{}) *redis.StatusCmd {
+	args := r.Called(ctx, key, iterator, data)
+	return args.Get(0).(*redis.StatusCmd)
+}
+
+func (r *RedisClient) CFAdd(ctx context.Context, key string, element interface{}) *redis.BoolCmd {
+	args := r.Called(ctx, key, element)
+	return args.Get(0).(*redis.BoolCmd)
+}
+
+func (r *RedisClient) CFAddNX(ctx context.Context, key string, element interface{}) *redis.BoolCmd {
+	args := r.Called(ctx, key, element)
+	return args.Get(0).(*redis.BoolCmd)
+}
+
+func (r *RedisClient) CFCount(ctx context.Context, key string, element interface{}) *redis.IntCmd {
+	args := r.Called(ctx, key, element)
+	return args.Get(0).(*redis.IntCmd)
+}
+
+func (r *RedisClient) CFDel(ctx context.Context, key string, element interface{}) *redis.BoolCmd {
+	args := r.Called(ctx, key, element)
+	return args.Get(0).(*redis.BoolCmd)
+}
+
+func (r *RedisClient) CFExists(ctx context.Context, key string, element interface{}) *redis.BoolCmd {
+	args := r.Called(ctx, key, element)
+	return args.Get(0).(*redis.BoolCmd)
+}
+
+func (r *RedisClient) CFInfo(ctx context.Context, key string) *redis.CFInfoCmd {
+	args := r.Called(ctx, key)
+	return args.Get(0).(*redis.CFInfoCmd)
+}
+
+func (r *RedisClient) CFInsert(ctx context.Context, key string, options *redis.CFInsertOptions, elements ...interface{}) *redis.BoolSliceCmd {
+	args := r.Called(ctx, key, options, elements)
+	return args.Get(0).(*redis.BoolSliceCmd)
+}
+
+func (r *RedisClient) CFInsertNX(ctx context.Context, key string, options *redis.CFInsertOptions, elements ...interface{}) *redis.IntSliceCmd {
+	args := r.Called(ctx, key, options, elements)
+	return args.Get(0).(*redis.IntSliceCmd)
+}
+
+func (r *RedisClient) CFMExists(ctx context.Context, key string, elements ...interface{}) *redis.BoolSliceCmd {
+	args := r.Called(ctx, key, elements)
+	return args.Get(0).(*redis.BoolSliceCmd)
+}
+
+func (r *RedisClient) CFReserve(ctx context.Context, key string, capacity int64) *redis.StatusCmd {
+	args := r.Called(ctx, key, capacity)
+	return args.Get(0).(*redis.StatusCmd)
+}
+
+func (r *RedisClient) CFReserveWithArgs(ctx context.Context, key string, options *redis.CFReserveOptions) *redis.StatusCmd {
+	args := r.Called(ctx, key, options)
+	return args.Get(0).(*redis.StatusCmd)
+}
+
+func (r *RedisClient) CFReserveExpansion(ctx context.Context, key string, capacity int64, expansion int64) *redis.StatusCmd {
+	args := r.Called(ctx, key, capacity, expansion)
+	return args.Get(0).(*redis.StatusCmd)
+}
+
+func (r *RedisClient) CFReserveBucketSize(ctx context.Context, key string, capacity int64, bucketsize int64) *redis.StatusCmd {
+	args := r.Called(ctx, key, capacity, bucketsize)
+	return args.Get(0).(*redis.StatusCmd)
+}
+
+func (r *RedisClient) CFReserveMaxIterations(ctx context.Context, key string, capacity int64, maxiterations int64) *redis.StatusCmd {
+	args := r.Called(ctx, key, capacity, maxiterations)
+	return args.Get(0).(*redis.StatusCmd)
+}
+
+func (r *RedisClient) CFScanDump(ctx context.Context, key string, iterator int64) *redis.ScanDumpCmd {
+	args := r.Called(ctx, key, iterator)
+	return args.Get(0).(*redis.ScanDumpCmd)
+}
+
+func (r *RedisClient) CFLoadChunk(ctx context.Context, key string, iterator int64, data interface{}) *redis.StatusCmd {
+	args := r.Called(ctx, key, iterator, data)
+	return args.Get(0).(*redis.StatusCmd)
+}
+
+func (r *RedisClient) CMSIncrBy(ctx context.Context, key string, elements ...interface{}) *redis.IntSliceCmd {
+	args := r.Called(ctx, key, elements)
+	return args.Get(0).(*redis.IntSliceCmd)
+}
+
+func (r *RedisClient) CMSInfo(ctx context.Context, key string) *redis.CMSInfoCmd {
+	args := r.Called(ctx, key)
+	return args.Get(0).(*redis.CMSInfoCmd)
+}
+
+func (r *RedisClient) CMSInitByDim(ctx context.Context, key string, width, height int64) *redis.StatusCmd {
+	args := r.Called(ctx, key, width, height)
+	return args.Get(0).(*redis.StatusCmd)
+}
+
+func (r *RedisClient) CMSInitByProb(ctx context.Context, key string, errorRate, probability float64) *redis.StatusCmd {
+	args := r.Called(ctx, key, errorRate, probability)
+	return args.Get(0).(*redis.StatusCmd)
+}
+
+func (r *RedisClient) CMSMerge(ctx context.Context, destKey string, sourceKeys ...string) *redis.StatusCmd {
+	args := r.Called(ctx, destKey, sourceKeys)
+	return args.Get(0).(*redis.StatusCmd)
+}
+
+func (r *RedisClient) CMSMergeWithWeight(ctx context.Context, destKey string, sourceKeys map[string]int64) *redis.StatusCmd {
+	args := r.Called(ctx, destKey, sourceKeys)
+	return args.Get(0).(*redis.StatusCmd)
+}
+
+func (r *RedisClient) CMSQuery(ctx context.Context, key string, elements ...interface{}) *redis.IntSliceCmd {
+	args := r.Called(ctx, key, elements)
+	return args.Get(0).(*redis.IntSliceCmd)
+}
+
+func (r *RedisClient) TopKAdd(ctx context.Context, key string, elements ...interface{}) *redis.StringSliceCmd {
+	args := r.Called(ctx, key, elements)
+	return args.Get(0).(*redis.StringSliceCmd)
+}
+
+func (r *RedisClient) TopKCount(ctx context.Context, key string, elements ...interface{}) *redis.IntSliceCmd {
+	args := r.Called(ctx, key, elements)
+	return args.Get(0).(*redis.IntSliceCmd)
+}
+
+func (r *RedisClient) TopKIncrBy(ctx context.Context, key string, elements ...interface{}) *redis.StringSliceCmd {
+	args := r.Called(ctx, key, elements)
+	return args.Get(0).(*redis.StringSliceCmd)
+}
+
+func (r *RedisClient) TopKInfo(ctx context.Context, key string) *redis.TopKInfoCmd {
+	args := r.Called(ctx, key)
+	return args.Get(0).(*redis.TopKInfoCmd)
+}
+
+func (r *RedisClient) TopKList(ctx context.Context, key string) *redis.StringSliceCmd {
+	args := r.Called(ctx, key)
+	return args.Get(0).(*redis.StringSliceCmd)
+}
+
+func (r *RedisClient) TopKListWithCount(ctx context.Context, key string) *redis.MapStringIntCmd {
+	args := r.Called(ctx, key)
+	return args.Get(0).(*redis.MapStringIntCmd)
+}
+
+func (r *RedisClient) TopKQuery(ctx context.Context, key string, elements ...interface{}) *redis.BoolSliceCmd {
+	args := r.Called(ctx, key, elements)
+	return args.Get(0).(*redis.BoolSliceCmd)
+}
+
+func (r *RedisClient) TopKReserve(ctx context.Context, key string, k int64) *redis.StatusCmd {
+	args := r.Called(ctx, key, k)
+	return args.Get(0).(*redis.StatusCmd)
+}
+
+func (r *RedisClient) TopKReserveWithOptions(ctx context.Context, key string, k int64, width, depth int64, decay float64) *redis.StatusCmd {
+	args := r.Called(ctx, key, k, width, depth, decay)
+	return args.Get(0).(*redis.StatusCmd)
+}
+
+func (r *RedisClient) TDigestAdd(ctx context.Context, key string, elements ...float64) *redis.StatusCmd {
+	args := r.Called(ctx, key, elements)
+	return args.Get(0).(*redis.StatusCmd)
+}
+
+func (r *RedisClient) TDigestByRank(ctx context.Context, key string, rank ...uint64) *redis.FloatSliceCmd {
+	args := r.Called(ctx, key, rank)
+	return args.Get(0).(*redis.FloatSliceCmd)
+}
+
+func (r *RedisClient) TDigestByRevRank(ctx context.Context, key string, rank ...uint64) *redis.FloatSliceCmd {
+	args := r.Called(ctx, key, rank)
+	return args.Get(0).(*redis.FloatSliceCmd)
+}
+
+func (r *RedisClient) TDigestCDF(ctx context.Context, key string, elements ...float64) *redis.FloatSliceCmd {
+	args := r.Called(ctx, key, elements)
+	return args.Get(0).(*redis.FloatSliceCmd)
+}
+
+func (r *RedisClient) TDigestCreate(ctx context.Context, key string) *redis.StatusCmd {
+	args := r.Called(ctx, key)
+	return args.Get(0).(*redis.StatusCmd)
+}
+
+func (r *RedisClient) TDigestCreateWithCompression(ctx context.Context, key string, compression int64) *redis.StatusCmd {
+	args := r.Called(ctx, key, compression)
+	return args.Get(0).(*redis.StatusCmd)
+}
+
+func (r *RedisClient) TDigestInfo(ctx context.Context, key string) *redis.TDigestInfoCmd {
+	args := r.Called(ctx, key)
+	return args.Get(0).(*redis.TDigestInfoCmd)
+}
+
+func (r *RedisClient) TDigestMax(ctx context.Context, key string) *redis.FloatCmd {
+	args := r.Called(ctx, key)
+	return args.Get(0).(*redis.FloatCmd)
+}
+
+func (r *RedisClient) TDigestMin(ctx context.Context, key string) *redis.FloatCmd {
+	args := r.Called(ctx, key)
+	return args.Get(0).(*redis.FloatCmd)
+}
+
+func (r *RedisClient) TDigestMerge(ctx context.Context, destKey string, options *redis.TDigestMergeOptions, sourceKeys ...string) *redis.StatusCmd {
+	args := r.Called(ctx, destKey, options, sourceKeys)
+	return args.Get(0).(*redis.StatusCmd)
+}
+
+func (r *RedisClient) TDigestQuantile(ctx context.Context, key string, elements ...float64) *redis.FloatSliceCmd {
+	args := r.Called(ctx, key, elements)
+	return args.Get(0).(*redis.FloatSliceCmd)
+}
+
+func (r *RedisClient) TDigestRank(ctx context.Context, key string, values ...float64) *redis.IntSliceCmd {
+	args := r.Called(ctx, key, values)
+	return args.Get(0).(*redis.IntSliceCmd)
+}
+
+func (r *RedisClient) TDigestReset(ctx context.Context, key string) *redis.StatusCmd {
+	args := r.Called(ctx, key)
+	return args.Get(0).(*redis.StatusCmd)
+}
+
+func (r *RedisClient) TDigestRevRank(ctx context.Context, key string, values ...float64) *redis.IntSliceCmd {
+	args := r.Called(ctx, key, values)
+	return args.Get(0).(*redis.IntSliceCmd)
+}
+
+func (r *RedisClient) TDigestTrimmedMean(ctx context.Context, key string, lowCutQuantile, highCutQuantile float64) *redis.FloatCmd {
+	args := r.Called(ctx, key, lowCutQuantile, highCutQuantile)
+	return args.Get(0).(*redis.FloatCmd)
+}
+
+func (r *RedisClient) TSAdd(ctx context.Context, key string, timestamp interface{}, value float64) *redis.IntCmd {
+	args := r.Called(ctx, key, timestamp, value)
+	return args.Get(0).(*redis.IntCmd)
+}
+
+func (r *RedisClient) TSAddWithArgs(ctx context.Context, key string, timestamp interface{}, value float64, options *redis.TSOptions) *redis.IntCmd {
+	args := r.Called(ctx, key, timestamp, value, options)
+	return args.Get(0).(*redis.IntCmd)
+}
+
+func (r *RedisClient) TSCreate(ctx context.Context, key string) *redis.StatusCmd {
+	args := r.Called(ctx, key)
+	return args.Get(0).(*redis.StatusCmd)
+}
+
+func (r *RedisClient) TSCreateWithArgs(ctx context.Context, key string, options *redis.TSOptions) *redis.StatusCmd {
+	args := r.Called(ctx, key, options)
+	return args.Get(0).(*redis.StatusCmd)
+}
+
+func (r *RedisClient) TSAlter(ctx context.Context, key string, options *redis.TSAlterOptions) *redis.StatusCmd {
+	args := r.Called(ctx, key, options)
+	return args.Get(0).(*redis.StatusCmd)
+}
+
+func (r *RedisClient) TSCreateRule(ctx context.Context, sourceKey string, destKey string, aggregator redis.Aggregator, bucketDuration int) *redis.StatusCmd {
+	args := r.Called(ctx, sourceKey, destKey, aggregator, bucketDuration)
+	return args.Get(0).(*redis.StatusCmd)
+}
+
+func (r *RedisClient) TSCreateRuleWithArgs(ctx context.Context, sourceKey string, destKey string, aggregator redis.Aggregator, bucketDuration int, options *redis.TSCreateRuleOptions) *redis.StatusCmd {
+	args := r.Called(ctx, sourceKey, destKey, aggregator, bucketDuration, options)
+	return args.Get(0).(*redis.StatusCmd)
+}
+
+func (r *RedisClient) TSIncrBy(ctx context.Context, Key string, timestamp float64) *redis.IntCmd {
+	args := r.Called(ctx, Key, timestamp)
+	return args.Get(0).(*redis.IntCmd)
+}
+
+func (r *RedisClient) TSIncrByWithArgs(ctx context.Context, key string, timestamp float64, options *redis.TSIncrDecrOptions) *redis.IntCmd {
+	args := r.Called(ctx, key, timestamp, options)
+	return args.Get(0).(*redis.IntCmd)
+}
+
+func (r *RedisClient) TSDecrBy(ctx context.Context, Key string, timestamp float64) *redis.IntCmd {
+	args := r.Called(ctx, Key, timestamp)
+	return args.Get(0).(*redis.IntCmd)
+}
+
+func (r *RedisClient) TSDecrByWithArgs(ctx context.Context, key string, timestamp float64, options *redis.TSIncrDecrOptions) *redis.IntCmd {
+	args := r.Called(ctx, key, timestamp, options)
+	return args.Get(0).(*redis.IntCmd)
+}
+
+func (r *RedisClient) TSDel(ctx context.Context, Key string, fromTimestamp int, toTimestamp int) *redis.IntCmd {
+	args := r.Called(ctx, Key, fromTimestamp, toTimestamp)
+	return args.Get(0).(*redis.IntCmd)
+}
+
+func (r *RedisClient) TSDeleteRule(ctx context.Context, sourceKey string, destKey string) *redis.StatusCmd {
+	args := r.Called(ctx, sourceKey, destKey)
+	return args.Get(0).(*redis.StatusCmd)
+}
+
+func (r *RedisClient) TSGet(ctx context.Context, key string) *redis.TSTimestampValueCmd {
+	args := r.Called(ctx, key)
+	return args.Get(0).(*redis.TSTimestampValueCmd)
+}
+
+func (r *RedisClient) TSGetWithArgs(ctx context.Context, key string, options *redis.TSGetOptions) *redis.TSTimestampValueCmd {
+	args := r.Called(ctx, key, options)
+	return args.Get(0).(*redis.TSTimestampValueCmd)
+}
+
+func (r *RedisClient) TSInfo(ctx context.Context, key string) *redis.MapStringInterfaceCmd {
+	args := r.Called(ctx, key)
+	return args.Get(0).(*redis.MapStringInterfaceCmd)
+}
+
+func (r *RedisClient) TSInfoWithArgs(ctx context.Context, key string, options *redis.TSInfoOptions) *redis.MapStringInterfaceCmd {
+	args := r.Called(ctx, key, options)
+	return args.Get(0).(*redis.MapStringInterfaceCmd)
+}
+
+func (r *RedisClient) TSMAdd(ctx context.Context, ktvSlices [][]interface{}) *redis.IntSliceCmd {
+	args := r.Called(ctx, ktvSlices)
+	return args.Get(0).(*redis.IntSliceCmd)
+}
+
+func (r *RedisClient) TSQueryIndex(ctx context.Context, filterExpr []string) *redis.StringSliceCmd {
+	args := r.Called(ctx, filterExpr)
+	return args.Get(0).(*redis.StringSliceCmd)
+}
+
+func (r *RedisClient) TSRevRange(ctx context.Context, key string, fromTimestamp int, toTimestamp int) *redis.TSTimestampValueSliceCmd {
+	args := r.Called(ctx, key, fromTimestamp, toTimestamp)
+	return args.Get(0).(*redis.TSTimestampValueSliceCmd)
+}
+
+func (r *RedisClient) TSRevRangeWithArgs(ctx context.Context, key string, fromTimestamp int, toTimestamp int, options *redis.TSRevRangeOptions) *redis.TSTimestampValueSliceCmd {
+	args := r.Called(ctx, key, fromTimestamp, toTimestamp, options)
+	return args.Get(0).(*redis.TSTimestampValueSliceCmd)
+}
+
+func (r *RedisClient) TSRange(ctx context.Context, key string, fromTimestamp int, toTimestamp int) *redis.TSTimestampValueSliceCmd {
+	args := r.Called(ctx, key, fromTimestamp, toTimestamp)
+	return args.Get(0).(*redis.TSTimestampValueSliceCmd)
+}
+
+func (r *RedisClient) TSRangeWithArgs(ctx context.Context, key string, fromTimestamp int, toTimestamp int, options *redis.TSRangeOptions) *redis.TSTimestampValueSliceCmd {
+	args := r.Called(ctx, key, fromTimestamp, toTimestamp, options)
+	return args.Get(0).(*redis.TSTimestampValueSliceCmd)
+}
+
+func (r *RedisClient) TSMRange(ctx context.Context, fromTimestamp int, toTimestamp int, filterExpr []string) *redis.MapStringSliceInterfaceCmd {
+	args := r.Called(ctx, fromTimestamp, toTimestamp, filterExpr)
+	return args.Get(0).(*redis.MapStringSliceInterfaceCmd)
+}
+
+func (r *RedisClient) TSMRangeWithArgs(ctx context.Context, fromTimestamp int, toTimestamp int, filterExpr []string, options *redis.TSMRangeOptions) *redis.MapStringSliceInterfaceCmd {
+	args := r.Called(ctx, fromTimestamp, toTimestamp, filterExpr, options)
+	return args.Get(0).(*redis.MapStringSliceInterfaceCmd)
+}
+
+func (r *RedisClient) TSMRevRange(ctx context.Context, fromTimestamp int, toTimestamp int, filterExpr []string) *redis.MapStringSliceInterfaceCmd {
+	args := r.Called(ctx, fromTimestamp, toTimestamp, filterExpr)
+	return args.Get(0).(*redis.MapStringSliceInterfaceCmd)
+}
+
+func (r *RedisClient) TSMRevRangeWithArgs(ctx context.Context, fromTimestamp int, toTimestamp int, filterExpr []string, options *redis.TSMRevRangeOptions) *redis.MapStringSliceInterfaceCmd {
+	args := r.Called(ctx, fromTimestamp, toTimestamp, filterExpr, options)
+	return args.Get(0).(*redis.MapStringSliceInterfaceCmd)
+}
+
+func (r *RedisClient) TSMGet(ctx context.Context, filters []string) *redis.MapStringSliceInterfaceCmd {
+	args := r.Called(ctx, filters)
+	return args.Get(0).(*redis.MapStringSliceInterfaceCmd)
+}
+
+func (r *RedisClient) TSMGetWithArgs(ctx context.Context, filters []string, options *redis.TSMGetOptions) *redis.MapStringSliceInterfaceCmd {
+	args := r.Called(ctx, filters, options)
+	return args.Get(0).(*redis.MapStringSliceInterfaceCmd)
+}
+
+func (r *RedisClient) JSONArrAppend(ctx context.Context, key, path string, values ...interface{}) *redis.IntSliceCmd {
+	args := r.Called(ctx, key, path, values)
+	return args.Get(0).(*redis.IntSliceCmd)
+}
+
+func (r *RedisClient) JSONArrIndex(ctx context.Context, key, path string, value ...interface{}) *redis.IntSliceCmd {
+	args := r.Called(ctx, key, path, value)
+	return args.Get(0).(*redis.IntSliceCmd)
+}
+
+func (r *RedisClient) JSONArrIndexWithArgs(ctx context.Context, key, path string, options *redis.JSONArrIndexArgs, value ...interface{}) *redis.IntSliceCmd {
+	args := r.Called(ctx, key, path, options, value)
+	return args.Get(0).(*redis.IntSliceCmd)
+}
+
+func (r *RedisClient) JSONArrInsert(ctx context.Context, key, path string, index int64, values ...interface{}) *redis.IntSliceCmd {
+	args := r.Called(ctx, key, path, index, values)
+	return args.Get(0).(*redis.IntSliceCmd)
+}
+
+func (r *RedisClient) JSONArrLen(ctx context.Context, key, path string) *redis.IntSliceCmd {
+	args := r.Called(ctx, key, path)
+	return args.Get(0).(*redis.IntSliceCmd)
+}
+
+func (r *RedisClient) JSONArrPop(ctx context.Context, key, path string, index int) *redis.StringSliceCmd {
+	args := r.Called(ctx, key, path, index)
+	return args.Get(0).(*redis.StringSliceCmd)
+}
+
+func (r *RedisClient) JSONArrTrim(ctx context.Context, key, path string) *redis.IntSliceCmd {
+	args := r.Called(ctx, key, path)
+	return args.Get(0).(*redis.IntSliceCmd)
+}
+
+func (r *RedisClient) JSONArrTrimWithArgs(ctx context.Context, key, path string, options *redis.JSONArrTrimArgs) *redis.IntSliceCmd {
+	args := r.Called(ctx, key, path, options)
+	return args.Get(0).(*redis.IntSliceCmd)
+}
+
+func (r *RedisClient) JSONClear(ctx context.Context, key, path string) *redis.IntCmd {
+	args := r.Called(ctx, key, path)
+	return args.Get(0).(*redis.IntCmd)
+}
+
+func (r *RedisClient) JSONDebugMemory(ctx context.Context, key, path string) *redis.IntCmd {
+	args := r.Called(ctx, key, path)
+	return args.Get(0).(*redis.IntCmd)
+}
+
+func (r *RedisClient) JSONDel(ctx context.Context, key, path string) *redis.IntCmd {
+	args := r.Called(ctx, key, path)
+	return args.Get(0).(*redis.IntCmd)
+}
+
+func (r *RedisClient) JSONForget(ctx context.Context, key, path string) *redis.IntCmd {
+	args := r.Called(ctx, key, path)
+	return args.Get(0).(*redis.IntCmd)
+}
+
+func (r *RedisClient) JSONGet(ctx context.Context, key string, paths ...string) *redis.JSONCmd {
+	args := r.Called(ctx, key, paths)
+	return args.Get(0).(*redis.JSONCmd)
+}
+
+func (r *RedisClient) JSONGetWithArgs(ctx context.Context, key string, options *redis.JSONGetArgs, paths ...string) *redis.JSONCmd {
+	args := r.Called(ctx, key, options, paths)
+	return args.Get(0).(*redis.JSONCmd)
+}
+
+func (r *RedisClient) JSONMerge(ctx context.Context, key, path string, value string) *redis.StatusCmd {
+	args := r.Called(ctx, key, path, value)
+	return args.Get(0).(*redis.StatusCmd)
+}
+
+func (r *RedisClient) JSONMSetArgs(ctx context.Context, docs []redis.JSONSetArgs) *redis.StatusCmd {
+	args := r.Called(ctx, docs)
+	return args.Get(0).(*redis.StatusCmd)
+}
+
+func (r *RedisClient) JSONMSet(ctx context.Context, params ...interface{}) *redis.StatusCmd {
+	args := r.Called(ctx, params)
+	return args.Get(0).(*redis.StatusCmd)
+}
+
+func (r *RedisClient) JSONMGet(ctx context.Context, path string, keys ...string) *redis.JSONSliceCmd {
+	args := r.Called(ctx, path, keys)
+	return args.Get(0).(*redis.JSONSliceCmd)
+}
+
+func (r *RedisClient) JSONNumIncrBy(ctx context.Context, key, path string, value float64) *redis.JSONCmd {
+	args := r.Called(ctx, key, path, value)
+	return args.Get(0).(*redis.JSONCmd)
+}
+
+func (r *RedisClient) JSONObjKeys(ctx context.Context, key, path string) *redis.SliceCmd {
+	args := r.Called(ctx, key, path)
+	return args.Get(0).(*redis.SliceCmd)
+}
+
+func (r *RedisClient) JSONObjLen(ctx context.Context, key, path string) *redis.IntPointerSliceCmd {
+	args := r.Called(ctx, key, path)
+	return args.Get(0).(*redis.IntPointerSliceCmd)
+}
+
+func (r *RedisClient) JSONSet(ctx context.Context, key, path string, value interface{}) *redis.StatusCmd {
+	args := r.Called(ctx, key, path, value)
+	return args.Get(0).(*redis.StatusCmd)
+}
+
+func (r *RedisClient) JSONSetMode(ctx context.Context, key, path string, value interface{}, mode string) *redis.StatusCmd {
+	args := r.Called(ctx, key, path, value, mode)
+	return args.Get(0).(*redis.StatusCmd)
+}
+
+func (r *RedisClient) JSONStrAppend(ctx context.Context, key, path, value string) *redis.IntPointerSliceCmd {
+	args := r.Called(ctx, key, path, value)
+	return args.Get(0).(*redis.IntPointerSliceCmd)
+}
+
+func (r *RedisClient) JSONStrLen(ctx context.Context, key, path string) *redis.IntPointerSliceCmd {
+	args := r.Called(ctx, key, path)
+	return args.Get(0).(*redis.IntPointerSliceCmd)
+}
+
+func (r *RedisClient) JSONToggle(ctx context.Context, key, path string) *redis.IntPointerSliceCmd {
+	args := r.Called(ctx, key, path)
+	return args.Get(0).(*redis.IntPointerSliceCmd)
+}
+
+func (r *RedisClient) JSONType(ctx context.Context, key, path string) *redis.JSONSliceCmd {
+	args := r.Called(ctx, key, path)
+	return args.Get(0).(*redis.JSONSliceCmd)
+}
+
 func (r *RedisClient) ACLLog(ctx context.Context, count int64) *redis.ACLLogCmd {
 	args := r.Called(ctx, count)
 	return args.Get(0).(*redis.ACLLogCmd)

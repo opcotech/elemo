@@ -5,7 +5,7 @@ import (
 	"errors"
 	"time"
 
-	oapiTypes "github.com/deepmap/oapi-codegen/pkg/types"
+	oapiTypes "github.com/oapi-codegen/runtime/types"
 
 	"github.com/opcotech/elemo/internal/license"
 	"github.com/opcotech/elemo/internal/model"

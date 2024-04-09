@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	oapiTypes "github.com/deepmap/oapi-codegen/pkg/types"
+	oapiTypes "github.com/oapi-codegen/runtime/types"
 
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg"

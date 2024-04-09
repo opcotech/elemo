@@ -138,6 +138,15 @@ func TestNewPermission(t *testing.T) {
 			},
 			wantErr: ErrInvalidPermissionDetails,
 		},
+		{
+			name: "create new permission with equal subject and target",
+			args: args{
+				subject: ID{Inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x9, 0xa, 0xb, 0xc}, Type: ResourceTypeUser},
+				target:  ID{Inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x9, 0xa, 0xb, 0xc}, Type: ResourceTypeUser},
+				kind:    PermissionKindCreate,
+			},
+			wantErr: ErrInvalidPermissionDetails,
+		},
 	}
 	for _, tt := range tests {
 		tt := tt

@@ -7,19 +7,23 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/otel/trace/embedded"
+
+	"github.com/opcotech/elemo/internal/pkg/tracing"
 )
 
 type TracerProvider struct {
 	mock.Mock
 }
 
-func (m *TracerProvider) Tracer(name string, options ...trace.TracerOption) trace.Tracer {
+func (m *TracerProvider) Tracer(name string, options ...trace.TracerOption) tracing.Tracer {
 	args := m.Called(name, options)
-	return args.Get(0).(trace.Tracer)
+	return args.Get(0).(tracing.Tracer)
 }
 
 type Tracer struct {
 	mock.Mock
+	embedded.Tracer
 }
 
 func (m *Tracer) Start(ctx context.Context, spanName string, opts ...trace.SpanStartOption) (context.Context, trace.Span) {
@@ -29,6 +33,11 @@ func (m *Tracer) Start(ctx context.Context, spanName string, opts ...trace.SpanS
 
 type Span struct {
 	mock.Mock
+	embedded.Span
+}
+
+func (m *Span) AddLink(link trace.Link) {
+	m.Called(link)
 }
 
 func (m *Span) End(options ...trace.SpanEndOption) {

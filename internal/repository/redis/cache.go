@@ -9,7 +9,6 @@ import (
 
 	"github.com/go-redis/cache/v9"
 	"github.com/redis/go-redis/v9"
-	"go.opentelemetry.io/otel/trace"
 
 	"github.com/opcotech/elemo/internal/pkg/log"
 	"github.com/opcotech/elemo/internal/pkg/tracing"
@@ -52,7 +51,7 @@ func WithRepositoryLogger(logger log.Logger) RepositoryOption {
 }
 
 // WithRepositoryTracer sets the tracer for a baseRepository.
-func WithRepositoryTracer(tracer trace.Tracer) RepositoryOption {
+func WithRepositoryTracer(tracer tracing.Tracer) RepositoryOption {
 	return func(r *baseRepository) error {
 		if tracer == nil {
 			return tracing.ErrNoTracer
@@ -65,10 +64,10 @@ func WithRepositoryTracer(tracer trace.Tracer) RepositoryOption {
 
 // baseRepository represents a baseRepository for a Neo4j baseRepository.
 type baseRepository struct {
-	db     *Database    `validate:"required"`
-	cache  CacheBackend `validate:"required"`
-	logger log.Logger   `validate:"required"`
-	tracer trace.Tracer `validate:"required"`
+	db     *Database      `validate:"required"`
+	cache  CacheBackend   `validate:"required"`
+	logger log.Logger     `validate:"required"`
+	tracer tracing.Tracer `validate:"required"`
 }
 
 func (r *baseRepository) Set(ctx context.Context, key string, val any) error {

@@ -13,7 +13,6 @@ import (
 	"github.com/go-oauth2/oauth2/v4"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 
 	httpMetricsProm "github.com/slok/go-http-metrics/metrics/prometheus"
 	httpMetricsMiddleware "github.com/slok/go-http-metrics/middleware"
@@ -22,6 +21,7 @@ import (
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg"
 	"github.com/opcotech/elemo/internal/pkg/log"
+	"github.com/opcotech/elemo/internal/pkg/tracing"
 )
 
 type ctxCallbackFunc func(w http.ResponseWriter, r *http.Request) any
@@ -76,7 +76,7 @@ func WithPrometheusMetrics(next http.Handler) http.Handler {
 // WithTracedMiddleware returns an HTTP middleware that traces the middleware
 // execution by creating a new span and passing the context to the next
 // handler.
-func WithTracedMiddleware(tracer trace.Tracer, middleware func(next http.Handler) http.Handler) func(next http.Handler) http.Handler {
+func WithTracedMiddleware(tracer tracing.Tracer, middleware func(next http.Handler) http.Handler) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			name, path := getMiddlewareName(middleware)

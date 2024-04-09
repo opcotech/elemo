@@ -9,7 +9,6 @@ import (
 	"github.com/go-chi/cors"
 	"github.com/hibiken/asynq"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"go.opentelemetry.io/otel/trace"
 
 	"github.com/opcotech/elemo/internal/config"
 	"github.com/opcotech/elemo/internal/pkg/log"
@@ -67,7 +66,7 @@ func WithWorkerLogger(logger log.Logger) WorkerOption {
 }
 
 // WithWorkerTracer sets the tracer for the worker.
-func WithWorkerTracer(tracer trace.Tracer) WorkerOption {
+func WithWorkerTracer(tracer tracing.Tracer) WorkerOption {
 	return func(w *Worker) error {
 		if tracer == nil {
 			return tracing.ErrNoTracer
@@ -83,7 +82,7 @@ func WithWorkerTracer(tracer trace.Tracer) WorkerOption {
 type Worker struct {
 	conf   *config.WorkerConfig
 	logger log.Logger
-	tracer trace.Tracer
+	tracer tracing.Tracer
 
 	*asynq.ServeMux
 	server *asynq.Server
@@ -174,7 +173,7 @@ func NewWorker(opts ...WorkerOption) (*Worker, error) {
 
 // NewWorkerMetricsServer creates a new metrics server to export prometheus
 // metrics.
-func NewWorkerMetricsServer(serverConfig *config.ServerConfig, tracer trace.Tracer) (http.Handler, error) {
+func NewWorkerMetricsServer(serverConfig *config.ServerConfig, tracer tracing.Tracer) (http.Handler, error) {
 	router := chi.NewRouter()
 
 	if serverConfig.CORS.Enabled {

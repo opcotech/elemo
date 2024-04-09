@@ -16,10 +16,10 @@ import (
 	authErrors "github.com/go-oauth2/oauth2/v4/errors"
 	authServer "github.com/go-oauth2/oauth2/v4/server"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"go.opentelemetry.io/otel/trace"
 
 	"github.com/opcotech/elemo/internal/config"
 	"github.com/opcotech/elemo/internal/pkg/log"
+	"github.com/opcotech/elemo/internal/pkg/tracing"
 	"github.com/opcotech/elemo/internal/transport/http/api"
 )
 
@@ -124,7 +124,7 @@ func NewServer(opts ...ControllerOption) (StrictServer, error) {
 }
 
 // NewRouter creates a new HTTP router for the Server.
-func NewRouter(strictServer StrictServer, serverConfig *config.ServerConfig, tracer trace.Tracer) (http.Handler, error) {
+func NewRouter(strictServer StrictServer, serverConfig *config.ServerConfig, tracer tracing.Tracer) (http.Handler, error) {
 	if serverConfig == nil {
 		return nil, config.ErrNoConfig
 	}
@@ -232,7 +232,7 @@ func NewRouter(strictServer StrictServer, serverConfig *config.ServerConfig, tra
 }
 
 // NewMetricsServer creates a new HTTP server for Prometheus metrics.
-func NewMetricsServer(serverConfig *config.ServerConfig, tracer trace.Tracer) (http.Handler, error) {
+func NewMetricsServer(serverConfig *config.ServerConfig, tracer tracing.Tracer) (http.Handler, error) {
 	router := chi.NewRouter()
 
 	if serverConfig.CORS.Enabled {

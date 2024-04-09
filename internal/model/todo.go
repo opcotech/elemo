@@ -56,13 +56,13 @@ func (p *TodoPriority) UnmarshalText(text []byte) error {
 
 // Todo represents a todo in the system.
 type Todo struct {
-	ID          ID           `json:"id" validate:"required,dive"`
+	ID          ID           `json:"id" validate:"required"`
 	Title       string       `json:"title" validate:"required,min=3,max=120"`
 	Description string       `json:"description" validate:"omitempty,min=10,max=500"`
 	Priority    TodoPriority `json:"priority" validate:"required,min=1,max=4"`
 	Completed   bool         `json:"completed"`
-	OwnedBy     ID           `json:"owned_by" validate:"required,dive"`
-	CreatedBy   ID           `json:"created_by" validate:"required,dive"`
+	OwnedBy     ID           `json:"owned_by" validate:"required"`
+	CreatedBy   ID           `json:"created_by" validate:"required"`
 	DueDate     *time.Time   `json:"due_date" validate:"omitempty"`
 	CreatedAt   *time.Time   `json:"created_at" validate:"omitempty"`
 	UpdatedAt   *time.Time   `json:"updated_at" validate:"omitempty"`

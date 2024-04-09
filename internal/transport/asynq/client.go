@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/hibiken/asynq"
-	"go.opentelemetry.io/otel/trace"
 
 	"github.com/opcotech/elemo/internal/config"
 	"github.com/opcotech/elemo/internal/pkg/log"
@@ -43,7 +42,7 @@ func WithClientLogger(logger log.Logger) ClientOption {
 }
 
 // WithClientTracer sets the tracer for the worker.
-func WithClientTracer(tracer trace.Tracer) ClientOption {
+func WithClientTracer(tracer tracing.Tracer) ClientOption {
 	return func(c *Client) error {
 		if tracer == nil {
 			return tracing.ErrNoTracer
@@ -58,7 +57,7 @@ func WithClientTracer(tracer trace.Tracer) ClientOption {
 type Client struct {
 	conf      *config.WorkerConfig
 	logger    log.Logger
-	tracer    trace.Tracer
+	tracer    tracing.Tracer
 	client    *asynq.Client
 	inspector *asynq.Inspector
 }

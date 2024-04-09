@@ -6,7 +6,6 @@ import (
 
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/otel/trace"
 
 	"github.com/opcotech/elemo/internal/config"
 	"github.com/opcotech/elemo/internal/pkg/log"
@@ -141,12 +140,12 @@ func TestWithDatabaseLogger(t *testing.T) {
 
 func TestWithDatabaseTracer(t *testing.T) {
 	type args struct {
-		tracer trace.Tracer
+		tracer tracing.Tracer
 	}
 	tests := []struct {
 		name    string
 		args    args
-		want    trace.Tracer
+		want    tracing.Tracer
 		wantErr error
 	}{
 		{
@@ -180,7 +179,7 @@ func TestNewDatabase(t *testing.T) {
 	type args struct {
 		client redis.UniversalClient
 		logger log.Logger
-		tracer trace.Tracer
+		tracer tracing.Tracer
 	}
 	tests := []struct {
 		name    string
