@@ -238,6 +238,7 @@ var startServerCmd = &cobra.Command{
 
 		roleService, err := service.NewRoleService(
 			service.WithRoleRepository(roleRepo),
+			service.WithUserRepository(userRepo),
 			service.WithPermissionService(permissionSvc),
 			service.WithLicenseService(licenseService),
 			service.WithLogger(logger.Named("role_service")),

@@ -49,6 +49,7 @@ func (s *RoleServiceIntegrationTestSuite) SetupSuite() {
 
 	s.roleService, err = service.NewRoleService(
 		service.WithRoleRepository(s.RoleRepo),
+		service.WithUserRepository(s.UserRepo),
 		service.WithPermissionService(permissionService),
 		service.WithLicenseService(licenseService),
 	)
@@ -85,7 +86,7 @@ func (s *RoleServiceIntegrationTestSuite) TearDownSuite() {
 }
 
 func (s *RoleServiceIntegrationTestSuite) TestCreate() {
-	err := s.roleService.Create(s.ctx, s.organization.ID, s.role)
+	err := s.roleService.Create(s.ctx, s.owner.ID, s.organization.ID, s.role)
 	s.Require().NoError(err)
 	s.Require().NotEmpty(s.role.ID)
 	s.Assert().NotNil(s.role.CreatedAt)
@@ -93,9 +94,9 @@ func (s *RoleServiceIntegrationTestSuite) TestCreate() {
 }
 
 func (s *RoleServiceIntegrationTestSuite) TestGet() {
-	s.Require().NoError(s.roleService.Create(s.ctx, s.organization.ID, s.role))
+	s.Require().NoError(s.roleService.Create(s.ctx, s.owner.ID, s.organization.ID, s.role))
 
-	role, err := s.roleService.Get(s.ctx, s.role.ID)
+	role, err := s.roleService.Get(s.ctx, s.role.ID, s.organization.ID)
 	s.Require().NoError(err)
 	s.Assert().Equal(s.role.ID, role.ID)
 	s.Assert().Equal(s.role.Name, role.Name)
@@ -107,9 +108,9 @@ func (s *RoleServiceIntegrationTestSuite) TestGet() {
 }
 
 func (s *RoleServiceIntegrationTestSuite) TestGetAllBelongsTo() {
-	s.Require().NoError(s.roleService.Create(s.ctx, s.organization.ID, s.role))
-	s.Require().NoError(s.roleService.Create(s.ctx, s.organization.ID, s.role))
-	s.Require().NoError(s.roleService.Create(s.ctx, s.organization.ID, s.role))
+	s.Require().NoError(s.roleService.Create(s.ctx, s.owner.ID, s.organization.ID, s.role))
+	s.Require().NoError(s.roleService.Create(s.ctx, s.owner.ID, s.organization.ID, s.role))
+	s.Require().NoError(s.roleService.Create(s.ctx, s.owner.ID, s.organization.ID, s.role))
 
 	roles, err := s.roleService.GetAllBelongsTo(s.ctx, s.organization.ID, 0, 10)
 	s.Require().NoError(err)
@@ -133,14 +134,14 @@ func (s *RoleServiceIntegrationTestSuite) TestGetAllBelongsTo() {
 }
 
 func (s *RoleServiceIntegrationTestSuite) TestUpdate() {
-	s.Require().NoError(s.roleService.Create(s.ctx, s.organization.ID, s.role))
+	s.Require().NoError(s.roleService.Create(s.ctx, s.owner.ID, s.organization.ID, s.role))
 
 	patch := map[string]any{
 		"name":        "new name",
 		"description": "new description",
 	}
 
-	updated, err := s.roleService.Update(s.ctx, s.role.ID, patch)
+	updated, err := s.roleService.Update(s.ctx, s.role.ID, s.organization.ID, patch)
 	s.Require().NoError(err)
 	s.Assert().Equal(s.role.ID, updated.ID)
 	s.Assert().Equal(patch["name"], updated.Name)
@@ -151,44 +152,71 @@ func (s *RoleServiceIntegrationTestSuite) TestUpdate() {
 	s.Assert().NotNil(updated.UpdatedAt)
 }
 
-func (s *RoleServiceIntegrationTestSuite) TestAddMember() {
-	s.Require().NoError(s.roleService.Create(s.ctx, s.organization.ID, s.role))
+func (s *RoleServiceIntegrationTestSuite) TestGetMembers() {
+	s.Require().NoError(s.roleService.Create(s.ctx, s.owner.ID, s.organization.ID, s.role))
 
 	user := testModel.NewUser()
 	s.Require().NoError(s.UserRepo.Create(context.Background(), user))
 
-	err := s.roleService.AddMember(s.ctx, s.role.ID, user.ID)
+	members, err := s.roleService.GetMembers(s.ctx, s.role.ID, s.organization.ID)
 	s.Require().NoError(err)
 
-	role, err := s.roleService.Get(s.ctx, s.role.ID)
+	memberIDs := make([]model.ID, len(members))
+	for i, member := range members {
+		memberIDs[i] = member.ID
+	}
+	s.Assert().ElementsMatch([]model.ID{s.owner.ID}, memberIDs)
+
+	err = s.roleService.AddMember(s.ctx, s.role.ID, user.ID, s.organization.ID)
+	s.Require().NoError(err)
+
+	members, err = s.roleService.GetMembers(s.ctx, s.role.ID, s.organization.ID)
+	s.Require().NoError(err)
+	memberIDs = make([]model.ID, len(members))
+	for i, member := range members {
+		memberIDs[i] = member.ID
+	}
+	s.Assert().ElementsMatch([]model.ID{s.owner.ID, user.ID}, memberIDs)
+}
+
+func (s *RoleServiceIntegrationTestSuite) TestAddMember() {
+	s.Require().NoError(s.roleService.Create(s.ctx, s.owner.ID, s.organization.ID, s.role))
+
+	user := testModel.NewUser()
+	s.Require().NoError(s.UserRepo.Create(context.Background(), user))
+
+	err := s.roleService.AddMember(s.ctx, s.role.ID, user.ID, s.organization.ID)
+	s.Require().NoError(err)
+
+	role, err := s.roleService.Get(s.ctx, s.role.ID, s.organization.ID)
 	s.Require().NoError(err)
 	s.Assert().ElementsMatch([]model.ID{s.owner.ID, user.ID}, role.Members)
 }
 
 func (s *RoleServiceIntegrationTestSuite) TestRemoveMember() {
-	s.Require().NoError(s.roleService.Create(s.ctx, s.organization.ID, s.role))
+	s.Require().NoError(s.roleService.Create(s.ctx, s.owner.ID, s.organization.ID, s.role))
 
 	user := testModel.NewUser()
 	s.Require().NoError(s.UserRepo.Create(context.Background(), user))
 
-	err := s.roleService.AddMember(s.ctx, s.role.ID, user.ID)
+	err := s.roleService.AddMember(s.ctx, s.role.ID, user.ID, s.organization.ID)
 	s.Require().NoError(err)
 
-	err = s.roleService.RemoveMember(s.ctx, s.role.ID, user.ID)
+	err = s.roleService.RemoveMember(s.ctx, s.role.ID, user.ID, s.organization.ID)
 	s.Require().NoError(err)
 
-	role, err := s.roleService.Get(s.ctx, s.role.ID)
+	role, err := s.roleService.Get(s.ctx, s.role.ID, s.organization.ID)
 	s.Require().NoError(err)
 	s.Assert().ElementsMatch([]model.ID{s.owner.ID}, role.Members)
 }
 
 func (s *RoleServiceIntegrationTestSuite) TestDelete() {
-	s.Require().NoError(s.roleService.Create(s.ctx, s.organization.ID, s.role))
+	s.Require().NoError(s.roleService.Create(s.ctx, s.owner.ID, s.organization.ID, s.role))
 
-	err := s.roleService.Delete(s.ctx, s.role.ID)
+	err := s.roleService.Delete(s.ctx, s.role.ID, s.organization.ID)
 	s.Require().NoError(err)
 
-	_, err = s.roleService.Get(s.ctx, s.role.ID)
+	_, err = s.roleService.Get(s.ctx, s.role.ID, s.organization.ID)
 	s.Assert().ErrorIs(err, repository.ErrNotFound)
 }
 

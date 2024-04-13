@@ -387,6 +387,30 @@ type PermissionKind string
 // ResourceType defines model for ResourceType.
 type ResourceType string
 
+// Role A role in the system.
+type Role struct {
+	// CreatedAt Date when the organization was created.
+	CreatedAt time.Time `json:"created_at"`
+
+	// Description Description of the role.
+	Description *string `json:"description"`
+
+	// Id Unique identifier of the role.
+	Id string `json:"id"`
+
+	// Members IDs of the users assigned to the role.
+	Members []string `json:"members"`
+
+	// Name Name of the role.
+	Name string `json:"name"`
+
+	// Permissions IDs of the permissions assigned to the role.
+	Permissions []string `json:"permissions"`
+
+	// UpdatedAt Date when the organization was updated.
+	UpdatedAt *time.Time `json:"updated_at"`
+}
+
 // SystemHealth defines model for SystemHealth.
 type SystemHealth struct {
 	// CacheDatabase Health of the cache database.
@@ -494,7 +518,7 @@ type Todo struct {
 	// DueDate Completion due date of the todo item.
 	DueDate *time.Time `json:"due_date"`
 
-	// Id Unique identifier of the todo .
+	// Id Unique identifier of the todo.
 	Id string `json:"id"`
 
 	// OwnedBy ID of the user who owns the todo item.
@@ -656,6 +680,24 @@ type PermissionPatch struct {
 	Kind PermissionKind `json:"kind"`
 }
 
+// RoleCreate defines model for RoleCreate.
+type RoleCreate struct {
+	// Description Description of the role.
+	Description *string `json:"description,omitempty"`
+
+	// Name Name of the role.
+	Name string `json:"name"`
+}
+
+// RolePatch defines model for RolePatch.
+type RolePatch struct {
+	// Description Description of the role.
+	Description *string `json:"description,omitempty"`
+
+	// Name Name of the role.
+	Name *string `json:"name,omitempty"`
+}
+
 // TodoCreate defines model for TodoCreate.
 type TodoCreate struct {
 	// Description Description of the todo item.
@@ -803,6 +845,33 @@ type V1OrganizationsCreateJSONBody struct {
 	Website *string `json:"website,omitempty"`
 }
 
+// V1OrganizationRolesGetParams defines parameters for V1OrganizationRolesGet.
+type V1OrganizationRolesGetParams struct {
+	// Offset Number of resources to skip.
+	Offset *Offset `form:"offset,omitempty" json:"offset,omitempty"`
+
+	// Limit Number of resources to return.
+	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// V1OrganizationRolesCreateJSONBody defines parameters for V1OrganizationRolesCreate.
+type V1OrganizationRolesCreateJSONBody struct {
+	// Description Description of the role.
+	Description *string `json:"description,omitempty"`
+
+	// Name Name of the role.
+	Name string `json:"name"`
+}
+
+// V1OrganizationRoleUpdateJSONBody defines parameters for V1OrganizationRoleUpdate.
+type V1OrganizationRoleUpdateJSONBody struct {
+	// Description Description of the role.
+	Description *string `json:"description,omitempty"`
+
+	// Name Name of the role.
+	Name *string `json:"name,omitempty"`
+}
+
 // V1OrganizationDeleteParams defines parameters for V1OrganizationDelete.
 type V1OrganizationDeleteParams struct {
 	// Force Irreversibly delete the user.
@@ -829,6 +898,12 @@ type V1OrganizationUpdateJSONBody struct {
 
 // V1OrganizationMembersAddJSONBody defines parameters for V1OrganizationMembersAdd.
 type V1OrganizationMembersAddJSONBody struct {
+	// UserId ID of the user to add.
+	UserId string `json:"user_id"`
+}
+
+// V1OrganizationRoleMembersAddJSONBody defines parameters for V1OrganizationRoleMembersAdd.
+type V1OrganizationRoleMembersAddJSONBody struct {
 	// UserId ID of the user to add.
 	UserId string `json:"user_id"`
 }
@@ -1015,11 +1090,20 @@ type V1UserUpdateJSONBody struct {
 // V1OrganizationsCreateJSONRequestBody defines body for V1OrganizationsCreate for application/json ContentType.
 type V1OrganizationsCreateJSONRequestBody V1OrganizationsCreateJSONBody
 
+// V1OrganizationRolesCreateJSONRequestBody defines body for V1OrganizationRolesCreate for application/json ContentType.
+type V1OrganizationRolesCreateJSONRequestBody V1OrganizationRolesCreateJSONBody
+
+// V1OrganizationRoleUpdateJSONRequestBody defines body for V1OrganizationRoleUpdate for application/json ContentType.
+type V1OrganizationRoleUpdateJSONRequestBody V1OrganizationRoleUpdateJSONBody
+
 // V1OrganizationUpdateJSONRequestBody defines body for V1OrganizationUpdate for application/json ContentType.
 type V1OrganizationUpdateJSONRequestBody V1OrganizationUpdateJSONBody
 
 // V1OrganizationMembersAddJSONRequestBody defines body for V1OrganizationMembersAdd for application/json ContentType.
 type V1OrganizationMembersAddJSONRequestBody V1OrganizationMembersAddJSONBody
+
+// V1OrganizationRoleMembersAddJSONRequestBody defines body for V1OrganizationRoleMembersAdd for application/json ContentType.
+type V1OrganizationRoleMembersAddJSONRequestBody V1OrganizationRoleMembersAddJSONBody
 
 // V1PermissionsCreateJSONRequestBody defines body for V1PermissionsCreate for application/json ContentType.
 type V1PermissionsCreateJSONRequestBody V1PermissionsCreateJSONBody
@@ -1047,6 +1131,21 @@ type ServerInterface interface {
 	// Create organization
 	// (POST /v1/organizations)
 	V1OrganizationsCreate(w http.ResponseWriter, r *http.Request)
+	// Get organization roles
+	// (GET /v1/organizations/${id}/roles)
+	V1OrganizationRolesGet(w http.ResponseWriter, r *http.Request, id Id, params V1OrganizationRolesGetParams)
+	// Create a new role in the organization
+	// (POST /v1/organizations/${id}/roles)
+	V1OrganizationRolesCreate(w http.ResponseWriter, r *http.Request, id Id)
+	// Delete organization role
+	// (DELETE /v1/organizations/${id}/roles/{role_id})
+	V1OrganizationRoleDelete(w http.ResponseWriter, r *http.Request, id Id, roleId string)
+	// Get organization role
+	// (GET /v1/organizations/${id}/roles/{role_id})
+	V1OrganizationRoleGet(w http.ResponseWriter, r *http.Request, id Id, roleId string)
+	// Update organization role
+	// (PATCH /v1/organizations/${id}/roles/{role_id})
+	V1OrganizationRoleUpdate(w http.ResponseWriter, r *http.Request, id Id, roleId string)
 	// Delete organization
 	// (DELETE /v1/organizations/{id})
 	V1OrganizationDelete(w http.ResponseWriter, r *http.Request, id Id, params V1OrganizationDeleteParams)
@@ -1064,7 +1163,16 @@ type ServerInterface interface {
 	V1OrganizationMembersAdd(w http.ResponseWriter, r *http.Request, id Id)
 	// Remove organization member
 	// (DELETE /v1/organizations/{id}/members/{user_id})
-	V1OrganizationMembersRemove(w http.ResponseWriter, r *http.Request, id Id, userId string)
+	V1OrganizationMemberRemove(w http.ResponseWriter, r *http.Request, id Id, userId string)
+	// Get organization role members
+	// (GET /v1/organizations/{id}/roles/{role_id}/members)
+	V1OrganizationRoleMembersGet(w http.ResponseWriter, r *http.Request, id Id, roleId string)
+	// Add organization role member
+	// (POST /v1/organizations/{id}/roles/{role_id}/members)
+	V1OrganizationRoleMembersAdd(w http.ResponseWriter, r *http.Request, id Id, roleId string)
+	// Remove organization role member
+	// (DELETE /v1/organizations/{id}/roles/{role_id}/members/{user_id})
+	V1OrganizationRoleMemberRemove(w http.ResponseWriter, r *http.Request, id Id, roleId string, userId string)
 	// Create permission
 	// (POST /v1/permissions)
 	V1PermissionsCreate(w http.ResponseWriter, r *http.Request)
@@ -1146,6 +1254,36 @@ func (_ Unimplemented) V1OrganizationsCreate(w http.ResponseWriter, r *http.Requ
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// Get organization roles
+// (GET /v1/organizations/${id}/roles)
+func (_ Unimplemented) V1OrganizationRolesGet(w http.ResponseWriter, r *http.Request, id Id, params V1OrganizationRolesGetParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Create a new role in the organization
+// (POST /v1/organizations/${id}/roles)
+func (_ Unimplemented) V1OrganizationRolesCreate(w http.ResponseWriter, r *http.Request, id Id) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Delete organization role
+// (DELETE /v1/organizations/${id}/roles/{role_id})
+func (_ Unimplemented) V1OrganizationRoleDelete(w http.ResponseWriter, r *http.Request, id Id, roleId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get organization role
+// (GET /v1/organizations/${id}/roles/{role_id})
+func (_ Unimplemented) V1OrganizationRoleGet(w http.ResponseWriter, r *http.Request, id Id, roleId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Update organization role
+// (PATCH /v1/organizations/${id}/roles/{role_id})
+func (_ Unimplemented) V1OrganizationRoleUpdate(w http.ResponseWriter, r *http.Request, id Id, roleId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // Delete organization
 // (DELETE /v1/organizations/{id})
 func (_ Unimplemented) V1OrganizationDelete(w http.ResponseWriter, r *http.Request, id Id, params V1OrganizationDeleteParams) {
@@ -1178,7 +1316,25 @@ func (_ Unimplemented) V1OrganizationMembersAdd(w http.ResponseWriter, r *http.R
 
 // Remove organization member
 // (DELETE /v1/organizations/{id}/members/{user_id})
-func (_ Unimplemented) V1OrganizationMembersRemove(w http.ResponseWriter, r *http.Request, id Id, userId string) {
+func (_ Unimplemented) V1OrganizationMemberRemove(w http.ResponseWriter, r *http.Request, id Id, userId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get organization role members
+// (GET /v1/organizations/{id}/roles/{role_id}/members)
+func (_ Unimplemented) V1OrganizationRoleMembersGet(w http.ResponseWriter, r *http.Request, id Id, roleId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Add organization role member
+// (POST /v1/organizations/{id}/roles/{role_id}/members)
+func (_ Unimplemented) V1OrganizationRoleMembersAdd(w http.ResponseWriter, r *http.Request, id Id, roleId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Remove organization role member
+// (DELETE /v1/organizations/{id}/roles/{role_id}/members/{user_id})
+func (_ Unimplemented) V1OrganizationRoleMemberRemove(w http.ResponseWriter, r *http.Request, id Id, roleId string, userId string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -1372,6 +1528,192 @@ func (siw *ServerInterfaceWrapper) V1OrganizationsCreate(w http.ResponseWriter, 
 	handler.ServeHTTP(w, r.WithContext(ctx))
 }
 
+// V1OrganizationRolesGet operation middleware
+func (siw *ServerInterfaceWrapper) V1OrganizationRolesGet(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "id", runtime.ParamLocationPath, chi.URLParam(r, "id"), &id)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	ctx = context.WithValue(ctx, Oauth2Scopes, []string{"organization.read", "role.read"})
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params V1OrganizationRolesGetParams
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "offset", r.URL.Query(), &params.Offset)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "limit", r.URL.Query(), &params.Limit)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1OrganizationRolesGet(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// V1OrganizationRolesCreate operation middleware
+func (siw *ServerInterfaceWrapper) V1OrganizationRolesCreate(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "id", runtime.ParamLocationPath, chi.URLParam(r, "id"), &id)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	ctx = context.WithValue(ctx, Oauth2Scopes, []string{"organization", "role"})
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1OrganizationRolesCreate(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// V1OrganizationRoleDelete operation middleware
+func (siw *ServerInterfaceWrapper) V1OrganizationRoleDelete(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "id", runtime.ParamLocationPath, chi.URLParam(r, "id"), &id)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "role_id" -------------
+	var roleId string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "role_id", runtime.ParamLocationPath, chi.URLParam(r, "role_id"), &roleId)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "role_id", Err: err})
+		return
+	}
+
+	ctx = context.WithValue(ctx, Oauth2Scopes, []string{"organization", "role"})
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1OrganizationRoleDelete(w, r, id, roleId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// V1OrganizationRoleGet operation middleware
+func (siw *ServerInterfaceWrapper) V1OrganizationRoleGet(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "id", runtime.ParamLocationPath, chi.URLParam(r, "id"), &id)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "role_id" -------------
+	var roleId string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "role_id", runtime.ParamLocationPath, chi.URLParam(r, "role_id"), &roleId)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "role_id", Err: err})
+		return
+	}
+
+	ctx = context.WithValue(ctx, Oauth2Scopes, []string{"organization.read", "role.read"})
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1OrganizationRoleGet(w, r, id, roleId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// V1OrganizationRoleUpdate operation middleware
+func (siw *ServerInterfaceWrapper) V1OrganizationRoleUpdate(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "id", runtime.ParamLocationPath, chi.URLParam(r, "id"), &id)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "role_id" -------------
+	var roleId string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "role_id", runtime.ParamLocationPath, chi.URLParam(r, "role_id"), &roleId)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "role_id", Err: err})
+		return
+	}
+
+	ctx = context.WithValue(ctx, Oauth2Scopes, []string{"organization", "role"})
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1OrganizationRoleUpdate(w, r, id, roleId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
 // V1OrganizationDelete operation middleware
 func (siw *ServerInterfaceWrapper) V1OrganizationDelete(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -1523,8 +1865,8 @@ func (siw *ServerInterfaceWrapper) V1OrganizationMembersAdd(w http.ResponseWrite
 	handler.ServeHTTP(w, r.WithContext(ctx))
 }
 
-// V1OrganizationMembersRemove operation middleware
-func (siw *ServerInterfaceWrapper) V1OrganizationMembersRemove(w http.ResponseWriter, r *http.Request) {
+// V1OrganizationMemberRemove operation middleware
+func (siw *ServerInterfaceWrapper) V1OrganizationMemberRemove(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	var err error
@@ -1550,7 +1892,127 @@ func (siw *ServerInterfaceWrapper) V1OrganizationMembersRemove(w http.ResponseWr
 	ctx = context.WithValue(ctx, Oauth2Scopes, []string{"organization"})
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.V1OrganizationMembersRemove(w, r, id, userId)
+		siw.Handler.V1OrganizationMemberRemove(w, r, id, userId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// V1OrganizationRoleMembersGet operation middleware
+func (siw *ServerInterfaceWrapper) V1OrganizationRoleMembersGet(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "id", runtime.ParamLocationPath, chi.URLParam(r, "id"), &id)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "role_id" -------------
+	var roleId string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "role_id", runtime.ParamLocationPath, chi.URLParam(r, "role_id"), &roleId)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "role_id", Err: err})
+		return
+	}
+
+	ctx = context.WithValue(ctx, Oauth2Scopes, []string{"organization.read", "role.read", "user.read"})
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1OrganizationRoleMembersGet(w, r, id, roleId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// V1OrganizationRoleMembersAdd operation middleware
+func (siw *ServerInterfaceWrapper) V1OrganizationRoleMembersAdd(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "id", runtime.ParamLocationPath, chi.URLParam(r, "id"), &id)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "role_id" -------------
+	var roleId string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "role_id", runtime.ParamLocationPath, chi.URLParam(r, "role_id"), &roleId)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "role_id", Err: err})
+		return
+	}
+
+	ctx = context.WithValue(ctx, Oauth2Scopes, []string{"organization", "role"})
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1OrganizationRoleMembersAdd(w, r, id, roleId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// V1OrganizationRoleMemberRemove operation middleware
+func (siw *ServerInterfaceWrapper) V1OrganizationRoleMemberRemove(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "id", runtime.ParamLocationPath, chi.URLParam(r, "id"), &id)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "role_id" -------------
+	var roleId string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "role_id", runtime.ParamLocationPath, chi.URLParam(r, "role_id"), &roleId)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "role_id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "user_id" -------------
+	var userId string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "user_id", runtime.ParamLocationPath, chi.URLParam(r, "user_id"), &userId)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "user_id", Err: err})
+		return
+	}
+
+	ctx = context.WithValue(ctx, Oauth2Scopes, []string{"organization", "role"})
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1OrganizationRoleMemberRemove(w, r, id, roleId, userId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -2233,6 +2695,21 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Post(options.BaseURL+"/v1/organizations", wrapper.V1OrganizationsCreate)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/organizations/${id}/roles", wrapper.V1OrganizationRolesGet)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/organizations/${id}/roles", wrapper.V1OrganizationRolesCreate)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/v1/organizations/${id}/roles/{role_id}", wrapper.V1OrganizationRoleDelete)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/organizations/${id}/roles/{role_id}", wrapper.V1OrganizationRoleGet)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/v1/organizations/${id}/roles/{role_id}", wrapper.V1OrganizationRoleUpdate)
+	})
+	r.Group(func(r chi.Router) {
 		r.Delete(options.BaseURL+"/v1/organizations/{id}", wrapper.V1OrganizationDelete)
 	})
 	r.Group(func(r chi.Router) {
@@ -2248,7 +2725,16 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Post(options.BaseURL+"/v1/organizations/{id}/members", wrapper.V1OrganizationMembersAdd)
 	})
 	r.Group(func(r chi.Router) {
-		r.Delete(options.BaseURL+"/v1/organizations/{id}/members/{user_id}", wrapper.V1OrganizationMembersRemove)
+		r.Delete(options.BaseURL+"/v1/organizations/{id}/members/{user_id}", wrapper.V1OrganizationMemberRemove)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/organizations/{id}/roles/{role_id}/members", wrapper.V1OrganizationRoleMembersGet)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/organizations/{id}/roles/{role_id}/members", wrapper.V1OrganizationRoleMembersAdd)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/v1/organizations/{id}/roles/{role_id}/members/{user_id}", wrapper.V1OrganizationRoleMemberRemove)
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/v1/permissions", wrapper.V1PermissionsCreate)
@@ -2423,6 +2909,321 @@ func (response V1OrganizationsCreate403JSONResponse) VisitV1OrganizationsCreateR
 type V1OrganizationsCreate500JSONResponse struct{ N500JSONResponse }
 
 func (response V1OrganizationsCreate500JSONResponse) VisitV1OrganizationsCreateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationRolesGetRequestObject struct {
+	Id     Id `json:"id"`
+	Params V1OrganizationRolesGetParams
+}
+
+type V1OrganizationRolesGetResponseObject interface {
+	VisitV1OrganizationRolesGetResponse(w http.ResponseWriter) error
+}
+
+type V1OrganizationRolesGet200JSONResponse []Role
+
+func (response V1OrganizationRolesGet200JSONResponse) VisitV1OrganizationRolesGetResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationRolesGet400JSONResponse struct{ N400JSONResponse }
+
+func (response V1OrganizationRolesGet400JSONResponse) VisitV1OrganizationRolesGetResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationRolesGet401JSONResponse struct{ N401JSONResponse }
+
+func (response V1OrganizationRolesGet401JSONResponse) VisitV1OrganizationRolesGetResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationRolesGet403JSONResponse struct{ N403JSONResponse }
+
+func (response V1OrganizationRolesGet403JSONResponse) VisitV1OrganizationRolesGetResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationRolesGet404JSONResponse struct{ N404JSONResponse }
+
+func (response V1OrganizationRolesGet404JSONResponse) VisitV1OrganizationRolesGetResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationRolesGet500JSONResponse struct{ N500JSONResponse }
+
+func (response V1OrganizationRolesGet500JSONResponse) VisitV1OrganizationRolesGetResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationRolesCreateRequestObject struct {
+	Id   Id `json:"id"`
+	Body *V1OrganizationRolesCreateJSONRequestBody
+}
+
+type V1OrganizationRolesCreateResponseObject interface {
+	VisitV1OrganizationRolesCreateResponse(w http.ResponseWriter) error
+}
+
+type V1OrganizationRolesCreate201JSONResponse struct{ N201JSONResponse }
+
+func (response V1OrganizationRolesCreate201JSONResponse) VisitV1OrganizationRolesCreateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationRolesCreate400JSONResponse struct{ N400JSONResponse }
+
+func (response V1OrganizationRolesCreate400JSONResponse) VisitV1OrganizationRolesCreateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationRolesCreate401JSONResponse struct{ N401JSONResponse }
+
+func (response V1OrganizationRolesCreate401JSONResponse) VisitV1OrganizationRolesCreateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationRolesCreate403JSONResponse struct{ N403JSONResponse }
+
+func (response V1OrganizationRolesCreate403JSONResponse) VisitV1OrganizationRolesCreateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationRolesCreate404JSONResponse struct{ N404JSONResponse }
+
+func (response V1OrganizationRolesCreate404JSONResponse) VisitV1OrganizationRolesCreateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationRolesCreate500JSONResponse struct{ N500JSONResponse }
+
+func (response V1OrganizationRolesCreate500JSONResponse) VisitV1OrganizationRolesCreateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationRoleDeleteRequestObject struct {
+	Id     Id     `json:"id"`
+	RoleId string `json:"role_id"`
+}
+
+type V1OrganizationRoleDeleteResponseObject interface {
+	VisitV1OrganizationRoleDeleteResponse(w http.ResponseWriter) error
+}
+
+type V1OrganizationRoleDelete204Response struct {
+}
+
+func (response V1OrganizationRoleDelete204Response) VisitV1OrganizationRoleDeleteResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type V1OrganizationRoleDelete400JSONResponse struct{ N400JSONResponse }
+
+func (response V1OrganizationRoleDelete400JSONResponse) VisitV1OrganizationRoleDeleteResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationRoleDelete401JSONResponse struct{ N401JSONResponse }
+
+func (response V1OrganizationRoleDelete401JSONResponse) VisitV1OrganizationRoleDeleteResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationRoleDelete403JSONResponse struct{ N403JSONResponse }
+
+func (response V1OrganizationRoleDelete403JSONResponse) VisitV1OrganizationRoleDeleteResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationRoleDelete404JSONResponse struct{ N404JSONResponse }
+
+func (response V1OrganizationRoleDelete404JSONResponse) VisitV1OrganizationRoleDeleteResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationRoleDelete500JSONResponse struct{ N500JSONResponse }
+
+func (response V1OrganizationRoleDelete500JSONResponse) VisitV1OrganizationRoleDeleteResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationRoleGetRequestObject struct {
+	Id     Id     `json:"id"`
+	RoleId string `json:"role_id"`
+}
+
+type V1OrganizationRoleGetResponseObject interface {
+	VisitV1OrganizationRoleGetResponse(w http.ResponseWriter) error
+}
+
+type V1OrganizationRoleGet200JSONResponse Role
+
+func (response V1OrganizationRoleGet200JSONResponse) VisitV1OrganizationRoleGetResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationRoleGet400JSONResponse struct{ N400JSONResponse }
+
+func (response V1OrganizationRoleGet400JSONResponse) VisitV1OrganizationRoleGetResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationRoleGet401JSONResponse struct{ N401JSONResponse }
+
+func (response V1OrganizationRoleGet401JSONResponse) VisitV1OrganizationRoleGetResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationRoleGet403JSONResponse struct{ N403JSONResponse }
+
+func (response V1OrganizationRoleGet403JSONResponse) VisitV1OrganizationRoleGetResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationRoleGet404JSONResponse struct{ N404JSONResponse }
+
+func (response V1OrganizationRoleGet404JSONResponse) VisitV1OrganizationRoleGetResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationRoleGet500JSONResponse struct{ N500JSONResponse }
+
+func (response V1OrganizationRoleGet500JSONResponse) VisitV1OrganizationRoleGetResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationRoleUpdateRequestObject struct {
+	Id     Id     `json:"id"`
+	RoleId string `json:"role_id"`
+	Body   *V1OrganizationRoleUpdateJSONRequestBody
+}
+
+type V1OrganizationRoleUpdateResponseObject interface {
+	VisitV1OrganizationRoleUpdateResponse(w http.ResponseWriter) error
+}
+
+type V1OrganizationRoleUpdate200JSONResponse Role
+
+func (response V1OrganizationRoleUpdate200JSONResponse) VisitV1OrganizationRoleUpdateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationRoleUpdate400JSONResponse struct{ N400JSONResponse }
+
+func (response V1OrganizationRoleUpdate400JSONResponse) VisitV1OrganizationRoleUpdateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationRoleUpdate401JSONResponse struct{ N401JSONResponse }
+
+func (response V1OrganizationRoleUpdate401JSONResponse) VisitV1OrganizationRoleUpdateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationRoleUpdate403JSONResponse struct{ N403JSONResponse }
+
+func (response V1OrganizationRoleUpdate403JSONResponse) VisitV1OrganizationRoleUpdateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationRoleUpdate404JSONResponse struct{ N404JSONResponse }
+
+func (response V1OrganizationRoleUpdate404JSONResponse) VisitV1OrganizationRoleUpdateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationRoleUpdate500JSONResponse struct{ N500JSONResponse }
+
+func (response V1OrganizationRoleUpdate500JSONResponse) VisitV1OrganizationRoleUpdateResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(500)
 
@@ -2741,62 +3542,252 @@ func (response V1OrganizationMembersAdd500JSONResponse) VisitV1OrganizationMembe
 	return json.NewEncoder(w).Encode(response)
 }
 
-type V1OrganizationMembersRemoveRequestObject struct {
+type V1OrganizationMemberRemoveRequestObject struct {
 	Id     Id     `json:"id"`
 	UserId string `json:"user_id"`
 }
 
-type V1OrganizationMembersRemoveResponseObject interface {
-	VisitV1OrganizationMembersRemoveResponse(w http.ResponseWriter) error
+type V1OrganizationMemberRemoveResponseObject interface {
+	VisitV1OrganizationMemberRemoveResponse(w http.ResponseWriter) error
 }
 
-type V1OrganizationMembersRemove204Response struct {
+type V1OrganizationMemberRemove204Response struct {
 }
 
-func (response V1OrganizationMembersRemove204Response) VisitV1OrganizationMembersRemoveResponse(w http.ResponseWriter) error {
+func (response V1OrganizationMemberRemove204Response) VisitV1OrganizationMemberRemoveResponse(w http.ResponseWriter) error {
 	w.WriteHeader(204)
 	return nil
 }
 
-type V1OrganizationMembersRemove400JSONResponse struct{ N400JSONResponse }
+type V1OrganizationMemberRemove400JSONResponse struct{ N400JSONResponse }
 
-func (response V1OrganizationMembersRemove400JSONResponse) VisitV1OrganizationMembersRemoveResponse(w http.ResponseWriter) error {
+func (response V1OrganizationMemberRemove400JSONResponse) VisitV1OrganizationMemberRemoveResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(400)
 
 	return json.NewEncoder(w).Encode(response)
 }
 
-type V1OrganizationMembersRemove401JSONResponse struct{ N401JSONResponse }
+type V1OrganizationMemberRemove401JSONResponse struct{ N401JSONResponse }
 
-func (response V1OrganizationMembersRemove401JSONResponse) VisitV1OrganizationMembersRemoveResponse(w http.ResponseWriter) error {
+func (response V1OrganizationMemberRemove401JSONResponse) VisitV1OrganizationMemberRemoveResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(401)
 
 	return json.NewEncoder(w).Encode(response)
 }
 
-type V1OrganizationMembersRemove403JSONResponse struct{ N403JSONResponse }
+type V1OrganizationMemberRemove403JSONResponse struct{ N403JSONResponse }
 
-func (response V1OrganizationMembersRemove403JSONResponse) VisitV1OrganizationMembersRemoveResponse(w http.ResponseWriter) error {
+func (response V1OrganizationMemberRemove403JSONResponse) VisitV1OrganizationMemberRemoveResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(403)
 
 	return json.NewEncoder(w).Encode(response)
 }
 
-type V1OrganizationMembersRemove404JSONResponse struct{ N404JSONResponse }
+type V1OrganizationMemberRemove404JSONResponse struct{ N404JSONResponse }
 
-func (response V1OrganizationMembersRemove404JSONResponse) VisitV1OrganizationMembersRemoveResponse(w http.ResponseWriter) error {
+func (response V1OrganizationMemberRemove404JSONResponse) VisitV1OrganizationMemberRemoveResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(404)
 
 	return json.NewEncoder(w).Encode(response)
 }
 
-type V1OrganizationMembersRemove500JSONResponse struct{ N500JSONResponse }
+type V1OrganizationMemberRemove500JSONResponse struct{ N500JSONResponse }
 
-func (response V1OrganizationMembersRemove500JSONResponse) VisitV1OrganizationMembersRemoveResponse(w http.ResponseWriter) error {
+func (response V1OrganizationMemberRemove500JSONResponse) VisitV1OrganizationMemberRemoveResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationRoleMembersGetRequestObject struct {
+	Id     Id     `json:"id"`
+	RoleId string `json:"role_id"`
+}
+
+type V1OrganizationRoleMembersGetResponseObject interface {
+	VisitV1OrganizationRoleMembersGetResponse(w http.ResponseWriter) error
+}
+
+type V1OrganizationRoleMembersGet200JSONResponse []User
+
+func (response V1OrganizationRoleMembersGet200JSONResponse) VisitV1OrganizationRoleMembersGetResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationRoleMembersGet400JSONResponse struct{ N400JSONResponse }
+
+func (response V1OrganizationRoleMembersGet400JSONResponse) VisitV1OrganizationRoleMembersGetResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationRoleMembersGet401JSONResponse struct{ N401JSONResponse }
+
+func (response V1OrganizationRoleMembersGet401JSONResponse) VisitV1OrganizationRoleMembersGetResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationRoleMembersGet403JSONResponse struct{ N403JSONResponse }
+
+func (response V1OrganizationRoleMembersGet403JSONResponse) VisitV1OrganizationRoleMembersGetResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationRoleMembersGet404JSONResponse struct{ N404JSONResponse }
+
+func (response V1OrganizationRoleMembersGet404JSONResponse) VisitV1OrganizationRoleMembersGetResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationRoleMembersGet500JSONResponse struct{ N500JSONResponse }
+
+func (response V1OrganizationRoleMembersGet500JSONResponse) VisitV1OrganizationRoleMembersGetResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationRoleMembersAddRequestObject struct {
+	Id     Id     `json:"id"`
+	RoleId string `json:"role_id"`
+	Body   *V1OrganizationRoleMembersAddJSONRequestBody
+}
+
+type V1OrganizationRoleMembersAddResponseObject interface {
+	VisitV1OrganizationRoleMembersAddResponse(w http.ResponseWriter) error
+}
+
+type V1OrganizationRoleMembersAdd201JSONResponse struct{ N201JSONResponse }
+
+func (response V1OrganizationRoleMembersAdd201JSONResponse) VisitV1OrganizationRoleMembersAddResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationRoleMembersAdd400JSONResponse struct{ N400JSONResponse }
+
+func (response V1OrganizationRoleMembersAdd400JSONResponse) VisitV1OrganizationRoleMembersAddResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationRoleMembersAdd401JSONResponse struct{ N401JSONResponse }
+
+func (response V1OrganizationRoleMembersAdd401JSONResponse) VisitV1OrganizationRoleMembersAddResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationRoleMembersAdd403JSONResponse struct{ N403JSONResponse }
+
+func (response V1OrganizationRoleMembersAdd403JSONResponse) VisitV1OrganizationRoleMembersAddResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationRoleMembersAdd404JSONResponse struct{ N404JSONResponse }
+
+func (response V1OrganizationRoleMembersAdd404JSONResponse) VisitV1OrganizationRoleMembersAddResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationRoleMembersAdd500JSONResponse struct{ N500JSONResponse }
+
+func (response V1OrganizationRoleMembersAdd500JSONResponse) VisitV1OrganizationRoleMembersAddResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationRoleMemberRemoveRequestObject struct {
+	Id     Id     `json:"id"`
+	RoleId string `json:"role_id"`
+	UserId string `json:"user_id"`
+}
+
+type V1OrganizationRoleMemberRemoveResponseObject interface {
+	VisitV1OrganizationRoleMemberRemoveResponse(w http.ResponseWriter) error
+}
+
+type V1OrganizationRoleMemberRemove204Response struct {
+}
+
+func (response V1OrganizationRoleMemberRemove204Response) VisitV1OrganizationRoleMemberRemoveResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type V1OrganizationRoleMemberRemove400JSONResponse struct{ N400JSONResponse }
+
+func (response V1OrganizationRoleMemberRemove400JSONResponse) VisitV1OrganizationRoleMemberRemoveResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationRoleMemberRemove401JSONResponse struct{ N401JSONResponse }
+
+func (response V1OrganizationRoleMemberRemove401JSONResponse) VisitV1OrganizationRoleMemberRemoveResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationRoleMemberRemove403JSONResponse struct{ N403JSONResponse }
+
+func (response V1OrganizationRoleMemberRemove403JSONResponse) VisitV1OrganizationRoleMemberRemoveResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationRoleMemberRemove404JSONResponse struct{ N404JSONResponse }
+
+func (response V1OrganizationRoleMemberRemove404JSONResponse) VisitV1OrganizationRoleMemberRemoveResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationRoleMemberRemove500JSONResponse struct{ N500JSONResponse }
+
+func (response V1OrganizationRoleMemberRemove500JSONResponse) VisitV1OrganizationRoleMemberRemoveResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(500)
 
@@ -3886,6 +4877,21 @@ type StrictServerInterface interface {
 	// Create organization
 	// (POST /v1/organizations)
 	V1OrganizationsCreate(ctx context.Context, request V1OrganizationsCreateRequestObject) (V1OrganizationsCreateResponseObject, error)
+	// Get organization roles
+	// (GET /v1/organizations/${id}/roles)
+	V1OrganizationRolesGet(ctx context.Context, request V1OrganizationRolesGetRequestObject) (V1OrganizationRolesGetResponseObject, error)
+	// Create a new role in the organization
+	// (POST /v1/organizations/${id}/roles)
+	V1OrganizationRolesCreate(ctx context.Context, request V1OrganizationRolesCreateRequestObject) (V1OrganizationRolesCreateResponseObject, error)
+	// Delete organization role
+	// (DELETE /v1/organizations/${id}/roles/{role_id})
+	V1OrganizationRoleDelete(ctx context.Context, request V1OrganizationRoleDeleteRequestObject) (V1OrganizationRoleDeleteResponseObject, error)
+	// Get organization role
+	// (GET /v1/organizations/${id}/roles/{role_id})
+	V1OrganizationRoleGet(ctx context.Context, request V1OrganizationRoleGetRequestObject) (V1OrganizationRoleGetResponseObject, error)
+	// Update organization role
+	// (PATCH /v1/organizations/${id}/roles/{role_id})
+	V1OrganizationRoleUpdate(ctx context.Context, request V1OrganizationRoleUpdateRequestObject) (V1OrganizationRoleUpdateResponseObject, error)
 	// Delete organization
 	// (DELETE /v1/organizations/{id})
 	V1OrganizationDelete(ctx context.Context, request V1OrganizationDeleteRequestObject) (V1OrganizationDeleteResponseObject, error)
@@ -3903,7 +4909,16 @@ type StrictServerInterface interface {
 	V1OrganizationMembersAdd(ctx context.Context, request V1OrganizationMembersAddRequestObject) (V1OrganizationMembersAddResponseObject, error)
 	// Remove organization member
 	// (DELETE /v1/organizations/{id}/members/{user_id})
-	V1OrganizationMembersRemove(ctx context.Context, request V1OrganizationMembersRemoveRequestObject) (V1OrganizationMembersRemoveResponseObject, error)
+	V1OrganizationMemberRemove(ctx context.Context, request V1OrganizationMemberRemoveRequestObject) (V1OrganizationMemberRemoveResponseObject, error)
+	// Get organization role members
+	// (GET /v1/organizations/{id}/roles/{role_id}/members)
+	V1OrganizationRoleMembersGet(ctx context.Context, request V1OrganizationRoleMembersGetRequestObject) (V1OrganizationRoleMembersGetResponseObject, error)
+	// Add organization role member
+	// (POST /v1/organizations/{id}/roles/{role_id}/members)
+	V1OrganizationRoleMembersAdd(ctx context.Context, request V1OrganizationRoleMembersAddRequestObject) (V1OrganizationRoleMembersAddResponseObject, error)
+	// Remove organization role member
+	// (DELETE /v1/organizations/{id}/roles/{role_id}/members/{user_id})
+	V1OrganizationRoleMemberRemove(ctx context.Context, request V1OrganizationRoleMemberRemoveRequestObject) (V1OrganizationRoleMemberRemoveResponseObject, error)
 	// Create permission
 	// (POST /v1/permissions)
 	V1PermissionsCreate(ctx context.Context, request V1PermissionsCreateRequestObject) (V1PermissionsCreateResponseObject, error)
@@ -4048,6 +5063,154 @@ func (sh *strictHandler) V1OrganizationsCreate(w http.ResponseWriter, r *http.Re
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(V1OrganizationsCreateResponseObject); ok {
 		if err := validResponse.VisitV1OrganizationsCreateResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1OrganizationRolesGet operation middleware
+func (sh *strictHandler) V1OrganizationRolesGet(w http.ResponseWriter, r *http.Request, id Id, params V1OrganizationRolesGetParams) {
+	var request V1OrganizationRolesGetRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1OrganizationRolesGet(ctx, request.(V1OrganizationRolesGetRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1OrganizationRolesGet")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1OrganizationRolesGetResponseObject); ok {
+		if err := validResponse.VisitV1OrganizationRolesGetResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1OrganizationRolesCreate operation middleware
+func (sh *strictHandler) V1OrganizationRolesCreate(w http.ResponseWriter, r *http.Request, id Id) {
+	var request V1OrganizationRolesCreateRequestObject
+
+	request.Id = id
+
+	var body V1OrganizationRolesCreateJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1OrganizationRolesCreate(ctx, request.(V1OrganizationRolesCreateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1OrganizationRolesCreate")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1OrganizationRolesCreateResponseObject); ok {
+		if err := validResponse.VisitV1OrganizationRolesCreateResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1OrganizationRoleDelete operation middleware
+func (sh *strictHandler) V1OrganizationRoleDelete(w http.ResponseWriter, r *http.Request, id Id, roleId string) {
+	var request V1OrganizationRoleDeleteRequestObject
+
+	request.Id = id
+	request.RoleId = roleId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1OrganizationRoleDelete(ctx, request.(V1OrganizationRoleDeleteRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1OrganizationRoleDelete")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1OrganizationRoleDeleteResponseObject); ok {
+		if err := validResponse.VisitV1OrganizationRoleDeleteResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1OrganizationRoleGet operation middleware
+func (sh *strictHandler) V1OrganizationRoleGet(w http.ResponseWriter, r *http.Request, id Id, roleId string) {
+	var request V1OrganizationRoleGetRequestObject
+
+	request.Id = id
+	request.RoleId = roleId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1OrganizationRoleGet(ctx, request.(V1OrganizationRoleGetRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1OrganizationRoleGet")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1OrganizationRoleGetResponseObject); ok {
+		if err := validResponse.VisitV1OrganizationRoleGetResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1OrganizationRoleUpdate operation middleware
+func (sh *strictHandler) V1OrganizationRoleUpdate(w http.ResponseWriter, r *http.Request, id Id, roleId string) {
+	var request V1OrganizationRoleUpdateRequestObject
+
+	request.Id = id
+	request.RoleId = roleId
+
+	var body V1OrganizationRoleUpdateJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1OrganizationRoleUpdate(ctx, request.(V1OrganizationRoleUpdateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1OrganizationRoleUpdate")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1OrganizationRoleUpdateResponseObject); ok {
+		if err := validResponse.VisitV1OrganizationRoleUpdateResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -4200,26 +5363,115 @@ func (sh *strictHandler) V1OrganizationMembersAdd(w http.ResponseWriter, r *http
 	}
 }
 
-// V1OrganizationMembersRemove operation middleware
-func (sh *strictHandler) V1OrganizationMembersRemove(w http.ResponseWriter, r *http.Request, id Id, userId string) {
-	var request V1OrganizationMembersRemoveRequestObject
+// V1OrganizationMemberRemove operation middleware
+func (sh *strictHandler) V1OrganizationMemberRemove(w http.ResponseWriter, r *http.Request, id Id, userId string) {
+	var request V1OrganizationMemberRemoveRequestObject
 
 	request.Id = id
 	request.UserId = userId
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.V1OrganizationMembersRemove(ctx, request.(V1OrganizationMembersRemoveRequestObject))
+		return sh.ssi.V1OrganizationMemberRemove(ctx, request.(V1OrganizationMemberRemoveRequestObject))
 	}
 	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "V1OrganizationMembersRemove")
+		handler = middleware(handler, "V1OrganizationMemberRemove")
 	}
 
 	response, err := handler(r.Context(), w, r, request)
 
 	if err != nil {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(V1OrganizationMembersRemoveResponseObject); ok {
-		if err := validResponse.VisitV1OrganizationMembersRemoveResponse(w); err != nil {
+	} else if validResponse, ok := response.(V1OrganizationMemberRemoveResponseObject); ok {
+		if err := validResponse.VisitV1OrganizationMemberRemoveResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1OrganizationRoleMembersGet operation middleware
+func (sh *strictHandler) V1OrganizationRoleMembersGet(w http.ResponseWriter, r *http.Request, id Id, roleId string) {
+	var request V1OrganizationRoleMembersGetRequestObject
+
+	request.Id = id
+	request.RoleId = roleId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1OrganizationRoleMembersGet(ctx, request.(V1OrganizationRoleMembersGetRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1OrganizationRoleMembersGet")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1OrganizationRoleMembersGetResponseObject); ok {
+		if err := validResponse.VisitV1OrganizationRoleMembersGetResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1OrganizationRoleMembersAdd operation middleware
+func (sh *strictHandler) V1OrganizationRoleMembersAdd(w http.ResponseWriter, r *http.Request, id Id, roleId string) {
+	var request V1OrganizationRoleMembersAddRequestObject
+
+	request.Id = id
+	request.RoleId = roleId
+
+	var body V1OrganizationRoleMembersAddJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1OrganizationRoleMembersAdd(ctx, request.(V1OrganizationRoleMembersAddRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1OrganizationRoleMembersAdd")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1OrganizationRoleMembersAddResponseObject); ok {
+		if err := validResponse.VisitV1OrganizationRoleMembersAddResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1OrganizationRoleMemberRemove operation middleware
+func (sh *strictHandler) V1OrganizationRoleMemberRemove(w http.ResponseWriter, r *http.Request, id Id, roleId string, userId string) {
+	var request V1OrganizationRoleMemberRemoveRequestObject
+
+	request.Id = id
+	request.RoleId = roleId
+	request.UserId = userId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1OrganizationRoleMemberRemove(ctx, request.(V1OrganizationRoleMemberRemoveRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1OrganizationRoleMemberRemove")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1OrganizationRoleMemberRemoveResponseObject); ok {
+		if err := validResponse.VisitV1OrganizationRoleMemberRemoveResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -4805,121 +6057,129 @@ func (sh *strictHandler) V1UserUpdate(w http.ResponseWriter, r *http.Request, id
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
-	"AA==",
+	"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",
+	"AAA=",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file
