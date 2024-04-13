@@ -83,7 +83,7 @@ jobs:
           name: "integration-test-results"
       - uses: ./.github/actions/generate
       - name: Upload test results
-        uses: paambaati/codeclimate-action@v4.0.0
+        uses: paambaati/codeclimate-action@v5.0.0
         env:
           CC_TEST_REPORTER_ID: ${{secrets.CC_TEST_REPORTER_ID}}
         with:
