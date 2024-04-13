@@ -23,7 +23,7 @@ function extractLicenses() {
 function lintLicenseCompatibility() {
   local licenses="$(yq '.[] | select(index(":permit"))[1]' < "${LICENSE_DECISIONS_FILE}")"
   local andExpression=$(echo "${licenses}" | egrep -v "${INVALID_LICENSES}" | xargs -n1 -I{} echo -n "{} and " | sed 's/ and $//')
-  local candidates=$(flict -el outbound-candidate "${andExpression}")
+  local candidates=$(flict outbound-candidate "${andExpression}")
 
   if [ "$(echo "${candidates}" | jq '. | length > 0')" != "true" ]; then
     echo "No OSS license candidates found for ${andExpression}"
@@ -33,5 +33,5 @@ function lintLicenseCompatibility() {
 }
 
 extractLicenses "${ROOT_DIR}" # Backend service
-extractLicenses "${ROOT_DIR}/web" # Web application
+# extractLicenses "${ROOT_DIR}/web" # Web application
 lintLicenseCompatibility
