@@ -56,7 +56,7 @@ func (r *CachedRoleRepository) Create(ctx context.Context, createdBy, belongsTo 
 	return r.roleRepo.Create(ctx, createdBy, belongsTo, role)
 }
 
-func (r *CachedRoleRepository) Get(ctx context.Context, id model.ID) (*model.Role, error) {
+func (r *CachedRoleRepository) Get(ctx context.Context, id, belongsTo model.ID) (*model.Role, error) {
 	var role *model.Role
 	var err error
 
@@ -69,7 +69,7 @@ func (r *CachedRoleRepository) Get(ctx context.Context, id model.ID) (*model.Rol
 		return role, nil
 	}
 
-	if role, err = r.roleRepo.Get(ctx, id); err != nil {
+	if role, err = r.roleRepo.Get(ctx, id, belongsTo); err != nil {
 		return nil, err
 	}
 
@@ -104,11 +104,11 @@ func (r *CachedRoleRepository) GetAllBelongsTo(ctx context.Context, belongsTo mo
 	return roles, nil
 }
 
-func (r *CachedRoleRepository) Update(ctx context.Context, id model.ID, patch map[string]any) (*model.Role, error) {
+func (r *CachedRoleRepository) Update(ctx context.Context, id, belongsTo model.ID, patch map[string]any) (*model.Role, error) {
 	var role *model.Role
 	var err error
 
-	role, err = r.roleRepo.Update(ctx, id, patch)
+	role, err = r.roleRepo.Update(ctx, id, belongsTo, patch)
 	if err != nil {
 		return nil, err
 	}
@@ -125,31 +125,29 @@ func (r *CachedRoleRepository) Update(ctx context.Context, id model.ID, patch ma
 	return role, nil
 }
 
-func (r *CachedRoleRepository) AddMember(ctx context.Context, roleID, memberID model.ID) error {
+func (r *CachedRoleRepository) AddMember(ctx context.Context, roleID, memberID, belongsToID model.ID) error {
 	if err := clearRolesKey(ctx, r.cacheRepo, roleID); err != nil {
 		return err
 	}
-
 	if err := clearRolesAllBelongsTo(ctx, r.cacheRepo); err != nil {
 		return err
 	}
 
-	return r.roleRepo.AddMember(ctx, roleID, memberID)
+	return r.roleRepo.AddMember(ctx, roleID, memberID, belongsToID)
 }
 
-func (r *CachedRoleRepository) RemoveMember(ctx context.Context, roleID, memberID model.ID) error {
+func (r *CachedRoleRepository) RemoveMember(ctx context.Context, roleID, memberID, belongsToID model.ID) error {
 	if err := clearRolesKey(ctx, r.cacheRepo, roleID); err != nil {
 		return err
 	}
-
 	if err := clearRolesAllBelongsTo(ctx, r.cacheRepo); err != nil {
 		return err
 	}
 
-	return r.roleRepo.RemoveMember(ctx, roleID, memberID)
+	return r.roleRepo.RemoveMember(ctx, roleID, memberID, belongsToID)
 }
 
-func (r *CachedRoleRepository) Delete(ctx context.Context, id model.ID) error {
+func (r *CachedRoleRepository) Delete(ctx context.Context, id, belongsTo model.ID) error {
 	if err := clearRolesKey(ctx, r.cacheRepo, id); err != nil {
 		return err
 	}
@@ -162,7 +160,7 @@ func (r *CachedRoleRepository) Delete(ctx context.Context, id model.ID) error {
 		return err
 	}
 
-	return r.roleRepo.Delete(ctx, id)
+	return r.roleRepo.Delete(ctx, id, belongsTo)
 }
 
 // NewCachedRoleRepository returns a new CachedRoleRepository.

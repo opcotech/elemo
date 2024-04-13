@@ -9,9 +9,9 @@ import (
 
 // Comment represents a comment on a resource.
 type Comment struct {
-	ID        ID         `json:"id" validate:"required,dive"`
+	ID        ID         `json:"id" validate:"required"`
 	Content   string     `json:"content" validate:"required,min=5,max=2000"`
-	CreatedBy ID         `json:"created_by" validate:"required,dive"`
+	CreatedBy ID         `json:"created_by" validate:"required"`
 	CreatedAt *time.Time `json:"created_at" validate:"omitempty"`
 	UpdatedAt *time.Time `json:"updated_at" validate:"omitempty"`
 }

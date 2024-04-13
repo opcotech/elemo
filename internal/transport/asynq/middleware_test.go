@@ -13,6 +13,7 @@ import (
 
 	"github.com/opcotech/elemo/internal/pkg"
 	"github.com/opcotech/elemo/internal/pkg/log"
+	"github.com/opcotech/elemo/internal/pkg/tracing"
 	"github.com/opcotech/elemo/internal/testutil/mock"
 )
 
@@ -55,13 +56,13 @@ func TestWithMetricsExporter(t *testing.T) {
 	tracer.On("Start", ctx, "transport.asynq.middleware/WithMetricsExporter", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 	assert.NoError(t,
-		WithMetricsExporter(tracer)(asynq.HandlerFunc(func(ctx context.Context, task *asynq.Task) error {
+		WithMetricsExporter(tracer)(asynq.HandlerFunc(func(_ context.Context, _ *asynq.Task) error {
 			return nil
 		})).ProcessTask(ctx, new(asynq.Task)),
 	)
 
 	assert.ErrorIs(t,
-		WithMetricsExporter(tracer)(asynq.HandlerFunc(func(ctx context.Context, task *asynq.Task) error {
+		WithMetricsExporter(tracer)(asynq.HandlerFunc(func(_ context.Context, _ *asynq.Task) error {
 			return assert.AnError
 		})).ProcessTask(ctx, new(asynq.Task)),
 		assert.AnError,
@@ -70,7 +71,7 @@ func TestWithMetricsExporter(t *testing.T) {
 
 func TestWithRateLimiter(t *testing.T) {
 	type args struct {
-		tracer  trace.Tracer
+		tracer  tracing.Tracer
 		limiter RateLimiter
 	}
 	tests := []struct {
@@ -81,7 +82,7 @@ func TestWithRateLimiter(t *testing.T) {
 		{
 			name: "return handler if rate limiter is allowed",
 			args: args{
-				tracer: func() trace.Tracer {
+				tracer: func() tracing.Tracer {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -101,7 +102,7 @@ func TestWithRateLimiter(t *testing.T) {
 		{
 			name: "return error if rate limiter is not allowed",
 			args: args{
-				tracer: func() trace.Tracer {
+				tracer: func() tracing.Tracer {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -124,7 +125,7 @@ func TestWithRateLimiter(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			handler := asynq.HandlerFunc(func(ctx context.Context, task *asynq.Task) error {
+			handler := asynq.HandlerFunc(func(_ context.Context, _ *asynq.Task) error {
 				return nil
 			})
 
@@ -143,7 +144,7 @@ func TestWithErrorLogger(t *testing.T) {
 		logger func(ctx context.Context, task *asynq.Task) log.Logger
 	}
 	type args struct {
-		tracer func(ctx context.Context) trace.Tracer
+		tracer func(ctx context.Context) tracing.Tracer
 	}
 	tests := []struct {
 		name    string
@@ -156,12 +157,12 @@ func TestWithErrorLogger(t *testing.T) {
 			fields: fields{
 				ctx:  context.Background(),
 				task: asynq.NewTask("test:task", []byte("hello")),
-				logger: func(ctx context.Context, task *asynq.Task) log.Logger {
+				logger: func(_ context.Context, _ *asynq.Task) log.Logger {
 					return new(mock.Logger)
 				},
 			},
 			args: args{
-				tracer: func(ctx context.Context) trace.Tracer {
+				tracer: func(ctx context.Context) tracing.Tracer {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -177,7 +178,7 @@ func TestWithErrorLogger(t *testing.T) {
 			fields: fields{
 				ctx:  context.Background(),
 				task: asynq.NewTask("test:task", []byte("hello")),
-				logger: func(ctx context.Context, task *asynq.Task) log.Logger {
+				logger: func(_ context.Context, task *asynq.Task) log.Logger {
 					logger := new(mock.Logger)
 					logger.On("Log", zap.ErrorLevel, assert.AnError.Error(), []zap.Field{
 						log.WithKey(task.Type()),
@@ -189,7 +190,7 @@ func TestWithErrorLogger(t *testing.T) {
 				},
 			},
 			args: args{
-				tracer: func(ctx context.Context) trace.Tracer {
+				tracer: func(ctx context.Context) tracing.Tracer {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -207,7 +208,7 @@ func TestWithErrorLogger(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			handler := asynq.HandlerFunc(func(ctx context.Context, task *asynq.Task) error {
+			handler := asynq.HandlerFunc(func(_ context.Context, _ *asynq.Task) error {
 				return tt.wantErr
 			})
 

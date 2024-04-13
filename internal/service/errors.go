@@ -6,6 +6,8 @@ var (
 	ErrEmailSend                       = errors.New("failed to send email")                           // failed to send email
 	ErrInvalidEmail                    = errors.New("invalid email address")                          // invalid email address
 	ErrInvalidPaginationParams         = errors.New("invalid pagination parameters")                  // invalid pagination parameters
+	ErrLicenseGet                      = errors.New("failed to get license")                          // failed to get license
+	ErrLicensePing                     = errors.New("failed to ping license")                         // failed to ping license
 	ErrNoLicenseService                = errors.New("no license service provided")                    // no license service provided
 	ErrNoOrganizationRepository        = errors.New("no organization repository provided")            // no organization repository provided
 	ErrNoPatchData                     = errors.New("no patch data provided")                         // no patch data provided
@@ -13,6 +15,7 @@ var (
 	ErrNoPermissionRepository          = errors.New("no permission repository provided")              // no permission repository provided
 	ErrNoPermissionService             = errors.New("no permission service provided")                 // no permission service provided
 	ErrNoResources                     = errors.New("no resources provided")                          // no resources provided
+	ErrNoRoleRepository                = errors.New("no role repository provided")                    // no role repository provided
 	ErrNoTodoRepository                = errors.New("no todo repository provided")                    // no todo repository provided
 	ErrNoUser                          = errors.New("no user provided")                               // no user provided
 	ErrNoUserRepository                = errors.New("no user repository provided")                    // no user repository provided
@@ -38,6 +41,13 @@ var (
 	ErrQuotaExceeded                   = errors.New("quota exceeded")                                 // quota exceeded
 	ErrQuotaInvalid                    = errors.New("invalid quota")                                  // invalid quota
 	ErrQuotaUsageGet                   = errors.New("failed to get usage of quota")                   // failed to get usage of quota
+	ErrRoleAddMember                   = errors.New("failed to add member to role")                   // failed to add member to role
+	ErrRoleCreate                      = errors.New("failed to create role")                          // failed to create role
+	ErrRoleDelete                      = errors.New("failed to delete role")                          // failed to delete role
+	ErrRoleGet                         = errors.New("failed to get role")                             // failed to get role
+	ErrRoleGetBelongsTo                = errors.New("failed to get roles that belongs to")            // failed to get roles that belongs to
+	ErrRoleRemoveMember                = errors.New("failed to remove member from role")              // failed to remove member from role
+	ErrRoleUpdate                      = errors.New("failed to update role")                          // failed to update role
 	ErrSystemHealthCheck               = errors.New("system health check failed")                     // system health check failed
 	ErrTodoCreate                      = errors.New("failed to create todo")                          // failed to create todo
 	ErrTodoDelete                      = errors.New("failed to delete todo")                          // failed to delete todo

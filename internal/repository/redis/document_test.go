@@ -191,7 +191,7 @@ func TestCachedDocumentRepository_Create(t *testing.T) {
 		{
 			name: "create document with belongs to cache delete error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, belongsTo model.ID, document *model.Document) *baseRepository {
+				cacheRepo: func(ctx context.Context, belongsTo model.ID, _ *model.Document) *baseRepository {
 					belongsToKey := composeCacheKey(model.ResourceTypeDocument.String(), "GetAllBelongsTo", belongsTo.String(), "*")
 
 					belongsToKeyResult := new(redis.StringSliceCmd)
@@ -221,7 +221,7 @@ func TestCachedDocumentRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				documentRepo: func(ctx context.Context, belongsTo model.ID, document *model.Document) repository.DocumentRepository {
+				documentRepo: func(_ context.Context, _ model.ID, _ *model.Document) repository.DocumentRepository {
 					return new(mock.DocumentRepository)
 				},
 			},
@@ -280,7 +280,7 @@ func TestCachedDocumentRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				documentRepo: func(ctx context.Context, belongsTo model.ID, document *model.Document) repository.DocumentRepository {
+				documentRepo: func(_ context.Context, _ model.ID, _ *model.Document) repository.DocumentRepository {
 					return new(mock.DocumentRepository)
 				},
 			},
@@ -345,7 +345,7 @@ func TestCachedDocumentRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				documentRepo: func(ctx context.Context, belongsTo model.ID, document *model.Document) repository.DocumentRepository {
+				documentRepo: func(_ context.Context, _ model.ID, _ *model.Document) repository.DocumentRepository {
 					return new(mock.DocumentRepository)
 				},
 			},
@@ -416,7 +416,7 @@ func TestCachedDocumentRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				documentRepo: func(ctx context.Context, belongsTo model.ID, document *model.Document) repository.DocumentRepository {
+				documentRepo: func(_ context.Context, _ model.ID, _ *model.Document) repository.DocumentRepository {
 					return new(mock.DocumentRepository)
 				},
 			},
@@ -493,7 +493,7 @@ func TestCachedDocumentRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				documentRepo: func(ctx context.Context, belongsTo model.ID, document *model.Document) repository.DocumentRepository {
+				documentRepo: func(_ context.Context, _ model.ID, _ *model.Document) repository.DocumentRepository {
 					return new(mock.DocumentRepository)
 				},
 			},
@@ -589,7 +589,7 @@ func TestCachedDocumentRepository_Get(t *testing.T) {
 			},
 			want: func(id model.ID) *model.Document {
 				return &model.Document{
-					ID:          model.MustNewID(model.ResourceTypeDocument),
+					ID:          id,
 					Name:        "test document",
 					Excerpt:     "test excerpt",
 					FileID:      "test file subject",
@@ -627,7 +627,7 @@ func TestCachedDocumentRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				documentRepo: func(ctx context.Context, id model.ID, document *model.Document) repository.DocumentRepository {
+				documentRepo: func(_ context.Context, _ model.ID, _ *model.Document) repository.DocumentRepository {
 					return new(mock.DocumentRepository)
 				},
 			},
@@ -637,7 +637,7 @@ func TestCachedDocumentRepository_Get(t *testing.T) {
 			},
 			want: func(id model.ID) *model.Document {
 				return &model.Document{
-					ID:          model.MustNewID(model.ResourceTypeDocument),
+					ID:          id,
 					Name:        "test document",
 					Excerpt:     "test excerpt",
 					FileID:      "test file subject",
@@ -651,7 +651,7 @@ func TestCachedDocumentRepository_Get(t *testing.T) {
 		{
 			name: "get uncached document error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id model.ID, document *model.Document) *baseRepository {
+				cacheRepo: func(ctx context.Context, id model.ID, _ *model.Document) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeDocument.String(), id.String())
 
 					db, err := NewDatabase(
@@ -675,7 +675,7 @@ func TestCachedDocumentRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				documentRepo: func(ctx context.Context, id model.ID, document *model.Document) repository.DocumentRepository {
+				documentRepo: func(ctx context.Context, id model.ID, _ *model.Document) repository.DocumentRepository {
 					repo := new(mock.DocumentRepository)
 					repo.On("Get", ctx, id).Return(nil, repository.ErrNotFound)
 					return repo
@@ -690,7 +690,7 @@ func TestCachedDocumentRepository_Get(t *testing.T) {
 		{
 			name: "get cached document error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id model.ID, document *model.Document) *baseRepository {
+				cacheRepo: func(ctx context.Context, id model.ID, _ *model.Document) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeDocument.String(), id.String())
 
 					db, err := NewDatabase(
@@ -714,7 +714,7 @@ func TestCachedDocumentRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				documentRepo: func(ctx context.Context, id model.ID, document *model.Document) repository.DocumentRepository {
+				documentRepo: func(_ context.Context, _ model.ID, _ *model.Document) repository.DocumentRepository {
 					return new(mock.DocumentRepository)
 				},
 			},
@@ -901,7 +901,7 @@ func TestCachedDocumentRepository_GetByCreator(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				documentRepo: func(ctx context.Context, createdBy model.ID, offset, limit int, documents []*model.Document) repository.DocumentRepository {
+				documentRepo: func(_ context.Context, _ model.ID, _, _ int, _ []*model.Document) repository.DocumentRepository {
 					return new(mock.DocumentRepository)
 				},
 			},
@@ -935,7 +935,7 @@ func TestCachedDocumentRepository_GetByCreator(t *testing.T) {
 		{
 			name: "get uncached documents error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, createdBy model.ID, offset, limit int, documents []*model.Document) *baseRepository {
+				cacheRepo: func(ctx context.Context, createdBy model.ID, offset, limit int, _ []*model.Document) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeDocument.String(), "GetByCreator", createdBy.String(), offset, limit)
 
 					db, err := NewDatabase(
@@ -960,7 +960,7 @@ func TestCachedDocumentRepository_GetByCreator(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				documentRepo: func(ctx context.Context, createdBy model.ID, offset, limit int, documents []*model.Document) repository.DocumentRepository {
+				documentRepo: func(ctx context.Context, createdBy model.ID, offset, limit int, _ []*model.Document) repository.DocumentRepository {
 					repo := new(mock.DocumentRepository)
 					repo.On("GetByCreator", ctx, createdBy, offset, limit).Return(nil, repository.ErrNotFound)
 					return repo
@@ -975,7 +975,7 @@ func TestCachedDocumentRepository_GetByCreator(t *testing.T) {
 		{
 			name: "get get documents cache error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, createdBy model.ID, offset, limit int, documents []*model.Document) *baseRepository {
+				cacheRepo: func(ctx context.Context, createdBy model.ID, offset, limit int, _ []*model.Document) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeDocument.String(), "GetByCreator", createdBy.String(), offset, limit)
 
 					db, err := NewDatabase(
@@ -1000,7 +1000,7 @@ func TestCachedDocumentRepository_GetByCreator(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				documentRepo: func(ctx context.Context, createdBy model.ID, offset, limit int, documents []*model.Document) repository.DocumentRepository {
+				documentRepo: func(_ context.Context, _ model.ID, _, _ int, _ []*model.Document) repository.DocumentRepository {
 					return new(mock.DocumentRepository)
 				},
 			},
@@ -1182,7 +1182,7 @@ func TestCachedDocumentRepository_GetAllBelongsTo(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				documentRepo: func(ctx context.Context, belongsTo model.ID, offset, limit int, documents []*model.Document) repository.DocumentRepository {
+				documentRepo: func(_ context.Context, _ model.ID, _, _ int, _ []*model.Document) repository.DocumentRepository {
 					return new(mock.DocumentRepository)
 				},
 			},
@@ -1216,7 +1216,7 @@ func TestCachedDocumentRepository_GetAllBelongsTo(t *testing.T) {
 		{
 			name: "get uncached documents error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, belongsTo model.ID, offset, limit int, documents []*model.Document) *baseRepository {
+				cacheRepo: func(ctx context.Context, belongsTo model.ID, offset, limit int, _ []*model.Document) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeDocument.String(), "GetAllBelongsTo", belongsTo.String(), offset, limit)
 
 					db, err := NewDatabase(
@@ -1241,7 +1241,7 @@ func TestCachedDocumentRepository_GetAllBelongsTo(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				documentRepo: func(ctx context.Context, belongsTo model.ID, offset, limit int, documents []*model.Document) repository.DocumentRepository {
+				documentRepo: func(ctx context.Context, belongsTo model.ID, offset, limit int, _ []*model.Document) repository.DocumentRepository {
 					repo := new(mock.DocumentRepository)
 					repo.On("GetAllBelongsTo", ctx, belongsTo, offset, limit).Return(nil, repository.ErrNotFound)
 					return repo
@@ -1256,7 +1256,7 @@ func TestCachedDocumentRepository_GetAllBelongsTo(t *testing.T) {
 		{
 			name: "get get documents cache error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, belongsTo model.ID, offset, limit int, documents []*model.Document) *baseRepository {
+				cacheRepo: func(ctx context.Context, belongsTo model.ID, offset, limit int, _ []*model.Document) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeDocument.String(), "GetAllBelongsTo", belongsTo.String(), offset, limit)
 
 					db, err := NewDatabase(
@@ -1281,7 +1281,7 @@ func TestCachedDocumentRepository_GetAllBelongsTo(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				documentRepo: func(ctx context.Context, belongsTo model.ID, offset, limit int, documents []*model.Document) repository.DocumentRepository {
+				documentRepo: func(_ context.Context, _ model.ID, _, _ int, _ []*model.Document) repository.DocumentRepository {
 					return new(mock.DocumentRepository)
 				},
 			},
@@ -1448,7 +1448,7 @@ func TestCachedDocumentRepository_Update(t *testing.T) {
 		{
 			name: "update document with error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id model.ID, document *model.Document) *baseRepository {
+				cacheRepo: func(_ context.Context, _ model.ID, _ *model.Document) *baseRepository {
 					db, err := NewDatabase(
 						WithClient(new(mock.RedisClient)),
 					)
@@ -1461,7 +1461,7 @@ func TestCachedDocumentRepository_Update(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				documentRepo: func(ctx context.Context, id model.ID, patch map[string]any, document *model.Document) repository.DocumentRepository {
+				documentRepo: func(ctx context.Context, id model.ID, patch map[string]any, _ *model.Document) repository.DocumentRepository {
 					repo := new(mock.DocumentRepository)
 					repo.On("Update", ctx, id, patch).Return(nil, repository.ErrNotFound)
 					return repo
@@ -1876,7 +1876,7 @@ func TestCachedDocumentRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				documentRepo: func(ctx context.Context, id model.ID) repository.DocumentRepository {
+				documentRepo: func(_ context.Context, _ model.ID) repository.DocumentRepository {
 					return new(mock.DocumentRepository)
 				},
 			},
@@ -1922,7 +1922,7 @@ func TestCachedDocumentRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				documentRepo: func(ctx context.Context, id model.ID) repository.DocumentRepository {
+				documentRepo: func(_ context.Context, _ model.ID) repository.DocumentRepository {
 					return new(mock.DocumentRepository)
 				},
 			},
@@ -1974,7 +1974,7 @@ func TestCachedDocumentRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				documentRepo: func(ctx context.Context, id model.ID) repository.DocumentRepository {
+				documentRepo: func(_ context.Context, _ model.ID) repository.DocumentRepository {
 					return new(mock.DocumentRepository)
 				},
 			},
@@ -2032,7 +2032,7 @@ func TestCachedDocumentRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				documentRepo: func(ctx context.Context, id model.ID) repository.DocumentRepository {
+				documentRepo: func(_ context.Context, _ model.ID) repository.DocumentRepository {
 					return new(mock.DocumentRepository)
 				},
 			},
@@ -2096,7 +2096,7 @@ func TestCachedDocumentRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				documentRepo: func(ctx context.Context, id model.ID) repository.DocumentRepository {
+				documentRepo: func(_ context.Context, _ model.ID) repository.DocumentRepository {
 					return new(mock.DocumentRepository)
 				},
 			},
@@ -2166,7 +2166,7 @@ func TestCachedDocumentRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				documentRepo: func(ctx context.Context, id model.ID) repository.DocumentRepository {
+				documentRepo: func(_ context.Context, _ model.ID) repository.DocumentRepository {
 					return new(mock.DocumentRepository)
 				},
 			},

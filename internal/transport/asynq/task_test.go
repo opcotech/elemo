@@ -5,7 +5,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/otel/trace"
 
 	"github.com/opcotech/elemo/internal/pkg/log"
 	"github.com/opcotech/elemo/internal/pkg/tracing"
@@ -70,12 +69,12 @@ func TestWithTaskLogger(t *testing.T) {
 
 func TestWithTaskTracer(t *testing.T) {
 	type args struct {
-		tracer trace.Tracer
+		tracer tracing.Tracer
 	}
 	tests := []struct {
 		name    string
 		args    args
-		want    trace.Tracer
+		want    tracing.Tracer
 		wantErr error
 	}{
 		{

@@ -8,7 +8,6 @@ import (
 	"github.com/hibiken/asynq"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/otel/trace"
 
 	"github.com/opcotech/elemo/internal/config"
 	"github.com/opcotech/elemo/internal/pkg/log"
@@ -58,7 +57,7 @@ func TestWithWorkerConfig(t *testing.T) {
 }
 
 func TestWithWorkerTaskHandler(t *testing.T) {
-	handler := asynq.HandlerFunc(func(ctx context.Context, task *asynq.Task) error {
+	handler := asynq.HandlerFunc(func(_ context.Context, _ *asynq.Task) error {
 		return nil
 	})
 
@@ -150,12 +149,12 @@ func TestWithWorkerLogger(t *testing.T) {
 
 func TestWithWorkerTracer(t *testing.T) {
 	type args struct {
-		tracer trace.Tracer
+		tracer tracing.Tracer
 	}
 	tests := []struct {
 		name    string
 		args    args
-		want    trace.Tracer
+		want    tracing.Tracer
 		wantErr error
 	}{
 		{

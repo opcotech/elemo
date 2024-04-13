@@ -7,10 +7,10 @@ import (
 	"github.com/hibiken/asynq"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/time/rate"
 
 	"github.com/opcotech/elemo/internal/pkg/log"
+	"github.com/opcotech/elemo/internal/pkg/tracing"
 )
 
 var (
@@ -67,7 +67,7 @@ func SetRateLimiter(limit float64, burst int) {
 }
 
 // WithMetricsExporter middleware exports prometheus metrics for asynq.
-func WithMetricsExporter(tracer trace.Tracer) func(next asynq.Handler) asynq.Handler {
+func WithMetricsExporter(tracer tracing.Tracer) func(next asynq.Handler) asynq.Handler {
 	return func(next asynq.Handler) asynq.Handler {
 		return asynq.HandlerFunc(func(ctx context.Context, t *asynq.Task) error {
 			ctx, span := tracer.Start(ctx, "transport.asynq.middleware/WithMetricsExporter")
@@ -88,7 +88,7 @@ func WithMetricsExporter(tracer trace.Tracer) func(next asynq.Handler) asynq.Han
 }
 
 // WithRateLimiter middleware limits the number of tasks processed per second.
-func WithRateLimiter(tracer trace.Tracer, r RateLimiter) func(next asynq.Handler) asynq.Handler {
+func WithRateLimiter(tracer tracing.Tracer, r RateLimiter) func(next asynq.Handler) asynq.Handler {
 	return func(next asynq.Handler) asynq.Handler {
 		return asynq.HandlerFunc(func(ctx context.Context, t *asynq.Task) error {
 			ctx, span := tracer.Start(ctx, "transport.asynq.middleware/WithRateLimiter")
@@ -103,7 +103,7 @@ func WithRateLimiter(tracer trace.Tracer, r RateLimiter) func(next asynq.Handler
 }
 
 // WithErrorLogger logs task processing errors.
-func WithErrorLogger(tracer trace.Tracer) func(next asynq.Handler) asynq.Handler {
+func WithErrorLogger(tracer tracing.Tracer) func(next asynq.Handler) asynq.Handler {
 	return func(next asynq.Handler) asynq.Handler {
 		return asynq.HandlerFunc(func(ctx context.Context, t *asynq.Task) error {
 			ctx, span := tracer.Start(ctx, "transport.asynq.middleware/WithErrorLogger")

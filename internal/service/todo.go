@@ -42,7 +42,7 @@ func (s *todoService) Create(ctx context.Context, todo *model.Todo) error {
 	defer span.End()
 
 	if expired, err := s.licenseService.Expired(ctx); expired || err != nil {
-		return license.ErrLicenseExpired
+		return errors.Join(ErrTodoCreate, license.ErrLicenseExpired)
 	}
 
 	if err := todo.Validate(); err != nil {
@@ -55,7 +55,7 @@ func (s *todoService) Create(ctx context.Context, todo *model.Todo) error {
 			return errors.Join(ErrTodoCreate, err)
 		}
 		if !hasRelation {
-			return ErrNoPermission
+			return errors.Join(ErrTodoCreate, ErrNoPermission)
 		}
 	}
 
@@ -75,7 +75,7 @@ func (s *todoService) Get(ctx context.Context, id model.ID) (*model.Todo, error)
 	}
 
 	if !s.permissionService.CtxUserHasPermission(ctx, id, model.PermissionKindRead) {
-		return nil, ErrNoPermission
+		return nil, errors.Join(ErrTodoGet, ErrNoPermission)
 	}
 
 	todo, err := s.todoRepo.Get(ctx, id)
@@ -92,7 +92,7 @@ func (s *todoService) GetAll(ctx context.Context, offset, limit int, completed *
 
 	userID, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID)
 	if !ok {
-		return nil, ErrNoUser
+		return nil, errors.Join(ErrTodoGetAll, ErrNoUser)
 	}
 
 	todos, err := s.todoRepo.GetByOwner(ctx, userID, offset, limit, completed)
@@ -108,7 +108,7 @@ func (s *todoService) Update(ctx context.Context, id model.ID, patch map[string]
 	defer span.End()
 
 	if expired, err := s.licenseService.Expired(ctx); expired || err != nil {
-		return nil, license.ErrLicenseExpired
+		return nil, errors.Join(ErrTodoUpdate, license.ErrLicenseExpired)
 	}
 
 	if err := id.Validate(); err != nil {
@@ -116,7 +116,7 @@ func (s *todoService) Update(ctx context.Context, id model.ID, patch map[string]
 	}
 
 	if !s.permissionService.CtxUserHasPermission(ctx, id, model.PermissionKindWrite) {
-		return nil, ErrNoPermission
+		return nil, errors.Join(ErrTodoUpdate, ErrNoPermission)
 	}
 
 	todo, err := s.todoRepo.Update(ctx, id, patch)
@@ -132,7 +132,7 @@ func (s *todoService) Delete(ctx context.Context, id model.ID) error {
 	defer span.End()
 
 	if expired, err := s.licenseService.Expired(ctx); expired || err != nil {
-		return license.ErrLicenseExpired
+		return errors.Join(ErrTodoDelete, license.ErrLicenseExpired)
 	}
 
 	if err := id.Validate(); err != nil {
@@ -140,7 +140,7 @@ func (s *todoService) Delete(ctx context.Context, id model.ID) error {
 	}
 
 	if !s.permissionService.CtxUserHasPermission(ctx, id, model.PermissionKindDelete) {
-		return ErrNoPermission
+		return errors.Join(ErrTodoDelete, ErrNoPermission)
 	}
 
 	if err := s.todoRepo.Delete(ctx, id); err != nil {

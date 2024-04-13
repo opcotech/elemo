@@ -2,7 +2,7 @@
 # Common image
 ##############################################################################
 
-FROM golang:1.20-bullseye AS common
+FROM golang:1.22-bullseye AS common
 
 WORKDIR /common
 
@@ -19,7 +19,7 @@ COPY . .
 # Build image
 ##############################################################################
 
-FROM golang:1.20-bullseye AS build
+FROM golang:1.22-bullseye AS build
 
 ENV GOOS linux
 ENV CGO_ENABLED 0

@@ -11,7 +11,7 @@ import (
 // information about it. For example, a Type can be used to indicate the
 // environment a resource belongs to.
 type Label struct {
-	ID          ID         `json:"id" validate:"required,dive"`
+	ID          ID         `json:"id" validate:"required"`
 	Name        string     `json:"name" validate:"required,min=3,max=120"`
 	Description string     `json:"description" validate:"omitempty,min=5,max=500"`
 	CreatedAt   *time.Time `json:"created_at" validate:"omitempty"`

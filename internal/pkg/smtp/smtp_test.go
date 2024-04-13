@@ -30,7 +30,7 @@ func TestNewDatabase(t *testing.T) {
 		client WrappedClient
 		config *config.SMTPConfig
 		logger log.Logger
-		tracer trace.Tracer
+		tracer tracing.Tracer
 	}
 	tests := []struct {
 		name    string
@@ -223,12 +223,12 @@ func TestWithLogger(t *testing.T) {
 
 func TestWithTracer(t *testing.T) {
 	type args struct {
-		tracer trace.Tracer
+		tracer tracing.Tracer
 	}
 	tests := []struct {
 		name    string
 		args    args
-		want    trace.Tracer
+		want    tracing.Tracer
 		wantErr error
 	}{
 		{
@@ -263,7 +263,7 @@ func TestClient_Authenticate(t *testing.T) {
 		client func(auth smtp.Auth) WrappedClient
 		config *config.SMTPConfig
 		logger log.Logger
-		tracer func(ctx context.Context) trace.Tracer
+		tracer func(ctx context.Context) tracing.Tracer
 	}
 	type args struct {
 		ctx context.Context
@@ -288,7 +288,7 @@ func TestClient_Authenticate(t *testing.T) {
 					Password: "password",
 				},
 				logger: new(mock.Logger),
-				tracer: func(ctx context.Context) trace.Tracer {
+				tracer: func(ctx context.Context) tracing.Tracer {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -316,7 +316,7 @@ func TestClient_Authenticate(t *testing.T) {
 					Password: "password",
 				},
 				logger: new(mock.Logger),
-				tracer: func(ctx context.Context) trace.Tracer {
+				tracer: func(ctx context.Context) tracing.Tracer {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -371,7 +371,7 @@ func TestClient_SendEmail(t *testing.T) {
 		{
 			name: "send email with success",
 			fields: fields{
-				client: func(ctx context.Context, subject, to string) *Client {
+				client: func(ctx context.Context, _, to string) *Client {
 					smtpConf := &config.SMTPConfig{
 						FromAddress: "no-reply@example.com",
 					}
@@ -412,7 +412,7 @@ func TestClient_SendEmail(t *testing.T) {
 		{
 			name: "send email with setting mail error",
 			fields: fields{
-				client: func(ctx context.Context, subject, to string) *Client {
+				client: func(ctx context.Context, _, _ string) *Client {
 					smtpConf := &config.SMTPConfig{
 						FromAddress: "no-reply@example.com",
 					}
@@ -448,7 +448,7 @@ func TestClient_SendEmail(t *testing.T) {
 		{
 			name: "send email with setting rcpt error",
 			fields: fields{
-				client: func(ctx context.Context, subject, to string) *Client {
+				client: func(ctx context.Context, _, to string) *Client {
 					smtpConf := &config.SMTPConfig{
 						FromAddress: "no-reply@example.com",
 					}
@@ -485,7 +485,7 @@ func TestClient_SendEmail(t *testing.T) {
 		{
 			name: "send email with getting data error",
 			fields: fields{
-				client: func(ctx context.Context, subject, to string) *Client {
+				client: func(ctx context.Context, _, to string) *Client {
 					smtpConf := &config.SMTPConfig{
 						FromAddress: "no-reply@example.com",
 					}
@@ -523,7 +523,7 @@ func TestClient_SendEmail(t *testing.T) {
 		{
 			name: "send email with buffer write error",
 			fields: fields{
-				client: func(ctx context.Context, subject, to string) *Client {
+				client: func(ctx context.Context, _, to string) *Client {
 					smtpConf := &config.SMTPConfig{
 						FromAddress: "no-reply@example.com",
 					}
@@ -564,7 +564,7 @@ func TestClient_SendEmail(t *testing.T) {
 		{
 			name: "send email with buffer close error",
 			fields: fields{
-				client: func(ctx context.Context, subject, to string) *Client {
+				client: func(ctx context.Context, _, to string) *Client {
 					smtpConf := &config.SMTPConfig{
 						FromAddress: "no-reply@example.com",
 					}
@@ -606,7 +606,7 @@ func TestClient_SendEmail(t *testing.T) {
 		{
 			name: "send email with invalid template",
 			fields: fields{
-				client: func(ctx context.Context, subject, to string) *Client {
+				client: func(ctx context.Context, _, to string) *Client {
 					smtpConf := &config.SMTPConfig{
 						FromAddress: "no-reply@example.com",
 					}
@@ -648,7 +648,7 @@ func TestClient_SendEmail(t *testing.T) {
 		{
 			name: "send email with template render error",
 			fields: fields{
-				client: func(ctx context.Context, subject, to string) *Client {
+				client: func(ctx context.Context, _, to string) *Client {
 					smtpConf := &config.SMTPConfig{
 						FromAddress: "no-reply@example.com",
 					}

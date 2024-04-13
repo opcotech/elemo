@@ -95,16 +95,15 @@ func (s *permissionService) CtxUserCreate(ctx context.Context, perm *model.Permi
 	ctx, span := s.tracer.Start(ctx, "service.permissionService/CtxUserCreate")
 	defer span.End()
 
-	hasRelation := s.CtxUserHasAnyRelation(ctx, perm.Target)
-	hasSystemRole := s.CtxUserHasSystemRole(ctx, model.SystemRoleOwner, model.SystemRoleAdmin)
+	hasPermission := false
 
-	hasCreatePermission := s.CtxUserHasPermission(ctx, perm.Target, model.PermissionKindCreate)
-	hasWritePermission := s.CtxUserHasPermission(ctx, perm.Target, model.PermissionKindWrite)
-	hasReadPermission := s.CtxUserHasPermission(ctx, perm.Target, model.PermissionKindRead)
-	hasDeletePermission := s.CtxUserHasPermission(ctx, perm.Target, model.PermissionKindDelete)
-	hasPermission := hasCreatePermission && hasWritePermission && hasReadPermission && hasDeletePermission
+	// If the user has "write" permission on the target, they can give any
+	// permission to the subject they own too (plus "read").
+	if s.CtxUserHasPermission(ctx, perm.Target, model.PermissionKindWrite) {
+		hasPermission = s.CtxUserHasPermission(ctx, perm.Target, perm.Kind)
+	}
 
-	if (hasRelation && hasPermission) || hasSystemRole || hasPermission {
+	if hasPermission {
 		return s.Create(ctx, perm)
 	}
 
@@ -221,12 +220,40 @@ func (s *permissionService) HasPermission(ctx context.Context, subject, target m
 	ctx, span := s.tracer.Start(ctx, "service.permissionService/HasPermission")
 	defer span.End()
 
+	// Collect system roles to check for based on permission kinds.
+	roles := []model.SystemRole{
+		model.SystemRoleOwner,
+		model.SystemRoleAdmin,
+		model.SystemRoleSupport,
+	}
+
+	// Limit the roles to check for based on the permission kinds.
+	// - If we have a permission kind of "all" or "delete, the role must be owner.
+	// - If we have a permission kind of "create" or "write", the role must be owner or admin.
+	// - Otherwise, the role can be any system role.
+	for _, kind := range kinds {
+		if kind == model.PermissionKindAll || kind == model.PermissionKindDelete {
+			roles = []model.SystemRole{model.SystemRoleOwner}
+			break
+		}
+
+		if kind == model.PermissionKindCreate || kind == model.PermissionKindWrite {
+			roles = []model.SystemRole{model.SystemRoleOwner, model.SystemRoleAdmin}
+			break
+		}
+	}
+
+	hasSystemRoles, err := s.permissionRepo.HasSystemRole(ctx, subject, roles...)
+	if err != nil {
+		return false, errors.Join(ErrPermissionHasSystemRole, err)
+	}
+
 	hasPermission, err := s.permissionRepo.HasPermission(ctx, subject, target, append(kinds, model.PermissionKindAll)...)
 	if err != nil {
 		return false, errors.Join(ErrPermissionHasPermission, err)
 	}
 
-	return hasPermission, nil
+	return hasSystemRoles || hasPermission, nil
 }
 
 func (s *permissionService) CtxUserHasPermission(ctx context.Context, target model.ID, kinds ...model.PermissionKind) bool {
@@ -271,11 +298,7 @@ func (s *permissionService) CtxUserUpdate(ctx context.Context, id model.ID, kind
 		return nil, errors.Join(ErrPermissionUpdate, err)
 	}
 
-	hasRelation := s.CtxUserHasAnyRelation(ctx, perm.Target)
-	hasSystemRole := s.CtxUserHasSystemRole(ctx, model.SystemRoleOwner, model.SystemRoleAdmin)
-	hasPermission := s.CtxUserHasPermission(ctx, perm.Target, model.PermissionKindWrite)
-
-	if (hasRelation && hasPermission) || hasSystemRole || hasPermission {
+	if s.CtxUserHasPermission(ctx, perm.Target, model.PermissionKindWrite) {
 		return s.Update(ctx, id, kind)
 	}
 
@@ -306,11 +329,7 @@ func (s *permissionService) CtxUserDelete(ctx context.Context, id model.ID) erro
 		return errors.Join(ErrPermissionDelete, err)
 	}
 
-	hasRelation := s.CtxUserHasAnyRelation(ctx, perm.Target)
-	hasSystemRole := s.CtxUserHasSystemRole(ctx, model.SystemRoleOwner, model.SystemRoleAdmin)
-	hasPermission := s.CtxUserHasPermission(ctx, perm.Target, model.PermissionKindDelete)
-
-	if (hasRelation && hasPermission) || hasSystemRole || hasPermission {
+	if s.CtxUserHasPermission(ctx, perm.Target, model.PermissionKindDelete) {
 		return s.Delete(ctx, id)
 	}
 

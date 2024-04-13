@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/redis/go-redis/v9"
-	"go.opentelemetry.io/otel/trace"
 
 	"github.com/opcotech/elemo/internal/config"
 	"github.com/opcotech/elemo/internal/pkg/log"
@@ -70,7 +69,7 @@ func WithDatabaseLogger(logger log.Logger) DatabaseOption {
 }
 
 // WithDatabaseTracer sets the tracer for a Neo4j database.
-func WithDatabaseTracer(tracer trace.Tracer) DatabaseOption {
+func WithDatabaseTracer(tracer tracing.Tracer) DatabaseOption {
 	return func(db *Database) error {
 		if tracer == nil {
 			return tracing.ErrNoTracer
@@ -86,7 +85,7 @@ func WithDatabaseTracer(tracer trace.Tracer) DatabaseOption {
 type Database struct {
 	client redis.UniversalClient `validate:"required"`
 	logger log.Logger            `validate:"required"`
-	tracer trace.Tracer          `validate:"required"`
+	tracer tracing.Tracer        `validate:"required"`
 }
 
 // GetClient returns the database client.

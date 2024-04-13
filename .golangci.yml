@@ -1,5 +1,5 @@
-run:
-  skip-dirs:
+issues:
+  exclude-dirs:
     - internal/transport/http/gen
 
 linters:
@@ -36,10 +36,10 @@ linters-settings:
     no-extra-aliases: true
     alias:
       # 3rd party
-      - pkg: github.com/deepmap/oapi-codegen/pkg/types
+      - pkg: github.com/oapi-codegen/runtime/types
         alias: oapiTypes
-      - pkg: github.com/deepmap/oapi-codegen/pkg/chi-middleware
-        alias: oapiMiddleware
+      - pkg: github.com/oapi-codegen/nethttp-middleware
+        alias: netHTTPMiddleware
       - pkg: github.com/go-oauth2/oauth2/v4/errors
         alias: authErrors
       - pkg: github.com/go-oauth2/oauth2/v4/server
@@ -48,6 +48,8 @@ linters-settings:
         alias: authManager
       - pkg: github.com/gabor-boros/go-oauth2-pg
         alias: authStore
+      - pkg: go.opentelemetry.io/otel/trace/noop
+        alias: nooptrace
       - pkg: go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp
         alias: otlptrace
       - pkg: go.opentelemetry.io/otel/sdk/trace

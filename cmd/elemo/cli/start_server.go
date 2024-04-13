@@ -31,7 +31,7 @@ var startServerCmd = &cobra.Command{
 	Use:   "server",
 	Short: "Start the server",
 	Long:  `Starts listening on the specified address.`,
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		initTracer("server")
 
 		license, err := parseLicense(&cfg.License)
@@ -119,6 +119,28 @@ var startServerCmd = &cobra.Command{
 			)
 			if err != nil {
 				logger.Fatal("failed to initialize cached organization repository", zap.Error(err))
+			}
+		}
+
+		var roleRepo repository.RoleRepository
+		{
+			repo, err := neo4j.NewRoleRepository(
+				neo4j.WithDatabase(graphDB),
+				neo4j.WithRepositoryLogger(logger.Named("role_repository")),
+				neo4j.WithRepositoryTracer(tracer),
+			)
+			if err != nil {
+				logger.Fatal("failed to initialize role repository", zap.Error(err))
+			}
+
+			roleRepo, err = redis.NewCachedRoleRepository(
+				repo,
+				redis.WithDatabase(cacheDB),
+				redis.WithRepositoryLogger(logger.Named("cached_role_repository")),
+				redis.WithRepositoryTracer(tracer),
+			)
+			if err != nil {
+				logger.Fatal("failed to initialize cached role repository", zap.Error(err))
 			}
 		}
 
@@ -214,6 +236,18 @@ var startServerCmd = &cobra.Command{
 			logger.Fatal("failed to initialize organization service", zap.Error(err))
 		}
 
+		roleService, err := service.NewRoleService(
+			service.WithRoleRepository(roleRepo),
+			service.WithUserRepository(userRepo),
+			service.WithPermissionService(permissionSvc),
+			service.WithLicenseService(licenseService),
+			service.WithLogger(logger.Named("role_service")),
+			service.WithTracer(tracer),
+		)
+		if err != nil {
+			logger.Fatal("failed to initialize role service", zap.Error(err))
+		}
+
 		userService, err := service.NewUserService(
 			service.WithUserRepository(userRepo),
 			service.WithPermissionService(permissionSvc),
@@ -245,6 +279,7 @@ var startServerCmd = &cobra.Command{
 			elemoHttp.WithConfig(cfg.Server),
 			elemoHttp.WithAuthProvider(authProvider),
 			elemoHttp.WithOrganizationService(organizationService),
+			elemoHttp.WithRoleService(roleService),
 			elemoHttp.WithUserService(userService),
 			elemoHttp.WithTodoService(todoService),
 			elemoHttp.WithSystemService(systemService),

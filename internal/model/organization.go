@@ -50,7 +50,7 @@ func (s *OrganizationStatus) UnmarshalText(text []byte) error {
 
 // Organization represents an organization.
 type Organization struct {
-	ID         ID                 `json:"id" validate:"required,dive"`
+	ID         ID                 `json:"id" validate:"required"`
 	Name       string             `json:"name" validate:"required,min=1,max=120"`
 	Email      string             `json:"email" validate:"required,email"`
 	Logo       string             `json:"logo" validate:"omitempty,url"`

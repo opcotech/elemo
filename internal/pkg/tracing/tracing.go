@@ -12,6 +12,8 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
 	"go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/otel/trace/embedded"
+	nooptrace "go.opentelemetry.io/otel/trace/noop"
 
 	"github.com/opcotech/elemo/internal/config"
 	"github.com/opcotech/elemo/internal/model"
@@ -19,9 +21,15 @@ import (
 
 var (
 	ErrNoTracer        = errors.New("no tracer") // the tracer is missing
-	noopTracerProvider = trace.NewNoopTracerProvider()
+	noopTracerProvider = nooptrace.NewTracerProvider()
 	noopTracer         = noopTracerProvider.Tracer("github.com/opcotech/elemo")
 )
+
+// Tracer re-defines the tracing.Tracer interface as the
+type Tracer interface {
+	embedded.Tracer
+	Start(ctx context.Context, spanName string, opts ...trace.SpanStartOption) (context.Context, trace.Span)
+}
 
 // NewTracerProvider creates a new tracer provider.
 func NewTracerProvider(ctx context.Context, version *model.VersionInfo, service string, cfg *config.TracingConfig) (trace.TracerProvider, error) {
@@ -50,6 +58,6 @@ func NewTracerProvider(ctx context.Context, version *model.VersionInfo, service 
 }
 
 // NoopTracer returns a noop tracer.
-func NoopTracer() trace.Tracer {
+func NoopTracer() Tracer {
 	return noopTracer
 }

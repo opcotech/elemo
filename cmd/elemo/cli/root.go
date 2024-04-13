@@ -40,7 +40,7 @@ var (
 	cfgFile        string
 	cfg            *config.Config
 	logger         log.Logger
-	tracer         trace.Tracer
+	tracer         tracing.Tracer
 	tracerProvider trace.TracerProvider
 )
 

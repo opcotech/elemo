@@ -69,16 +69,16 @@ func (s *CachedRoleRepositoryIntegrationTestSuite) TestCreate() {
 func (s *CachedRoleRepositoryIntegrationTestSuite) TestGet() {
 	s.Require().NoError(s.RoleRepo.Create(context.Background(), s.testUser.ID, s.testOrg.ID, s.role))
 
-	original, err := s.RoleRepo.Get(context.Background(), s.role.ID)
+	original, err := s.RoleRepo.Get(context.Background(), s.role.ID, s.testOrg.ID)
 	s.Require().NoError(err)
 
-	usingCache, err := s.roleRepo.Get(context.Background(), s.role.ID)
+	usingCache, err := s.roleRepo.Get(context.Background(), s.role.ID, s.testOrg.ID)
 	s.Require().NoError(err)
 
 	s.Assert().Equal(original, usingCache)
 	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
 
-	cached, err := s.roleRepo.Get(context.Background(), s.role.ID)
+	cached, err := s.roleRepo.Get(context.Background(), s.role.ID, s.testOrg.ID)
 	s.Require().NoError(err)
 
 	s.Assert().Equal(usingCache.ID, cached.ID)
@@ -113,7 +113,7 @@ func (s *CachedRoleRepositoryIntegrationTestSuite) TestAddMember() {
 
 	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
 
-	_, err = s.roleRepo.Get(context.Background(), s.role.ID)
+	_, err = s.roleRepo.Get(context.Background(), s.role.ID, s.testOrg.ID)
 	s.Require().NoError(err)
 
 	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 2)
@@ -121,7 +121,7 @@ func (s *CachedRoleRepositoryIntegrationTestSuite) TestAddMember() {
 	newUser := testModel.NewUser()
 	s.Require().NoError(s.UserRepo.Create(context.Background(), newUser))
 
-	s.Require().NoError(s.roleRepo.AddMember(context.Background(), s.role.ID, newUser.ID))
+	s.Require().NoError(s.roleRepo.AddMember(context.Background(), s.role.ID, newUser.ID, s.testOrg.ID))
 
 	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }
@@ -134,7 +134,7 @@ func (s *CachedRoleRepositoryIntegrationTestSuite) TestRemoveMember() {
 
 	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
 
-	_, err = s.roleRepo.Get(context.Background(), s.role.ID)
+	_, err = s.roleRepo.Get(context.Background(), s.role.ID, s.testOrg.ID)
 	s.Require().NoError(err)
 
 	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 2)
@@ -142,8 +142,8 @@ func (s *CachedRoleRepositoryIntegrationTestSuite) TestRemoveMember() {
 	newUser := testModel.NewUser()
 	s.Require().NoError(s.UserRepo.Create(context.Background(), newUser))
 
-	s.Require().NoError(s.roleRepo.AddMember(context.Background(), s.role.ID, newUser.ID))
-	s.Require().NoError(s.roleRepo.RemoveMember(context.Background(), s.role.ID, s.testUser.ID))
+	s.Require().NoError(s.roleRepo.AddMember(context.Background(), s.role.ID, newUser.ID, s.testOrg.ID))
+	s.Require().NoError(s.roleRepo.RemoveMember(context.Background(), s.role.ID, s.testUser.ID, s.testOrg.ID))
 
 	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }
@@ -156,7 +156,7 @@ func (s *CachedRoleRepositoryIntegrationTestSuite) TestUpdate() {
 		"description": "new description",
 	}
 
-	role, err := s.roleRepo.Update(context.Background(), s.role.ID, patch)
+	role, err := s.roleRepo.Update(context.Background(), s.role.ID, s.testOrg.ID, patch)
 	s.Require().NoError(err)
 
 	s.Assert().Equal(s.role.ID, role.ID)
@@ -173,14 +173,14 @@ func (s *CachedRoleRepositoryIntegrationTestSuite) TestUpdate() {
 func (s *CachedRoleRepositoryIntegrationTestSuite) TestDelete() {
 	s.Require().NoError(s.RoleRepo.Create(context.Background(), s.testUser.ID, s.testOrg.ID, s.role))
 
-	_, err := s.roleRepo.Get(context.Background(), s.role.ID)
+	_, err := s.roleRepo.Get(context.Background(), s.role.ID, s.testOrg.ID)
 	s.Require().NoError(err)
 
 	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
 
-	s.Require().NoError(s.roleRepo.Delete(context.Background(), s.role.ID))
+	s.Require().NoError(s.roleRepo.Delete(context.Background(), s.role.ID, s.testOrg.ID))
 
-	_, err = s.roleRepo.Get(context.Background(), s.role.ID)
+	_, err = s.roleRepo.Get(context.Background(), s.role.ID, s.testOrg.ID)
 	s.Assert().ErrorIs(err, repository.ErrNotFound)
 
 	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)

@@ -35,11 +35,12 @@ func CheckResponseBody(t *testing.T, body io.Reader, expected any, dst any) {
 }
 
 // GetHTTPClient returns a pre-configured HTTP client.
-// #nosec
 func GetHTTPClient() *http.Client {
 	return &http.Client{
 		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true, // #nosec G402
+			},
 		},
 	}
 }

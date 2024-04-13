@@ -260,9 +260,9 @@ func (r *IssueRelationKind) UnmarshalText(text []byte) error {
 
 // IssueRelation represents a relation between two issues.
 type IssueRelation struct {
-	ID        ID                `json:"id" validate:"required,dive"`
-	Source    ID                `json:"source" validate:"required,dive"`
-	Target    ID                `json:"target" validate:"required,dive"`
+	ID        ID                `json:"id" validate:"required"`
+	Source    ID                `json:"source" validate:"required"`
+	Target    ID                `json:"target" validate:"required"`
 	Kind      IssueRelationKind `json:"kind" validate:"required,min=1,max=7"`
 	CreatedAt *time.Time        `json:"created_at" validate:"omitempty"`
 	UpdatedAt *time.Time        `json:"updated_at" validate:"omitempty"`
@@ -288,16 +288,16 @@ func (i *IssueRelation) Validate() error {
 // Issue represents an issue in the system that can be assigned to a
 // user and belong to a project or another Issue.
 type Issue struct {
-	ID          ID              `json:"id" validate:"required,dive"`
+	ID          ID              `json:"id" validate:"required"`
 	NumericID   uint            `json:"numeric_id" validate:"required"`
-	Parent      *ID             `json:"parent" validate:"omitempty,dive"`
+	Parent      *ID             `json:"parent" validate:"omitempty"`
 	Kind        IssueKind       `json:"kind" validate:"required,min=1,max=4"`
 	Title       string          `json:"title" validate:"required,min=3,max=120"`
 	Description string          `json:"description" validate:"omitempty,min=10"`
 	Status      IssueStatus     `json:"status" validate:"required,min=1,max=6"`
 	Priority    IssuePriority   `json:"priority" validate:"required,min=1,max=5"`
 	Resolution  IssueResolution `json:"resolution" validate:"required,min=1,max=7"`
-	ReportedBy  ID              `json:"reported_by" validate:"required,dive"`
+	ReportedBy  ID              `json:"reported_by" validate:"required"`
 	Assignees   []ID            `json:"assignees" validate:"omitempty,dive"`
 	Labels      []ID            `json:"labels" validate:"omitempty,dive"`
 	Comments    []ID            `json:"comments" validate:"omitempty,dive"`

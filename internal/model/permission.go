@@ -60,10 +60,10 @@ func (p *PermissionKind) UnmarshalText(text []byte) error {
 // Permission represents a permission attached to a relation. The permission
 // defines the kind of access a subject has on a target.
 type Permission struct {
-	ID        ID             `json:"id" validate:"required,dive"`
+	ID        ID             `json:"id" validate:"required"`
 	Kind      PermissionKind `json:"kind" validate:"required,min=1,max=5"`
-	Subject   ID             `json:"subject" validate:"required,dive,nefield=Target"`
-	Target    ID             `json:"target" validate:"required,dive,nefield=Subject"`
+	Subject   ID             `json:"subject" validate:"required"`
+	Target    ID             `json:"target" validate:"required"`
 	CreatedAt *time.Time     `json:"created_at" validate:"omitempty"`
 	UpdatedAt *time.Time     `json:"updated_at" validate:"omitempty"`
 }
@@ -72,6 +72,9 @@ type Permission struct {
 func (p *Permission) Validate() error {
 	if err := validate.Struct(p); err != nil {
 		return errors.Join(ErrInvalidPermissionDetails, err)
+	}
+	if p.Subject.Inner == p.Target.Inner {
+		return errors.Join(ErrInvalidPermissionDetails, ErrPermissionSubjectTargetEqual)
 	}
 	if err := p.ID.Validate(); err != nil {
 		return errors.Join(ErrInvalidPermissionDetails, err)

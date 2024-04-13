@@ -56,7 +56,7 @@ func (s *UserStatus) UnmarshalText(text []byte) error {
 
 // User represents a user in the system.
 type User struct {
-	ID          ID         `json:"id" validate:"required,dive"`
+	ID          ID         `json:"id" validate:"required"`
 	Username    string     `json:"username" validate:"required,lowercase,min=3,max=50,containsany=0123456789abcdefghijklmnopqrstuvwxyz-_"`
 	Email       string     `json:"email" validate:"required,email"`
 	Password    string     `json:"password" validate:"required,min=8,max=64"`

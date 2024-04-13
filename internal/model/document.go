@@ -12,11 +12,11 @@ import (
 // pointer to a file in the static file storage, editable by users with the
 // appropriate permissions on the front-end.
 type Document struct {
-	ID          ID         `json:"id" validate:"required,dive"`
+	ID          ID         `json:"id" validate:"required"`
 	Name        string     `json:"name" validate:"required,min=3,max=120"`
 	Excerpt     string     `json:"excerpt" validate:"omitempty,min=10,max=500"`
 	FileID      string     `json:"file_id" validate:"required"`
-	CreatedBy   ID         `json:"created_by" validate:"required,dive"`
+	CreatedBy   ID         `json:"created_by" validate:"required"`
 	Labels      []ID       `json:"labels" validate:"omitempty,dive"`
 	Comments    []ID       `json:"comments" validate:"omitempty,dive"`
 	Attachments []ID       `json:"attachments" validate:"omitempty,dive"`

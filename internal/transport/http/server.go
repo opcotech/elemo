@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"time"
 
-	oapiMiddleware "github.com/deepmap/oapi-codegen/pkg/chi-middleware"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/openapi3filter"
 	"github.com/go-chi/chi/v5"
@@ -15,11 +14,12 @@ import (
 	"github.com/go-chi/cors"
 	authErrors "github.com/go-oauth2/oauth2/v4/errors"
 	authServer "github.com/go-oauth2/oauth2/v4/server"
+	netHTTPMiddleware "github.com/oapi-codegen/nethttp-middleware"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"go.opentelemetry.io/otel/trace"
 
 	"github.com/opcotech/elemo/internal/config"
 	"github.com/opcotech/elemo/internal/pkg/log"
+	"github.com/opcotech/elemo/internal/pkg/tracing"
 	"github.com/opcotech/elemo/internal/transport/http/api"
 )
 
@@ -124,7 +124,7 @@ func NewServer(opts ...ControllerOption) (StrictServer, error) {
 }
 
 // NewRouter creates a new HTTP router for the Server.
-func NewRouter(strictServer StrictServer, serverConfig *config.ServerConfig, tracer trace.Tracer) (http.Handler, error) {
+func NewRouter(strictServer StrictServer, serverConfig *config.ServerConfig, tracer tracing.Tracer) (http.Handler, error) {
 	if serverConfig == nil {
 		return nil, config.ErrNoConfig
 	}
@@ -196,9 +196,9 @@ func NewRouter(strictServer StrictServer, serverConfig *config.ServerConfig, tra
 	router.Group(func(r chi.Router) {
 		r.Use(
 			WithTracedMiddleware(tracer, WithUserID(strictServer.ValidateBearerToken)),
-			WithTracedMiddleware(tracer, oapiMiddleware.OapiRequestValidatorWithOptions(swagger, &oapiMiddleware.Options{
+			WithTracedMiddleware(tracer, netHTTPMiddleware.OapiRequestValidatorWithOptions(swagger, &netHTTPMiddleware.Options{
 				Options: openapi3filter.Options{
-					AuthenticationFunc: func(ctx context.Context, input *openapi3filter.AuthenticationInput) error {
+					AuthenticationFunc: func(_ context.Context, input *openapi3filter.AuthenticationInput) error {
 						if err := strictServer.ValidateTokenHandler(input.RequestValidationInput.Request); err != nil {
 							if errors.Is(err, authErrors.ErrInvalidAccessToken) {
 								return ErrAuthNoPermission
@@ -232,7 +232,7 @@ func NewRouter(strictServer StrictServer, serverConfig *config.ServerConfig, tra
 }
 
 // NewMetricsServer creates a new HTTP server for Prometheus metrics.
-func NewMetricsServer(serverConfig *config.ServerConfig, tracer trace.Tracer) (http.Handler, error) {
+func NewMetricsServer(serverConfig *config.ServerConfig, tracer tracing.Tracer) (http.Handler, error) {
 	router := chi.NewRouter()
 
 	if serverConfig.CORS.Enabled {

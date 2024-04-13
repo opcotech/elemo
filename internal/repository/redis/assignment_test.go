@@ -355,7 +355,7 @@ func TestCachedAssignmentRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				assignmentRepo: func(ctx context.Context, id model.ID, assignment *model.Assignment) repository.AssignmentRepository {
+				assignmentRepo: func(_ context.Context, _ model.ID, _ *model.Assignment) repository.AssignmentRepository {
 					return new(mock.AssignmentRepository)
 				},
 			},
@@ -375,7 +375,7 @@ func TestCachedAssignmentRepository_Get(t *testing.T) {
 		{
 			name: "get uncached assignment error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id model.ID, assignment *model.Assignment) *baseRepository {
+				cacheRepo: func(ctx context.Context, id model.ID, _ *model.Assignment) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeAssignment.String(), id.String())
 
 					db, err := NewDatabase(
@@ -399,7 +399,7 @@ func TestCachedAssignmentRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				assignmentRepo: func(ctx context.Context, id model.ID, assignment *model.Assignment) repository.AssignmentRepository {
+				assignmentRepo: func(ctx context.Context, id model.ID, _ *model.Assignment) repository.AssignmentRepository {
 					repo := new(mock.AssignmentRepository)
 					repo.On("Get", ctx, id).Return(nil, repository.ErrNotFound)
 					return repo
@@ -414,7 +414,7 @@ func TestCachedAssignmentRepository_Get(t *testing.T) {
 		{
 			name: "get cached assignment error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id model.ID, assignment *model.Assignment) *baseRepository {
+				cacheRepo: func(ctx context.Context, id model.ID, _ *model.Assignment) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeAssignment.String(), id.String())
 
 					db, err := NewDatabase(
@@ -438,7 +438,7 @@ func TestCachedAssignmentRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				assignmentRepo: func(ctx context.Context, id model.ID, assignment *model.Assignment) repository.AssignmentRepository {
+				assignmentRepo: func(_ context.Context, _ model.ID, _ *model.Assignment) repository.AssignmentRepository {
 					return new(mock.AssignmentRepository)
 				},
 			},
@@ -617,7 +617,7 @@ func TestCachedAssignmentRepository_GetByUser(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				assignmentRepo: func(ctx context.Context, userID model.ID, offset, limit int, assignments []*model.Assignment) repository.AssignmentRepository {
+				assignmentRepo: func(_ context.Context, _ model.ID, _, _ int, _ []*model.Assignment) repository.AssignmentRepository {
 					return new(mock.AssignmentRepository)
 				},
 			},
@@ -643,7 +643,7 @@ func TestCachedAssignmentRepository_GetByUser(t *testing.T) {
 		{
 			name: "get uncached assignments error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, userID model.ID, offset, limit int, assignments []*model.Assignment) *baseRepository {
+				cacheRepo: func(ctx context.Context, userID model.ID, offset, limit int, _ []*model.Assignment) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByUser", userID.String(), offset, limit)
 
 					db, err := NewDatabase(
@@ -668,7 +668,7 @@ func TestCachedAssignmentRepository_GetByUser(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				assignmentRepo: func(ctx context.Context, userID model.ID, offset, limit int, assignments []*model.Assignment) repository.AssignmentRepository {
+				assignmentRepo: func(ctx context.Context, userID model.ID, offset, limit int, _ []*model.Assignment) repository.AssignmentRepository {
 					repo := new(mock.AssignmentRepository)
 					repo.On("GetByUser", ctx, userID, offset, limit).Return(nil, repository.ErrNotFound)
 					return repo
@@ -683,7 +683,7 @@ func TestCachedAssignmentRepository_GetByUser(t *testing.T) {
 		{
 			name: "get get assignments cache error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, userID model.ID, offset, limit int, assignments []*model.Assignment) *baseRepository {
+				cacheRepo: func(ctx context.Context, userID model.ID, offset, limit int, _ []*model.Assignment) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByUser", userID.String(), offset, limit)
 
 					db, err := NewDatabase(
@@ -708,7 +708,7 @@ func TestCachedAssignmentRepository_GetByUser(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				assignmentRepo: func(ctx context.Context, userID model.ID, offset, limit int, assignments []*model.Assignment) repository.AssignmentRepository {
+				assignmentRepo: func(_ context.Context, _ model.ID, _, _ int, _ []*model.Assignment) repository.AssignmentRepository {
 					return new(mock.AssignmentRepository)
 				},
 			},
@@ -882,7 +882,7 @@ func TestCachedAssignmentRepository_GetByResource(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				assignmentRepo: func(ctx context.Context, userID model.ID, offset, limit int, assignments []*model.Assignment) repository.AssignmentRepository {
+				assignmentRepo: func(_ context.Context, _ model.ID, _, _ int, _ []*model.Assignment) repository.AssignmentRepository {
 					return new(mock.AssignmentRepository)
 				},
 			},
@@ -908,7 +908,7 @@ func TestCachedAssignmentRepository_GetByResource(t *testing.T) {
 		{
 			name: "get uncached assignments error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, userID model.ID, offset, limit int, assignments []*model.Assignment) *baseRepository {
+				cacheRepo: func(ctx context.Context, userID model.ID, offset, limit int, _ []*model.Assignment) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByResource", userID.String(), offset, limit)
 
 					db, err := NewDatabase(
@@ -933,7 +933,7 @@ func TestCachedAssignmentRepository_GetByResource(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				assignmentRepo: func(ctx context.Context, userID model.ID, offset, limit int, assignments []*model.Assignment) repository.AssignmentRepository {
+				assignmentRepo: func(ctx context.Context, userID model.ID, offset, limit int, _ []*model.Assignment) repository.AssignmentRepository {
 					repo := new(mock.AssignmentRepository)
 					repo.On("GetByResource", ctx, userID, offset, limit).Return(nil, repository.ErrNotFound)
 					return repo
@@ -948,7 +948,7 @@ func TestCachedAssignmentRepository_GetByResource(t *testing.T) {
 		{
 			name: "get get assignments cache error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, userID model.ID, offset, limit int, assignments []*model.Assignment) *baseRepository {
+				cacheRepo: func(ctx context.Context, userID model.ID, offset, limit int, _ []*model.Assignment) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByResource", userID.String(), offset, limit)
 
 					db, err := NewDatabase(
@@ -973,7 +973,7 @@ func TestCachedAssignmentRepository_GetByResource(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				assignmentRepo: func(ctx context.Context, userID model.ID, offset, limit int, assignments []*model.Assignment) repository.AssignmentRepository {
+				assignmentRepo: func(_ context.Context, _ model.ID, _, _ int, _ []*model.Assignment) repository.AssignmentRepository {
 					return new(mock.AssignmentRepository)
 				},
 			},
@@ -1255,7 +1255,7 @@ func TestCachedAssignmentRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				assignmentRepo: func(ctx context.Context, id model.ID) repository.AssignmentRepository {
+				assignmentRepo: func(_ context.Context, _ model.ID) repository.AssignmentRepository {
 					return new(mock.AssignmentRepository)
 				},
 			},
@@ -1306,7 +1306,7 @@ func TestCachedAssignmentRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				assignmentRepo: func(ctx context.Context, id model.ID) repository.AssignmentRepository {
+				assignmentRepo: func(_ context.Context, _ model.ID) repository.AssignmentRepository {
 					return new(mock.AssignmentRepository)
 				},
 			},
@@ -1364,7 +1364,7 @@ func TestCachedAssignmentRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				assignmentRepo: func(ctx context.Context, id model.ID) repository.AssignmentRepository {
+				assignmentRepo: func(_ context.Context, _ model.ID) repository.AssignmentRepository {
 					return new(mock.AssignmentRepository)
 				},
 			},

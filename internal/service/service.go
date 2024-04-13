@@ -1,8 +1,6 @@
 package service
 
 import (
-	"go.opentelemetry.io/otel/trace"
-
 	"github.com/opcotech/elemo/internal/pkg/log"
 	"github.com/opcotech/elemo/internal/pkg/tracing"
 	"github.com/opcotech/elemo/internal/repository"
@@ -24,7 +22,7 @@ func WithLogger(logger log.Logger) Option {
 }
 
 // WithTracer sets the tracer for the baseService.
-func WithTracer(tracer trace.Tracer) Option {
+func WithTracer(tracer tracing.Tracer) Option {
 	return func(s *baseService) error {
 		if tracer == nil {
 			return tracing.ErrNoTracer
@@ -44,6 +42,19 @@ func WithOrganizationRepository(organizationRepo repository.OrganizationReposito
 		}
 
 		s.organizationRepo = organizationRepo
+		return nil
+	}
+}
+
+// WithRoleRepository sets the organization repository for the
+// baseService.
+func WithRoleRepository(roleRepo repository.RoleRepository) Option {
+	return func(s *baseService) error {
+		if roleRepo == nil {
+			return ErrNoOrganizationRepository
+		}
+
+		s.roleRepo = roleRepo
 		return nil
 	}
 }
@@ -100,11 +111,12 @@ func WithPermissionService(permissionService PermissionService) Option {
 // core functionality.
 type baseService struct {
 	logger log.Logger
-	tracer trace.Tracer
+	tracer tracing.Tracer
 
 	organizationRepo repository.OrganizationRepository
-	userRepo         repository.UserRepository
+	roleRepo         repository.RoleRepository
 	todoRepo         repository.TodoRepository
+	userRepo         repository.UserRepository
 
 	licenseService    LicenseService
 	permissionService PermissionService

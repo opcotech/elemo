@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/hibiken/asynq"
-	"go.opentelemetry.io/otel/trace"
 
 	"github.com/opcotech/elemo/internal/config"
 	"github.com/opcotech/elemo/internal/pkg/log"
@@ -57,7 +56,7 @@ func WithSchedulerLogger(logger log.Logger) SchedulerOption {
 }
 
 // WithSchedulerTracer sets the tracer for the scheduler.
-func WithSchedulerTracer(tracer trace.Tracer) SchedulerOption {
+func WithSchedulerTracer(tracer tracing.Tracer) SchedulerOption {
 	return func(s *Scheduler) error {
 		if tracer == nil {
 			return tracing.ErrNoTracer
@@ -74,7 +73,7 @@ func WithSchedulerTracer(tracer trace.Tracer) SchedulerOption {
 type Scheduler struct {
 	conf   *config.WorkerConfig
 	logger log.Logger
-	tracer trace.Tracer
+	tracer tracing.Tracer
 
 	scheduler *asynq.Scheduler
 

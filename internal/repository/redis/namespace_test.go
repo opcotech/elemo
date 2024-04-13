@@ -34,7 +34,7 @@ func TestCachedNamespaceRepository_Create(t *testing.T) {
 		{
 			name: "add new namespace",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, organization model.ID, namespace *model.Namespace) *baseRepository {
+				cacheRepo: func(ctx context.Context, _ model.ID, _ *model.Namespace) *baseRepository {
 					getAllKey := composeCacheKey(model.ResourceTypeNamespace.String(), "GetAll", "*")
 					organizationKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*")
 
@@ -91,7 +91,7 @@ func TestCachedNamespaceRepository_Create(t *testing.T) {
 		{
 			name: "add new namespace with error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, organization model.ID, namespace *model.Namespace) *baseRepository {
+				cacheRepo: func(ctx context.Context, _ model.ID, _ *model.Namespace) *baseRepository {
 					getAllKey := composeCacheKey(model.ResourceTypeNamespace.String(), "GetAll", "*")
 					organizationKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*")
 
@@ -149,7 +149,7 @@ func TestCachedNamespaceRepository_Create(t *testing.T) {
 		{
 			name: "add new namespace with cache delete error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, organization model.ID, namespace *model.Namespace) *baseRepository {
+				cacheRepo: func(ctx context.Context, _ model.ID, _ *model.Namespace) *baseRepository {
 					getAllKey := composeCacheKey(model.ResourceTypeNamespace.String(), "GetAll", "*")
 					organizationKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*")
 
@@ -184,7 +184,7 @@ func TestCachedNamespaceRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				namespaceRepo: func(ctx context.Context, organization model.ID, namespace *model.Namespace) repository.NamespaceRepository {
+				namespaceRepo: func(_ context.Context, _ model.ID, _ *model.Namespace) repository.NamespaceRepository {
 					return new(mock.NamespaceRepository)
 				},
 			},
@@ -204,7 +204,7 @@ func TestCachedNamespaceRepository_Create(t *testing.T) {
 		{
 			name: "add new namespace with organization cache delete error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, organization model.ID, namespace *model.Namespace) *baseRepository {
+				cacheRepo: func(ctx context.Context, _ model.ID, _ *model.Namespace) *baseRepository {
 					getAllKey := composeCacheKey(model.ResourceTypeNamespace.String(), "GetAll", "*")
 					organizationKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*")
 
@@ -240,7 +240,7 @@ func TestCachedNamespaceRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				namespaceRepo: func(ctx context.Context, organization model.ID, namespace *model.Namespace) repository.NamespaceRepository {
+				namespaceRepo: func(_ context.Context, _ model.ID, _ *model.Namespace) repository.NamespaceRepository {
 					return new(mock.NamespaceRepository)
 				},
 			},
@@ -333,7 +333,7 @@ func TestCachedNamespaceRepository_Get(t *testing.T) {
 			},
 			want: func(id model.ID) *model.Namespace {
 				return &model.Namespace{
-					ID:          model.MustNewID(model.ResourceTypeNamespace),
+					ID:          id,
 					Name:        "test namespace",
 					Description: "test description",
 					Projects:    make([]model.ID, 0),
@@ -368,7 +368,7 @@ func TestCachedNamespaceRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				namespaceRepo: func(ctx context.Context, id model.ID, namespace *model.Namespace) repository.NamespaceRepository {
+				namespaceRepo: func(_ context.Context, _ model.ID, _ *model.Namespace) repository.NamespaceRepository {
 					return new(mock.NamespaceRepository)
 				},
 			},
@@ -378,7 +378,7 @@ func TestCachedNamespaceRepository_Get(t *testing.T) {
 			},
 			want: func(id model.ID) *model.Namespace {
 				return &model.Namespace{
-					ID:          model.MustNewID(model.ResourceTypeNamespace),
+					ID:          id,
 					Name:        "test namespace",
 					Description: "test description",
 					Projects:    make([]model.ID, 0),
@@ -389,7 +389,7 @@ func TestCachedNamespaceRepository_Get(t *testing.T) {
 		{
 			name: "get uncached namespace error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id model.ID, namespace *model.Namespace) *baseRepository {
+				cacheRepo: func(ctx context.Context, id model.ID, _ *model.Namespace) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeNamespace.String(), id.String())
 
 					db, err := NewDatabase(
@@ -413,7 +413,7 @@ func TestCachedNamespaceRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				namespaceRepo: func(ctx context.Context, id model.ID, namespace *model.Namespace) repository.NamespaceRepository {
+				namespaceRepo: func(ctx context.Context, id model.ID, _ *model.Namespace) repository.NamespaceRepository {
 					repo := new(mock.NamespaceRepository)
 					repo.On("Get", ctx, id).Return(nil, repository.ErrNotFound)
 					return repo
@@ -428,7 +428,7 @@ func TestCachedNamespaceRepository_Get(t *testing.T) {
 		{
 			name: "get cached namespace error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id model.ID, namespace *model.Namespace) *baseRepository {
+				cacheRepo: func(ctx context.Context, id model.ID, _ *model.Namespace) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeNamespace.String(), id.String())
 
 					db, err := NewDatabase(
@@ -452,7 +452,7 @@ func TestCachedNamespaceRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				namespaceRepo: func(ctx context.Context, id model.ID, namespace *model.Namespace) repository.NamespaceRepository {
+				namespaceRepo: func(_ context.Context, _ model.ID, _ *model.Namespace) repository.NamespaceRepository {
 					return new(mock.NamespaceRepository)
 				},
 			},
@@ -633,7 +633,7 @@ func TestCachedNamespaceRepository_GetAll(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				namespaceRepo: func(ctx context.Context, organization model.ID, offset, limit int, namespaces []*model.Namespace) repository.NamespaceRepository {
+				namespaceRepo: func(_ context.Context, _ model.ID, _, _ int, _ []*model.Namespace) repository.NamespaceRepository {
 					return new(mock.NamespaceRepository)
 				},
 			},
@@ -661,7 +661,7 @@ func TestCachedNamespaceRepository_GetAll(t *testing.T) {
 		{
 			name: "get uncached namespaces error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, organization model.ID, offset, limit int, namespaces []*model.Namespace) *baseRepository {
+				cacheRepo: func(ctx context.Context, organization model.ID, offset, limit int, _ []*model.Namespace) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeNamespace.String(), "GetAll", organization.String(), offset, limit)
 
 					db, err := NewDatabase(
@@ -686,7 +686,7 @@ func TestCachedNamespaceRepository_GetAll(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				namespaceRepo: func(ctx context.Context, organization model.ID, offset, limit int, namespaces []*model.Namespace) repository.NamespaceRepository {
+				namespaceRepo: func(ctx context.Context, organization model.ID, offset, limit int, _ []*model.Namespace) repository.NamespaceRepository {
 					repo := new(mock.NamespaceRepository)
 					repo.On("GetAll", ctx, organization, offset, limit).Return(nil, repository.ErrNotFound)
 					return repo
@@ -701,7 +701,7 @@ func TestCachedNamespaceRepository_GetAll(t *testing.T) {
 		{
 			name: "get get namespaces cache error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, organization model.ID, offset, limit int, namespaces []*model.Namespace) *baseRepository {
+				cacheRepo: func(ctx context.Context, organization model.ID, offset, limit int, _ []*model.Namespace) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeNamespace.String(), "GetAll", organization.String(), offset, limit)
 
 					db, err := NewDatabase(
@@ -726,7 +726,7 @@ func TestCachedNamespaceRepository_GetAll(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				namespaceRepo: func(ctx context.Context, organization model.ID, offset, limit int, namespaces []*model.Namespace) repository.NamespaceRepository {
+				namespaceRepo: func(_ context.Context, _ model.ID, _, _ int, _ []*model.Namespace) repository.NamespaceRepository {
 					return new(mock.NamespaceRepository)
 				},
 			},
@@ -884,7 +884,7 @@ func TestCachedNamespaceRepository_Update(t *testing.T) {
 		{
 			name: "update namespace with error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id model.ID, namespace *model.Namespace) *baseRepository {
+				cacheRepo: func(_ context.Context, _ model.ID, _ *model.Namespace) *baseRepository {
 					db, err := NewDatabase(
 						WithClient(new(mock.RedisClient)),
 					)
@@ -897,7 +897,7 @@ func TestCachedNamespaceRepository_Update(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				namespaceRepo: func(ctx context.Context, id model.ID, patch map[string]any, namespace *model.Namespace) repository.NamespaceRepository {
+				namespaceRepo: func(ctx context.Context, id model.ID, patch map[string]any, _ *model.Namespace) repository.NamespaceRepository {
 					repo := new(mock.NamespaceRepository)
 					repo.On("Update", ctx, id, patch).Return(nil, repository.ErrNotFound)
 					return repo
@@ -1244,7 +1244,7 @@ func TestCachedNamespaceRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				namespaceRepo: func(ctx context.Context, id model.ID) repository.NamespaceRepository {
+				namespaceRepo: func(_ context.Context, _ model.ID) repository.NamespaceRepository {
 					return new(mock.NamespaceRepository)
 				},
 			},
@@ -1296,7 +1296,7 @@ func TestCachedNamespaceRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				namespaceRepo: func(ctx context.Context, id model.ID) repository.NamespaceRepository {
+				namespaceRepo: func(_ context.Context, _ model.ID) repository.NamespaceRepository {
 					return new(mock.NamespaceRepository)
 				},
 			},

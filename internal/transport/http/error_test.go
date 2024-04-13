@@ -59,7 +59,7 @@ func TestHTTPError(t *testing.T) {
 
 			ctx := log.WithContext(context.Background(), logger)
 
-			rr := testHttp.ExecuteRequest(r, func(w http.ResponseWriter, r *http.Request) {
+			rr := testHttp.ExecuteRequest(r, func(w http.ResponseWriter, _ *http.Request) {
 				httpError(ctx, w, tt.args.err, tt.args.status)
 			})
 
@@ -119,7 +119,7 @@ func TestHTTPErrorStruct(t *testing.T) {
 
 			ctx := log.WithContext(context.Background(), logger)
 
-			rr := testHttp.ExecuteRequest(r, func(w http.ResponseWriter, r *http.Request) {
+			rr := testHttp.ExecuteRequest(r, func(w http.ResponseWriter, _ *http.Request) {
 				httpErrorStruct(ctx, w, tt.args.err, &tt.want, tt.args.status)
 			})
 

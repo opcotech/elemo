@@ -54,7 +54,7 @@ func (r *SystemRole) UnmarshalText(text []byte) error {
 // Role is a group of users. However, permissions are attached to roles
 // separately to avoid infinitely nested permissions.
 type Role struct {
-	ID          ID         `json:"id" validate:"required,dive"`
+	ID          ID         `json:"id" validate:"required"`
 	Name        string     `json:"name" validate:"required,min=3,max=120"`
 	Description string     `json:"description" validate:"omitempty,min=5,max=500"`
 	Members     []ID       `json:"members" validate:"omitempty,dive"`

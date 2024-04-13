@@ -8,7 +8,6 @@ import (
 	"net/smtp"
 
 	"github.com/Shopify/gomail"
-	"go.opentelemetry.io/otel/trace"
 
 	"github.com/opcotech/elemo/internal/config"
 	"github.com/opcotech/elemo/internal/email"
@@ -77,7 +76,7 @@ func WithLogger(logger log.Logger) Option {
 
 // WithTracer returns an Option that configures a Client with the given
 // tracer.
-func WithTracer(tracer trace.Tracer) Option {
+func WithTracer(tracer tracing.Tracer) Option {
 	return func(c *Client) error {
 		if tracer == nil {
 			return tracing.ErrNoTracer
@@ -92,7 +91,7 @@ type Client struct {
 	client WrappedClient      `validate:"required"`
 	config *config.SMTPConfig `validate:"required"`
 	logger log.Logger         `validate:"required"`
-	tracer trace.Tracer       `validate:"required"`
+	tracer tracing.Tracer     `validate:"required"`
 }
 
 // Authenticate initiates the SMTP handshake and authenticates the client.

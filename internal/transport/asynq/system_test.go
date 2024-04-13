@@ -107,7 +107,7 @@ func TestSystemHealthCheckTaskHandler_ProcessTask(t *testing.T) {
 		{
 			name: "process task",
 			fields: fields{
-				baseTaskHandler: func(ctx context.Context, task *asynq.Task) *baseTaskHandler {
+				baseTaskHandler: func(ctx context.Context, _ *asynq.Task) *baseTaskHandler {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -131,7 +131,7 @@ func TestSystemHealthCheckTaskHandler_ProcessTask(t *testing.T) {
 		{
 			name: "process task with invalid payload",
 			fields: fields{
-				baseTaskHandler: func(ctx context.Context, task *asynq.Task) *baseTaskHandler {
+				baseTaskHandler: func(ctx context.Context, _ *asynq.Task) *baseTaskHandler {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -371,7 +371,7 @@ func TestSystemLicenseExpiryTaskHandler_ProcessTask(t *testing.T) {
 		{
 			name: "process task with invalid payload",
 			fields: fields{
-				baseTaskHandler: func(ctx context.Context, task *asynq.Task) *baseTaskHandler {
+				baseTaskHandler: func(ctx context.Context, _ *asynq.Task) *baseTaskHandler {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 

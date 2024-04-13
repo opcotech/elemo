@@ -10,7 +10,7 @@ import (
 // Namespace represents a namespace of an organization. A namespace is a
 // logical grouping of Projects and Documents.
 type Namespace struct {
-	ID          ID         `json:"id" validate:"required,dive"`
+	ID          ID         `json:"id" validate:"required"`
 	Name        string     `json:"name" validate:"required,min=3,max=120"`
 	Description string     `json:"description" validate:"omitempty,min=5,max=500"`
 	Projects    []ID       `json:"projects" validate:"omitempty,dive"`

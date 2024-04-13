@@ -34,7 +34,7 @@ func TestCachedProjectRepository_Create(t *testing.T) {
 		{
 			name: "add new project",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, namespace model.ID, project *model.Project) *baseRepository {
+				cacheRepo: func(ctx context.Context, _ model.ID, _ *model.Project) *baseRepository {
 					getAllKey := composeCacheKey(model.ResourceTypeProject.String(), "GetAll", "*")
 					namespacesKey := composeCacheKey(model.ResourceTypeNamespace.String(), "*")
 
@@ -95,7 +95,7 @@ func TestCachedProjectRepository_Create(t *testing.T) {
 		{
 			name: "add new project with error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, namespace model.ID, project *model.Project) *baseRepository {
+				cacheRepo: func(ctx context.Context, _ model.ID, _ *model.Project) *baseRepository {
 					getAllKey := composeCacheKey(model.ResourceTypeProject.String(), "GetAll", "*")
 					namespacesKey := composeCacheKey(model.ResourceTypeNamespace.String(), "*")
 
@@ -157,7 +157,7 @@ func TestCachedProjectRepository_Create(t *testing.T) {
 		{
 			name: "add new project with cache delete error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, namespace model.ID, project *model.Project) *baseRepository {
+				cacheRepo: func(ctx context.Context, _ model.ID, _ *model.Project) *baseRepository {
 					getAllKey := composeCacheKey(model.ResourceTypeProject.String(), "GetAll", "*")
 					namespacesKey := composeCacheKey(model.ResourceTypeNamespace.String(), "*")
 
@@ -192,7 +192,7 @@ func TestCachedProjectRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				projectRepo: func(ctx context.Context, namespace model.ID, project *model.Project) repository.ProjectRepository {
+				projectRepo: func(_ context.Context, _ model.ID, _ *model.Project) repository.ProjectRepository {
 					return new(mock.ProjectRepository)
 				},
 			},
@@ -216,7 +216,7 @@ func TestCachedProjectRepository_Create(t *testing.T) {
 		{
 			name: "add new project with namespace cache delete error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, namespace model.ID, project *model.Project) *baseRepository {
+				cacheRepo: func(ctx context.Context, _ model.ID, _ *model.Project) *baseRepository {
 					getAllKey := composeCacheKey(model.ResourceTypeProject.String(), "GetAll", "*")
 					namespacesKey := composeCacheKey(model.ResourceTypeNamespace.String(), "*")
 
@@ -252,7 +252,7 @@ func TestCachedProjectRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				projectRepo: func(ctx context.Context, namespace model.ID, project *model.Project) repository.ProjectRepository {
+				projectRepo: func(_ context.Context, _ model.ID, _ *model.Project) repository.ProjectRepository {
 					return new(mock.ProjectRepository)
 				},
 			},
@@ -388,7 +388,7 @@ func TestCachedProjectRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				projectRepo: func(ctx context.Context, id model.ID, project *model.Project) repository.ProjectRepository {
+				projectRepo: func(_ context.Context, _ model.ID, _ *model.Project) repository.ProjectRepository {
 					return new(mock.ProjectRepository)
 				},
 			},
@@ -413,7 +413,7 @@ func TestCachedProjectRepository_Get(t *testing.T) {
 		{
 			name: "get uncached project error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id model.ID, project *model.Project) *baseRepository {
+				cacheRepo: func(ctx context.Context, id model.ID, _ *model.Project) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeProject.String(), id.String())
 
 					db, err := NewDatabase(
@@ -437,7 +437,7 @@ func TestCachedProjectRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				projectRepo: func(ctx context.Context, id model.ID, project *model.Project) repository.ProjectRepository {
+				projectRepo: func(ctx context.Context, id model.ID, _ *model.Project) repository.ProjectRepository {
 					repo := new(mock.ProjectRepository)
 					repo.On("Get", ctx, id).Return(nil, repository.ErrNotFound)
 					return repo
@@ -452,7 +452,7 @@ func TestCachedProjectRepository_Get(t *testing.T) {
 		{
 			name: "get cached project error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id model.ID, project *model.Project) *baseRepository {
+				cacheRepo: func(ctx context.Context, id model.ID, _ *model.Project) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeProject.String(), id.String())
 
 					db, err := NewDatabase(
@@ -476,7 +476,7 @@ func TestCachedProjectRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				projectRepo: func(ctx context.Context, id model.ID, project *model.Project) repository.ProjectRepository {
+				projectRepo: func(_ context.Context, _ model.ID, _ *model.Project) repository.ProjectRepository {
 					return new(mock.ProjectRepository)
 				},
 			},
@@ -652,7 +652,7 @@ func TestCachedProjectRepository_GetByKey(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				projectRepo: func(ctx context.Context, projectKey string, project *model.Project) repository.ProjectRepository {
+				projectRepo: func(_ context.Context, _ string, _ *model.Project) repository.ProjectRepository {
 					return new(mock.ProjectRepository)
 				},
 			},
@@ -677,7 +677,7 @@ func TestCachedProjectRepository_GetByKey(t *testing.T) {
 		{
 			name: "get uncached project error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, projectKey string, project *model.Project) *baseRepository {
+				cacheRepo: func(ctx context.Context, projectKey string, _ *model.Project) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeProject.String(), "GetByKey", projectKey)
 
 					db, err := NewDatabase(
@@ -701,7 +701,7 @@ func TestCachedProjectRepository_GetByKey(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				projectRepo: func(ctx context.Context, projectKey string, project *model.Project) repository.ProjectRepository {
+				projectRepo: func(ctx context.Context, projectKey string, _ *model.Project) repository.ProjectRepository {
 					repo := new(mock.ProjectRepository)
 					repo.On("GetByKey", ctx, projectKey).Return(nil, repository.ErrNotFound)
 					return repo
@@ -716,7 +716,7 @@ func TestCachedProjectRepository_GetByKey(t *testing.T) {
 		{
 			name: "get cached project error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, projectKey string, project *model.Project) *baseRepository {
+				cacheRepo: func(ctx context.Context, projectKey string, _ *model.Project) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeProject.String(), "GetByKey", projectKey)
 
 					db, err := NewDatabase(
@@ -740,7 +740,7 @@ func TestCachedProjectRepository_GetByKey(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				projectRepo: func(ctx context.Context, projectKey string, project *model.Project) repository.ProjectRepository {
+				projectRepo: func(_ context.Context, _ string, _ *model.Project) repository.ProjectRepository {
 					return new(mock.ProjectRepository)
 				},
 			},
@@ -929,7 +929,7 @@ func TestCachedProjectRepository_GetAll(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				projectRepo: func(ctx context.Context, namespace model.ID, offset, limit int, projects []*model.Project) repository.ProjectRepository {
+				projectRepo: func(_ context.Context, _ model.ID, _, _ int, _ []*model.Project) repository.ProjectRepository {
 					return new(mock.ProjectRepository)
 				},
 			},
@@ -965,7 +965,7 @@ func TestCachedProjectRepository_GetAll(t *testing.T) {
 		{
 			name: "get uncached projects error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, namespace model.ID, offset, limit int, projects []*model.Project) *baseRepository {
+				cacheRepo: func(ctx context.Context, namespace model.ID, offset, limit int, _ []*model.Project) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeProject.String(), "GetAll", namespace.String(), offset, limit)
 
 					db, err := NewDatabase(
@@ -990,7 +990,7 @@ func TestCachedProjectRepository_GetAll(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				projectRepo: func(ctx context.Context, namespace model.ID, offset, limit int, projects []*model.Project) repository.ProjectRepository {
+				projectRepo: func(ctx context.Context, namespace model.ID, offset, limit int, _ []*model.Project) repository.ProjectRepository {
 					repo := new(mock.ProjectRepository)
 					repo.On("GetAll", ctx, namespace, offset, limit).Return(nil, repository.ErrNotFound)
 					return repo
@@ -1005,7 +1005,7 @@ func TestCachedProjectRepository_GetAll(t *testing.T) {
 		{
 			name: "get get projects cache error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, namespace model.ID, offset, limit int, projects []*model.Project) *baseRepository {
+				cacheRepo: func(ctx context.Context, namespace model.ID, offset, limit int, _ []*model.Project) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeProject.String(), "GetAll", namespace.String(), offset, limit)
 
 					db, err := NewDatabase(
@@ -1030,7 +1030,7 @@ func TestCachedProjectRepository_GetAll(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				projectRepo: func(ctx context.Context, namespace model.ID, offset, limit int, projects []*model.Project) repository.ProjectRepository {
+				projectRepo: func(_ context.Context, _ model.ID, _, _ int, _ []*model.Project) repository.ProjectRepository {
 					return new(mock.ProjectRepository)
 				},
 			},
@@ -1198,7 +1198,7 @@ func TestCachedProjectRepository_Update(t *testing.T) {
 		{
 			name: "update project with error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id model.ID, project *model.Project) *baseRepository {
+				cacheRepo: func(_ context.Context, _ model.ID, _ *model.Project) *baseRepository {
 					db, err := NewDatabase(
 						WithClient(new(mock.RedisClient)),
 					)
@@ -1211,7 +1211,7 @@ func TestCachedProjectRepository_Update(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				projectRepo: func(ctx context.Context, id model.ID, patch map[string]any, project *model.Project) repository.ProjectRepository {
+				projectRepo: func(ctx context.Context, id model.ID, patch map[string]any, _ *model.Project) repository.ProjectRepository {
 					repo := new(mock.ProjectRepository)
 					repo.On("Update", ctx, id, patch).Return(nil, repository.ErrNotFound)
 					return repo
@@ -1689,7 +1689,7 @@ func TestCachedProjectRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				projectRepo: func(ctx context.Context, id model.ID) repository.ProjectRepository {
+				projectRepo: func(_ context.Context, _ model.ID) repository.ProjectRepository {
 					return new(mock.ProjectRepository)
 				},
 			},
@@ -1741,7 +1741,7 @@ func TestCachedProjectRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				projectRepo: func(ctx context.Context, id model.ID) repository.ProjectRepository {
+				projectRepo: func(_ context.Context, _ model.ID) repository.ProjectRepository {
 					return new(mock.ProjectRepository)
 				},
 			},
@@ -1793,7 +1793,7 @@ func TestCachedProjectRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				projectRepo: func(ctx context.Context, id model.ID) repository.ProjectRepository {
+				projectRepo: func(_ context.Context, _ model.ID) repository.ProjectRepository {
 					return new(mock.ProjectRepository)
 				},
 			},
@@ -1851,7 +1851,7 @@ func TestCachedProjectRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				projectRepo: func(ctx context.Context, id model.ID) repository.ProjectRepository {
+				projectRepo: func(_ context.Context, _ model.ID) repository.ProjectRepository {
 					return new(mock.ProjectRepository)
 				},
 			},

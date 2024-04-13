@@ -168,7 +168,7 @@ func TestCachedTodoRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				todoRepo: func(ctx context.Context, todo *model.Todo) repository.TodoRepository {
+				todoRepo: func(_ context.Context, _ *model.Todo) repository.TodoRepository {
 					return new(mock.TodoRepository)
 				},
 			},
@@ -262,7 +262,7 @@ func TestCachedTodoRepository_Get(t *testing.T) {
 			},
 			want: func(id model.ID) *model.Todo {
 				return &model.Todo{
-					ID:          model.MustNewID(model.ResourceTypeTodo),
+					ID:          id,
 					Title:       "test title",
 					Description: "test description",
 					Priority:    model.TodoPriorityNormal,
@@ -299,7 +299,7 @@ func TestCachedTodoRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				todoRepo: func(ctx context.Context, id model.ID, todo *model.Todo) repository.TodoRepository {
+				todoRepo: func(_ context.Context, _ model.ID, _ *model.Todo) repository.TodoRepository {
 					return new(mock.TodoRepository)
 				},
 			},
@@ -309,7 +309,7 @@ func TestCachedTodoRepository_Get(t *testing.T) {
 			},
 			want: func(id model.ID) *model.Todo {
 				return &model.Todo{
-					ID:          model.MustNewID(model.ResourceTypeTodo),
+					ID:          id,
 					Title:       "test title",
 					Description: "test description",
 					Priority:    model.TodoPriorityNormal,
@@ -322,7 +322,7 @@ func TestCachedTodoRepository_Get(t *testing.T) {
 		{
 			name: "get uncached todo error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id model.ID, todo *model.Todo) *baseRepository {
+				cacheRepo: func(ctx context.Context, id model.ID, _ *model.Todo) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeTodo.String(), id.String())
 
 					db, err := NewDatabase(
@@ -346,7 +346,7 @@ func TestCachedTodoRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				todoRepo: func(ctx context.Context, id model.ID, todo *model.Todo) repository.TodoRepository {
+				todoRepo: func(ctx context.Context, id model.ID, _ *model.Todo) repository.TodoRepository {
 					repo := new(mock.TodoRepository)
 					repo.On("Get", ctx, id).Return(nil, repository.ErrNotFound)
 					return repo
@@ -361,7 +361,7 @@ func TestCachedTodoRepository_Get(t *testing.T) {
 		{
 			name: "get cached todo error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id model.ID, todo *model.Todo) *baseRepository {
+				cacheRepo: func(ctx context.Context, id model.ID, _ *model.Todo) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeTodo.String(), id.String())
 
 					db, err := NewDatabase(
@@ -385,7 +385,7 @@ func TestCachedTodoRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				todoRepo: func(ctx context.Context, id model.ID, todo *model.Todo) repository.TodoRepository {
+				todoRepo: func(_ context.Context, _ model.ID, _ *model.Todo) repository.TodoRepository {
 					return new(mock.TodoRepository)
 				},
 			},
@@ -573,7 +573,7 @@ func TestCachedTodoRepository_GetByOwner(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				todoRepo: func(ctx context.Context, owner model.ID, offset, limit int, completed *bool, todos []*model.Todo) repository.TodoRepository {
+				todoRepo: func(_ context.Context, _ model.ID, _, _ int, _ *bool, _ []*model.Todo) repository.TodoRepository {
 					return new(mock.TodoRepository)
 				},
 			},
@@ -607,7 +607,7 @@ func TestCachedTodoRepository_GetByOwner(t *testing.T) {
 		{
 			name: "get uncached todos error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, owner model.ID, offset, limit int, completed *bool, todos []*model.Todo) *baseRepository {
+				cacheRepo: func(ctx context.Context, owner model.ID, offset, limit int, completed *bool, _ []*model.Todo) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeTodo.String(), "GetByOwner", owner.String(), offset, limit, completed)
 
 					db, err := NewDatabase(
@@ -649,7 +649,7 @@ func TestCachedTodoRepository_GetByOwner(t *testing.T) {
 		{
 			name: "get get todos cache error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, owner model.ID, offset, limit int, completed *bool, todos []*model.Todo) *baseRepository {
+				cacheRepo: func(ctx context.Context, owner model.ID, offset, limit int, completed *bool, _ []*model.Todo) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeTodo.String(), "GetByOwner", owner.String(), offset, limit, completed)
 
 					db, err := NewDatabase(
@@ -674,7 +674,7 @@ func TestCachedTodoRepository_GetByOwner(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				todoRepo: func(ctx context.Context, owner model.ID, offset, limit int, completed *bool, todos []*model.Todo) repository.TodoRepository {
+				todoRepo: func(_ context.Context, _ model.ID, _, _ int, _ *bool, _ []*model.Todo) repository.TodoRepository {
 					return new(mock.TodoRepository)
 				},
 			},
@@ -838,7 +838,7 @@ func TestCachedTodoRepository_Update(t *testing.T) {
 		{
 			name: "update todo with error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id model.ID, todo *model.Todo) *baseRepository {
+				cacheRepo: func(_ context.Context, _ model.ID, _ *model.Todo) *baseRepository {
 					db, err := NewDatabase(
 						WithClient(new(mock.RedisClient)),
 					)
@@ -851,7 +851,7 @@ func TestCachedTodoRepository_Update(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				todoRepo: func(ctx context.Context, id model.ID, patch map[string]any, todo *model.Todo) repository.TodoRepository {
+				todoRepo: func(ctx context.Context, id model.ID, patch map[string]any, _ *model.Todo) repository.TodoRepository {
 					repo := new(mock.TodoRepository)
 					repo.On("Update", ctx, id, patch).Return(nil, repository.ErrNotFound)
 					return repo
@@ -1215,7 +1215,7 @@ func TestCachedTodoRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				todoRepo: func(ctx context.Context, id model.ID) repository.TodoRepository {
+				todoRepo: func(_ context.Context, _ model.ID) repository.TodoRepository {
 					return new(mock.TodoRepository)
 				},
 			},

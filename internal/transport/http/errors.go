@@ -10,6 +10,7 @@ var (
 	ErrNoLicenseService      = errors.New("no license service provided")      // no license service provided
 	ErrNoLogger              = errors.New("no logger provided")               // no logger provided
 	ErrNoOrganizationService = errors.New("no organization service provided") // no organization service provided
+	ErrNoRoleService         = errors.New("no role service provided")         // no role service provided
 	ErrNoPermissionService   = errors.New("no permission service provided")   // no permission service provided
 	ErrNoSystemService       = errors.New("no system service provided")       // no system service provided
 	ErrNoTodoService         = errors.New("no todo service provided")         // no todo service provided

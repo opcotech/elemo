@@ -602,7 +602,7 @@ func TestLicenseService_WithinThreshold(t *testing.T) {
 						permissionService: new(mock.PermissionService),
 					}
 				},
-				licenseRepo: func(ctx context.Context) repository.LicenseRepository {
+				licenseRepo: func(_ context.Context) repository.LicenseRepository {
 					return new(mock.LicenseRepository)
 				},
 				license: &license.License{

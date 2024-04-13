@@ -7,7 +7,6 @@ import (
 
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
 	neo4jConfig "github.com/neo4j/neo4j-go-driver/v5/neo4j/config"
-	"go.opentelemetry.io/otel/trace"
 
 	"github.com/opcotech/elemo/internal/config"
 	"github.com/opcotech/elemo/internal/model"
@@ -78,7 +77,7 @@ func WithDatabaseLogger(logger log.Logger) DatabaseOption {
 }
 
 // WithDatabaseTracer sets the tracer for a Neo4j database.
-func WithDatabaseTracer(tracer trace.Tracer) DatabaseOption {
+func WithDatabaseTracer(tracer tracing.Tracer) DatabaseOption {
 	return func(db *Database) {
 		db.tracer = tracer
 	}
@@ -89,7 +88,7 @@ type Database struct {
 	driver neo4j.DriverWithContext `validate:"required"`
 	name   string                  `validate:"required"`
 	logger log.Logger              `validate:"required"`
-	tracer trace.Tracer            `validate:"required"`
+	tracer tracing.Tracer          `validate:"required"`
 }
 
 // GetReadSession returns a "read" session.
@@ -169,7 +168,7 @@ func WithRepositoryLogger(logger log.Logger) RepositoryOption {
 }
 
 // WithRepositoryTracer sets the tracer for a baseRepository.
-func WithRepositoryTracer(tracer trace.Tracer) RepositoryOption {
+func WithRepositoryTracer(tracer tracing.Tracer) RepositoryOption {
 	return func(r *baseRepository) error {
 		if tracer == nil {
 			return tracing.ErrNoTracer
@@ -182,9 +181,9 @@ func WithRepositoryTracer(tracer trace.Tracer) RepositoryOption {
 
 // baseRepository represents a baseRepository for a Neo4j baseRepository.
 type baseRepository struct {
-	db     *Database    `validate:"required"`
-	logger log.Logger   `validate:"required"`
-	tracer trace.Tracer `validate:"required"`
+	db     *Database      `validate:"required"`
+	logger log.Logger     `validate:"required"`
+	tracer tracing.Tracer `validate:"required"`
 }
 
 // newRepository creates a new baseRepository for a Neo4j baseRepository.

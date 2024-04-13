@@ -13,7 +13,6 @@ import (
 	"github.com/go-oauth2/oauth2/v4"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 
 	httpMetricsProm "github.com/slok/go-http-metrics/metrics/prometheus"
 	httpMetricsMiddleware "github.com/slok/go-http-metrics/middleware"
@@ -22,6 +21,7 @@ import (
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg"
 	"github.com/opcotech/elemo/internal/pkg/log"
+	"github.com/opcotech/elemo/internal/pkg/tracing"
 )
 
 type ctxCallbackFunc func(w http.ResponseWriter, r *http.Request) any
@@ -55,7 +55,7 @@ func withContextObject(ctxKey pkg.CtxKey, cb ctxCallbackFunc) func(next http.Han
 // WithContextObject returns a middleware that adds any value to the context
 // associated with the given key.
 func WithContextObject(key pkg.CtxKey, value any) func(next http.Handler) http.Handler {
-	return withContextObject(key, func(w http.ResponseWriter, r *http.Request) any {
+	return withContextObject(key, func(_ http.ResponseWriter, _ *http.Request) any {
 		return value
 	})
 }
@@ -76,7 +76,7 @@ func WithPrometheusMetrics(next http.Handler) http.Handler {
 // WithTracedMiddleware returns an HTTP middleware that traces the middleware
 // execution by creating a new span and passing the context to the next
 // handler.
-func WithTracedMiddleware(tracer trace.Tracer, middleware func(next http.Handler) http.Handler) func(next http.Handler) http.Handler {
+func WithTracedMiddleware(tracer tracing.Tracer, middleware func(next http.Handler) http.Handler) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			name, path := getMiddlewareName(middleware)
@@ -125,7 +125,7 @@ func WithRequestLogger(next http.Handler) http.Handler {
 // from the Authorization header if present. Otherwise, an empty string is
 // added.
 func WithUserID(tokenValidator func(r *http.Request) (oauth2.TokenInfo, error)) func(next http.Handler) http.Handler {
-	return withContextObject(pkg.CtxKeyUserID, func(w http.ResponseWriter, r *http.Request) any {
+	return withContextObject(pkg.CtxKeyUserID, func(_ http.ResponseWriter, r *http.Request) any {
 		if info, _ := tokenValidator(r); info != nil {
 			id, _ := model.NewIDFromString(info.GetUserID(), model.ResourceTypeUser.String())
 			return id

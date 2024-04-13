@@ -50,7 +50,7 @@ func (s *ProjectStatus) UnmarshalText(text []byte) error {
 
 // Project represents a project that is used to group tasks together.
 type Project struct {
-	ID          ID            `json:"id" validate:"required,dive"`
+	ID          ID            `json:"id" validate:"required"`
 	Key         string        `json:"key" validate:"required,alpha,min=3,max=6"`
 	Name        string        `json:"name" validate:"required,min=3,max=120"`
 	Description string        `json:"description" validate:"omitempty,min=10,max=500"`

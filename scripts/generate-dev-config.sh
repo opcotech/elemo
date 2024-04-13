@@ -63,6 +63,9 @@ log:
 license:
   file: "configs/development/license.gen.key"
 
+template:
+  directory: "templates"
+
 server:
   address: "${host}:35478"
   read_timeout: 10
