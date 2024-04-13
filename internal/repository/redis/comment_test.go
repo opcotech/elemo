@@ -34,7 +34,7 @@ func TestCachedCommentRepository_Create(t *testing.T) {
 		{
 			name: "add new comment to an issue",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, belongsTo model.ID, comment *model.Comment) *baseRepository {
+				cacheRepo: func(ctx context.Context, belongsTo model.ID, _ *model.Comment) *baseRepository {
 					belongsToKey := composeCacheKey(model.ResourceTypeComment.String(), "GetAllBelongsTo", belongsTo.String(), "*")
 					issuesKey := composeCacheKey(model.ResourceTypeIssue.String(), "*")
 
@@ -89,7 +89,7 @@ func TestCachedCommentRepository_Create(t *testing.T) {
 		{
 			name: "add new comment to a document",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, belongsTo model.ID, comment *model.Comment) *baseRepository {
+				cacheRepo: func(ctx context.Context, belongsTo model.ID, _ *model.Comment) *baseRepository {
 					belongsToKey := composeCacheKey(model.ResourceTypeComment.String(), "GetAllBelongsTo", belongsTo.String(), "*")
 					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
 
@@ -144,7 +144,7 @@ func TestCachedCommentRepository_Create(t *testing.T) {
 		{
 			name: "add new comment with error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, belongsTo model.ID, comment *model.Comment) *baseRepository {
+				cacheRepo: func(ctx context.Context, belongsTo model.ID, _ *model.Comment) *baseRepository {
 					belongsToKey := composeCacheKey(model.ResourceTypeComment.String(), "GetAllBelongsTo", belongsTo.String(), "*")
 					issuesKey := composeCacheKey(model.ResourceTypeIssue.String(), "*")
 
@@ -200,7 +200,7 @@ func TestCachedCommentRepository_Create(t *testing.T) {
 		{
 			name: "add new comment belongs to cache delete error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, belongsTo model.ID, comment *model.Comment) *baseRepository {
+				cacheRepo: func(ctx context.Context, belongsTo model.ID, _ *model.Comment) *baseRepository {
 					belongsToKey := composeCacheKey(model.ResourceTypeComment.String(), "GetAllBelongsTo", belongsTo.String(), "*")
 					issuesKey := composeCacheKey(model.ResourceTypeIssue.String(), "*")
 
@@ -236,7 +236,7 @@ func TestCachedCommentRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				commentRepo: func(ctx context.Context, belongsTo model.ID, comment *model.Comment) repository.CommentRepository {
+				commentRepo: func(_ context.Context, _ model.ID, _ *model.Comment) repository.CommentRepository {
 					return new(mock.CommentRepository)
 				},
 			},
@@ -327,7 +327,7 @@ func TestCachedCommentRepository_Get(t *testing.T) {
 			},
 			want: func(id model.ID) *model.Comment {
 				return &model.Comment{
-					ID:        model.MustNewID(model.ResourceTypeComment),
+					ID:        id,
 					Content:   "test comment content",
 					CreatedBy: model.MustNewID(model.ResourceTypeUser),
 				}
@@ -360,7 +360,7 @@ func TestCachedCommentRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				commentRepo: func(ctx context.Context, id model.ID, comment *model.Comment) repository.CommentRepository {
+				commentRepo: func(_ context.Context, _ model.ID, _ *model.Comment) repository.CommentRepository {
 					return new(mock.CommentRepository)
 				},
 			},
@@ -370,7 +370,7 @@ func TestCachedCommentRepository_Get(t *testing.T) {
 			},
 			want: func(id model.ID) *model.Comment {
 				return &model.Comment{
-					ID:        model.MustNewID(model.ResourceTypeComment),
+					ID:        id,
 					Content:   "test comment content",
 					CreatedBy: model.MustNewID(model.ResourceTypeUser),
 				}
@@ -379,7 +379,7 @@ func TestCachedCommentRepository_Get(t *testing.T) {
 		{
 			name: "get uncached comment error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id model.ID, comment *model.Comment) *baseRepository {
+				cacheRepo: func(ctx context.Context, id model.ID, _ *model.Comment) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeComment.String(), id.String())
 
 					db, err := NewDatabase(
@@ -403,7 +403,7 @@ func TestCachedCommentRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				commentRepo: func(ctx context.Context, id model.ID, comment *model.Comment) repository.CommentRepository {
+				commentRepo: func(ctx context.Context, id model.ID, _ *model.Comment) repository.CommentRepository {
 					repo := new(mock.CommentRepository)
 					repo.On("Get", ctx, id).Return(nil, repository.ErrNotFound)
 					return repo
@@ -418,7 +418,7 @@ func TestCachedCommentRepository_Get(t *testing.T) {
 		{
 			name: "get cached comment error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id model.ID, comment *model.Comment) *baseRepository {
+				cacheRepo: func(ctx context.Context, id model.ID, _ *model.Comment) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeComment.String(), id.String())
 
 					db, err := NewDatabase(
@@ -442,7 +442,7 @@ func TestCachedCommentRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				commentRepo: func(ctx context.Context, id model.ID, comment *model.Comment) repository.CommentRepository {
+				commentRepo: func(_ context.Context, _ model.ID, _ *model.Comment) repository.CommentRepository {
 					return new(mock.CommentRepository)
 				},
 			},
@@ -619,7 +619,7 @@ func TestCachedCommentRepository_GetAllBelongsTo(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				commentRepo: func(ctx context.Context, belongsTo model.ID, offset, limit int, comments []*model.Comment) repository.CommentRepository {
+				commentRepo: func(_ context.Context, _ model.ID, _, _ int, _ []*model.Comment) repository.CommentRepository {
 					return new(mock.CommentRepository)
 				},
 			},
@@ -643,7 +643,7 @@ func TestCachedCommentRepository_GetAllBelongsTo(t *testing.T) {
 		{
 			name: "get uncached comments error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, belongsTo model.ID, offset, limit int, comments []*model.Comment) *baseRepository {
+				cacheRepo: func(ctx context.Context, belongsTo model.ID, offset, limit int, _ []*model.Comment) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeComment.String(), "GetAllBelongsTo", belongsTo.String(), offset, limit)
 
 					db, err := NewDatabase(
@@ -668,7 +668,7 @@ func TestCachedCommentRepository_GetAllBelongsTo(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				commentRepo: func(ctx context.Context, belongsTo model.ID, offset, limit int, comments []*model.Comment) repository.CommentRepository {
+				commentRepo: func(ctx context.Context, belongsTo model.ID, offset, limit int, _ []*model.Comment) repository.CommentRepository {
 					repo := new(mock.CommentRepository)
 					repo.On("GetAllBelongsTo", ctx, belongsTo, offset, limit).Return(nil, repository.ErrNotFound)
 					return repo
@@ -683,7 +683,7 @@ func TestCachedCommentRepository_GetAllBelongsTo(t *testing.T) {
 		{
 			name: "get get comments cache error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, belongsTo model.ID, offset, limit int, comments []*model.Comment) *baseRepository {
+				cacheRepo: func(ctx context.Context, belongsTo model.ID, offset, limit int, _ []*model.Comment) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeComment.String(), "GetAllBelongsTo", belongsTo.String(), offset, limit)
 
 					db, err := NewDatabase(
@@ -708,7 +708,7 @@ func TestCachedCommentRepository_GetAllBelongsTo(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				commentRepo: func(ctx context.Context, belongsTo model.ID, offset, limit int, comments []*model.Comment) repository.CommentRepository {
+				commentRepo: func(_ context.Context, _ model.ID, _, _ int, _ []*model.Comment) repository.CommentRepository {
 					return new(mock.CommentRepository)
 				},
 			},
@@ -861,7 +861,7 @@ func TestCachedCommentRepository_Update(t *testing.T) {
 		{
 			name: "update comment with error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id model.ID, comment *model.Comment) *baseRepository {
+				cacheRepo: func(_ context.Context, _ model.ID, _ *model.Comment) *baseRepository {
 					db, err := NewDatabase(
 						WithClient(new(mock.RedisClient)),
 					)
@@ -874,7 +874,7 @@ func TestCachedCommentRepository_Update(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				commentRepo: func(ctx context.Context, id model.ID, comment *model.Comment) repository.CommentRepository {
+				commentRepo: func(ctx context.Context, id model.ID, _ *model.Comment) repository.CommentRepository {
 					repo := new(mock.CommentRepository)
 					repo.On("Update", ctx, id, "new content").Return(nil, repository.ErrNotFound)
 					return repo
@@ -1224,7 +1224,7 @@ func TestCachedCommentRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				commentRepo: func(ctx context.Context, id model.ID) repository.CommentRepository {
+				commentRepo: func(_ context.Context, _ model.ID) repository.CommentRepository {
 					return new(mock.CommentRepository)
 				},
 			},
@@ -1277,7 +1277,7 @@ func TestCachedCommentRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				commentRepo: func(ctx context.Context, id model.ID) repository.CommentRepository {
+				commentRepo: func(_ context.Context, _ model.ID) repository.CommentRepository {
 					return new(mock.CommentRepository)
 				},
 			},
@@ -1335,7 +1335,7 @@ func TestCachedCommentRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				commentRepo: func(ctx context.Context, id model.ID) repository.CommentRepository {
+				commentRepo: func(_ context.Context, _ model.ID) repository.CommentRepository {
 					return new(mock.CommentRepository)
 				},
 			},

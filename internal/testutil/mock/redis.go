@@ -427,8 +427,8 @@ func (r *RedisClient) TSCreateRuleWithArgs(ctx context.Context, sourceKey string
 	return args.Get(0).(*redis.StatusCmd)
 }
 
-func (r *RedisClient) TSIncrBy(ctx context.Context, Key string, timestamp float64) *redis.IntCmd {
-	args := r.Called(ctx, Key, timestamp)
+func (r *RedisClient) TSIncrBy(ctx context.Context, key string, timestamp float64) *redis.IntCmd {
+	args := r.Called(ctx, key, timestamp)
 	return args.Get(0).(*redis.IntCmd)
 }
 
@@ -437,8 +437,8 @@ func (r *RedisClient) TSIncrByWithArgs(ctx context.Context, key string, timestam
 	return args.Get(0).(*redis.IntCmd)
 }
 
-func (r *RedisClient) TSDecrBy(ctx context.Context, Key string, timestamp float64) *redis.IntCmd {
-	args := r.Called(ctx, Key, timestamp)
+func (r *RedisClient) TSDecrBy(ctx context.Context, key string, timestamp float64) *redis.IntCmd {
+	args := r.Called(ctx, key, timestamp)
 	return args.Get(0).(*redis.IntCmd)
 }
 
@@ -447,8 +447,8 @@ func (r *RedisClient) TSDecrByWithArgs(ctx context.Context, key string, timestam
 	return args.Get(0).(*redis.IntCmd)
 }
 
-func (r *RedisClient) TSDel(ctx context.Context, Key string, fromTimestamp int, toTimestamp int) *redis.IntCmd {
-	args := r.Called(ctx, Key, fromTimestamp, toTimestamp)
+func (r *RedisClient) TSDel(ctx context.Context, key string, fromTimestamp int, toTimestamp int) *redis.IntCmd {
+	args := r.Called(ctx, key, fromTimestamp, toTimestamp)
 	return args.Get(0).(*redis.IntCmd)
 }
 

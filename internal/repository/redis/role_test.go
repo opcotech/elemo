@@ -35,7 +35,7 @@ func TestCachedRoleRepository_Create(t *testing.T) {
 		{
 			name: "add new role",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, createdBy, belongsTo model.ID, role *model.Role) *baseRepository {
+				cacheRepo: func(ctx context.Context, _, belongsTo model.ID, _ *model.Role) *baseRepository {
 					belongsToKey := composeCacheKey(model.ResourceTypeRole.String(), "GetAllBelongsTo", belongsTo.String(), "*")
 					organizationsKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*")
 					projectsKey := composeCacheKey(model.ResourceTypeProject.String(), "*")
@@ -99,7 +99,7 @@ func TestCachedRoleRepository_Create(t *testing.T) {
 		{
 			name: "add new role with error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, createdBy, belongsTo model.ID, role *model.Role) *baseRepository {
+				cacheRepo: func(ctx context.Context, _, belongsTo model.ID, _ *model.Role) *baseRepository {
 					belongsToKey := composeCacheKey(model.ResourceTypeRole.String(), "GetAllBelongsTo", belongsTo.String(), "*")
 					organizationsKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*")
 					projectsKey := composeCacheKey(model.ResourceTypeProject.String(), "*")
@@ -164,7 +164,7 @@ func TestCachedRoleRepository_Create(t *testing.T) {
 		{
 			name: "add new role with belongs to cache error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, createdBy, belongsTo model.ID, role *model.Role) *baseRepository {
+				cacheRepo: func(ctx context.Context, _, belongsTo model.ID, _ *model.Role) *baseRepository {
 					belongsToKey := composeCacheKey(model.ResourceTypeRole.String(), "GetAllBelongsTo", belongsTo.String(), "*")
 
 					belongsToKeyResult := new(redis.StringSliceCmd)
@@ -217,7 +217,7 @@ func TestCachedRoleRepository_Create(t *testing.T) {
 		{
 			name: "add new role with organization cache error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, createdBy, belongsTo model.ID, role *model.Role) *baseRepository {
+				cacheRepo: func(ctx context.Context, _, belongsTo model.ID, _ *model.Role) *baseRepository {
 					belongsToKey := composeCacheKey(model.ResourceTypeRole.String(), "GetAllBelongsTo", belongsTo.String(), "*")
 					organizationsKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*")
 
@@ -276,7 +276,7 @@ func TestCachedRoleRepository_Create(t *testing.T) {
 		{
 			name: "add new role with project cache error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, createdBy, belongsTo model.ID, role *model.Role) *baseRepository {
+				cacheRepo: func(ctx context.Context, _, belongsTo model.ID, _ *model.Role) *baseRepository {
 					belongsToKey := composeCacheKey(model.ResourceTypeRole.String(), "GetAllBelongsTo", belongsTo.String(), "*")
 					organizationsKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*")
 					projectsKey := composeCacheKey(model.ResourceTypeProject.String(), "*")
@@ -416,7 +416,7 @@ func TestCachedRoleRepository_Get(t *testing.T) {
 			},
 			want: func(id model.ID) *model.Role {
 				return &model.Role{
-					ID:          model.MustNewID(model.ResourceTypeRole),
+					ID:          id,
 					Name:        "test role",
 					Description: "test description",
 					Members:     make([]model.ID, 0),
@@ -451,7 +451,7 @@ func TestCachedRoleRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				roleRepo: func(ctx context.Context, id, belongsTo model.ID, role *model.Role) repository.RoleRepository {
+				roleRepo: func(_ context.Context, _, _ model.ID, _ *model.Role) repository.RoleRepository {
 					return new(mock.RoleRepository)
 				},
 			},
@@ -460,7 +460,7 @@ func TestCachedRoleRepository_Get(t *testing.T) {
 				id:        model.MustNewID(model.ResourceTypeRole),
 				belongsTo: model.MustNewID(model.ResourceTypeOrganization),
 			},
-			want: func(id model.ID) *model.Role {
+			want: func(_ model.ID) *model.Role {
 				return &model.Role{
 					ID:          model.MustNewID(model.ResourceTypeRole),
 					Name:        "test role",
@@ -473,7 +473,7 @@ func TestCachedRoleRepository_Get(t *testing.T) {
 		{
 			name: "get uncached role error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id model.ID, role *model.Role) *baseRepository {
+				cacheRepo: func(ctx context.Context, id model.ID, _ *model.Role) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeRole.String(), id.String())
 
 					db, err := NewDatabase(
@@ -497,7 +497,7 @@ func TestCachedRoleRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				roleRepo: func(ctx context.Context, id, belongsTo model.ID, role *model.Role) repository.RoleRepository {
+				roleRepo: func(ctx context.Context, id, belongsTo model.ID, _ *model.Role) repository.RoleRepository {
 					repo := new(mock.RoleRepository)
 					repo.On("Get", ctx, id, belongsTo).Return(nil, repository.ErrNotFound)
 					return repo
@@ -513,7 +513,7 @@ func TestCachedRoleRepository_Get(t *testing.T) {
 		{
 			name: "get cached role error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id model.ID, role *model.Role) *baseRepository {
+				cacheRepo: func(ctx context.Context, id model.ID, _ *model.Role) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeRole.String(), id.String())
 
 					db, err := NewDatabase(
@@ -537,7 +537,7 @@ func TestCachedRoleRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				roleRepo: func(ctx context.Context, id, belongsTo model.ID, role *model.Role) repository.RoleRepository {
+				roleRepo: func(_ context.Context, _, _ model.ID, _ *model.Role) repository.RoleRepository {
 					return new(mock.RoleRepository)
 				},
 			},
@@ -720,7 +720,7 @@ func TestCachedRoleRepository_GetAllBelongsTo(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				roleRepo: func(ctx context.Context, belongsTo model.ID, offset, limit int, roles []*model.Role) repository.RoleRepository {
+				roleRepo: func(_ context.Context, _ model.ID, _, _ int, _ []*model.Role) repository.RoleRepository {
 					return new(mock.RoleRepository)
 				},
 			},
@@ -748,7 +748,7 @@ func TestCachedRoleRepository_GetAllBelongsTo(t *testing.T) {
 		{
 			name: "get uncached roles error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, belongsTo model.ID, offset, limit int, roles []*model.Role) *baseRepository {
+				cacheRepo: func(ctx context.Context, belongsTo model.ID, offset, limit int, _ []*model.Role) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeRole.String(), "GetAllBelongsTo", belongsTo.String(), offset, limit)
 
 					db, err := NewDatabase(
@@ -773,7 +773,7 @@ func TestCachedRoleRepository_GetAllBelongsTo(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				roleRepo: func(ctx context.Context, belongsTo model.ID, offset, limit int, roles []*model.Role) repository.RoleRepository {
+				roleRepo: func(ctx context.Context, belongsTo model.ID, offset, limit int, _ []*model.Role) repository.RoleRepository {
 					repo := new(mock.RoleRepository)
 					repo.On("GetAllBelongsTo", ctx, belongsTo, offset, limit).Return(nil, repository.ErrNotFound)
 					return repo
@@ -788,7 +788,7 @@ func TestCachedRoleRepository_GetAllBelongsTo(t *testing.T) {
 		{
 			name: "get get roles cache error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, belongsTo model.ID, offset, limit int, roles []*model.Role) *baseRepository {
+				cacheRepo: func(ctx context.Context, belongsTo model.ID, offset, limit int, _ []*model.Role) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeRole.String(), "GetAllBelongsTo", belongsTo.String(), offset, limit)
 
 					db, err := NewDatabase(
@@ -813,7 +813,7 @@ func TestCachedRoleRepository_GetAllBelongsTo(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				roleRepo: func(ctx context.Context, belongsTo model.ID, offset, limit int, roles []*model.Role) repository.RoleRepository {
+				roleRepo: func(_ context.Context, _ model.ID, _, _ int, _ []*model.Role) repository.RoleRepository {
 					return new(mock.RoleRepository)
 				},
 			},
@@ -971,7 +971,7 @@ func TestCachedRoleRepository_Update(t *testing.T) {
 		{
 			name: "update role with error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id model.ID, role *model.Role) *baseRepository {
+				cacheRepo: func(_ context.Context, _ model.ID, _ *model.Role) *baseRepository {
 					db, err := NewDatabase(
 						WithClient(new(mock.RedisClient)),
 					)
@@ -984,7 +984,7 @@ func TestCachedRoleRepository_Update(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				roleRepo: func(ctx context.Context, id, belongsTo model.ID, patch map[string]any, role *model.Role) repository.RoleRepository {
+				roleRepo: func(ctx context.Context, id, belongsTo model.ID, patch map[string]any, _ *model.Role) repository.RoleRepository {
 					repo := new(mock.RoleRepository)
 					repo.On("Update", ctx, id, belongsTo, patch).Return(nil, repository.ErrNotFound)
 					return repo
@@ -1155,7 +1155,7 @@ func TestCachedRoleRepository_AddMember(t *testing.T) {
 		{
 			name: "delete role success",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id, memberID model.ID) *baseRepository {
+				cacheRepo: func(ctx context.Context, id, _ model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeRole.String(), id.String())
 					getAllKey := composeCacheKey(model.ResourceTypeRole.String(), "GetAllBelongsTo", "*")
 
@@ -1204,7 +1204,7 @@ func TestCachedRoleRepository_AddMember(t *testing.T) {
 		{
 			name: "delete role with role deletion error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id, memberID model.ID) *baseRepository {
+				cacheRepo: func(ctx context.Context, id, _ model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeRole.String(), id.String())
 					getAllKey := composeCacheKey(model.ResourceTypeRole.String(), "GetAllBelongsTo", "*")
 
@@ -1254,7 +1254,7 @@ func TestCachedRoleRepository_AddMember(t *testing.T) {
 		{
 			name: "delete role with cache deletion error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id, memberID model.ID) *baseRepository {
+				cacheRepo: func(ctx context.Context, id, _ model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeRole.String(), id.String())
 
 					dbClient := new(mock.RedisClient)
@@ -1297,7 +1297,7 @@ func TestCachedRoleRepository_AddMember(t *testing.T) {
 		{
 			name: "delete role cache by related key error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id, memberID model.ID) *baseRepository {
+				cacheRepo: func(ctx context.Context, id, _ model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeRole.String(), id.String())
 					getAllKey := composeCacheKey(model.ResourceTypeRole.String(), "GetAllBelongsTo", "*")
 
@@ -1330,7 +1330,7 @@ func TestCachedRoleRepository_AddMember(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				roleRepo: func(ctx context.Context, id, memberID, belongsToID model.ID) repository.RoleRepository {
+				roleRepo: func(_ context.Context, _, _, _ model.ID) repository.RoleRepository {
 					return new(mock.RoleRepository)
 				},
 			},
@@ -1377,7 +1377,7 @@ func TestCachedRoleRepository_RemoveMember(t *testing.T) {
 		{
 			name: "delete role success",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id, memberID model.ID) *baseRepository {
+				cacheRepo: func(ctx context.Context, id, _ model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeRole.String(), id.String())
 					getAllKey := composeCacheKey(model.ResourceTypeRole.String(), "GetAllBelongsTo", "*")
 
@@ -1426,7 +1426,7 @@ func TestCachedRoleRepository_RemoveMember(t *testing.T) {
 		{
 			name: "delete role with role deletion error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id, memberID model.ID) *baseRepository {
+				cacheRepo: func(ctx context.Context, id, _ model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeRole.String(), id.String())
 					getAllKey := composeCacheKey(model.ResourceTypeRole.String(), "GetAllBelongsTo", "*")
 
@@ -1476,7 +1476,7 @@ func TestCachedRoleRepository_RemoveMember(t *testing.T) {
 		{
 			name: "delete role with cache deletion error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id, memberID model.ID) *baseRepository {
+				cacheRepo: func(ctx context.Context, id, _ model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeRole.String(), id.String())
 
 					dbClient := new(mock.RedisClient)
@@ -1519,7 +1519,7 @@ func TestCachedRoleRepository_RemoveMember(t *testing.T) {
 		{
 			name: "delete role cache by related key error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id, memberID model.ID) *baseRepository {
+				cacheRepo: func(ctx context.Context, id, _ model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeRole.String(), id.String())
 					getAllKey := composeCacheKey(model.ResourceTypeRole.String(), "GetAllBelongsTo", "*")
 
@@ -1552,7 +1552,7 @@ func TestCachedRoleRepository_RemoveMember(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				roleRepo: func(ctx context.Context, id, memberID, belongsToID model.ID) repository.RoleRepository {
+				roleRepo: func(_ context.Context, _, _, _ model.ID) repository.RoleRepository {
 					return new(mock.RoleRepository)
 				},
 			},
@@ -1794,7 +1794,7 @@ func TestCachedRoleRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				roleRepo: func(ctx context.Context, id, belongsTo model.ID) repository.RoleRepository {
+				roleRepo: func(_ context.Context, _, _ model.ID) repository.RoleRepository {
 					return new(mock.RoleRepository)
 				},
 			},
@@ -1847,7 +1847,7 @@ func TestCachedRoleRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				roleRepo: func(ctx context.Context, id, belongsTo model.ID) repository.RoleRepository {
+				roleRepo: func(_ context.Context, _, _ model.ID) repository.RoleRepository {
 					return new(mock.RoleRepository)
 				},
 			},
@@ -1906,7 +1906,7 @@ func TestCachedRoleRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				roleRepo: func(ctx context.Context, id, belongsTo model.ID) repository.RoleRepository {
+				roleRepo: func(_ context.Context, _, _ model.ID) repository.RoleRepository {
 					return new(mock.RoleRepository)
 				},
 			},

@@ -57,7 +57,7 @@ func TestWithWorkerConfig(t *testing.T) {
 }
 
 func TestWithWorkerTaskHandler(t *testing.T) {
-	handler := asynq.HandlerFunc(func(ctx context.Context, task *asynq.Task) error {
+	handler := asynq.HandlerFunc(func(_ context.Context, _ *asynq.Task) error {
 		return nil
 	})
 

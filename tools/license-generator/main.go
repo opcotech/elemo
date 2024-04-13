@@ -135,8 +135,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// #nosec
-	if err := os.WriteFile(outputLicenseFile, []byte(licenseData), 0644); err != nil {
+	if err := os.WriteFile(outputLicenseFile, []byte(licenseData), 0600); err != nil {
 		log.Fatal(err)
 	}
 

@@ -34,7 +34,7 @@ func TestCachedUserRepository_Create(t *testing.T) {
 		{
 			name: "create new user",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, user *model.User) *baseRepository {
+				cacheRepo: func(ctx context.Context, _ *model.User) *baseRepository {
 					getAllKey := composeCacheKey(model.ResourceTypeUser.String(), "GetAll", "*")
 					organizationsKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*")
 					rolesKey := composeCacheKey(model.ResourceTypeRole.String(), "*")
@@ -107,7 +107,7 @@ func TestCachedUserRepository_Create(t *testing.T) {
 		{
 			name: "add new user with error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, user *model.User) *baseRepository {
+				cacheRepo: func(ctx context.Context, _ *model.User) *baseRepository {
 					getAllKey := composeCacheKey(model.ResourceTypeUser.String(), "GetAll", "*")
 					organizationsKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*")
 					rolesKey := composeCacheKey(model.ResourceTypeRole.String(), "*")
@@ -181,7 +181,7 @@ func TestCachedUserRepository_Create(t *testing.T) {
 		{
 			name: "add new user get all cache delete error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, user *model.User) *baseRepository {
+				cacheRepo: func(ctx context.Context, _ *model.User) *baseRepository {
 					getAllKey := composeCacheKey(model.ResourceTypeUser.String(), "GetAll", "*")
 					organizationsKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*")
 					rolesKey := composeCacheKey(model.ResourceTypeRole.String(), "*")
@@ -223,7 +223,7 @@ func TestCachedUserRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				userRepo: func(ctx context.Context, user *model.User) repository.UserRepository {
+				userRepo: func(_ context.Context, _ *model.User) repository.UserRepository {
 					return new(mock.UserRepository)
 				},
 			},
@@ -253,7 +253,7 @@ func TestCachedUserRepository_Create(t *testing.T) {
 		{
 			name: "create new user organizations cache delete error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, user *model.User) *baseRepository {
+				cacheRepo: func(ctx context.Context, _ *model.User) *baseRepository {
 					getAllKey := composeCacheKey(model.ResourceTypeUser.String(), "GetAll", "*")
 					organizationsKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*")
 
@@ -289,7 +289,7 @@ func TestCachedUserRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				userRepo: func(ctx context.Context, user *model.User) repository.UserRepository {
+				userRepo: func(_ context.Context, _ *model.User) repository.UserRepository {
 					return new(mock.UserRepository)
 				},
 			},
@@ -319,7 +319,7 @@ func TestCachedUserRepository_Create(t *testing.T) {
 		{
 			name: "create new user roles cache delete error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, user *model.User) *baseRepository {
+				cacheRepo: func(ctx context.Context, _ *model.User) *baseRepository {
 					getAllKey := composeCacheKey(model.ResourceTypeUser.String(), "GetAll", "*")
 					organizationsKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*")
 					rolesKey := composeCacheKey(model.ResourceTypeRole.String(), "*")
@@ -361,7 +361,7 @@ func TestCachedUserRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				userRepo: func(ctx context.Context, user *model.User) repository.UserRepository {
+				userRepo: func(_ context.Context, _ *model.User) repository.UserRepository {
 					return new(mock.UserRepository)
 				},
 			},
@@ -510,7 +510,7 @@ func TestCachedUserRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				userRepo: func(ctx context.Context, id model.ID, user *model.User) repository.UserRepository {
+				userRepo: func(_ context.Context, _ model.ID, _ *model.User) repository.UserRepository {
 					return new(mock.UserRepository)
 				},
 			},
@@ -542,7 +542,7 @@ func TestCachedUserRepository_Get(t *testing.T) {
 		{
 			name: "get uncached user error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id model.ID, user *model.User) *baseRepository {
+				cacheRepo: func(ctx context.Context, id model.ID, _ *model.User) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeUser.String(), id.String())
 
 					db, err := NewDatabase(
@@ -566,7 +566,7 @@ func TestCachedUserRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				userRepo: func(ctx context.Context, id model.ID, user *model.User) repository.UserRepository {
+				userRepo: func(ctx context.Context, id model.ID, _ *model.User) repository.UserRepository {
 					repo := new(mock.UserRepository)
 					repo.On("Get", ctx, id).Return(nil, repository.ErrNotFound)
 					return repo
@@ -581,7 +581,7 @@ func TestCachedUserRepository_Get(t *testing.T) {
 		{
 			name: "get cached user error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id model.ID, user *model.User) *baseRepository {
+				cacheRepo: func(ctx context.Context, id model.ID, _ *model.User) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeUser.String(), id.String())
 
 					db, err := NewDatabase(
@@ -605,7 +605,7 @@ func TestCachedUserRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				userRepo: func(ctx context.Context, id model.ID, user *model.User) repository.UserRepository {
+				userRepo: func(_ context.Context, _ model.ID, _ *model.User) repository.UserRepository {
 					return new(mock.UserRepository)
 				},
 			},
@@ -788,7 +788,7 @@ func TestCachedUserRepository_GetByEmail(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				userRepo: func(ctx context.Context, email string, user *model.User) repository.UserRepository {
+				userRepo: func(_ context.Context, _ string, _ *model.User) repository.UserRepository {
 					return new(mock.UserRepository)
 				},
 			},
@@ -820,7 +820,7 @@ func TestCachedUserRepository_GetByEmail(t *testing.T) {
 		{
 			name: "get uncached user error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, email string, user *model.User) *baseRepository {
+				cacheRepo: func(ctx context.Context, email string, _ *model.User) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeUser.String(), "GetByEmail", email)
 
 					db, err := NewDatabase(
@@ -844,7 +844,7 @@ func TestCachedUserRepository_GetByEmail(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				userRepo: func(ctx context.Context, email string, user *model.User) repository.UserRepository {
+				userRepo: func(ctx context.Context, email string, _ *model.User) repository.UserRepository {
 					repo := new(mock.UserRepository)
 					repo.On("GetByEmail", ctx, email).Return(nil, repository.ErrNotFound)
 					return repo
@@ -859,7 +859,7 @@ func TestCachedUserRepository_GetByEmail(t *testing.T) {
 		{
 			name: "get cached user error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, email string, user *model.User) *baseRepository {
+				cacheRepo: func(ctx context.Context, email string, _ *model.User) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeUser.String(), "GetByEmail", email)
 
 					db, err := NewDatabase(
@@ -883,7 +883,7 @@ func TestCachedUserRepository_GetByEmail(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				userRepo: func(ctx context.Context, email string, user *model.User) repository.UserRepository {
+				userRepo: func(_ context.Context, _ string, _ *model.User) repository.UserRepository {
 					return new(mock.UserRepository)
 				},
 			},
@@ -1086,7 +1086,7 @@ func TestCachedUserRepository_GetAll(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				userRepo: func(ctx context.Context, offset, limit int, users []*model.User) repository.UserRepository {
+				userRepo: func(_ context.Context, _, _ int, _ []*model.User) repository.UserRepository {
 					return new(mock.UserRepository)
 				},
 			},
@@ -1137,7 +1137,7 @@ func TestCachedUserRepository_GetAll(t *testing.T) {
 		{
 			name: "get uncached users error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, offset, limit int, users []*model.User) *baseRepository {
+				cacheRepo: func(ctx context.Context, offset, limit int, _ []*model.User) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeUser.String(), "GetAll", offset, limit)
 
 					db, err := NewDatabase(
@@ -1162,7 +1162,7 @@ func TestCachedUserRepository_GetAll(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				userRepo: func(ctx context.Context, offset, limit int, users []*model.User) repository.UserRepository {
+				userRepo: func(ctx context.Context, offset, limit int, _ []*model.User) repository.UserRepository {
 					repo := new(mock.UserRepository)
 					repo.On("GetAll", ctx, offset, limit).Return(nil, repository.ErrNotFound)
 					return repo
@@ -1178,7 +1178,7 @@ func TestCachedUserRepository_GetAll(t *testing.T) {
 		{
 			name: "get get users cache error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, offset, limit int, users []*model.User) *baseRepository {
+				cacheRepo: func(ctx context.Context, offset, limit int, _ []*model.User) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeUser.String(), "GetAll", offset, limit)
 
 					db, err := NewDatabase(
@@ -1203,7 +1203,7 @@ func TestCachedUserRepository_GetAll(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				userRepo: func(ctx context.Context, offset, limit int, users []*model.User) repository.UserRepository {
+				userRepo: func(_ context.Context, _, _ int, _ []*model.User) repository.UserRepository {
 					return new(mock.UserRepository)
 				},
 			},
@@ -1381,7 +1381,7 @@ func TestCachedUserRepository_Update(t *testing.T) {
 		{
 			name: "update user with error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id model.ID, user *model.User) *baseRepository {
+				cacheRepo: func(_ context.Context, _ model.ID, _ *model.User) *baseRepository {
 					db, err := NewDatabase(
 						WithClient(new(mock.RedisClient)),
 					)
@@ -1394,7 +1394,7 @@ func TestCachedUserRepository_Update(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				userRepo: func(ctx context.Context, id model.ID, patch map[string]any, user *model.User) repository.UserRepository {
+				userRepo: func(ctx context.Context, id model.ID, patch map[string]any, _ *model.User) repository.UserRepository {
 					repo := new(mock.UserRepository)
 					repo.On("Update", ctx, id, patch).Return(nil, repository.ErrNotFound)
 					return repo
@@ -1871,7 +1871,7 @@ func TestCachedUserRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				userRepo: func(ctx context.Context, id model.ID) repository.UserRepository {
+				userRepo: func(_ context.Context, _ model.ID) repository.UserRepository {
 					return new(mock.UserRepository)
 				},
 			},
@@ -1923,7 +1923,7 @@ func TestCachedUserRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				userRepo: func(ctx context.Context, id model.ID) repository.UserRepository {
+				userRepo: func(_ context.Context, _ model.ID) repository.UserRepository {
 					return new(mock.UserRepository)
 				},
 			},
@@ -1981,7 +1981,7 @@ func TestCachedUserRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				userRepo: func(ctx context.Context, id model.ID) repository.UserRepository {
+				userRepo: func(_ context.Context, _ model.ID) repository.UserRepository {
 					return new(mock.UserRepository)
 				},
 			},
@@ -2045,7 +2045,7 @@ func TestCachedUserRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				userRepo: func(ctx context.Context, id model.ID) repository.UserRepository {
+				userRepo: func(_ context.Context, _ model.ID) repository.UserRepository {
 					return new(mock.UserRepository)
 				},
 			},

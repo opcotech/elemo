@@ -4,7 +4,6 @@ go 1.22
 
 require (
 	github.com/Shopify/gomail v0.0.0-20220729171026-0784ece65e69
-	github.com/deepmap/oapi-codegen v1.16.2
 	github.com/gabor-boros/go-oauth2-pg v0.0.0-20230608073400-a93883d73d34
 	github.com/getkin/kin-openapi v0.124.0
 	github.com/go-chi/chi/v5 v5.0.12
@@ -19,6 +18,7 @@ require (
 	github.com/hyperboloide/lk v0.0.0-20230325114855-ce3fecd34798
 	github.com/jackc/pgx/v5 v5.5.5
 	github.com/neo4j/neo4j-go-driver/v5 v5.19.0
+	github.com/oapi-codegen/nethttp-middleware v1.0.1
 	github.com/oapi-codegen/runtime v1.1.1
 	github.com/prometheus/client_golang v1.19.0
 	github.com/redis/go-redis/v9 v9.5.1

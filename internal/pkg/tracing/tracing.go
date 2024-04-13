@@ -13,6 +13,7 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
 	"go.opentelemetry.io/otel/trace"
 	"go.opentelemetry.io/otel/trace/embedded"
+	nooptrace "go.opentelemetry.io/otel/trace/noop"
 
 	"github.com/opcotech/elemo/internal/config"
 	"github.com/opcotech/elemo/internal/model"
@@ -20,7 +21,7 @@ import (
 
 var (
 	ErrNoTracer        = errors.New("no tracer") // the tracer is missing
-	noopTracerProvider = trace.NewNoopTracerProvider()
+	noopTracerProvider = nooptrace.NewTracerProvider()
 	noopTracer         = noopTracerProvider.Tracer("github.com/opcotech/elemo")
 )
 

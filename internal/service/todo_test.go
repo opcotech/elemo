@@ -450,7 +450,7 @@ func TestTodoService_Get(t *testing.T) {
 				id:  todo.ID,
 			},
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID, todo *model.Todo) *baseService {
+				baseService: func(ctx context.Context, id model.ID, _ *model.Todo) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -480,7 +480,7 @@ func TestTodoService_Get(t *testing.T) {
 				id:  todo.ID,
 			},
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID, todo *model.Todo) *baseService {
+				baseService: func(ctx context.Context, id model.ID, _ *model.Todo) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -510,7 +510,7 @@ func TestTodoService_Get(t *testing.T) {
 				id:  todo.ID,
 			},
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID, todo *model.Todo) *baseService {
+				baseService: func(ctx context.Context, id model.ID, _ *model.Todo) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -543,7 +543,7 @@ func TestTodoService_Get(t *testing.T) {
 				id:  model.ID{},
 			},
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID, todo *model.Todo) *baseService {
+				baseService: func(ctx context.Context, _ model.ID, _ *model.Todo) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -702,7 +702,7 @@ func TestTodoService_GetAll(t *testing.T) {
 				completed: nil,
 			},
 			fields: fields{
-				baseService: func(ctx context.Context, offset, limit int, completed *bool, todos []*model.Todo) *baseService {
+				baseService: func(ctx context.Context, _, _ int, _ *bool, _ []*model.Todo) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -729,7 +729,7 @@ func TestTodoService_GetAll(t *testing.T) {
 				completed: nil,
 			},
 			fields: fields{
-				baseService: func(ctx context.Context, offset, limit int, completed *bool, todos []*model.Todo) *baseService {
+				baseService: func(ctx context.Context, offset, limit int, completed *bool, _ []*model.Todo) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -833,7 +833,7 @@ func TestTodoService_Update(t *testing.T) {
 				},
 			},
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID, patch map[string]any, todo *model.Todo) *baseService {
+				baseService: func(ctx context.Context, id model.ID, _ map[string]any, _ *model.Todo) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -869,7 +869,7 @@ func TestTodoService_Update(t *testing.T) {
 				},
 			},
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID, patch map[string]any, todo *model.Todo) *baseService {
+				baseService: func(ctx context.Context, id model.ID, _ map[string]any, _ *model.Todo) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -905,7 +905,7 @@ func TestTodoService_Update(t *testing.T) {
 				},
 			},
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID, patch map[string]any, todo *model.Todo) *baseService {
+				baseService: func(ctx context.Context, id model.ID, patch map[string]any, _ *model.Todo) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -944,7 +944,7 @@ func TestTodoService_Update(t *testing.T) {
 				},
 			},
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID, patch map[string]any, todo *model.Todo) *baseService {
+				baseService: func(ctx context.Context, _ model.ID, _ map[string]any, _ *model.Todo) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -975,7 +975,7 @@ func TestTodoService_Update(t *testing.T) {
 				},
 			},
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID, patch map[string]any, todo *model.Todo) *baseService {
+				baseService: func(ctx context.Context, _ model.ID, _ map[string]any, _ *model.Todo) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1006,7 +1006,7 @@ func TestTodoService_Update(t *testing.T) {
 				},
 			},
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID, patch map[string]any, todo *model.Todo) *baseService {
+				baseService: func(ctx context.Context, _ model.ID, _ map[string]any, _ *model.Todo) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1205,7 +1205,7 @@ func TestTodoService_Delete(t *testing.T) {
 				id:  model.ID{},
 			},
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID) *baseService {
+				baseService: func(ctx context.Context, _ model.ID) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1233,7 +1233,7 @@ func TestTodoService_Delete(t *testing.T) {
 				id:  todo.ID,
 			},
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID) *baseService {
+				baseService: func(ctx context.Context, _ model.ID) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1261,7 +1261,7 @@ func TestTodoService_Delete(t *testing.T) {
 				id:  todo.ID,
 			},
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID) *baseService {
+				baseService: func(ctx context.Context, _ model.ID) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 

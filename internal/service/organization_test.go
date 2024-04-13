@@ -185,7 +185,7 @@ func TestOrganizationService_Create(t *testing.T) {
 		{
 			name: "create organization with no permission",
 			fields: fields{
-				baseService: func(ctx context.Context, organization *model.Organization) *baseService {
+				baseService: func(ctx context.Context, _ *model.Organization) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -220,7 +220,7 @@ func TestOrganizationService_Create(t *testing.T) {
 		{
 			name: "create organization with permission error",
 			fields: fields{
-				baseService: func(ctx context.Context, organization *model.Organization) *baseService {
+				baseService: func(ctx context.Context, _ *model.Organization) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -255,7 +255,7 @@ func TestOrganizationService_Create(t *testing.T) {
 		{
 			name: "create organization with invalid organization",
 			fields: fields{
-				baseService: func(ctx context.Context, organization *model.Organization) *baseService {
+				baseService: func(ctx context.Context, _ *model.Organization) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -321,7 +321,7 @@ func TestOrganizationService_Create(t *testing.T) {
 		{
 			name: "create organization out of quota",
 			fields: fields{
-				baseService: func(ctx context.Context, organization *model.Organization) *baseService {
+				baseService: func(ctx context.Context, _ *model.Organization) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -356,7 +356,7 @@ func TestOrganizationService_Create(t *testing.T) {
 		{
 			name: "create organization with expired license",
 			fields: fields{
-				baseService: func(ctx context.Context, organization *model.Organization) *baseService {
+				baseService: func(ctx context.Context, _ *model.Organization) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -385,7 +385,7 @@ func TestOrganizationService_Create(t *testing.T) {
 		{
 			name: "create organization with license expired error",
 			fields: fields{
-				baseService: func(ctx context.Context, organization *model.Organization) *baseService {
+				baseService: func(ctx context.Context, _ *model.Organization) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -469,7 +469,7 @@ func TestOrganizationService_Get(t *testing.T) {
 		{
 			name: "get organization with invalid organization",
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID, organization *model.Organization) *baseService {
+				baseService: func(ctx context.Context, _ model.ID, _ *model.Organization) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -492,7 +492,7 @@ func TestOrganizationService_Get(t *testing.T) {
 		{
 			name: "get organization with error",
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID, organization *model.Organization) *baseService {
+				baseService: func(ctx context.Context, id model.ID, _ *model.Organization) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -579,7 +579,7 @@ func TestOrganizationService_GetAll(t *testing.T) {
 		{
 			name: "get all organizations with invalid offset",
 			fields: fields{
-				baseService: func(ctx context.Context, offset, limit int, organizations []*model.Organization) *baseService {
+				baseService: func(ctx context.Context, _, _ int, _ []*model.Organization) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -603,7 +603,7 @@ func TestOrganizationService_GetAll(t *testing.T) {
 		{
 			name: "get all organizations with invalid limit",
 			fields: fields{
-				baseService: func(ctx context.Context, limit, offset int, organizations []*model.Organization) *baseService {
+				baseService: func(ctx context.Context, _, _ int, _ []*model.Organization) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -627,7 +627,7 @@ func TestOrganizationService_GetAll(t *testing.T) {
 		{
 			name: "get all organizations with error",
 			fields: fields{
-				baseService: func(ctx context.Context, offset, limit int, organization []*model.Organization) *baseService {
+				baseService: func(ctx context.Context, offset, limit int, _ []*model.Organization) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -769,7 +769,7 @@ func TestOrganizationService_Update(t *testing.T) {
 		{
 			name: "update organization with invalid id",
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID, patch map[string]any, organization *model.Organization) *baseService {
+				baseService: func(ctx context.Context, _ model.ID, _ map[string]any, _ *model.Organization) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -799,7 +799,7 @@ func TestOrganizationService_Update(t *testing.T) {
 		{
 			name: "update organization with empty patch",
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID, patch map[string]any, organization *model.Organization) *baseService {
+				baseService: func(ctx context.Context, id model.ID, _ map[string]any, _ *model.Organization) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -833,7 +833,7 @@ func TestOrganizationService_Update(t *testing.T) {
 		{
 			name: "update organization with error",
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID, patch map[string]any, organization *model.Organization) *baseService {
+				baseService: func(ctx context.Context, id model.ID, patch map[string]any, _ *model.Organization) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -873,7 +873,7 @@ func TestOrganizationService_Update(t *testing.T) {
 		{
 			name: "update organization out of quota",
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID, patch map[string]any, organization *model.Organization) *baseService {
+				baseService: func(ctx context.Context, id model.ID, _ map[string]any, _ *model.Organization) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -911,7 +911,7 @@ func TestOrganizationService_Update(t *testing.T) {
 		{
 			name: "update organization with expired license",
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID, patch map[string]any, organization *model.Organization) *baseService {
+				baseService: func(ctx context.Context, _ model.ID, _ map[string]any, _ *model.Organization) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -943,7 +943,7 @@ func TestOrganizationService_Update(t *testing.T) {
 		{
 			name: "update organization with expired license error",
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID, patch map[string]any, organization *model.Organization) *baseService {
+				baseService: func(ctx context.Context, _ model.ID, _ map[string]any, _ *model.Organization) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1084,7 +1084,7 @@ func TestOrganizationService_Delete(t *testing.T) {
 		{
 			name: "delete organization license expired",
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID) *baseService {
+				baseService: func(ctx context.Context, _ model.ID) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1113,7 +1113,7 @@ func TestOrganizationService_Delete(t *testing.T) {
 		{
 			name: "delete organization license error",
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID) *baseService {
+				baseService: func(ctx context.Context, _ model.ID) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1221,7 +1221,7 @@ func TestOrganizationService_Delete(t *testing.T) {
 		{
 			name: "delete organization with invalid id",
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID) *baseService {
+				baseService: func(ctx context.Context, _ model.ID) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1397,7 +1397,7 @@ func TestOrganizationService_AddMember(t *testing.T) {
 		{
 			name: "add member to organization with no permission",
 			fields: fields{
-				baseService: func(ctx context.Context, organization model.ID) *baseService {
+				baseService: func(ctx context.Context, _ model.ID) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1432,7 +1432,7 @@ func TestOrganizationService_AddMember(t *testing.T) {
 		{
 			name: "add member to organization with permission error",
 			fields: fields{
-				baseService: func(ctx context.Context, organization model.ID) *baseService {
+				baseService: func(ctx context.Context, _ model.ID) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1467,7 +1467,7 @@ func TestOrganizationService_AddMember(t *testing.T) {
 		{
 			name: "add member to organization with invalid organization",
 			fields: fields{
-				baseService: func(ctx context.Context, organization model.ID) *baseService {
+				baseService: func(ctx context.Context, _ model.ID) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1501,7 +1501,7 @@ func TestOrganizationService_AddMember(t *testing.T) {
 		{
 			name: "add member to organization with invalid user",
 			fields: fields{
-				baseService: func(ctx context.Context, organization model.ID) *baseService {
+				baseService: func(ctx context.Context, _ model.ID) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1573,7 +1573,7 @@ func TestOrganizationService_AddMember(t *testing.T) {
 		{
 			name: "add member to organization with license expired error",
 			fields: fields{
-				baseService: func(ctx context.Context, organization model.ID) *baseService {
+				baseService: func(ctx context.Context, _ model.ID) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1677,7 +1677,7 @@ func TestOrganizationService_GetMembers(t *testing.T) {
 		{
 			name: "get members of organization with invalid organization id",
 			fields: fields{
-				baseService: func(ctx context.Context, organizationID model.ID, organization *model.Organization, members []*model.User) *baseService {
+				baseService: func(ctx context.Context, _ model.ID, _ *model.Organization, _ []*model.User) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1709,7 +1709,7 @@ func TestOrganizationService_GetMembers(t *testing.T) {
 		{
 			name: "get members of organization with organization get error",
 			fields: fields{
-				baseService: func(ctx context.Context, organizationID model.ID, organization *model.Organization, members []*model.User) *baseService {
+				baseService: func(ctx context.Context, organizationID model.ID, _ *model.Organization, _ []*model.User) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1744,7 +1744,7 @@ func TestOrganizationService_GetMembers(t *testing.T) {
 		{
 			name: "get members of organization with user get error",
 			fields: fields{
-				baseService: func(ctx context.Context, organizationID model.ID, organization *model.Organization, members []*model.User) *baseService {
+				baseService: func(ctx context.Context, organizationID model.ID, organization *model.Organization, _ []*model.User) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1851,7 +1851,7 @@ func TestOrganizationService_RemoveMember(t *testing.T) {
 		{
 			name: "add member to organization with no permission",
 			fields: fields{
-				baseService: func(ctx context.Context, organization model.ID) *baseService {
+				baseService: func(ctx context.Context, _ model.ID) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1886,7 +1886,7 @@ func TestOrganizationService_RemoveMember(t *testing.T) {
 		{
 			name: "add member to organization with permission error",
 			fields: fields{
-				baseService: func(ctx context.Context, organization model.ID) *baseService {
+				baseService: func(ctx context.Context, _ model.ID) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1921,7 +1921,7 @@ func TestOrganizationService_RemoveMember(t *testing.T) {
 		{
 			name: "add member to organization with invalid organization",
 			fields: fields{
-				baseService: func(ctx context.Context, organization model.ID) *baseService {
+				baseService: func(ctx context.Context, _ model.ID) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1955,7 +1955,7 @@ func TestOrganizationService_RemoveMember(t *testing.T) {
 		{
 			name: "add member to organization with invalid user",
 			fields: fields{
-				baseService: func(ctx context.Context, organization model.ID) *baseService {
+				baseService: func(ctx context.Context, _ model.ID) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -2027,7 +2027,7 @@ func TestOrganizationService_RemoveMember(t *testing.T) {
 		{
 			name: "add member to organization with license expired error",
 			fields: fields{
-				baseService: func(ctx context.Context, organization model.ID) *baseService {
+				baseService: func(ctx context.Context, _ model.ID) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 

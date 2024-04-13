@@ -227,7 +227,7 @@ func TestRoleService_Create(t *testing.T) {
 		{
 			name: "create new role license expired",
 			fields: fields{
-				baseService: func(ctx context.Context, owner, belongsTo model.ID, role *model.Role) *baseService {
+				baseService: func(ctx context.Context, _, _ model.ID, _ *model.Role) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -258,7 +258,7 @@ func TestRoleService_Create(t *testing.T) {
 		{
 			name: "create new role invalid role",
 			fields: fields{
-				baseService: func(ctx context.Context, owner, belongsTo model.ID, role *model.Role) *baseService {
+				baseService: func(ctx context.Context, _, _ model.ID, _ *model.Role) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -290,7 +290,7 @@ func TestRoleService_Create(t *testing.T) {
 		{
 			name: "create new role quota exceeded",
 			fields: fields{
-				baseService: func(ctx context.Context, owner, belongsTo model.ID, role *model.Role) *baseService {
+				baseService: func(ctx context.Context, _, belongsTo model.ID, _ *model.Role) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -327,7 +327,7 @@ func TestRoleService_Create(t *testing.T) {
 		{
 			name: "create new role with no permission",
 			fields: fields{
-				baseService: func(ctx context.Context, owner, belongsTo model.ID, role *model.Role) *baseService {
+				baseService: func(ctx context.Context, _, belongsTo model.ID, _ *model.Role) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -467,7 +467,7 @@ func TestRoleService_Get(t *testing.T) {
 		{
 			name: "get role with invalid role id",
 			fields: fields{
-				baseService: func(ctx context.Context, id, belongsTo model.ID, role *model.Role) *baseService {
+				baseService: func(ctx context.Context, _, _ model.ID, _ *model.Role) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -493,7 +493,7 @@ func TestRoleService_Get(t *testing.T) {
 		{
 			name: "get role with no role permissions",
 			fields: fields{
-				baseService: func(ctx context.Context, id, belongsTo model.ID, role *model.Role) *baseService {
+				baseService: func(ctx context.Context, id, belongsTo model.ID, _ *model.Role) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -527,7 +527,7 @@ func TestRoleService_Get(t *testing.T) {
 		{
 			name: "get role with no related permissions",
 			fields: fields{
-				baseService: func(ctx context.Context, id, belongsTo model.ID, role *model.Role) *baseService {
+				baseService: func(ctx context.Context, id, belongsTo model.ID, _ *model.Role) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -666,7 +666,7 @@ func TestRoleService_GetAllBelongsTo(t *testing.T) {
 		{
 			name: "get roles belongs to with invalid role id",
 			fields: fields{
-				baseService: func(ctx context.Context, belongsTo model.ID, offset, limit int, roles []*model.Role) *baseService {
+				baseService: func(ctx context.Context, _ model.ID, _, _ int, _ []*model.Role) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -693,7 +693,7 @@ func TestRoleService_GetAllBelongsTo(t *testing.T) {
 		{
 			name: "get roles belongs to with no permissions",
 			fields: fields{
-				baseService: func(ctx context.Context, belongsTo model.ID, offset, limit int, roles []*model.Role) *baseService {
+				baseService: func(ctx context.Context, belongsTo model.ID, _, _ int, _ []*model.Role) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -725,7 +725,7 @@ func TestRoleService_GetAllBelongsTo(t *testing.T) {
 		{
 			name: "get roles belongs to with invalid pagination offset",
 			fields: fields{
-				baseService: func(ctx context.Context, belongsTo model.ID, offset, limit int, roles []*model.Role) *baseService {
+				baseService: func(ctx context.Context, _ model.ID, _, _ int, _ []*model.Role) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -752,7 +752,7 @@ func TestRoleService_GetAllBelongsTo(t *testing.T) {
 		{
 			name: "get roles belongs to with invalid pagination limit",
 			fields: fields{
-				baseService: func(ctx context.Context, belongsTo model.ID, offset, limit int, roles []*model.Role) *baseService {
+				baseService: func(ctx context.Context, _ model.ID, _, _ int, _ []*model.Role) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 

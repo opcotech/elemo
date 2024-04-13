@@ -34,7 +34,7 @@ func TestCachedOrganizationRepository_Create(t *testing.T) {
 		{
 			name: "add new organization",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, owner model.ID, organization *model.Organization) *baseRepository {
+				cacheRepo: func(ctx context.Context, _ model.ID, _ *model.Organization) *baseRepository {
 					ownerKey := composeCacheKey(model.ResourceTypeOrganization.String(), "GetAll", "*")
 
 					ownerKeyResult := new(redis.StringSliceCmd)
@@ -89,7 +89,7 @@ func TestCachedOrganizationRepository_Create(t *testing.T) {
 		{
 			name: "add new organization with error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, owner model.ID, organization *model.Organization) *baseRepository {
+				cacheRepo: func(ctx context.Context, _ model.ID, _ *model.Organization) *baseRepository {
 					ownerKey := composeCacheKey(model.ResourceTypeOrganization.String(), "GetAll", "*")
 
 					ownerKeyResult := new(redis.StringSliceCmd)
@@ -145,7 +145,7 @@ func TestCachedOrganizationRepository_Create(t *testing.T) {
 		{
 			name: "add new organization get all cache delete error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, owner model.ID, organization *model.Organization) *baseRepository {
+				cacheRepo: func(ctx context.Context, _ model.ID, _ *model.Organization) *baseRepository {
 					ownerKey := composeCacheKey(model.ResourceTypeOrganization.String(), "GetAll", "*")
 
 					ownerKeyResult := new(redis.StringSliceCmd)
@@ -175,7 +175,7 @@ func TestCachedOrganizationRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				organizationRepo: func(ctx context.Context, owner model.ID, organization *model.Organization) repository.OrganizationRepository {
+				organizationRepo: func(_ context.Context, _ model.ID, _ *model.Organization) repository.OrganizationRepository {
 					return new(mock.OrganizationRepository)
 				},
 			},
@@ -272,7 +272,7 @@ func TestCachedOrganizationRepository_Get(t *testing.T) {
 			},
 			want: func(id model.ID) *model.Organization {
 				return &model.Organization{
-					ID:         model.MustNewID(model.ResourceTypeOrganization),
+					ID:         id,
 					Name:       "test organization",
 					Email:      "info@example.com",
 					Logo:       "https://example.com/logo.png",
@@ -311,7 +311,7 @@ func TestCachedOrganizationRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				organizationRepo: func(ctx context.Context, id model.ID, organization *model.Organization) repository.OrganizationRepository {
+				organizationRepo: func(_ context.Context, _ model.ID, _ *model.Organization) repository.OrganizationRepository {
 					return new(mock.OrganizationRepository)
 				},
 			},
@@ -321,7 +321,7 @@ func TestCachedOrganizationRepository_Get(t *testing.T) {
 			},
 			want: func(id model.ID) *model.Organization {
 				return &model.Organization{
-					ID:         model.MustNewID(model.ResourceTypeOrganization),
+					ID:         id,
 					Name:       "test organization",
 					Email:      "info@example.com",
 					Logo:       "https://example.com/logo.png",
@@ -336,7 +336,7 @@ func TestCachedOrganizationRepository_Get(t *testing.T) {
 		{
 			name: "get uncached organization error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id model.ID, organization *model.Organization) *baseRepository {
+				cacheRepo: func(ctx context.Context, id model.ID, _ *model.Organization) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeOrganization.String(), id.String())
 
 					db, err := NewDatabase(
@@ -360,7 +360,7 @@ func TestCachedOrganizationRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				organizationRepo: func(ctx context.Context, id model.ID, organization *model.Organization) repository.OrganizationRepository {
+				organizationRepo: func(ctx context.Context, id model.ID, _ *model.Organization) repository.OrganizationRepository {
 					repo := new(mock.OrganizationRepository)
 					repo.On("Get", ctx, id).Return(nil, repository.ErrNotFound)
 					return repo
@@ -375,7 +375,7 @@ func TestCachedOrganizationRepository_Get(t *testing.T) {
 		{
 			name: "get cached organization error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id model.ID, organization *model.Organization) *baseRepository {
+				cacheRepo: func(ctx context.Context, id model.ID, _ *model.Organization) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeOrganization.String(), id.String())
 
 					db, err := NewDatabase(
@@ -399,7 +399,7 @@ func TestCachedOrganizationRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				organizationRepo: func(ctx context.Context, id model.ID, organization *model.Organization) repository.OrganizationRepository {
+				organizationRepo: func(_ context.Context, _ model.ID, _ *model.Organization) repository.OrganizationRepository {
 					return new(mock.OrganizationRepository)
 				},
 			},
@@ -588,7 +588,7 @@ func TestCachedOrganizationRepository_GetAll(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				organizationRepo: func(ctx context.Context, offset, limit int, organizations []*model.Organization) repository.OrganizationRepository {
+				organizationRepo: func(_ context.Context, _, _ int, _ []*model.Organization) repository.OrganizationRepository {
 					return new(mock.OrganizationRepository)
 				},
 			},
@@ -625,7 +625,7 @@ func TestCachedOrganizationRepository_GetAll(t *testing.T) {
 		{
 			name: "get uncached organizations error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, offset, limit int, organizations []*model.Organization) *baseRepository {
+				cacheRepo: func(ctx context.Context, offset, limit int, _ []*model.Organization) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeOrganization.String(), "GetAll", offset, limit)
 
 					db, err := NewDatabase(
@@ -650,7 +650,7 @@ func TestCachedOrganizationRepository_GetAll(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				organizationRepo: func(ctx context.Context, offset, limit int, organizations []*model.Organization) repository.OrganizationRepository {
+				organizationRepo: func(ctx context.Context, offset, limit int, _ []*model.Organization) repository.OrganizationRepository {
 					repo := new(mock.OrganizationRepository)
 					repo.On("GetAll", ctx, offset, limit).Return(nil, repository.ErrNotFound)
 					return repo
@@ -666,7 +666,7 @@ func TestCachedOrganizationRepository_GetAll(t *testing.T) {
 		{
 			name: "get get organizations cache error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, offset, limit int, organizations []*model.Organization) *baseRepository {
+				cacheRepo: func(ctx context.Context, offset, limit int, _ []*model.Organization) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeOrganization.String(), "GetAll", offset, limit)
 
 					db, err := NewDatabase(
@@ -691,7 +691,7 @@ func TestCachedOrganizationRepository_GetAll(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				organizationRepo: func(ctx context.Context, offset, limit int, organizations []*model.Organization) repository.OrganizationRepository {
+				organizationRepo: func(_ context.Context, _, _ int, _ []*model.Organization) repository.OrganizationRepository {
 					return new(mock.OrganizationRepository)
 				},
 			},
@@ -855,7 +855,7 @@ func TestCachedOrganizationRepository_Update(t *testing.T) {
 		{
 			name: "update organization with error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id model.ID, organization *model.Organization) *baseRepository {
+				cacheRepo: func(_ context.Context, _ model.ID, _ *model.Organization) *baseRepository {
 					db, err := NewDatabase(
 						WithClient(new(mock.RedisClient)),
 					)
@@ -868,7 +868,7 @@ func TestCachedOrganizationRepository_Update(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				organizationRepo: func(ctx context.Context, id model.ID, patch map[string]any, organization *model.Organization) repository.OrganizationRepository {
+				organizationRepo: func(ctx context.Context, id model.ID, patch map[string]any, _ *model.Organization) repository.OrganizationRepository {
 					repo := new(mock.OrganizationRepository)
 					repo.On("Update", ctx, id, patch).Return(nil, repository.ErrNotFound)
 					return repo
@@ -1035,7 +1035,7 @@ func TestCachedOrganizationRepository_AddMember(t *testing.T) {
 		{
 			name: "delete organization success",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id, memberID model.ID) *baseRepository {
+				cacheRepo: func(ctx context.Context, id, _ model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeOrganization.String(), id.String())
 					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "GetAll", "*")
 
@@ -1083,7 +1083,7 @@ func TestCachedOrganizationRepository_AddMember(t *testing.T) {
 		{
 			name: "delete organization with organization deletion error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id, memberID model.ID) *baseRepository {
+				cacheRepo: func(ctx context.Context, id, _ model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeOrganization.String(), id.String())
 					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "GetAll", "*")
 
@@ -1132,7 +1132,7 @@ func TestCachedOrganizationRepository_AddMember(t *testing.T) {
 		{
 			name: "delete organization with cache deletion error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id, memberID model.ID) *baseRepository {
+				cacheRepo: func(ctx context.Context, id, _ model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeOrganization.String(), id.String())
 
 					dbClient := new(mock.RedisClient)
@@ -1174,7 +1174,7 @@ func TestCachedOrganizationRepository_AddMember(t *testing.T) {
 		{
 			name: "delete organization cache by related key error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id, memberID model.ID) *baseRepository {
+				cacheRepo: func(ctx context.Context, id, _ model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeOrganization.String(), id.String())
 					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "GetAll", "*")
 
@@ -1207,7 +1207,7 @@ func TestCachedOrganizationRepository_AddMember(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				organizationRepo: func(ctx context.Context, id, memberID model.ID) repository.OrganizationRepository {
+				organizationRepo: func(_ context.Context, _, _ model.ID) repository.OrganizationRepository {
 					return new(mock.OrganizationRepository)
 				},
 			},
@@ -1252,7 +1252,7 @@ func TestCachedOrganizationRepository_RemoveMember(t *testing.T) {
 		{
 			name: "delete organization success",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id, memberID model.ID) *baseRepository {
+				cacheRepo: func(ctx context.Context, id, _ model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeOrganization.String(), id.String())
 					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "GetAll", "*")
 
@@ -1300,7 +1300,7 @@ func TestCachedOrganizationRepository_RemoveMember(t *testing.T) {
 		{
 			name: "delete organization with organization deletion error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id, memberID model.ID) *baseRepository {
+				cacheRepo: func(ctx context.Context, id, _ model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeOrganization.String(), id.String())
 					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "GetAll", "*")
 
@@ -1349,7 +1349,7 @@ func TestCachedOrganizationRepository_RemoveMember(t *testing.T) {
 		{
 			name: "delete organization with cache deletion error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id, memberID model.ID) *baseRepository {
+				cacheRepo: func(ctx context.Context, id, _ model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeOrganization.String(), id.String())
 
 					dbClient := new(mock.RedisClient)
@@ -1391,7 +1391,7 @@ func TestCachedOrganizationRepository_RemoveMember(t *testing.T) {
 		{
 			name: "delete organization cache by related key error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id, memberID model.ID) *baseRepository {
+				cacheRepo: func(ctx context.Context, id, _ model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeOrganization.String(), id.String())
 					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "GetAll", "*")
 
@@ -1424,7 +1424,7 @@ func TestCachedOrganizationRepository_RemoveMember(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				organizationRepo: func(ctx context.Context, id, memberID model.ID) repository.OrganizationRepository {
+				organizationRepo: func(_ context.Context, _, _ model.ID) repository.OrganizationRepository {
 					return new(mock.OrganizationRepository)
 				},
 			},
@@ -1637,7 +1637,7 @@ func TestCachedOrganizationRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				organizationRepo: func(ctx context.Context, id model.ID) repository.OrganizationRepository {
+				organizationRepo: func(_ context.Context, _ model.ID) repository.OrganizationRepository {
 					return new(mock.OrganizationRepository)
 				},
 			},

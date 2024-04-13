@@ -34,7 +34,7 @@ func TestCachedAttachmentRepository_Create(t *testing.T) {
 		{
 			name: "add new attachment",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, belongsTo model.ID, attachment *model.Attachment) *baseRepository {
+				cacheRepo: func(ctx context.Context, belongsTo model.ID, _ *model.Attachment) *baseRepository {
 					belongsToKey := composeCacheKey(model.ResourceTypeAttachment.String(), "GetAllBelongsTo", belongsTo.String(), "*")
 					issuesKey := composeCacheKey(model.ResourceTypeIssue.String(), "*")
 					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
@@ -96,7 +96,7 @@ func TestCachedAttachmentRepository_Create(t *testing.T) {
 		{
 			name: "add new attachment with error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, belongsTo model.ID, attachment *model.Attachment) *baseRepository {
+				cacheRepo: func(ctx context.Context, belongsTo model.ID, _ *model.Attachment) *baseRepository {
 					belongsToKey := composeCacheKey(model.ResourceTypeAttachment.String(), "GetAllBelongsTo", belongsTo.String(), "*")
 					issuesKey := composeCacheKey(model.ResourceTypeIssue.String(), "*")
 					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
@@ -159,7 +159,7 @@ func TestCachedAttachmentRepository_Create(t *testing.T) {
 		{
 			name: "add new attachment belongs to cache delete error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, belongsTo model.ID, attachment *model.Attachment) *baseRepository {
+				cacheRepo: func(ctx context.Context, belongsTo model.ID, _ *model.Attachment) *baseRepository {
 					belongsToKey := composeCacheKey(model.ResourceTypeAttachment.String(), "GetAllBelongsTo", belongsTo.String(), "*")
 
 					belongsToKeyResult := new(redis.StringSliceCmd)
@@ -189,7 +189,7 @@ func TestCachedAttachmentRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				attachmentRepo: func(ctx context.Context, belongsTo model.ID, attachment *model.Attachment) repository.AttachmentRepository {
+				attachmentRepo: func(_ context.Context, _ model.ID, _ *model.Attachment) repository.AttachmentRepository {
 					return new(mock.AttachmentRepository)
 				},
 			},
@@ -208,7 +208,7 @@ func TestCachedAttachmentRepository_Create(t *testing.T) {
 		{
 			name: "add new attachment cross cache delete error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, belongsTo model.ID, attachment *model.Attachment) *baseRepository {
+				cacheRepo: func(ctx context.Context, belongsTo model.ID, _ *model.Attachment) *baseRepository {
 					belongsToKey := composeCacheKey(model.ResourceTypeAttachment.String(), "GetAllBelongsTo", belongsTo.String(), "*")
 					issuesKey := composeCacheKey(model.ResourceTypeIssue.String(), "*")
 					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
@@ -250,7 +250,7 @@ func TestCachedAttachmentRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				attachmentRepo: func(ctx context.Context, belongsTo model.ID, attachment *model.Attachment) repository.AttachmentRepository {
+				attachmentRepo: func(_ context.Context, _ model.ID, _ *model.Attachment) repository.AttachmentRepository {
 					return new(mock.AttachmentRepository)
 				},
 			},
@@ -342,7 +342,7 @@ func TestCachedAttachmentRepository_Get(t *testing.T) {
 			},
 			want: func(id model.ID) *model.Attachment {
 				return &model.Attachment{
-					ID:        model.MustNewID(model.ResourceTypeAttachment),
+					ID:        id,
 					Name:      "test",
 					FileID:    "test",
 					CreatedBy: model.MustNewID(model.ResourceTypeUser),
@@ -376,7 +376,7 @@ func TestCachedAttachmentRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				attachmentRepo: func(ctx context.Context, id model.ID, attachment *model.Attachment) repository.AttachmentRepository {
+				attachmentRepo: func(_ context.Context, _ model.ID, _ *model.Attachment) repository.AttachmentRepository {
 					return new(mock.AttachmentRepository)
 				},
 			},
@@ -386,7 +386,7 @@ func TestCachedAttachmentRepository_Get(t *testing.T) {
 			},
 			want: func(id model.ID) *model.Attachment {
 				return &model.Attachment{
-					ID:        model.MustNewID(model.ResourceTypeAttachment),
+					ID:        id,
 					Name:      "test",
 					FileID:    "test",
 					CreatedBy: model.MustNewID(model.ResourceTypeUser),
@@ -396,7 +396,7 @@ func TestCachedAttachmentRepository_Get(t *testing.T) {
 		{
 			name: "get uncached attachment error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id model.ID, attachment *model.Attachment) *baseRepository {
+				cacheRepo: func(ctx context.Context, id model.ID, _ *model.Attachment) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeAttachment.String(), id.String())
 
 					db, err := NewDatabase(
@@ -420,7 +420,7 @@ func TestCachedAttachmentRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				attachmentRepo: func(ctx context.Context, id model.ID, attachment *model.Attachment) repository.AttachmentRepository {
+				attachmentRepo: func(ctx context.Context, id model.ID, _ *model.Attachment) repository.AttachmentRepository {
 					repo := new(mock.AttachmentRepository)
 					repo.On("Get", ctx, id).Return(nil, repository.ErrNotFound)
 					return repo
@@ -435,7 +435,7 @@ func TestCachedAttachmentRepository_Get(t *testing.T) {
 		{
 			name: "get cached attachment error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id model.ID, attachment *model.Attachment) *baseRepository {
+				cacheRepo: func(ctx context.Context, id model.ID, _ *model.Attachment) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeAttachment.String(), id.String())
 
 					db, err := NewDatabase(
@@ -459,7 +459,7 @@ func TestCachedAttachmentRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				attachmentRepo: func(ctx context.Context, id model.ID, attachment *model.Attachment) repository.AttachmentRepository {
+				attachmentRepo: func(_ context.Context, _ model.ID, _ *model.Attachment) repository.AttachmentRepository {
 					return new(mock.AttachmentRepository)
 				},
 			},
@@ -638,7 +638,7 @@ func TestCachedAttachmentRepository_GetAllBelongsTo(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				attachmentRepo: func(ctx context.Context, belongsTo model.ID, offset, limit int, attachments []*model.Attachment) repository.AttachmentRepository {
+				attachmentRepo: func(_ context.Context, _ model.ID, _, _ int, _ []*model.Attachment) repository.AttachmentRepository {
 					return new(mock.AttachmentRepository)
 				},
 			},
@@ -664,7 +664,7 @@ func TestCachedAttachmentRepository_GetAllBelongsTo(t *testing.T) {
 		{
 			name: "get uncached attachments error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, belongsTo model.ID, offset, limit int, attachments []*model.Attachment) *baseRepository {
+				cacheRepo: func(ctx context.Context, belongsTo model.ID, offset, limit int, _ []*model.Attachment) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeAttachment.String(), "GetAllBelongsTo", belongsTo.String(), offset, limit)
 
 					db, err := NewDatabase(
@@ -689,7 +689,7 @@ func TestCachedAttachmentRepository_GetAllBelongsTo(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				attachmentRepo: func(ctx context.Context, belongsTo model.ID, offset, limit int, attachments []*model.Attachment) repository.AttachmentRepository {
+				attachmentRepo: func(ctx context.Context, belongsTo model.ID, offset, limit int, _ []*model.Attachment) repository.AttachmentRepository {
 					repo := new(mock.AttachmentRepository)
 					repo.On("GetAllBelongsTo", ctx, belongsTo, offset, limit).Return(nil, repository.ErrNotFound)
 					return repo
@@ -704,7 +704,7 @@ func TestCachedAttachmentRepository_GetAllBelongsTo(t *testing.T) {
 		{
 			name: "get get attachments cache error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, belongsTo model.ID, offset, limit int, attachments []*model.Attachment) *baseRepository {
+				cacheRepo: func(ctx context.Context, belongsTo model.ID, offset, limit int, _ []*model.Attachment) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeAttachment.String(), "GetAllBelongsTo", belongsTo.String(), offset, limit)
 
 					db, err := NewDatabase(
@@ -729,7 +729,7 @@ func TestCachedAttachmentRepository_GetAllBelongsTo(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				attachmentRepo: func(ctx context.Context, belongsTo model.ID, offset, limit int, attachments []*model.Attachment) repository.AttachmentRepository {
+				attachmentRepo: func(_ context.Context, _ model.ID, _, _ int, _ []*model.Attachment) repository.AttachmentRepository {
 					return new(mock.AttachmentRepository)
 				},
 			},
@@ -882,7 +882,7 @@ func TestCachedAttachmentRepository_Update(t *testing.T) {
 		{
 			name: "update attachment with error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id model.ID, attachment *model.Attachment) *baseRepository {
+				cacheRepo: func(_ context.Context, _ model.ID, _ *model.Attachment) *baseRepository {
 					db, err := NewDatabase(
 						WithClient(new(mock.RedisClient)),
 					)
@@ -895,7 +895,7 @@ func TestCachedAttachmentRepository_Update(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				attachmentRepo: func(ctx context.Context, id model.ID, attachment *model.Attachment) repository.AttachmentRepository {
+				attachmentRepo: func(ctx context.Context, id model.ID, _ *model.Attachment) repository.AttachmentRepository {
 					repo := new(mock.AttachmentRepository)
 					repo.On("Update", ctx, id, "name").Return(nil, repository.ErrNotFound)
 					return repo
@@ -1245,7 +1245,7 @@ func TestCachedAttachmentRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				attachmentRepo: func(ctx context.Context, id model.ID) repository.AttachmentRepository {
+				attachmentRepo: func(_ context.Context, _ model.ID) repository.AttachmentRepository {
 					return new(mock.AttachmentRepository)
 				},
 			},
@@ -1297,7 +1297,7 @@ func TestCachedAttachmentRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				attachmentRepo: func(ctx context.Context, id model.ID) repository.AttachmentRepository {
+				attachmentRepo: func(_ context.Context, _ model.ID) repository.AttachmentRepository {
 					return new(mock.AttachmentRepository)
 				},
 			},
@@ -1355,7 +1355,7 @@ func TestCachedAttachmentRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				attachmentRepo: func(ctx context.Context, id model.ID) repository.AttachmentRepository {
+				attachmentRepo: func(_ context.Context, _ model.ID) repository.AttachmentRepository {
 					return new(mock.AttachmentRepository)
 				},
 			},

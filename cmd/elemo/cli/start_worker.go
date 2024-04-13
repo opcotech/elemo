@@ -18,7 +18,7 @@ var startWorkerCmd = &cobra.Command{
 	Short: "Start the worker",
 	Long: `Starts the worker processes and listens for prometheus metrics on the
 configured port.`,
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		initTracer("worker")
 
 		if _, err := parseLicense(&cfg.License); err != nil {

@@ -55,7 +55,7 @@ func withContextObject(ctxKey pkg.CtxKey, cb ctxCallbackFunc) func(next http.Han
 // WithContextObject returns a middleware that adds any value to the context
 // associated with the given key.
 func WithContextObject(key pkg.CtxKey, value any) func(next http.Handler) http.Handler {
-	return withContextObject(key, func(w http.ResponseWriter, r *http.Request) any {
+	return withContextObject(key, func(_ http.ResponseWriter, _ *http.Request) any {
 		return value
 	})
 }
@@ -125,7 +125,7 @@ func WithRequestLogger(next http.Handler) http.Handler {
 // from the Authorization header if present. Otherwise, an empty string is
 // added.
 func WithUserID(tokenValidator func(r *http.Request) (oauth2.TokenInfo, error)) func(next http.Handler) http.Handler {
-	return withContextObject(pkg.CtxKeyUserID, func(w http.ResponseWriter, r *http.Request) any {
+	return withContextObject(pkg.CtxKeyUserID, func(_ http.ResponseWriter, r *http.Request) any {
 		if info, _ := tokenValidator(r); info != nil {
 			id, _ := model.NewIDFromString(info.GetUserID(), model.ResourceTypeUser.String())
 			return id

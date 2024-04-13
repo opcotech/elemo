@@ -28,7 +28,7 @@ elemo auth add-client --callback-url https://example.com/callback
 
 # Create a new public client for the domain example.com
 elemo auth add-client --domain example.com --public`,
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(cmd *cobra.Command, _ []string) {
 		callbackURL, err := cmd.Flags().GetString("callback-url")
 		if err != nil {
 			logger.Fatal("failed to get callback-url flag value", zap.Error(err))

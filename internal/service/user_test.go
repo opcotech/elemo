@@ -162,7 +162,7 @@ func TestUserService_Create(t *testing.T) {
 		{
 			name: "create user with invalid user",
 			fields: fields{
-				baseService: func(ctx context.Context, user *model.User) *baseService {
+				baseService: func(ctx context.Context, _ *model.User) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -263,7 +263,7 @@ func TestUserService_Create(t *testing.T) {
 		{
 			name: "create user out of quota",
 			fields: fields{
-				baseService: func(ctx context.Context, user *model.User) *baseService {
+				baseService: func(ctx context.Context, _ *model.User) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -297,7 +297,7 @@ func TestUserService_Create(t *testing.T) {
 		{
 			name: "create user with expired license",
 			fields: fields{
-				baseService: func(ctx context.Context, user *model.User) *baseService {
+				baseService: func(ctx context.Context, _ *model.User) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -325,7 +325,7 @@ func TestUserService_Create(t *testing.T) {
 		{
 			name: "create user with license expired error",
 			fields: fields{
-				baseService: func(ctx context.Context, user *model.User) *baseService {
+				baseService: func(ctx context.Context, _ *model.User) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -408,7 +408,7 @@ func TestUserService_Get(t *testing.T) {
 		{
 			name: "get user with invalid user",
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID, user *model.User) *baseService {
+				baseService: func(ctx context.Context, _ model.ID, _ *model.User) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -431,7 +431,7 @@ func TestUserService_Get(t *testing.T) {
 		{
 			name: "get user with error",
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID, user *model.User) *baseService {
+				baseService: func(ctx context.Context, id model.ID, _ *model.User) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -513,7 +513,7 @@ func TestUserService_GetByEmail(t *testing.T) {
 		{
 			name: "get user with invalid user",
 			fields: fields{
-				baseService: func(ctx context.Context, email string, user *model.User) *baseService {
+				baseService: func(ctx context.Context, _ string, _ *model.User) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -536,7 +536,7 @@ func TestUserService_GetByEmail(t *testing.T) {
 		{
 			name: "get user with error",
 			fields: fields{
-				baseService: func(ctx context.Context, email string, user *model.User) *baseService {
+				baseService: func(ctx context.Context, email string, _ *model.User) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -623,7 +623,7 @@ func TestUserService_GetAll(t *testing.T) {
 		{
 			name: "get all users with invalid offset",
 			fields: fields{
-				baseService: func(ctx context.Context, offset, limit int, users []*model.User) *baseService {
+				baseService: func(ctx context.Context, _, _ int, _ []*model.User) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -647,7 +647,7 @@ func TestUserService_GetAll(t *testing.T) {
 		{
 			name: "get all users with invalid limit",
 			fields: fields{
-				baseService: func(ctx context.Context, limit, offset int, users []*model.User) *baseService {
+				baseService: func(ctx context.Context, _, _ int, _ []*model.User) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -671,7 +671,7 @@ func TestUserService_GetAll(t *testing.T) {
 		{
 			name: "get all users with error",
 			fields: fields{
-				baseService: func(ctx context.Context, offset, limit int, user []*model.User) *baseService {
+				baseService: func(ctx context.Context, offset, limit int, _ []*model.User) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -812,7 +812,7 @@ func TestUserService_Update(t *testing.T) {
 		{
 			name: "update user with invalid id",
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID, patch map[string]any, user *model.User) *baseService {
+				baseService: func(ctx context.Context, _ model.ID, _ map[string]any, _ *model.User) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -842,7 +842,7 @@ func TestUserService_Update(t *testing.T) {
 		{
 			name: "update user with empty patch",
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID, patch map[string]any, user *model.User) *baseService {
+				baseService: func(ctx context.Context, _ model.ID, _ map[string]any, _ *model.User) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -871,7 +871,7 @@ func TestUserService_Update(t *testing.T) {
 		{
 			name: "update user with error",
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID, patch map[string]any, user *model.User) *baseService {
+				baseService: func(ctx context.Context, id model.ID, patch map[string]any, _ *model.User) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -911,7 +911,7 @@ func TestUserService_Update(t *testing.T) {
 		{
 			name: "update user out of quota",
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID, patch map[string]any, user *model.User) *baseService {
+				baseService: func(ctx context.Context, id model.ID, _ map[string]any, _ *model.User) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -949,7 +949,7 @@ func TestUserService_Update(t *testing.T) {
 		{
 			name: "update user with no context user id",
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID, patch map[string]any, user *model.User) *baseService {
+				baseService: func(ctx context.Context, _ model.ID, _ map[string]any, _ *model.User) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -979,7 +979,7 @@ func TestUserService_Update(t *testing.T) {
 		{
 			name: "update user with expired license",
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID, patch map[string]any, user *model.User) *baseService {
+				baseService: func(ctx context.Context, _ model.ID, _ map[string]any, _ *model.User) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1011,7 +1011,7 @@ func TestUserService_Update(t *testing.T) {
 		{
 			name: "update user with expired license error",
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID, patch map[string]any, user *model.User) *baseService {
+				baseService: func(ctx context.Context, _ model.ID, _ map[string]any, _ *model.User) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1153,7 +1153,7 @@ func TestUserService_Delete(t *testing.T) {
 		{
 			name: "delete user with license expired",
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID) *baseService {
+				baseService: func(ctx context.Context, _ model.ID) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1182,7 +1182,7 @@ func TestUserService_Delete(t *testing.T) {
 		{
 			name: "delete user with license expired error",
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID) *baseService {
+				baseService: func(ctx context.Context, _ model.ID) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1291,7 +1291,7 @@ func TestUserService_Delete(t *testing.T) {
 		{
 			name: "delete user with invalid id",
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID) *baseService {
+				baseService: func(ctx context.Context, _ model.ID) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1400,7 +1400,7 @@ func TestUserService_Delete(t *testing.T) {
 		{
 			name: "soft delete user with no context user id",
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID) *baseService {
+				baseService: func(ctx context.Context, _ model.ID) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return().Twice()
 
@@ -1429,7 +1429,7 @@ func TestUserService_Delete(t *testing.T) {
 		{
 			name: "force delete user with no context user id",
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID) *baseService {
+				baseService: func(ctx context.Context, _ model.ID) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 

@@ -33,7 +33,7 @@ func TestCachedLabelRepository_Create(t *testing.T) {
 		{
 			name: "create new label",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, label *model.Label) *baseRepository {
+				cacheRepo: func(ctx context.Context, _ *model.Label) *baseRepository {
 					getAllKey := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
 					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
 					issuesKey := composeCacheKey(model.ResourceTypeIssue.String(), "*")
@@ -93,7 +93,7 @@ func TestCachedLabelRepository_Create(t *testing.T) {
 		{
 			name: "add new label with error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, label *model.Label) *baseRepository {
+				cacheRepo: func(ctx context.Context, _ *model.Label) *baseRepository {
 					getAllKey := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
 					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
 					issuesKey := composeCacheKey(model.ResourceTypeIssue.String(), "*")
@@ -154,7 +154,7 @@ func TestCachedLabelRepository_Create(t *testing.T) {
 		{
 			name: "add new label get all cache delete error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, label *model.Label) *baseRepository {
+				cacheRepo: func(ctx context.Context, _ *model.Label) *baseRepository {
 					getAllKey := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
 					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
 					issuesKey := composeCacheKey(model.ResourceTypeIssue.String(), "*")
@@ -196,7 +196,7 @@ func TestCachedLabelRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				labelRepo: func(ctx context.Context, label *model.Label) repository.LabelRepository {
+				labelRepo: func(_ context.Context, _ *model.Label) repository.LabelRepository {
 					return new(mock.LabelRepository)
 				},
 			},
@@ -213,7 +213,7 @@ func TestCachedLabelRepository_Create(t *testing.T) {
 		{
 			name: "create new label documents cache delete error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, label *model.Label) *baseRepository {
+				cacheRepo: func(ctx context.Context, _ *model.Label) *baseRepository {
 					getAllKey := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
 					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
 
@@ -249,7 +249,7 @@ func TestCachedLabelRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				labelRepo: func(ctx context.Context, label *model.Label) repository.LabelRepository {
+				labelRepo: func(_ context.Context, _ *model.Label) repository.LabelRepository {
 					return new(mock.LabelRepository)
 				},
 			},
@@ -266,7 +266,7 @@ func TestCachedLabelRepository_Create(t *testing.T) {
 		{
 			name: "create new label issues cache delete error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, label *model.Label) *baseRepository {
+				cacheRepo: func(ctx context.Context, _ *model.Label) *baseRepository {
 					getAllKey := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
 					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
 					issuesKey := composeCacheKey(model.ResourceTypeIssue.String(), "*")
@@ -308,7 +308,7 @@ func TestCachedLabelRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				labelRepo: func(ctx context.Context, label *model.Label) repository.LabelRepository {
+				labelRepo: func(_ context.Context, _ *model.Label) repository.LabelRepository {
 					return new(mock.LabelRepository)
 				},
 			},
@@ -398,7 +398,7 @@ func TestCachedLabelRepository_Get(t *testing.T) {
 			},
 			want: func(id model.ID) *model.Label {
 				return &model.Label{
-					ID:          model.MustNewID(model.ResourceTypeLabel),
+					ID:          id,
 					Name:        "test label",
 					Description: "test description",
 				}
@@ -431,7 +431,7 @@ func TestCachedLabelRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				labelRepo: func(ctx context.Context, id model.ID, label *model.Label) repository.LabelRepository {
+				labelRepo: func(_ context.Context, _ model.ID, _ *model.Label) repository.LabelRepository {
 					return new(mock.LabelRepository)
 				},
 			},
@@ -441,7 +441,7 @@ func TestCachedLabelRepository_Get(t *testing.T) {
 			},
 			want: func(id model.ID) *model.Label {
 				return &model.Label{
-					ID:          model.MustNewID(model.ResourceTypeLabel),
+					ID:          id,
 					Name:        "test label",
 					Description: "test description",
 				}
@@ -450,7 +450,7 @@ func TestCachedLabelRepository_Get(t *testing.T) {
 		{
 			name: "get uncached label error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id model.ID, label *model.Label) *baseRepository {
+				cacheRepo: func(ctx context.Context, id model.ID, _ *model.Label) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), id.String())
 
 					db, err := NewDatabase(
@@ -474,7 +474,7 @@ func TestCachedLabelRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				labelRepo: func(ctx context.Context, id model.ID, label *model.Label) repository.LabelRepository {
+				labelRepo: func(ctx context.Context, id model.ID, _ *model.Label) repository.LabelRepository {
 					repo := new(mock.LabelRepository)
 					repo.On("Get", ctx, id).Return(nil, repository.ErrNotFound)
 					return repo
@@ -489,7 +489,7 @@ func TestCachedLabelRepository_Get(t *testing.T) {
 		{
 			name: "get cached label error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id model.ID, label *model.Label) *baseRepository {
+				cacheRepo: func(ctx context.Context, id model.ID, _ *model.Label) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), id.String())
 
 					db, err := NewDatabase(
@@ -513,7 +513,7 @@ func TestCachedLabelRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				labelRepo: func(ctx context.Context, id model.ID, label *model.Label) repository.LabelRepository {
+				labelRepo: func(_ context.Context, _ model.ID, _ *model.Label) repository.LabelRepository {
 					return new(mock.LabelRepository)
 				},
 			},
@@ -690,7 +690,7 @@ func TestCachedLabelRepository_GetAll(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				labelRepo: func(ctx context.Context, offset, limit int, labels []*model.Label) repository.LabelRepository {
+				labelRepo: func(_ context.Context, _, _ int, _ []*model.Label) repository.LabelRepository {
 					return new(mock.LabelRepository)
 				},
 			},
@@ -715,7 +715,7 @@ func TestCachedLabelRepository_GetAll(t *testing.T) {
 		{
 			name: "get uncached labels error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, offset, limit int, labels []*model.Label) *baseRepository {
+				cacheRepo: func(ctx context.Context, offset, limit int, _ []*model.Label) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", offset, limit)
 
 					db, err := NewDatabase(
@@ -740,7 +740,7 @@ func TestCachedLabelRepository_GetAll(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				labelRepo: func(ctx context.Context, offset, limit int, labels []*model.Label) repository.LabelRepository {
+				labelRepo: func(ctx context.Context, offset, limit int, _ []*model.Label) repository.LabelRepository {
 					repo := new(mock.LabelRepository)
 					repo.On("GetAll", ctx, offset, limit).Return(nil, repository.ErrNotFound)
 					return repo
@@ -756,7 +756,7 @@ func TestCachedLabelRepository_GetAll(t *testing.T) {
 		{
 			name: "get get labels cache error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, offset, limit int, labels []*model.Label) *baseRepository {
+				cacheRepo: func(ctx context.Context, offset, limit int, _ []*model.Label) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", offset, limit)
 
 					db, err := NewDatabase(
@@ -781,7 +781,7 @@ func TestCachedLabelRepository_GetAll(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				labelRepo: func(ctx context.Context, offset, limit int, labels []*model.Label) repository.LabelRepository {
+				labelRepo: func(_ context.Context, _, _ int, _ []*model.Label) repository.LabelRepository {
 					return new(mock.LabelRepository)
 				},
 			},
@@ -939,7 +939,7 @@ func TestCachedLabelRepository_Update(t *testing.T) {
 		{
 			name: "update label with error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id model.ID, label *model.Label) *baseRepository {
+				cacheRepo: func(_ context.Context, _ model.ID, _ *model.Label) *baseRepository {
 					db, err := NewDatabase(
 						WithClient(new(mock.RedisClient)),
 					)
@@ -952,7 +952,7 @@ func TestCachedLabelRepository_Update(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				labelRepo: func(ctx context.Context, id model.ID, patch map[string]any, label *model.Label) repository.LabelRepository {
+				labelRepo: func(ctx context.Context, id model.ID, patch map[string]any, _ *model.Label) repository.LabelRepository {
 					repo := new(mock.LabelRepository)
 					repo.On("Update", ctx, id, patch).Return(nil, repository.ErrNotFound)
 					return repo
@@ -1119,7 +1119,7 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 		{
 			name: "delete label success",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id, attachTo model.ID) *baseRepository {
+				cacheRepo: func(ctx context.Context, id, _ model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), id.String())
 					getAllKey := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
 					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
@@ -1179,7 +1179,7 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 		{
 			name: "delete label with label deletion error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id, attachTo model.ID) *baseRepository {
+				cacheRepo: func(ctx context.Context, id, _ model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), id.String())
 					getAllKey := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
 					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
@@ -1240,7 +1240,7 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 		{
 			name: "delete label with cache deletion error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id, attachTo model.ID) *baseRepository {
+				cacheRepo: func(ctx context.Context, id, _ model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), id.String())
 
 					dbClient := new(mock.RedisClient)
@@ -1282,7 +1282,7 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 		{
 			name: "delete label cache by related key error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id, attachTo model.ID) *baseRepository {
+				cacheRepo: func(ctx context.Context, id, _ model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), id.String())
 					getAllKey := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
 
@@ -1315,7 +1315,7 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				labelRepo: func(ctx context.Context, id, attachTo model.ID) repository.LabelRepository {
+				labelRepo: func(_ context.Context, _, _ model.ID) repository.LabelRepository {
 					return new(mock.LabelRepository)
 				},
 			},
@@ -1329,7 +1329,7 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 		{
 			name: "delete label cache by document key error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id, attachTo model.ID) *baseRepository {
+				cacheRepo: func(ctx context.Context, id, _ model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), id.String())
 					getAllKey := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
 					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
@@ -1368,7 +1368,7 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				labelRepo: func(ctx context.Context, id, attachTo model.ID) repository.LabelRepository {
+				labelRepo: func(_ context.Context, _, _ model.ID) repository.LabelRepository {
 					return new(mock.LabelRepository)
 				},
 			},
@@ -1382,7 +1382,7 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 		{
 			name: "delete label cache by issues key error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id, attachTo model.ID) *baseRepository {
+				cacheRepo: func(ctx context.Context, id, _ model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), id.String())
 					getAllKey := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
 					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
@@ -1427,7 +1427,7 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				labelRepo: func(ctx context.Context, id, attachTo model.ID) repository.LabelRepository {
+				labelRepo: func(_ context.Context, _, _ model.ID) repository.LabelRepository {
 					return new(mock.LabelRepository)
 				},
 			},
@@ -1472,7 +1472,7 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 		{
 			name: "delete label success",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id, detachFrom model.ID) *baseRepository {
+				cacheRepo: func(ctx context.Context, id, _ model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), id.String())
 					getAllKey := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
 					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
@@ -1532,7 +1532,7 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 		{
 			name: "delete label with label deletion error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id, detachFrom model.ID) *baseRepository {
+				cacheRepo: func(ctx context.Context, id, _ model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), id.String())
 					getAllKey := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
 					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
@@ -1593,7 +1593,7 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 		{
 			name: "delete label with cache deletion error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id, detachFrom model.ID) *baseRepository {
+				cacheRepo: func(ctx context.Context, id, _ model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), id.String())
 
 					dbClient := new(mock.RedisClient)
@@ -1635,7 +1635,7 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 		{
 			name: "delete label cache by related key error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id, detachFrom model.ID) *baseRepository {
+				cacheRepo: func(ctx context.Context, id, _ model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), id.String())
 					getAllKey := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
 
@@ -1668,7 +1668,7 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				labelRepo: func(ctx context.Context, id, detachFrom model.ID) repository.LabelRepository {
+				labelRepo: func(_ context.Context, _, _ model.ID) repository.LabelRepository {
 					return new(mock.LabelRepository)
 				},
 			},
@@ -1682,7 +1682,7 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 		{
 			name: "delete label cache by document key error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id, detachFrom model.ID) *baseRepository {
+				cacheRepo: func(ctx context.Context, id, _ model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), id.String())
 					getAllKey := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
 					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
@@ -1721,7 +1721,7 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				labelRepo: func(ctx context.Context, id, detachFrom model.ID) repository.LabelRepository {
+				labelRepo: func(_ context.Context, _, _ model.ID) repository.LabelRepository {
 					return new(mock.LabelRepository)
 				},
 			},
@@ -1735,7 +1735,7 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 		{
 			name: "delete label cache by issues key error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id, detachFrom model.ID) *baseRepository {
+				cacheRepo: func(ctx context.Context, id, _ model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), id.String())
 					getAllKey := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
 					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
@@ -1780,7 +1780,7 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				labelRepo: func(ctx context.Context, id, detachFrom model.ID) repository.LabelRepository {
+				labelRepo: func(_ context.Context, _, _ model.ID) repository.LabelRepository {
 					return new(mock.LabelRepository)
 				},
 			},
@@ -2017,7 +2017,7 @@ func TestCachedLabelRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				labelRepo: func(ctx context.Context, id model.ID) repository.LabelRepository {
+				labelRepo: func(_ context.Context, _ model.ID) repository.LabelRepository {
 					return new(mock.LabelRepository)
 				},
 			},
@@ -2069,7 +2069,7 @@ func TestCachedLabelRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				labelRepo: func(ctx context.Context, id model.ID) repository.LabelRepository {
+				labelRepo: func(_ context.Context, _ model.ID) repository.LabelRepository {
 					return new(mock.LabelRepository)
 				},
 			},
@@ -2127,7 +2127,7 @@ func TestCachedLabelRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				labelRepo: func(ctx context.Context, id model.ID) repository.LabelRepository {
+				labelRepo: func(_ context.Context, _ model.ID) repository.LabelRepository {
 					return new(mock.LabelRepository)
 				},
 			},

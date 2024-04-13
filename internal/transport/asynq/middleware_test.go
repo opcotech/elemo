@@ -56,13 +56,13 @@ func TestWithMetricsExporter(t *testing.T) {
 	tracer.On("Start", ctx, "transport.asynq.middleware/WithMetricsExporter", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 	assert.NoError(t,
-		WithMetricsExporter(tracer)(asynq.HandlerFunc(func(ctx context.Context, task *asynq.Task) error {
+		WithMetricsExporter(tracer)(asynq.HandlerFunc(func(_ context.Context, _ *asynq.Task) error {
 			return nil
 		})).ProcessTask(ctx, new(asynq.Task)),
 	)
 
 	assert.ErrorIs(t,
-		WithMetricsExporter(tracer)(asynq.HandlerFunc(func(ctx context.Context, task *asynq.Task) error {
+		WithMetricsExporter(tracer)(asynq.HandlerFunc(func(_ context.Context, _ *asynq.Task) error {
 			return assert.AnError
 		})).ProcessTask(ctx, new(asynq.Task)),
 		assert.AnError,
@@ -125,7 +125,7 @@ func TestWithRateLimiter(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			handler := asynq.HandlerFunc(func(ctx context.Context, task *asynq.Task) error {
+			handler := asynq.HandlerFunc(func(_ context.Context, _ *asynq.Task) error {
 				return nil
 			})
 
@@ -157,7 +157,7 @@ func TestWithErrorLogger(t *testing.T) {
 			fields: fields{
 				ctx:  context.Background(),
 				task: asynq.NewTask("test:task", []byte("hello")),
-				logger: func(ctx context.Context, task *asynq.Task) log.Logger {
+				logger: func(_ context.Context, _ *asynq.Task) log.Logger {
 					return new(mock.Logger)
 				},
 			},
@@ -178,7 +178,7 @@ func TestWithErrorLogger(t *testing.T) {
 			fields: fields{
 				ctx:  context.Background(),
 				task: asynq.NewTask("test:task", []byte("hello")),
-				logger: func(ctx context.Context, task *asynq.Task) log.Logger {
+				logger: func(_ context.Context, task *asynq.Task) log.Logger {
 					logger := new(mock.Logger)
 					logger.On("Log", zap.ErrorLevel, assert.AnError.Error(), []zap.Field{
 						log.WithKey(task.Type()),
@@ -208,7 +208,7 @@ func TestWithErrorLogger(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			handler := asynq.HandlerFunc(func(ctx context.Context, task *asynq.Task) error {
+			handler := asynq.HandlerFunc(func(_ context.Context, _ *asynq.Task) error {
 				return tt.wantErr
 			})
 

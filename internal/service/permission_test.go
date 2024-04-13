@@ -139,7 +139,7 @@ func Test_permissionService_Create(t *testing.T) {
 		{
 			name: "create permission",
 			fields: fields{
-				baseService: func(ctx context.Context, perm *model.Permission) *baseService {
+				baseService: func(ctx context.Context, _ *model.Permission) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -170,7 +170,7 @@ func Test_permissionService_Create(t *testing.T) {
 		{
 			name: "create permission with error",
 			fields: fields{
-				baseService: func(ctx context.Context, perm *model.Permission) *baseService {
+				baseService: func(ctx context.Context, _ *model.Permission) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -202,7 +202,7 @@ func Test_permissionService_Create(t *testing.T) {
 		{
 			name: "create permission with nil permission",
 			fields: fields{
-				baseService: func(ctx context.Context, perm *model.Permission) *baseService {
+				baseService: func(ctx context.Context, _ *model.Permission) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -214,7 +214,7 @@ func Test_permissionService_Create(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				permissionRepo: func(ctx context.Context, perm *model.Permission) repository.PermissionRepository {
+				permissionRepo: func(_ context.Context, _ *model.Permission) repository.PermissionRepository {
 					return new(mock.PermissionRepository)
 				},
 			},
@@ -259,7 +259,7 @@ func Test_permissionService_CtxUserCreate(t *testing.T) {
 		{
 			name: "create permission having all permissions",
 			fields: fields{
-				baseService: func(ctx context.Context, userID model.ID, perm *model.Permission) *baseService {
+				baseService: func(ctx context.Context, _ model.ID, _ *model.Permission) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -316,7 +316,7 @@ func Test_permissionService_CtxUserCreate(t *testing.T) {
 		{
 			name: "create permission having a direct permission",
 			fields: fields{
-				baseService: func(ctx context.Context, userID model.ID, perm *model.Permission) *baseService {
+				baseService: func(ctx context.Context, _ model.ID, _ *model.Permission) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -373,7 +373,7 @@ func Test_permissionService_CtxUserCreate(t *testing.T) {
 		{
 			name: "create permission having a system role",
 			fields: fields{
-				baseService: func(ctx context.Context, userID model.ID, perm *model.Permission) *baseService {
+				baseService: func(ctx context.Context, _ model.ID, _ *model.Permission) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -430,7 +430,7 @@ func Test_permissionService_CtxUserCreate(t *testing.T) {
 		{
 			name: "create permission no permission",
 			fields: fields{
-				baseService: func(ctx context.Context, userID model.ID, perm *model.Permission) *baseService {
+				baseService: func(ctx context.Context, _ model.ID, _ *model.Permission) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -518,7 +518,7 @@ func Test_permissionService_Get(t *testing.T) {
 		{
 			name: "get permission",
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID, perm *model.Permission) *baseService {
+				baseService: func(ctx context.Context, _ model.ID, _ *model.Permission) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -550,7 +550,7 @@ func Test_permissionService_Get(t *testing.T) {
 		{
 			name: "get permission with error",
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID, perm *model.Permission) *baseService {
+				baseService: func(ctx context.Context, _ model.ID, _ *model.Permission) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -562,7 +562,7 @@ func Test_permissionService_Get(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				permissionRepo: func(ctx context.Context, id model.ID, perm *model.Permission) repository.PermissionRepository {
+				permissionRepo: func(ctx context.Context, id model.ID, _ *model.Permission) repository.PermissionRepository {
 					repo := new(mock.PermissionRepository)
 					repo.On("Get", ctx, id).Return(nil, assert.AnError)
 					return repo
@@ -610,7 +610,7 @@ func Test_permissionService_GetBySubject(t *testing.T) {
 		{
 			name: "get permissions",
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID, perms []*model.Permission) *baseService {
+				baseService: func(ctx context.Context, _ model.ID, _ []*model.Permission) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -644,7 +644,7 @@ func Test_permissionService_GetBySubject(t *testing.T) {
 		{
 			name: "get permission with error",
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID, perms []*model.Permission) *baseService {
+				baseService: func(ctx context.Context, _ model.ID, _ []*model.Permission) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -656,7 +656,7 @@ func Test_permissionService_GetBySubject(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				permissionRepo: func(ctx context.Context, id model.ID, perms []*model.Permission) repository.PermissionRepository {
+				permissionRepo: func(ctx context.Context, id model.ID, _ []*model.Permission) repository.PermissionRepository {
 					repo := new(mock.PermissionRepository)
 					repo.On("GetBySubject", ctx, id).Return(nil, assert.AnError)
 					return repo
@@ -704,7 +704,7 @@ func Test_permissionService_GetByTarget(t *testing.T) {
 		{
 			name: "get permissions",
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID, perms []*model.Permission) *baseService {
+				baseService: func(ctx context.Context, _ model.ID, _ []*model.Permission) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -738,7 +738,7 @@ func Test_permissionService_GetByTarget(t *testing.T) {
 		{
 			name: "get permission with error",
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID, perms []*model.Permission) *baseService {
+				baseService: func(ctx context.Context, _ model.ID, _ []*model.Permission) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -750,7 +750,7 @@ func Test_permissionService_GetByTarget(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				permissionRepo: func(ctx context.Context, id model.ID, perms []*model.Permission) repository.PermissionRepository {
+				permissionRepo: func(ctx context.Context, id model.ID, _ []*model.Permission) repository.PermissionRepository {
 					repo := new(mock.PermissionRepository)
 					repo.On("GetByTarget", ctx, id).Return(nil, assert.AnError)
 					return repo
@@ -799,7 +799,7 @@ func Test_permissionService_GetBySubjectAndTarget(t *testing.T) {
 		{
 			name: "get permissions",
 			fields: fields{
-				baseService: func(ctx context.Context, subject, target model.ID, perms []*model.Permission) *baseService {
+				baseService: func(ctx context.Context, _, _ model.ID, _ []*model.Permission) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -834,7 +834,7 @@ func Test_permissionService_GetBySubjectAndTarget(t *testing.T) {
 		{
 			name: "get permission with error",
 			fields: fields{
-				baseService: func(ctx context.Context, subject, target model.ID, perms []*model.Permission) *baseService {
+				baseService: func(ctx context.Context, _, _ model.ID, _ []*model.Permission) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -846,7 +846,7 @@ func Test_permissionService_GetBySubjectAndTarget(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				permissionRepo: func(ctx context.Context, subject, target model.ID, perms []*model.Permission) repository.PermissionRepository {
+				permissionRepo: func(ctx context.Context, subject, target model.ID, _ []*model.Permission) repository.PermissionRepository {
 					repo := new(mock.PermissionRepository)
 					repo.On("GetBySubjectAndTarget", ctx, subject, target).Return(nil, assert.AnError)
 					return repo
@@ -896,7 +896,7 @@ func Test_permissionService_HasAnyRelation(t *testing.T) {
 		{
 			name: "get relation",
 			fields: fields{
-				baseService: func(ctx context.Context, subject, target model.ID, hasRelation bool) *baseService {
+				baseService: func(ctx context.Context, _, _ model.ID, _ bool) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -924,7 +924,7 @@ func Test_permissionService_HasAnyRelation(t *testing.T) {
 		{
 			name: "get relation with no relations",
 			fields: fields{
-				baseService: func(ctx context.Context, subject, target model.ID, hasRelation bool) *baseService {
+				baseService: func(ctx context.Context, _, _ model.ID, _ bool) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -952,7 +952,7 @@ func Test_permissionService_HasAnyRelation(t *testing.T) {
 		{
 			name: "get relation with error",
 			fields: fields{
-				baseService: func(ctx context.Context, subject, target model.ID, hasRelation bool) *baseService {
+				baseService: func(ctx context.Context, _, _ model.ID, _ bool) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -964,7 +964,7 @@ func Test_permissionService_HasAnyRelation(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				permissionRepo: func(ctx context.Context, subject, target model.ID, hasRelation bool) repository.PermissionRepository {
+				permissionRepo: func(ctx context.Context, subject, target model.ID, _ bool) repository.PermissionRepository {
 					repo := new(mock.PermissionRepository)
 					repo.On("HasAnyRelation", ctx, subject, target).Return(false, assert.AnError)
 					return repo
@@ -1014,7 +1014,7 @@ func Test_permissionService_CtxUserHasAnyRelation(t *testing.T) {
 		{
 			name: "get relation",
 			fields: fields{
-				baseService: func(ctx context.Context, userID, target model.ID, hasRelation bool) *baseService {
+				baseService: func(ctx context.Context, _, _ model.ID, _ bool) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1042,7 +1042,7 @@ func Test_permissionService_CtxUserHasAnyRelation(t *testing.T) {
 		{
 			name: "get relation with no relations",
 			fields: fields{
-				baseService: func(ctx context.Context, userID, target model.ID, hasRelation bool) *baseService {
+				baseService: func(ctx context.Context, _, _ model.ID, _ bool) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1070,7 +1070,7 @@ func Test_permissionService_CtxUserHasAnyRelation(t *testing.T) {
 		{
 			name: "get relation with error",
 			fields: fields{
-				baseService: func(ctx context.Context, userID, target model.ID, hasRelation bool) *baseService {
+				baseService: func(ctx context.Context, _, _ model.ID, _ bool) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1083,7 +1083,7 @@ func Test_permissionService_CtxUserHasAnyRelation(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				permissionRepo: func(ctx context.Context, userID, target model.ID, hasRelation bool) repository.PermissionRepository {
+				permissionRepo: func(ctx context.Context, userID, target model.ID, _ bool) repository.PermissionRepository {
 					repo := new(mock.PermissionRepository)
 					repo.On("HasAnyRelation", ctx, userID, target).Return(false, assert.AnError)
 					return repo
@@ -1098,7 +1098,7 @@ func Test_permissionService_CtxUserHasAnyRelation(t *testing.T) {
 		{
 			name: "get relation with no ctx user",
 			fields: fields{
-				baseService: func(ctx context.Context, userID, target model.ID, hasRelation bool) *baseService {
+				baseService: func(ctx context.Context, _, _ model.ID, _ bool) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1110,7 +1110,7 @@ func Test_permissionService_CtxUserHasAnyRelation(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				permissionRepo: func(ctx context.Context, userID, target model.ID, hasRelation bool) repository.PermissionRepository {
+				permissionRepo: func(_ context.Context, _, _ model.ID, _ bool) repository.PermissionRepository {
 					return new(mock.PermissionRepository)
 				},
 			},
@@ -1156,7 +1156,7 @@ func Test_permissionService_HasSystemRole(t *testing.T) {
 		{
 			name: "get role",
 			fields: fields{
-				baseService: func(ctx context.Context, subject model.ID, roles []model.SystemRole, hasRole bool) *baseService {
+				baseService: func(ctx context.Context, _ model.ID, _ []model.SystemRole, _ bool) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1184,7 +1184,7 @@ func Test_permissionService_HasSystemRole(t *testing.T) {
 		{
 			name: "get role with error",
 			fields: fields{
-				baseService: func(ctx context.Context, subject model.ID, roles []model.SystemRole, hasRole bool) *baseService {
+				baseService: func(ctx context.Context, _ model.ID, _ []model.SystemRole, _ bool) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1196,7 +1196,7 @@ func Test_permissionService_HasSystemRole(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				permissionRepo: func(ctx context.Context, subject model.ID, roles []model.SystemRole, hasRole bool) repository.PermissionRepository {
+				permissionRepo: func(ctx context.Context, subject model.ID, roles []model.SystemRole, _ bool) repository.PermissionRepository {
 					repo := new(mock.PermissionRepository)
 					repo.On("HasSystemRole", ctx, subject, roles).Return(false, assert.AnError)
 					return repo
@@ -1246,7 +1246,7 @@ func Test_permissionService_CtxUserHasSystemRole(t *testing.T) {
 		{
 			name: "get role",
 			fields: fields{
-				baseService: func(ctx context.Context, userID model.ID, roles []model.SystemRole, hasRole bool) *baseService {
+				baseService: func(ctx context.Context, _ model.ID, _ []model.SystemRole, _ bool) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1274,7 +1274,7 @@ func Test_permissionService_CtxUserHasSystemRole(t *testing.T) {
 		{
 			name: "get role with error",
 			fields: fields{
-				baseService: func(ctx context.Context, userID model.ID, roles []model.SystemRole, hasRole bool) *baseService {
+				baseService: func(ctx context.Context, _ model.ID, _ []model.SystemRole, _ bool) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1287,7 +1287,7 @@ func Test_permissionService_CtxUserHasSystemRole(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				permissionRepo: func(ctx context.Context, userID model.ID, roles []model.SystemRole, hasRole bool) repository.PermissionRepository {
+				permissionRepo: func(ctx context.Context, userID model.ID, roles []model.SystemRole, _ bool) repository.PermissionRepository {
 					repo := new(mock.PermissionRepository)
 					repo.On("HasSystemRole", ctx, userID, roles).Return(false, assert.AnError)
 					return repo
@@ -1301,7 +1301,7 @@ func Test_permissionService_CtxUserHasSystemRole(t *testing.T) {
 		{
 			name: "get role with no ctx user",
 			fields: fields{
-				baseService: func(ctx context.Context, userID model.ID, roles []model.SystemRole, hasRole bool) *baseService {
+				baseService: func(ctx context.Context, _ model.ID, _ []model.SystemRole, _ bool) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1314,7 +1314,7 @@ func Test_permissionService_CtxUserHasSystemRole(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				permissionRepo: func(ctx context.Context, userID model.ID, roles []model.SystemRole, hasRole bool) repository.PermissionRepository {
+				permissionRepo: func(_ context.Context, _ model.ID, _ []model.SystemRole, _ bool) repository.PermissionRepository {
 					return new(mock.PermissionRepository)
 				},
 			},
@@ -1361,7 +1361,7 @@ func Test_permissionService_HasPermission(t *testing.T) {
 		{
 			name: "has permission",
 			fields: fields{
-				baseService: func(ctx context.Context, subject, target model.ID, kinds []model.PermissionKind) *baseService {
+				baseService: func(ctx context.Context, _, _ model.ID, _ []model.PermissionKind) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1392,7 +1392,7 @@ func Test_permissionService_HasPermission(t *testing.T) {
 		{
 			name: "has no permission",
 			fields: fields{
-				baseService: func(ctx context.Context, subject, target model.ID, kinds []model.PermissionKind) *baseService {
+				baseService: func(ctx context.Context, _, _ model.ID, _ []model.PermissionKind) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1423,7 +1423,7 @@ func Test_permissionService_HasPermission(t *testing.T) {
 		{
 			name: "has permission system role error",
 			fields: fields{
-				baseService: func(ctx context.Context, subject, target model.ID, kinds []model.PermissionKind) *baseService {
+				baseService: func(ctx context.Context, _, _ model.ID, _ []model.PermissionKind) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1436,7 +1436,7 @@ func Test_permissionService_HasPermission(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				permissionRepo: func(ctx context.Context, subject, target model.ID, kinds []model.PermissionKind) repository.PermissionRepository {
+				permissionRepo: func(ctx context.Context, subject, _ model.ID, _ []model.PermissionKind) repository.PermissionRepository {
 					repo := new(mock.PermissionRepository)
 					repo.On("HasSystemRole", ctx, subject, []model.SystemRole{model.SystemRoleOwner}).Return(false, assert.AnError)
 					return repo
@@ -1453,7 +1453,7 @@ func Test_permissionService_HasPermission(t *testing.T) {
 		{
 			name: "has permission with error",
 			fields: fields{
-				baseService: func(ctx context.Context, subject, target model.ID, kinds []model.PermissionKind) *baseService {
+				baseService: func(ctx context.Context, _, _ model.ID, _ []model.PermissionKind) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1519,7 +1519,7 @@ func Test_permissionService_CtxUserHasPermission(t *testing.T) {
 		{
 			name: "has permission",
 			fields: fields{
-				baseService: func(ctx context.Context, subject, target model.ID, kinds []model.PermissionKind) *baseService {
+				baseService: func(ctx context.Context, _, _ model.ID, _ []model.PermissionKind) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1550,7 +1550,7 @@ func Test_permissionService_CtxUserHasPermission(t *testing.T) {
 		{
 			name: "has no permission",
 			fields: fields{
-				baseService: func(ctx context.Context, subject, target model.ID, kinds []model.PermissionKind) *baseService {
+				baseService: func(ctx context.Context, _, _ model.ID, _ []model.PermissionKind) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1581,7 +1581,7 @@ func Test_permissionService_CtxUserHasPermission(t *testing.T) {
 		{
 			name: "has permission with error",
 			fields: fields{
-				baseService: func(ctx context.Context, subject, target model.ID, kinds []model.PermissionKind) *baseService {
+				baseService: func(ctx context.Context, _, _ model.ID, _ []model.PermissionKind) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1612,7 +1612,7 @@ func Test_permissionService_CtxUserHasPermission(t *testing.T) {
 		{
 			name: "has permission with no ctx user",
 			fields: fields{
-				baseService: func(ctx context.Context, subject, target model.ID, kinds []model.PermissionKind) *baseService {
+				baseService: func(ctx context.Context, _, _ model.ID, _ []model.PermissionKind) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1625,7 +1625,7 @@ func Test_permissionService_CtxUserHasPermission(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				permissionRepo: func(ctx context.Context, subject, target model.ID, kinds []model.PermissionKind) repository.PermissionRepository {
+				permissionRepo: func(_ context.Context, _, _ model.ID, _ []model.PermissionKind) repository.PermissionRepository {
 					return new(mock.PermissionRepository)
 				},
 			},
@@ -1671,7 +1671,7 @@ func Test_permissionService_Update(t *testing.T) {
 		{
 			name: "update permission",
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID, kind model.PermissionKind) *baseService {
+				baseService: func(ctx context.Context, _ model.ID, _ model.PermissionKind) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1704,7 +1704,7 @@ func Test_permissionService_Update(t *testing.T) {
 		{
 			name: "update permission with error",
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID, kind model.PermissionKind) *baseService {
+				baseService: func(ctx context.Context, _ model.ID, _ model.PermissionKind) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1716,7 +1716,7 @@ func Test_permissionService_Update(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				permissionRepo: func(ctx context.Context, id model.ID, want *model.Permission, kind model.PermissionKind) repository.PermissionRepository {
+				permissionRepo: func(ctx context.Context, id model.ID, _ *model.Permission, kind model.PermissionKind) repository.PermissionRepository {
 					repo := new(mock.PermissionRepository)
 					repo.On("Update", ctx, id, kind).Return(nil, assert.AnError)
 					return repo
@@ -1769,7 +1769,7 @@ func Test_permissionService_CtxUserUpdate(t *testing.T) {
 		{
 			name: "update permission with direct permission",
 			fields: fields{
-				baseService: func(ctx context.Context, userID model.ID, want *model.Permission, kind model.PermissionKind) *baseService {
+				baseService: func(ctx context.Context, _ model.ID, _ *model.Permission, _ model.PermissionKind) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1817,7 +1817,7 @@ func Test_permissionService_CtxUserUpdate(t *testing.T) {
 		{
 			name: "update permission with system role",
 			fields: fields{
-				baseService: func(ctx context.Context, userID model.ID, want *model.Permission, kind model.PermissionKind) *baseService {
+				baseService: func(ctx context.Context, _ model.ID, _ *model.Permission, _ model.PermissionKind) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1865,7 +1865,7 @@ func Test_permissionService_CtxUserUpdate(t *testing.T) {
 		{
 			name: "update permission with error",
 			fields: fields{
-				baseService: func(ctx context.Context, userID model.ID, want *model.Permission, kind model.PermissionKind) *baseService {
+				baseService: func(ctx context.Context, _ model.ID, _ *model.Permission, _ model.PermissionKind) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1914,7 +1914,7 @@ func Test_permissionService_CtxUserUpdate(t *testing.T) {
 		{
 			name: "update permission with no permission",
 			fields: fields{
-				baseService: func(ctx context.Context, userID model.ID, want *model.Permission, kind model.PermissionKind) *baseService {
+				baseService: func(ctx context.Context, _ model.ID, _ *model.Permission, _ model.PermissionKind) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1931,7 +1931,7 @@ func Test_permissionService_CtxUserUpdate(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				permissionRepo: func(ctx context.Context, userID model.ID, want *model.Permission, kind model.PermissionKind) repository.PermissionRepository {
+				permissionRepo: func(ctx context.Context, userID model.ID, want *model.Permission, _ model.PermissionKind) repository.PermissionRepository {
 					repo := new(mock.PermissionRepository)
 					repo.On("HasSystemRole", ctx, userID, []model.SystemRole{
 						model.SystemRoleOwner,
@@ -1961,7 +1961,7 @@ func Test_permissionService_CtxUserUpdate(t *testing.T) {
 		{
 			name: "update permission no permission found",
 			fields: fields{
-				baseService: func(ctx context.Context, userID model.ID, want *model.Permission, kind model.PermissionKind) *baseService {
+				baseService: func(ctx context.Context, _ model.ID, _ *model.Permission, _ model.PermissionKind) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1974,7 +1974,7 @@ func Test_permissionService_CtxUserUpdate(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				permissionRepo: func(ctx context.Context, userID model.ID, want *model.Permission, kind model.PermissionKind) repository.PermissionRepository {
+				permissionRepo: func(ctx context.Context, _ model.ID, want *model.Permission, _ model.PermissionKind) repository.PermissionRepository {
 					repo := new(mock.PermissionRepository)
 					repo.On("Get", ctx, want.ID).Return(nil, assert.AnError)
 					return repo
@@ -1996,7 +1996,7 @@ func Test_permissionService_CtxUserUpdate(t *testing.T) {
 		{
 			name: "update permission with no ctx user",
 			fields: fields{
-				baseService: func(ctx context.Context, userID model.ID, want *model.Permission, kind model.PermissionKind) *baseService {
+				baseService: func(ctx context.Context, _ model.ID, _ *model.Permission, _ model.PermissionKind) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -2008,7 +2008,7 @@ func Test_permissionService_CtxUserUpdate(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				permissionRepo: func(ctx context.Context, userID model.ID, want *model.Permission, kind model.PermissionKind) repository.PermissionRepository {
+				permissionRepo: func(_ context.Context, _ model.ID, _ *model.Permission, _ model.PermissionKind) repository.PermissionRepository {
 					return new(mock.PermissionRepository)
 				},
 			},
@@ -2062,7 +2062,7 @@ func Test_permissionService_Delete(t *testing.T) {
 		{
 			name: "delete permission",
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID) *baseService {
+				baseService: func(ctx context.Context, _ model.ID) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -2088,7 +2088,7 @@ func Test_permissionService_Delete(t *testing.T) {
 		{
 			name: "delete permission with error",
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID) *baseService {
+				baseService: func(ctx context.Context, _ model.ID) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -2147,7 +2147,7 @@ func Test_permissionService_CtxUserDelete(t *testing.T) {
 		{
 			name: "delete permission using permissions",
 			fields: fields{
-				baseService: func(ctx context.Context, userID, id model.ID, perm *model.Permission) *baseService {
+				baseService: func(ctx context.Context, _, _ model.ID, _ *model.Permission) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -2165,7 +2165,7 @@ func Test_permissionService_CtxUserDelete(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				permissionRepo: func(ctx context.Context, userID, id model.ID, perm *model.Permission) repository.PermissionRepository {
+				permissionRepo: func(ctx context.Context, userID, _ model.ID, perm *model.Permission) repository.PermissionRepository {
 					repo := new(mock.PermissionRepository)
 					repo.On("HasSystemRole", ctx, userID, []model.SystemRole{
 						model.SystemRoleOwner,
@@ -2193,7 +2193,7 @@ func Test_permissionService_CtxUserDelete(t *testing.T) {
 		{
 			name: "delete permission when no permissions but system role",
 			fields: fields{
-				baseService: func(ctx context.Context, userID, id model.ID, perm *model.Permission) *baseService {
+				baseService: func(ctx context.Context, _, _ model.ID, _ *model.Permission) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -2211,7 +2211,7 @@ func Test_permissionService_CtxUserDelete(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				permissionRepo: func(ctx context.Context, userID, id model.ID, perm *model.Permission) repository.PermissionRepository {
+				permissionRepo: func(ctx context.Context, userID, _ model.ID, perm *model.Permission) repository.PermissionRepository {
 					repo := new(mock.PermissionRepository)
 					repo.On("HasSystemRole", ctx, userID, []model.SystemRole{
 						model.SystemRoleOwner,
@@ -2239,7 +2239,7 @@ func Test_permissionService_CtxUserDelete(t *testing.T) {
 		{
 			name: "delete permission no target found",
 			fields: fields{
-				baseService: func(ctx context.Context, userID, id model.ID, perm *model.Permission) *baseService {
+				baseService: func(ctx context.Context, _, _ model.ID, _ *model.Permission) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -2252,7 +2252,7 @@ func Test_permissionService_CtxUserDelete(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				permissionRepo: func(ctx context.Context, userID, id model.ID, perm *model.Permission) repository.PermissionRepository {
+				permissionRepo: func(ctx context.Context, _, _ model.ID, perm *model.Permission) repository.PermissionRepository {
 					repo := new(mock.PermissionRepository)
 					repo.On("Get", ctx, perm.ID).Return(nil, assert.AnError)
 					return repo
@@ -2273,7 +2273,7 @@ func Test_permissionService_CtxUserDelete(t *testing.T) {
 		{
 			name: "delete permission with no permissions",
 			fields: fields{
-				baseService: func(ctx context.Context, userID, id model.ID, perm *model.Permission) *baseService {
+				baseService: func(ctx context.Context, _, _ model.ID, _ *model.Permission) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -2290,7 +2290,7 @@ func Test_permissionService_CtxUserDelete(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				permissionRepo: func(ctx context.Context, userID, id model.ID, perm *model.Permission) repository.PermissionRepository {
+				permissionRepo: func(ctx context.Context, userID, _ model.ID, perm *model.Permission) repository.PermissionRepository {
 					repo := new(mock.PermissionRepository)
 					repo.On("HasSystemRole", ctx, userID, []model.SystemRole{
 						model.SystemRoleOwner,
@@ -2319,7 +2319,7 @@ func Test_permissionService_CtxUserDelete(t *testing.T) {
 		{
 			name: "delete permission with no ctx user",
 			fields: fields{
-				baseService: func(ctx context.Context, userID, id model.ID, perm *model.Permission) *baseService {
+				baseService: func(ctx context.Context, _, _ model.ID, _ *model.Permission) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -2331,7 +2331,7 @@ func Test_permissionService_CtxUserDelete(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				permissionRepo: func(ctx context.Context, userID, id model.ID, perm *model.Permission) repository.PermissionRepository {
+				permissionRepo: func(_ context.Context, _, _ model.ID, _ *model.Permission) repository.PermissionRepository {
 					return new(mock.PermissionRepository)
 				},
 				perm: &model.Permission{

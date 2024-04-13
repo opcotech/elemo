@@ -35,7 +35,7 @@ func TestCachedIssueRepository_Create(t *testing.T) {
 		{
 			name: "add new issue with no parent",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, project model.ID, issue *model.Issue) *baseRepository {
+				cacheRepo: func(ctx context.Context, project model.ID, _ *model.Issue) *baseRepository {
 					allProjectsKey := composeCacheKey(model.ResourceTypeProject.String(), "*")
 					projectsKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForProject", project.String(), "*")
 
@@ -179,7 +179,7 @@ func TestCachedIssueRepository_Create(t *testing.T) {
 		{
 			name: "add new issue with error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, project model.ID, issue *model.Issue) *baseRepository {
+				cacheRepo: func(ctx context.Context, project model.ID, _ *model.Issue) *baseRepository {
 					allProjectsKey := composeCacheKey(model.ResourceTypeProject.String(), "*")
 					projectsKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForProject", project.String(), "*")
 
@@ -249,7 +249,7 @@ func TestCachedIssueRepository_Create(t *testing.T) {
 		{
 			name: "add new issue with cache delete error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, project model.ID, issue *model.Issue) *baseRepository {
+				cacheRepo: func(ctx context.Context, project model.ID, _ *model.Issue) *baseRepository {
 					allProjectsKey := composeCacheKey(model.ResourceTypeProject.String(), "*")
 					projectsKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForProject", project.String(), "*")
 
@@ -285,7 +285,7 @@ func TestCachedIssueRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, project model.ID, issue *model.Issue) repository.IssueRepository {
+				issueRepo: func(_ context.Context, _ model.ID, _ *model.Issue) repository.IssueRepository {
 					return new(mock.IssueRepository)
 				},
 			},
@@ -387,7 +387,7 @@ func TestCachedIssueRepository_Create(t *testing.T) {
 		{
 			name: "add new issue with project cache delete error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, project model.ID, issue *model.Issue) *baseRepository {
+				cacheRepo: func(ctx context.Context, project model.ID, _ *model.Issue) *baseRepository {
 					allProjectsKey := composeCacheKey(model.ResourceTypeProject.String(), "*")
 					projectsKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForProject", project.String(), "*")
 
@@ -423,7 +423,7 @@ func TestCachedIssueRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, project model.ID, issue *model.Issue) repository.IssueRepository {
+				issueRepo: func(_ context.Context, _ model.ID, _ *model.Issue) repository.IssueRepository {
 					return new(mock.IssueRepository)
 				},
 			},
@@ -528,7 +528,7 @@ func TestCachedIssueRepository_Get(t *testing.T) {
 			},
 			want: func(id model.ID) *model.Issue {
 				return &model.Issue{
-					ID:          model.MustNewID(model.ResourceTypeIssue),
+					ID:          id,
 					NumericID:   1,
 					Parent:      nil,
 					Kind:        model.IssueKindStory,
@@ -575,7 +575,7 @@ func TestCachedIssueRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, id model.ID, issue *model.Issue) repository.IssueRepository {
+				issueRepo: func(_ context.Context, _ model.ID, _ *model.Issue) repository.IssueRepository {
 					return new(mock.IssueRepository)
 				},
 			},
@@ -585,7 +585,7 @@ func TestCachedIssueRepository_Get(t *testing.T) {
 			},
 			want: func(id model.ID) *model.Issue {
 				return &model.Issue{
-					ID:          model.MustNewID(model.ResourceTypeIssue),
+					ID:          id,
 					NumericID:   1,
 					Parent:      nil,
 					Kind:        model.IssueKindStory,
@@ -608,7 +608,7 @@ func TestCachedIssueRepository_Get(t *testing.T) {
 		{
 			name: "get uncached issue error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id model.ID, issue *model.Issue) *baseRepository {
+				cacheRepo: func(ctx context.Context, id model.ID, _ *model.Issue) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeIssue.String(), id.String())
 
 					db, err := NewDatabase(
@@ -632,7 +632,7 @@ func TestCachedIssueRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, id model.ID, issue *model.Issue) repository.IssueRepository {
+				issueRepo: func(ctx context.Context, id model.ID, _ *model.Issue) repository.IssueRepository {
 					repo := new(mock.IssueRepository)
 					repo.On("Get", ctx, id).Return(nil, repository.ErrNotFound)
 					return repo
@@ -647,7 +647,7 @@ func TestCachedIssueRepository_Get(t *testing.T) {
 		{
 			name: "get cached issue error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id model.ID, issue *model.Issue) *baseRepository {
+				cacheRepo: func(ctx context.Context, id model.ID, _ *model.Issue) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeIssue.String(), id.String())
 
 					db, err := NewDatabase(
@@ -671,7 +671,7 @@ func TestCachedIssueRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, id model.ID, issue *model.Issue) repository.IssueRepository {
+				issueRepo: func(_ context.Context, _ model.ID, _ *model.Issue) repository.IssueRepository {
 					return new(mock.IssueRepository)
 				},
 			},
@@ -876,7 +876,7 @@ func TestCachedIssueRepository_GetAllForProject(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, project model.ID, offset, limit int, issues []*model.Issue) repository.IssueRepository {
+				issueRepo: func(_ context.Context, _ model.ID, _, _ int, _ []*model.Issue) repository.IssueRepository {
 					return new(mock.IssueRepository)
 				},
 			},
@@ -928,7 +928,7 @@ func TestCachedIssueRepository_GetAllForProject(t *testing.T) {
 		{
 			name: "get uncached issues error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, project model.ID, offset, limit int, issues []*model.Issue) *baseRepository {
+				cacheRepo: func(ctx context.Context, project model.ID, offset, limit int, _ []*model.Issue) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForProject", project.String(), offset, limit)
 
 					db, err := NewDatabase(
@@ -953,7 +953,7 @@ func TestCachedIssueRepository_GetAllForProject(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, project model.ID, offset, limit int, issues []*model.Issue) repository.IssueRepository {
+				issueRepo: func(ctx context.Context, project model.ID, offset, limit int, _ []*model.Issue) repository.IssueRepository {
 					repo := new(mock.IssueRepository)
 					repo.On("GetAllForProject", ctx, project, offset, limit).Return(nil, repository.ErrNotFound)
 					return repo
@@ -968,7 +968,7 @@ func TestCachedIssueRepository_GetAllForProject(t *testing.T) {
 		{
 			name: "get get issues cache error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, project model.ID, offset, limit int, issues []*model.Issue) *baseRepository {
+				cacheRepo: func(ctx context.Context, project model.ID, offset, limit int, _ []*model.Issue) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForProject", project.String(), offset, limit)
 
 					db, err := NewDatabase(
@@ -993,7 +993,7 @@ func TestCachedIssueRepository_GetAllForProject(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, project model.ID, offset, limit int, issues []*model.Issue) repository.IssueRepository {
+				issueRepo: func(_ context.Context, _ model.ID, _, _ int, _ []*model.Issue) repository.IssueRepository {
 					return new(mock.IssueRepository)
 				},
 			},
@@ -1193,7 +1193,7 @@ func TestCachedIssueRepository_GetAllForIssue(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, issue model.ID, offset, limit int, issues []*model.Issue) repository.IssueRepository {
+				issueRepo: func(_ context.Context, _ model.ID, _, _ int, _ []*model.Issue) repository.IssueRepository {
 					return new(mock.IssueRepository)
 				},
 			},
@@ -1245,7 +1245,7 @@ func TestCachedIssueRepository_GetAllForIssue(t *testing.T) {
 		{
 			name: "get uncached issues error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, issue model.ID, offset, limit int, issues []*model.Issue) *baseRepository {
+				cacheRepo: func(ctx context.Context, issue model.ID, offset, limit int, _ []*model.Issue) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForIssue", issue.String(), offset, limit)
 
 					db, err := NewDatabase(
@@ -1270,7 +1270,7 @@ func TestCachedIssueRepository_GetAllForIssue(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, issue model.ID, offset, limit int, issues []*model.Issue) repository.IssueRepository {
+				issueRepo: func(ctx context.Context, issue model.ID, offset, limit int, _ []*model.Issue) repository.IssueRepository {
 					repo := new(mock.IssueRepository)
 					repo.On("GetAllForIssue", ctx, issue, offset, limit).Return(nil, repository.ErrNotFound)
 					return repo
@@ -1285,7 +1285,7 @@ func TestCachedIssueRepository_GetAllForIssue(t *testing.T) {
 		{
 			name: "get get issues cache error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, issue model.ID, offset, limit int, issues []*model.Issue) *baseRepository {
+				cacheRepo: func(ctx context.Context, issue model.ID, offset, limit int, _ []*model.Issue) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForIssue", issue.String(), offset, limit)
 
 					db, err := NewDatabase(
@@ -1310,7 +1310,7 @@ func TestCachedIssueRepository_GetAllForIssue(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, issue model.ID, offset, limit int, issues []*model.Issue) repository.IssueRepository {
+				issueRepo: func(_ context.Context, _ model.ID, _, _ int, _ []*model.Issue) repository.IssueRepository {
 					return new(mock.IssueRepository)
 				},
 			},
@@ -1400,7 +1400,7 @@ func TestCachedIssueRepository_AddWatcher(t *testing.T) {
 		{
 			name: "add watcher",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id, watcher model.ID) *baseRepository {
+				cacheRepo: func(ctx context.Context, id, _ model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeIssue.String(), id.String())
 					watchersKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetWatchers", id.String(), "*")
 					allForIssueKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForIssue", "*")
@@ -1459,7 +1459,7 @@ func TestCachedIssueRepository_AddWatcher(t *testing.T) {
 		{
 			name: "add watcher with deletion error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id, watcher model.ID) *baseRepository {
+				cacheRepo: func(ctx context.Context, id, _ model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeIssue.String(), id.String())
 					watchersKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetWatchers", id.String(), "*")
 					allForIssueKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForIssue", "*")
@@ -1519,7 +1519,7 @@ func TestCachedIssueRepository_AddWatcher(t *testing.T) {
 		{
 			name: "add watcher with clear cache error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id, watcher model.ID) *baseRepository {
+				cacheRepo: func(ctx context.Context, id, _ model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeIssue.String(), id.String())
 
 					db, err := NewDatabase(
@@ -1558,7 +1558,7 @@ func TestCachedIssueRepository_AddWatcher(t *testing.T) {
 		{
 			name: "add watcher with clear watchers cache error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id, watcher model.ID) *baseRepository {
+				cacheRepo: func(ctx context.Context, id, _ model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeIssue.String(), id.String())
 					watchersKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetWatchers", id.String(), "*")
 
@@ -1607,7 +1607,7 @@ func TestCachedIssueRepository_AddWatcher(t *testing.T) {
 		{
 			name: "add watcher with clear for issue cache error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id, watcher model.ID) *baseRepository {
+				cacheRepo: func(ctx context.Context, id, _ model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeIssue.String(), id.String())
 					watchersKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetWatchers", id.String(), "*")
 					allForIssueKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForIssue", "*")
@@ -1661,7 +1661,7 @@ func TestCachedIssueRepository_AddWatcher(t *testing.T) {
 		{
 			name: "add watcher with clear for project cache error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id, watcher model.ID) *baseRepository {
+				cacheRepo: func(ctx context.Context, id, _ model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeIssue.String(), id.String())
 					watchersKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetWatchers", id.String(), "*")
 					allForIssueKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForIssue", "*")
@@ -1808,7 +1808,7 @@ func TestCachedIssueRepository_GetWatchers(t *testing.T) {
 		{
 			name: "get issue watchers with error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id model.ID, watchers []*model.User) *baseRepository {
+				cacheRepo: func(ctx context.Context, id model.ID, _ []*model.User) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeIssue.String(), "GetWatchers", id.String())
 
 					db, err := NewDatabase(
@@ -1833,7 +1833,7 @@ func TestCachedIssueRepository_GetWatchers(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, id model.ID, watchers []*model.User) repository.IssueRepository {
+				issueRepo: func(ctx context.Context, id model.ID, _ []*model.User) repository.IssueRepository {
 					repo := new(mock.IssueRepository)
 					repo.On("GetWatchers", ctx, id).Return(nil, repository.ErrNotFound)
 					return repo
@@ -1873,7 +1873,7 @@ func TestCachedIssueRepository_GetWatchers(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, id model.ID, watchers []*model.User) repository.IssueRepository {
+				issueRepo: func(_ context.Context, _ model.ID, _ []*model.User) repository.IssueRepository {
 					return new(mock.IssueRepository)
 				},
 			},
@@ -1956,7 +1956,7 @@ func TestCachedIssueRepository_GetWatchers(t *testing.T) {
 		{
 			name: "get issue watchers with get cache error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id model.ID, watchers []*model.User) *baseRepository {
+				cacheRepo: func(ctx context.Context, id model.ID, _ []*model.User) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeIssue.String(), "GetWatchers", id.String())
 
 					db, err := NewDatabase(
@@ -1981,7 +1981,7 @@ func TestCachedIssueRepository_GetWatchers(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, id model.ID, watchers []*model.User) repository.IssueRepository {
+				issueRepo: func(_ context.Context, _ model.ID, _ []*model.User) repository.IssueRepository {
 					return new(mock.IssueRepository)
 				},
 			},
@@ -2040,7 +2040,7 @@ func TestCachedIssueRepository_RemoveWatcher(t *testing.T) {
 		{
 			name: "remove issue watcher",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id, watcher model.ID) *baseRepository {
+				cacheRepo: func(ctx context.Context, id, _ model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeIssue.String(), id.String())
 					watchersKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetWatchers", id.String(), "*")
 
@@ -2100,7 +2100,7 @@ func TestCachedIssueRepository_RemoveWatcher(t *testing.T) {
 		{
 			name: "remove issue watcher with deletion error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id, watcher model.ID) *baseRepository {
+				cacheRepo: func(ctx context.Context, id, _ model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeIssue.String(), id.String())
 					watchersKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetWatchers", id.String(), "*")
 
@@ -2161,7 +2161,7 @@ func TestCachedIssueRepository_RemoveWatcher(t *testing.T) {
 		{
 			name: "remove issue watcher with clear cache error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id, watcher model.ID) *baseRepository {
+				cacheRepo: func(ctx context.Context, id, _ model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeIssue.String(), id.String())
 
 					db, err := NewDatabase(
@@ -2200,7 +2200,7 @@ func TestCachedIssueRepository_RemoveWatcher(t *testing.T) {
 		{
 			name: "remove issue watcher with clear watchers cache error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id, watcher model.ID) *baseRepository {
+				cacheRepo: func(ctx context.Context, id, _ model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeIssue.String(), id.String())
 					watchersKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetWatchers", id.String(), "*")
 
@@ -2248,7 +2248,7 @@ func TestCachedIssueRepository_RemoveWatcher(t *testing.T) {
 		{
 			name: "remove issue watcher with clear for issue cache error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id, watcher model.ID) *baseRepository {
+				cacheRepo: func(ctx context.Context, id, _ model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeIssue.String(), id.String())
 					watchersKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetWatchers", id.String(), "*")
 
@@ -2303,7 +2303,7 @@ func TestCachedIssueRepository_RemoveWatcher(t *testing.T) {
 		{
 			name: "remove issue watcher with clear for project cache error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id, watcher model.ID) *baseRepository {
+				cacheRepo: func(ctx context.Context, id, _ model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeIssue.String(), id.String())
 					watchersKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetWatchers", id.String(), "*")
 
@@ -2895,7 +2895,7 @@ func TestCachedIssueRepository_GetRelations(t *testing.T) {
 		{
 			name: "get issue relations with error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id model.ID, relations []*model.IssueRelation) *baseRepository {
+				cacheRepo: func(ctx context.Context, id model.ID, _ []*model.IssueRelation) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeIssue.String(), "GetRelations", id.String())
 
 					db, err := NewDatabase(
@@ -2920,7 +2920,7 @@ func TestCachedIssueRepository_GetRelations(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, id model.ID, relations []*model.IssueRelation) repository.IssueRepository {
+				issueRepo: func(ctx context.Context, id model.ID, _ []*model.IssueRelation) repository.IssueRepository {
 					repo := new(mock.IssueRepository)
 					repo.On("GetRelations", ctx, id).Return(nil, repository.ErrNotFound)
 					return repo
@@ -2960,7 +2960,7 @@ func TestCachedIssueRepository_GetRelations(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, id model.ID, relations []*model.IssueRelation) repository.IssueRepository {
+				issueRepo: func(_ context.Context, _ model.ID, _ []*model.IssueRelation) repository.IssueRepository {
 					return new(mock.IssueRepository)
 				},
 			},
@@ -3045,7 +3045,7 @@ func TestCachedIssueRepository_GetRelations(t *testing.T) {
 		{
 			name: "get issue relations with get cache error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id model.ID, relations []*model.IssueRelation) *baseRepository {
+				cacheRepo: func(ctx context.Context, id model.ID, _ []*model.IssueRelation) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeIssue.String(), "GetRelations", id.String())
 
 					db, err := NewDatabase(
@@ -3070,7 +3070,7 @@ func TestCachedIssueRepository_GetRelations(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, id model.ID, relations []*model.IssueRelation) repository.IssueRepository {
+				issueRepo: func(_ context.Context, _ model.ID, _ []*model.IssueRelation) repository.IssueRepository {
 					return new(mock.IssueRepository)
 				},
 			},
@@ -3132,7 +3132,7 @@ func TestCachedIssueRepository_RemoveRelation(t *testing.T) {
 		{
 			name: "remove issue relation",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, source, target model.ID, kind model.IssueRelationKind) *baseRepository {
+				cacheRepo: func(ctx context.Context, source, _ model.ID, _ model.IssueRelationKind) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeIssue.String(), source.String())
 					relationsKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetRelations", source.String(), "*")
 
@@ -3194,7 +3194,7 @@ func TestCachedIssueRepository_RemoveRelation(t *testing.T) {
 		{
 			name: "remove issue relation non-issue relation",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, source, target model.ID, kind model.IssueRelationKind) *baseRepository {
+				cacheRepo: func(ctx context.Context, _, target model.ID, _ model.IssueRelationKind) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeIssue.String(), target.String())
 					relationsKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetRelations", target.String(), "*")
 
@@ -3256,7 +3256,7 @@ func TestCachedIssueRepository_RemoveRelation(t *testing.T) {
 		{
 			name: "remove issue relation with deletion error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, source, target model.ID, kind model.IssueRelationKind) *baseRepository {
+				cacheRepo: func(ctx context.Context, source, _ model.ID, _ model.IssueRelationKind) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeIssue.String(), source.String())
 					relationsKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetRelations", source.String(), "*")
 
@@ -3319,7 +3319,7 @@ func TestCachedIssueRepository_RemoveRelation(t *testing.T) {
 		{
 			name: "remove issue relation with clear cache error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, source, target model.ID, kind model.IssueRelationKind) *baseRepository {
+				cacheRepo: func(ctx context.Context, source, _ model.ID, _ model.IssueRelationKind) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeIssue.String(), source.String())
 
 					db, err := NewDatabase(
@@ -3360,7 +3360,7 @@ func TestCachedIssueRepository_RemoveRelation(t *testing.T) {
 		{
 			name: "remove issue relation with clear relations cache error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, source, target model.ID, kind model.IssueRelationKind) *baseRepository {
+				cacheRepo: func(ctx context.Context, source, _ model.ID, _ model.IssueRelationKind) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeIssue.String(), source.String())
 					relationsKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetRelations", source.String(), "*")
 
@@ -3410,7 +3410,7 @@ func TestCachedIssueRepository_RemoveRelation(t *testing.T) {
 		{
 			name: "remove issue relation with clear for issue cache error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, source, target model.ID, kind model.IssueRelationKind) *baseRepository {
+				cacheRepo: func(ctx context.Context, source, _ model.ID, _ model.IssueRelationKind) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeIssue.String(), source.String())
 					relationsKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetRelations", source.String(), "*")
 
@@ -3467,7 +3467,7 @@ func TestCachedIssueRepository_RemoveRelation(t *testing.T) {
 		{
 			name: "remove issue relation with clear for project cache error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, source, target model.ID, kind model.IssueRelationKind) *baseRepository {
+				cacheRepo: func(ctx context.Context, source, _ model.ID, _ model.IssueRelationKind) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeIssue.String(), source.String())
 					relationsKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetRelations", source.String(), "*")
 
@@ -3647,7 +3647,7 @@ func TestCachedIssueRepository_Update(t *testing.T) {
 		{
 			name: "update issue with error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id model.ID, issue *model.Issue) *baseRepository {
+				cacheRepo: func(_ context.Context, _ model.ID, _ *model.Issue) *baseRepository {
 					db, err := NewDatabase(
 						WithClient(new(mock.RedisClient)),
 					)
@@ -3660,7 +3660,7 @@ func TestCachedIssueRepository_Update(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, id model.ID, patch map[string]any, issue *model.Issue) repository.IssueRepository {
+				issueRepo: func(ctx context.Context, id model.ID, patch map[string]any, _ *model.Issue) repository.IssueRepository {
 					repo := new(mock.IssueRepository)
 					repo.On("Update", ctx, id, patch).Return(nil, repository.ErrNotFound)
 					return repo

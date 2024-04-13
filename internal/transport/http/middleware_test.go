@@ -20,7 +20,7 @@ func TestWithContextObject(t *testing.T) {
 	request, err := http.NewRequestWithContext(context.Background(), "GET", "/", nil)
 	require.NoError(t, err)
 
-	wrappedFunc := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	wrappedFunc := http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		require.Equal(t, testObj, r.Context().Value(pkg.CtxKey("test")).(string))
 	})
 
@@ -36,7 +36,7 @@ func TestWithRequestLogger(t *testing.T) {
 	request, err := http.NewRequestWithContext(ctx, "GET", "/", nil)
 	require.NoError(t, err)
 
-	wrappedFunc := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
+	wrappedFunc := http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {})
 	WithRequestLogger(wrappedFunc).ServeHTTP(httptest.NewRecorder(), request)
 
 	logger.AssertExpectations(t)
