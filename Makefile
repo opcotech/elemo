@@ -97,8 +97,8 @@ lint.backend: dep ## Run linters on the backend
 	@golangci-lint run --timeout 5m
 
 .PHONY: lint.license
-lint.license: dep ## Check license headers
-	@./scripts/extract-and-lint-licenses.sh
+lint.license: dep ## Check license
+	fossa analyze && fossa test
 
 .PHONY: test
 test: test.unit test.integration ## Run all tests
