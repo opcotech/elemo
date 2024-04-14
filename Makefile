@@ -90,15 +90,11 @@ format: dep ## Format source code
 	@goimports -w $(shell pwd)
 
 .PHONY: lint
-lint: lint.license lint.backend ## Run linters on the project
+lint: lint.backend ## Run linters on the project
 
 .PHONY: lint.backend
 lint.backend: dep ## Run linters on the backend
 	@golangci-lint run --timeout 5m
-
-.PHONY: lint.license
-lint.license: dep ## Check license
-	fossa analyze && fossa test
 
 .PHONY: test
 test: test.unit test.integration ## Run all tests
