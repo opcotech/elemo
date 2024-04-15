@@ -11,6 +11,8 @@
 - [Feature Requests](#feature-requests)
 - [Triaging Issues](#triaging-issues)
 - [Submitting Pull Requests](#submitting-pull-requests)
+- [Code Quality and Tests](#code-quality-and-tests)
+- [Updating The APIs](#updating-the-apis)
 - [Writing Commit Messages](#writing-commit-messages)
 - [Code Review](#code-review)
 - [Coding Style](#coding-style)
@@ -74,14 +76,8 @@ a well-written, thorough bug report. Believe in Karma, open an issue that you wo
   quickly and efficiently address your issue. Be clear, concise, and descriptive. Provide as much information as you
   can, including steps to reproduce, stack traces, compiler errors, library versions, OS versions, and screenshots (if
   applicable).
--
-    *
-
-*
-
-Use [GitHub-flavored Markdown](https://help.github.com/en/github/writing-on-github/basic-writing-and-formatting-syntax).
-** Especially put code blocks and console outputs in backticks (```). This improves readability.
-
+- **Use [GitHub-flavored Markdown](https://help.github.com/en/github/writing-on-github/basic-writing-and-formatting-syntax).**
+  Especially put code blocks and console outputs in backticks (```). This improves readability.
 - **Provide as many _relevant_ details as you can**. This help the work of others and reduces the back-and-forth.
 
 ## Feature Requests
@@ -142,6 +138,82 @@ approach for solving the problem in the comments for an existing issue.
 - When writing comments, use properly constructed sentences, including punctuation.
 - Although we are not all natives, please try your best to **provide documentation and comments in grammatically correct
   English**.
+
+## Code Quality and Tests
+
+The project ensures code quality and code coverage in multiple ways. Besides third-party online tools, with the lack of
+completeness, `gofmt` `go-imports`, `golangci-lint`, `go test`, `k6`, `playwright` and `eslint` are used to keep up with
+industry standards.
+
+To run the backend tests and linters, execute the following:
+
+```shell
+# Backend linters
+make lint
+
+# Backend tests (unit and integration)
+make test
+
+# Backend unit tests
+make test.unit
+
+# Backend integration tests
+make test.integration
+
+# Check code coverage
+make test
+make coverage.combine
+make coverage.stats
+```
+
+Although front-end unit tests are not created yet, linters and some end-to-end
+tests are available. In order to run end-to-end tests, you have to have the
+necessary browser drivers installed. The easiest way to install them, is using
+playwright. When the drivers are installed, you can start the end-to-end tests.
+
+```shell
+# Change to web directory
+cd web
+
+# Run linters
+pnpm lint
+
+# Install playwright dependencies
+npx playwright install --with-deps
+
+# Execute end-to-end tests
+pnpm test:e2e
+```
+
+The external tests, such as load tests, smoke tests, stress tests, etc., are
+defined in the `tests` directory. To run these tests, you need to install `k6`
+first. Then, execute the following:
+
+```shell
+# Change directory
+cd tests
+
+# Execute tests
+k6 run main.js
+```
+
+## Updating The APIs
+
+The APIs are defined in `/api/openapi/openapi.yaml`. To reduce the possibility
+of human error and ensure the API is called properly, both the server and client
+code is generated.
+
+After updating the API specification, you have to regenerate the server and
+client code. To do so, execute the following:
+
+```shell
+# Regenerate backend code
+make generate.openapi
+
+# Regenerate front-end code
+cd web
+pnpm generate
+```
 
 ## Writing Commit Messages
 
