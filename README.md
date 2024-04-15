@@ -31,7 +31,8 @@ size of company an easy use.
 
 ## Features
 
-_The features listed below are part of the roadmap, but not necessarily implemented yet. The implemented features are marked with a checkmark._
+_The features listed below are part of the roadmap, but not necessarily implemented yet. The implemented features are
+marked with a checkmark._
 
 - [ ] **Organizations:** Collaborate on projects across multiple organizations, whether it is your client, vendor, your
   subsidiary, or else.

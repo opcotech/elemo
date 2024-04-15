@@ -9,7 +9,7 @@ However, if the latest version is 2.0.x, the patches for 1.x.x won't be applied.
 Below is the current support table.
 
 | Version | Supported          |
-| ------- | ------------------ |
+|---------|--------------------|
 | 0.x.x   | :white_check_mark: |
 
 ## Reporting a Vulnerability
