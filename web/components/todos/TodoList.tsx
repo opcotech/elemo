@@ -8,11 +8,11 @@ const MemoizedTodoListItem = memo(TodoListItem);
 export interface TodoListProps {
   todos: Todo[];
   editing?: string;
-  deleting: { id: string; timer: NodeJS.Timer | undefined }[];
+  deleting: { id: string; timer: NodeJS.Timeout | undefined }[];
   loading: string[];
   handleUpdate: (id: string, todo: UpdateTodoParams) => Promise<void>;
   handleEdit: (id: string, editing: boolean) => void;
-  handleDelete: (id: string, deleting: boolean, timer?: NodeJS.Timer) => void;
+  handleDelete: (id: string, deleting: boolean, timer?: NodeJS.Timeout) => void;
 }
 
 export function TodoList({ todos, editing, deleting, loading, handleEdit, handleUpdate, handleDelete }: TodoListProps) {

@@ -18,7 +18,7 @@ export interface TodoListItemProps extends Todo {
   deleting: boolean;
   handleUpdateTodo: (id: string, todo: any) => void;
   handleEditTodo: (id: string, editing: boolean) => void;
-  handleDeleteTodo: (id: string, deleting: boolean, timer?: NodeJS.Timer) => void;
+  handleDeleteTodo: (id: string, deleting: boolean, timer?: NodeJS.Timeout) => void;
 }
 
 export function TodoListItem({

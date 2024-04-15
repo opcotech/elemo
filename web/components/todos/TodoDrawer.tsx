@@ -12,7 +12,7 @@ import { TodoList } from './TodoList';
 
 type TodoListState = {
   editing?: string;
-  deleting: { id: string; timer: NodeJS.Timer | undefined }[];
+  deleting: { id: string; timer: NodeJS.Timeout | undefined }[];
   loading: string[];
 };
 
@@ -65,7 +65,7 @@ export function TodoDrawer() {
   }, []);
 
   const handleDelete = useCallback(
-    (id: string, deleting: boolean, timer?: NodeJS.Timer) => {
+    (id: string, deleting: boolean, timer?: NodeJS.Timeout) => {
       setState((state) => ({
         ...state,
         deleting: deleting

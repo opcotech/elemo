@@ -1,6 +1,6 @@
 # Contributing Guidelines
 
-*Pull requests, bug reports, and all other forms of contribution are welcomed and highly encouraged!*
+_Pull requests, bug reports, and all other forms of contribution are welcomed and highly encouraged!_
 
 ### Table of Contents
 
@@ -16,11 +16,12 @@
 - [Writing Commit Messages](#writing-commit-messages)
 - [Code Review](#code-review)
 - [Coding Style](#coding-style)
+- [Web Component Design](#web-component-design)
 - [Developer's Certificate of Origin](#developers-certificate-of-origin)
 
 > **This guide serves to set clear expectations for everyone involved with the project so that we can improve it
-together, while also creating a welcoming space for everyone to participate. Following these guidelines will help ensure
-a positive experience for contributors and maintainers.**
+> together, while also creating a welcoming space for everyone to participate. Following these guidelines will help
+> ensure a positive experience for contributors and maintainers.**
 
 ## Code of Conduct
 
@@ -108,7 +109,7 @@ for non-trivial changes, it is usually best to
 first [start a discussion](https://github.com/opcotech/elemo/discussions/categories/ideas) to discuss your intended
 approach for solving the problem in the comments for an existing issue.
 
-*Note: All contributions will be licensed under the project's license.*
+_Note: All contributions will be licensed under the project's license._
 
 - **Smaller is better.** Submit **one** pull request per bug fix or feature. A pull request should contain isolated
   changes pertaining to a single bug fix or feature implementation. **Do not** refactor or reformat code that is
@@ -225,7 +226,7 @@ Please [write a great commit message](https://chris.beams.io/posts/git-commit/).
 4. Do not end the subject line with a period
 5. Use the imperative mood in the subject line (example: "Fix networking issue")
 6. Wrap the body at about 72 characters
-7. Use the body to explain **why**, *not what and how* (the code shows that!)
+7. Use the body to explain **why**, _not what and how_ (the code shows that!)
 
 We use [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/) format, which is enforced by linters. An
 example excellent commit could look like this:
@@ -233,21 +234,21 @@ example excellent commit could look like this:
 ```
 fix: short summary of changes in 50 chars or less in total
 
-Add a more detailed explanation here, if necessary. Possibly give 
-some background about the issue being fixed, etc. The body of the 
-commit message can be several paragraphs. Further paragraphs come 
+Add a more detailed explanation here, if necessary. Possibly give
+some background about the issue being fixed, etc. The body of the
+commit message can be several paragraphs. Further paragraphs come
 after blank lines and please do proper word-wrap.
 
-Wrap it to about 72 characters or so. In some contexts, 
-the first line is treated as the subject of the commit and the 
-rest of the text as the body. The blank line separating the summary 
-from the body is critical (unless you omit the body entirely); 
-various tools like `log`, `shortlog` and `rebase` can get confused 
+Wrap it to about 72 characters or so. In some contexts,
+the first line is treated as the subject of the commit and the
+rest of the text as the body. The blank line separating the summary
+from the body is critical (unless you omit the body entirely);
+various tools like `log`, `shortlog` and `rebase` can get confused
 if you run the two together.
 
 Explain the problem that this commit is solving. Focus on why you
-are making this change as opposed to how or what. The code explains 
-how or what. Reviewers and your future self can read the patch, 
+are making this change as opposed to how or what. The code explains
+how or what. Reviewers and your future self can read the patch,
 but might not understand why a particular solution was implemented.
 Are there side effects or other unintuitive consequences of this
 change? Here's the place to explain them.
@@ -283,6 +284,13 @@ modifying and of the overall project. Failure to do so will result in a prolonge
 updating the superficial aspects of your code, rather than improving its functionality and performance.
 
 When possible, style and format will be enforced with a linter.
+
+## Web Component Design
+
+The project uses [Storybook](https://storybook.js.org/) for building UI components and pages in isolation. To run
+Storybook locally, execute `pnpm storybook` in the `web` directory.
+
+Then, navigate to the local Storybook instance: http://127.0.0.1:6006.
 
 ## Developer's Certificate of Origin
 
