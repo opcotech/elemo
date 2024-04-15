@@ -37,7 +37,7 @@ All notable changes to this project will be documented in this file.
 - Enhance todo list (#44) ([d4798eb](https://github.com/opcotech/elemo/commit/d4798ebd6a03e11070f0f249eac37302732f7cee))
 - Revamp UI and related API (#60) ([abc4fe3](https://github.com/opcotech/elemo/commit/abc4fe3197ebde4e7c9504feb3a0875c776239e0))
 - Prepare for open sourcing (#128) ([9be5a86](https://github.com/opcotech/elemo/commit/9be5a86de9cfddde1bbfa9c8d983b33370e9e857))
-- Update front-end dependencies (#143) ([0768927](https://github.com/opcotech/elemo/commit/0768927f1beed8bc08b5fb38c8fecb9485c7a775))
+- Update front-end dependencies (#143) ([8996c02](https://github.com/opcotech/elemo/commit/8996c02414a14d22b5b1c15f11ab5fd684ec7b65))
 
 **Testing**
 
