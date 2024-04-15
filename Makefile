@@ -8,7 +8,7 @@ COVERAGE_OUT_INTEGRATION := $(ROOT_DIR)/.coverage.integration.out
 COVERAGE_HTML := $(ROOT_DIR)/coverage.html
 GO_EXEC := $(shell which go)
 GO_TEST_COVER := $(GO_EXEC) test -json -race -shuffle=on -cover -covermode=atomic
-GO_TEST_IGNORE := "testutil|tools|cmd|http\/api"
+GO_TEST_IGNORE := "(mode: atomic|testutil|tools|cmd|http\/api)"
 
 default: build
 
@@ -112,7 +112,7 @@ coverage.combine:
 	@rm -f $(COVERAGE_OUT)
 	@echo "mode: atomic" > $(COVERAGE_OUT)
 	@for file in $(COVERAGE_OUT_UNIT) $(COVERAGE_OUT_INTEGRATION); do \
-		cat $$file | egrep -v "(mode: atomic|$(shell echo $GO_TEST_IGNORE))" >> $(COVERAGE_OUT); \
+		cat $$file | egrep -v ${GO_TEST_IGNORE} >> $(COVERAGE_OUT); \
 	done
 	@rm -f $(COVERAGE_OUT_UNIT) $(COVERAGE_OUT_INTEGRATION)
 
