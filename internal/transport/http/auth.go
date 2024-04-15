@@ -211,8 +211,8 @@ func (c *authController) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write([]byte(`<h1>Login page</h1>`))
 	_, _ = w.Write([]byte(`
 		<form method="post">
-			<input type="email" name="email" /> <small>try gabor@elemo.app</small><br>
-			<input type="password" name="password" /> <small>try AppleTree123</small><br>
+			<input type="email" name="email" /> <small></small><br>
+			<input type="password" name="password" /> <small></small><br>
 			<input type="submit" value="login">
 		</form>
 	`))
