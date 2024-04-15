@@ -1,7 +1,7 @@
 {
-  "name": "web-ng",
+  "name": "elemo-web",
   "version": "0.1.0",
-  "license": "Apache-2.0",
+  "license": "MPL-2.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -24,7 +24,7 @@
     "@types/react-dom": "18.2.25",
     "autoprefixer": "10.4.19",
     "elemo-client": "workspace:*",
-    "eslint": "9.0.0",
+    "eslint": "8.57.0",
     "eslint-config-next": "14.2.1",
     "framer-motion": "^11.0.28",
     "next": "14.2.1",

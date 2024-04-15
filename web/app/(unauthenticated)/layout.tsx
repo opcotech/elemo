@@ -3,6 +3,7 @@ import ErrorBoundary from '@/components/ErrorBoundary';
 import Provider from '@/components/Provider';
 
 import '../globals.css';
+import { Suspense } from 'react';
 
 const lato = Lato({
   variable: '--font-lato',
@@ -30,7 +31,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={`h-full ${lato.className} ${workSans.className}`}>
       <body className={'h-full'}>
         <ErrorBoundary>
-          <Provider>{children}</Provider>
+          <Suspense>
+            <Provider>{children}</Provider>
+          </Suspense>
         </ErrorBoundary>
       </body>
     </html>
