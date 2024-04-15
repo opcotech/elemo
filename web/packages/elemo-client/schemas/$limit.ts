@@ -3,8 +3,8 @@
 /* tslint:disable */
 /* eslint-disable */
 export const $limit = {
-    type: 'number',
-    description: `Number of resources to return.`,
-    maximum: 1000,
-    minimum: 1,
+  type: 'number',
+  description: `Number of resources to return.`,
+  maximum: 1000,
+  minimum: 1
 } as const;

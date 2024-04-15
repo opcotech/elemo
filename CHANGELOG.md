@@ -8,6 +8,10 @@ All notable changes to this project will be documented in this file.
 
 - Ensure tracer is initialized for auth cli command ([683354a](https://github.com/opcotech/elemo/commit/683354a3f2c832b665304c64e840e51b0d1f0dc0))
 
+**Documentation**
+
+- Ensure best practices (#142) ([ff38476](https://github.com/opcotech/elemo/commit/ff38476a65e38ee858292752dcb3fc1365fd2259))
+
 **Features**
 
 - Initial commit ([35cb9fc](https://github.com/opcotech/elemo/commit/35cb9fccd081c036c901afc4c5affc91aac20bbc))
@@ -32,7 +36,8 @@ All notable changes to this project will be documented in this file.
 
 - Enhance todo list (#44) ([d4798eb](https://github.com/opcotech/elemo/commit/d4798ebd6a03e11070f0f249eac37302732f7cee))
 - Revamp UI and related API (#60) ([abc4fe3](https://github.com/opcotech/elemo/commit/abc4fe3197ebde4e7c9504feb3a0875c776239e0))
-- Prepare for open sourcing (#128) ([41ef125](https://github.com/opcotech/elemo/commit/41ef125b2f0063cef29fee69e00468b5b36fc6df))
+- Prepare for open sourcing (#128) ([9be5a86](https://github.com/opcotech/elemo/commit/9be5a86de9cfddde1bbfa9c8d983b33370e9e857))
+- Update front-end dependencies (#143) ([0768927](https://github.com/opcotech/elemo/commit/0768927f1beed8bc08b5fb38c8fecb9485c7a775))
 
 **Testing**
 
@@ -41,10 +46,10 @@ All notable changes to this project will be documented in this file.
 **Build**
 
 - Fix config generation and use ([fbe6659](https://github.com/opcotech/elemo/commit/fbe6659f5ae7783cb1b394df2495beeb3c8a7b86))
+- Resolve codeql errors ([1fd49b3](https://github.com/opcotech/elemo/commit/1fd49b3285d9008cebee19c88de3b3467465040e))
 
 **Ci**
 
 - Bump paambaati/codeclimate-action from 3.2.0 to 4.0.0 (#6) ([66ef67b](https://github.com/opcotech/elemo/commit/66ef67bacd57fdee8aabd0722a81f7ca1afc1e67))
-- Remove fossa check ([356dbba](https://github.com/opcotech/elemo/commit/356dbba2bc9740348992e70a0c6f07c41dcdc64d))
 
 
