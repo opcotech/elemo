@@ -2,6 +2,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-export const $TodoPriority = {
-    type: 'Enum',
-} as const;
+/**
+ * Number of resources to return.
+ */
+export type limit = number;

@@ -2,48 +2,27 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-export const $Organization = {
-    description: `An organization in the system.`,
+export const $Role = {
+    description: `A role in the system.`,
     properties: {
         id: {
             type: 'string',
-            description: `Unique identifier of the organization.`,
+            description: `Unique identifier of the role.`,
             isRequired: true,
         },
         name: {
             type: 'string',
-            description: `Name of the organization.`,
+            description: `Name of the role.`,
             isRequired: true,
             maxLength: 120,
-            minLength: 1,
+            minLength: 3,
         },
-        email: {
+        description: {
             type: 'string',
-            description: `Email address of the organization.`,
-            isRequired: true,
-            format: 'email',
-            maxLength: 254,
-            minLength: 6,
-        },
-        logo: {
-            type: 'string',
-            description: `Logo of the organization.`,
-            isRequired: true,
+            description: `Description of the role.`,
             isNullable: true,
-            format: 'uri',
-            maxLength: 2000,
-        },
-        website: {
-            type: 'string',
-            description: `Work title of the user.`,
-            isRequired: true,
-            isNullable: true,
-            format: 'uri',
-            maxLength: 2000,
-        },
-        status: {
-            type: 'OrganizationStatus',
-            isRequired: true,
+            maxLength: 500,
+            minLength: 5,
         },
         members: {
             type: 'array',
@@ -52,14 +31,7 @@ export const $Organization = {
             },
             isRequired: true,
         },
-        teams: {
-            type: 'array',
-            contains: {
-                type: 'string',
-            },
-            isRequired: true,
-        },
-        namespaces: {
+        permissions: {
             type: 'array',
             contains: {
                 type: 'string',

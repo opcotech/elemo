@@ -2,6 +2,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-export const $TodoPriority = {
-    type: 'Enum',
+export const $offset = {
+    type: 'number',
+    description: `Number of resources to skip.`,
 } as const;

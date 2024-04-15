@@ -2,6 +2,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-export const $TodoPriority = {
-    type: 'Enum',
+export const $force = {
+    type: 'boolean',
+    description: `Irreversibly delete the user.`,
 } as const;

@@ -2,6 +2,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-export const $TodoPriority = {
-    type: 'Enum',
-} as const;
+/**
+ * ID of a role.
+ */
+export type roles = Array<'Owner' | 'Admin' | 'Support'>;

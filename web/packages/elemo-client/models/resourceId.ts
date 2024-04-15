@@ -2,6 +2,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-export const $TodoPriority = {
-    type: 'Enum',
-} as const;
+/**
+ * ID of the resource combined with its resource type.
+ */
+export type resourceId = string;

@@ -2,6 +2,9 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-export const $TodoPriority = {
-    type: 'Enum',
+export const $roles = {
+    type: 'array',
+    contains: {
+        type: 'Enum',
+    },
 } as const;
