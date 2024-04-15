@@ -1,7 +1,8 @@
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/8801/badge)](https://www.bestpractices.dev/projects/8801)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fopcotech%2Felemo.svg?type=shield&issueType=license)](https://app.fossa.com/projects/git%2Bgithub.com%2Fopcotech%2Felemo?ref=badge_shield&issueType=license)
 [![Backend Build](https://github.com/opcotech/elemo/actions/workflows/build-backend.yml/badge.svg)](https://github.com/opcotech/elemo/actions/workflows/build-backend.yml)
 [![Maintainability](https://api.codeclimate.com/v1/badges/75d49d53fc2510bc9e0e/maintainability)](https://codeclimate.com/repos/643f9ba5f0900f00bb3c5881/maintainability)
 [![Test Coverage](https://api.codeclimate.com/v1/badges/75d49d53fc2510bc9e0e/test_coverage)](https://codeclimate.com/repos/643f9ba5f0900f00bb3c5881/test_coverage)
-[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fopcotech%2Felemo.svg?type=shield&issueType=license)](https://app.fossa.com/projects/git%2Bgithub.com%2Fopcotech%2Felemo?ref=badge_shield&issueType=license)
 
 <br />
 <div align="center">
