@@ -1,0 +1,74 @@
+name: "Bug Report"
+description: Create a new issue for a bug.
+labels:
+  - bug
+  - triage-needed
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: "Description"
+      description: Please enter an explicit description of your issue. Do not include any sensitive information.
+      placeholder: Short and explicit description of the issue...
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: "Reproduction steps"
+      description: Please enter the explicit steps to reproduce the issue.
+      value: |
+        1. Go to '...'
+        2. Click on '....'
+        3. Scroll down to '....'
+        4. See error
+      render: bash
+    validations:
+      required: true
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: "Screenshots"
+      description: If applicable, add screenshots to help explain your problem. Do not include any sensitive information.
+      value: |
+        ![DESCRIPTION](LINK.png)
+      render: bash
+    validations:
+      required: false
+  - type: textarea
+    id: logs
+    attributes:
+      label: "Logs"
+      description: Please copy and paste any relevant log output. This will be automatically formatted into code, so no need for backticks.
+      render: bash
+    validations:
+      required: false
+  - type: dropdown
+    id: browsers
+    attributes:
+      label: "Browsers"
+      description: What browsers are you seeing the problem on?
+      multiple: true
+      options:
+        - Firefox
+        - Chrome
+        - Safari
+        - Microsoft Edge
+        - Opera
+        - Any / Not Applicable
+    validations:
+      required: false
+  - type: textarea
+    id: version
+    attributes:
+      label: "Version"
+      description: What is the affected Elemo and Go versions?
+      placeholder: |
+        {
+          "Version": "0.1.0",
+          "Commit": "5a21d5a",
+          "Date": "2024-01-01T07:48:34Z",
+          "GoVersion": "go1.22.2"
+        }
+    validations:
+      required: true

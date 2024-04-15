@@ -2,7 +2,9 @@
 
 set -euo pipefail
 
-CONFIG_DIR="$(realpath "$(dirname "${BASH_SOURCE[0]:-$0}")/../configs/development")"
+ROOT_DIR="$(realpath "$(dirname "${BASH_SOURCE[0]:-$0}")/..")"
+CONFIG_DIR="${ROOT_DIR}/configs/development"
+TOOLS_DIR="${ROOT_DIR}/tools"
 
 function generateCert() {
   local host="${1}"
@@ -21,12 +23,13 @@ function generateCert() {
 function generateSigningKey() {
   openssl genrsa -out "${CONFIG_DIR}/signing-key.gen.pem" 2048
   openssl req -new -x509 -days 3650 \
+    -subj "/C=AE/ST=Dubai/L=Dubai/O=Opcotech/OU=Developers/CN=elemo.app" \
     -key "${CONFIG_DIR}/signing-key.gen.pem" \
     -out "${CONFIG_DIR}/signing-cert.gen.pem"
 }
 
 function generateLicenseKey() {
-  go run tools/license-generator/main.go \
+  go run "${TOOLS_DIR}/license-generator/main.go" \
     -validity-period 3650 \
     -email info@example.com \
     -organization "ACME Inc." \
@@ -48,11 +51,11 @@ function generateConfigFile() {
     local smtp_host="smtp"
   else
     local suffix=".local"
-    local redis_host=host
-    local neo4j_host=host
-    local postgres_host=host
-    local otel_collector_host=host
-    local smtp_host=host
+    local redis_host="${host}"
+    local neo4j_host="${host}"
+    local postgres_host="${host}"
+    local otel_collector_host="${host}"
+    local smtp_host="${host}"
   fi
 
 
@@ -106,8 +109,8 @@ worker:
   group_max_delay: 60
   group_max_size: 5
   log_level: "info"
-    rate_limit: 120
-    rate_limit_burst: 175
+  rate_limit: 120
+  rate_limit_burst: 175
   broker:
     host: ${redis_host}
     port: 6379
@@ -196,6 +199,7 @@ tracing:
 EOF
 }
 
+mkdir -p "${CONFIG_DIR}"
 generateCert "docker"
 generateCert "127.0.0.1"
 generateSigningKey

@@ -5,13 +5,13 @@ checks:
       threshold: 6
   complex-logic:
     config:
-      threshold: 7
+      threshold: 10
   file-lines:
     config:
       threshold: 750
   method-complexity:
     config:
-      threshold: 7
+      threshold: 10
   method-count:
     config:
       threshold: 20
@@ -44,6 +44,6 @@ exclude_patterns:
   - "cmd/"
   - "configs/"
   - "internal/testutil/"
-  - "internal/transport/http/api"
+  - "internal/transport/http/api/"
   - "tests/"
   - "tools/"

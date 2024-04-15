@@ -2,16 +2,6 @@ openapi: 3.0.3
 info:
   title: Elemo API
   version: 0.1.0
-  termsOfService: "https://elemo.app/terms-of-service"
-  license:
-    name: Apache 2.0
-    url: "https://elemo.app/license"
-  contact:
-    name: Elemo Support
-    email: help@elemo.app
-    url: "https://elemo.app/contact"
-  x-logo:
-    url: "https://elemo.app/static/img/logo.png"
   description: |
     # Introduction
 
@@ -44,7 +34,7 @@ info:
     All endpoints that are returning a list of resources supports and requires pagination. The default page size is `100` items, controlled by the `limit` query parameter. To utilize pagination, you may define `offset` in addition which skips the defined results. Therefore, if `offset` is set to `100`, the endpoint will return the next page's results. Sample request:
 
     ```shell
-    $ curl -H "Authorization: Bearer {access_token}" https://{site}.elemo.app/api/v1/users?limit=100&offset=100
+    $ curl -H "Authorization: Bearer {access_token}" https://{domain}/api/v1/users?limit=100&offset=100
     ```
 
     Although the pagination is very flexible, it defines some constraints:
@@ -74,12 +64,6 @@ tags:
   - name: Permission
     description: Permissions in the system.
 servers:
-  - url: "https://{site}.elemo.app/api"
-    description: Managed production instance.
-    variables:
-      site:
-        description: test
-        default: example
   - url: "https://{domain}/api"
     description: Self-hosted instance.
     variables:

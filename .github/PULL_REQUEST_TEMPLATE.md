@@ -24,28 +24,29 @@ Include other information, such as, which sources and targets are affected.
 
 ## Checklist
 
+- [ ] I have read and understood the [Developer's Certificate of Origin] and
+  added `Signed-off-by: <YOUR NAME>` to the commit trail where `<YOUR NAME>` is
+  my name.
+
 ### Documentation
 
-- [ ] Documentation comments are updated
-- [ ] Documentation site is updated
-
-### Code quality
-
-- [ ] `make format` has been run
-- [ ] `make lint` passes
-- [ ] `make test` passes
+- Documentation comments are updated
+- Documentation site is updated
 
 ### Review
 
-- [ ] Self-checked the diff
-- [ ] Reviewed the code based on Go's [code review guide]
-- [ ] Reviewed the code based on Go's [concurrency review guide]
+- Reviewed the code based on Go's [code review guide]
+- Reviewed the code based on Go's [concurrency review guide]
 
 ### Miscellaneous
 
-- [ ] Pull request is rebased onto main
-- [ ] Commit history is clean
+- Pull request is rebased onto main
+- Commit history is clean
 
+<!-- Links -->
+
+[Developer's Certificate of Origin]: https://github.com/opcotech/elemo/blob/main/CONTRIBUTING.md#developers-certificate-of-origin
 
 [code review guide]: https://github.com/golang/go/wiki/CodeReviewComments
+
 [concurrency review guide]: https://github.com/golang/go/wiki/CodeReviewConcurrency

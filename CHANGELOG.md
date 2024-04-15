@@ -20,6 +20,7 @@ All notable changes to this project will be documented in this file.
 - Add email service and task scheduler (#43) ([470c76a](https://github.com/opcotech/elemo/commit/470c76ab76217bdf7227c18537844179be5d84a4))
 - Add organization service (#45) ([88f9857](https://github.com/opcotech/elemo/commit/88f98571adf5d38155f0df722d8de8bdf5ec4d39))
 - Add permission service (#62) ([76adc7e](https://github.com/opcotech/elemo/commit/76adc7e2127fe19036870d5c5c5af9f19e1a8714))
+- Add role service (#127) ([346bbd4](https://github.com/opcotech/elemo/commit/346bbd408cfe8b921749487dd26ec9796e554ef3))
 
 **Miscellaneous Tasks**
 
@@ -31,6 +32,7 @@ All notable changes to this project will be documented in this file.
 
 - Enhance todo list (#44) ([d4798eb](https://github.com/opcotech/elemo/commit/d4798ebd6a03e11070f0f249eac37302732f7cee))
 - Revamp UI and related API (#60) ([abc4fe3](https://github.com/opcotech/elemo/commit/abc4fe3197ebde4e7c9504feb3a0875c776239e0))
+- Prepare for open sourcing (#128) ([41ef125](https://github.com/opcotech/elemo/commit/41ef125b2f0063cef29fee69e00468b5b36fc6df))
 
 **Testing**
 
@@ -43,4 +45,6 @@ All notable changes to this project will be documented in this file.
 **Ci**
 
 - Bump paambaati/codeclimate-action from 3.2.0 to 4.0.0 (#6) ([66ef67b](https://github.com/opcotech/elemo/commit/66ef67bacd57fdee8aabd0722a81f7ca1afc1e67))
+- Remove fossa check ([356dbba](https://github.com/opcotech/elemo/commit/356dbba2bc9740348992e70a0c6f07c41dcdc64d))
+
 
