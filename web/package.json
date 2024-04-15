@@ -11,7 +11,7 @@
     "start": "next start",
     "lint": "next lint",
     "test:e2e": "playwright test",
-    "format": "prettier --plugin-search-dir . --write . && next lint -- --fix",
+    "format": "prettier --plugin-search-dir . --write . && next lint --fix",
     "generate": "npx openapi-typescript-codegen --input ../api/openapi/openapi.yaml --output ./packages/elemo-client --exportSchemas true"
   },
   "dependencies": {
