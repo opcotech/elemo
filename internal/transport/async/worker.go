@@ -1,4 +1,4 @@
-package asynq
+package async
 
 import (
 	"errors"
@@ -13,14 +13,11 @@ import (
 	"github.com/opcotech/elemo/internal/config"
 	"github.com/opcotech/elemo/internal/pkg/log"
 	"github.com/opcotech/elemo/internal/pkg/tracing"
+	"github.com/opcotech/elemo/internal/queue"
 	elemoHttp "github.com/opcotech/elemo/internal/transport/http"
 )
 
 const (
-	MessageQueueDefaultPriority = "default" // The default queue name.
-	MessageQueueLowPriority     = "low"     // The low priority queue name.
-	MessageQueueHighPriority    = "high"    // The high priority queue name.
-
 	PathRoot    = "/"
 	PathMetrics = "/metrics"
 )
@@ -41,7 +38,7 @@ func WithWorkerConfig(conf *config.WorkerConfig) WorkerOption {
 }
 
 // WithWorkerTaskHandler sets a task handler for the worker.
-func WithWorkerTaskHandler(taskType TaskType, handler asynq.Handler) WorkerOption {
+func WithWorkerTaskHandler(taskType queue.TaskType, handler asynq.Handler) WorkerOption {
 	return func(w *Worker) error {
 		if handler == nil {
 			return ErrNoTaskHandler
@@ -87,7 +84,7 @@ type Worker struct {
 	*asynq.ServeMux
 	server *asynq.Server
 
-	handlers map[TaskType]asynq.Handler
+	handlers map[queue.TaskType]asynq.Handler
 }
 
 // Start starts the async worker.
@@ -107,7 +104,7 @@ func NewWorker(opts ...WorkerOption) (*Worker, error) {
 	w := &Worker{
 		logger:   log.DefaultLogger(),
 		tracer:   tracing.NoopTracer(),
-		handlers: make(map[TaskType]asynq.Handler),
+		handlers: make(map[queue.TaskType]asynq.Handler),
 		ServeMux: asynq.NewServeMux(),
 	}
 
@@ -153,9 +150,9 @@ func NewWorker(opts ...WorkerOption) (*Worker, error) {
 				return !errors.Is(err, ErrRateLimitExceeded)
 			},
 			Queues: map[string]int{
-				MessageQueueHighPriority:    6,
-				MessageQueueDefaultPriority: 3,
-				MessageQueueLowPriority:     1,
+				queue.MessageQueueHighPriority:    6,
+				queue.MessageQueueDefaultPriority: 3,
+				queue.MessageQueueLowPriority:     1,
 			},
 		},
 	)

@@ -1,58 +1,16 @@
-package asynq
+package async
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/opcotech/elemo/internal/config"
 	"github.com/opcotech/elemo/internal/pkg/log"
 	"github.com/opcotech/elemo/internal/pkg/tracing"
 	"github.com/opcotech/elemo/internal/testutil/mock"
 )
 
-func TestWithClientConfig(t *testing.T) {
-	type args struct {
-		config *config.WorkerConfig
-	}
-	tests := []struct {
-		name    string
-		args    args
-		want    *Client
-		wantErr error
-	}{
-		{
-			name: "create new option with config",
-			args: args{
-				config: new(config.WorkerConfig),
-			},
-			want: &Client{
-				conf: new(config.WorkerConfig),
-			},
-		},
-		{
-			name: "create new option with nil config",
-			args: args{
-				config: nil,
-			},
-			wantErr: config.ErrNoConfig,
-		},
-	}
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			client := new(Client)
-			err := WithClientConfig(tt.args.config)(client)
-			require.ErrorIs(t, err, tt.wantErr)
-			if tt.wantErr == nil {
-				require.Equal(t, tt.want, client)
-			}
-		})
-	}
-}
-
-func TestWithClientLogger(t *testing.T) {
+func TestWithTaskLogger(t *testing.T) {
 	type args struct {
 		logger log.Logger
 	}
@@ -81,15 +39,15 @@ func TestWithClientLogger(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			client := new(Client)
-			err := WithClientLogger(tt.args.logger)(client)
+			handler := new(baseTaskHandler)
+			err := WithTaskLogger(tt.args.logger)(handler)
 			require.ErrorIs(t, err, tt.wantErr)
-			require.Equal(t, tt.want, client.logger)
+			require.Equal(t, tt.want, handler.logger)
 		})
 	}
 }
 
-func TestWithClientTracer(t *testing.T) {
+func TestWithTaskTracer(t *testing.T) {
 	type args struct {
 		tracer tracing.Tracer
 	}
@@ -118,10 +76,10 @@ func TestWithClientTracer(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			client := new(Client)
-			err := WithClientTracer(tt.args.tracer)(client)
+			handler := new(baseTaskHandler)
+			err := WithTaskTracer(tt.args.tracer)(handler)
 			require.ErrorIs(t, err, tt.wantErr)
-			require.Equal(t, tt.want, client.tracer)
+			require.Equal(t, tt.want, handler.tracer)
 		})
 	}
 }

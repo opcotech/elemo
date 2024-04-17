@@ -1,4 +1,4 @@
-package asynq
+package async
 
 import (
 	"context"
@@ -14,38 +14,13 @@ import (
 
 	"github.com/opcotech/elemo/internal/license"
 	"github.com/opcotech/elemo/internal/pkg/log"
+	"github.com/opcotech/elemo/internal/queue"
 	"github.com/opcotech/elemo/internal/testutil/mock"
 )
 
-func TestNewSystemHealthCheckTask(t *testing.T) {
-	tests := []struct {
-		name    string
-		want    *asynq.Task
-		wantErr error
-	}{
-		{
-			name: "create new task",
-			want: asynq.NewTask(TaskTypeSystemHealthCheck.String(),
-				[]byte(`{"message":"healthy"}`),
-				asynq.Timeout(DefaultTaskTimeout),
-				asynq.Retention(DefaultTaskRetention)),
-		},
-	}
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
-			got, err := NewSystemHealthCheckTask()
-			assert.ErrorIs(t, err, tt.wantErr)
-			assert.Equal(t, tt.want, got)
-		})
-	}
-}
-
 func TestNewSystemHealthCheckTaskHandler(t *testing.T) {
 	type args struct {
-		opts []TaskOption
+		opts []TaskHandlerOption
 	}
 	tests := []struct {
 		name    string
@@ -56,7 +31,7 @@ func TestNewSystemHealthCheckTaskHandler(t *testing.T) {
 		{
 			name: "create new task handler",
 			args: args{
-				opts: []TaskOption{
+				opts: []TaskHandlerOption{
 					WithTaskLogger(new(mock.Logger)),
 					WithTaskTracer(new(mock.Tracer)),
 				},
@@ -71,7 +46,7 @@ func TestNewSystemHealthCheckTaskHandler(t *testing.T) {
 		{
 			name: "create new task handler with invalid option",
 			args: args{
-				opts: []TaskOption{
+				opts: []TaskHandlerOption{
 					WithTaskLogger(nil),
 				},
 			},
@@ -123,7 +98,7 @@ func TestSystemHealthCheckTaskHandler_ProcessTask(t *testing.T) {
 			args: args{
 				ctx: context.Background(),
 				task: func() *asynq.Task {
-					task, _ := NewSystemHealthCheckTask()
+					task, _ := queue.NewSystemHealthCheckTask()
 					return task
 				}(),
 			},
@@ -148,10 +123,10 @@ func TestSystemHealthCheckTaskHandler_ProcessTask(t *testing.T) {
 				ctx: context.Background(),
 				task: func() *asynq.Task {
 					return asynq.NewTask(
-						TaskTypeSystemHealthCheck.String(),
+						queue.TaskTypeSystemHealthCheck.String(),
 						[]byte(`{"message"`),
-						asynq.Timeout(DefaultTaskTimeout),
-						asynq.Retention(DefaultTaskRetention),
+						asynq.Timeout(queue.DefaultTaskTimeout),
+						asynq.Retention(queue.DefaultTaskRetention),
 					)
 				}(),
 			},
@@ -173,57 +148,9 @@ func TestSystemHealthCheckTaskHandler_ProcessTask(t *testing.T) {
 	}
 }
 
-func TestNewSystemLicenseExpiryTask(t *testing.T) {
-	licenseID, _ := xid.FromString("bvn6c05roa2mnak37ms0")
-
-	type args struct {
-		license *license.License
-	}
-	tests := []struct {
-		name    string
-		args    args
-		want    *asynq.Task
-		wantErr error
-	}{
-		{
-			name: "create new task",
-			args: args{
-				license: &license.License{
-					ID:           licenseID,
-					Email:        "info@example.com",
-					Organization: "ACME Inc.",
-					ExpiresAt:    time.Date(2099, 12, 31, 0, 0, 0, 0, time.UTC),
-				},
-			},
-			want: asynq.NewTask(TaskTypeSystemLicenseExpiry.String(),
-				[]byte(`{"LicenseID":"`+licenseID.String()+`","LicenseEmail":"info@example.com","LicenseOrganization":"ACME Inc.","LicenseExpiresAt":"2099-12-31T00:00:00Z"}`),
-				asynq.Timeout(DefaultTaskTimeout),
-				asynq.Queue(MessageQueueHighPriority),
-			),
-		},
-		{
-			name: "create new task with no license",
-			args: args{
-				license: nil,
-			},
-			wantErr: license.ErrNoLicense,
-		},
-	}
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
-			got, err := NewSystemLicenseExpiryTask(tt.args.license)
-			assert.ErrorIs(t, err, tt.wantErr)
-			assert.Equal(t, tt.want, got)
-		})
-	}
-}
-
 func TestNewSystemLicenseExpiryTaskHandler(t *testing.T) {
 	type args struct {
-		opts []TaskOption
+		opts []TaskHandlerOption
 	}
 	tests := []struct {
 		name    string
@@ -234,7 +161,7 @@ func TestNewSystemLicenseExpiryTaskHandler(t *testing.T) {
 		{
 			name: "create new task handler",
 			args: args{
-				opts: []TaskOption{
+				opts: []TaskHandlerOption{
 					WithTaskEmailService(new(mock.EmailService)),
 					WithTaskLogger(new(mock.Logger)),
 					WithTaskTracer(new(mock.Tracer)),
@@ -251,7 +178,7 @@ func TestNewSystemLicenseExpiryTaskHandler(t *testing.T) {
 		{
 			name: "create new task handler with invalid option",
 			args: args{
-				opts: []TaskOption{
+				opts: []TaskHandlerOption{
 					WithTaskLogger(nil),
 				},
 			},
@@ -260,7 +187,7 @@ func TestNewSystemLicenseExpiryTaskHandler(t *testing.T) {
 		{
 			name: "create new task handler with no email service",
 			args: args{
-				opts: []TaskOption{
+				opts: []TaskHandlerOption{
 					WithTaskLogger(new(mock.Logger)),
 					WithTaskTracer(new(mock.Tracer)),
 				},
@@ -304,7 +231,7 @@ func TestSystemLicenseExpiryTaskHandler_ProcessTask(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "transport.asynq.SystemLicenseExpiryTaskHandler/ProcessTask", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					var payload LicenseExpiryTaskPayload
+					var payload queue.LicenseExpiryTaskPayload
 					_ = json.Unmarshal(task.Payload(), &payload)
 
 					emailService := new(mock.EmailService)
@@ -325,7 +252,7 @@ func TestSystemLicenseExpiryTaskHandler_ProcessTask(t *testing.T) {
 			args: args{
 				ctx: context.Background(),
 				task: func() *asynq.Task {
-					task, _ := NewSystemLicenseExpiryTask(&license.License{
+					task, _ := queue.NewSystemLicenseExpiryTask(&license.License{
 						ID:           xid.New(),
 						Email:        "info@exameple.com",
 						Organization: "ACME Inc.",
@@ -345,7 +272,7 @@ func TestSystemLicenseExpiryTaskHandler_ProcessTask(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "transport.asynq.SystemLicenseExpiryTaskHandler/ProcessTask", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					var payload LicenseExpiryTaskPayload
+					var payload queue.LicenseExpiryTaskPayload
 					_ = json.Unmarshal(task.Payload(), &payload)
 
 					return &baseTaskHandler{
@@ -358,7 +285,7 @@ func TestSystemLicenseExpiryTaskHandler_ProcessTask(t *testing.T) {
 			args: args{
 				ctx: context.Background(),
 				task: func() *asynq.Task {
-					task, _ := NewSystemLicenseExpiryTask(&license.License{
+					task, _ := queue.NewSystemLicenseExpiryTask(&license.License{
 						ID:           xid.New(),
 						Email:        "info@exameple.com",
 						Organization: "ACME Inc.",
@@ -388,10 +315,10 @@ func TestSystemLicenseExpiryTaskHandler_ProcessTask(t *testing.T) {
 				ctx: context.Background(),
 				task: func() *asynq.Task {
 					return asynq.NewTask(
-						TaskTypeSystemLicenseExpiry.String(),
+						queue.TaskTypeSystemLicenseExpiry.String(),
 						[]byte(`{"LicenseID"`),
-						asynq.Timeout(DefaultTaskTimeout),
-						asynq.Queue(MessageQueueHighPriority),
+						asynq.Timeout(queue.DefaultTaskTimeout),
+						asynq.Queue(queue.MessageQueueHighPriority),
 					)
 				}(),
 			},

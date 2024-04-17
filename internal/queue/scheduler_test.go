@@ -1,36 +1,58 @@
-package asynq
+package queue
 
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/opcotech/elemo/internal/config"
 	"github.com/opcotech/elemo/internal/pkg/log"
 	"github.com/opcotech/elemo/internal/pkg/tracing"
 	"github.com/opcotech/elemo/internal/testutil/mock"
 )
 
-func TestTaskType_String(t *testing.T) {
+func TestWithSchedulerConfig(t *testing.T) {
+	type args struct {
+		config *config.WorkerConfig
+	}
 	tests := []struct {
-		name string
-		t    TaskType
-		want string
+		name    string
+		args    args
+		want    *Scheduler
+		wantErr error
 	}{
-		{"health check task", TaskTypeSystemHealthCheck, "system:health_check"},
-		{"license expiry task", TaskTypeSystemLicenseExpiry, "system:license_expiry"},
+		{
+			name: "create new option with config",
+			args: args{
+				config: new(config.WorkerConfig),
+			},
+			want: &Scheduler{
+				conf: new(config.WorkerConfig),
+			},
+		},
+		{
+			name: "create new option with nil config",
+			args: args{
+				config: nil,
+			},
+			wantErr: config.ErrNoConfig,
+		},
 	}
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-
-			assert.Equal(t, tt.want, tt.t.String())
+			scheduler := new(Scheduler)
+			err := WithSchedulerConfig(tt.args.config)(scheduler)
+			require.ErrorIs(t, err, tt.wantErr)
+			if tt.wantErr == nil {
+				require.Equal(t, tt.want, scheduler)
+			}
 		})
 	}
 }
 
-func TestWithTaskLogger(t *testing.T) {
+func TestWithSchedulerLogger(t *testing.T) {
 	type args struct {
 		logger log.Logger
 	}
@@ -59,15 +81,15 @@ func TestWithTaskLogger(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			handler := new(baseTaskHandler)
-			err := WithTaskLogger(tt.args.logger)(handler)
+			scheduler := new(Scheduler)
+			err := WithSchedulerLogger(tt.args.logger)(scheduler)
 			require.ErrorIs(t, err, tt.wantErr)
-			require.Equal(t, tt.want, handler.logger)
+			require.Equal(t, tt.want, scheduler.logger)
 		})
 	}
 }
 
-func TestWithTaskTracer(t *testing.T) {
+func TestWithSchedulerTracer(t *testing.T) {
 	type args struct {
 		tracer tracing.Tracer
 	}
@@ -96,10 +118,10 @@ func TestWithTaskTracer(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			handler := new(baseTaskHandler)
-			err := WithTaskTracer(tt.args.tracer)(handler)
+			scheduler := new(Scheduler)
+			err := WithSchedulerTracer(tt.args.tracer)(scheduler)
 			require.ErrorIs(t, err, tt.wantErr)
-			require.Equal(t, tt.want, handler.tracer)
+			require.Equal(t, tt.want, scheduler.tracer)
 		})
 	}
 }

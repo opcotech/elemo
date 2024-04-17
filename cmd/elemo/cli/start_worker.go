@@ -8,8 +8,9 @@ import (
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 
+	"github.com/opcotech/elemo/internal/queue"
 	"github.com/opcotech/elemo/internal/service"
-	"github.com/opcotech/elemo/internal/transport/asynq"
+	"github.com/opcotech/elemo/internal/transport/async"
 )
 
 // startWorkerCmd represents the start command
@@ -42,30 +43,30 @@ configured port.`,
 		}
 		_ = emailService
 
-		systemHealthCheckHandler, err := asynq.NewSystemHealthCheckTaskHandler(
-			asynq.WithTaskLogger(logger.Named("system_health_check_task")),
-			asynq.WithTaskTracer(tracer),
+		systemHealthCheckHandler, err := async.NewSystemHealthCheckTaskHandler(
+			async.WithTaskLogger(logger.Named("system_health_check_task")),
+			async.WithTaskTracer(tracer),
 		)
 		if err != nil {
 			logger.Fatal("failed to initialize system health check task handler", zap.Error(err))
 		}
 
-		systemLicenseExpiryTaskHandler, err := asynq.NewSystemLicenseExpiryTaskHandler(
-			asynq.WithTaskEmailService(emailService),
-			asynq.WithTaskLogger(logger.Named("system_license_expiry_task")),
-			asynq.WithTaskTracer(tracer),
+		systemLicenseExpiryTaskHandler, err := async.NewSystemLicenseExpiryTaskHandler(
+			async.WithTaskEmailService(emailService),
+			async.WithTaskLogger(logger.Named("system_license_expiry_task")),
+			async.WithTaskTracer(tracer),
 		)
 		if err != nil {
 			logger.Fatal("failed to initialize system license expiry task handler", zap.Error(err))
 		}
 
-		asynq.SetRateLimiter(cfg.Worker.RateLimit, cfg.Worker.RateLimitBurst)
-		worker, err := asynq.NewWorker(
-			asynq.WithWorkerTaskHandler(asynq.TaskTypeSystemHealthCheck, systemHealthCheckHandler),
-			asynq.WithWorkerTaskHandler(asynq.TaskTypeSystemLicenseExpiry, systemLicenseExpiryTaskHandler),
-			asynq.WithWorkerConfig(&cfg.Worker),
-			asynq.WithWorkerLogger(logger.Named("worker")),
-			asynq.WithWorkerTracer(tracer),
+		async.SetRateLimiter(cfg.Worker.RateLimit, cfg.Worker.RateLimitBurst)
+		worker, err := async.NewWorker(
+			async.WithWorkerTaskHandler(queue.TaskTypeSystemHealthCheck, systemHealthCheckHandler),
+			async.WithWorkerTaskHandler(queue.TaskTypeSystemLicenseExpiry, systemLicenseExpiryTaskHandler),
+			async.WithWorkerConfig(&cfg.Worker),
+			async.WithWorkerLogger(logger.Named("worker")),
+			async.WithWorkerTracer(tracer),
 		)
 		if err != nil {
 			logger.Fatal("failed to create worker", zap.Error(err))
@@ -79,13 +80,13 @@ func init() {
 	startCmd.AddCommand(startWorkerCmd)
 }
 
-func startWorkerServer(worker *asynq.Worker) error {
+func startWorkerServer(worker *async.Worker) error {
 	logger.Info("starting worker server")
 	return worker.Start()
 }
 
 func startWorkerMetricsServer() error {
-	router, err := asynq.NewWorkerMetricsServer(&cfg.WorkerMetricsServer, tracer)
+	router, err := async.NewWorkerMetricsServer(&cfg.WorkerMetricsServer, tracer)
 	if err != nil {
 		logger.Fatal("failed to initialize metrics router", zap.Error(err))
 	}
@@ -102,7 +103,7 @@ func startWorkerMetricsServer() error {
 	return s.ListenAndServeTLS(cfg.WorkerMetricsServer.TLS.CertFile, cfg.WorkerMetricsServer.TLS.KeyFile)
 }
 
-func startWorkerServers(worker *asynq.Worker) {
+func startWorkerServers(worker *async.Worker) {
 	wg := new(sync.WaitGroup)
 	wg.Add(2)
 

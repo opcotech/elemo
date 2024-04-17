@@ -13,15 +13,15 @@ import (
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 
+	"github.com/go-oauth2/oauth2/v4/server"
+
 	"github.com/opcotech/elemo/internal/model"
+	"github.com/opcotech/elemo/internal/queue"
 	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/repository/neo4j"
 	"github.com/opcotech/elemo/internal/repository/pg"
 	"github.com/opcotech/elemo/internal/repository/redis"
 	"github.com/opcotech/elemo/internal/service"
-	"github.com/opcotech/elemo/internal/transport/asynq"
-
-	"github.com/go-oauth2/oauth2/v4/server"
 
 	elemoHttp "github.com/opcotech/elemo/internal/transport/http"
 )
@@ -54,15 +54,15 @@ var startServerCmd = &cobra.Command{
 			logger.Fatal("failed to initialize relational database", zap.Error(err))
 		}
 
-		messageQueue, err := asynq.NewClient(
-			asynq.WithClientConfig(&cfg.Worker),
-			asynq.WithClientLogger(logger.Named("message_queue")),
-			asynq.WithClientTracer(tracer),
+		messageQueue, err := queue.NewClient(
+			queue.WithClientConfig(&cfg.Worker),
+			queue.WithClientLogger(logger.Named("message_queue")),
+			queue.WithClientTracer(tracer),
 		)
 		if err != nil {
 			logger.Fatal("failed to initialize message queue", zap.Error(err))
 		}
-		defer func(messageQueue *asynq.Client) {
+		defer func(messageQueue *queue.Client) {
 			err := messageQueue.Close(context.Background())
 			if err != nil {
 				logger.Error("failed to close message queue", zap.Error(err))
@@ -292,16 +292,16 @@ var startServerCmd = &cobra.Command{
 			logger.Fatal("failed to initialize http server", zap.Error(err))
 		}
 
-		systemLicenseExpiryTask, err := asynq.NewSystemLicenseExpiryTask(license)
+		systemLicenseExpiryTask, err := queue.NewSystemLicenseExpiryTask(license)
 		if err != nil {
 			logger.Fatal("failed to initialize system license expiry task", zap.Error(err))
 		}
 
-		taskScheduler, err := asynq.NewScheduler(
-			asynq.WithSchedulerTask("@every 1m", systemLicenseExpiryTask),
-			asynq.WithSchedulerConfig(&cfg.Worker),
-			asynq.WithSchedulerLogger(logger.Named("task_scheduler")),
-			asynq.WithSchedulerTracer(tracer),
+		taskScheduler, err := queue.NewScheduler(
+			queue.WithSchedulerTask("@every 1m", systemLicenseExpiryTask),
+			queue.WithSchedulerConfig(&cfg.Worker),
+			queue.WithSchedulerLogger(logger.Named("task_scheduler")),
+			queue.WithSchedulerTracer(tracer),
 		)
 		if err != nil {
 			logger.Fatal("failed to initialize scheduler", zap.Error(err))
@@ -378,7 +378,7 @@ func startHTTPServer(server elemoHttp.StrictServer) error {
 	return s.ListenAndServeTLS(cfg.Server.TLS.CertFile, cfg.Server.TLS.KeyFile)
 }
 
-func startSchedulerServer(scheduler *asynq.Scheduler) error {
+func startSchedulerServer(scheduler *queue.Scheduler) error {
 	logger.Info("starting task scheduler")
 	return scheduler.Start()
 }
@@ -401,7 +401,7 @@ func startHTTPMetricsServer() error {
 	return s.ListenAndServeTLS(cfg.MetricsServer.TLS.CertFile, cfg.MetricsServer.TLS.KeyFile)
 }
 
-func startHTTPServers(server elemoHttp.StrictServer, taskScheduler *asynq.Scheduler) {
+func startHTTPServers(server elemoHttp.StrictServer, taskScheduler *queue.Scheduler) {
 	wg := new(sync.WaitGroup)
 	wg.Add(3)
 

@@ -1,4 +1,4 @@
-package asynq
+package async
 
 import (
 	"context"
@@ -9,14 +9,8 @@ import (
 
 	"github.com/hibiken/asynq"
 
-	"github.com/opcotech/elemo/internal/license"
-	"github.com/opcotech/elemo/internal/model"
+	"github.com/opcotech/elemo/internal/queue"
 )
-
-// HealthCheckTaskPayload is the payload for the health check task.
-type HealthCheckTaskPayload struct {
-	Message string `json:"message"`
-}
 
 // SystemHealthCheckTaskHandler is the health check task. The health check task is used to
 // check the health of the async worker. If the async worker is unhealthy, the
@@ -32,7 +26,7 @@ func (h *SystemHealthCheckTaskHandler) ProcessTask(ctx context.Context, task *as
 	_, span := h.tracer.Start(ctx, "transport.asynq.SystemHealthCheckTaskHandler/ProcessTask")
 	defer span.End()
 
-	var payload HealthCheckTaskPayload
+	var payload queue.HealthCheckTaskPayload
 	if err := json.Unmarshal(task.Payload(), &payload); err != nil {
 		return errors.Join(ErrTaskPayloadUnmarshal, err, asynq.SkipRetry)
 	}
@@ -41,32 +35,13 @@ func (h *SystemHealthCheckTaskHandler) ProcessTask(ctx context.Context, task *as
 }
 
 // NewSystemHealthCheckTaskHandler creates a new health check task handler.
-func NewSystemHealthCheckTaskHandler(opts ...TaskOption) (*SystemHealthCheckTaskHandler, error) {
+func NewSystemHealthCheckTaskHandler(opts ...TaskHandlerOption) (*SystemHealthCheckTaskHandler, error) {
 	h, err := newBaseTaskHandler(opts...)
 	if err != nil {
 		return nil, err
 	}
 
 	return &SystemHealthCheckTaskHandler{h}, nil
-}
-
-// NewSystemHealthCheckTask creates a new health check task.
-func NewSystemHealthCheckTask() (*asynq.Task, error) {
-	payload, _ := json.Marshal(HealthCheckTaskPayload{Message: model.HealthStatusHealthy.String()})
-	return asynq.NewTask(
-		TaskTypeSystemHealthCheck.String(),
-		payload,
-		asynq.Timeout(DefaultTaskTimeout),
-		asynq.Retention(DefaultTaskRetention),
-	), nil
-}
-
-// LicenseExpiryTaskPayload is the payload for the license expiry check task.
-type LicenseExpiryTaskPayload struct {
-	LicenseID           string
-	LicenseEmail        string
-	LicenseOrganization string
-	LicenseExpiresAt    time.Time
 }
 
 // SystemLicenseExpiryTaskHandler is the license expiry check task. If the
@@ -82,7 +57,7 @@ func (h *SystemLicenseExpiryTaskHandler) ProcessTask(ctx context.Context, task *
 	ctx, span := h.tracer.Start(ctx, "transport.asynq.SystemLicenseExpiryTaskHandler/ProcessTask")
 	defer span.End()
 
-	var payload LicenseExpiryTaskPayload
+	var payload queue.LicenseExpiryTaskPayload
 	if err := json.Unmarshal(task.Payload(), &payload); err != nil {
 		return errors.Join(ErrTaskPayloadUnmarshal, err, asynq.SkipRetry)
 	}
@@ -102,7 +77,7 @@ func (h *SystemLicenseExpiryTaskHandler) ProcessTask(ctx context.Context, task *
 }
 
 // NewSystemLicenseExpiryTaskHandler creates a new license expiry check task handler.
-func NewSystemLicenseExpiryTaskHandler(opts ...TaskOption) (*SystemLicenseExpiryTaskHandler, error) {
+func NewSystemLicenseExpiryTaskHandler(opts ...TaskHandlerOption) (*SystemLicenseExpiryTaskHandler, error) {
 	h, err := newBaseTaskHandler(opts...)
 	if err != nil {
 		return nil, err
@@ -113,25 +88,4 @@ func NewSystemLicenseExpiryTaskHandler(opts ...TaskOption) (*SystemLicenseExpiry
 	}
 
 	return &SystemLicenseExpiryTaskHandler{h}, nil
-}
-
-// NewSystemLicenseExpiryTask creates a new license expiry check task.
-func NewSystemLicenseExpiryTask(l *license.License) (*asynq.Task, error) {
-	if l == nil {
-		return nil, license.ErrNoLicense
-	}
-
-	payload, _ := json.Marshal(LicenseExpiryTaskPayload{
-		LicenseID:           l.ID.String(),
-		LicenseEmail:        l.Email,
-		LicenseOrganization: l.Organization,
-		LicenseExpiresAt:    l.ExpiresAt,
-	})
-
-	return asynq.NewTask(
-		TaskTypeSystemLicenseExpiry.String(),
-		payload,
-		asynq.Timeout(DefaultTaskTimeout),
-		asynq.Queue(MessageQueueHighPriority),
-	), nil
 }

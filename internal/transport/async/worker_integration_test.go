@@ -1,4 +1,4 @@
-package asynq_test
+package async_test
 
 import (
 	"reflect"
@@ -9,7 +9,7 @@ import (
 
 	"github.com/opcotech/elemo/internal/config"
 	"github.com/opcotech/elemo/internal/testutil"
-	elemoAsynq "github.com/opcotech/elemo/internal/transport/asynq"
+	elemoAsynq "github.com/opcotech/elemo/internal/transport/async"
 )
 
 type AsynqWorkerIntegrationTestSuite struct {
