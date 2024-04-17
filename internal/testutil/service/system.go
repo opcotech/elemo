@@ -8,11 +8,11 @@ import (
 
 	"github.com/opcotech/elemo/internal/config"
 	"github.com/opcotech/elemo/internal/model"
+	"github.com/opcotech/elemo/internal/queue"
 	"github.com/opcotech/elemo/internal/repository/neo4j"
 	"github.com/opcotech/elemo/internal/service"
 	"github.com/opcotech/elemo/internal/testutil"
 	"github.com/opcotech/elemo/internal/testutil/repository"
-	"github.com/opcotech/elemo/internal/transport/asynq"
 )
 
 // NewSystemService creates a new SystemService for testing.
@@ -42,8 +42,8 @@ func NewSystemService(t *testing.T, neo4jDBConf *config.GraphDatabaseConfig, pgD
 	)
 	require.NoError(t, err)
 
-	queueClient, err := asynq.NewClient(
-		asynq.WithClientConfig(workerConf),
+	queueClient, err := queue.NewClient(
+		queue.WithClientConfig(workerConf),
 	)
 	require.NoError(t, err)
 

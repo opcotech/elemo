@@ -1,4 +1,4 @@
-package asynq_test
+package queue_test
 
 import (
 	"context"
@@ -10,16 +10,17 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/opcotech/elemo/internal/config"
+	"github.com/opcotech/elemo/internal/queue"
 	"github.com/opcotech/elemo/internal/testutil"
-	elemoAsynq "github.com/opcotech/elemo/internal/transport/asynq"
+	"github.com/opcotech/elemo/internal/transport/async"
 )
 
 type AsynqClientIntegrationTestSuite struct {
 	testutil.ContainerIntegrationTestSuite
 	testutil.RedisContainerIntegrationTestSuite
 
-	client *elemoAsynq.Client
-	worker *elemoAsynq.Worker
+	client *queue.Client
+	worker *async.Worker
 }
 
 func (s *AsynqClientIntegrationTestSuite) SetupSuite() {
@@ -31,24 +32,24 @@ func (s *AsynqClientIntegrationTestSuite) SetupSuite() {
 
 	var err error
 
-	s.client, err = elemoAsynq.NewClient(
-		elemoAsynq.WithClientConfig(&config.WorkerConfig{
+	s.client, err = queue.NewClient(
+		queue.WithClientConfig(&config.WorkerConfig{
 			Concurrency: 10,
 			Broker:      s.RedisConf.RedisConfig,
 		}),
 	)
 	s.Require().NoError(err)
 
-	systemHealthCheckTaskHandler, err := elemoAsynq.NewSystemHealthCheckTaskHandler()
+	systemHealthCheckTaskHandler, err := async.NewSystemHealthCheckTaskHandler()
 	s.Require().NoError(err)
 
-	elemoAsynq.SetRateLimiter(0, 0)
-	s.worker, err = elemoAsynq.NewWorker(
-		elemoAsynq.WithWorkerConfig(&config.WorkerConfig{
+	async.SetRateLimiter(0, 0)
+	s.worker, err = async.NewWorker(
+		async.WithWorkerConfig(&config.WorkerConfig{
 			Concurrency: 10,
 			Broker:      s.RedisConf.RedisConfig,
 		}),
-		elemoAsynq.WithWorkerTaskHandler(elemoAsynq.TaskTypeSystemHealthCheck, systemHealthCheckTaskHandler),
+		async.WithWorkerTaskHandler(queue.TaskTypeSystemHealthCheck, systemHealthCheckTaskHandler),
 	)
 	s.Require().NoError(err)
 
@@ -73,7 +74,7 @@ func (s *AsynqClientIntegrationTestSuite) TestEnqueue() {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	task, err := elemoAsynq.NewSystemHealthCheckTask()
+	task, err := queue.NewSystemHealthCheckTask()
 	s.Require().NoError(err)
 
 	info, err := s.client.Enqueue(ctx, task)
@@ -87,7 +88,7 @@ func (s *AsynqClientIntegrationTestSuite) TestGetTaskInfo() {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	task, err := elemoAsynq.NewSystemHealthCheckTask()
+	task, err := queue.NewSystemHealthCheckTask()
 	s.Require().NoError(err)
 
 	info, err := s.client.Enqueue(ctx, task)

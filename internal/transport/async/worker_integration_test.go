@@ -1,4 +1,4 @@
-package asynq_test
+package async_test
 
 import (
 	"reflect"
@@ -9,14 +9,14 @@ import (
 
 	"github.com/opcotech/elemo/internal/config"
 	"github.com/opcotech/elemo/internal/testutil"
-	elemoAsynq "github.com/opcotech/elemo/internal/transport/asynq"
+	"github.com/opcotech/elemo/internal/transport/async"
 )
 
 type AsynqWorkerIntegrationTestSuite struct {
 	testutil.ContainerIntegrationTestSuite
 	testutil.RedisContainerIntegrationTestSuite
 
-	worker *elemoAsynq.Worker
+	worker *async.Worker
 }
 
 func (s *AsynqWorkerIntegrationTestSuite) SetupSuite() {
@@ -28,9 +28,9 @@ func (s *AsynqWorkerIntegrationTestSuite) SetupSuite() {
 
 	var err error
 
-	elemoAsynq.SetRateLimiter(0, 0)
-	s.worker, err = elemoAsynq.NewWorker(
-		elemoAsynq.WithWorkerConfig(&config.WorkerConfig{
+	async.SetRateLimiter(0, 0)
+	s.worker, err = async.NewWorker(
+		async.WithWorkerConfig(&config.WorkerConfig{
 			Concurrency: 10,
 			Broker:      s.RedisConf.RedisConfig,
 		}),
