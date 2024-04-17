@@ -12,7 +12,7 @@ import (
 	"github.com/opcotech/elemo/internal/config"
 	"github.com/opcotech/elemo/internal/queue"
 	"github.com/opcotech/elemo/internal/testutil"
-	elemoAsynq "github.com/opcotech/elemo/internal/transport/async"
+	"github.com/opcotech/elemo/internal/transport/async"
 )
 
 type AsynqClientIntegrationTestSuite struct {
@@ -20,7 +20,7 @@ type AsynqClientIntegrationTestSuite struct {
 	testutil.RedisContainerIntegrationTestSuite
 
 	client *queue.Client
-	worker *elemoAsynq.Worker
+	worker *async.Worker
 }
 
 func (s *AsynqClientIntegrationTestSuite) SetupSuite() {
@@ -40,16 +40,16 @@ func (s *AsynqClientIntegrationTestSuite) SetupSuite() {
 	)
 	s.Require().NoError(err)
 
-	systemHealthCheckTaskHandler, err := elemoAsynq.NewSystemHealthCheckTaskHandler()
+	systemHealthCheckTaskHandler, err := async.NewSystemHealthCheckTaskHandler()
 	s.Require().NoError(err)
 
-	elemoAsynq.SetRateLimiter(0, 0)
-	s.worker, err = elemoAsynq.NewWorker(
-		elemoAsynq.WithWorkerConfig(&config.WorkerConfig{
+	async.SetRateLimiter(0, 0)
+	s.worker, err = async.NewWorker(
+		async.WithWorkerConfig(&config.WorkerConfig{
 			Concurrency: 10,
 			Broker:      s.RedisConf.RedisConfig,
 		}),
-		elemoAsynq.WithWorkerTaskHandler(queue.TaskTypeSystemHealthCheck, systemHealthCheckTaskHandler),
+		async.WithWorkerTaskHandler(queue.TaskTypeSystemHealthCheck, systemHealthCheckTaskHandler),
 	)
 	s.Require().NoError(err)
 
