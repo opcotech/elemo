@@ -7,7 +7,7 @@ COVERAGE_OUT_UNIT := $(ROOT_DIR)/.coverage.unit.out
 COVERAGE_OUT_INTEGRATION := $(ROOT_DIR)/.coverage.integration.out
 COVERAGE_HTML := $(ROOT_DIR)/coverage.html
 GO_EXEC := $(shell which go)
-GO_TEST_COVER := $(GO_EXEC) test -json -race -shuffle=on -cover -covermode=atomic
+GO_TEST_COVER := $(GO_EXEC) test -json -race -shuffle=on -cover -covermode=atomic -ldflags="-extldflags=-Wl,-ld_classic"
 GO_TEST_IGNORE := "(mode: atomic|testutil|tools|cmd|http\/api)"
 
 default: build

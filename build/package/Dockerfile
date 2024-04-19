@@ -28,7 +28,7 @@ COPY --from=common /common /build
 COPY --from=common $GOPATH/pkg/mod $GOPATH/pkg/mod
 
 WORKDIR /build
-RUN go build -ldflags "-s -w" -o /usr/bin/elemo cmd/elemo/main.go
+RUN go build -ldflags="-s -w -extldflags=-Wl,-ld_classic" -o /usr/bin/elemo cmd/elemo/main.go
 
 ##############################################################################
 # Production image
