@@ -11,7 +11,7 @@ All notable changes to this project will be documented in this file.
 **Documentation**
 
 - Ensure best practices (#142) ([ff38476](https://github.com/opcotech/elemo/commit/ff38476a65e38ee858292752dcb3fc1365fd2259))
-- Replace badges and extend contributing guide ([8ec11e6](https://github.com/opcotech/elemo/commit/8ec11e69699a37585e464107e5ca3d37546d05e3))
+- Replace badges and extend contributing guide ([dec6bb2](https://github.com/opcotech/elemo/commit/dec6bb2b7489390c384ead8544dd0702af98d7fe))
 
 **Features**
 
@@ -32,8 +32,8 @@ All notable changes to this project will be documented in this file.
 - Bump front-end dependencies (#34) ([43ac423](https://github.com/opcotech/elemo/commit/43ac4233df123b45ef235d213b7091d804e0b22b))
 - Drop unnecessary license decisions (#41) ([37cfce2](https://github.com/opcotech/elemo/commit/37cfce21dddb08f8ba7a0ef89f1b0d3e8e61976a))
 - Update dependencies and set update frequency (#42) ([c3014d0](https://github.com/opcotech/elemo/commit/c3014d0d0637098ae6d915d2de0474a2028146d8))
-- Ensure commit lint ignores dependency updates ([1fc35db](https://github.com/opcotech/elemo/commit/1fc35db062e9c338812bc15c1c0359a141ceed51))
-- Suppress ld warning ([c37faba](https://github.com/opcotech/elemo/commit/c37fababaf5d4cba24c562d0ab1b758a17a66654))
+- Ensure commit lint ignores dependencies ([d976979](https://github.com/opcotech/elemo/commit/d976979376df523509268f4747ea6bf09df78251))
+- Suppress ld warning ([7ae6258](https://github.com/opcotech/elemo/commit/7ae625888ba6c857c133e153fec5d7b2a411755f))
 
 **Refactor**
 
