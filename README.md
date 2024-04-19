@@ -1,8 +1,8 @@
 [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/8801/badge)](https://www.bestpractices.dev/projects/8801)
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fopcotech%2Felemo.svg?type=shield&issueType=license)](https://app.fossa.com/projects/git%2Bgithub.com%2Fopcotech%2Felemo?ref=badge_shield&issueType=license)
 [![Backend Build](https://github.com/opcotech/elemo/actions/workflows/build-backend.yml/badge.svg)](https://github.com/opcotech/elemo/actions/workflows/build-backend.yml)
-[![Maintainability](https://api.codeclimate.com/v1/badges/75d49d53fc2510bc9e0e/maintainability)](https://codeclimate.com/repos/643f9ba5f0900f00bb3c5881/maintainability)
-[![Test Coverage](https://api.codeclimate.com/v1/badges/75d49d53fc2510bc9e0e/test_coverage)](https://codeclimate.com/repos/643f9ba5f0900f00bb3c5881/test_coverage)
+[![Maintainability](https://api.codeclimate.com/v1/badges/9164ce433e407e447946/maintainability)](https://codeclimate.com/github/opcotech/elemo/maintainability)
+[![Test Coverage](https://api.codeclimate.com/v1/badges/9164ce433e407e447946/test_coverage)](https://codeclimate.com/github/opcotech/elemo/test_coverage)
 
 <br />
 <div align="center">
@@ -57,8 +57,8 @@ marked with a checkmark._
 
 ## Try Elemo
 
-Setting up the development environment is an easy and straightforward process. Follow the steps below and get ready to
-contribute:
+Setting up the development environment is an easy and straightforward process, however, you will need to run the code
+on Linux, MacOS, or Windows WSL2. Follow the steps below and get ready to contribute:
 
 1. Clone the repository
 

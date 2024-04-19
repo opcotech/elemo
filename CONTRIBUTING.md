@@ -11,6 +11,7 @@ _Pull requests, bug reports, and all other forms of contribution are welcomed an
 - [Feature Requests](#feature-requests)
 - [Triaging Issues](#triaging-issues)
 - [Submitting Pull Requests](#submitting-pull-requests)
+- [Running the services](#running-the-services)
 - [Code Quality and Tests](#code-quality-and-tests)
 - [Updating The APIs](#updating-the-apis)
 - [Writing Commit Messages](#writing-commit-messages)
@@ -78,7 +79,7 @@ a well-written, thorough bug report. Believe in Karma, open an issue that you wo
   can, including steps to reproduce, stack traces, compiler errors, library versions, OS versions, and screenshots (if
   applicable).
 - **Use [GitHub-flavored Markdown](https://help.github.com/en/github/writing-on-github/basic-writing-and-formatting-syntax).**
-  Especially put code blocks and console outputs in backticks (```). This improves readability.
+  Especially put code blocks and console outputs in backticks (`````````). This improves readability.
 - **Provide as many _relevant_ details as you can**. This help the work of others and reduces the back-and-forth.
 
 ## Feature Requests
@@ -139,6 +140,46 @@ _Note: All contributions will be licensed under the project's license._
 - When writing comments, use properly constructed sentences, including punctuation.
 - Although we are not all natives, please try your best to **provide documentation and comments in grammatically correct
   English**.
+
+## Running the Services
+
+The project is using Makefile for the backend and standard pnpm tooling for the front-end. To start backend-related
+services, execute `make start.backend`. In order to start the front-end, execute `pnpm dev` in the `web/` directory.
+
+Below, you can find more useful make targets to run (`make <target>`):
+
+```shell
+dep                ## Download dependencies
+dep-update         ## Update dependencies
+build              ## Build the project
+build.backend      ## Build service
+generate           ## Generate code
+generate.openapi   ## Generate http server code from openapi spec
+generate.email     ## Generate email templates
+start.backend      ## Start backend services
+stop.backend       ## Halt backend services
+destroy.backend    ## Remove backend service resources
+lint               ## Run linters on the project
+test               ## Run all tests
+test.unit          ## Run unit tests
+test.integration   ## Run integration tests
+coverage.combine   ## Combine the generated coverage reports into one
+coverage.html      ## Generate html coverage report from previous test run
+coverage.stats     ## Generate coverage stats from previous test run
+```
+
+In the case of the front-end, here are some useful pnpm run scripts too:
+
+```shell
+dev        ## Run the front-end in development mode
+build      ## Build the front-end
+start      ## Start the front-end
+storybook  ## Start Storybook
+lint       ## Run linters
+test:e2e   ## Run the end-to-end tests
+format     ## Run code formatting
+generate   ## Generate the front-end API client from the OpenAPI scheme
+```
 
 ## Code Quality and Tests
 

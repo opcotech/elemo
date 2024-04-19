@@ -11,6 +11,7 @@ All notable changes to this project will be documented in this file.
 **Documentation**
 
 - Ensure best practices (#142) ([ff38476](https://github.com/opcotech/elemo/commit/ff38476a65e38ee858292752dcb3fc1365fd2259))
+- Replace badges and extend contributing guide ([8ec11e6](https://github.com/opcotech/elemo/commit/8ec11e69699a37585e464107e5ca3d37546d05e3))
 
 **Features**
 
@@ -31,6 +32,8 @@ All notable changes to this project will be documented in this file.
 - Bump front-end dependencies (#34) ([43ac423](https://github.com/opcotech/elemo/commit/43ac4233df123b45ef235d213b7091d804e0b22b))
 - Drop unnecessary license decisions (#41) ([37cfce2](https://github.com/opcotech/elemo/commit/37cfce21dddb08f8ba7a0ef89f1b0d3e8e61976a))
 - Update dependencies and set update frequency (#42) ([c3014d0](https://github.com/opcotech/elemo/commit/c3014d0d0637098ae6d915d2de0474a2028146d8))
+- Ensure commit lint ignores dependency updates ([1fc35db](https://github.com/opcotech/elemo/commit/1fc35db062e9c338812bc15c1c0359a141ceed51))
+- Suppress ld warning ([c37faba](https://github.com/opcotech/elemo/commit/c37fababaf5d4cba24c562d0ab1b758a17a66654))
 
 **Refactor**
 
@@ -38,6 +41,7 @@ All notable changes to this project will be documented in this file.
 - Revamp UI and related API (#60) ([abc4fe3](https://github.com/opcotech/elemo/commit/abc4fe3197ebde4e7c9504feb3a0875c776239e0))
 - Prepare for open sourcing (#128) ([9be5a86](https://github.com/opcotech/elemo/commit/9be5a86de9cfddde1bbfa9c8d983b33370e9e857))
 - Update front-end dependencies (#143) ([8996c02](https://github.com/opcotech/elemo/commit/8996c02414a14d22b5b1c15f11ab5fd684ec7b65))
+- Separate async tasks from handlers (#153) ([9a3b5f0](https://github.com/opcotech/elemo/commit/9a3b5f0f28a13021b4d9770e6b94608ba0f6db78))
 
 **Testing**
 
