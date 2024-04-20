@@ -6,8 +6,9 @@
  * HTTP error description.
  */
 export type HTTPError = {
-  /**
-   * Description of the error.
-   */
-  message: string;
+    /**
+     * Description of the error.
+     */
+    message: string;
 };
+

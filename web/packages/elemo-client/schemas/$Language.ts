@@ -3,5 +3,5 @@
 /* tslint:disable */
 /* eslint-disable */
 export const $Language = {
-  type: 'Enum'
+    type: 'Enum',
 } as const;

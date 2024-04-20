@@ -3,6 +3,6 @@
 /* tslint:disable */
 /* eslint-disable */
 export const $id = {
-  type: 'string',
-  description: `ID of the resource.`
+    type: 'string',
+    description: `ID of the resource.`,
 } as const;

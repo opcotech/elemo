@@ -3,6 +3,6 @@
 /* tslint:disable */
 /* eslint-disable */
 export const $force = {
-  type: 'boolean',
-  description: `Irreversibly delete the user.`
+    type: 'boolean',
+    description: `Irreversibly delete the user.`,
 } as const;

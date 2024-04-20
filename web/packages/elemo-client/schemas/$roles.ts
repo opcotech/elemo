@@ -3,8 +3,8 @@
 /* tslint:disable */
 /* eslint-disable */
 export const $roles = {
-  type: 'array',
-  contains: {
-    type: 'Enum'
-  }
+    type: 'array',
+    contains: {
+        type: 'Enum',
+    },
 } as const;
