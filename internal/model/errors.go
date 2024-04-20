@@ -20,6 +20,8 @@ var (
 	ErrInvalidLabelDetails          = errors.New("invalid Type details")                    // the Type details are invalid
 	ErrInvalidLanguage              = errors.New("invalid language code")                   // Language is not valid
 	ErrInvalidNamespaceDetails      = errors.New("invalid namespace details")               // the namespace details are invalid
+	ErrInvalidNotificationDetails   = errors.New("invalid notification details")            // the notification details are invalid
+	ErrInvalidNotificationRecipient = errors.New("invalid notification recipient")          // the notification recipient is invalid
 	ErrInvalidOrganizationDetails   = errors.New("invalid organization details")            // the organization details are invalid
 	ErrInvalidOrganizationStatus    = errors.New("invalid organization status")             // the organization status is invalid
 	ErrInvalidPermissionDetails     = errors.New("invalid permission details")              // the permission details are invalid
