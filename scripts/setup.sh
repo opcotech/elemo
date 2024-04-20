@@ -14,7 +14,7 @@ export ELEMO_CONFIG="${DEV_CONFIG_DIR}/config.local.gen.yml"
 
 function checkInstalled() {
   local program="${1}"
-  
+
   if ! type "${program}"; then
       echo "Couldn't find ${program} in your PATH. Make sure it is installed."
       exit 1
@@ -35,12 +35,12 @@ function backupCopyFile() {
 }
 
 function setupOAuthClient() {
-  docker-compose -f "${DOCKER_DEPLOY_DIR}/docker-compose.yml" up postgres --remove-orphans -d
+  docker compose -f "${DOCKER_DEPLOY_DIR}/docker-compose.yml" up postgres --remove-orphans -d
   waitAndPrint 5
 
   go run "${CMD_DIR}/main.go" auth add-client --callback-url http://127.0.0.1:3000/api/auth/callback/elemo --public 2>&1
   ADD_CLIENT_OUT=$(go run "${CMD_DIR}/main.go" auth add-client --callback-url http://127.0.0.1:3000/api/auth/callback/elemo --public 2>&1 | grep "client-id")
-  docker-compose -f "${DOCKER_DEPLOY_DIR}/docker-compose.yml" down
+  docker compose -f "${DOCKER_DEPLOY_DIR}/docker-compose.yml" down
 
   backupCopyFile "${WEB_DIR}/.env" "${WEB_DIR}/.env.example"
   backupCopyFile "${WEB_DIR}/.env.test.local" "${WEB_DIR}/.env.test.example"
@@ -51,13 +51,13 @@ function setupOAuthClient() {
 }
 
 function setupDemoData() {
-  docker-compose -f "${DOCKER_DEPLOY_DIR}/docker-compose.yml" up neo4j --remove-orphans -d
+  docker compose -f "${DOCKER_DEPLOY_DIR}/docker-compose.yml" up neo4j --remove-orphans -d
   waitAndPrint 5
 
-  echo "MATCH (n) DETACH DELETE n" | docker-compose -f "${DOCKER_DEPLOY_DIR}/docker-compose.yml" exec -T neo4j cypher-shell -u "neo4j" -p "neo4jsecret"
-  docker-compose -f "${DOCKER_DEPLOY_DIR}/docker-compose.yml" exec -T neo4j cypher-shell -u "neo4j" -p "neo4jsecret" < "${QUERIES_DIR}/bootstrap.cypher"
-  docker-compose -f "${DOCKER_DEPLOY_DIR}/docker-compose.yml" exec -T neo4j cypher-shell -u "neo4j" -p "neo4jsecret" < "${QUERIES_DIR}/demo.cypher"
-  docker-compose -f "${DOCKER_DEPLOY_DIR}/docker-compose.yml" down
+  echo "MATCH (n) DETACH DELETE n" | docker compose -f "${DOCKER_DEPLOY_DIR}/docker-compose.yml" exec -T neo4j cypher-shell -u "neo4j" -p "neo4jsecret"
+  docker compose -f "${DOCKER_DEPLOY_DIR}/docker-compose.yml" exec -T neo4j cypher-shell -u "neo4j" -p "neo4jsecret" < "${QUERIES_DIR}/bootstrap.cypher"
+  docker compose -f "${DOCKER_DEPLOY_DIR}/docker-compose.yml" exec -T neo4j cypher-shell -u "neo4j" -p "neo4jsecret" < "${QUERIES_DIR}/demo.cypher"
+  docker compose -f "${DOCKER_DEPLOY_DIR}/docker-compose.yml" down
 }
 
 function installFrontEnd() {
@@ -69,7 +69,6 @@ function installFrontEnd() {
 # Run preflight
 checkInstalled "certutil"
 checkInstalled "docker"
-checkInstalled "docker-compose"
 checkInstalled "go"
 checkInstalled "jq"
 checkInstalled "mkcert"

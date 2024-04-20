@@ -33,11 +33,11 @@ build: generate dep build.backend  ## Build the project
 
 .PHONY: build.backend
 build.backend: ## Build service
-	docker-compose -f deploy/docker/docker-compose.yml build --no-cache
+	docker compose -f deploy/docker/docker-compose.yml build --no-cache
 
 .PHONY: build.monitoring
 build.monitoring: ## Build service
-	docker-compose -f deploy/docker/docker-compose.monitoring.yml build
+	docker compose -f deploy/docker/docker-compose.monitoring.yml build
 
 .PHONY: generate
 generate: generate.openapi generate.email ## Generate code
@@ -53,27 +53,27 @@ generate.email: ## Generate email templates
 
 .PHONY: start.backend
 start.backend: ## Start service
-	docker-compose -f deploy/docker/docker-compose.yml up --build -d --force-recreate
+	docker compose -f deploy/docker/docker-compose.yml up --build -d --force-recreate
 
 .PHONY: start.monitoring
 start.monitoring: ## Start service
-	docker-compose -f deploy/docker/docker-compose.monitoring.yml up --build -d
+	docker compose -f deploy/docker/docker-compose.monitoring.yml up --build -d
 
 .PHONY: stop.backend
 stop.backend: ## Halt service
-	docker-compose -f deploy/docker/docker-compose.yml stop
+	docker compose -f deploy/docker/docker-compose.yml stop
 
 .PHONY: stop.monitoring
 stop.monitoring: ## Halt service
-	docker-compose -f deploy/docker/docker-compose.monitoring.yml stop
+	docker compose -f deploy/docker/docker-compose.monitoring.yml stop
 
 .PHONY: destroy.backend
 destroy.backend: ## Remove service resources
-	docker-compose -f deploy/docker/docker-compose.yml down --rmi local --volumes
+	docker compose -f deploy/docker/docker-compose.yml down --rmi local --volumes
 
 .PHONY: destroy.monitoring
 destroy.monitoring: ## Remove service resources
-	docker-compose -f deploy/docker/docker-compose.monitoring.yml down --rmi local --volumes
+	docker compose -f deploy/docker/docker-compose.monitoring.yml down --rmi local --volumes
 
 .PHONY: bench
 bench: bench.backend ## Run all benchmarks
