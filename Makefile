@@ -27,7 +27,7 @@ endef
 .PHONY: help
 help: ## Show help message
 	@echo "Available targets:";
-	@grep -E '^[a-z.A-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}';
+	@grep -E '^[a-z.A-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}';
 
 .PHONY: changelog
 changelog: ## Update the changelog
@@ -135,7 +135,7 @@ stop.backend: ## Stop backend service
 	@docker compose -f deploy/docker/docker-compose.yml stop
 	
 .PHONY: test
-test: test.backend test.frontend # Run all backend and front-end tests
+test: test.backend test.frontend test.k6 ## Run all k6, backend and front-end tests
 
 .PHONY: test.backend
 test.backend: test.backend.unit test.backend.integration test.backend.bench test.backend.coverage ## Run all backend tests
@@ -172,9 +172,17 @@ test.backend.coverage: ## Combine unit and integration test coverage
 test.frontend: test.frontend.e2e ## Run all front-end tests
 
 .PHONY: test.frontend.e2e
-test.frontend.e2e: start.backend ## Run front-end end-to-end tests
+test.frontend.e2e: ## Run front-end end-to-end tests
+	@$(MAKE) start.backend
 	$(call log, execute front-end end-to-end tests)
 	@$(PNPM_RUN) test:e2e
+	@trap "$(MAKE) stop.backend" EXIT
+
+.PHONY: test.k6
+test.k6: ## Run k6 tests
+	$(call log, execute k6 tests)
+	@$(MAKE) start.backend
+	@k6 run $(ROOT_DIR)/tests/main.js
 	@trap "$(MAKE) stop.backend" EXIT
 
 .PHONY: lint
