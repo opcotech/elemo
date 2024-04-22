@@ -375,7 +375,11 @@ func startHTTPServer(server elemoHttp.StrictServer) error {
 		WriteTimeout:      cfg.Server.WriteTimeout * time.Second,
 	}
 
-	return s.ListenAndServeTLS(cfg.Server.TLS.CertFile, cfg.Server.TLS.KeyFile)
+	if cfg.Server.TLS.CertFile != "" && cfg.Server.TLS.KeyFile != "" {
+		return s.ListenAndServeTLS(cfg.Server.TLS.CertFile, cfg.Server.TLS.KeyFile)
+	}
+
+	return s.ListenAndServe()
 }
 
 func startSchedulerServer(scheduler *queue.Scheduler) error {
@@ -398,7 +402,11 @@ func startHTTPMetricsServer() error {
 		WriteTimeout:      cfg.MetricsServer.WriteTimeout * time.Second,
 	}
 
-	return s.ListenAndServeTLS(cfg.MetricsServer.TLS.CertFile, cfg.MetricsServer.TLS.KeyFile)
+	if cfg.MetricsServer.TLS.CertFile != "" && cfg.MetricsServer.TLS.KeyFile != "" {
+		return s.ListenAndServeTLS(cfg.MetricsServer.TLS.CertFile, cfg.MetricsServer.TLS.KeyFile)
+	}
+
+	return s.ListenAndServe()
 }
 
 func startHTTPServers(server elemoHttp.StrictServer, taskScheduler *queue.Scheduler) {
