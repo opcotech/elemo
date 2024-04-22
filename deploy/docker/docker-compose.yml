@@ -1,5 +1,3 @@
-version: "3.8"
-
 volumes:
   neo4j_data: { }
   pg_data: { }
