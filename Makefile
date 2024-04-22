@@ -177,6 +177,33 @@ test.frontend.e2e: start.backend ## Run front-end end-to-end tests
 	@$(PNPM_RUN) test:e2e
 	@trap "$(MAKE) stop.backend" EXIT
 
+.PHONY: lint
+lint: lint.backend lint.frontend ## Run linters for the backend and front-end
+
+.PHONY: lint.backend
+lint.backend: ## Run linters for the backend
+	$(call log, run backend linters)
+	@golangci-lint run --timeout 5m
+
+.PHONY: lint.frontend
+lint.frontend: ## Run linters for the front-end
+	$(call log, run front-end linters)
+	@$(PNPM_RUN) lint
+
+.PHONY: format
+format: format.backend format.frontend ## Run formatters for the backend and front-end
+
+.PHONY: format.backend
+format.backend: ## Run formatters for the backend
+	$(call log, run backend formatters)
+	@gofmt -l -s -w $(shell pwd)
+	@goimports -w $(shell pwd)
+
+.PHONY: format.frontend
+format.frontend: ## Run formatters for the front-end
+	$(call log, run front-end formatters)
+	@$(PNPM_RUN) format
+
 .PHONY: destroy.backend
 destroy.backend: stop.backend ## Destroy all backend resources
 	$(call log, removing docker resources)
