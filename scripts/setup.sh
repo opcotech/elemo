@@ -35,12 +35,8 @@ function backupCopyFile() {
 }
 
 function setupOAuthClient() {
-  docker compose -f "${DOCKER_DEPLOY_DIR}/docker-compose.yml" up postgres --remove-orphans -d
-  waitAndPrint 5
-
   go run "${CMD_DIR}/main.go" auth add-client --callback-url http://127.0.0.1:3000/api/auth/callback/elemo --public 2>&1
   ADD_CLIENT_OUT=$(go run "${CMD_DIR}/main.go" auth add-client --callback-url http://127.0.0.1:3000/api/auth/callback/elemo --public 2>&1 | grep "client-id")
-  docker compose -f "${DOCKER_DEPLOY_DIR}/docker-compose.yml" down
 
   backupCopyFile "${WEB_DIR}/.env" "${WEB_DIR}/.env.example"
   backupCopyFile "${WEB_DIR}/.env.test.local" "${WEB_DIR}/.env.test.example"
@@ -51,13 +47,9 @@ function setupOAuthClient() {
 }
 
 function setupDemoData() {
-  docker compose -f "${DOCKER_DEPLOY_DIR}/docker-compose.yml" up neo4j --remove-orphans -d
-  waitAndPrint 5
-
   echo "MATCH (n) DETACH DELETE n" | docker compose -f "${DOCKER_DEPLOY_DIR}/docker-compose.yml" exec -T neo4j cypher-shell -u "neo4j" -p "neo4jsecret"
   docker compose -f "${DOCKER_DEPLOY_DIR}/docker-compose.yml" exec -T neo4j cypher-shell -u "neo4j" -p "neo4jsecret" < "${QUERIES_DIR}/bootstrap.cypher"
   docker compose -f "${DOCKER_DEPLOY_DIR}/docker-compose.yml" exec -T neo4j cypher-shell -u "neo4j" -p "neo4jsecret" < "${QUERIES_DIR}/demo.cypher"
-  docker compose -f "${DOCKER_DEPLOY_DIR}/docker-compose.yml" down
 }
 
 function installFrontEnd() {
@@ -75,9 +67,16 @@ checkInstalled "yq"
 # Generate dev config and start Elemo
 bash "${SCRIPTS_DIR}/generate-dev-config.sh"
 
+# Start services
+docker compose -f "${DOCKER_DEPLOY_DIR}/docker-compose.yml" up postgres neo4j --remove-orphans -d
+waitAndPrint 5
+
 # Create a new OAuth2 client and configure the front-end
 setupOAuthClient
 setupDemoData
+
+# Tear down services
+docker compose -f "${DOCKER_DEPLOY_DIR}/docker-compose.yml" down
 
 # Setup the front-end
 installFrontEnd
