@@ -149,36 +149,42 @@ services, execute `make start.backend`. In order to start the front-end, execute
 Below, you can find more useful make targets to run (`make <target>`):
 
 ```shell
-dep                ## Download dependencies
-dep-update         ## Update dependencies
-build              ## Build the project
-build.backend      ## Build service
-generate           ## Generate code
-generate.openapi   ## Generate http server code from openapi spec
-generate.email     ## Generate email templates
-start.backend      ## Start backend services
-stop.backend       ## Halt backend services
-destroy.backend    ## Remove backend service resources
-lint               ## Run linters on the project
-test               ## Run all tests
-test.unit          ## Run unit tests
-test.integration   ## Run integration tests
-coverage.combine   ## Combine the generated coverage reports into one
-coverage.html      ## Generate html coverage report from previous test run
-coverage.stats     ## Generate coverage stats from previous test run
-```
-
-In the case of the front-end, here are some useful pnpm run scripts too:
-
-```shell
-dev        ## Run the front-end in development mode
-build      ## Build the front-end
-start      ## Start the front-end
-storybook  ## Start Storybook
-lint       ## Run linters
-test:e2e   ## Run the end-to-end tests
-format     ## Run code formatting
-generate   ## Generate the front-end API client from the OpenAPI scheme
+build.backend                  # Build backend images
+build.frontend                 # Build front-end app
+build                          # Build backend and front-end
+changelog                      # Update the changelog
+clean                          # Destroys all backend resources and cleans up untracked files
+dep.backend                    # Download backend dependencies
+dep.frontend                   # Install front-end dependencies
+dep                            # Download and install backend and front-end dependencies
+destroy.backend                # Destroy all backend resources
+dev.frontend                   # Start front-end for development
+dev                            # Start backend and front-end for development
+format.backend                 # Run formatters for the backend
+format.frontend                # Run formatters for the front-end
+format                         # Run formatters for the backend and front-end
+generate.client                # Generate API client
+generate.email                 # Generate HTML emails from MJML templates
+generate.server                # Generate API server
+generate                       # Generate resources
+help                           # Show help message
+lint.backend                   # Run linters for the backend
+lint.frontend                  # Run linters for the front-end
+lint                           # Run linters for the backend and front-end
+release                        # Cut a new release
+start.backend                  # Start backend services
+start.frontend                 # Start front-end app
+start                          # Start backend and front-end
+stop.backend                   # Stop backend service
+stop                           # Stop backend services
+test.k6                        # Run k6 tests
+test.backend.bench             # Run backend benchmarks
+test.backend.coverage          # Combine unit and integration test coverage
+test.backend.integration       # Run backend integration tests
+test.backend.unit              # Run backend unit tests
+test.backend                   # Run all backend tests
+test.frontend                  # Run all front-end tests
+test                           # Run all k6, backend and front-end tests
 ```
 
 ## Code Quality and Tests
@@ -187,44 +193,27 @@ The project ensures code quality and code coverage in multiple ways. Besides thi
 completeness, `gofmt` `go-imports`, `golangci-lint`, `go test`, `k6`, `playwright` and `eslint` are used to keep up with
 industry standards.
 
-To run the backend tests and linters, execute the following:
-
-```shell
-# Backend linters
-make lint
-
-# Backend tests (unit and integration)
-make test
-
-# Backend unit tests
-make test.unit
-
-# Backend integration tests
-make test.integration
-
-# Check code coverage
-make test
-make coverage.combine
-make coverage.stats
-```
-
-Although front-end unit tests are not created yet, linters and some end-to-end
-tests are available. In order to run end-to-end tests, you have to have the
-necessary browser drivers installed. The easiest way to install them, is using
+Although front-end unit tests are not created yet, linters and some end-to-end tests are available. In order to run
+end-to-end tests, you have to have the necessary browser drivers installed. The easiest way to install them, is using
 playwright. When the drivers are installed, you can start the end-to-end tests.
 
 ```shell
-# Change to web directory
-cd web
+# Install playwright dependencies
+pnpm dlx --prefix web playwright install --with-deps
 
 # Run linters
-pnpm lint
+make lint           # Run linters for the backend and front-end, or
+make lint.backend   # Run linters for the backend, or
+make lint.frontend  # Run linters for the front-end
 
-# Install playwright dependencies
-npx playwright install --with-deps
-
-# Execute end-to-end tests
-pnpm test:e2e
+# Run tests
+make test                     # Run all backend and front-end tests, or
+make test.backend.bench       # Run backend benchmarks, or
+make test.backend.coverage    # Combine unit and integration test coverage, or
+make test.backend.integration # Run backend integration tests, or
+make test.backend.unit        # Run backend unit tests, or
+make test.backend             # Run all backend tests, or
+make test.frontend            # Run all front-end tests
 ```
 
 The external tests, such as load tests, smoke tests, stress tests, etc., are
@@ -232,11 +221,7 @@ defined in the `tests` directory. To run these tests, you need to install `k6`
 first. Then, execute the following:
 
 ```shell
-# Change directory
-cd tests
-
-# Execute tests
-k6 run main.js
+make test.k6 # Run k6 tests
 ```
 
 ## Updating The APIs
@@ -249,12 +234,8 @@ After updating the API specification, you have to regenerate the server and
 client code. To do so, execute the following:
 
 ```shell
-# Regenerate backend code
-make generate.openapi
-
-# Regenerate front-end code
-cd web
-pnpm generate
+make generate.server # Generate API server
+make generate.client # Generate API client
 ```
 
 ## Writing Commit Messages
