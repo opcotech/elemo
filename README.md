@@ -71,7 +71,7 @@ on Linux, MacOS, or Windows WSL2. Follow the steps below and get ready to contri
 
    ```shell
    # Make sure you have all the development requirements installed, then run the setup script.
-   # Requirements: yq, jq, go, openssl, mkcert, certutil, docker, docker-compose, make, nvm
+   # Requirements: yq, jq, go, openssl, docker, docker-compose, make, nvm
    ./scripts/setup.sh
    ```
 

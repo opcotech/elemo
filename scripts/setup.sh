@@ -67,12 +67,9 @@ function installFrontEnd() {
 }
 
 # Run preflight
-checkInstalled "certutil"
 checkInstalled "docker"
 checkInstalled "go"
 checkInstalled "jq"
-checkInstalled "mkcert"
-checkInstalled "openssl"
 checkInstalled "yq"
 
 # Generate dev config and start Elemo

@@ -6,20 +6,6 @@ ROOT_DIR="$(realpath "$(dirname "${BASH_SOURCE[0]:-$0}")/..")"
 CONFIG_DIR="${ROOT_DIR}/configs/development"
 TOOLS_DIR="${ROOT_DIR}/tools"
 
-function generateCert() {
-  local host="${1}"
-
-  if [[ "${host}" == "docker" ]]; then
-    host="0.0.0.0"
-    local suffix=""
-  else
-    local suffix=".local"
-  fi
-
-  mkcert -install
-  mkcert -cert-file "${CONFIG_DIR}/cert${suffix}.gen.pem" -key-file "${CONFIG_DIR}/key${suffix}.gen.pem" "${host}"
-}
-
 function generateSigningKey() {
   openssl genrsa -out "${CONFIG_DIR}/signing-key.gen.pem" 2048
   openssl req -new -x509 -days 3650 \
@@ -95,9 +81,6 @@ server:
     cookie_name: "elemo_session"
     max_age: 86400
     is_secure: false
-  tls:
-    cert_file: "configs/development/cert${suffix}.gen.pem"
-    key_file: "configs/development/key${suffix}.gen.pem"
 
 worker:
   concurrency: 10
@@ -166,17 +149,11 @@ metrics_server:
   address: "${host}:35479"
   read_timeout: 10
   write_timeout: 5
-  tls:
-    cert_file: "configs/development/cert${suffix}.gen.pem"
-    key_file: "configs/development/key${suffix}.gen.pem"
 
 worker_metrics_server:
   address: "${host}:35480"
   read_timeout: 10
   write_timeout: 5
-  tls:
-    cert_file: "configs/development/cert${suffix}.gen.pem"
-    key_file: "configs/development/key${suffix}.gen.pem"
 
 smtp:
   host: "${smtp_host}"
@@ -200,8 +177,6 @@ EOF
 }
 
 mkdir -p "${CONFIG_DIR}"
-generateCert "docker"
-generateCert "127.0.0.1"
 generateSigningKey
 generateLicenseKey
 generateConfigFile "docker"
