@@ -14,7 +14,7 @@ BACKEND_COVER_OUT_UNIT := $(ROOT_DIR)/.coverage.unit.out
 BACKEND_COVER_OUT_INTEGRATION := $(ROOT_DIR)/.coverage.integration.out
 
 PNPM_EXEC := $(shell which pnpm)
-PNPM := $(PNPM_EXEC) --prefix $(FRONTEND_DIR)
+PNPM_RUN := $(PNPM_EXEC) run --prefix $(FRONTEND_DIR)
 
 GO_EXEC := $(shell which go)
 GO_TEST_COVER := $(GO_EXEC) test -json -race -shuffle=on -cover -covermode=atomic -ldflags="-extldflags=-Wl,-ld_classic"
@@ -48,7 +48,7 @@ release: ## Cut a new release
 		mv $(TMPDIR)/package.json.tmp $(FRONTEND_CLIENT_DIR)/package.json;
 	@jq '.version="$(RELEASE_VERSION)"' $(FRONTEND_DIR)/package.json > $(TMPDIR)/package.json.tmp && \
 		mv $(TMPDIR)/package.json.tmp $(FRONTEND_DIR)/package.json;
-	@pnpm --prefix $(FRONTEND_DIR) update $(FRONTEND_CLIENT)
+	@$(PNPM_EXEC) update --prefix $(FRONTEND_CLIENT)
 
 	@$(MAKE) changelog;
 	
@@ -69,7 +69,7 @@ generate.server: ## Generate API server
 .PHONY: generate.client
 generate.client: ## Generate API client
 	$(call log, generating front-end API client)
-	@$(PNPM) run generate 2>&1 >/dev/null
+	@$(PNPM_RUN) generate 2>&1 >/dev/null
 
 .PHONY: generate.email
 generate.email: ## Generate HTML emails from MJML templates
@@ -90,7 +90,7 @@ dep.backend: ## Download backend dependencies
 dep.frontend: ## Install front-end dependencies
 	$(call log, download and install front-end dependencies)
 	@rm -rf $(FRONTEND_DIR)/node_modules
-	@$(PNPM) install
+	@$(PNPM_EXEC) install --prefix $(FRONTEND_DIR)
 
 .PHONY: build
 build: build.backend build.frontend ## Build backend and front-end
@@ -103,7 +103,7 @@ build.backend: ## Build backend images
 .PHONY: build.frontend
 build.frontend: ## Build front-end app
 	$(call log, build front-end app)
-	@$(PNPM) run build
+	@$(PNPM_RUN) build
 
 .PHONY: dev
 dev: start.backend dev.frontend ## Start backend and front-end for development
@@ -111,7 +111,7 @@ dev: start.backend dev.frontend ## Start backend and front-end for development
 .PHONY: dev.frontend
 dev.frontend: dep.frontend ## Start front-end for development
 	$(call log, starting front-end app)
-	@$(PNPM) run dev
+	@$(PNPM_RUN) dev
 
 .PHONY: start
 start: start.backend start.frontend ## Start backend and front-end
@@ -124,7 +124,7 @@ start.backend: ## Start backend services
 .PHONY: start.frontend
 start.frontend: build.frontend ## Start front-end app
 	$(call log, starting front-end app)
-	@$(PNPM) run start
+	@$(PNPM_RUN) start
 
 .PHONY: stop
 stop: stop.backend ## Stop backend services
@@ -173,17 +173,17 @@ test.frontend: test.frontend.e2e ## Run all front-end tests
 
 .PHONY: test.frontend.e2e
 test.frontend.e2e: ## Run front-end end-to-end tests
-	@$(MAKE) start.backend
 	$(call log, execute front-end end-to-end tests)
-	@$(PNPM) run test:e2e
+	@$(MAKE) start.backend
 	@trap "$(MAKE) stop.backend" EXIT
+	@$(PNPM_RUN) test:e2e
 
 .PHONY: test.k6
 test.k6: ## Run k6 tests
 	$(call log, execute k6 tests)
 	@$(MAKE) start.backend
-	@k6 run $(ROOT_DIR)/tests/main.js
 	@trap "$(MAKE) stop.backend" EXIT
+	@k6 run $(ROOT_DIR)/tests/main.js
 
 .PHONY: lint
 lint: lint.backend lint.frontend ## Run linters for the backend and front-end
@@ -196,7 +196,7 @@ lint.backend: ## Run linters for the backend
 .PHONY: lint.frontend
 lint.frontend: ## Run linters for the front-end
 	$(call log, run front-end linters)
-	@$(PNPM) run lint
+	@$(PNPM_RUN) lint
 
 .PHONY: format
 format: format.backend format.frontend ## Run formatters for the backend and front-end
@@ -210,7 +210,7 @@ format.backend: ## Run formatters for the backend
 .PHONY: format.frontend
 format.frontend: ## Run formatters for the front-end
 	$(call log, run front-end formatters)
-	@$(PNPM) run format
+	@$(PNPM_RUN) format
 
 .PHONY: destroy.backend
 destroy.backend: stop.backend ## Destroy all backend resources
