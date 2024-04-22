@@ -12,7 +12,7 @@
     "lint": "next lint",
     "test:e2e": "playwright test",
     "format": "prettier --plugin-search-dir . --write . && next lint --fix",
-    "generate": "npx openapi-typescript-codegen --input ../api/openapi/openapi.yaml --output ./packages/elemo-client --exportSchemas true"
+    "generate": "../scripts/generate-frontend-client.sh"
   },
   "dependencies": {
     "@headlessui/react": "^1.7.19",
