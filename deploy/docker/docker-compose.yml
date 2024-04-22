@@ -1,3 +1,5 @@
+name: elemo
+
 volumes:
   neo4j_data: { }
   pg_data: { }
