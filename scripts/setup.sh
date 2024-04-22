@@ -16,8 +16,8 @@ function checkInstalled() {
   local program="${1}"
 
   if ! type "${program}"; then
-      echo "Couldn't find ${program} in your PATH. Make sure it is installed."
-      exit 1
+    echo "Couldn't find ${program} in your PATH. Make sure it is installed."
+    exit 1
   fi
 }
 
@@ -63,6 +63,7 @@ checkInstalled "docker"
 checkInstalled "go"
 checkInstalled "jq"
 checkInstalled "yq"
+checkInstalled "node"
 
 # Generate dev config and start Elemo
 bash "${SCRIPTS_DIR}/generate-dev-config.sh"
