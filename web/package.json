@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "build.storybook": "storybook build",
+    "build:storybook": "storybook build",
     "storybook": "storybook dev -p 6006 --no-open",
     "start": "next start",
     "lint": "next lint",
