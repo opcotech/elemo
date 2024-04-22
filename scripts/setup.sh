@@ -63,7 +63,7 @@ function setupDemoData() {
 function installFrontEnd() {
   cd "${WEB_DIR}"
   npm install -g pnpm
-  pnpm install
+  pnpm install --unsafe-perm
 }
 
 # Run preflight
