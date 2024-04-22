@@ -1,4 +1,4 @@
-name: Build Backend
+name: Build backend
 
 on:
   push:
@@ -18,7 +18,6 @@ jobs:
       - uses: actions/setup-go@v4
         with:
           go-version: "^1.22"
-      - uses: ./.github/actions/generate
       - name: Go CI Lint
         uses: golangci/golangci-lint-action@v3
         with:
@@ -34,9 +33,8 @@ jobs:
       - uses: actions/setup-go@v4
         with:
           go-version: "^1.22"
-      - uses: ./.github/actions/generate
       - name: Execute unit tests
-        run: make test.unit
+        run: make test.backend.unit
       - name: Stash test results
         uses: actions/upload-artifact@master
         with:
@@ -44,18 +42,30 @@ jobs:
           path: .coverage.unit.out
           retention-days: 7
 
-  integration-test:
+  benchmark-test:
     runs-on: "ubuntu-latest"
     needs:
-      - unit-test
+      - lint
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v4
         with:
           go-version: "^1.22"
-      - uses: ./.github/actions/generate
       - name: Execute integration tests
-        run: make test.integration
+        run: make test.backend.bench
+
+  integration-test:
+    runs-on: "ubuntu-latest"
+    needs:
+      - unit-test
+      - benchmark-test
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v4
+        with:
+          go-version: "^1.22"
+      - name: Execute integration tests
+        run: make test.backend.integration
       - name: Stash test results
         uses: actions/upload-artifact@master
         with:
@@ -81,12 +91,11 @@ jobs:
         uses: actions/download-artifact@master
         with:
           name: "integration-test-results"
-      - uses: ./.github/actions/generate
       - name: Upload test results
         uses: paambaati/codeclimate-action@v5.0.0
         env:
           CC_TEST_REPORTER_ID: ${{secrets.CC_TEST_REPORTER_ID}}
         with:
-          coverageCommand: make coverage.combine
+          coverageCommand: make test.backend.coverage
           prefix: github.com/${{github.repository}}
           coverageLocations: ${{github.workspace}}/.coverage.out:gocov
