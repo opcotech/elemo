@@ -119,7 +119,7 @@ start: start.backend start.frontend ## Start backend and front-end
 .PHONY: start.backend
 start.backend: ## Start backend services
 	$(call log, starting backend services)
-	@docker compose -f deploy/docker/docker-compose.yml up -d
+	@docker compose -f deploy/docker/docker-compose.yml up -d --force-recreate
 
 .PHONY: start.frontend
 start.frontend: build.frontend ## Start front-end app
