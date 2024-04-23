@@ -175,15 +175,15 @@ test.frontend: test.frontend.e2e ## Run all front-end tests
 test.frontend.e2e: ## Run front-end end-to-end tests
 	$(call log, execute front-end end-to-end tests)
 	@$(MAKE) start.backend
-	@trap "$(MAKE) stop.backend" EXIT
 	@$(PNPM_RUN) test:e2e
+	@trap "$(MAKE) stop.backend" EXIT
 
 .PHONY: test.k6
 test.k6: ## Run k6 tests
 	$(call log, execute k6 tests)
 	@$(MAKE) start.backend
-	@trap "$(MAKE) stop.backend" EXIT
 	@k6 run $(ROOT_DIR)/tests/main.js
+	@trap "$(MAKE) stop.backend" EXIT
 
 .PHONY: lint
 lint: lint.backend lint.frontend ## Run linters for the backend and front-end

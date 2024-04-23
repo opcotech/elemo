@@ -199,7 +199,7 @@ playwright. When the drivers are installed, you can start the end-to-end tests.
 
 ```shell
 # Install playwright dependencies
-pnpm dlx --prefix web playwright install --with-deps
+pnpm --prefix web dlx playwright install --with-deps
 
 # Run linters
 make lint           # Run linters for the backend and front-end, or

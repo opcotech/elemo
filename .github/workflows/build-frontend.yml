@@ -41,6 +41,7 @@ jobs:
         run: |
           pip install jq yq
           npm install -g pnpm
+          pnpm --prefix web dlx playwright install --with-deps
       - name: Setup local env
         run: |
           ./scripts/setup.sh
