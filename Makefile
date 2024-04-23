@@ -155,7 +155,7 @@ test.backend.unit: ## Run backend unit tests
 test.backend.integration: ## Run backend integration tests
 	$(call log, execute backend integration tests)
 	@rm -f $(BACKEND_COVER_OUT_INTEGRATION)
-	@$(GO_TEST_COVER) -timeout 3600s -run=Integration -coverprofile=$(BACKEND_COVER_OUT_INTEGRATION) ./...
+	@$(GO_TEST_COVER) -timeout 900s -run=Integration -coverprofile=$(BACKEND_COVER_OUT_INTEGRATION) ./...
 
 .PHONY: test.backend.coverage
 test.backend.coverage: ## Combine unit and integration test coverage
