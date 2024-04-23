@@ -38,9 +38,9 @@ FROM gcr.io/distroless/static-debian11:nonroot AS production
 
 ENV TZ UTC
 
-COPY --chown=nonroot:nonroot assets /elemo/assets
-COPY --chown=nonroot:nonroot configs /elemo/configs
-COPY --chown=nonroot:nonroot templates /elemo/templates
-COPY --from=build /usr/bin/elemo /elemo/bin/elemo
+COPY --chown=nonroot:nonroot assets /opt/opcotech/elemo/assets
+COPY --chown=nonroot:nonroot configs /opt/opcotech/elemo/configs
+COPY --chown=nonroot:nonroot templates /opt/opcotech/elemo/templates
+COPY --from=build /usr/bin/elemo /opt/opcotech/elemo/bin/elemo
 
-WORKDIR /elemo
+WORKDIR /opt/opcotech/elemo

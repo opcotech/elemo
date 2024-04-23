@@ -71,7 +71,7 @@ services:
       context: ../../
       dockerfile: build/package/Dockerfile
     entrypoint:
-      - /elemo/bin/elemo
+      - bin/elemo
       - start
       - server
     security_opt:
@@ -86,7 +86,7 @@ services:
       smtp:
         condition: service_started
     environment:
-      ELEMO_CONFIG: /elemo/configs/development/config.gen.yml
+      ELEMO_CONFIG: configs/development/config.gen.yml
     ports:
       - "35478:35478"
       - "35479:35479"
@@ -98,7 +98,7 @@ services:
       context: ../../
       dockerfile: build/package/Dockerfile
     entrypoint:
-      - /elemo/bin/elemo
+      - bin/elemo
       - start
       - worker
     security_opt:
@@ -115,6 +115,6 @@ services:
       smtp:
         condition: service_started
     environment:
-      ELEMO_CONFIG: /elemo/configs/development/config.gen.yml
+      ELEMO_CONFIG: configs/development/config.gen.yml
     ports:
       - "35480:35480"
