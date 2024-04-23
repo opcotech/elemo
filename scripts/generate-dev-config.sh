@@ -125,7 +125,7 @@ graph_database:
   port: 7687
   username: neo4j
   password: neo4jsecret
-  name: neo4j
+  database: neo4j
   max_transaction_retry_time: 3
   max_connection_pool_size: 100
   max_connection_lifetime: 300
@@ -139,7 +139,7 @@ relational_database:
   port: 5432
   username: elemo
   password: pgsecret
-  name: elemo
+  database: elemo
   max_connections: 100
   max_connection_lifetime: 300
   max_connection_idle_time: 10
