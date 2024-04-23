@@ -29,7 +29,9 @@ body:
     id: screenshot
     attributes:
       label: "Screenshots"
-      description: If applicable, add screenshots to help explain your problem. Do not include any sensitive information.
+      description: |
+        If applicable, add screenshots to help explain your problem. Do not
+        include any sensitive information.
       value: |
         ![DESCRIPTION](LINK.png)
       render: bash
@@ -39,7 +41,9 @@ body:
     id: logs
     attributes:
       label: "Logs"
-      description: Please copy and paste any relevant log output. This will be automatically formatted into code, so no need for backticks.
+      description: |
+        Please copy and paste any relevant log output. This will be
+        automatically formatted into code, so no need for backticks.
       render: bash
     validations:
       required: false
@@ -59,16 +63,14 @@ body:
     validations:
       required: false
   - type: textarea
-    id: version
+    id: bug-report
     attributes:
-      label: "Version"
-      description: What is the affected Elemo and Go versions?
+      label: "Automated bug report"
+      description: |
+        Run `scripts/bug-report.sh` locally and paste its output. If the script
+        fails, paste that output. If it is not applicable to share the output,
+        paste "N/A". Do not include any sensitive information.
       placeholder: |
-        {
-          "Version": "0.1.0",
-          "Commit": "5a21d5a",
-          "Date": "2024-01-01T07:48:34Z",
-          "GoVersion": "go1.22.2"
-        }
+        <OUTPUT>
     validations:
       required: true
