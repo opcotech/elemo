@@ -57,7 +57,7 @@ services:
       retries: 3
 
   smtp:
-    image: mailhog/mailhog:v1.0.1
+    image: richarvey/mailhog:latest
     container_name: elemo-smtp
     ports:
       - "1025:1025"
