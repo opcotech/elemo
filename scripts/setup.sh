@@ -3,36 +3,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(realpath "$(dirname "${BASH_SOURCE[0]:-$0}")/..")"
-CMD_DIR="${ROOT_DIR}/cmd/elemo"
-DEV_CONFIG_DIR="${ROOT_DIR}/configs/development"
-DOCKER_DEPLOY_DIR="${ROOT_DIR}/deploy/docker"
-QUERIES_DIR="${ROOT_DIR}/assets/queries"
-SCRIPTS_DIR="${ROOT_DIR}/scripts"
-WEB_DIR="${ROOT_DIR}/web"
-
-export ELEMO_CONFIG="${DEV_CONFIG_DIR}/config.local.gen.yml"
-
-function checkInstalled() {
-  local program="${1}"
-
-  if ! type "${program}"; then
-    echo "Couldn't find ${program} in your PATH. Make sure it is installed."
-    exit 1
-  fi
-}
-
-function waitAndPrint() {
-  echo "waiting ${1} seconds to let the services boot"
-  sleep "${1}"
-}
-
-function backupCopyFile() {
-  local backupFile="${1}"
-  local copyFile="${2}"
-
-  [[ -f "${backupFile}" ]] && mv "${backupFile}" "${backupFile}.bkp"
-  cp "${copyFile}" "${backupFile}"
-}
+source "${ROOT_DIR}/scripts/common.sh";
 
 function setupOAuthClient() {
   go run "${CMD_DIR}/main.go" auth add-client --callback-url http://127.0.0.1:3000/api/auth/callback/elemo --public 2>&1
@@ -54,7 +25,7 @@ function setupDemoData() {
 
 function installFrontEnd() {
   cd "${WEB_DIR}"
-  npm install -g pnpm
+  ! type "pnpm" && npm install -g pnpm;
   pnpm install --unsafe-perm
 }
 
@@ -62,11 +33,10 @@ function installFrontEnd() {
 checkInstalled "docker"
 checkInstalled "go"
 checkInstalled "jq"
-checkInstalled "yq"
-checkInstalled "node"
+checkInstalled "npm"
 
-# Generate dev config and start Elemo
-bash "${SCRIPTS_DIR}/generate-dev-config.sh"
+# Generate dev config if missing
+generateConfigIfMissing
 
 # Start services
 docker compose -f "${DOCKER_DEPLOY_DIR}/docker-compose.yml" up postgres neo4j --remove-orphans -d

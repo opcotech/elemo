@@ -3,8 +3,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(realpath "$(dirname "${BASH_SOURCE[0]:-$0}")/..")"
-CONFIG_DIR="${ROOT_DIR}/configs/development"
-TOOLS_DIR="${ROOT_DIR}/tools"
+source "${ROOT_DIR}/scripts/common.sh";
 
 function generateSigningKey() {
   openssl genrsa -out "${CONFIG_DIR}/signing-key.gen.pem" 2048
@@ -176,6 +175,11 @@ tracing:
 EOF
 }
 
+# Run preflight
+checkInstalled "go"
+checkInstalled "openssl"
+
+# Generate necessary resources
 mkdir -p "${CONFIG_DIR}"
 generateSigningKey
 generateLicenseKey
