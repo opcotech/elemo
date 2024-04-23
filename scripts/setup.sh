@@ -6,8 +6,9 @@ ROOT_DIR="$(realpath "$(dirname "${BASH_SOURCE[0]:-$0}")/..")"
 source "${ROOT_DIR}/scripts/common.sh";
 
 function setupOAuthClient() {
-  go run "${CMD_DIR}/main.go" auth add-client --callback-url http://127.0.0.1:3000/api/auth/callback/elemo --public 2>&1
-  ADD_CLIENT_OUT=$(go run "${CMD_DIR}/main.go" auth add-client --callback-url http://127.0.0.1:3000/api/auth/callback/elemo --public 2>&1 | grep "client-id")
+  ADD_CLIENT_OUT=$(docker compose \
+    -f "${DOCKER_DEPLOY_DIR}/docker-compose.yml" exec -T elemo-server bin/elemo auth add-client \
+        --callback-url http://127.0.0.1:3000/api/auth/callback/elemo --public 2>&1 | grep "client-id")
 
   backupCopyFile "${WEB_DIR}/.env" "${WEB_DIR}/.env.example"
   backupCopyFile "${WEB_DIR}/.env.test.local" "${WEB_DIR}/.env.test.example"
@@ -31,7 +32,6 @@ function installFrontEnd() {
 
 # Run preflight
 checkInstalled "docker"
-checkInstalled "go"
 checkInstalled "jq"
 checkInstalled "npm"
 
@@ -39,7 +39,7 @@ checkInstalled "npm"
 generateConfigIfMissing
 
 # Start services
-docker compose -f "${DOCKER_DEPLOY_DIR}/docker-compose.yml" up postgres neo4j --remove-orphans -d
+docker compose -f "${DOCKER_DEPLOY_DIR}/docker-compose.yml" up --remove-orphans -d
 waitAndPrint 5
 
 # Create a new OAuth2 client and configure the front-end
