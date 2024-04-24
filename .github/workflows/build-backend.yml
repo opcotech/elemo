@@ -15,7 +15,7 @@ jobs:
       GO111MODULE: on
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: "^1.22"
       - name: Go CI Lint
@@ -30,7 +30,7 @@ jobs:
       - lint
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: "^1.22"
       - name: Execute unit tests
@@ -48,7 +48,7 @@ jobs:
       - lint
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: "^1.22"
       - name: Execute integration tests
@@ -61,7 +61,7 @@ jobs:
       - benchmark-test
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: "^1.22"
       - name: Execute integration tests
@@ -80,7 +80,7 @@ jobs:
       - integration-test
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: "^1.22"
       - name: Unstash unit test results
