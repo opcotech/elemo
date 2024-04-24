@@ -71,7 +71,7 @@ on Linux, MacOS, or Windows WSL2. Follow the steps below and get ready to contri
 
    ```shell
    # Make sure you have all the development requirements installed, then run the setup script.
-   # Requirements: yq, jq, go, openssl, mkcert, certutil, docker, docker-compose, make, nvm
+   # Requirements: yq, jq, go, openssl, docker (with compose plugin), make, nvm
    ./scripts/setup.sh
    ```
 
@@ -79,10 +79,7 @@ on Linux, MacOS, or Windows WSL2. Follow the steps below and get ready to contri
 
    ```shell
    # Start the backend services
-   make start.backend
-
-   # Start the front-end
-   cd web && pnpm dev
+   make start # or "make dev" for development
    ```
 
 4. Now, you can try Elemo. Navigate to http://127.0.0.1:3000 and log in using the `demo@elemo.app` email

@@ -1,0 +1,57 @@
+name: Build front-end
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  lint:
+    runs-on: "ubuntu-latest"
+    env:
+      GO111MODULE: on
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+      - name: Install pnpm
+        run: npm install -g pnpm
+      - name: Lint
+        run: make dep.frontend lint.frontend
+
+  e2e-test:
+    runs-on: "ubuntu-latest"
+    needs:
+      - lint
+    env:
+      CI: true
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+      - uses: actions/setup-go@v4
+        with:
+          go-version: "^1.22"
+      - name: Install dependencies
+        run: |
+          pip install jq yq
+          npm install -g pnpm
+          pnpm --prefix web dlx playwright install --with-deps
+      - name: Setup local env
+        run: |
+          ./scripts/setup.sh
+          sed -i s/CI=false/CI=true/g web/.env.test.local
+          sed -i s/PLAYWRIGHT_HEADLESS=false/PLAYWRIGHT_HEADLESS=true/g web/.env.test.local
+      - name: Execute end-to-end tests
+        run: make dep.frontend test.frontend.e2e
+      - name: Stash test results
+        uses: actions/upload-artifact@master
+        with:
+          name: "unit-test-results"
+          path: web/tests/results
+          retention-days: 7

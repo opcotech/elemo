@@ -3,11 +3,9 @@ package http
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 	"time"
 
-	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/openapi3filter"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -134,21 +132,7 @@ func NewRouter(strictServer StrictServer, serverConfig *config.ServerConfig, tra
 		return nil, errors.Join(ErrInvalidSwagger, err)
 	}
 
-	swagger.Servers = openapi3.Servers{
-		&openapi3.Server{
-			URL:         fmt.Sprintf("https://%s", serverConfig.Address),
-			Description: "Default server",
-		},
-		&openapi3.Server{
-			URL:         "{url}",
-			Description: "Third-party server",
-			Variables: map[string]*openapi3.ServerVariable{
-				"url": {
-					Default: "https://example.com/api",
-				},
-			},
-		},
-	}
+	swagger.Servers = nil
 
 	throttleLimit := DefaultRequestThrottleLimit
 	if serverConfig.RequestThrottleLimit > 0 {

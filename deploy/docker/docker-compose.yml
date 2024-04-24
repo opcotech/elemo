@@ -1,4 +1,4 @@
-version: "3.8"
+name: elemo
 
 volumes:
   neo4j_data: { }
@@ -57,7 +57,7 @@ services:
       retries: 3
 
   smtp:
-    image: mailhog/mailhog:v1.0.1
+    image: richarvey/mailhog:latest
     container_name: elemo-smtp
     ports:
       - "1025:1025"
@@ -70,7 +70,7 @@ services:
       context: ../../
       dockerfile: build/package/Dockerfile
     entrypoint:
-      - /elemo/bin/elemo
+      - bin/elemo
       - start
       - server
     security_opt:
@@ -85,7 +85,7 @@ services:
       smtp:
         condition: service_started
     environment:
-      ELEMO_CONFIG: /elemo/configs/development/config.gen.yml
+      ELEMO_CONFIG: configs/development/config.gen.yml
     ports:
       - "35478:35478"
       - "35479:35479"
@@ -97,7 +97,7 @@ services:
       context: ../../
       dockerfile: build/package/Dockerfile
     entrypoint:
-      - /elemo/bin/elemo
+      - bin/elemo
       - start
       - worker
     security_opt:
@@ -114,6 +114,6 @@ services:
       smtp:
         condition: service_started
     environment:
-      ELEMO_CONFIG: /elemo/configs/development/config.gen.yml
+      ELEMO_CONFIG: configs/development/config.gen.yml
     ports:
       - "35480:35480"

@@ -100,7 +100,11 @@ func startWorkerMetricsServer() error {
 		WriteTimeout:      cfg.WorkerMetricsServer.WriteTimeout * time.Second,
 	}
 
-	return s.ListenAndServeTLS(cfg.WorkerMetricsServer.TLS.CertFile, cfg.WorkerMetricsServer.TLS.KeyFile)
+	if cfg.WorkerMetricsServer.TLS.CertFile != "" && cfg.WorkerMetricsServer.TLS.KeyFile != "" {
+		return s.ListenAndServeTLS(cfg.WorkerMetricsServer.TLS.CertFile, cfg.WorkerMetricsServer.TLS.KeyFile)
+	}
+
+	return s.ListenAndServe()
 }
 
 func startWorkerServers(worker *async.Worker) {
