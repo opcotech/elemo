@@ -19,3 +19,5 @@ checkInstalled "pnpm"
 
 # Generate front-end API client
 generateAPIClient
+
+success "the front-end client is generated successfully"

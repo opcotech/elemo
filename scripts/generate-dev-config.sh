@@ -6,6 +6,7 @@ ROOT_DIR="$(realpath "$(dirname "${BASH_SOURCE[0]:-$0}")/..")"
 source "${ROOT_DIR}/scripts/common.sh";
 
 function generateSigningKey() {
+  log "generating signing key"
   openssl genrsa -out "${CONFIG_DIR}/signing-key.gen.pem" 2048
   openssl req -new -x509 -days 3650 \
     -subj "/C=AE/ST=Dubai/L=Dubai/O=Opcotech/OU=Developers/CN=elemo.app" \
@@ -14,6 +15,7 @@ function generateSigningKey() {
 }
 
 function generateLicenseKey() {
+  log "generating license key"
   go run "${TOOLS_DIR}/license-generator/main.go" \
     -validity-period 3650 \
     -email info@example.com \
@@ -25,6 +27,7 @@ function generateLicenseKey() {
 
 function generateConfigFile() {
   local host="${1}"
+  log "generating development configuration for ${1}"
 
   if [[ "${host}" == "docker" ]]; then
     host="0.0.0.0"
@@ -46,16 +49,16 @@ function generateConfigFile() {
 
   cat <<EOF > "${CONFIG_DIR}/config${suffix}.gen.yml"
 log:
-  level: "info"
+  level: info
 
 license:
-  file: "configs/development/license.gen.key"
+  file: configs/development/license.gen.key
 
 template:
-  directory: "templates"
+  directory: templates
 
 server:
-  address: "${host}:35478"
+  address: ${host}:35478
   read_timeout: 10
   write_timeout: 5
   request_throttle_limit: 350
@@ -64,20 +67,20 @@ server:
   cors:
     enabled: true
     allowed_origins:
-      - "http://127.0.0.1:3000"
+      - http://127.0.0.1:3000
     allowed_methods:
-      - "GET"
-      - "POST"
-      - "PUT"
-      - "PATCH"
-      - "DELETE"
-      - "OPTIONS"
+      - GET
+      - POST
+      - PUT
+      - PATCH
+      - DELETE
+      - OPTIONS
     allowed_headers:
       - "*"
     allow_credentials: false
     max_age: 86400
   session:
-    cookie_name: "elemo_session"
+    cookie_name: elemo_session
     max_age: 86400
     is_secure: false
 
@@ -145,32 +148,32 @@ relational_database:
   min_connections: 5
 
 metrics_server:
-  address: "${host}:35479"
+  address: ${host}:35479
   read_timeout: 10
   write_timeout: 5
 
 worker_metrics_server:
-  address: "${host}:35480"
+  address: ${host}:35480
   read_timeout: 10
   write_timeout: 5
 
 smtp:
   host: "${smtp_host}"
   port: 1025
-  username: "no-reply@elemo.app"
-  password: "smtpsecret"
-  from_address: "no-reply@elemo.app"
-  support_address: "support@elemo.app"
-  reply_to_address: "support@elemo.app"
-  hostname: "elemo.local"
+  username: no-reply@elemo.app
+  password: smtpsecret
+  from_address: no-reply@elemo.app
+  support_address: support@elemo.app
+  reply_to_address: support@elemo.app
+  hostname: elemo.local
   connection_timeout: 10
   enable_auth: false
   skip_tls_verify: true
   security_protocol: ""
 
 tracing:
-  service_name: "elemo"
-  collector_endpoint: "${otel_collector_host}:4318"
+  service_name: elemo
+  collector_endpoint: ${otel_collector_host}:4318
   trace_ratio: 0.75
 EOF
 }
@@ -185,3 +188,5 @@ generateSigningKey
 generateLicenseKey
 generateConfigFile "docker"
 generateConfigFile "127.0.0.1"
+
+success "the configuration is generated successfully"

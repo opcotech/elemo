@@ -20,6 +20,8 @@ GO_EXEC := $(shell which go)
 GO_TEST_COVER := $(GO_EXEC) test -json -race -shuffle=on -cover -covermode=atomic -ldflags="-extldflags=-Wl,-ld_classic"
 GO_TEST_IGNORE := "(mode: atomic|testutil|tools|cmd|http\/api)"
 
+TMPDIR := $(shell echo "${TMPDIR:-/tmp}")
+
 define log
 	@echo "[\033[36mINFO\033[0m]\t$(1)" 1>&2;
 endef

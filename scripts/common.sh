@@ -2,6 +2,7 @@
 
 set -euo pipefail
 
+export TMPDIR="${TMPDIR:-/tmp}"
 export ROOT_DIR="$(realpath "$(dirname "${BASH_SOURCE[0]:-$0}")/..")"
 export CMD_DIR="${ROOT_DIR}/cmd/elemo"
 export CONFIG_DIR="${ROOT_DIR}/configs/development"
@@ -14,17 +15,44 @@ export WEB_DIR="${ROOT_DIR}/web"
 
 export ELEMO_CONFIG="${CONFIG_DIR}/config.local.gen.yml"
 
+normal=""
+red=""
+green=""
+cyan=""
+
+if test -t 1; then
+  ncolors=$(tput colors)
+  if test -n "$ncolors" && test $ncolors -ge 8; then
+    normal="$(tput sgr0)"
+    red="$(tput setaf 1)"
+    green="$(tput setaf 2)"
+    cyan="$(tput setaf 6)"
+  fi
+fi
+
+function log() {
+    echo -e "${cyan}INFO${normal}\t${1}" 1>&2;
+}
+
+function success() {
+    echo -e "${green}DONE${normal}\t${1}" 1>&2;
+}
+
+function error() {
+    echo -e "${red}ERROR${normal}\t${1}" 1>&2;
+    exit 1;
+}
+
 function checkInstalled() {
   local program="${1}"
 
   if ! type "${program}" 2>&1 > /dev/null; then
-    echo "Couldn't find ${program} in your PATH. Make sure it is installed."
-    exit 1
+    error "couldn't find ${program} in your PATH. Make sure it is installed."
   fi
 }
 
 function waitAndPrint() {
-  echo "waiting ${1} seconds to let the services boot"
+  log "waiting ${1} seconds to let the services boot"
   sleep "${1}"
 }
 
