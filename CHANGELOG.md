@@ -35,7 +35,8 @@ All notable changes to this project will be documented in this file.
 - Ensure commit lint ignores dependencies ([d976979](https://github.com/opcotech/elemo/commit/d976979376df523509268f4747ea6bf09df78251))
 - Suppress ld warning ([7ae6258](https://github.com/opcotech/elemo/commit/7ae625888ba6c857c133e153fec5d7b2a411755f))
 - Ensure commit lint ignores dependencies ([77ef2fd](https://github.com/opcotech/elemo/commit/77ef2fd4f3a9892c7a44b2ccfca06c0ef27ba132))
-- Switch to AGPLv3 license ([f49fdd0](https://github.com/opcotech/elemo/commit/f49fdd0428f333ffd8f2e20bc4ef18884f3698fd))
+- Switch to AGPLv3 license ([5a2e827](https://github.com/opcotech/elemo/commit/5a2e827404ca830aa485c2bb86b7f461166df609))
+- Extend CODEOWNERS list ([16ffc7b](https://github.com/opcotech/elemo/commit/16ffc7bd069998ea356aa081aaaa60629b4afe13))
 
 **Refactor**
 
