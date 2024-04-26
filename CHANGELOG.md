@@ -34,6 +34,8 @@ All notable changes to this project will be documented in this file.
 - Update dependencies and set update frequency (#42) ([c3014d0](https://github.com/opcotech/elemo/commit/c3014d0d0637098ae6d915d2de0474a2028146d8))
 - Ensure commit lint ignores dependencies ([d976979](https://github.com/opcotech/elemo/commit/d976979376df523509268f4747ea6bf09df78251))
 - Suppress ld warning ([7ae6258](https://github.com/opcotech/elemo/commit/7ae625888ba6c857c133e153fec5d7b2a411755f))
+- Ensure commit lint ignores dependencies ([77ef2fd](https://github.com/opcotech/elemo/commit/77ef2fd4f3a9892c7a44b2ccfca06c0ef27ba132))
+- Switch to AGPLv3 license ([f49fdd0](https://github.com/opcotech/elemo/commit/f49fdd0428f333ffd8f2e20bc4ef18884f3698fd))
 
 **Refactor**
 
@@ -42,6 +44,7 @@ All notable changes to this project will be documented in this file.
 - Prepare for open sourcing (#128) ([9be5a86](https://github.com/opcotech/elemo/commit/9be5a86de9cfddde1bbfa9c8d983b33370e9e857))
 - Update front-end dependencies (#143) ([8996c02](https://github.com/opcotech/elemo/commit/8996c02414a14d22b5b1c15f11ab5fd684ec7b65))
 - Separate async tasks from handlers (#153) ([9a3b5f0](https://github.com/opcotech/elemo/commit/9a3b5f0f28a13021b4d9770e6b94608ba0f6db78))
+- Simplify getting started for newcomers (#160) ([f9b716b](https://github.com/opcotech/elemo/commit/f9b716beed9370592e9d96ae54ccf20debdd57b2))
 
 **Testing**
 
@@ -55,5 +58,8 @@ All notable changes to this project will be documented in this file.
 **Ci**
 
 - Bump paambaati/codeclimate-action from 3.2.0 to 4.0.0 (#6) ([66ef67b](https://github.com/opcotech/elemo/commit/66ef67bacd57fdee8aabd0722a81f7ca1afc1e67))
+- Bump golangci/golangci-lint-action from 3 to 4 (#163) ([ac97102](https://github.com/opcotech/elemo/commit/ac97102a15dde526d51d4b12f0a01f56385ede8d))
+- Bump actions/setup-go from 4 to 5 (#162) ([b162b70](https://github.com/opcotech/elemo/commit/b162b70f67c4c66923f9ae7e88f1c57c7319dfb6))
+- Bump actions/checkout from 3 to 4 (#161) ([380108d](https://github.com/opcotech/elemo/commit/380108d8540346ca436e27fb438ee5a9622fa44b))
 
 
