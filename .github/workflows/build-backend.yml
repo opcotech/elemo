@@ -19,7 +19,7 @@ jobs:
         with:
           go-version: "^1.22"
       - name: Go CI Lint
-        uses: golangci/golangci-lint-action@v4
+        uses: golangci/golangci-lint-action@v5
         with:
           version: latest
           args: --timeout 5m
@@ -92,7 +92,7 @@ jobs:
         with:
           name: "integration-test-results"
       - name: Upload test results
-        uses: paambaati/codeclimate-action@v5.0.0
+        uses: paambaati/codeclimate-action@v6.0.0
         env:
           CC_TEST_REPORTER_ID: ${{secrets.CC_TEST_REPORTER_ID}}
         with:
