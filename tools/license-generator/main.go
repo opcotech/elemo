@@ -80,7 +80,7 @@ func parseFlags() error {
 			}
 
 			quotaKey := elemoLicense.Quota(quotaParts[0])
-			quotaValue, err := strconv.Atoi(quotaParts[1])
+			quotaValue, err := strconv.ParseUint(quotaParts[1], 10, 32)
 			if err != nil {
 				return errors.New("invalid quota value")
 			}
