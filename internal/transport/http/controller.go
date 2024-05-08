@@ -155,6 +155,19 @@ func WithTodoService(todoService service.TodoService) ControllerOption {
 	}
 }
 
+// WithNotificationService sets the notification service for the controller.
+func WithNotificationService(notificationService service.NotificationService) ControllerOption {
+	return func(c *baseController) error {
+		if notificationService == nil {
+			return ErrNoTodoService
+		}
+
+		c.notificationService = notificationService
+
+		return nil
+	}
+}
+
 // baseController defines the dependencies that are required to be injected
 // into a controller.
 type baseController struct {
@@ -171,6 +184,7 @@ type baseController struct {
 	systemService       service.SystemService
 	licenseService      service.LicenseService
 	permissionService   service.PermissionService
+	notificationService service.NotificationService
 }
 
 // newController creates a new base controller with the given dependencies

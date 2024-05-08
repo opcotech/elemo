@@ -2,6 +2,7 @@ package redis
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"time"
@@ -21,7 +22,8 @@ func NewClient(conf *config.CacheDatabaseConfig) (redis.UniversalClient, error) 
 		return nil, config.ErrNoConfig
 	}
 
-	return redis.NewClient(&redis.Options{
+	// TODO: use URL parsing + extend options
+	options := &redis.Options{
 		Addr:                  fmt.Sprintf("%s:%d", conf.Host, conf.Port),
 		Username:              conf.Username,
 		Password:              conf.Password,
@@ -36,7 +38,16 @@ func NewClient(conf *config.CacheDatabaseConfig) (redis.UniversalClient, error) 
 		MaxIdleConns:          conf.MaxIdleConnections,
 		ConnMaxIdleTime:       conf.ConnectionMaxIdleTime * time.Second,
 		ConnMaxLifetime:       conf.ConnectionMaxLifetime * time.Second,
-	}), nil
+	}
+
+	if conf.IsSecure {
+		options.TLSConfig = &tls.Config{
+			ServerName: conf.Host,
+			MinVersion: tls.VersionTLS12,
+		}
+	}
+
+	return redis.NewClient(options), nil
 }
 
 // DatabaseOption configures a Redis database.

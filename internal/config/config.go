@@ -73,7 +73,7 @@ type CacheDatabaseConfig struct {
 // ConnectionURL returns the connection URL for the cache database.
 func (c *CacheDatabaseConfig) ConnectionURL() string {
 	if c.IsSecure {
-		return fmt.Sprintf("redis://%s:%s@%s/%d?sslmode=require", c.Username, c.Password, c.Address(), c.Database)
+		return fmt.Sprintf("rediss://%s:%s@%s/%d?sslmode=require", c.Username, c.Password, c.Address(), c.Database)
 	}
 
 	return fmt.Sprintf("redis://%s:%s@%s:%d/%d?sslmode=disable", c.Username, c.Password, c.Host, c.Port, c.Database)

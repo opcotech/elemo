@@ -9,6 +9,8 @@ var (
 	ErrLicenseGet                      = errors.New("failed to get license")                          // failed to get license
 	ErrLicensePing                     = errors.New("failed to ping license")                         // failed to ping license
 	ErrNoLicenseService                = errors.New("no license service provided")                    // no license service provided
+	ErrNoNotificationRepository        = errors.New("no notification repository provided")            // no notification repository provided
+	ErrNoNotificationService           = errors.New("no notification service provided")               // no notification service provided
 	ErrNoOrganizationRepository        = errors.New("no organization repository provided")            // no organization repository provided
 	ErrNoPatchData                     = errors.New("no patch data provided")                         // no patch data provided
 	ErrNoPermission                    = errors.New("no permission")                                  // no permission
@@ -16,6 +18,11 @@ var (
 	ErrNoPermissionService             = errors.New("no permission service provided")                 // no permission service provided
 	ErrNoResources                     = errors.New("no resources provided")                          // no resources provided
 	ErrNoRoleRepository                = errors.New("no role repository provided")                    // no role repository provided
+	ErrNotificationCreate              = errors.New("failed to create notification")                  // failed to create notification
+	ErrNotificationDelete              = errors.New("failed to delete notification")                  // failed to delete notification
+	ErrNotificationGet                 = errors.New("failed to get notification")                     // failed to get notification
+	ErrNotificationGetByRecipient      = errors.New("failed to get notifications")                    // failed to get notifications
+	ErrNotificationUpdate              = errors.New("failed to update notification")                  // failed to update notification
 	ErrNoTodoRepository                = errors.New("no todo repository provided")                    // no todo repository provided
 	ErrNoUser                          = errors.New("no user provided")                               // no user provided
 	ErrNoUserRepository                = errors.New("no user repository provided")                    // no user repository provided

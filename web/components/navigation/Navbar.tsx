@@ -31,16 +31,25 @@ export function Navbar({ navigation, userNavigation }: NavbarProps) {
   const [hasTodos, setHasTodos] = useState(false);
   const [hasNotifications, setHasNotifications] = useState(false);
 
-  const [todos, notifications, fetchingTodos, fetchTodos, toggleTodoDrawer, toggleNotificationDrawer] = useStore(
-    (state) => [
-      state.todos,
-      undefined,
-      state.fetchingTodos,
-      state.fetchTodos,
-      () => state.toggleDrawer('todos'),
-      () => state.toggleDrawer('notifications')
-    ]
-  );
+  const [
+    todos,
+    notifications,
+    fetchingTodos,
+    fetchTodos,
+    fetchingNotifications,
+    fetchNotifications,
+    toggleTodoDrawer,
+    toggleNotificationDrawer
+  ] = useStore((state) => [
+    state.todos,
+    state.notifications,
+    state.fetchingTodos,
+    state.fetchTodos,
+    state.fetchingNotifications,
+    state.fetchNotifications,
+    () => state.toggleDrawer('todos'),
+    () => state.toggleDrawer('notifications')
+  ]);
 
   const { data: session } = useSession();
   const user = session?.user;
@@ -62,6 +71,14 @@ export function Navbar({ navigation, userNavigation }: NavbarProps) {
   useEffect(() => {
     if (todos) setHasTodos(todos.some((t) => !t.completed));
   }, [todos]);
+
+  useEffect(() => {
+    if (!fetchingNotifications && !notifications) fetchNotifications();
+  }, [fetchingNotifications, fetchNotifications, notifications]);
+
+  useEffect(() => {
+    if (notifications) setHasNotifications(notifications.some((n) => !n.read));
+  }, [notifications]);
 
   return (
     <Disclosure id="navbar" as="nav" className="bg-gray-50 shadow-sm z-20">

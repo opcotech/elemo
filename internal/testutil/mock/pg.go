@@ -2,12 +2,25 @@ package mock
 
 import (
 	"context"
+	"reflect"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/mock"
 )
+
+type PGRow struct {
+	mock.Mock
+}
+
+func (r *PGRow) Scan(dest ...any) error {
+	args := r.Called(dest)
+	for i, x := range args.Get(0).([]any) {
+		reflect.ValueOf(dest[i]).Elem().Set(reflect.ValueOf(x))
+	}
+	return args.Error(1)
+}
 
 type PGPool struct {
 	mock.Mock
@@ -49,7 +62,7 @@ func (p *PGPool) Stat() *pgxpool.Stat {
 }
 
 func (p *PGPool) Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error) {
-	args := p.Called(ctx, sql, arguments)
+	args := p.Called(append([]any{ctx, sql}, arguments...)...)
 	return args.Get(0).(pgconn.CommandTag), args.Error(1)
 }
 
