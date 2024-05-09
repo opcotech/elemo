@@ -21,7 +21,7 @@ var (
 	ErrNotificationCreate              = errors.New("failed to create notification")                  // failed to create notification
 	ErrNotificationDelete              = errors.New("failed to delete notification")                  // failed to delete notification
 	ErrNotificationGet                 = errors.New("failed to get notification")                     // failed to get notification
-	ErrNotificationGetByRecipient      = errors.New("failed to get notifications")                    // failed to get notifications
+	ErrNotificationGetAllByRecipient   = errors.New("failed to get notifications")                    // failed to get notifications
 	ErrNotificationUpdate              = errors.New("failed to update notification")                  // failed to update notification
 	ErrNoTodoRepository                = errors.New("no todo repository provided")                    // no todo repository provided
 	ErrNoUser                          = errors.New("no user provided")                               // no user provided

@@ -17,7 +17,7 @@ type NotificationService interface {
 	// Get returns an notification by its ID. If the notification does not
 	// exist, an error is returned.
 	Get(ctx context.Context, id, recipient model.ID) (*model.Notification, error)
-	// GetByRecipient returns all notifications for the given recipient. The
+	// GetAllByRecipient returns all notifications for the given recipient. The
 	// offset and limit parameters are  used to paginate the results. If the
 	// offset is greater than the number of notification in the system, an empty
 	// slice is returned.
@@ -68,6 +68,10 @@ func (s *notificationService) Get(ctx context.Context, id, recipient model.ID) (
 		return nil, errors.Join(ErrNotificationGet, err)
 	}
 
+	if err := recipient.Validate(); err != nil {
+		return nil, errors.Join(ErrNotificationGet, err)
+	}
+
 	notification, err := s.notificationRepo.Get(ctx, id, recipient)
 	if err != nil {
 		return nil, errors.Join(ErrNotificationGet, err)
@@ -77,20 +81,24 @@ func (s *notificationService) Get(ctx context.Context, id, recipient model.ID) (
 }
 
 func (s *notificationService) GetAllByRecipient(ctx context.Context, recipient model.ID, offset, limit int) ([]*model.Notification, error) {
-	ctx, span := s.tracer.Start(ctx, "service.notificationService/GetByRecipient")
+	ctx, span := s.tracer.Start(ctx, "service.notificationService/GetAllByRecipient")
 	defer span.End()
 
 	if userID, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID); !ok || userID != recipient {
-		return nil, errors.Join(ErrNotificationGetByRecipient, ErrNoPermission)
+		return nil, errors.Join(ErrNotificationGetAllByRecipient, ErrNoPermission)
+	}
+
+	if err := recipient.Validate(); err != nil {
+		return nil, errors.Join(ErrNotificationGetAllByRecipient, err)
 	}
 
 	if offset < 0 || limit <= 0 {
-		return nil, errors.Join(ErrNotificationGetByRecipient, ErrInvalidPaginationParams)
+		return nil, errors.Join(ErrNotificationGetAllByRecipient, ErrInvalidPaginationParams)
 	}
 
 	notifications, err := s.notificationRepo.GetAllByRecipient(ctx, recipient, offset, limit)
 	if err != nil {
-		return nil, errors.Join(ErrNotificationGetByRecipient, err)
+		return nil, errors.Join(ErrNotificationGetAllByRecipient, err)
 	}
 
 	return notifications, nil
@@ -102,6 +110,14 @@ func (s *notificationService) Update(ctx context.Context, id, recipient model.ID
 
 	if userID, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID); !ok || userID != recipient {
 		return nil, errors.Join(ErrNotificationUpdate, ErrNoPermission)
+	}
+
+	if err := id.Validate(); err != nil {
+		return nil, errors.Join(ErrNotificationUpdate, err)
+	}
+
+	if err := recipient.Validate(); err != nil {
+		return nil, errors.Join(ErrNotificationUpdate, err)
 	}
 
 	notification, err := s.notificationRepo.Update(ctx, id, recipient, read)
@@ -121,6 +137,10 @@ func (s *notificationService) Delete(ctx context.Context, id, recipient model.ID
 	}
 
 	if err := id.Validate(); err != nil {
+		return errors.Join(ErrNotificationDelete, err)
+	}
+
+	if err := recipient.Validate(); err != nil {
 		return errors.Join(ErrNotificationDelete, err)
 	}
 

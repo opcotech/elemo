@@ -5,6 +5,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/repository"
 )
@@ -22,7 +23,7 @@ func (r *NotificationRepository) Create(ctx context.Context, notification *model
 		return errors.Join(repository.ErrNotificationCreate, err)
 	}
 
-	createdAt := time.Now().UTC()
+	createdAt := time.Now().UTC().Round(time.Microsecond)
 
 	notification.ID = model.MustNewID(model.ResourceTypeNotification)
 	notification.Read = false
@@ -58,6 +59,9 @@ func (r *NotificationRepository) Get(ctx context.Context, id, recipient model.ID
 	var n model.Notification
 	row := r.db.pool.QueryRow(ctx, "SELECT * FROM notifications WHERE id = $1 AND recipient = $2", id.String(), recipient.String())
 	if err := row.Scan(&nid, &n.Title, &n.Description, &rid, &n.Read, &n.CreatedAt, &n.UpdatedAt); err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, repository.ErrNotFound
+		}
 		return nil, errors.Join(repository.ErrNotificationRead, err)
 	}
 
@@ -67,7 +71,7 @@ func (r *NotificationRepository) Get(ctx context.Context, id, recipient model.ID
 }
 
 func (r *NotificationRepository) GetAllByRecipient(ctx context.Context, recipient model.ID, offset, limit int) ([]*model.Notification, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.pg.NotificationRepository/GetByRecipient")
+	ctx, span := r.tracer.Start(ctx, "repository.pg.NotificationRepository/GetAllByRecipient")
 	defer span.End()
 
 	if err := recipient.Validate(); err != nil {
@@ -109,14 +113,21 @@ func (r *NotificationRepository) Update(ctx context.Context, id, recipient model
 		return nil, errors.Join(repository.ErrNotificationUpdate, err)
 	}
 
+	if err := recipient.Validate(); err != nil {
+		return nil, errors.Join(repository.ErrNotificationUpdate, err)
+	}
+
 	var nid, rid pgID
 	var n model.Notification
 	row := r.db.pool.QueryRow(ctx,
-		"UPDATE notifications SET read = $3, updated_at = $4 WHERE id = $1 AND recipient = $2 RETURNING *",
-		id.String(), recipient.String(), read, time.Now().UTC().Format(time.RFC3339Nano),
+		"UPDATE notifications SET read = $3, updated_at = timezone('utc', now()) WHERE id = $1 AND recipient = $2 RETURNING *",
+		id.String(), recipient.String(), read,
 	)
 	if err := row.Scan(&nid, &n.Title, &n.Description, &rid, &n.Read, &n.CreatedAt, &n.UpdatedAt); err != nil {
-		return nil, errors.Join(repository.ErrNotificationRead, err)
+		if err == pgx.ErrNoRows {
+			return nil, repository.ErrNotFound
+		}
+		return nil, errors.Join(repository.ErrNotificationUpdate, err)
 	}
 
 	n.ID = nid.ID
@@ -132,11 +143,18 @@ func (r *NotificationRepository) Delete(ctx context.Context, id, recipient model
 		return errors.Join(repository.ErrNotificationDelete, err)
 	}
 
+	if err := recipient.Validate(); err != nil {
+		return errors.Join(repository.ErrNotificationDelete, err)
+	}
+
 	_, err := r.db.pool.Exec(ctx,
 		"DELETE FROM notifications WHERE id = $1 AND recipient = $2",
 		id.String(), recipient.String(),
 	)
 	if err != nil {
+		if err == pgx.ErrNoRows {
+			return repository.ErrNotFound
+		}
 		return errors.Join(repository.ErrNotificationDelete, err)
 	}
 

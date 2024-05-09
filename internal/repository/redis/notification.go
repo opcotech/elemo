@@ -15,8 +15,8 @@ func clearNotificationsKey(ctx context.Context, r *baseRepository, id model.ID) 
 	return r.Delete(ctx, composeCacheKey(model.ResourceTypeNotification.String(), id.String()))
 }
 
-func clearNotificationGetByRecipient(ctx context.Context, r *baseRepository, recipient model.ID) error {
-	return clearNotificationsPattern(ctx, r, "GetByRecipient", recipient.String(), "*")
+func clearNotificationGetAllByRecipient(ctx context.Context, r *baseRepository, recipient model.ID) error {
+	return clearNotificationsPattern(ctx, r, "GetAllByRecipient", recipient.String(), "*")
 }
 
 // CachedNotificationRepository implements caching on the
@@ -27,7 +27,7 @@ type CachedNotificationRepository struct {
 }
 
 func (r *CachedNotificationRepository) Create(ctx context.Context, notification *model.Notification) error {
-	if err := clearNotificationGetByRecipient(ctx, r.cacheRepo, notification.Recipient); err != nil {
+	if err := clearNotificationGetAllByRecipient(ctx, r.cacheRepo, notification.Recipient); err != nil {
 		return err
 	}
 
@@ -62,7 +62,7 @@ func (r *CachedNotificationRepository) GetAllByRecipient(ctx context.Context, re
 	var notifications []*model.Notification
 	var err error
 
-	key := composeCacheKey(model.ResourceTypeNotification.String(), "GetByRecipient", recipient.String(), offset, limit)
+	key := composeCacheKey(model.ResourceTypeNotification.String(), "GetAllByRecipient", recipient.String(), offset, limit)
 	if err = r.cacheRepo.Get(ctx, key, &notifications); err != nil {
 		return nil, err
 	}
@@ -88,7 +88,7 @@ func (r *CachedNotificationRepository) Update(ctx context.Context, id, recipient
 		return nil, err
 	}
 
-	pattern := composeCacheKey(model.ResourceTypeNotification.String(), "GetByRecipient", "*")
+	pattern := composeCacheKey(model.ResourceTypeNotification.String(), "GetAllByRecipient", "*")
 	if err := r.cacheRepo.DeletePattern(ctx, pattern); err != nil {
 		return nil, err
 	}
@@ -101,7 +101,7 @@ func (r *CachedNotificationRepository) Delete(ctx context.Context, id, recipient
 		return err
 	}
 
-	pattern := composeCacheKey(model.ResourceTypeNotification.String(), "GetByRecipient", "*")
+	pattern := composeCacheKey(model.ResourceTypeNotification.String(), "GetAllByRecipient", "*")
 	if err := r.cacheRepo.DeletePattern(ctx, pattern); err != nil {
 		return err
 	}
