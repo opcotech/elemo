@@ -276,6 +276,18 @@ func TestDatabase_Close(t *testing.T) {
 	require.NoError(t, db.Close())
 }
 
+func TestDatabase_GetPool(t *testing.T) {
+	t.Parallel()
+
+	pool := new(mock.PGPool)
+
+	db := &Database{
+		pool: pool,
+	}
+
+	require.Equal(t, pool, db.GetPool())
+}
+
 func TestDatabase_Ping(t *testing.T) {
 	type args struct {
 		ctx context.Context

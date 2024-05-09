@@ -115,6 +115,11 @@ func (db *Database) Ping(ctx context.Context) error {
 	return db.pool.Ping(ctx)
 }
 
+// GetPool returns the database pool.
+func (db *Database) GetPool() Pool {
+	return db.pool
+}
+
 // Close closes the database connection.
 func (db *Database) Close() error {
 	db.pool.Close()

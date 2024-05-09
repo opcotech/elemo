@@ -127,11 +127,21 @@ type PgContainerIntegrationTestSuite struct {
 	PostgresDB *pg.Database
 }
 
+func (s *PgContainerIntegrationTestSuite) BootstrapPgDatabase(ts *ContainerIntegrationTestSuite) {
+	testRepo.BootstrapPgDatabase(context.Background(), ts.T(), s.PostgresDB)
+}
+
 func (s *PgContainerIntegrationTestSuite) SetupPg(ts *ContainerIntegrationTestSuite, name string) {
 	pgC, pgDBConf := testContainer.NewPgContainer(context.Background(), ts.T(), name)
 	ts.AddContainer(pgC)
 
 	s.PostgresDB, _ = testRepo.NewPgDatabase(ts.T(), pgDBConf)
+
+	s.BootstrapPgDatabase(ts)
+}
+
+func (s *PgContainerIntegrationTestSuite) CleanupPg(ts *ContainerIntegrationTestSuite) {
+	testRepo.CleanupPgStore(context.Background(), ts.T(), s.PostgresDB)
 }
 
 // RedisContainerIntegrationTestSuite is a test suite which sets up a Redis

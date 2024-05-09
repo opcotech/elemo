@@ -17,7 +17,8 @@ import (
 )
 
 var (
-	bootstrapScript, _ = os.ReadFile(testConfig.RootDir + "/assets/queries/bootstrap.cypher")
+	neo4jBootstrapScript, _ = os.ReadFile(testConfig.RootDir + "/assets/queries/bootstrap.cypher")
+	pgBootstrapScript, _    = os.ReadFile(testConfig.RootDir + "/assets/queries/bootstrap.sql")
 )
 
 // NewNeo4jDatabase creates a new Neo4j database connection for testing.
@@ -39,7 +40,7 @@ func NewNeo4jDatabase(t *testing.T, conf *config.GraphDatabaseConfig) (*neo4j.Da
 
 // BootstrapNeo4jDatabase creates the initial database schema for the system.
 func BootstrapNeo4jDatabase(ctx context.Context, t *testing.T, db *neo4j.Database) {
-	statements := strings.Split(string(bootstrapScript), ";")
+	statements := strings.Split(string(neo4jBootstrapScript), ";")
 
 	for _, statement := range statements {
 		statement = strings.TrimSpace(statement)
@@ -73,6 +74,33 @@ func NewPgDatabase(t *testing.T, conf *config.RelationalDatabaseConfig) (*pg.Dat
 	require.NoError(t, err)
 
 	return db, db.Close
+}
+
+// BootstrapPgDatabase creates the initial database schema for the system.
+func BootstrapPgDatabase(ctx context.Context, t *testing.T, db *pg.Database) {
+	statements := strings.Split(string(pgBootstrapScript), ";")
+
+	for _, statement := range statements {
+		statement = strings.TrimSpace(statement)
+		if statement != "" {
+			_, err := db.GetPool().Exec(ctx, statement)
+			if err != nil {
+				t.Log(statement)
+			}
+			require.NoError(t, err)
+		}
+	}
+}
+
+func CleanupPgStore(ctx context.Context, t *testing.T, db *pg.Database) {
+	_, err := db.GetPool().Exec(ctx, `
+	DO $$ DECLARE table_name text;
+	BEGIN
+		FOR table_name IN (SELECT tablename FROM pg_tables WHERE schemaname='etl') LOOP
+			EXECUTE 'TRUNCATE TABLE etl."' || table_name || '" CASCADE;';
+		END LOOP;
+	END $$;`)
+	require.NoError(t, err)
 }
 
 // NewRedisDatabase creates a new Redis database connection for testing.
