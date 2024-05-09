@@ -49,6 +49,7 @@ func (s *SystemServiceIntegrationTestSuite) SetupSuite() {
 
 func (s *SystemServiceIntegrationTestSuite) TearDownTest() {
 	defer s.CleanupNeo4j(&s.ContainerIntegrationTestSuite)
+	defer s.CleanupPg(&s.ContainerIntegrationTestSuite)
 }
 
 func (s *SystemServiceIntegrationTestSuite) TearDownSuite() {
