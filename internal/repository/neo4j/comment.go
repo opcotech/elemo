@@ -143,7 +143,7 @@ func (r *CommentRepository) Update(ctx context.Context, id model.ID, content str
 
 	cypher := `
 	MATCH (c:` + id.Label() + ` {id: $id})
-	SET c.content = $content, c.updated_at =  datetime()
+	SET c.content = $content, c.updated_at = datetime()
 	WITH c
 	MATCH (o:` + model.ResourceTypeUser.String() + `)-[:` + EdgeKindCommented.String() + `]->(c)
 	RETURN c, o.id AS o`
