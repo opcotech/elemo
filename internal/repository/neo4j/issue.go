@@ -527,7 +527,7 @@ func (r *IssueRepository) Update(ctx context.Context, id model.ID, patch map[str
 
 	cypher := `
 	MATCH (i:` + id.Label() + ` {id: $id})
-	SET i += $patch, i.updated_at = datetime($updated_at)
+	SET i += $patch, i.updated_at = datetime()
 	WITH i
 	OPTIONAL MATCH (i)-[:` + EdgeKindRelatedTo.String() + ` {kind: $parent_kind}]->(par:` + model.ResourceTypeIssue.String() + `)
 	OPTIONAL MATCH (i)-[:` + EdgeKindRelatedTo.String() + `]->(rel:` + model.ResourceTypeIssue.String() + `)
@@ -545,7 +545,6 @@ func (r *IssueRepository) Update(ctx context.Context, id model.ID, patch map[str
 		"id":          id.String(),
 		"patch":       patch,
 		"parent_kind": model.IssueRelationKindSubtaskOf.String(),
-		"updated_at":  time.Now().UTC().Format(time.RFC3339Nano),
 	}
 
 	scanParams := &issueScanParams{

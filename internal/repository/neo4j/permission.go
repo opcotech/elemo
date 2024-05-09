@@ -353,14 +353,13 @@ func (r *PermissionRepository) Update(ctx context.Context, id model.ID, kind mod
 
 	cypher := `
 	MATCH (s)-[p:` + EdgeKindHasPermission.String() + ` {id: $id}]->(t)
-	SET p.kind = $kind, p.updated_at = datetime($updated_at)
+	SET p.kind = $kind, p.updated_at = datetime()
 	RETURN s, p, t
 	`
 
 	params := map[string]any{
 		"id":         id.String(),
 		"kind":       kind.String(),
-		"updated_at": time.Now().UTC().Format(time.RFC3339Nano),
 	}
 
 	perm, err := ExecuteWriteAndReadSingle(ctx, r.db, cypher, params, r.scan("p", "s", "t"))

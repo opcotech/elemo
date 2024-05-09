@@ -143,7 +143,7 @@ func (r *CommentRepository) Update(ctx context.Context, id model.ID, content str
 
 	cypher := `
 	MATCH (c:` + id.Label() + ` {id: $id})
-	SET c.content = $content, c.updated_at = datetime($updated_at)
+	SET c.content = $content, c.updated_at =  datetime()
 	WITH c
 	MATCH (o:` + model.ResourceTypeUser.String() + `)-[:` + EdgeKindCommented.String() + `]->(c)
 	RETURN c, o.id AS o`
@@ -151,7 +151,6 @@ func (r *CommentRepository) Update(ctx context.Context, id model.ID, content str
 	params := map[string]any{
 		"id":         id.String(),
 		"content":    content,
-		"updated_at": time.Now().UTC().Format(time.RFC3339Nano),
 	}
 
 	doc, err := ExecuteWriteAndReadSingle(ctx, r.db, cypher, params, r.scan("c", "o"))

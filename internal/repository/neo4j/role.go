@@ -154,7 +154,7 @@ func (r *RoleRepository) Update(ctx context.Context, id, belongsTo model.ID, pat
 
 	cypher := `
 	MATCH (r:` + id.Label() + ` {id: $id}), (b:` + belongsTo.Label() + ` {id: $belongs_to_id})
-	SET r += $patch, r.updated_at = datetime($updated_at)
+	SET r += $patch, r.updated_at = datetime()
 	WITH r
 	OPTIONAL MATCH (r)<-[:` + EdgeKindMemberOf.String() + `]-(u:` + model.ResourceTypeUser.String() + `)
 	OPTIONAL MATCH (r)-[p:` + EdgeKindHasPermission.String() + `]->()
@@ -164,7 +164,6 @@ func (r *RoleRepository) Update(ctx context.Context, id, belongsTo model.ID, pat
 		"id":            id.String(),
 		"belongs_to_id": belongsTo.String(),
 		"patch":         patch,
-		"updated_at":    time.Now().UTC().Format(time.RFC3339Nano),
 	}
 
 	role, err := ExecuteWriteAndReadSingle(ctx, r.db, cypher, params, r.scan("r", "m", "p"))

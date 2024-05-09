@@ -163,7 +163,7 @@ func (r *TodoRepository) Update(ctx context.Context, id model.ID, patch map[stri
 
 	cypher := `
 	MATCH (t:` + id.Label() + ` {id: $id})
-	SET t += $patch, t.updated_at = datetime($updated_at)
+	SET t += $patch, t.updated_at = datetime()
 	WITH t
 	OPTIONAL MATCH (t)-[:` + EdgeKindBelongsTo.String() + `]->(o)
 	OPTIONAL MATCH (t)<-[:` + EdgeKindCreated.String() + `]-(c)
@@ -172,7 +172,6 @@ func (r *TodoRepository) Update(ctx context.Context, id model.ID, patch map[stri
 	params := map[string]any{
 		"id":         id.String(),
 		"patch":      patch,
-		"updated_at": time.Now().UTC().Format(time.RFC3339Nano),
 	}
 
 	todo, err := ExecuteWriteAndReadSingle(ctx, r.db, cypher, params, r.scan("t", "o", "c"))

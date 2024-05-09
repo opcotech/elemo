@@ -176,7 +176,7 @@ func (r *ProjectRepository) Update(ctx context.Context, id model.ID, patch map[s
 
 	cypher := `
 	MATCH (p:` + id.Label() + ` {id: $id})
-	SET p += $patch, p.updated_at = datetime($updated_at)
+	SET p += $patch, p.updated_at = datetime()
 	WITH p
 	OPTIONAL MATCH (d:` + model.ResourceTypeDocument.String() + `)-[:` + EdgeKindBelongsTo.String() + `]->(p)
 	OPTIONAL MATCH (p)-[:` + EdgeKindHasTeam.String() + `]->(t:` + model.ResourceTypeRole.String() + `)
@@ -186,7 +186,6 @@ func (r *ProjectRepository) Update(ctx context.Context, id model.ID, patch map[s
 	params := map[string]any{
 		"id":         id.String(),
 		"patch":      patch,
-		"updated_at": time.Now().UTC().Format(time.RFC3339Nano),
 	}
 
 	project, err := ExecuteWriteAndReadSingle(ctx, r.db, cypher, params, r.scan("p", "d", "t", "i"))
