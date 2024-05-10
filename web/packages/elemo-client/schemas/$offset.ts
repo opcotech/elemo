@@ -3,6 +3,6 @@
 /* tslint:disable */
 /* eslint-disable */
 export const $offset = {
-    type: 'number',
-    description: `Number of resources to skip.`,
+  type: 'number',
+  description: `Number of resources to skip.`
 } as const;
