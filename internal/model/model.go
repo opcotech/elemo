@@ -14,7 +14,7 @@ type ID struct {
 }
 
 func (id ID) Validate() error {
-	if id.Type < 1 || id.Type > 15 {
+	if id.Type < 1 || id.Type > 16 {
 		return ErrInvalidID
 	}
 	return nil

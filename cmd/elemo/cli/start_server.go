@@ -188,7 +188,38 @@ var startServerCmd = &cobra.Command{
 			}
 		}
 
-		permissionSvc, err := service.NewPermissionService(
+		var notificationRepo repository.NotificationRepository
+		{
+			repo, err := pg.NewNotificationRepository(
+				pg.WithDatabase(relDB),
+				pg.WithRepositoryLogger(logger.Named("notification_repository")),
+				pg.WithRepositoryTracer(tracer),
+			)
+			if err != nil {
+				logger.Fatal("failed to initialize notification repository", zap.Error(err))
+			}
+
+			notificationRepo, err = redis.NewCachedNotificationRepository(
+				repo,
+				redis.WithDatabase(cacheDB),
+				redis.WithRepositoryLogger(logger.Named("cached_notification_repository")),
+				redis.WithRepositoryTracer(tracer),
+			)
+			if err != nil {
+				logger.Fatal("failed to initialize cached notification repository", zap.Error(err))
+			}
+		}
+
+		notificationService, err := service.NewNotificationService(
+			notificationRepo,
+			service.WithLogger(logger.Named("notification_service")),
+			service.WithTracer(tracer),
+		)
+		if err != nil {
+			logger.Fatal("failed to initialize notification service", zap.Error(err))
+		}
+
+		permissionService, err := service.NewPermissionService(
 			permissionRepo,
 			service.WithLogger(logger.Named("permission_service")),
 			service.WithTracer(tracer),
@@ -200,7 +231,7 @@ var startServerCmd = &cobra.Command{
 		licenseService, err := service.NewLicenseService(
 			license,
 			licenseRepo,
-			service.WithPermissionService(permissionSvc),
+			service.WithPermissionService(permissionService),
 			service.WithLogger(logger.Named("license_service")),
 			service.WithTracer(tracer),
 		)
@@ -227,7 +258,7 @@ var startServerCmd = &cobra.Command{
 		organizationService, err := service.NewOrganizationService(
 			service.WithOrganizationRepository(organizationRepo),
 			service.WithUserRepository(userRepo),
-			service.WithPermissionService(permissionSvc),
+			service.WithPermissionService(permissionService),
 			service.WithLicenseService(licenseService),
 			service.WithLogger(logger.Named("organization_service")),
 			service.WithTracer(tracer),
@@ -239,7 +270,7 @@ var startServerCmd = &cobra.Command{
 		roleService, err := service.NewRoleService(
 			service.WithRoleRepository(roleRepo),
 			service.WithUserRepository(userRepo),
-			service.WithPermissionService(permissionSvc),
+			service.WithPermissionService(permissionService),
 			service.WithLicenseService(licenseService),
 			service.WithLogger(logger.Named("role_service")),
 			service.WithTracer(tracer),
@@ -250,7 +281,7 @@ var startServerCmd = &cobra.Command{
 
 		userService, err := service.NewUserService(
 			service.WithUserRepository(userRepo),
-			service.WithPermissionService(permissionSvc),
+			service.WithPermissionService(permissionService),
 			service.WithLicenseService(licenseService),
 			service.WithLogger(logger.Named("user_service")),
 			service.WithTracer(tracer),
@@ -261,7 +292,7 @@ var startServerCmd = &cobra.Command{
 
 		todoService, err := service.NewTodoService(
 			service.WithTodoRepository(todoRepo),
-			service.WithPermissionService(permissionSvc),
+			service.WithPermissionService(permissionService),
 			service.WithLicenseService(licenseService),
 			service.WithLogger(logger.Named("todo_service")),
 			service.WithTracer(tracer),
@@ -284,7 +315,8 @@ var startServerCmd = &cobra.Command{
 			elemoHttp.WithTodoService(todoService),
 			elemoHttp.WithSystemService(systemService),
 			elemoHttp.WithLicenseService(licenseService),
-			elemoHttp.WithPermissionService(permissionSvc),
+			elemoHttp.WithPermissionService(permissionService),
+			elemoHttp.WithNotificationService(notificationService),
 			elemoHttp.WithLogger(logger.Named("http_server")),
 			elemoHttp.WithTracer(tracer),
 		)

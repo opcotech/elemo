@@ -40,7 +40,7 @@ const config: PlaywrightTestConfig = {
         viewport: { width: 1920, height: 1080 },
         deviceScaleFactor: 1
       }
-    },
+    }
     /*{
       name: 'Mobile',
       ...commonProjectConfig,

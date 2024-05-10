@@ -107,6 +107,18 @@ func WithPermissionService(permissionService PermissionService) Option {
 	}
 }
 
+// WithNotificationService sets the notification service for the baseService.
+func WithNotificationService(notificationService NotificationService) Option {
+	return func(s *baseService) error {
+		if notificationService == nil {
+			return ErrNoPermissionService
+		}
+
+		s.notificationService = notificationService
+		return nil
+	}
+}
+
 // baseService defines the dependencies that are required to interact with the
 // core functionality.
 type baseService struct {
@@ -118,8 +130,9 @@ type baseService struct {
 	todoRepo         repository.TodoRepository
 	userRepo         repository.UserRepository
 
-	licenseService    LicenseService
-	permissionService PermissionService
+	licenseService      LicenseService
+	permissionService   PermissionService
+	notificationService NotificationService
 }
 
 // newService creates a new baseService and defines the default values. Those

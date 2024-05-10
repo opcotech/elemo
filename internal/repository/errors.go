@@ -51,6 +51,10 @@ var (
 	ErrNoLicenseRepository      = errors.New("no license repository provided")            // no license repository provided
 	ErrNoPool                   = errors.New("no pool")                                   // the pool is nil
 	ErrNotFound                 = errors.New("resource not found")                        // the resource was not found
+	ErrNotificationCreate       = errors.New("failed to create notification")             // the notification could not be created
+	ErrNotificationDelete       = errors.New("failed to delete notification")             // the notification could not be deleted
+	ErrNotificationRead         = errors.New("failed to read notification")               // the notification could not be retrieved
+	ErrNotificationUpdate       = errors.New("failed to update notification")             // the notification could not be updates
 	ErrOrganizationAddMember    = errors.New("failed to add member to organization")      // member cannot be added to organization
 	ErrOrganizationCreate       = errors.New("failed to create organization")             // organization cannot be created
 	ErrOrganizationDelete       = errors.New("failed to delete organization")             // organization cannot be deleted

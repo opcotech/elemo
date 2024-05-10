@@ -34,7 +34,7 @@ func TestCacheDatabaseConfig_ConnectionURL(t *testing.T) {
 					IsSecure: true,
 				},
 			},
-			want: "redis://user:secret@localhost:6379/0?sslmode=require",
+			want: "rediss://user:secret@localhost:6379/0?sslmode=require",
 		},
 		{
 			name: "unsecure connection",

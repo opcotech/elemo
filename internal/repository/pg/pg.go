@@ -8,8 +8,10 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"go.uber.org/zap"
 
 	"github.com/opcotech/elemo/internal/config"
+	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/log"
 	"github.com/opcotech/elemo/internal/pkg/tracing"
 	"github.com/opcotech/elemo/internal/pkg/validate"
@@ -113,6 +115,11 @@ func (db *Database) Ping(ctx context.Context) error {
 	return db.pool.Ping(ctx)
 }
 
+// GetPool returns the database pool.
+func (db *Database) GetPool() Pool {
+	return db.pool
+}
+
 // Close closes the database connection.
 func (db *Database) Close() error {
 	db.pool.Close()
@@ -132,9 +139,81 @@ func NewDatabase(opts ...DatabaseOption) (*Database, error) {
 		}
 	}
 
-	if err := validate.Struct(db); err != nil {
-		return nil, errors.Join(repository.ErrInvalidDatabase, err)
+	return db, nil
+}
+
+type RepositoryOption func(*baseRepository) error
+
+// WithDatabase sets the baseRepository for a baseRepository.
+func WithDatabase(db *Database) RepositoryOption {
+	return func(r *baseRepository) error {
+		if db == nil {
+			return repository.ErrNoDriver
+		}
+		r.db = db
+
+		return nil
+	}
+}
+
+// WithRepositoryLogger sets the logger for a baseRepository.
+func WithRepositoryLogger(logger log.Logger) RepositoryOption {
+	return func(r *baseRepository) error {
+		if logger == nil {
+			return log.ErrNoLogger
+		}
+		r.logger = logger
+
+		return nil
+	}
+}
+
+// WithRepositoryTracer sets the tracer for a baseRepository.
+func WithRepositoryTracer(tracer tracing.Tracer) RepositoryOption {
+	return func(r *baseRepository) error {
+		if tracer == nil {
+			return tracing.ErrNoTracer
+		}
+		r.tracer = tracer
+
+		return nil
+	}
+}
+
+// baseRepository represents a baseRepository for a Neo4j baseRepository.
+type baseRepository struct {
+	db     *Database      `validate:"required"`
+	logger log.Logger     `validate:"required"`
+	tracer tracing.Tracer `validate:"required"`
+}
+
+// newRepository creates a new baseRepository for a Postgres baseRepository.
+func newRepository(opts ...RepositoryOption) (*baseRepository, error) {
+	r := &baseRepository{
+		logger: log.DefaultLogger(),
+		tracer: tracing.NoopTracer(),
 	}
 
-	return db, nil
+	for _, opt := range opts {
+		if err := opt(r); err != nil {
+			return nil, err
+		}
+	}
+
+	if err := validate.Struct(r); err != nil {
+		return nil, errors.Join(repository.ErrInvalidRepository, err)
+	}
+
+	return r, nil
+}
+
+type pgID struct {
+	model.ID
+}
+
+func (id *pgID) Scan(value any) error {
+	var err error
+	id.ID, err = model.NewIDFromString(value.(string), model.ResourceTypeNotification.String())
+	log.DefaultLogger().Info("Parsing ID", zap.String("id", value.(string)), zap.Error(err))
+	return err
 }

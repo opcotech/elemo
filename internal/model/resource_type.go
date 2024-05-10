@@ -10,6 +10,7 @@ const (
 	ResourceTypeIssueRelation                         // issue relation resource type
 	ResourceTypeLabel                                 // Type resource type
 	ResourceTypeNamespace                             // namespace resource type
+	ResourceTypeNotification                          // notification resource type
 	ResourceTypeOrganization                          // organization resource type
 	ResourceTypePermission                            // permission resource type
 	ResourceTypeProject                               // project resource type
@@ -29,6 +30,7 @@ var (
 		"IssueRelation": ResourceTypeIssueRelation,
 		"Label":         ResourceTypeLabel,
 		"Namespace":     ResourceTypeNamespace,
+		"Notification":  ResourceTypeNotification,
 		"Organization":  ResourceTypeOrganization,
 		"Permission":    ResourceTypePermission,
 		"Project":       ResourceTypeProject,
@@ -46,6 +48,7 @@ var (
 		ResourceTypeIssueRelation: "IssueRelation",
 		ResourceTypeLabel:         "Label",
 		ResourceTypeNamespace:     "Namespace",
+		ResourceTypeNotification:  "Notification",
 		ResourceTypeOrganization:  "Organization",
 		ResourceTypePermission:    "Permission",
 		ResourceTypeProject:       "Project",
@@ -67,7 +70,7 @@ func (t ResourceType) String() string {
 
 // MarshalText implements the encoding.TextMarshaler interface.
 func (t ResourceType) MarshalText() (text []byte, err error) {
-	if t < 1 || t > 15 {
+	if t < 1 || t > 16 {
 		return nil, ErrInvalidResourceType
 	}
 	return []byte(t.String()), nil

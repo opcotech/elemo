@@ -59,6 +59,7 @@ type server struct {
 	TodoController
 	SystemController
 	PermissionController
+	NotificationController
 }
 
 func (s *server) InternalErrorHandler(err error) *authErrors.Response {
@@ -115,6 +116,10 @@ func NewServer(opts ...ControllerOption) (StrictServer, error) {
 	}
 
 	if s.PermissionController, err = NewPermissionController(opts...); err != nil {
+		return nil, err
+	}
+
+	if s.NotificationController, err = NewNotificationController(opts...); err != nil {
 		return nil, err
 	}
 

@@ -125,13 +125,30 @@ func (s *Neo4jContainerIntegrationTestSuite) CleanupNeo4j(ts *ContainerIntegrati
 // container to run tests.
 type PgContainerIntegrationTestSuite struct {
 	PostgresDB *pg.Database
+
+	NotificationRepo *pg.NotificationRepository
+}
+
+func (s *PgContainerIntegrationTestSuite) BootstrapPgDatabase(ts *ContainerIntegrationTestSuite) {
+	testRepo.BootstrapPgDatabase(context.Background(), ts.T(), s.PostgresDB)
 }
 
 func (s *PgContainerIntegrationTestSuite) SetupPg(ts *ContainerIntegrationTestSuite, name string) {
+	var err error
+
 	pgC, pgDBConf := testContainer.NewPgContainer(context.Background(), ts.T(), name)
 	ts.AddContainer(pgC)
 
 	s.PostgresDB, _ = testRepo.NewPgDatabase(ts.T(), pgDBConf)
+
+	s.NotificationRepo, err = pg.NewNotificationRepository(pg.WithDatabase(s.PostgresDB))
+	ts.Require().NoError(err)
+
+	s.BootstrapPgDatabase(ts)
+}
+
+func (s *PgContainerIntegrationTestSuite) CleanupPg(ts *ContainerIntegrationTestSuite) {
+	testRepo.CleanupPgStore(context.Background(), ts.T(), s.PostgresDB)
 }
 
 // RedisContainerIntegrationTestSuite is a test suite which sets up a Redis
