@@ -199,8 +199,8 @@ func (r *DocumentRepository) Update(ctx context.Context, id model.ID, patch map[
 	RETURN d, c.id AS c, collect(DISTINCT l.id) AS l, collect(DISTINCT comm.id) AS comm, collect(DISTINCT att.id) AS att`
 
 	params := map[string]any{
-		"id":         id.String(),
-		"patch":      patch,
+		"id":    id.String(),
+		"patch": patch,
 	}
 
 	doc, err := ExecuteWriteAndReadSingle(ctx, r.db, cypher, params, r.scan("d", "c", "l", "comm", "att"))

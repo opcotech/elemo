@@ -149,8 +149,8 @@ func (r *CommentRepository) Update(ctx context.Context, id model.ID, content str
 	RETURN c, o.id AS o`
 
 	params := map[string]any{
-		"id":         id.String(),
-		"content":    content,
+		"id":      id.String(),
+		"content": content,
 	}
 
 	doc, err := ExecuteWriteAndReadSingle(ctx, r.db, cypher, params, r.scan("c", "o"))

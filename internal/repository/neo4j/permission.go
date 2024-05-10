@@ -358,8 +358,8 @@ func (r *PermissionRepository) Update(ctx context.Context, id model.ID, kind mod
 	`
 
 	params := map[string]any{
-		"id":         id.String(),
-		"kind":       kind.String(),
+		"id":   id.String(),
+		"kind": kind.String(),
 	}
 
 	perm, err := ExecuteWriteAndReadSingle(ctx, r.db, cypher, params, r.scan("p", "s", "t"))

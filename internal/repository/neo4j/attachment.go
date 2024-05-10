@@ -149,8 +149,8 @@ func (r *AttachmentRepository) Update(ctx context.Context, id model.ID, name str
 	RETURN a, o.id AS o`
 
 	params := map[string]any{
-		"id":         id.String(),
-		"name":       name,
+		"id":   id.String(),
+		"name": name,
 	}
 
 	doc, err := ExecuteWriteAndReadSingle(ctx, r.db, cypher, params, r.scan("a", "o"))

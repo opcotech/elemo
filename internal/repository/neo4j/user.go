@@ -201,8 +201,8 @@ func (r *UserRepository) Update(ctx context.Context, id model.ID, patch map[stri
 	RETURN u, collect(DISTINCT p.id) AS p, collect(DISTINCT d.id) AS d
 	`
 	params := map[string]any{
-		"id":         id.String(),
-		"patch":      patch,
+		"id":    id.String(),
+		"patch": patch,
 	}
 
 	updated, err := ExecuteWriteAndReadSingle(ctx, r.db, cypher, params, r.scan("u", "p", "d"))

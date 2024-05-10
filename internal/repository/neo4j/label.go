@@ -119,8 +119,8 @@ func (r *LabelRepository) Update(ctx context.Context, id model.ID, patch map[str
 	RETURN l`
 
 	params := map[string]any{
-		"id":         id.String(),
-		"patch":      patch,
+		"id":    id.String(),
+		"patch": patch,
 	}
 
 	label, err := ExecuteWriteAndReadSingle(ctx, r.db, cypher, params, r.scan("l"))

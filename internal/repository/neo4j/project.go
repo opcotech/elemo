@@ -184,8 +184,8 @@ func (r *ProjectRepository) Update(ctx context.Context, id model.ID, patch map[s
 	RETURN p, d, t, i`
 
 	params := map[string]any{
-		"id":         id.String(),
-		"patch":      patch,
+		"id":    id.String(),
+		"patch": patch,
 	}
 
 	project, err := ExecuteWriteAndReadSingle(ctx, r.db, cypher, params, r.scan("p", "d", "t", "i"))

@@ -161,8 +161,8 @@ func (r *OrganizationRepository) Update(ctx context.Context, id model.ID, patch 
 	RETURN o, collect(DISTINCT u.id) AS m, collect(DISTINCT n.id) AS n, collect(DISTINCT t.id) AS t`
 
 	params := map[string]any{
-		"id":         id.String(),
-		"patch":      patch,
+		"id":    id.String(),
+		"patch": patch,
 	}
 
 	org, err := ExecuteWriteAndReadSingle(ctx, r.db, cypher, params, r.scan("o", "n", "t", "m"))
