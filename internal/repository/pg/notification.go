@@ -59,7 +59,7 @@ func (r *NotificationRepository) Get(ctx context.Context, id, recipient model.ID
 	var n model.Notification
 	row := r.db.pool.QueryRow(ctx, "SELECT * FROM notifications WHERE id = $1 AND recipient = $2", id.String(), recipient.String())
 	if err := row.Scan(&nid, &n.Title, &n.Description, &rid, &n.Read, &n.CreatedAt, &n.UpdatedAt); err != nil {
-		if err == pgx.ErrNoRows {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, repository.ErrNotFound
 		}
 		return nil, errors.Join(repository.ErrNotificationRead, err)
@@ -124,7 +124,7 @@ func (r *NotificationRepository) Update(ctx context.Context, id, recipient model
 		id.String(), recipient.String(), read,
 	)
 	if err := row.Scan(&nid, &n.Title, &n.Description, &rid, &n.Read, &n.CreatedAt, &n.UpdatedAt); err != nil {
-		if err == pgx.ErrNoRows {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, repository.ErrNotFound
 		}
 		return nil, errors.Join(repository.ErrNotificationUpdate, err)
@@ -152,7 +152,7 @@ func (r *NotificationRepository) Delete(ctx context.Context, id, recipient model
 		id.String(), recipient.String(),
 	)
 	if err != nil {
-		if err == pgx.ErrNoRows {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return repository.ErrNotFound
 		}
 		return errors.Join(repository.ErrNotificationDelete, err)

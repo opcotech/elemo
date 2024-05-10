@@ -95,7 +95,7 @@ func TestNotificationService_Create(t *testing.T) {
 		{
 			name: "create notification",
 			fields: fields{
-				baseService: func(ctx context.Context, notification *model.Notification) *baseService {
+				baseService: func(ctx context.Context, _ *model.Notification) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -121,7 +121,7 @@ func TestNotificationService_Create(t *testing.T) {
 		{
 			name: "create notification with error",
 			fields: fields{
-				baseService: func(ctx context.Context, notification *model.Notification) *baseService {
+				baseService: func(ctx context.Context, _ *model.Notification) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -148,7 +148,7 @@ func TestNotificationService_Create(t *testing.T) {
 		{
 			name: "create notification with invalid notification",
 			fields: fields{
-				baseService: func(ctx context.Context, notification *model.Notification) *baseService {
+				baseService: func(ctx context.Context, _ *model.Notification) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -210,7 +210,7 @@ func TestNotificationService_Get(t *testing.T) {
 		{
 			name: "get notification",
 			fields: fields{
-				baseService: func(ctx context.Context, id, recipient model.ID, notification *model.Notification) *baseService {
+				baseService: func(ctx context.Context, _, _ model.ID, _ *model.Notification) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -243,7 +243,7 @@ func TestNotificationService_Get(t *testing.T) {
 		{
 			name: "get notification with error",
 			fields: fields{
-				baseService: func(ctx context.Context, id, recipient model.ID, notification *model.Notification) *baseService {
+				baseService: func(ctx context.Context, _, _ model.ID, _ *model.Notification) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -255,7 +255,7 @@ func TestNotificationService_Get(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				notificationRepo: func(ctx context.Context, id, recipient model.ID, notification *model.Notification) repository.NotificationRepository {
+				notificationRepo: func(ctx context.Context, id, recipient model.ID, _ *model.Notification) repository.NotificationRepository {
 					repo := new(mock.NotificationRepository)
 					repo.On("Get", ctx, id, recipient).Return(nil, assert.AnError)
 					return repo
@@ -271,7 +271,7 @@ func TestNotificationService_Get(t *testing.T) {
 		{
 			name: "get notification for other user",
 			fields: fields{
-				baseService: func(ctx context.Context, id, recipient model.ID, notification *model.Notification) *baseService {
+				baseService: func(ctx context.Context, _, _ model.ID, _ *model.Notification) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -283,7 +283,7 @@ func TestNotificationService_Get(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				notificationRepo: func(ctx context.Context, id, recipient model.ID, notification *model.Notification) repository.NotificationRepository {
+				notificationRepo: func(_ context.Context, _, _ model.ID, _ *model.Notification) repository.NotificationRepository {
 					return new(mock.NotificationRepository)
 				},
 			},
@@ -297,7 +297,7 @@ func TestNotificationService_Get(t *testing.T) {
 		{
 			name: "get notification with invalid id",
 			fields: fields{
-				baseService: func(ctx context.Context, id, recipient model.ID, notification *model.Notification) *baseService {
+				baseService: func(ctx context.Context, _, _ model.ID, _ *model.Notification) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -309,7 +309,7 @@ func TestNotificationService_Get(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				notificationRepo: func(ctx context.Context, id, recipient model.ID, notification *model.Notification) repository.NotificationRepository {
+				notificationRepo: func(_ context.Context, _, _ model.ID, _ *model.Notification) repository.NotificationRepository {
 					return new(mock.NotificationRepository)
 				},
 			},
@@ -323,7 +323,7 @@ func TestNotificationService_Get(t *testing.T) {
 		{
 			name: "get notification with invalid recipient",
 			fields: fields{
-				baseService: func(ctx context.Context, id, recipient model.ID, notification *model.Notification) *baseService {
+				baseService: func(ctx context.Context, _, _ model.ID, _ *model.Notification) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -335,7 +335,7 @@ func TestNotificationService_Get(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				notificationRepo: func(ctx context.Context, id, recipient model.ID, notification *model.Notification) repository.NotificationRepository {
+				notificationRepo: func(_ context.Context, _, _ model.ID, _ *model.Notification) repository.NotificationRepository {
 					return new(mock.NotificationRepository)
 				},
 			},
@@ -385,7 +385,7 @@ func TestNotificationService_GetAllByRecipient(t *testing.T) {
 		{
 			name: "get notifications",
 			fields: fields{
-				baseService: func(ctx context.Context, recipient model.ID, offset, limit int, notifications []*model.Notification) *baseService {
+				baseService: func(ctx context.Context, _ model.ID, _, _ int, _ []*model.Notification) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -427,7 +427,7 @@ func TestNotificationService_GetAllByRecipient(t *testing.T) {
 		{
 			name: "get notifications with error",
 			fields: fields{
-				baseService: func(ctx context.Context, recipient model.ID, offset, limit int, notifications []*model.Notification) *baseService {
+				baseService: func(ctx context.Context, _ model.ID, _, _ int, _ []*model.Notification) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -439,7 +439,7 @@ func TestNotificationService_GetAllByRecipient(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				notificationRepo: func(ctx context.Context, recipient model.ID, offset, limit int, notifications []*model.Notification) repository.NotificationRepository {
+				notificationRepo: func(ctx context.Context, recipient model.ID, offset, limit int, _ []*model.Notification) repository.NotificationRepository {
 					repo := new(mock.NotificationRepository)
 					repo.On("GetAllByRecipient", ctx, recipient, offset, limit).Return(nil, assert.AnError)
 					return repo
@@ -456,7 +456,7 @@ func TestNotificationService_GetAllByRecipient(t *testing.T) {
 		{
 			name: "get notifications for other user",
 			fields: fields{
-				baseService: func(ctx context.Context, recipient model.ID, offset, limit int, notifications []*model.Notification) *baseService {
+				baseService: func(ctx context.Context, _ model.ID, _, _ int, _ []*model.Notification) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -468,7 +468,7 @@ func TestNotificationService_GetAllByRecipient(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				notificationRepo: func(ctx context.Context, recipient model.ID, offset, limit int, notifications []*model.Notification) repository.NotificationRepository {
+				notificationRepo: func(_ context.Context, _ model.ID, _, _ int, _ []*model.Notification) repository.NotificationRepository {
 					return new(mock.NotificationRepository)
 				},
 			},
@@ -483,7 +483,7 @@ func TestNotificationService_GetAllByRecipient(t *testing.T) {
 		{
 			name: "get notifications with invalid recipient",
 			fields: fields{
-				baseService: func(ctx context.Context, recipient model.ID, offset, limit int, notifications []*model.Notification) *baseService {
+				baseService: func(ctx context.Context, _ model.ID, _, _ int, _ []*model.Notification) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -495,7 +495,7 @@ func TestNotificationService_GetAllByRecipient(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				notificationRepo: func(ctx context.Context, recipient model.ID, offset, limit int, notifications []*model.Notification) repository.NotificationRepository {
+				notificationRepo: func(_ context.Context, _ model.ID, _, _ int, _ []*model.Notification) repository.NotificationRepository {
 					return new(mock.NotificationRepository)
 				},
 			},
@@ -510,7 +510,7 @@ func TestNotificationService_GetAllByRecipient(t *testing.T) {
 		{
 			name: "get notifications with invalid pagination params",
 			fields: fields{
-				baseService: func(ctx context.Context, recipient model.ID, offset, limit int, notifications []*model.Notification) *baseService {
+				baseService: func(ctx context.Context, _ model.ID, _, _ int, _ []*model.Notification) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -522,7 +522,7 @@ func TestNotificationService_GetAllByRecipient(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				notificationRepo: func(ctx context.Context, recipient model.ID, offset, limit int, notifications []*model.Notification) repository.NotificationRepository {
+				notificationRepo: func(_ context.Context, _ model.ID, _, _ int, _ []*model.Notification) repository.NotificationRepository {
 					return new(mock.NotificationRepository)
 				},
 			},
@@ -574,7 +574,7 @@ func TestNotificationService_Update(t *testing.T) {
 		{
 			name: "update notification",
 			fields: fields{
-				baseService: func(ctx context.Context, id, recipient model.ID, read bool, notification *model.Notification) *baseService {
+				baseService: func(ctx context.Context, _, _ model.ID, _ bool, _ *model.Notification) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -609,7 +609,7 @@ func TestNotificationService_Update(t *testing.T) {
 		{
 			name: "update notification with error",
 			fields: fields{
-				baseService: func(ctx context.Context, id, recipient model.ID, read bool, notification *model.Notification) *baseService {
+				baseService: func(ctx context.Context, _, _ model.ID, _ bool, _ *model.Notification) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -621,7 +621,7 @@ func TestNotificationService_Update(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				notificationRepo: func(ctx context.Context, id, recipient model.ID, read bool, notification *model.Notification) repository.NotificationRepository {
+				notificationRepo: func(ctx context.Context, id, recipient model.ID, read bool, _ *model.Notification) repository.NotificationRepository {
 					repo := new(mock.NotificationRepository)
 					repo.On("Update", ctx, id, recipient, read).Return(nil, assert.AnError)
 					return repo
@@ -638,7 +638,7 @@ func TestNotificationService_Update(t *testing.T) {
 		{
 			name: "update notification for other user",
 			fields: fields{
-				baseService: func(ctx context.Context, id, recipient model.ID, read bool, notification *model.Notification) *baseService {
+				baseService: func(ctx context.Context, _, _ model.ID, _ bool, _ *model.Notification) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -650,7 +650,7 @@ func TestNotificationService_Update(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				notificationRepo: func(ctx context.Context, id, recipient model.ID, read bool, notification *model.Notification) repository.NotificationRepository {
+				notificationRepo: func(_ context.Context, _, _ model.ID, _ bool, _ *model.Notification) repository.NotificationRepository {
 					return new(mock.NotificationRepository)
 				},
 			},
@@ -665,7 +665,7 @@ func TestNotificationService_Update(t *testing.T) {
 		{
 			name: "update notification with invalid id",
 			fields: fields{
-				baseService: func(ctx context.Context, id, recipient model.ID, read bool, notification *model.Notification) *baseService {
+				baseService: func(ctx context.Context, _, _ model.ID, _ bool, _ *model.Notification) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -677,7 +677,7 @@ func TestNotificationService_Update(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				notificationRepo: func(ctx context.Context, id, recipient model.ID, read bool, notification *model.Notification) repository.NotificationRepository {
+				notificationRepo: func(_ context.Context, _, _ model.ID, _ bool, _ *model.Notification) repository.NotificationRepository {
 					return new(mock.NotificationRepository)
 				},
 			},
@@ -692,7 +692,7 @@ func TestNotificationService_Update(t *testing.T) {
 		{
 			name: "update notification with invalid recipient",
 			fields: fields{
-				baseService: func(ctx context.Context, id, recipient model.ID, read bool, notification *model.Notification) *baseService {
+				baseService: func(ctx context.Context, _, _ model.ID, _ bool, _ *model.Notification) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -704,7 +704,7 @@ func TestNotificationService_Update(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				notificationRepo: func(ctx context.Context, id, recipient model.ID, read bool, notification *model.Notification) repository.NotificationRepository {
+				notificationRepo: func(_ context.Context, _, _ model.ID, _ bool, _ *model.Notification) repository.NotificationRepository {
 					return new(mock.NotificationRepository)
 				},
 			},
@@ -754,7 +754,7 @@ func TestNotificationService_Delete(t *testing.T) {
 		{
 			name: "delete notification",
 			fields: fields{
-				baseService: func(ctx context.Context, id, recipient model.ID) *baseService {
+				baseService: func(ctx context.Context, _, _ model.ID) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -781,7 +781,7 @@ func TestNotificationService_Delete(t *testing.T) {
 		{
 			name: "delete notification with error",
 			fields: fields{
-				baseService: func(ctx context.Context, id, recipient model.ID) *baseService {
+				baseService: func(ctx context.Context, _, _ model.ID) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -809,7 +809,7 @@ func TestNotificationService_Delete(t *testing.T) {
 		{
 			name: "delete notification for other user",
 			fields: fields{
-				baseService: func(ctx context.Context, id, recipient model.ID) *baseService {
+				baseService: func(ctx context.Context, _, _ model.ID) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -821,7 +821,7 @@ func TestNotificationService_Delete(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				notificationRepo: func(ctx context.Context, id, recipient model.ID) repository.NotificationRepository {
+				notificationRepo: func(_ context.Context, _, _ model.ID) repository.NotificationRepository {
 					return new(mock.NotificationRepository)
 				},
 			},
@@ -835,7 +835,7 @@ func TestNotificationService_Delete(t *testing.T) {
 		{
 			name: "delete notification with invalid id",
 			fields: fields{
-				baseService: func(ctx context.Context, id, recipient model.ID) *baseService {
+				baseService: func(ctx context.Context, _, _ model.ID) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -847,7 +847,7 @@ func TestNotificationService_Delete(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				notificationRepo: func(ctx context.Context, id, recipient model.ID) repository.NotificationRepository {
+				notificationRepo: func(_ context.Context, _, _ model.ID) repository.NotificationRepository {
 					return new(mock.NotificationRepository)
 				},
 			},
@@ -861,7 +861,7 @@ func TestNotificationService_Delete(t *testing.T) {
 		{
 			name: "delete notification with invalid recipient",
 			fields: fields{
-				baseService: func(ctx context.Context, id, recipient model.ID) *baseService {
+				baseService: func(ctx context.Context, _, _ model.ID) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -873,7 +873,7 @@ func TestNotificationService_Delete(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				notificationRepo: func(ctx context.Context, id, recipient model.ID) repository.NotificationRepository {
+				notificationRepo: func(_ context.Context, _, _ model.ID) repository.NotificationRepository {
 					return new(mock.NotificationRepository)
 				},
 			},

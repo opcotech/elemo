@@ -163,7 +163,7 @@ func TestNotificationRepository_Create(t *testing.T) {
 		{
 			name: "create new invalid notification",
 			fields: fields{
-				baseRepository: func(ctx context.Context, notification *model.Notification) *baseRepository {
+				baseRepository: func(ctx context.Context, _ *model.Notification) *baseRepository {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -276,7 +276,7 @@ func TestNotificationRepository_Get(t *testing.T) {
 		{
 			name: "get notification not found",
 			fields: fields{
-				baseRepository: func(ctx context.Context, id, recipient model.ID, notification *model.Notification) *baseRepository {
+				baseRepository: func(ctx context.Context, id, recipient model.ID, _ *model.Notification) *baseRepository {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -353,7 +353,7 @@ func TestNotificationRepository_Get(t *testing.T) {
 		{
 			name: "get notification with invalid notification",
 			fields: fields{
-				baseRepository: func(ctx context.Context, id, recipient model.ID, _ *model.Notification) *baseRepository {
+				baseRepository: func(ctx context.Context, _, _ model.ID, _ *model.Notification) *baseRepository {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -381,7 +381,7 @@ func TestNotificationRepository_Get(t *testing.T) {
 		{
 			name: "get notification with invalid recipient",
 			fields: fields{
-				baseRepository: func(ctx context.Context, id, _ model.ID, _ *model.Notification) *baseRepository {
+				baseRepository: func(ctx context.Context, _, _ model.ID, _ *model.Notification) *baseRepository {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -511,7 +511,7 @@ func TestNotificationRepository_GetAllByRecipient(t *testing.T) {
 		{
 			name: "get all notifications with error",
 			fields: fields{
-				baseRepository: func(ctx context.Context, recipient model.ID, offset, limit int, notifications []*model.Notification) *baseRepository {
+				baseRepository: func(ctx context.Context, recipient model.ID, offset, limit int, _ []*model.Notification) *baseRepository {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -545,7 +545,7 @@ func TestNotificationRepository_GetAllByRecipient(t *testing.T) {
 		{
 			name: "get all notifications with invalid ID",
 			fields: fields{
-				baseRepository: func(ctx context.Context, recipient model.ID, offset, limit int, notifications []*model.Notification) *baseRepository {
+				baseRepository: func(ctx context.Context, _ model.ID, _, _ int, _ []*model.Notification) *baseRepository {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -573,7 +573,7 @@ func TestNotificationRepository_GetAllByRecipient(t *testing.T) {
 		{
 			name: "get all notifications with scan error",
 			fields: fields{
-				baseRepository: func(ctx context.Context, recipient model.ID, offset, limit int, notifications []*model.Notification) *baseRepository {
+				baseRepository: func(ctx context.Context, recipient model.ID, offset, limit int, _ []*model.Notification) *baseRepository {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -699,7 +699,7 @@ func TestNotificationRepository_Update(t *testing.T) {
 		{
 			name: "update notification not found",
 			fields: fields{
-				baseRepository: func(ctx context.Context, id, recipient model.ID, read bool, notification *model.Notification) *baseRepository {
+				baseRepository: func(ctx context.Context, id, recipient model.ID, read bool, _ *model.Notification) *baseRepository {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -738,7 +738,7 @@ func TestNotificationRepository_Update(t *testing.T) {
 		{
 			name: "update notification with error",
 			fields: fields{
-				baseRepository: func(ctx context.Context, id, recipient model.ID, read bool, notification *model.Notification) *baseRepository {
+				baseRepository: func(ctx context.Context, id, recipient model.ID, read bool, _ *model.Notification) *baseRepository {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -777,7 +777,7 @@ func TestNotificationRepository_Update(t *testing.T) {
 		{
 			name: "update notification with invalid notification ID",
 			fields: fields{
-				baseRepository: func(ctx context.Context, id, recipient model.ID, read bool, notification *model.Notification) *baseRepository {
+				baseRepository: func(ctx context.Context, _, _ model.ID, _ bool, _ *model.Notification) *baseRepository {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -805,7 +805,7 @@ func TestNotificationRepository_Update(t *testing.T) {
 		{
 			name: "update notification with invalid recipient ID",
 			fields: fields{
-				baseRepository: func(ctx context.Context, id, recipient model.ID, read bool, notification *model.Notification) *baseRepository {
+				baseRepository: func(ctx context.Context, _, _ model.ID, _ bool, _ *model.Notification) *baseRepository {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
