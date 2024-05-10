@@ -194,16 +194,15 @@ func (r *UserRepository) Update(ctx context.Context, id model.ID, patch map[stri
 
 	cypher := `
 	MATCH (u:` + id.Label() + ` {id: $id})
-	SET u += $patch, u.updated_at = datetime($updated_at)
+	SET u += $patch, u.updated_at = datetime()
 	WITH u
 	OPTIONAL MATCH (u)-[p:` + EdgeKindHasPermission.String() + `]->()
 	OPTIONAL MATCH (u)<-[r:` + EdgeKindBelongsTo.String() + `]-(d:` + model.ResourceTypeDocument.String() + `)
 	RETURN u, collect(DISTINCT p.id) AS p, collect(DISTINCT d.id) AS d
 	`
 	params := map[string]any{
-		"id":         id.String(),
-		"patch":      patch,
-		"updated_at": time.Now().UTC().Format(time.RFC3339Nano),
+		"id":    id.String(),
+		"patch": patch,
 	}
 
 	updated, err := ExecuteWriteAndReadSingle(ctx, r.db, cypher, params, r.scan("u", "p", "d"))

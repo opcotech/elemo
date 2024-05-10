@@ -143,15 +143,14 @@ func (r *AttachmentRepository) Update(ctx context.Context, id model.ID, name str
 
 	cypher := `
 	MATCH (a:` + id.Label() + ` {id: $id})
-	SET a.name = $name, a.updated_at = datetime($updated_at)
+	SET a.name = $name, a.updated_at = datetime()
 	WITH a
 	MATCH (o:` + model.ResourceTypeUser.String() + `)-[:` + EdgeKindCreated.String() + `]->(a)
 	RETURN a, o.id AS o`
 
 	params := map[string]any{
-		"id":         id.String(),
-		"name":       name,
-		"updated_at": time.Now().UTC().Format(time.RFC3339Nano),
+		"id":   id.String(),
+		"name": name,
 	}
 
 	doc, err := ExecuteWriteAndReadSingle(ctx, r.db, cypher, params, r.scan("a", "o"))

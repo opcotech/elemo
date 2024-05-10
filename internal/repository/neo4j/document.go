@@ -190,7 +190,7 @@ func (r *DocumentRepository) Update(ctx context.Context, id model.ID, patch map[
 
 	cypher := `
 	MATCH (d:` + id.Label() + ` {id: $id})
-	SET d += $patch, d.updated_at = datetime($updated_at)
+	SET d += $patch, d.updated_at = datetime()
 	WITH d
 	MATCH (c:` + model.ResourceTypeUser.String() + `)-[` + EdgeKindCreated.String() + `]->(d)
 	OPTIONAL MATCH (d)-[:` + EdgeKindHasLabel.String() + `]->(l:` + model.ResourceTypeLabel.String() + `)
@@ -199,9 +199,8 @@ func (r *DocumentRepository) Update(ctx context.Context, id model.ID, patch map[
 	RETURN d, c.id AS c, collect(DISTINCT l.id) AS l, collect(DISTINCT comm.id) AS comm, collect(DISTINCT att.id) AS att`
 
 	params := map[string]any{
-		"id":         id.String(),
-		"patch":      patch,
-		"updated_at": time.Now().UTC().Format(time.RFC3339Nano),
+		"id":    id.String(),
+		"patch": patch,
 	}
 
 	doc, err := ExecuteWriteAndReadSingle(ctx, r.db, cypher, params, r.scan("d", "c", "l", "comm", "att"))

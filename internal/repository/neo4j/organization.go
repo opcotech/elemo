@@ -153,7 +153,7 @@ func (r *OrganizationRepository) Update(ctx context.Context, id model.ID, patch 
 	defer span.End()
 
 	cypher := `
-	MATCH (o:` + id.Label() + ` {id: $id}) SET o += $patch, o.updated_at = datetime($updated_at)
+	MATCH (o:` + id.Label() + ` {id: $id}) SET o += $patch, o.updated_at = datetime()
 	WITH o
 	OPTIONAL MATCH (u:` + model.ResourceTypeUser.String() + `)-[:` + EdgeKindMemberOf.String() + `]->(o)
 	OPTIONAL MATCH (o)-[:` + EdgeKindHasNamespace.String() + `]->(n:` + model.ResourceTypeNamespace.String() + `)
@@ -161,9 +161,8 @@ func (r *OrganizationRepository) Update(ctx context.Context, id model.ID, patch 
 	RETURN o, collect(DISTINCT u.id) AS m, collect(DISTINCT n.id) AS n, collect(DISTINCT t.id) AS t`
 
 	params := map[string]any{
-		"id":         id.String(),
-		"patch":      patch,
-		"updated_at": time.Now().UTC().Format(time.RFC3339Nano),
+		"id":    id.String(),
+		"patch": patch,
 	}
 
 	org, err := ExecuteWriteAndReadSingle(ctx, r.db, cypher, params, r.scan("o", "n", "t", "m"))
