@@ -2,6 +2,10 @@
 
 set -euo pipefail
 
+if [ "$CI" == "true" ]; then
+  set -x
+fi
+
 export TMPDIR="${TMPDIR:-/tmp}"
 export ROOT_DIR="$(realpath "$(dirname "${BASH_SOURCE[0]:-$0}")/..")"
 export CMD_DIR="${ROOT_DIR}/cmd/elemo"
