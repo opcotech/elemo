@@ -50,7 +50,7 @@ jobs:
       - name: Execute end-to-end tests
         run: make dep.frontend test.frontend.e2e
       - name: Stash test results
-        uses: actions/upload-artifact@master
+        uses: actions/upload-artifact@v4
         with:
           name: "unit-test-results"
           path: web/tests/results
