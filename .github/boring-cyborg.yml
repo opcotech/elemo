@@ -23,3 +23,13 @@ labelPRBasedOnFilePath:
     - tool/key-generator/**/*
     - tool/license-generator/**/*
     - tool/license-validator/**/*
+
+firstPRWelcomeComment: |
+  Thanks for opening this pull request! 🥳
+  Please check out our [contributing guide](https://github.com/opcotech/elemo/blob/main/CONTRIBUTING.md).
+
+firstPRMergeComment: |
+  Awesome work, congrats on your first merged pull request! 🎉 🥳
+
+firstIssueWelcomeComment: |
+  Thanks for opening your first issue here! 🎉 We will triage it soon.
