@@ -2,6 +2,10 @@
 
 set -euo pipefail
 
+if [ "$CI" == "true" ]; then
+  set -x
+fi
+
 ROOT_DIR="$(realpath "$(dirname "${BASH_SOURCE[0]:-$0}")/..")"
 source "${ROOT_DIR}/scripts/common.sh";
 
@@ -24,7 +28,7 @@ function setupDemoData() {
   echo "MATCH (n) DETACH DELETE n" | docker compose -f "${DOCKER_DEPLOY_DIR}/docker-compose.yml" exec -T neo4j cypher-shell -u "neo4j" -p "neo4jsecret"
   docker compose -f "${DOCKER_DEPLOY_DIR}/docker-compose.yml" exec -T neo4j cypher-shell -u "neo4j" -p "neo4jsecret" < "${QUERIES_DIR}/bootstrap.cypher"
   docker compose -f "${DOCKER_DEPLOY_DIR}/docker-compose.yml" exec -T neo4j cypher-shell -u "neo4j" -p "neo4jsecret" < "${QUERIES_DIR}/demo.cypher"
-  docker-compose -f "${DOCKER_DEPLOY_DIR}/docker-compose.yml" exec -T postgres psql postgres://elemo:pgsecret@postgres/elemo < "${QUERIES_DIR}/bootstrap.sql"
+  docker compose -f "${DOCKER_DEPLOY_DIR}/docker-compose.yml" exec -T postgres psql postgres://elemo:pgsecret@postgres/elemo < "${QUERIES_DIR}/bootstrap.sql"
 }
 
 function installFrontEnd() {
@@ -32,7 +36,8 @@ function installFrontEnd() {
   if ! type "pnpm" 2>&1 > /dev/null; then 
     npm install -g pnpm
   fi
-  pnpm install --prefix web --unsafe-perm
+  pnpm --prefix web install --unsafe-perm
+  pnpm --prefix web exec playwright install
 }
 
 # Run preflight

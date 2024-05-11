@@ -1,6 +1,7 @@
 [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/8801/badge)](https://www.bestpractices.dev/projects/8801)
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fopcotech%2Felemo.svg?type=shield&issueType=license)](https://app.fossa.com/projects/git%2Bgithub.com%2Fopcotech%2Felemo?ref=badge_shield&issueType=license)
 [![Backend Build](https://github.com/opcotech/elemo/actions/workflows/build-backend.yml/badge.svg)](https://github.com/opcotech/elemo/actions/workflows/build-backend.yml)
+[![Front-end Build](https://github.com/opcotech/elemo/actions/workflows/build-frontend.yml/badge.svg)](https://github.com/opcotech/elemo/actions/workflows/build-frontend.yml)
 [![Maintainability](https://api.codeclimate.com/v1/badges/9164ce433e407e447946/maintainability)](https://codeclimate.com/github/opcotech/elemo/maintainability)
 [![Test Coverage](https://api.codeclimate.com/v1/badges/9164ce433e407e447946/test_coverage)](https://codeclimate.com/github/opcotech/elemo/test_coverage)
 
@@ -34,12 +35,12 @@ size of company an easy use.
 
 ## Features
 
-_The features listed below are part of the roadmap, but not necessarily implemented yet. The implemented features are
+_The features listed below are part of the roadmap, but not necessarily implemented yet. The __fully__ implemented features are
 marked with a checkmark._
 
 - [ ] **Organizations:** Collaborate on projects across multiple organizations, whether it is your client, vendor, your
       subsidiary, or else.
-- [ ] **Roles:** Create roles for organizations, namespaces, or projects. Be flexible. You decide on what permissions
+- [x] **Roles:** Create roles for organizations, namespaces, or projects. Be flexible. You decide on what permissions
       the role has.
 - [ ] **Namespaces:** Organize your projects into namespaces, create namespace-specific roles and forget about
       team-named projects as a workaround.

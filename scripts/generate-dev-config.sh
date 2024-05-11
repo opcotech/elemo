@@ -2,6 +2,10 @@
 
 set -euo pipefail
 
+if [ "$CI" == "true" ]; then
+  set -x
+fi
+
 ROOT_DIR="$(realpath "$(dirname "${BASH_SOURCE[0]:-$0}")/..")"
 source "${ROOT_DIR}/scripts/common.sh";
 

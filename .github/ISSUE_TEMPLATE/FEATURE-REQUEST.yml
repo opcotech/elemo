@@ -9,16 +9,8 @@ body:
     id: summary
     attributes:
       label: "Summary"
-      description: Provide a brief explanation of the feature.
-      placeholder: Describe in a few lines your feature request...
-    validations:
-      required: true
-  - type: textarea
-    id: example_use_cases
-    attributes:
-      label: "Example Use-cases"
-      description: List some basic use-cases for the feature.
-      placeholder: A few specific words about your feature request.
+      description: Provide explanation of the feature.
+      placeholder: Describe your feature request as precise as possible...
     validations:
       required: true
   - type: textarea

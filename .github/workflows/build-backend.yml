@@ -36,7 +36,7 @@ jobs:
       - name: Execute unit tests
         run: make test.backend.unit
       - name: Stash test results
-        uses: actions/upload-artifact@master
+        uses: actions/upload-artifact@v4
         with:
           name: "unit-test-results"
           path: .coverage.unit.out
@@ -67,7 +67,7 @@ jobs:
       - name: Execute integration tests
         run: make test.backend.integration
       - name: Stash test results
-        uses: actions/upload-artifact@master
+        uses: actions/upload-artifact@v4
         with:
           name: "integration-test-results"
           path: .coverage.integration.out
@@ -84,17 +84,17 @@ jobs:
         with:
           go-version: "^1.22"
       - name: Unstash unit test results
-        uses: actions/download-artifact@master
+        uses: actions/download-artifact@v4
         with:
           name: "unit-test-results"
       - name: Unstash integration test results
-        uses: actions/download-artifact@master
+        uses: actions/download-artifact@main
         with:
           name: "integration-test-results"
       - name: Upload test results
         uses: paambaati/codeclimate-action@v6.0.0
         env:
-          CC_TEST_REPORTER_ID: ${{secrets.CC_TEST_REPORTER_ID}}
+          CC_TEST_REPORTER_ID: 3fa16f73e6568d7742b05ed8dbdab71641c366c85def280983aa19f9ee732cf9
         with:
           coverageCommand: make test.backend.coverage
           prefix: github.com/${{github.repository}}
