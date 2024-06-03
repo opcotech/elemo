@@ -1103,6 +1103,11 @@ func (r *RedisClient) BitField(ctx context.Context, key string, args ...any) *re
 	return call.Get(0).(*redis.IntSliceCmd)
 }
 
+func (r *RedisClient) BitFieldRO(ctx context.Context, key string, values ...any) *redis.IntSliceCmd {
+	args := r.Called(ctx, key, values)
+	return args.Get(0).(*redis.IntSliceCmd)
+}
+
 func (r *RedisClient) Scan(ctx context.Context, cursor uint64, match string, count int64) *redis.ScanCmd {
 	args := r.Called(ctx, cursor, match, count)
 	return args.Get(0).(*redis.ScanCmd)
