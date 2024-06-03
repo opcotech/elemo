@@ -81,8 +81,8 @@ export function FormSelect(props: FormSelectProps) {
                     disabled
                       ? 'text-gray-400'
                       : active
-                      ? 'bg-gray-50 text-blue-500'
-                      : 'text-gray-700 hover:text-blue-500 hover:bg-gray-50'
+                        ? 'bg-gray-50 text-blue-500'
+                        : 'text-gray-700 hover:text-blue-500 hover:bg-gray-50'
                   )
                 }
               >
