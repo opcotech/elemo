@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-if [ "$CI" == "true" ]; then
+if [ "${CI:-}" == "true" ]; then
   set -x
 fi
 

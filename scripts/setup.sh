@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-if [ "$CI" == "true" ]; then
+if [ "${CI:-}" == "true" ]; then
   set -x
 fi
 
@@ -33,7 +33,7 @@ function setupDemoData() {
 
 function installFrontEnd() {
   log "installing front-end requirements"
-  if ! type "pnpm" 2>&1 > /dev/null; then 
+  if ! type "pnpm" 2>&1 > /dev/null; then
     npm install -g pnpm
   fi
   pnpm --prefix web install --unsafe-perm
