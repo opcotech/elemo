@@ -239,8 +239,8 @@ github.com/nxadm/tail v1.4.4/go.mod h1:kenIhsEOeOJmVchQTgglprH7qJGnHDVpk1VPCcaMI
 github.com/nxadm/tail v1.4.8/go.mod h1:+ncqLTQzXmGhMZNUePPaPqPvBxHAIsmXswZKocGu+AU=
 github.com/nxadm/tail v1.4.11 h1:8feyoE3OzPrcshW5/MJ4sGESc5cqmGkGCWlco4l0bqY=
 github.com/nxadm/tail v1.4.11/go.mod h1:OTaG3NK980DZzxbRq6lEuzgU+mug70nY11sMd4JXXHc=
-github.com/oapi-codegen/nethttp-middleware v1.0.1 h1:ZWvwfnMU0eloHX1VEJmQscQm3741t0vCm0eSIie1NIo=
-github.com/oapi-codegen/nethttp-middleware v1.0.1/go.mod h1:P7xtAvpoqNB+5obR9qRCeefH7YlXWSK3KgPs/9WB8tE=
+github.com/oapi-codegen/nethttp-middleware v1.0.2 h1:A5tfAcKJhWIbIPnlQH+l/DtfVE1i5TFgPlQAiW+l1vQ=
+github.com/oapi-codegen/nethttp-middleware v1.0.2/go.mod h1:DfDalonSO+eRQ3RTb8kYoWZByCCPFRxm9WKq1UbY0E4=
 github.com/oapi-codegen/runtime v1.1.1 h1:EXLHh0DXIJnWhdRPN2w4MXAzFyE4CskzhNLUmtpMYro=
 github.com/oapi-codegen/runtime v1.1.1/go.mod h1:SK9X900oXmPWilYR5/WKPzt3Kqxn/uS/+lbpREv+eCg=
 github.com/onsi/ginkgo v1.6.0/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=
