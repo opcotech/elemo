@@ -24,7 +24,7 @@ require (
 	github.com/redis/go-redis/v9 v9.5.2
 	github.com/rs/xid v1.5.0
 	github.com/slok/go-http-metrics v0.12.0
-	github.com/spf13/cobra v1.8.0
+	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.19.0
 	github.com/stretchr/testify v1.9.0
 	github.com/testcontainers/testcontainers-go v0.31.0
