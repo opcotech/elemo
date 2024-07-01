@@ -7,7 +7,7 @@
     "build": "tsc --project ."
   },
   "dependencies": {
-    "@types/node": "20.14.0",
+    "@types/node": "20.14.9",
     "form-data": "^4.0.0",
     "typescript": "5.4.5"
   }
