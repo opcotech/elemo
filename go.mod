@@ -17,7 +17,7 @@ require (
 	github.com/hibiken/asynq v0.24.1
 	github.com/hyperboloide/lk v0.0.0-20230325114855-ce3fecd34798
 	github.com/jackc/pgx/v5 v5.6.0
-	github.com/neo4j/neo4j-go-driver/v5 v5.20.0
+	github.com/neo4j/neo4j-go-driver/v5 v5.23.0
 	github.com/oapi-codegen/nethttp-middleware v1.0.1
 	github.com/oapi-codegen/runtime v1.1.1
 	github.com/prometheus/client_golang v1.19.1
