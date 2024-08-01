@@ -21,7 +21,7 @@ require (
 	github.com/oapi-codegen/nethttp-middleware v1.0.1
 	github.com/oapi-codegen/runtime v1.1.1
 	github.com/prometheus/client_golang v1.19.1
-	github.com/redis/go-redis/v9 v9.5.2
+	github.com/redis/go-redis/v9 v9.6.1
 	github.com/rs/xid v1.5.0
 	github.com/slok/go-http-metrics v0.12.0
 	github.com/spf13/cobra v1.8.0
