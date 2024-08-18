@@ -378,6 +378,37 @@ func TestTodoService_Create(t *testing.T) {
 			},
 			wantErr: ErrTodoCreate,
 		},
+		{
+			name: "create todo for self",
+			args: args{
+				ctx:  context.Background(),
+				todo: testModel.NewTodo(userID, userID),
+			},
+			fields: fields{
+				baseService: func(ctx context.Context, todo *model.Todo) *baseService {
+					span := new(mock.Span)
+					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					tracer := new(mock.Tracer)
+					tracer.On("Start", ctx, "service.todoService/Create", []trace.SpanStartOption(nil)).Return(ctx, span)
+
+					licenseSvc := new(mock.LicenseService)
+					licenseSvc.On("Expired", ctx).Return(false, nil)
+
+					todoRepo := new(mock.TodoRepository)
+					todoRepo.On("Create", ctx, todo).Return(nil)
+
+					return &baseService{
+						logger:            new(mock.Logger),
+						tracer:            tracer,
+						todoRepo:          todoRepo,
+						permissionService: new(mock.PermissionService),
+						licenseService:    licenseSvc,
+					}
+				},
+			},
+			wantErr: nil,
+		},
 	}
 	for _, tt := range tests {
 		tt := tt

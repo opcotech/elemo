@@ -39,7 +39,7 @@ MERGE (o:Organization {id: '9bsv0s4vl6gg02sv7jrg'})
     created_at: datetime()
   }
 CREATE
-  (u)-[:MEMBER_OF {id: '9bsv0s3n4ccg0329pecg', created_at: datetime()}]->(o),
+  (u)-[:MEMBER_OF {id: '9m4e2mr0ui3e8a215n4g', created_at: datetime()}]->(o),
   (u)-[:HAS_PERMISSION {id: '9bsv0s613svg02gik0r0', created_at: datetime(), kind: '*'}]->(o);
 
 // Add random user with read permission
