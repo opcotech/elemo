@@ -1,0 +1,78 @@
+import { Meta, ColorPalette, ColorItem } from '@storybook/blocks';
+
+<Meta title='Styleguide/Colors' />
+
+export const Palette = ({ theme }) => (
+  <div className={theme}>
+    <ColorPalette>
+      <ColorItem
+        title='Base colors'
+        subtitle='background and foreground colors'
+        colors={{
+          background: 'hsl(var(--background))',
+          foreground: 'hsl(var(--foreground))',
+        }}
+      />
+      <ColorItem
+        title='Primary'
+        subtitle='used for important interactions'
+        colors={{
+          'light-background': 'hsl(var(--primary-light))',
+          background: 'hsl(var(--primary))',
+          'dark-background': 'hsl(var(--primary-dark))',
+          foreground: 'hsl(var(--primary-foreground))',
+        }}
+      />
+      <ColorItem
+        title='Secondary'
+        subtitle='used for less important interactions'
+        colors={{
+          'light-background': 'hsl(var(--secondary-light))',
+          background: 'hsl(var(--secondary))',
+          'dark-background': 'hsl(var(--secondary-dark))',
+          foreground: 'hsl(var(--secondary-foreground))',
+        }}
+      />
+      <ColorItem
+        title='Destructive'
+        subtitle='used for destructive interactions'
+        colors={{
+          'light-background': 'hsl(var(--destructive-light))',
+          background: 'hsl(var(--destructive))',
+          'dark-background': 'hsl(var(--destructive-dark))',
+          foreground: 'hsl(var(--destructive-foreground))',
+        }}
+      />
+      <ColorItem
+        title='Accent'
+        subtitle='used for highlighting'
+        colors={{
+          'light-background': 'hsl(var(--accent-light))',
+          background: 'hsl(var(--accent))',
+          'dark-background': 'hsl(var(--accent-dark))',
+          foreground: 'hsl(var(--accent-foreground))',
+        }}
+      />
+      <ColorItem
+        title='Muted'
+        subtitle='used to indicate unimportant elements'
+        colors={{
+          'light-background': 'hsl(var(--muted-light))',
+          background: 'hsl(var(--muted))',
+          'dark-background': 'hsl(var(--muted-dark))',
+          foreground: 'hsl(var(--muted-foreground))',
+        }}
+      />
+    </ColorPalette>
+  </div>
+);
+
+# Colors
+
+### Light theme
+
+<Palette theme='light' />
+
+### Dark theme
+
+<Palette theme='dark' />

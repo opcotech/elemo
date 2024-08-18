@@ -1,0 +1,23 @@
+import { Meta } from '@storybook/addon-docs';
+
+<Meta title='Styleguide/Shadows' />
+
+export function Box({ shadow }) {
+  return (
+    <div class='flex shrink-0 flex-col items-center'>
+      <p class='font-mono mb-3 text-center text-sm font-medium text-foreground'>{shadow}</p>
+      <div class={`h-24 w-24 rounded-lg bg-background ${shadow}`} />
+    </div>
+  );
+}
+
+# Shadows
+
+<section class='flex shrink-0 items-center justify-around gap-12 p-8'>
+  <Box shadow='shadow-sm' />
+  <Box shadow='shadow' />
+  <Box shadow='shadow-md' />
+  <Box shadow='shadow-lg' />
+  <Box shadow='shadow-xl' />
+  <Box shadow='shadow-2xl' />
+</section>

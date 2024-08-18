@@ -1,45 +1,53 @@
 import type { StorybookConfig } from '@storybook/nextjs';
-import * as path from 'path';
 
 const config: StorybookConfig = {
-  stories: ['../components/**/*.stories.@(js|jsx|ts|tsx)'],
-  staticDirs: ['../public'],
+  staticDirs: ['./theme'],
+  stories: ['../stories/**/*.mdx', '../stories/**/*.stories.@(js|jsx|mjs|ts|tsx)'],
+  core: {
+    disableTelemetry: true,
+  },
   addons: [
+    '@chromatic-com/storybook',
     '@storybook/addon-a11y',
     '@storybook/addon-essentials',
     '@storybook/addon-interactions',
     '@storybook/addon-links',
-    '@storybook/client-api',
-    '@storybook/addon-styling'
+    '@storybook/addon-onboarding',
+    '@storybook/addon-themes',
+    {
+      name: '@storybook/addon-styling-webpack',
+      options: {
+        rules: [
+          // Replaces existing CSS rules to support PostCSS
+          {
+            test: /\.css$/,
+            use: [
+              'style-loader',
+              {
+                loader: 'css-loader',
+                options: { importLoaders: 1 },
+              },
+              {
+                // Gets options from `postcss.config.js` in your project root
+                loader: 'postcss-loader',
+                options: { implementation: require.resolve('postcss') },
+              },
+            ],
+          },
+        ],
+      },
+    },
   ],
   framework: {
     name: '@storybook/nextjs',
-    options: {}
+    options: {},
+  },
+  typescript: {
+    reactDocgen: 'react-docgen-typescript',
+    check: false,
   },
   docs: {
-    autodocs: 'tag'
+    autodocs: 'tag',
   },
-  core: {
-    disableTelemetry: true
-  },
-  webpackFinal: async (config) => {
-    if (config.resolve) {
-      config.resolve = {
-        ...config.resolve,
-        alias: {
-          ...(config.resolve.alias ?? {}),
-          '@/components': path.resolve(__dirname, '../components'),
-          '@/lib/auth': path.resolve(__dirname, '../lib/auth.ts'),
-          '@/lib/api': path.resolve(__dirname, '../lib/api/index.ts'),
-          '@/lib/helpers': path.resolve(__dirname, '../lib/helpers/index.ts'),
-          '@/lib/hooks/useTimeout': path.resolve(__dirname, '../lib/hooks/useTimeout.ts'),
-          '@/store': path.resolve(__dirname, '../store')
-        }
-      };
-    }
-
-    return config;
-  }
 };
-
 export default config;
