@@ -1,0 +1,89 @@
+import { Meta, Typeset } from '@storybook/blocks';
+
+<Meta title='Styleguide/Typography' />
+
+export const typography = {
+  type: {
+    heading: 'var(--font-heading)',
+    body: 'var(--font-body)',
+  },
+  weight: {
+    light: '300',
+    regular: '400',
+    medium: '500',
+    bold: '700',
+  },
+  size: {
+    'text-xs': 12,
+    'text-sm': 14,
+    'text-base': 16,
+    'text-lg': 18,
+    'text-xl': 20,
+    'text-2xl': 24,
+    'text-3xl': 30,
+    'text-4xl': 36,
+    'text-5xl': 48,
+    'text-6xl': 60,
+    'text-7xl': 72,
+    'text-8xl': 96,
+    'text-9xl': 128,
+  },
+};
+
+export const SampleText = 'Listening to music sometimes, a window opens and happy you are.';
+
+# Typography
+
+### Heading
+
+**Font:** Karla
+
+**Weights:** 400(light), 500(regular), 600(semibold), 700(bold)
+
+<Typeset
+  sampleText={SampleText}
+  fontFamily={typography.type.heading}
+  fontWeight={typography.weight.regular}
+  fontSizes={[
+    Number(typography.size['text-xs']),
+    Number(typography.size['text-sm']),
+    Number(typography.size['text-base']),
+    Number(typography.size['text-lg']),
+    Number(typography.size['text-xl']),
+    Number(typography.size['text-2xl']),
+    Number(typography.size['text-3xl']),
+    Number(typography.size['text-4xl']),
+    Number(typography.size['text-5xl']),
+    Number(typography.size['text-6xl']),
+    Number(typography.size['text-7xl']),
+    Number(typography.size['text-8xl']),
+    Number(typography.size['text-9xl']),
+  ]}
+/>
+
+### Body
+
+**Font:** Lexend
+
+**Weights:** 300(light), 400(regular), 500(medium), 700(bold)
+
+<Typeset
+  sampleText={SampleText}
+  fontFamily={typography.type.body}
+  fontWeight={typography.weight.light}
+  fontSizes={[
+    Number(typography.size['text-xs']),
+    Number(typography.size['text-sm']),
+    Number(typography.size['text-base']),
+    Number(typography.size['text-lg']),
+    Number(typography.size['text-xl']),
+    Number(typography.size['text-2xl']),
+    Number(typography.size['text-3xl']),
+    Number(typography.size['text-4xl']),
+    Number(typography.size['text-5xl']),
+    Number(typography.size['text-6xl']),
+    Number(typography.size['text-7xl']),
+    Number(typography.size['text-8xl']),
+    Number(typography.size['text-9xl']),
+  ]}
+/>

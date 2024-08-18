@@ -1,0 +1,27 @@
+import { Meta, IconGallery, IconItem } from '@storybook/addon-docs/blocks';
+import { IconX, IconLoader2, IconMoon, IconSun, IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
+
+<Meta title='Styleguide/Iconography' />
+
+export const icons = [
+  IconChevronLeft,
+  IconChevronRight,
+  IconLoader2,
+  IconMoon,
+  IconSearch,
+  IconSun,
+  IconUserCircle,
+  IconX,
+];
+
+# Iconography
+
+<IconGallery>
+  {icons
+    .sort((a, b) => (a.displayName > b.displayName ? 1 : -1))
+    .map((Icon) => (
+      <IconItem key={Icon.displayName} name={Icon.displayName}>
+        <Icon />
+      </IconItem>
+    ))}
+</IconGallery>
