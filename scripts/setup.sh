@@ -18,7 +18,7 @@ function setupOAuthClient() {
   backupCopyFile "${WEB_DIR}/.env" "${WEB_DIR}/.env.example"
   backupCopyFile "${WEB_DIR}/.env.test.local" "${WEB_DIR}/.env.test.example"
 
-  SECRETS=$(echo "${ADD_CLIENT_OUT}" | jq -r '"ELEMO_CLIENT_ID=" + ."client-id", "ELEMO_CLIENT_SECRET=" + ."client-secret"')
+  SECRETS=$(echo "${ADD_CLIENT_OUT}" | jq -r '"VITE_AUTH_CLIENT_ID=" + ."client-id", "VITE_AUTH_CLIENT_SECRET=" + ."client-secret"')
   echo "$SECRETS" >> "${WEB_DIR}/.env"
   echo "$SECRETS" >> "${WEB_DIR}/.env.test.local"
 }
@@ -37,6 +37,7 @@ function installFrontEnd() {
     npm install -g pnpm
   fi
   pnpm --prefix web install --unsafe-perm
+  pnpm --prefix web generate
   pnpm --prefix web exec playwright install
 }
 

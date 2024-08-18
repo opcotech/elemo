@@ -224,18 +224,22 @@ func initSMTPClient(smtpConf *config.SMTPConfig) (*elemoSMTP.Client, error) {
 		Timeout: smtpConf.ConnectionTimeout * time.Second,
 	}
 
-	address := fmt.Sprintf("%s:%d", smtpConf.Host, smtpConf.Port)
+	address := net.JoinHostPort(smtpConf.Host, fmt.Sprintf("%d", smtpConf.Port))
 	tlsConf := &tls.Config{
 		InsecureSkipVerify: smtpConf.SkipTLSVerify, //nolint:gosec
 		ServerName:         smtpConf.Host,
 	}
 
 	if smtpConf.SecurityProtocol == "TLS" {
-		if conn, err = tls.DialWithDialer(&dialer, "tcp", address, tlsConf); err != nil {
+		tlsDialer := tls.Dialer{
+			NetDialer: &dialer,
+			Config:    tlsConf,
+		}
+		if conn, err = tlsDialer.DialContext(context.Background(), "tcp", address); err != nil {
 			return nil, err
 		}
 	} else {
-		if conn, err = dialer.Dial("tcp", address); err != nil {
+		if conn, err = dialer.DialContext(context.Background(), "tcp", address); err != nil {
 			return nil, err
 		}
 	}
