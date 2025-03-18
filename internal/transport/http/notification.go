@@ -65,8 +65,8 @@ func (c *notificationController) V1NotificationsGet(ctx context.Context, request
 
 	notifications, err := c.notificationService.GetAllByRecipient(ctx,
 		recipientID,
-		pkg.GetDefaultPtr(request.Params.Offset, DefaultOffset),
-		pkg.GetDefaultPtr(request.Params.Limit, DefaultLimit),
+		pkg.RenderDefaultPtr(request.Params.Offset, DefaultOffset),
+		pkg.RenderDefaultPtr(request.Params.Limit, DefaultLimit),
 	)
 	if err != nil {
 		if errors.Is(err, service.ErrNoPermission) {

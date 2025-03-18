@@ -73,24 +73,24 @@ func (s *DocumentRepositoryIntegrationTestSuite) TestGet() {
 	s.Assert().Nil(s.document.UpdatedAt)
 }
 
-func (s *DocumentRepositoryIntegrationTestSuite) TestGetByCreator() {
+func (s *DocumentRepositoryIntegrationTestSuite) TestFindByCreator() {
 	s.Require().NoError(s.DocumentRepo.Create(context.Background(), s.testUser.ID, s.document))
 	s.Require().NoError(s.DocumentRepo.Create(context.Background(), s.testUser.ID, testModel.NewDocument(s.testUser.ID)))
 	s.Require().NoError(s.DocumentRepo.Create(context.Background(), s.testUser.ID, testModel.NewDocument(s.testUser.ID)))
 
-	documents, err := s.DocumentRepo.GetByCreator(context.Background(), s.testUser.ID, 0, 10)
+	documents, err := s.DocumentRepo.FindByCreator(context.Background(), s.testUser.ID, 0, 10)
 	s.Require().NoError(err)
 	s.Assert().Len(documents, 3)
 
-	documents, err = s.DocumentRepo.GetByCreator(context.Background(), s.testUser.ID, 1, 2)
+	documents, err = s.DocumentRepo.FindByCreator(context.Background(), s.testUser.ID, 1, 2)
 	s.Require().NoError(err)
 	s.Assert().Len(documents, 2)
 
-	documents, err = s.DocumentRepo.GetByCreator(context.Background(), s.testUser.ID, 2, 2)
+	documents, err = s.DocumentRepo.FindByCreator(context.Background(), s.testUser.ID, 2, 2)
 	s.Require().NoError(err)
 	s.Assert().Len(documents, 1)
 
-	documents, err = s.DocumentRepo.GetByCreator(context.Background(), s.testUser.ID, 3, 2)
+	documents, err = s.DocumentRepo.FindByCreator(context.Background(), s.testUser.ID, 3, 2)
 	s.Require().NoError(err)
 	s.Assert().Len(documents, 0)
 }

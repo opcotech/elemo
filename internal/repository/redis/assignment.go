@@ -95,7 +95,7 @@ func (r *CachedAssignmentRepository) Get(ctx context.Context, id model.ID) (*mod
 	return assignment, nil
 }
 
-func (r *CachedAssignmentRepository) GetByUser(ctx context.Context, userID model.ID, offset, limit int) ([]*model.Assignment, error) {
+func (r *CachedAssignmentRepository) FindByUser(ctx context.Context, userID model.ID, offset, limit int) ([]*model.Assignment, error) {
 	var assignments []*model.Assignment
 	var err error
 
@@ -108,7 +108,7 @@ func (r *CachedAssignmentRepository) GetByUser(ctx context.Context, userID model
 		return assignments, nil
 	}
 
-	if assignments, err = r.assignmentRepo.GetByUser(ctx, userID, offset, limit); err != nil {
+	if assignments, err = r.assignmentRepo.FindByUser(ctx, userID, offset, limit); err != nil {
 		return nil, err
 	}
 
@@ -119,7 +119,7 @@ func (r *CachedAssignmentRepository) GetByUser(ctx context.Context, userID model
 	return assignments, nil
 }
 
-func (r *CachedAssignmentRepository) GetByResource(ctx context.Context, resourceID model.ID, offset, limit int) ([]*model.Assignment, error) {
+func (r *CachedAssignmentRepository) FindByResource(ctx context.Context, resourceID model.ID, offset, limit int) ([]*model.Assignment, error) {
 	var assignments []*model.Assignment
 	var err error
 
@@ -132,7 +132,7 @@ func (r *CachedAssignmentRepository) GetByResource(ctx context.Context, resource
 		return assignments, nil
 	}
 
-	if assignments, err = r.assignmentRepo.GetByResource(ctx, resourceID, offset, limit); err != nil {
+	if assignments, err = r.assignmentRepo.FindByResource(ctx, resourceID, offset, limit); err != nil {
 		return nil, err
 	}
 

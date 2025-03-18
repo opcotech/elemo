@@ -2,7 +2,7 @@ package pkg
 
 // GetDefault returns the value if it is not the zero value of the type, otherwise
 // it returns the fallback.
-func GetDefault[T comparable](value, fallback T) T {
+func RenderDefault[T comparable](value, fallback T) T {
 	var zero T
 	if value == zero {
 		return fallback
@@ -13,7 +13,7 @@ func GetDefault[T comparable](value, fallback T) T {
 
 // GetDefaultPtr returns the value if it is not nil, otherwise it returns the
 // fallback.
-func GetDefaultPtr[T any](value *T, fallback T) T {
+func RenderDefaultPtr[T any](value *T, fallback T) T {
 	if value == nil {
 		return fallback
 	}

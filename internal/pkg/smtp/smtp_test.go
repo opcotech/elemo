@@ -21,7 +21,7 @@ type testTemplateData struct {
 	Field string
 }
 
-func (t *testTemplateData) Get() any {
+func (t *testTemplateData) RenderData() any {
 	return t
 }
 

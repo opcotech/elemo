@@ -243,7 +243,7 @@ func (r *IssueRepository) Get(ctx context.Context, id model.ID) (*model.Issue, e
 	return issue, nil
 }
 
-func (r *IssueRepository) GetAllForProject(ctx context.Context, projectID model.ID, offset, limit int) ([]*model.Issue, error) {
+func (r *IssueRepository) FindAllForProject(ctx context.Context, projectID model.ID, offset, limit int) ([]*model.Issue, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.IssueRepository/GetAllForProject")
 	defer span.End()
 
@@ -294,7 +294,7 @@ func (r *IssueRepository) GetAllForProject(ctx context.Context, projectID model.
 	return issues, nil
 }
 
-func (r *IssueRepository) GetAllForIssue(ctx context.Context, issueID model.ID, offset, limit int) ([]*model.Issue, error) {
+func (r *IssueRepository) FindAllForIssue(ctx context.Context, issueID model.ID, offset, limit int) ([]*model.Issue, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.IssueRepository/GetAllForProject")
 	defer span.End()
 

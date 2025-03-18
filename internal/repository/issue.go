@@ -10,8 +10,8 @@ import (
 type IssueRepository interface {
 	Create(ctx context.Context, project model.ID, issue *model.Issue) error
 	Get(ctx context.Context, id model.ID) (*model.Issue, error)
-	GetAllForProject(ctx context.Context, projectID model.ID, offset, limit int) ([]*model.Issue, error)
-	GetAllForIssue(ctx context.Context, issueID model.ID, offset, limit int) ([]*model.Issue, error)
+	FindAllForProject(ctx context.Context, projectID model.ID, offset, limit int) ([]*model.Issue, error)
+	FindAllForIssue(ctx context.Context, issueID model.ID, offset, limit int) ([]*model.Issue, error)
 	AddWatcher(ctx context.Context, issue model.ID, user model.ID) error
 	GetWatchers(ctx context.Context, issue model.ID) ([]*model.User, error)
 	RemoveWatcher(ctx context.Context, issue model.ID, user model.ID) error

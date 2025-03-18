@@ -25,7 +25,7 @@ func (a *AssignmentRepository) Get(ctx context.Context, id model.ID) (*model.Ass
 	return args.Get(0).(*model.Assignment), args.Error(1)
 }
 
-func (a *AssignmentRepository) GetByUser(ctx context.Context, userID model.ID, offset, limit int) ([]*model.Assignment, error) {
+func (a *AssignmentRepository) FindByUser(ctx context.Context, userID model.ID, offset, limit int) ([]*model.Assignment, error) {
 	args := a.Called(ctx, userID, offset, limit)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
@@ -33,7 +33,7 @@ func (a *AssignmentRepository) GetByUser(ctx context.Context, userID model.ID, o
 	return args.Get(0).([]*model.Assignment), args.Error(1)
 }
 
-func (a *AssignmentRepository) GetByResource(ctx context.Context, resourceID model.ID, offset, limit int) ([]*model.Assignment, error) {
+func (a *AssignmentRepository) FindByResource(ctx context.Context, resourceID model.ID, offset, limit int) ([]*model.Assignment, error) {
 	args := a.Called(ctx, resourceID, offset, limit)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)

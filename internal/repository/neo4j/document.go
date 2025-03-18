@@ -128,8 +128,8 @@ func (r *DocumentRepository) Get(ctx context.Context, id model.ID) (*model.Docum
 	return doc, nil
 }
 
-func (r *DocumentRepository) GetByCreator(ctx context.Context, createdBy model.ID, offset, limit int) ([]*model.Document, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.DocumentRepository/GetByCreator")
+func (r *DocumentRepository) FindByCreator(ctx context.Context, createdBy model.ID, offset, limit int) ([]*model.Document, error) {
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.DocumentRepository/FindByCreator")
 	defer span.End()
 
 	cypher := `

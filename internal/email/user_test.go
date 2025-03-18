@@ -17,5 +17,5 @@ func TestUserWelcomeTemplateData_Get(t *testing.T) {
 		SupportEmail: "info@example.com",
 	}
 
-	assert.Equal(t, data, data.Get())
+	assert.Equal(t, data, data.RenderData())
 }
