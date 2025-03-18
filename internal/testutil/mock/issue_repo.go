@@ -25,7 +25,7 @@ func (i *IssueRepository) Get(ctx context.Context, id model.ID) (*model.Issue, e
 	return args.Get(0).(*model.Issue), args.Error(1)
 }
 
-func (i *IssueRepository) GetAllForProject(ctx context.Context, projectID model.ID, offset, limit int) ([]*model.Issue, error) {
+func (i *IssueRepository) FindAllForProject(ctx context.Context, projectID model.ID, offset, limit int) ([]*model.Issue, error) {
 	args := i.Called(ctx, projectID, offset, limit)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
@@ -33,7 +33,7 @@ func (i *IssueRepository) GetAllForProject(ctx context.Context, projectID model.
 	return args.Get(0).([]*model.Issue), args.Error(1)
 }
 
-func (i *IssueRepository) GetAllForIssue(ctx context.Context, issueID model.ID, offset, limit int) ([]*model.Issue, error) {
+func (i *IssueRepository) FindAllForIssue(ctx context.Context, issueID model.ID, offset, limit int) ([]*model.Issue, error) {
 	args := i.Called(ctx, issueID, offset, limit)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)

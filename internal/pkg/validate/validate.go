@@ -7,7 +7,7 @@ var (
 )
 
 // GetValidator returns the validator instance.
-func GetValidator() *validator.Validate {
+func RenderValidator() *validator.Validate {
 	return validate
 }
 

@@ -11,6 +11,6 @@ type UserWelcomeTemplateData struct {
 }
 
 // Get returns the welcome email template data.
-func (d *UserWelcomeTemplateData) Get() interface{} {
+func (d *UserWelcomeTemplateData) RenderData() interface{} {
 	return d
 }

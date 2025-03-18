@@ -94,11 +94,11 @@ func (r *CachedDocumentRepository) Get(ctx context.Context, id model.ID) (*model
 	return document, nil
 }
 
-func (r *CachedDocumentRepository) GetByCreator(ctx context.Context, createdBy model.ID, offset, limit int) ([]*model.Document, error) {
+func (r *CachedDocumentRepository) FindByCreator(ctx context.Context, createdBy model.ID, offset, limit int) ([]*model.Document, error) {
 	var documents []*model.Document
 	var err error
 
-	key := composeCacheKey(model.ResourceTypeDocument.String(), "GetByCreator", createdBy.String(), offset, limit)
+	key := composeCacheKey(model.ResourceTypeDocument.String(), "FindByCreator", createdBy.String(), offset, limit)
 	if err = r.cacheRepo.Get(ctx, key, &documents); err != nil {
 		return nil, err
 	}
@@ -107,7 +107,7 @@ func (r *CachedDocumentRepository) GetByCreator(ctx context.Context, createdBy m
 		return documents, nil
 	}
 
-	if documents, err = r.documentRepo.GetByCreator(ctx, createdBy, offset, limit); err != nil {
+	if documents, err = r.documentRepo.FindByCreator(ctx, createdBy, offset, limit); err != nil {
 		return nil, err
 	}
 
