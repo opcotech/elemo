@@ -45,7 +45,7 @@ func BootstrapNeo4jDatabase(ctx context.Context, t *testing.T, db *neo4j.Databas
 	for _, statement := range statements {
 		statement = strings.TrimSpace(statement)
 		if statement != "" {
-			_, err := db.GetWriteSession(ctx).Run(ctx, statement, nil)
+			_, err := db.WriteSession(ctx).Run(ctx, statement, nil)
 			if err != nil {
 				t.Log(statement)
 			}
@@ -56,7 +56,7 @@ func BootstrapNeo4jDatabase(ctx context.Context, t *testing.T, db *neo4j.Databas
 
 // CleanupNeo4jStore deletes all nodes and relationships from the database.
 func CleanupNeo4jStore(ctx context.Context, t *testing.T, db *neo4j.Database) {
-	_, err := db.GetWriteSession(ctx).Run(ctx, "MATCH (n) WHERE n.system IS NULL OR n.system = false DETACH DELETE n", nil)
+	_, err := db.WriteSession(ctx).Run(ctx, "MATCH (n) WHERE n.system IS NULL OR n.system = false DETACH DELETE n", nil)
 	require.NoError(t, err)
 }
 
@@ -83,7 +83,7 @@ func BootstrapPgDatabase(ctx context.Context, t *testing.T, db *pg.Database) {
 	for _, statement := range statements {
 		statement = strings.TrimSpace(statement)
 		if statement != "" {
-			_, err := db.GetPool().Exec(ctx, statement)
+			_, err := db.Pool().Exec(ctx, statement)
 			if err != nil {
 				t.Log(statement)
 			}
@@ -93,7 +93,7 @@ func BootstrapPgDatabase(ctx context.Context, t *testing.T, db *pg.Database) {
 }
 
 func CleanupPgStore(ctx context.Context, t *testing.T, db *pg.Database) {
-	_, err := db.GetPool().Exec(ctx, `
+	_, err := db.Pool().Exec(ctx, `
 	DO $$ DECLARE table_name text;
 	BEGIN
 		FOR table_name IN (SELECT tablename FROM pg_tables WHERE schemaname='etl') LOOP
@@ -121,6 +121,6 @@ func NewRedisDatabase(t *testing.T, conf *config.CacheDatabaseConfig) (*redis.Da
 
 // CleanupRedisStore deletes all keys from the database.
 func CleanupRedisStore(ctx context.Context, t *testing.T, db *redis.Database) {
-	err := db.GetClient().FlushDB(ctx).Err()
+	err := db.Client().FlushDB(ctx).Err()
 	require.NoError(t, err)
 }

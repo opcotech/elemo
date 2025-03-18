@@ -243,7 +243,7 @@ func TestNewDatabase(t *testing.T) {
 	}
 }
 
-func TestDatabase_GetClient(t *testing.T) {
+func TestDatabase_Client(t *testing.T) {
 	t.Parallel()
 
 	client := new(mock.RedisClient)
@@ -252,7 +252,7 @@ func TestDatabase_GetClient(t *testing.T) {
 		client: client,
 	}
 
-	require.Equal(t, client, db.GetClient())
+	require.Equal(t, client, db.Client())
 }
 
 func TestDatabase_Close(t *testing.T) {
