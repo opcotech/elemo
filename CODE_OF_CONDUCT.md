@@ -1,8 +1,11 @@
 # Contributor Covenant Code of Conduct
+Welcome to Elemo! We are thrilled to have you as part of the community. This code 
+of conduct outlines our commitment to fostering a respectful, welcoming, and supportive
+environment for everyone.
 
 ## Our Pledge
 
-We as members, contributors, and leaders pledge to make participation in our
+We, as members, contributors, and leaders, pledge to make participation in our
 community a harassment-free experience for everyone, regardless of age, body
 size, visible or invisible disability, ethnicity, sex characteristics, gender
 identity and expression, level of experience, education, socio-economic status,
