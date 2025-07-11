@@ -87,40 +87,42 @@ func (s *CachedAssignmentRepositoryIntegrationTestSuite) TestGet() {
 	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
 }
 
-func (s *CachedAssignmentRepositoryIntegrationTestSuite) TestGetByResource() {
+// TestFindByResource tests retrieving assignments by resource ID
+func (s *CachedAssignmentRepositoryIntegrationTestSuite) TestFindByResource() {
 	s.Require().NoError(s.AssignmentRepo.Create(context.Background(), s.assignment))
 	s.Require().NoError(s.AssignmentRepo.Create(context.Background(), testModel.NewAssignment(s.testUser.ID, s.testIssue.ID, model.AssignmentKindReviewer)))
 
-	originalAssignments, err := s.AssignmentRepo.GetByResource(context.Background(), s.testIssue.ID, 0, 10)
+	originalAssignments, err := s.AssignmentRepo.FindByResource(context.Background(), s.testIssue.ID, 0, 10)
 	s.Require().NoError(err)
 
-	usingCacheAssignments, err := s.assignmentRepo.GetByResource(context.Background(), s.testIssue.ID, 0, 10)
+	usingCacheAssignments, err := s.assignmentRepo.FindByResource(context.Background(), s.testIssue.ID, 0, 10)
 	s.Require().NoError(err)
 
 	s.Assert().Equal(originalAssignments, usingCacheAssignments)
 	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
 
-	cachedAssignments, err := s.assignmentRepo.GetByResource(context.Background(), s.testIssue.ID, 0, 10)
+	cachedAssignments, err := s.assignmentRepo.FindByResource(context.Background(), s.testIssue.ID, 0, 10)
 	s.Require().NoError(err)
 	s.Assert().Equal(len(usingCacheAssignments), len(cachedAssignments))
 
 	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
 }
 
-func (s *CachedAssignmentRepositoryIntegrationTestSuite) TestGetByUser() {
+// TestFindByUser tests retrieving assignments by user ID  
+func (s *CachedAssignmentRepositoryIntegrationTestSuite) TestFindByUser() {
 	s.Require().NoError(s.AssignmentRepo.Create(context.Background(), s.assignment))
 	s.Require().NoError(s.AssignmentRepo.Create(context.Background(), testModel.NewAssignment(s.testUser.ID, s.testIssue.ID, model.AssignmentKindReviewer)))
 
-	originalAssignments, err := s.AssignmentRepo.GetByUser(context.Background(), s.testUser.ID, 0, 10)
+	originalAssignments, err := s.AssignmentRepo.FindByUser(context.Background(), s.testUser.ID, 0, 10)
 	s.Require().NoError(err)
 
-	usingCacheAssignments, err := s.assignmentRepo.GetByUser(context.Background(), s.testUser.ID, 0, 10)
+	usingCacheAssignments, err := s.assignmentRepo.FindByUser(context.Background(), s.testUser.ID, 0, 10)
 	s.Require().NoError(err)
 
 	s.Assert().Equal(originalAssignments, usingCacheAssignments)
 	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
 
-	cachedAssignments, err := s.assignmentRepo.GetByUser(context.Background(), s.testUser.ID, 0, 10)
+	cachedAssignments, err := s.assignmentRepo.FindByUser(context.Background(), s.testUser.ID, 0, 10)
 	s.Require().NoError(err)
 	s.Assert().Equal(len(usingCacheAssignments), len(cachedAssignments))
 

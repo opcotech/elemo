@@ -85,20 +85,20 @@ func (s *CachedDocumentRepositoryIntegrationTestSuite) TestGet() {
 	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
 }
 
-func (s *CachedDocumentRepositoryIntegrationTestSuite) TestGetByCreator() {
+func (s *CachedDocumentRepositoryIntegrationTestSuite) TestFindByCreator() {
 	s.Require().NoError(s.DocumentRepo.Create(context.Background(), s.testUser.ID, s.document))
 	s.Require().NoError(s.DocumentRepo.Create(context.Background(), s.testUser.ID, testModel.NewDocument(s.testUser.ID)))
 
-	originalDocuments, err := s.DocumentRepo.GetByCreator(context.Background(), s.testUser.ID, 0, 10)
+	originalDocuments, err := s.DocumentRepo.FindByCreator(context.Background(), s.testUser.ID, 0, 10)
 	s.Require().NoError(err)
 
-	usingCacheDocuments, err := s.documentRepo.GetByCreator(context.Background(), s.testUser.ID, 0, 10)
+	usingCacheDocuments, err := s.documentRepo.FindByCreator(context.Background(), s.testUser.ID, 0, 10)
 	s.Require().NoError(err)
 
 	s.Assert().Equal(originalDocuments, usingCacheDocuments)
 	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
 
-	cachedDocuments, err := s.documentRepo.GetByCreator(context.Background(), s.testUser.ID, 0, 10)
+	cachedDocuments, err := s.documentRepo.FindByCreator(context.Background(), s.testUser.ID, 0, 10)
 	s.Require().NoError(err)
 	s.Assert().Equal(len(usingCacheDocuments), len(cachedDocuments))
 

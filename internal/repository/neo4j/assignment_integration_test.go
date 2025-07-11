@@ -78,19 +78,19 @@ func (s *AssignmentRepositoryIntegrationTestSuite) TestGetByUser() {
 	reviewer := testModel.NewAssignment(s.testUser.ID, s.testDoc.ID, model.AssignmentKindReviewer)
 	s.Require().NoError(s.AssignmentRepo.Create(context.Background(), reviewer))
 
-	assignments, err := s.AssignmentRepo.GetByUser(context.Background(), s.testUser.ID, 0, 10)
+	assignments, err := s.AssignmentRepo.FindByUser(context.Background(), s.testUser.ID, 0, 10)
 	s.Require().NoError(err)
 	s.Assert().Len(assignments, 2)
 
-	assignments, err = s.AssignmentRepo.GetByUser(context.Background(), s.testUser.ID, 0, 1)
+	assignments, err = s.AssignmentRepo.FindByUser(context.Background(), s.testUser.ID, 0, 1)
 	s.Require().NoError(err)
 	s.Assert().Len(assignments, 1)
 
-	assignments, err = s.AssignmentRepo.GetByUser(context.Background(), s.testUser.ID, 1, 1)
+	assignments, err = s.AssignmentRepo.FindByUser(context.Background(), s.testUser.ID, 1, 1)
 	s.Require().NoError(err)
 	s.Assert().Len(assignments, 1)
 
-	assignments, err = s.AssignmentRepo.GetByUser(context.Background(), s.testUser.ID, 2, 1)
+	assignments, err = s.AssignmentRepo.FindByUser(context.Background(), s.testUser.ID, 2, 1)
 	s.Require().NoError(err)
 	s.Assert().Len(assignments, 0)
 }
@@ -102,19 +102,19 @@ func (s *AssignmentRepositoryIntegrationTestSuite) TestGetByResource() {
 	reviewer := testModel.NewAssignment(s.testUser.ID, s.testDoc.ID, model.AssignmentKindReviewer)
 	s.Require().NoError(s.AssignmentRepo.Create(context.Background(), reviewer))
 
-	assignments, err := s.AssignmentRepo.GetByResource(context.Background(), s.testDoc.ID, 0, 10)
+	assignments, err := s.AssignmentRepo.FindByResource(context.Background(), s.testDoc.ID, 0, 10)
 	s.Require().NoError(err)
 	s.Assert().Len(assignments, 2)
 
-	assignments, err = s.AssignmentRepo.GetByResource(context.Background(), s.testDoc.ID, 0, 1)
+	assignments, err = s.AssignmentRepo.FindByResource(context.Background(), s.testDoc.ID, 0, 1)
 	s.Require().NoError(err)
 	s.Assert().Len(assignments, 1)
 
-	assignments, err = s.AssignmentRepo.GetByResource(context.Background(), s.testDoc.ID, 1, 1)
+	assignments, err = s.AssignmentRepo.FindByResource(context.Background(), s.testDoc.ID, 1, 1)
 	s.Require().NoError(err)
 	s.Assert().Len(assignments, 1)
 
-	assignments, err = s.AssignmentRepo.GetByResource(context.Background(), s.testDoc.ID, 2, 1)
+	assignments, err = s.AssignmentRepo.FindByResource(context.Background(), s.testDoc.ID, 2, 1)
 	s.Require().NoError(err)
 	s.Assert().Len(assignments, 0)
 }

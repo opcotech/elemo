@@ -99,20 +99,20 @@ func (s *CachedIssueRepositoryIntegrationTestSuite) TestGet() {
 	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
 }
 
-func (s *CachedIssueRepositoryIntegrationTestSuite) TestGetAllForProject() {
+func (s *CachedIssueRepositoryIntegrationTestSuite) TestFindAllForProject() {
 	s.Require().NoError(s.IssueRepo.Create(context.Background(), s.testProject.ID, s.issue))
 	s.Require().NoError(s.IssueRepo.Create(context.Background(), s.testProject.ID, testModel.NewIssue(s.testUser.ID)))
 
-	originalIssues, err := s.IssueRepo.GetAllForProject(context.Background(), s.testProject.ID, 0, 10)
+	originalIssues, err := s.IssueRepo.FindAllForProject(context.Background(), s.testProject.ID, 0, 10)
 	s.Require().NoError(err)
 
-	usingCacheIssues, err := s.issueRepo.GetAllForProject(context.Background(), s.testProject.ID, 0, 10)
+	usingCacheIssues, err := s.issueRepo.FindAllForProject(context.Background(), s.testProject.ID, 0, 10)
 	s.Require().NoError(err)
 
 	s.Assert().Equal(originalIssues, usingCacheIssues)
 	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
 
-	cachedIssues, err := s.issueRepo.GetAllForProject(context.Background(), s.testProject.ID, 0, 10)
+	cachedIssues, err := s.issueRepo.FindAllForProject(context.Background(), s.testProject.ID, 0, 10)
 	s.Require().NoError(err)
 	s.Assert().Equal(len(usingCacheIssues), len(cachedIssues))
 
@@ -134,16 +134,16 @@ func (s *CachedIssueRepositoryIntegrationTestSuite) TestGetAllForIssue() {
 
 	s.Require().NoError(s.IssueRepo.AddRelation(context.Background(), relation))
 
-	originalIssues, err := s.IssueRepo.GetAllForIssue(context.Background(), s.issue.ID, 0, 10)
+	originalIssues, err := s.IssueRepo.FindAllForIssue(context.Background(), s.issue.ID, 0, 10)
 	s.Require().NoError(err)
 
-	usingCacheIssues, err := s.issueRepo.GetAllForIssue(context.Background(), s.issue.ID, 0, 10)
+	usingCacheIssues, err := s.issueRepo.FindAllForIssue(context.Background(), s.issue.ID, 0, 10)
 	s.Require().NoError(err)
 
 	s.Assert().Equal(originalIssues, usingCacheIssues)
 	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
 
-	cachedIssues, err := s.issueRepo.GetAllForIssue(context.Background(), s.issue.ID, 0, 10)
+	cachedIssues, err := s.issueRepo.FindAllForIssue(context.Background(), s.issue.ID, 0, 10)
 	s.Require().NoError(err)
 	s.Assert().Equal(len(usingCacheIssues), len(cachedIssues))
 

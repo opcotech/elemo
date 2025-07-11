@@ -11,6 +11,6 @@ type PasswordResetTemplateData struct {
 }
 
 // Get returns the password reset email template data.
-func (d *PasswordResetTemplateData) Get() interface{} {
+func (d *PasswordResetTemplateData) RenderData() interface{} {
 	return d
 }

@@ -12,6 +12,6 @@ type OrganizationInviteTemplateData struct {
 }
 
 // Get returns the invitation email template data.
-func (d *OrganizationInviteTemplateData) Get() interface{} {
+func (d *OrganizationInviteTemplateData) RenderData() interface{} {
 	return d
 }

@@ -41,7 +41,6 @@ func NewTracerProvider(ctx context.Context, version *model.VersionInfo, service 
 	if err != nil {
 		return nil, err
 	}
-
 	tracerProvider := sdktrace.NewTracerProvider(
 		sdktrace.WithResource(resource.NewWithAttributes(
 			semconv.SchemaURL,

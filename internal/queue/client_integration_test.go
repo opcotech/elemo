@@ -84,7 +84,7 @@ func (s *AsynqClientIntegrationTestSuite) TestEnqueue() {
 	s.Assert().Equal(asynq.TaskStatePending, info.State)
 }
 
-func (s *AsynqClientIntegrationTestSuite) TestGetTaskInfo() {
+func (s *AsynqClientIntegrationTestSuite) TestTaskInfo() {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
@@ -96,7 +96,7 @@ func (s *AsynqClientIntegrationTestSuite) TestGetTaskInfo() {
 
 	for info.State != asynq.TaskStateCompleted {
 		s.Require().NoError(ctx.Err())
-		info, err = s.client.GetTaskInfo(info.Queue, info.ID)
+		info, err = s.client.TaskInfo(info.Queue, info.ID)
 		s.Require().NoError(err)
 	}
 

@@ -10,7 +10,7 @@ import (
 // TemplateData represents the data needed to render an email template.
 type TemplateData interface {
 	// Get returns the template data.
-	Get() any
+	RenderData() any
 }
 
 // Template is a struct that represents the data needed to render
@@ -30,7 +30,7 @@ func (t *Template) Validate() error {
 
 // Render returns the rendered template.
 func (t *Template) Render() (string, error) {
-	return emailBody[*template.Template](t.Path, t.Data.Get(), template.ParseFiles)
+	return emailBody[*template.Template](t.Path, t.Data.RenderData(), template.ParseFiles)
 }
 
 // NewTemplate returns a new email template.

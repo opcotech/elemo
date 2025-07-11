@@ -1057,7 +1057,7 @@ func TestCachedIssueRepository_GetAllForProject(t *testing.T) {
 				cacheRepo: tt.fields.cacheRepo(tt.args.ctx, tt.args.project, tt.args.offset, tt.args.limit, tt.want),
 				issueRepo: tt.fields.issueRepo(tt.args.ctx, tt.args.project, tt.args.offset, tt.args.limit, tt.want),
 			}
-			got, err := r.GetAllForProject(tt.args.ctx, tt.args.project, tt.args.offset, tt.args.limit)
+			got, err := r.FindAllForProject(tt.args.ctx, tt.args.project, tt.args.offset, tt.args.limit)
 			require.ErrorIs(t, err, tt.wantErr)
 			require.ElementsMatch(t, tt.want, got)
 		})
@@ -1374,7 +1374,7 @@ func TestCachedIssueRepository_GetAllForIssue(t *testing.T) {
 				cacheRepo: tt.fields.cacheRepo(tt.args.ctx, tt.args.issue, tt.args.offset, tt.args.limit, tt.want),
 				issueRepo: tt.fields.issueRepo(tt.args.ctx, tt.args.issue, tt.args.offset, tt.args.limit, tt.want),
 			}
-			got, err := r.GetAllForIssue(tt.args.ctx, tt.args.issue, tt.args.offset, tt.args.limit)
+			got, err := r.FindAllForIssue(tt.args.ctx, tt.args.issue, tt.args.offset, tt.args.limit)
 			require.ErrorIs(t, err, tt.wantErr)
 			require.ElementsMatch(t, tt.want, got)
 		})

@@ -113,7 +113,7 @@ func (r *baseRepository) DeletePattern(ctx context.Context, pattern string) erro
 	ctx, span := r.tracer.Start(ctx, "repository.redis.baseRepository/DeletePattern")
 	defer span.End()
 
-	keys, err := r.db.GetClient().Keys(ctx, pattern).Result()
+	keys, err := r.db.Client().Keys(ctx, pattern).Result()
 	if err != nil && !errors.Is(err, redis.Nil) {
 		return err
 	}
@@ -141,7 +141,7 @@ func newBaseRepository(opts ...RepositoryOption) (*baseRepository, error) {
 	}
 
 	r.cache = cache.New(&cache.Options{
-		Redis:      r.db.GetClient(),
+		Redis:      r.db.Client(),
 		LocalCache: cache.NewTinyLFU(1000, 1*time.Minute),
 	})
 

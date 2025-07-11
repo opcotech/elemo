@@ -6,8 +6,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGetValidator(t *testing.T) {
-	assert.NotNil(t, GetValidator())
+func TestRenderValidator(t *testing.T) {
+	assert.NotNil(t, RenderValidator())
 }
 
 func TestStruct(t *testing.T) {

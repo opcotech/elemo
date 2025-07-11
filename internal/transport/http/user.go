@@ -92,7 +92,7 @@ func (c *userController) V1UsersGet(ctx context.Context, request api.V1UsersGetR
 	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1UsersGet")
 	defer span.End()
 
-	users, err := c.userService.GetAll(ctx, pkg.GetDefaultPtr(request.Params.Offset, DefaultOffset), pkg.GetDefaultPtr(request.Params.Limit, DefaultLimit))
+	users, err := c.userService.GetAll(ctx, pkg.RenderDefaultPtr(request.Params.Offset, DefaultOffset), pkg.RenderDefaultPtr(request.Params.Limit, DefaultLimit))
 	if err != nil {
 		if errors.Is(err, service.ErrNoPermission) {
 			return api.V1UsersGet403JSONResponse{N403JSONResponse: permissionDenied}, nil
@@ -186,7 +186,7 @@ func (c *userController) V1UserDelete(ctx context.Context, request api.V1UserDel
 		return api.V1UserDelete404JSONResponse{N404JSONResponse: notFound}, nil
 	}
 
-	if err := c.userService.Delete(ctx, userID, pkg.GetDefaultPtr(request.Params.Force, false)); err != nil {
+	if err := c.userService.Delete(ctx, userID, pkg.RenderDefaultPtr(request.Params.Force, false)); err != nil {
 		if errors.Is(err, service.ErrNoPermission) {
 			return api.V1UserDelete403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		}
@@ -225,14 +225,14 @@ func createUserJSONRequestBodyToUser(body *api.V1UsersCreateJSONRequestBody) (*m
 		return nil, err
 	}
 
-	user.FirstName = pkg.GetDefaultPtr(body.FirstName, "")
-	user.LastName = pkg.GetDefaultPtr(body.LastName, "")
-	user.Title = pkg.GetDefaultPtr(body.Title, "")
-	user.Picture = pkg.GetDefaultPtr(body.Picture, "")
-	user.Bio = pkg.GetDefaultPtr(body.Bio, "")
-	user.Address = pkg.GetDefaultPtr(body.Address, "")
-	user.Phone = pkg.GetDefaultPtr(body.Phone, "")
-	user.Links = pkg.GetDefaultPtr(body.Links, make([]string, 0))
+	user.FirstName = pkg.RenderDefaultPtr(body.FirstName, "")
+	user.LastName = pkg.RenderDefaultPtr(body.LastName, "")
+	user.Title = pkg.RenderDefaultPtr(body.Title, "")
+	user.Picture = pkg.RenderDefaultPtr(body.Picture, "")
+	user.Bio = pkg.RenderDefaultPtr(body.Bio, "")
+	user.Address = pkg.RenderDefaultPtr(body.Address, "")
+	user.Phone = pkg.RenderDefaultPtr(body.Phone, "")
+	user.Links = pkg.RenderDefaultPtr(body.Links, make([]string, 0))
 
 	if body.Languages != nil {
 		user.Languages = make([]model.Language, len(*body.Languages))

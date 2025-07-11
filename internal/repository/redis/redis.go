@@ -99,8 +99,8 @@ type Database struct {
 	tracer tracing.Tracer        `validate:"required"`
 }
 
-// GetClient returns the database client.
-func (db *Database) GetClient() redis.UniversalClient {
+// Client returns the database client.
+func (db *Database) Client() redis.UniversalClient {
 	return db.client
 }
 

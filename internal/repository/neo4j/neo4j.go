@@ -91,8 +91,8 @@ type Database struct {
 	tracer tracing.Tracer          `validate:"required"`
 }
 
-// GetReadSession returns a "read" session.
-func (db *Database) GetReadSession(ctx context.Context) neo4j.SessionWithContext {
+// ReadSession returns a "read" session.
+func (db *Database) ReadSession(ctx context.Context) neo4j.SessionWithContext {
 	return db.driver.NewSession(ctx, neo4j.SessionConfig{
 		AccessMode:   neo4j.AccessModeRead,
 		DatabaseName: db.name,
@@ -100,8 +100,8 @@ func (db *Database) GetReadSession(ctx context.Context) neo4j.SessionWithContext
 	})
 }
 
-// GetWriteSession returns a "write" session.
-func (db *Database) GetWriteSession(ctx context.Context) neo4j.SessionWithContext {
+// WriteSession returns a "write" session.
+func (db *Database) WriteSession(ctx context.Context) neo4j.SessionWithContext {
 	return db.driver.NewSession(ctx, neo4j.SessionConfig{
 		AccessMode:   neo4j.AccessModeWrite,
 		DatabaseName: db.name,
@@ -271,7 +271,7 @@ func ExecuteAndConsumeResult(ctx context.Context, tx neo4j.ManagedTransaction, q
 
 // ExecuteWriteAndConsume executes a query and consumes its result.
 func ExecuteWriteAndConsume(ctx context.Context, db *Database, query string, params map[string]any) error {
-	session := db.GetWriteSession(ctx)
+	session := db.WriteSession(ctx)
 	defer func(ctx context.Context, sess neo4j.SessionWithContext) {
 		err := sess.Close(ctx)
 		if err != nil {
@@ -289,7 +289,7 @@ func ExecuteWriteAndConsume(ctx context.Context, db *Database, query string, par
 
 // ExecuteReadAndReadSingle executes a query and reads a single result.
 func ExecuteReadAndReadSingle[T any](ctx context.Context, db *Database, query string, params map[string]any, reader func(record *neo4j.Record) (*T, error)) (*T, error) {
-	session := db.GetReadSession(ctx)
+	session := db.ReadSession(ctx)
 	defer func(ctx context.Context, sess neo4j.SessionWithContext) {
 		err := sess.Close(ctx)
 		if err != nil {
@@ -317,7 +317,7 @@ func ExecuteReadAndReadSingle[T any](ctx context.Context, db *Database, query st
 
 // ExecuteWriteAndReadSingle executes a query and reads a single result.
 func ExecuteWriteAndReadSingle[T any](ctx context.Context, db *Database, query string, params map[string]any, reader func(record *neo4j.Record) (*T, error)) (*T, error) {
-	session := db.GetWriteSession(ctx)
+	session := db.WriteSession(ctx)
 	defer func(ctx context.Context, sess neo4j.SessionWithContext) {
 		err := sess.Close(ctx)
 		if err != nil {
@@ -345,7 +345,7 @@ func ExecuteWriteAndReadSingle[T any](ctx context.Context, db *Database, query s
 
 // ExecuteReadAndReadAll executes a query and reads all results.
 func ExecuteReadAndReadAll[T any](ctx context.Context, db *Database, query string, params map[string]any, reader func(record *neo4j.Record) (T, error)) ([]T, error) {
-	session := db.GetReadSession(ctx)
+	session := db.ReadSession(ctx)
 	defer func(ctx context.Context, sess neo4j.SessionWithContext) {
 		err := sess.Close(ctx)
 		if err != nil {
@@ -382,7 +382,7 @@ func ExecuteReadAndReadAll[T any](ctx context.Context, db *Database, query strin
 
 // ExecuteWriteAndReadAll executes a query and reads all results.
 func ExecuteWriteAndReadAll[T any](ctx context.Context, db *Database, query string, params map[string]any, reader func(record *neo4j.Record) (T, error)) ([]T, error) {
-	session := db.GetWriteSession(ctx)
+	session := db.WriteSession(ctx)
 	defer func(ctx context.Context, sess neo4j.SessionWithContext) {
 		err := sess.Close(ctx)
 		if err != nil {

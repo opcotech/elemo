@@ -1064,7 +1064,7 @@ func TestCachedDocumentRepository_GetByCreator(t *testing.T) {
 				cacheRepo:    tt.fields.cacheRepo(tt.args.ctx, tt.args.createdBy, tt.args.offset, tt.args.limit, tt.want),
 				documentRepo: tt.fields.documentRepo(tt.args.ctx, tt.args.createdBy, tt.args.offset, tt.args.limit, tt.want),
 			}
-			got, err := r.GetByCreator(tt.args.ctx, tt.args.createdBy, tt.args.offset, tt.args.limit)
+			got, err := r.FindByCreator(tt.args.ctx, tt.args.createdBy, tt.args.offset, tt.args.limit)
 			assert.ErrorIs(t, err, tt.wantErr)
 			assert.ElementsMatch(t, tt.want, got)
 		})

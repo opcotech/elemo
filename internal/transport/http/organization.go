@@ -99,8 +99,8 @@ func (c *organizationController) V1OrganizationsGet(ctx context.Context, request
 	defer span.End()
 
 	organizations, err := c.organizationService.GetAll(ctx,
-		pkg.GetDefaultPtr(request.Params.Offset, DefaultOffset),
-		pkg.GetDefaultPtr(request.Params.Limit, DefaultLimit),
+		pkg.RenderDefaultPtr(request.Params.Offset, DefaultOffset),
+		pkg.RenderDefaultPtr(request.Params.Limit, DefaultLimit),
 	)
 	if err != nil {
 		if errors.Is(err, service.ErrNoPermission) {
@@ -158,7 +158,7 @@ func (c *organizationController) V1OrganizationDelete(ctx context.Context, reque
 		return api.V1OrganizationDelete400JSONResponse{N400JSONResponse: badRequest}, nil
 	}
 
-	if err := c.organizationService.Delete(ctx, organizationID, pkg.GetDefaultPtr(request.Params.Force, false)); err != nil {
+	if err := c.organizationService.Delete(ctx, organizationID, pkg.RenderDefaultPtr(request.Params.Force, false)); err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
 			return api.V1OrganizationDelete404JSONResponse{N404JSONResponse: notFound}, nil
 		}
@@ -282,7 +282,7 @@ func (c *organizationController) V1OrganizationRolesCreate(ctx context.Context, 
 		return api.V1OrganizationRolesCreate400JSONResponse{N400JSONResponse: badRequest}, nil
 	}
 
-	role.Description = pkg.GetDefaultPtr(request.Body.Description, "")
+	role.Description = pkg.RenderDefaultPtr(request.Body.Description, "")
 
 	if err := c.roleService.Create(ctx, ownedBy, organizationID, role); err != nil {
 		if errors.Is(err, service.ErrNoPermission) {
@@ -312,8 +312,8 @@ func (c *organizationController) V1OrganizationRolesGet(ctx context.Context, req
 
 	roles, err := c.roleService.GetAllBelongsTo(ctx,
 		organizationID,
-		pkg.GetDefaultPtr(request.Params.Offset, DefaultOffset),
-		pkg.GetDefaultPtr(request.Params.Limit, DefaultLimit),
+		pkg.RenderDefaultPtr(request.Params.Offset, DefaultOffset),
+		pkg.RenderDefaultPtr(request.Params.Limit, DefaultLimit),
 	)
 	if err != nil {
 		if errors.Is(err, service.ErrNoPermission) {

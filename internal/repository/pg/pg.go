@@ -115,8 +115,8 @@ func (db *Database) Ping(ctx context.Context) error {
 	return db.pool.Ping(ctx)
 }
 
-// GetPool returns the database pool.
-func (db *Database) GetPool() Pool {
+// Pool returns the database pool.
+func (db *Database) Pool() Pool {
 	return db.pool
 }
 

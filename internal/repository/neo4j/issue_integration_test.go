@@ -91,24 +91,24 @@ func (s *IssueRepositoryIntegrationTestSuite) TestGet() {
 	s.Assert().Nil(issue.UpdatedAt)
 }
 
-func (s *IssueRepositoryIntegrationTestSuite) TestGetAllForProject() {
+func (s *IssueRepositoryIntegrationTestSuite) TestFindAllForProject() {
 	s.Require().NoError(s.IssueRepo.Create(context.Background(), s.testProject.ID, s.issue))
 	s.Require().NoError(s.IssueRepo.Create(context.Background(), s.testProject.ID, testModel.NewIssue(s.testUser.ID)))
 	s.Require().NoError(s.IssueRepo.Create(context.Background(), s.testProject.ID, testModel.NewIssue(s.testUser.ID)))
 
-	issues, err := s.IssueRepo.GetAllForProject(context.Background(), s.testProject.ID, 0, 10)
+	issues, err := s.IssueRepo.FindAllForProject(context.Background(), s.testProject.ID, 0, 10)
 	s.Require().NoError(err)
 	s.Assert().Len(issues, 3)
 
-	issues, err = s.IssueRepo.GetAllForProject(context.Background(), s.testProject.ID, 1, 2)
+	issues, err = s.IssueRepo.FindAllForProject(context.Background(), s.testProject.ID, 1, 2)
 	s.Require().NoError(err)
 	s.Assert().Len(issues, 2)
 
-	issues, err = s.IssueRepo.GetAllForProject(context.Background(), s.testProject.ID, 2, 2)
+	issues, err = s.IssueRepo.FindAllForProject(context.Background(), s.testProject.ID, 2, 2)
 	s.Require().NoError(err)
 	s.Assert().Len(issues, 1)
 
-	issues, err = s.IssueRepo.GetAllForProject(context.Background(), s.testProject.ID, 3, 2)
+	issues, err = s.IssueRepo.FindAllForProject(context.Background(), s.testProject.ID, 3, 2)
 	s.Require().NoError(err)
 	s.Assert().Len(issues, 0)
 }
@@ -128,15 +128,15 @@ func (s *IssueRepositoryIntegrationTestSuite) TestGetAllForIssue() {
 
 	s.Require().NoError(s.IssueRepo.AddRelation(context.Background(), relation))
 
-	issues, err := s.IssueRepo.GetAllForIssue(context.Background(), s.issue.ID, 0, 10)
+	issues, err := s.IssueRepo.FindAllForIssue(context.Background(), s.issue.ID, 0, 10)
 	s.Require().NoError(err)
 	s.Assert().Len(issues, 2)
 
-	issues, err = s.IssueRepo.GetAllForIssue(context.Background(), s.issue.ID, 1, 2)
+	issues, err = s.IssueRepo.FindAllForIssue(context.Background(), s.issue.ID, 1, 2)
 	s.Require().NoError(err)
 	s.Assert().Len(issues, 1)
 
-	issues, err = s.IssueRepo.GetAllForIssue(context.Background(), s.issue.ID, 2, 2)
+	issues, err = s.IssueRepo.FindAllForIssue(context.Background(), s.issue.ID, 2, 2)
 	s.Require().NoError(err)
 	s.Assert().Len(issues, 0)
 }

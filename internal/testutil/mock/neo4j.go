@@ -106,12 +106,12 @@ type Neo4jStore struct {
 	mock.Mock
 }
 
-func (n *Neo4jStore) GetReadSession(ctx context.Context) any {
+func (n *Neo4jStore) ReadSession(ctx context.Context) any {
 	args := n.Called(ctx)
 	return args.Get(0)
 }
 
-func (n *Neo4jStore) GetWriteSession(ctx context.Context) any {
+func (n *Neo4jStore) WriteSession(ctx context.Context) any {
 	args := n.Called(ctx)
 	return args.Get(0)
 }

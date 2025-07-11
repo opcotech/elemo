@@ -102,11 +102,11 @@ func (r *CachedIssueRepository) Get(ctx context.Context, id model.ID) (*model.Is
 	return issue, nil
 }
 
-func (r *CachedIssueRepository) GetAllForProject(ctx context.Context, projectID model.ID, offset, limit int) ([]*model.Issue, error) {
+func (r *CachedIssueRepository) FindAllForProject(ctx context.Context, projectID model.ID, offset, limit int) ([]*model.Issue, error) {
 	var issues []*model.Issue
 	var err error
 
-	key := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForProject", projectID.String(), offset, limit)
+	key := composeCacheKey(model.ResourceTypeIssue.String(), "FindAllForProject", projectID.String(), offset, limit)
 	if err = r.cacheRepo.Get(ctx, key, &issues); err != nil {
 		return nil, err
 	}
@@ -115,7 +115,7 @@ func (r *CachedIssueRepository) GetAllForProject(ctx context.Context, projectID 
 		return issues, nil
 	}
 
-	if issues, err = r.issueRepo.GetAllForProject(ctx, projectID, offset, limit); err != nil {
+	if issues, err = r.issueRepo.FindAllForProject(ctx, projectID, offset, limit); err != nil {
 		return nil, err
 	}
 
@@ -126,7 +126,7 @@ func (r *CachedIssueRepository) GetAllForProject(ctx context.Context, projectID 
 	return issues, nil
 }
 
-func (r *CachedIssueRepository) GetAllForIssue(ctx context.Context, issueID model.ID, offset, limit int) ([]*model.Issue, error) {
+func (r *CachedIssueRepository) FindAllForIssue(ctx context.Context, issueID model.ID, offset, limit int) ([]*model.Issue, error) {
 	var issues []*model.Issue
 	var err error
 
@@ -139,7 +139,7 @@ func (r *CachedIssueRepository) GetAllForIssue(ctx context.Context, issueID mode
 		return issues, nil
 	}
 
-	if issues, err = r.issueRepo.GetAllForIssue(ctx, issueID, offset, limit); err != nil {
+	if issues, err = r.issueRepo.FindAllForIssue(ctx, issueID, offset, limit); err != nil {
 		return nil, err
 	}
 
