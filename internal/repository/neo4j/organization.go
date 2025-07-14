@@ -186,7 +186,8 @@ func (r *OrganizationRepository) AddMember(ctx context.Context, orgID, memberID 
 	}
 
 	cypher := `
-	MATCH (o:` + orgID.Label() + ` {id: $org_id}), (u:` + memberID.Label() + ` {id: $member_id})
+	MATCH (o:` + orgID.Label() + ` {id: $org_id})
+	MATCH (u:` + memberID.Label() + ` {id: $member_id})
 	MERGE (u)-[m:` + EdgeKindMemberOf.String() + `]->(o)
 	ON CREATE SET m.created_at = datetime($now), m.id = $membership_id
 	ON MATCH SET m.updated_at = datetime($now)`

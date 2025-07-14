@@ -68,7 +68,8 @@ func (r *PermissionRepository) Create(ctx context.Context, perm *model.Permissio
 	perm.UpdatedAt = nil
 
 	cypher := `
-	MATCH (subject:` + perm.Subject.Label() + ` {id: $subject}), (target:` + perm.Target.Label() + ` {id: $target})
+	MATCH (subject:` + perm.Subject.Label() + ` {id: $subject})
+	MATCH (target:` + perm.Target.Label() + ` {id: $target})
 	MERGE (subject)-[p:` + EdgeKindHasPermission.String() + ` {id: $id, kind: $kind}]->(target) ON CREATE SET p.created_at = datetime($created_at)
 	`
 

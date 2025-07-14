@@ -66,7 +66,8 @@ func (r *AssignmentRepository) Create(ctx context.Context, assignment *model.Ass
 	assignment.CreatedAt = convert.ToPointer(createdAt)
 
 	cypher := `
-	MATCH (u:` + assignment.User.Label() + ` {id: $user_id}), (r:` + assignment.Resource.Label() + ` {id: $resource_id})
+	MATCH (u:` + assignment.User.Label() + ` {id: $user_id})
+	MATCH (r:` + assignment.Resource.Label() + ` {id: $resource_id})
 	MERGE (u)-[a:` + EdgeKindAssignedTo.String() + ` {kind: $kind}]->(r)
 	ON CREATE SET a.id = $id, a.created_at = datetime($created_at)`
 

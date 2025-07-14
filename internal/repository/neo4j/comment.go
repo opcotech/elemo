@@ -65,7 +65,8 @@ func (r *CommentRepository) Create(ctx context.Context, belongsTo model.ID, comm
 	comment.UpdatedAt = nil
 
 	cypher := `
-	MATCH (b:` + belongsTo.Label() + ` {id: $belong_to_id}), (o:` + comment.CreatedBy.Label() + ` {id: $created_by_id})
+	MATCH (b:` + belongsTo.Label() + ` {id: $belong_to_id})
+	MATCH (o:` + comment.CreatedBy.Label() + ` {id: $created_by_id})
 	CREATE
 		(c:` + comment.ID.Label() + ` {id: $id, content: $content, created_by: $created_by_id, created_at: datetime($created_at)}),
 		(b)-[:` + EdgeKindHasComment.String() + ` {id: $has_comment_rel_id, created_at: datetime($created_at)}]->(c),

@@ -66,7 +66,8 @@ func (r *RoleRepository) Create(ctx context.Context, createdBy, belongsTo model.
 	role.UpdatedAt = nil
 
 	cypher := `
-	MATCH (u:` + createdBy.Label() + ` {id: $owner_id}), (b:` + belongsTo.Label() + ` {id: $belongs_to_id})
+	MATCH (u:` + createdBy.Label() + ` {id: $owner_id})
+	MATCH (b:` + belongsTo.Label() + ` {id: $belongs_to_id})
 	MERGE (r:` + role.ID.Label() + ` {id: $role_id})
 	ON CREATE SET r += { name: $name, description: $description, created_at: datetime($created_at) }
 	CREATE (r)<-[:` + EdgeKindHasTeam.String() + ` { id: $has_team_id, created_at: datetime($created_at) }]-(b)
@@ -99,7 +100,8 @@ func (r *RoleRepository) Get(ctx context.Context, id, belongsTo model.ID) (*mode
 	defer span.End()
 
 	cypher := `
-	MATCH (r:` + id.Label() + ` {id: $id}), (b:` + belongsTo.Label() + ` {id: $belongs_to_id})
+	MATCH (r:` + id.Label() + ` {id: $id})
+	MATCH (b:` + belongsTo.Label() + ` {id: $belongs_to_id})
 	OPTIONAL MATCH (r)<-[:` + EdgeKindMemberOf.String() + `]-(u:` + model.ResourceTypeUser.String() + `)
 	OPTIONAL MATCH (r)-[p:` + EdgeKindHasPermission.String() + `]->()
 	RETURN r, collect(DISTINCT u.id) AS m, collect(DISTINCT p.id) AS p
@@ -153,7 +155,8 @@ func (r *RoleRepository) Update(ctx context.Context, id, belongsTo model.ID, pat
 	defer span.End()
 
 	cypher := `
-	MATCH (r:` + id.Label() + ` {id: $id}), (b:` + belongsTo.Label() + ` {id: $belongs_to_id})
+	MATCH (r:` + id.Label() + ` {id: $id})
+	MATCH (b:` + belongsTo.Label() + ` {id: $belongs_to_id})
 	SET r += $patch, r.updated_at = datetime()
 	WITH r
 	OPTIONAL MATCH (r)<-[:` + EdgeKindMemberOf.String() + `]-(u:` + model.ResourceTypeUser.String() + `)
@@ -179,7 +182,9 @@ func (r *RoleRepository) AddMember(ctx context.Context, roleID, memberID, belong
 	defer span.End()
 
 	cypher := `
-	MATCH (r:` + roleID.Label() + ` {id: $role_id}), (u:` + memberID.Label() + ` {id: $member_id}), (b:` + belongsToID.Label() + ` {id: $belongs_to_id})
+	MATCH (r:` + roleID.Label() + ` {id: $role_id})
+	MATCH (u:` + memberID.Label() + ` {id: $member_id})
+	MATCH (b:` + belongsToID.Label() + ` {id: $belongs_to_id})
 	MERGE (u)-[m:` + EdgeKindMemberOf.String() + `]->(r)
 	ON CREATE SET m.created_at = datetime($now), m.id = $membership_id
 	ON MATCH SET m.updated_at = datetime($now)`
@@ -204,7 +209,8 @@ func (r *RoleRepository) RemoveMember(ctx context.Context, roleID, memberID, bel
 	defer span.End()
 
 	cypher := `
-	MATCH (:` + roleID.Label() + ` {id: $role_id})<-[r:` + EdgeKindMemberOf.String() + `]-(:` + memberID.Label() + ` {id: $member_id}), (b:` + belongsToID.Label() + ` {id: $belongs_to_id})
+	MATCH (:` + roleID.Label() + ` {id: $role_id})<-[r:` + EdgeKindMemberOf.String() + `]-(:` + memberID.Label() + ` {id: $member_id})
+	MATCH (b:` + belongsToID.Label() + ` {id: $belongs_to_id})
 	DELETE r`
 
 	params := map[string]any{
@@ -224,7 +230,9 @@ func (r *RoleRepository) Delete(ctx context.Context, id, belongsTo model.ID) err
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.RoleRepository/Delete")
 	defer span.End()
 
-	cypher := `MATCH (r:` + id.Label() + ` {id: $id}), (b:` + belongsTo.Label() + ` {id: $belongs_to_id}) DETACH DELETE r`
+	cypher := `MATCH (r:` + id.Label() + ` {id: $id})
+	MATCH (b:` + belongsTo.Label() + ` {id: $belongs_to_id})
+	DETACH DELETE r`
 	params := map[string]any{
 		"id":            id.String(),
 		"belongs_to_id": belongsTo.String(),
