@@ -144,7 +144,8 @@ func (r *LabelRepository) AttachTo(ctx context.Context, labelID, attachTo model.
 	}
 
 	cypher := `
-	MATCH (l:` + labelID.Label() + ` {id: $label_id}), (n:` + attachTo.Label() + ` {id: $node_id})
+	MATCH (l:` + labelID.Label() + ` {id: $label_id})
+	MATCH (n:` + attachTo.Label() + ` {id: $node_id})
 	CREATE (n)-[:` + EdgeKindHasLabel.String() + `]->(l)`
 
 	params := map[string]any{

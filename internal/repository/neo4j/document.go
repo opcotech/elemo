@@ -77,7 +77,8 @@ func (r *DocumentRepository) Create(ctx context.Context, belongsTo model.ID, doc
 	document.UpdatedAt = nil
 
 	cypher := `
-	MATCH (b:` + belongsTo.Label() + ` {id: $belong_to_id}), (o:` + document.CreatedBy.Label() + ` {id: $created_by_id})
+	MATCH (b:` + belongsTo.Label() + ` {id: $belong_to_id})
+	MATCH (o:` + document.CreatedBy.Label() + ` {id: $created_by_id})
 	CREATE
 		(d:` + document.ID.Label() + ` {
 			id: $id, name: $name, excerpt: $excerpt, file_id: $file_id, created_by: $created_by_id,

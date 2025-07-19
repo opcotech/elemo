@@ -144,7 +144,8 @@ func (r *IssueRepository) Create(ctx context.Context, project model.ID, issue *m
 	issue.UpdatedAt = nil
 
 	cypher := `
-	MATCH (p:` + project.Label() + ` {id: $project_id}), (u:` + issue.ReportedBy.Label() + ` {id: $reported_by_id})
+	MATCH (p:` + project.Label() + ` {id: $project_id})
+	MATCH (u:` + issue.ReportedBy.Label() + ` {id: $reported_by_id})
 	CREATE
 		(i:` + issue.ID.Label() + ` {
 			id: $id, numeric_id: $numeric_id, kind: $kind, title: $title, description: $description, status: $status,
@@ -358,7 +359,8 @@ func (r *IssueRepository) AddWatcher(ctx context.Context, issue model.ID, user m
 	}
 
 	cypher := `
-	MATCH (i:` + issue.Label() + ` {id: $issue_id}), (u:` + user.Label() + ` {id: $user_id})
+	MATCH (i:` + issue.Label() + ` {id: $issue_id})
+	MATCH (u:` + user.Label() + ` {id: $user_id})
 	CREATE (u)-[:` + EdgeKindWatches.String() + ` {id: $rel_id, created_at: datetime($created_at)}]->(i)`
 
 	params := map[string]any{
@@ -444,7 +446,8 @@ func (r *IssueRepository) AddRelation(ctx context.Context, relation *model.Issue
 	relation.UpdatedAt = nil
 
 	cypher := `
-	MATCH (s:` + relation.Source.Label() + ` {id: $source_id}), (t:` + relation.Target.Label() + ` {id: $target_id})
+	MATCH (s:` + relation.Source.Label() + ` {id: $source_id})
+	MATCH (t:` + relation.Target.Label() + ` {id: $target_id})
 	MERGE (s)-[r:` + EdgeKindRelatedTo.String() + ` {kind: $kind}]->(t)
 	ON CREATE SET r.id = $id, r.created_at = datetime($created_at)
 	`

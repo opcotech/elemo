@@ -67,7 +67,8 @@ func (r *TodoRepository) Create(ctx context.Context, todo *model.Todo) error {
 	todo.UpdatedAt = nil
 
 	cypher := `
-	MATCH (o:` + todo.OwnedBy.Label() + ` {id: $owner_id}), (c:` + todo.CreatedBy.Label() + ` {id: $creator_id})
+	MATCH (o:` + todo.OwnedBy.Label() + ` {id: $owner_id})
+	MATCH (c:` + todo.CreatedBy.Label() + ` {id: $creator_id})
 	CREATE
 		(t:` + todo.ID.Label() + ` {
 			id: $id, title: $title, description: $description, priority: $priority, completed: $completed,

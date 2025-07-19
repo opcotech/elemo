@@ -65,7 +65,8 @@ func (r *AttachmentRepository) Create(ctx context.Context, belongsTo model.ID, a
 	attachment.UpdatedAt = nil
 
 	cypher := `
-	MATCH (b:` + belongsTo.Label() + ` {id: $belong_to_id}), (o:` + attachment.CreatedBy.Label() + ` {id: $created_by_id})
+	MATCH (b:` + belongsTo.Label() + ` {id: $belong_to_id})
+	MATCH (o:` + attachment.CreatedBy.Label() + ` {id: $created_by_id})
 	CREATE
 		(a:` + attachment.ID.Label() + ` {
 			id: $id, name: $name, file_id: $file_id, created_by: $created_by_id, created_at: datetime($created_at)
