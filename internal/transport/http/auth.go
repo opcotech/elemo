@@ -161,7 +161,7 @@ func (c *authController) ClientAuthHandler(w http.ResponseWriter, r *http.Reques
 
 	w.Header().Set("Content-Type", "text/html;charset=UTF-8")
 	_, _ = w.Write([]byte(`<h1>Authorize page</h1>`))
-	_, _ = w.Write([]byte(fmt.Sprintf(`
+	_, _ = w.Write(fmt.Appendf(nil, `
 		<form action="%s" method="post">
 			<h1>Authorize</h1>
 			<p>The client would like to perform actions on your behalf.</p>
@@ -170,7 +170,7 @@ func (c *authController) ClientAuthHandler(w http.ResponseWriter, r *http.Reques
 				Allow
 			</button>
 		</form>
-	`, PathOauthAuthorize)))
+	`, PathOauthAuthorize))
 }
 
 func (c *authController) LoginHandler(w http.ResponseWriter, r *http.Request) {

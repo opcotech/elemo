@@ -127,7 +127,7 @@ func NewSystemService(resources map[model.HealthCheckComponent]Pingable, version
 		return nil, ErrNoVersionInfo
 	}
 
-	if svc.resources == nil || len(svc.resources) == 0 {
+	if len(svc.resources) == 0 {
 		return nil, ErrNoResources
 	}
 

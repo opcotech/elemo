@@ -50,8 +50,8 @@ func NewPool(ctx context.Context, conf *config.RelationalDatabaseConfig) (Pool, 
 
 	poolConf.MaxConnLifetime = conf.MaxConnectionLifetime * time.Second
 	poolConf.MaxConnIdleTime = conf.MaxConnectionIdleTime * time.Second
-	poolConf.MaxConns = int32(conf.MaxConnections)
-	poolConf.MinConns = int32(conf.MinConnections)
+	poolConf.MaxConns = int32(conf.MaxConnections) // nolint:gosec
+	poolConf.MinConns = int32(conf.MinConnections) // nolint:gosec
 
 	pool, err := pgxpool.NewWithConfig(ctx, poolConf)
 	if err != nil {

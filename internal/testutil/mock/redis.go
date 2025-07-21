@@ -1653,13 +1653,13 @@ func (r *RedisClient) ZCard(ctx context.Context, key string) *redis.IntCmd {
 	return args.Get(0).(*redis.IntCmd)
 }
 
-func (r *RedisClient) ZCount(ctx context.Context, key, min, max string) *redis.IntCmd {
-	args := r.Called(ctx, key, min, max)
+func (r *RedisClient) ZCount(ctx context.Context, key, _min, _max string) *redis.IntCmd {
+	args := r.Called(ctx, key, _min, _max)
 	return args.Get(0).(*redis.IntCmd)
 }
 
-func (r *RedisClient) ZLexCount(ctx context.Context, key, min, max string) *redis.IntCmd {
-	args := r.Called(ctx, key, min, max)
+func (r *RedisClient) ZLexCount(ctx context.Context, key, _min, _max string) *redis.IntCmd {
+	args := r.Called(ctx, key, _min, _max)
 	return args.Get(0).(*redis.IntCmd)
 }
 
@@ -1763,13 +1763,13 @@ func (r *RedisClient) ZRemRangeByRank(ctx context.Context, key string, start, st
 	return args.Get(0).(*redis.IntCmd)
 }
 
-func (r *RedisClient) ZRemRangeByScore(ctx context.Context, key, min, max string) *redis.IntCmd {
-	args := r.Called(ctx, key, min, max)
+func (r *RedisClient) ZRemRangeByScore(ctx context.Context, key, _min, _max string) *redis.IntCmd {
+	args := r.Called(ctx, key, _min, _max)
 	return args.Get(0).(*redis.IntCmd)
 }
 
-func (r *RedisClient) ZRemRangeByLex(ctx context.Context, key, min, max string) *redis.IntCmd {
-	args := r.Called(ctx, key, min, max)
+func (r *RedisClient) ZRemRangeByLex(ctx context.Context, key, _min, _max string) *redis.IntCmd {
+	args := r.Called(ctx, key, _min, _max)
 	return args.Get(0).(*redis.IntCmd)
 }
 
@@ -2233,8 +2233,8 @@ func (r *RedisClient) ClusterDelSlots(ctx context.Context, slots ...int) *redis.
 	return args.Get(0).(*redis.StatusCmd)
 }
 
-func (r *RedisClient) ClusterDelSlotsRange(ctx context.Context, min, max int) *redis.StatusCmd {
-	args := r.Called(ctx, min, max)
+func (r *RedisClient) ClusterDelSlotsRange(ctx context.Context, _min, _max int) *redis.StatusCmd {
+	args := r.Called(ctx, _min, _max)
 	return args.Get(0).(*redis.StatusCmd)
 }
 
@@ -2258,8 +2258,8 @@ func (r *RedisClient) ClusterAddSlots(ctx context.Context, slots ...int) *redis.
 	return args.Get(0).(*redis.StatusCmd)
 }
 
-func (r *RedisClient) ClusterAddSlotsRange(ctx context.Context, min, max int) *redis.StatusCmd {
-	args := r.Called(ctx, min, max)
+func (r *RedisClient) ClusterAddSlotsRange(ctx context.Context, _min, _max int) *redis.StatusCmd {
+	args := r.Called(ctx, _min, _max)
 	return args.Get(0).(*redis.StatusCmd)
 }
 

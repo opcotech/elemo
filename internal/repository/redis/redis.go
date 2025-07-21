@@ -27,7 +27,7 @@ func NewClient(conf *config.CacheDatabaseConfig) (redis.UniversalClient, error) 
 		Addr:                  fmt.Sprintf("%s:%d", conf.Host, conf.Port),
 		Username:              conf.Username,
 		Password:              conf.Password,
-		DB:                    conf.RedisConfig.Database,
+		DB:                    conf.Database,
 		MaxRetries:            3,
 		DialTimeout:           conf.DialTimeout * time.Second,
 		ReadTimeout:           conf.ReadTimeout * time.Second,

@@ -15,7 +15,12 @@ func NewIssue(reportedBy model.ID) *model.Issue {
 		panic(err)
 	}
 
-	issue, err := model.NewIssue(uint(numericID), testutil.GenerateRandomString(10), model.IssueKindStory, reportedBy)
+	issue, err := model.NewIssue(
+		uint(numericID), // nolint:gosec
+		testutil.GenerateRandomString(10),
+		model.IssueKindStory,
+		reportedBy,
+	)
 	if err != nil {
 		panic(err)
 	}

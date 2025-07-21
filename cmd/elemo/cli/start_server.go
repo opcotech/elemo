@@ -13,8 +13,6 @@ import (
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 
-	"github.com/go-oauth2/oauth2/v4/server"
-
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/queue"
 	"github.com/opcotech/elemo/internal/repository"
@@ -382,9 +380,9 @@ func initAuthProvider(pool pg.Pool) (*authServer.Server, error) {
 	manager.MapClientStorage(clientStore)
 	manager.MapTokenStorage(tokenStore)
 
-	srv := server.NewDefaultServer(manager)
+	srv := authServer.NewDefaultServer(manager)
 	srv.SetAllowGetAccessRequest(true)
-	srv.SetClientInfoHandler(server.ClientFormHandler)
+	srv.SetClientInfoHandler(authServer.ClientFormHandler)
 	srv.SetInternalErrorHandler(srv.InternalErrorHandler)
 	srv.SetResponseErrorHandler(srv.ResponseErrorHandler)
 	srv.SetPreRedirectErrorHandler(srv.PreRedirectErrorHandler)
