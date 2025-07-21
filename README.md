@@ -2,8 +2,7 @@
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fopcotech%2Felemo.svg?type=shield&issueType=license)](https://app.fossa.com/projects/git%2Bgithub.com%2Fopcotech%2Felemo?ref=badge_shield&issueType=license)
 [![Backend Build](https://github.com/opcotech/elemo/actions/workflows/build-backend.yml/badge.svg)](https://github.com/opcotech/elemo/actions/workflows/build-backend.yml)
 [![Front-end Build](https://github.com/opcotech/elemo/actions/workflows/build-frontend.yml/badge.svg)](https://github.com/opcotech/elemo/actions/workflows/build-frontend.yml)
-[![Maintainability](https://api.codeclimate.com/v1/badges/9164ce433e407e447946/maintainability)](https://codeclimate.com/github/opcotech/elemo/maintainability)
-[![Test Coverage](https://api.codeclimate.com/v1/badges/9164ce433e407e447946/test_coverage)](https://codeclimate.com/github/opcotech/elemo/test_coverage)
+[![codecov](https://codecov.io/gh/opcotech/elemo/graph/badge.svg?token=1E0JG98ESD)](https://codecov.io/gh/opcotech/elemo)
 
 <br />
 <div align="center">

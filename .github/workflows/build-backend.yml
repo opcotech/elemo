@@ -95,11 +95,12 @@ jobs:
         uses: actions/download-artifact@main
         with:
           name: "integration-test-results"
-      - name: Upload test results
-        uses: paambaati/codeclimate-action@v9.0.0
-        env:
-          CC_TEST_REPORTER_ID: 3fa16f73e6568d7742b05ed8dbdab71641c366c85def280983aa19f9ee732cf9
+      - name: Combine coverage reports
+        run: make test.backend.coverage
+      - name: Upload coverage report
+        uses: codecov/codecov-action@v5
         with:
-          coverageCommand: make test.backend.coverage
-          prefix: github.com/${{github.repository}}
-          coverageLocations: ${{github.workspace}}/.coverage.out:gocov
+          files: .coverage.out
+          token: ${{ secrets.CODECOV_TOKEN }}
+          slug: opcotech/elemo
+          fail_ci_if_error: true
