@@ -37,9 +37,11 @@ jobs:
         run: make test.backend.unit
       - name: Stash test results
         uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
         with:
           name: "unit-test-results"
           path: .coverage.unit.out
+          include-hidden-files: true
           retention-days: 7
 
   benchmark-test:
@@ -68,9 +70,11 @@ jobs:
         run: make test.backend.integration
       - name: Stash test results
         uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
         with:
           name: "integration-test-results"
           path: .coverage.integration.out
+          include-hidden-files: true
           retention-days: 7
 
   coverage:
@@ -92,7 +96,7 @@ jobs:
         with:
           name: "integration-test-results"
       - name: Upload test results
-        uses: paambaati/codeclimate-action@v6.0.0
+        uses: paambaati/codeclimate-action@v9.0.0
         env:
           CC_TEST_REPORTER_ID: 3fa16f73e6568d7742b05ed8dbdab71641c366c85def280983aa19f9ee732cf9
         with:
