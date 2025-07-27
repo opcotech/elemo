@@ -1,8 +1,7 @@
-[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/8801/badge)](https://www.bestpractices.dev/projects/8801)
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fopcotech%2Felemo.svg?type=shield&issueType=license)](https://app.fossa.com/projects/git%2Bgithub.com%2Fopcotech%2Felemo?ref=badge_shield&issueType=license)
-[![Backend Build](https://github.com/opcotech/elemo/actions/workflows/build-backend.yml/badge.svg)](https://github.com/opcotech/elemo/actions/workflows/build-backend.yml)
-[![Front-end Build](https://github.com/opcotech/elemo/actions/workflows/build-frontend.yml/badge.svg)](https://github.com/opcotech/elemo/actions/workflows/build-frontend.yml)
-[![codecov](https://codecov.io/gh/opcotech/elemo/graph/badge.svg?token=1E0JG98ESD)](https://codecov.io/gh/opcotech/elemo)
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/8801/badge)](https://www.bestpractices.dev/projects/8801)
+[![Build](https://github.com/opcotech/elemo/actions/workflows/build.yml/badge.svg)](https://github.com/opcotech/elemo/actions/workflows/build.yml)
+[![Codecov](https://codecov.io/gh/opcotech/elemo/graph/badge.svg?token=1E0JG98ESD)](https://codecov.io/gh/opcotech/elemo)
 
 <br />
 <div align="center">
