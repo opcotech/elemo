@@ -1,20 +1,37 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+yarn.lock
+
+# Sentry Config File
+.env.sentry-build-plugin
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
 
 # dependencies
 /node_modules
 /.pnp
 .pnp.js
+.yarn/install-state.gz
 
 # testing
 /coverage
+/tests/results
 
-# next.js
-/.next/
-/out/
+# tanstack
+/.tanstack
+/.nitro
+
+# Vite
+/.output
+/.vinxi
+/.cache
 
 # production
+/api
 /build
-/storybook-static
+/server/build
+/public/build
 
 # misc
 .DS_Store
@@ -28,7 +45,6 @@ yarn-error.log*
 # local env files
 .env
 .env*.local
-.env*.bkp
 
 # vercel
 .vercel
@@ -37,5 +53,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# test results
-tests/results
+# storybook
+*storybook.log
+storybook-static
+
+# generated client
+!/src/lib/client/*.gen.ts
