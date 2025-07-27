@@ -11,14 +11,12 @@ on:
 jobs:
   lint:
     runs-on: "ubuntu-latest"
-    env:
-      GO111MODULE: on
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: "20.x"
-      - name: Install pnpm
+      - name: Install tooling
         run: npm install -g pnpm
       - name: Lint
         run: make dep.frontend lint.frontend
@@ -27,6 +25,11 @@ jobs:
     runs-on: "ubuntu-latest"
     needs:
       - lint
+    strategy:
+      matrix:
+        project: [chromium, firefox, webkit, 'Mobile Chrome', 'Mobile Safari']
+      fail-fast: false
+    name: E2E Tests - ${{ matrix.project }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -35,20 +38,44 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: "^1.22"
-      - name: Install dependencies
+      - name: Install tooling
         run: |
           pip install jq yq
           npm install -g pnpm
+      - name: Install dependencies
+        run: |
+          cd web
+          pnpm install
+      - name: Install Playwright browsers
+        run: |
+          cd web
+          pnpm exec playwright install --with-deps
       - name: Setup local env
         run: |
           ./scripts/setup.sh
           sed -i s/CI=false/CI=true/g web/.env.test.local
-          sed -i s/PLAYWRIGHT_HEADLESS=false/PLAYWRIGHT_HEADLESS=true/g web/.env.test.local
+      - name: Start backend services
+        run: |
+          make start.backend
       - name: Execute end-to-end tests
-        run: make dep.frontend test.frontend.e2e
-      - name: Stash test results
+        run: |
+          cd web
+          pnpm test:e2e --project "${{ matrix.project }}"
+      - name: Upload test results
         uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: "unit-test-results"
-          path: web/tests/results
+          name: "e2e-test-results-${{ matrix.project }}"
+          path: web/test-results
           retention-days: 7
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: "playwright-report-${{ matrix.project }}"
+          path: web/playwright-report
+          retention-days: 7
+      - name: Stop backend services
+        if: always()
+        run: |
+          make stop.backend

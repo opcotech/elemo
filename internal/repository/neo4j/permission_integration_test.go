@@ -157,6 +157,13 @@ func (s *PermissionRepositoryIntegrationTestSuite) TestHasAnyRelation() {
 	s.Assert().True(hasRelation)
 }
 
+func (s *PermissionRepositoryIntegrationTestSuite) TestHasAnyRelationSameUser() {
+	// Test that a user always has a relation to themselves
+	hasRelation, err := s.PermissionRepo.HasAnyRelation(context.Background(), s.testUser.ID, s.testUser.ID)
+	s.Require().NoError(err)
+	s.Assert().True(hasRelation)
+}
+
 func (s *PermissionRepositoryIntegrationTestSuite) TestHasSystemRole() {
 	hasRole, err := s.PermissionRepo.HasSystemRole(
 		context.Background(),

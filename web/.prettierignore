@@ -1,2 +1,47 @@
-.next/
+# Dependencies
 node_modules/
+
+# Build outputs
+dist/
+build/
+.output/
+.nitro/
+
+# Generated files
+*.d.ts
+*.map
+
+# Package manager files
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+
+# Config files that should maintain their formatting
+*.config.js
+*.config.ts
+vite.config.ts
+postcss.config.ts
+
+# Version control
+.git/
+
+# IDE/Editor files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Environment files
+.env*
+
+# Public assets
+public/
+
+# Temporary files
+*.tmp
+*.temp

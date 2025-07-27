@@ -273,6 +273,11 @@ func (r *PermissionRepository) HasAnyRelation(ctx context.Context, source, targe
 		return false, errors.Join(repository.ErrRelationRead, err)
 	}
 
+	// If source and target are the same, they always have a relation (self-relation)
+	if source.String() == target.String() {
+		return true, nil
+	}
+
 	cypher := `
 	MATCH (s:` + source.Label() + ` {id: $source_id})
 	MATCH (t:` + target.Label() + ` {id: $target_id})
