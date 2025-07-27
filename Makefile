@@ -17,7 +17,7 @@ PNPM_EXEC := $(shell which pnpm)
 PNPM_RUN := $(PNPM_EXEC) run --prefix $(FRONTEND_DIR)
 
 GO_EXEC := $(shell which go)
-GO_TEST_COVER := $(GO_EXEC) test -json -race -shuffle=on -cover -covermode=atomic -ldflags="-extldflags=-Wl,-ld_classic"
+GO_TEST_COVER := $(GO_EXEC) test -race -shuffle=on -cover -covermode=atomic -ldflags="-extldflags=-Wl,-ld_classic"
 GO_TEST_IGNORE := "(mode: atomic|testutil|tools|cmd|http\/api)"
 
 TMPDIR := $(shell echo "${TMPDIR:-/tmp}")

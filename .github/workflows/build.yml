@@ -1,0 +1,181 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  backend-lint:
+    name: Backend Lint
+    runs-on: "ubuntu-latest"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "^1.24"
+      - name: Go CI Lint
+        uses: golangci/golangci-lint-action@v7
+        with:
+          version: latest
+          args: --timeout 5m
+
+  frontend-lint:
+    name: Frontend Lint
+    runs-on: "ubuntu-latest"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+      - name: Install tooling
+        run: npm install -g pnpm
+      - name: Lint
+        run: make dep.frontend lint.frontend
+
+  backend-unit-test:
+    name: Backend Unit Tests
+    runs-on: "ubuntu-latest"
+    needs:
+      - backend-lint
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "^1.24"
+      - name: Execute unit tests
+        run: make test.backend.unit
+      - name: Stash test results
+        uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: "unit-test-results"
+          path: .coverage.unit.out
+          include-hidden-files: true
+          retention-days: 7
+
+  backend-benchmark-test:
+    name: Backend Benchmark Tests
+    runs-on: "ubuntu-latest"
+    needs:
+      - backend-lint
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "^1.24"
+      - name: Execute benchmark tests
+        run: make test.backend.bench
+
+  backend-integration-test:
+    name: Backend Integration Tests
+    runs-on: "ubuntu-latest"
+    needs:
+      - backend-unit-test
+      - backend-benchmark-test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "^1.24"
+      - name: Execute integration tests
+        run: make test.backend.integration
+      - name: Stash test results
+        uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: "integration-test-results"
+          path: .coverage.integration.out
+          include-hidden-files: true
+          retention-days: 7
+
+  frontend-e2e-test:
+    name: Frontend E2E Tests - ${{ matrix.project }}
+    runs-on: "ubuntu-latest"
+    needs:
+      - frontend-lint
+      - backend-integration-test
+    strategy:
+      matrix:
+        project: [chromium, firefox, webkit, 'Mobile Chrome', 'Mobile Safari']
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "^1.24"
+      - name: Install tooling
+        run: |
+          pip install jq yq
+          npm install -g pnpm
+      - name: Install dependencies
+        run: |
+          cd web
+          pnpm install
+      - name: Install Playwright browsers
+        run: |
+          cd web
+          pnpm exec playwright install --with-deps
+      - name: Setup local env
+        run: |
+          ./scripts/setup.sh
+          sed -i s/CI=false/CI=true/g web/.env.test.local
+      - name: Start backend services
+        run: |
+          make start.backend
+      - name: Execute end-to-end tests
+        run: |
+          cd web
+          pnpm test:e2e --project "${{ matrix.project }}"
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: "e2e-test-results-${{ matrix.project }}"
+          path: web/test-results
+          retention-days: 7
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: "playwright-report-${{ matrix.project }}"
+          path: web/playwright-report
+          retention-days: 7
+      - name: Stop backend services
+        if: always()
+        run: |
+          make stop.backend
+
+  coverage:
+    name: Coverage Report
+    runs-on: ubuntu-latest
+    needs:
+      - backend-integration-test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "^1.24"
+      - name: Unstash unit test results
+        uses: actions/download-artifact@v4
+        with:
+          name: "unit-test-results"
+      - name: Unstash integration test results
+        uses: actions/download-artifact@v4
+        with:
+          name: "integration-test-results"
+      - name: Combine coverage reports
+        run: make test.backend.coverage
+      - name: Upload coverage report
+        uses: codecov/codecov-action@v5
+        with:
+          files: .coverage.out
+          token: ${{ secrets.CODECOV_TOKEN }}
+          slug: opcotech/elemo
+          fail_ci_if_error: true 
