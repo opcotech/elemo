@@ -31,6 +31,8 @@ import {
 } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/use-auth";
 import { v1TodosCreateMutation } from "@/lib/client/@tanstack/react-query.gen";
 import { zTodoCreate } from "@/lib/client/zod.gen";
@@ -216,17 +218,16 @@ export function AddTodoForm({
 
             <DialogFooter className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
+                <Checkbox
                   id="createMore"
-                  name="createMore"
-                  className="h-4 w-4"
                   checked={createMore}
-                  onChange={(e) => setCreateMore(e.target.checked)}
+                  onCheckedChange={(checked) =>
+                    setCreateMore(!!checked)
+                  }
                 />
-                <label htmlFor="createMore" className="text-sm">
+                <Label htmlFor="createMore" className="text-sm">
                   Create more
-                </label>
+                </Label>
               </div>
             
               <Button type="submit" disabled={mutation.isPending}>
