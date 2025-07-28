@@ -1,6 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
+import { useState } from "react";
 import type { z } from "zod";
 
 import { Button } from "@/components/ui/button";
@@ -53,6 +54,7 @@ export function AddTodoForm({
   onSuccess,
 }: AddTodoFormProps) {
   const { user } = useAuth();
+  const [createMore, setCreateMore] = useState(false);
 
   const form = useForm<TodoFormValues>({
     resolver: zodResolver(todoFormSchema),
@@ -77,7 +79,7 @@ export function AddTodoForm({
       },
       {
         onSuccess: () => {
-          onOpenChange(false);
+          if (!createMore) onOpenChange(false);
           onSuccess?.();
           form.reset();
           showSuccessToast(
@@ -203,7 +205,21 @@ export function AddTodoForm({
               />
             </div>
 
-            <DialogFooter>
+            <DialogFooter className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="createMore"
+                  name="createMore"
+                  className="h-4 w-4"
+                  checked={createMore}
+                  onChange={(e) => setCreateMore(e.target.checked)}
+                />
+                <label htmlFor="createMore" className="text-sm">
+                  Create more
+                </label>
+              </div>
+            
               <Button type="submit" disabled={mutation.isPending}>
                 {mutation.isPending ? (
                   <>
@@ -215,6 +231,7 @@ export function AddTodoForm({
                 )}
               </Button>
             </DialogFooter>
+
           </form>
         </Form>
       </DialogContent>
