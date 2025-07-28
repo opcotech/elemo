@@ -1,9 +1,11 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import type { z } from "zod";
 
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { DatePicker } from "@/components/ui/date-picker";
 import {
   Dialog,
@@ -21,6 +23,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -41,6 +44,13 @@ const todoFormSchema = zTodoCreate.omit({ owned_by: true });
 
 type TodoFormValues = z.infer<typeof todoFormSchema>;
 
+const defaultValues: TodoFormValues = {
+  title: "",
+  description: undefined,
+  priority: "normal",
+  due_date: null,
+};
+
 interface AddTodoFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -53,13 +63,11 @@ export function AddTodoForm({
   onSuccess,
 }: AddTodoFormProps) {
   const { user } = useAuth();
+  const [createMore, setCreateMore] = useState(false);
 
   const form = useForm<TodoFormValues>({
     resolver: zodResolver(todoFormSchema),
-    defaultValues: {
-      priority: "normal",
-      due_date: null,
-    },
+    defaultValues,
   });
 
   const mutation = useMutation(v1TodosCreateMutation());
@@ -77,9 +85,9 @@ export function AddTodoForm({
       },
       {
         onSuccess: () => {
-          onOpenChange(false);
+          if (!createMore) onOpenChange(false);
           onSuccess?.();
-          form.reset();
+          form.reset(defaultValues);
           showSuccessToast(
             "Todo added successfully",
             `Todo "${values.title}" with priority "${values.priority}" added successfully`
@@ -95,7 +103,7 @@ export function AddTodoForm({
   const handleOpenChange = (newOpen: boolean) => {
     if (!newOpen) {
       // Reset form when closing
-      form.reset();
+      form.reset(defaultValues);
     }
     onOpenChange(newOpen);
   };
@@ -142,8 +150,13 @@ export function AddTodoForm({
                       placeholder="Enter todo description (optional)"
                       className="min-h-40 resize-y"
                       rows={6}
-                      {...field}
-                      value={field.value || undefined}
+                      value={field.value || ""}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        field.onChange(value === "" ? undefined : value);
+                      }}
+                      onBlur={field.onBlur}
+                      name={field.name}
                     />
                   </FormControl>
                   <FormMessage />
@@ -159,8 +172,8 @@ export function AddTodoForm({
                   <FormItem className="w-1/3">
                     <FormLabel>Priority</FormLabel>
                     <Select
+                      value={field.value}
                       onValueChange={field.onChange}
-                      defaultValue={field.value}
                     >
                       <FormControl>
                         <SelectTrigger className="w-full">
@@ -203,7 +216,18 @@ export function AddTodoForm({
               />
             </div>
 
-            <DialogFooter>
+            <DialogFooter className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="createMore"
+                  checked={createMore}
+                  onCheckedChange={(checked) => setCreateMore(!!checked)}
+                />
+                <Label htmlFor="createMore" className="mb-0.5 font-normal">
+                  Create more
+                </Label>
+              </div>
+              
               <Button type="submit" disabled={mutation.isPending}>
                 {mutation.isPending ? (
                   <>
@@ -215,6 +239,7 @@ export function AddTodoForm({
                 )}
               </Button>
             </DialogFooter>
+            
           </form>
         </Form>
       </DialogContent>
