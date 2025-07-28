@@ -15,7 +15,7 @@ var (
 	neo4jContainerRequest = func(name string) testcontainers.GenericContainerRequest {
 		return testcontainers.GenericContainerRequest{
 			ContainerRequest: testcontainers.ContainerRequest{
-				Image:        "neo4j:5.6",
+				Image:        "neo4j:5.26",
 				Name:         name + "-neo4j",
 				ExposedPorts: []string{"7687/tcp"},
 				WaitingFor:   wait.ForLog("Started."),
@@ -31,7 +31,7 @@ var (
 	pgContainerRequest = func(name string) testcontainers.GenericContainerRequest {
 		return testcontainers.GenericContainerRequest{
 			ContainerRequest: testcontainers.ContainerRequest{
-				Image:        "postgres:15.2",
+				Image:        "postgres:17.5",
 				Name:         name + "-pg",
 				ExposedPorts: []string{"5432/tcp"},
 				WaitingFor:   wait.ForLog("database system is ready to accept connections").WithOccurrence(2).WithStartupTimeout(5 * time.Second),
@@ -49,7 +49,7 @@ var (
 	redisContainerRequest = func(name string) testcontainers.GenericContainerRequest {
 		return testcontainers.GenericContainerRequest{
 			ContainerRequest: testcontainers.ContainerRequest{
-				Image:        "redis:7.0",
+				Image:        "redis:8.0",
 				Name:         name + "-redis",
 				ExposedPorts: []string{"6379/tcp"},
 				WaitingFor:   wait.ForLog("* Ready to accept connections"),

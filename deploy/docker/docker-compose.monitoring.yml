@@ -6,7 +6,7 @@ networks:
 
 services:
   otel_collector:
-    image: otel/opentelemetry-collector-contrib:0.70.0
+    image: otel/opentelemetry-collector-contrib:0.130.1
     container_name: elemo-otel-collector
     command:
       - "--config=/etc/otel-collector-config.yaml"
