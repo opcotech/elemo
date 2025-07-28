@@ -10,7 +10,7 @@ networks:
 
 services:
   redis:
-    image: redis:7.0
+    image: redis:8.0
     container_name: elemo-redis
     ports:
       - "6379:6379"
@@ -21,7 +21,7 @@ services:
       retries: 3
 
   neo4j:
-    image: neo4j:5.6.0
+    image: neo4j:5.26
     container_name: elemo-neo4j
     ports:
       - "7474:7474"
@@ -40,7 +40,7 @@ services:
       retries: 3
 
   postgres:
-    image: postgres:15.2
+    image: postgres:17.5
     container_name: elemo-postgres
     ports:
       - "5432:5432"
@@ -57,11 +57,15 @@ services:
       retries: 3
 
   smtp:
-    image: richarvey/mailhog:latest
+    image: axllent/mailpit:latest
     container_name: elemo-smtp
     ports:
       - "1025:1025"
       - "8025:8025"
+    environment:
+      MP_MAX_MESSAGES: 5000
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
 
   elemo-server:
     image: elemo-server
