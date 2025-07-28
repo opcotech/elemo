@@ -42,6 +42,13 @@ const todoFormSchema = zTodoCreate.omit({ owned_by: true });
 
 type TodoFormValues = z.infer<typeof todoFormSchema>;
 
+const defaultValues: TodoFormValues = {
+  title: "",
+  description: undefined,
+  priority: "normal",
+  due_date: null,
+};
+
 interface AddTodoFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -57,12 +64,9 @@ export function AddTodoForm({
   const [createMore, setCreateMore] = useState(false);
 
   const form = useForm<TodoFormValues>({
-    resolver: zodResolver(todoFormSchema),
-    defaultValues: {
-      priority: "normal",
-      due_date: null,
-    },
-  });
+  resolver: zodResolver(todoFormSchema),
+  defaultValues,
+});
 
   const mutation = useMutation(v1TodosCreateMutation());
 
@@ -81,7 +85,7 @@ export function AddTodoForm({
         onSuccess: () => {
           if (!createMore) onOpenChange(false);
           onSuccess?.();
-          form.reset();
+          form.reset(defaultValues);
           showSuccessToast(
             "Todo added successfully",
             `Todo "${values.title}" with priority "${values.priority}" added successfully`
@@ -97,7 +101,7 @@ export function AddTodoForm({
   const handleOpenChange = (newOpen: boolean) => {
     if (!newOpen) {
       // Reset form when closing
-      form.reset();
+      form.reset(defaultValues);
     }
     onOpenChange(newOpen);
   };
@@ -144,8 +148,13 @@ export function AddTodoForm({
                       placeholder="Enter todo description (optional)"
                       className="min-h-40 resize-y"
                       rows={6}
-                      {...field}
-                      value={field.value || undefined}
+                      value={field.value || ""}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        field.onChange(value === "" ? undefined : value);
+                      }}
+                      onBlur={field.onBlur}
+                      name={field.name}
                     />
                   </FormControl>
                   <FormMessage />
@@ -154,32 +163,32 @@ export function AddTodoForm({
             />
 
             <div className="flex gap-4">
-              <FormField
-                control={form.control}
-                name="priority"
-                render={({ field }) => (
-                  <FormItem className="w-1/3">
-                    <FormLabel>Priority</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Select a priority" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="normal">Normal</SelectItem>
-                        <SelectItem value="important">Important</SelectItem>
-                        <SelectItem value="urgent">Urgent</SelectItem>
-                        <SelectItem value="critical">Critical</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            <FormField
+              control={form.control}
+              name="priority"
+              render={({ field }) => (
+                <FormItem className="w-1/3">
+                  <FormLabel>Priority</FormLabel>
+                  <Select
+                    value={field.value}
+                    onValueChange={field.onChange}
+                  >
+                    <FormControl>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select a priority" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="normal">Normal</SelectItem>
+                      <SelectItem value="important">Important</SelectItem>
+                      <SelectItem value="urgent">Urgent</SelectItem>
+                      <SelectItem value="critical">Critical</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
               <FormField
                 control={form.control}
