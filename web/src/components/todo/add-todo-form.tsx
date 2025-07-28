@@ -1,10 +1,11 @@
-import { useState } from "react";
-import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
 import type { z } from "zod";
 
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { DatePicker } from "@/components/ui/date-picker";
 import {
   Dialog,
@@ -22,6 +23,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -31,8 +33,6 @@ import {
 } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/use-auth";
 import { v1TodosCreateMutation } from "@/lib/client/@tanstack/react-query.gen";
 import { zTodoCreate } from "@/lib/client/zod.gen";
@@ -66,9 +66,9 @@ export function AddTodoForm({
   const [createMore, setCreateMore] = useState(false);
 
   const form = useForm<TodoFormValues>({
-  resolver: zodResolver(todoFormSchema),
-  defaultValues,
-});
+    resolver: zodResolver(todoFormSchema),
+    defaultValues,
+  });
 
   const mutation = useMutation(v1TodosCreateMutation());
 
@@ -165,32 +165,32 @@ export function AddTodoForm({
             />
 
             <div className="flex gap-4">
-            <FormField
-              control={form.control}
-              name="priority"
-              render={({ field }) => (
-                <FormItem className="w-1/3">
-                  <FormLabel>Priority</FormLabel>
-                  <Select
-                    value={field.value}
-                    onValueChange={field.onChange}
-                  >
-                    <FormControl>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select a priority" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="normal">Normal</SelectItem>
-                      <SelectItem value="important">Important</SelectItem>
-                      <SelectItem value="urgent">Urgent</SelectItem>
-                      <SelectItem value="critical">Critical</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+              <FormField
+                control={form.control}
+                name="priority"
+                render={({ field }) => (
+                  <FormItem className="w-1/3">
+                    <FormLabel>Priority</FormLabel>
+                    <Select
+                      value={field.value}
+                      onValueChange={field.onChange}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select a priority" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="normal">Normal</SelectItem>
+                        <SelectItem value="important">Important</SelectItem>
+                        <SelectItem value="urgent">Urgent</SelectItem>
+                        <SelectItem value="critical">Critical</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               <FormField
                 control={form.control}
@@ -221,15 +221,13 @@ export function AddTodoForm({
                 <Checkbox
                   id="createMore"
                   checked={createMore}
-                  onCheckedChange={(checked) =>
-                    setCreateMore(!!checked)
-                  }
+                  onCheckedChange={(checked) => setCreateMore(!!checked)}
                 />
-                <Label htmlFor="createMore" className="text-sm">
+                <Label htmlFor="createMore" className="mb-0.5 font-normal">
                   Create more
                 </Label>
               </div>
-            
+              
               <Button type="submit" disabled={mutation.isPending}>
                 {mutation.isPending ? (
                   <>
@@ -241,7 +239,7 @@ export function AddTodoForm({
                 )}
               </Button>
             </DialogFooter>
-
+            
           </form>
         </Form>
       </DialogContent>
