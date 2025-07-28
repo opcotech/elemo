@@ -15,7 +15,7 @@
     <a href="https://github.com/opcotech/elemo/blob/main/CONTRIBUTING.md#web-component-design"><strong>Check Storybook</strong></a>
     <br />
     <br />
-    <a href="https://discord.gg/sx9FPyXAdP">Join our Discord</a>
+    Join our <a href="https://discord.gg/sx9FPyXAdP">Discord</a> or <a href="https://join.slack.com/t/elemo-workspace/shared_invite/zt-3a6w9jb46-4uGjtkcqBN9BqBD50xl8eA">Slack</a>
     ·
     <a href="https://github.com/opcotech/elemo/issues/new?assignees=&labels=bug%2Ctriage-needed&projects=&template=BUG-REPORT.yml">Bug report</a>
     ·
