@@ -7,12 +7,23 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 
 	"github.com/opcotech/elemo/internal/config"
+	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/repository/neo4j"
 	"github.com/opcotech/elemo/internal/repository/pg"
 	"github.com/opcotech/elemo/internal/repository/redis"
+	"github.com/opcotech/elemo/internal/repository/s3"
+	testConfig "github.com/opcotech/elemo/internal/testutil/config"
 	testContainer "github.com/opcotech/elemo/internal/testutil/container"
 	testRepo "github.com/opcotech/elemo/internal/testutil/repository"
 )
+
+type ConfigurationTestSuite struct {
+	Config *config.Config
+}
+
+func (s *ConfigurationTestSuite) LoadConfig() {
+	s.Config = testConfig.Conf
+}
 
 // ContainerIntegrationTestSuite is a test suite which uses a container to run
 // tests.
@@ -176,4 +187,34 @@ func (s *RedisContainerIntegrationTestSuite) GetKeys(ts *ContainerIntegrationTes
 	keys, err := s.RedisDB.GetClient().Keys(context.Background(), pattern).Result()
 	ts.Require().NoError(err)
 	return keys
+}
+
+// LocalStackContainerIntegrationTestSuite is a test suite which sets up a
+// LocalStack container to run tests.
+type LocalStackContainerIntegrationTestSuite struct {
+	S3Storage *s3.Storage
+
+	StaticFileRepository repository.StaticFileRepository
+}
+
+func (s *LocalStackContainerIntegrationTestSuite) BootstrapLocalStack(ts *ContainerIntegrationTestSuite) {
+	testRepo.BootstrapS3Storage(context.Background(), ts.T(), s.S3Storage)
+}
+
+func (s *LocalStackContainerIntegrationTestSuite) SetupLocalStack(ts *ContainerIntegrationTestSuite, name string) {
+	var err error
+
+	localStackC, localStackConf := testContainer.NewLocalStackContainer(context.Background(), ts.T(), name)
+	ts.AddContainer(localStackC)
+
+	s.S3Storage = testRepo.NewS3Storage(ts.T(), localStackConf)
+
+	s.StaticFileRepository, err = s3.NewStaticFileRepository(s3.WithStorage(s.S3Storage))
+	ts.Require().NoError(err)
+
+	s.BootstrapLocalStack(ts)
+}
+
+func (s *LocalStackContainerIntegrationTestSuite) CleanupLocalStack(ts *ContainerIntegrationTestSuite) {
+	testRepo.CleanupS3Storage(context.Background(), ts.T(), s.S3Storage)
 }

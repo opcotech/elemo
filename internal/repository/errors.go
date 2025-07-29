@@ -21,6 +21,11 @@ var (
 	ErrDocumentDelete           = errors.New("failed to delete document")                 // the document could not be deleted
 	ErrDocumentRead             = errors.New("failed to read document")                   // the document could not be retrieved
 	ErrDocumentUpdate           = errors.New("failed to update document")                 // the document could not be updated
+	ErrFileCreate               = errors.New("failed to create file")                     // the file could not be created
+	ErrFileDelete               = errors.New("failed to delete file")                     // the file could not be deleted
+	ErrFileGet                  = errors.New("failed to get file")                        // the file could not be retrieved
+	ErrFileUpdate               = errors.New("failed to update file")                     // the file could not be updated
+	ErrInvalidConfig            = errors.New("invalid config")                            // the config is invalid
 	ErrInvalidDatabase          = errors.New("invalid database")                          // the database is invalid
 	ErrInvalidDriver            = errors.New("invalid driver")                            // the driver is invalid
 	ErrInvalidPool              = errors.New("invalid pool")                              // the pool is invalid
@@ -46,6 +51,7 @@ var (
 	ErrNamespaceDelete          = errors.New("failed to delete namespace")                // the namespace could not be deleted
 	ErrNamespaceRead            = errors.New("failed to read namespace")                  // the namespace could not be retrieved
 	ErrNamespaceUpdate          = errors.New("failed to update namespace")                // the namespace could not be updated
+	ErrNoBucket                 = errors.New("no bucket")                                 // the bucket is missing
 	ErrNoClient                 = errors.New("no client")                                 // the client is missing
 	ErrNoDriver                 = errors.New("no driver")                                 // the driver is missing
 	ErrNoLicenseRepository      = errors.New("no license repository provided")            // no license repository provided

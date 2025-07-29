@@ -23,6 +23,12 @@ linters:
       no-extra-aliases: true
       alias:
         # 3rd party
+        - pkg: github.com/aws/aws-sdk-go-v2/config
+          alias: awsConfig
+        - pkg: github.com/aws/aws-sdk-go-v2/credentials
+          alias: awsCredentials
+        - pkg: github.com/aws/aws-sdk-go-v2/service/s3
+          alias: awsS3
         - pkg: github.com/oapi-codegen/runtime/types
           alias: oapiTypes
         - pkg: github.com/oapi-codegen/nethttp-middleware

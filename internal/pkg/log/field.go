@@ -46,6 +46,7 @@ const (
 	FieldStatus                = "status"                  // name of the user status field
 	FieldTTL                   = "ttl"                     // name of the ttl field
 	FieldToken                 = "token"                   // name of the token field
+	FieldTraceID               = "trace_id"                // name of the trace id field
 	FieldURL                   = "url"                     // name of the url field
 	FieldUser                  = "user"                    // name of the user field
 	FieldUserAgent             = "user_agent"              // name of the user agent field
@@ -242,6 +243,11 @@ func WithTTL(ttl time.Duration) zap.Field {
 // WithToken sets the ttl field.
 func WithToken(token string) zap.Field {
 	return zap.String(FieldToken, token)
+}
+
+// WithTraceID sets the trace ID field.
+func WithTraceID(id string) zap.Field {
+	return zap.String(FieldTraceID, id)
 }
 
 // WithURL sets the url field.

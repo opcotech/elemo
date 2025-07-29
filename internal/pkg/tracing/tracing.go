@@ -61,3 +61,16 @@ func NewTracerProvider(ctx context.Context, version *model.VersionInfo, service 
 func NoopTracer() Tracer {
 	return noopTracer
 }
+
+// GetTraceID extracts the trace ID from the span context.
+func GetTraceID(span trace.Span) string {
+	if span == nil {
+		return ""
+	}
+	return span.SpanContext().TraceID().String()
+}
+
+// GetTraceIDFromCtx extracts the trace ID from the context.
+func GetTraceIDFromCtx(ctx context.Context) string {
+	return GetTraceID(trace.SpanFromContext(ctx))
+}

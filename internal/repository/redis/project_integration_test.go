@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/opcotech/elemo/internal/model"
+	"github.com/opcotech/elemo/internal/pkg"
 	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/repository/redis"
 	"github.com/opcotech/elemo/internal/testutil"
@@ -132,8 +133,8 @@ func (s *CachedProjectRepositoryIntegrationTestSuite) TestUpdate() {
 	s.Require().NoError(s.ProjectRepo.Create(context.Background(), s.testNamespace.ID, s.project))
 
 	patch := map[string]any{
-		"name":        testutil.GenerateRandomString(10),
-		"description": testutil.GenerateRandomString(10),
+		"name":        pkg.GenerateRandomString(10),
+		"description": pkg.GenerateRandomString(10),
 	}
 
 	project, err := s.projectRepo.Update(context.Background(), s.project.ID, patch)

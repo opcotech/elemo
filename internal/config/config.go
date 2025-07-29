@@ -128,6 +128,15 @@ func (c *RelationalDatabaseConfig) ConnectionURL() string {
 	return fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=disable", c.Username, c.Password, c.Host, c.Port, c.Database)
 }
 
+// S3StorageConfig is the configuration for the s3 storage.
+type S3StorageConfig struct {
+	Bucket          string `mapstructure:"bucket"`
+	Region          string `mapstructure:"region"`
+	AccessKeyID     string `mapstructure:"access_key_id"`
+	SecretAccessKey string `mapstructure:"secret_access_key"`
+	BaseEndpoint    string `mapstructure:"base_endpoint"`
+}
+
 // TLSConfig is the configuration for TLS.
 type TLSConfig struct {
 	CertFile string `mapstructure:"cert_file"`
@@ -198,6 +207,7 @@ type Config struct {
 	GraphDatabase       GraphDatabaseConfig      `mapstructure:"graph_database"`
 	RelationalDatabase  RelationalDatabaseConfig `mapstructure:"relational_database"`
 	CacheDatabase       CacheDatabaseConfig      `mapstructure:"cache_database"`
+	S3Storage           S3StorageConfig          `mapstructure:"s3_storage"`
 	Tracing             TracingConfig            `mapstructure:"tracing"`
 	SMTP                SMTPConfig               `mapstructure:"smtp"`
 	Template            TemplateConfig           `mapstructure:"template"`

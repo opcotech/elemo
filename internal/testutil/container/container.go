@@ -2,6 +2,7 @@ package container
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -53,6 +54,28 @@ var (
 				Name:         name + "-redis",
 				ExposedPorts: []string{"6379/tcp"},
 				WaitingFor:   wait.ForLog("* Ready to accept connections"),
+			},
+			Started: true,
+			Reuse:   true,
+		}
+	}
+
+	localStackContainerRequest = func(name string) testcontainers.GenericContainerRequest {
+		return testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
+				Image: "localstack/localstack:latest",
+				Name:  name + "-localstack",
+				ExposedPorts: []string{
+					"4566/tcp",
+				},
+				WaitingFor: wait.ForLog("Ready."),
+				Env: map[string]string{
+					"DEBUG":                 "1",
+					"SERVICES":              "s3",
+					"AWS_REGION":            "us-east-1",
+					"AWS_ACCESS_KEY_ID":     "aws-access-key",
+					"AWS_SECRET_ACCESS_KEY": "aws-secret-key",
+				},
 			},
 			Started: true,
 			Reuse:   true,
@@ -143,6 +166,33 @@ func NewRedisContainer(ctx context.Context, t *testing.T, name string) (testcont
 			Password: "",
 			Database: 0,
 		},
+	}
+
+	return container, conf
+}
+
+// NewLocalStackContainer creates a new test container for the Postgres image.
+func NewLocalStackContainer(ctx context.Context, t *testing.T, name string) (testcontainers.Container, *config.S3StorageConfig) {
+	container, err := testcontainers.GenericContainer(ctx, localStackContainerRequest(name))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	host, err := container.Host(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	port, err := container.MappedPort(ctx, "4566/tcp")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	conf := &config.S3StorageConfig{
+		Region:          "us-east-1",
+		AccessKeyID:     "aws-access-key",
+		SecretAccessKey: "aws-secret-key",
+		BaseEndpoint:    fmt.Sprintf("http://%s:%d", host, port.Int()),
 	}
 
 	return container, conf
