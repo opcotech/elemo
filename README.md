@@ -94,3 +94,18 @@ feedback. To get started with contributing:
 - For details on building Elemo, see the
   related [Dockerfile](https://github.com/opcotech/elemo/blob/main/build/package/Dockerfile).
 - Create a fork of Elemo and submit a pull request with your proposed changes.
+
+## License
+
+Elemo is licensed under a **dual-license model**:
+
+- **AGPL v3.0** (open source):
+  You can use, modify, and redistribute Elemo freely under the terms of the GNU Affero General Public License v3.0.
+  However, you **must make your source code public**, including any changes, when hosting or deploying Elemo.
+
+- **Commercial License**:
+  If you wish to use Elemo **without releasing your source code**, or to **host it as a service** (e.g., SaaS), you must purchase a commercial license.
+
+Unauthorized commercial or closed-source use of Elemo is not permitted.
+
+To inquire about commercial licensing: **info@opcotech.com**
