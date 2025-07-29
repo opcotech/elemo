@@ -1,5 +1,6 @@
 name: "Feature Request"
 description: Create a new issue for a new feature request.
+type: Feature
 labels:
   - question
   - enhancement

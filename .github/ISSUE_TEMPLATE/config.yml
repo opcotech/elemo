@@ -1,1 +1,11 @@
 blank_issues_enabled: false
+contact_links:
+  - name: Join the discussions
+    url: https://github.com/opcotech/elemo/discussions
+    about: Ask and answer questions.
+  - name: Slack
+    url: https://join.slack.com/t/elemo-workspace/shared_invite/zt-3a6w9jb46-4uGjtkcqBN9BqBD50xl8eA
+    about: Get synchronous support in real-time.
+  - name: Discord
+    url: https://discord.gg/sx9FPyXAdP
+    about: Get asynchronous support in real-time.

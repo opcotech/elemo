@@ -1,0 +1,25 @@
+name: "Task"
+description: Create a new issue which is not a bug or feature request.
+type: Task
+labels:
+  - triage-needed
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: "Description"
+      description: Please enter an explicit description of your issue. Do not include any sensitive information.
+      placeholder: Short and explicit description of the issue...
+    validations:
+      required: true
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: "Screenshots"
+      description: |
+        If applicable, add screenshots. Do not include any sensitive information.
+      value: |
+        ![DESCRIPTION](LINK.png)
+      render: bash
+    validations:
+      required: false
