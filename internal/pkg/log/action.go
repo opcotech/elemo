@@ -19,6 +19,13 @@ const (
 	ActionDBInitialize       // initialize a database
 	ActionDBQueryExecute     // execute a database query
 
+	// Static file actions
+
+	ActionFilePut    // put a file
+	ActionFileGet    // get a file
+	ActionFileUpdate // update a file
+	ActionFileDelete // delete a file
+
 	// Authentication and authorization actions
 
 	ActionAuthRequestAuthorize // authorize a request
@@ -55,6 +62,10 @@ func (a Action) String() string {
 		"create_index",
 		"init_db",
 		"execute_query",
+		"put_file",
+		"get_file",
+		"update_file",
+		"delete_file",
 		"authorize_request",
 		"create_session",
 		"create_auth_store",

@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/opcotech/elemo/internal/model"
+	"github.com/opcotech/elemo/internal/pkg"
 	"github.com/opcotech/elemo/internal/pkg/password"
 	"github.com/opcotech/elemo/internal/testutil"
 )
@@ -12,16 +13,16 @@ import (
 // record.
 func NewUser() *model.User {
 	user, err := model.NewUser(
-		strings.ToLower(testutil.GenerateRandomString(10)),
+		strings.ToLower(pkg.GenerateRandomString(10)),
 		testutil.GenerateEmail(10),
-		password.HashPassword(testutil.GenerateRandomString(10)),
+		password.HashPassword(pkg.GenerateRandomString(10)),
 	)
 	if err != nil {
 		panic(err)
 	}
 
-	user.FirstName = testutil.GenerateRandomString(5)
-	user.LastName = testutil.GenerateRandomString(5)
+	user.FirstName = pkg.GenerateRandomString(5)
+	user.LastName = pkg.GenerateRandomString(5)
 	user.Picture = imageURL
 	user.Title = "Senior Test User"
 	user.Bio = "I am a test user."

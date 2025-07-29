@@ -5,6 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/opcotech/elemo/internal/pkg"
 	"github.com/opcotech/elemo/internal/testutil"
 )
 
@@ -191,7 +192,7 @@ func TestTemplate_Body(t *testing.T) {
 					SupportEmail: "info@example.com",
 				},
 				EmailMimeType: MimeTypeHTML,
-				Path: testutil.NewTempFile(t, testutil.GenerateRandomString(10),
+				Path: testutil.NewTempFile(t, pkg.GenerateRandomString(10),
 					"Hello {{ .FirstName }} ({{ .Username }})!\n"+
 						"Welcome to {{ .ServerURL }}. If you have any questions, please contact {{ .SupportEmail }}.",
 				),
@@ -208,7 +209,7 @@ func TestTemplate_Body(t *testing.T) {
 					SupportEmail: "info@example.com",
 				},
 				EmailMimeType: MimeTypeHTML,
-				Path: testutil.NewTempFile(t, testutil.GenerateRandomString(10),
+				Path: testutil.NewTempFile(t, pkg.GenerateRandomString(10),
 					"{{ ?? }}",
 				),
 			},

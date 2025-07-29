@@ -244,6 +244,12 @@ func TestWithToken(t *testing.T) {
 	assert.Equal(t, WithToken("token"), zap.String(FieldToken, "token"))
 }
 
+func TestWithTraceID(t *testing.T) {
+	t.Parallel()
+
+	assert.Equal(t, WithTraceID("12345678"), zap.String(FieldTraceID, "12345678"))
+}
+
 func TestWithURL(t *testing.T) {
 	t.Parallel()
 

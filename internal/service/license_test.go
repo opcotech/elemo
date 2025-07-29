@@ -195,7 +195,7 @@ func TestLicenseService_Expired(t *testing.T) {
 				license: &license.License{
 					ID:           xid.NilID(),
 					Email:        testutil.GenerateEmail(10),
-					Organization: testutil.GenerateRandomString(10),
+					Organization: pkg.GenerateRandomString(10),
 					Quotas:       license.DefaultQuotas,
 					Features:     license.DefaultFeatures,
 					ExpiresAt:    time.Now().UTC().Add(1 * time.Hour),
@@ -226,7 +226,7 @@ func TestLicenseService_Expired(t *testing.T) {
 				license: &license.License{
 					ID:           xid.NilID(),
 					Email:        testutil.GenerateEmail(10),
-					Organization: testutil.GenerateRandomString(10),
+					Organization: pkg.GenerateRandomString(10),
 					Quotas:       license.DefaultQuotas,
 					Features:     license.DefaultFeatures,
 					ExpiresAt:    time.Now().UTC().Add(-1 * time.Hour),
@@ -292,7 +292,7 @@ func TestLicenseService_HasFeature(t *testing.T) {
 				license: &license.License{
 					ID:           xid.NilID(),
 					Email:        testutil.GenerateEmail(10),
-					Organization: testutil.GenerateRandomString(10),
+					Organization: pkg.GenerateRandomString(10),
 					Quotas:       license.DefaultQuotas,
 					Features:     license.DefaultFeatures,
 					ExpiresAt:    time.Now().UTC().Add(1 * time.Hour),
@@ -324,7 +324,7 @@ func TestLicenseService_HasFeature(t *testing.T) {
 				license: &license.License{
 					ID:           xid.NilID(),
 					Email:        testutil.GenerateEmail(10),
-					Organization: testutil.GenerateRandomString(10),
+					Organization: pkg.GenerateRandomString(10),
 					Quotas:       license.DefaultQuotas,
 					Features:     license.DefaultFeatures,
 					ExpiresAt:    time.Now().UTC().Add(-1 * time.Hour),
@@ -394,7 +394,7 @@ func TestLicenseService_WithinThreshold(t *testing.T) {
 				license: &license.License{
 					ID:           xid.NilID(),
 					Email:        testutil.GenerateEmail(10),
-					Organization: testutil.GenerateRandomString(10),
+					Organization: pkg.GenerateRandomString(10),
 					Quotas:       license.DefaultQuotas,
 					Features:     license.DefaultFeatures,
 					ExpiresAt:    time.Now().UTC().Add(1 * time.Hour),
@@ -430,7 +430,7 @@ func TestLicenseService_WithinThreshold(t *testing.T) {
 				license: &license.License{
 					ID:           xid.NilID(),
 					Email:        testutil.GenerateEmail(10),
-					Organization: testutil.GenerateRandomString(10),
+					Organization: pkg.GenerateRandomString(10),
 					Quotas:       license.DefaultQuotas,
 					Features:     license.DefaultFeatures,
 					ExpiresAt:    time.Now().UTC().Add(1 * time.Hour),
@@ -466,7 +466,7 @@ func TestLicenseService_WithinThreshold(t *testing.T) {
 				license: &license.License{
 					ID:           xid.NilID(),
 					Email:        testutil.GenerateEmail(10),
-					Organization: testutil.GenerateRandomString(10),
+					Organization: pkg.GenerateRandomString(10),
 					Quotas:       license.DefaultQuotas,
 					Features:     license.DefaultFeatures,
 					ExpiresAt:    time.Now().UTC().Add(1 * time.Hour),
@@ -502,7 +502,7 @@ func TestLicenseService_WithinThreshold(t *testing.T) {
 				license: &license.License{
 					ID:           xid.NilID(),
 					Email:        testutil.GenerateEmail(10),
-					Organization: testutil.GenerateRandomString(10),
+					Organization: pkg.GenerateRandomString(10),
 					Quotas:       license.DefaultQuotas,
 					Features:     license.DefaultFeatures,
 					ExpiresAt:    time.Now().UTC().Add(1 * time.Hour),
@@ -538,7 +538,7 @@ func TestLicenseService_WithinThreshold(t *testing.T) {
 				license: &license.License{
 					ID:           xid.NilID(),
 					Email:        testutil.GenerateEmail(10),
-					Organization: testutil.GenerateRandomString(10),
+					Organization: pkg.GenerateRandomString(10),
 					Quotas:       license.DefaultQuotas,
 					Features:     license.DefaultFeatures,
 					ExpiresAt:    time.Now().UTC().Add(1 * time.Hour),
@@ -574,7 +574,7 @@ func TestLicenseService_WithinThreshold(t *testing.T) {
 				license: &license.License{
 					ID:           xid.NilID(),
 					Email:        testutil.GenerateEmail(10),
-					Organization: testutil.GenerateRandomString(10),
+					Organization: pkg.GenerateRandomString(10),
 					Quotas:       license.DefaultQuotas,
 					Features:     license.DefaultFeatures,
 					ExpiresAt:    time.Now().UTC().Add(1 * time.Hour),
@@ -608,7 +608,7 @@ func TestLicenseService_WithinThreshold(t *testing.T) {
 				license: &license.License{
 					ID:           xid.NilID(),
 					Email:        testutil.GenerateEmail(10),
-					Organization: testutil.GenerateRandomString(10),
+					Organization: pkg.GenerateRandomString(10),
 					Quotas:       license.DefaultQuotas,
 					Features:     license.DefaultFeatures,
 					ExpiresAt:    time.Now().UTC().Add(1 * time.Hour),
@@ -645,7 +645,7 @@ func TestLicenseService_WithinThreshold(t *testing.T) {
 				license: &license.License{
 					ID:           xid.NilID(),
 					Email:        testutil.GenerateEmail(10),
-					Organization: testutil.GenerateRandomString(10),
+					Organization: pkg.GenerateRandomString(10),
 					Quotas: map[license.Quota]uint32{
 						license.QuotaUsers: 0,
 					},
@@ -683,7 +683,7 @@ func TestLicenseService_WithinThreshold(t *testing.T) {
 				license: &license.License{
 					ID:           xid.NilID(),
 					Email:        testutil.GenerateEmail(10),
-					Organization: testutil.GenerateRandomString(10),
+					Organization: pkg.GenerateRandomString(10),
 					Quotas: map[license.Quota]uint32{
 						license.QuotaUsers: 0,
 					},
@@ -717,7 +717,7 @@ func TestLicenseService_GetLicense(t *testing.T) {
 	expectedLicense := &license.License{
 		ID:           xid.NilID(),
 		Email:        testutil.GenerateEmail(10),
-		Organization: testutil.GenerateRandomString(10),
+		Organization: pkg.GenerateRandomString(10),
 		Quotas:       license.DefaultQuotas,
 		Features:     license.DefaultFeatures,
 		ExpiresAt:    time.Now().UTC().Add(1 * time.Hour),
@@ -889,7 +889,7 @@ func TestLicenseService_Ping(t *testing.T) {
 				license: &license.License{
 					ID:           xid.NilID(),
 					Email:        testutil.GenerateEmail(10),
-					Organization: testutil.GenerateRandomString(10),
+					Organization: pkg.GenerateRandomString(10),
 					Quotas:       license.DefaultQuotas,
 					Features:     license.DefaultFeatures,
 					ExpiresAt:    time.Now().UTC().Add(1 * time.Hour),
@@ -920,7 +920,7 @@ func TestLicenseService_Ping(t *testing.T) {
 				license: &license.License{
 					ID:           xid.NilID(),
 					Email:        testutil.GenerateEmail(10),
-					Organization: testutil.GenerateRandomString(10),
+					Organization: pkg.GenerateRandomString(10),
 					Quotas:       license.DefaultQuotas,
 					Features:     license.DefaultFeatures,
 					ExpiresAt:    time.Now().UTC().Add(-1 * time.Hour),

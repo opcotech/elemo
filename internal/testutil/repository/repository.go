@@ -6,19 +6,21 @@ import (
 	"strings"
 	"testing"
 
+	awsS3 "github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/stretchr/testify/require"
 
 	"github.com/opcotech/elemo/internal/config"
 	"github.com/opcotech/elemo/internal/repository/neo4j"
 	"github.com/opcotech/elemo/internal/repository/pg"
 	"github.com/opcotech/elemo/internal/repository/redis"
-
+	"github.com/opcotech/elemo/internal/repository/s3"
 	testConfig "github.com/opcotech/elemo/internal/testutil/config"
 )
 
 var (
 	neo4jBootstrapScript, _ = os.ReadFile(testConfig.RootDir + "/assets/queries/bootstrap.cypher")
 	pgBootstrapScript, _    = os.ReadFile(testConfig.RootDir + "/assets/queries/bootstrap.sql")
+	s3TestBucketName        = "test-bucket"
 )
 
 // NewNeo4jDatabase creates a new Neo4j database connection for testing.
@@ -123,4 +125,36 @@ func NewRedisDatabase(t *testing.T, conf *config.CacheDatabaseConfig) (*redis.Da
 func CleanupRedisStore(ctx context.Context, t *testing.T, db *redis.Database) {
 	err := db.GetClient().FlushDB(ctx).Err()
 	require.NoError(t, err)
+}
+
+// NewS3Storage creates a new S3 storage for testing with LocalStack.
+func NewS3Storage(t *testing.T, conf *config.S3StorageConfig) *s3.Storage {
+	client, err := s3.NewClient(context.Background(), conf)
+	require.NoError(t, err)
+
+	storage, err := s3.NewStorage(
+		s3.WithStorageClient(client),
+		s3.WithStorageBucket(s3TestBucketName),
+	)
+	require.NoError(t, err)
+
+	return storage
+}
+
+// BootstrapS3Storage creates the initial bucket.
+func BootstrapS3Storage(ctx context.Context, t *testing.T, storage *s3.Storage) {
+	_, err := storage.GetClient().CreateBucket(ctx, &awsS3.CreateBucketInput{Bucket: &s3TestBucketName})
+	require.NoError(t, err)
+}
+
+func CleanupS3Storage(ctx context.Context, t *testing.T, storage *s3.Storage) {
+	client := storage.GetClient()
+
+	out, err := client.ListObjectsV2(ctx, &awsS3.ListObjectsV2Input{Bucket: &s3TestBucketName})
+	require.NoError(t, err)
+
+	for _, o := range out.Contents {
+		_, err := client.DeleteObject(ctx, &awsS3.DeleteObjectInput{Bucket: &s3TestBucketName, Key: o.Key})
+		require.NoError(t, err)
+	}
 }
