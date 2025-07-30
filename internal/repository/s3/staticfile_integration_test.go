@@ -5,12 +5,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/opcotech/elemo/internal/pkg"
-	"github.com/yeqown/go-qrcode/v2"
-	"github.com/yeqown/go-qrcode/writer/standard"
-
 	"github.com/stretchr/testify/suite"
 
+	"github.com/opcotech/elemo/internal/pkg"
 	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/testutil"
 )
@@ -33,16 +30,10 @@ func (s *StaticFileRepositoryIntegrationTestSuite) SetupSuite() {
 }
 
 func (s *StaticFileRepositoryIntegrationTestSuite) SetupTest() {
-	s.staticFilePath = pkg.GenerateRandomString(10) + ".png"
+	s.staticFilePath = pkg.GenerateRandomString(10) + ".txt"
 
-	qrCode, err := qrcode.New("https://elemo.click")
-	s.Require().NoError(err)
-
-	buf := new(pkg.WriteCloserBuffer)
-	writer := standard.NewWithWriter(buf)
-	s.Require().NoError(qrCode.Save(writer))
-
-	s.staticFile = buf.Bytes()
+	// Create simple test file content
+	s.staticFile = []byte("This is a test file content for S3 static file repository testing.")
 }
 
 func (s *StaticFileRepositoryIntegrationTestSuite) TearDownTest() {
