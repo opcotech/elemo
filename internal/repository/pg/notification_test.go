@@ -164,7 +164,7 @@ func TestNotificationRepository_Create(t *testing.T) {
 		{
 			name: "create new invalid notification",
 			fields: fields{
-				baseRepository: func(ctx context.Context, ctrl *gomock.Controller, _ *model.Notification) *baseRepository {
+				baseRepository: func(ctx context.Context, _ *gomock.Controller, _ *model.Notification) *baseRepository {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -360,7 +360,7 @@ func TestNotificationRepository_Get(t *testing.T) {
 		{
 			name: "get notification with invalid notification",
 			fields: fields{
-				baseRepository: func(ctx context.Context, ctrl *gomock.Controller, _, _ model.ID, _ *model.Notification) *baseRepository {
+				baseRepository: func(ctx context.Context, _ *gomock.Controller, _, _ model.ID, _ *model.Notification) *baseRepository {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -388,7 +388,7 @@ func TestNotificationRepository_Get(t *testing.T) {
 		{
 			name: "get notification with invalid recipient",
 			fields: fields{
-				baseRepository: func(ctx context.Context, ctrl *gomock.Controller, _, _ model.ID, _ *model.Notification) *baseRepository {
+				baseRepository: func(ctx context.Context, _ *gomock.Controller, _, _ model.ID, _ *model.Notification) *baseRepository {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -560,7 +560,7 @@ func TestNotificationRepository_GetAllByRecipient(t *testing.T) {
 		{
 			name: "get all notifications with invalid ID",
 			fields: fields{
-				baseRepository: func(ctx context.Context, ctrl *gomock.Controller, _ model.ID, _, _ int, _ []*model.Notification) *baseRepository {
+				baseRepository: func(ctx context.Context, _ *gomock.Controller, _ model.ID, _, _ int, _ []*model.Notification) *baseRepository {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -795,7 +795,7 @@ func TestNotificationRepository_Update(t *testing.T) {
 		{
 			name: "update notification with invalid notification ID",
 			fields: fields{
-				baseRepository: func(ctx context.Context, ctrl *gomock.Controller, _, _ model.ID, _ bool, _ *model.Notification) *baseRepository {
+				baseRepository: func(ctx context.Context, _ *gomock.Controller, _, _ model.ID, _ bool, _ *model.Notification) *baseRepository {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -823,7 +823,7 @@ func TestNotificationRepository_Update(t *testing.T) {
 		{
 			name: "update notification with invalid recipient ID",
 			fields: fields{
-				baseRepository: func(ctx context.Context, ctrl *gomock.Controller, _, _ model.ID, _ bool, _ *model.Notification) *baseRepository {
+				baseRepository: func(ctx context.Context, _ *gomock.Controller, _, _ model.ID, _ bool, _ *model.Notification) *baseRepository {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -981,7 +981,7 @@ func TestNotificationRepository_Delete(t *testing.T) {
 		{
 			name: "delete notification with invalid notification ID",
 			fields: fields{
-				baseRepository: func(ctx context.Context, ctrl *gomock.Controller, id, recipient model.ID) *baseRepository {
+				baseRepository: func(ctx context.Context, _ *gomock.Controller, _, _ model.ID) *baseRepository {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1009,7 +1009,7 @@ func TestNotificationRepository_Delete(t *testing.T) {
 		{
 			name: "delete notification with invalid recipient ID",
 			fields: fields{
-				baseRepository: func(ctx context.Context, ctrl *gomock.Controller, id, recipient model.ID) *baseRepository {
+				baseRepository: func(ctx context.Context, _ *gomock.Controller, _, _ model.ID) *baseRepository {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
