@@ -1,0 +1,33 @@
+name: License Check
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  check-licenses:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - name: Install Feluda
+        run: cargo install --git https://github.com/anistark/feluda.git
+
+      - name: Check licenses
+        run: |
+            feluda \
+                --language go \
+                --project-license AGPL-3.0 \
+                --ci-format github \
+                --fail-on-restrictive \
+                --fail-on-incompatible
