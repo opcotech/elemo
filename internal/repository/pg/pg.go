@@ -19,6 +19,9 @@ import (
 )
 
 // Pool defines the interface for a database connection pool.
+//
+//go:generate mockgen -source=pg.go -destination=../../testutil/mock/pg_gen.go -package=mock
+//go:generate mockgen -destination=../../testutil/mock/pgx_gen.go -package=mock github.com/jackc/pgx/v5 Row,Rows
 type Pool interface {
 	Close()
 	Acquire(ctx context.Context) (*pgxpool.Conn, error)

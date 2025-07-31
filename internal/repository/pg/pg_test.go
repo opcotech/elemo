@@ -2,6 +2,7 @@ package pg
 
 import (
 	"context"
+	"go.uber.org/mock/gomock"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -97,9 +98,9 @@ func TestWithDatabasePool(t *testing.T) {
 		{
 			name: "create new option with pool",
 			args: args{
-				pool: new(mock.PGPool),
+				pool: mock.NewMockPool(nil),
 			},
-			want: new(mock.PGPool),
+			want: mock.NewMockPool(nil),
 		},
 		{
 			name: "create new option with nil pool",
@@ -210,12 +211,12 @@ func TestNewDatabase(t *testing.T) {
 		{
 			name: "create new database",
 			args: args{
-				pool:   new(mock.PGPool),
+				pool:   mock.NewMockPool(nil),
 				logger: new(mock.Logger),
 				tracer: new(mock.Tracer),
 			},
 			want: &Database{
-				pool:   new(mock.PGPool),
+				pool:   mock.NewMockPool(nil),
 				logger: new(mock.Logger),
 				tracer: new(mock.Tracer),
 			},
@@ -232,7 +233,7 @@ func TestNewDatabase(t *testing.T) {
 		{
 			name: "create new database with nil logger",
 			args: args{
-				pool:   new(mock.PGPool),
+				pool:   mock.NewMockPool(nil),
 				logger: nil,
 				tracer: new(mock.Tracer),
 			},
@@ -241,7 +242,7 @@ func TestNewDatabase(t *testing.T) {
 		{
 			name: "create new database with nil tracer",
 			args: args{
-				pool:   new(mock.PGPool),
+				pool:   mock.NewMockPool(nil),
 				logger: new(mock.Logger),
 				tracer: nil,
 			},
@@ -266,8 +267,10 @@ func TestNewDatabase(t *testing.T) {
 func TestDatabase_Close(t *testing.T) {
 	t.Parallel()
 
-	pool := new(mock.PGPool)
-	pool.On("Close").Return(nil)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	pool := mock.NewMockPool(ctrl)
+	pool.EXPECT().Close()
 
 	db := &Database{
 		pool: pool,
@@ -279,7 +282,7 @@ func TestDatabase_Close(t *testing.T) {
 func TestDatabase_GetPool(t *testing.T) {
 	t.Parallel()
 
-	pool := new(mock.PGPool)
+	pool := mock.NewMockPool(nil)
 
 	db := &Database{
 		pool: pool,
@@ -293,7 +296,7 @@ func TestDatabase_Ping(t *testing.T) {
 		ctx context.Context
 	}
 	type fields struct {
-		pool func(ctx context.Context) Pool
+		pool func(ctx context.Context, ctrl *gomock.Controller) Pool
 	}
 	tests := []struct {
 		name    string
@@ -307,9 +310,9 @@ func TestDatabase_Ping(t *testing.T) {
 				ctx: context.Background(),
 			},
 			fields: fields{
-				pool: func(ctx context.Context) Pool {
-					p := new(mock.PGPool)
-					p.On("Ping", ctx).Return(nil)
+				pool: func(ctx context.Context, ctrl *gomock.Controller) Pool {
+					p := mock.NewMockPool(ctrl)
+					p.EXPECT().Ping(ctx).Return(nil)
 					return p
 				},
 			},
@@ -320,9 +323,9 @@ func TestDatabase_Ping(t *testing.T) {
 				ctx: context.Background(),
 			},
 			fields: fields{
-				pool: func(ctx context.Context) Pool {
-					p := new(mock.PGPool)
-					p.On("Ping", ctx).Return(assert.AnError)
+				pool: func(ctx context.Context, ctrl *gomock.Controller) Pool {
+					p := mock.NewMockPool(ctrl)
+					p.EXPECT().Ping(ctx).Return(assert.AnError)
 					return p
 				},
 			},
@@ -333,8 +336,10 @@ func TestDatabase_Ping(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 			db := &Database{
-				pool: tt.fields.pool(tt.args.ctx),
+				pool: tt.fields.pool(tt.args.ctx, ctrl),
 			}
 			err := db.Ping(tt.args.ctx)
 			if !tt.wantErr && err != nil {
