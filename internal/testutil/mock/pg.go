@@ -8,22 +8,6 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-type PGRow struct {
-	mock.Mock
-}
-
-func (r *PGRow) Scan(dest ...any) error {
-	args := r.Called(dest)
-	if args.Get(0) == nil {
-		return args.Error(1)
-	}
-	for i, x := range args.Get(0).([]any) {
-		reflect.ValueOf(dest[i]).Elem().Set(reflect.ValueOf(x))
-	}
-
-	return args.Error(1)
-}
-
 type PGRows struct {
 	mock.Mock
 }

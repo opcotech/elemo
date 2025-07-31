@@ -242,14 +242,19 @@ func TestNotificationRepository_Get(t *testing.T) {
 					mockDB, err := NewDatabase(WithDatabasePool(mockDBPool))
 					require.NoError(t, err)
 
-					mockRow := new(mock.PGRow)
-					mockRow.On("Scan", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(
-						[]any{
-							pgID{ID: notification.ID}, notification.Title, notification.Description,
-							pgID{ID: notification.Recipient}, notification.Read, notification.CreatedAt, notification.UpdatedAt,
-						},
-						nil,
-					)
+					mockRow := mock.NewMockRow(ctrl)
+					mockRow.EXPECT().
+						Scan(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+						DoAndReturn(func(dest ...any) error {
+							dest[0].(*pgID).ID = notification.ID
+							*(dest[1].(*string)) = notification.Title
+							*(dest[2].(*string)) = notification.Description
+							dest[3].(*pgID).ID = notification.Recipient
+							*(dest[4].(*bool)) = notification.Read
+							*(dest[5].(**time.Time)) = notification.CreatedAt
+							*(dest[6].(**time.Time)) = notification.UpdatedAt
+							return nil
+						})
 
 					mockDBPool.EXPECT().QueryRow(ctx,
 						"SELECT * FROM notifications WHERE id = $1 AND recipient = $2",
@@ -290,11 +295,10 @@ func TestNotificationRepository_Get(t *testing.T) {
 					mockDB, err := NewDatabase(WithDatabasePool(mockDBPool))
 					require.NoError(t, err)
 
-					mockRow := new(mock.PGRow)
-					mockRow.On("Scan", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(
-						nil,
-						pgx.ErrNoRows,
-					)
+					mockRow := mock.NewMockRow(ctrl)
+					mockRow.EXPECT().
+						Scan(gomock.Any()).
+						Return(pgx.ErrNoRows)
 
 					mockDBPool.EXPECT().QueryRow(ctx,
 						"SELECT * FROM notifications WHERE id = $1 AND recipient = $2",
@@ -329,10 +333,10 @@ func TestNotificationRepository_Get(t *testing.T) {
 					mockDB, err := NewDatabase(WithDatabasePool(mockDBPool))
 					require.NoError(t, err)
 
-					mockRow := new(mock.PGRow)
-					mockRow.On("Scan", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(
-						nil, assert.AnError,
-					)
+					mockRow := mock.NewMockRow(ctrl)
+					mockRow.EXPECT().
+						Scan(gomock.Any()).
+						Return(assert.AnError)
 
 					mockDBPool.EXPECT().QueryRow(ctx,
 						"SELECT * FROM notifications WHERE id = $1 AND recipient = $2",
@@ -669,14 +673,19 @@ func TestNotificationRepository_Update(t *testing.T) {
 					mockDB, err := NewDatabase(WithDatabasePool(mockDBPool))
 					require.NoError(t, err)
 
-					mockRow := new(mock.PGRow)
-					mockRow.On("Scan", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(
-						[]any{
-							pgID{ID: notification.ID}, notification.Title, notification.Description,
-							pgID{ID: notification.Recipient}, notification.Read, notification.CreatedAt, notification.UpdatedAt,
-						},
-						nil,
-					)
+					mockRow := mock.NewMockRow(ctrl)
+					mockRow.EXPECT().
+						Scan(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+						DoAndReturn(func(dest ...any) error {
+							dest[0].(*pgID).ID = notification.ID
+							*(dest[1].(*string)) = notification.Title
+							*(dest[2].(*string)) = notification.Description
+							dest[3].(*pgID).ID = notification.Recipient
+							*(dest[4].(*bool)) = notification.Read
+							*(dest[5].(**time.Time)) = notification.CreatedAt
+							*(dest[6].(**time.Time)) = notification.UpdatedAt
+							return nil
+						})
 
 					mockDBPool.EXPECT().QueryRow(ctx,
 						"UPDATE notifications SET read = $3, updated_at = timezone('utc', now()) WHERE id = $1 AND recipient = $2 RETURNING *",
@@ -717,11 +726,10 @@ func TestNotificationRepository_Update(t *testing.T) {
 					mockDB, err := NewDatabase(WithDatabasePool(mockDBPool))
 					require.NoError(t, err)
 
-					mockRow := new(mock.PGRow)
-					mockRow.On("Scan", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(
-						nil,
-						pgx.ErrNoRows,
-					)
+					mockRow := mock.NewMockRow(ctrl)
+					mockRow.EXPECT().
+						Scan(gomock.Any()).
+						Return(pgx.ErrNoRows)
 
 					mockDBPool.EXPECT().QueryRow(ctx,
 						"UPDATE notifications SET read = $3, updated_at = timezone('utc', now()) WHERE id = $1 AND recipient = $2 RETURNING *",
@@ -756,11 +764,10 @@ func TestNotificationRepository_Update(t *testing.T) {
 					mockDB, err := NewDatabase(WithDatabasePool(mockDBPool))
 					require.NoError(t, err)
 
-					mockRow := new(mock.PGRow)
-					mockRow.On("Scan", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(
-						nil,
-						assert.AnError,
-					)
+					mockRow := mock.NewMockRow(ctrl)
+					mockRow.EXPECT().
+						Scan(gomock.Any()).
+						Return(assert.AnError)
 
 					mockDBPool.EXPECT().QueryRow(ctx,
 						"UPDATE notifications SET read = $3, updated_at = timezone('utc', now()) WHERE id = $1 AND recipient = $2 RETURNING *",
