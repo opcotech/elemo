@@ -43,7 +43,6 @@ export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
   ];
 
   const workspaceNavigation: SidebarNavigationItem[] = [];
-
   const projectsNavigation: SidebarNavigationItem[] = [];
 
   return (
@@ -56,6 +55,7 @@ export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
                 <SidebarHeader>
                   <h2 className="px-2 py-2 text-lg font-semibold">Elemo</h2>
                 </SidebarHeader>
+
                 <SidebarContent>
                   <SidebarGroup>
                     <SidebarGroupContent>
@@ -73,6 +73,7 @@ export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
                       </SidebarMenu>
                     </SidebarGroupContent>
                   </SidebarGroup>
+
                   <SidebarGroup>
                     <SidebarGroupLabel>Workspace</SidebarGroupLabel>
                     <SidebarGroupContent>
@@ -90,6 +91,7 @@ export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
                       </SidebarMenu>
                     </SidebarGroupContent>
                   </SidebarGroup>
+
                   <SidebarGroup>
                     <SidebarGroupLabel>Projects</SidebarGroupLabel>
                     <SidebarGroupContent>
@@ -106,12 +108,14 @@ export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
                     </SidebarGroupContent>
                   </SidebarGroup>
                 </SidebarContent>
+
                 <SidebarFooter>
                   <SidebarMenu>
                     {user ? <NavUser user={user} /> : <NavUserSkeleton />}
                   </SidebarMenu>
                 </SidebarFooter>
               </Sidebar>
+
               <SidebarInset className="flex flex-col border">
                 <NavHeader />
                 <main className="flex-1 overflow-hidden">{children}</main>
