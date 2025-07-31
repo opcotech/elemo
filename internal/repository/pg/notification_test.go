@@ -463,19 +463,25 @@ func TestNotificationRepository_GetAllByRecipient(t *testing.T) {
 					mockDB, err := NewDatabase(WithDatabasePool(mockDBPool))
 					require.NoError(t, err)
 
-					mockRows := new(mock.PGRows)
-					mockRows.On("Close").Return()
-					mockRows.On("Next").Return(true).Times(limit)
-					mockRows.On("Next").Return(false)
+					mockRows := mock.NewMockRows(ctrl)
+					mockRows.EXPECT().Close().Return()
+					mockRows.EXPECT().Next().Return(true).Times(limit)
+					mockRows.EXPECT().Next().Return(false)
 
 					for _, notification := range notifications[offset:] {
-						mockRows.On("Scan", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(
-							[]any{
-								pgID{ID: notification.ID}, notification.Title, notification.Description,
-								pgID{ID: notification.Recipient}, notification.Read, notification.CreatedAt, notification.UpdatedAt,
-							},
-							nil,
-						).Once()
+						mockRows.EXPECT().
+							Scan(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+							DoAndReturn(func(dest ...any) error {
+								dest[0].(*pgID).ID = notification.ID
+								*(dest[1].(*string)) = notification.Title
+								*(dest[2].(*string)) = notification.Description
+								dest[3].(*pgID).ID = notification.Recipient
+								*(dest[4].(*bool)) = notification.Read
+								*(dest[5].(**time.Time)) = notification.CreatedAt
+								*(dest[6].(**time.Time)) = notification.UpdatedAt
+								return nil
+							}).
+							Times(1)
 					}
 
 					mockDBPool.EXPECT().Query(ctx,
@@ -534,7 +540,7 @@ func TestNotificationRepository_GetAllByRecipient(t *testing.T) {
 					mockDBPool.EXPECT().Query(ctx,
 						"SELECT * FROM notifications WHERE recipient = $1 LIMIT $2 OFFSET $3",
 						[]any{recipient.String(), limit, offset},
-					).Return(new(mock.PGRows), assert.AnError)
+					).Return(mock.NewMockRows(nil), assert.AnError)
 
 					return &baseRepository{
 						db:     mockDB,
@@ -593,14 +599,12 @@ func TestNotificationRepository_GetAllByRecipient(t *testing.T) {
 					mockDB, err := NewDatabase(WithDatabasePool(mockDBPool))
 					require.NoError(t, err)
 
-					mockRows := new(mock.PGRows)
-					mockRows.On("Close").Return()
-					mockRows.On("Next").Return(true).Times(limit)
-					mockRows.On("Next").Return(false)
-					mockRows.On("Scan", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(
-						nil,
-						assert.AnError,
-					)
+					mockRows := mock.NewMockRows(ctrl)
+					mockRows.EXPECT().Close().Return()
+					mockRows.EXPECT().Next().Return(true).Times(1)
+					mockRows.EXPECT().
+						Scan(gomock.Any()).
+						Return(assert.AnError)
 
 					mockDBPool.EXPECT().Query(ctx,
 						"SELECT * FROM notifications WHERE recipient = $1 LIMIT $2 OFFSET $3",
