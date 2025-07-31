@@ -4,29 +4,59 @@ import { useEffect, useState } from "react";
 import { Progress } from "@/components/ui/progress";
 
 export function TopProgressBar() {
+  const [progress, setProgress] = useState(0);
+  const [isVisible, setIsVisible] = useState(false);
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
-
+  
   useEffect(() => {
-    const unsubStart = router.subscribe("onBeforeNavigate", () => {
-      setLoading(true);
-    });
+    let timer: NodeJS.Timeout | undefined;
 
-    const unsubDone = router.subscribe("onResolved", () => {
-      setLoading(false);
-    });
+    const start = () => {
+      setIsVisible(true);
+      setProgress(10);
+      timer = setInterval(() => {
+        setProgress((prev) => {
+          if (prev >= 90) {
+            clearInterval(timer);
+            return prev;
+          }
+          if (prev < 20) return prev + 10;
+          if (prev < 50) return prev + 4;
+          return prev + 2;
+        });
+      }, 300);
+    };
+
+    const complete = () => {
+      if (timer) {
+        clearInterval(timer);
+      }
+      setProgress(100);
+      setTimeout(() => {
+        setIsVisible(false);
+        setTimeout(() => setProgress(0), 500);
+      }, 500);
+    };
+
+    const unsubBefore = router.subscribe("onBeforeNavigate", start);
+    const unsubResolved = router.subscribe("onResolved", complete);
 
     return () => {
-      unsubStart();
-      unsubDone();
+      unsubBefore();
+      unsubResolved();
+      if (timer) {
+        clearInterval(timer);
+      }
     };
   }, [router]);
 
-  if (!loading) return null;
+  if (!isVisible) {
+    return null;
+  }
 
   return (
     <div className="fixed top-0 left-0 z-50 w-full">
-      <Progress value={100} className="bg-primary h-1" />
+      <Progress value={progress} className="h-1" />
     </div>
   );
 }
