@@ -1,12 +1,8 @@
-import { Slot } from "@radix-ui/react-slot";
-import { cva } from "class-variance-authority";
-import type { VariantProps } from "class-variance-authority";
-import { motion } from "framer-motion";
-import * as React from "react";
+import * as React from "react"
+import { Slot } from "@radix-ui/react-slot"
+import { cva, type VariantProps } from "class-variance-authority"
 
-import { buttonVariants as motionButtonVariants } from "./animations";
-
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
   "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-sm text-sm font-medium transition-all duration-200 cursor-pointer disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:ring focus-visible:ring-ring focus-visible:ring-offset-2",
@@ -41,7 +37,7 @@ const buttonVariants = cva(
       size: "default",
     },
   }
-);
+)
 
 function Button({
   className,
@@ -49,36 +45,19 @@ function Button({
   size,
   asChild = false,
   ...props
-}: Omit<
-  React.ComponentProps<"button">,
-  "onDrag" | "onDragStart" | "onDragEnd"
-> &
+}: React.ComponentProps<"button"> &
   VariantProps<typeof buttonVariants> & {
-    asChild?: boolean;
+    asChild?: boolean
   }) {
-  // If using asChild, we can't animate the child directly, so fallback to normal rendering
-  if (asChild) {
-    return (
-      <Slot
-        data-slot="button"
-        className={cn(buttonVariants({ variant, size, className }))}
-        {...props}
-      />
-    );
-  }
+  const Comp = asChild ? Slot : "button"
 
   return (
-    <motion.button
+    <Comp
       data-slot="button"
       className={cn(buttonVariants({ variant, size, className }))}
-      variants={motionButtonVariants}
-      initial="initial"
-      whileHover="hover"
-      whileTap="tap"
-      whileFocus="focus"
-      {...(props as any)}
+      {...props}
     />
-  );
+  )
 }
 
-export { Button, buttonVariants };
+export { Button, buttonVariants }
