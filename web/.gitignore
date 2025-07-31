@@ -36,6 +36,7 @@ yarn.lock
 # misc
 .DS_Store
 *.pem
+*.bkp
 
 # debug
 npm-debug.log*
