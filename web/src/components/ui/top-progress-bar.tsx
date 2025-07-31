@@ -1,7 +1,6 @@
-"use client";
-
-import { useEffect, useState } from "react";
 import { useRouter } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+
 import { Progress } from "@/components/ui/progress";
 
 export function TopProgressBar() {
@@ -26,8 +25,8 @@ export function TopProgressBar() {
   if (!loading) return null;
 
   return (
-    <div className="fixed top-0 left-0 w-full z-50">
-      <Progress value={100} className="h-1 bg-primary" />
+    <div className="fixed top-0 left-0 z-50 w-full">
+      <Progress value={100} className="bg-primary h-1" />
     </div>
   );
 }

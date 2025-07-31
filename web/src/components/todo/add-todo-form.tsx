@@ -171,10 +171,7 @@ export function AddTodoForm({
                 render={({ field }) => (
                   <FormItem className="w-1/3">
                     <FormLabel>Priority</FormLabel>
-                    <Select
-                      value={field.value}
-                      onValueChange={field.onChange}
-                    >
+                    <Select value={field.value} onValueChange={field.onChange}>
                       <FormControl>
                         <SelectTrigger className="w-full">
                           <SelectValue placeholder="Select a priority" />
@@ -227,7 +224,7 @@ export function AddTodoForm({
                   Create more
                 </Label>
               </div>
-              
+
               <Button type="submit" disabled={mutation.isPending}>
                 {mutation.isPending ? (
                   <>
@@ -239,7 +236,6 @@ export function AddTodoForm({
                 )}
               </Button>
             </DialogFooter>
-            
           </form>
         </Form>
       </DialogContent>

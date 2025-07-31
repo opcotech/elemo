@@ -23,7 +23,6 @@ import { AddTodoFormProvider } from "@/contexts/add-todo-form-context";
 import { EditTodoFormProvider } from "@/contexts/edit-todo-form-context";
 import { TodoSheetProvider } from "@/contexts/todo-sheet-context";
 import { useAuth } from "@/hooks/use-auth";
-import { TopProgressBar } from "@/components/ui/top-progress-bar"; // new import
 
 interface AuthenticatedLayoutProps {
   children: ReactNode;
@@ -51,9 +50,6 @@ export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
       <EditTodoFormProvider>
         <TodoSheetProvider>
           <SidebarProvider>
-            
-            <TopProgressBar />
-
             <div className="flex h-screen w-screen">
               <Sidebar variant="inset">
                 <SidebarHeader>

@@ -15,6 +15,7 @@ import { BreadcrumbProvider } from "@/components/breadcrumb";
 import { NotFound } from "@/components/not-found";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
+import { TopProgressBar } from "@/components/ui/top-progress-bar";
 import { config } from "@/config";
 import { queryClient } from "@/lib/query-client";
 import appCss from "@/styles/app.css?url";
@@ -52,6 +53,7 @@ function RootComponent() {
           <BreadcrumbProvider>
             <AuthProvider>
               {config.auth().debugBanner && <AuthDebug />}
+              <TopProgressBar />
               <Outlet />
               <Toaster />
             </AuthProvider>
