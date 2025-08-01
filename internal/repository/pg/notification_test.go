@@ -96,7 +96,7 @@ func TestNotificationRepository_Create(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.pg.NotificationRepository/Create", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					mockDBPool := mock.NewMockPool(ctrl)
+					mockDBPool := mock.NewPGPool(ctrl)
 					mockDB, err := NewDatabase(WithDatabasePool(mockDBPool))
 					require.NoError(t, err)
 
@@ -133,7 +133,7 @@ func TestNotificationRepository_Create(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.pg.NotificationRepository/Create", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					mockDBPool := mock.NewMockPool(ctrl)
+					mockDBPool := mock.NewPGPool(ctrl)
 					mockDB, err := NewDatabase(WithDatabasePool(mockDBPool))
 					require.NoError(t, err)
 
@@ -171,7 +171,7 @@ func TestNotificationRepository_Create(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.pg.NotificationRepository/Create", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					mockDBPool := mock.NewMockPool(nil)
+					mockDBPool := mock.NewPGPool(nil)
 					mockDB, err := NewDatabase(WithDatabasePool(mockDBPool))
 					require.NoError(t, err)
 
@@ -238,11 +238,11 @@ func TestNotificationRepository_Get(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.pg.NotificationRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					mockDBPool := mock.NewMockPool(ctrl)
+					mockDBPool := mock.NewPGPool(ctrl)
 					mockDB, err := NewDatabase(WithDatabasePool(mockDBPool))
 					require.NoError(t, err)
 
-					mockRow := mock.NewMockRow(ctrl)
+					mockRow := mock.NewPGRow(ctrl)
 					mockRow.EXPECT().
 						Scan(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 						DoAndReturn(func(dest ...any) error {
@@ -291,11 +291,11 @@ func TestNotificationRepository_Get(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.pg.NotificationRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					mockDBPool := mock.NewMockPool(ctrl)
+					mockDBPool := mock.NewPGPool(ctrl)
 					mockDB, err := NewDatabase(WithDatabasePool(mockDBPool))
 					require.NoError(t, err)
 
-					mockRow := mock.NewMockRow(ctrl)
+					mockRow := mock.NewPGRow(ctrl)
 					mockRow.EXPECT().
 						Scan(gomock.Any()).
 						Return(pgx.ErrNoRows)
@@ -329,11 +329,11 @@ func TestNotificationRepository_Get(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.pg.NotificationRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					mockDBPool := mock.NewMockPool(ctrl)
+					mockDBPool := mock.NewPGPool(ctrl)
 					mockDB, err := NewDatabase(WithDatabasePool(mockDBPool))
 					require.NoError(t, err)
 
-					mockRow := mock.NewMockRow(ctrl)
+					mockRow := mock.NewPGRow(ctrl)
 					mockRow.EXPECT().
 						Scan(gomock.Any()).
 						Return(assert.AnError)
@@ -367,7 +367,7 @@ func TestNotificationRepository_Get(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.pg.NotificationRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					mockDBPool := mock.NewMockPool(nil)
+					mockDBPool := mock.NewPGPool(nil)
 					mockDB, err := NewDatabase(WithDatabasePool(mockDBPool))
 					require.NoError(t, err)
 
@@ -395,7 +395,7 @@ func TestNotificationRepository_Get(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.pg.NotificationRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					mockDBPool := mock.NewMockPool(nil)
+					mockDBPool := mock.NewPGPool(nil)
 					mockDB, err := NewDatabase(WithDatabasePool(mockDBPool))
 					require.NoError(t, err)
 
@@ -459,11 +459,11 @@ func TestNotificationRepository_GetAllByRecipient(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.pg.NotificationRepository/GetAllByRecipient", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					mockDBPool := mock.NewMockPool(ctrl)
+					mockDBPool := mock.NewPGPool(ctrl)
 					mockDB, err := NewDatabase(WithDatabasePool(mockDBPool))
 					require.NoError(t, err)
 
-					mockRows := mock.NewMockRows(ctrl)
+					mockRows := mock.NewPGRows(ctrl)
 					mockRows.EXPECT().Close().Return()
 					mockRows.EXPECT().Next().Return(true).Times(limit)
 					mockRows.EXPECT().Next().Return(false)
@@ -533,14 +533,14 @@ func TestNotificationRepository_GetAllByRecipient(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.pg.NotificationRepository/GetAllByRecipient", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					mockDBPool := mock.NewMockPool(ctrl)
+					mockDBPool := mock.NewPGPool(ctrl)
 					mockDB, err := NewDatabase(WithDatabasePool(mockDBPool))
 					require.NoError(t, err)
 
 					mockDBPool.EXPECT().Query(ctx,
 						"SELECT * FROM notifications WHERE recipient = $1 LIMIT $2 OFFSET $3",
 						[]any{recipient.String(), limit, offset},
-					).Return(mock.NewMockRows(nil), assert.AnError)
+					).Return(mock.NewPGRows(nil), assert.AnError)
 
 					return &baseRepository{
 						db:     mockDB,
@@ -567,7 +567,7 @@ func TestNotificationRepository_GetAllByRecipient(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.pg.NotificationRepository/GetAllByRecipient", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					mockDB, err := NewDatabase(WithDatabasePool(mock.NewMockPool(nil)))
+					mockDB, err := NewDatabase(WithDatabasePool(mock.NewPGPool(nil)))
 					require.NoError(t, err)
 
 					return &baseRepository{
@@ -595,11 +595,11 @@ func TestNotificationRepository_GetAllByRecipient(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.pg.NotificationRepository/GetAllByRecipient", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					mockDBPool := mock.NewMockPool(ctrl)
+					mockDBPool := mock.NewPGPool(ctrl)
 					mockDB, err := NewDatabase(WithDatabasePool(mockDBPool))
 					require.NoError(t, err)
 
-					mockRows := mock.NewMockRows(ctrl)
+					mockRows := mock.NewPGRows(ctrl)
 					mockRows.EXPECT().Close().Return()
 					mockRows.EXPECT().Next().Return(true).Times(1)
 					mockRows.EXPECT().
@@ -673,11 +673,11 @@ func TestNotificationRepository_Update(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.pg.NotificationRepository/Update", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					mockDBPool := mock.NewMockPool(ctrl)
+					mockDBPool := mock.NewPGPool(ctrl)
 					mockDB, err := NewDatabase(WithDatabasePool(mockDBPool))
 					require.NoError(t, err)
 
-					mockRow := mock.NewMockRow(ctrl)
+					mockRow := mock.NewPGRow(ctrl)
 					mockRow.EXPECT().
 						Scan(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 						DoAndReturn(func(dest ...any) error {
@@ -726,11 +726,11 @@ func TestNotificationRepository_Update(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.pg.NotificationRepository/Update", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					mockDBPool := mock.NewMockPool(ctrl)
+					mockDBPool := mock.NewPGPool(ctrl)
 					mockDB, err := NewDatabase(WithDatabasePool(mockDBPool))
 					require.NoError(t, err)
 
-					mockRow := mock.NewMockRow(ctrl)
+					mockRow := mock.NewPGRow(ctrl)
 					mockRow.EXPECT().
 						Scan(gomock.Any()).
 						Return(pgx.ErrNoRows)
@@ -764,11 +764,11 @@ func TestNotificationRepository_Update(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.pg.NotificationRepository/Update", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					mockDBPool := mock.NewMockPool(ctrl)
+					mockDBPool := mock.NewPGPool(ctrl)
 					mockDB, err := NewDatabase(WithDatabasePool(mockDBPool))
 					require.NoError(t, err)
 
-					mockRow := mock.NewMockRow(ctrl)
+					mockRow := mock.NewPGRow(ctrl)
 					mockRow.EXPECT().
 						Scan(gomock.Any()).
 						Return(assert.AnError)
@@ -802,7 +802,7 @@ func TestNotificationRepository_Update(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.pg.NotificationRepository/Update", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					mockDBPool := mock.NewMockPool(nil)
+					mockDBPool := mock.NewPGPool(nil)
 					mockDB, err := NewDatabase(WithDatabasePool(mockDBPool))
 					require.NoError(t, err)
 
@@ -830,7 +830,7 @@ func TestNotificationRepository_Update(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.pg.NotificationRepository/Update", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					mockDBPool := mock.NewMockPool(nil)
+					mockDBPool := mock.NewPGPool(nil)
 					mockDB, err := NewDatabase(WithDatabasePool(mockDBPool))
 					require.NoError(t, err)
 
@@ -890,7 +890,7 @@ func TestNotificationRepository_Delete(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.pg.NotificationRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					mockDBPool := mock.NewMockPool(ctrl)
+					mockDBPool := mock.NewPGPool(ctrl)
 					mockDB, err := NewDatabase(WithDatabasePool(mockDBPool))
 					require.NoError(t, err)
 
@@ -922,7 +922,7 @@ func TestNotificationRepository_Delete(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.pg.NotificationRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					mockDBPool := mock.NewMockPool(ctrl)
+					mockDBPool := mock.NewPGPool(ctrl)
 					mockDB, err := NewDatabase(WithDatabasePool(mockDBPool))
 					require.NoError(t, err)
 
@@ -955,7 +955,7 @@ func TestNotificationRepository_Delete(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.pg.NotificationRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					mockDBPool := mock.NewMockPool(ctrl)
+					mockDBPool := mock.NewPGPool(ctrl)
 					mockDB, err := NewDatabase(WithDatabasePool(mockDBPool))
 					require.NoError(t, err)
 
@@ -988,7 +988,7 @@ func TestNotificationRepository_Delete(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.pg.NotificationRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					mockDBPool := mock.NewMockPool(nil)
+					mockDBPool := mock.NewPGPool(nil)
 					mockDB, err := NewDatabase(WithDatabasePool(mockDBPool))
 					require.NoError(t, err)
 
@@ -1016,7 +1016,7 @@ func TestNotificationRepository_Delete(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.pg.NotificationRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					mockDBPool := mock.NewMockPool(nil)
+					mockDBPool := mock.NewPGPool(nil)
 					mockDB, err := NewDatabase(WithDatabasePool(mockDBPool))
 					require.NoError(t, err)
 

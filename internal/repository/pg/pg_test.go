@@ -98,9 +98,9 @@ func TestWithDatabasePool(t *testing.T) {
 		{
 			name: "create new option with pool",
 			args: args{
-				pool: mock.NewMockPool(nil),
+				pool: mock.NewPGPool(nil),
 			},
-			want: mock.NewMockPool(nil),
+			want: mock.NewPGPool(nil),
 		},
 		{
 			name: "create new option with nil pool",
@@ -211,12 +211,12 @@ func TestNewDatabase(t *testing.T) {
 		{
 			name: "create new database",
 			args: args{
-				pool:   mock.NewMockPool(nil),
+				pool:   mock.NewPGPool(nil),
 				logger: new(mock.Logger),
 				tracer: new(mock.Tracer),
 			},
 			want: &Database{
-				pool:   mock.NewMockPool(nil),
+				pool:   mock.NewPGPool(nil),
 				logger: new(mock.Logger),
 				tracer: new(mock.Tracer),
 			},
@@ -233,7 +233,7 @@ func TestNewDatabase(t *testing.T) {
 		{
 			name: "create new database with nil logger",
 			args: args{
-				pool:   mock.NewMockPool(nil),
+				pool:   mock.NewPGPool(nil),
 				logger: nil,
 				tracer: new(mock.Tracer),
 			},
@@ -242,7 +242,7 @@ func TestNewDatabase(t *testing.T) {
 		{
 			name: "create new database with nil tracer",
 			args: args{
-				pool:   mock.NewMockPool(nil),
+				pool:   mock.NewPGPool(nil),
 				logger: new(mock.Logger),
 				tracer: nil,
 			},
@@ -269,7 +269,7 @@ func TestDatabase_Close(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	pool := mock.NewMockPool(ctrl)
+	pool := mock.NewPGPool(ctrl)
 	pool.EXPECT().Close()
 
 	db := &Database{
@@ -282,7 +282,7 @@ func TestDatabase_Close(t *testing.T) {
 func TestDatabase_GetPool(t *testing.T) {
 	t.Parallel()
 
-	pool := mock.NewMockPool(nil)
+	pool := mock.NewPGPool(nil)
 
 	db := &Database{
 		pool: pool,
@@ -311,7 +311,7 @@ func TestDatabase_Ping(t *testing.T) {
 			},
 			fields: fields{
 				pool: func(ctx context.Context, ctrl *gomock.Controller) Pool {
-					p := mock.NewMockPool(ctrl)
+					p := mock.NewPGPool(ctrl)
 					p.EXPECT().Ping(ctx).Return(nil)
 					return p
 				},
@@ -324,7 +324,7 @@ func TestDatabase_Ping(t *testing.T) {
 			},
 			fields: fields{
 				pool: func(ctx context.Context, ctrl *gomock.Controller) Pool {
-					p := mock.NewMockPool(ctrl)
+					p := mock.NewPGPool(ctrl)
 					p.EXPECT().Ping(ctx).Return(assert.AnError)
 					return p
 				},
