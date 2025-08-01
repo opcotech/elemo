@@ -772,7 +772,7 @@ func TestCachedAssignmentRepository_GetByUser(t *testing.T) {
 				cacheRepo:      tt.fields.cacheRepo(tt.args.ctx, tt.args.userID, tt.args.offset, tt.args.limit, tt.want),
 				assignmentRepo: tt.fields.assignmentRepo(tt.args.ctx, tt.args.userID, tt.args.offset, tt.args.limit, tt.want),
 			}
-			got, err := r.GetByUser(tt.args.ctx, tt.args.userID, tt.args.offset, tt.args.limit)
+			got, err := r.FindByUser(tt.args.ctx, tt.args.userID, tt.args.offset, tt.args.limit)
 			assert.ErrorIs(t, err, tt.wantErr)
 			assert.ElementsMatch(t, tt.want, got)
 		})
@@ -1037,7 +1037,7 @@ func TestCachedAssignmentRepository_GetByResource(t *testing.T) {
 				cacheRepo:      tt.fields.cacheRepo(tt.args.ctx, tt.args.userID, tt.args.offset, tt.args.limit, tt.want),
 				assignmentRepo: tt.fields.assignmentRepo(tt.args.ctx, tt.args.userID, tt.args.offset, tt.args.limit, tt.want),
 			}
-			got, err := r.GetByResource(tt.args.ctx, tt.args.userID, tt.args.offset, tt.args.limit)
+			got, err := r.FindByResource(tt.args.ctx, tt.args.userID, tt.args.offset, tt.args.limit)
 			assert.ErrorIs(t, err, tt.wantErr)
 			assert.ElementsMatch(t, tt.want, got)
 		})

@@ -90,8 +90,8 @@ func (c *todoController) V1TodosGet(ctx context.Context, request api.V1TodosGetR
 	defer span.End()
 
 	todos, err := c.todoService.GetAll(ctx,
-		pkg.GetDefaultPtr(request.Params.Offset, DefaultOffset),
-		pkg.GetDefaultPtr(request.Params.Limit, DefaultLimit),
+		pkg.RenderDefaultPtr(request.Params.Offset, DefaultOffset),
+		pkg.RenderDefaultPtr(request.Params.Limit, DefaultLimit),
 		request.Params.Completed,
 	)
 	if err != nil {
@@ -193,7 +193,7 @@ func createTodoJSONRequestBodyToTodo(body *api.V1TodosCreateJSONRequestBody, own
 		return nil, err
 	}
 
-	todo.Description = pkg.GetDefaultPtr(body.Description.Value, "")
+	todo.Description = pkg.RenderDefaultPtr(body.Description.Value, "")
 
 	if body.DueDate.Value != nil {
 		todo.DueDate = *body.DueDate.Value

@@ -106,7 +106,7 @@ func (r *AssignmentRepository) Get(ctx context.Context, id model.ID) (*model.Ass
 	return assignment, nil
 }
 
-func (r *AssignmentRepository) GetByUser(ctx context.Context, userID model.ID, offset, limit int) ([]*model.Assignment, error) {
+func (r *AssignmentRepository) FindByUser(ctx context.Context, userID model.ID, offset, limit int) ([]*model.Assignment, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.AssignmentRepository/GetByUser")
 	defer span.End()
 
@@ -130,7 +130,7 @@ func (r *AssignmentRepository) GetByUser(ctx context.Context, userID model.ID, o
 	return assignments, nil
 }
 
-func (r *AssignmentRepository) GetByResource(ctx context.Context, resourceID model.ID, offset, limit int) ([]*model.Assignment, error) {
+func (r *AssignmentRepository) FindByResource(ctx context.Context, resourceID model.ID, offset, limit int) ([]*model.Assignment, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.AssignmentRepository/GetByResource")
 	defer span.End()
 

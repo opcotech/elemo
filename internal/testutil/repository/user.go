@@ -23,7 +23,7 @@ func MakeUserSystemOwner(userID model.ID, db *neo4j.Database) error {
 		"perm_kind":  model.PermissionKindAll.String(),
 	}
 
-	_, err := db.GetWriteSession(ctx).Run(ctx, cypher, params)
+	_, err := db.WriteSession(ctx).Run(ctx, cypher, params)
 	if err != nil {
 		return err
 	}

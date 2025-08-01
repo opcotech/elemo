@@ -279,7 +279,7 @@ func TestDatabase_Close(t *testing.T) {
 	require.NoError(t, db.Close())
 }
 
-func TestDatabase_GetPool(t *testing.T) {
+func TestDatabase_Pool(t *testing.T) {
 	t.Parallel()
 
 	pool := mock.NewPGPool(nil)
@@ -288,7 +288,7 @@ func TestDatabase_GetPool(t *testing.T) {
 		pool: pool,
 	}
 
-	require.Equal(t, pool, db.GetPool())
+	require.Equal(t, pool, db.Pool())
 }
 
 func TestDatabase_Ping(t *testing.T) {

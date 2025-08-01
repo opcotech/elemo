@@ -25,7 +25,7 @@ func (d *DocumentRepository) Get(ctx context.Context, id model.ID) (*model.Docum
 	return args.Get(0).(*model.Document), args.Error(1)
 }
 
-func (d *DocumentRepository) GetByCreator(ctx context.Context, createdBy model.ID, offset, limit int) ([]*model.Document, error) {
+func (d *DocumentRepository) FindByCreator(ctx context.Context, createdBy model.ID, offset, limit int) ([]*model.Document, error) {
 	args := d.Called(ctx, createdBy, offset, limit)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
