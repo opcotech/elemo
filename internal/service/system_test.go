@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"go.uber.org/mock/gomock"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -30,7 +31,7 @@ func TestNewSystemService(t *testing.T) {
 			name: "new system service",
 			args: args{
 				resources: map[model.HealthCheckComponent]Pingable{
-					model.HealthCheckComponentGraphDB: new(mock.PingableResource),
+					model.HealthCheckComponentGraphDB: mock.NewPingableResource(nil),
 				},
 				version: &model.VersionInfo{
 					Version: "1.0.0",
@@ -49,7 +50,7 @@ func TestNewSystemService(t *testing.T) {
 					Version: "1.0.0",
 				},
 				resources: map[model.HealthCheckComponent]Pingable{
-					model.HealthCheckComponentGraphDB: new(mock.PingableResource),
+					model.HealthCheckComponentGraphDB: mock.NewPingableResource(nil),
 				},
 			},
 		},
@@ -71,7 +72,7 @@ func TestNewSystemService(t *testing.T) {
 			name: "new system service with nil version",
 			args: args{
 				resources: map[model.HealthCheckComponent]Pingable{
-					model.HealthCheckComponentGraphDB: new(mock.PingableResource),
+					model.HealthCheckComponentGraphDB: mock.NewPingableResource(nil),
 				},
 				version: nil,
 				opts: []Option{
@@ -85,7 +86,7 @@ func TestNewSystemService(t *testing.T) {
 			name: "new system service with invalid options",
 			args: args{
 				resources: map[model.HealthCheckComponent]Pingable{
-					model.HealthCheckComponentGraphDB: new(mock.PingableResource),
+					model.HealthCheckComponentGraphDB: mock.NewPingableResource(nil),
 				},
 				version: &model.VersionInfo{},
 				opts: []Option{
@@ -157,7 +158,7 @@ func Test_systemService_GetHealth(t *testing.T) {
 	type fields struct {
 		baseService func(ctx context.Context) *baseService
 		versionInfo *model.VersionInfo
-		resources   func(ctx context.Context) map[model.HealthCheckComponent]Pingable
+		resources   func(ctx context.Context, ctrl *gomock.Controller) map[model.HealthCheckComponent]Pingable
 	}
 	type args struct {
 		ctx context.Context
@@ -191,9 +192,9 @@ func Test_systemService_GetHealth(t *testing.T) {
 				versionInfo: &model.VersionInfo{
 					Version: "1.0.0",
 				},
-				resources: func(ctx context.Context) map[model.HealthCheckComponent]Pingable {
-					resource := new(mock.PingableResource)
-					resource.On("Ping", ctx).Return(nil).Times(4)
+				resources: func(ctx context.Context, ctrl *gomock.Controller) map[model.HealthCheckComponent]Pingable {
+					resource := mock.NewPingableResource(ctrl)
+					resource.EXPECT().Ping(ctx).Return(nil).Times(4)
 
 					return map[model.HealthCheckComponent]Pingable{
 						model.HealthCheckComponentGraphDB:      resource,
@@ -235,9 +236,9 @@ func Test_systemService_GetHealth(t *testing.T) {
 				versionInfo: &model.VersionInfo{
 					Version: "1.0.0",
 				},
-				resources: func(ctx context.Context) map[model.HealthCheckComponent]Pingable {
-					resource := new(mock.PingableResource)
-					resource.On("Ping", ctx).Return(assert.AnError).Times(4)
+				resources: func(ctx context.Context, ctrl *gomock.Controller) map[model.HealthCheckComponent]Pingable {
+					resource := mock.NewPingableResource(ctrl)
+					resource.EXPECT().Ping(ctx).Return(assert.AnError).Times(4)
 
 					return map[model.HealthCheckComponent]Pingable{
 						model.HealthCheckComponentGraphDB:      resource,
@@ -263,10 +264,12 @@ func Test_systemService_GetHealth(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 			s := &systemService{
 				baseService: tt.fields.baseService(tt.args.ctx),
 				versionInfo: tt.fields.versionInfo,
-				resources:   tt.fields.resources(tt.args.ctx),
+				resources:   tt.fields.resources(tt.args.ctx, ctrl),
 			}
 			got, err := s.GetHealth(tt.args.ctx)
 			require.ErrorIs(t, err, tt.wantErr)
