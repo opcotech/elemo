@@ -1,5 +1,7 @@
 package service
 
+//go:generate mockgen -source=system.go -destination=../testutil/mock/system_service_gen.go -package=mock -mock_names "Pingable=PingableResource,SystemService=SystemService"
+
 import (
 	"context"
 	"errors"
