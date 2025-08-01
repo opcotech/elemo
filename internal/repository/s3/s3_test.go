@@ -72,9 +72,9 @@ func TestWithStorageClient(t *testing.T) {
 		{
 			name: "create new option with client",
 			args: args{
-				client: new(testMock.S3Client),
+				client: new(testMock.S3ClientOld),
 			},
-			want: new(testMock.S3Client),
+			want: new(testMock.S3ClientOld),
 		},
 		{
 			name: "create new option with nil client",
@@ -223,13 +223,13 @@ func TestNewStorage(t *testing.T) {
 		{
 			name: "create new storage",
 			args: args{
-				client: new(testMock.S3Client),
+				client: new(testMock.S3ClientOld),
 				bucket: "test-bucket",
 				logger: new(testMock.Logger),
 				tracer: new(testMock.Tracer),
 			},
 			want: &Storage{
-				client: new(testMock.S3Client),
+				client: new(testMock.S3ClientOld),
 				bucket: "test-bucket",
 				logger: new(testMock.Logger),
 				tracer: new(testMock.Tracer),
@@ -248,7 +248,7 @@ func TestNewStorage(t *testing.T) {
 		{
 			name: "create new storage with empty bucket",
 			args: args{
-				client: new(testMock.S3Client),
+				client: new(testMock.S3ClientOld),
 				bucket: "",
 				logger: new(testMock.Logger),
 				tracer: new(testMock.Tracer),
@@ -258,7 +258,7 @@ func TestNewStorage(t *testing.T) {
 		{
 			name: "create new storage with nil logger",
 			args: args{
-				client: new(testMock.S3Client),
+				client: new(testMock.S3ClientOld),
 				bucket: "test-bucket",
 				logger: nil,
 				tracer: new(testMock.Tracer),
@@ -268,7 +268,7 @@ func TestNewStorage(t *testing.T) {
 		{
 			name: "create new storage with nil tracer",
 			args: args{
-				client: new(testMock.S3Client),
+				client: new(testMock.S3ClientOld),
 				bucket: "test-bucket",
 				logger: new(testMock.Logger),
 				tracer: nil,
@@ -295,7 +295,7 @@ func TestNewStorage(t *testing.T) {
 func TestStorage_GetClient(t *testing.T) {
 	t.Parallel()
 
-	client := new(testMock.S3Client)
+	client := new(testMock.S3ClientOld)
 
 	storage := &Storage{
 		client: client,
@@ -325,7 +325,7 @@ func TestStorage_Ping(t *testing.T) {
 			},
 			fields: fields{
 				client: func(ctx context.Context) Client {
-					c := new(testMock.S3Client)
+					c := new(testMock.S3ClientOld)
 					c.On("HeadBucket", ctx, &awsS3.HeadBucketInput{Bucket: aws.String("test-bucket")}, mock.Anything).Return(&awsS3.HeadBucketOutput{}, nil)
 					return c
 				},
@@ -339,7 +339,7 @@ func TestStorage_Ping(t *testing.T) {
 			},
 			fields: fields{
 				client: func(ctx context.Context) Client {
-					c := new(testMock.S3Client)
+					c := new(testMock.S3ClientOld)
 					c.On("HeadBucket", ctx, &awsS3.HeadBucketInput{Bucket: aws.String("test-bucket")}, mock.Anything).Return(&awsS3.HeadBucketOutput{}, assert.AnError)
 					return c
 				},
@@ -380,14 +380,14 @@ func TestWithStorage(t *testing.T) {
 			name: "create new option with storage",
 			args: args{
 				storage: &Storage{
-					client: new(testMock.S3Client),
+					client: new(testMock.S3ClientOld),
 					bucket: "test-bucket",
 					logger: new(testMock.Logger),
 					tracer: new(testMock.Tracer),
 				},
 			},
 			want: &Storage{
-				client: new(testMock.S3Client),
+				client: new(testMock.S3ClientOld),
 				bucket: "test-bucket",
 				logger: new(testMock.Logger),
 				tracer: new(testMock.Tracer),
@@ -503,7 +503,7 @@ func TestNewBaseRepository(t *testing.T) {
 			name: "create new base repository",
 			args: args{
 				storage: &Storage{
-					client: new(testMock.S3Client),
+					client: new(testMock.S3ClientOld),
 					bucket: "test-bucket",
 					logger: new(testMock.Logger),
 					tracer: new(testMock.Tracer),
@@ -513,7 +513,7 @@ func TestNewBaseRepository(t *testing.T) {
 			},
 			want: &baseRepository{
 				storage: &Storage{
-					client: new(testMock.S3Client),
+					client: new(testMock.S3ClientOld),
 					bucket: "test-bucket",
 					logger: new(testMock.Logger),
 					tracer: new(testMock.Tracer),
@@ -535,7 +535,7 @@ func TestNewBaseRepository(t *testing.T) {
 			name: "create new base repository with nil logger",
 			args: args{
 				storage: &Storage{
-					client: new(testMock.S3Client),
+					client: new(testMock.S3ClientOld),
 					bucket: "test-bucket",
 					logger: new(testMock.Logger),
 					tracer: new(testMock.Tracer),
@@ -549,7 +549,7 @@ func TestNewBaseRepository(t *testing.T) {
 			name: "create new base repository with nil tracer",
 			args: args{
 				storage: &Storage{
-					client: new(testMock.S3Client),
+					client: new(testMock.S3ClientOld),
 					bucket: "test-bucket",
 					logger: new(testMock.Logger),
 					tracer: new(testMock.Tracer),
