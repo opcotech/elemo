@@ -2,6 +2,7 @@ package async
 
 import (
 	"context"
+	"go.uber.org/mock/gomock"
 	"testing"
 
 	"github.com/hibiken/asynq"
@@ -70,17 +71,27 @@ func TestWithMetricsExporter(t *testing.T) {
 }
 
 func TestWithRateLimiter(t *testing.T) {
+	type fields struct {
+		limiter func(ctrl *gomock.Controller) RateLimiter
+	}
 	type args struct {
-		tracer  tracing.Tracer
-		limiter RateLimiter
+		tracer tracing.Tracer
 	}
 	tests := []struct {
 		name    string
+		fields  fields
 		args    args
 		wantErr error
 	}{
 		{
 			name: "return handler if rate limiter is allowed",
+			fields: fields{
+				limiter: func(ctrl *gomock.Controller) RateLimiter {
+					limiter := mock.NewRateLimiter(ctrl)
+					limiter.EXPECT().Allow().Return(true)
+					return limiter
+				},
+			},
 			args: args{
 				tracer: func() tracing.Tracer {
 					span := new(mock.Span)
@@ -90,17 +101,19 @@ func TestWithRateLimiter(t *testing.T) {
 					tracer.On("Start", mock.Anything, "transport.asynq.middleware/WithRateLimiter", []trace.SpanStartOption(nil)).Return(context.Background(), span)
 
 					return tracer
-				}(),
-				limiter: func() RateLimiter {
-					limiter := new(mock.RateLimiter)
-					limiter.On("Allow").Return(true)
-					return limiter
 				}(),
 			},
 			wantErr: nil,
 		},
 		{
 			name: "return error if rate limiter is not allowed",
+			fields: fields{
+				limiter: func(ctrl *gomock.Controller) RateLimiter {
+					limiter := mock.NewRateLimiter(ctrl)
+					limiter.EXPECT().Allow().Return(false)
+					return limiter
+				},
+			},
 			args: args{
 				tracer: func() tracing.Tracer {
 					span := new(mock.Span)
@@ -110,11 +123,6 @@ func TestWithRateLimiter(t *testing.T) {
 					tracer.On("Start", mock.Anything, "transport.asynq.middleware/WithRateLimiter", []trace.SpanStartOption(nil)).Return(context.Background(), span)
 
 					return tracer
-				}(),
-				limiter: func() RateLimiter {
-					limiter := new(mock.RateLimiter)
-					limiter.On("Allow").Return(false)
-					return limiter
 				}(),
 			},
 			wantErr: ErrRateLimitExceeded,
@@ -124,12 +132,14 @@ func TestWithRateLimiter(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 
 			handler := asynq.HandlerFunc(func(_ context.Context, _ *asynq.Task) error {
 				return nil
 			})
 
-			wrapped := WithRateLimiter(tt.args.tracer, tt.args.limiter)(handler)
+			wrapped := WithRateLimiter(tt.args.tracer, tt.fields.limiter(ctrl))(handler)
 			err := wrapped.ProcessTask(context.Background(), new(asynq.Task))
 
 			assert.ErrorIs(t, err, tt.wantErr)
