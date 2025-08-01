@@ -14,6 +14,7 @@ import (
 	"github.com/opcotech/elemo/internal/repository"
 )
 
+//go:generate mockgen -source=s3.go -destination=../../testutil/mock/s3_gen.go -package=mock -mock_names "Client=S3Client"
 type Client interface {
 	CreateBucket(ctx context.Context, params *awsS3.CreateBucketInput, optFns ...func(*awsS3.Options)) (*awsS3.CreateBucketOutput, error)
 	HeadBucket(ctx context.Context, params *awsS3.HeadBucketInput, optFns ...func(*awsS3.Options)) (*awsS3.HeadBucketOutput, error)
