@@ -1205,7 +1205,7 @@ func TestCachedNamespaceRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				namespaceRepo: func(ctx context.Context, _ *gomock.Controller, id model.ID) repository.NamespaceRepository {
+				namespaceRepo: func(_ context.Context, _ *gomock.Controller, _ model.ID) repository.NamespaceRepository {
 					repo := mock.NewNamespaceRepository(nil)
 					return repo
 				},
