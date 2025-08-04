@@ -71,7 +71,7 @@ func TestCachedNamespaceRepository_Create(t *testing.T) {
 					}
 				},
 				namespaceRepo: func(ctx context.Context, organization model.ID, namespace *model.Namespace) repository.NamespaceRepository {
-					repo := new(mock.NamespaceRepository)
+					repo := new(mock.NamespaceRepositoryOld)
 					repo.On("Create", ctx, organization, namespace).Return(nil)
 					return repo
 				},
@@ -128,7 +128,7 @@ func TestCachedNamespaceRepository_Create(t *testing.T) {
 					}
 				},
 				namespaceRepo: func(ctx context.Context, organization model.ID, namespace *model.Namespace) repository.NamespaceRepository {
-					repo := new(mock.NamespaceRepository)
+					repo := new(mock.NamespaceRepositoryOld)
 					repo.On("Create", ctx, organization, namespace).Return(repository.ErrNamespaceCreate)
 					return repo
 				},
@@ -185,7 +185,7 @@ func TestCachedNamespaceRepository_Create(t *testing.T) {
 					}
 				},
 				namespaceRepo: func(_ context.Context, _ model.ID, _ *model.Namespace) repository.NamespaceRepository {
-					return new(mock.NamespaceRepository)
+					return new(mock.NamespaceRepositoryOld)
 				},
 			},
 			args: args{
@@ -241,7 +241,7 @@ func TestCachedNamespaceRepository_Create(t *testing.T) {
 					}
 				},
 				namespaceRepo: func(_ context.Context, _ model.ID, _ *model.Namespace) repository.NamespaceRepository {
-					return new(mock.NamespaceRepository)
+					return new(mock.NamespaceRepositoryOld)
 				},
 			},
 			args: args{
@@ -322,7 +322,7 @@ func TestCachedNamespaceRepository_Get(t *testing.T) {
 					}
 				},
 				namespaceRepo: func(ctx context.Context, id model.ID, namespace *model.Namespace) repository.NamespaceRepository {
-					repo := new(mock.NamespaceRepository)
+					repo := new(mock.NamespaceRepositoryOld)
 					repo.On("Get", ctx, id).Return(namespace, nil)
 					return repo
 				},
@@ -369,7 +369,7 @@ func TestCachedNamespaceRepository_Get(t *testing.T) {
 					}
 				},
 				namespaceRepo: func(_ context.Context, _ model.ID, _ *model.Namespace) repository.NamespaceRepository {
-					return new(mock.NamespaceRepository)
+					return new(mock.NamespaceRepositoryOld)
 				},
 			},
 			args: args{
@@ -414,7 +414,7 @@ func TestCachedNamespaceRepository_Get(t *testing.T) {
 					}
 				},
 				namespaceRepo: func(ctx context.Context, id model.ID, _ *model.Namespace) repository.NamespaceRepository {
-					repo := new(mock.NamespaceRepository)
+					repo := new(mock.NamespaceRepositoryOld)
 					repo.On("Get", ctx, id).Return(nil, repository.ErrNotFound)
 					return repo
 				},
@@ -453,7 +453,7 @@ func TestCachedNamespaceRepository_Get(t *testing.T) {
 					}
 				},
 				namespaceRepo: func(_ context.Context, _ model.ID, _ *model.Namespace) repository.NamespaceRepository {
-					return new(mock.NamespaceRepository)
+					return new(mock.NamespaceRepositoryOld)
 				},
 			},
 			args: args{
@@ -496,7 +496,7 @@ func TestCachedNamespaceRepository_Get(t *testing.T) {
 					}
 				},
 				namespaceRepo: func(ctx context.Context, id model.ID, namespace *model.Namespace) repository.NamespaceRepository {
-					repo := new(mock.NamespaceRepository)
+					repo := new(mock.NamespaceRepositoryOld)
 					repo.On("Get", ctx, id).Return(namespace, nil)
 					return repo
 				},
@@ -580,7 +580,7 @@ func TestCachedNamespaceRepository_GetAll(t *testing.T) {
 					}
 				},
 				namespaceRepo: func(ctx context.Context, organization model.ID, offset, limit int, namespaces []*model.Namespace) repository.NamespaceRepository {
-					repo := new(mock.NamespaceRepository)
+					repo := new(mock.NamespaceRepositoryOld)
 					repo.On("GetAll", ctx, organization, offset, limit).Return(namespaces, nil)
 					return repo
 				},
@@ -634,7 +634,7 @@ func TestCachedNamespaceRepository_GetAll(t *testing.T) {
 					}
 				},
 				namespaceRepo: func(_ context.Context, _ model.ID, _, _ int, _ []*model.Namespace) repository.NamespaceRepository {
-					return new(mock.NamespaceRepository)
+					return new(mock.NamespaceRepositoryOld)
 				},
 			},
 			args: args{
@@ -687,7 +687,7 @@ func TestCachedNamespaceRepository_GetAll(t *testing.T) {
 					}
 				},
 				namespaceRepo: func(ctx context.Context, organization model.ID, offset, limit int, _ []*model.Namespace) repository.NamespaceRepository {
-					repo := new(mock.NamespaceRepository)
+					repo := new(mock.NamespaceRepositoryOld)
 					repo.On("GetAll", ctx, organization, offset, limit).Return(nil, repository.ErrNotFound)
 					return repo
 				},
@@ -727,7 +727,7 @@ func TestCachedNamespaceRepository_GetAll(t *testing.T) {
 					}
 				},
 				namespaceRepo: func(_ context.Context, _ model.ID, _, _ int, _ []*model.Namespace) repository.NamespaceRepository {
-					return new(mock.NamespaceRepository)
+					return new(mock.NamespaceRepositoryOld)
 				},
 			},
 			args: args{
@@ -770,7 +770,7 @@ func TestCachedNamespaceRepository_GetAll(t *testing.T) {
 					}
 				},
 				namespaceRepo: func(ctx context.Context, organization model.ID, offset, limit int, namespaces []*model.Namespace) repository.NamespaceRepository {
-					repo := new(mock.NamespaceRepository)
+					repo := new(mock.NamespaceRepositoryOld)
 					repo.On("GetAll", ctx, organization, offset, limit).Return(namespaces, nil)
 					return repo
 				},
@@ -860,7 +860,7 @@ func TestCachedNamespaceRepository_Update(t *testing.T) {
 					}
 				},
 				namespaceRepo: func(ctx context.Context, id model.ID, patch map[string]any, namespace *model.Namespace) repository.NamespaceRepository {
-					repo := new(mock.NamespaceRepository)
+					repo := new(mock.NamespaceRepositoryOld)
 					repo.On("Update", ctx, id, patch).Return(namespace, nil)
 					return repo
 				},
@@ -898,7 +898,7 @@ func TestCachedNamespaceRepository_Update(t *testing.T) {
 					}
 				},
 				namespaceRepo: func(ctx context.Context, id model.ID, patch map[string]any, _ *model.Namespace) repository.NamespaceRepository {
-					repo := new(mock.NamespaceRepository)
+					repo := new(mock.NamespaceRepositoryOld)
 					repo.On("Update", ctx, id, patch).Return(nil, repository.ErrNotFound)
 					return repo
 				},
@@ -952,7 +952,7 @@ func TestCachedNamespaceRepository_Update(t *testing.T) {
 					}
 				},
 				namespaceRepo: func(ctx context.Context, id model.ID, patch map[string]any, namespace *model.Namespace) repository.NamespaceRepository {
-					repo := new(mock.NamespaceRepository)
+					repo := new(mock.NamespaceRepositoryOld)
 					repo.On("Update", ctx, id, patch).Return(namespace, nil)
 					return repo
 				},
@@ -1013,7 +1013,7 @@ func TestCachedNamespaceRepository_Update(t *testing.T) {
 					}
 				},
 				namespaceRepo: func(ctx context.Context, id model.ID, patch map[string]any, namespace *model.Namespace) repository.NamespaceRepository {
-					repo := new(mock.NamespaceRepository)
+					repo := new(mock.NamespaceRepositoryOld)
 					repo.On("Update", ctx, id, patch).Return(namespace, nil)
 					return repo
 				},
@@ -1103,7 +1103,7 @@ func TestCachedNamespaceRepository_Delete(t *testing.T) {
 					}
 				},
 				namespaceRepo: func(ctx context.Context, id model.ID) repository.NamespaceRepository {
-					repo := new(mock.NamespaceRepository)
+					repo := new(mock.NamespaceRepositoryOld)
 					repo.On("Delete", ctx, id).Return(nil)
 					return repo
 				},
@@ -1156,7 +1156,7 @@ func TestCachedNamespaceRepository_Delete(t *testing.T) {
 					}
 				},
 				namespaceRepo: func(ctx context.Context, id model.ID) repository.NamespaceRepository {
-					repo := new(mock.NamespaceRepository)
+					repo := new(mock.NamespaceRepositoryOld)
 					repo.On("Delete", ctx, id).Return(repository.ErrNamespaceDelete)
 					return repo
 				},
@@ -1197,7 +1197,7 @@ func TestCachedNamespaceRepository_Delete(t *testing.T) {
 					}
 				},
 				namespaceRepo: func(ctx context.Context, id model.ID) repository.NamespaceRepository {
-					repo := new(mock.NamespaceRepository)
+					repo := new(mock.NamespaceRepositoryOld)
 					repo.On("Delete", ctx, id).Return(nil)
 					return repo
 				},
@@ -1245,7 +1245,7 @@ func TestCachedNamespaceRepository_Delete(t *testing.T) {
 					}
 				},
 				namespaceRepo: func(_ context.Context, _ model.ID) repository.NamespaceRepository {
-					return new(mock.NamespaceRepository)
+					return new(mock.NamespaceRepositoryOld)
 				},
 			},
 			args: args{
@@ -1297,7 +1297,7 @@ func TestCachedNamespaceRepository_Delete(t *testing.T) {
 					}
 				},
 				namespaceRepo: func(_ context.Context, _ model.ID) repository.NamespaceRepository {
-					return new(mock.NamespaceRepository)
+					return new(mock.NamespaceRepositoryOld)
 				},
 			},
 			args: args{
