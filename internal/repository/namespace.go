@@ -7,6 +7,8 @@ import (
 )
 
 // NamespaceRepository is a repository for managing namespaces.
+//
+//go:generate mockgen -source=namespace.go -destination=../testutil/mock/namespace_repo_gen.go -package=mock -mock_names "NamespaceRepository=NamespaceRepository"
 type NamespaceRepository interface {
 	Create(ctx context.Context, orgID model.ID, namespace *model.Namespace) error
 	Get(ctx context.Context, id model.ID) (*model.Namespace, error)
