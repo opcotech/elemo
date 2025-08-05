@@ -1,4 +1,11 @@
-import { ChevronsUpDown, LogOut, Palette, UserIcon } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import {
+  ChevronsUpDown,
+  LogOut,
+  Palette,
+  SettingsIcon,
+  UserIcon,
+} from "lucide-react";
 
 import { useTheme } from "@/components/theme-provider";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -63,6 +70,13 @@ export function NavUser({ user }: { user: User }) {
               <UserIcon />
               Account
             </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link to="/settings">
+                <SettingsIcon />
+                Settings
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={() => setTheme(theme === "light" ? "dark" : "light")}
             >

@@ -26,6 +26,7 @@ import { useAuth } from "@/hooks/use-auth";
 
 interface AuthenticatedLayoutProps {
   children: ReactNode;
+  sidebarContent?: ReactNode;
 }
 
 interface SidebarNavigationItem {
@@ -34,7 +35,10 @@ interface SidebarNavigationItem {
   icon: React.ElementType;
 }
 
-export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
+export function AuthenticatedLayout({
+  children,
+  sidebarContent,
+}: AuthenticatedLayoutProps) {
   const { user } = useAuth();
 
   const navigation: SidebarNavigationItem[] = [
@@ -73,6 +77,8 @@ export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
                       </SidebarMenu>
                     </SidebarGroupContent>
                   </SidebarGroup>
+
+                  {sidebarContent}
 
                   <SidebarGroup>
                     <SidebarGroupLabel>Workspace</SidebarGroupLabel>
