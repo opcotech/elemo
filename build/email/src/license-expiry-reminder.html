@@ -1,0 +1,122 @@
+@@include('./includes/html-head.html')
+
+<table class="wrap" cellspacing="0" cellpadding="0" role="presentation">
+  <tr>
+    <td class="p-sm">
+      @@include('./includes/header.html')
+
+      <div class="main-content">
+        <div class="box">
+          <table class="box-table" cellpadding="0" cellspacing="0">
+            <tr>
+              <td>
+                <table cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td class="content pb-0" align="center">
+                      <!--[if mso]>
+                        <v:roundrect
+                          xmlns:v="urn:schemas-microsoft-com:vml"
+                          xmlns:w="urn:schemas-microsoft-com:office:word"
+                          href="."
+                          style="height: 64px; v-text-anchor: middle; width: 64px"
+                          arcsize="100%"
+                          stroke="f"
+                          fillcolor="#066FD1"
+                        >
+                          <w:anchorlock />
+                          <center style="color: #ffffff; font-family: sans-serif; font-size: 16px; font-weight: bold">
+                            <img
+                              src="./assets/icons-white-certificate.png"
+                              class="va-middle"
+                              width="32"
+                              height="32"
+                              alt="lock-open"
+                            />
+                          </center>
+                        </v:roundrect>
+                      <![endif]-->
+                      <!--[if !mso]> <!-->
+                      <table class="icon icon-lg bg-primary" cellspacing="0" cellpadding="0" role="presentation">
+                        <tr>
+                          <td valign="middle" align="center">
+                            <img
+                              src="./assets/icons-white-certificate.png"
+                              class="va-middle"
+                              width="32"
+                              height="32"
+                              alt="lock-open"
+                            />
+                          </td>
+                        </tr>
+                      </table>
+                      <!-- <![endif]-->
+
+                      <h1 class="text-center m-0 font-strong mt-md">{{ .Subject }}</h1>
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td class="content pb-0">
+                      <p>Hello&nbsp;{{ .LicenseOrganization }},</p>
+                      <p>
+                        Your license for {{ .ServerURL }} expires at
+                        <strong class="strong">{{ .LicenseExpiresAt }}</strong>.
+                      </p>
+                      <p>
+                        You can renew the license anytime by sending an email to
+                        <a href="mailto:{{ .RenewEmail }}">{{ .RenewEmail }}</a> and we will get in touch with you about
+                        the details. Please find your license details below.
+                      </p>
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td class="content pt-0 pb-lg">
+                      <table cellspacing="0" cellpadding="0" role="presentation">
+                        <tr style="text-align: left">
+                          <th class="strong">License ID:</th>
+                          <td><code>{{ .LicenseID }}</code></td>
+                        </tr>
+                        <tr style="text-align: left">
+                          <th class="strong">Licensee:</th>
+                          <td>{{ .LicenseOrganization }}</td>
+                        </tr>
+                        <tr style="text-align: left">
+                          <th class="strong">Licensee Email:</th>
+                          <td>{{ .LicenseEmail }}</td>
+                        </tr>
+                        <tr style="text-align: left">
+                          <th class="strong">License Expiry:</th>
+                          <td>{{ .LicenseExpiresAt }}</td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td class="content pt-0 pb-0">
+                      <p>
+                        This process will be simplified soon, so you can renew licenses on your own. Until then, thank
+                        you for your patience.
+                      </p>
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td class="content pt-0">
+                      <p>Sincerely,<br />The Elemo team</p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </div>
+      </div>
+
+      @@include('./includes/footer.html')
+    </td>
+  </tr>
+</table>
+
+@@include('./includes/html-footer.html')

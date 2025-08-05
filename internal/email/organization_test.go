@@ -11,8 +11,8 @@ func TestOrganizationInviteTemplateData_Get(t *testing.T) {
 
 	data := &OrganizationInviteTemplateData{
 		Subject:          "You have been invited to join an organization",
-		Username:         "test-user",
 		FirstName:        "Test",
+		LastName:         "Bob",
 		OrganizationName: "ACME Inc.",
 		InvitationURL:    "https://example.com/org/1/invite",
 		SupportEmail:     "info@example.com",

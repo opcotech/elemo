@@ -2,9 +2,10 @@ package pg
 
 import (
 	"context"
-	"go.uber.org/mock/gomock"
 	"testing"
 	"time"
+
+	"go.uber.org/mock/gomock"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"

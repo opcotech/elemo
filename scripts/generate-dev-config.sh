@@ -41,6 +41,7 @@ function generateConfigFile() {
     local redis_host="redis"
     local neo4j_host="neo4j"
     local postgres_host="postgres"
+    local localstack_host="localstack"
     local otel_collector_host="otel_collector"
     local smtp_host="smtp"
   else
@@ -48,6 +49,7 @@ function generateConfigFile() {
     local redis_host="${host}"
     local neo4j_host="${host}"
     local postgres_host="${host}"
+    local localstack_host="${host}"
     local otel_collector_host="${host}"
     local smtp_host="${host}"
   fi
@@ -153,6 +155,13 @@ relational_database:
   max_connection_lifetime: 300
   max_connection_idle_time: 10
   min_connections: 5
+
+s3_storage:
+  bucket: "elemo"
+  region: "us-east-1"
+  access_key_id: "access-key-id"
+  secret_access_key: "secret-access-key"
+  base_endpoint: "http://${localstack_host}:4566"
 
 metrics_server:
   address: ${host}:35479

@@ -1,9 +1,11 @@
 .DEFAULT_GOAL := build
 
 ROOT_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
+BUILD_DIR=$(ROOT_DIR)/build
 TEMPLATES_DIR=$(ROOT_DIR)/templates
 API_DIR:=$(ROOT_DIR)/api/openapi
 API_SERVER_DIR:=$(ROOT_DIR)/internal/transport/http/api
+EMAILS_DIR:=$(BUILD_DIR)/email
 
 FRONTEND_DIR:=$(ROOT_DIR)/web
 FRONTEND_CLIENT:=elemo-client
@@ -15,6 +17,7 @@ BACKEND_COVER_OUT_INTEGRATION := $(ROOT_DIR)/.coverage.integration.out
 
 PNPM_EXEC := $(shell which pnpm)
 PNPM_RUN := $(PNPM_EXEC) run --prefix $(FRONTEND_DIR)
+PNPM_EMAILS_RUN := $(PNPM_EXEC) run --prefix $(EMAILS_DIR)
 
 GO_EXEC := $(shell which go)
 GO_TEST_COVER := $(GO_EXEC) test -race -shuffle=on -cover -covermode=atomic -ldflags="-extldflags=-Wl,-ld_classic"
@@ -74,10 +77,16 @@ generate.client: ## Generate API client
 	@$(PNPM_RUN) generate 2>&1 >/dev/null
 
 .PHONY: generate.email
-generate.email: ## Generate HTML emails from MJML templates
+generate.email: ## Generate HTML template emails
+	# TODO: when deployed to production, we should use the actual S3 bucket and endpoint
 	$(call log, compiling email templates)
-	@mjml --config.minify=true --config.minifyOptions='{"minifyCSS": true}' \
-		--config.validationLevel=strict -r $(TEMPLATES_DIR)/email/*.mjml -o $(TEMPLATES_DIR)/email
+	@$(PNPM_EMAILS_RUN) build --out $(TEMPLATES_DIR)/email \
+		--access-key-id "access-key-id" \
+		--secret-access-key "secret-access-key" \
+		--region "us-east-1" \
+		--s3-bucket elemo \
+		--endpoint "http://0.0.0.0:4566" \
+		--static-root "http://0.0.0.0:4566/elemo"
 
 .PHONY: dep
 dep: deb.backend dep.frontend ## Download and install backend and front-end dependencies

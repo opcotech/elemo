@@ -10,9 +10,9 @@ func TestPasswordResetTemplateData_Get(t *testing.T) {
 	t.Parallel()
 
 	data := &PasswordResetTemplateData{
-		Subject:          "Reset your password",
-		Username:         "test-user",
+		Subject:          "[Action Required] Reset your password",
 		FirstName:        "Test",
+		LastName:         "Bob",
 		PasswordResetURL: "https://example.com/password/reset",
 		SupportEmail:     "info@example.com",
 	}

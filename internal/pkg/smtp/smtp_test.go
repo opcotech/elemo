@@ -2,12 +2,12 @@ package smtp
 
 import (
 	"context"
-	"net/smtp"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/mock/gomock"
 
 	"github.com/opcotech/elemo/internal/config"
 	"github.com/opcotech/elemo/internal/email"
@@ -41,13 +41,13 @@ func TestNewDatabase(t *testing.T) {
 		{
 			name: "create new client",
 			args: args{
-				client: new(mock.NetSMTPClient),
+				client: new(mock.MockWrappedClient),
 				config: new(config.SMTPConfig),
 				logger: new(mock.Logger),
 				tracer: new(mock.Tracer),
 			},
 			want: &Client{
-				client: new(mock.NetSMTPClient),
+				client: new(mock.MockWrappedClient),
 				config: new(config.SMTPConfig),
 				logger: new(mock.Logger),
 				tracer: new(mock.Tracer),
@@ -66,7 +66,7 @@ func TestNewDatabase(t *testing.T) {
 		{
 			name: "create new client with nil config",
 			args: args{
-				client: new(mock.NetSMTPClient),
+				client: new(mock.MockWrappedClient),
 				config: nil,
 				logger: new(mock.Logger),
 				tracer: new(mock.Tracer),
@@ -76,7 +76,7 @@ func TestNewDatabase(t *testing.T) {
 		{
 			name: "create new client with nil logger",
 			args: args{
-				client: new(mock.NetSMTPClient),
+				client: new(mock.MockWrappedClient),
 				config: new(config.SMTPConfig),
 				logger: nil,
 				tracer: new(mock.Tracer),
@@ -86,7 +86,7 @@ func TestNewDatabase(t *testing.T) {
 		{
 			name: "create new client with nil tracer",
 			args: args{
-				client: new(mock.NetSMTPClient),
+				client: new(mock.MockWrappedClient),
 				config: new(config.SMTPConfig),
 				logger: new(mock.Logger),
 				tracer: nil,
@@ -160,9 +160,9 @@ func TestWithWrappedClient(t *testing.T) {
 		{
 			name: "create new option with client",
 			args: args{
-				client: new(mock.NetSMTPClient),
+				client: new(mock.MockWrappedClient),
 			},
-			want: new(mock.NetSMTPClient),
+			want: new(mock.MockWrappedClient),
 		},
 		{
 			name: "create new option with nil client",
@@ -258,103 +258,9 @@ func TestWithTracer(t *testing.T) {
 	}
 }
 
-func TestClient_Authenticate(t *testing.T) {
-	type fields struct {
-		client func(auth smtp.Auth) WrappedClient
-		config *config.SMTPConfig
-		logger log.Logger
-		tracer func(ctx context.Context) tracing.Tracer
-	}
-	type args struct {
-		ctx context.Context
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr error
-	}{
-		{
-			name: "authenticate with success",
-			fields: fields{
-				client: func(auth smtp.Auth) WrappedClient {
-					client := new(mock.NetSMTPClient)
-					client.On("Auth", auth).Return(nil)
-					return client
-				},
-				config: &config.SMTPConfig{
-					Host:     "host",
-					Username: "username",
-					Password: "password",
-				},
-				logger: new(mock.Logger),
-				tracer: func(ctx context.Context) tracing.Tracer {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
-
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "smtp.Client/Authenticate", []trace.SpanStartOption(nil)).Return(ctx, span)
-
-					return tracer
-				},
-			},
-			args: args{
-				ctx: context.Background(),
-			},
-		},
-		{
-			name: "authenticate with error",
-			fields: fields{
-				client: func(auth smtp.Auth) WrappedClient {
-					client := new(mock.NetSMTPClient)
-					client.On("Auth", auth).Return(assert.AnError)
-					return client
-				},
-				config: &config.SMTPConfig{
-					Host:     "host",
-					Username: "username",
-					Password: "password",
-				},
-				logger: new(mock.Logger),
-				tracer: func(ctx context.Context) tracing.Tracer {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
-
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "smtp.Client/Authenticate", []trace.SpanStartOption(nil)).Return(ctx, span)
-
-					return tracer
-				},
-			},
-			args: args{
-				ctx: context.Background(),
-			},
-			wantErr: ErrAuthFailed,
-		},
-	}
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			c := &Client{
-				client: tt.fields.client(smtp.PlainAuth(
-					"",
-					tt.fields.config.Username,
-					tt.fields.config.Password,
-					tt.fields.config.Host,
-				)),
-				config: tt.fields.config,
-				logger: tt.fields.logger,
-				tracer: tt.fields.tracer(tt.args.ctx),
-			}
-			assert.ErrorIs(t, c.Authenticate(tt.args.ctx), tt.wantErr)
-		})
-	}
-}
-
 func TestClient_SendEmail(t *testing.T) {
 	type fields struct {
-		client func(ctx context.Context, subject, to string) *Client
+		client func(ctrl *gomock.Controller, ctx context.Context, subject, to string) *Client
 	}
 	type args struct {
 		ctx      context.Context
@@ -371,22 +277,19 @@ func TestClient_SendEmail(t *testing.T) {
 		{
 			name: "send email with success",
 			fields: fields{
-				client: func(ctx context.Context, _, to string) *Client {
+				client: func(ctrl *gomock.Controller, ctx context.Context, _, _ string) *Client {
 					smtpConf := &config.SMTPConfig{
 						FromAddress: "no-reply@example.com",
 					}
 
-					buf := new(mock.Buffer)
-					buf.On("Write", mock.Anything).Return(10, nil)
-					buf.On("Close").Return(nil)
-
-					client := new(mock.NetSMTPClient)
-					client.On("Mail", smtpConf.FromAddress).Return(nil)
-					client.On("Rcpt", to).Return(nil)
-					client.On("Data").Return(buf, nil)
+					client := mock.NewMockWrappedClient(ctrl)
+					client.EXPECT().DialAndSend(gomock.Any()).Return(nil)
 
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					logger := new(mock.Logger)
+					logger.On("Info", "email sent", mock.Anything)
 
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "smtp.Client/SendEmail", []trace.SpanStartOption(nil)).Return(ctx, span)
@@ -394,7 +297,7 @@ func TestClient_SendEmail(t *testing.T) {
 					return &Client{
 						client: client,
 						config: smtpConf,
-						logger: new(mock.Logger),
+						logger: logger,
 						tracer: tracer,
 					}
 				},
@@ -412,16 +315,19 @@ func TestClient_SendEmail(t *testing.T) {
 		{
 			name: "send email with setting mail error",
 			fields: fields{
-				client: func(ctx context.Context, _, _ string) *Client {
+				client: func(ctrl *gomock.Controller, ctx context.Context, _, _ string) *Client {
 					smtpConf := &config.SMTPConfig{
 						FromAddress: "no-reply@example.com",
 					}
 
-					client := new(mock.NetSMTPClient)
-					client.On("Mail", smtpConf.FromAddress).Return(assert.AnError)
+					client := mock.NewMockWrappedClient(ctrl)
+					client.EXPECT().DialAndSend(gomock.Any()).Return(assert.AnError)
 
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
+
+					logger := new(mock.Logger)
+					logger.On("Error", "failed to compose email", mock.Anything)
 
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "smtp.Client/SendEmail", []trace.SpanStartOption(nil)).Return(ctx, span)
@@ -429,7 +335,7 @@ func TestClient_SendEmail(t *testing.T) {
 					return &Client{
 						client: client,
 						config: smtpConf,
-						logger: new(mock.Logger),
+						logger: logger,
 						tracer: tracer,
 					}
 				},
@@ -443,256 +349,18 @@ func TestClient_SendEmail(t *testing.T) {
 					Data: &testTemplateData{Field: "value"},
 				},
 			},
-			wantErr: ErrComposeEmail,
-		},
-		{
-			name: "send email with setting rcpt error",
-			fields: fields{
-				client: func(ctx context.Context, _, to string) *Client {
-					smtpConf := &config.SMTPConfig{
-						FromAddress: "no-reply@example.com",
-					}
-
-					client := new(mock.NetSMTPClient)
-					client.On("Mail", smtpConf.FromAddress).Return(nil)
-					client.On("Rcpt", to).Return(assert.AnError)
-
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
-
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "smtp.Client/SendEmail", []trace.SpanStartOption(nil)).Return(ctx, span)
-
-					return &Client{
-						client: client,
-						config: smtpConf,
-						logger: new(mock.Logger),
-						tracer: tracer,
-					}
-				},
-			},
-			args: args{
-				ctx:     context.Background(),
-				subject: "subject",
-				to:      "test-user@example.com",
-				template: &email.Template{
-					Path: testutil.NewTempFile(t, "template", "{{ .Field }}"),
-					Data: &testTemplateData{Field: "value"},
-				},
-			},
-			wantErr: ErrComposeEmail,
-		},
-		{
-			name: "send email with getting data error",
-			fields: fields{
-				client: func(ctx context.Context, _, to string) *Client {
-					smtpConf := &config.SMTPConfig{
-						FromAddress: "no-reply@example.com",
-					}
-
-					client := new(mock.NetSMTPClient)
-					client.On("Mail", smtpConf.FromAddress).Return(nil)
-					client.On("Rcpt", to).Return(nil)
-					client.On("Data").Return(new(mock.Buffer), assert.AnError)
-
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
-
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "smtp.Client/SendEmail", []trace.SpanStartOption(nil)).Return(ctx, span)
-
-					return &Client{
-						client: client,
-						config: smtpConf,
-						logger: new(mock.Logger),
-						tracer: tracer,
-					}
-				},
-			},
-			args: args{
-				ctx:     context.Background(),
-				subject: "subject",
-				to:      "test-user@example.com",
-				template: &email.Template{
-					Path: testutil.NewTempFile(t, "template", "{{ .Field }}"),
-					Data: &testTemplateData{Field: "value"},
-				},
-			},
-			wantErr: ErrComposeEmail,
-		},
-		{
-			name: "send email with buffer write error",
-			fields: fields{
-				client: func(ctx context.Context, _, to string) *Client {
-					smtpConf := &config.SMTPConfig{
-						FromAddress: "no-reply@example.com",
-					}
-
-					buf := new(mock.Buffer)
-					buf.On("Write", mock.Anything).Return(0, assert.AnError)
-
-					client := new(mock.NetSMTPClient)
-					client.On("Mail", smtpConf.FromAddress).Return(nil)
-					client.On("Rcpt", to).Return(nil)
-					client.On("Data").Return(buf, nil)
-
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
-
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "smtp.Client/SendEmail", []trace.SpanStartOption(nil)).Return(ctx, span)
-
-					return &Client{
-						client: client,
-						config: smtpConf,
-						logger: new(mock.Logger),
-						tracer: tracer,
-					}
-				},
-			},
-			args: args{
-				ctx:     context.Background(),
-				subject: "subject",
-				to:      "test-user@example.com",
-				template: &email.Template{
-					Path: testutil.NewTempFile(t, "template", "{{ .Field }}"),
-					Data: &testTemplateData{Field: "value"},
-				},
-			},
-			wantErr: ErrComposeEmail,
-		},
-		{
-			name: "send email with buffer close error",
-			fields: fields{
-				client: func(ctx context.Context, _, to string) *Client {
-					smtpConf := &config.SMTPConfig{
-						FromAddress: "no-reply@example.com",
-					}
-
-					buf := new(mock.Buffer)
-					buf.On("Write", mock.Anything).Return(10, nil)
-					buf.On("Close").Return(assert.AnError)
-
-					client := new(mock.NetSMTPClient)
-					client.On("Mail", smtpConf.FromAddress).Return(nil)
-					client.On("Rcpt", to).Return(nil)
-					client.On("Data").Return(buf, nil)
-
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
-
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "smtp.Client/SendEmail", []trace.SpanStartOption(nil)).Return(ctx, span)
-
-					return &Client{
-						client: client,
-						config: smtpConf,
-						logger: new(mock.Logger),
-						tracer: tracer,
-					}
-				},
-			},
-			args: args{
-				ctx:     context.Background(),
-				subject: "subject",
-				to:      "test-user@example.com",
-				template: &email.Template{
-					Path: testutil.NewTempFile(t, "template", "{{ .Field }}"),
-					Data: &testTemplateData{Field: "value"},
-				},
-			},
-			wantErr: ErrComposeEmail,
-		},
-		{
-			name: "send email with invalid template",
-			fields: fields{
-				client: func(ctx context.Context, _, to string) *Client {
-					smtpConf := &config.SMTPConfig{
-						FromAddress: "no-reply@example.com",
-					}
-
-					buf := new(mock.Buffer)
-					buf.On("Write", mock.Anything).Return(10, nil)
-					buf.On("Close").Return(nil)
-
-					client := new(mock.NetSMTPClient)
-					client.On("Mail", smtpConf.FromAddress).Return(nil)
-					client.On("Rcpt", to).Return(nil)
-					client.On("Data").Return(buf, nil)
-
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
-
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "smtp.Client/SendEmail", []trace.SpanStartOption(nil)).Return(ctx, span)
-
-					return &Client{
-						client: client,
-						config: smtpConf,
-						logger: new(mock.Logger),
-						tracer: tracer,
-					}
-				},
-			},
-			args: args{
-				ctx:     context.Background(),
-				subject: "subject",
-				to:      "test-user@example.com",
-				template: &email.Template{
-					Path: testutil.NewTempFile(t, "template", "{{ .Field }}"),
-					Data: nil,
-				},
-			},
-			wantErr: ErrComposeEmail,
-		},
-		{
-			name: "send email with template render error",
-			fields: fields{
-				client: func(ctx context.Context, _, to string) *Client {
-					smtpConf := &config.SMTPConfig{
-						FromAddress: "no-reply@example.com",
-					}
-
-					buf := new(mock.Buffer)
-					buf.On("Write", mock.Anything).Return(10, nil)
-					buf.On("Close").Return(nil)
-
-					client := new(mock.NetSMTPClient)
-					client.On("Mail", smtpConf.FromAddress).Return(nil)
-					client.On("Rcpt", to).Return(nil)
-					client.On("Data").Return(buf, nil)
-
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
-
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "smtp.Client/SendEmail", []trace.SpanStartOption(nil)).Return(ctx, span)
-
-					return &Client{
-						client: client,
-						config: smtpConf,
-						logger: new(mock.Logger),
-						tracer: tracer,
-					}
-				},
-			},
-			args: args{
-				ctx:     context.Background(),
-				subject: "subject",
-				to:      "test-user@example.com",
-				template: &email.Template{
-					Path: testutil.NewTempFile(t, "template", "{{ ?? }}"),
-					Data: &testTemplateData{Field: "value"},
-				},
-			},
-			wantErr: ErrComposeEmail,
+			wantErr: ErrSendEmail,
 		},
 	}
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			c := tt.fields.client(tt.args.ctx, tt.args.subject, tt.args.to)
+
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			c := tt.fields.client(ctrl, tt.args.ctx, tt.args.subject, tt.args.to)
 			err := c.SendEmail(tt.args.ctx, tt.args.subject, tt.args.to, tt.args.template)
 			assert.ErrorIs(t, err, tt.wantErr)
 		})

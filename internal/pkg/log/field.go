@@ -44,6 +44,7 @@ const (
 	FieldSession               = "session"                 // name of the session field
 	FieldSize                  = "size"                    // name of the size field
 	FieldStatus                = "status"                  // name of the user status field
+	FieldSubject               = "subject"                 // name of the subject field
 	FieldTTL                   = "ttl"                     // name of the ttl field
 	FieldToken                 = "token"                   // name of the token field
 	FieldTraceID               = "trace_id"                // name of the trace id field
@@ -233,6 +234,11 @@ func WithSize(size int64) zap.Field {
 // WithStatus sets the status code field.
 func WithStatus[S string | int](status S) zap.Field {
 	return zap.Any(FieldStatus, status)
+}
+
+// WithSubject sets the subject field.
+func WithSubject(subject string) zap.Field {
+	return zap.String(FieldSubject, subject)
 }
 
 // WithTTL sets the ttl field.

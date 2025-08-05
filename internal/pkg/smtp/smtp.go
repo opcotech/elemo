@@ -2,10 +2,7 @@ package smtp
 
 import (
 	"context"
-	"crypto/tls"
 	"errors"
-	"io"
-	"net/smtp"
 
 	"github.com/Shopify/gomail"
 
@@ -18,20 +15,10 @@ import (
 
 // WrappedClient is the interface that wraps the SMTP client methods used by
 // the Client.
+//
+//go:generate mockgen -source=smtp.go -destination=../../testutil/mock/smtp_gen.go -package=mock
 type WrappedClient interface {
-	Close() error
-	Hello(localName string) error
-	StartTLS(config *tls.Config) error
-	TLSConnectionState() (state tls.ConnectionState, ok bool)
-	Verify(addr string) error
-	Auth(a smtp.Auth) error
-	Mail(from string) error
-	Rcpt(to string) error
-	Data() (io.WriteCloser, error)
-	Extension(ext string) (bool, string)
-	Reset() error
-	Noop() error
-	Quit() error
+	DialAndSend(messages ...*gomail.Message) error
 }
 
 // Option is a function that configures a Client.
@@ -94,81 +81,63 @@ type Client struct {
 	tracer tracing.Tracer     `validate:"required"`
 }
 
-// Authenticate initiates the SMTP handshake and authenticates the client.
-func (c *Client) Authenticate(ctx context.Context) error {
-	_, span := c.tracer.Start(ctx, "smtp.Client/Authenticate")
-	defer span.End()
-
-	auth := smtp.PlainAuth("", c.config.Username, c.config.Password, c.config.Host)
-	if err := c.client.Auth(auth); err != nil {
-		return errors.Join(ErrAuthFailed, err)
-	}
-
-	return nil
-}
-
-// composeMessage composes an email message with the given subject and body,
-// then returns the message.
-func (c *Client) composeMessage(_ context.Context, subject, to string, template *email.Template) (*gomail.Message, error) {
-	if err := validate.Struct(template); err != nil {
-		return nil, errors.Join(ErrComposeEmail, err)
-	}
-
-	htmlBody, err := template.Render()
-	if err != nil {
-		return nil, errors.Join(ErrComposeEmail, err)
-	}
-
-	headers := map[string][]string{
-		"From":                      {c.config.FromAddress},
-		"To":                        {to},
-		"Subject":                   {subject},
-		"Reply-To":                  {c.config.ReplyToAddress},
-		"Content-Transfer-Encoding": {"8bit"},
-		"Auto-Submitted":            {"auto-generated"},
-		"Precedence":                {"bulk"},
-	}
-
-	message := gomail.NewMessage()
-	message.SetHeaders(headers)
-	message.SetBody("text/html", htmlBody)
-
-	return message, nil
-}
-
 // SendEmail sends an email with the given subject and body to the recipient.
 func (c *Client) SendEmail(ctx context.Context, subject, to string, template *email.Template) error {
 	_, span := c.tracer.Start(ctx, "smtp.Client/SendEmail")
 	defer span.End()
 
-	message, err := c.composeMessage(ctx, subject, to, template)
+	if err := validate.Struct(template); err != nil {
+		c.logger.Error(
+			ErrSendEmail.Error(),
+			log.WithSubject(subject),
+			log.WithValue(template),
+			log.WithAction(log.ActionEmailSend),
+			log.WithTraceID(tracing.GetTraceIDFromCtx(ctx)),
+			log.WithError(err),
+		)
+		return errors.Join(ErrSendEmail, err)
+	}
+
+	htmlBody, err := template.Render()
 	if err != nil {
-		return errors.Join(ErrComposeEmail, err)
+		c.logger.Error(
+			ErrSendEmail.Error(),
+			log.WithSubject(subject),
+			log.WithValue(template),
+			log.WithAction(log.ActionEmailSend),
+			log.WithTraceID(tracing.GetTraceIDFromCtx(ctx)),
+			log.WithError(err),
+		)
+		return errors.Join(ErrSendEmail, err)
 	}
 
-	if err := c.client.Mail(c.config.FromAddress); err != nil {
-		return errors.Join(ErrComposeEmail, err)
+	message := gomail.NewMessage()
+	message.SetBody("text/html", htmlBody)
+	message.SetHeaders(map[string][]string{
+		"From":     {message.FormatAddress(c.config.FromAddress, "")},
+		"To":       {message.FormatAddress(to, "")},
+		"Subject":  {subject},
+		"Reply-To": {c.config.ReplyToAddress},
+	})
+
+	if err := c.client.DialAndSend(message); err != nil {
+		c.logger.Error(
+			ErrSendEmail.Error(),
+			log.WithSubject(subject),
+			log.WithValue(template),
+			log.WithAction(log.ActionEmailSend),
+			log.WithTraceID(tracing.GetTraceIDFromCtx(ctx)),
+			log.WithError(err),
+		)
+		return errors.Join(ErrSendEmail, err)
 	}
 
-	if err := c.client.Rcpt(to); err != nil {
-		return errors.Join(ErrComposeEmail, err)
-	}
-
-	w, err := c.client.Data()
-	if err != nil {
-		return errors.Join(ErrComposeEmail, err)
-	}
-
-	if wrote, err := message.WriteTo(w); err != nil || wrote == 0 {
-		if err == nil {
-			err = ErrNoBytesWritten
-		}
-		return errors.Join(ErrComposeEmail, err)
-	}
-
-	if err := w.Close(); err != nil {
-		return errors.Join(ErrComposeEmail, err)
-	}
+	c.logger.Info(
+		"email sent",
+		log.WithSubject(subject),
+		log.WithAction(log.ActionEmailSend),
+		log.WithTraceID(tracing.GetTraceIDFromCtx(ctx)),
+	)
 
 	return nil
 }

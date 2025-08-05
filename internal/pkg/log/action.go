@@ -39,6 +39,9 @@ const (
 	ActionRequestTransform     // transform a request
 	ActionRequesterValidate    // validate a requester
 
+	// Email actions
+	ActionEmailSend // send an email
+
 	// Configuration actions
 
 	ActionCertificateLoad // load a certificate
@@ -76,6 +79,7 @@ func (a Action) String() string {
 		"deserialize_request",
 		"transform_request",
 		"validate_requester",
+		"send_email",
 		"load_certificate",
 		"load_config",
 		"load_private_key",

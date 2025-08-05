@@ -1,0 +1,114 @@
+@@include('./includes/html-head.html')
+
+<table class="wrap" cellspacing="0" cellpadding="0" role="presentation">
+  <tr>
+    <td class="p-sm">
+      @@include('./includes/header.html')
+
+      <div class="main-content">
+        <div class="box">
+          <table class="box-table" cellpadding="0" cellspacing="0">
+            <tr>
+              <td>
+                <table cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td class="content pb-0" align="center">
+                      <table class="mb-lg" cellspacing="0" cellpadding="0">
+                        <tr>
+                          <td valign="middle" align="center">
+                            <img
+                              src="./assets/illustrations-light-dart.png"
+                              alt=""
+                              height="200"
+                              width="266"
+                              class="img-illustration img-light"
+                            />
+                            <!--[if !mso]><!-->
+                            <img
+                              src="./assets/illustrations-dark-dart.png"
+                              alt=""
+                              height="200"
+                              width="266"
+                              class="img-illustration img-dark"
+                            />
+                            <!--<![endif]-->
+                          </td>
+                        </tr>
+                      </table>
+
+                      <h1 class="text-center m-0 font-strong">{{ .OrganizationName }} is waiting!</h1>
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td class="content pb-md">
+                      <p>Hello&nbsp;{{ if .FirstName }}{{ .FirstName }}{{ else }}{{ .Username }}{{ end }},</p>
+                      <p>
+                        You are invited to join "<strong>{{ .OrganizationName }}</strong>" organization. If you wish to
+                        accept the invitation, click the button below.
+                      </p>
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td class="content text-center pt-0">
+                      <table cellspacing="0" cellpadding="0" role="presentation">
+                        <tr>
+                          <td align="center">
+                            <table
+                              cellpadding="0"
+                              cellspacing="0"
+                              border="0"
+                              class="bg-primary rounded-lg w-auto"
+                              role="presentation"
+                            >
+                              <tr>
+                                <td align="center" valign="top" class="lh-1">
+                                  <a href="{{ .InvitationURL }}" class="btn bg-primary border-primary">
+                                    <span class="btn-span">Join {{ .OrganizationName }}</span>
+                                  </a>
+                                </td>
+                              </tr>
+                            </table>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td class="content pt-0 pb-0">
+                      <p>If you were not expecting this invitation, you can ignore this email.</p>
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td class="content pt-0">
+                      <p>We wish you having fun,<br />The Elemo team</p>
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td class="content text-muted pt-0 text-center font-sm">
+                      <p>
+                        Having trouble with the button above? Copy and paste this link into your browser:<br /><a
+                          href="{{ .InvitationURL }}"
+                          class="break-all"
+                          >{{ .InvitationURL }}</a
+                        >
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </div>
+      </div>
+
+      @@include('./includes/footer.html')
+    </td>
+  </tr>
+</table>
+
+@@include('./includes/html-footer.html')
