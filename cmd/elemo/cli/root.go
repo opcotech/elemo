@@ -5,12 +5,11 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"net"
-	"net/smtp"
 	"os"
 	"strings"
 	"time"
 
+	"github.com/Shopify/gomail"
 	authStore "github.com/gabor-boros/go-oauth2-pg"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -18,16 +17,15 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/opcotech/elemo/assets/keys"
+	"github.com/opcotech/elemo/internal/config"
 	"github.com/opcotech/elemo/internal/license"
 	"github.com/opcotech/elemo/internal/model"
+	"github.com/opcotech/elemo/internal/pkg/log"
 	elemoSMTP "github.com/opcotech/elemo/internal/pkg/smtp"
+	"github.com/opcotech/elemo/internal/pkg/tracing"
 	"github.com/opcotech/elemo/internal/repository/neo4j"
 	"github.com/opcotech/elemo/internal/repository/pg"
 	"github.com/opcotech/elemo/internal/repository/redis"
-
-	"github.com/opcotech/elemo/internal/config"
-	"github.com/opcotech/elemo/internal/pkg/log"
-	"github.com/opcotech/elemo/internal/pkg/tracing"
 )
 
 const (
@@ -217,62 +215,35 @@ func initRelationalDatabase() (*pg.Database, pg.Pool, error) {
 // initSMTPClient initializes the SMTP client.
 // nolint:unused
 func initSMTPClient(smtpConf *config.SMTPConfig) (*elemoSMTP.Client, error) {
-	var conn net.Conn
-	var err error
+	dialer := gomail.NewDialer(
+		smtpConf.Host,
+		smtpConf.Port,
+		smtpConf.Username,
+		smtpConf.Password,
+	)
 
-	dialer := net.Dialer{
-		Timeout: smtpConf.ConnectionTimeout * time.Second,
-	}
-
-	address := net.JoinHostPort(smtpConf.Host, fmt.Sprintf("%d", smtpConf.Port))
-	tlsConf := &tls.Config{
-		InsecureSkipVerify: smtpConf.SkipTLSVerify, //nolint:gosec
-		ServerName:         smtpConf.Host,
-	}
-
-	if smtpConf.SecurityProtocol == "TLS" {
-		tlsDialer := tls.Dialer{
-			NetDialer: &dialer,
-			Config:    tlsConf,
-		}
-		if conn, err = tlsDialer.DialContext(context.Background(), "tcp", address); err != nil {
-			return nil, err
-		}
-	} else {
-		if conn, err = dialer.DialContext(context.Background(), "tcp", address); err != nil {
-			return nil, err
+	// Configure TLS settings
+	switch smtpConf.SecurityProtocol {
+	case "TLS":
+		dialer.SSL = true
+	case "STARTTLS":
+		dialer.TLSConfig = &tls.Config{
+			InsecureSkipVerify: smtpConf.SkipTLSVerify, //nolint:gosec
+			ServerName:         smtpConf.Host,
 		}
 	}
 
-	baseClient, err := smtp.NewClient(conn, smtpConf.Host)
-	if err != nil {
-		return nil, err
-	}
-
-	if err = baseClient.Hello(smtpConf.Hostname); err != nil {
-		return nil, err
-	}
-
-	if smtpConf.SecurityProtocol == "STARTTLS" {
-		if err = baseClient.StartTLS(tlsConf); err != nil {
-			return nil, err
-		}
-	}
+	// Set connection timeout
+	dialer.Timeout = smtpConf.ConnectionTimeout * time.Second
 
 	client, err := elemoSMTP.NewClient(
-		elemoSMTP.WithWrappedClient(baseClient),
+		elemoSMTP.WithWrappedClient(dialer),
 		elemoSMTP.WithConfig(smtpConf),
 		elemoSMTP.WithLogger(logger.Named("smtp")),
 		elemoSMTP.WithTracer(tracer),
 	)
 	if err != nil {
 		return nil, err
-	}
-
-	if smtpConf.EnableAuth {
-		if err = client.Authenticate(context.Background()); err != nil {
-			return nil, err
-		}
 	}
 
 	return client, nil

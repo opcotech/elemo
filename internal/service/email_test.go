@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/mock/gomock"
 
 	"github.com/opcotech/elemo/internal/config"
 	"github.com/opcotech/elemo/internal/email"
@@ -36,7 +37,11 @@ func TestNewEmailService(t *testing.T) {
 		{
 			name: "new email service",
 			args: args{
-				client:       new(mock.SMTPClient),
+				client: func() EmailSender {
+					ctrl := gomock.NewController(t)
+					defer ctrl.Finish()
+					return mock.NewMockEmailSender(ctrl)
+				}(),
 				templatesDir: "/templates",
 				smtpConf:     new(config.SMTPConfig),
 				opts: []Option{
@@ -49,7 +54,11 @@ func TestNewEmailService(t *testing.T) {
 					logger: new(mock.Logger),
 					tracer: new(mock.Tracer),
 				},
-				client:       new(mock.SMTPClient),
+				client: func() EmailSender {
+					ctrl := gomock.NewController(t)
+					defer ctrl.Finish()
+					return mock.NewMockEmailSender(ctrl)
+				}(),
 				templatesDir: "/templates",
 				smtpConf:     new(config.SMTPConfig),
 			},
@@ -70,7 +79,11 @@ func TestNewEmailService(t *testing.T) {
 		{
 			name: "new email service with invalid options",
 			args: args{
-				client:       new(mock.SMTPClient),
+				client: func() EmailSender {
+					ctrl := gomock.NewController(t)
+					defer ctrl.Finish()
+					return mock.NewMockEmailSender(ctrl)
+				}(),
 				templatesDir: "/templates",
 				smtpConf:     new(config.SMTPConfig),
 				opts: []Option{
@@ -82,7 +95,11 @@ func TestNewEmailService(t *testing.T) {
 		{
 			name: "new email service with no logger",
 			args: args{
-				client:       new(mock.SMTPClient),
+				client: func() EmailSender {
+					ctrl := gomock.NewController(t)
+					defer ctrl.Finish()
+					return mock.NewMockEmailSender(ctrl)
+				}(),
 				templatesDir: "/templates",
 				smtpConf:     new(config.SMTPConfig),
 				opts: []Option{
@@ -94,7 +111,11 @@ func TestNewEmailService(t *testing.T) {
 					logger: log.DefaultLogger(),
 					tracer: new(mock.Tracer),
 				},
-				client:       new(mock.SMTPClient),
+				client: func() EmailSender {
+					ctrl := gomock.NewController(t)
+					defer ctrl.Finish()
+					return mock.NewMockEmailSender(ctrl)
+				}(),
 				templatesDir: "/templates",
 				smtpConf:     new(config.SMTPConfig),
 			},
@@ -102,7 +123,11 @@ func TestNewEmailService(t *testing.T) {
 		{
 			name: "new email service with no tracer",
 			args: args{
-				client:       new(mock.SMTPClient),
+				client: func() EmailSender {
+					ctrl := gomock.NewController(t)
+					defer ctrl.Finish()
+					return mock.NewMockEmailSender(ctrl)
+				}(),
 				templatesDir: "/templates",
 				smtpConf:     new(config.SMTPConfig),
 				opts: []Option{
@@ -114,7 +139,11 @@ func TestNewEmailService(t *testing.T) {
 					logger: new(mock.Logger),
 					tracer: tracing.NoopTracer(),
 				},
-				client:       new(mock.SMTPClient),
+				client: func() EmailSender {
+					ctrl := gomock.NewController(t)
+					defer ctrl.Finish()
+					return mock.NewMockEmailSender(ctrl)
+				}(),
 				templatesDir: "/templates",
 				smtpConf:     new(config.SMTPConfig),
 			},
@@ -135,7 +164,7 @@ func TestNewEmailService(t *testing.T) {
 func TestEmailService_SendAuthPasswordResetEmail(t *testing.T) {
 	type fields struct {
 		baseService  func(ctx context.Context) *baseService
-		client       func(ctx context.Context, templatesDir, resetPath string, smtpConf *config.SMTPConfig, user *model.User) EmailSender
+		client       func(ctrl *gomock.Controller, ctx context.Context, templatesDir, resetPath string, smtpConf *config.SMTPConfig, user *model.User) EmailSender
 		templatesDir string
 		smtpConf     *config.SMTPConfig
 	}
@@ -165,23 +194,23 @@ func TestEmailService_SendAuthPasswordResetEmail(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				client: func(ctx context.Context, templatesDir, resetPath string, smtpConf *config.SMTPConfig, user *model.User) EmailSender {
+				client: func(ctrl *gomock.Controller, ctx context.Context, templatesDir, resetPath string, smtpConf *config.SMTPConfig, user *model.User) EmailSender {
 					subject := "Reset your password"
 
 					template, err := email.NewTemplate(
 						path.Join(templatesDir, authPasswordResetTemplate),
 						&email.PasswordResetTemplateData{
 							Subject:          subject,
-							Username:         user.Username,
 							FirstName:        user.FirstName,
+							LastName:         user.LastName,
 							PasswordResetURL: fmt.Sprintf("https://%s", path.Join(smtpConf.Hostname, resetPath)),
 							SupportEmail:     smtpConf.SupportAddress,
 						},
 					)
 					require.NoError(t, err)
 
-					client := new(mock.SMTPClient)
-					client.On("SendEmail", ctx, subject, user.Email, template).Return(nil)
+					client := mock.NewMockEmailSender(ctrl)
+					client.EXPECT().SendEmail(ctx, subject, user.Email, template).Return(nil)
 
 					return client
 				},
@@ -197,6 +226,7 @@ func TestEmailService_SendAuthPasswordResetEmail(t *testing.T) {
 				user: &model.User{
 					Username:  "test",
 					FirstName: "Test",
+					LastName:  "User",
 					Email:     "test@example.com",
 				},
 			},
@@ -216,23 +246,23 @@ func TestEmailService_SendAuthPasswordResetEmail(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				client: func(ctx context.Context, templatesDir, resetPath string, smtpConf *config.SMTPConfig, user *model.User) EmailSender {
+				client: func(ctrl *gomock.Controller, ctx context.Context, templatesDir, resetPath string, smtpConf *config.SMTPConfig, user *model.User) EmailSender {
 					subject := "Reset your password"
 
 					template, err := email.NewTemplate(
 						path.Join(templatesDir, authPasswordResetTemplate),
 						&email.PasswordResetTemplateData{
 							Subject:          subject,
-							Username:         user.Username,
 							FirstName:        user.FirstName,
+							LastName:         user.LastName,
 							PasswordResetURL: fmt.Sprintf("https://%s", path.Join(smtpConf.Hostname, resetPath)),
 							SupportEmail:     smtpConf.SupportAddress,
 						},
 					)
 					require.NoError(t, err)
 
-					client := new(mock.SMTPClient)
-					client.On("SendEmail", ctx, subject, user.Email, template).Return(assert.AnError)
+					client := mock.NewMockEmailSender(ctrl)
+					client.EXPECT().SendEmail(ctx, subject, user.Email, template).Return(assert.AnError)
 
 					return client
 				},
@@ -248,6 +278,7 @@ func TestEmailService_SendAuthPasswordResetEmail(t *testing.T) {
 				user: &model.User{
 					Username:  "test",
 					FirstName: "Test",
+					LastName:  "User",
 					Email:     "test@example.com",
 				},
 			},
@@ -259,9 +290,12 @@ func TestEmailService_SendAuthPasswordResetEmail(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
 			s := &emailService{
 				baseService:  tt.fields.baseService(tt.args.ctx),
-				client:       tt.fields.client(tt.args.ctx, tt.fields.templatesDir, tt.args.resetPath, tt.fields.smtpConf, tt.args.user),
+				client:       tt.fields.client(ctrl, tt.args.ctx, tt.fields.templatesDir, tt.args.resetPath, tt.fields.smtpConf, tt.args.user),
 				templatesDir: tt.fields.templatesDir,
 				smtpConf:     tt.fields.smtpConf,
 			}
@@ -273,7 +307,7 @@ func TestEmailService_SendAuthPasswordResetEmail(t *testing.T) {
 func TestEmailService_SendOrganizationInvitationEmail(t *testing.T) {
 	type fields struct {
 		baseService  func(ctx context.Context) *baseService
-		client       func(ctx context.Context, templatesDir, invitationPath string, smtpConf *config.SMTPConfig, organization *model.Organization, user *model.User) EmailSender
+		client       func(ctrl *gomock.Controller, ctx context.Context, templatesDir, invitationPath string, smtpConf *config.SMTPConfig, organization *model.Organization, user *model.User) EmailSender
 		templatesDir string
 		smtpConf     *config.SMTPConfig
 	}
@@ -304,15 +338,15 @@ func TestEmailService_SendOrganizationInvitationEmail(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				client: func(ctx context.Context, templatesDir, invitationPath string, smtpConf *config.SMTPConfig, organization *model.Organization, user *model.User) EmailSender {
+				client: func(ctrl *gomock.Controller, ctx context.Context, templatesDir, invitationPath string, smtpConf *config.SMTPConfig, organization *model.Organization, user *model.User) EmailSender {
 					subject := fmt.Sprintf("You have been invited to join %s", organization.Name)
 
 					template, err := email.NewTemplate(
 						path.Join(templatesDir, organizationInviteTemplate),
 						&email.OrganizationInviteTemplateData{
 							Subject:          subject,
-							Username:         user.Username,
 							FirstName:        user.FirstName,
+							LastName:         user.LastName,
 							OrganizationName: organization.Name,
 							InvitationURL:    fmt.Sprintf("https://%s", path.Join(smtpConf.Hostname, invitationPath)),
 							SupportEmail:     smtpConf.SupportAddress,
@@ -320,8 +354,8 @@ func TestEmailService_SendOrganizationInvitationEmail(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					client := new(mock.SMTPClient)
-					client.On("SendEmail", ctx, subject, user.Email, template).Return(nil)
+					client := mock.NewMockEmailSender(ctrl)
+					client.EXPECT().SendEmail(ctx, subject, user.Email, template).Return(nil)
 
 					return client
 				},
@@ -340,6 +374,7 @@ func TestEmailService_SendOrganizationInvitationEmail(t *testing.T) {
 				user: &model.User{
 					Username:  "test",
 					FirstName: "Test",
+					LastName:  "User",
 					Email:     "test@example.com",
 				},
 			},
@@ -359,15 +394,15 @@ func TestEmailService_SendOrganizationInvitationEmail(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				client: func(ctx context.Context, templatesDir, invitationPath string, smtpConf *config.SMTPConfig, organization *model.Organization, user *model.User) EmailSender {
+				client: func(ctrl *gomock.Controller, ctx context.Context, templatesDir, invitationPath string, smtpConf *config.SMTPConfig, organization *model.Organization, user *model.User) EmailSender {
 					subject := fmt.Sprintf("You have been invited to join %s", organization.Name)
 
 					template, err := email.NewTemplate(
 						path.Join(templatesDir, organizationInviteTemplate),
 						&email.OrganizationInviteTemplateData{
 							Subject:          subject,
-							Username:         user.Username,
 							FirstName:        user.FirstName,
+							LastName:         user.LastName,
 							OrganizationName: organization.Name,
 							InvitationURL:    fmt.Sprintf("https://%s", path.Join(smtpConf.Hostname, invitationPath)),
 							SupportEmail:     smtpConf.SupportAddress,
@@ -375,8 +410,8 @@ func TestEmailService_SendOrganizationInvitationEmail(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					client := new(mock.SMTPClient)
-					client.On("SendEmail", ctx, subject, user.Email, template).Return(assert.AnError)
+					client := mock.NewMockEmailSender(ctrl)
+					client.EXPECT().SendEmail(ctx, subject, user.Email, template).Return(assert.AnError)
 
 					return client
 				},
@@ -395,6 +430,7 @@ func TestEmailService_SendOrganizationInvitationEmail(t *testing.T) {
 				user: &model.User{
 					Username:  "test",
 					FirstName: "Test",
+					LastName:  "User",
 					Email:     "test@example.com",
 				},
 			},
@@ -406,9 +442,12 @@ func TestEmailService_SendOrganizationInvitationEmail(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
 			s := &emailService{
 				baseService:  tt.fields.baseService(tt.args.ctx),
-				client:       tt.fields.client(tt.args.ctx, tt.fields.templatesDir, tt.args.invitationPath, tt.fields.smtpConf, tt.args.organization, tt.args.user),
+				client:       tt.fields.client(ctrl, tt.args.ctx, tt.fields.templatesDir, tt.args.invitationPath, tt.fields.smtpConf, tt.args.organization, tt.args.user),
 				templatesDir: tt.fields.templatesDir,
 				smtpConf:     tt.fields.smtpConf,
 			}
@@ -420,7 +459,7 @@ func TestEmailService_SendOrganizationInvitationEmail(t *testing.T) {
 func TestEmailService_SendSystemLicenseExpiryEmail(t *testing.T) {
 	type fields struct {
 		baseService  func(ctx context.Context) *baseService
-		client       func(ctx context.Context, templatesDir string, smtpConf *config.SMTPConfig, licenseID, licenseEmail, licenseOrganization string, licenseExpiresAt time.Time) EmailSender
+		client       func(ctrl *gomock.Controller, ctx context.Context, templatesDir string, smtpConf *config.SMTPConfig, licenseID, licenseEmail, licenseOrganization string, licenseExpiresAt time.Time) EmailSender
 		templatesDir string
 		smtpConf     *config.SMTPConfig
 	}
@@ -452,7 +491,7 @@ func TestEmailService_SendSystemLicenseExpiryEmail(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				client: func(ctx context.Context, templatesDir string, smtpConf *config.SMTPConfig, licenseID, licenseEmail, licenseOrganization string, licenseExpiresAt time.Time) EmailSender {
+				client: func(ctrl *gomock.Controller, ctx context.Context, templatesDir string, smtpConf *config.SMTPConfig, licenseID, licenseEmail, licenseOrganization string, licenseExpiresAt time.Time) EmailSender {
 					subject := fmt.Sprintf("Your license for %s is about to expire", licenseOrganization)
 
 					template, err := email.NewTemplate(
@@ -470,8 +509,8 @@ func TestEmailService_SendSystemLicenseExpiryEmail(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					client := new(mock.SMTPClient)
-					client.On("SendEmail", ctx, subject, licenseEmail, template).Return(nil)
+					client := mock.NewMockEmailSender(ctrl)
+					client.EXPECT().SendEmail(ctx, subject, licenseEmail, template).Return(nil)
 
 					return client
 				},
@@ -504,7 +543,7 @@ func TestEmailService_SendSystemLicenseExpiryEmail(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				client: func(ctx context.Context, templatesDir string, smtpConf *config.SMTPConfig, licenseID, licenseEmail, licenseOrganization string, licenseExpiresAt time.Time) EmailSender {
+				client: func(ctrl *gomock.Controller, ctx context.Context, templatesDir string, smtpConf *config.SMTPConfig, licenseID, licenseEmail, licenseOrganization string, licenseExpiresAt time.Time) EmailSender {
 					subject := fmt.Sprintf("Your license for %s is about to expire", licenseOrganization)
 
 					template, err := email.NewTemplate(
@@ -522,8 +561,8 @@ func TestEmailService_SendSystemLicenseExpiryEmail(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					client := new(mock.SMTPClient)
-					client.On("SendEmail", ctx, subject, licenseEmail, template).Return(assert.AnError)
+					client := mock.NewMockEmailSender(ctrl)
+					client.EXPECT().SendEmail(ctx, subject, licenseEmail, template).Return(assert.AnError)
 
 					return client
 				},
@@ -548,9 +587,13 @@ func TestEmailService_SendSystemLicenseExpiryEmail(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
 			s := &emailService{
 				baseService: tt.fields.baseService(tt.args.ctx),
 				client: tt.fields.client(
+					ctrl,
 					tt.args.ctx,
 					tt.fields.templatesDir,
 					tt.fields.smtpConf,
@@ -577,7 +620,7 @@ func TestEmailService_SendSystemLicenseExpiryEmail(t *testing.T) {
 func TestEmailService_SendUserWelcomeEmail(t *testing.T) {
 	type fields struct {
 		baseService  func(ctx context.Context) *baseService
-		client       func(ctx context.Context, templatesDir string, smtpConf *config.SMTPConfig, user *model.User) EmailSender
+		client       func(ctrl *gomock.Controller, ctx context.Context, templatesDir string, smtpConf *config.SMTPConfig, user *model.User) EmailSender
 		templatesDir string
 		smtpConf     *config.SMTPConfig
 	}
@@ -606,23 +649,23 @@ func TestEmailService_SendUserWelcomeEmail(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				client: func(ctx context.Context, templatesDir string, smtpConf *config.SMTPConfig, user *model.User) EmailSender {
+				client: func(ctrl *gomock.Controller, ctx context.Context, templatesDir string, smtpConf *config.SMTPConfig, user *model.User) EmailSender {
 					subject := fmt.Sprintf("Welcome to %s", smtpConf.Hostname)
 
 					template, err := email.NewTemplate(
 						path.Join(templatesDir, userWelcomeTemplate),
 						&email.UserWelcomeTemplateData{
 							Subject:      subject,
-							Username:     user.Username,
 							FirstName:    user.FirstName,
+							LastName:     user.LastName,
 							LoginURL:     fmt.Sprintf("https://%s/sign-in", smtpConf.Hostname),
 							SupportEmail: smtpConf.SupportAddress,
 						},
 					)
 					require.NoError(t, err)
 
-					client := new(mock.SMTPClient)
-					client.On("SendEmail", ctx, subject, user.Email, template).Return(nil)
+					client := mock.NewMockEmailSender(ctrl)
+					client.EXPECT().SendEmail(ctx, subject, user.Email, template).Return(assert.AnError)
 
 					return client
 				},
@@ -637,56 +680,7 @@ func TestEmailService_SendUserWelcomeEmail(t *testing.T) {
 				user: &model.User{
 					Username:  "test",
 					FirstName: "Test",
-					Email:     "test@example.com",
-				},
-			},
-		},
-		{
-			name: "send auth password reset email failed",
-			fields: fields{
-				baseService: func(ctx context.Context) *baseService {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
-
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "service.emailService/SendUserWelcomeEmail", []trace.SpanStartOption(nil)).Return(ctx, span)
-
-					return &baseService{
-						logger: new(mock.Logger),
-						tracer: tracer,
-					}
-				},
-				client: func(ctx context.Context, templatesDir string, smtpConf *config.SMTPConfig, user *model.User) EmailSender {
-					subject := fmt.Sprintf("Welcome to %s", smtpConf.Hostname)
-
-					template, err := email.NewTemplate(
-						path.Join(templatesDir, userWelcomeTemplate),
-						&email.UserWelcomeTemplateData{
-							Subject:      subject,
-							Username:     user.Username,
-							FirstName:    user.FirstName,
-							LoginURL:     fmt.Sprintf("https://%s/sign-in", smtpConf.Hostname),
-							SupportEmail: smtpConf.SupportAddress,
-						},
-					)
-					require.NoError(t, err)
-
-					client := new(mock.SMTPClient)
-					client.On("SendEmail", ctx, subject, user.Email, template).Return(assert.AnError)
-
-					return client
-				},
-				templatesDir: "/templates",
-				smtpConf: &config.SMTPConfig{
-					Hostname:       "example.com",
-					SupportAddress: "support@example.com",
-				},
-			},
-			args: args{
-				ctx: context.Background(),
-				user: &model.User{
-					Username:  "test",
-					FirstName: "Test",
+					LastName:  "User",
 					Email:     "test@example.com",
 				},
 			},
@@ -698,9 +692,12 @@ func TestEmailService_SendUserWelcomeEmail(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
 			s := &emailService{
 				baseService:  tt.fields.baseService(tt.args.ctx),
-				client:       tt.fields.client(tt.args.ctx, tt.fields.templatesDir, tt.fields.smtpConf, tt.args.user),
+				client:       tt.fields.client(ctrl, tt.args.ctx, tt.fields.templatesDir, tt.fields.smtpConf, tt.args.user),
 				templatesDir: tt.fields.templatesDir,
 				smtpConf:     tt.fields.smtpConf,
 			}

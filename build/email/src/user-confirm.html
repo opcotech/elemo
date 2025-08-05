@@ -1,0 +1,131 @@
+@@include('./includes/html-head.html')
+
+<table class="wrap" cellspacing="0" cellpadding="0" role="presentation">
+  <tr>
+    <td class="p-sm">
+      @@include('./includes/header.html')
+
+      <div class="main-content">
+        <div class="box">
+          <table class="box-table" cellpadding="0" cellspacing="0">
+            <tr>
+              <td>
+                <table cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td class="content pb-0" align="center">
+                      <!--[if mso]>
+                        <v:roundrect
+                          xmlns:v="urn:schemas-microsoft-com:vml"
+                          xmlns:w="urn:schemas-microsoft-com:office:word"
+                          href="."
+                          style="height: 64px; v-text-anchor: middle; width: 64px"
+                          arcsize="100%"
+                          stroke="f"
+                          fillcolor="#066FD1"
+                        >
+                          <w:anchorlock />
+                          <center style="color: #ffffff; font-family: sans-serif; font-size: 16px; font-weight: bold">
+                            <img
+                              src="./assets/icons-white-mail-check.png"
+                              class="va-middle"
+                              width="32"
+                              height="32"
+                              alt="lock-open"
+                            />
+                          </center>
+                        </v:roundrect>
+                      <![endif]-->
+                      <!--[if !mso]> <!-->
+                      <table class="icon icon-lg bg-primary" cellspacing="0" cellpadding="0" role="presentation">
+                        <tr>
+                          <td valign="middle" align="center">
+                            <img
+                              src="./assets/icons-white-mail-check.png"
+                              class="va-middle"
+                              width="32"
+                              height="32"
+                              alt="lock-open"
+                            />
+                          </td>
+                        </tr>
+                      </table>
+                      <!-- <![endif]-->
+
+                      <h1 class="text-center m-0 font-strong mt-md">Verify your account!</h1>
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td class="content pb-md">
+                      <p>Hello&nbsp;{{ if ne .FirstName "" }}{{ .FirstName }}{{ else }}{{ .Username }}{{ end }},</p>
+                      <p>
+                        Before you could log in to Elemo, you must verify your account. To proceed, click the button
+                        below.
+                      </p>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="content text-center pt-0">
+                      <table cellspacing="0" cellpadding="0" role="presentation">
+                        <tr>
+                          <td align="center">
+                            <table
+                              cellpadding="0"
+                              cellspacing="0"
+                              border="0"
+                              class="bg-primary rounded-lg w-auto"
+                              role="presentation"
+                            >
+                              <tr>
+                                <td align="center" valign="top" class="lh-1">
+                                  <a href="{{ .VerifyURL }}" class="btn bg-primary border-primary">
+                                    <span class="btn-span">Verify&nbsp;your&nbsp;account</span>
+                                  </a>
+                                </td>
+                              </tr>
+                            </table>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td class="content pt-0 pb-0">
+                      <p>
+                        We are here to help you on your way and to ensure you gain the very best out of the platform. If
+                        you need any help during your journey, contact us directly via
+                        <a href="mailto:{{ .SupportEmail }}">{{ .SupportEmail }}</a>.
+                      </p>
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td class="content pt-0">
+                      <p>We wish you having fun,<br />The Elemo team</p>
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td class="content text-muted pt-0 text-center font-sm">
+                      <p>
+                        If you didn't register, please ignore this message or contact us at
+                        <a href="mailto:{{ .SupportEmail }}">{{ .SupportEmail }}</a> if you have any questions. Having
+                        trouble with the button above? Copy and paste this link into your browser:<br />
+                        <a href="{{ .VerifyURL }}" class="break-all">{{ .VerifyURL }}</a>
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </div>
+      </div>
+
+      @@include('./includes/footer.html')
+    </td>
+  </tr>
+</table>
+
+@@include('./includes/html-footer.html')

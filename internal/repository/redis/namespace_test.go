@@ -2,8 +2,9 @@ package redis
 
 import (
 	"context"
-	"go.uber.org/mock/gomock"
 	"testing"
+
+	"go.uber.org/mock/gomock"
 
 	"github.com/go-redis/cache/v9"
 	"github.com/redis/go-redis/v9"

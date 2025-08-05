@@ -11,8 +11,8 @@ func TestUserWelcomeTemplateData_Get(t *testing.T) {
 
 	data := &UserWelcomeTemplateData{
 		Subject:      "Welcome to Elemo!",
-		Username:     "test-user",
 		FirstName:    "Test",
+		LastName:     "Bob",
 		LoginURL:     "https://example.com",
 		SupportEmail: "info@example.com",
 	}

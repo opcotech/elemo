@@ -23,6 +23,8 @@ const (
 )
 
 // EmailSender defines the interface to send emails.
+//
+//go:generate mockgen -source=email.go -destination=../testutil/mock/email_sender_gen.go -package=mock
 type EmailSender interface {
 	// SendEmail sends an email to the given address using a template.
 	SendEmail(ctx context.Context, subject, to string, template *email.Template) error
@@ -72,8 +74,8 @@ func (s *emailService) SendAuthPasswordResetEmail(ctx context.Context, resetPath
 
 	data := &email.PasswordResetTemplateData{
 		Subject:          "Reset your password",
-		Username:         user.Username,
 		FirstName:        user.FirstName,
+		LastName:         user.LastName,
 		PasswordResetURL: fmt.Sprintf("https://%s", path.Join(s.smtpConf.Hostname, resetPath)),
 		SupportEmail:     s.smtpConf.SupportAddress,
 	}
@@ -87,8 +89,8 @@ func (s *emailService) SendOrganizationInvitationEmail(ctx context.Context, invi
 
 	data := &email.OrganizationInviteTemplateData{
 		Subject:          fmt.Sprintf("You have been invited to join %s", organization.Name),
-		Username:         user.Username,
 		FirstName:        user.FirstName,
+		LastName:         user.LastName,
 		OrganizationName: organization.Name,
 		InvitationURL:    fmt.Sprintf("https://%s", path.Join(s.smtpConf.Hostname, invitationPath)),
 		SupportEmail:     s.smtpConf.SupportAddress,
@@ -121,8 +123,8 @@ func (s *emailService) SendUserWelcomeEmail(ctx context.Context, user *model.Use
 
 	data := &email.UserWelcomeTemplateData{
 		Subject:      fmt.Sprintf("Welcome to %s", s.smtpConf.Hostname),
-		Username:     user.Username,
 		FirstName:    user.FirstName,
+		LastName:     user.LastName,
 		LoginURL:     fmt.Sprintf("https://%s/sign-in", s.smtpConf.Hostname),
 		SupportEmail: s.smtpConf.SupportAddress,
 	}

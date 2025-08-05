@@ -232,6 +232,12 @@ func TestWithStatus(t *testing.T) {
 	assert.Equal(t, WithStatus(200), zap.Int(FieldStatus, 200))
 }
 
+func TestWithSubject(t *testing.T) {
+	t.Parallel()
+
+	assert.Equal(t, WithSubject("subject"), zap.String(FieldSubject, "subject"))
+}
+
 func TestWithTTL(t *testing.T) {
 	t.Parallel()
 

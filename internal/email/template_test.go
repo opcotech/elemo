@@ -16,7 +16,7 @@ type testTemplateData struct {
 	SupportEmail string `validate:"required,email"`
 }
 
-func (d *testTemplateData) Get() interface{} {
+func (d *testTemplateData) Get() any {
 	return d
 }
 

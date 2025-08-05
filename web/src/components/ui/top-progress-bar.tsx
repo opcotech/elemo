@@ -7,7 +7,7 @@ export function TopProgressBar() {
   const [progress, setProgress] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
   const router = useRouter();
-  
+
   useEffect(() => {
     let timer: NodeJS.Timeout | undefined;
 

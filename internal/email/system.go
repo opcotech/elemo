@@ -14,6 +14,6 @@ type LicenseExpiryTemplateData struct {
 }
 
 // Get returns the license expiration email template data.
-func (d *LicenseExpiryTemplateData) Get() interface{} {
+func (d *LicenseExpiryTemplateData) Get() any {
 	return d
 }
