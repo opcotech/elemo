@@ -30,7 +30,7 @@ export function BreadcrumbNav({ className }: BreadcrumbNavProps) {
             <BreadcrumbItem>
               {item.isNavigatable !== false && item.href ? (
                 <BreadcrumbLink
-                  href={item.href}
+                  to={item.href}
                   className="hover:text-primary transition-colors duration-200"
                 >
                   {item.label}

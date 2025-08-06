@@ -400,7 +400,10 @@ function SidebarGroup({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="sidebar-group"
       data-sidebar="group"
-      className={cn("relative flex w-full min-w-0 flex-col p-2", className)}
+      className={cn(
+        "relative flex w-full min-w-0 flex-col pr-2 pb-2 pl-2",
+        className
+      )}
       {...props}
     />
   );
@@ -488,7 +491,7 @@ function SidebarMenuItem({ className, ...props }: React.ComponentProps<"li">) {
 
 const sidebarMenuButtonVariants = cva(
   // Subtle badge-like fill: bg-primary/10 (primary-50 with opacity) and text-primary on hover/active/focus
-  "peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-lg p-2 text-left text-sm outline-none ring-sidebar-ring transition-[width,height,padding] border border-transparent hover:bg-primary/5 hover:text-primary focus-visible:bg-primary/5 focus-visible:text-primary active:bg-primary/5 active:text-primary hover:border-primary/20 focus-visible:border-primary/20 active:border-primary/20 focus-visible:ring focus-visible:ring-sidebar-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 group-has-data-[sidebar=menu-action]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-primary/5 data-[active=true]:font-semibold data-[active=true]:text-primary data-[active=true]:border-primary/30 data-[state=open]:hover:bg-primary/5 data-[state=open]:hover:text-primary group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-2! [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0",
+  "peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-lg p-2 text-left text-sm outline-none ring-sidebar-ring transition-[width,height,padding] border border-transparent hover:bg-primary/5 hover:text-primary focus-visible:bg-primary/5 focus-visible:text-primary active:bg-primary/5 active:text-primary hover:border-primary/20 focus-visible:border-primary/20 active:border-primary/20 focus-visible:ring focus-visible:ring-sidebar-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 group-has-data-[sidebar=menu-action]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-primary/5 data-[active=true]:text-primary data-[active=true]:border-primary/30 data-[state=open]:hover:bg-primary/5 data-[state=open]:hover:text-primary group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-2! [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0",
   {
     variants: {
       variant: {

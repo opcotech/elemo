@@ -5,10 +5,10 @@ import type { Session } from "neo4j-driver";
 dotenv.config({ path: ".env.test.local" });
 
 const driver = neo4j.driver(
-  process.env.NEO4J_URL || "",
+  process.env.NEO4J_URL || "neo4j://localhost:7687",
   neo4j.auth.basic(
     process.env.NEO4J_USER || "neo4j",
-    process.env.NEO4J_PASSWORD || ""
+    process.env.NEO4J_PASSWORD || "neo4jsecret"
   )
 );
 
