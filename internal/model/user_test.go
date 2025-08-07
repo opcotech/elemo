@@ -106,8 +106,8 @@ func TestNewUser(t *testing.T) {
 				Username:    "test",
 				Email:       "test@example.com",
 				Password:    "super-secret",
-				FirstName:   "Test"
-				LastName:    "User"
+				FirstName:   "Test",
+				LastName:    "User",
 				Status:      UserStatusActive,
 				Links:       make([]string, 0),
 				Languages:   make([]Language, 0),
@@ -156,7 +156,7 @@ func TestNewUser(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			got, err := NewUser(tt.args.username, tt.args.email, tt.args.password)
+			got, err := model.NewUser(tt.args.username, tt.args.email, tt.args.password)
 			require.ErrorIs(t, err, tt.wantErr)
 
 			if tt.wantErr == nil {
