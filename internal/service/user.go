@@ -3,11 +3,19 @@ package service
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/opcotech/elemo/internal/license"
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg"
+	"github.com/opcotech/elemo/internal/pkg/auth"
 	"github.com/opcotech/elemo/internal/pkg/password"
+	"github.com/opcotech/elemo/internal/repository"
+)
+
+const (
+	UserConfirmationDeadline  = 24 * time.Hour
+	UserPasswordResetDeadline = 15 * time.Minute
 )
 
 // UserService serves the business logic of interacting with users in the
@@ -36,6 +44,16 @@ type UserService interface {
 	// the database to preserve the user's history and relations unless the
 	// force parameter is set to true.
 	Delete(ctx context.Context, id model.ID, force bool) error
+	// CreateToken creates a user token pair and saves the secret token in the
+	// database. If saving the user token is successful, the public token is
+	// returned. Any existing tokens are purged.
+	CreateToken(ctx context.Context, id model.ID, sendTo string, tokenContext model.UserTokenContext, data map[string]any) (string, error)
+	// VerifyToken checks the confirmation token and returns whether the token
+	// is valid or not.
+	VerifyToken(ctx context.Context, public string) (map[string]any, error)
+	// DeleteToken removes a confirmation token, hence prevents
+	// token reuse.
+	DeleteToken(ctx context.Context, id model.ID, tokenContext model.UserTokenContext) error
 }
 
 // userService is the concrete implementation of the UserService interface.
@@ -204,6 +222,98 @@ func (s *userService) Delete(ctx context.Context, id model.ID, force bool) error
 	return nil
 }
 
+func (s *userService) CreateToken(ctx context.Context, id model.ID, sendTo string, tokenContext model.UserTokenContext, data map[string]any) (string, error) {
+	ctx, span := s.tracer.Start(ctx, "service.userService/CreateToken")
+	defer span.End()
+
+	if id.IsNil() {
+		return "", errors.Join(ErrUserCreateUserToken, model.ErrInvalidID)
+	}
+
+	existingToken, err := s.userTokenRepo.Get(ctx, id, tokenContext)
+	if err != nil && !errors.Is(err, repository.ErrNotFound) {
+		return "", errors.Join(ErrUserCreateUserToken, err)
+	}
+
+	if existingToken != nil {
+		if err := s.userTokenRepo.Delete(ctx, existingToken.UserID, existingToken.Context); err != nil {
+			return "", errors.Join(ErrUserCreateUserToken, err)
+		}
+	}
+
+	tokenData := pkg.MergeMaps(data, map[string]any{"user_id": id.String()})
+	public, secret, err := auth.GenerateToken(tokenContext.String(), tokenData)
+	if err != nil {
+		return "", errors.Join(ErrUserCreateUserToken, err)
+	}
+
+	newToken, err := model.NewUserToken(id, sendTo, secret, tokenContext)
+	if err != nil {
+		return "", errors.Join(ErrUserCreateUserToken, err)
+	}
+
+	if err := s.userTokenRepo.Create(ctx, newToken); err != nil {
+		return "", errors.Join(ErrUserCreateUserToken, err)
+	}
+
+	return public, nil
+}
+
+func (s *userService) VerifyToken(ctx context.Context, public string) (map[string]any, error) {
+	ctx, span := s.tracer.Start(ctx, "service.userService/VerifyToken")
+	defer span.End()
+
+	kind, _, tokenData := auth.SplitToken(public)
+
+	userID, err := model.NewIDFromString(tokenData["user_id"].(string), model.ResourceTypeUser.String())
+	if err != nil {
+		return nil, errors.Join(ErrUserVerifyToken, ErrInvalidToken)
+	}
+
+	var tokenContext model.UserTokenContext
+	if err := tokenContext.UnmarshalText([]byte(kind)); err != nil {
+		return nil, errors.Join(ErrUserVerifyToken, ErrInvalidToken)
+	}
+
+	confirmation, err := s.userTokenRepo.Get(ctx, userID, tokenContext)
+	if err != nil {
+		return nil, errors.Join(ErrUserVerifyToken, err)
+	}
+
+	if !auth.IsTokenMatching(confirmation.Token, public) {
+		return nil, errors.Join(ErrUserVerifyToken, ErrInvalidToken)
+	}
+
+	var deadline time.Duration
+	switch kind {
+	case model.UserTokenContextConfirm.String():
+		deadline = UserConfirmationDeadline
+	case model.UserTokenContextResetPassword.String():
+		deadline = UserPasswordResetDeadline
+	}
+
+	if time.Now().After(confirmation.CreatedAt.Add(deadline)) {
+		return nil, errors.Join(ErrUserVerifyToken, ErrExpiredToken)
+	}
+
+	return tokenData, nil
+}
+
+func (s *userService) DeleteToken(ctx context.Context, id model.ID, tokenContext model.UserTokenContext) error {
+	ctx, span := s.tracer.Start(ctx, "service.userService/DeleteConfirmationToken")
+	defer span.End()
+
+	if id.IsNil() {
+		return errors.Join(ErrUserDeleteUserToken, model.ErrInvalidID)
+	}
+
+	if err := s.userTokenRepo.Delete(ctx, id, tokenContext); err != nil {
+		return errors.Join(ErrUserDeleteUserToken, err)
+	}
+
+	return nil
+}
+
 // NewUserService returns a new instance of the UserService interface.
 func NewUserService(opts ...Option) (UserService, error) {
 	s, err := newService(opts...)
@@ -217,6 +327,10 @@ func NewUserService(opts ...Option) (UserService, error) {
 
 	if svc.userRepo == nil {
 		return nil, ErrNoUserRepository
+	}
+
+	if svc.userTokenRepo == nil {
+		return nil, ErrNoUserTokenRepository
 	}
 
 	if svc.permissionService == nil {

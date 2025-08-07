@@ -51,10 +51,13 @@ func TestHTTPError(t *testing.T) {
 			logger := new(mock.Logger)
 			if tt.args.status >= 500 {
 				logger.On("Log", zapcore.ErrorLevel, tt.args.err.Error(), []zapcore.Field{
+					log.WithTraceID("00000000000000000000000000000000"),
 					log.WithError(tt.args.err),
 				}).Return()
 			} else {
-				logger.On("Log", zapcore.WarnLevel, tt.args.err.Error(), []zapcore.Field(nil)).Return()
+				logger.On("Log", zapcore.WarnLevel, tt.args.err.Error(), []zapcore.Field{
+					log.WithTraceID("00000000000000000000000000000000"),
+				}).Return()
 			}
 
 			ctx := log.WithContext(context.Background(), logger)
@@ -111,10 +114,13 @@ func TestHTTPErrorStruct(t *testing.T) {
 			logger := new(mock.Logger)
 			if tt.args.status >= 500 {
 				logger.On("Log", zapcore.ErrorLevel, tt.args.err.Error(), []zapcore.Field{
+					log.WithTraceID("00000000000000000000000000000000"),
 					log.WithError(tt.args.err),
 				}).Return()
 			} else {
-				logger.On("Log", zapcore.WarnLevel, tt.args.err.Error(), []zapcore.Field(nil)).Return()
+				logger.On("Log", zapcore.WarnLevel, tt.args.err.Error(), []zapcore.Field{
+					log.WithTraceID("00000000000000000000000000000000"),
+				}).Return()
 			}
 
 			ctx := log.WithContext(context.Background(), logger)

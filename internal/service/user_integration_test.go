@@ -21,6 +21,7 @@ import (
 type UserServiceIntegrationTestSuite struct {
 	testutil.ContainerIntegrationTestSuite
 	testutil.Neo4jContainerIntegrationTestSuite
+	testutil.PgContainerIntegrationTestSuite
 
 	userService service.UserService
 
@@ -37,6 +38,7 @@ func (s *UserServiceIntegrationTestSuite) SetupSuite() {
 	}
 	container := reflect.TypeOf(s).Elem().String()
 	s.SetupNeo4j(&s.ContainerIntegrationTestSuite, container)
+	s.SetupPg(&s.ContainerIntegrationTestSuite, container)
 
 	permissionService, err := service.NewPermissionService(s.PermissionRepo)
 	s.Require().NoError(err)
@@ -50,6 +52,7 @@ func (s *UserServiceIntegrationTestSuite) SetupSuite() {
 
 	s.userService, err = service.NewUserService(
 		service.WithUserRepository(s.UserRepo),
+		service.WithUserTokenRepository(s.UserTokenRepository),
 		service.WithPermissionService(permissionService),
 		service.WithLicenseService(licenseService),
 	)

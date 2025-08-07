@@ -1,10 +1,15 @@
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
 import { Trash2 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useDeleteNotification } from "@/hooks/use-notifications";
+import {
+  v1NotificationDeleteMutation,
+  v1NotificationsGetOptions,
+} from "@/lib/api";
 import type { Notification } from "@/lib/api";
+import { showErrorToast, showSuccessToast } from "@/lib/toast";
 
 interface NotificationItemProps {
   notification: Notification;
@@ -15,7 +20,21 @@ export function NotificationItem({
   notification,
   onSuccess,
 }: NotificationItemProps) {
-  const deleteMutation = useDeleteNotification();
+  const deleteMutation = useMutation({
+    ...v1NotificationDeleteMutation(),
+    onSuccess: () => {
+      useQueryClient().invalidateQueries({
+        queryKey: v1NotificationsGetOptions().queryKey,
+      });
+      showSuccessToast(
+        "Notification deleted",
+        "The notification has been removed"
+      );
+    },
+    onError: (error) => {
+      showErrorToast("Failed to delete notification", error.message);
+    },
+  });
 
   const handleDelete = () => {
     deleteMutation.mutate(

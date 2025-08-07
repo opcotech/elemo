@@ -115,7 +115,7 @@ smtp:
   from_address: no-reply@elemo.app
   support_address: support@elemo.app
   reply_to_address: support@elemo.app
-  hostname: elemo.local
+  client_url: http://localhost:3000
   connection_timeout: 10
   enable_auth: false
   skip_tls_verify: true

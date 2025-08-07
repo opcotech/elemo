@@ -6,7 +6,6 @@ import (
 
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg"
-	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/service"
 	"github.com/opcotech/elemo/internal/transport/http/api"
 )
@@ -31,17 +30,17 @@ func (c *todoController) V1TodosCreate(ctx context.Context, request api.V1TodosC
 
 	createdBy, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID)
 	if !ok {
-		return api.V1TodosCreate400JSONResponse{N400JSONResponse: badRequest}, nil
+		return api.V1TodosCreate400JSONResponse{N400JSONResponse: formatBadRequest(model.ErrInvalidID)}, nil
 	}
 
 	ownerID, err := model.NewIDFromString(request.Body.OwnedBy, model.ResourceTypeUser.String())
 	if err != nil {
-		return api.V1TodosCreate400JSONResponse{N400JSONResponse: badRequest}, nil
+		return api.V1TodosCreate400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
 	todo, err := createTodoJSONRequestBodyToTodo(request.Body, ownerID, createdBy)
 	if err != nil {
-		return api.V1TodosCreate400JSONResponse{N400JSONResponse: badRequest}, nil
+		return api.V1TodosCreate400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
 	if err := c.todoService.Create(ctx, todo); err != nil {
@@ -66,7 +65,7 @@ func (c *todoController) V1TodoGet(ctx context.Context, request api.V1TodoGetReq
 
 	todoID, err := model.NewIDFromString(request.Id, model.ResourceTypeTodo.String())
 	if err != nil {
-		return api.V1TodoGet400JSONResponse{N400JSONResponse: badRequest}, nil
+		return api.V1TodoGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
 	todo, err := c.todoService.Get(ctx, todoID)
@@ -74,7 +73,7 @@ func (c *todoController) V1TodoGet(ctx context.Context, request api.V1TodoGetReq
 		if errors.Is(err, service.ErrNoPermission) {
 			return api.V1TodoGet403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		}
-		if errors.Is(err, repository.ErrNotFound) {
+		if isNotFoundError(err) {
 			return api.V1TodoGet404JSONResponse{N404JSONResponse: notFound}, nil
 		}
 		return api.V1TodoGet500JSONResponse{N500JSONResponse: api.N500JSONResponse{
@@ -117,12 +116,12 @@ func (c *todoController) V1TodoUpdate(ctx context.Context, request api.V1TodoUpd
 
 	todoID, err := model.NewIDFromString(request.Id, model.ResourceTypeTodo.String())
 	if err != nil {
-		return api.V1TodoUpdate400JSONResponse{N400JSONResponse: badRequest}, nil
+		return api.V1TodoUpdate400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
 	patch, err := api.ConvertRequestToMap(request.Body)
 	if err != nil {
-		return api.V1TodoUpdate400JSONResponse{N400JSONResponse: badRequest}, nil
+		return api.V1TodoUpdate400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
 	todo, err := c.todoService.Update(ctx, todoID, patch)
@@ -130,7 +129,7 @@ func (c *todoController) V1TodoUpdate(ctx context.Context, request api.V1TodoUpd
 		if errors.Is(err, service.ErrNoPermission) {
 			return api.V1TodoUpdate403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		}
-		if errors.Is(err, repository.ErrNotFound) {
+		if isNotFoundError(err) {
 			return api.V1TodoUpdate404JSONResponse{N404JSONResponse: notFound}, nil
 		}
 		return api.V1TodoUpdate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
@@ -154,7 +153,7 @@ func (c *todoController) V1TodoDelete(ctx context.Context, request api.V1TodoDel
 		if errors.Is(err, service.ErrNoPermission) {
 			return api.V1TodoDelete403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		}
-		if errors.Is(err, repository.ErrNotFound) {
+		if isNotFoundError(err) {
 			return api.V1TodoDelete404JSONResponse{N404JSONResponse: notFound}, nil
 		}
 		return api.V1TodoDelete500JSONResponse{N500JSONResponse: api.N500JSONResponse{

@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"path"
 	"testing"
 	"time"
@@ -20,6 +21,42 @@ import (
 	"github.com/opcotech/elemo/internal/pkg/tracing"
 	"github.com/opcotech/elemo/internal/testutil/mock"
 )
+
+// templateMatcher is a custom gomock matcher for email templates
+type templateMatcher struct {
+	expectedTemplate *email.Template
+}
+
+func (m *templateMatcher) Matches(x interface{}) bool {
+	template, ok := x.(*email.Template)
+	if !ok {
+		return false
+	}
+
+	if m.expectedTemplate.Path != template.Path {
+		return false
+	}
+
+	expectedData := m.expectedTemplate.Data.Get()
+	actualData := template.Data.Get()
+
+	return m.compareStructs(expectedData, actualData)
+}
+
+func (m *templateMatcher) compareStructs(expected, actual interface{}) bool {
+	expectedStr := fmt.Sprintf("%+v", expected)
+	actualStr := fmt.Sprintf("%+v", actual)
+
+	return expectedStr == actualStr
+}
+
+func (m *templateMatcher) String() string {
+	return fmt.Sprintf("is template with path %s", m.expectedTemplate.Path)
+}
+
+func matchTemplate(expected *email.Template) gomock.Matcher {
+	return &templateMatcher{expectedTemplate: expected}
+}
 
 func TestNewEmailService(t *testing.T) {
 	type args struct {
@@ -40,7 +77,7 @@ func TestNewEmailService(t *testing.T) {
 				client: func() EmailSender {
 					ctrl := gomock.NewController(t)
 					defer ctrl.Finish()
-					return mock.NewMockEmailSender(ctrl)
+					return mock.NewEmailSender(ctrl)
 				}(),
 				templatesDir: "/templates",
 				smtpConf:     new(config.SMTPConfig),
@@ -57,7 +94,7 @@ func TestNewEmailService(t *testing.T) {
 				client: func() EmailSender {
 					ctrl := gomock.NewController(t)
 					defer ctrl.Finish()
-					return mock.NewMockEmailSender(ctrl)
+					return mock.NewEmailSender(ctrl)
 				}(),
 				templatesDir: "/templates",
 				smtpConf:     new(config.SMTPConfig),
@@ -82,7 +119,7 @@ func TestNewEmailService(t *testing.T) {
 				client: func() EmailSender {
 					ctrl := gomock.NewController(t)
 					defer ctrl.Finish()
-					return mock.NewMockEmailSender(ctrl)
+					return mock.NewEmailSender(ctrl)
 				}(),
 				templatesDir: "/templates",
 				smtpConf:     new(config.SMTPConfig),
@@ -98,7 +135,7 @@ func TestNewEmailService(t *testing.T) {
 				client: func() EmailSender {
 					ctrl := gomock.NewController(t)
 					defer ctrl.Finish()
-					return mock.NewMockEmailSender(ctrl)
+					return mock.NewEmailSender(ctrl)
 				}(),
 				templatesDir: "/templates",
 				smtpConf:     new(config.SMTPConfig),
@@ -114,7 +151,7 @@ func TestNewEmailService(t *testing.T) {
 				client: func() EmailSender {
 					ctrl := gomock.NewController(t)
 					defer ctrl.Finish()
-					return mock.NewMockEmailSender(ctrl)
+					return mock.NewEmailSender(ctrl)
 				}(),
 				templatesDir: "/templates",
 				smtpConf:     new(config.SMTPConfig),
@@ -126,7 +163,7 @@ func TestNewEmailService(t *testing.T) {
 				client: func() EmailSender {
 					ctrl := gomock.NewController(t)
 					defer ctrl.Finish()
-					return mock.NewMockEmailSender(ctrl)
+					return mock.NewEmailSender(ctrl)
 				}(),
 				templatesDir: "/templates",
 				smtpConf:     new(config.SMTPConfig),
@@ -142,7 +179,7 @@ func TestNewEmailService(t *testing.T) {
 				client: func() EmailSender {
 					ctrl := gomock.NewController(t)
 					defer ctrl.Finish()
-					return mock.NewMockEmailSender(ctrl)
+					return mock.NewEmailSender(ctrl)
 				}(),
 				templatesDir: "/templates",
 				smtpConf:     new(config.SMTPConfig),
@@ -164,14 +201,14 @@ func TestNewEmailService(t *testing.T) {
 func TestEmailService_SendAuthPasswordResetEmail(t *testing.T) {
 	type fields struct {
 		baseService  func(ctx context.Context) *baseService
-		client       func(ctrl *gomock.Controller, ctx context.Context, templatesDir, resetPath string, smtpConf *config.SMTPConfig, user *model.User) EmailSender
+		client       func(ctrl *gomock.Controller, ctx context.Context, templatesDir, token string, smtpConf *config.SMTPConfig, user *model.User) EmailSender
 		templatesDir string
 		smtpConf     *config.SMTPConfig
 	}
 	type args struct {
-		ctx       context.Context
-		resetPath string
-		user      *model.User
+		ctx   context.Context
+		user  *model.User
+		token string
 	}
 	tests := []struct {
 		name    string
@@ -194,41 +231,42 @@ func TestEmailService_SendAuthPasswordResetEmail(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				client: func(ctrl *gomock.Controller, ctx context.Context, templatesDir, resetPath string, smtpConf *config.SMTPConfig, user *model.User) EmailSender {
-					subject := "Reset your password"
+				client: func(ctrl *gomock.Controller, ctx context.Context, templatesDir, token string, smtpConf *config.SMTPConfig, user *model.User) EmailSender {
+					subject := "[Action Required] Reset your password"
 
+					passwordResetURL := fmt.Sprintf("%s/reset-password?token=%s", smtpConf.ClientURL, token)
 					template, err := email.NewTemplate(
 						path.Join(templatesDir, authPasswordResetTemplate),
 						&email.PasswordResetTemplateData{
 							Subject:          subject,
 							FirstName:        user.FirstName,
 							LastName:         user.LastName,
-							PasswordResetURL: fmt.Sprintf("https://%s", path.Join(smtpConf.Hostname, resetPath)),
+							PasswordResetURL: fmt.Sprintf("%s/redirect?url=%s", smtpConf.ClientURL, url.QueryEscape(passwordResetURL)),
 							SupportEmail:     smtpConf.SupportAddress,
 						},
 					)
 					require.NoError(t, err)
 
-					client := mock.NewMockEmailSender(ctrl)
-					client.EXPECT().SendEmail(ctx, subject, user.Email, template).Return(nil)
+					client := mock.NewEmailSender(ctrl)
+					client.EXPECT().SendEmail(ctx, subject, user.Email, matchTemplate(template)).Return(nil)
 
 					return client
 				},
 				templatesDir: "/templates",
 				smtpConf: &config.SMTPConfig{
-					Hostname:       "example.com",
+					ClientURL:      "https://example.com",
 					SupportAddress: "support@example.com",
 				},
 			},
 			args: args{
-				ctx:       context.Background(),
-				resetPath: "/reset",
+				ctx: context.Background(),
 				user: &model.User{
 					Username:  "test",
 					FirstName: "Test",
 					LastName:  "User",
 					Email:     "test@example.com",
 				},
+				token: "test-token",
 			},
 		},
 		{
@@ -246,41 +284,42 @@ func TestEmailService_SendAuthPasswordResetEmail(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				client: func(ctrl *gomock.Controller, ctx context.Context, templatesDir, resetPath string, smtpConf *config.SMTPConfig, user *model.User) EmailSender {
-					subject := "Reset your password"
+				client: func(ctrl *gomock.Controller, ctx context.Context, templatesDir, token string, smtpConf *config.SMTPConfig, user *model.User) EmailSender {
+					subject := "[Action Required] Reset your password"
 
+					passwordResetURL := fmt.Sprintf("%s/reset-password?token=%s", smtpConf.ClientURL, token)
 					template, err := email.NewTemplate(
 						path.Join(templatesDir, authPasswordResetTemplate),
 						&email.PasswordResetTemplateData{
 							Subject:          subject,
 							FirstName:        user.FirstName,
 							LastName:         user.LastName,
-							PasswordResetURL: fmt.Sprintf("https://%s", path.Join(smtpConf.Hostname, resetPath)),
+							PasswordResetURL: fmt.Sprintf("%s/redirect?url=%s", smtpConf.ClientURL, url.QueryEscape(passwordResetURL)),
 							SupportEmail:     smtpConf.SupportAddress,
 						},
 					)
 					require.NoError(t, err)
 
-					client := mock.NewMockEmailSender(ctrl)
-					client.EXPECT().SendEmail(ctx, subject, user.Email, template).Return(assert.AnError)
+					client := mock.NewEmailSender(ctrl)
+					client.EXPECT().SendEmail(ctx, subject, user.Email, matchTemplate(template)).Return(assert.AnError)
 
 					return client
 				},
 				templatesDir: "/templates",
 				smtpConf: &config.SMTPConfig{
-					Hostname:       "example.com",
+					ClientURL:      "https://example.com",
 					SupportAddress: "support@example.com",
 				},
 			},
 			args: args{
-				ctx:       context.Background(),
-				resetPath: "/reset",
+				ctx: context.Background(),
 				user: &model.User{
 					Username:  "test",
 					FirstName: "Test",
 					LastName:  "User",
 					Email:     "test@example.com",
 				},
+				token: "test-token",
 			},
 			wantErr: ErrEmailSend,
 		},
@@ -295,11 +334,11 @@ func TestEmailService_SendAuthPasswordResetEmail(t *testing.T) {
 
 			s := &emailService{
 				baseService:  tt.fields.baseService(tt.args.ctx),
-				client:       tt.fields.client(ctrl, tt.args.ctx, tt.fields.templatesDir, tt.args.resetPath, tt.fields.smtpConf, tt.args.user),
+				client:       tt.fields.client(ctrl, tt.args.ctx, tt.fields.templatesDir, tt.args.token, tt.fields.smtpConf, tt.args.user),
 				templatesDir: tt.fields.templatesDir,
 				smtpConf:     tt.fields.smtpConf,
 			}
-			assert.ErrorIs(t, s.SendAuthPasswordResetEmail(tt.args.ctx, tt.args.resetPath, tt.args.user), tt.wantErr)
+			assert.ErrorIs(t, s.SendAuthPasswordResetEmail(tt.args.ctx, tt.args.user, tt.args.token), tt.wantErr)
 		})
 	}
 }
@@ -307,7 +346,7 @@ func TestEmailService_SendAuthPasswordResetEmail(t *testing.T) {
 func TestEmailService_SendOrganizationInvitationEmail(t *testing.T) {
 	type fields struct {
 		baseService  func(ctx context.Context) *baseService
-		client       func(ctrl *gomock.Controller, ctx context.Context, templatesDir, invitationPath string, smtpConf *config.SMTPConfig, organization *model.Organization, user *model.User) EmailSender
+		client       func(ctrl *gomock.Controller, ctx context.Context, templatesDir, token string, smtpConf *config.SMTPConfig, organization *model.Organization, user *model.User) EmailSender
 		templatesDir string
 		smtpConf     *config.SMTPConfig
 	}
@@ -316,6 +355,7 @@ func TestEmailService_SendOrganizationInvitationEmail(t *testing.T) {
 		invitationPath string
 		organization   *model.Organization
 		user           *model.User
+		token          string
 	}
 	tests := []struct {
 		name    string
@@ -338,9 +378,10 @@ func TestEmailService_SendOrganizationInvitationEmail(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				client: func(ctrl *gomock.Controller, ctx context.Context, templatesDir, invitationPath string, smtpConf *config.SMTPConfig, organization *model.Organization, user *model.User) EmailSender {
-					subject := fmt.Sprintf("You have been invited to join %s", organization.Name)
+				client: func(ctrl *gomock.Controller, ctx context.Context, templatesDir, token string, smtpConf *config.SMTPConfig, organization *model.Organization, user *model.User) EmailSender {
+					subject := fmt.Sprintf("[Action Required] You have been invited to join %s", organization.Name)
 
+					invitationURL := fmt.Sprintf("%s/organizations/join?workspace=%s&token=%s", smtpConf.ClientURL, organization.ID.String(), token)
 					template, err := email.NewTemplate(
 						path.Join(templatesDir, organizationInviteTemplate),
 						&email.OrganizationInviteTemplateData{
@@ -348,20 +389,20 @@ func TestEmailService_SendOrganizationInvitationEmail(t *testing.T) {
 							FirstName:        user.FirstName,
 							LastName:         user.LastName,
 							OrganizationName: organization.Name,
-							InvitationURL:    fmt.Sprintf("https://%s", path.Join(smtpConf.Hostname, invitationPath)),
+							InvitationURL:    fmt.Sprintf("%s/redirect?url=%s", smtpConf.ClientURL, url.QueryEscape(invitationURL)),
 							SupportEmail:     smtpConf.SupportAddress,
 						},
 					)
 					require.NoError(t, err)
 
-					client := mock.NewMockEmailSender(ctrl)
-					client.EXPECT().SendEmail(ctx, subject, user.Email, template).Return(nil)
+					client := mock.NewEmailSender(ctrl)
+					client.EXPECT().SendEmail(ctx, subject, user.Email, matchTemplate(template)).Return(nil)
 
 					return client
 				},
 				templatesDir: "/templates",
 				smtpConf: &config.SMTPConfig{
-					Hostname:       "example.com",
+					ClientURL:      "https://example.com",
 					SupportAddress: "support@example.com",
 				},
 			},
@@ -394,9 +435,10 @@ func TestEmailService_SendOrganizationInvitationEmail(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				client: func(ctrl *gomock.Controller, ctx context.Context, templatesDir, invitationPath string, smtpConf *config.SMTPConfig, organization *model.Organization, user *model.User) EmailSender {
-					subject := fmt.Sprintf("You have been invited to join %s", organization.Name)
+				client: func(ctrl *gomock.Controller, ctx context.Context, templatesDir, token string, smtpConf *config.SMTPConfig, organization *model.Organization, user *model.User) EmailSender {
+					subject := fmt.Sprintf("[Action Required] You have been invited to join %s", organization.Name)
 
+					invitationURL := fmt.Sprintf("%s/organizations/join?workspace=%s&token=%s", smtpConf.ClientURL, organization.ID.String(), token)
 					template, err := email.NewTemplate(
 						path.Join(templatesDir, organizationInviteTemplate),
 						&email.OrganizationInviteTemplateData{
@@ -404,20 +446,20 @@ func TestEmailService_SendOrganizationInvitationEmail(t *testing.T) {
 							FirstName:        user.FirstName,
 							LastName:         user.LastName,
 							OrganizationName: organization.Name,
-							InvitationURL:    fmt.Sprintf("https://%s", path.Join(smtpConf.Hostname, invitationPath)),
+							InvitationURL:    fmt.Sprintf("%s/redirect?url=%s", smtpConf.ClientURL, url.QueryEscape(invitationURL)),
 							SupportEmail:     smtpConf.SupportAddress,
 						},
 					)
 					require.NoError(t, err)
 
-					client := mock.NewMockEmailSender(ctrl)
-					client.EXPECT().SendEmail(ctx, subject, user.Email, template).Return(assert.AnError)
+					client := mock.NewEmailSender(ctrl)
+					client.EXPECT().SendEmail(ctx, subject, user.Email, matchTemplate(template)).Return(assert.AnError)
 
 					return client
 				},
 				templatesDir: "/templates",
 				smtpConf: &config.SMTPConfig{
-					Hostname:       "example.com",
+					ClientURL:      "https://example.com",
 					SupportAddress: "support@example.com",
 				},
 			},
@@ -447,11 +489,11 @@ func TestEmailService_SendOrganizationInvitationEmail(t *testing.T) {
 
 			s := &emailService{
 				baseService:  tt.fields.baseService(tt.args.ctx),
-				client:       tt.fields.client(ctrl, tt.args.ctx, tt.fields.templatesDir, tt.args.invitationPath, tt.fields.smtpConf, tt.args.organization, tt.args.user),
+				client:       tt.fields.client(ctrl, tt.args.ctx, tt.fields.templatesDir, tt.args.token, tt.fields.smtpConf, tt.args.organization, tt.args.user),
 				templatesDir: tt.fields.templatesDir,
 				smtpConf:     tt.fields.smtpConf,
 			}
-			assert.ErrorIs(t, s.SendOrganizationInvitationEmail(tt.args.ctx, tt.args.invitationPath, tt.args.organization, tt.args.user), tt.wantErr)
+			assert.ErrorIs(t, s.SendOrganizationInvitationEmail(tt.args.ctx, tt.args.organization, tt.args.user, tt.args.token), tt.wantErr)
 		})
 	}
 }
@@ -502,21 +544,21 @@ func TestEmailService_SendSystemLicenseExpiryEmail(t *testing.T) {
 							LicenseEmail:        licenseEmail,
 							LicenseOrganization: licenseOrganization,
 							LicenseExpiresAt:    licenseExpiresAt.Format(time.RFC850),
-							ServerURL:           fmt.Sprintf("https://%s", smtpConf.Hostname),
+							ServerURL:           fmt.Sprintf("https://%s", smtpConf.ClientURL),
 							RenewEmail:          renewEmailAddress,
 							SupportEmail:        smtpConf.SupportAddress,
 						},
 					)
 					require.NoError(t, err)
 
-					client := mock.NewMockEmailSender(ctrl)
-					client.EXPECT().SendEmail(ctx, subject, licenseEmail, template).Return(nil)
+					client := mock.NewEmailSender(ctrl)
+					client.EXPECT().SendEmail(ctx, subject, licenseEmail, matchTemplate(template)).Return(nil)
 
 					return client
 				},
 				templatesDir: "/templates",
 				smtpConf: &config.SMTPConfig{
-					Hostname:       "example.com",
+					ClientURL:      "https://example.com",
 					SupportAddress: "support@example.com",
 				},
 			},
@@ -554,21 +596,21 @@ func TestEmailService_SendSystemLicenseExpiryEmail(t *testing.T) {
 							LicenseEmail:        licenseEmail,
 							LicenseOrganization: licenseOrganization,
 							LicenseExpiresAt:    licenseExpiresAt.Format(time.RFC850),
-							ServerURL:           fmt.Sprintf("https://%s", smtpConf.Hostname),
+							ServerURL:           fmt.Sprintf("https://%s", smtpConf.ClientURL),
 							RenewEmail:          renewEmailAddress,
 							SupportEmail:        smtpConf.SupportAddress,
 						},
 					)
 					require.NoError(t, err)
 
-					client := mock.NewMockEmailSender(ctrl)
-					client.EXPECT().SendEmail(ctx, subject, licenseEmail, template).Return(assert.AnError)
+					client := mock.NewEmailSender(ctrl)
+					client.EXPECT().SendEmail(ctx, subject, licenseEmail, matchTemplate(template)).Return(assert.AnError)
 
 					return client
 				},
 				templatesDir: "/templates",
 				smtpConf: &config.SMTPConfig{
-					Hostname:       "example.com",
+					ClientURL:      "https://example.com",
 					SupportAddress: "support@example.com",
 				},
 			},
@@ -650,7 +692,7 @@ func TestEmailService_SendUserWelcomeEmail(t *testing.T) {
 					}
 				},
 				client: func(ctrl *gomock.Controller, ctx context.Context, templatesDir string, smtpConf *config.SMTPConfig, user *model.User) EmailSender {
-					subject := fmt.Sprintf("Welcome to %s", smtpConf.Hostname)
+					subject := "Welcome to Elemo"
 
 					template, err := email.NewTemplate(
 						path.Join(templatesDir, userWelcomeTemplate),
@@ -658,20 +700,20 @@ func TestEmailService_SendUserWelcomeEmail(t *testing.T) {
 							Subject:      subject,
 							FirstName:    user.FirstName,
 							LastName:     user.LastName,
-							LoginURL:     fmt.Sprintf("https://%s/sign-in", smtpConf.Hostname),
+							LoginURL:     fmt.Sprintf("%s/redirect?url=%s", smtpConf.ClientURL, url.QueryEscape(fmt.Sprintf("%s/auth/login", smtpConf.ClientURL))),
 							SupportEmail: smtpConf.SupportAddress,
 						},
 					)
 					require.NoError(t, err)
 
-					client := mock.NewMockEmailSender(ctrl)
-					client.EXPECT().SendEmail(ctx, subject, user.Email, template).Return(assert.AnError)
+					client := mock.NewEmailSender(ctrl)
+					client.EXPECT().SendEmail(ctx, subject, user.Email, matchTemplate(template)).Return(assert.AnError)
 
 					return client
 				},
 				templatesDir: "/templates",
 				smtpConf: &config.SMTPConfig{
-					Hostname:       "example.com",
+					ClientURL:      "https://example.com",
 					SupportAddress: "support@example.com",
 				},
 			},

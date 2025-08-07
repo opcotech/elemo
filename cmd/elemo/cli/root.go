@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"net/smtp"
 	"os"
 	"strings"
 	"time"
@@ -213,28 +214,24 @@ func initRelationalDatabase() (*pg.Database, pg.Pool, error) {
 }
 
 // initSMTPClient initializes the SMTP client.
-// nolint:unused
 func initSMTPClient(smtpConf *config.SMTPConfig) (*elemoSMTP.Client, error) {
-	dialer := gomail.NewDialer(
-		smtpConf.Host,
-		smtpConf.Port,
-		smtpConf.Username,
-		smtpConf.Password,
-	)
+	dialer := &gomail.Dialer{Host: smtpConf.Host, Port: smtpConf.Port}
+	dialer.Timeout = smtpConf.ConnectionTimeout * time.Second
 
-	// Configure TLS settings
-	switch smtpConf.SecurityProtocol {
-	case "TLS":
-		dialer.SSL = true
-	case "STARTTLS":
+	if smtpConf.EnableAuth {
+		dialer.Auth = smtp.PlainAuth("", smtpConf.Username, smtpConf.Password, smtpConf.Host)
+	}
+
+	if smtpConf.SecurityProtocol == "TLS" {
 		dialer.TLSConfig = &tls.Config{
 			InsecureSkipVerify: smtpConf.SkipTLSVerify, //nolint:gosec
 			ServerName:         smtpConf.Host,
 		}
 	}
 
-	// Set connection timeout
-	dialer.Timeout = smtpConf.ConnectionTimeout * time.Second
+	if smtpConf.SecurityProtocol == "STARTTLS" {
+		dialer.StartTLSPolicy = gomail.MandatoryStartTLS
+	}
 
 	client, err := elemoSMTP.NewClient(
 		elemoSMTP.WithWrappedClient(dialer),
