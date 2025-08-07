@@ -103,7 +103,7 @@ func TestNotificationRepository_Create(t *testing.T) {
 
 					mockDBPool.EXPECT().Exec(ctx,
 						"INSERT INTO notifications (id, title, description, recipient, read, created_at) VALUES ($1, $2, $3, $4, $5, $6)",
-						gomock.Any(), notification.Title, notification.Description, notification.Recipient.String(),
+						gomock.Any(), notification.Title, notification.Description, notification.Recipient,
 						notification.Read, gomock.Any(),
 					).Return(pgconn.CommandTag{}, nil)
 
@@ -140,7 +140,7 @@ func TestNotificationRepository_Create(t *testing.T) {
 
 					mockDBPool.EXPECT().Exec(ctx,
 						"INSERT INTO notifications (id, title, description, recipient, read, created_at) VALUES ($1, $2, $3, $4, $5, $6)",
-						gomock.Any(), notification.Title, notification.Description, notification.Recipient.String(),
+						gomock.Any(), notification.Title, notification.Description, notification.Recipient,
 						notification.Read, gomock.Any(),
 					).Return(pgconn.CommandTag{}, assert.AnError)
 
@@ -247,10 +247,10 @@ func TestNotificationRepository_Get(t *testing.T) {
 					mockRow.EXPECT().
 						Scan(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 						DoAndReturn(func(dest ...any) error {
-							dest[0].(*pgID).ID = notification.ID
+							*(dest[0].(*model.ID)) = notification.ID
 							*(dest[1].(*string)) = notification.Title
 							*(dest[2].(*string)) = notification.Description
-							dest[3].(*pgID).ID = notification.Recipient
+							*(dest[3].(*model.ID)) = notification.Recipient
 							*(dest[4].(*bool)) = notification.Read
 							*(dest[5].(**time.Time)) = notification.CreatedAt
 							*(dest[6].(**time.Time)) = notification.UpdatedAt
@@ -259,7 +259,7 @@ func TestNotificationRepository_Get(t *testing.T) {
 
 					mockDBPool.EXPECT().QueryRow(ctx,
 						"SELECT * FROM notifications WHERE id = $1 AND recipient = $2",
-						[]any{id.String(), recipient.String()},
+						id, recipient,
 					).Return(mockRow)
 
 					return &baseRepository{
@@ -303,7 +303,7 @@ func TestNotificationRepository_Get(t *testing.T) {
 
 					mockDBPool.EXPECT().QueryRow(ctx,
 						"SELECT * FROM notifications WHERE id = $1 AND recipient = $2",
-						[]any{id.String(), recipient.String()},
+						id, recipient,
 					).Return(mockRow)
 
 					return &baseRepository{
@@ -341,7 +341,7 @@ func TestNotificationRepository_Get(t *testing.T) {
 
 					mockDBPool.EXPECT().QueryRow(ctx,
 						"SELECT * FROM notifications WHERE id = $1 AND recipient = $2",
-						[]any{id.String(), recipient.String()},
+						id, recipient,
 					).Return(mockRow)
 
 					return &baseRepository{
@@ -473,10 +473,10 @@ func TestNotificationRepository_GetAllByRecipient(t *testing.T) {
 						mockRows.EXPECT().
 							Scan(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 							DoAndReturn(func(dest ...any) error {
-								dest[0].(*pgID).ID = notification.ID
+								*(dest[0].(*model.ID)) = notification.ID
 								*(dest[1].(*string)) = notification.Title
 								*(dest[2].(*string)) = notification.Description
-								dest[3].(*pgID).ID = notification.Recipient
+								*(dest[3].(*model.ID)) = notification.Recipient
 								*(dest[4].(*bool)) = notification.Read
 								*(dest[5].(**time.Time)) = notification.CreatedAt
 								*(dest[6].(**time.Time)) = notification.UpdatedAt
@@ -487,7 +487,7 @@ func TestNotificationRepository_GetAllByRecipient(t *testing.T) {
 
 					mockDBPool.EXPECT().Query(ctx,
 						"SELECT * FROM notifications WHERE recipient = $1 LIMIT $2 OFFSET $3",
-						[]any{recipient.String(), limit, offset},
+						recipient, limit, offset,
 					).Return(mockRows, nil)
 
 					return &baseRepository{
@@ -540,7 +540,7 @@ func TestNotificationRepository_GetAllByRecipient(t *testing.T) {
 
 					mockDBPool.EXPECT().Query(ctx,
 						"SELECT * FROM notifications WHERE recipient = $1 LIMIT $2 OFFSET $3",
-						[]any{recipient.String(), limit, offset},
+						recipient, limit, offset,
 					).Return(mock.NewPGRows(nil), assert.AnError)
 
 					return &baseRepository{
@@ -609,7 +609,7 @@ func TestNotificationRepository_GetAllByRecipient(t *testing.T) {
 
 					mockDBPool.EXPECT().Query(ctx,
 						"SELECT * FROM notifications WHERE recipient = $1 LIMIT $2 OFFSET $3",
-						[]any{recipient.String(), limit, offset},
+						recipient, limit, offset,
 					).Return(mockRows, nil)
 
 					return &baseRepository{
@@ -682,10 +682,10 @@ func TestNotificationRepository_Update(t *testing.T) {
 					mockRow.EXPECT().
 						Scan(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 						DoAndReturn(func(dest ...any) error {
-							dest[0].(*pgID).ID = notification.ID
+							*(dest[0].(*model.ID)) = notification.ID
 							*(dest[1].(*string)) = notification.Title
 							*(dest[2].(*string)) = notification.Description
-							dest[3].(*pgID).ID = notification.Recipient
+							*(dest[3].(*model.ID)) = notification.Recipient
 							*(dest[4].(*bool)) = notification.Read
 							*(dest[5].(**time.Time)) = notification.CreatedAt
 							*(dest[6].(**time.Time)) = notification.UpdatedAt
@@ -694,7 +694,7 @@ func TestNotificationRepository_Update(t *testing.T) {
 
 					mockDBPool.EXPECT().QueryRow(ctx,
 						"UPDATE notifications SET read = $3, updated_at = timezone('utc', now()) WHERE id = $1 AND recipient = $2 RETURNING *",
-						[]any{id.String(), recipient.String(), read},
+						id, recipient, read,
 					).Return(mockRow)
 
 					return &baseRepository{
@@ -738,7 +738,7 @@ func TestNotificationRepository_Update(t *testing.T) {
 
 					mockDBPool.EXPECT().QueryRow(ctx,
 						"UPDATE notifications SET read = $3, updated_at = timezone('utc', now()) WHERE id = $1 AND recipient = $2 RETURNING *",
-						[]any{id.String(), recipient.String(), read},
+						id, recipient, read,
 					).Return(mockRow)
 
 					return &baseRepository{
@@ -776,7 +776,7 @@ func TestNotificationRepository_Update(t *testing.T) {
 
 					mockDBPool.EXPECT().QueryRow(ctx,
 						"UPDATE notifications SET read = $3, updated_at = timezone('utc', now()) WHERE id = $1 AND recipient = $2 RETURNING *",
-						[]any{id.String(), recipient.String(), read},
+						id, recipient, read,
 					).Return(mockRow)
 
 					return &baseRepository{
@@ -897,7 +897,7 @@ func TestNotificationRepository_Delete(t *testing.T) {
 
 					mockDBPool.EXPECT().Exec(ctx,
 						"DELETE FROM notifications WHERE id = $1 AND recipient = $2",
-						id.String(), recipient.String(),
+						id, recipient,
 					).Return(pgconn.CommandTag{}, nil)
 
 					return &baseRepository{
@@ -929,7 +929,7 @@ func TestNotificationRepository_Delete(t *testing.T) {
 
 					mockDBPool.EXPECT().Exec(ctx,
 						"DELETE FROM notifications WHERE id = $1 AND recipient = $2",
-						id.String(), recipient.String(),
+						id, recipient,
 					).Return(pgconn.CommandTag{}, pgx.ErrNoRows)
 
 					return &baseRepository{
@@ -962,7 +962,7 @@ func TestNotificationRepository_Delete(t *testing.T) {
 
 					mockDBPool.EXPECT().Exec(ctx,
 						"DELETE FROM notifications WHERE id = $1 AND recipient = $2",
-						id.String(), recipient.String(),
+						id, recipient,
 					).Return(pgconn.CommandTag{}, assert.AnError)
 
 					return &baseRepository{

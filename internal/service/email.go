@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"path"
 	"time"
 
@@ -24,22 +25,24 @@ const (
 
 // EmailSender defines the interface to send emails.
 //
-//go:generate mockgen -source=email.go -destination=../testutil/mock/email_sender_gen.go -package=mock
+//go:generate mockgen -source=email.go -destination=../testutil/mock/email_sender_gen.go -package=mock -mock_names EmailSender=EmailSender
 type EmailSender interface {
 	// SendEmail sends an email to the given address using a template.
 	SendEmail(ctx context.Context, subject, to string, template *email.Template) error
 }
 
 // EmailService defines the interface to send emails from templates.
+//
+//go:generate mockgen -source=email.go -destination=../testutil/mock/email_service_gen.go -package=mock -mock_names EmailService=EmailService
 type EmailService interface {
 	// SendEmail sends an email from a template to the list of active users.
 	// SendEmail(ctx context.Context, subject string, template *email.Template, data any, users []*model.User) error
 
 	// SendAuthPasswordResetEmail sends an email to the user with a link to
 	// reset the password.
-	SendAuthPasswordResetEmail(ctx context.Context, resetPath string, user *model.User) error
+	SendAuthPasswordResetEmail(ctx context.Context, user *model.User, token string) error
 	// SendOrganizationInvitationEmail sends an email to the invited user.
-	SendOrganizationInvitationEmail(ctx context.Context, invitationPath string, organization *model.Organization, user *model.User) error
+	SendOrganizationInvitationEmail(ctx context.Context, organization *model.Organization, user *model.User, token string) error
 	// SendSystemLicenseExpiryEmail sends an email to the license owner when the license is about to expire.
 	SendSystemLicenseExpiryEmail(ctx context.Context, licenseID, licenseEmail, licenseOrganization string, licenseExpiresAt time.Time) error
 	// SendUserWelcomeEmail sends an email to the user to welcome it to the
@@ -68,31 +71,35 @@ func (s *emailService) sendEmail(ctx context.Context, subject string, template s
 	return nil
 }
 
-func (s *emailService) SendAuthPasswordResetEmail(ctx context.Context, resetPath string, user *model.User) error {
+func (s *emailService) SendAuthPasswordResetEmail(ctx context.Context, user *model.User, token string) error {
 	ctx, span := s.tracer.Start(ctx, "service.emailService/SendAuthPasswordResetEmail")
 	defer span.End()
 
+	passwordResetURL := fmt.Sprintf("%s/reset-password?token=%s", s.smtpConf.ClientURL, token)
+
 	data := &email.PasswordResetTemplateData{
-		Subject:          "Reset your password",
+		Subject:          "[Action Required] Reset your password",
 		FirstName:        user.FirstName,
 		LastName:         user.LastName,
-		PasswordResetURL: fmt.Sprintf("https://%s", path.Join(s.smtpConf.Hostname, resetPath)),
+		PasswordResetURL: passwordResetURL,
 		SupportEmail:     s.smtpConf.SupportAddress,
 	}
 
 	return s.sendEmail(ctx, data.Subject, authPasswordResetTemplate, data, user)
 }
 
-func (s *emailService) SendOrganizationInvitationEmail(ctx context.Context, invitationPath string, organization *model.Organization, user *model.User) error {
+func (s *emailService) SendOrganizationInvitationEmail(ctx context.Context, organization *model.Organization, user *model.User, token string) error {
 	ctx, span := s.tracer.Start(ctx, "service.emailService/SendOrganizationInvitationEmail")
 	defer span.End()
 
+	invitationURL := fmt.Sprintf("%s/organizations/join?workspace=%s&token=%s", s.smtpConf.ClientURL, organization.ID.String(), token)
+
 	data := &email.OrganizationInviteTemplateData{
-		Subject:          fmt.Sprintf("You have been invited to join %s", organization.Name),
+		Subject:          fmt.Sprintf("[Action Required] You have been invited to join %s", organization.Name),
 		FirstName:        user.FirstName,
 		LastName:         user.LastName,
 		OrganizationName: organization.Name,
-		InvitationURL:    fmt.Sprintf("https://%s", path.Join(s.smtpConf.Hostname, invitationPath)),
+		InvitationURL:    fmt.Sprintf("%s/redirect?url=%s", s.smtpConf.ClientURL, url.QueryEscape(invitationURL)),
 		SupportEmail:     s.smtpConf.SupportAddress,
 	}
 
@@ -109,7 +116,7 @@ func (s *emailService) SendSystemLicenseExpiryEmail(ctx context.Context, license
 		LicenseEmail:        licenseEmail,
 		LicenseOrganization: licenseOrganization,
 		LicenseExpiresAt:    licenseExpiresAt.Format(time.RFC850),
-		ServerURL:           fmt.Sprintf("https://%s", s.smtpConf.Hostname),
+		ServerURL:           fmt.Sprintf("https://%s", s.smtpConf.ClientURL),
 		RenewEmail:          renewEmailAddress,
 		SupportEmail:        s.smtpConf.SupportAddress,
 	}
@@ -121,11 +128,13 @@ func (s *emailService) SendUserWelcomeEmail(ctx context.Context, user *model.Use
 	ctx, span := s.tracer.Start(ctx, "service.emailService/SendUserWelcomeEmail")
 	defer span.End()
 
+	loginURL := fmt.Sprintf("%s/auth/login", s.smtpConf.ClientURL)
+
 	data := &email.UserWelcomeTemplateData{
-		Subject:      fmt.Sprintf("Welcome to %s", s.smtpConf.Hostname),
+		Subject:      "Welcome to Elemo",
 		FirstName:    user.FirstName,
 		LastName:     user.LastName,
-		LoginURL:     fmt.Sprintf("https://%s/sign-in", s.smtpConf.Hostname),
+		LoginURL:     fmt.Sprintf("%s/redirect?url=%s", s.smtpConf.ClientURL, url.QueryEscape(loginURL)),
 		SupportEmail: s.smtpConf.SupportAddress,
 	}
 

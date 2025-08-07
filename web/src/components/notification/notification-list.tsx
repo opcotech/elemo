@@ -1,12 +1,19 @@
+import { useQuery } from "@tanstack/react-query";
 import { Bell } from "lucide-react";
 
 import { NotificationItem } from "@/components/notification";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useNotifications } from "@/hooks/use-notifications";
+import { v1NotificationsGetOptions } from "@/lib/api";
 
 export function NotificationList() {
-  const { data: notifications, isLoading, refetch } = useNotifications();
+  const {
+    data: notifications,
+    isLoading,
+    refetch,
+  } = useQuery({
+    ...v1NotificationsGetOptions(),
+  });
 
   if (isLoading) {
     return (

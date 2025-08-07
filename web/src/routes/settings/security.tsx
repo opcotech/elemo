@@ -1,4 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Eye, EyeOff, Lock } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -19,8 +20,9 @@ import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
 import { useAuth } from "@/hooks/use-auth";
 import { useBreadcrumbUtils } from "@/hooks/use-breadcrumbs";
-import { useUpdatePassword } from "@/hooks/use-update-password";
+import { v1UserUpdateMutation } from "@/lib/api";
 import { requireAuthBeforeLoad } from "@/lib/auth/require-auth";
+import { showErrorToast, showSuccessToast } from "@/lib/toast";
 
 export const Route = createFileRoute("/settings/security")({
   beforeLoad: requireAuthBeforeLoad,
@@ -54,7 +56,18 @@ function SecuritySettings() {
     resolver: zodResolver(passwordChangeSchema),
   });
 
-  const updatePasswordMutation = useUpdatePassword();
+  const updatePasswordMutation = useMutation({
+    ...v1UserUpdateMutation(),
+    onSuccess: () => {
+      showSuccessToast(
+        "Password updated successfully",
+        "Your password has been changed successfully"
+      );
+    },
+    onError: (error) => {
+      showErrorToast("Failed to update password", error.message);
+    },
+  });
 
   const onSubmit = (values: PasswordChangeFormData) => {
     updatePasswordMutation.mutate(

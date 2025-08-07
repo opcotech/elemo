@@ -36,6 +36,8 @@ const initialState: AuthState = {
   error: null,
 };
 
+const publicPaths = ["/login", "/forgot-password", "/reset-password"];
+
 function authReducer(state: AuthState, action: AuthAction): AuthState {
   switch (action.type) {
     case "SET_LOADING":
@@ -101,6 +103,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
           const isValid = await authClient.validateToken(accessToken);
           if (isValid) {
             dispatch({ type: "SET_USER", payload: storedUser });
+            if (publicPaths.includes(window.location.pathname)) {
+              navigate({ to: "/dashboard" });
+            }
             return;
           }
         }
@@ -134,8 +139,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
         clearAllAuthData();
         dispatch({ type: "CLEAR_AUTH" });
 
-        // Only redirect to login if we're not already on the login page
-        if (window.location.pathname !== "/login") {
+        // Only redirect to login if we're not on a public page
+        if (!publicPaths.includes(window.location.pathname)) {
           navigate({
             to: "/login",
             search: {

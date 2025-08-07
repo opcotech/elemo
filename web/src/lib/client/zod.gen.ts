@@ -434,6 +434,11 @@ export const zId = z.string();
 export const zResourceId = z.string();
 
 /**
+ * Email address of the user.
+ */
+export const zUserEmail = z.email();
+
+/**
  * Irreversibly delete the user.
  */
 export const zForce = z.boolean();
@@ -483,6 +488,14 @@ export const zUserCreate = z.object({
   phone: z.optional(z.union([z.string().min(7).max(16), z.null()])),
   links: z.optional(z.union([z.array(z.url().max(2000)), z.null()])),
   languages: z.optional(z.union([z.array(zLanguage), z.null()])),
+});
+
+/**
+ * Password reset request.
+ */
+export const zUserPasswordReset = z.object({
+  token: z.string(),
+  password: z.string().min(8).max(64),
 });
 
 export const zTodoCreate = z.object({
@@ -575,6 +588,22 @@ export const zV1UsersCreateData = z.object({
 export const zV1UsersCreateResponse = z.object({
   id: z.string(),
 });
+
+export const zV1UserRequestPasswordResetData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    email: z.email(),
+  }),
+});
+
+export const zV1UserResetPasswordData = z.object({
+  body: z.optional(zUserPasswordReset),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zV1UserResetPasswordResponse = z.union([z.unknown(), z.void()]);
 
 export const zV1UserDeleteData = z.object({
   body: z.optional(z.never()),

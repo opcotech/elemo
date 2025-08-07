@@ -22,7 +22,7 @@ type SMTPConfig struct {
 	Port              int           `mapstructure:"port"`
 	Username          string        `mapstructure:"username"`
 	Password          string        `mapstructure:"password"`
-	Hostname          string        `mapstructure:"hostname"`
+	ClientURL         string        `mapstructure:"client_url"`
 	ConnectionTimeout time.Duration `mapstructure:"connection_timeout"`
 	EnableAuth        bool          `mapstructure:"enable_auth"`
 	SkipTLSVerify     bool          `mapstructure:"skip_tls_verify"`

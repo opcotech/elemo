@@ -27,6 +27,7 @@ func TestResourceType_String(t *testing.T) {
 		{"Role", ResourceTypeRole, "Role"},
 		{"Todo", ResourceTypeTodo, "Todo"},
 		{"User", ResourceTypeUser, "User"},
+		{"UserToken", ResourceTypeUserToken, "UserToken"},
 	}
 	for _, tt := range tests {
 		tt := tt
@@ -59,6 +60,7 @@ func TestResourceType_MarshalText(t *testing.T) {
 		{"Role", ResourceTypeRole, []byte("Role"), nil},
 		{"Todo", ResourceTypeTodo, []byte("Todo"), nil},
 		{"User", ResourceTypeUser, []byte("User"), nil},
+		{"UserToken", ResourceTypeUserToken, []byte("UserToken"), nil},
 		{"type high", ResourceType(100), nil, ErrInvalidResourceType},
 		{"type low", ResourceType(0), nil, ErrInvalidResourceType},
 	}
@@ -98,6 +100,7 @@ func TestResourceType_UnmarshalText(t *testing.T) {
 		{"Role", []byte("Role"), ResourceTypeRole, nil},
 		{"Todo", []byte("Todo"), ResourceTypeTodo, nil},
 		{"User", []byte("User"), ResourceTypeUser, nil},
+		{"UserToken", []byte("UserToken"), ResourceTypeUserToken, nil},
 		{"invalid", []byte("invalid"), 0, ErrInvalidResourceType},
 	}
 	for _, tt := range tests {

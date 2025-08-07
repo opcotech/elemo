@@ -142,6 +142,19 @@ func WithUserService(userService service.UserService) ControllerOption {
 	}
 }
 
+// WithUserService sets the user service for the controller.
+func WithEmailService(emailService service.EmailService) ControllerOption {
+	return func(c *baseController) error {
+		if emailService == nil {
+			return ErrNoUserService
+		}
+
+		c.emailService = emailService
+
+		return nil
+	}
+}
+
 // WithTodoService sets the todo service for the controller.
 func WithTodoService(todoService service.TodoService) ControllerOption {
 	return func(c *baseController) error {
@@ -180,6 +193,7 @@ type baseController struct {
 	organizationService service.OrganizationService
 	roleService         service.RoleService
 	userService         service.UserService
+	emailService        service.EmailService
 	todoService         service.TodoService
 	systemService       service.SystemService
 	licenseService      service.LicenseService

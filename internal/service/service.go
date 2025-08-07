@@ -71,6 +71,18 @@ func WithUserRepository(userRepo repository.UserRepository) Option {
 	}
 }
 
+// WithUserTokenRepository sets the user token repository for the baseService.
+func WithUserTokenRepository(userTokenRepo repository.UserTokenRepository) Option {
+	return func(s *baseService) error {
+		if userTokenRepo == nil {
+			return ErrNoUserTokenRepository
+		}
+
+		s.userTokenRepo = userTokenRepo
+		return nil
+	}
+}
+
 // WithTodoRepository sets the todo repository for the baseService.
 func WithTodoRepository(todoRepo repository.TodoRepository) Option {
 	return func(s *baseService) error {
@@ -129,6 +141,7 @@ type baseService struct {
 	roleRepo         repository.RoleRepository
 	todoRepo         repository.TodoRepository
 	userRepo         repository.UserRepository
+	userTokenRepo    repository.UserTokenRepository
 
 	licenseService      LicenseService
 	permissionService   PermissionService

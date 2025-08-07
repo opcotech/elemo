@@ -8,10 +8,8 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"go.uber.org/zap"
 
 	"github.com/opcotech/elemo/internal/config"
-	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/log"
 	"github.com/opcotech/elemo/internal/pkg/tracing"
 	"github.com/opcotech/elemo/internal/pkg/validate"
@@ -208,15 +206,4 @@ func newRepository(opts ...RepositoryOption) (*baseRepository, error) {
 	}
 
 	return r, nil
-}
-
-type pgID struct {
-	model.ID
-}
-
-func (id *pgID) Scan(value any) error {
-	var err error
-	id.ID, err = model.NewIDFromString(value.(string), model.ResourceTypeNotification.String())
-	log.DefaultLogger().Info("Parsing ID", zap.String("id", value.(string)), zap.Error(err))
-	return err
 }

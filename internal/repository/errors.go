@@ -88,6 +88,9 @@ var (
 	ErrTodoDelete               = errors.New("failed to delete todo")                     // todo cannot be deleted
 	ErrTodoRead                 = errors.New("failed to read todo")                       // todo cannot be read
 	ErrTodoUpdate               = errors.New("failed to update todo")                     // todo cannot be updated
+	ErrTokenCreate              = errors.New("failed to create token")                    // token cannot be created
+	ErrTokenDelete              = errors.New("failed to delete token")                    // token cannot be deleted
+	ErrTokenRead                = errors.New("failed to read token")                      // token cannot be read
 	ErrUserCreate               = errors.New("failed to create user")                     // user cannot be created
 	ErrUserDelete               = errors.New("failed to delete user")                     // user cannot be deleted
 	ErrUserRead                 = errors.New("failed to read user")                       // user cannot be read
