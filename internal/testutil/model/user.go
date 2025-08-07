@@ -21,8 +21,8 @@ func NewUser() *model.User {
 		panic(err)
 	}
 
-	user.FirstName = pkg.GenerateRandomString(5)
-	user.LastName = pkg.GenerateRandomString(5)
+	user.FirstName = "Test"
+	user.LastName = "User"
 	user.Picture = imageURL
 	user.Title = "Senior Test User"
 	user.Bio = "I am a test user."
