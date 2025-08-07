@@ -241,7 +241,7 @@ func TestEmailService_SendAuthPasswordResetEmail(t *testing.T) {
 							Subject:          subject,
 							FirstName:        user.FirstName,
 							LastName:         user.LastName,
-							PasswordResetURL: fmt.Sprintf("%s/redirect?url=%s", smtpConf.ClientURL, url.QueryEscape(passwordResetURL)),
+							PasswordResetURL: passwordResetURL,
 							SupportEmail:     smtpConf.SupportAddress,
 						},
 					)
@@ -294,7 +294,7 @@ func TestEmailService_SendAuthPasswordResetEmail(t *testing.T) {
 							Subject:          subject,
 							FirstName:        user.FirstName,
 							LastName:         user.LastName,
-							PasswordResetURL: fmt.Sprintf("%s/redirect?url=%s", smtpConf.ClientURL, url.QueryEscape(passwordResetURL)),
+							PasswordResetURL: passwordResetURL,
 							SupportEmail:     smtpConf.SupportAddress,
 						},
 					)
