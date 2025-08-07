@@ -106,6 +106,8 @@ func TestNewUser(t *testing.T) {
 				Username:    "test",
 				Email:       "test@example.com",
 				Password:    "super-secret",
+				FirstName:   "Test"
+				LastName:    "User"
 				Status:      UserStatusActive,
 				Links:       make([]string, 0),
 				Languages:   make([]Language, 0),
