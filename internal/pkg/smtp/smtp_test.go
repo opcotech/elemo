@@ -41,13 +41,13 @@ func TestNewDatabase(t *testing.T) {
 		{
 			name: "create new client",
 			args: args{
-				client: new(mock.NetSMTPClient),
+				client: new(mock.NetSMTPClientOld),
 				config: new(config.SMTPConfig),
 				logger: new(mock.Logger),
 				tracer: new(mock.Tracer),
 			},
 			want: &Client{
-				client: new(mock.NetSMTPClient),
+				client: new(mock.NetSMTPClientOld),
 				config: new(config.SMTPConfig),
 				logger: new(mock.Logger),
 				tracer: new(mock.Tracer),
@@ -66,7 +66,7 @@ func TestNewDatabase(t *testing.T) {
 		{
 			name: "create new client with nil config",
 			args: args{
-				client: new(mock.NetSMTPClient),
+				client: new(mock.NetSMTPClientOld),
 				config: nil,
 				logger: new(mock.Logger),
 				tracer: new(mock.Tracer),
@@ -76,7 +76,7 @@ func TestNewDatabase(t *testing.T) {
 		{
 			name: "create new client with nil logger",
 			args: args{
-				client: new(mock.NetSMTPClient),
+				client: new(mock.NetSMTPClientOld),
 				config: new(config.SMTPConfig),
 				logger: nil,
 				tracer: new(mock.Tracer),
@@ -86,7 +86,7 @@ func TestNewDatabase(t *testing.T) {
 		{
 			name: "create new client with nil tracer",
 			args: args{
-				client: new(mock.NetSMTPClient),
+				client: new(mock.NetSMTPClientOld),
 				config: new(config.SMTPConfig),
 				logger: new(mock.Logger),
 				tracer: nil,
@@ -160,9 +160,9 @@ func TestWithWrappedClient(t *testing.T) {
 		{
 			name: "create new option with client",
 			args: args{
-				client: new(mock.NetSMTPClient),
+				client: new(mock.NetSMTPClientOld),
 			},
-			want: new(mock.NetSMTPClient),
+			want: new(mock.NetSMTPClientOld),
 		},
 		{
 			name: "create new option with nil client",
@@ -278,7 +278,7 @@ func TestClient_Authenticate(t *testing.T) {
 			name: "authenticate with success",
 			fields: fields{
 				client: func(auth smtp.Auth) WrappedClient {
-					client := new(mock.NetSMTPClient)
+					client := new(mock.NetSMTPClientOld)
 					client.On("Auth", auth).Return(nil)
 					return client
 				},
@@ -306,7 +306,7 @@ func TestClient_Authenticate(t *testing.T) {
 			name: "authenticate with error",
 			fields: fields{
 				client: func(auth smtp.Auth) WrappedClient {
-					client := new(mock.NetSMTPClient)
+					client := new(mock.NetSMTPClientOld)
 					client.On("Auth", auth).Return(assert.AnError)
 					return client
 				},
@@ -376,11 +376,11 @@ func TestClient_SendEmail(t *testing.T) {
 						FromAddress: "no-reply@example.com",
 					}
 
-					buf := new(mock.Buffer)
+					buf := new(mock.BufferOld)
 					buf.On("Write", mock.Anything).Return(10, nil)
 					buf.On("Close").Return(nil)
 
-					client := new(mock.NetSMTPClient)
+					client := new(mock.NetSMTPClientOld)
 					client.On("Mail", smtpConf.FromAddress).Return(nil)
 					client.On("Rcpt", to).Return(nil)
 					client.On("Data").Return(buf, nil)
@@ -417,7 +417,7 @@ func TestClient_SendEmail(t *testing.T) {
 						FromAddress: "no-reply@example.com",
 					}
 
-					client := new(mock.NetSMTPClient)
+					client := new(mock.NetSMTPClientOld)
 					client.On("Mail", smtpConf.FromAddress).Return(assert.AnError)
 
 					span := new(mock.Span)
@@ -453,7 +453,7 @@ func TestClient_SendEmail(t *testing.T) {
 						FromAddress: "no-reply@example.com",
 					}
 
-					client := new(mock.NetSMTPClient)
+					client := new(mock.NetSMTPClientOld)
 					client.On("Mail", smtpConf.FromAddress).Return(nil)
 					client.On("Rcpt", to).Return(assert.AnError)
 
@@ -490,10 +490,10 @@ func TestClient_SendEmail(t *testing.T) {
 						FromAddress: "no-reply@example.com",
 					}
 
-					client := new(mock.NetSMTPClient)
+					client := new(mock.NetSMTPClientOld)
 					client.On("Mail", smtpConf.FromAddress).Return(nil)
 					client.On("Rcpt", to).Return(nil)
-					client.On("Data").Return(new(mock.Buffer), assert.AnError)
+					client.On("Data").Return(new(mock.BufferOld), assert.AnError)
 
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
@@ -528,10 +528,10 @@ func TestClient_SendEmail(t *testing.T) {
 						FromAddress: "no-reply@example.com",
 					}
 
-					buf := new(mock.Buffer)
+					buf := new(mock.BufferOld)
 					buf.On("Write", mock.Anything).Return(0, assert.AnError)
 
-					client := new(mock.NetSMTPClient)
+					client := new(mock.NetSMTPClientOld)
 					client.On("Mail", smtpConf.FromAddress).Return(nil)
 					client.On("Rcpt", to).Return(nil)
 					client.On("Data").Return(buf, nil)
@@ -569,11 +569,11 @@ func TestClient_SendEmail(t *testing.T) {
 						FromAddress: "no-reply@example.com",
 					}
 
-					buf := new(mock.Buffer)
+					buf := new(mock.BufferOld)
 					buf.On("Write", mock.Anything).Return(10, nil)
 					buf.On("Close").Return(assert.AnError)
 
-					client := new(mock.NetSMTPClient)
+					client := new(mock.NetSMTPClientOld)
 					client.On("Mail", smtpConf.FromAddress).Return(nil)
 					client.On("Rcpt", to).Return(nil)
 					client.On("Data").Return(buf, nil)
@@ -611,11 +611,11 @@ func TestClient_SendEmail(t *testing.T) {
 						FromAddress: "no-reply@example.com",
 					}
 
-					buf := new(mock.Buffer)
+					buf := new(mock.BufferOld)
 					buf.On("Write", mock.Anything).Return(10, nil)
 					buf.On("Close").Return(nil)
 
-					client := new(mock.NetSMTPClient)
+					client := new(mock.NetSMTPClientOld)
 					client.On("Mail", smtpConf.FromAddress).Return(nil)
 					client.On("Rcpt", to).Return(nil)
 					client.On("Data").Return(buf, nil)
@@ -653,11 +653,11 @@ func TestClient_SendEmail(t *testing.T) {
 						FromAddress: "no-reply@example.com",
 					}
 
-					buf := new(mock.Buffer)
+					buf := new(mock.BufferOld)
 					buf.On("Write", mock.Anything).Return(10, nil)
 					buf.On("Close").Return(nil)
 
-					client := new(mock.NetSMTPClient)
+					client := new(mock.NetSMTPClientOld)
 					client.On("Mail", smtpConf.FromAddress).Return(nil)
 					client.On("Rcpt", to).Return(nil)
 					client.On("Data").Return(buf, nil)

@@ -25,80 +25,80 @@ func (a *SMTPAuth) Next(fromServer []byte, more bool) (toServer []byte, err erro
 	return args.Get(0).([]byte), args.Error(1)
 }
 
-type NetSMTPClient struct {
+type NetSMTPClientOld struct {
 	mock.Mock
 }
 
-func (n *NetSMTPClient) Close() error {
+func (n *NetSMTPClientOld) Close() error {
 	args := n.Called()
 	return args.Error(0)
 }
 
-func (n *NetSMTPClient) Hello(localName string) error {
+func (n *NetSMTPClientOld) Hello(localName string) error {
 	args := n.Called(localName)
 	return args.Error(0)
 }
 
-func (n *NetSMTPClient) StartTLS(config *tls.Config) error {
+func (n *NetSMTPClientOld) StartTLS(config *tls.Config) error {
 	args := n.Called(config)
 	return args.Error(0)
 }
 
-func (n *NetSMTPClient) TLSConnectionState() (state tls.ConnectionState, ok bool) {
+func (n *NetSMTPClientOld) TLSConnectionState() (state tls.ConnectionState, ok bool) {
 	args := n.Called()
 	return args.Get(0).(tls.ConnectionState), args.Bool(1)
 }
 
-func (n *NetSMTPClient) Verify(addr string) error {
+func (n *NetSMTPClientOld) Verify(addr string) error {
 	args := n.Called(addr)
 	return args.Error(0)
 }
 
-func (n *NetSMTPClient) Auth(a smtp.Auth) error {
+func (n *NetSMTPClientOld) Auth(a smtp.Auth) error {
 	args := n.Called(a)
 	return args.Error(0)
 }
 
-func (n *NetSMTPClient) Mail(from string) error {
+func (n *NetSMTPClientOld) Mail(from string) error {
 	args := n.Called(from)
 	return args.Error(0)
 }
 
-func (n *NetSMTPClient) Rcpt(to string) error {
+func (n *NetSMTPClientOld) Rcpt(to string) error {
 	args := n.Called(to)
 	return args.Error(0)
 }
 
-func (n *NetSMTPClient) Data() (io.WriteCloser, error) {
+func (n *NetSMTPClientOld) Data() (io.WriteCloser, error) {
 	args := n.Called()
 	return args.Get(0).(io.WriteCloser), args.Error(1)
 }
 
-func (n *NetSMTPClient) Extension(ext string) (bool, string) {
+func (n *NetSMTPClientOld) Extension(ext string) (bool, string) {
 	args := n.Called(ext)
 	return args.Bool(0), args.String(1)
 }
 
-func (n *NetSMTPClient) Reset() error {
+func (n *NetSMTPClientOld) Reset() error {
 	args := n.Called()
 	return args.Error(0)
 }
 
-func (n *NetSMTPClient) Noop() error {
+func (n *NetSMTPClientOld) Noop() error {
 	args := n.Called()
 	return args.Error(0)
 }
 
-func (n *NetSMTPClient) Quit() error {
+func (n *NetSMTPClientOld) Quit() error {
 	args := n.Called()
 	return args.Error(0)
 }
 
-type SMTPClient struct {
+type SMTPClientOld struct {
 	mock.Mock
 }
 
-func (s *SMTPClient) SendEmail(ctx context.Context, subject, to string, template *email.Template) error {
+func (s *SMTPClientOld) SendEmail(ctx context.Context, subject, to string, template *email.Template) error {
 	args := s.Called(ctx, subject, to, template)
 	return args.Error(0)
 }
