@@ -17,6 +17,7 @@ const (
 	ResourceTypeRole                                  // role resource type
 	ResourceTypeTodo                                  // todo resource type
 	ResourceTypeUser                                  // user resource type
+	ResourceTypeUserToken                             // user token resource type
 )
 
 var (
@@ -37,6 +38,7 @@ var (
 		"Role":          ResourceTypeRole,
 		"Todo":          ResourceTypeTodo,
 		"User":          ResourceTypeUser,
+		"UserToken":     ResourceTypeUserToken,
 	}
 	resourceTypeValues = map[ResourceType]string{
 		ResourceTypeResourceType:  "ResourceType",
@@ -55,6 +57,7 @@ var (
 		ResourceTypeRole:          "Role",
 		ResourceTypeTodo:          "Todo",
 		ResourceTypeUser:          "User",
+		ResourceTypeUserToken:     "UserToken",
 	}
 )
 
@@ -70,7 +73,7 @@ func (t ResourceType) String() string {
 
 // MarshalText implements the encoding.TextMarshaler interface.
 func (t ResourceType) MarshalText() (text []byte, err error) {
-	if t < 1 || t > 16 {
+	if t < 1 || t > 17 {
 		return nil, ErrInvalidResourceType
 	}
 	return []byte(t.String()), nil

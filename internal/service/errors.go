@@ -4,8 +4,10 @@ import "errors"
 
 var (
 	ErrEmailSend                       = errors.New("failed to send email")                           // failed to send email
+	ErrExpiredToken                    = errors.New("expired token")                                  // expired token
 	ErrInvalidEmail                    = errors.New("invalid email address")                          // invalid email address
 	ErrInvalidPaginationParams         = errors.New("invalid pagination parameters")                  // invalid pagination parameters
+	ErrInvalidToken                    = errors.New("invalid token")                                  // invalid token
 	ErrLicenseGet                      = errors.New("failed to get license")                          // failed to get license
 	ErrLicensePing                     = errors.New("failed to ping license")                         // failed to ping license
 	ErrNoLicenseService                = errors.New("no license service provided")                    // no license service provided
@@ -26,6 +28,7 @@ var (
 	ErrNoTodoRepository                = errors.New("no todo repository provided")                    // no todo repository provided
 	ErrNoUser                          = errors.New("no user provided")                               // no user provided
 	ErrNoUserRepository                = errors.New("no user repository provided")                    // no user repository provided
+	ErrNoUserTokenRepository           = errors.New("no user token repository provided")              // no user token repository provided
 	ErrNoVersionInfo                   = errors.New("no version info provided")                       // no version info provided
 	ErrOrganizationCreate              = errors.New("failed to create organization")                  // failed to create organization
 	ErrOrganizationDelete              = errors.New("failed to delete organization")                  // failed to delete organization
@@ -62,8 +65,11 @@ var (
 	ErrTodoGetAll                      = errors.New("failed to get todos")                            // failed to get todos
 	ErrTodoUpdate                      = errors.New("failed to update todo")                          // failed to update todo
 	ErrUserCreate                      = errors.New("failed to create user")                          // failed to create user
+	ErrUserCreateUserToken             = errors.New("failed to create user token")                    // failed to create user token
 	ErrUserDelete                      = errors.New("failed to delete user")                          // failed to delete user
+	ErrUserDeleteUserToken             = errors.New("failed to delete user token")                    // failed to delete user token
 	ErrUserGet                         = errors.New("failed to get user")                             // failed to get user
 	ErrUserGetAll                      = errors.New("failed to get users")                            // failed to get users
 	ErrUserUpdate                      = errors.New("failed to update user")                          // failed to update user
+	ErrUserVerifyToken                 = errors.New("failed to verify user token")                    // failed to verify user token
 )

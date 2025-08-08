@@ -8,6 +8,12 @@ import type {
   V1UsersCreateData,
   V1UsersCreateResponses,
   V1UsersCreateErrors,
+  V1UserRequestPasswordResetData,
+  V1UserRequestPasswordResetResponses,
+  V1UserRequestPasswordResetErrors,
+  V1UserResetPasswordData,
+  V1UserResetPasswordResponses,
+  V1UserResetPasswordErrors,
   V1UserDeleteData,
   V1UserDeleteResponses,
   V1UserDeleteErrors,
@@ -187,6 +193,46 @@ export const v1UsersCreate = <ThrowOnError extends boolean = false>(
       },
     ],
     url: "/v1/users",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options?.headers,
+    },
+  });
+};
+
+/**
+ * Initiate password reset
+ * Initiate password reset flow.
+ */
+export const v1UserRequestPasswordReset = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<V1UserRequestPasswordResetData, ThrowOnError>
+) => {
+  return (options.client ?? _heyApiClient).get<
+    V1UserRequestPasswordResetResponses,
+    V1UserRequestPasswordResetErrors,
+    ThrowOnError
+  >({
+    url: "/v1/users/reset",
+    ...options,
+  });
+};
+
+/**
+ * Reset user password
+ * Reset the user password.
+ */
+export const v1UserResetPassword = <ThrowOnError extends boolean = false>(
+  options?: Options<V1UserResetPasswordData, ThrowOnError>
+) => {
+  return (options?.client ?? _heyApiClient).post<
+    V1UserResetPasswordResponses,
+    V1UserResetPasswordErrors,
+    ThrowOnError
+  >({
+    url: "/v1/users/reset",
     ...options,
     headers: {
       "Content-Type": "application/json",

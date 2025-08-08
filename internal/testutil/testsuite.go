@@ -137,7 +137,8 @@ func (s *Neo4jContainerIntegrationTestSuite) CleanupNeo4j(ts *ContainerIntegrati
 type PgContainerIntegrationTestSuite struct {
 	PostgresDB *pg.Database
 
-	NotificationRepo *pg.NotificationRepository
+	NotificationRepo    *pg.NotificationRepository
+	UserTokenRepository *pg.UserTokenRepository
 }
 
 func (s *PgContainerIntegrationTestSuite) BootstrapPgDatabase(ts *ContainerIntegrationTestSuite) {
@@ -153,6 +154,9 @@ func (s *PgContainerIntegrationTestSuite) SetupPg(ts *ContainerIntegrationTestSu
 	s.PostgresDB, _ = testRepo.NewPgDatabase(ts.T(), pgDBConf)
 
 	s.NotificationRepo, err = pg.NewNotificationRepository(pg.WithDatabase(s.PostgresDB))
+	ts.Require().NoError(err)
+
+	s.UserTokenRepository, err = pg.NewUserTokenRepository(pg.WithDatabase(s.PostgresDB))
 	ts.Require().NoError(err)
 
 	s.BootstrapPgDatabase(ts)

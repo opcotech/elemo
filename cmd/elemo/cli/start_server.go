@@ -52,6 +52,11 @@ var startServerCmd = &cobra.Command{
 			logger.Fatal("failed to initialize relational database", zap.Error(err))
 		}
 
+		smtpClient, err := initSMTPClient(&cfg.SMTP)
+		if err != nil {
+			logger.Fatal("failed to initialize SMTP client", zap.Error(err))
+		}
+
 		messageQueue, err := queue.NewClient(
 			queue.WithClientConfig(&cfg.Worker),
 			queue.WithClientLogger(logger.Named("message_queue")),
@@ -162,6 +167,20 @@ var startServerCmd = &cobra.Command{
 			if err != nil {
 				logger.Fatal("failed to initialize cached user repository", zap.Error(err))
 			}
+		}
+
+		var userTokenRepo repository.UserTokenRepository
+		{
+			repo, err := pg.NewUserTokenRepository(
+				pg.WithDatabase(relDB),
+				pg.WithRepositoryLogger(logger.Named("user_token_repository")),
+				pg.WithRepositoryTracer(tracer),
+			)
+			if err != nil {
+				logger.Fatal("failed to initialize user token repository", zap.Error(err))
+			}
+
+			userTokenRepo = repo
 		}
 
 		var todoRepo repository.TodoRepository
@@ -279,6 +298,7 @@ var startServerCmd = &cobra.Command{
 
 		userService, err := service.NewUserService(
 			service.WithUserRepository(userRepo),
+			service.WithUserTokenRepository(userTokenRepo),
 			service.WithPermissionService(permissionService),
 			service.WithLicenseService(licenseService),
 			service.WithLogger(logger.Named("user_service")),
@@ -299,6 +319,17 @@ var startServerCmd = &cobra.Command{
 			logger.Fatal("failed to initialize todo service", zap.Error(err))
 		}
 
+		emailService, err := service.NewEmailService(
+			smtpClient,
+			cfg.Template.Directory,
+			&cfg.SMTP,
+			service.WithLogger(logger.Named("email_service")),
+			service.WithTracer(tracer),
+		)
+		if err != nil {
+			logger.Fatal("failed to initialize email service", zap.Error(err))
+		}
+
 		authProvider, err := initAuthProvider(relDBPool)
 		if err != nil {
 			logger.Fatal("failed to initialize auth server", zap.Error(err))
@@ -311,6 +342,7 @@ var startServerCmd = &cobra.Command{
 			elemoHttp.WithRoleService(roleService),
 			elemoHttp.WithUserService(userService),
 			elemoHttp.WithTodoService(todoService),
+			elemoHttp.WithEmailService(emailService),
 			elemoHttp.WithSystemService(systemService),
 			elemoHttp.WithLicenseService(licenseService),
 			elemoHttp.WithPermissionService(permissionService),

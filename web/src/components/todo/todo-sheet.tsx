@@ -1,5 +1,6 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import { CircleCheckBig, Plus } from "lucide-react";
 import { useMemo } from "react";
 
@@ -19,12 +20,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAddTodoForm } from "@/contexts/add-todo-form-context";
 import { useEditTodoForm } from "@/contexts/edit-todo-form-context";
 import { useTodoSheet } from "@/contexts/todo-sheet-context";
-import { useTodos } from "@/hooks/use-todos";
+import { v1TodosGetOptions } from "@/lib/api";
 import type { TodoPriority } from "@/lib/api";
 
 export function TodoSheetTrigger() {
   const { open } = useTodoSheet();
-  const { data: todos } = useTodos();
+  const { data: todos } = useQuery({
+    ...v1TodosGetOptions(),
+  });
   const uncompletedCount = todos?.filter((t) => !t.completed).length || 0;
 
   return (
@@ -47,7 +50,13 @@ export function TodoSheetTrigger() {
 }
 
 export function TodoSheet() {
-  const { data: todos, isLoading, refetch } = useTodos();
+  const {
+    data: todos,
+    isLoading,
+    refetch,
+  } = useQuery({
+    ...v1TodosGetOptions(),
+  });
   const { isOpen, close } = useTodoSheet();
   const {
     isOpen: isAddFormOpen,

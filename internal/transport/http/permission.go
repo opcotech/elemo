@@ -7,7 +7,6 @@ import (
 
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg"
-	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/service"
 	"github.com/opcotech/elemo/internal/transport/http/api"
 )
@@ -34,7 +33,7 @@ func (c *permissionController) V1PermissionsCreate(ctx context.Context, request 
 
 	permission, err := createPermissionJSONRequestBodyToPermission(request.Body)
 	if err != nil {
-		return api.V1PermissionsCreate400JSONResponse{N400JSONResponse: badRequest}, nil
+		return api.V1PermissionsCreate400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
 	if err := c.permissionService.CtxUserCreate(ctx, permission); err != nil {
@@ -59,12 +58,12 @@ func (c *permissionController) V1PermissionGet(ctx context.Context, request api.
 
 	permissionID, err := model.NewIDFromString(request.Id, model.ResourceTypePermission.String())
 	if err != nil {
-		return api.V1PermissionGet400JSONResponse{N400JSONResponse: badRequest}, nil
+		return api.V1PermissionGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
 	permission, err := c.permissionService.Get(ctx, permissionID)
 	if err != nil {
-		if errors.Is(err, repository.ErrNotFound) {
+		if isNotFoundError(err) {
 			return api.V1PermissionGet404JSONResponse{N404JSONResponse: notFound}, nil
 		}
 		return api.V1PermissionGet500JSONResponse{N500JSONResponse: api.N500JSONResponse{
@@ -81,12 +80,12 @@ func (c *permissionController) V1PermissionUpdate(ctx context.Context, request a
 
 	permissionID, err := model.NewIDFromString(request.Id, model.ResourceTypePermission.String())
 	if err != nil {
-		return api.V1PermissionUpdate400JSONResponse{N400JSONResponse: badRequest}, nil
+		return api.V1PermissionUpdate400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
 	var kind model.PermissionKind
 	if err := kind.UnmarshalText([]byte(request.Body.Kind)); err != nil {
-		return api.V1PermissionUpdate400JSONResponse{N400JSONResponse: badRequest}, nil
+		return api.V1PermissionUpdate400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
 	permission, err := c.permissionService.CtxUserUpdate(ctx, permissionID, kind)
@@ -94,7 +93,7 @@ func (c *permissionController) V1PermissionUpdate(ctx context.Context, request a
 		if errors.Is(err, service.ErrNoPermission) {
 			return api.V1PermissionUpdate403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		}
-		if errors.Is(err, repository.ErrNotFound) {
+		if isNotFoundError(err) {
 			return api.V1PermissionUpdate404JSONResponse{N404JSONResponse: notFound}, nil
 		}
 		return api.V1PermissionUpdate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
@@ -111,14 +110,14 @@ func (c *permissionController) V1PermissionDelete(ctx context.Context, request a
 
 	permissionID, err := model.NewIDFromString(request.Id, model.ResourceTypePermission.String())
 	if err != nil {
-		return api.V1PermissionDelete400JSONResponse{N400JSONResponse: badRequest}, nil
+		return api.V1PermissionDelete400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
 	if err := c.permissionService.CtxUserDelete(ctx, permissionID); err != nil {
 		if errors.Is(err, service.ErrNoPermission) {
 			return api.V1PermissionDelete403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		}
-		if errors.Is(err, repository.ErrNotFound) {
+		if isNotFoundError(err) {
 			return api.V1PermissionDelete404JSONResponse{N404JSONResponse: notFound}, nil
 		}
 		return api.V1PermissionDelete500JSONResponse{N500JSONResponse: api.N500JSONResponse{
@@ -135,13 +134,13 @@ func (c *permissionController) V1PermissionResourceGet(ctx context.Context, requ
 
 	userID, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID)
 	if !ok {
-		return api.V1PermissionResourceGet400JSONResponse{N400JSONResponse: badRequest}, nil
+		return api.V1PermissionResourceGet400JSONResponse{N400JSONResponse: formatBadRequest(model.ErrInvalidID)}, nil
 	}
 
 	parts := strings.Split(request.ResourceId, ":")
 	id, err := model.NewIDFromString(parts[1], parts[0])
 	if err != nil {
-		return api.V1PermissionResourceGet400JSONResponse{N400JSONResponse: badRequest}, nil
+		return api.V1PermissionResourceGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
 	permissions, err := c.permissionService.GetBySubjectAndTarget(ctx, userID, id)
@@ -149,7 +148,7 @@ func (c *permissionController) V1PermissionResourceGet(ctx context.Context, requ
 		if errors.Is(err, service.ErrNoPermission) {
 			return api.V1PermissionResourceGet403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		}
-		if errors.Is(err, repository.ErrNotFound) {
+		if isNotFoundError(err) {
 			return api.V1PermissionResourceGet404JSONResponse{N404JSONResponse: notFound}, nil
 		}
 		return api.V1PermissionResourceGet500JSONResponse{
@@ -174,7 +173,7 @@ func (c *permissionController) V1PermissionHasRelations(ctx context.Context, req
 	parts := strings.Split(request.ResourceId, ":")
 	id, err := model.NewIDFromString(parts[1], parts[0])
 	if err != nil {
-		return api.V1PermissionHasRelations400JSONResponse{N400JSONResponse: badRequest}, nil
+		return api.V1PermissionHasRelations400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
 	return api.V1PermissionHasRelations200JSONResponse(c.permissionService.CtxUserHasAnyRelation(ctx, id)), nil
@@ -188,7 +187,7 @@ func (c *permissionController) V1PermissionHasSystemRole(ctx context.Context, re
 	for i, roleName := range request.Params.Roles {
 		var role model.SystemRole
 		if err := role.UnmarshalText([]byte(roleName)); err != nil {
-			return api.V1PermissionHasSystemRole400JSONResponse{N400JSONResponse: badRequest}, nil
+			return api.V1PermissionHasSystemRole400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 		}
 		roles[i] = role
 	}

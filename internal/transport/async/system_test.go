@@ -11,6 +11,7 @@ import (
 	"github.com/rs/xid"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/mock/gomock"
 
 	"github.com/opcotech/elemo/internal/license"
 	"github.com/opcotech/elemo/internal/pkg/log"
@@ -162,7 +163,7 @@ func TestNewSystemLicenseExpiryTaskHandler(t *testing.T) {
 			name: "create new task handler",
 			args: args{
 				opts: []TaskHandlerOption{
-					WithTaskEmailService(new(mock.EmailService)),
+					WithTaskEmailService(mock.NewEmailService(gomock.NewController(t))),
 					WithTaskLogger(new(mock.Logger)),
 					WithTaskTracer(new(mock.Tracer)),
 				},
@@ -171,7 +172,7 @@ func TestNewSystemLicenseExpiryTaskHandler(t *testing.T) {
 				baseTaskHandler: &baseTaskHandler{
 					logger:       new(mock.Logger),
 					tracer:       new(mock.Tracer),
-					emailService: new(mock.EmailService),
+					emailService: mock.NewEmailService(gomock.NewController(t)),
 				},
 			},
 		},
@@ -234,8 +235,9 @@ func TestSystemLicenseExpiryTaskHandler_ProcessTask(t *testing.T) {
 					var payload queue.LicenseExpiryTaskPayload
 					_ = json.Unmarshal(task.Payload(), &payload)
 
-					emailService := new(mock.EmailService)
-					emailService.On("SendSystemLicenseExpiryEmail", ctx,
+					ctrl := gomock.NewController(t)
+					emailService := mock.NewEmailService(ctrl)
+					emailService.EXPECT().SendSystemLicenseExpiryEmail(ctx,
 						payload.LicenseID,
 						payload.LicenseEmail,
 						payload.LicenseOrganization,
@@ -278,7 +280,7 @@ func TestSystemLicenseExpiryTaskHandler_ProcessTask(t *testing.T) {
 					return &baseTaskHandler{
 						logger:       new(mock.Logger),
 						tracer:       tracer,
-						emailService: new(mock.EmailService),
+						emailService: mock.NewEmailService(gomock.NewController(t)),
 					}
 				},
 			},

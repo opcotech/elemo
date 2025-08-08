@@ -16,7 +16,7 @@ import (
 // WrappedClient is the interface that wraps the SMTP client methods used by
 // the Client.
 //
-//go:generate mockgen -source=smtp.go -destination=../../testutil/mock/smtp_gen.go -package=mock
+//go:generate mockgen -source=smtp.go -destination=../../testutil/mock/smtp_gen.go -package=mock -mock_names WrappedClient=WrappedClient
 type WrappedClient interface {
 	DialAndSend(messages ...*gomail.Message) error
 }

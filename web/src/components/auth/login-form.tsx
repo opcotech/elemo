@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import { Eye, EyeOff, Lock, Mail } from "lucide-react";
 import { useState } from "react";
 
@@ -14,7 +15,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useLogin } from "@/hooks/use-login";
+import { useLogin } from "@/hooks/use-auth";
 
 interface LoginFormProps {
   redirectTo?: string;
@@ -115,23 +116,34 @@ export function LoginForm({ redirectTo }: LoginFormProps) {
                   )}
                 </Button>
               </div>
+              <div className="flex justify-end">
+                <Link
+                  to="/forgot-password"
+                  search={{ redirect: redirectTo }}
+                  className="text-muted-foreground hover:text-primary text-sm hover:underline"
+                >
+                  Forgot password?
+                </Link>
+              </div>
             </div>
 
-            <Button
-              type="submit"
-              className="flex w-full items-center"
-              disabled={isLoading || !email || !password}
-              aria-label="Sign in"
-            >
-              {isLoading ? (
-                <>
-                  <Spinner size="xs" className="mr-0.5 text-white" />
-                  <span>Signing in...</span>
-                </>
-              ) : (
-                "Sign in"
-              )}
-            </Button>
+            <div className="pt-4">
+              <Button
+                type="submit"
+                className="flex w-full items-center"
+                disabled={isLoading || !email || !password}
+                aria-label="Sign in"
+              >
+                {isLoading ? (
+                  <>
+                    <Spinner size="xs" className="mr-0.5 text-white" />
+                    <span>Signing in...</span>
+                  </>
+                ) : (
+                  "Sign in"
+                )}
+              </Button>
+            </div>
           </form>
         </CardContent>
       </Card>

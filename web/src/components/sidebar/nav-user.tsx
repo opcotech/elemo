@@ -23,7 +23,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useLogout } from "@/hooks/use-logout";
+import { useLogout } from "@/hooks/use-auth";
 import type { User } from "@/lib/auth/types";
 
 export function NavUser({ user }: { user: User }) {

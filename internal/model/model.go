@@ -1,7 +1,9 @@
 package model
 
 import (
+	"database/sql/driver"
 	"errors"
+	"strings"
 
 	"github.com/rs/xid"
 )
@@ -14,10 +16,25 @@ type ID struct {
 }
 
 func (id ID) Validate() error {
-	if id.Type < 1 || id.Type > 16 {
+	if id.Type < 1 || id.Type > 17 {
 		return ErrInvalidID
 	}
 	return nil
+}
+
+func (id ID) Value() (driver.Value, error) {
+	return id.Type.String() + ":" + id.Inner.String(), nil
+}
+
+func (id *ID) Scan(value any) error {
+	parts := strings.Split(value.(string), ":")
+	if len(parts) != 2 {
+		return ErrInvalidID
+	}
+
+	var err error
+	*id, err = NewIDFromString(parts[1], parts[0])
+	return err
 }
 
 // String returns the string representation of the ID. The type is not part of

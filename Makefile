@@ -68,6 +68,9 @@ generate: generate.email generate.server generate.client ## Generate resources
 
 .PHONY: generate.server
 generate.server: ## Generate API server
+	$(call log, generating backend files)
+	@go generate ./...
+
 	$(call log, generating backend API server)
 	@oapi-codegen -config $(API_DIR)/generator.config.yml -o $(API_SERVER_DIR)/server.go $(API_DIR)/openapi.yaml
 

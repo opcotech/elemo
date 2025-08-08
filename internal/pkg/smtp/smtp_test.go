@@ -41,13 +41,13 @@ func TestNewDatabase(t *testing.T) {
 		{
 			name: "create new client",
 			args: args{
-				client: new(mock.MockWrappedClient),
+				client: new(mock.WrappedClient),
 				config: new(config.SMTPConfig),
 				logger: new(mock.Logger),
 				tracer: new(mock.Tracer),
 			},
 			want: &Client{
-				client: new(mock.MockWrappedClient),
+				client: new(mock.WrappedClient),
 				config: new(config.SMTPConfig),
 				logger: new(mock.Logger),
 				tracer: new(mock.Tracer),
@@ -66,7 +66,7 @@ func TestNewDatabase(t *testing.T) {
 		{
 			name: "create new client with nil config",
 			args: args{
-				client: new(mock.MockWrappedClient),
+				client: new(mock.WrappedClient),
 				config: nil,
 				logger: new(mock.Logger),
 				tracer: new(mock.Tracer),
@@ -76,7 +76,7 @@ func TestNewDatabase(t *testing.T) {
 		{
 			name: "create new client with nil logger",
 			args: args{
-				client: new(mock.MockWrappedClient),
+				client: new(mock.WrappedClient),
 				config: new(config.SMTPConfig),
 				logger: nil,
 				tracer: new(mock.Tracer),
@@ -86,7 +86,7 @@ func TestNewDatabase(t *testing.T) {
 		{
 			name: "create new client with nil tracer",
 			args: args{
-				client: new(mock.MockWrappedClient),
+				client: new(mock.WrappedClient),
 				config: new(config.SMTPConfig),
 				logger: new(mock.Logger),
 				tracer: nil,
@@ -160,9 +160,9 @@ func TestWithWrappedClient(t *testing.T) {
 		{
 			name: "create new option with client",
 			args: args{
-				client: new(mock.MockWrappedClient),
+				client: new(mock.WrappedClient),
 			},
-			want: new(mock.MockWrappedClient),
+			want: new(mock.WrappedClient),
 		},
 		{
 			name: "create new option with nil client",
@@ -282,7 +282,7 @@ func TestClient_SendEmail(t *testing.T) {
 						FromAddress: "no-reply@example.com",
 					}
 
-					client := mock.NewMockWrappedClient(ctrl)
+					client := mock.NewWrappedClient(ctrl)
 					client.EXPECT().DialAndSend(gomock.Any()).Return(nil)
 
 					span := new(mock.Span)
@@ -320,7 +320,7 @@ func TestClient_SendEmail(t *testing.T) {
 						FromAddress: "no-reply@example.com",
 					}
 
-					client := mock.NewMockWrappedClient(ctrl)
+					client := mock.NewWrappedClient(ctrl)
 					client.EXPECT().DialAndSend(gomock.Any()).Return(assert.AnError)
 
 					span := new(mock.Span)

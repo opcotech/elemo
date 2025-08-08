@@ -9,7 +9,6 @@ import (
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg"
 	"github.com/opcotech/elemo/internal/pkg/convert"
-	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/service"
 	"github.com/opcotech/elemo/internal/transport/http/api"
 )
@@ -45,12 +44,12 @@ func (c *organizationController) V1OrganizationsCreate(ctx context.Context, requ
 
 	ownedBy, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID)
 	if !ok {
-		return api.V1OrganizationsCreate400JSONResponse{N400JSONResponse: badRequest}, nil
+		return api.V1OrganizationsCreate400JSONResponse{N400JSONResponse: formatBadRequest(model.ErrInvalidID)}, nil
 	}
 
 	organization, err := createOrganizationJSONRequestBodyToOrganization(request.Body)
 	if err != nil {
-		return api.V1OrganizationsCreate400JSONResponse{N400JSONResponse: badRequest}, nil
+		return api.V1OrganizationsCreate400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
 	if err := c.organizationService.Create(ctx, ownedBy, organization); err != nil {
@@ -75,7 +74,7 @@ func (c *organizationController) V1OrganizationGet(ctx context.Context, request 
 
 	organizationID, err := model.NewIDFromString(request.Id, model.ResourceTypeOrganization.String())
 	if err != nil {
-		return api.V1OrganizationGet400JSONResponse{N400JSONResponse: badRequest}, nil
+		return api.V1OrganizationGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
 	organization, err := c.organizationService.Get(ctx, organizationID)
@@ -83,7 +82,7 @@ func (c *organizationController) V1OrganizationGet(ctx context.Context, request 
 		if errors.Is(err, service.ErrNoPermission) {
 			return api.V1OrganizationGet403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		}
-		if errors.Is(err, repository.ErrNotFound) {
+		if isNotFoundError(err) {
 			return api.V1OrganizationGet404JSONResponse{N404JSONResponse: notFound}, nil
 		}
 		return api.V1OrganizationGet500JSONResponse{N500JSONResponse: api.N500JSONResponse{
@@ -125,17 +124,17 @@ func (c *organizationController) V1OrganizationUpdate(ctx context.Context, reque
 
 	organizationID, err := model.NewIDFromString(request.Id, model.ResourceTypeOrganization.String())
 	if err != nil {
-		return api.V1OrganizationUpdate400JSONResponse{N400JSONResponse: badRequest}, nil
+		return api.V1OrganizationUpdate400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
 	patch := make(map[string]any)
 	if err := convert.AnyToAny(request.Body, &patch); err != nil {
-		return api.V1OrganizationUpdate400JSONResponse{N400JSONResponse: badRequest}, nil
+		return api.V1OrganizationUpdate400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
 	organization, err := c.organizationService.Update(ctx, organizationID, patch)
 	if err != nil {
-		if errors.Is(err, repository.ErrNotFound) {
+		if isNotFoundError(err) {
 			return api.V1OrganizationUpdate404JSONResponse{N404JSONResponse: notFound}, nil
 		}
 		if errors.Is(err, service.ErrNoPermission) {
@@ -155,11 +154,11 @@ func (c *organizationController) V1OrganizationDelete(ctx context.Context, reque
 
 	organizationID, err := model.NewIDFromString(request.Id, model.ResourceTypeOrganization.String())
 	if err != nil {
-		return api.V1OrganizationDelete400JSONResponse{N400JSONResponse: badRequest}, nil
+		return api.V1OrganizationDelete400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
 	if err := c.organizationService.Delete(ctx, organizationID, pkg.GetDefaultPtr(request.Params.Force, false)); err != nil {
-		if errors.Is(err, repository.ErrNotFound) {
+		if isNotFoundError(err) {
 			return api.V1OrganizationDelete404JSONResponse{N404JSONResponse: notFound}, nil
 		}
 		if errors.Is(err, service.ErrNoPermission) {
@@ -179,7 +178,7 @@ func (c *organizationController) V1OrganizationMembersGet(ctx context.Context, r
 
 	organizationID, err := model.NewIDFromString(request.Id, model.ResourceTypeOrganization.String())
 	if err != nil {
-		return api.V1OrganizationMembersGet400JSONResponse{N400JSONResponse: badRequest}, nil
+		return api.V1OrganizationMembersGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
 	users, err := c.organizationService.GetMembers(ctx, organizationID)
@@ -187,7 +186,7 @@ func (c *organizationController) V1OrganizationMembersGet(ctx context.Context, r
 		if errors.Is(err, service.ErrNoPermission) {
 			return api.V1OrganizationMembersGet403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		}
-		if errors.Is(err, repository.ErrNotFound) {
+		if isNotFoundError(err) {
 			return api.V1OrganizationMembersGet404JSONResponse{N404JSONResponse: notFound}, nil
 		}
 		return api.V1OrganizationMembersGet500JSONResponse{N500JSONResponse: api.N500JSONResponse{
@@ -209,19 +208,19 @@ func (c *organizationController) V1OrganizationMembersAdd(ctx context.Context, r
 
 	organizationID, err := model.NewIDFromString(request.Id, model.ResourceTypeOrganization.String())
 	if err != nil {
-		return api.V1OrganizationMembersAdd400JSONResponse{N400JSONResponse: badRequest}, nil
+		return api.V1OrganizationMembersAdd400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
 	userID, err := model.NewIDFromString(request.Id, model.ResourceTypeUser.String())
 	if err != nil {
-		return api.V1OrganizationMembersAdd400JSONResponse{N400JSONResponse: badRequest}, nil
+		return api.V1OrganizationMembersAdd400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
 	if err := c.organizationService.AddMember(ctx, organizationID, userID); err != nil {
 		if errors.Is(err, service.ErrNoPermission) {
 			return api.V1OrganizationMembersAdd403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		}
-		if errors.Is(err, repository.ErrNotFound) {
+		if isNotFoundError(err) {
 			return api.V1OrganizationMembersAdd404JSONResponse{N404JSONResponse: notFound}, nil
 		}
 		return api.V1OrganizationMembersAdd500JSONResponse{N500JSONResponse: api.N500JSONResponse{
@@ -240,19 +239,19 @@ func (c *organizationController) V1OrganizationMemberRemove(ctx context.Context,
 
 	organizationID, err := model.NewIDFromString(request.Id, model.ResourceTypeOrganization.String())
 	if err != nil {
-		return api.V1OrganizationMemberRemove400JSONResponse{N400JSONResponse: badRequest}, nil
+		return api.V1OrganizationMemberRemove400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
 	userID, err := model.NewIDFromString(request.UserId, model.ResourceTypeUser.String())
 	if err != nil {
-		return api.V1OrganizationMemberRemove400JSONResponse{N400JSONResponse: badRequest}, nil
+		return api.V1OrganizationMemberRemove400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
 	if err := c.organizationService.RemoveMember(ctx, organizationID, userID); err != nil {
 		if errors.Is(err, service.ErrNoPermission) {
 			return api.V1OrganizationMemberRemove403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		}
-		if errors.Is(err, repository.ErrNotFound) {
+		if isNotFoundError(err) {
 			return api.V1OrganizationMemberRemove404JSONResponse{N404JSONResponse: notFound}, nil
 		}
 		return api.V1OrganizationMemberRemove500JSONResponse{N500JSONResponse: api.N500JSONResponse{
@@ -269,17 +268,17 @@ func (c *organizationController) V1OrganizationRolesCreate(ctx context.Context, 
 
 	ownedBy, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID)
 	if !ok {
-		return api.V1OrganizationRolesCreate400JSONResponse{N400JSONResponse: badRequest}, nil
+		return api.V1OrganizationRolesCreate400JSONResponse{N400JSONResponse: formatBadRequest(model.ErrInvalidID)}, nil
 	}
 
 	organizationID, err := model.NewIDFromString(request.Id, model.ResourceTypeOrganization.String())
 	if err != nil {
-		return api.V1OrganizationRolesCreate400JSONResponse{N400JSONResponse: badRequest}, nil
+		return api.V1OrganizationRolesCreate400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
 	role, err := model.NewRole(request.Body.Name)
 	if err != nil {
-		return api.V1OrganizationRolesCreate400JSONResponse{N400JSONResponse: badRequest}, nil
+		return api.V1OrganizationRolesCreate400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
 	role.Description = pkg.GetDefaultPtr(request.Body.Description, "")
@@ -288,7 +287,7 @@ func (c *organizationController) V1OrganizationRolesCreate(ctx context.Context, 
 		if errors.Is(err, service.ErrNoPermission) {
 			return api.V1OrganizationRolesCreate403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		}
-		if errors.Is(err, repository.ErrNotFound) {
+		if isNotFoundError(err) {
 			return api.V1OrganizationRolesCreate404JSONResponse{N404JSONResponse: notFound}, nil
 		}
 		return api.V1OrganizationRolesCreate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
@@ -307,7 +306,7 @@ func (c *organizationController) V1OrganizationRolesGet(ctx context.Context, req
 
 	organizationID, err := model.NewIDFromString(request.Id, model.ResourceTypeOrganization.String())
 	if err != nil {
-		return api.V1OrganizationRolesGet400JSONResponse{N400JSONResponse: badRequest}, nil
+		return api.V1OrganizationRolesGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
 	roles, err := c.roleService.GetAllBelongsTo(ctx,
@@ -319,7 +318,7 @@ func (c *organizationController) V1OrganizationRolesGet(ctx context.Context, req
 		if errors.Is(err, service.ErrNoPermission) {
 			return api.V1OrganizationRolesGet403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		}
-		if errors.Is(err, repository.ErrNotFound) {
+		if isNotFoundError(err) {
 			return api.V1OrganizationRolesGet404JSONResponse{N404JSONResponse: notFound}, nil
 		}
 		return api.V1OrganizationRolesGet500JSONResponse{N500JSONResponse: api.N500JSONResponse{
@@ -341,12 +340,12 @@ func (c *organizationController) V1OrganizationRoleGet(ctx context.Context, requ
 
 	organizationID, err := model.NewIDFromString(request.Id, model.ResourceTypeOrganization.String())
 	if err != nil {
-		return api.V1OrganizationRoleGet400JSONResponse{N400JSONResponse: badRequest}, nil
+		return api.V1OrganizationRoleGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
 	roleID, err := model.NewIDFromString(request.RoleId, model.ResourceTypeUser.String())
 	if err != nil {
-		return api.V1OrganizationRoleGet400JSONResponse{N400JSONResponse: badRequest}, nil
+		return api.V1OrganizationRoleGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
 	role, err := c.roleService.Get(ctx, roleID, organizationID)
@@ -354,7 +353,7 @@ func (c *organizationController) V1OrganizationRoleGet(ctx context.Context, requ
 		if errors.Is(err, service.ErrNoPermission) {
 			return api.V1OrganizationRoleGet403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		}
-		if errors.Is(err, repository.ErrNotFound) {
+		if isNotFoundError(err) {
 			return api.V1OrganizationRoleGet404JSONResponse{N404JSONResponse: notFound}, nil
 		}
 		return api.V1OrganizationRoleGet500JSONResponse{N500JSONResponse: api.N500JSONResponse{
@@ -371,17 +370,17 @@ func (c *organizationController) V1OrganizationRoleUpdate(ctx context.Context, r
 
 	organizationID, err := model.NewIDFromString(request.Id, model.ResourceTypeOrganization.String())
 	if err != nil {
-		return api.V1OrganizationRoleUpdate400JSONResponse{N400JSONResponse: badRequest}, nil
+		return api.V1OrganizationRoleUpdate400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
 	roleID, err := model.NewIDFromString(request.RoleId, model.ResourceTypeUser.String())
 	if err != nil {
-		return api.V1OrganizationRoleUpdate400JSONResponse{N400JSONResponse: badRequest}, nil
+		return api.V1OrganizationRoleUpdate400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
 	patch := make(map[string]any)
 	if err := convert.AnyToAny(request.Body, &patch); err != nil {
-		return api.V1OrganizationRoleUpdate400JSONResponse{N400JSONResponse: badRequest}, nil
+		return api.V1OrganizationRoleUpdate400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
 	role, err := c.roleService.Update(ctx, roleID, organizationID, patch)
@@ -389,7 +388,7 @@ func (c *organizationController) V1OrganizationRoleUpdate(ctx context.Context, r
 		if errors.Is(err, service.ErrNoPermission) {
 			return api.V1OrganizationRoleUpdate403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		}
-		if errors.Is(err, repository.ErrNotFound) {
+		if isNotFoundError(err) {
 			return api.V1OrganizationRoleUpdate404JSONResponse{N404JSONResponse: notFound}, nil
 		}
 		return api.V1OrganizationRoleUpdate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
@@ -406,19 +405,19 @@ func (c *organizationController) V1OrganizationRoleDelete(ctx context.Context, r
 
 	organizationID, err := model.NewIDFromString(request.Id, model.ResourceTypeOrganization.String())
 	if err != nil {
-		return api.V1OrganizationRoleDelete400JSONResponse{N400JSONResponse: badRequest}, nil
+		return api.V1OrganizationRoleDelete400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
 	roleID, err := model.NewIDFromString(request.RoleId, model.ResourceTypeUser.String())
 	if err != nil {
-		return api.V1OrganizationRoleDelete400JSONResponse{N400JSONResponse: badRequest}, nil
+		return api.V1OrganizationRoleDelete400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
 	if err := c.roleService.Delete(ctx, roleID, organizationID); err != nil {
 		if errors.Is(err, service.ErrNoPermission) {
 			return api.V1OrganizationRoleDelete403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		}
-		if errors.Is(err, repository.ErrNotFound) {
+		if isNotFoundError(err) {
 			return api.V1OrganizationRoleDelete404JSONResponse{N404JSONResponse: notFound}, nil
 		}
 		return api.V1OrganizationRoleDelete500JSONResponse{N500JSONResponse: api.N500JSONResponse{
@@ -435,12 +434,12 @@ func (c *organizationController) V1OrganizationRoleMembersGet(ctx context.Contex
 
 	organizationID, err := model.NewIDFromString(request.Id, model.ResourceTypeOrganization.String())
 	if err != nil {
-		return api.V1OrganizationRoleMembersGet400JSONResponse{N400JSONResponse: badRequest}, nil
+		return api.V1OrganizationRoleMembersGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
 	roleID, err := model.NewIDFromString(request.RoleId, model.ResourceTypeUser.String())
 	if err != nil {
-		return api.V1OrganizationRoleMembersGet400JSONResponse{N400JSONResponse: badRequest}, nil
+		return api.V1OrganizationRoleMembersGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
 	users, err := c.roleService.GetMembers(ctx, roleID, organizationID)
@@ -448,7 +447,7 @@ func (c *organizationController) V1OrganizationRoleMembersGet(ctx context.Contex
 		if errors.Is(err, service.ErrNoPermission) {
 			return api.V1OrganizationRoleMembersGet403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		}
-		if errors.Is(err, repository.ErrNotFound) {
+		if isNotFoundError(err) {
 			return api.V1OrganizationRoleMembersGet404JSONResponse{N404JSONResponse: notFound}, nil
 		}
 		return api.V1OrganizationRoleMembersGet500JSONResponse{N500JSONResponse: api.N500JSONResponse{
@@ -470,24 +469,24 @@ func (c *organizationController) V1OrganizationRoleMembersAdd(ctx context.Contex
 
 	organizationID, err := model.NewIDFromString(request.Id, model.ResourceTypeOrganization.String())
 	if err != nil {
-		return api.V1OrganizationRoleMembersAdd400JSONResponse{N400JSONResponse: badRequest}, nil
+		return api.V1OrganizationRoleMembersAdd400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
 	roleID, err := model.NewIDFromString(request.RoleId, model.ResourceTypeUser.String())
 	if err != nil {
-		return api.V1OrganizationRoleMembersAdd400JSONResponse{N400JSONResponse: badRequest}, nil
+		return api.V1OrganizationRoleMembersAdd400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
 	userID, err := model.NewIDFromString(request.Id, model.ResourceTypeUser.String())
 	if err != nil {
-		return api.V1OrganizationRoleMembersAdd400JSONResponse{N400JSONResponse: badRequest}, nil
+		return api.V1OrganizationRoleMembersAdd400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
 	if err := c.roleService.AddMember(ctx, roleID, userID, organizationID); err != nil {
 		if errors.Is(err, service.ErrNoPermission) {
 			return api.V1OrganizationRoleMembersAdd403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		}
-		if errors.Is(err, repository.ErrNotFound) {
+		if isNotFoundError(err) {
 			return api.V1OrganizationRoleMembersAdd404JSONResponse{N404JSONResponse: notFound}, nil
 		}
 		return api.V1OrganizationRoleMembersAdd500JSONResponse{N500JSONResponse: api.N500JSONResponse{
@@ -506,24 +505,24 @@ func (c *organizationController) V1OrganizationRoleMemberRemove(ctx context.Cont
 
 	organizationID, err := model.NewIDFromString(request.Id, model.ResourceTypeOrganization.String())
 	if err != nil {
-		return api.V1OrganizationRoleMemberRemove400JSONResponse{N400JSONResponse: badRequest}, nil
+		return api.V1OrganizationRoleMemberRemove400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
 	roleID, err := model.NewIDFromString(request.RoleId, model.ResourceTypeUser.String())
 	if err != nil {
-		return api.V1OrganizationRoleMemberRemove400JSONResponse{N400JSONResponse: badRequest}, nil
+		return api.V1OrganizationRoleMemberRemove400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
 	userID, err := model.NewIDFromString(request.UserId, model.ResourceTypeUser.String())
 	if err != nil {
-		return api.V1OrganizationRoleMemberRemove400JSONResponse{N400JSONResponse: badRequest}, nil
+		return api.V1OrganizationRoleMemberRemove400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
 	if err := c.roleService.RemoveMember(ctx, roleID, userID, organizationID); err != nil {
 		if errors.Is(err, service.ErrNoPermission) {
 			return api.V1OrganizationRoleMemberRemove403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		}
-		if errors.Is(err, repository.ErrNotFound) {
+		if isNotFoundError(err) {
 			return api.V1OrganizationRoleMemberRemove404JSONResponse{N404JSONResponse: notFound}, nil
 		}
 		return api.V1OrganizationRoleMemberRemove500JSONResponse{N500JSONResponse: api.N500JSONResponse{

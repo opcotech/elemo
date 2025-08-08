@@ -1,3 +1,4 @@
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Bell, Eye, Folder, GitBranch } from "lucide-react";
 import { useEffect } from "react";
@@ -15,7 +16,7 @@ import {
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useBreadcrumbUtils } from "@/hooks/use-breadcrumbs";
-import { useNotifications } from "@/hooks/use-notifications";
+import { v1NotificationsGetOptions } from "@/lib/api";
 import { requireAuthBeforeLoad } from "@/lib/auth/require-auth";
 
 export const Route = createFileRoute("/inbox")({
@@ -29,7 +30,9 @@ export const Route = createFileRoute("/inbox")({
 
 function InboxPage() {
   const { setBreadcrumbsFromItems } = useBreadcrumbUtils();
-  const { data: notifications } = useNotifications();
+  const { data: notifications } = useQuery({
+    ...v1NotificationsGetOptions(),
+  });
 
   useEffect(() => {
     setBreadcrumbsFromItems([

@@ -2,6 +2,7 @@ package http
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/goccy/go-json"
@@ -17,10 +18,19 @@ var (
 	permissionDenied = api.N403JSONResponse{
 		Message: "The requested operation is forbidden",
 	}
-	badRequest = api.N400JSONResponse{
-		Message: "The provided input is invalid",
-	}
 )
+
+func formatBadRequest(err error) api.N400JSONResponse {
+	return api.N400JSONResponse{
+		Message: fmt.Sprintf("The provided input is invalid. %s", err.Error()),
+	}
+}
+
+func setCommonHeaders(w http.ResponseWriter) {
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.Header().Set("X-Frame-Options", "DENY")
+	w.Header().Set("X-XSS-Protection", "1; mode=block")
+}
 
 func mustWrite(w http.ResponseWriter, data []byte) {
 	if _, err := w.Write(data); err != nil {

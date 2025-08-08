@@ -35,5 +35,7 @@ var (
 	ErrInvalidTodoPriority          = errors.New("invalid todo priority")                   // the todo priority is invalid
 	ErrInvalidUserDetails           = errors.New("invalid user details")                    // the user details are invalid
 	ErrInvalidUserStatus            = errors.New("invalid user status")                     // the user status is invalid
+	ErrInvalidUserToken             = errors.New("invalid user token")                      // the user token is invalid
+	ErrInvalidUserTokenContext      = errors.New("invalid user token context")              // the provided user token context is invalid
 	ErrPermissionSubjectTargetEqual = errors.New("permission subject and target are equal") // the permission subject and target are equal
 )

@@ -32,7 +32,7 @@ func (r *NotificationRepository) Create(ctx context.Context, notification *model
 
 	_, err := r.db.pool.Exec(ctx,
 		"INSERT INTO notifications (id, title, description, recipient, read, created_at) VALUES ($1, $2, $3, $4, $5, $6)",
-		notification.ID.String(), notification.Title, notification.Description, notification.Recipient.String(),
+		notification.ID, notification.Title, notification.Description, notification.Recipient,
 		notification.Read, createdAt,
 	)
 
@@ -55,18 +55,15 @@ func (r *NotificationRepository) Get(ctx context.Context, id, recipient model.ID
 		return nil, errors.Join(repository.ErrNotificationRead, err)
 	}
 
-	var nid, rid pgID
 	var n model.Notification
-	row := r.db.pool.QueryRow(ctx, "SELECT * FROM notifications WHERE id = $1 AND recipient = $2", id.String(), recipient.String())
-	if err := row.Scan(&nid, &n.Title, &n.Description, &rid, &n.Read, &n.CreatedAt, &n.UpdatedAt); err != nil {
+	row := r.db.pool.QueryRow(ctx, "SELECT * FROM notifications WHERE id = $1 AND recipient = $2", id, recipient)
+	if err := row.Scan(&n.ID, &n.Title, &n.Description, &n.Recipient, &n.Read, &n.CreatedAt, &n.UpdatedAt); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, repository.ErrNotFound
 		}
 		return nil, errors.Join(repository.ErrNotificationRead, err)
 	}
 
-	n.ID = nid.ID
-	n.Recipient = rid.ID
 	return &n, nil
 }
 
@@ -80,7 +77,7 @@ func (r *NotificationRepository) GetAllByRecipient(ctx context.Context, recipien
 
 	rows, err := r.db.pool.Query(ctx,
 		"SELECT * FROM notifications WHERE recipient = $1 LIMIT $2 OFFSET $3",
-		recipient.String(), limit, offset,
+		recipient, limit, offset,
 	)
 	if err != nil {
 		return nil, errors.Join(repository.ErrNotificationRead, err)
@@ -90,15 +87,10 @@ func (r *NotificationRepository) GetAllByRecipient(ctx context.Context, recipien
 	notifications := make([]*model.Notification, 0)
 
 	for rows.Next() {
-		var nid, rid pgID
-
 		var n model.Notification
-		if err := rows.Scan(&nid, &n.Title, &n.Description, &rid, &n.Read, &n.CreatedAt, &n.UpdatedAt); err != nil {
+		if err := rows.Scan(&n.ID, &n.Title, &n.Description, &n.Recipient, &n.Read, &n.CreatedAt, &n.UpdatedAt); err != nil {
 			return nil, errors.Join(repository.ErrNotificationRead, err)
 		}
-
-		n.ID = nid.ID
-		n.Recipient = rid.ID
 		notifications = append(notifications, &n)
 	}
 
@@ -117,21 +109,18 @@ func (r *NotificationRepository) Update(ctx context.Context, id, recipient model
 		return nil, errors.Join(repository.ErrNotificationUpdate, err)
 	}
 
-	var nid, rid pgID
 	var n model.Notification
 	row := r.db.pool.QueryRow(ctx,
 		"UPDATE notifications SET read = $3, updated_at = timezone('utc', now()) WHERE id = $1 AND recipient = $2 RETURNING *",
-		id.String(), recipient.String(), read,
+		id, recipient, read,
 	)
-	if err := row.Scan(&nid, &n.Title, &n.Description, &rid, &n.Read, &n.CreatedAt, &n.UpdatedAt); err != nil {
+	if err := row.Scan(&n.ID, &n.Title, &n.Description, &n.Recipient, &n.Read, &n.CreatedAt, &n.UpdatedAt); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, repository.ErrNotFound
 		}
 		return nil, errors.Join(repository.ErrNotificationUpdate, err)
 	}
 
-	n.ID = nid.ID
-	n.Recipient = rid.ID
 	return &n, nil
 }
 
@@ -149,7 +138,7 @@ func (r *NotificationRepository) Delete(ctx context.Context, id, recipient model
 
 	_, err := r.db.pool.Exec(ctx,
 		"DELETE FROM notifications WHERE id = $1 AND recipient = $2",
-		id.String(), recipient.String(),
+		id, recipient,
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {

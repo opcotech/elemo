@@ -6,7 +6,6 @@ import (
 
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg"
-	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/service"
 	"github.com/opcotech/elemo/internal/transport/http/api"
 )
@@ -30,12 +29,12 @@ func (c *notificationController) V1NotificationGet(ctx context.Context, request 
 
 	recipientID, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID)
 	if !ok {
-		return api.V1NotificationGet400JSONResponse{N400JSONResponse: badRequest}, nil
+		return api.V1NotificationGet400JSONResponse{N400JSONResponse: formatBadRequest(model.ErrInvalidID)}, nil
 	}
 
 	notificationID, err := model.NewIDFromString(request.Id, model.ResourceTypeNotification.String())
 	if err != nil {
-		return api.V1NotificationGet400JSONResponse{N400JSONResponse: badRequest}, nil
+		return api.V1NotificationGet400JSONResponse{N400JSONResponse: formatBadRequest(model.ErrInvalidID)}, nil
 	}
 
 	notification, err := c.notificationService.Get(ctx, notificationID, recipientID)
@@ -43,7 +42,7 @@ func (c *notificationController) V1NotificationGet(ctx context.Context, request 
 		if errors.Is(err, service.ErrNoPermission) {
 			return api.V1NotificationGet403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		}
-		if errors.Is(err, repository.ErrNotFound) {
+		if isNotFoundError(err) {
 			return api.V1NotificationGet404JSONResponse{N404JSONResponse: notFound}, nil
 		}
 		return api.V1NotificationGet500JSONResponse{N500JSONResponse: api.N500JSONResponse{
@@ -60,7 +59,7 @@ func (c *notificationController) V1NotificationsGet(ctx context.Context, request
 
 	recipientID, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID)
 	if !ok {
-		return api.V1NotificationsGet400JSONResponse{N400JSONResponse: badRequest}, nil
+		return api.V1NotificationsGet400JSONResponse{N400JSONResponse: formatBadRequest(model.ErrInvalidID)}, nil
 	}
 
 	notifications, err := c.notificationService.GetAllByRecipient(ctx,
@@ -91,12 +90,12 @@ func (c *notificationController) V1NotificationUpdate(ctx context.Context, reque
 
 	recipientID, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID)
 	if !ok {
-		return api.V1NotificationUpdate400JSONResponse{N400JSONResponse: badRequest}, nil
+		return api.V1NotificationUpdate400JSONResponse{N400JSONResponse: formatBadRequest(model.ErrInvalidID)}, nil
 	}
 
 	notificationID, err := model.NewIDFromString(request.Id, model.ResourceTypeNotification.String())
 	if err != nil {
-		return api.V1NotificationUpdate400JSONResponse{N400JSONResponse: badRequest}, nil
+		return api.V1NotificationUpdate400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
 	notification, err := c.notificationService.Update(ctx, notificationID, recipientID, request.Body.Read)
@@ -104,7 +103,7 @@ func (c *notificationController) V1NotificationUpdate(ctx context.Context, reque
 		if errors.Is(err, service.ErrNoPermission) {
 			return api.V1NotificationUpdate403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		}
-		if errors.Is(err, repository.ErrNotFound) {
+		if isNotFoundError(err) {
 			return api.V1NotificationUpdate404JSONResponse{N404JSONResponse: notFound}, nil
 		}
 		return api.V1NotificationUpdate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
@@ -121,7 +120,7 @@ func (c *notificationController) V1NotificationDelete(ctx context.Context, reque
 
 	recipientID, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID)
 	if !ok {
-		return api.V1NotificationDelete400JSONResponse{N400JSONResponse: badRequest}, nil
+		return api.V1NotificationDelete400JSONResponse{N400JSONResponse: formatBadRequest(model.ErrInvalidID)}, nil
 	}
 
 	notificationID, err := model.NewIDFromString(request.Id, model.ResourceTypeNotification.String())
@@ -133,7 +132,7 @@ func (c *notificationController) V1NotificationDelete(ctx context.Context, reque
 		if errors.Is(err, service.ErrNoPermission) {
 			return api.V1NotificationDelete403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		}
-		if errors.Is(err, repository.ErrNotFound) {
+		if isNotFoundError(err) {
 			return api.V1NotificationDelete404JSONResponse{N404JSONResponse: notFound}, nil
 		}
 		return api.V1NotificationDelete500JSONResponse{N500JSONResponse: api.N500JSONResponse{

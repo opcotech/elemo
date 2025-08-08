@@ -621,6 +621,11 @@ export type Id = string;
 export type ResourceId = string;
 
 /**
+ * Email address of the user.
+ */
+export type UserEmail = string;
+
+/**
  * Irreversibly delete the user.
  */
 export type Force = boolean;
@@ -735,6 +740,20 @@ export type UserCreate = {
    * Languages of the user.
    */
   languages?: Array<Language> | null;
+};
+
+/**
+ * Password reset request.
+ */
+export type UserPasswordReset = {
+  /**
+   * Token to verify
+   */
+  token: string;
+  /**
+   * Password of the user.
+   */
+  password: string;
 };
 
 export type TodoCreate = {
@@ -949,6 +968,85 @@ export type V1UsersCreateResponses = {
 
 export type V1UsersCreateResponse =
   V1UsersCreateResponses[keyof V1UsersCreateResponses];
+
+export type V1UserRequestPasswordResetData = {
+  body?: never;
+  path?: never;
+  query: {
+    /**
+     * Email address of the user.
+     */
+    email: string;
+  };
+  url: "/v1/users/reset";
+};
+
+export type V1UserRequestPasswordResetErrors = {
+  /**
+   * Bad request
+   */
+  400: HttpError;
+  /**
+   * The requested resource not found
+   */
+  404: HttpError;
+  /**
+   * Internal Server Error
+   */
+  500: HttpError;
+};
+
+export type V1UserRequestPasswordResetError =
+  V1UserRequestPasswordResetErrors[keyof V1UserRequestPasswordResetErrors];
+
+export type V1UserRequestPasswordResetResponses = {
+  /**
+   * OK
+   */
+  200: unknown;
+};
+
+export type V1UserResetPasswordData = {
+  /**
+   * Password reset request.
+   */
+  body?: UserPasswordReset;
+  path?: never;
+  query?: never;
+  url: "/v1/users/reset";
+};
+
+export type V1UserResetPasswordErrors = {
+  /**
+   * Bad request
+   */
+  400: HttpError;
+  /**
+   * The requested resource not found
+   */
+  404: HttpError;
+  /**
+   * Internal Server Error
+   */
+  500: HttpError;
+};
+
+export type V1UserResetPasswordError =
+  V1UserResetPasswordErrors[keyof V1UserResetPasswordErrors];
+
+export type V1UserResetPasswordResponses = {
+  /**
+   * OK
+   */
+  200: unknown;
+  /**
+   * New token generated
+   */
+  204: void;
+};
+
+export type V1UserResetPasswordResponse =
+  V1UserResetPasswordResponses[keyof V1UserResetPasswordResponses];
 
 export type V1UserDeleteData = {
   body?: never;
