@@ -1,5 +1,8 @@
 package smtp
 
+//go:generate mockgen -source=smtp.go -destination=../../testutil/mock/smtp_gen.go -package=mock -mock_names "WrappedClient=NetSMTPClient,Client=SMTPClient"
+//go:generate mockgen -destination=../../testutil/mock/io_gen.go -package=mock -mock_names "WriteCloser=Buffer" io WriteCloser
+
 import (
 	"context"
 	"crypto/tls"
