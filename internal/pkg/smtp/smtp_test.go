@@ -2,6 +2,7 @@ package smtp
 
 import (
 	"context"
+	"go.uber.org/mock/gomock"
 	"net/smtp"
 	"testing"
 
@@ -41,13 +42,13 @@ func TestNewDatabase(t *testing.T) {
 		{
 			name: "create new client",
 			args: args{
-				client: new(mock.NetSMTPClientOld),
+				client: mock.NewNetSMTPClient(nil),
 				config: new(config.SMTPConfig),
 				logger: new(mock.Logger),
 				tracer: new(mock.Tracer),
 			},
 			want: &Client{
-				client: new(mock.NetSMTPClientOld),
+				client: mock.NewNetSMTPClient(nil),
 				config: new(config.SMTPConfig),
 				logger: new(mock.Logger),
 				tracer: new(mock.Tracer),
@@ -66,7 +67,7 @@ func TestNewDatabase(t *testing.T) {
 		{
 			name: "create new client with nil config",
 			args: args{
-				client: new(mock.NetSMTPClientOld),
+				client: mock.NewNetSMTPClient(nil),
 				config: nil,
 				logger: new(mock.Logger),
 				tracer: new(mock.Tracer),
@@ -76,7 +77,7 @@ func TestNewDatabase(t *testing.T) {
 		{
 			name: "create new client with nil logger",
 			args: args{
-				client: new(mock.NetSMTPClientOld),
+				client: mock.NewNetSMTPClient(nil),
 				config: new(config.SMTPConfig),
 				logger: nil,
 				tracer: new(mock.Tracer),
@@ -86,7 +87,7 @@ func TestNewDatabase(t *testing.T) {
 		{
 			name: "create new client with nil tracer",
 			args: args{
-				client: new(mock.NetSMTPClientOld),
+				client: mock.NewNetSMTPClient(nil),
 				config: new(config.SMTPConfig),
 				logger: new(mock.Logger),
 				tracer: nil,
@@ -160,9 +161,9 @@ func TestWithWrappedClient(t *testing.T) {
 		{
 			name: "create new option with client",
 			args: args{
-				client: new(mock.NetSMTPClientOld),
+				client: mock.NewNetSMTPClient(nil),
 			},
-			want: new(mock.NetSMTPClientOld),
+			want: mock.NewNetSMTPClient(nil),
 		},
 		{
 			name: "create new option with nil client",
@@ -260,7 +261,7 @@ func TestWithTracer(t *testing.T) {
 
 func TestClient_Authenticate(t *testing.T) {
 	type fields struct {
-		client func(auth smtp.Auth) WrappedClient
+		client func(ctrl *gomock.Controller, auth smtp.Auth) WrappedClient
 		config *config.SMTPConfig
 		logger log.Logger
 		tracer func(ctx context.Context) tracing.Tracer
@@ -277,9 +278,9 @@ func TestClient_Authenticate(t *testing.T) {
 		{
 			name: "authenticate with success",
 			fields: fields{
-				client: func(auth smtp.Auth) WrappedClient {
-					client := new(mock.NetSMTPClientOld)
-					client.On("Auth", auth).Return(nil)
+				client: func(ctrl *gomock.Controller, auth smtp.Auth) WrappedClient {
+					client := mock.NewNetSMTPClient(ctrl)
+					client.EXPECT().Auth(auth).Return(nil)
 					return client
 				},
 				config: &config.SMTPConfig{
@@ -305,9 +306,9 @@ func TestClient_Authenticate(t *testing.T) {
 		{
 			name: "authenticate with error",
 			fields: fields{
-				client: func(auth smtp.Auth) WrappedClient {
-					client := new(mock.NetSMTPClientOld)
-					client.On("Auth", auth).Return(assert.AnError)
+				client: func(ctrl *gomock.Controller, auth smtp.Auth) WrappedClient {
+					client := mock.NewNetSMTPClient(ctrl)
+					client.EXPECT().Auth(auth).Return(assert.AnError)
 					return client
 				},
 				config: &config.SMTPConfig{
@@ -336,13 +337,18 @@ func TestClient_Authenticate(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 			c := &Client{
-				client: tt.fields.client(smtp.PlainAuth(
-					"",
-					tt.fields.config.Username,
-					tt.fields.config.Password,
-					tt.fields.config.Host,
-				)),
+				client: tt.fields.client(
+					ctrl,
+					smtp.PlainAuth(
+						"",
+						tt.fields.config.Username,
+						tt.fields.config.Password,
+						tt.fields.config.Host,
+					),
+				),
 				config: tt.fields.config,
 				logger: tt.fields.logger,
 				tracer: tt.fields.tracer(tt.args.ctx),
@@ -354,7 +360,7 @@ func TestClient_Authenticate(t *testing.T) {
 
 func TestClient_SendEmail(t *testing.T) {
 	type fields struct {
-		client func(ctx context.Context, subject, to string) *Client
+		client func(ctrl *gomock.Controller, ctx context.Context, subject, to string) *Client
 	}
 	type args struct {
 		ctx      context.Context
@@ -371,7 +377,7 @@ func TestClient_SendEmail(t *testing.T) {
 		{
 			name: "send email with success",
 			fields: fields{
-				client: func(ctx context.Context, _, to string) *Client {
+				client: func(ctrl *gomock.Controller, ctx context.Context, _, to string) *Client {
 					smtpConf := &config.SMTPConfig{
 						FromAddress: "no-reply@example.com",
 					}
@@ -380,10 +386,10 @@ func TestClient_SendEmail(t *testing.T) {
 					buf.On("Write", mock.Anything).Return(10, nil)
 					buf.On("Close").Return(nil)
 
-					client := new(mock.NetSMTPClientOld)
-					client.On("Mail", smtpConf.FromAddress).Return(nil)
-					client.On("Rcpt", to).Return(nil)
-					client.On("Data").Return(buf, nil)
+					client := mock.NewNetSMTPClient(ctrl)
+					client.EXPECT().Mail(smtpConf.FromAddress).Return(nil)
+					client.EXPECT().Rcpt(to).Return(nil)
+					client.EXPECT().Data().Return(buf, nil)
 
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
@@ -412,13 +418,13 @@ func TestClient_SendEmail(t *testing.T) {
 		{
 			name: "send email with setting mail error",
 			fields: fields{
-				client: func(ctx context.Context, _, _ string) *Client {
+				client: func(ctrl *gomock.Controller, ctx context.Context, _, _ string) *Client {
 					smtpConf := &config.SMTPConfig{
 						FromAddress: "no-reply@example.com",
 					}
 
-					client := new(mock.NetSMTPClientOld)
-					client.On("Mail", smtpConf.FromAddress).Return(assert.AnError)
+					client := mock.NewNetSMTPClient(ctrl)
+					client.EXPECT().Mail(smtpConf.FromAddress).Return(assert.AnError)
 
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
@@ -448,14 +454,14 @@ func TestClient_SendEmail(t *testing.T) {
 		{
 			name: "send email with setting rcpt error",
 			fields: fields{
-				client: func(ctx context.Context, _, to string) *Client {
+				client: func(ctrl *gomock.Controller, ctx context.Context, _, to string) *Client {
 					smtpConf := &config.SMTPConfig{
 						FromAddress: "no-reply@example.com",
 					}
 
-					client := new(mock.NetSMTPClientOld)
-					client.On("Mail", smtpConf.FromAddress).Return(nil)
-					client.On("Rcpt", to).Return(assert.AnError)
+					client := mock.NewNetSMTPClient(ctrl)
+					client.EXPECT().Mail(smtpConf.FromAddress).Return(nil)
+					client.EXPECT().Rcpt(to).Return(assert.AnError)
 
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
@@ -485,15 +491,15 @@ func TestClient_SendEmail(t *testing.T) {
 		{
 			name: "send email with getting data error",
 			fields: fields{
-				client: func(ctx context.Context, _, to string) *Client {
+				client: func(ctrl *gomock.Controller, ctx context.Context, _, to string) *Client {
 					smtpConf := &config.SMTPConfig{
 						FromAddress: "no-reply@example.com",
 					}
 
-					client := new(mock.NetSMTPClientOld)
-					client.On("Mail", smtpConf.FromAddress).Return(nil)
-					client.On("Rcpt", to).Return(nil)
-					client.On("Data").Return(new(mock.BufferOld), assert.AnError)
+					client := mock.NewNetSMTPClient(ctrl)
+					client.EXPECT().Mail(smtpConf.FromAddress).Return(nil)
+					client.EXPECT().Rcpt(to).Return(nil)
+					client.EXPECT().Data().Return(new(mock.BufferOld), assert.AnError)
 
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
@@ -523,7 +529,7 @@ func TestClient_SendEmail(t *testing.T) {
 		{
 			name: "send email with buffer write error",
 			fields: fields{
-				client: func(ctx context.Context, _, to string) *Client {
+				client: func(ctrl *gomock.Controller, ctx context.Context, _, to string) *Client {
 					smtpConf := &config.SMTPConfig{
 						FromAddress: "no-reply@example.com",
 					}
@@ -531,10 +537,10 @@ func TestClient_SendEmail(t *testing.T) {
 					buf := new(mock.BufferOld)
 					buf.On("Write", mock.Anything).Return(0, assert.AnError)
 
-					client := new(mock.NetSMTPClientOld)
-					client.On("Mail", smtpConf.FromAddress).Return(nil)
-					client.On("Rcpt", to).Return(nil)
-					client.On("Data").Return(buf, nil)
+					client := mock.NewNetSMTPClient(ctrl)
+					client.EXPECT().Mail(smtpConf.FromAddress).Return(nil)
+					client.EXPECT().Rcpt(to).Return(nil)
+					client.EXPECT().Data().Return(buf, nil)
 
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
@@ -564,7 +570,7 @@ func TestClient_SendEmail(t *testing.T) {
 		{
 			name: "send email with buffer close error",
 			fields: fields{
-				client: func(ctx context.Context, _, to string) *Client {
+				client: func(ctrl *gomock.Controller, ctx context.Context, _, to string) *Client {
 					smtpConf := &config.SMTPConfig{
 						FromAddress: "no-reply@example.com",
 					}
@@ -573,10 +579,10 @@ func TestClient_SendEmail(t *testing.T) {
 					buf.On("Write", mock.Anything).Return(10, nil)
 					buf.On("Close").Return(assert.AnError)
 
-					client := new(mock.NetSMTPClientOld)
-					client.On("Mail", smtpConf.FromAddress).Return(nil)
-					client.On("Rcpt", to).Return(nil)
-					client.On("Data").Return(buf, nil)
+					client := mock.NewNetSMTPClient(ctrl)
+					client.EXPECT().Mail(smtpConf.FromAddress).Return(nil)
+					client.EXPECT().Rcpt(to).Return(nil)
+					client.EXPECT().Data().Return(buf, nil)
 
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
@@ -606,7 +612,7 @@ func TestClient_SendEmail(t *testing.T) {
 		{
 			name: "send email with invalid template",
 			fields: fields{
-				client: func(ctx context.Context, _, to string) *Client {
+				client: func(_ *gomock.Controller, ctx context.Context, _, to string) *Client {
 					smtpConf := &config.SMTPConfig{
 						FromAddress: "no-reply@example.com",
 					}
@@ -615,10 +621,7 @@ func TestClient_SendEmail(t *testing.T) {
 					buf.On("Write", mock.Anything).Return(10, nil)
 					buf.On("Close").Return(nil)
 
-					client := new(mock.NetSMTPClientOld)
-					client.On("Mail", smtpConf.FromAddress).Return(nil)
-					client.On("Rcpt", to).Return(nil)
-					client.On("Data").Return(buf, nil)
+					client := mock.NewNetSMTPClient(nil)
 
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
@@ -648,7 +651,7 @@ func TestClient_SendEmail(t *testing.T) {
 		{
 			name: "send email with template render error",
 			fields: fields{
-				client: func(ctx context.Context, _, to string) *Client {
+				client: func(ctrl *gomock.Controller, ctx context.Context, _, to string) *Client {
 					smtpConf := &config.SMTPConfig{
 						FromAddress: "no-reply@example.com",
 					}
@@ -657,10 +660,10 @@ func TestClient_SendEmail(t *testing.T) {
 					buf.On("Write", mock.Anything).Return(10, nil)
 					buf.On("Close").Return(nil)
 
-					client := new(mock.NetSMTPClientOld)
-					client.On("Mail", smtpConf.FromAddress).Return(nil)
-					client.On("Rcpt", to).Return(nil)
-					client.On("Data").Return(buf, nil)
+					client := mock.NewNetSMTPClient(ctrl)
+					client.EXPECT().Mail(smtpConf.FromAddress).Return(nil)
+					client.EXPECT().Rcpt(to).Return(nil)
+					client.EXPECT().Data().Return(buf, nil)
 
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
@@ -692,7 +695,9 @@ func TestClient_SendEmail(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			c := tt.fields.client(tt.args.ctx, tt.args.subject, tt.args.to)
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			c := tt.fields.client(ctrl, tt.args.ctx, tt.args.subject, tt.args.to)
 			err := c.SendEmail(tt.args.ctx, tt.args.subject, tt.args.to, tt.args.template)
 			assert.ErrorIs(t, err, tt.wantErr)
 		})
