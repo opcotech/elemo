@@ -382,9 +382,9 @@ func TestClient_SendEmail(t *testing.T) {
 						FromAddress: "no-reply@example.com",
 					}
 
-					buf := new(mock.BufferOld)
-					buf.On("Write", mock.Anything).Return(10, nil)
-					buf.On("Close").Return(nil)
+					buf := mock.NewWriteCloser(ctrl)
+					buf.EXPECT().Write(gomock.Any()).Return(10, nil).AnyTimes()
+					buf.EXPECT().Close().Return(nil)
 
 					client := mock.NewNetSMTPClient(ctrl)
 					client.EXPECT().Mail(smtpConf.FromAddress).Return(nil)
@@ -499,7 +499,7 @@ func TestClient_SendEmail(t *testing.T) {
 					client := mock.NewNetSMTPClient(ctrl)
 					client.EXPECT().Mail(smtpConf.FromAddress).Return(nil)
 					client.EXPECT().Rcpt(to).Return(nil)
-					client.EXPECT().Data().Return(new(mock.BufferOld), assert.AnError)
+					client.EXPECT().Data().Return(mock.NewWriteCloser(nil), assert.AnError)
 
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
@@ -534,8 +534,8 @@ func TestClient_SendEmail(t *testing.T) {
 						FromAddress: "no-reply@example.com",
 					}
 
-					buf := new(mock.BufferOld)
-					buf.On("Write", mock.Anything).Return(0, assert.AnError)
+					buf := mock.NewWriteCloser(ctrl)
+					buf.EXPECT().Write(gomock.Any()).Return(0, assert.AnError).AnyTimes()
 
 					client := mock.NewNetSMTPClient(ctrl)
 					client.EXPECT().Mail(smtpConf.FromAddress).Return(nil)
@@ -575,9 +575,8 @@ func TestClient_SendEmail(t *testing.T) {
 						FromAddress: "no-reply@example.com",
 					}
 
-					buf := new(mock.BufferOld)
-					buf.On("Write", mock.Anything).Return(10, nil)
-					buf.On("Close").Return(assert.AnError)
+					buf := mock.NewWriteCloser(ctrl)
+					buf.EXPECT().Write(gomock.Any()).Return(10, nil).AnyTimes()
 
 					client := mock.NewNetSMTPClient(ctrl)
 					client.EXPECT().Mail(smtpConf.FromAddress).Return(nil)
@@ -612,14 +611,10 @@ func TestClient_SendEmail(t *testing.T) {
 		{
 			name: "send email with invalid template",
 			fields: fields{
-				client: func(_ *gomock.Controller, ctx context.Context, _, to string) *Client {
+				client: func(ctrl *gomock.Controller, ctx context.Context, _, to string) *Client {
 					smtpConf := &config.SMTPConfig{
 						FromAddress: "no-reply@example.com",
 					}
-
-					buf := new(mock.BufferOld)
-					buf.On("Write", mock.Anything).Return(10, nil)
-					buf.On("Close").Return(nil)
 
 					client := mock.NewNetSMTPClient(nil)
 
@@ -656,14 +651,7 @@ func TestClient_SendEmail(t *testing.T) {
 						FromAddress: "no-reply@example.com",
 					}
 
-					buf := new(mock.BufferOld)
-					buf.On("Write", mock.Anything).Return(10, nil)
-					buf.On("Close").Return(nil)
-
-					client := mock.NewNetSMTPClient(ctrl)
-					client.EXPECT().Mail(smtpConf.FromAddress).Return(nil)
-					client.EXPECT().Rcpt(to).Return(nil)
-					client.EXPECT().Data().Return(buf, nil)
+					client := mock.NewNetSMTPClient(nil)
 
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
