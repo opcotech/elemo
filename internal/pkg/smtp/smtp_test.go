@@ -612,7 +612,7 @@ func TestClient_SendEmail(t *testing.T) {
 		{
 			name: "send email with invalid template",
 			fields: fields{
-				client: func(ctrl *gomock.Controller, ctx context.Context, _, to string) *Client {
+				client: func(_ *gomock.Controller, ctx context.Context, _, _ string) *Client {
 					smtpConf := &config.SMTPConfig{
 						FromAddress: "no-reply@example.com",
 					}
@@ -647,7 +647,7 @@ func TestClient_SendEmail(t *testing.T) {
 		{
 			name: "send email with template render error",
 			fields: fields{
-				client: func(ctrl *gomock.Controller, ctx context.Context, _, to string) *Client {
+				client: func(_ *gomock.Controller, ctx context.Context, _, _ string) *Client {
 					smtpConf := &config.SMTPConfig{
 						FromAddress: "no-reply@example.com",
 					}
