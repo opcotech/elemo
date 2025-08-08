@@ -209,8 +209,8 @@ export const zUser = z.object({
     .min(3)
     .max(50)
     .regex(/^[a-z0-9-_]{3,50}$/),
-  first_name: z.union([z.string().min(1).max(50), z.null()]),
-  last_name: z.union([z.string().min(1).max(50), z.null()]),
+  first_name: z.string().min(1).max(50),
+  last_name: z.string().min(1).max(50),
   email: z.email().min(6).max(254),
   picture: z.union([z.url().max(2000), z.null()]),
   title: z.union([z.string().min(3).max(50), z.null()]),
@@ -456,8 +456,8 @@ export const zUserPatch = z.object({
       .max(50)
       .regex(/^[a-z0-9-_]{3,50}$/)
   ),
-  first_name: z.optional(z.union([z.string().min(1).max(50), z.null()])),
-  last_name: z.optional(z.union([z.string().min(1).max(50), z.null()])),
+  first_name: z.optional(z.string().min(1).max(50)),
+  last_name: z.optional(z.string().min(1).max(50)),
   email: z.optional(z.email().min(6).max(254)),
   password: z.optional(z.string().min(8).max(64)),
   new_password: z.optional(z.string().min(8).max(64)),
@@ -477,8 +477,8 @@ export const zUserCreate = z.object({
     .min(3)
     .max(50)
     .regex(/^[a-z0-9-_]{3,50}$/),
-  first_name: z.optional(z.union([z.string().min(1).max(50), z.null()])),
-  last_name: z.optional(z.union([z.string().min(1).max(50), z.null()])),
+  first_name: z.string().min(1).max(50),
+  last_name: z.string().min(1).max(50),
   email: z.email().min(6).max(254),
   password: z.string().min(8).max(64),
   picture: z.optional(z.union([z.url().max(2000), z.null()])),

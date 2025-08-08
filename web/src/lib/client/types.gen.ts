@@ -16,11 +16,11 @@ export type User = {
   /**
    * First name of the user.
    */
-  first_name: string | null;
+  first_name: string;
   /**
    * Last name of the user.
    */
-  last_name: string | null;
+  last_name: string;
   /**
    * Email address of the user.
    */
@@ -643,11 +643,11 @@ export type UserPatch = {
   /**
    * First name of the user.
    */
-  first_name?: string | null;
+  first_name?: string;
   /**
    * Last name of the user.
    */
-  last_name?: string | null;
+  last_name?: string;
   /**
    * Email address of the user.
    */
@@ -699,11 +699,11 @@ export type UserCreate = {
   /**
    * First name of the user.
    */
-  first_name?: string | null;
+  first_name: string;
   /**
    * Last name of the user.
    */
-  last_name?: string | null;
+  last_name: string;
   /**
    * Email address of the user.
    */

@@ -117,14 +117,12 @@ components:
           minLength: 1
           maxLength: 50
           example: Test
-          nullable: true
         last_name:
           type: string
           description: Last name of the user.
           example: User
           minLength: 1
           maxLength: 50
-          nullable: true
         email:
           type: string
           format: email
@@ -1132,18 +1130,12 @@ components:
                 minLength: 1
                 maxLength: 50
                 example: Test
-                nullable: true
-                x-go-type: "Optional[string]"
-                x-go-type-skip-optional-pointer: true
               last_name:
                 type: string
                 description: Last name of the user.
                 example: User
                 minLength: 1
                 maxLength: 50
-                nullable: true
-                x-go-type: "Optional[string]"
-                x-go-type-skip-optional-pointer: true
               email:
                 type: string
                 format: email
@@ -1263,14 +1255,12 @@ components:
                 minLength: 1
                 maxLength: 50
                 example: Test
-                nullable: true
               last_name:
                 type: string
                 description: Last name of the user.
                 example: User
                 minLength: 1
                 maxLength: 50
-                nullable: true
               email:
                 type: string
                 format: email
@@ -1340,6 +1330,8 @@ components:
               - username
               - email
               - password
+              - first_name
+              - last_name
     UserPasswordReset:
       description: "Password reset request."
       content:
