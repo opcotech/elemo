@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/mock/gomock"
 
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/repository"
@@ -17,7 +18,7 @@ import (
 
 func TestCachedLabelRepository_Create(t *testing.T) {
 	type fields struct {
-		cacheRepo func(ctx context.Context, label *model.Label) *baseRepository
+		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, label *model.Label) *baseRepository
 		labelRepo func(ctx context.Context, label *model.Label) repository.LabelRepository
 	}
 	type args struct {
@@ -33,7 +34,7 @@ func TestCachedLabelRepository_Create(t *testing.T) {
 		{
 			name: "create new label",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, _ *model.Label) *baseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, _ *model.Label) *baseRepository {
 					getAllKey := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
 					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
 					issuesKey := composeCacheKey(model.ResourceTypeIssue.String(), "*")
@@ -47,10 +48,10 @@ func TestCachedLabelRepository_Create(t *testing.T) {
 					issuesKeyResult := new(redis.StringSliceCmd)
 					issuesKeyResult.SetVal([]string{issuesKey})
 
-					dbClient := new(mock.RedisClient)
-					dbClient.On("Keys", ctx, getAllKey).Return(getAllKeyResult)
-					dbClient.On("Keys", ctx, documentsKey).Return(documentsKeyResult)
-					dbClient.On("Keys", ctx, issuesKey).Return(issuesKeyResult)
+					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, getAllKey).Return(getAllKeyResult)
+					dbClient.EXPECT().Keys(ctx, documentsKey).Return(documentsKeyResult)
+					dbClient.EXPECT().Keys(ctx, issuesKey).Return(issuesKeyResult)
 
 					db, err := NewDatabase(
 						WithClient(dbClient),
@@ -63,10 +64,10 @@ func TestCachedLabelRepository_Create(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(mock.CacheRepository)
-					cacheRepo.On("Delete", ctx, getAllKey).Return(nil)
-					cacheRepo.On("Delete", ctx, documentsKey).Return(nil)
-					cacheRepo.On("Delete", ctx, issuesKey).Return(nil)
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, documentsKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, issuesKey).Return(nil)
 
 					return &baseRepository{
 						db:     db,
@@ -93,7 +94,7 @@ func TestCachedLabelRepository_Create(t *testing.T) {
 		{
 			name: "add new label with error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, _ *model.Label) *baseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, _ *model.Label) *baseRepository {
 					getAllKey := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
 					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
 					issuesKey := composeCacheKey(model.ResourceTypeIssue.String(), "*")
@@ -107,10 +108,10 @@ func TestCachedLabelRepository_Create(t *testing.T) {
 					issuesKeyResult := new(redis.StringSliceCmd)
 					issuesKeyResult.SetVal([]string{issuesKey})
 
-					dbClient := new(mock.RedisClient)
-					dbClient.On("Keys", ctx, getAllKey).Return(getAllKeyResult)
-					dbClient.On("Keys", ctx, documentsKey).Return(documentsKeyResult)
-					dbClient.On("Keys", ctx, issuesKey).Return(issuesKeyResult)
+					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, getAllKey).Return(getAllKeyResult)
+					dbClient.EXPECT().Keys(ctx, documentsKey).Return(documentsKeyResult)
+					dbClient.EXPECT().Keys(ctx, issuesKey).Return(issuesKeyResult)
 
 					db, err := NewDatabase(
 						WithClient(dbClient),
@@ -123,10 +124,10 @@ func TestCachedLabelRepository_Create(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(mock.CacheRepository)
-					cacheRepo.On("Delete", ctx, getAllKey).Return(nil)
-					cacheRepo.On("Delete", ctx, documentsKey).Return(nil)
-					cacheRepo.On("Delete", ctx, issuesKey).Return(nil)
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, documentsKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, issuesKey).Return(nil)
 
 					return &baseRepository{
 						db:     db,
@@ -154,24 +155,14 @@ func TestCachedLabelRepository_Create(t *testing.T) {
 		{
 			name: "add new label get all cache delete error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, _ *model.Label) *baseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, _ *model.Label) *baseRepository {
 					getAllKey := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
-					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
-					issuesKey := composeCacheKey(model.ResourceTypeIssue.String(), "*")
 
 					getAllKeyResult := new(redis.StringSliceCmd)
 					getAllKeyResult.SetVal([]string{getAllKey})
 
-					documentsKeyResult := new(redis.StringSliceCmd)
-					documentsKeyResult.SetVal([]string{documentsKey})
-
-					issuesKeyResult := new(redis.StringSliceCmd)
-					issuesKeyResult.SetVal([]string{issuesKey})
-
-					dbClient := new(mock.RedisClient)
-					dbClient.On("Keys", ctx, issuesKey).Return(issuesKeyResult)
-					dbClient.On("Keys", ctx, documentsKey).Return(documentsKeyResult)
-					dbClient.On("Keys", ctx, getAllKey).Return(getAllKeyResult)
+					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, getAllKey).Return(getAllKeyResult)
 
 					db, err := NewDatabase(
 						WithClient(dbClient),
@@ -184,10 +175,8 @@ func TestCachedLabelRepository_Create(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(mock.CacheRepository)
-					cacheRepo.On("Delete", ctx, issuesKey).Return(nil)
-					cacheRepo.On("Delete", ctx, documentsKey).Return(nil)
-					cacheRepo.On("Delete", ctx, getAllKey).Return(repository.ErrCacheDelete)
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(repository.ErrCacheDelete)
 
 					return &baseRepository{
 						db:     db,
@@ -213,7 +202,7 @@ func TestCachedLabelRepository_Create(t *testing.T) {
 		{
 			name: "create new label documents cache delete error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, _ *model.Label) *baseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, _ *model.Label) *baseRepository {
 					getAllKey := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
 					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
 
@@ -223,9 +212,9 @@ func TestCachedLabelRepository_Create(t *testing.T) {
 					documentsKeyResult := new(redis.StringSliceCmd)
 					documentsKeyResult.SetVal([]string{documentsKey})
 
-					dbClient := new(mock.RedisClient)
-					dbClient.On("Keys", ctx, getAllKey).Return(getAllKeyResult)
-					dbClient.On("Keys", ctx, documentsKey).Return(documentsKeyResult)
+					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, getAllKey).Return(getAllKeyResult)
+					dbClient.EXPECT().Keys(ctx, documentsKey).Return(documentsKeyResult)
 
 					db, err := NewDatabase(
 						WithClient(dbClient),
@@ -238,9 +227,9 @@ func TestCachedLabelRepository_Create(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(mock.CacheRepository)
-					cacheRepo.On("Delete", ctx, getAllKey).Return(nil)
-					cacheRepo.On("Delete", ctx, documentsKey).Return(repository.ErrCacheDelete)
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, documentsKey).Return(repository.ErrCacheDelete)
 
 					return &baseRepository{
 						db:     db,
@@ -266,7 +255,7 @@ func TestCachedLabelRepository_Create(t *testing.T) {
 		{
 			name: "create new label issues cache delete error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, _ *model.Label) *baseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, _ *model.Label) *baseRepository {
 					getAllKey := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
 					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
 					issuesKey := composeCacheKey(model.ResourceTypeIssue.String(), "*")
@@ -280,10 +269,10 @@ func TestCachedLabelRepository_Create(t *testing.T) {
 					issuesKeyResult := new(redis.StringSliceCmd)
 					issuesKeyResult.SetVal([]string{issuesKey})
 
-					dbClient := new(mock.RedisClient)
-					dbClient.On("Keys", ctx, getAllKey).Return(getAllKeyResult)
-					dbClient.On("Keys", ctx, documentsKey).Return(documentsKeyResult)
-					dbClient.On("Keys", ctx, issuesKey).Return(issuesKeyResult)
+					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, getAllKey).Return(getAllKeyResult)
+					dbClient.EXPECT().Keys(ctx, documentsKey).Return(documentsKeyResult)
+					dbClient.EXPECT().Keys(ctx, issuesKey).Return(issuesKeyResult)
 
 					db, err := NewDatabase(
 						WithClient(dbClient),
@@ -296,10 +285,10 @@ func TestCachedLabelRepository_Create(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(mock.CacheRepository)
-					cacheRepo.On("Delete", ctx, getAllKey).Return(nil)
-					cacheRepo.On("Delete", ctx, documentsKey).Return(nil)
-					cacheRepo.On("Delete", ctx, issuesKey).Return(repository.ErrCacheDelete)
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, documentsKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, issuesKey).Return(repository.ErrCacheDelete)
 
 					return &baseRepository{
 						db:     db,
@@ -327,8 +316,10 @@ func TestCachedLabelRepository_Create(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 			r := &CachedLabelRepository{
-				cacheRepo: tt.fields.cacheRepo(tt.args.ctx, tt.args.label),
+				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.label),
 				labelRepo: tt.fields.labelRepo(tt.args.ctx, tt.args.label),
 			}
 			err := r.Create(tt.args.ctx, tt.args.label)
@@ -339,7 +330,7 @@ func TestCachedLabelRepository_Create(t *testing.T) {
 
 func TestCachedLabelRepository_Get(t *testing.T) {
 	type fields struct {
-		cacheRepo func(ctx context.Context, id model.ID, label *model.Label) *baseRepository
+		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, label *model.Label) *baseRepository
 		labelRepo func(ctx context.Context, id model.ID, label *model.Label) repository.LabelRepository
 	}
 	type args struct {
@@ -356,11 +347,11 @@ func TestCachedLabelRepository_Get(t *testing.T) {
 		{
 			name: "get uncached label",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id model.ID, label *model.Label) *baseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, label *model.Label) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), id.String())
 
 					db, err := NewDatabase(
-						WithClient(new(mock.RedisClient)),
+						WithClient(mock.NewUniversalClient(ctrl)),
 					)
 					require.NoError(t, err)
 
@@ -369,14 +360,12 @@ func TestCachedLabelRepository_Get(t *testing.T) {
 
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "repository.redis.baseRepository/Set", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(mock.CacheRepository)
-					cacheRepo.On("Get", ctx, key, mock.Anything).Return(nil, nil)
-					cacheRepo.On("Set", &cache.Item{
-						Ctx:   ctx,
-						Key:   key,
-						Value: label,
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Do(func(_ context.Context, _ string, dst any) {
+						if ptr, ok := dst.(**model.Label); ok {
+							*ptr = label
+						}
 					}).Return(nil)
 
 					return &baseRepository{
@@ -407,11 +396,11 @@ func TestCachedLabelRepository_Get(t *testing.T) {
 		{
 			name: "get cached label",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id model.ID, label *model.Label) *baseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, label *model.Label) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), id.String())
 
 					db, err := NewDatabase(
-						WithClient(new(mock.RedisClient)),
+						WithClient(mock.NewUniversalClient(ctrl)),
 					)
 					require.NoError(t, err)
 
@@ -421,8 +410,12 @@ func TestCachedLabelRepository_Get(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(mock.CacheRepository)
-					cacheRepo.On("Get", ctx, key, mock.Anything).Return(label, nil)
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Do(func(_ context.Context, _ string, dst any) {
+						if ptr, ok := dst.(**model.Label); ok {
+							*ptr = label
+						}
+					}).Return(nil)
 
 					return &baseRepository{
 						db:     db,
@@ -450,11 +443,11 @@ func TestCachedLabelRepository_Get(t *testing.T) {
 		{
 			name: "get uncached label error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id model.ID, _ *model.Label) *baseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *model.Label) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), id.String())
 
 					db, err := NewDatabase(
-						WithClient(new(mock.RedisClient)),
+						WithClient(mock.NewUniversalClient(ctrl)),
 					)
 					require.NoError(t, err)
 
@@ -464,8 +457,8 @@ func TestCachedLabelRepository_Get(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(mock.CacheRepository)
-					cacheRepo.On("Get", ctx, key, mock.Anything).Return(nil, nil)
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(nil)
 
 					return &baseRepository{
 						db:     db,
@@ -489,11 +482,11 @@ func TestCachedLabelRepository_Get(t *testing.T) {
 		{
 			name: "get cached label error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id model.ID, _ *model.Label) *baseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *model.Label) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), id.String())
 
 					db, err := NewDatabase(
-						WithClient(new(mock.RedisClient)),
+						WithClient(mock.NewUniversalClient(ctrl)),
 					)
 					require.NoError(t, err)
 
@@ -503,8 +496,8 @@ func TestCachedLabelRepository_Get(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(mock.CacheRepository)
-					cacheRepo.On("Get", ctx, key, mock.Anything).Return(nil, assert.AnError)
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(assert.AnError)
 
 					return &baseRepository{
 						db:     db,
@@ -526,11 +519,11 @@ func TestCachedLabelRepository_Get(t *testing.T) {
 		{
 			name: "get uncached label cache set error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id model.ID, label *model.Label) *baseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, label *model.Label) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), id.String())
 
 					db, err := NewDatabase(
-						WithClient(new(mock.RedisClient)),
+						WithClient(mock.NewUniversalClient(ctrl)),
 					)
 					require.NoError(t, err)
 
@@ -541,9 +534,9 @@ func TestCachedLabelRepository_Get(t *testing.T) {
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Set", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(mock.CacheRepository)
-					cacheRepo.On("Get", ctx, key, mock.Anything).Return(nil, nil)
-					cacheRepo.On("Set", &cache.Item{
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(cache.ErrCacheMiss)
+					cacheRepo.EXPECT().Set(&cache.Item{
 						Ctx:   ctx,
 						Key:   key,
 						Value: label,
@@ -573,13 +566,15 @@ func TestCachedLabelRepository_Get(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 			var want *model.Label
 			if tt.want != nil {
 				want = tt.want(tt.args.id)
 			}
 
 			r := &CachedLabelRepository{
-				cacheRepo: tt.fields.cacheRepo(tt.args.ctx, tt.args.id, want),
+				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, want),
 				labelRepo: tt.fields.labelRepo(tt.args.ctx, tt.args.id, want),
 			}
 			got, err := r.Get(tt.args.ctx, tt.args.id)
@@ -591,7 +586,7 @@ func TestCachedLabelRepository_Get(t *testing.T) {
 
 func TestCachedLabelRepository_GetAll(t *testing.T) {
 	type fields struct {
-		cacheRepo func(ctx context.Context, offset, limit int, labels []*model.Label) *baseRepository
+		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, labels []*model.Label) *baseRepository
 		labelRepo func(ctx context.Context, offset, limit int, labels []*model.Label) repository.LabelRepository
 	}
 	type args struct {
@@ -609,11 +604,11 @@ func TestCachedLabelRepository_GetAll(t *testing.T) {
 		{
 			name: "get uncached labels",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, offset, limit int, labels []*model.Label) *baseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, labels []*model.Label) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", offset, limit)
 
 					db, err := NewDatabase(
-						WithClient(new(mock.RedisClient)),
+						WithClient(mock.NewUniversalClient(ctrl)),
 					)
 					require.NoError(t, err)
 
@@ -624,9 +619,9 @@ func TestCachedLabelRepository_GetAll(t *testing.T) {
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Set", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(mock.CacheRepository)
-					cacheRepo.On("Get", ctx, key, mock.Anything).Return(nil, nil)
-					cacheRepo.On("Set", &cache.Item{
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(cache.ErrCacheMiss)
+					cacheRepo.EXPECT().Set(&cache.Item{
 						Ctx:   ctx,
 						Key:   key,
 						Value: labels,
@@ -666,11 +661,11 @@ func TestCachedLabelRepository_GetAll(t *testing.T) {
 		{
 			name: "get cached labels",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, offset, limit int, labels []*model.Label) *baseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, labels []*model.Label) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", offset, limit)
 
 					db, err := NewDatabase(
-						WithClient(new(mock.RedisClient)),
+						WithClient(mock.NewUniversalClient(ctrl)),
 					)
 					require.NoError(t, err)
 
@@ -680,8 +675,12 @@ func TestCachedLabelRepository_GetAll(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(mock.CacheRepository)
-					cacheRepo.On("Get", ctx, key, mock.Anything).Return(labels, nil)
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Do(func(_ context.Context, _ string, dst any) {
+						if ptr, ok := dst.(*[]*model.Label); ok {
+							*ptr = labels
+						}
+					}).Return(nil)
 
 					return &baseRepository{
 						db:     db,
@@ -715,11 +714,11 @@ func TestCachedLabelRepository_GetAll(t *testing.T) {
 		{
 			name: "get uncached labels error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, offset, limit int, _ []*model.Label) *baseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, _ []*model.Label) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", offset, limit)
 
 					db, err := NewDatabase(
-						WithClient(new(mock.RedisClient)),
+						WithClient(mock.NewUniversalClient(ctrl)),
 					)
 					require.NoError(t, err)
 
@@ -730,8 +729,8 @@ func TestCachedLabelRepository_GetAll(t *testing.T) {
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Set", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(mock.CacheRepository)
-					cacheRepo.On("Get", ctx, key, mock.Anything).Return(nil, nil)
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(nil)
 
 					return &baseRepository{
 						db:     db,
@@ -756,11 +755,11 @@ func TestCachedLabelRepository_GetAll(t *testing.T) {
 		{
 			name: "get get labels cache error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, offset, limit int, _ []*model.Label) *baseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, _ []*model.Label) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", offset, limit)
 
 					db, err := NewDatabase(
-						WithClient(new(mock.RedisClient)),
+						WithClient(mock.NewUniversalClient(ctrl)),
 					)
 					require.NoError(t, err)
 
@@ -771,8 +770,8 @@ func TestCachedLabelRepository_GetAll(t *testing.T) {
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Set", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(mock.CacheRepository)
-					cacheRepo.On("Get", ctx, key, mock.Anything).Return(nil, assert.AnError)
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(assert.AnError)
 
 					return &baseRepository{
 						db:     db,
@@ -795,11 +794,11 @@ func TestCachedLabelRepository_GetAll(t *testing.T) {
 		{
 			name: "get uncached labels cache set error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, offset, limit int, labels []*model.Label) *baseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, labels []*model.Label) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", offset, limit)
 
 					db, err := NewDatabase(
-						WithClient(new(mock.RedisClient)),
+						WithClient(mock.NewUniversalClient(ctrl)),
 					)
 					require.NoError(t, err)
 
@@ -810,9 +809,9 @@ func TestCachedLabelRepository_GetAll(t *testing.T) {
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Set", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(mock.CacheRepository)
-					cacheRepo.On("Get", ctx, key, mock.Anything).Return(nil, nil)
-					cacheRepo.On("Set", &cache.Item{
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(nil)
+					cacheRepo.EXPECT().Set(&cache.Item{
 						Ctx:   ctx,
 						Key:   key,
 						Value: labels,
@@ -843,8 +842,10 @@ func TestCachedLabelRepository_GetAll(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 			r := &CachedLabelRepository{
-				cacheRepo: tt.fields.cacheRepo(tt.args.ctx, tt.args.offset, tt.args.limit, tt.want),
+				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.offset, tt.args.limit, tt.want),
 				labelRepo: tt.fields.labelRepo(tt.args.ctx, tt.args.offset, tt.args.limit, tt.want),
 			}
 			got, err := r.GetAll(tt.args.ctx, tt.args.offset, tt.args.limit)
@@ -856,7 +857,7 @@ func TestCachedLabelRepository_GetAll(t *testing.T) {
 
 func TestCachedLabelRepository_Update(t *testing.T) {
 	type fields struct {
-		cacheRepo func(ctx context.Context, id model.ID, label *model.Label) *baseRepository
+		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, label *model.Label) *baseRepository
 		labelRepo func(ctx context.Context, id model.ID, patch map[string]any, label *model.Label) repository.LabelRepository
 	}
 	type args struct {
@@ -874,20 +875,21 @@ func TestCachedLabelRepository_Update(t *testing.T) {
 		{
 			name: "update label",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id model.ID, label *model.Label) *baseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, label *model.Label) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), id.String())
 					getAllKey := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
 
 					getAllKeyCmd := new(redis.StringSliceCmd)
 					getAllKeyCmd.SetVal([]string{getAllKey})
 
-					dbClient := new(mock.RedisClient)
-					dbClient.On("Keys", ctx, getAllKey).Return(getAllKeyCmd, nil)
-					dbClient.On("Set", &cache.Item{
+					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, getAllKey).Return(getAllKeyCmd)
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Set(&cache.Item{
 						Ctx:   ctx,
 						Key:   key,
 						Value: label,
-					}).Return(new(redis.StatusCmd))
+					}).Return(nil)
 
 					db, err := NewDatabase(
 						WithClient(dbClient),
@@ -898,16 +900,10 @@ func TestCachedLabelRepository_Update(t *testing.T) {
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
 					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Set", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(mock.CacheRepository)
-					cacheRepo.On("Delete", ctx, getAllKey).Return(nil)
-					cacheRepo.On("Set", &cache.Item{
-						Ctx:   ctx,
-						Key:   key,
-						Value: label,
-					}).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(nil)
 
 					return &baseRepository{
 						db:     db,
@@ -939,15 +935,15 @@ func TestCachedLabelRepository_Update(t *testing.T) {
 		{
 			name: "update label with error",
 			fields: fields{
-				cacheRepo: func(_ context.Context, _ model.ID, _ *model.Label) *baseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ *model.Label) *baseRepository {
 					db, err := NewDatabase(
-						WithClient(new(mock.RedisClient)),
+						WithClient(mock.NewUniversalClient(ctrl)),
 					)
 					require.NoError(t, err)
 
 					return &baseRepository{
 						db:     db,
-						cache:  new(mock.CacheRepository),
+						cache:  mock.NewCacheBackend(ctrl),
 						tracer: new(mock.Tracer),
 						logger: new(mock.Logger),
 					}
@@ -971,15 +967,11 @@ func TestCachedLabelRepository_Update(t *testing.T) {
 		{
 			name: "update label set cache error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id model.ID, label *model.Label) *baseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, label *model.Label) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), id.String())
 
-					dbClient := new(mock.RedisClient)
-					dbClient.On("Set", &cache.Item{
-						Ctx:   ctx,
-						Key:   key,
-						Value: label,
-					}).Return(new(redis.StatusCmd))
+					dbClient := mock.NewUniversalClient(ctrl)
+					cacheRepo := mock.NewCacheBackend(ctrl)
 
 					db, err := NewDatabase(
 						WithClient(dbClient),
@@ -991,9 +983,7 @@ func TestCachedLabelRepository_Update(t *testing.T) {
 
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Set", []trace.SpanStartOption(nil)).Return(ctx, span)
-
-					cacheRepo := new(mock.CacheRepository)
-					cacheRepo.On("Set", &cache.Item{
+					cacheRepo.EXPECT().Set(&cache.Item{
 						Ctx:   ctx,
 						Key:   key,
 						Value: label,
@@ -1025,20 +1015,21 @@ func TestCachedLabelRepository_Update(t *testing.T) {
 		{
 			name: "update label delete get all cache error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id model.ID, label *model.Label) *baseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, label *model.Label) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), id.String())
 					getAllKey := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
 
 					getAllKeyCmd := new(redis.StringSliceCmd)
 					getAllKeyCmd.SetVal([]string{getAllKey})
 
-					dbClient := new(mock.RedisClient)
-					dbClient.On("Keys", ctx, getAllKey).Return(getAllKeyCmd, nil)
-					dbClient.On("Set", &cache.Item{
+					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, getAllKey).Return(getAllKeyCmd)
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Set(&cache.Item{
 						Ctx:   ctx,
 						Key:   key,
 						Value: label,
-					}).Return(new(redis.StatusCmd))
+					}).Return(nil)
 
 					db, err := NewDatabase(
 						WithClient(dbClient),
@@ -1049,16 +1040,10 @@ func TestCachedLabelRepository_Update(t *testing.T) {
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
 					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Set", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(mock.CacheRepository)
-					cacheRepo.On("Delete", ctx, getAllKey).Return(assert.AnError)
-					cacheRepo.On("Set", &cache.Item{
-						Ctx:   ctx,
-						Key:   key,
-						Value: label,
-					}).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(assert.AnError)
 
 					return &baseRepository{
 						db:     db,
@@ -1088,9 +1073,11 @@ func TestCachedLabelRepository_Update(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 
 			r := &CachedLabelRepository{
-				cacheRepo: tt.fields.cacheRepo(tt.args.ctx, tt.args.id, tt.want),
+				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, tt.want),
 				labelRepo: tt.fields.labelRepo(tt.args.ctx, tt.args.id, tt.args.patch, tt.want),
 			}
 			got, err := r.Update(tt.args.ctx, tt.args.id, tt.args.patch)
@@ -1102,7 +1089,7 @@ func TestCachedLabelRepository_Update(t *testing.T) {
 
 func TestCachedLabelRepository_AttachTo(t *testing.T) {
 	type fields struct {
-		cacheRepo func(ctx context.Context, id, attachTo model.ID) *baseRepository
+		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, id, attachTo model.ID) *baseRepository
 		labelRepo func(ctx context.Context, id, attachTo model.ID) repository.LabelRepository
 	}
 	type args struct {
@@ -1119,7 +1106,7 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 		{
 			name: "delete label success",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id, _ model.ID) *baseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id, _ model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), id.String())
 					getAllKey := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
 					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
@@ -1134,10 +1121,10 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 					issuesKeyCmd := new(redis.StringSliceCmd)
 					issuesKeyCmd.SetVal([]string{issuesKey})
 
-					dbClient := new(mock.RedisClient)
-					dbClient.On("Keys", ctx, getAllKey).Return(getAllKeyCmd)
-					dbClient.On("Keys", ctx, documentsKey).Return(documentsKeyCmd)
-					dbClient.On("Keys", ctx, issuesKey).Return(issuesKeyCmd)
+					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, getAllKey).Return(getAllKeyCmd)
+					dbClient.EXPECT().Keys(ctx, documentsKey).Return(documentsKeyCmd)
+					dbClient.EXPECT().Keys(ctx, issuesKey).Return(issuesKeyCmd)
 
 					db, err := NewDatabase(
 						WithClient(dbClient),
@@ -1151,11 +1138,11 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(mock.CacheRepository)
-					cacheRepo.On("Delete", ctx, key).Return(nil)
-					cacheRepo.On("Delete", ctx, getAllKey).Return(nil)
-					cacheRepo.On("Delete", ctx, documentsKey).Return(nil)
-					cacheRepo.On("Delete", ctx, issuesKey).Return(nil)
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, documentsKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, issuesKey).Return(nil)
 
 					return &baseRepository{
 						db:     db,
@@ -1179,7 +1166,7 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 		{
 			name: "delete label with label deletion error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id, _ model.ID) *baseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id, _ model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), id.String())
 					getAllKey := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
 					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
@@ -1194,10 +1181,10 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 					issuesKeyCmd := new(redis.StringSliceCmd)
 					issuesKeyCmd.SetVal([]string{issuesKey})
 
-					dbClient := new(mock.RedisClient)
-					dbClient.On("Keys", ctx, getAllKey).Return(getAllKeyCmd)
-					dbClient.On("Keys", ctx, documentsKey).Return(documentsKeyCmd)
-					dbClient.On("Keys", ctx, issuesKey).Return(issuesKeyCmd)
+					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, getAllKey).Return(getAllKeyCmd)
+					dbClient.EXPECT().Keys(ctx, documentsKey).Return(documentsKeyCmd)
+					dbClient.EXPECT().Keys(ctx, issuesKey).Return(issuesKeyCmd)
 
 					db, err := NewDatabase(
 						WithClient(dbClient),
@@ -1211,11 +1198,11 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(mock.CacheRepository)
-					cacheRepo.On("Delete", ctx, key).Return(nil)
-					cacheRepo.On("Delete", ctx, getAllKey).Return(nil)
-					cacheRepo.On("Delete", ctx, documentsKey).Return(nil)
-					cacheRepo.On("Delete", ctx, issuesKey).Return(nil)
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, documentsKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, issuesKey).Return(nil)
 
 					return &baseRepository{
 						db:     db,
@@ -1240,10 +1227,10 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 		{
 			name: "delete label with cache deletion error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id, _ model.ID) *baseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id, _ model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), id.String())
 
-					dbClient := new(mock.RedisClient)
+					dbClient := mock.NewUniversalClient(ctrl)
 
 					db, err := NewDatabase(
 						WithClient(dbClient),
@@ -1256,8 +1243,8 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(mock.CacheRepository)
-					cacheRepo.On("Delete", ctx, key).Return(repository.ErrCacheDelete)
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, key).Return(repository.ErrCacheDelete)
 
 					return &baseRepository{
 						db:     db,
@@ -1282,15 +1269,15 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 		{
 			name: "delete label cache by related key error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id, _ model.ID) *baseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id, _ model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), id.String())
 					getAllKey := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
 
 					getAllKeyCmd := new(redis.StringSliceCmd)
 					getAllKeyCmd.SetVal([]string{getAllKey})
 
-					dbClient := new(mock.RedisClient)
-					dbClient.On("Keys", ctx, getAllKey).Return(getAllKeyCmd)
+					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, getAllKey).Return(getAllKeyCmd)
 
 					db, err := NewDatabase(
 						WithClient(dbClient),
@@ -1304,9 +1291,9 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(mock.CacheRepository)
-					cacheRepo.On("Delete", ctx, key).Return(nil)
-					cacheRepo.On("Delete", ctx, getAllKey).Return(repository.ErrCacheDelete)
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(repository.ErrCacheDelete)
 
 					return &baseRepository{
 						db:     db,
@@ -1329,7 +1316,7 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 		{
 			name: "delete label cache by document key error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id, _ model.ID) *baseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id, _ model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), id.String())
 					getAllKey := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
 					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
@@ -1340,9 +1327,9 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 					documentsKeyCmd := new(redis.StringSliceCmd)
 					documentsKeyCmd.SetVal([]string{documentsKey})
 
-					dbClient := new(mock.RedisClient)
-					dbClient.On("Keys", ctx, getAllKey).Return(getAllKeyCmd)
-					dbClient.On("Keys", ctx, documentsKey).Return(documentsKeyCmd)
+					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, getAllKey).Return(getAllKeyCmd)
+					dbClient.EXPECT().Keys(ctx, documentsKey).Return(documentsKeyCmd)
 
 					db, err := NewDatabase(
 						WithClient(dbClient),
@@ -1356,10 +1343,10 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(mock.CacheRepository)
-					cacheRepo.On("Delete", ctx, key).Return(nil)
-					cacheRepo.On("Delete", ctx, getAllKey).Return(nil)
-					cacheRepo.On("Delete", ctx, documentsKey).Return(repository.ErrCacheDelete)
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, documentsKey).Return(repository.ErrCacheDelete)
 
 					return &baseRepository{
 						db:     db,
@@ -1382,7 +1369,7 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 		{
 			name: "delete label cache by issues key error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id, _ model.ID) *baseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id, _ model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), id.String())
 					getAllKey := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
 					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
@@ -1397,10 +1384,10 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 					issuesKeyCmd := new(redis.StringSliceCmd)
 					issuesKeyCmd.SetVal([]string{issuesKey})
 
-					dbClient := new(mock.RedisClient)
-					dbClient.On("Keys", ctx, getAllKey).Return(getAllKeyCmd)
-					dbClient.On("Keys", ctx, documentsKey).Return(documentsKeyCmd)
-					dbClient.On("Keys", ctx, issuesKey).Return(issuesKeyCmd)
+					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, getAllKey).Return(getAllKeyCmd)
+					dbClient.EXPECT().Keys(ctx, documentsKey).Return(documentsKeyCmd)
+					dbClient.EXPECT().Keys(ctx, issuesKey).Return(issuesKeyCmd)
 
 					db, err := NewDatabase(
 						WithClient(dbClient),
@@ -1414,11 +1401,11 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(mock.CacheRepository)
-					cacheRepo.On("Delete", ctx, key).Return(nil)
-					cacheRepo.On("Delete", ctx, getAllKey).Return(nil)
-					cacheRepo.On("Delete", ctx, documentsKey).Return(nil)
-					cacheRepo.On("Delete", ctx, issuesKey).Return(repository.ErrCacheDelete)
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, documentsKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, issuesKey).Return(repository.ErrCacheDelete)
 
 					return &baseRepository{
 						db:     db,
@@ -1443,8 +1430,10 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 			r := &CachedLabelRepository{
-				cacheRepo: tt.fields.cacheRepo(tt.args.ctx, tt.args.id, tt.args.attachTo),
+				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.attachTo),
 				labelRepo: tt.fields.labelRepo(tt.args.ctx, tt.args.id, tt.args.attachTo),
 			}
 			err := r.AttachTo(tt.args.ctx, tt.args.id, tt.args.attachTo)
@@ -1455,7 +1444,7 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 
 func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 	type fields struct {
-		cacheRepo func(ctx context.Context, id, detachFrom model.ID) *baseRepository
+		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, id, detachFrom model.ID) *baseRepository
 		labelRepo func(ctx context.Context, id, detachFrom model.ID) repository.LabelRepository
 	}
 	type args struct {
@@ -1472,7 +1461,7 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 		{
 			name: "delete label success",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id, _ model.ID) *baseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id, _ model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), id.String())
 					getAllKey := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
 					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
@@ -1487,10 +1476,10 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 					issuesKeyCmd := new(redis.StringSliceCmd)
 					issuesKeyCmd.SetVal([]string{issuesKey})
 
-					dbClient := new(mock.RedisClient)
-					dbClient.On("Keys", ctx, getAllKey).Return(getAllKeyCmd)
-					dbClient.On("Keys", ctx, documentsKey).Return(documentsKeyCmd)
-					dbClient.On("Keys", ctx, issuesKey).Return(issuesKeyCmd)
+					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, getAllKey).Return(getAllKeyCmd)
+					dbClient.EXPECT().Keys(ctx, documentsKey).Return(documentsKeyCmd)
+					dbClient.EXPECT().Keys(ctx, issuesKey).Return(issuesKeyCmd)
 
 					db, err := NewDatabase(
 						WithClient(dbClient),
@@ -1504,11 +1493,11 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(mock.CacheRepository)
-					cacheRepo.On("Delete", ctx, key).Return(nil)
-					cacheRepo.On("Delete", ctx, getAllKey).Return(nil)
-					cacheRepo.On("Delete", ctx, documentsKey).Return(nil)
-					cacheRepo.On("Delete", ctx, issuesKey).Return(nil)
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, documentsKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, issuesKey).Return(nil)
 
 					return &baseRepository{
 						db:     db,
@@ -1532,7 +1521,7 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 		{
 			name: "delete label with label deletion error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id, _ model.ID) *baseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id, _ model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), id.String())
 					getAllKey := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
 					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
@@ -1547,10 +1536,10 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 					issuesKeyCmd := new(redis.StringSliceCmd)
 					issuesKeyCmd.SetVal([]string{issuesKey})
 
-					dbClient := new(mock.RedisClient)
-					dbClient.On("Keys", ctx, getAllKey).Return(getAllKeyCmd)
-					dbClient.On("Keys", ctx, documentsKey).Return(documentsKeyCmd)
-					dbClient.On("Keys", ctx, issuesKey).Return(issuesKeyCmd)
+					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, getAllKey).Return(getAllKeyCmd)
+					dbClient.EXPECT().Keys(ctx, documentsKey).Return(documentsKeyCmd)
+					dbClient.EXPECT().Keys(ctx, issuesKey).Return(issuesKeyCmd)
 
 					db, err := NewDatabase(
 						WithClient(dbClient),
@@ -1564,11 +1553,11 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(mock.CacheRepository)
-					cacheRepo.On("Delete", ctx, key).Return(nil)
-					cacheRepo.On("Delete", ctx, getAllKey).Return(nil)
-					cacheRepo.On("Delete", ctx, documentsKey).Return(nil)
-					cacheRepo.On("Delete", ctx, issuesKey).Return(nil)
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, documentsKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, issuesKey).Return(nil)
 
 					return &baseRepository{
 						db:     db,
@@ -1593,10 +1582,10 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 		{
 			name: "delete label with cache deletion error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id, _ model.ID) *baseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id, _ model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), id.String())
 
-					dbClient := new(mock.RedisClient)
+					dbClient := mock.NewUniversalClient(ctrl)
 
 					db, err := NewDatabase(
 						WithClient(dbClient),
@@ -1609,8 +1598,8 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(mock.CacheRepository)
-					cacheRepo.On("Delete", ctx, key).Return(repository.ErrCacheDelete)
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, key).Return(repository.ErrCacheDelete)
 
 					return &baseRepository{
 						db:     db,
@@ -1635,15 +1624,15 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 		{
 			name: "delete label cache by related key error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id, _ model.ID) *baseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id, _ model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), id.String())
 					getAllKey := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
 
 					getAllKeyCmd := new(redis.StringSliceCmd)
 					getAllKeyCmd.SetVal([]string{getAllKey})
 
-					dbClient := new(mock.RedisClient)
-					dbClient.On("Keys", ctx, getAllKey).Return(getAllKeyCmd)
+					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, getAllKey).Return(getAllKeyCmd)
 
 					db, err := NewDatabase(
 						WithClient(dbClient),
@@ -1657,9 +1646,9 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(mock.CacheRepository)
-					cacheRepo.On("Delete", ctx, key).Return(nil)
-					cacheRepo.On("Delete", ctx, getAllKey).Return(repository.ErrCacheDelete)
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(repository.ErrCacheDelete)
 
 					return &baseRepository{
 						db:     db,
@@ -1682,7 +1671,7 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 		{
 			name: "delete label cache by document key error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id, _ model.ID) *baseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id, _ model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), id.String())
 					getAllKey := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
 					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
@@ -1693,9 +1682,9 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 					documentsKeyCmd := new(redis.StringSliceCmd)
 					documentsKeyCmd.SetVal([]string{documentsKey})
 
-					dbClient := new(mock.RedisClient)
-					dbClient.On("Keys", ctx, getAllKey).Return(getAllKeyCmd)
-					dbClient.On("Keys", ctx, documentsKey).Return(documentsKeyCmd)
+					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, getAllKey).Return(getAllKeyCmd)
+					dbClient.EXPECT().Keys(ctx, documentsKey).Return(documentsKeyCmd)
 
 					db, err := NewDatabase(
 						WithClient(dbClient),
@@ -1709,10 +1698,10 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(mock.CacheRepository)
-					cacheRepo.On("Delete", ctx, key).Return(nil)
-					cacheRepo.On("Delete", ctx, getAllKey).Return(nil)
-					cacheRepo.On("Delete", ctx, documentsKey).Return(repository.ErrCacheDelete)
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, documentsKey).Return(repository.ErrCacheDelete)
 
 					return &baseRepository{
 						db:     db,
@@ -1735,7 +1724,7 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 		{
 			name: "delete label cache by issues key error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id, _ model.ID) *baseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id, _ model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), id.String())
 					getAllKey := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
 					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
@@ -1750,10 +1739,10 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 					issuesKeyCmd := new(redis.StringSliceCmd)
 					issuesKeyCmd.SetVal([]string{issuesKey})
 
-					dbClient := new(mock.RedisClient)
-					dbClient.On("Keys", ctx, getAllKey).Return(getAllKeyCmd)
-					dbClient.On("Keys", ctx, documentsKey).Return(documentsKeyCmd)
-					dbClient.On("Keys", ctx, issuesKey).Return(issuesKeyCmd)
+					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, getAllKey).Return(getAllKeyCmd)
+					dbClient.EXPECT().Keys(ctx, documentsKey).Return(documentsKeyCmd)
+					dbClient.EXPECT().Keys(ctx, issuesKey).Return(issuesKeyCmd)
 
 					db, err := NewDatabase(
 						WithClient(dbClient),
@@ -1767,11 +1756,11 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(mock.CacheRepository)
-					cacheRepo.On("Delete", ctx, key).Return(nil)
-					cacheRepo.On("Delete", ctx, getAllKey).Return(nil)
-					cacheRepo.On("Delete", ctx, documentsKey).Return(nil)
-					cacheRepo.On("Delete", ctx, issuesKey).Return(repository.ErrCacheDelete)
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, documentsKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, issuesKey).Return(repository.ErrCacheDelete)
 
 					return &baseRepository{
 						db:     db,
@@ -1796,8 +1785,10 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 			r := &CachedLabelRepository{
-				cacheRepo: tt.fields.cacheRepo(tt.args.ctx, tt.args.id, tt.args.detachFrom),
+				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.detachFrom),
 				labelRepo: tt.fields.labelRepo(tt.args.ctx, tt.args.id, tt.args.detachFrom),
 			}
 			err := r.DetachFrom(tt.args.ctx, tt.args.id, tt.args.detachFrom)
@@ -1808,7 +1799,7 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 
 func TestCachedLabelRepository_Delete(t *testing.T) {
 	type fields struct {
-		cacheRepo func(ctx context.Context, id model.ID) *baseRepository
+		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *baseRepository
 		labelRepo func(ctx context.Context, id model.ID) repository.LabelRepository
 	}
 	type args struct {
@@ -1824,7 +1815,7 @@ func TestCachedLabelRepository_Delete(t *testing.T) {
 		{
 			name: "delete label success",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id model.ID) *baseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), id.String())
 					getAllKey := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
 					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
@@ -1839,10 +1830,10 @@ func TestCachedLabelRepository_Delete(t *testing.T) {
 					issuesKeyCmd := new(redis.StringSliceCmd)
 					issuesKeyCmd.SetVal([]string{issuesKey})
 
-					dbClient := new(mock.RedisClient)
-					dbClient.On("Keys", ctx, getAllKey).Return(getAllKeyCmd)
-					dbClient.On("Keys", ctx, documentsKey).Return(documentsKeyCmd)
-					dbClient.On("Keys", ctx, issuesKey).Return(issuesKeyCmd)
+					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, getAllKey).Return(getAllKeyCmd)
+					dbClient.EXPECT().Keys(ctx, documentsKey).Return(documentsKeyCmd)
+					dbClient.EXPECT().Keys(ctx, issuesKey).Return(issuesKeyCmd)
 
 					db, err := NewDatabase(
 						WithClient(dbClient),
@@ -1856,11 +1847,11 @@ func TestCachedLabelRepository_Delete(t *testing.T) {
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(mock.CacheRepository)
-					cacheRepo.On("Delete", ctx, key).Return(nil)
-					cacheRepo.On("Delete", ctx, getAllKey).Return(nil)
-					cacheRepo.On("Delete", ctx, documentsKey).Return(nil)
-					cacheRepo.On("Delete", ctx, issuesKey).Return(nil)
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, documentsKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, issuesKey).Return(nil)
 
 					return &baseRepository{
 						db:     db,
@@ -1883,7 +1874,7 @@ func TestCachedLabelRepository_Delete(t *testing.T) {
 		{
 			name: "delete label with label deletion error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id model.ID) *baseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), id.String())
 					getAllKey := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
 					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
@@ -1898,10 +1889,10 @@ func TestCachedLabelRepository_Delete(t *testing.T) {
 					issuesKeyCmd := new(redis.StringSliceCmd)
 					issuesKeyCmd.SetVal([]string{issuesKey})
 
-					dbClient := new(mock.RedisClient)
-					dbClient.On("Keys", ctx, getAllKey).Return(getAllKeyCmd)
-					dbClient.On("Keys", ctx, documentsKey).Return(documentsKeyCmd)
-					dbClient.On("Keys", ctx, issuesKey).Return(issuesKeyCmd)
+					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, getAllKey).Return(getAllKeyCmd)
+					dbClient.EXPECT().Keys(ctx, documentsKey).Return(documentsKeyCmd)
+					dbClient.EXPECT().Keys(ctx, issuesKey).Return(issuesKeyCmd)
 
 					db, err := NewDatabase(
 						WithClient(dbClient),
@@ -1915,11 +1906,11 @@ func TestCachedLabelRepository_Delete(t *testing.T) {
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(mock.CacheRepository)
-					cacheRepo.On("Delete", ctx, key).Return(nil)
-					cacheRepo.On("Delete", ctx, getAllKey).Return(nil)
-					cacheRepo.On("Delete", ctx, documentsKey).Return(nil)
-					cacheRepo.On("Delete", ctx, issuesKey).Return(nil)
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, documentsKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, issuesKey).Return(nil)
 
 					return &baseRepository{
 						db:     db,
@@ -1943,10 +1934,10 @@ func TestCachedLabelRepository_Delete(t *testing.T) {
 		{
 			name: "delete label with cache deletion error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id model.ID) *baseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), id.String())
 
-					dbClient := new(mock.RedisClient)
+					dbClient := mock.NewUniversalClient(ctrl)
 
 					db, err := NewDatabase(
 						WithClient(dbClient),
@@ -1959,8 +1950,8 @@ func TestCachedLabelRepository_Delete(t *testing.T) {
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(mock.CacheRepository)
-					cacheRepo.On("Delete", ctx, key).Return(repository.ErrCacheDelete)
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, key).Return(repository.ErrCacheDelete)
 
 					return &baseRepository{
 						db:     db,
@@ -1984,15 +1975,15 @@ func TestCachedLabelRepository_Delete(t *testing.T) {
 		{
 			name: "delete label cache by related key error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id model.ID) *baseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), id.String())
 					getAllKey := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
 
 					getAllKeyCmd := new(redis.StringSliceCmd)
 					getAllKeyCmd.SetVal([]string{getAllKey})
 
-					dbClient := new(mock.RedisClient)
-					dbClient.On("Keys", ctx, getAllKey).Return(getAllKeyCmd)
+					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, getAllKey).Return(getAllKeyCmd)
 
 					db, err := NewDatabase(
 						WithClient(dbClient),
@@ -2006,9 +1997,9 @@ func TestCachedLabelRepository_Delete(t *testing.T) {
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(mock.CacheRepository)
-					cacheRepo.On("Delete", ctx, key).Return(nil)
-					cacheRepo.On("Delete", ctx, getAllKey).Return(repository.ErrCacheDelete)
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(repository.ErrCacheDelete)
 
 					return &baseRepository{
 						db:     db,
@@ -2030,7 +2021,7 @@ func TestCachedLabelRepository_Delete(t *testing.T) {
 		{
 			name: "delete label cache by document key error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id model.ID) *baseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), id.String())
 					getAllKey := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
 					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
@@ -2041,9 +2032,9 @@ func TestCachedLabelRepository_Delete(t *testing.T) {
 					documentsKeyCmd := new(redis.StringSliceCmd)
 					documentsKeyCmd.SetVal([]string{documentsKey})
 
-					dbClient := new(mock.RedisClient)
-					dbClient.On("Keys", ctx, getAllKey).Return(getAllKeyCmd)
-					dbClient.On("Keys", ctx, documentsKey).Return(documentsKeyCmd)
+					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, getAllKey).Return(getAllKeyCmd)
+					dbClient.EXPECT().Keys(ctx, documentsKey).Return(documentsKeyCmd)
 
 					db, err := NewDatabase(
 						WithClient(dbClient),
@@ -2057,10 +2048,10 @@ func TestCachedLabelRepository_Delete(t *testing.T) {
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(mock.CacheRepository)
-					cacheRepo.On("Delete", ctx, key).Return(nil)
-					cacheRepo.On("Delete", ctx, getAllKey).Return(nil)
-					cacheRepo.On("Delete", ctx, documentsKey).Return(repository.ErrCacheDelete)
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, documentsKey).Return(repository.ErrCacheDelete)
 
 					return &baseRepository{
 						db:     db,
@@ -2082,7 +2073,7 @@ func TestCachedLabelRepository_Delete(t *testing.T) {
 		{
 			name: "delete label cache by issues key error",
 			fields: fields{
-				cacheRepo: func(ctx context.Context, id model.ID) *baseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), id.String())
 					getAllKey := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
 					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
@@ -2097,10 +2088,10 @@ func TestCachedLabelRepository_Delete(t *testing.T) {
 					issuesKeyCmd := new(redis.StringSliceCmd)
 					issuesKeyCmd.SetVal([]string{issuesKey})
 
-					dbClient := new(mock.RedisClient)
-					dbClient.On("Keys", ctx, getAllKey).Return(getAllKeyCmd)
-					dbClient.On("Keys", ctx, documentsKey).Return(documentsKeyCmd)
-					dbClient.On("Keys", ctx, issuesKey).Return(issuesKeyCmd)
+					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, getAllKey).Return(getAllKeyCmd)
+					dbClient.EXPECT().Keys(ctx, documentsKey).Return(documentsKeyCmd)
+					dbClient.EXPECT().Keys(ctx, issuesKey).Return(issuesKeyCmd)
 
 					db, err := NewDatabase(
 						WithClient(dbClient),
@@ -2114,11 +2105,11 @@ func TestCachedLabelRepository_Delete(t *testing.T) {
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					cacheRepo := new(mock.CacheRepository)
-					cacheRepo.On("Delete", ctx, key).Return(nil)
-					cacheRepo.On("Delete", ctx, getAllKey).Return(nil)
-					cacheRepo.On("Delete", ctx, documentsKey).Return(nil)
-					cacheRepo.On("Delete", ctx, issuesKey).Return(repository.ErrCacheDelete)
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, documentsKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, issuesKey).Return(repository.ErrCacheDelete)
 
 					return &baseRepository{
 						db:     db,
@@ -2142,8 +2133,10 @@ func TestCachedLabelRepository_Delete(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 			r := &CachedLabelRepository{
-				cacheRepo: tt.fields.cacheRepo(tt.args.ctx, tt.args.id),
+				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id),
 				labelRepo: tt.fields.labelRepo(tt.args.ctx, tt.args.id),
 			}
 			err := r.Delete(tt.args.ctx, tt.args.id)

@@ -6,6 +6,7 @@ import (
 
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 
 	"github.com/opcotech/elemo/internal/config"
 	"github.com/opcotech/elemo/internal/pkg/log"
@@ -77,9 +78,17 @@ func TestWithDatabaseClient(t *testing.T) {
 		{
 			name: "create new option with client",
 			args: args{
-				client: new(mock.RedisClient),
+				client: func() redis.UniversalClient {
+					ctrl := gomock.NewController(t)
+					defer ctrl.Finish()
+					return mock.NewUniversalClient(ctrl)
+				}(),
 			},
-			want: new(mock.RedisClient),
+			want: func() redis.UniversalClient {
+				ctrl := gomock.NewController(t)
+				defer ctrl.Finish()
+				return mock.NewUniversalClient(ctrl)
+			}(),
 		},
 		{
 			name: "create new option with nil client",
@@ -190,12 +199,20 @@ func TestNewDatabase(t *testing.T) {
 		{
 			name: "create new database",
 			args: args{
-				client: new(mock.RedisClient),
+				client: func() redis.UniversalClient {
+					ctrl := gomock.NewController(t)
+					defer ctrl.Finish()
+					return mock.NewUniversalClient(ctrl)
+				}(),
 				logger: new(mock.Logger),
 				tracer: new(mock.Tracer),
 			},
 			want: &Database{
-				client: new(mock.RedisClient),
+				client: func() redis.UniversalClient {
+					ctrl := gomock.NewController(t)
+					defer ctrl.Finish()
+					return mock.NewUniversalClient(ctrl)
+				}(),
 				logger: new(mock.Logger),
 				tracer: new(mock.Tracer),
 			},
@@ -212,7 +229,11 @@ func TestNewDatabase(t *testing.T) {
 		{
 			name: "create new database with nil logger",
 			args: args{
-				client: new(mock.RedisClient),
+				client: func() redis.UniversalClient {
+					ctrl := gomock.NewController(t)
+					defer ctrl.Finish()
+					return mock.NewUniversalClient(ctrl)
+				}(),
 				logger: nil,
 				tracer: new(mock.Tracer),
 			},
@@ -221,7 +242,11 @@ func TestNewDatabase(t *testing.T) {
 		{
 			name: "create new database with nil tracer",
 			args: args{
-				client: new(mock.RedisClient),
+				client: func() redis.UniversalClient {
+					ctrl := gomock.NewController(t)
+					defer ctrl.Finish()
+					return mock.NewUniversalClient(ctrl)
+				}(),
 				logger: new(mock.Logger),
 				tracer: nil,
 			},
@@ -246,7 +271,10 @@ func TestNewDatabase(t *testing.T) {
 func TestDatabase_GetClient(t *testing.T) {
 	t.Parallel()
 
-	client := new(mock.RedisClient)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	client := mock.NewUniversalClient(ctrl)
 
 	db := &Database{
 		client: client,
@@ -258,8 +286,11 @@ func TestDatabase_GetClient(t *testing.T) {
 func TestDatabase_Close(t *testing.T) {
 	t.Parallel()
 
-	client := new(mock.RedisClient)
-	client.On("Close").Return(nil)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	client := mock.NewUniversalClient(ctrl)
+	client.EXPECT().Close().Return(nil)
 
 	db := &Database{
 		client: client,
@@ -273,7 +304,7 @@ func TestDatabase_Ping(t *testing.T) {
 		ctx context.Context
 	}
 	type fields struct {
-		client func(ctx context.Context) redis.UniversalClient
+		client func(ctrl *gomock.Controller, ctx context.Context) redis.UniversalClient
 	}
 	tests := []struct {
 		name    string
@@ -287,9 +318,9 @@ func TestDatabase_Ping(t *testing.T) {
 				ctx: context.Background(),
 			},
 			fields: fields{
-				client: func(ctx context.Context) redis.UniversalClient {
-					p := new(mock.RedisClient)
-					p.On("Ping", ctx).Return(&redis.StatusCmd{})
+				client: func(ctrl *gomock.Controller, ctx context.Context) redis.UniversalClient {
+					p := mock.NewUniversalClient(ctrl)
+					p.EXPECT().Ping(ctx).Return(&redis.StatusCmd{})
 					return p
 				},
 			},
@@ -299,8 +330,10 @@ func TestDatabase_Ping(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 			db := &Database{
-				client: tt.fields.client(tt.args.ctx),
+				client: tt.fields.client(ctrl, tt.args.ctx),
 			}
 			err := db.Ping(tt.args.ctx)
 			if !tt.wantErr && err != nil {
