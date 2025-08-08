@@ -36,7 +36,7 @@ func TestNewEmailService(t *testing.T) {
 		{
 			name: "new email service",
 			args: args{
-				client:       new(mock.SMTPClientOld),
+				client:       new(mock.SMTPClient),
 				templatesDir: "/templates",
 				smtpConf:     new(config.SMTPConfig),
 				opts: []Option{
@@ -49,7 +49,7 @@ func TestNewEmailService(t *testing.T) {
 					logger: new(mock.Logger),
 					tracer: new(mock.Tracer),
 				},
-				client:       new(mock.SMTPClientOld),
+				client:       new(mock.SMTPClient),
 				templatesDir: "/templates",
 				smtpConf:     new(config.SMTPConfig),
 			},
@@ -70,7 +70,7 @@ func TestNewEmailService(t *testing.T) {
 		{
 			name: "new email service with invalid options",
 			args: args{
-				client:       new(mock.SMTPClientOld),
+				client:       new(mock.SMTPClient),
 				templatesDir: "/templates",
 				smtpConf:     new(config.SMTPConfig),
 				opts: []Option{
@@ -82,7 +82,7 @@ func TestNewEmailService(t *testing.T) {
 		{
 			name: "new email service with no logger",
 			args: args{
-				client:       new(mock.SMTPClientOld),
+				client:       new(mock.SMTPClient),
 				templatesDir: "/templates",
 				smtpConf:     new(config.SMTPConfig),
 				opts: []Option{
@@ -94,7 +94,7 @@ func TestNewEmailService(t *testing.T) {
 					logger: log.DefaultLogger(),
 					tracer: new(mock.Tracer),
 				},
-				client:       new(mock.SMTPClientOld),
+				client:       new(mock.SMTPClient),
 				templatesDir: "/templates",
 				smtpConf:     new(config.SMTPConfig),
 			},
@@ -102,7 +102,7 @@ func TestNewEmailService(t *testing.T) {
 		{
 			name: "new email service with no tracer",
 			args: args{
-				client:       new(mock.SMTPClientOld),
+				client:       new(mock.SMTPClient),
 				templatesDir: "/templates",
 				smtpConf:     new(config.SMTPConfig),
 				opts: []Option{
@@ -114,7 +114,7 @@ func TestNewEmailService(t *testing.T) {
 					logger: new(mock.Logger),
 					tracer: tracing.NoopTracer(),
 				},
-				client:       new(mock.SMTPClientOld),
+				client:       new(mock.SMTPClient),
 				templatesDir: "/templates",
 				smtpConf:     new(config.SMTPConfig),
 			},
@@ -180,7 +180,7 @@ func TestEmailService_SendAuthPasswordResetEmail(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					client := new(mock.SMTPClientOld)
+					client := new(mock.SMTPClient)
 					client.On("SendEmail", ctx, subject, user.Email, template).Return(nil)
 
 					return client
@@ -231,7 +231,7 @@ func TestEmailService_SendAuthPasswordResetEmail(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					client := new(mock.SMTPClientOld)
+					client := new(mock.SMTPClient)
 					client.On("SendEmail", ctx, subject, user.Email, template).Return(assert.AnError)
 
 					return client
@@ -320,7 +320,7 @@ func TestEmailService_SendOrganizationInvitationEmail(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					client := new(mock.SMTPClientOld)
+					client := new(mock.SMTPClient)
 					client.On("SendEmail", ctx, subject, user.Email, template).Return(nil)
 
 					return client
@@ -375,7 +375,7 @@ func TestEmailService_SendOrganizationInvitationEmail(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					client := new(mock.SMTPClientOld)
+					client := new(mock.SMTPClient)
 					client.On("SendEmail", ctx, subject, user.Email, template).Return(assert.AnError)
 
 					return client
@@ -470,7 +470,7 @@ func TestEmailService_SendSystemLicenseExpiryEmail(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					client := new(mock.SMTPClientOld)
+					client := new(mock.SMTPClient)
 					client.On("SendEmail", ctx, subject, licenseEmail, template).Return(nil)
 
 					return client
@@ -522,7 +522,7 @@ func TestEmailService_SendSystemLicenseExpiryEmail(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					client := new(mock.SMTPClientOld)
+					client := new(mock.SMTPClient)
 					client.On("SendEmail", ctx, subject, licenseEmail, template).Return(assert.AnError)
 
 					return client
@@ -621,7 +621,7 @@ func TestEmailService_SendUserWelcomeEmail(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					client := new(mock.SMTPClientOld)
+					client := new(mock.SMTPClient)
 					client.On("SendEmail", ctx, subject, user.Email, template).Return(nil)
 
 					return client
@@ -671,7 +671,7 @@ func TestEmailService_SendUserWelcomeEmail(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					client := new(mock.SMTPClientOld)
+					client := new(mock.SMTPClient)
 					client.On("SendEmail", ctx, subject, user.Email, template).Return(assert.AnError)
 
 					return client
