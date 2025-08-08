@@ -577,6 +577,7 @@ func TestClient_SendEmail(t *testing.T) {
 
 					buf := mock.NewWriteCloser(ctrl)
 					buf.EXPECT().Write(gomock.Any()).Return(10, nil).AnyTimes()
+					buf.EXPECT().Close().Return(assert.AnError)
 
 					client := mock.NewNetSMTPClient(ctrl)
 					client.EXPECT().Mail(smtpConf.FromAddress).Return(nil)
