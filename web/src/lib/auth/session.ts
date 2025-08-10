@@ -2,8 +2,6 @@ import Cookies from "js-cookie";
 
 import type { AuthTokens, User } from "./types";
 
-import { config } from "@/config";
-
 const ACCESS_TOKEN_KEY = "elemo_at";
 const REFRESH_TOKEN_KEY = "elemo_rt";
 const USER_KEY = "elemo_user";
@@ -150,13 +148,29 @@ export class SessionManager {
       const expiryTime =
         Date.now() + (tokens.expires_in ? tokens.expires_in * 1000 : 3600000);
       await SecureStorage.setItem(TOKEN_EXPIRY_KEY, expiryTime.toString());
+
+      // Also store access token in a cookie so that it is available during
+      // server-side rendering (cookies are forwarded with the initial HTTP
+      // request, unlike localStorage). We intentionally keep it **non**
+      // httpOnly here so the client-side code can still read it when needed.
+      // The cookie expiry mirrors the token TTL converted from seconds ➜ days.
+      const isSecure = window.location.protocol === "https:";
+      Cookies.set(ACCESS_TOKEN_KEY, tokens.access_token, {
+        path: "/",
+        httpOnly: false,
+        secure: isSecure,
+        sameSite: "strict",
+        expires: tokens.expires_in ? tokens.expires_in / 86400 : 1 / 24, // default 1h
+      });
     }
 
     // Store refresh token in secure HTTP-only cookie
     if (tokens.refresh_token) {
+      const isSecure = window.location.protocol === "https:";
       Cookies.set(REFRESH_TOKEN_KEY, tokens.refresh_token, {
-        httpOnly: false, // Will be httpOnly in production with proper backend setup
-        secure: config.env().isProduction,
+        path: "/",
+        httpOnly: false, // Should be httpOnly when backend supports it
+        secure: isSecure,
         sameSite: "strict",
         expires: 30, // 30 days
       });
@@ -221,6 +235,8 @@ export class SessionManager {
       SecureStorage.removeItem(ACCESS_TOKEN_KEY);
       SecureStorage.removeItem(USER_KEY);
       SecureStorage.removeItem(TOKEN_EXPIRY_KEY);
+      // Remove access-token cookie as well
+      Cookies.remove(ACCESS_TOKEN_KEY, { path: "/" });
     }
     Cookies.remove(REFRESH_TOKEN_KEY);
   }
@@ -284,6 +300,8 @@ export class SessionManager {
     if (typeof window !== "undefined") {
       SecureStorage.removeItem(ACCESS_TOKEN_KEY);
       SecureStorage.removeItem(TOKEN_EXPIRY_KEY);
+      // Remove access-token cookie as well
+      Cookies.remove(ACCESS_TOKEN_KEY, { path: "/" });
     }
   }
 

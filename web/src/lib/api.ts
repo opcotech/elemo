@@ -9,6 +9,11 @@ client.setConfig({
   baseUrl: config.auth().apiBaseUrl,
   cache: "no-store",
   auth: async () => {
+    // Do not attempt to read localStorage or run refresh logic on the server.
+    if (typeof window === "undefined") {
+      return undefined;
+    }
+
     try {
       let token = await getAccessToken();
 
