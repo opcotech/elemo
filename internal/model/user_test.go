@@ -84,9 +84,11 @@ func TestUserStatus_UnmarshalText(t *testing.T) {
 
 func TestNewUser(t *testing.T) {
 	type args struct {
-		username string
-		email    string
-		password string
+		username  string
+		firstName string
+		lastName  string
+		email     string
+		password  string
 	}
 	tests := []struct {
 		name    string
@@ -97,13 +99,17 @@ func TestNewUser(t *testing.T) {
 		{
 			name: "create new user",
 			args: args{
-				username: "test",
-				email:    "test@example.com",
-				password: "super-secret",
+				username:  "test",
+				firstName: "Test",
+				lastName:  "User",
+				email:     "test@example.com",
+				password:  "super-secret",
 			},
 			want: &User{
 				ID:          ID{Inner: xid.NilID(), Type: ResourceTypeUser},
 				Username:    "test",
+				FirstName:   "Test",
+				LastName:    "User",
 				Email:       "test@example.com",
 				Password:    "super-secret",
 				Status:      UserStatusActive,
@@ -116,36 +122,66 @@ func TestNewUser(t *testing.T) {
 		{
 			name: "create new user with empty username",
 			args: args{
-				username: "",
-				email:    "test@example.com",
-				password: "super-secret",
+				username:  "",
+				firstName: "Test",
+				lastName:  "User",
+				email:     "test@example.com",
+				password:  "super-secret",
 			},
 			wantErr: ErrInvalidUserDetails,
 		},
 		{
 			name: "create new user with empty email",
 			args: args{
-				username: "test",
-				email:    "",
-				password: "super-secret",
+				username:  "test",
+				firstName: "Test",
+				lastName:  "User",
+				email:     "",
+				password:  "super-secret",
 			},
 			wantErr: ErrInvalidUserDetails,
 		},
 		{
 			name: "create new user with empty password",
 			args: args{
-				username: "test",
-				email:    "test@example.com",
-				password: "",
+				username:  "test",
+				firstName: "Test",
+				lastName:  "User",
+				email:     "test@example.com",
+				password:  "",
+			},
+			wantErr: ErrInvalidUserDetails,
+		},
+		{
+			name: "create new user with invalid first name",
+			args: args{
+				username:  "test",
+				firstName: "",
+				lastName:  "User",
+				email:     "test@example.com",
+				password:  "super-secret",
+			},
+			wantErr: ErrInvalidUserDetails,
+		},
+		{
+			name: "create new user with invalid last name",
+			args: args{
+				username:  "test",
+				firstName: "Test",
+				lastName:  "",
+				email:     "test@example.com",
+				password:  "super-secret",
 			},
 			wantErr: ErrInvalidUserDetails,
 		},
 		{
 			name: "create new user with invalid email",
 			args: args{
-				username: "test",
-				email:    "test@example",
-				password: "super-secret",
+				username:  "test",
+				firstName: "Test",
+				lastName:  "User",
+				email:     "test@example",
+				password:  "super-secret",
 			},
 			wantErr: ErrInvalidUserDetails,
 		},
@@ -154,7 +190,7 @@ func TestNewUser(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			got, err := NewUser(tt.args.username, tt.args.email, tt.args.password)
+			got, err := NewUser(tt.args.username, tt.args.firstName, tt.args.lastName, tt.args.email, tt.args.password)
 			require.ErrorIs(t, err, tt.wantErr)
 
 			if tt.wantErr == nil {

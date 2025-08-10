@@ -20,6 +20,8 @@ const (
 func createTestUser() *model.User {
 	user, err := model.NewUser(
 		strings.ToLower(GenerateRandomString(10)),
+		"Test",
+		"User",
 		GenerateRandomString(10)+"@example.com",
 		password.HashPassword(GenerateRandomString(10)),
 	)

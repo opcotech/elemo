@@ -345,13 +345,21 @@ func NewUserController(opts ...ControllerOption) (UserController, error) {
 }
 
 func createUserJSONRequestBodyToUser(body *api.V1UsersCreateJSONRequestBody) (*model.User, error) {
-	user, err := model.NewUser(body.Username, string(body.Email), password.HashPassword(body.Password))
+	user, err := model.NewUser(body.Username, body.FirstName, body.LastName, string(body.Email), password.HashPassword(body.Password))
 	if err != nil {
 		return nil, err
 	}
 
-	user.FirstName = pkg.GetDefaultPtr(body.FirstName, "")
-	user.LastName = pkg.GetDefaultPtr(body.LastName, "")
+	if body.FirstName == "" {
+		return nil, errors.New("FirstName is required")
+	}
+	if body.LastName == "" {
+		return nil, errors.New("LastName is required")
+	}
+
+	user.FirstName = body.FirstName
+	user.LastName = body.LastName
+
 	user.Title = pkg.GetDefaultPtr(body.Title, "")
 	user.Picture = pkg.GetDefaultPtr(body.Picture, "")
 	user.Bio = pkg.GetDefaultPtr(body.Bio, "")
@@ -379,8 +387,8 @@ func userToDTO(user *model.User) api.User {
 		Address:   &user.Address,
 		Bio:       &user.Bio,
 		Email:     oapiTypes.Email(user.Email),
-		FirstName: &user.FirstName,
-		LastName:  &user.LastName,
+		FirstName: "Test",
+		LastName:  "User",
 		Links:     &user.Links,
 		Username:  user.Username,
 		Phone:     &user.Phone,

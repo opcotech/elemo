@@ -14,6 +14,8 @@ import (
 func NewUser() *model.User {
 	user, err := model.NewUser(
 		strings.ToLower(pkg.GenerateRandomString(10)),
+		"Test",
+		"User",
 		testutil.GenerateEmail(10),
 		password.HashPassword(pkg.GenerateRandomString(10)),
 	)
@@ -21,8 +23,6 @@ func NewUser() *model.User {
 		panic(err)
 	}
 
-	user.FirstName = pkg.GenerateRandomString(5)
-	user.LastName = pkg.GenerateRandomString(5)
 	user.Picture = imageURL
 	user.Title = "Senior Test User"
 	user.Bio = "I am a test user."
