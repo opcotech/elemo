@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { Link, createFileRoute } from "@tanstack/react-router";
 import { User } from "lucide-react";
 import { useEffect } from "react";
 
@@ -131,10 +131,12 @@ function Dashboard() {
               <Button variant="outline" className="w-full justify-start">
                 View Profile
               </Button>
-              <Button variant="outline" className="w-full justify-start" asChild>
-                <Link to="/settings">
-                  Settings
-                </Link>
+              <Button
+                variant="outline"
+                className="w-full justify-start"
+                asChild
+              >
+                <Link to="/settings">Settings</Link>
               </Button>
               <Button variant="outline" className="w-full justify-start">
                 Help & Support
