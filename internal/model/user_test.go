@@ -2,7 +2,7 @@ package model
 
 import (
 	"testing"
-	"github.com/opcotech/elemo/internal/model"
+
 	"github.com/rs/xid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -156,7 +156,7 @@ func TestNewUser(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			got, err := model.NewUser(tt.args.username, tt.args.email, tt.args.password)
+			got, err := NewUser(tt.args.username, tt.args.email, tt.args.password)
 			require.ErrorIs(t, err, tt.wantErr)
 
 			if tt.wantErr == nil {

@@ -345,40 +345,40 @@ func NewUserController(opts ...ControllerOption) (UserController, error) {
 }
 
 func createUserJSONRequestBodyToUser(body *api.V1UsersCreateJSONRequestBody) (*model.User, error) {
-    user, err := model.NewUser(body.Username, string(body.Email), password.HashPassword(body.Password))
-    if err != nil {
-        return nil, err
-    }
+	user, err := model.NewUser(body.Username, string(body.Email), password.HashPassword(body.Password))
+	if err != nil {
+		return nil, err
+	}
 
-    if body.FirstName == "" {
-        return nil, errors.New("FirstName is required")
-    }
-    if body.LastName == "" {
-        return nil, errors.New("LastName is required")
-    }
+	if body.FirstName == "" {
+		return nil, errors.New("FirstName is required")
+	}
+	if body.LastName == "" {
+		return nil, errors.New("LastName is required")
+	}
 
-    user.FirstName = body.FirstName
-    user.LastName = body.LastName
+	user.FirstName = body.FirstName
+	user.LastName = body.LastName
 
-    user.Title = pkg.GetDefaultPtr(body.Title, "")
-    user.Picture = pkg.GetDefaultPtr(body.Picture, "")
-    user.Bio = pkg.GetDefaultPtr(body.Bio, "")
-    user.Address = pkg.GetDefaultPtr(body.Address, "")
-    user.Phone = pkg.GetDefaultPtr(body.Phone, "")
-    user.Links = pkg.GetDefaultPtr(body.Links, make([]string, 0))
+	user.Title = pkg.GetDefaultPtr(body.Title, "")
+	user.Picture = pkg.GetDefaultPtr(body.Picture, "")
+	user.Bio = pkg.GetDefaultPtr(body.Bio, "")
+	user.Address = pkg.GetDefaultPtr(body.Address, "")
+	user.Phone = pkg.GetDefaultPtr(body.Phone, "")
+	user.Links = pkg.GetDefaultPtr(body.Links, make([]string, 0))
 
-    if body.Languages != nil {
-        user.Languages = make([]model.Language, len(*body.Languages))
-        for i, language := range *body.Languages {
-            var lang model.Language
-            if err := lang.UnmarshalText([]byte(language)); err != nil {
-                return nil, err
-            }
-            user.Languages[i] = lang
-        }
-    }
+	if body.Languages != nil {
+		user.Languages = make([]model.Language, len(*body.Languages))
+		for i, language := range *body.Languages {
+			var lang model.Language
+			if err := lang.UnmarshalText([]byte(language)); err != nil {
+				return nil, err
+			}
+			user.Languages[i] = lang
+		}
+	}
 
-    return user, nil
+	return user, nil
 }
 
 func userToDTO(user *model.User) api.User {
