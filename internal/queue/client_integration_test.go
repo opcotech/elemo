@@ -58,12 +58,9 @@ func (s *AsynqClientIntegrationTestSuite) SetupSuite() {
 	}()
 }
 
-func (s *AsynqClientIntegrationTestSuite) SetupTest() {
-}
+func (s *AsynqClientIntegrationTestSuite) SetupTest() {}
 
-func (s *AsynqClientIntegrationTestSuite) TearDownTest() {
-	defer s.CleanupRedis(&s.ContainerIntegrationTestSuite)
-}
+func (s *AsynqClientIntegrationTestSuite) TearDownTest() {}
 
 func (s *AsynqClientIntegrationTestSuite) TearDownSuite() {
 	defer s.CleanupContainers()

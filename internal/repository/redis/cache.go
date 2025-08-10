@@ -17,6 +17,9 @@ import (
 )
 
 // CacheBackend represents a cache backend.
+//
+//go:generate mockgen -destination=../../testutil/mock/universalclient_gen.go -package=mock -mock_names "UniversalClient=UniversalClient" github.com/redis/go-redis/v9 UniversalClient
+//go:generate mockgen -source=cache.go -destination=../../testutil/mock/cachebackend_gen.go -package=mock -mock_names "CacheBackend=CacheBackend"
 type CacheBackend interface {
 	Set(item *cache.Item) error
 	Get(ctx context.Context, key string, dst any) error
@@ -91,7 +94,7 @@ func (r *baseRepository) Get(ctx context.Context, key string, dst any) error {
 	ctx, span := r.tracer.Start(ctx, "repository.redis.baseRepository/Get")
 	defer span.End()
 
-	if err := r.cache.Get(ctx, key, &dst); err != nil && !errors.Is(err, cache.ErrCacheMiss) {
+	if err := r.cache.Get(ctx, key, dst); err != nil && !errors.Is(err, cache.ErrCacheMiss) {
 		return errors.Join(repository.ErrCacheRead, err)
 	}
 

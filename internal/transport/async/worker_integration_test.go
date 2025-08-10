@@ -38,12 +38,9 @@ func (s *AsynqWorkerIntegrationTestSuite) SetupSuite() {
 	s.Require().NoError(err)
 }
 
-func (s *AsynqWorkerIntegrationTestSuite) SetupTest() {
-}
+func (s *AsynqWorkerIntegrationTestSuite) SetupTest() {}
 
-func (s *AsynqWorkerIntegrationTestSuite) TearDownTest() {
-	defer s.CleanupRedis(&s.ContainerIntegrationTestSuite)
-}
+func (s *AsynqWorkerIntegrationTestSuite) TearDownTest() {}
 
 func (s *AsynqWorkerIntegrationTestSuite) TearDownSuite() {
 	defer s.CleanupContainers()

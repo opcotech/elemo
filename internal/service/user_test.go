@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -1023,7 +1022,7 @@ func TestUserService_Update(t *testing.T) {
 					tracer.On("Start", ctx, "service.userService/Update", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					licenseSvc := new(mock.LicenseService)
-					licenseSvc.On("Expired", ctx).Return(false, errors.New("test error"))
+					licenseSvc.On("Expired", ctx).Return(false, assert.AnError)
 
 					return &baseService{
 						logger:            new(mock.Logger),
