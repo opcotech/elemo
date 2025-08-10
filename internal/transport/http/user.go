@@ -345,7 +345,7 @@ func NewUserController(opts ...ControllerOption) (UserController, error) {
 }
 
 func createUserJSONRequestBodyToUser(body *api.V1UsersCreateJSONRequestBody) (*model.User, error) {
-	user, err := model.NewUser(body.Username, string(body.Email), password.HashPassword(body.Password))
+	user, err := model.NewUser(body.Username, body.FirstName, body.LastName, string(body.Email), password.HashPassword(body.Password))
 	if err != nil {
 		return nil, err
 	}

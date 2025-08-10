@@ -97,10 +97,12 @@ func (u *User) Validate() error {
 }
 
 // NewUser returns a new User.
-func NewUser(username, email, password string) (*User, error) {
+func NewUser(username, firstName, lastName, email, password string) (*User, error) {
 	user := &User{
 		ID:          MustNewNilID(ResourceTypeUser),
 		Username:    username,
+		FirstName:   firstName,
+		LastName:    lastName,
 		Email:       email,
 		Password:    password,
 		Status:      UserStatusActive,
