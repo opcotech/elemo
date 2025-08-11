@@ -6,36 +6,36 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-type LicenseRepository struct {
+type LicenseRepositoryOld struct {
 	mock.Mock
 }
 
-func (l *LicenseRepository) ActiveUserCount(ctx context.Context) (int, error) {
+func (l *LicenseRepositoryOld) ActiveUserCount(ctx context.Context) (int, error) {
 	args := l.Called(ctx)
 	return args.Int(0), args.Error(1)
 }
 
-func (l *LicenseRepository) ActiveOrganizationCount(ctx context.Context) (int, error) {
+func (l *LicenseRepositoryOld) ActiveOrganizationCount(ctx context.Context) (int, error) {
 	args := l.Called(ctx)
 	return args.Int(0), args.Error(1)
 }
 
-func (l *LicenseRepository) DocumentCount(ctx context.Context) (int, error) {
+func (l *LicenseRepositoryOld) DocumentCount(ctx context.Context) (int, error) {
 	args := l.Called(ctx)
 	return args.Int(0), args.Error(1)
 }
 
-func (l *LicenseRepository) NamespaceCount(ctx context.Context) (int, error) {
+func (l *LicenseRepositoryOld) NamespaceCount(ctx context.Context) (int, error) {
 	args := l.Called(ctx)
 	return args.Int(0), args.Error(1)
 }
 
-func (l *LicenseRepository) ProjectCount(ctx context.Context) (int, error) {
+func (l *LicenseRepositoryOld) ProjectCount(ctx context.Context) (int, error) {
 	args := l.Called(ctx)
 	return args.Int(0), args.Error(1)
 }
 
-func (l *LicenseRepository) RoleCount(ctx context.Context) (int, error) {
+func (l *LicenseRepositoryOld) RoleCount(ctx context.Context) (int, error) {
 	args := l.Called(ctx)
 	return args.Int(0), args.Error(1)
 }
