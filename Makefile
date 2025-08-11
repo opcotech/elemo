@@ -49,11 +49,11 @@ release: ## Cut a new release
 	$(if $(value RELEASE_VERSION),,$(error No RELEASE_VERSION set))
 
 	$(call log, bumping front-end version)
-	@jq '.version="$(RELEASE_VERSION)"' $(FRONTEND_CLIENT_DIR)/package.json > $(TMPDIR)/package.json.tmp && \
-		mv $(TMPDIR)/package.json.tmp $(FRONTEND_CLIENT_DIR)/package.json;
-	@jq '.version="$(RELEASE_VERSION)"' $(FRONTEND_DIR)/package.json > $(TMPDIR)/package.json.tmp && \
-		mv $(TMPDIR)/package.json.tmp $(FRONTEND_DIR)/package.json;
-	@$(PNPM_EXEC) update --prefix $(FRONTEND_CLIENT)
+	@jq '.version="$(RELEASE_VERSION)"' "$(FRONTEND_CLIENT_DIR)/package.json" > "$(TMPDIR)/package.json.tmp" && \
+		mv "$(TMPDIR)/package.json.tmp" "$(FRONTEND_CLIENT_DIR)/package.json";
+	@jq '.version="$(RELEASE_VERSION)"' "$(FRONTEND_DIR)/package.json" > "$(TMPDIR)/package.json.tmp" && \
+		mv "$(TMPDIR)/package.json.tmp" "$(FRONTEND_DIR)/package.json";
+	@$(PNPM_EXEC) update --prefix "$(FRONTEND_CLIENT)"
 
 	@$(MAKE) changelog;
 	
@@ -72,7 +72,7 @@ generate.server: ## Generate API server
 	@go generate ./...
 
 	$(call log, generating backend API server)
-	@oapi-codegen -config $(API_DIR)/generator.config.yml -o $(API_SERVER_DIR)/server.go $(API_DIR)/openapi.yaml
+	@oapi-codegen -config "$(API_DIR)/generator.config.yml" -o "$(API_SERVER_DIR)/server.go" "$(API_DIR)/openapi.yaml"
 
 .PHONY: generate.client
 generate.client: ## Generate API client
@@ -83,7 +83,7 @@ generate.client: ## Generate API client
 generate.email: ## Generate HTML template emails
 	# TODO: when deployed to production, we should use the actual S3 bucket and endpoint
 	$(call log, compiling email templates)
-	@$(PNPM_EMAILS_RUN) build --out $(TEMPLATES_DIR)/email \
+	@$(PNPM_EMAILS_RUN) build --out "$(TEMPLATES_DIR)/email" \
 		--access-key-id "access-key-id" \
 		--secret-access-key "secret-access-key" \
 		--region "us-east-1" \
@@ -103,8 +103,8 @@ dep.backend: ## Download backend dependencies
 .PHONY: dep.frontend
 dep.frontend: ## Install front-end dependencies
 	$(call log, download and install front-end dependencies)
-	@rm -rf $(FRONTEND_DIR)/node_modules
-	@$(PNPM_EXEC) install --prefix $(FRONTEND_DIR)
+	@rm -rf "$(FRONTEND_DIR)/node_modules"
+	@$(PNPM_EXEC) install --prefix "$(FRONTEND_DIR)"
 
 .PHONY: build
 build: build.backend build.frontend ## Build backend and front-end
@@ -162,24 +162,24 @@ test.backend.bench: ## Run backend benchmarks
 .PHONY: test.backend.unit
 test.backend.unit: ## Run backend unit tests
 	$(call log, execute backend unit tests)
-	@rm -f $(BACKEND_COVER_OUT_UNIT)
-	@$(GO_TEST_COVER) -short -coverprofile=$(BACKEND_COVER_OUT_UNIT) ./...
+	@rm -f "$(BACKEND_COVER_OUT_UNIT)"
+	@$(GO_TEST_COVER) -short -coverprofile="$(BACKEND_COVER_OUT_UNIT)" ./...
 
 .PHONY: test.backend.integration
 test.backend.integration: ## Run backend integration tests
 	$(call log, execute backend integration tests)
 	@rm -f $(BACKEND_COVER_OUT_INTEGRATION)
-	@$(GO_TEST_COVER) -timeout 900s -run=Integration -coverprofile=$(BACKEND_COVER_OUT_INTEGRATION) ./...
+	@$(GO_TEST_COVER) -timeout 900s -run=Integration -coverprofile="$(BACKEND_COVER_OUT_INTEGRATION)" ./...
 
 .PHONY: test.backend.coverage
 test.backend.coverage: ## Combine unit and integration test coverage
 	$(call log, combine backend test coverage)
-	@rm -f $(BACKEND_COVER_OUT)
-	@echo "mode: atomic" > $(BACKEND_COVER_OUT)
-	@for file in $(BACKEND_COVER_OUT_UNIT) $(BACKEND_COVER_OUT_INTEGRATION); do \
-		cat $$file | egrep -v ${GO_TEST_IGNORE} >> $(BACKEND_COVER_OUT); \
+	@rm -f "$(BACKEND_COVER_OUT)"
+	@echo "mode: atomic" > "$(BACKEND_COVER_OUT)"
+	@for file in "$(BACKEND_COVER_OUT_UNIT)" "$(BACKEND_COVER_OUT_INTEGRATION)"; do \
+		cat $$file | egrep -v "${GO_TEST_IGNORE}" >> "$(BACKEND_COVER_OUT)"; \
 	done
-	@rm -f $(BACKEND_COVER_OUT_UNIT) $(BACKEND_COVER_OUT_INTEGRATION)
+	@rm -f "$(BACKEND_COVER_OUT_UNIT)" "$(BACKEND_COVER_OUT_INTEGRATION)"
 	@$(GO_EXEC) tool cover -func "$(BACKEND_COVER_OUT)"
 
 .PHONY: test.frontend
@@ -196,7 +196,7 @@ test.frontend.e2e: ## Run front-end end-to-end tests
 test.k6: ## Run k6 tests
 	$(call log, execute k6 tests)
 	@$(MAKE) start.backend
-	@k6 run $(ROOT_DIR)/tests/main.js
+	@k6 run "$(ROOT_DIR)/tests/main.js"
 	@trap "$(MAKE) stop.backend" EXIT
 
 .PHONY: lint
