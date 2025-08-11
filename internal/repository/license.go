@@ -5,6 +5,8 @@ import (
 )
 
 // LicenseRepository is the repository for retrieving license information.
+//
+//go:generate mockgen -source=license.go -destination=../testutil/mock/license_repo_gen.go -package=mock -mock_names "LicenseRepository=LicenseRepository"
 type LicenseRepository interface {
 	ActiveUserCount(ctx context.Context) (int, error)
 	ActiveOrganizationCount(ctx context.Context) (int, error)
