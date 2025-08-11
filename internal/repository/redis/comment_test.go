@@ -1180,7 +1180,7 @@ func TestCachedCommentRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				commentRepo: func(_ *gomock.Controller, ctx context.Context, id model.ID) repository.CommentRepository {
+				commentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID) repository.CommentRepository {
 					return mock.NewCommentRepository(nil)
 				},
 			},
