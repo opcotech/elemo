@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"go.uber.org/mock/gomock"
 	"testing"
 	"time"
 
@@ -36,7 +37,7 @@ func TestNewLicenseService(t *testing.T) {
 			name: "new license service",
 			args: args{
 				l:    new(license.License),
-				repo: new(mock.LicenseRepository),
+				repo: mock.NewLicenseRepository(nil),
 				opts: []Option{
 					WithLogger(new(mock.Logger)),
 					WithTracer(new(mock.Tracer)),
@@ -49,7 +50,7 @@ func TestNewLicenseService(t *testing.T) {
 					tracer:            new(mock.Tracer),
 					permissionService: new(mock.PermissionService),
 				},
-				licenseRepo: new(mock.LicenseRepository),
+				licenseRepo: mock.NewLicenseRepository(nil),
 				license:     new(license.License),
 			},
 		},
@@ -57,7 +58,7 @@ func TestNewLicenseService(t *testing.T) {
 			name: "new license service with no license",
 			args: args{
 				l:    nil,
-				repo: new(mock.LicenseRepository),
+				repo: mock.NewLicenseRepository(nil),
 				opts: []Option{
 					WithLogger(new(mock.Logger)),
 					WithTracer(new(mock.Tracer)),
@@ -83,7 +84,7 @@ func TestNewLicenseService(t *testing.T) {
 			name: "new license service with no permission service",
 			args: args{
 				l:    new(license.License),
-				repo: new(mock.LicenseRepository),
+				repo: mock.NewLicenseRepository(nil),
 				opts: []Option{
 					WithLogger(new(mock.Logger)),
 					WithTracer(new(mock.Tracer)),
@@ -95,7 +96,7 @@ func TestNewLicenseService(t *testing.T) {
 			name: "new license service with invalid options",
 			args: args{
 				l:    new(license.License),
-				repo: new(mock.LicenseRepository),
+				repo: mock.NewLicenseRepository(nil),
 				opts: []Option{
 					WithLogger(new(mock.Logger)),
 					WithTracer(new(mock.Tracer)),
@@ -108,7 +109,7 @@ func TestNewLicenseService(t *testing.T) {
 			name: "new license service with no logger",
 			args: args{
 				l:    new(license.License),
-				repo: new(mock.LicenseRepository),
+				repo: mock.NewLicenseRepository(nil),
 				opts: []Option{
 					WithTracer(new(mock.Tracer)),
 					WithPermissionService(new(mock.PermissionService)),
@@ -120,7 +121,7 @@ func TestNewLicenseService(t *testing.T) {
 					tracer:            new(mock.Tracer),
 					permissionService: new(mock.PermissionService),
 				},
-				licenseRepo: new(mock.LicenseRepository),
+				licenseRepo: mock.NewLicenseRepository(nil),
 				license:     new(license.License),
 			},
 		},
@@ -128,7 +129,7 @@ func TestNewLicenseService(t *testing.T) {
 			name: "new license service with no tracer",
 			args: args{
 				l:    new(license.License),
-				repo: new(mock.LicenseRepository),
+				repo: mock.NewLicenseRepository(nil),
 				opts: []Option{
 					WithLogger(new(mock.Logger)),
 					WithPermissionService(new(mock.PermissionService)),
@@ -140,7 +141,7 @@ func TestNewLicenseService(t *testing.T) {
 					tracer:            tracing.NoopTracer(),
 					permissionService: new(mock.PermissionService),
 				},
-				licenseRepo: new(mock.LicenseRepository),
+				licenseRepo: mock.NewLicenseRepository(nil),
 				license:     new(license.License),
 			},
 		},
@@ -191,7 +192,7 @@ func TestLicenseService_Expired(t *testing.T) {
 						permissionService: new(mock.PermissionService),
 					}
 				},
-				licenseRepo: new(mock.LicenseRepository),
+				licenseRepo: mock.NewLicenseRepository(nil),
 				license: &license.License{
 					ID:           xid.NilID(),
 					Email:        testutil.GenerateEmail(10),
@@ -222,7 +223,7 @@ func TestLicenseService_Expired(t *testing.T) {
 						permissionService: new(mock.PermissionService),
 					}
 				},
-				licenseRepo: new(mock.LicenseRepository),
+				licenseRepo: mock.NewLicenseRepository(nil),
 				license: &license.License{
 					ID:           xid.NilID(),
 					Email:        testutil.GenerateEmail(10),
@@ -288,7 +289,7 @@ func TestLicenseService_HasFeature(t *testing.T) {
 						permissionService: new(mock.PermissionService),
 					}
 				},
-				licenseRepo: new(mock.LicenseRepository),
+				licenseRepo: mock.NewLicenseRepository(nil),
 				license: &license.License{
 					ID:           xid.NilID(),
 					Email:        testutil.GenerateEmail(10),
@@ -320,7 +321,7 @@ func TestLicenseService_HasFeature(t *testing.T) {
 						permissionService: new(mock.PermissionService),
 					}
 				},
-				licenseRepo: new(mock.LicenseRepository),
+				licenseRepo: mock.NewLicenseRepository(nil),
 				license: &license.License{
 					ID:           xid.NilID(),
 					Email:        testutil.GenerateEmail(10),
@@ -356,7 +357,7 @@ func TestLicenseService_WithinThreshold(t *testing.T) {
 	}
 	type fields struct {
 		baseService func(ctx context.Context) *baseService
-		licenseRepo func(ctx context.Context) repository.LicenseRepository
+		licenseRepo func(ctrl *gomock.Controller, ctx context.Context) repository.LicenseRepository
 		license     *license.License
 	}
 	tests := []struct {
@@ -386,9 +387,9 @@ func TestLicenseService_WithinThreshold(t *testing.T) {
 						permissionService: new(mock.PermissionService),
 					}
 				},
-				licenseRepo: func(ctx context.Context) repository.LicenseRepository {
-					repo := new(mock.LicenseRepository)
-					repo.On("DocumentCount", ctx).Return(1, nil)
+				licenseRepo: func(ctrl *gomock.Controller, ctx context.Context) repository.LicenseRepository {
+					repo := mock.NewLicenseRepository(ctrl)
+					repo.EXPECT().DocumentCount(ctx).Return(1, nil)
 					return repo
 				},
 				license: &license.License{
@@ -422,9 +423,9 @@ func TestLicenseService_WithinThreshold(t *testing.T) {
 						permissionService: new(mock.PermissionService),
 					}
 				},
-				licenseRepo: func(ctx context.Context) repository.LicenseRepository {
-					repo := new(mock.LicenseRepository)
-					repo.On("NamespaceCount", ctx).Return(1, nil)
+				licenseRepo: func(ctrl *gomock.Controller, ctx context.Context) repository.LicenseRepository {
+					repo := mock.NewLicenseRepository(ctrl)
+					repo.EXPECT().NamespaceCount(ctx).Return(1, nil)
 					return repo
 				},
 				license: &license.License{
@@ -458,9 +459,9 @@ func TestLicenseService_WithinThreshold(t *testing.T) {
 						permissionService: new(mock.PermissionService),
 					}
 				},
-				licenseRepo: func(ctx context.Context) repository.LicenseRepository {
-					repo := new(mock.LicenseRepository)
-					repo.On("ActiveOrganizationCount", ctx).Return(1, nil)
+				licenseRepo: func(ctrl *gomock.Controller, ctx context.Context) repository.LicenseRepository {
+					repo := mock.NewLicenseRepository(ctrl)
+					repo.EXPECT().ActiveOrganizationCount(ctx).Return(1, nil)
 					return repo
 				},
 				license: &license.License{
@@ -494,9 +495,9 @@ func TestLicenseService_WithinThreshold(t *testing.T) {
 						permissionService: new(mock.PermissionService),
 					}
 				},
-				licenseRepo: func(ctx context.Context) repository.LicenseRepository {
-					repo := new(mock.LicenseRepository)
-					repo.On("ProjectCount", ctx).Return(1, nil)
+				licenseRepo: func(ctrl *gomock.Controller, ctx context.Context) repository.LicenseRepository {
+					repo := mock.NewLicenseRepository(ctrl)
+					repo.EXPECT().ProjectCount(ctx).Return(1, nil)
 					return repo
 				},
 				license: &license.License{
@@ -530,9 +531,9 @@ func TestLicenseService_WithinThreshold(t *testing.T) {
 						permissionService: new(mock.PermissionService),
 					}
 				},
-				licenseRepo: func(ctx context.Context) repository.LicenseRepository {
-					repo := new(mock.LicenseRepository)
-					repo.On("RoleCount", ctx).Return(1, nil)
+				licenseRepo: func(ctrl *gomock.Controller, ctx context.Context) repository.LicenseRepository {
+					repo := mock.NewLicenseRepository(ctrl)
+					repo.EXPECT().RoleCount(ctx).Return(1, nil)
 					return repo
 				},
 				license: &license.License{
@@ -566,9 +567,9 @@ func TestLicenseService_WithinThreshold(t *testing.T) {
 						permissionService: new(mock.PermissionService),
 					}
 				},
-				licenseRepo: func(ctx context.Context) repository.LicenseRepository {
-					repo := new(mock.LicenseRepository)
-					repo.On("ActiveUserCount", ctx).Return(1, nil)
+				licenseRepo: func(ctrl *gomock.Controller, ctx context.Context) repository.LicenseRepository {
+					repo := mock.NewLicenseRepository(ctrl)
+					repo.EXPECT().ActiveUserCount(ctx).Return(1, nil)
 					return repo
 				},
 				license: &license.License{
@@ -602,8 +603,8 @@ func TestLicenseService_WithinThreshold(t *testing.T) {
 						permissionService: new(mock.PermissionService),
 					}
 				},
-				licenseRepo: func(_ context.Context) repository.LicenseRepository {
-					return new(mock.LicenseRepository)
+				licenseRepo: func(_ *gomock.Controller, _ context.Context) repository.LicenseRepository {
+					return mock.NewLicenseRepository(nil)
 				},
 				license: &license.License{
 					ID:           xid.NilID(),
@@ -637,9 +638,9 @@ func TestLicenseService_WithinThreshold(t *testing.T) {
 						permissionService: new(mock.PermissionService),
 					}
 				},
-				licenseRepo: func(ctx context.Context) repository.LicenseRepository {
-					repo := new(mock.LicenseRepository)
-					repo.On("ActiveUserCount", ctx).Return(1, nil)
+				licenseRepo: func(ctrl *gomock.Controller, ctx context.Context) repository.LicenseRepository {
+					repo := mock.NewLicenseRepository(ctrl)
+					repo.EXPECT().ActiveUserCount(ctx).Return(1, nil)
 					return repo
 				},
 				license: &license.License{
@@ -675,9 +676,9 @@ func TestLicenseService_WithinThreshold(t *testing.T) {
 						permissionService: new(mock.PermissionService),
 					}
 				},
-				licenseRepo: func(ctx context.Context) repository.LicenseRepository {
-					repo := new(mock.LicenseRepository)
-					repo.On("ActiveUserCount", ctx).Return(0, assert.AnError)
+				licenseRepo: func(ctrl *gomock.Controller, ctx context.Context) repository.LicenseRepository {
+					repo := mock.NewLicenseRepository(ctrl)
+					repo.EXPECT().ActiveUserCount(ctx).Return(0, assert.AnError)
 					return repo
 				},
 				license: &license.License{
@@ -699,9 +700,11 @@ func TestLicenseService_WithinThreshold(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 			s := &licenseService{
 				baseService: tt.fields.baseService(tt.args.ctx),
-				licenseRepo: tt.fields.licenseRepo(tt.args.ctx),
+				licenseRepo: tt.fields.licenseRepo(ctrl, tt.args.ctx),
 				license:     tt.fields.license,
 			}
 			got, err := s.WithinThreshold(tt.args.ctx, tt.args.quota)
@@ -764,7 +767,7 @@ func TestLicenseService_GetLicense(t *testing.T) {
 						permissionService: permissionSvc,
 					}
 				},
-				licenseRepo: new(mock.LicenseRepository),
+				licenseRepo: mock.NewLicenseRepository(nil),
 				license:     expectedLicense,
 			},
 			want: *expectedLicense,
@@ -795,7 +798,7 @@ func TestLicenseService_GetLicense(t *testing.T) {
 						permissionService: permissionSvc,
 					}
 				},
-				licenseRepo: new(mock.LicenseRepository),
+				licenseRepo: mock.NewLicenseRepository(nil),
 				license:     expectedLicense,
 			},
 			want:    license.License{},
@@ -827,7 +830,7 @@ func TestLicenseService_GetLicense(t *testing.T) {
 						permissionService: permissionSvc,
 					}
 				},
-				licenseRepo: new(mock.LicenseRepository),
+				licenseRepo: mock.NewLicenseRepository(nil),
 				license:     expectedLicense,
 			},
 			want:    license.License{},
@@ -885,7 +888,7 @@ func TestLicenseService_Ping(t *testing.T) {
 						permissionService: new(mock.PermissionService),
 					}
 				},
-				licenseRepo: new(mock.LicenseRepository),
+				licenseRepo: mock.NewLicenseRepository(nil),
 				license: &license.License{
 					ID:           xid.NilID(),
 					Email:        testutil.GenerateEmail(10),
@@ -916,7 +919,7 @@ func TestLicenseService_Ping(t *testing.T) {
 						permissionService: new(mock.PermissionService),
 					}
 				},
-				licenseRepo: new(mock.LicenseRepository),
+				licenseRepo: mock.NewLicenseRepository(nil),
 				license: &license.License{
 					ID:           xid.NilID(),
 					Email:        testutil.GenerateEmail(10),
