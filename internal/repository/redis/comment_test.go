@@ -19,7 +19,7 @@ import (
 func TestCachedCommentRepository_Create(t *testing.T) {
 	type fields struct {
 		cacheRepo   func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, comment *model.Comment) *baseRepository
-		commentRepo func(ctx context.Context, belongsTo model.ID, comment *model.Comment) repository.CommentRepository
+		commentRepo func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, comment *model.Comment) repository.CommentRepository
 	}
 	type args struct {
 		ctx       context.Context
@@ -71,9 +71,9 @@ func TestCachedCommentRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				commentRepo: func(ctx context.Context, belongsTo model.ID, comment *model.Comment) repository.CommentRepository {
-					repo := new(mock.CommentRepository)
-					repo.On("Create", ctx, belongsTo, comment).Return(nil)
+				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, comment *model.Comment) repository.CommentRepository {
+					repo := mock.NewCommentRepository(ctrl)
+					repo.EXPECT().Create(ctx, belongsTo, comment).Return(nil)
 					return repo
 				},
 			},
@@ -126,9 +126,9 @@ func TestCachedCommentRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				commentRepo: func(ctx context.Context, belongsTo model.ID, comment *model.Comment) repository.CommentRepository {
-					repo := new(mock.CommentRepository)
-					repo.On("Create", ctx, belongsTo, comment).Return(nil)
+				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, comment *model.Comment) repository.CommentRepository {
+					repo := mock.NewCommentRepository(ctrl)
+					repo.EXPECT().Create(ctx, belongsTo, comment).Return(nil)
 					return repo
 				},
 			},
@@ -181,9 +181,9 @@ func TestCachedCommentRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				commentRepo: func(ctx context.Context, belongsTo model.ID, comment *model.Comment) repository.CommentRepository {
-					repo := new(mock.CommentRepository)
-					repo.On("Create", ctx, belongsTo, comment).Return(repository.ErrCommentCreate)
+				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, comment *model.Comment) repository.CommentRepository {
+					repo := mock.NewCommentRepository(ctrl)
+					repo.EXPECT().Create(ctx, belongsTo, comment).Return(repository.ErrCommentCreate)
 					return repo
 				},
 			},
@@ -237,8 +237,8 @@ func TestCachedCommentRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				commentRepo: func(_ context.Context, _ model.ID, _ *model.Comment) repository.CommentRepository {
-					return new(mock.CommentRepository)
+				commentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID, _ *model.Comment) repository.CommentRepository {
+					return mock.NewCommentRepository(nil)
 				},
 			},
 			args: args{
@@ -262,7 +262,7 @@ func TestCachedCommentRepository_Create(t *testing.T) {
 			defer ctrl.Finish()
 			r := &CachedCommentRepository{
 				cacheRepo:   tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.belongsTo, tt.args.comment),
-				commentRepo: tt.fields.commentRepo(tt.args.ctx, tt.args.belongsTo, tt.args.comment),
+				commentRepo: tt.fields.commentRepo(ctrl, tt.args.ctx, tt.args.belongsTo, tt.args.comment),
 			}
 			err := r.Create(tt.args.ctx, tt.args.belongsTo, tt.args.comment)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -273,7 +273,7 @@ func TestCachedCommentRepository_Create(t *testing.T) {
 func TestCachedCommentRepository_Get(t *testing.T) {
 	type fields struct {
 		cacheRepo   func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *model.Comment) *baseRepository
-		commentRepo func(ctx context.Context, id model.ID, comment *model.Comment) repository.CommentRepository
+		commentRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *model.Comment) repository.CommentRepository
 	}
 	type args struct {
 		ctx context.Context
@@ -319,9 +319,9 @@ func TestCachedCommentRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				commentRepo: func(ctx context.Context, id model.ID, comment *model.Comment) repository.CommentRepository {
-					repo := new(mock.CommentRepository)
-					repo.On("Get", ctx, id).Return(comment, nil)
+				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *model.Comment) repository.CommentRepository {
+					repo := mock.NewCommentRepository(ctrl)
+					repo.EXPECT().Get(ctx, id).Return(comment, nil)
 					return repo
 				},
 			},
@@ -368,8 +368,8 @@ func TestCachedCommentRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				commentRepo: func(_ context.Context, _ model.ID, _ *model.Comment) repository.CommentRepository {
-					return new(mock.CommentRepository)
+				commentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID, _ *model.Comment) repository.CommentRepository {
+					return mock.NewCommentRepository(nil)
 				},
 			},
 			args: args{
@@ -411,9 +411,9 @@ func TestCachedCommentRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				commentRepo: func(ctx context.Context, id model.ID, _ *model.Comment) repository.CommentRepository {
-					repo := new(mock.CommentRepository)
-					repo.On("Get", ctx, id).Return(nil, repository.ErrNotFound)
+				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *model.Comment) repository.CommentRepository {
+					repo := mock.NewCommentRepository(ctrl)
+					repo.EXPECT().Get(ctx, id).Return(nil, repository.ErrNotFound)
 					return repo
 				},
 			},
@@ -450,8 +450,8 @@ func TestCachedCommentRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				commentRepo: func(_ context.Context, _ model.ID, _ *model.Comment) repository.CommentRepository {
-					return new(mock.CommentRepository)
+				commentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID, _ *model.Comment) repository.CommentRepository {
+					return mock.NewCommentRepository(nil)
 				},
 			},
 			args: args{
@@ -493,9 +493,9 @@ func TestCachedCommentRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				commentRepo: func(ctx context.Context, id model.ID, comment *model.Comment) repository.CommentRepository {
-					repo := new(mock.CommentRepository)
-					repo.On("Get", ctx, id).Return(comment, nil)
+				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *model.Comment) repository.CommentRepository {
+					repo := mock.NewCommentRepository(ctrl)
+					repo.EXPECT().Get(ctx, id).Return(comment, nil)
 					return repo
 				},
 			},
@@ -520,7 +520,7 @@ func TestCachedCommentRepository_Get(t *testing.T) {
 
 			r := &CachedCommentRepository{
 				cacheRepo:   tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, want),
-				commentRepo: tt.fields.commentRepo(tt.args.ctx, tt.args.id, want),
+				commentRepo: tt.fields.commentRepo(ctrl, tt.args.ctx, tt.args.id, want),
 			}
 			got, err := r.Get(tt.args.ctx, tt.args.id)
 			assert.ErrorIs(t, err, tt.wantErr)
@@ -532,7 +532,7 @@ func TestCachedCommentRepository_Get(t *testing.T) {
 func TestCachedCommentRepository_GetAllBelongsTo(t *testing.T) {
 	type fields struct {
 		cacheRepo   func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, comments []*model.Comment) *baseRepository
-		commentRepo func(ctx context.Context, belongsTo model.ID, offset, limit int, comments []*model.Comment) repository.CommentRepository
+		commentRepo func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, comments []*model.Comment) repository.CommentRepository
 	}
 	type args struct {
 		ctx       context.Context
@@ -580,9 +580,9 @@ func TestCachedCommentRepository_GetAllBelongsTo(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				commentRepo: func(ctx context.Context, belongsTo model.ID, offset, limit int, comments []*model.Comment) repository.CommentRepository {
-					repo := new(mock.CommentRepository)
-					repo.On("GetAllBelongsTo", ctx, belongsTo, offset, limit).Return(comments, nil)
+				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, comments []*model.Comment) repository.CommentRepository {
+					repo := mock.NewCommentRepository(ctrl)
+					repo.EXPECT().GetAllBelongsTo(ctx, belongsTo, offset, limit).Return(comments, nil)
 					return repo
 				},
 			},
@@ -634,8 +634,8 @@ func TestCachedCommentRepository_GetAllBelongsTo(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				commentRepo: func(_ context.Context, _ model.ID, _, _ int, _ []*model.Comment) repository.CommentRepository {
-					return new(mock.CommentRepository)
+				commentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID, _, _ int, _ []*model.Comment) repository.CommentRepository {
+					return mock.NewCommentRepository(nil)
 				},
 			},
 			args: args{
@@ -683,9 +683,9 @@ func TestCachedCommentRepository_GetAllBelongsTo(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				commentRepo: func(ctx context.Context, belongsTo model.ID, offset, limit int, _ []*model.Comment) repository.CommentRepository {
-					repo := new(mock.CommentRepository)
-					repo.On("GetAllBelongsTo", ctx, belongsTo, offset, limit).Return(nil, repository.ErrNotFound)
+				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, _ []*model.Comment) repository.CommentRepository {
+					repo := mock.NewCommentRepository(ctrl)
+					repo.EXPECT().GetAllBelongsTo(ctx, belongsTo, offset, limit).Return(nil, repository.ErrNotFound)
 					return repo
 				},
 			},
@@ -723,8 +723,8 @@ func TestCachedCommentRepository_GetAllBelongsTo(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				commentRepo: func(_ context.Context, _ model.ID, _, _ int, _ []*model.Comment) repository.CommentRepository {
-					return new(mock.CommentRepository)
+				commentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID, _, _ int, _ []*model.Comment) repository.CommentRepository {
+					return mock.NewCommentRepository(nil)
 				},
 			},
 			args: args{
@@ -766,9 +766,9 @@ func TestCachedCommentRepository_GetAllBelongsTo(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				commentRepo: func(ctx context.Context, belongsTo model.ID, offset, limit int, comments []*model.Comment) repository.CommentRepository {
-					repo := new(mock.CommentRepository)
-					repo.On("GetAllBelongsTo", ctx, belongsTo, offset, limit).Return(comments, nil)
+				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, comments []*model.Comment) repository.CommentRepository {
+					repo := mock.NewCommentRepository(ctrl)
+					repo.EXPECT().GetAllBelongsTo(ctx, belongsTo, offset, limit).Return(comments, nil)
 					return repo
 				},
 			},
@@ -788,7 +788,7 @@ func TestCachedCommentRepository_GetAllBelongsTo(t *testing.T) {
 			defer ctrl.Finish()
 			r := &CachedCommentRepository{
 				cacheRepo:   tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.belongsTo, tt.args.offset, tt.args.limit, tt.want),
-				commentRepo: tt.fields.commentRepo(tt.args.ctx, tt.args.belongsTo, tt.args.offset, tt.args.limit, tt.want),
+				commentRepo: tt.fields.commentRepo(ctrl, tt.args.ctx, tt.args.belongsTo, tt.args.offset, tt.args.limit, tt.want),
 			}
 			got, err := r.GetAllBelongsTo(tt.args.ctx, tt.args.belongsTo, tt.args.offset, tt.args.limit)
 			assert.ErrorIs(t, err, tt.wantErr)
@@ -800,7 +800,7 @@ func TestCachedCommentRepository_GetAllBelongsTo(t *testing.T) {
 func TestCachedCommentRepository_Update(t *testing.T) {
 	type fields struct {
 		cacheRepo   func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *model.Comment) *baseRepository
-		commentRepo func(ctx context.Context, id model.ID, comment *model.Comment) repository.CommentRepository
+		commentRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *model.Comment) repository.CommentRepository
 	}
 	type args struct {
 		ctx     context.Context
@@ -854,9 +854,9 @@ func TestCachedCommentRepository_Update(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				commentRepo: func(ctx context.Context, id model.ID, comment *model.Comment) repository.CommentRepository {
-					repo := new(mock.CommentRepository)
-					repo.On("Update", ctx, id, comment.Content).Return(comment, nil)
+				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *model.Comment) repository.CommentRepository {
+					repo := mock.NewCommentRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, comment.Content).Return(comment, nil)
 					return repo
 				},
 			},
@@ -887,9 +887,9 @@ func TestCachedCommentRepository_Update(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				commentRepo: func(ctx context.Context, id model.ID, _ *model.Comment) repository.CommentRepository {
-					repo := new(mock.CommentRepository)
-					repo.On("Update", ctx, id, "new content").Return(nil, repository.ErrNotFound)
+				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *model.Comment) repository.CommentRepository {
+					repo := mock.NewCommentRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, "new content").Return(nil, repository.ErrNotFound)
 					return repo
 				},
 			},
@@ -931,9 +931,9 @@ func TestCachedCommentRepository_Update(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				commentRepo: func(ctx context.Context, id model.ID, comment *model.Comment) repository.CommentRepository {
-					repo := new(mock.CommentRepository)
-					repo.On("Update", ctx, id, "new content").Return(comment, nil)
+				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *model.Comment) repository.CommentRepository {
+					repo := mock.NewCommentRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, "new content").Return(comment, nil)
 					return repo
 				},
 			},
@@ -984,9 +984,9 @@ func TestCachedCommentRepository_Update(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				commentRepo: func(ctx context.Context, id model.ID, comment *model.Comment) repository.CommentRepository {
-					repo := new(mock.CommentRepository)
-					repo.On("Update", ctx, id, "new content").Return(comment, nil)
+				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *model.Comment) repository.CommentRepository {
+					repo := mock.NewCommentRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, "new content").Return(comment, nil)
 					return repo
 				},
 			},
@@ -1008,7 +1008,7 @@ func TestCachedCommentRepository_Update(t *testing.T) {
 
 			r := &CachedCommentRepository{
 				cacheRepo:   tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, tt.want),
-				commentRepo: tt.fields.commentRepo(tt.args.ctx, tt.args.id, tt.want),
+				commentRepo: tt.fields.commentRepo(ctrl, tt.args.ctx, tt.args.id, tt.want),
 			}
 			got, err := r.Update(tt.args.ctx, tt.args.id, tt.args.content)
 			assert.ErrorIs(t, err, tt.wantErr)
@@ -1020,7 +1020,7 @@ func TestCachedCommentRepository_Update(t *testing.T) {
 func TestCachedCommentRepository_Delete(t *testing.T) {
 	type fields struct {
 		cacheRepo   func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *baseRepository
-		commentRepo func(ctx context.Context, id model.ID) repository.CommentRepository
+		commentRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID) repository.CommentRepository
 	}
 	type args struct {
 		ctx context.Context
@@ -1080,9 +1080,9 @@ func TestCachedCommentRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				commentRepo: func(ctx context.Context, id model.ID) repository.CommentRepository {
-					repo := new(mock.CommentRepository)
-					repo.On("Delete", ctx, id).Return(nil)
+				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) repository.CommentRepository {
+					repo := mock.NewCommentRepository(ctrl)
+					repo.EXPECT().Delete(ctx, id).Return(nil)
 					return repo
 				},
 			},
@@ -1139,9 +1139,9 @@ func TestCachedCommentRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				commentRepo: func(ctx context.Context, id model.ID) repository.CommentRepository {
-					repo := new(mock.CommentRepository)
-					repo.On("Delete", ctx, id).Return(repository.ErrCommentDelete)
+				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) repository.CommentRepository {
+					repo := mock.NewCommentRepository(ctrl)
+					repo.EXPECT().Delete(ctx, id).Return(repository.ErrCommentDelete)
 					return repo
 				},
 			},
@@ -1180,10 +1180,8 @@ func TestCachedCommentRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				commentRepo: func(ctx context.Context, id model.ID) repository.CommentRepository {
-					repo := new(mock.CommentRepository)
-					repo.On("Delete", ctx, id).Return(nil)
-					return repo
+				commentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID) repository.CommentRepository {
+					return mock.NewCommentRepository(nil)
 				},
 			},
 			args: args{
@@ -1228,8 +1226,8 @@ func TestCachedCommentRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				commentRepo: func(_ context.Context, _ model.ID) repository.CommentRepository {
-					return new(mock.CommentRepository)
+				commentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID) repository.CommentRepository {
+					return mock.NewCommentRepository(nil)
 				},
 			},
 			args: args{
@@ -1281,8 +1279,8 @@ func TestCachedCommentRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				commentRepo: func(_ context.Context, _ model.ID) repository.CommentRepository {
-					return new(mock.CommentRepository)
+				commentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID) repository.CommentRepository {
+					return mock.NewCommentRepository(nil)
 				},
 			},
 			args: args{
@@ -1339,8 +1337,8 @@ func TestCachedCommentRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				commentRepo: func(_ context.Context, _ model.ID) repository.CommentRepository {
-					return new(mock.CommentRepository)
+				commentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID) repository.CommentRepository {
+					return mock.NewCommentRepository(nil)
 				},
 			},
 			args: args{
@@ -1359,7 +1357,7 @@ func TestCachedCommentRepository_Delete(t *testing.T) {
 			defer ctrl.Finish()
 			r := &CachedCommentRepository{
 				cacheRepo:   tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id),
-				commentRepo: tt.fields.commentRepo(tt.args.ctx, tt.args.id),
+				commentRepo: tt.fields.commentRepo(ctrl, tt.args.ctx, tt.args.id),
 			}
 			err := r.Delete(tt.args.ctx, tt.args.id)
 			assert.ErrorIs(t, err, tt.wantErr)
