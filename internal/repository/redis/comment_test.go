@@ -72,7 +72,7 @@ func TestCachedCommentRepository_Create(t *testing.T) {
 					}
 				},
 				commentRepo: func(ctx context.Context, belongsTo model.ID, comment *model.Comment) repository.CommentRepository {
-					repo := new(mock.CommentRepository)
+					repo := new(mock.CommentRepositoryOld)
 					repo.On("Create", ctx, belongsTo, comment).Return(nil)
 					return repo
 				},
@@ -127,7 +127,7 @@ func TestCachedCommentRepository_Create(t *testing.T) {
 					}
 				},
 				commentRepo: func(ctx context.Context, belongsTo model.ID, comment *model.Comment) repository.CommentRepository {
-					repo := new(mock.CommentRepository)
+					repo := new(mock.CommentRepositoryOld)
 					repo.On("Create", ctx, belongsTo, comment).Return(nil)
 					return repo
 				},
@@ -182,7 +182,7 @@ func TestCachedCommentRepository_Create(t *testing.T) {
 					}
 				},
 				commentRepo: func(ctx context.Context, belongsTo model.ID, comment *model.Comment) repository.CommentRepository {
-					repo := new(mock.CommentRepository)
+					repo := new(mock.CommentRepositoryOld)
 					repo.On("Create", ctx, belongsTo, comment).Return(repository.ErrCommentCreate)
 					return repo
 				},
@@ -238,7 +238,7 @@ func TestCachedCommentRepository_Create(t *testing.T) {
 					}
 				},
 				commentRepo: func(_ context.Context, _ model.ID, _ *model.Comment) repository.CommentRepository {
-					return new(mock.CommentRepository)
+					return new(mock.CommentRepositoryOld)
 				},
 			},
 			args: args{
@@ -320,7 +320,7 @@ func TestCachedCommentRepository_Get(t *testing.T) {
 					}
 				},
 				commentRepo: func(ctx context.Context, id model.ID, comment *model.Comment) repository.CommentRepository {
-					repo := new(mock.CommentRepository)
+					repo := new(mock.CommentRepositoryOld)
 					repo.On("Get", ctx, id).Return(comment, nil)
 					return repo
 				},
@@ -369,7 +369,7 @@ func TestCachedCommentRepository_Get(t *testing.T) {
 					}
 				},
 				commentRepo: func(_ context.Context, _ model.ID, _ *model.Comment) repository.CommentRepository {
-					return new(mock.CommentRepository)
+					return new(mock.CommentRepositoryOld)
 				},
 			},
 			args: args{
@@ -412,7 +412,7 @@ func TestCachedCommentRepository_Get(t *testing.T) {
 					}
 				},
 				commentRepo: func(ctx context.Context, id model.ID, _ *model.Comment) repository.CommentRepository {
-					repo := new(mock.CommentRepository)
+					repo := new(mock.CommentRepositoryOld)
 					repo.On("Get", ctx, id).Return(nil, repository.ErrNotFound)
 					return repo
 				},
@@ -451,7 +451,7 @@ func TestCachedCommentRepository_Get(t *testing.T) {
 					}
 				},
 				commentRepo: func(_ context.Context, _ model.ID, _ *model.Comment) repository.CommentRepository {
-					return new(mock.CommentRepository)
+					return new(mock.CommentRepositoryOld)
 				},
 			},
 			args: args{
@@ -494,7 +494,7 @@ func TestCachedCommentRepository_Get(t *testing.T) {
 					}
 				},
 				commentRepo: func(ctx context.Context, id model.ID, comment *model.Comment) repository.CommentRepository {
-					repo := new(mock.CommentRepository)
+					repo := new(mock.CommentRepositoryOld)
 					repo.On("Get", ctx, id).Return(comment, nil)
 					return repo
 				},
@@ -581,7 +581,7 @@ func TestCachedCommentRepository_GetAllBelongsTo(t *testing.T) {
 					}
 				},
 				commentRepo: func(ctx context.Context, belongsTo model.ID, offset, limit int, comments []*model.Comment) repository.CommentRepository {
-					repo := new(mock.CommentRepository)
+					repo := new(mock.CommentRepositoryOld)
 					repo.On("GetAllBelongsTo", ctx, belongsTo, offset, limit).Return(comments, nil)
 					return repo
 				},
@@ -635,7 +635,7 @@ func TestCachedCommentRepository_GetAllBelongsTo(t *testing.T) {
 					}
 				},
 				commentRepo: func(_ context.Context, _ model.ID, _, _ int, _ []*model.Comment) repository.CommentRepository {
-					return new(mock.CommentRepository)
+					return new(mock.CommentRepositoryOld)
 				},
 			},
 			args: args{
@@ -684,7 +684,7 @@ func TestCachedCommentRepository_GetAllBelongsTo(t *testing.T) {
 					}
 				},
 				commentRepo: func(ctx context.Context, belongsTo model.ID, offset, limit int, _ []*model.Comment) repository.CommentRepository {
-					repo := new(mock.CommentRepository)
+					repo := new(mock.CommentRepositoryOld)
 					repo.On("GetAllBelongsTo", ctx, belongsTo, offset, limit).Return(nil, repository.ErrNotFound)
 					return repo
 				},
@@ -724,7 +724,7 @@ func TestCachedCommentRepository_GetAllBelongsTo(t *testing.T) {
 					}
 				},
 				commentRepo: func(_ context.Context, _ model.ID, _, _ int, _ []*model.Comment) repository.CommentRepository {
-					return new(mock.CommentRepository)
+					return new(mock.CommentRepositoryOld)
 				},
 			},
 			args: args{
@@ -767,7 +767,7 @@ func TestCachedCommentRepository_GetAllBelongsTo(t *testing.T) {
 					}
 				},
 				commentRepo: func(ctx context.Context, belongsTo model.ID, offset, limit int, comments []*model.Comment) repository.CommentRepository {
-					repo := new(mock.CommentRepository)
+					repo := new(mock.CommentRepositoryOld)
 					repo.On("GetAllBelongsTo", ctx, belongsTo, offset, limit).Return(comments, nil)
 					return repo
 				},
@@ -855,7 +855,7 @@ func TestCachedCommentRepository_Update(t *testing.T) {
 					}
 				},
 				commentRepo: func(ctx context.Context, id model.ID, comment *model.Comment) repository.CommentRepository {
-					repo := new(mock.CommentRepository)
+					repo := new(mock.CommentRepositoryOld)
 					repo.On("Update", ctx, id, comment.Content).Return(comment, nil)
 					return repo
 				},
@@ -888,7 +888,7 @@ func TestCachedCommentRepository_Update(t *testing.T) {
 					}
 				},
 				commentRepo: func(ctx context.Context, id model.ID, _ *model.Comment) repository.CommentRepository {
-					repo := new(mock.CommentRepository)
+					repo := new(mock.CommentRepositoryOld)
 					repo.On("Update", ctx, id, "new content").Return(nil, repository.ErrNotFound)
 					return repo
 				},
@@ -932,7 +932,7 @@ func TestCachedCommentRepository_Update(t *testing.T) {
 					}
 				},
 				commentRepo: func(ctx context.Context, id model.ID, comment *model.Comment) repository.CommentRepository {
-					repo := new(mock.CommentRepository)
+					repo := new(mock.CommentRepositoryOld)
 					repo.On("Update", ctx, id, "new content").Return(comment, nil)
 					return repo
 				},
@@ -985,7 +985,7 @@ func TestCachedCommentRepository_Update(t *testing.T) {
 					}
 				},
 				commentRepo: func(ctx context.Context, id model.ID, comment *model.Comment) repository.CommentRepository {
-					repo := new(mock.CommentRepository)
+					repo := new(mock.CommentRepositoryOld)
 					repo.On("Update", ctx, id, "new content").Return(comment, nil)
 					return repo
 				},
@@ -1081,7 +1081,7 @@ func TestCachedCommentRepository_Delete(t *testing.T) {
 					}
 				},
 				commentRepo: func(ctx context.Context, id model.ID) repository.CommentRepository {
-					repo := new(mock.CommentRepository)
+					repo := new(mock.CommentRepositoryOld)
 					repo.On("Delete", ctx, id).Return(nil)
 					return repo
 				},
@@ -1140,7 +1140,7 @@ func TestCachedCommentRepository_Delete(t *testing.T) {
 					}
 				},
 				commentRepo: func(ctx context.Context, id model.ID) repository.CommentRepository {
-					repo := new(mock.CommentRepository)
+					repo := new(mock.CommentRepositoryOld)
 					repo.On("Delete", ctx, id).Return(repository.ErrCommentDelete)
 					return repo
 				},
@@ -1181,7 +1181,7 @@ func TestCachedCommentRepository_Delete(t *testing.T) {
 					}
 				},
 				commentRepo: func(ctx context.Context, id model.ID) repository.CommentRepository {
-					repo := new(mock.CommentRepository)
+					repo := new(mock.CommentRepositoryOld)
 					repo.On("Delete", ctx, id).Return(nil)
 					return repo
 				},
@@ -1229,7 +1229,7 @@ func TestCachedCommentRepository_Delete(t *testing.T) {
 					}
 				},
 				commentRepo: func(_ context.Context, _ model.ID) repository.CommentRepository {
-					return new(mock.CommentRepository)
+					return new(mock.CommentRepositoryOld)
 				},
 			},
 			args: args{
@@ -1282,7 +1282,7 @@ func TestCachedCommentRepository_Delete(t *testing.T) {
 					}
 				},
 				commentRepo: func(_ context.Context, _ model.ID) repository.CommentRepository {
-					return new(mock.CommentRepository)
+					return new(mock.CommentRepositoryOld)
 				},
 			},
 			args: args{
@@ -1340,7 +1340,7 @@ func TestCachedCommentRepository_Delete(t *testing.T) {
 					}
 				},
 				commentRepo: func(_ context.Context, _ model.ID) repository.CommentRepository {
-					return new(mock.CommentRepository)
+					return new(mock.CommentRepositoryOld)
 				},
 			},
 			args: args{
