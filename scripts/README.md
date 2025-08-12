@@ -17,10 +17,15 @@ This script generates development configuration files and key.
 ## generate-frontend-client.sh
 
 Takes the Open API specification in the `api/openapi` directory, and generates
-a Typescript client from it.
+a TypeScript client from it.
+
+## pretty-test.sh
+
+Takes the JSON output of `go test` command and pretty-formats it using `jq` to
+make it more readable.
 
 ## setup.sh
 
-This script prepares the whole development environment. Generates new developer
-configuration, creates certificates, register a new OAuth client, sets the web
-credentials, creates a new user in the database to interact with.
+This script prepares the whole development environment. Generates a new
+developer configuration, creates certificates, register a new OAuth client,
+sets the web credentials, creates a new user in the database to interact with.
