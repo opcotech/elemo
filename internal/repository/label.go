@@ -7,6 +7,8 @@ import (
 )
 
 // LabelRepository is a repository for managing labels.
+//
+//go:generate mockgen -source=label.go -destination=../testutil/mock/label_repo_gen.go -package=mock -mock_names "LabelRepository=LabelRepository"
 type LabelRepository interface {
 	Create(ctx context.Context, label *model.Label) error
 	Get(ctx context.Context, id model.ID) (*model.Label, error)

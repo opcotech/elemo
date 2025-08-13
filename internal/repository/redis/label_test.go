@@ -19,7 +19,7 @@ import (
 func TestCachedLabelRepository_Create(t *testing.T) {
 	type fields struct {
 		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, label *model.Label) *baseRepository
-		labelRepo func(ctx context.Context, label *model.Label) repository.LabelRepository
+		labelRepo func(ctrl *gomock.Controller, ctx context.Context, label *model.Label) repository.LabelRepository
 	}
 	type args struct {
 		ctx   context.Context
@@ -76,9 +76,9 @@ func TestCachedLabelRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				labelRepo: func(ctx context.Context, label *model.Label) repository.LabelRepository {
-					repo := new(mock.LabelRepositoryOld)
-					repo.On("Create", ctx, label).Return(nil)
+				labelRepo: func(ctrl *gomock.Controller, ctx context.Context, label *model.Label) repository.LabelRepository {
+					repo := mock.NewLabelRepository(ctrl)
+					repo.EXPECT().Create(ctx, label).Return(nil)
 					return repo
 				},
 			},
@@ -136,9 +136,9 @@ func TestCachedLabelRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				labelRepo: func(ctx context.Context, label *model.Label) repository.LabelRepository {
-					repo := new(mock.LabelRepositoryOld)
-					repo.On("Create", ctx, label).Return(repository.ErrLabelCreate)
+				labelRepo: func(ctrl *gomock.Controller, ctx context.Context, label *model.Label) repository.LabelRepository {
+					repo := mock.NewLabelRepository(ctrl)
+					repo.EXPECT().Create(ctx, label).Return(repository.ErrLabelCreate)
 					return repo
 				},
 			},
@@ -185,8 +185,8 @@ func TestCachedLabelRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				labelRepo: func(_ context.Context, _ *model.Label) repository.LabelRepository {
-					return new(mock.LabelRepositoryOld)
+				labelRepo: func(_ *gomock.Controller, _ context.Context, _ *model.Label) repository.LabelRepository {
+					return mock.NewLabelRepository(nil)
 				},
 			},
 			args: args{
@@ -238,8 +238,8 @@ func TestCachedLabelRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				labelRepo: func(_ context.Context, _ *model.Label) repository.LabelRepository {
-					return new(mock.LabelRepositoryOld)
+				labelRepo: func(_ *gomock.Controller, _ context.Context, _ *model.Label) repository.LabelRepository {
+					return mock.NewLabelRepository(nil)
 				},
 			},
 			args: args{
@@ -297,8 +297,8 @@ func TestCachedLabelRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				labelRepo: func(_ context.Context, _ *model.Label) repository.LabelRepository {
-					return new(mock.LabelRepositoryOld)
+				labelRepo: func(_ *gomock.Controller, _ context.Context, _ *model.Label) repository.LabelRepository {
+					return mock.NewLabelRepository(nil)
 				},
 			},
 			args: args{
@@ -320,7 +320,7 @@ func TestCachedLabelRepository_Create(t *testing.T) {
 			defer ctrl.Finish()
 			r := &CachedLabelRepository{
 				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.label),
-				labelRepo: tt.fields.labelRepo(tt.args.ctx, tt.args.label),
+				labelRepo: tt.fields.labelRepo(ctrl, tt.args.ctx, tt.args.label),
 			}
 			err := r.Create(tt.args.ctx, tt.args.label)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -331,7 +331,7 @@ func TestCachedLabelRepository_Create(t *testing.T) {
 func TestCachedLabelRepository_Get(t *testing.T) {
 	type fields struct {
 		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, label *model.Label) *baseRepository
-		labelRepo func(ctx context.Context, id model.ID, label *model.Label) repository.LabelRepository
+		labelRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, label *model.Label) repository.LabelRepository
 	}
 	type args struct {
 		ctx context.Context
@@ -375,10 +375,8 @@ func TestCachedLabelRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				labelRepo: func(ctx context.Context, id model.ID, label *model.Label) repository.LabelRepository {
-					repo := new(mock.LabelRepositoryOld)
-					repo.On("Get", ctx, id).Return(label, nil)
-					return repo
+				labelRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID, _ *model.Label) repository.LabelRepository {
+					return mock.NewLabelRepository(nil)
 				},
 			},
 			args: args{
@@ -424,8 +422,8 @@ func TestCachedLabelRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				labelRepo: func(_ context.Context, _ model.ID, _ *model.Label) repository.LabelRepository {
-					return new(mock.LabelRepositoryOld)
+				labelRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID, _ *model.Label) repository.LabelRepository {
+					return mock.NewLabelRepository(nil)
 				},
 			},
 			args: args{
@@ -467,9 +465,9 @@ func TestCachedLabelRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				labelRepo: func(ctx context.Context, id model.ID, _ *model.Label) repository.LabelRepository {
-					repo := new(mock.LabelRepositoryOld)
-					repo.On("Get", ctx, id).Return(nil, repository.ErrNotFound)
+				labelRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *model.Label) repository.LabelRepository {
+					repo := mock.NewLabelRepository(ctrl)
+					repo.EXPECT().Get(ctx, id).Return(nil, repository.ErrNotFound)
 					return repo
 				},
 			},
@@ -506,8 +504,8 @@ func TestCachedLabelRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				labelRepo: func(_ context.Context, _ model.ID, _ *model.Label) repository.LabelRepository {
-					return new(mock.LabelRepositoryOld)
+				labelRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID, _ *model.Label) repository.LabelRepository {
+					return mock.NewLabelRepository(nil)
 				},
 			},
 			args: args{
@@ -549,9 +547,9 @@ func TestCachedLabelRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				labelRepo: func(ctx context.Context, id model.ID, label *model.Label) repository.LabelRepository {
-					repo := new(mock.LabelRepositoryOld)
-					repo.On("Get", ctx, id).Return(label, nil)
+				labelRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, label *model.Label) repository.LabelRepository {
+					repo := mock.NewLabelRepository(ctrl)
+					repo.EXPECT().Get(ctx, id).Return(label, nil)
 					return repo
 				},
 			},
@@ -575,7 +573,7 @@ func TestCachedLabelRepository_Get(t *testing.T) {
 
 			r := &CachedLabelRepository{
 				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, want),
-				labelRepo: tt.fields.labelRepo(tt.args.ctx, tt.args.id, want),
+				labelRepo: tt.fields.labelRepo(ctrl, tt.args.ctx, tt.args.id, want),
 			}
 			got, err := r.Get(tt.args.ctx, tt.args.id)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -587,7 +585,7 @@ func TestCachedLabelRepository_Get(t *testing.T) {
 func TestCachedLabelRepository_GetAll(t *testing.T) {
 	type fields struct {
 		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, labels []*model.Label) *baseRepository
-		labelRepo func(ctx context.Context, offset, limit int, labels []*model.Label) repository.LabelRepository
+		labelRepo func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, labels []*model.Label) repository.LabelRepository
 	}
 	type args struct {
 		ctx    context.Context
@@ -634,9 +632,9 @@ func TestCachedLabelRepository_GetAll(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				labelRepo: func(ctx context.Context, offset, limit int, labels []*model.Label) repository.LabelRepository {
-					repo := new(mock.LabelRepositoryOld)
-					repo.On("GetAll", ctx, offset, limit).Return(labels, nil)
+				labelRepo: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, labels []*model.Label) repository.LabelRepository {
+					repo := mock.NewLabelRepository(ctrl)
+					repo.EXPECT().GetAll(ctx, offset, limit).Return(labels, nil)
 					return repo
 				},
 			},
@@ -689,8 +687,8 @@ func TestCachedLabelRepository_GetAll(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				labelRepo: func(_ context.Context, _, _ int, _ []*model.Label) repository.LabelRepository {
-					return new(mock.LabelRepositoryOld)
+				labelRepo: func(_ *gomock.Controller, _ context.Context, _, _ int, _ []*model.Label) repository.LabelRepository {
+					return mock.NewLabelRepository(nil)
 				},
 			},
 			args: args{
@@ -739,9 +737,9 @@ func TestCachedLabelRepository_GetAll(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				labelRepo: func(ctx context.Context, offset, limit int, _ []*model.Label) repository.LabelRepository {
-					repo := new(mock.LabelRepositoryOld)
-					repo.On("GetAll", ctx, offset, limit).Return(nil, repository.ErrNotFound)
+				labelRepo: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, _ []*model.Label) repository.LabelRepository {
+					repo := mock.NewLabelRepository(ctrl)
+					repo.EXPECT().GetAll(ctx, offset, limit).Return(nil, repository.ErrNotFound)
 					return repo
 				},
 			},
@@ -780,8 +778,8 @@ func TestCachedLabelRepository_GetAll(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				labelRepo: func(_ context.Context, _, _ int, _ []*model.Label) repository.LabelRepository {
-					return new(mock.LabelRepositoryOld)
+				labelRepo: func(_ *gomock.Controller, _ context.Context, _, _ int, _ []*model.Label) repository.LabelRepository {
+					return mock.NewLabelRepository(nil)
 				},
 			},
 			args: args{
@@ -810,7 +808,7 @@ func TestCachedLabelRepository_GetAll(t *testing.T) {
 					tracer.On("Start", ctx, "repository.redis.baseRepository/Set", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
-					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(nil)
+					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(cache.ErrCacheMiss)
 					cacheRepo.EXPECT().Set(&cache.Item{
 						Ctx:   ctx,
 						Key:   key,
@@ -824,9 +822,9 @@ func TestCachedLabelRepository_GetAll(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				labelRepo: func(ctx context.Context, offset, limit int, labels []*model.Label) repository.LabelRepository {
-					repo := new(mock.LabelRepositoryOld)
-					repo.On("GetAll", ctx, offset, limit).Return(labels, nil)
+				labelRepo: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, labels []*model.Label) repository.LabelRepository {
+					repo := mock.NewLabelRepository(ctrl)
+					repo.EXPECT().GetAll(ctx, offset, limit).Return(labels, nil)
 					return repo
 				},
 			},
@@ -846,7 +844,7 @@ func TestCachedLabelRepository_GetAll(t *testing.T) {
 			defer ctrl.Finish()
 			r := &CachedLabelRepository{
 				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.offset, tt.args.limit, tt.want),
-				labelRepo: tt.fields.labelRepo(tt.args.ctx, tt.args.offset, tt.args.limit, tt.want),
+				labelRepo: tt.fields.labelRepo(ctrl, tt.args.ctx, tt.args.offset, tt.args.limit, tt.want),
 			}
 			got, err := r.GetAll(tt.args.ctx, tt.args.offset, tt.args.limit)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -858,7 +856,7 @@ func TestCachedLabelRepository_GetAll(t *testing.T) {
 func TestCachedLabelRepository_Update(t *testing.T) {
 	type fields struct {
 		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, label *model.Label) *baseRepository
-		labelRepo func(ctx context.Context, id model.ID, patch map[string]any, label *model.Label) repository.LabelRepository
+		labelRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, label *model.Label) repository.LabelRepository
 	}
 	type args struct {
 		ctx   context.Context
@@ -912,9 +910,9 @@ func TestCachedLabelRepository_Update(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				labelRepo: func(ctx context.Context, id model.ID, patch map[string]any, label *model.Label) repository.LabelRepository {
-					repo := new(mock.LabelRepositoryOld)
-					repo.On("Update", ctx, id, patch).Return(label, nil)
+				labelRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, label *model.Label) repository.LabelRepository {
+					repo := mock.NewLabelRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, patch).Return(label, nil)
 					return repo
 				},
 			},
@@ -948,9 +946,9 @@ func TestCachedLabelRepository_Update(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				labelRepo: func(ctx context.Context, id model.ID, patch map[string]any, _ *model.Label) repository.LabelRepository {
-					repo := new(mock.LabelRepositoryOld)
-					repo.On("Update", ctx, id, patch).Return(nil, repository.ErrNotFound)
+				labelRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, _ *model.Label) repository.LabelRepository {
+					repo := mock.NewLabelRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, patch).Return(nil, repository.ErrNotFound)
 					return repo
 				},
 			},
@@ -996,9 +994,9 @@ func TestCachedLabelRepository_Update(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				labelRepo: func(ctx context.Context, id model.ID, patch map[string]any, label *model.Label) repository.LabelRepository {
-					repo := new(mock.LabelRepositoryOld)
-					repo.On("Update", ctx, id, patch).Return(label, nil)
+				labelRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, label *model.Label) repository.LabelRepository {
+					repo := mock.NewLabelRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, patch).Return(label, nil)
 					return repo
 				},
 			},
@@ -1052,9 +1050,9 @@ func TestCachedLabelRepository_Update(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				labelRepo: func(ctx context.Context, id model.ID, patch map[string]any, label *model.Label) repository.LabelRepository {
-					repo := new(mock.LabelRepositoryOld)
-					repo.On("Update", ctx, id, patch).Return(label, nil)
+				labelRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, label *model.Label) repository.LabelRepository {
+					repo := mock.NewLabelRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, patch).Return(label, nil)
 					return repo
 				},
 			},
@@ -1078,7 +1076,7 @@ func TestCachedLabelRepository_Update(t *testing.T) {
 
 			r := &CachedLabelRepository{
 				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, tt.want),
-				labelRepo: tt.fields.labelRepo(tt.args.ctx, tt.args.id, tt.args.patch, tt.want),
+				labelRepo: tt.fields.labelRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.patch, tt.want),
 			}
 			got, err := r.Update(tt.args.ctx, tt.args.id, tt.args.patch)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -1090,7 +1088,7 @@ func TestCachedLabelRepository_Update(t *testing.T) {
 func TestCachedLabelRepository_AttachTo(t *testing.T) {
 	type fields struct {
 		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, id, attachTo model.ID) *baseRepository
-		labelRepo func(ctx context.Context, id, attachTo model.ID) repository.LabelRepository
+		labelRepo func(ctrl *gomock.Controller, ctx context.Context, id, attachTo model.ID) repository.LabelRepository
 	}
 	type args struct {
 		ctx      context.Context
@@ -1151,9 +1149,9 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				labelRepo: func(ctx context.Context, id, attachTo model.ID) repository.LabelRepository {
-					repo := new(mock.LabelRepositoryOld)
-					repo.On("AttachTo", ctx, id, attachTo).Return(nil)
+				labelRepo: func(ctrl *gomock.Controller, ctx context.Context, id, attachTo model.ID) repository.LabelRepository {
+					repo := mock.NewLabelRepository(ctrl)
+					repo.EXPECT().AttachTo(ctx, id, attachTo).Return(nil)
 					return repo
 				},
 			},
@@ -1211,9 +1209,9 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				labelRepo: func(ctx context.Context, id, attachTo model.ID) repository.LabelRepository {
-					repo := new(mock.LabelRepositoryOld)
-					repo.On("AttachTo", ctx, id, attachTo).Return(repository.ErrLabelDelete)
+				labelRepo: func(ctrl *gomock.Controller, ctx context.Context, id, attachTo model.ID) repository.LabelRepository {
+					repo := mock.NewLabelRepository(ctrl)
+					repo.EXPECT().AttachTo(ctx, id, attachTo).Return(repository.ErrLabelDelete)
 					return repo
 				},
 			},
@@ -1253,10 +1251,8 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				labelRepo: func(ctx context.Context, id, attachTo model.ID) repository.LabelRepository {
-					repo := new(mock.LabelRepositoryOld)
-					repo.On("AttachTo", ctx, id, attachTo).Return(nil)
-					return repo
+				labelRepo: func(_ *gomock.Controller, _ context.Context, _, _ model.ID) repository.LabelRepository {
+					return mock.NewLabelRepository(nil)
 				},
 			},
 			args: args{
@@ -1302,8 +1298,8 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				labelRepo: func(_ context.Context, _, _ model.ID) repository.LabelRepository {
-					return new(mock.LabelRepositoryOld)
+				labelRepo: func(_ *gomock.Controller, _ context.Context, _, _ model.ID) repository.LabelRepository {
+					return mock.NewLabelRepository(nil)
 				},
 			},
 			args: args{
@@ -1355,8 +1351,8 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				labelRepo: func(_ context.Context, _, _ model.ID) repository.LabelRepository {
-					return new(mock.LabelRepositoryOld)
+				labelRepo: func(_ *gomock.Controller, _ context.Context, _, _ model.ID) repository.LabelRepository {
+					return mock.NewLabelRepository(nil)
 				},
 			},
 			args: args{
@@ -1414,8 +1410,8 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				labelRepo: func(_ context.Context, _, _ model.ID) repository.LabelRepository {
-					return new(mock.LabelRepositoryOld)
+				labelRepo: func(_ *gomock.Controller, _ context.Context, _, _ model.ID) repository.LabelRepository {
+					return mock.NewLabelRepository(nil)
 				},
 			},
 			args: args{
@@ -1434,7 +1430,7 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 			defer ctrl.Finish()
 			r := &CachedLabelRepository{
 				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.attachTo),
-				labelRepo: tt.fields.labelRepo(tt.args.ctx, tt.args.id, tt.args.attachTo),
+				labelRepo: tt.fields.labelRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.attachTo),
 			}
 			err := r.AttachTo(tt.args.ctx, tt.args.id, tt.args.attachTo)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -1445,7 +1441,7 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 	type fields struct {
 		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, id, detachFrom model.ID) *baseRepository
-		labelRepo func(ctx context.Context, id, detachFrom model.ID) repository.LabelRepository
+		labelRepo func(ctrl *gomock.Controller, ctx context.Context, id, detachFrom model.ID) repository.LabelRepository
 	}
 	type args struct {
 		ctx        context.Context
@@ -1506,9 +1502,9 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				labelRepo: func(ctx context.Context, id, detachFrom model.ID) repository.LabelRepository {
-					repo := new(mock.LabelRepositoryOld)
-					repo.On("DetachFrom", ctx, id, detachFrom).Return(nil)
+				labelRepo: func(ctrl *gomock.Controller, ctx context.Context, id, detachFrom model.ID) repository.LabelRepository {
+					repo := mock.NewLabelRepository(ctrl)
+					repo.EXPECT().DetachFrom(ctx, id, detachFrom).Return(nil)
 					return repo
 				},
 			},
@@ -1566,9 +1562,9 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				labelRepo: func(ctx context.Context, id, detachFrom model.ID) repository.LabelRepository {
-					repo := new(mock.LabelRepositoryOld)
-					repo.On("DetachFrom", ctx, id, detachFrom).Return(repository.ErrLabelDelete)
+				labelRepo: func(ctrl *gomock.Controller, ctx context.Context, id, detachFrom model.ID) repository.LabelRepository {
+					repo := mock.NewLabelRepository(ctrl)
+					repo.EXPECT().DetachFrom(ctx, id, detachFrom).Return(repository.ErrLabelDelete)
 					return repo
 				},
 			},
@@ -1608,10 +1604,8 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				labelRepo: func(ctx context.Context, id, detachFrom model.ID) repository.LabelRepository {
-					repo := new(mock.LabelRepositoryOld)
-					repo.On("DetachFrom", ctx, id, detachFrom).Return(nil)
-					return repo
+				labelRepo: func(_ *gomock.Controller, _ context.Context, _, _ model.ID) repository.LabelRepository {
+					return mock.NewLabelRepository(nil)
 				},
 			},
 			args: args{
@@ -1657,8 +1651,8 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				labelRepo: func(_ context.Context, _, _ model.ID) repository.LabelRepository {
-					return new(mock.LabelRepositoryOld)
+				labelRepo: func(_ *gomock.Controller, _ context.Context, _, _ model.ID) repository.LabelRepository {
+					return mock.NewLabelRepository(nil)
 				},
 			},
 			args: args{
@@ -1710,8 +1704,8 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				labelRepo: func(_ context.Context, _, _ model.ID) repository.LabelRepository {
-					return new(mock.LabelRepositoryOld)
+				labelRepo: func(_ *gomock.Controller, _ context.Context, _, _ model.ID) repository.LabelRepository {
+					return mock.NewLabelRepository(nil)
 				},
 			},
 			args: args{
@@ -1769,8 +1763,8 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				labelRepo: func(_ context.Context, _, _ model.ID) repository.LabelRepository {
-					return new(mock.LabelRepositoryOld)
+				labelRepo: func(_ *gomock.Controller, _ context.Context, _, _ model.ID) repository.LabelRepository {
+					return mock.NewLabelRepository(nil)
 				},
 			},
 			args: args{
@@ -1789,7 +1783,7 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 			defer ctrl.Finish()
 			r := &CachedLabelRepository{
 				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.detachFrom),
-				labelRepo: tt.fields.labelRepo(tt.args.ctx, tt.args.id, tt.args.detachFrom),
+				labelRepo: tt.fields.labelRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.detachFrom),
 			}
 			err := r.DetachFrom(tt.args.ctx, tt.args.id, tt.args.detachFrom)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -1800,7 +1794,7 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 func TestCachedLabelRepository_Delete(t *testing.T) {
 	type fields struct {
 		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *baseRepository
-		labelRepo func(ctx context.Context, id model.ID) repository.LabelRepository
+		labelRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID) repository.LabelRepository
 	}
 	type args struct {
 		ctx context.Context
@@ -1860,9 +1854,9 @@ func TestCachedLabelRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				labelRepo: func(ctx context.Context, id model.ID) repository.LabelRepository {
-					repo := new(mock.LabelRepositoryOld)
-					repo.On("Delete", ctx, id).Return(nil)
+				labelRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) repository.LabelRepository {
+					repo := mock.NewLabelRepository(ctrl)
+					repo.EXPECT().Delete(ctx, id).Return(nil)
 					return repo
 				},
 			},
@@ -1919,9 +1913,9 @@ func TestCachedLabelRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				labelRepo: func(ctx context.Context, id model.ID) repository.LabelRepository {
-					repo := new(mock.LabelRepositoryOld)
-					repo.On("Delete", ctx, id).Return(repository.ErrLabelDelete)
+				labelRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) repository.LabelRepository {
+					repo := mock.NewLabelRepository(ctrl)
+					repo.EXPECT().Delete(ctx, id).Return(repository.ErrLabelDelete)
 					return repo
 				},
 			},
@@ -1960,10 +1954,8 @@ func TestCachedLabelRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				labelRepo: func(ctx context.Context, id model.ID) repository.LabelRepository {
-					repo := new(mock.LabelRepositoryOld)
-					repo.On("Delete", ctx, id).Return(nil)
-					return repo
+				labelRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID) repository.LabelRepository {
+					return mock.NewLabelRepository(nil)
 				},
 			},
 			args: args{
@@ -2008,8 +2000,8 @@ func TestCachedLabelRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				labelRepo: func(_ context.Context, _ model.ID) repository.LabelRepository {
-					return new(mock.LabelRepositoryOld)
+				labelRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID) repository.LabelRepository {
+					return mock.NewLabelRepository(nil)
 				},
 			},
 			args: args{
@@ -2060,8 +2052,8 @@ func TestCachedLabelRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				labelRepo: func(_ context.Context, _ model.ID) repository.LabelRepository {
-					return new(mock.LabelRepositoryOld)
+				labelRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID) repository.LabelRepository {
+					return mock.NewLabelRepository(nil)
 				},
 			},
 			args: args{
@@ -2118,8 +2110,8 @@ func TestCachedLabelRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				labelRepo: func(_ context.Context, _ model.ID) repository.LabelRepository {
-					return new(mock.LabelRepositoryOld)
+				labelRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID) repository.LabelRepository {
+					return mock.NewLabelRepository(nil)
 				},
 			},
 			args: args{
@@ -2137,7 +2129,7 @@ func TestCachedLabelRepository_Delete(t *testing.T) {
 			defer ctrl.Finish()
 			r := &CachedLabelRepository{
 				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id),
-				labelRepo: tt.fields.labelRepo(tt.args.ctx, tt.args.id),
+				labelRepo: tt.fields.labelRepo(ctrl, tt.args.ctx, tt.args.id),
 			}
 			err := r.Delete(tt.args.ctx, tt.args.id)
 			require.ErrorIs(t, err, tt.wantErr)
