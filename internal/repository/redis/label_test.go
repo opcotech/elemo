@@ -77,7 +77,7 @@ func TestCachedLabelRepository_Create(t *testing.T) {
 					}
 				},
 				labelRepo: func(ctx context.Context, label *model.Label) repository.LabelRepository {
-					repo := new(mock.LabelRepository)
+					repo := new(mock.LabelRepositoryOld)
 					repo.On("Create", ctx, label).Return(nil)
 					return repo
 				},
@@ -137,7 +137,7 @@ func TestCachedLabelRepository_Create(t *testing.T) {
 					}
 				},
 				labelRepo: func(ctx context.Context, label *model.Label) repository.LabelRepository {
-					repo := new(mock.LabelRepository)
+					repo := new(mock.LabelRepositoryOld)
 					repo.On("Create", ctx, label).Return(repository.ErrLabelCreate)
 					return repo
 				},
@@ -186,7 +186,7 @@ func TestCachedLabelRepository_Create(t *testing.T) {
 					}
 				},
 				labelRepo: func(_ context.Context, _ *model.Label) repository.LabelRepository {
-					return new(mock.LabelRepository)
+					return new(mock.LabelRepositoryOld)
 				},
 			},
 			args: args{
@@ -239,7 +239,7 @@ func TestCachedLabelRepository_Create(t *testing.T) {
 					}
 				},
 				labelRepo: func(_ context.Context, _ *model.Label) repository.LabelRepository {
-					return new(mock.LabelRepository)
+					return new(mock.LabelRepositoryOld)
 				},
 			},
 			args: args{
@@ -298,7 +298,7 @@ func TestCachedLabelRepository_Create(t *testing.T) {
 					}
 				},
 				labelRepo: func(_ context.Context, _ *model.Label) repository.LabelRepository {
-					return new(mock.LabelRepository)
+					return new(mock.LabelRepositoryOld)
 				},
 			},
 			args: args{
@@ -376,7 +376,7 @@ func TestCachedLabelRepository_Get(t *testing.T) {
 					}
 				},
 				labelRepo: func(ctx context.Context, id model.ID, label *model.Label) repository.LabelRepository {
-					repo := new(mock.LabelRepository)
+					repo := new(mock.LabelRepositoryOld)
 					repo.On("Get", ctx, id).Return(label, nil)
 					return repo
 				},
@@ -425,7 +425,7 @@ func TestCachedLabelRepository_Get(t *testing.T) {
 					}
 				},
 				labelRepo: func(_ context.Context, _ model.ID, _ *model.Label) repository.LabelRepository {
-					return new(mock.LabelRepository)
+					return new(mock.LabelRepositoryOld)
 				},
 			},
 			args: args{
@@ -468,7 +468,7 @@ func TestCachedLabelRepository_Get(t *testing.T) {
 					}
 				},
 				labelRepo: func(ctx context.Context, id model.ID, _ *model.Label) repository.LabelRepository {
-					repo := new(mock.LabelRepository)
+					repo := new(mock.LabelRepositoryOld)
 					repo.On("Get", ctx, id).Return(nil, repository.ErrNotFound)
 					return repo
 				},
@@ -507,7 +507,7 @@ func TestCachedLabelRepository_Get(t *testing.T) {
 					}
 				},
 				labelRepo: func(_ context.Context, _ model.ID, _ *model.Label) repository.LabelRepository {
-					return new(mock.LabelRepository)
+					return new(mock.LabelRepositoryOld)
 				},
 			},
 			args: args{
@@ -550,7 +550,7 @@ func TestCachedLabelRepository_Get(t *testing.T) {
 					}
 				},
 				labelRepo: func(ctx context.Context, id model.ID, label *model.Label) repository.LabelRepository {
-					repo := new(mock.LabelRepository)
+					repo := new(mock.LabelRepositoryOld)
 					repo.On("Get", ctx, id).Return(label, nil)
 					return repo
 				},
@@ -635,7 +635,7 @@ func TestCachedLabelRepository_GetAll(t *testing.T) {
 					}
 				},
 				labelRepo: func(ctx context.Context, offset, limit int, labels []*model.Label) repository.LabelRepository {
-					repo := new(mock.LabelRepository)
+					repo := new(mock.LabelRepositoryOld)
 					repo.On("GetAll", ctx, offset, limit).Return(labels, nil)
 					return repo
 				},
@@ -690,7 +690,7 @@ func TestCachedLabelRepository_GetAll(t *testing.T) {
 					}
 				},
 				labelRepo: func(_ context.Context, _, _ int, _ []*model.Label) repository.LabelRepository {
-					return new(mock.LabelRepository)
+					return new(mock.LabelRepositoryOld)
 				},
 			},
 			args: args{
@@ -740,7 +740,7 @@ func TestCachedLabelRepository_GetAll(t *testing.T) {
 					}
 				},
 				labelRepo: func(ctx context.Context, offset, limit int, _ []*model.Label) repository.LabelRepository {
-					repo := new(mock.LabelRepository)
+					repo := new(mock.LabelRepositoryOld)
 					repo.On("GetAll", ctx, offset, limit).Return(nil, repository.ErrNotFound)
 					return repo
 				},
@@ -781,7 +781,7 @@ func TestCachedLabelRepository_GetAll(t *testing.T) {
 					}
 				},
 				labelRepo: func(_ context.Context, _, _ int, _ []*model.Label) repository.LabelRepository {
-					return new(mock.LabelRepository)
+					return new(mock.LabelRepositoryOld)
 				},
 			},
 			args: args{
@@ -825,7 +825,7 @@ func TestCachedLabelRepository_GetAll(t *testing.T) {
 					}
 				},
 				labelRepo: func(ctx context.Context, offset, limit int, labels []*model.Label) repository.LabelRepository {
-					repo := new(mock.LabelRepository)
+					repo := new(mock.LabelRepositoryOld)
 					repo.On("GetAll", ctx, offset, limit).Return(labels, nil)
 					return repo
 				},
@@ -913,7 +913,7 @@ func TestCachedLabelRepository_Update(t *testing.T) {
 					}
 				},
 				labelRepo: func(ctx context.Context, id model.ID, patch map[string]any, label *model.Label) repository.LabelRepository {
-					repo := new(mock.LabelRepository)
+					repo := new(mock.LabelRepositoryOld)
 					repo.On("Update", ctx, id, patch).Return(label, nil)
 					return repo
 				},
@@ -949,7 +949,7 @@ func TestCachedLabelRepository_Update(t *testing.T) {
 					}
 				},
 				labelRepo: func(ctx context.Context, id model.ID, patch map[string]any, _ *model.Label) repository.LabelRepository {
-					repo := new(mock.LabelRepository)
+					repo := new(mock.LabelRepositoryOld)
 					repo.On("Update", ctx, id, patch).Return(nil, repository.ErrNotFound)
 					return repo
 				},
@@ -997,7 +997,7 @@ func TestCachedLabelRepository_Update(t *testing.T) {
 					}
 				},
 				labelRepo: func(ctx context.Context, id model.ID, patch map[string]any, label *model.Label) repository.LabelRepository {
-					repo := new(mock.LabelRepository)
+					repo := new(mock.LabelRepositoryOld)
 					repo.On("Update", ctx, id, patch).Return(label, nil)
 					return repo
 				},
@@ -1053,7 +1053,7 @@ func TestCachedLabelRepository_Update(t *testing.T) {
 					}
 				},
 				labelRepo: func(ctx context.Context, id model.ID, patch map[string]any, label *model.Label) repository.LabelRepository {
-					repo := new(mock.LabelRepository)
+					repo := new(mock.LabelRepositoryOld)
 					repo.On("Update", ctx, id, patch).Return(label, nil)
 					return repo
 				},
@@ -1152,7 +1152,7 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 					}
 				},
 				labelRepo: func(ctx context.Context, id, attachTo model.ID) repository.LabelRepository {
-					repo := new(mock.LabelRepository)
+					repo := new(mock.LabelRepositoryOld)
 					repo.On("AttachTo", ctx, id, attachTo).Return(nil)
 					return repo
 				},
@@ -1212,7 +1212,7 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 					}
 				},
 				labelRepo: func(ctx context.Context, id, attachTo model.ID) repository.LabelRepository {
-					repo := new(mock.LabelRepository)
+					repo := new(mock.LabelRepositoryOld)
 					repo.On("AttachTo", ctx, id, attachTo).Return(repository.ErrLabelDelete)
 					return repo
 				},
@@ -1254,7 +1254,7 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 					}
 				},
 				labelRepo: func(ctx context.Context, id, attachTo model.ID) repository.LabelRepository {
-					repo := new(mock.LabelRepository)
+					repo := new(mock.LabelRepositoryOld)
 					repo.On("AttachTo", ctx, id, attachTo).Return(nil)
 					return repo
 				},
@@ -1303,7 +1303,7 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 					}
 				},
 				labelRepo: func(_ context.Context, _, _ model.ID) repository.LabelRepository {
-					return new(mock.LabelRepository)
+					return new(mock.LabelRepositoryOld)
 				},
 			},
 			args: args{
@@ -1356,7 +1356,7 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 					}
 				},
 				labelRepo: func(_ context.Context, _, _ model.ID) repository.LabelRepository {
-					return new(mock.LabelRepository)
+					return new(mock.LabelRepositoryOld)
 				},
 			},
 			args: args{
@@ -1415,7 +1415,7 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 					}
 				},
 				labelRepo: func(_ context.Context, _, _ model.ID) repository.LabelRepository {
-					return new(mock.LabelRepository)
+					return new(mock.LabelRepositoryOld)
 				},
 			},
 			args: args{
@@ -1507,7 +1507,7 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 					}
 				},
 				labelRepo: func(ctx context.Context, id, detachFrom model.ID) repository.LabelRepository {
-					repo := new(mock.LabelRepository)
+					repo := new(mock.LabelRepositoryOld)
 					repo.On("DetachFrom", ctx, id, detachFrom).Return(nil)
 					return repo
 				},
@@ -1567,7 +1567,7 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 					}
 				},
 				labelRepo: func(ctx context.Context, id, detachFrom model.ID) repository.LabelRepository {
-					repo := new(mock.LabelRepository)
+					repo := new(mock.LabelRepositoryOld)
 					repo.On("DetachFrom", ctx, id, detachFrom).Return(repository.ErrLabelDelete)
 					return repo
 				},
@@ -1609,7 +1609,7 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 					}
 				},
 				labelRepo: func(ctx context.Context, id, detachFrom model.ID) repository.LabelRepository {
-					repo := new(mock.LabelRepository)
+					repo := new(mock.LabelRepositoryOld)
 					repo.On("DetachFrom", ctx, id, detachFrom).Return(nil)
 					return repo
 				},
@@ -1658,7 +1658,7 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 					}
 				},
 				labelRepo: func(_ context.Context, _, _ model.ID) repository.LabelRepository {
-					return new(mock.LabelRepository)
+					return new(mock.LabelRepositoryOld)
 				},
 			},
 			args: args{
@@ -1711,7 +1711,7 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 					}
 				},
 				labelRepo: func(_ context.Context, _, _ model.ID) repository.LabelRepository {
-					return new(mock.LabelRepository)
+					return new(mock.LabelRepositoryOld)
 				},
 			},
 			args: args{
@@ -1770,7 +1770,7 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 					}
 				},
 				labelRepo: func(_ context.Context, _, _ model.ID) repository.LabelRepository {
-					return new(mock.LabelRepository)
+					return new(mock.LabelRepositoryOld)
 				},
 			},
 			args: args{
@@ -1861,7 +1861,7 @@ func TestCachedLabelRepository_Delete(t *testing.T) {
 					}
 				},
 				labelRepo: func(ctx context.Context, id model.ID) repository.LabelRepository {
-					repo := new(mock.LabelRepository)
+					repo := new(mock.LabelRepositoryOld)
 					repo.On("Delete", ctx, id).Return(nil)
 					return repo
 				},
@@ -1920,7 +1920,7 @@ func TestCachedLabelRepository_Delete(t *testing.T) {
 					}
 				},
 				labelRepo: func(ctx context.Context, id model.ID) repository.LabelRepository {
-					repo := new(mock.LabelRepository)
+					repo := new(mock.LabelRepositoryOld)
 					repo.On("Delete", ctx, id).Return(repository.ErrLabelDelete)
 					return repo
 				},
@@ -1961,7 +1961,7 @@ func TestCachedLabelRepository_Delete(t *testing.T) {
 					}
 				},
 				labelRepo: func(ctx context.Context, id model.ID) repository.LabelRepository {
-					repo := new(mock.LabelRepository)
+					repo := new(mock.LabelRepositoryOld)
 					repo.On("Delete", ctx, id).Return(nil)
 					return repo
 				},
@@ -2009,7 +2009,7 @@ func TestCachedLabelRepository_Delete(t *testing.T) {
 					}
 				},
 				labelRepo: func(_ context.Context, _ model.ID) repository.LabelRepository {
-					return new(mock.LabelRepository)
+					return new(mock.LabelRepositoryOld)
 				},
 			},
 			args: args{
@@ -2061,7 +2061,7 @@ func TestCachedLabelRepository_Delete(t *testing.T) {
 					}
 				},
 				labelRepo: func(_ context.Context, _ model.ID) repository.LabelRepository {
-					return new(mock.LabelRepository)
+					return new(mock.LabelRepositoryOld)
 				},
 			},
 			args: args{
@@ -2119,7 +2119,7 @@ func TestCachedLabelRepository_Delete(t *testing.T) {
 					}
 				},
 				labelRepo: func(_ context.Context, _ model.ID) repository.LabelRepository {
-					return new(mock.LabelRepository)
+					return new(mock.LabelRepositoryOld)
 				},
 			},
 			args: args{
