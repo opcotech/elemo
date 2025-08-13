@@ -124,7 +124,7 @@ func TestCachedAssignmentRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				assignmentRepo: func(_ *gomock.Controller, ctx context.Context, assignment *model.Assignment) repository.AssignmentRepository {
+				assignmentRepo: func(_ *gomock.Controller, _ context.Context, _ *model.Assignment) repository.AssignmentRepository {
 					return mock.NewAssignmentRepository(nil)
 				},
 			},
@@ -174,7 +174,7 @@ func TestCachedAssignmentRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				assignmentRepo: func(_ *gomock.Controller, ctx context.Context, assignment *model.Assignment) repository.AssignmentRepository {
+				assignmentRepo: func(_ *gomock.Controller, _ context.Context, _ *model.Assignment) repository.AssignmentRepository {
 					return mock.NewAssignmentRepository(nil)
 				},
 			},
@@ -226,7 +226,7 @@ func TestCachedAssignmentRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				assignmentRepo: func(_ *gomock.Controller, ctx context.Context, assignment *model.Assignment) repository.AssignmentRepository {
+				assignmentRepo: func(_ *gomock.Controller, _ context.Context, _ *model.Assignment) repository.AssignmentRepository {
 					return mock.NewAssignmentRepository(nil)
 				},
 			},
@@ -1226,7 +1226,7 @@ func TestCachedAssignmentRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				assignmentRepo: func(_ *gomock.Controller, ctx context.Context, id model.ID) repository.AssignmentRepository {
+				assignmentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID) repository.AssignmentRepository {
 					return mock.NewAssignmentRepository(nil)
 				},
 			},
@@ -1381,7 +1381,7 @@ func TestCachedAssignmentRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				assignmentRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID) repository.AssignmentRepository {
+				assignmentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID) repository.AssignmentRepository {
 					return mock.NewAssignmentRepository(nil)
 				},
 			},
