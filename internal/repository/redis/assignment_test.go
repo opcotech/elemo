@@ -19,7 +19,7 @@ import (
 func TestCachedAssignmentRepository_Create(t *testing.T) {
 	type fields struct {
 		cacheRepo      func(ctrl *gomock.Controller, ctx context.Context, assignment *model.Assignment) *baseRepository
-		assignmentRepo func(ctx context.Context, assignment *model.Assignment) repository.AssignmentRepository
+		assignmentRepo func(ctrl *gomock.Controller, ctx context.Context, assignment *model.Assignment) repository.AssignmentRepository
 	}
 	type args struct {
 		ctx        context.Context
@@ -80,9 +80,9 @@ func TestCachedAssignmentRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				assignmentRepo: func(ctx context.Context, assignment *model.Assignment) repository.AssignmentRepository {
-					repo := new(mock.AssignmentRepository)
-					repo.On("Create", ctx, assignment).Return(nil)
+				assignmentRepo: func(ctrl *gomock.Controller, ctx context.Context, assignment *model.Assignment) repository.AssignmentRepository {
+					repo := mock.NewAssignmentRepository(ctrl)
+					repo.EXPECT().Create(ctx, assignment).Return(nil)
 					return repo
 				},
 			},
@@ -124,10 +124,8 @@ func TestCachedAssignmentRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				assignmentRepo: func(ctx context.Context, assignment *model.Assignment) repository.AssignmentRepository {
-					repo := new(mock.AssignmentRepository)
-					repo.On("Create", ctx, assignment).Return(nil)
-					return repo
+				assignmentRepo: func(_ *gomock.Controller, _ context.Context, _ *model.Assignment) repository.AssignmentRepository {
+					return mock.NewAssignmentRepository(nil)
 				},
 			},
 			args: args{
@@ -176,10 +174,8 @@ func TestCachedAssignmentRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				assignmentRepo: func(ctx context.Context, assignment *model.Assignment) repository.AssignmentRepository {
-					repo := new(mock.AssignmentRepository)
-					repo.On("Create", ctx, assignment).Return(nil)
-					return repo
+				assignmentRepo: func(_ *gomock.Controller, _ context.Context, _ *model.Assignment) repository.AssignmentRepository {
+					return mock.NewAssignmentRepository(nil)
 				},
 			},
 			args: args{
@@ -230,10 +226,8 @@ func TestCachedAssignmentRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				assignmentRepo: func(ctx context.Context, assignment *model.Assignment) repository.AssignmentRepository {
-					repo := new(mock.AssignmentRepository)
-					repo.On("Create", ctx, assignment).Return(nil)
-					return repo
+				assignmentRepo: func(_ *gomock.Controller, _ context.Context, _ *model.Assignment) repository.AssignmentRepository {
+					return mock.NewAssignmentRepository(nil)
 				},
 			},
 			args: args{
@@ -256,7 +250,7 @@ func TestCachedAssignmentRepository_Create(t *testing.T) {
 			defer ctrl.Finish()
 			r := &CachedAssignmentRepository{
 				cacheRepo:      tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.assignment),
-				assignmentRepo: tt.fields.assignmentRepo(tt.args.ctx, tt.args.assignment),
+				assignmentRepo: tt.fields.assignmentRepo(ctrl, tt.args.ctx, tt.args.assignment),
 			}
 			err := r.Create(tt.args.ctx, tt.args.assignment)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -267,7 +261,7 @@ func TestCachedAssignmentRepository_Create(t *testing.T) {
 func TestCachedAssignmentRepository_Get(t *testing.T) {
 	type fields struct {
 		cacheRepo      func(ctrl *gomock.Controller, ctx context.Context, id model.ID, assignment *model.Assignment) *baseRepository
-		assignmentRepo func(ctx context.Context, id model.ID, assignment *model.Assignment) repository.AssignmentRepository
+		assignmentRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, assignment *model.Assignment) repository.AssignmentRepository
 	}
 	type args struct {
 		ctx context.Context
@@ -313,9 +307,9 @@ func TestCachedAssignmentRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				assignmentRepo: func(ctx context.Context, id model.ID, assignment *model.Assignment) repository.AssignmentRepository {
-					repo := new(mock.AssignmentRepository)
-					repo.On("Get", ctx, id).Return(assignment, nil)
+				assignmentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, assignment *model.Assignment) repository.AssignmentRepository {
+					repo := mock.NewAssignmentRepository(ctrl)
+					repo.EXPECT().Get(ctx, id).Return(assignment, nil)
 					return repo
 				},
 			},
@@ -363,8 +357,8 @@ func TestCachedAssignmentRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				assignmentRepo: func(_ context.Context, _ model.ID, _ *model.Assignment) repository.AssignmentRepository {
-					return new(mock.AssignmentRepository)
+				assignmentRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ *model.Assignment) repository.AssignmentRepository {
+					return mock.NewAssignmentRepository(ctrl)
 				},
 			},
 			args: args{
@@ -407,9 +401,9 @@ func TestCachedAssignmentRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				assignmentRepo: func(ctx context.Context, id model.ID, _ *model.Assignment) repository.AssignmentRepository {
-					repo := new(mock.AssignmentRepository)
-					repo.On("Get", ctx, id).Return(nil, repository.ErrNotFound)
+				assignmentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *model.Assignment) repository.AssignmentRepository {
+					repo := mock.NewAssignmentRepository(ctrl)
+					repo.EXPECT().Get(ctx, id).Return(nil, repository.ErrNotFound)
 					return repo
 				},
 			},
@@ -446,8 +440,8 @@ func TestCachedAssignmentRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				assignmentRepo: func(_ context.Context, _ model.ID, _ *model.Assignment) repository.AssignmentRepository {
-					return new(mock.AssignmentRepository)
+				assignmentRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ *model.Assignment) repository.AssignmentRepository {
+					return mock.NewAssignmentRepository(ctrl)
 				},
 			},
 			args: args{
@@ -489,9 +483,9 @@ func TestCachedAssignmentRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				assignmentRepo: func(ctx context.Context, id model.ID, assignment *model.Assignment) repository.AssignmentRepository {
-					repo := new(mock.AssignmentRepository)
-					repo.On("Get", ctx, id).Return(assignment, nil)
+				assignmentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, assignment *model.Assignment) repository.AssignmentRepository {
+					repo := mock.NewAssignmentRepository(ctrl)
+					repo.EXPECT().Get(ctx, id).Return(assignment, nil)
 					return repo
 				},
 			},
@@ -516,7 +510,7 @@ func TestCachedAssignmentRepository_Get(t *testing.T) {
 
 			r := &CachedAssignmentRepository{
 				cacheRepo:      tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, want),
-				assignmentRepo: tt.fields.assignmentRepo(tt.args.ctx, tt.args.id, want),
+				assignmentRepo: tt.fields.assignmentRepo(ctrl, tt.args.ctx, tt.args.id, want),
 			}
 			got, err := r.Get(tt.args.ctx, tt.args.id)
 			assert.ErrorIs(t, err, tt.wantErr)
@@ -528,7 +522,7 @@ func TestCachedAssignmentRepository_Get(t *testing.T) {
 func TestCachedAssignmentRepository_GetByUser(t *testing.T) {
 	type fields struct {
 		cacheRepo      func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, offset, limit int, assignments []*model.Assignment) *baseRepository
-		assignmentRepo func(ctx context.Context, userID model.ID, offset, limit int, assignments []*model.Assignment) repository.AssignmentRepository
+		assignmentRepo func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, offset, limit int, assignments []*model.Assignment) repository.AssignmentRepository
 	}
 	type args struct {
 		ctx    context.Context
@@ -576,9 +570,9 @@ func TestCachedAssignmentRepository_GetByUser(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				assignmentRepo: func(ctx context.Context, userID model.ID, offset, limit int, assignments []*model.Assignment) repository.AssignmentRepository {
-					repo := new(mock.AssignmentRepository)
-					repo.On("GetByUser", ctx, userID, offset, limit).Return(assignments, nil)
+				assignmentRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, offset, limit int, assignments []*model.Assignment) repository.AssignmentRepository {
+					repo := mock.NewAssignmentRepository(ctrl)
+					repo.EXPECT().GetByUser(ctx, userID, offset, limit).Return(assignments, nil)
 					return repo
 				},
 			},
@@ -632,8 +626,8 @@ func TestCachedAssignmentRepository_GetByUser(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				assignmentRepo: func(_ context.Context, _ model.ID, _, _ int, _ []*model.Assignment) repository.AssignmentRepository {
-					return new(mock.AssignmentRepository)
+				assignmentRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _, _ int, _ []*model.Assignment) repository.AssignmentRepository {
+					return mock.NewAssignmentRepository(ctrl)
 				},
 			},
 			args: args{
@@ -683,9 +677,9 @@ func TestCachedAssignmentRepository_GetByUser(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				assignmentRepo: func(ctx context.Context, userID model.ID, offset, limit int, _ []*model.Assignment) repository.AssignmentRepository {
-					repo := new(mock.AssignmentRepository)
-					repo.On("GetByUser", ctx, userID, offset, limit).Return(nil, repository.ErrNotFound)
+				assignmentRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, offset, limit int, _ []*model.Assignment) repository.AssignmentRepository {
+					repo := mock.NewAssignmentRepository(ctrl)
+					repo.EXPECT().GetByUser(ctx, userID, offset, limit).Return(nil, repository.ErrNotFound)
 					return repo
 				},
 			},
@@ -723,8 +717,8 @@ func TestCachedAssignmentRepository_GetByUser(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				assignmentRepo: func(_ context.Context, _ model.ID, _, _ int, _ []*model.Assignment) repository.AssignmentRepository {
-					return new(mock.AssignmentRepository)
+				assignmentRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _, _ int, _ []*model.Assignment) repository.AssignmentRepository {
+					return mock.NewAssignmentRepository(ctrl)
 				},
 			},
 			args: args{
@@ -766,9 +760,9 @@ func TestCachedAssignmentRepository_GetByUser(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				assignmentRepo: func(ctx context.Context, userID model.ID, offset, limit int, assignments []*model.Assignment) repository.AssignmentRepository {
-					repo := new(mock.AssignmentRepository)
-					repo.On("GetByUser", ctx, userID, offset, limit).Return(assignments, nil)
+				assignmentRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, offset, limit int, assignments []*model.Assignment) repository.AssignmentRepository {
+					repo := mock.NewAssignmentRepository(ctrl)
+					repo.EXPECT().GetByUser(ctx, userID, offset, limit).Return(assignments, nil)
 					return repo
 				},
 			},
@@ -788,7 +782,7 @@ func TestCachedAssignmentRepository_GetByUser(t *testing.T) {
 			defer ctrl.Finish()
 			r := &CachedAssignmentRepository{
 				cacheRepo:      tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.userID, tt.args.offset, tt.args.limit, tt.want),
-				assignmentRepo: tt.fields.assignmentRepo(tt.args.ctx, tt.args.userID, tt.args.offset, tt.args.limit, tt.want),
+				assignmentRepo: tt.fields.assignmentRepo(ctrl, tt.args.ctx, tt.args.userID, tt.args.offset, tt.args.limit, tt.want),
 			}
 			got, err := r.GetByUser(tt.args.ctx, tt.args.userID, tt.args.offset, tt.args.limit)
 			assert.ErrorIs(t, err, tt.wantErr)
@@ -800,7 +794,7 @@ func TestCachedAssignmentRepository_GetByUser(t *testing.T) {
 func TestCachedAssignmentRepository_GetByResource(t *testing.T) {
 	type fields struct {
 		cacheRepo      func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, offset, limit int, assignments []*model.Assignment) *baseRepository
-		assignmentRepo func(ctx context.Context, userID model.ID, offset, limit int, assignments []*model.Assignment) repository.AssignmentRepository
+		assignmentRepo func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, offset, limit int, assignments []*model.Assignment) repository.AssignmentRepository
 	}
 	type args struct {
 		ctx    context.Context
@@ -848,9 +842,9 @@ func TestCachedAssignmentRepository_GetByResource(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				assignmentRepo: func(ctx context.Context, userID model.ID, offset, limit int, assignments []*model.Assignment) repository.AssignmentRepository {
-					repo := new(mock.AssignmentRepository)
-					repo.On("GetByResource", ctx, userID, offset, limit).Return(assignments, nil)
+				assignmentRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, offset, limit int, assignments []*model.Assignment) repository.AssignmentRepository {
+					repo := mock.NewAssignmentRepository(ctrl)
+					repo.EXPECT().GetByResource(ctx, userID, offset, limit).Return(assignments, nil)
 					return repo
 				},
 			},
@@ -904,8 +898,8 @@ func TestCachedAssignmentRepository_GetByResource(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				assignmentRepo: func(_ context.Context, _ model.ID, _, _ int, _ []*model.Assignment) repository.AssignmentRepository {
-					return new(mock.AssignmentRepository)
+				assignmentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID, _, _ int, _ []*model.Assignment) repository.AssignmentRepository {
+					return mock.NewAssignmentRepository(nil)
 				},
 			},
 			args: args{
@@ -955,9 +949,9 @@ func TestCachedAssignmentRepository_GetByResource(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				assignmentRepo: func(ctx context.Context, userID model.ID, offset, limit int, _ []*model.Assignment) repository.AssignmentRepository {
-					repo := new(mock.AssignmentRepository)
-					repo.On("GetByResource", ctx, userID, offset, limit).Return(nil, repository.ErrNotFound)
+				assignmentRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, offset, limit int, _ []*model.Assignment) repository.AssignmentRepository {
+					repo := mock.NewAssignmentRepository(ctrl)
+					repo.EXPECT().GetByResource(ctx, userID, offset, limit).Return(nil, repository.ErrNotFound)
 					return repo
 				},
 			},
@@ -995,8 +989,8 @@ func TestCachedAssignmentRepository_GetByResource(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				assignmentRepo: func(_ context.Context, _ model.ID, _, _ int, _ []*model.Assignment) repository.AssignmentRepository {
-					return new(mock.AssignmentRepository)
+				assignmentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID, _, _ int, _ []*model.Assignment) repository.AssignmentRepository {
+					return mock.NewAssignmentRepository(nil)
 				},
 			},
 			args: args{
@@ -1038,9 +1032,9 @@ func TestCachedAssignmentRepository_GetByResource(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				assignmentRepo: func(ctx context.Context, userID model.ID, offset, limit int, assignments []*model.Assignment) repository.AssignmentRepository {
-					repo := new(mock.AssignmentRepository)
-					repo.On("GetByResource", ctx, userID, offset, limit).Return(assignments, nil)
+				assignmentRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, offset, limit int, assignments []*model.Assignment) repository.AssignmentRepository {
+					repo := mock.NewAssignmentRepository(ctrl)
+					repo.EXPECT().GetByResource(ctx, userID, offset, limit).Return(assignments, nil)
 					return repo
 				},
 			},
@@ -1060,7 +1054,7 @@ func TestCachedAssignmentRepository_GetByResource(t *testing.T) {
 			defer ctrl.Finish()
 			r := &CachedAssignmentRepository{
 				cacheRepo:      tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.userID, tt.args.offset, tt.args.limit, tt.want),
-				assignmentRepo: tt.fields.assignmentRepo(tt.args.ctx, tt.args.userID, tt.args.offset, tt.args.limit, tt.want),
+				assignmentRepo: tt.fields.assignmentRepo(ctrl, tt.args.ctx, tt.args.userID, tt.args.offset, tt.args.limit, tt.want),
 			}
 			got, err := r.GetByResource(tt.args.ctx, tt.args.userID, tt.args.offset, tt.args.limit)
 			assert.ErrorIs(t, err, tt.wantErr)
@@ -1072,7 +1066,7 @@ func TestCachedAssignmentRepository_GetByResource(t *testing.T) {
 func TestCachedAssignmentRepository_Delete(t *testing.T) {
 	type fields struct {
 		cacheRepo      func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *baseRepository
-		assignmentRepo func(ctx context.Context, id model.ID) repository.AssignmentRepository
+		assignmentRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID) repository.AssignmentRepository
 	}
 	type args struct {
 		ctx context.Context
@@ -1132,9 +1126,9 @@ func TestCachedAssignmentRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				assignmentRepo: func(ctx context.Context, id model.ID) repository.AssignmentRepository {
-					repo := new(mock.AssignmentRepository)
-					repo.On("Delete", ctx, id).Return(nil)
+				assignmentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) repository.AssignmentRepository {
+					repo := mock.NewAssignmentRepository(ctrl)
+					repo.EXPECT().Delete(ctx, id).Return(nil)
 					return repo
 				},
 			},
@@ -1191,9 +1185,9 @@ func TestCachedAssignmentRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				assignmentRepo: func(ctx context.Context, id model.ID) repository.AssignmentRepository {
-					repo := new(mock.AssignmentRepository)
-					repo.On("Delete", ctx, id).Return(repository.ErrAssignmentDelete)
+				assignmentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) repository.AssignmentRepository {
+					repo := mock.NewAssignmentRepository(ctrl)
+					repo.EXPECT().Delete(ctx, id).Return(repository.ErrAssignmentDelete)
 					return repo
 				},
 			},
@@ -1232,10 +1226,8 @@ func TestCachedAssignmentRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				assignmentRepo: func(ctx context.Context, id model.ID) repository.AssignmentRepository {
-					repo := new(mock.AssignmentRepository)
-					repo.On("Delete", ctx, id).Return(nil)
-					return repo
+				assignmentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID) repository.AssignmentRepository {
+					return mock.NewAssignmentRepository(nil)
 				},
 			},
 			args: args{
@@ -1280,8 +1272,8 @@ func TestCachedAssignmentRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				assignmentRepo: func(_ context.Context, _ model.ID) repository.AssignmentRepository {
-					return new(mock.AssignmentRepository)
+				assignmentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID) repository.AssignmentRepository {
+					return mock.NewAssignmentRepository(nil)
 				},
 			},
 			args: args{
@@ -1331,8 +1323,8 @@ func TestCachedAssignmentRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				assignmentRepo: func(_ context.Context, _ model.ID) repository.AssignmentRepository {
-					return new(mock.AssignmentRepository)
+				assignmentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID) repository.AssignmentRepository {
+					return mock.NewAssignmentRepository(nil)
 				},
 			},
 			args: args{
@@ -1389,8 +1381,8 @@ func TestCachedAssignmentRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				assignmentRepo: func(_ context.Context, _ model.ID) repository.AssignmentRepository {
-					return new(mock.AssignmentRepository)
+				assignmentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID) repository.AssignmentRepository {
+					return mock.NewAssignmentRepository(nil)
 				},
 			},
 			args: args{
@@ -1409,7 +1401,7 @@ func TestCachedAssignmentRepository_Delete(t *testing.T) {
 			defer ctrl.Finish()
 			r := &CachedAssignmentRepository{
 				cacheRepo:      tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id),
-				assignmentRepo: tt.fields.assignmentRepo(tt.args.ctx, tt.args.id),
+				assignmentRepo: tt.fields.assignmentRepo(ctrl, tt.args.ctx, tt.args.id),
 			}
 			err := r.Delete(tt.args.ctx, tt.args.id)
 			assert.ErrorIs(t, err, tt.wantErr)
