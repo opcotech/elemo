@@ -19,7 +19,7 @@ import (
 func TestCachedAttachmentRepository_Create(t *testing.T) {
 	type fields struct {
 		cacheRepo      func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, attachment *model.Attachment) *baseRepository
-		attachmentRepo func(ctx context.Context, belongsTo model.ID, attachment *model.Attachment) repository.AttachmentRepository
+		attachmentRepo func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, attachment *model.Attachment) repository.AttachmentRepository
 	}
 	type args struct {
 		ctx        context.Context
@@ -77,9 +77,9 @@ func TestCachedAttachmentRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				attachmentRepo: func(ctx context.Context, belongsTo model.ID, attachment *model.Attachment) repository.AttachmentRepository {
-					repo := new(mock.AttachmentRepositoryOld)
-					repo.On("Create", ctx, belongsTo, attachment).Return(nil)
+				attachmentRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, attachment *model.Attachment) repository.AttachmentRepository {
+					repo := mock.NewAttachmentRepository(ctrl)
+					repo.EXPECT().Create(ctx, belongsTo, attachment).Return(nil)
 					return repo
 				},
 			},
@@ -139,9 +139,9 @@ func TestCachedAttachmentRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				attachmentRepo: func(ctx context.Context, belongsTo model.ID, attachment *model.Attachment) repository.AttachmentRepository {
-					repo := new(mock.AttachmentRepositoryOld)
-					repo.On("Create", ctx, belongsTo, attachment).Return(repository.ErrAttachmentCreate)
+				attachmentRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, attachment *model.Attachment) repository.AttachmentRepository {
+					repo := mock.NewAttachmentRepository(ctrl)
+					repo.EXPECT().Create(ctx, belongsTo, attachment).Return(repository.ErrAttachmentCreate)
 					return repo
 				},
 			},
@@ -190,8 +190,8 @@ func TestCachedAttachmentRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				attachmentRepo: func(_ context.Context, _ model.ID, _ *model.Attachment) repository.AttachmentRepository {
-					return new(mock.AttachmentRepositoryOld)
+				attachmentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID, _ *model.Attachment) repository.AttachmentRepository {
+					return mock.NewAttachmentRepository(nil)
 				},
 			},
 			args: args{
@@ -245,8 +245,8 @@ func TestCachedAttachmentRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				attachmentRepo: func(_ context.Context, _ model.ID, _ *model.Attachment) repository.AttachmentRepository {
-					return new(mock.AttachmentRepositoryOld)
+				attachmentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID, _ *model.Attachment) repository.AttachmentRepository {
+					return mock.NewAttachmentRepository(nil)
 				},
 			},
 			args: args{
@@ -269,7 +269,7 @@ func TestCachedAttachmentRepository_Create(t *testing.T) {
 			defer ctrl.Finish()
 			r := &CachedAttachmentRepository{
 				cacheRepo:      tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.belongsTo, tt.args.attachment),
-				attachmentRepo: tt.fields.attachmentRepo(tt.args.ctx, tt.args.belongsTo, tt.args.attachment),
+				attachmentRepo: tt.fields.attachmentRepo(ctrl, tt.args.ctx, tt.args.belongsTo, tt.args.attachment),
 			}
 			err := r.Create(tt.args.ctx, tt.args.belongsTo, tt.args.attachment)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -280,7 +280,7 @@ func TestCachedAttachmentRepository_Create(t *testing.T) {
 func TestCachedAttachmentRepository_Get(t *testing.T) {
 	type fields struct {
 		cacheRepo      func(ctrl *gomock.Controller, ctx context.Context, id model.ID, attachment *model.Attachment) *baseRepository
-		attachmentRepo func(ctx context.Context, id model.ID, attachment *model.Attachment) repository.AttachmentRepository
+		attachmentRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, attachment *model.Attachment) repository.AttachmentRepository
 	}
 	type args struct {
 		ctx context.Context
@@ -326,9 +326,9 @@ func TestCachedAttachmentRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				attachmentRepo: func(ctx context.Context, id model.ID, attachment *model.Attachment) repository.AttachmentRepository {
-					repo := new(mock.AttachmentRepositoryOld)
-					repo.On("Get", ctx, id).Return(attachment, nil)
+				attachmentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, attachment *model.Attachment) repository.AttachmentRepository {
+					repo := mock.NewAttachmentRepository(ctrl)
+					repo.EXPECT().Get(ctx, id).Return(attachment, nil)
 					return repo
 				},
 			},
@@ -376,8 +376,8 @@ func TestCachedAttachmentRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				attachmentRepo: func(_ context.Context, _ model.ID, _ *model.Attachment) repository.AttachmentRepository {
-					return new(mock.AttachmentRepositoryOld)
+				attachmentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID, _ *model.Attachment) repository.AttachmentRepository {
+					return mock.NewAttachmentRepository(nil)
 				},
 			},
 			args: args{
@@ -420,9 +420,9 @@ func TestCachedAttachmentRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				attachmentRepo: func(ctx context.Context, id model.ID, _ *model.Attachment) repository.AttachmentRepository {
-					repo := new(mock.AttachmentRepositoryOld)
-					repo.On("Get", ctx, id).Return(nil, repository.ErrNotFound)
+				attachmentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *model.Attachment) repository.AttachmentRepository {
+					repo := mock.NewAttachmentRepository(ctrl)
+					repo.EXPECT().Get(ctx, id).Return(nil, repository.ErrNotFound)
 					return repo
 				},
 			},
@@ -459,8 +459,8 @@ func TestCachedAttachmentRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				attachmentRepo: func(_ context.Context, _ model.ID, _ *model.Attachment) repository.AttachmentRepository {
-					return new(mock.AttachmentRepositoryOld)
+				attachmentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID, _ *model.Attachment) repository.AttachmentRepository {
+					return mock.NewAttachmentRepository(nil)
 				},
 			},
 			args: args{
@@ -502,9 +502,9 @@ func TestCachedAttachmentRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				attachmentRepo: func(ctx context.Context, id model.ID, attachment *model.Attachment) repository.AttachmentRepository {
-					repo := new(mock.AttachmentRepositoryOld)
-					repo.On("Get", ctx, id).Return(attachment, nil)
+				attachmentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, attachment *model.Attachment) repository.AttachmentRepository {
+					repo := mock.NewAttachmentRepository(ctrl)
+					repo.EXPECT().Get(ctx, id).Return(attachment, nil)
 					return repo
 				},
 			},
@@ -527,7 +527,7 @@ func TestCachedAttachmentRepository_Get(t *testing.T) {
 
 			r := &CachedAttachmentRepository{
 				cacheRepo:      tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, want),
-				attachmentRepo: tt.fields.attachmentRepo(tt.args.ctx, tt.args.id, want),
+				attachmentRepo: tt.fields.attachmentRepo(ctrl, tt.args.ctx, tt.args.id, want),
 			}
 			got, err := r.Get(tt.args.ctx, tt.args.id)
 			assert.ErrorIs(t, err, tt.wantErr)
@@ -539,7 +539,7 @@ func TestCachedAttachmentRepository_Get(t *testing.T) {
 func TestCachedAttachmentRepository_GetAllBelongsTo(t *testing.T) {
 	type fields struct {
 		cacheRepo      func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, attachments []*model.Attachment) *baseRepository
-		attachmentRepo func(ctx context.Context, belongsTo model.ID, offset, limit int, attachments []*model.Attachment) repository.AttachmentRepository
+		attachmentRepo func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, attachments []*model.Attachment) repository.AttachmentRepository
 	}
 	type args struct {
 		ctx       context.Context
@@ -587,9 +587,9 @@ func TestCachedAttachmentRepository_GetAllBelongsTo(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				attachmentRepo: func(ctx context.Context, belongsTo model.ID, offset, limit int, attachments []*model.Attachment) repository.AttachmentRepository {
-					repo := new(mock.AttachmentRepositoryOld)
-					repo.On("GetAllBelongsTo", ctx, belongsTo, offset, limit).Return(attachments, nil)
+				attachmentRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, attachments []*model.Attachment) repository.AttachmentRepository {
+					repo := mock.NewAttachmentRepository(ctrl)
+					repo.EXPECT().GetAllBelongsTo(ctx, belongsTo, offset, limit).Return(attachments, nil)
 					return repo
 				},
 			},
@@ -643,8 +643,8 @@ func TestCachedAttachmentRepository_GetAllBelongsTo(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				attachmentRepo: func(_ context.Context, _ model.ID, _, _ int, _ []*model.Attachment) repository.AttachmentRepository {
-					return new(mock.AttachmentRepositoryOld)
+				attachmentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID, _, _ int, _ []*model.Attachment) repository.AttachmentRepository {
+					return mock.NewAttachmentRepository(nil)
 				},
 			},
 			args: args{
@@ -694,9 +694,9 @@ func TestCachedAttachmentRepository_GetAllBelongsTo(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				attachmentRepo: func(ctx context.Context, belongsTo model.ID, offset, limit int, _ []*model.Attachment) repository.AttachmentRepository {
-					repo := new(mock.AttachmentRepositoryOld)
-					repo.On("GetAllBelongsTo", ctx, belongsTo, offset, limit).Return(nil, repository.ErrNotFound)
+				attachmentRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, _ []*model.Attachment) repository.AttachmentRepository {
+					repo := mock.NewAttachmentRepository(ctrl)
+					repo.EXPECT().GetAllBelongsTo(ctx, belongsTo, offset, limit).Return(nil, repository.ErrNotFound)
 					return repo
 				},
 			},
@@ -734,8 +734,8 @@ func TestCachedAttachmentRepository_GetAllBelongsTo(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				attachmentRepo: func(_ context.Context, _ model.ID, _, _ int, _ []*model.Attachment) repository.AttachmentRepository {
-					return new(mock.AttachmentRepositoryOld)
+				attachmentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID, _, _ int, _ []*model.Attachment) repository.AttachmentRepository {
+					return mock.NewAttachmentRepository(nil)
 				},
 			},
 			args: args{
@@ -777,9 +777,9 @@ func TestCachedAttachmentRepository_GetAllBelongsTo(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				attachmentRepo: func(ctx context.Context, belongsTo model.ID, offset, limit int, attachments []*model.Attachment) repository.AttachmentRepository {
-					repo := new(mock.AttachmentRepositoryOld)
-					repo.On("GetAllBelongsTo", ctx, belongsTo, offset, limit).Return(attachments, nil)
+				attachmentRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, attachments []*model.Attachment) repository.AttachmentRepository {
+					repo := mock.NewAttachmentRepository(ctrl)
+					repo.EXPECT().GetAllBelongsTo(ctx, belongsTo, offset, limit).Return(attachments, nil)
 					return repo
 				},
 			},
@@ -798,7 +798,7 @@ func TestCachedAttachmentRepository_GetAllBelongsTo(t *testing.T) {
 
 			r := &CachedAttachmentRepository{
 				cacheRepo:      tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.belongsTo, tt.args.offset, tt.args.limit, tt.want),
-				attachmentRepo: tt.fields.attachmentRepo(tt.args.ctx, tt.args.belongsTo, tt.args.offset, tt.args.limit, tt.want),
+				attachmentRepo: tt.fields.attachmentRepo(ctrl, tt.args.ctx, tt.args.belongsTo, tt.args.offset, tt.args.limit, tt.want),
 			}
 			got, err := r.GetAllBelongsTo(tt.args.ctx, tt.args.belongsTo, tt.args.offset, tt.args.limit)
 			assert.ErrorIs(t, err, tt.wantErr)
@@ -810,7 +810,7 @@ func TestCachedAttachmentRepository_GetAllBelongsTo(t *testing.T) {
 func TestCachedAttachmentRepository_Update(t *testing.T) {
 	type fields struct {
 		cacheRepo      func(ctrl *gomock.Controller, ctx context.Context, id model.ID, attachment *model.Attachment) *baseRepository
-		attachmentRepo func(ctx context.Context, id model.ID, attachment *model.Attachment) repository.AttachmentRepository
+		attachmentRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, attachment *model.Attachment) repository.AttachmentRepository
 	}
 	type args struct {
 		ctx  context.Context
@@ -864,9 +864,9 @@ func TestCachedAttachmentRepository_Update(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				attachmentRepo: func(ctx context.Context, id model.ID, attachment *model.Attachment) repository.AttachmentRepository {
-					repo := new(mock.AttachmentRepositoryOld)
-					repo.On("Update", ctx, id, attachment.Name).Return(attachment, nil)
+				attachmentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, attachment *model.Attachment) repository.AttachmentRepository {
+					repo := mock.NewAttachmentRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, attachment.Name).Return(attachment, nil)
 					return repo
 				},
 			},
@@ -896,9 +896,9 @@ func TestCachedAttachmentRepository_Update(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				attachmentRepo: func(ctx context.Context, id model.ID, _ *model.Attachment) repository.AttachmentRepository {
-					repo := new(mock.AttachmentRepositoryOld)
-					repo.On("Update", ctx, id, "name").Return(nil, repository.ErrNotFound)
+				attachmentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *model.Attachment) repository.AttachmentRepository {
+					repo := mock.NewAttachmentRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, "name").Return(nil, repository.ErrNotFound)
 					return repo
 				},
 			},
@@ -942,9 +942,9 @@ func TestCachedAttachmentRepository_Update(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				attachmentRepo: func(ctx context.Context, id model.ID, attachment *model.Attachment) repository.AttachmentRepository {
-					repo := new(mock.AttachmentRepositoryOld)
-					repo.On("Update", ctx, id, "name").Return(attachment, nil)
+				attachmentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, attachment *model.Attachment) repository.AttachmentRepository {
+					repo := mock.NewAttachmentRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, "name").Return(attachment, nil)
 					return repo
 				},
 			},
@@ -995,9 +995,9 @@ func TestCachedAttachmentRepository_Update(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				attachmentRepo: func(ctx context.Context, id model.ID, attachment *model.Attachment) repository.AttachmentRepository {
-					repo := new(mock.AttachmentRepositoryOld)
-					repo.On("Update", ctx, id, "name").Return(attachment, nil)
+				attachmentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, attachment *model.Attachment) repository.AttachmentRepository {
+					repo := mock.NewAttachmentRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, "name").Return(attachment, nil)
 					return repo
 				},
 			},
@@ -1017,7 +1017,7 @@ func TestCachedAttachmentRepository_Update(t *testing.T) {
 
 			r := &CachedAttachmentRepository{
 				cacheRepo:      tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, tt.want),
-				attachmentRepo: tt.fields.attachmentRepo(tt.args.ctx, tt.args.id, tt.want),
+				attachmentRepo: tt.fields.attachmentRepo(ctrl, tt.args.ctx, tt.args.id, tt.want),
 			}
 			got, err := r.Update(tt.args.ctx, tt.args.id, tt.args.name)
 			assert.ErrorIs(t, err, tt.wantErr)
@@ -1029,7 +1029,7 @@ func TestCachedAttachmentRepository_Update(t *testing.T) {
 func TestCachedAttachmentRepository_Delete(t *testing.T) {
 	type fields struct {
 		cacheRepo      func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *baseRepository
-		attachmentRepo func(ctx context.Context, id model.ID) repository.AttachmentRepository
+		attachmentRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID) repository.AttachmentRepository
 	}
 	type args struct {
 		ctx context.Context
@@ -1089,9 +1089,9 @@ func TestCachedAttachmentRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				attachmentRepo: func(ctx context.Context, id model.ID) repository.AttachmentRepository {
-					repo := new(mock.AttachmentRepositoryOld)
-					repo.On("Delete", ctx, id).Return(nil)
+				attachmentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) repository.AttachmentRepository {
+					repo := mock.NewAttachmentRepository(ctrl)
+					repo.EXPECT().Delete(ctx, id).Return(nil)
 					return repo
 				},
 			},
@@ -1148,9 +1148,9 @@ func TestCachedAttachmentRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				attachmentRepo: func(ctx context.Context, id model.ID) repository.AttachmentRepository {
-					repo := new(mock.AttachmentRepositoryOld)
-					repo.On("Delete", ctx, id).Return(repository.ErrAttachmentDelete)
+				attachmentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) repository.AttachmentRepository {
+					repo := mock.NewAttachmentRepository(ctrl)
+					repo.EXPECT().Delete(ctx, id).Return(repository.ErrAttachmentDelete)
 					return repo
 				},
 			},
@@ -1189,10 +1189,8 @@ func TestCachedAttachmentRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				attachmentRepo: func(ctx context.Context, id model.ID) repository.AttachmentRepository {
-					repo := new(mock.AttachmentRepositoryOld)
-					repo.On("Delete", ctx, id).Return(nil)
-					return repo
+				attachmentRepo: func(_ *gomock.Controller, ctx context.Context, id model.ID) repository.AttachmentRepository {
+					return mock.NewAttachmentRepository(nil)
 				},
 			},
 			args: args{
@@ -1237,8 +1235,8 @@ func TestCachedAttachmentRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				attachmentRepo: func(_ context.Context, _ model.ID) repository.AttachmentRepository {
-					return new(mock.AttachmentRepositoryOld)
+				attachmentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID) repository.AttachmentRepository {
+					return mock.NewAttachmentRepository(nil)
 				},
 			},
 			args: args{
@@ -1289,8 +1287,8 @@ func TestCachedAttachmentRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				attachmentRepo: func(_ context.Context, _ model.ID) repository.AttachmentRepository {
-					return new(mock.AttachmentRepositoryOld)
+				attachmentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID) repository.AttachmentRepository {
+					return mock.NewAttachmentRepository(nil)
 				},
 			},
 			args: args{
@@ -1347,8 +1345,8 @@ func TestCachedAttachmentRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				attachmentRepo: func(_ context.Context, _ model.ID) repository.AttachmentRepository {
-					return new(mock.AttachmentRepositoryOld)
+				attachmentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID) repository.AttachmentRepository {
+					return mock.NewAttachmentRepository(nil)
 				},
 			},
 			args: args{
@@ -1365,7 +1363,7 @@ func TestCachedAttachmentRepository_Delete(t *testing.T) {
 			defer ctrl.Finish()
 			r := &CachedAttachmentRepository{
 				cacheRepo:      tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id),
-				attachmentRepo: tt.fields.attachmentRepo(tt.args.ctx, tt.args.id),
+				attachmentRepo: tt.fields.attachmentRepo(ctrl, tt.args.ctx, tt.args.id),
 			}
 			err := r.Delete(tt.args.ctx, tt.args.id)
 			assert.ErrorIs(t, err, tt.wantErr)
