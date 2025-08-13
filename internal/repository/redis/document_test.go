@@ -19,7 +19,7 @@ import (
 func TestCachedDocumentRepository_Create(t *testing.T) {
 	type fields struct {
 		cacheRepo    func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, document *model.Document) *baseRepository
-		documentRepo func(ctx context.Context, belongsTo model.ID, document *model.Document) repository.DocumentRepository
+		documentRepo func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, document *model.Document) repository.DocumentRepository
 	}
 	type args struct {
 		ctx       context.Context
@@ -89,9 +89,9 @@ func TestCachedDocumentRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				documentRepo: func(ctx context.Context, belongsTo model.ID, document *model.Document) repository.DocumentRepository {
-					repo := new(mock.DocumentRepositoryOld)
-					repo.On("Create", ctx, belongsTo, document).Return(nil)
+				documentRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, document *model.Document) repository.DocumentRepository {
+					repo := mock.NewDocumentRepository(ctrl)
+					repo.EXPECT().Create(ctx, belongsTo, document).Return(nil)
 					return repo
 				},
 			},
@@ -167,9 +167,9 @@ func TestCachedDocumentRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				documentRepo: func(ctx context.Context, belongsTo model.ID, document *model.Document) repository.DocumentRepository {
-					repo := new(mock.DocumentRepositoryOld)
-					repo.On("Create", ctx, belongsTo, document).Return(repository.ErrDocumentCreate)
+				documentRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, document *model.Document) repository.DocumentRepository {
+					repo := mock.NewDocumentRepository(ctrl)
+					repo.EXPECT().Create(ctx, belongsTo, document).Return(repository.ErrDocumentCreate)
 					return repo
 				},
 			},
@@ -222,8 +222,8 @@ func TestCachedDocumentRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				documentRepo: func(_ context.Context, _ model.ID, _ *model.Document) repository.DocumentRepository {
-					return new(mock.DocumentRepositoryOld)
+				documentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID, _ *model.Document) repository.DocumentRepository {
+					return mock.NewDocumentRepository(nil)
 				},
 			},
 			args: args{
@@ -281,8 +281,8 @@ func TestCachedDocumentRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				documentRepo: func(_ context.Context, _ model.ID, _ *model.Document) repository.DocumentRepository {
-					return new(mock.DocumentRepositoryOld)
+				documentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID, _ *model.Document) repository.DocumentRepository {
+					return mock.NewDocumentRepository(nil)
 				},
 			},
 			args: args{
@@ -346,8 +346,8 @@ func TestCachedDocumentRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				documentRepo: func(_ context.Context, _ model.ID, _ *model.Document) repository.DocumentRepository {
-					return new(mock.DocumentRepositoryOld)
+				documentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID, _ *model.Document) repository.DocumentRepository {
+					return mock.NewDocumentRepository(nil)
 				},
 			},
 			args: args{
@@ -417,8 +417,8 @@ func TestCachedDocumentRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				documentRepo: func(_ context.Context, _ model.ID, _ *model.Document) repository.DocumentRepository {
-					return new(mock.DocumentRepositoryOld)
+				documentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID, _ *model.Document) repository.DocumentRepository {
+					return mock.NewDocumentRepository(nil)
 				},
 			},
 			args: args{
@@ -494,8 +494,8 @@ func TestCachedDocumentRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				documentRepo: func(_ context.Context, _ model.ID, _ *model.Document) repository.DocumentRepository {
-					return new(mock.DocumentRepositoryOld)
+				documentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID, _ *model.Document) repository.DocumentRepository {
+					return mock.NewDocumentRepository(nil)
 				},
 			},
 			args: args{
@@ -523,7 +523,7 @@ func TestCachedDocumentRepository_Create(t *testing.T) {
 			defer ctrl.Finish()
 			r := &CachedDocumentRepository{
 				cacheRepo:    tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.belongsTo, tt.args.document),
-				documentRepo: tt.fields.documentRepo(tt.args.ctx, tt.args.belongsTo, tt.args.document),
+				documentRepo: tt.fields.documentRepo(ctrl, tt.args.ctx, tt.args.belongsTo, tt.args.document),
 			}
 			err := r.Create(tt.args.ctx, tt.args.belongsTo, tt.args.document)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -534,7 +534,7 @@ func TestCachedDocumentRepository_Create(t *testing.T) {
 func TestCachedDocumentRepository_Get(t *testing.T) {
 	type fields struct {
 		cacheRepo    func(ctrl *gomock.Controller, ctx context.Context, id model.ID, document *model.Document) *baseRepository
-		documentRepo func(ctx context.Context, id model.ID, document *model.Document) repository.DocumentRepository
+		documentRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, document *model.Document) repository.DocumentRepository
 	}
 	type args struct {
 		ctx context.Context
@@ -580,9 +580,9 @@ func TestCachedDocumentRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				documentRepo: func(ctx context.Context, id model.ID, document *model.Document) repository.DocumentRepository {
-					repo := new(mock.DocumentRepositoryOld)
-					repo.On("Get", ctx, id).Return(document, nil)
+				documentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, document *model.Document) repository.DocumentRepository {
+					repo := mock.NewDocumentRepository(ctrl)
+					repo.EXPECT().Get(ctx, id).Return(document, nil)
 					return repo
 				},
 			},
@@ -634,8 +634,8 @@ func TestCachedDocumentRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				documentRepo: func(_ context.Context, _ model.ID, _ *model.Document) repository.DocumentRepository {
-					return new(mock.DocumentRepositoryOld)
+				documentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID, _ *model.Document) repository.DocumentRepository {
+					return mock.NewDocumentRepository(nil)
 				},
 			},
 			args: args{
@@ -686,9 +686,9 @@ func TestCachedDocumentRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				documentRepo: func(ctx context.Context, id model.ID, _ *model.Document) repository.DocumentRepository {
-					repo := new(mock.DocumentRepositoryOld)
-					repo.On("Get", ctx, id).Return(nil, repository.ErrNotFound)
+				documentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *model.Document) repository.DocumentRepository {
+					repo := mock.NewDocumentRepository(ctrl)
+					repo.EXPECT().Get(ctx, id).Return(nil, repository.ErrNotFound)
 					return repo
 				},
 			},
@@ -725,8 +725,8 @@ func TestCachedDocumentRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				documentRepo: func(_ context.Context, _ model.ID, _ *model.Document) repository.DocumentRepository {
-					return new(mock.DocumentRepositoryOld)
+				documentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID, _ *model.Document) repository.DocumentRepository {
+					return mock.NewDocumentRepository(nil)
 				},
 			},
 			args: args{
@@ -768,9 +768,9 @@ func TestCachedDocumentRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				documentRepo: func(ctx context.Context, id model.ID, document *model.Document) repository.DocumentRepository {
-					repo := new(mock.DocumentRepositoryOld)
-					repo.On("Get", ctx, id).Return(document, nil)
+				documentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, document *model.Document) repository.DocumentRepository {
+					repo := mock.NewDocumentRepository(ctrl)
+					repo.EXPECT().Get(ctx, id).Return(document, nil)
 					return repo
 				},
 			},
@@ -794,7 +794,7 @@ func TestCachedDocumentRepository_Get(t *testing.T) {
 
 			r := &CachedDocumentRepository{
 				cacheRepo:    tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, want),
-				documentRepo: tt.fields.documentRepo(tt.args.ctx, tt.args.id, want),
+				documentRepo: tt.fields.documentRepo(ctrl, tt.args.ctx, tt.args.id, want),
 			}
 			got, err := r.Get(tt.args.ctx, tt.args.id)
 			assert.ErrorIs(t, err, tt.wantErr)
@@ -806,7 +806,7 @@ func TestCachedDocumentRepository_Get(t *testing.T) {
 func TestCachedDocumentRepository_GetByCreator(t *testing.T) {
 	type fields struct {
 		cacheRepo    func(ctrl *gomock.Controller, ctx context.Context, createdBy model.ID, offset, limit int, documents []*model.Document) *baseRepository
-		documentRepo func(ctx context.Context, createdBy model.ID, offset, limit int, documents []*model.Document) repository.DocumentRepository
+		documentRepo func(ctrl *gomock.Controller, ctx context.Context, createdBy model.ID, offset, limit int, documents []*model.Document) repository.DocumentRepository
 	}
 	type args struct {
 		ctx       context.Context
@@ -854,9 +854,9 @@ func TestCachedDocumentRepository_GetByCreator(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				documentRepo: func(ctx context.Context, createdBy model.ID, offset, limit int, documents []*model.Document) repository.DocumentRepository {
-					repo := new(mock.DocumentRepositoryOld)
-					repo.On("GetByCreator", ctx, createdBy, offset, limit).Return(documents, nil)
+				documentRepo: func(ctrl *gomock.Controller, ctx context.Context, createdBy model.ID, offset, limit int, documents []*model.Document) repository.DocumentRepository {
+					repo := mock.NewDocumentRepository(ctrl)
+					repo.EXPECT().GetByCreator(ctx, createdBy, offset, limit).Return(documents, nil)
 					return repo
 				},
 			},
@@ -918,8 +918,8 @@ func TestCachedDocumentRepository_GetByCreator(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				documentRepo: func(_ context.Context, _ model.ID, _, _ int, _ []*model.Document) repository.DocumentRepository {
-					return new(mock.DocumentRepositoryOld)
+				documentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID, _, _ int, _ []*model.Document) repository.DocumentRepository {
+					return mock.NewDocumentRepository(nil)
 				},
 			},
 			args: args{
@@ -977,9 +977,9 @@ func TestCachedDocumentRepository_GetByCreator(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				documentRepo: func(ctx context.Context, createdBy model.ID, offset, limit int, _ []*model.Document) repository.DocumentRepository {
-					repo := new(mock.DocumentRepositoryOld)
-					repo.On("GetByCreator", ctx, createdBy, offset, limit).Return(nil, repository.ErrNotFound)
+				documentRepo: func(ctrl *gomock.Controller, ctx context.Context, createdBy model.ID, offset, limit int, _ []*model.Document) repository.DocumentRepository {
+					repo := mock.NewDocumentRepository(ctrl)
+					repo.EXPECT().GetByCreator(ctx, createdBy, offset, limit).Return(nil, repository.ErrNotFound)
 					return repo
 				},
 			},
@@ -1017,8 +1017,8 @@ func TestCachedDocumentRepository_GetByCreator(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				documentRepo: func(_ context.Context, _ model.ID, _, _ int, _ []*model.Document) repository.DocumentRepository {
-					return new(mock.DocumentRepositoryOld)
+				documentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID, _, _ int, _ []*model.Document) repository.DocumentRepository {
+					return mock.NewDocumentRepository(nil)
 				},
 			},
 			args: args{
@@ -1060,9 +1060,9 @@ func TestCachedDocumentRepository_GetByCreator(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				documentRepo: func(ctx context.Context, createdBy model.ID, offset, limit int, documents []*model.Document) repository.DocumentRepository {
-					repo := new(mock.DocumentRepositoryOld)
-					repo.On("GetByCreator", ctx, createdBy, offset, limit).Return(documents, nil)
+				documentRepo: func(ctrl *gomock.Controller, ctx context.Context, createdBy model.ID, offset, limit int, documents []*model.Document) repository.DocumentRepository {
+					repo := mock.NewDocumentRepository(ctrl)
+					repo.EXPECT().GetByCreator(ctx, createdBy, offset, limit).Return(documents, nil)
 					return repo
 				},
 			},
@@ -1081,7 +1081,7 @@ func TestCachedDocumentRepository_GetByCreator(t *testing.T) {
 			defer ctrl.Finish()
 			r := &CachedDocumentRepository{
 				cacheRepo:    tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.createdBy, tt.args.offset, tt.args.limit, tt.want),
-				documentRepo: tt.fields.documentRepo(tt.args.ctx, tt.args.createdBy, tt.args.offset, tt.args.limit, tt.want),
+				documentRepo: tt.fields.documentRepo(ctrl, tt.args.ctx, tt.args.createdBy, tt.args.offset, tt.args.limit, tt.want),
 			}
 			got, err := r.GetByCreator(tt.args.ctx, tt.args.createdBy, tt.args.offset, tt.args.limit)
 			assert.ErrorIs(t, err, tt.wantErr)
@@ -1093,7 +1093,7 @@ func TestCachedDocumentRepository_GetByCreator(t *testing.T) {
 func TestCachedDocumentRepository_GetAllBelongsTo(t *testing.T) {
 	type fields struct {
 		cacheRepo    func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, documents []*model.Document) *baseRepository
-		documentRepo func(ctx context.Context, belongsTo model.ID, offset, limit int, documents []*model.Document) repository.DocumentRepository
+		documentRepo func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, documents []*model.Document) repository.DocumentRepository
 	}
 	type args struct {
 		ctx       context.Context
@@ -1141,9 +1141,9 @@ func TestCachedDocumentRepository_GetAllBelongsTo(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				documentRepo: func(ctx context.Context, belongsTo model.ID, offset, limit int, documents []*model.Document) repository.DocumentRepository {
-					repo := new(mock.DocumentRepositoryOld)
-					repo.On("GetAllBelongsTo", ctx, belongsTo, offset, limit).Return(documents, nil)
+				documentRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, documents []*model.Document) repository.DocumentRepository {
+					repo := mock.NewDocumentRepository(ctrl)
+					repo.EXPECT().GetAllBelongsTo(ctx, belongsTo, offset, limit).Return(documents, nil)
 					return repo
 				},
 			},
@@ -1205,8 +1205,8 @@ func TestCachedDocumentRepository_GetAllBelongsTo(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				documentRepo: func(_ context.Context, _ model.ID, _, _ int, _ []*model.Document) repository.DocumentRepository {
-					return new(mock.DocumentRepositoryOld)
+				documentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID, _, _ int, _ []*model.Document) repository.DocumentRepository {
+					return mock.NewDocumentRepository(nil)
 				},
 			},
 			args: args{
@@ -1264,9 +1264,9 @@ func TestCachedDocumentRepository_GetAllBelongsTo(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				documentRepo: func(ctx context.Context, belongsTo model.ID, offset, limit int, _ []*model.Document) repository.DocumentRepository {
-					repo := new(mock.DocumentRepositoryOld)
-					repo.On("GetAllBelongsTo", ctx, belongsTo, offset, limit).Return(nil, repository.ErrNotFound)
+				documentRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, _ []*model.Document) repository.DocumentRepository {
+					repo := mock.NewDocumentRepository(ctrl)
+					repo.EXPECT().GetAllBelongsTo(ctx, belongsTo, offset, limit).Return(nil, repository.ErrNotFound)
 					return repo
 				},
 			},
@@ -1304,8 +1304,8 @@ func TestCachedDocumentRepository_GetAllBelongsTo(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				documentRepo: func(_ context.Context, _ model.ID, _, _ int, _ []*model.Document) repository.DocumentRepository {
-					return new(mock.DocumentRepositoryOld)
+				documentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID, _, _ int, _ []*model.Document) repository.DocumentRepository {
+					return mock.NewDocumentRepository(nil)
 				},
 			},
 			args: args{
@@ -1347,9 +1347,9 @@ func TestCachedDocumentRepository_GetAllBelongsTo(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				documentRepo: func(ctx context.Context, belongsTo model.ID, offset, limit int, documents []*model.Document) repository.DocumentRepository {
-					repo := new(mock.DocumentRepositoryOld)
-					repo.On("GetAllBelongsTo", ctx, belongsTo, offset, limit).Return(documents, nil)
+				documentRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, documents []*model.Document) repository.DocumentRepository {
+					repo := mock.NewDocumentRepository(ctrl)
+					repo.EXPECT().GetAllBelongsTo(ctx, belongsTo, offset, limit).Return(documents, nil)
 					return repo
 				},
 			},
@@ -1368,7 +1368,7 @@ func TestCachedDocumentRepository_GetAllBelongsTo(t *testing.T) {
 			defer ctrl.Finish()
 			r := &CachedDocumentRepository{
 				cacheRepo:    tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.belongsTo, tt.args.offset, tt.args.limit, tt.want),
-				documentRepo: tt.fields.documentRepo(tt.args.ctx, tt.args.belongsTo, tt.args.offset, tt.args.limit, tt.want),
+				documentRepo: tt.fields.documentRepo(ctrl, tt.args.ctx, tt.args.belongsTo, tt.args.offset, tt.args.limit, tt.want),
 			}
 			got, err := r.GetAllBelongsTo(tt.args.ctx, tt.args.belongsTo, tt.args.offset, tt.args.limit)
 			assert.ErrorIs(t, err, tt.wantErr)
@@ -1380,7 +1380,7 @@ func TestCachedDocumentRepository_GetAllBelongsTo(t *testing.T) {
 func TestCachedDocumentRepository_Update(t *testing.T) {
 	type fields struct {
 		cacheRepo    func(ctrl *gomock.Controller, ctx context.Context, id model.ID, document *model.Document) *baseRepository
-		documentRepo func(ctx context.Context, id model.ID, patch map[string]any, document *model.Document) repository.DocumentRepository
+		documentRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, document *model.Document) repository.DocumentRepository
 	}
 	type args struct {
 		ctx   context.Context
@@ -1440,9 +1440,9 @@ func TestCachedDocumentRepository_Update(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				documentRepo: func(ctx context.Context, id model.ID, patch map[string]any, document *model.Document) repository.DocumentRepository {
-					repo := new(mock.DocumentRepositoryOld)
-					repo.On("Update", ctx, id, patch).Return(document, nil)
+				documentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, document *model.Document) repository.DocumentRepository {
+					repo := mock.NewDocumentRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, patch).Return(document, nil)
 					return repo
 				},
 			},
@@ -1481,9 +1481,9 @@ func TestCachedDocumentRepository_Update(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				documentRepo: func(ctx context.Context, id model.ID, patch map[string]any, _ *model.Document) repository.DocumentRepository {
-					repo := new(mock.DocumentRepositoryOld)
-					repo.On("Update", ctx, id, patch).Return(nil, repository.ErrNotFound)
+				documentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, _ *model.Document) repository.DocumentRepository {
+					repo := mock.NewDocumentRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, patch).Return(nil, repository.ErrNotFound)
 					return repo
 				},
 			},
@@ -1530,9 +1530,9 @@ func TestCachedDocumentRepository_Update(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				documentRepo: func(ctx context.Context, id model.ID, patch map[string]any, document *model.Document) repository.DocumentRepository {
-					repo := new(mock.DocumentRepositoryOld)
-					repo.On("Update", ctx, id, patch).Return(document, nil)
+				documentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, document *model.Document) repository.DocumentRepository {
+					repo := mock.NewDocumentRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, patch).Return(document, nil)
 					return repo
 				},
 			},
@@ -1586,9 +1586,9 @@ func TestCachedDocumentRepository_Update(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				documentRepo: func(ctx context.Context, id model.ID, patch map[string]any, document *model.Document) repository.DocumentRepository {
-					repo := new(mock.DocumentRepositoryOld)
-					repo.On("Update", ctx, id, patch).Return(document, nil)
+				documentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, document *model.Document) repository.DocumentRepository {
+					repo := mock.NewDocumentRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, patch).Return(document, nil)
 					return repo
 				},
 			},
@@ -1648,9 +1648,9 @@ func TestCachedDocumentRepository_Update(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				documentRepo: func(ctx context.Context, id model.ID, patch map[string]any, document *model.Document) repository.DocumentRepository {
-					repo := new(mock.DocumentRepositoryOld)
-					repo.On("Update", ctx, id, patch).Return(document, nil)
+				documentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, document *model.Document) repository.DocumentRepository {
+					repo := mock.NewDocumentRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, patch).Return(document, nil)
 					return repo
 				},
 			},
@@ -1684,7 +1684,7 @@ func TestCachedDocumentRepository_Update(t *testing.T) {
 
 			r := &CachedDocumentRepository{
 				cacheRepo:    tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, tt.want),
-				documentRepo: tt.fields.documentRepo(tt.args.ctx, tt.args.id, tt.args.patch, tt.want),
+				documentRepo: tt.fields.documentRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.patch, tt.want),
 			}
 			got, err := r.Update(tt.args.ctx, tt.args.id, tt.args.patch)
 			assert.ErrorIs(t, err, tt.wantErr)
@@ -1698,7 +1698,7 @@ func TestCachedDocumentRepository_Update(t *testing.T) {
 func TestCachedDocumentRepository_Delete(t *testing.T) {
 	type fields struct {
 		cacheRepo    func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *baseRepository
-		documentRepo func(ctx context.Context, id model.ID) repository.DocumentRepository
+		documentRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID) repository.DocumentRepository
 	}
 	type args struct {
 		ctx context.Context
@@ -1770,9 +1770,9 @@ func TestCachedDocumentRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				documentRepo: func(ctx context.Context, id model.ID) repository.DocumentRepository {
-					repo := new(mock.DocumentRepositoryOld)
-					repo.On("Delete", ctx, id).Return(nil)
+				documentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) repository.DocumentRepository {
+					repo := mock.NewDocumentRepository(ctrl)
+					repo.EXPECT().Delete(ctx, id).Return(nil)
 					return repo
 				},
 			},
@@ -1841,9 +1841,9 @@ func TestCachedDocumentRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				documentRepo: func(ctx context.Context, id model.ID) repository.DocumentRepository {
-					repo := new(mock.DocumentRepositoryOld)
-					repo.On("Delete", ctx, id).Return(repository.ErrNotFound)
+				documentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) repository.DocumentRepository {
+					repo := mock.NewDocumentRepository(ctrl)
+					repo.EXPECT().Delete(ctx, id).Return(repository.ErrNotFound)
 					return repo
 				},
 			},
@@ -1883,8 +1883,8 @@ func TestCachedDocumentRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				documentRepo: func(_ context.Context, _ model.ID) repository.DocumentRepository {
-					return new(mock.DocumentRepositoryOld)
+				documentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID) repository.DocumentRepository {
+					return mock.NewDocumentRepository(nil)
 				},
 			},
 			args: args{
@@ -1929,8 +1929,8 @@ func TestCachedDocumentRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				documentRepo: func(_ context.Context, _ model.ID) repository.DocumentRepository {
-					return new(mock.DocumentRepositoryOld)
+				documentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID) repository.DocumentRepository {
+					return mock.NewDocumentRepository(nil)
 				},
 			},
 			args: args{
@@ -1981,8 +1981,8 @@ func TestCachedDocumentRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				documentRepo: func(_ context.Context, _ model.ID) repository.DocumentRepository {
-					return new(mock.DocumentRepositoryOld)
+				documentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID) repository.DocumentRepository {
+					return mock.NewDocumentRepository(nil)
 				},
 			},
 			args: args{
@@ -2039,8 +2039,8 @@ func TestCachedDocumentRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				documentRepo: func(_ context.Context, _ model.ID) repository.DocumentRepository {
-					return new(mock.DocumentRepositoryOld)
+				documentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID) repository.DocumentRepository {
+					return mock.NewDocumentRepository(nil)
 				},
 			},
 			args: args{
@@ -2103,8 +2103,8 @@ func TestCachedDocumentRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				documentRepo: func(_ context.Context, _ model.ID) repository.DocumentRepository {
-					return new(mock.DocumentRepositoryOld)
+				documentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID) repository.DocumentRepository {
+					return mock.NewDocumentRepository(nil)
 				},
 			},
 			args: args{
@@ -2173,8 +2173,8 @@ func TestCachedDocumentRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				documentRepo: func(_ context.Context, _ model.ID) repository.DocumentRepository {
-					return new(mock.DocumentRepositoryOld)
+				documentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID) repository.DocumentRepository {
+					return mock.NewDocumentRepository(nil)
 				},
 			},
 			args: args{
@@ -2192,7 +2192,7 @@ func TestCachedDocumentRepository_Delete(t *testing.T) {
 			defer ctrl.Finish()
 			r := &CachedDocumentRepository{
 				cacheRepo:    tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id),
-				documentRepo: tt.fields.documentRepo(tt.args.ctx, tt.args.id),
+				documentRepo: tt.fields.documentRepo(ctrl, tt.args.ctx, tt.args.id),
 			}
 			err := r.Delete(tt.args.ctx, tt.args.id)
 			assert.ErrorIs(t, err, tt.wantErr)
