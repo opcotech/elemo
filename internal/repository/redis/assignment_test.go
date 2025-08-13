@@ -81,7 +81,7 @@ func TestCachedAssignmentRepository_Create(t *testing.T) {
 					}
 				},
 				assignmentRepo: func(ctx context.Context, assignment *model.Assignment) repository.AssignmentRepository {
-					repo := new(mock.AssignmentRepository)
+					repo := new(mock.AssignmentRepositoryOld)
 					repo.On("Create", ctx, assignment).Return(nil)
 					return repo
 				},
@@ -125,7 +125,7 @@ func TestCachedAssignmentRepository_Create(t *testing.T) {
 					}
 				},
 				assignmentRepo: func(ctx context.Context, assignment *model.Assignment) repository.AssignmentRepository {
-					repo := new(mock.AssignmentRepository)
+					repo := new(mock.AssignmentRepositoryOld)
 					repo.On("Create", ctx, assignment).Return(nil)
 					return repo
 				},
@@ -177,7 +177,7 @@ func TestCachedAssignmentRepository_Create(t *testing.T) {
 					}
 				},
 				assignmentRepo: func(ctx context.Context, assignment *model.Assignment) repository.AssignmentRepository {
-					repo := new(mock.AssignmentRepository)
+					repo := new(mock.AssignmentRepositoryOld)
 					repo.On("Create", ctx, assignment).Return(nil)
 					return repo
 				},
@@ -231,7 +231,7 @@ func TestCachedAssignmentRepository_Create(t *testing.T) {
 					}
 				},
 				assignmentRepo: func(ctx context.Context, assignment *model.Assignment) repository.AssignmentRepository {
-					repo := new(mock.AssignmentRepository)
+					repo := new(mock.AssignmentRepositoryOld)
 					repo.On("Create", ctx, assignment).Return(nil)
 					return repo
 				},
@@ -314,7 +314,7 @@ func TestCachedAssignmentRepository_Get(t *testing.T) {
 					}
 				},
 				assignmentRepo: func(ctx context.Context, id model.ID, assignment *model.Assignment) repository.AssignmentRepository {
-					repo := new(mock.AssignmentRepository)
+					repo := new(mock.AssignmentRepositoryOld)
 					repo.On("Get", ctx, id).Return(assignment, nil)
 					return repo
 				},
@@ -364,7 +364,7 @@ func TestCachedAssignmentRepository_Get(t *testing.T) {
 					}
 				},
 				assignmentRepo: func(_ context.Context, _ model.ID, _ *model.Assignment) repository.AssignmentRepository {
-					return new(mock.AssignmentRepository)
+					return new(mock.AssignmentRepositoryOld)
 				},
 			},
 			args: args{
@@ -408,7 +408,7 @@ func TestCachedAssignmentRepository_Get(t *testing.T) {
 					}
 				},
 				assignmentRepo: func(ctx context.Context, id model.ID, _ *model.Assignment) repository.AssignmentRepository {
-					repo := new(mock.AssignmentRepository)
+					repo := new(mock.AssignmentRepositoryOld)
 					repo.On("Get", ctx, id).Return(nil, repository.ErrNotFound)
 					return repo
 				},
@@ -447,7 +447,7 @@ func TestCachedAssignmentRepository_Get(t *testing.T) {
 					}
 				},
 				assignmentRepo: func(_ context.Context, _ model.ID, _ *model.Assignment) repository.AssignmentRepository {
-					return new(mock.AssignmentRepository)
+					return new(mock.AssignmentRepositoryOld)
 				},
 			},
 			args: args{
@@ -490,7 +490,7 @@ func TestCachedAssignmentRepository_Get(t *testing.T) {
 					}
 				},
 				assignmentRepo: func(ctx context.Context, id model.ID, assignment *model.Assignment) repository.AssignmentRepository {
-					repo := new(mock.AssignmentRepository)
+					repo := new(mock.AssignmentRepositoryOld)
 					repo.On("Get", ctx, id).Return(assignment, nil)
 					return repo
 				},
@@ -577,7 +577,7 @@ func TestCachedAssignmentRepository_GetByUser(t *testing.T) {
 					}
 				},
 				assignmentRepo: func(ctx context.Context, userID model.ID, offset, limit int, assignments []*model.Assignment) repository.AssignmentRepository {
-					repo := new(mock.AssignmentRepository)
+					repo := new(mock.AssignmentRepositoryOld)
 					repo.On("GetByUser", ctx, userID, offset, limit).Return(assignments, nil)
 					return repo
 				},
@@ -633,7 +633,7 @@ func TestCachedAssignmentRepository_GetByUser(t *testing.T) {
 					}
 				},
 				assignmentRepo: func(_ context.Context, _ model.ID, _, _ int, _ []*model.Assignment) repository.AssignmentRepository {
-					return new(mock.AssignmentRepository)
+					return new(mock.AssignmentRepositoryOld)
 				},
 			},
 			args: args{
@@ -684,7 +684,7 @@ func TestCachedAssignmentRepository_GetByUser(t *testing.T) {
 					}
 				},
 				assignmentRepo: func(ctx context.Context, userID model.ID, offset, limit int, _ []*model.Assignment) repository.AssignmentRepository {
-					repo := new(mock.AssignmentRepository)
+					repo := new(mock.AssignmentRepositoryOld)
 					repo.On("GetByUser", ctx, userID, offset, limit).Return(nil, repository.ErrNotFound)
 					return repo
 				},
@@ -724,7 +724,7 @@ func TestCachedAssignmentRepository_GetByUser(t *testing.T) {
 					}
 				},
 				assignmentRepo: func(_ context.Context, _ model.ID, _, _ int, _ []*model.Assignment) repository.AssignmentRepository {
-					return new(mock.AssignmentRepository)
+					return new(mock.AssignmentRepositoryOld)
 				},
 			},
 			args: args{
@@ -767,7 +767,7 @@ func TestCachedAssignmentRepository_GetByUser(t *testing.T) {
 					}
 				},
 				assignmentRepo: func(ctx context.Context, userID model.ID, offset, limit int, assignments []*model.Assignment) repository.AssignmentRepository {
-					repo := new(mock.AssignmentRepository)
+					repo := new(mock.AssignmentRepositoryOld)
 					repo.On("GetByUser", ctx, userID, offset, limit).Return(assignments, nil)
 					return repo
 				},
@@ -849,7 +849,7 @@ func TestCachedAssignmentRepository_GetByResource(t *testing.T) {
 					}
 				},
 				assignmentRepo: func(ctx context.Context, userID model.ID, offset, limit int, assignments []*model.Assignment) repository.AssignmentRepository {
-					repo := new(mock.AssignmentRepository)
+					repo := new(mock.AssignmentRepositoryOld)
 					repo.On("GetByResource", ctx, userID, offset, limit).Return(assignments, nil)
 					return repo
 				},
@@ -905,7 +905,7 @@ func TestCachedAssignmentRepository_GetByResource(t *testing.T) {
 					}
 				},
 				assignmentRepo: func(_ context.Context, _ model.ID, _, _ int, _ []*model.Assignment) repository.AssignmentRepository {
-					return new(mock.AssignmentRepository)
+					return new(mock.AssignmentRepositoryOld)
 				},
 			},
 			args: args{
@@ -956,7 +956,7 @@ func TestCachedAssignmentRepository_GetByResource(t *testing.T) {
 					}
 				},
 				assignmentRepo: func(ctx context.Context, userID model.ID, offset, limit int, _ []*model.Assignment) repository.AssignmentRepository {
-					repo := new(mock.AssignmentRepository)
+					repo := new(mock.AssignmentRepositoryOld)
 					repo.On("GetByResource", ctx, userID, offset, limit).Return(nil, repository.ErrNotFound)
 					return repo
 				},
@@ -996,7 +996,7 @@ func TestCachedAssignmentRepository_GetByResource(t *testing.T) {
 					}
 				},
 				assignmentRepo: func(_ context.Context, _ model.ID, _, _ int, _ []*model.Assignment) repository.AssignmentRepository {
-					return new(mock.AssignmentRepository)
+					return new(mock.AssignmentRepositoryOld)
 				},
 			},
 			args: args{
@@ -1039,7 +1039,7 @@ func TestCachedAssignmentRepository_GetByResource(t *testing.T) {
 					}
 				},
 				assignmentRepo: func(ctx context.Context, userID model.ID, offset, limit int, assignments []*model.Assignment) repository.AssignmentRepository {
-					repo := new(mock.AssignmentRepository)
+					repo := new(mock.AssignmentRepositoryOld)
 					repo.On("GetByResource", ctx, userID, offset, limit).Return(assignments, nil)
 					return repo
 				},
@@ -1133,7 +1133,7 @@ func TestCachedAssignmentRepository_Delete(t *testing.T) {
 					}
 				},
 				assignmentRepo: func(ctx context.Context, id model.ID) repository.AssignmentRepository {
-					repo := new(mock.AssignmentRepository)
+					repo := new(mock.AssignmentRepositoryOld)
 					repo.On("Delete", ctx, id).Return(nil)
 					return repo
 				},
@@ -1192,7 +1192,7 @@ func TestCachedAssignmentRepository_Delete(t *testing.T) {
 					}
 				},
 				assignmentRepo: func(ctx context.Context, id model.ID) repository.AssignmentRepository {
-					repo := new(mock.AssignmentRepository)
+					repo := new(mock.AssignmentRepositoryOld)
 					repo.On("Delete", ctx, id).Return(repository.ErrAssignmentDelete)
 					return repo
 				},
@@ -1233,7 +1233,7 @@ func TestCachedAssignmentRepository_Delete(t *testing.T) {
 					}
 				},
 				assignmentRepo: func(ctx context.Context, id model.ID) repository.AssignmentRepository {
-					repo := new(mock.AssignmentRepository)
+					repo := new(mock.AssignmentRepositoryOld)
 					repo.On("Delete", ctx, id).Return(nil)
 					return repo
 				},
@@ -1281,7 +1281,7 @@ func TestCachedAssignmentRepository_Delete(t *testing.T) {
 					}
 				},
 				assignmentRepo: func(_ context.Context, _ model.ID) repository.AssignmentRepository {
-					return new(mock.AssignmentRepository)
+					return new(mock.AssignmentRepositoryOld)
 				},
 			},
 			args: args{
@@ -1332,7 +1332,7 @@ func TestCachedAssignmentRepository_Delete(t *testing.T) {
 					}
 				},
 				assignmentRepo: func(_ context.Context, _ model.ID) repository.AssignmentRepository {
-					return new(mock.AssignmentRepository)
+					return new(mock.AssignmentRepositoryOld)
 				},
 			},
 			args: args{
@@ -1390,7 +1390,7 @@ func TestCachedAssignmentRepository_Delete(t *testing.T) {
 					}
 				},
 				assignmentRepo: func(_ context.Context, _ model.ID) repository.AssignmentRepository {
-					return new(mock.AssignmentRepository)
+					return new(mock.AssignmentRepositoryOld)
 				},
 			},
 			args: args{
