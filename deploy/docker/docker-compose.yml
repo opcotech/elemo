@@ -36,8 +36,8 @@ services:
     healthcheck:
       test:
         [ "CMD", "cypher-shell", "-u", "neo4j", "-p", "neo4jsecret", "match (n) return count(n)" ]
-      interval: 5s
-      timeout: 5s
+      interval: 10s
+      timeout: 10s
       retries: 3
 
   postgres:

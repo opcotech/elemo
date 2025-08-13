@@ -95,6 +95,10 @@ feedback. To get started with contributing:
   related [Dockerfile](https://github.com/opcotech/elemo/blob/main/build/package/Dockerfile).
 - Create a fork of Elemo and submit a pull request with your proposed changes.
 
+## Codespaces/Dev Containers
+
+Configuration for codespaces/dev containers are available. For more information check out the related [documentation](https://github.com/opcotech/elemo/blob/main/docs/guides/01-devcontainer.md).
+
 ## License
 
 Elemo is licensed under a **dual-license model**:

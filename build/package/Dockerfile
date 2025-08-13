@@ -6,8 +6,9 @@ FROM golang:1.24-bullseye AS common
 
 WORKDIR /common
 
-RUN apt install -y --no-install-recommends git \
-    && rm -rf /var/session-client/apt/lists/*
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends git \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY go.mod go.mod
 COPY go.sum go.sum
