@@ -1189,7 +1189,7 @@ func TestCachedAttachmentRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				attachmentRepo: func(_ *gomock.Controller, ctx context.Context, id model.ID) repository.AttachmentRepository {
+				attachmentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID) repository.AttachmentRepository {
 					return mock.NewAttachmentRepository(nil)
 				},
 			},
