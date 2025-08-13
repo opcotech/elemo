@@ -90,7 +90,7 @@ func TestCachedDocumentRepository_Create(t *testing.T) {
 					}
 				},
 				documentRepo: func(ctx context.Context, belongsTo model.ID, document *model.Document) repository.DocumentRepository {
-					repo := new(mock.DocumentRepository)
+					repo := new(mock.DocumentRepositoryOld)
 					repo.On("Create", ctx, belongsTo, document).Return(nil)
 					return repo
 				},
@@ -168,7 +168,7 @@ func TestCachedDocumentRepository_Create(t *testing.T) {
 					}
 				},
 				documentRepo: func(ctx context.Context, belongsTo model.ID, document *model.Document) repository.DocumentRepository {
-					repo := new(mock.DocumentRepository)
+					repo := new(mock.DocumentRepositoryOld)
 					repo.On("Create", ctx, belongsTo, document).Return(repository.ErrDocumentCreate)
 					return repo
 				},
@@ -223,7 +223,7 @@ func TestCachedDocumentRepository_Create(t *testing.T) {
 					}
 				},
 				documentRepo: func(_ context.Context, _ model.ID, _ *model.Document) repository.DocumentRepository {
-					return new(mock.DocumentRepository)
+					return new(mock.DocumentRepositoryOld)
 				},
 			},
 			args: args{
@@ -282,7 +282,7 @@ func TestCachedDocumentRepository_Create(t *testing.T) {
 					}
 				},
 				documentRepo: func(_ context.Context, _ model.ID, _ *model.Document) repository.DocumentRepository {
-					return new(mock.DocumentRepository)
+					return new(mock.DocumentRepositoryOld)
 				},
 			},
 			args: args{
@@ -347,7 +347,7 @@ func TestCachedDocumentRepository_Create(t *testing.T) {
 					}
 				},
 				documentRepo: func(_ context.Context, _ model.ID, _ *model.Document) repository.DocumentRepository {
-					return new(mock.DocumentRepository)
+					return new(mock.DocumentRepositoryOld)
 				},
 			},
 			args: args{
@@ -418,7 +418,7 @@ func TestCachedDocumentRepository_Create(t *testing.T) {
 					}
 				},
 				documentRepo: func(_ context.Context, _ model.ID, _ *model.Document) repository.DocumentRepository {
-					return new(mock.DocumentRepository)
+					return new(mock.DocumentRepositoryOld)
 				},
 			},
 			args: args{
@@ -495,7 +495,7 @@ func TestCachedDocumentRepository_Create(t *testing.T) {
 					}
 				},
 				documentRepo: func(_ context.Context, _ model.ID, _ *model.Document) repository.DocumentRepository {
-					return new(mock.DocumentRepository)
+					return new(mock.DocumentRepositoryOld)
 				},
 			},
 			args: args{
@@ -581,7 +581,7 @@ func TestCachedDocumentRepository_Get(t *testing.T) {
 					}
 				},
 				documentRepo: func(ctx context.Context, id model.ID, document *model.Document) repository.DocumentRepository {
-					repo := new(mock.DocumentRepository)
+					repo := new(mock.DocumentRepositoryOld)
 					repo.On("Get", ctx, id).Return(document, nil)
 					return repo
 				},
@@ -635,7 +635,7 @@ func TestCachedDocumentRepository_Get(t *testing.T) {
 					}
 				},
 				documentRepo: func(_ context.Context, _ model.ID, _ *model.Document) repository.DocumentRepository {
-					return new(mock.DocumentRepository)
+					return new(mock.DocumentRepositoryOld)
 				},
 			},
 			args: args{
@@ -687,7 +687,7 @@ func TestCachedDocumentRepository_Get(t *testing.T) {
 					}
 				},
 				documentRepo: func(ctx context.Context, id model.ID, _ *model.Document) repository.DocumentRepository {
-					repo := new(mock.DocumentRepository)
+					repo := new(mock.DocumentRepositoryOld)
 					repo.On("Get", ctx, id).Return(nil, repository.ErrNotFound)
 					return repo
 				},
@@ -726,7 +726,7 @@ func TestCachedDocumentRepository_Get(t *testing.T) {
 					}
 				},
 				documentRepo: func(_ context.Context, _ model.ID, _ *model.Document) repository.DocumentRepository {
-					return new(mock.DocumentRepository)
+					return new(mock.DocumentRepositoryOld)
 				},
 			},
 			args: args{
@@ -769,7 +769,7 @@ func TestCachedDocumentRepository_Get(t *testing.T) {
 					}
 				},
 				documentRepo: func(ctx context.Context, id model.ID, document *model.Document) repository.DocumentRepository {
-					repo := new(mock.DocumentRepository)
+					repo := new(mock.DocumentRepositoryOld)
 					repo.On("Get", ctx, id).Return(document, nil)
 					return repo
 				},
@@ -855,7 +855,7 @@ func TestCachedDocumentRepository_GetByCreator(t *testing.T) {
 					}
 				},
 				documentRepo: func(ctx context.Context, createdBy model.ID, offset, limit int, documents []*model.Document) repository.DocumentRepository {
-					repo := new(mock.DocumentRepository)
+					repo := new(mock.DocumentRepositoryOld)
 					repo.On("GetByCreator", ctx, createdBy, offset, limit).Return(documents, nil)
 					return repo
 				},
@@ -919,7 +919,7 @@ func TestCachedDocumentRepository_GetByCreator(t *testing.T) {
 					}
 				},
 				documentRepo: func(_ context.Context, _ model.ID, _, _ int, _ []*model.Document) repository.DocumentRepository {
-					return new(mock.DocumentRepository)
+					return new(mock.DocumentRepositoryOld)
 				},
 			},
 			args: args{
@@ -978,7 +978,7 @@ func TestCachedDocumentRepository_GetByCreator(t *testing.T) {
 					}
 				},
 				documentRepo: func(ctx context.Context, createdBy model.ID, offset, limit int, _ []*model.Document) repository.DocumentRepository {
-					repo := new(mock.DocumentRepository)
+					repo := new(mock.DocumentRepositoryOld)
 					repo.On("GetByCreator", ctx, createdBy, offset, limit).Return(nil, repository.ErrNotFound)
 					return repo
 				},
@@ -1018,7 +1018,7 @@ func TestCachedDocumentRepository_GetByCreator(t *testing.T) {
 					}
 				},
 				documentRepo: func(_ context.Context, _ model.ID, _, _ int, _ []*model.Document) repository.DocumentRepository {
-					return new(mock.DocumentRepository)
+					return new(mock.DocumentRepositoryOld)
 				},
 			},
 			args: args{
@@ -1061,7 +1061,7 @@ func TestCachedDocumentRepository_GetByCreator(t *testing.T) {
 					}
 				},
 				documentRepo: func(ctx context.Context, createdBy model.ID, offset, limit int, documents []*model.Document) repository.DocumentRepository {
-					repo := new(mock.DocumentRepository)
+					repo := new(mock.DocumentRepositoryOld)
 					repo.On("GetByCreator", ctx, createdBy, offset, limit).Return(documents, nil)
 					return repo
 				},
@@ -1142,7 +1142,7 @@ func TestCachedDocumentRepository_GetAllBelongsTo(t *testing.T) {
 					}
 				},
 				documentRepo: func(ctx context.Context, belongsTo model.ID, offset, limit int, documents []*model.Document) repository.DocumentRepository {
-					repo := new(mock.DocumentRepository)
+					repo := new(mock.DocumentRepositoryOld)
 					repo.On("GetAllBelongsTo", ctx, belongsTo, offset, limit).Return(documents, nil)
 					return repo
 				},
@@ -1206,7 +1206,7 @@ func TestCachedDocumentRepository_GetAllBelongsTo(t *testing.T) {
 					}
 				},
 				documentRepo: func(_ context.Context, _ model.ID, _, _ int, _ []*model.Document) repository.DocumentRepository {
-					return new(mock.DocumentRepository)
+					return new(mock.DocumentRepositoryOld)
 				},
 			},
 			args: args{
@@ -1265,7 +1265,7 @@ func TestCachedDocumentRepository_GetAllBelongsTo(t *testing.T) {
 					}
 				},
 				documentRepo: func(ctx context.Context, belongsTo model.ID, offset, limit int, _ []*model.Document) repository.DocumentRepository {
-					repo := new(mock.DocumentRepository)
+					repo := new(mock.DocumentRepositoryOld)
 					repo.On("GetAllBelongsTo", ctx, belongsTo, offset, limit).Return(nil, repository.ErrNotFound)
 					return repo
 				},
@@ -1305,7 +1305,7 @@ func TestCachedDocumentRepository_GetAllBelongsTo(t *testing.T) {
 					}
 				},
 				documentRepo: func(_ context.Context, _ model.ID, _, _ int, _ []*model.Document) repository.DocumentRepository {
-					return new(mock.DocumentRepository)
+					return new(mock.DocumentRepositoryOld)
 				},
 			},
 			args: args{
@@ -1348,7 +1348,7 @@ func TestCachedDocumentRepository_GetAllBelongsTo(t *testing.T) {
 					}
 				},
 				documentRepo: func(ctx context.Context, belongsTo model.ID, offset, limit int, documents []*model.Document) repository.DocumentRepository {
-					repo := new(mock.DocumentRepository)
+					repo := new(mock.DocumentRepositoryOld)
 					repo.On("GetAllBelongsTo", ctx, belongsTo, offset, limit).Return(documents, nil)
 					return repo
 				},
@@ -1441,7 +1441,7 @@ func TestCachedDocumentRepository_Update(t *testing.T) {
 					}
 				},
 				documentRepo: func(ctx context.Context, id model.ID, patch map[string]any, document *model.Document) repository.DocumentRepository {
-					repo := new(mock.DocumentRepository)
+					repo := new(mock.DocumentRepositoryOld)
 					repo.On("Update", ctx, id, patch).Return(document, nil)
 					return repo
 				},
@@ -1482,7 +1482,7 @@ func TestCachedDocumentRepository_Update(t *testing.T) {
 					}
 				},
 				documentRepo: func(ctx context.Context, id model.ID, patch map[string]any, _ *model.Document) repository.DocumentRepository {
-					repo := new(mock.DocumentRepository)
+					repo := new(mock.DocumentRepositoryOld)
 					repo.On("Update", ctx, id, patch).Return(nil, repository.ErrNotFound)
 					return repo
 				},
@@ -1531,7 +1531,7 @@ func TestCachedDocumentRepository_Update(t *testing.T) {
 					}
 				},
 				documentRepo: func(ctx context.Context, id model.ID, patch map[string]any, document *model.Document) repository.DocumentRepository {
-					repo := new(mock.DocumentRepository)
+					repo := new(mock.DocumentRepositoryOld)
 					repo.On("Update", ctx, id, patch).Return(document, nil)
 					return repo
 				},
@@ -1587,7 +1587,7 @@ func TestCachedDocumentRepository_Update(t *testing.T) {
 					}
 				},
 				documentRepo: func(ctx context.Context, id model.ID, patch map[string]any, document *model.Document) repository.DocumentRepository {
-					repo := new(mock.DocumentRepository)
+					repo := new(mock.DocumentRepositoryOld)
 					repo.On("Update", ctx, id, patch).Return(document, nil)
 					return repo
 				},
@@ -1649,7 +1649,7 @@ func TestCachedDocumentRepository_Update(t *testing.T) {
 					}
 				},
 				documentRepo: func(ctx context.Context, id model.ID, patch map[string]any, document *model.Document) repository.DocumentRepository {
-					repo := new(mock.DocumentRepository)
+					repo := new(mock.DocumentRepositoryOld)
 					repo.On("Update", ctx, id, patch).Return(document, nil)
 					return repo
 				},
@@ -1771,7 +1771,7 @@ func TestCachedDocumentRepository_Delete(t *testing.T) {
 					}
 				},
 				documentRepo: func(ctx context.Context, id model.ID) repository.DocumentRepository {
-					repo := new(mock.DocumentRepository)
+					repo := new(mock.DocumentRepositoryOld)
 					repo.On("Delete", ctx, id).Return(nil)
 					return repo
 				},
@@ -1842,7 +1842,7 @@ func TestCachedDocumentRepository_Delete(t *testing.T) {
 					}
 				},
 				documentRepo: func(ctx context.Context, id model.ID) repository.DocumentRepository {
-					repo := new(mock.DocumentRepository)
+					repo := new(mock.DocumentRepositoryOld)
 					repo.On("Delete", ctx, id).Return(repository.ErrNotFound)
 					return repo
 				},
@@ -1884,7 +1884,7 @@ func TestCachedDocumentRepository_Delete(t *testing.T) {
 					}
 				},
 				documentRepo: func(_ context.Context, _ model.ID) repository.DocumentRepository {
-					return new(mock.DocumentRepository)
+					return new(mock.DocumentRepositoryOld)
 				},
 			},
 			args: args{
@@ -1930,7 +1930,7 @@ func TestCachedDocumentRepository_Delete(t *testing.T) {
 					}
 				},
 				documentRepo: func(_ context.Context, _ model.ID) repository.DocumentRepository {
-					return new(mock.DocumentRepository)
+					return new(mock.DocumentRepositoryOld)
 				},
 			},
 			args: args{
@@ -1982,7 +1982,7 @@ func TestCachedDocumentRepository_Delete(t *testing.T) {
 					}
 				},
 				documentRepo: func(_ context.Context, _ model.ID) repository.DocumentRepository {
-					return new(mock.DocumentRepository)
+					return new(mock.DocumentRepositoryOld)
 				},
 			},
 			args: args{
@@ -2040,7 +2040,7 @@ func TestCachedDocumentRepository_Delete(t *testing.T) {
 					}
 				},
 				documentRepo: func(_ context.Context, _ model.ID) repository.DocumentRepository {
-					return new(mock.DocumentRepository)
+					return new(mock.DocumentRepositoryOld)
 				},
 			},
 			args: args{
@@ -2104,7 +2104,7 @@ func TestCachedDocumentRepository_Delete(t *testing.T) {
 					}
 				},
 				documentRepo: func(_ context.Context, _ model.ID) repository.DocumentRepository {
-					return new(mock.DocumentRepository)
+					return new(mock.DocumentRepositoryOld)
 				},
 			},
 			args: args{
@@ -2174,7 +2174,7 @@ func TestCachedDocumentRepository_Delete(t *testing.T) {
 					}
 				},
 				documentRepo: func(_ context.Context, _ model.ID) repository.DocumentRepository {
-					return new(mock.DocumentRepository)
+					return new(mock.DocumentRepositoryOld)
 				},
 			},
 			args: args{
