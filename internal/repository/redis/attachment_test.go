@@ -78,7 +78,7 @@ func TestCachedAttachmentRepository_Create(t *testing.T) {
 					}
 				},
 				attachmentRepo: func(ctx context.Context, belongsTo model.ID, attachment *model.Attachment) repository.AttachmentRepository {
-					repo := new(mock.AttachmentRepository)
+					repo := new(mock.AttachmentRepositoryOld)
 					repo.On("Create", ctx, belongsTo, attachment).Return(nil)
 					return repo
 				},
@@ -140,7 +140,7 @@ func TestCachedAttachmentRepository_Create(t *testing.T) {
 					}
 				},
 				attachmentRepo: func(ctx context.Context, belongsTo model.ID, attachment *model.Attachment) repository.AttachmentRepository {
-					repo := new(mock.AttachmentRepository)
+					repo := new(mock.AttachmentRepositoryOld)
 					repo.On("Create", ctx, belongsTo, attachment).Return(repository.ErrAttachmentCreate)
 					return repo
 				},
@@ -191,7 +191,7 @@ func TestCachedAttachmentRepository_Create(t *testing.T) {
 					}
 				},
 				attachmentRepo: func(_ context.Context, _ model.ID, _ *model.Attachment) repository.AttachmentRepository {
-					return new(mock.AttachmentRepository)
+					return new(mock.AttachmentRepositoryOld)
 				},
 			},
 			args: args{
@@ -246,7 +246,7 @@ func TestCachedAttachmentRepository_Create(t *testing.T) {
 					}
 				},
 				attachmentRepo: func(_ context.Context, _ model.ID, _ *model.Attachment) repository.AttachmentRepository {
-					return new(mock.AttachmentRepository)
+					return new(mock.AttachmentRepositoryOld)
 				},
 			},
 			args: args{
@@ -327,7 +327,7 @@ func TestCachedAttachmentRepository_Get(t *testing.T) {
 					}
 				},
 				attachmentRepo: func(ctx context.Context, id model.ID, attachment *model.Attachment) repository.AttachmentRepository {
-					repo := new(mock.AttachmentRepository)
+					repo := new(mock.AttachmentRepositoryOld)
 					repo.On("Get", ctx, id).Return(attachment, nil)
 					return repo
 				},
@@ -377,7 +377,7 @@ func TestCachedAttachmentRepository_Get(t *testing.T) {
 					}
 				},
 				attachmentRepo: func(_ context.Context, _ model.ID, _ *model.Attachment) repository.AttachmentRepository {
-					return new(mock.AttachmentRepository)
+					return new(mock.AttachmentRepositoryOld)
 				},
 			},
 			args: args{
@@ -421,7 +421,7 @@ func TestCachedAttachmentRepository_Get(t *testing.T) {
 					}
 				},
 				attachmentRepo: func(ctx context.Context, id model.ID, _ *model.Attachment) repository.AttachmentRepository {
-					repo := new(mock.AttachmentRepository)
+					repo := new(mock.AttachmentRepositoryOld)
 					repo.On("Get", ctx, id).Return(nil, repository.ErrNotFound)
 					return repo
 				},
@@ -460,7 +460,7 @@ func TestCachedAttachmentRepository_Get(t *testing.T) {
 					}
 				},
 				attachmentRepo: func(_ context.Context, _ model.ID, _ *model.Attachment) repository.AttachmentRepository {
-					return new(mock.AttachmentRepository)
+					return new(mock.AttachmentRepositoryOld)
 				},
 			},
 			args: args{
@@ -503,7 +503,7 @@ func TestCachedAttachmentRepository_Get(t *testing.T) {
 					}
 				},
 				attachmentRepo: func(ctx context.Context, id model.ID, attachment *model.Attachment) repository.AttachmentRepository {
-					repo := new(mock.AttachmentRepository)
+					repo := new(mock.AttachmentRepositoryOld)
 					repo.On("Get", ctx, id).Return(attachment, nil)
 					return repo
 				},
@@ -588,7 +588,7 @@ func TestCachedAttachmentRepository_GetAllBelongsTo(t *testing.T) {
 					}
 				},
 				attachmentRepo: func(ctx context.Context, belongsTo model.ID, offset, limit int, attachments []*model.Attachment) repository.AttachmentRepository {
-					repo := new(mock.AttachmentRepository)
+					repo := new(mock.AttachmentRepositoryOld)
 					repo.On("GetAllBelongsTo", ctx, belongsTo, offset, limit).Return(attachments, nil)
 					return repo
 				},
@@ -644,7 +644,7 @@ func TestCachedAttachmentRepository_GetAllBelongsTo(t *testing.T) {
 					}
 				},
 				attachmentRepo: func(_ context.Context, _ model.ID, _, _ int, _ []*model.Attachment) repository.AttachmentRepository {
-					return new(mock.AttachmentRepository)
+					return new(mock.AttachmentRepositoryOld)
 				},
 			},
 			args: args{
@@ -695,7 +695,7 @@ func TestCachedAttachmentRepository_GetAllBelongsTo(t *testing.T) {
 					}
 				},
 				attachmentRepo: func(ctx context.Context, belongsTo model.ID, offset, limit int, _ []*model.Attachment) repository.AttachmentRepository {
-					repo := new(mock.AttachmentRepository)
+					repo := new(mock.AttachmentRepositoryOld)
 					repo.On("GetAllBelongsTo", ctx, belongsTo, offset, limit).Return(nil, repository.ErrNotFound)
 					return repo
 				},
@@ -735,7 +735,7 @@ func TestCachedAttachmentRepository_GetAllBelongsTo(t *testing.T) {
 					}
 				},
 				attachmentRepo: func(_ context.Context, _ model.ID, _, _ int, _ []*model.Attachment) repository.AttachmentRepository {
-					return new(mock.AttachmentRepository)
+					return new(mock.AttachmentRepositoryOld)
 				},
 			},
 			args: args{
@@ -778,7 +778,7 @@ func TestCachedAttachmentRepository_GetAllBelongsTo(t *testing.T) {
 					}
 				},
 				attachmentRepo: func(ctx context.Context, belongsTo model.ID, offset, limit int, attachments []*model.Attachment) repository.AttachmentRepository {
-					repo := new(mock.AttachmentRepository)
+					repo := new(mock.AttachmentRepositoryOld)
 					repo.On("GetAllBelongsTo", ctx, belongsTo, offset, limit).Return(attachments, nil)
 					return repo
 				},
@@ -865,7 +865,7 @@ func TestCachedAttachmentRepository_Update(t *testing.T) {
 					}
 				},
 				attachmentRepo: func(ctx context.Context, id model.ID, attachment *model.Attachment) repository.AttachmentRepository {
-					repo := new(mock.AttachmentRepository)
+					repo := new(mock.AttachmentRepositoryOld)
 					repo.On("Update", ctx, id, attachment.Name).Return(attachment, nil)
 					return repo
 				},
@@ -897,7 +897,7 @@ func TestCachedAttachmentRepository_Update(t *testing.T) {
 					}
 				},
 				attachmentRepo: func(ctx context.Context, id model.ID, _ *model.Attachment) repository.AttachmentRepository {
-					repo := new(mock.AttachmentRepository)
+					repo := new(mock.AttachmentRepositoryOld)
 					repo.On("Update", ctx, id, "name").Return(nil, repository.ErrNotFound)
 					return repo
 				},
@@ -943,7 +943,7 @@ func TestCachedAttachmentRepository_Update(t *testing.T) {
 					}
 				},
 				attachmentRepo: func(ctx context.Context, id model.ID, attachment *model.Attachment) repository.AttachmentRepository {
-					repo := new(mock.AttachmentRepository)
+					repo := new(mock.AttachmentRepositoryOld)
 					repo.On("Update", ctx, id, "name").Return(attachment, nil)
 					return repo
 				},
@@ -996,7 +996,7 @@ func TestCachedAttachmentRepository_Update(t *testing.T) {
 					}
 				},
 				attachmentRepo: func(ctx context.Context, id model.ID, attachment *model.Attachment) repository.AttachmentRepository {
-					repo := new(mock.AttachmentRepository)
+					repo := new(mock.AttachmentRepositoryOld)
 					repo.On("Update", ctx, id, "name").Return(attachment, nil)
 					return repo
 				},
@@ -1090,7 +1090,7 @@ func TestCachedAttachmentRepository_Delete(t *testing.T) {
 					}
 				},
 				attachmentRepo: func(ctx context.Context, id model.ID) repository.AttachmentRepository {
-					repo := new(mock.AttachmentRepository)
+					repo := new(mock.AttachmentRepositoryOld)
 					repo.On("Delete", ctx, id).Return(nil)
 					return repo
 				},
@@ -1149,7 +1149,7 @@ func TestCachedAttachmentRepository_Delete(t *testing.T) {
 					}
 				},
 				attachmentRepo: func(ctx context.Context, id model.ID) repository.AttachmentRepository {
-					repo := new(mock.AttachmentRepository)
+					repo := new(mock.AttachmentRepositoryOld)
 					repo.On("Delete", ctx, id).Return(repository.ErrAttachmentDelete)
 					return repo
 				},
@@ -1190,7 +1190,7 @@ func TestCachedAttachmentRepository_Delete(t *testing.T) {
 					}
 				},
 				attachmentRepo: func(ctx context.Context, id model.ID) repository.AttachmentRepository {
-					repo := new(mock.AttachmentRepository)
+					repo := new(mock.AttachmentRepositoryOld)
 					repo.On("Delete", ctx, id).Return(nil)
 					return repo
 				},
@@ -1238,7 +1238,7 @@ func TestCachedAttachmentRepository_Delete(t *testing.T) {
 					}
 				},
 				attachmentRepo: func(_ context.Context, _ model.ID) repository.AttachmentRepository {
-					return new(mock.AttachmentRepository)
+					return new(mock.AttachmentRepositoryOld)
 				},
 			},
 			args: args{
@@ -1290,7 +1290,7 @@ func TestCachedAttachmentRepository_Delete(t *testing.T) {
 					}
 				},
 				attachmentRepo: func(_ context.Context, _ model.ID) repository.AttachmentRepository {
-					return new(mock.AttachmentRepository)
+					return new(mock.AttachmentRepositoryOld)
 				},
 			},
 			args: args{
@@ -1348,7 +1348,7 @@ func TestCachedAttachmentRepository_Delete(t *testing.T) {
 					}
 				},
 				attachmentRepo: func(_ context.Context, _ model.ID) repository.AttachmentRepository {
-					return new(mock.AttachmentRepository)
+					return new(mock.AttachmentRepositoryOld)
 				},
 			},
 			args: args{
