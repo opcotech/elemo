@@ -1,0 +1,43 @@
+{
+  "name": "Elemo",
+  "image": "mcr.microsoft.com/devcontainers/base:bullseye",
+  "features": {
+    "ghcr.io/devcontainers/features/go:1": {
+      "version": "1.24",
+      "golangciLintVersion": "latest"
+    },
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "lts",
+      "pnpmVersion": "latest"
+    },
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {
+      "version": "latest"
+    },
+    "ghcr.io/eitsupi/devcontainer-features/jq-likes:2": {
+      "jqVersion": "latest",
+      "yqVersion": "latest",
+      "gojqVersion": "none",
+      "xqVersion": "none",
+      "jaqVersion": "none",
+      "allowJqRcVersion": false
+    }
+  },
+  "forwardPorts": [3000, 5432, 6379, 7474, 8025, 35478],
+  "portsAttributes": {
+    "3000": { "label": "Web App", "protocol": "http" },
+    "5432": { "label": "PostgreSQL" },
+    "6379": { "label": "Redis" },
+    "7474": { "label": "Neo4j", "protocol": "http" },
+    "8025": { "label": "SMTP", "protocol": "http" },
+    "35478": {
+      "label": "Elemo API",
+      "protocol": "http",
+      "visibility": "public"
+    }
+  },
+  "remoteEnv": {
+    "DOCKER_HOST": "unix:///var/run/docker.sock"
+  },
+  "postCreateCommand": "scripts/setup.sh",
+  "updateRemoteUserUID": true
+}

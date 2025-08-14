@@ -11,16 +11,28 @@ source "${ROOT_DIR}/scripts/common.sh";
 
 function setupOAuthClient() {
   log "setting up OAuth2 client"
-  ADD_CLIENT_OUT=$(docker compose \
+
+  local api_host
+  local webapp_host
+  
+  if [ -n "${CODESPACE_NAME:-}" ]; then
+    api_host="https://${CODESPACE_NAME}-35478.app.github.dev"
+    webapp_host="https://${CODESPACE_NAME}-3000.app.github.dev"
+  else
+    api_host="http://127.0.0.1:35478"
+    webapp_host="http://127.0.0.1:3000"
+  fi
+
+  local add_client_out=$(docker compose \
     -f "${DOCKER_DEPLOY_DIR}/docker-compose.yml" exec -T elemo-server bin/elemo auth add-client \
-        --callback-url http://127.0.0.1:3000/api/auth/callback/elemo --public 2>&1 | grep "client-id")
+        --callback-url "${webapp_host}/api/auth/callback/elemo" --public 2>&1 | grep "client-id")
 
   backupCopyFile "${WEB_DIR}/.env" "${WEB_DIR}/.env.example"
   backupCopyFile "${WEB_DIR}/.env.test.local" "${WEB_DIR}/.env.test.example"
 
-  SECRETS=$(echo "${ADD_CLIENT_OUT}" | jq -r '"VITE_AUTH_CLIENT_ID=" + ."client-id", "VITE_AUTH_CLIENT_SECRET=" + ."client-secret"')
-  echo "$SECRETS" >> "${WEB_DIR}/.env"
-  echo "$SECRETS" >> "${WEB_DIR}/.env.test.local"
+  local secrets=$(echo "${add_client_out}" | jq -r --arg api_host "$api_host" "\"VITE_API_BASE_URL=\" + \$api_host + \"\n\" + \"VITE_AUTH_CLIENT_ID=\" + .\"client-id\" + \"\n\" + \"VITE_AUTH_CLIENT_SECRET=\" + .\"client-secret\"")
+  echo "$secrets" >> "${WEB_DIR}/.env"
+  echo "$secrets" >> "${WEB_DIR}/.env.test.local"
 }
 
 function setupDemoData() {
@@ -50,7 +62,7 @@ checkInstalled "npm"
 generateConfigIfMissing
 
 # Start services
-docker compose -f "${DOCKER_DEPLOY_DIR}/docker-compose.yml" up --remove-orphans -d
+DOCKER_BUILDKIT=0 COMPOSE_DOCKER_CLI_BUILD=0 docker compose -f "${DOCKER_DEPLOY_DIR}/docker-compose.yml" up --remove-orphans -d --build
 waitAndPrint 5
 
 # Create a new OAuth2 client and configure the front-end

@@ -59,4 +59,4 @@ next-env.d.ts
 storybook-static
 
 # generated client
-!/src/lib/client/*.gen.ts
+!/src/lib/client/**/*.gen.ts

@@ -8,6 +8,8 @@ if [ "$CI" == "true" ]; then
   set -x
 fi
 
+CODESPACE_CORS="${CODESPACE_NAME:+- https://${CODESPACE_NAME}-3000.app.github.dev}"
+
 ROOT_DIR="$(realpath "$(dirname "${BASH_SOURCE[0]:-$0}")/..")"
 source "${ROOT_DIR}/scripts/common.sh";
 
@@ -77,6 +79,7 @@ server:
     allowed_origins:
       - http://localhost:3000
       - http://127.0.0.1:3000
+      ${CODESPACE_CORS}
     allowed_methods:
       - GET
       - POST
@@ -86,7 +89,7 @@ server:
       - OPTIONS
     allowed_headers:
       - "*"
-    allow_credentials: false
+    allow_credentials: true
     max_age: 86400
   session:
     cookie_name: elemo_session
