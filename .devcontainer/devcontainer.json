@@ -32,12 +32,8 @@
     "35478": {
       "label": "Elemo API",
       "protocol": "http",
-      "onAutoForward": "openBrowser",
       "visibility": "public"
     }
-  },
-  "otherPortsAttributes": {
-    "onAutoForward": "notify"
   },
   "remoteEnv": {
     "DOCKER_HOST": "unix:///var/run/docker.sock"
