@@ -7,6 +7,8 @@ import (
 )
 
 // NotificationRepository is a repository for managing notifications.
+//
+//go:generate mockgen -source=notification.go -destination=../testutil/mock/notification_repo_gen.go -package=mock -mock_names "NotificationRepository=NotificationRepository"
 type NotificationRepository interface {
 	Create(ctx context.Context, notification *model.Notification) error
 	Get(ctx context.Context, id, recipient model.ID) (*model.Notification, error)
