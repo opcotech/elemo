@@ -7,6 +7,8 @@ import (
 )
 
 // ProjectRepository is a repository for managing projects.
+//
+//go:generate mockgen -source=project.go -destination=../../testutil/mock/pg_gen.go -package=mock -mock_names "ProjectRepository=ProjectRepository"
 type ProjectRepository interface {
 	Create(ctx context.Context, namespaceID model.ID, project *model.Project) error
 	Get(ctx context.Context, id model.ID) (*model.Project, error)
