@@ -22,7 +22,7 @@ func TestCachedProjectRepository_Create(t *testing.T) {
 
 	type fields struct {
 		cacheRepo   func(ctrl *gomock.Controller, ctx context.Context, namespace model.ID, project *model.Project) *baseRepository
-		projectRepo func(ctx context.Context, namespace model.ID, project *model.Project) repository.ProjectRepository
+		projectRepo func(ctrl *gomock.Controller, ctx context.Context, namespace model.ID, project *model.Project) repository.ProjectRepository
 	}
 	type args struct {
 		ctx       context.Context
@@ -74,9 +74,9 @@ func TestCachedProjectRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				projectRepo: func(ctx context.Context, namespace model.ID, project *model.Project) repository.ProjectRepository {
-					repo := new(mock.ProjectRepository)
-					repo.On("Create", ctx, namespace, project).Return(nil)
+				projectRepo: func(ctrl *gomock.Controller, ctx context.Context, namespace model.ID, project *model.Project) repository.ProjectRepository {
+					repo := mock.NewProjectRepository(ctrl)
+					repo.EXPECT().Create(ctx, namespace, project).Return(nil)
 					return repo
 				},
 			},
@@ -135,9 +135,9 @@ func TestCachedProjectRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				projectRepo: func(ctx context.Context, namespace model.ID, project *model.Project) repository.ProjectRepository {
-					repo := new(mock.ProjectRepository)
-					repo.On("Create", ctx, namespace, project).Return(repository.ErrProjectCreate)
+				projectRepo: func(ctrl *gomock.Controller, ctx context.Context, namespace model.ID, project *model.Project) repository.ProjectRepository {
+					repo := mock.NewProjectRepository(ctrl)
+					repo.EXPECT().Create(ctx, namespace, project).Return(repository.ErrProjectCreate)
 					return repo
 				},
 			},
@@ -191,8 +191,8 @@ func TestCachedProjectRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				projectRepo: func(_ context.Context, _ model.ID, _ *model.Project) repository.ProjectRepository {
-					return new(mock.ProjectRepository)
+				projectRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ *model.Project) repository.ProjectRepository {
+					return mock.NewProjectRepository(ctrl)
 				},
 			},
 			args: args{
@@ -251,8 +251,8 @@ func TestCachedProjectRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				projectRepo: func(_ context.Context, _ model.ID, _ *model.Project) repository.ProjectRepository {
-					return new(mock.ProjectRepository)
+				projectRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ *model.Project) repository.ProjectRepository {
+					return mock.NewProjectRepository(ctrl)
 				},
 			},
 			args: args{
@@ -281,7 +281,7 @@ func TestCachedProjectRepository_Create(t *testing.T) {
 			defer ctrl.Finish()
 			r := &CachedProjectRepository{
 				cacheRepo:   tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.namespace, tt.args.project),
-				projectRepo: tt.fields.projectRepo(tt.args.ctx, tt.args.namespace, tt.args.project),
+				projectRepo: tt.fields.projectRepo(ctrl, tt.args.ctx, tt.args.namespace, tt.args.project),
 			}
 			err := r.Create(tt.args.ctx, tt.args.namespace, tt.args.project)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -292,7 +292,7 @@ func TestCachedProjectRepository_Create(t *testing.T) {
 func TestCachedProjectRepository_Get(t *testing.T) {
 	type fields struct {
 		cacheRepo   func(ctrl *gomock.Controller, ctx context.Context, id model.ID, project *model.Project) *baseRepository
-		projectRepo func(ctx context.Context, id model.ID, project *model.Project) repository.ProjectRepository
+		projectRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, project *model.Project) repository.ProjectRepository
 	}
 	type args struct {
 		ctx context.Context
@@ -338,9 +338,9 @@ func TestCachedProjectRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				projectRepo: func(ctx context.Context, id model.ID, project *model.Project) repository.ProjectRepository {
-					repo := new(mock.ProjectRepository)
-					repo.On("Get", ctx, id).Return(project, nil)
+				projectRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, project *model.Project) repository.ProjectRepository {
+					repo := mock.NewProjectRepository(ctrl)
+					repo.EXPECT().Get(ctx, id).Return(project, nil)
 					return repo
 				},
 			},
@@ -393,8 +393,8 @@ func TestCachedProjectRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				projectRepo: func(_ context.Context, _ model.ID, _ *model.Project) repository.ProjectRepository {
-					return new(mock.ProjectRepository)
+				projectRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ *model.Project) repository.ProjectRepository {
+					return mock.NewProjectRepository(ctrl)
 				},
 			},
 			args: args{
@@ -442,9 +442,9 @@ func TestCachedProjectRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				projectRepo: func(ctx context.Context, id model.ID, _ *model.Project) repository.ProjectRepository {
-					repo := new(mock.ProjectRepository)
-					repo.On("Get", ctx, id).Return(nil, repository.ErrNotFound)
+				projectRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *model.Project) repository.ProjectRepository {
+					repo := mock.NewProjectRepository(ctrl)
+					repo.EXPECT().Get(ctx, id).Return(nil, repository.ErrNotFound)
 					return repo
 				},
 			},
@@ -481,8 +481,8 @@ func TestCachedProjectRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				projectRepo: func(_ context.Context, _ model.ID, _ *model.Project) repository.ProjectRepository {
-					return new(mock.ProjectRepository)
+				projectRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ *model.Project) repository.ProjectRepository {
+					return mock.NewProjectRepository(ctrl)
 				},
 			},
 			args: args{
@@ -524,9 +524,9 @@ func TestCachedProjectRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				projectRepo: func(ctx context.Context, id model.ID, project *model.Project) repository.ProjectRepository {
-					repo := new(mock.ProjectRepository)
-					repo.On("Get", ctx, id).Return(project, nil)
+				projectRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, project *model.Project) repository.ProjectRepository {
+					repo := mock.NewProjectRepository(ctrl)
+					repo.EXPECT().Get(ctx, id).Return(project, nil)
 					return repo
 				},
 			},
@@ -550,7 +550,7 @@ func TestCachedProjectRepository_Get(t *testing.T) {
 
 			r := &CachedProjectRepository{
 				cacheRepo:   tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, want),
-				projectRepo: tt.fields.projectRepo(tt.args.ctx, tt.args.id, want),
+				projectRepo: tt.fields.projectRepo(ctrl, tt.args.ctx, tt.args.id, want),
 			}
 			got, err := r.Get(tt.args.ctx, tt.args.id)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -562,7 +562,7 @@ func TestCachedProjectRepository_Get(t *testing.T) {
 func TestCachedProjectRepository_GetByKey(t *testing.T) {
 	type fields struct {
 		cacheRepo   func(ctrl *gomock.Controller, ctx context.Context, key string, project *model.Project) *baseRepository
-		projectRepo func(ctx context.Context, key string, project *model.Project) repository.ProjectRepository
+		projectRepo func(ctrl *gomock.Controller, ctx context.Context, key string, project *model.Project) repository.ProjectRepository
 	}
 	type args struct {
 		ctx context.Context
@@ -608,9 +608,9 @@ func TestCachedProjectRepository_GetByKey(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				projectRepo: func(ctx context.Context, projectKey string, project *model.Project) repository.ProjectRepository {
-					repo := new(mock.ProjectRepository)
-					repo.On("GetByKey", ctx, projectKey).Return(project, nil)
+				projectRepo: func(ctrl *gomock.Controller, ctx context.Context, projectKey string, project *model.Project) repository.ProjectRepository {
+					repo := mock.NewProjectRepository(ctrl)
+					repo.EXPECT().GetByKey(ctx, projectKey).Return(project, nil)
 					return repo
 				},
 			},
@@ -663,8 +663,8 @@ func TestCachedProjectRepository_GetByKey(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				projectRepo: func(_ context.Context, _ string, _ *model.Project) repository.ProjectRepository {
-					return new(mock.ProjectRepository)
+				projectRepo: func(ctrl *gomock.Controller, _ context.Context, _ string, _ *model.Project) repository.ProjectRepository {
+					return mock.NewProjectRepository(ctrl)
 				},
 			},
 			args: args{
@@ -712,9 +712,9 @@ func TestCachedProjectRepository_GetByKey(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				projectRepo: func(ctx context.Context, projectKey string, _ *model.Project) repository.ProjectRepository {
-					repo := new(mock.ProjectRepository)
-					repo.On("GetByKey", ctx, projectKey).Return(nil, repository.ErrNotFound)
+				projectRepo: func(ctrl *gomock.Controller, ctx context.Context, projectKey string, _ *model.Project) repository.ProjectRepository {
+					repo := mock.NewProjectRepository(ctrl)
+					repo.EXPECT().GetByKey(ctx, projectKey).Return(nil, repository.ErrNotFound)
 					return repo
 				},
 			},
@@ -751,8 +751,8 @@ func TestCachedProjectRepository_GetByKey(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				projectRepo: func(_ context.Context, _ string, _ *model.Project) repository.ProjectRepository {
-					return new(mock.ProjectRepository)
+				projectRepo: func(ctrl *gomock.Controller, _ context.Context, _ string, _ *model.Project) repository.ProjectRepository {
+					return mock.NewProjectRepository(ctrl)
 				},
 			},
 			args: args{
@@ -794,9 +794,9 @@ func TestCachedProjectRepository_GetByKey(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				projectRepo: func(ctx context.Context, projectKey string, project *model.Project) repository.ProjectRepository {
-					repo := new(mock.ProjectRepository)
-					repo.On("GetByKey", ctx, projectKey).Return(project, nil)
+				projectRepo: func(ctrl *gomock.Controller, ctx context.Context, projectKey string, project *model.Project) repository.ProjectRepository {
+					repo := mock.NewProjectRepository(ctrl)
+					repo.EXPECT().GetByKey(ctx, projectKey).Return(project, nil)
 					return repo
 				},
 			},
@@ -820,7 +820,7 @@ func TestCachedProjectRepository_GetByKey(t *testing.T) {
 
 			r := &CachedProjectRepository{
 				cacheRepo:   tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.key, want),
-				projectRepo: tt.fields.projectRepo(tt.args.ctx, tt.args.key, want),
+				projectRepo: tt.fields.projectRepo(ctrl, tt.args.ctx, tt.args.key, want),
 			}
 			got, err := r.GetByKey(tt.args.ctx, tt.args.key)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -832,7 +832,7 @@ func TestCachedProjectRepository_GetByKey(t *testing.T) {
 func TestCachedProjectRepository_GetAll(t *testing.T) {
 	type fields struct {
 		cacheRepo   func(ctrl *gomock.Controller, ctx context.Context, namespace model.ID, offset, limit int, projects []*model.Project) *baseRepository
-		projectRepo func(ctx context.Context, namespace model.ID, offset, limit int, projects []*model.Project) repository.ProjectRepository
+		projectRepo func(ctrl *gomock.Controller, ctx context.Context, namespace model.ID, offset, limit int, projects []*model.Project) repository.ProjectRepository
 	}
 	type args struct {
 		ctx       context.Context
@@ -880,9 +880,9 @@ func TestCachedProjectRepository_GetAll(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				projectRepo: func(ctx context.Context, namespace model.ID, offset, limit int, projects []*model.Project) repository.ProjectRepository {
-					repo := new(mock.ProjectRepository)
-					repo.On("GetAll", ctx, namespace, offset, limit).Return(projects, nil)
+				projectRepo: func(ctrl *gomock.Controller, ctx context.Context, namespace model.ID, offset, limit int, projects []*model.Project) repository.ProjectRepository {
+					repo := mock.NewProjectRepository(ctrl)
+					repo.EXPECT().GetAll(ctx, namespace, offset, limit).Return(projects, nil)
 					return repo
 				},
 			},
@@ -947,8 +947,8 @@ func TestCachedProjectRepository_GetAll(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				projectRepo: func(_ context.Context, _ model.ID, _, _ int, _ []*model.Project) repository.ProjectRepository {
-					return new(mock.ProjectRepository)
+				projectRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _, _ int, _ []*model.Project) repository.ProjectRepository {
+					return mock.NewProjectRepository(ctrl)
 				},
 			},
 			args: args{
@@ -1008,9 +1008,9 @@ func TestCachedProjectRepository_GetAll(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				projectRepo: func(ctx context.Context, namespace model.ID, offset, limit int, _ []*model.Project) repository.ProjectRepository {
-					repo := new(mock.ProjectRepository)
-					repo.On("GetAll", ctx, namespace, offset, limit).Return(nil, repository.ErrNotFound)
+				projectRepo: func(ctrl *gomock.Controller, ctx context.Context, namespace model.ID, offset, limit int, _ []*model.Project) repository.ProjectRepository {
+					repo := mock.NewProjectRepository(ctrl)
+					repo.EXPECT().GetAll(ctx, namespace, offset, limit).Return(nil, repository.ErrNotFound)
 					return repo
 				},
 			},
@@ -1048,8 +1048,8 @@ func TestCachedProjectRepository_GetAll(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				projectRepo: func(_ context.Context, _ model.ID, _, _ int, _ []*model.Project) repository.ProjectRepository {
-					return new(mock.ProjectRepository)
+				projectRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _, _ int, _ []*model.Project) repository.ProjectRepository {
+					return mock.NewProjectRepository(ctrl)
 				},
 			},
 			args: args{
@@ -1091,9 +1091,9 @@ func TestCachedProjectRepository_GetAll(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				projectRepo: func(ctx context.Context, namespace model.ID, offset, limit int, projects []*model.Project) repository.ProjectRepository {
-					repo := new(mock.ProjectRepository)
-					repo.On("GetAll", ctx, namespace, offset, limit).Return(projects, nil)
+				projectRepo: func(ctrl *gomock.Controller, ctx context.Context, namespace model.ID, offset, limit int, projects []*model.Project) repository.ProjectRepository {
+					repo := mock.NewProjectRepository(ctrl)
+					repo.EXPECT().GetAll(ctx, namespace, offset, limit).Return(projects, nil)
 					return repo
 				},
 			},
@@ -1112,7 +1112,7 @@ func TestCachedProjectRepository_GetAll(t *testing.T) {
 			defer ctrl.Finish()
 			r := &CachedProjectRepository{
 				cacheRepo:   tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.namespace, tt.args.offset, tt.args.limit, tt.want),
-				projectRepo: tt.fields.projectRepo(tt.args.ctx, tt.args.namespace, tt.args.offset, tt.args.limit, tt.want),
+				projectRepo: tt.fields.projectRepo(ctrl, tt.args.ctx, tt.args.namespace, tt.args.offset, tt.args.limit, tt.want),
 			}
 			got, err := r.GetAll(tt.args.ctx, tt.args.namespace, tt.args.offset, tt.args.limit)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -1124,7 +1124,7 @@ func TestCachedProjectRepository_GetAll(t *testing.T) {
 func TestCachedProjectRepository_Update(t *testing.T) {
 	type fields struct {
 		cacheRepo   func(ctrl *gomock.Controller, ctx context.Context, id model.ID, project *model.Project) *baseRepository
-		projectRepo func(ctx context.Context, id model.ID, patch map[string]any, project *model.Project) repository.ProjectRepository
+		projectRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, project *model.Project) repository.ProjectRepository
 	}
 	type args struct {
 		ctx   context.Context
@@ -1184,9 +1184,9 @@ func TestCachedProjectRepository_Update(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				projectRepo: func(ctx context.Context, id model.ID, patch map[string]any, project *model.Project) repository.ProjectRepository {
-					repo := new(mock.ProjectRepository)
-					repo.On("Update", ctx, id, patch).Return(project, nil)
+				projectRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, project *model.Project) repository.ProjectRepository {
+					repo := mock.NewProjectRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, patch).Return(project, nil)
 					return repo
 				},
 			},
@@ -1226,9 +1226,9 @@ func TestCachedProjectRepository_Update(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				projectRepo: func(ctx context.Context, id model.ID, patch map[string]any, _ *model.Project) repository.ProjectRepository {
-					repo := new(mock.ProjectRepository)
-					repo.On("Update", ctx, id, patch).Return(nil, repository.ErrNotFound)
+				projectRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, _ *model.Project) repository.ProjectRepository {
+					repo := mock.NewProjectRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, patch).Return(nil, repository.ErrNotFound)
 					return repo
 				},
 			},
@@ -1286,9 +1286,9 @@ func TestCachedProjectRepository_Update(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				projectRepo: func(ctx context.Context, id model.ID, patch map[string]any, project *model.Project) repository.ProjectRepository {
-					repo := new(mock.ProjectRepository)
-					repo.On("Update", ctx, id, patch).Return(project, nil)
+				projectRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, project *model.Project) repository.ProjectRepository {
+					repo := mock.NewProjectRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, patch).Return(project, nil)
 					return repo
 				},
 			},
@@ -1359,9 +1359,9 @@ func TestCachedProjectRepository_Update(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				projectRepo: func(ctx context.Context, id model.ID, patch map[string]any, project *model.Project) repository.ProjectRepository {
-					repo := new(mock.ProjectRepository)
-					repo.On("Update", ctx, id, patch).Return(project, nil)
+				projectRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, project *model.Project) repository.ProjectRepository {
+					repo := mock.NewProjectRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, patch).Return(project, nil)
 					return repo
 				},
 			},
@@ -1426,9 +1426,9 @@ func TestCachedProjectRepository_Update(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				projectRepo: func(ctx context.Context, id model.ID, patch map[string]any, project *model.Project) repository.ProjectRepository {
-					repo := new(mock.ProjectRepository)
-					repo.On("Update", ctx, id, patch).Return(project, nil)
+				projectRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, project *model.Project) repository.ProjectRepository {
+					repo := mock.NewProjectRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, patch).Return(project, nil)
 					return repo
 				},
 			},
@@ -1463,7 +1463,7 @@ func TestCachedProjectRepository_Update(t *testing.T) {
 
 			r := &CachedProjectRepository{
 				cacheRepo:   tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, tt.want),
-				projectRepo: tt.fields.projectRepo(tt.args.ctx, tt.args.id, tt.args.patch, tt.want),
+				projectRepo: tt.fields.projectRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.patch, tt.want),
 			}
 			got, err := r.Update(tt.args.ctx, tt.args.id, tt.args.patch)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -1477,7 +1477,7 @@ func TestCachedProjectRepository_Update(t *testing.T) {
 func TestCachedProjectRepository_Delete(t *testing.T) {
 	type fields struct {
 		cacheRepo   func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *baseRepository
-		projectRepo func(ctx context.Context, id model.ID) repository.ProjectRepository
+		projectRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID) repository.ProjectRepository
 	}
 	type args struct {
 		ctx context.Context
@@ -1537,9 +1537,9 @@ func TestCachedProjectRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				projectRepo: func(ctx context.Context, id model.ID) repository.ProjectRepository {
-					repo := new(mock.ProjectRepository)
-					repo.On("Delete", ctx, id).Return(nil)
+				projectRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) repository.ProjectRepository {
+					repo := mock.NewProjectRepository(ctrl)
+					repo.EXPECT().Delete(ctx, id).Return(nil)
 					return repo
 				},
 			},
@@ -1596,9 +1596,9 @@ func TestCachedProjectRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				projectRepo: func(ctx context.Context, id model.ID) repository.ProjectRepository {
-					repo := new(mock.ProjectRepository)
-					repo.On("Delete", ctx, id).Return(repository.ErrProjectDelete)
+				projectRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) repository.ProjectRepository {
+					repo := mock.NewProjectRepository(ctrl)
+					repo.EXPECT().Delete(ctx, id).Return(repository.ErrProjectDelete)
 					return repo
 				},
 			},
@@ -1637,9 +1637,8 @@ func TestCachedProjectRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				projectRepo: func(ctx context.Context, id model.ID) repository.ProjectRepository {
-					repo := new(mock.ProjectRepository)
-					repo.On("Delete", ctx, id).Return(nil)
+				projectRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID) repository.ProjectRepository {
+					repo := mock.NewProjectRepository(ctrl)
 					return repo
 				},
 			},
@@ -1691,8 +1690,8 @@ func TestCachedProjectRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				projectRepo: func(_ context.Context, _ model.ID) repository.ProjectRepository {
-					return new(mock.ProjectRepository)
+				projectRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID) repository.ProjectRepository {
+					return mock.NewProjectRepository(ctrl)
 				},
 			},
 			args: args{
@@ -1737,8 +1736,8 @@ func TestCachedProjectRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				projectRepo: func(_ context.Context, _ model.ID) repository.ProjectRepository {
-					return new(mock.ProjectRepository)
+				projectRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID) repository.ProjectRepository {
+					return mock.NewProjectRepository(ctrl)
 				},
 			},
 			args: args{
@@ -1795,8 +1794,8 @@ func TestCachedProjectRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				projectRepo: func(_ context.Context, _ model.ID) repository.ProjectRepository {
-					return new(mock.ProjectRepository)
+				projectRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID) repository.ProjectRepository {
+					return mock.NewProjectRepository(ctrl)
 				},
 			},
 			args: args{
@@ -1814,7 +1813,7 @@ func TestCachedProjectRepository_Delete(t *testing.T) {
 			defer ctrl.Finish()
 			r := &CachedProjectRepository{
 				cacheRepo:   tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id),
-				projectRepo: tt.fields.projectRepo(tt.args.ctx, tt.args.id),
+				projectRepo: tt.fields.projectRepo(ctrl, tt.args.ctx, tt.args.id),
 			}
 			err := r.Delete(tt.args.ctx, tt.args.id)
 			require.ErrorIs(t, err, tt.wantErr)
