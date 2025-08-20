@@ -95,7 +95,7 @@ func TestNotificationRepository_Create(t *testing.T) {
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
 					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "repository.pg.NotificationRepositoryOld/Create", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.pg.NotificationRepository/Create", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					mockDBPool := mock.NewPGPool(ctrl)
 					mockDB, err := NewDatabase(WithDatabasePool(mockDBPool))
@@ -132,7 +132,7 @@ func TestNotificationRepository_Create(t *testing.T) {
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
 					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "repository.pg.NotificationRepositoryOld/Create", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.pg.NotificationRepository/Create", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					mockDBPool := mock.NewPGPool(ctrl)
 					mockDB, err := NewDatabase(WithDatabasePool(mockDBPool))
@@ -170,7 +170,7 @@ func TestNotificationRepository_Create(t *testing.T) {
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
 					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "repository.pg.NotificationRepositoryOld/Create", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.pg.NotificationRepository/Create", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					mockDBPool := mock.NewPGPool(nil)
 					mockDB, err := NewDatabase(WithDatabasePool(mockDBPool))
@@ -237,7 +237,7 @@ func TestNotificationRepository_Get(t *testing.T) {
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
 					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "repository.pg.NotificationRepositoryOld/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.pg.NotificationRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					mockDBPool := mock.NewPGPool(ctrl)
 					mockDB, err := NewDatabase(WithDatabasePool(mockDBPool))
@@ -290,7 +290,7 @@ func TestNotificationRepository_Get(t *testing.T) {
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
 					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "repository.pg.NotificationRepositoryOld/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.pg.NotificationRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					mockDBPool := mock.NewPGPool(ctrl)
 					mockDB, err := NewDatabase(WithDatabasePool(mockDBPool))
@@ -328,7 +328,7 @@ func TestNotificationRepository_Get(t *testing.T) {
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
 					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "repository.pg.NotificationRepositoryOld/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.pg.NotificationRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					mockDBPool := mock.NewPGPool(ctrl)
 					mockDB, err := NewDatabase(WithDatabasePool(mockDBPool))
@@ -366,7 +366,7 @@ func TestNotificationRepository_Get(t *testing.T) {
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
 					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "repository.pg.NotificationRepositoryOld/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.pg.NotificationRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					mockDBPool := mock.NewPGPool(nil)
 					mockDB, err := NewDatabase(WithDatabasePool(mockDBPool))
@@ -394,7 +394,7 @@ func TestNotificationRepository_Get(t *testing.T) {
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
 					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "repository.pg.NotificationRepositoryOld/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.pg.NotificationRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					mockDBPool := mock.NewPGPool(nil)
 					mockDB, err := NewDatabase(WithDatabasePool(mockDBPool))
@@ -458,7 +458,7 @@ func TestNotificationRepository_GetAllByRecipient(t *testing.T) {
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
 					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "repository.pg.NotificationRepositoryOld/GetAllByRecipient", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.pg.NotificationRepository/GetAllByRecipient", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					mockDBPool := mock.NewPGPool(ctrl)
 					mockDB, err := NewDatabase(WithDatabasePool(mockDBPool))
@@ -532,7 +532,7 @@ func TestNotificationRepository_GetAllByRecipient(t *testing.T) {
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
 					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "repository.pg.NotificationRepositoryOld/GetAllByRecipient", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.pg.NotificationRepository/GetAllByRecipient", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					mockDBPool := mock.NewPGPool(ctrl)
 					mockDB, err := NewDatabase(WithDatabasePool(mockDBPool))
@@ -566,7 +566,7 @@ func TestNotificationRepository_GetAllByRecipient(t *testing.T) {
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
 					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "repository.pg.NotificationRepositoryOld/GetAllByRecipient", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.pg.NotificationRepository/GetAllByRecipient", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					mockDB, err := NewDatabase(WithDatabasePool(mock.NewPGPool(nil)))
 					require.NoError(t, err)
@@ -594,7 +594,7 @@ func TestNotificationRepository_GetAllByRecipient(t *testing.T) {
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
 					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "repository.pg.NotificationRepositoryOld/GetAllByRecipient", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.pg.NotificationRepository/GetAllByRecipient", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					mockDBPool := mock.NewPGPool(ctrl)
 					mockDB, err := NewDatabase(WithDatabasePool(mockDBPool))
@@ -672,7 +672,7 @@ func TestNotificationRepository_Update(t *testing.T) {
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
 					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "repository.pg.NotificationRepositoryOld/Update", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.pg.NotificationRepository/Update", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					mockDBPool := mock.NewPGPool(ctrl)
 					mockDB, err := NewDatabase(WithDatabasePool(mockDBPool))
@@ -725,7 +725,7 @@ func TestNotificationRepository_Update(t *testing.T) {
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
 					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "repository.pg.NotificationRepositoryOld/Update", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.pg.NotificationRepository/Update", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					mockDBPool := mock.NewPGPool(ctrl)
 					mockDB, err := NewDatabase(WithDatabasePool(mockDBPool))
@@ -763,7 +763,7 @@ func TestNotificationRepository_Update(t *testing.T) {
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
 					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "repository.pg.NotificationRepositoryOld/Update", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.pg.NotificationRepository/Update", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					mockDBPool := mock.NewPGPool(ctrl)
 					mockDB, err := NewDatabase(WithDatabasePool(mockDBPool))
@@ -801,7 +801,7 @@ func TestNotificationRepository_Update(t *testing.T) {
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
 					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "repository.pg.NotificationRepositoryOld/Update", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.pg.NotificationRepository/Update", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					mockDBPool := mock.NewPGPool(nil)
 					mockDB, err := NewDatabase(WithDatabasePool(mockDBPool))
@@ -829,7 +829,7 @@ func TestNotificationRepository_Update(t *testing.T) {
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
 					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "repository.pg.NotificationRepositoryOld/Update", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.pg.NotificationRepository/Update", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					mockDBPool := mock.NewPGPool(nil)
 					mockDB, err := NewDatabase(WithDatabasePool(mockDBPool))
@@ -889,7 +889,7 @@ func TestNotificationRepository_Delete(t *testing.T) {
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
 					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "repository.pg.NotificationRepositoryOld/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.pg.NotificationRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					mockDBPool := mock.NewPGPool(ctrl)
 					mockDB, err := NewDatabase(WithDatabasePool(mockDBPool))
@@ -921,7 +921,7 @@ func TestNotificationRepository_Delete(t *testing.T) {
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
 					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "repository.pg.NotificationRepositoryOld/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.pg.NotificationRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					mockDBPool := mock.NewPGPool(ctrl)
 					mockDB, err := NewDatabase(WithDatabasePool(mockDBPool))
@@ -954,7 +954,7 @@ func TestNotificationRepository_Delete(t *testing.T) {
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
 					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "repository.pg.NotificationRepositoryOld/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.pg.NotificationRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					mockDBPool := mock.NewPGPool(ctrl)
 					mockDB, err := NewDatabase(WithDatabasePool(mockDBPool))
@@ -987,7 +987,7 @@ func TestNotificationRepository_Delete(t *testing.T) {
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
 					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "repository.pg.NotificationRepositoryOld/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.pg.NotificationRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					mockDBPool := mock.NewPGPool(nil)
 					mockDB, err := NewDatabase(WithDatabasePool(mockDBPool))
@@ -1015,7 +1015,7 @@ func TestNotificationRepository_Delete(t *testing.T) {
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
 					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "repository.pg.NotificationRepositoryOld/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer.On("Start", ctx, "repository.pg.NotificationRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
 
 					mockDBPool := mock.NewPGPool(nil)
 					mockDB, err := NewDatabase(WithDatabasePool(mockDBPool))
