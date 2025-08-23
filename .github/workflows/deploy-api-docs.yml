@@ -1,0 +1,67 @@
+name: Deploy API Docs to Vercel
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'api/**'
+      - 'redocly.yaml'
+      - '.github/workflows/deploy-docs.yml'
+
+jobs:
+  check-docs-changes:
+    name: Check API Docs Changes
+    runs-on: ubuntu-latest
+    outputs:
+      should-deploy: ${{ steps.check-changes.outputs.should-deploy }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      
+      - name: Check if API docs have changes
+        id: check-changes
+        run: |
+          if git diff --name-only HEAD~1 HEAD | grep -q -E "^(api/|redocly\.yaml)"; then
+            echo "should-deploy=true" >> $GITHUB_OUTPUT
+            echo "API documentation has changes, will deploy"
+          else
+            echo "should-deploy=false" >> $GITHUB_OUTPUT
+            echo "No changes in API documentation, skipping deployment"
+          fi
+
+  deploy-docs:
+    name: Deploy API Docs to Vercel
+    runs-on: ubuntu-latest
+    needs: check-docs-changes
+    if: needs.check-docs-changes.outputs.should-deploy == 'true'
+    environment:
+      name: production
+      url: ${{ steps.deploy.outputs.url }}
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+          cache: 'npm'
+      
+      - name: Install Redocly CLI
+        run: npm install -g @redocly/cli
+      
+      - name: Build API Documentation
+        run: |
+          redocly build-docs api/openapi/openapi.yaml --output api/openapi/index.html
+      
+      - name: Deploy API Docs to Vercel
+        id: deploy
+        uses: amondnet/vercel-action@v25
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_DOCS_PROJECT_ID }}
+          working-directory: ./api/openapi
+          vercel-args: '--prod'
