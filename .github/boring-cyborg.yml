@@ -1,24 +1,24 @@
 labelPRBasedOnFilePath:
-  api:
+  component: api:
     - api/**/*
     - internal/transport/http/**/*
     - web/packages/elemo-client/**/*
-  auth:
+  component: auth:
     - internal/transport/http/auth.go
-  build:
+  component: build:
     - .github/**/*
     - build/**/*
     - Makefile
-  configs:
+  component: configs:
     - configs/**/*
     - internal/config/**/*
-  deployments:
+  component: deployments:
     - deploy/**/*
-  front-end:
+  component: front-end:
     - web/**/*
-  legal:
+  type: legal:
     - LICENSE
-  license:
+  component: license:
     - internal/license/**/*
     - tool/key-generator/**/*
     - tool/license-generator/**/*
@@ -26,15 +26,18 @@ labelPRBasedOnFilePath:
 
 firstPRWelcomeComment: |
   Thanks for opening this pull request! 🥳
-
-  Please check out our [contributing guide](https://github.com/opcotech/elemo/blob/main/CONTRIBUTING.md). If you have any questions, please ask in the #development channel in our [Slack](https://join.slack.com/t/elemo-workspace/shared_invite/zt-3a6w9jb46-4uGjtkcqBN9BqBD50xl8eA) or [Discord](https://discord.gg/sx9FPyXAdP).
-
+  Please check out our [contributing guide](https://github.com/opcotech/elemo/blob/main/CONTRIBUTING.md).
+  If you have any questions, please ask in the #development channel in our
+  [Slack](https://join.slack.com/t/elemo-workspace/shared_invite/zt-3a6w9jb46-4uGjtkcqBN9BqBD50xl8eA) or
+  [Discord](https://discord.gg/sx9FPyXAdP).
   Happy coding! 🚀
 
 firstPRMergeComment: |
   Awesome work, congrats on your first merged pull request! 🎉 🥳
-
-  Don't forget to join our [Slack](https://join.slack.com/t/elemo-workspace/shared_invite/zt-3a6w9jb46-4uGjtkcqBN9BqBD50xl8eA) or [Discord](https://discord.gg/sx9FPyXAdP) to stay in the loop!
+  Don't forget to join our
+  [Slack](https://join.slack.com/t/elemo-workspace/shared_invite/zt-3a6w9jb46-4uGjtkcqBN9BqBD50xl8eA) or
+  [Discord](https://discord.gg/sx9FPyXAdP) to stay in the loop!
 
 firstIssueWelcomeComment: |
   Thanks for opening your first issue here! 🎉 We will triage it soon.
+
