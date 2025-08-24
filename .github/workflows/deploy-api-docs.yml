@@ -48,18 +48,14 @@ jobs:
       
       - name: Install Redocly CLI
         run: npm install -g @redocly/cli
-      
-      - name: Build API Documentation
-        run: |
-          redocly build-docs api/openapi/openapi.yaml --output api/openapi/index.html
-      
+
       - name: Install Vercel CLI
         run: npm install -g vercel@latest
       
       - name: Deploy API Docs to Vercel
         id: deploy
+        working-directory: ./api/openapi
         run: |
-          cd api/openapi
           vercel link --token ${{ secrets.VERCEL_TOKEN }} --scope ${{ secrets.VERCEL_ORG_ID }} --project ${{ secrets.VERCEL_DOCS_PROJECT_ID }} --yes
           vercel --token ${{ secrets.VERCEL_TOKEN }} --prod --yes
         env:

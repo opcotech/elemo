@@ -44,27 +44,14 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20.x"
-      
-      - name: Install pnpm
-        run: npm install -g pnpm
-      
-      - name: Install dependencies
-        run: |
-          cd website
-          pnpm install --frozen-lockfile
-      
-      - name: Build Astro website
-        run: |
-          cd website
-          pnpm run build
-      
+
       - name: Install Vercel CLI
         run: npm install -g vercel@latest
       
       - name: Deploy Website to Vercel
         id: deploy
+        working-directory: ./website
         run: |
-          cd website
           vercel link --token ${{ secrets.VERCEL_TOKEN }} --scope ${{ secrets.VERCEL_ORG_ID }} --project ${{ secrets.VERCEL_WEBSITE_PROJECT_ID }} --yes
           vercel --token ${{ secrets.VERCEL_TOKEN }} --prod --yes
         env:
