@@ -1,29 +1,28 @@
 labelPRBasedOnFilePath:
-  component: api:
+  "component: api":
     - api/**/*
     - internal/transport/http/**/*
     - web/packages/elemo-client/**/*
-  component: auth:
+  "component: auth":
     - internal/transport/http/auth.go
-  component: build:
+  "component: build":
     - .github/**/*
     - build/**/*
     - Makefile
-  component: configs:
+  "component: configs":
     - configs/**/*
     - internal/config/**/*
-  component: deployments:
+  "component: deployments":
     - deploy/**/*
-  component: front-end:
+  "component: front-end":
     - web/**/*
-  type: legal:
+  "type: legal":
     - LICENSE
-  component: license:
+  "component: license":
     - internal/license/**/*
     - tool/key-generator/**/*
     - tool/license-generator/**/*
     - tool/license-validator/**/*
-
 firstPRWelcomeComment: |
   Thanks for opening this pull request! 🥳
   Please check out our [contributing guide](https://github.com/opcotech/elemo/blob/main/CONTRIBUTING.md).
@@ -31,13 +30,11 @@ firstPRWelcomeComment: |
   [Slack](https://join.slack.com/t/elemo-workspace/shared_invite/zt-3a6w9jb46-4uGjtkcqBN9BqBD50xl8eA) or
   [Discord](https://discord.gg/sx9FPyXAdP).
   Happy coding! 🚀
-
 firstPRMergeComment: |
   Awesome work, congrats on your first merged pull request! 🎉 🥳
   Don't forget to join our
   [Slack](https://join.slack.com/t/elemo-workspace/shared_invite/zt-3a6w9jb46-4uGjtkcqBN9BqBD50xl8eA) or
   [Discord](https://discord.gg/sx9FPyXAdP) to stay in the loop!
-
 firstIssueWelcomeComment: |
   Thanks for opening your first issue here! 🎉 We will triage it soon.
 
