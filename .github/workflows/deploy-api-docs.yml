@@ -48,7 +48,7 @@ jobs:
       
       - name: Install Redocly CLI
         run: npm install -g @redocly/cli
-      
+
       - name: Install Vercel CLI
         run: npm install -g vercel@latest
       
