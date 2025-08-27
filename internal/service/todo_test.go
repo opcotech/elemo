@@ -315,7 +315,7 @@ func TestTodoService_Create(t *testing.T) {
 				todo: testModel.NewTodo(userID, peerID),
 			},
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, todo *model.Todo) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ *model.Todo) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -348,7 +348,7 @@ func TestTodoService_Create(t *testing.T) {
 				todo: testModel.NewTodo(userID, peerID),
 			},
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, todo *model.Todo) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ *model.Todo) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
