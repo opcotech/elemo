@@ -6,7 +6,7 @@ import (
 	"github.com/opcotech/elemo/internal/model"
 )
 
-// IssueRepository is a repository for managing user issues.]
+// IssueRepository is a repository for managing user issues.
 //
 //go:generate mockgen -source=issue.go -destination=../testutil/mock/issue_repo_gen.go -package=mock -mock_names "IssueRepository=IssueRepository"
 type IssueRepository interface {
