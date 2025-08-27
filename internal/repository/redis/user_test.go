@@ -20,7 +20,7 @@ import (
 func TestCachedUserRepository_Create(t *testing.T) {
 	type fields struct {
 		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, user *model.User) *baseRepository
-		userRepo  func(ctx context.Context, user *model.User) repository.UserRepository
+		userRepo  func(ctrl *gomock.Controller, ctx context.Context, user *model.User) repository.UserRepository
 	}
 	type args struct {
 		ctx  context.Context
@@ -77,9 +77,9 @@ func TestCachedUserRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				userRepo: func(ctx context.Context, user *model.User) repository.UserRepository {
-					repo := new(mock.UserRepository)
-					repo.On("Create", ctx, user).Return(nil)
+				userRepo: func(ctrl *gomock.Controller, ctx context.Context, user *model.User) repository.UserRepository {
+					repo := mock.NewUserRepository(ctrl)
+					repo.EXPECT().Create(ctx, user).Return(nil)
 					return repo
 				},
 			},
@@ -150,9 +150,9 @@ func TestCachedUserRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				userRepo: func(ctx context.Context, user *model.User) repository.UserRepository {
-					repo := new(mock.UserRepository)
-					repo.On("Create", ctx, user).Return(repository.ErrUserCreate)
+				userRepo: func(ctrl *gomock.Controller, ctx context.Context, user *model.User) repository.UserRepository {
+					repo := mock.NewUserRepository(ctrl)
+					repo.EXPECT().Create(ctx, user).Return(repository.ErrUserCreate)
 					return repo
 				},
 			},
@@ -212,8 +212,8 @@ func TestCachedUserRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				userRepo: func(_ context.Context, _ *model.User) repository.UserRepository {
-					return new(mock.UserRepository)
+				userRepo: func(ctrl *gomock.Controller, _ context.Context, _ *model.User) repository.UserRepository {
+					return mock.NewUserRepository(ctrl)
 				},
 			},
 			args: args{
@@ -278,8 +278,8 @@ func TestCachedUserRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				userRepo: func(_ context.Context, _ *model.User) repository.UserRepository {
-					return new(mock.UserRepository)
+				userRepo: func(ctrl *gomock.Controller, _ context.Context, _ *model.User) repository.UserRepository {
+					return mock.NewUserRepository(ctrl)
 				},
 			},
 			args: args{
@@ -350,8 +350,8 @@ func TestCachedUserRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				userRepo: func(_ context.Context, _ *model.User) repository.UserRepository {
-					return new(mock.UserRepository)
+				userRepo: func(ctrl *gomock.Controller, _ context.Context, _ *model.User) repository.UserRepository {
+					return mock.NewUserRepository(ctrl)
 				},
 			},
 			args: args{
@@ -386,7 +386,7 @@ func TestCachedUserRepository_Create(t *testing.T) {
 			defer ctrl.Finish()
 			r := &CachedUserRepository{
 				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.user),
-				userRepo:  tt.fields.userRepo(tt.args.ctx, tt.args.user),
+				userRepo:  tt.fields.userRepo(ctrl, tt.args.ctx, tt.args.user),
 			}
 			err := r.Create(tt.args.ctx, tt.args.user)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -397,7 +397,7 @@ func TestCachedUserRepository_Create(t *testing.T) {
 func TestCachedUserRepository_Get(t *testing.T) {
 	type fields struct {
 		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, user *model.User) *baseRepository
-		userRepo  func(ctx context.Context, id model.ID, user *model.User) repository.UserRepository
+		userRepo  func(ctrl *gomock.Controller, ctx context.Context, id model.ID, user *model.User) repository.UserRepository
 	}
 	type args struct {
 		ctx context.Context
@@ -443,9 +443,9 @@ func TestCachedUserRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				userRepo: func(ctx context.Context, id model.ID, user *model.User) repository.UserRepository {
-					repo := new(mock.UserRepository)
-					repo.On("Get", ctx, id).Return(user, nil)
+				userRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, user *model.User) repository.UserRepository {
+					repo := mock.NewUserRepository(ctrl)
+					repo.EXPECT().Get(ctx, id).Return(user, nil)
 					return repo
 				},
 			},
@@ -505,8 +505,8 @@ func TestCachedUserRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				userRepo: func(_ context.Context, _ model.ID, _ *model.User) repository.UserRepository {
-					return new(mock.UserRepository)
+				userRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ *model.User) repository.UserRepository {
+					return mock.NewUserRepository(ctrl)
 				},
 			},
 			args: args{
@@ -561,9 +561,9 @@ func TestCachedUserRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				userRepo: func(ctx context.Context, id model.ID, _ *model.User) repository.UserRepository {
-					repo := new(mock.UserRepository)
-					repo.On("Get", ctx, id).Return(nil, repository.ErrNotFound)
+				userRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *model.User) repository.UserRepository {
+					repo := mock.NewUserRepository(ctrl)
+					repo.EXPECT().Get(ctx, id).Return(nil, repository.ErrNotFound)
 					return repo
 				},
 			},
@@ -600,8 +600,8 @@ func TestCachedUserRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				userRepo: func(_ context.Context, _ model.ID, _ *model.User) repository.UserRepository {
-					return new(mock.UserRepository)
+				userRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ *model.User) repository.UserRepository {
+					return mock.NewUserRepository(ctrl)
 				},
 			},
 			args: args{
@@ -643,9 +643,9 @@ func TestCachedUserRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				userRepo: func(ctx context.Context, id model.ID, user *model.User) repository.UserRepository {
-					repo := new(mock.UserRepository)
-					repo.On("Get", ctx, id).Return(user, nil)
+				userRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, user *model.User) repository.UserRepository {
+					repo := mock.NewUserRepository(ctrl)
+					repo.EXPECT().Get(ctx, id).Return(user, nil)
 					return repo
 				},
 			},
@@ -669,7 +669,7 @@ func TestCachedUserRepository_Get(t *testing.T) {
 
 			r := &CachedUserRepository{
 				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, want),
-				userRepo:  tt.fields.userRepo(tt.args.ctx, tt.args.id, want),
+				userRepo:  tt.fields.userRepo(ctrl, tt.args.ctx, tt.args.id, want),
 			}
 			got, err := r.Get(tt.args.ctx, tt.args.id)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -681,7 +681,7 @@ func TestCachedUserRepository_Get(t *testing.T) {
 func TestCachedUserRepository_GetByEmail(t *testing.T) {
 	type fields struct {
 		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, email string, user *model.User) *baseRepository
-		userRepo  func(ctx context.Context, email string, user *model.User) repository.UserRepository
+		userRepo  func(ctrl *gomock.Controller, ctx context.Context, email string, user *model.User) repository.UserRepository
 	}
 	type args struct {
 		ctx   context.Context
@@ -727,9 +727,9 @@ func TestCachedUserRepository_GetByEmail(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				userRepo: func(ctx context.Context, email string, user *model.User) repository.UserRepository {
-					repo := new(mock.UserRepository)
-					repo.On("GetByEmail", ctx, email).Return(user, nil)
+				userRepo: func(ctrl *gomock.Controller, ctx context.Context, email string, user *model.User) repository.UserRepository {
+					repo := mock.NewUserRepository(ctrl)
+					repo.EXPECT().GetByEmail(ctx, email).Return(user, nil)
 					return repo
 				},
 			},
@@ -789,8 +789,8 @@ func TestCachedUserRepository_GetByEmail(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				userRepo: func(_ context.Context, _ string, _ *model.User) repository.UserRepository {
-					return new(mock.UserRepository)
+				userRepo: func(ctrl *gomock.Controller, _ context.Context, _ string, _ *model.User) repository.UserRepository {
+					return mock.NewUserRepository(ctrl)
 				},
 			},
 			args: args{
@@ -845,9 +845,9 @@ func TestCachedUserRepository_GetByEmail(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				userRepo: func(ctx context.Context, email string, _ *model.User) repository.UserRepository {
-					repo := new(mock.UserRepository)
-					repo.On("GetByEmail", ctx, email).Return(nil, repository.ErrNotFound)
+				userRepo: func(ctrl *gomock.Controller, ctx context.Context, email string, _ *model.User) repository.UserRepository {
+					repo := mock.NewUserRepository(ctrl)
+					repo.EXPECT().GetByEmail(ctx, email).Return(nil, repository.ErrNotFound)
 					return repo
 				},
 			},
@@ -884,8 +884,8 @@ func TestCachedUserRepository_GetByEmail(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				userRepo: func(_ context.Context, _ string, _ *model.User) repository.UserRepository {
-					return new(mock.UserRepository)
+				userRepo: func(ctrl *gomock.Controller, _ context.Context, _ string, _ *model.User) repository.UserRepository {
+					return mock.NewUserRepository(ctrl)
 				},
 			},
 			args: args{
@@ -927,9 +927,9 @@ func TestCachedUserRepository_GetByEmail(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				userRepo: func(ctx context.Context, email string, user *model.User) repository.UserRepository {
-					repo := new(mock.UserRepository)
-					repo.On("GetByEmail", ctx, email).Return(user, nil)
+				userRepo: func(ctrl *gomock.Controller, ctx context.Context, email string, user *model.User) repository.UserRepository {
+					repo := mock.NewUserRepository(ctrl)
+					repo.EXPECT().GetByEmail(ctx, email).Return(user, nil)
 					return repo
 				},
 			},
@@ -953,7 +953,7 @@ func TestCachedUserRepository_GetByEmail(t *testing.T) {
 
 			r := &CachedUserRepository{
 				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.email, want),
-				userRepo:  tt.fields.userRepo(tt.args.ctx, tt.args.email, want),
+				userRepo:  tt.fields.userRepo(ctrl, tt.args.ctx, tt.args.email, want),
 			}
 			got, err := r.GetByEmail(tt.args.ctx, tt.args.email)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -965,7 +965,7 @@ func TestCachedUserRepository_GetByEmail(t *testing.T) {
 func TestCachedUserRepository_GetAll(t *testing.T) {
 	type fields struct {
 		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, users []*model.User) *baseRepository
-		userRepo  func(ctx context.Context, offset, limit int, users []*model.User) repository.UserRepository
+		userRepo  func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, users []*model.User) repository.UserRepository
 	}
 	type args struct {
 		ctx    context.Context
@@ -1012,9 +1012,9 @@ func TestCachedUserRepository_GetAll(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				userRepo: func(ctx context.Context, offset, limit int, users []*model.User) repository.UserRepository {
-					repo := new(mock.UserRepository)
-					repo.On("GetAll", ctx, offset, limit).Return(users, nil)
+				userRepo: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, users []*model.User) repository.UserRepository {
+					repo := mock.NewUserRepository(ctrl)
+					repo.EXPECT().GetAll(ctx, offset, limit).Return(users, nil)
 					return repo
 				},
 			},
@@ -1093,8 +1093,8 @@ func TestCachedUserRepository_GetAll(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				userRepo: func(_ context.Context, _, _ int, _ []*model.User) repository.UserRepository {
-					return new(mock.UserRepository)
+				userRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ int, _ []*model.User) repository.UserRepository {
+					return mock.NewUserRepository(ctrl)
 				},
 			},
 			args: args{
@@ -1169,9 +1169,9 @@ func TestCachedUserRepository_GetAll(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				userRepo: func(ctx context.Context, offset, limit int, _ []*model.User) repository.UserRepository {
-					repo := new(mock.UserRepository)
-					repo.On("GetAll", ctx, offset, limit).Return(nil, repository.ErrNotFound)
+				userRepo: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, _ []*model.User) repository.UserRepository {
+					repo := mock.NewUserRepository(ctrl)
+					repo.EXPECT().GetAll(ctx, offset, limit).Return(nil, repository.ErrNotFound)
 					return repo
 				},
 			},
@@ -1210,8 +1210,8 @@ func TestCachedUserRepository_GetAll(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				userRepo: func(_ context.Context, _, _ int, _ []*model.User) repository.UserRepository {
-					return new(mock.UserRepository)
+				userRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ int, _ []*model.User) repository.UserRepository {
+					return mock.NewUserRepository(ctrl)
 				},
 			},
 			args: args{
@@ -1254,9 +1254,9 @@ func TestCachedUserRepository_GetAll(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				userRepo: func(ctx context.Context, offset, limit int, users []*model.User) repository.UserRepository {
-					repo := new(mock.UserRepository)
-					repo.On("GetAll", ctx, offset, limit).Return(users, nil)
+				userRepo: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, users []*model.User) repository.UserRepository {
+					repo := mock.NewUserRepository(ctrl)
+					repo.EXPECT().GetAll(ctx, offset, limit).Return(users, nil)
 					return repo
 				},
 			},
@@ -1276,7 +1276,7 @@ func TestCachedUserRepository_GetAll(t *testing.T) {
 			defer ctrl.Finish()
 			r := &CachedUserRepository{
 				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.offset, tt.args.limit, tt.want),
-				userRepo:  tt.fields.userRepo(tt.args.ctx, tt.args.offset, tt.args.limit, tt.want),
+				userRepo:  tt.fields.userRepo(ctrl, tt.args.ctx, tt.args.offset, tt.args.limit, tt.want),
 			}
 			got, err := r.GetAll(tt.args.ctx, tt.args.offset, tt.args.limit)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -1288,7 +1288,7 @@ func TestCachedUserRepository_GetAll(t *testing.T) {
 func TestCachedUserRepository_Update(t *testing.T) {
 	type fields struct {
 		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, user *model.User) *baseRepository
-		userRepo  func(ctx context.Context, id model.ID, patch map[string]any, user *model.User) repository.UserRepository
+		userRepo  func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, user *model.User) repository.UserRepository
 	}
 	type args struct {
 		ctx   context.Context
@@ -1345,9 +1345,9 @@ func TestCachedUserRepository_Update(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				userRepo: func(ctx context.Context, id model.ID, patch map[string]any, user *model.User) repository.UserRepository {
-					repo := new(mock.UserRepository)
-					repo.On("Update", ctx, id, patch).Return(user, nil)
+				userRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, user *model.User) repository.UserRepository {
+					repo := mock.NewUserRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, patch).Return(user, nil)
 					return repo
 				},
 			},
@@ -1394,9 +1394,9 @@ func TestCachedUserRepository_Update(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				userRepo: func(ctx context.Context, id model.ID, patch map[string]any, _ *model.User) repository.UserRepository {
-					repo := new(mock.UserRepository)
-					repo.On("Update", ctx, id, patch).Return(nil, repository.ErrNotFound)
+				userRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, _ *model.User) repository.UserRepository {
+					repo := mock.NewUserRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, patch).Return(nil, repository.ErrNotFound)
 					return repo
 				},
 			},
@@ -1441,9 +1441,9 @@ func TestCachedUserRepository_Update(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				userRepo: func(ctx context.Context, id model.ID, patch map[string]any, user *model.User) repository.UserRepository {
-					repo := new(mock.UserRepository)
-					repo.On("Update", ctx, id, patch).Return(user, nil)
+				userRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, user *model.User) repository.UserRepository {
+					repo := mock.NewUserRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, patch).Return(user, nil)
 					return repo
 				},
 			},
@@ -1491,9 +1491,9 @@ func TestCachedUserRepository_Update(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				userRepo: func(ctx context.Context, id model.ID, patch map[string]any, user *model.User) repository.UserRepository {
-					repo := new(mock.UserRepository)
-					repo.On("Update", ctx, id, patch).Return(user, nil)
+				userRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, user *model.User) repository.UserRepository {
+					repo := mock.NewUserRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, patch).Return(user, nil)
 					return repo
 				},
 			},
@@ -1568,9 +1568,9 @@ func TestCachedUserRepository_Update(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				userRepo: func(ctx context.Context, id model.ID, patch map[string]any, user *model.User) repository.UserRepository {
-					repo := new(mock.UserRepository)
-					repo.On("Update", ctx, id, patch).Return(user, nil)
+				userRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, user *model.User) repository.UserRepository {
+					repo := mock.NewUserRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, patch).Return(user, nil)
 					return repo
 				},
 			},
@@ -1612,7 +1612,7 @@ func TestCachedUserRepository_Update(t *testing.T) {
 
 			r := &CachedUserRepository{
 				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, tt.want),
-				userRepo:  tt.fields.userRepo(tt.args.ctx, tt.args.id, tt.args.patch, tt.want),
+				userRepo:  tt.fields.userRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.patch, tt.want),
 			}
 			got, err := r.Update(tt.args.ctx, tt.args.id, tt.args.patch)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -1626,7 +1626,7 @@ func TestCachedUserRepository_Update(t *testing.T) {
 func TestCachedUserRepository_Delete(t *testing.T) {
 	type fields struct {
 		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *baseRepository
-		userRepo  func(ctx context.Context, id model.ID) repository.UserRepository
+		userRepo  func(ctrl *gomock.Controller, ctx context.Context, id model.ID) repository.UserRepository
 	}
 	type args struct {
 		ctx context.Context
@@ -1692,9 +1692,9 @@ func TestCachedUserRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				userRepo: func(ctx context.Context, id model.ID) repository.UserRepository {
-					repo := new(mock.UserRepository)
-					repo.On("Delete", ctx, id).Return(nil)
+				userRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) repository.UserRepository {
+					repo := mock.NewUserRepository(ctrl)
+					repo.EXPECT().Delete(ctx, id).Return(nil)
 					return repo
 				},
 			},
@@ -1757,9 +1757,9 @@ func TestCachedUserRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				userRepo: func(ctx context.Context, id model.ID) repository.UserRepository {
-					repo := new(mock.UserRepository)
-					repo.On("Delete", ctx, id).Return(repository.ErrUserDelete)
+				userRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) repository.UserRepository {
+					repo := mock.NewUserRepository(ctrl)
+					repo.EXPECT().Delete(ctx, id).Return(repository.ErrUserDelete)
 					return repo
 				},
 			},
@@ -1798,9 +1798,8 @@ func TestCachedUserRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				userRepo: func(ctx context.Context, id model.ID) repository.UserRepository {
-					repo := new(mock.UserRepository)
-					repo.On("Delete", ctx, id).Return(nil)
+				userRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID) repository.UserRepository {
+					repo := mock.NewUserRepository(ctrl)
 					return repo
 				},
 			},
@@ -1846,8 +1845,8 @@ func TestCachedUserRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				userRepo: func(_ context.Context, _ model.ID) repository.UserRepository {
-					return new(mock.UserRepository)
+				userRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID) repository.UserRepository {
+					return mock.NewUserRepository(ctrl)
 				},
 			},
 			args: args{
@@ -1898,8 +1897,8 @@ func TestCachedUserRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				userRepo: func(_ context.Context, _ model.ID) repository.UserRepository {
-					return new(mock.UserRepository)
+				userRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID) repository.UserRepository {
+					return mock.NewUserRepository(ctrl)
 				},
 			},
 			args: args{
@@ -1956,8 +1955,8 @@ func TestCachedUserRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				userRepo: func(_ context.Context, _ model.ID) repository.UserRepository {
-					return new(mock.UserRepository)
+				userRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID) repository.UserRepository {
+					return mock.NewUserRepository(ctrl)
 				},
 			},
 			args: args{
@@ -2020,8 +2019,8 @@ func TestCachedUserRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				userRepo: func(_ context.Context, _ model.ID) repository.UserRepository {
-					return new(mock.UserRepository)
+				userRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID) repository.UserRepository {
+					return mock.NewUserRepository(ctrl)
 				},
 			},
 			args: args{
@@ -2039,7 +2038,7 @@ func TestCachedUserRepository_Delete(t *testing.T) {
 			defer ctrl.Finish()
 			r := &CachedUserRepository{
 				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id),
-				userRepo:  tt.fields.userRepo(tt.args.ctx, tt.args.id),
+				userRepo:  tt.fields.userRepo(ctrl, tt.args.ctx, tt.args.id),
 			}
 			err := r.Delete(tt.args.ctx, tt.args.id)
 			require.ErrorIs(t, err, tt.wantErr)
