@@ -19,7 +19,7 @@ import (
 func TestCachedTodoRepository_Create(t *testing.T) {
 	type fields struct {
 		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, todo *model.Todo) *baseRepository
-		todoRepo  func(ctx context.Context, todo *model.Todo) repository.TodoRepository
+		todoRepo  func(ctrl *gomock.Controller, ctx context.Context, todo *model.Todo) repository.TodoRepository
 	}
 	type args struct {
 		ctx  context.Context
@@ -64,9 +64,9 @@ func TestCachedTodoRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				todoRepo: func(ctx context.Context, todo *model.Todo) repository.TodoRepository {
-					repo := new(mock.TodoRepository)
-					repo.On("Create", ctx, todo).Return(nil)
+				todoRepo: func(ctrl *gomock.Controller, ctx context.Context, todo *model.Todo) repository.TodoRepository {
+					repo := mock.NewTodoRepository(ctrl)
+					repo.EXPECT().Create(ctx, todo).Return(nil)
 					return repo
 				},
 			},
@@ -116,9 +116,9 @@ func TestCachedTodoRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				todoRepo: func(ctx context.Context, todo *model.Todo) repository.TodoRepository {
-					repo := new(mock.TodoRepository)
-					repo.On("Create", ctx, todo).Return(repository.ErrTodoCreate)
+				todoRepo: func(ctrl *gomock.Controller, ctx context.Context, todo *model.Todo) repository.TodoRepository {
+					repo := mock.NewTodoRepository(ctrl)
+					repo.EXPECT().Create(ctx, todo).Return(repository.ErrTodoCreate)
 					return repo
 				},
 			},
@@ -169,8 +169,8 @@ func TestCachedTodoRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				todoRepo: func(_ context.Context, _ *model.Todo) repository.TodoRepository {
-					return new(mock.TodoRepository)
+				todoRepo: func(ctrl *gomock.Controller, _ context.Context, _ *model.Todo) repository.TodoRepository {
+					return mock.NewTodoRepository(ctrl)
 				},
 			},
 			args: args{
@@ -196,7 +196,7 @@ func TestCachedTodoRepository_Create(t *testing.T) {
 			defer ctrl.Finish()
 			r := &CachedTodoRepository{
 				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.todo),
-				todoRepo:  tt.fields.todoRepo(tt.args.ctx, tt.args.todo),
+				todoRepo:  tt.fields.todoRepo(ctrl, tt.args.ctx, tt.args.todo),
 			}
 			err := r.Create(tt.args.ctx, tt.args.todo)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -207,7 +207,7 @@ func TestCachedTodoRepository_Create(t *testing.T) {
 func TestCachedTodoRepository_Get(t *testing.T) {
 	type fields struct {
 		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, todo *model.Todo) *baseRepository
-		todoRepo  func(ctx context.Context, id model.ID, todo *model.Todo) repository.TodoRepository
+		todoRepo  func(ctrl *gomock.Controller, ctx context.Context, id model.ID, todo *model.Todo) repository.TodoRepository
 	}
 	type args struct {
 		ctx context.Context
@@ -253,9 +253,9 @@ func TestCachedTodoRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				todoRepo: func(ctx context.Context, id model.ID, todo *model.Todo) repository.TodoRepository {
-					repo := new(mock.TodoRepository)
-					repo.On("Get", ctx, id).Return(todo, nil)
+				todoRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, todo *model.Todo) repository.TodoRepository {
+					repo := mock.NewTodoRepository(ctrl)
+					repo.EXPECT().Get(ctx, id).Return(todo, nil)
 					return repo
 				},
 			},
@@ -306,8 +306,8 @@ func TestCachedTodoRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				todoRepo: func(_ context.Context, _ model.ID, _ *model.Todo) repository.TodoRepository {
-					return new(mock.TodoRepository)
+				todoRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ *model.Todo) repository.TodoRepository {
+					return mock.NewTodoRepository(ctrl)
 				},
 			},
 			args: args{
@@ -353,9 +353,9 @@ func TestCachedTodoRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				todoRepo: func(ctx context.Context, id model.ID, _ *model.Todo) repository.TodoRepository {
-					repo := new(mock.TodoRepository)
-					repo.On("Get", ctx, id).Return(nil, repository.ErrNotFound)
+				todoRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *model.Todo) repository.TodoRepository {
+					repo := mock.NewTodoRepository(ctrl)
+					repo.EXPECT().Get(ctx, id).Return(nil, repository.ErrNotFound)
 					return repo
 				},
 			},
@@ -392,8 +392,8 @@ func TestCachedTodoRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				todoRepo: func(_ context.Context, _ model.ID, _ *model.Todo) repository.TodoRepository {
-					return new(mock.TodoRepository)
+				todoRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ *model.Todo) repository.TodoRepository {
+					return mock.NewTodoRepository(ctrl)
 				},
 			},
 			args: args{
@@ -435,9 +435,9 @@ func TestCachedTodoRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				todoRepo: func(ctx context.Context, id model.ID, todo *model.Todo) repository.TodoRepository {
-					repo := new(mock.TodoRepository)
-					repo.On("Get", ctx, id).Return(todo, nil)
+				todoRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, todo *model.Todo) repository.TodoRepository {
+					repo := mock.NewTodoRepository(ctrl)
+					repo.EXPECT().Get(ctx, id).Return(todo, nil)
 					return repo
 				},
 			},
@@ -461,7 +461,7 @@ func TestCachedTodoRepository_Get(t *testing.T) {
 
 			r := &CachedTodoRepository{
 				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, want),
-				todoRepo:  tt.fields.todoRepo(tt.args.ctx, tt.args.id, want),
+				todoRepo:  tt.fields.todoRepo(ctrl, tt.args.ctx, tt.args.id, want),
 			}
 			got, err := r.Get(tt.args.ctx, tt.args.id)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -473,7 +473,7 @@ func TestCachedTodoRepository_Get(t *testing.T) {
 func TestCachedTodoRepository_GetByOwner(t *testing.T) {
 	type fields struct {
 		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, owner model.ID, offset, limit int, completed *bool, todos []*model.Todo) *baseRepository
-		todoRepo  func(ctx context.Context, owner model.ID, offset, limit int, completed *bool, todos []*model.Todo) repository.TodoRepository
+		todoRepo  func(ctrl *gomock.Controller, ctx context.Context, owner model.ID, offset, limit int, completed *bool, todos []*model.Todo) repository.TodoRepository
 	}
 	type args struct {
 		ctx       context.Context
@@ -522,9 +522,9 @@ func TestCachedTodoRepository_GetByOwner(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				todoRepo: func(ctx context.Context, owner model.ID, offset, limit int, completed *bool, todos []*model.Todo) repository.TodoRepository {
-					repo := new(mock.TodoRepository)
-					repo.On("GetByOwner", ctx, owner, offset, limit, completed).Return(todos, nil)
+				todoRepo: func(ctrl *gomock.Controller, ctx context.Context, owner model.ID, offset, limit int, completed *bool, todos []*model.Todo) repository.TodoRepository {
+					repo := mock.NewTodoRepository(ctrl)
+					repo.EXPECT().GetByOwner(ctx, owner, offset, limit, completed).Return(todos, nil)
 					return repo
 				},
 			},
@@ -586,8 +586,8 @@ func TestCachedTodoRepository_GetByOwner(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				todoRepo: func(_ context.Context, _ model.ID, _, _ int, _ *bool, _ []*model.Todo) repository.TodoRepository {
-					return new(mock.TodoRepository)
+				todoRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _, _ int, _ *bool, _ []*model.Todo) repository.TodoRepository {
+					return mock.NewTodoRepository(ctrl)
 				},
 			},
 			args: args{
@@ -645,9 +645,9 @@ func TestCachedTodoRepository_GetByOwner(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				todoRepo: func(ctx context.Context, owner model.ID, offset, limit int, completed *bool, todos []*model.Todo) repository.TodoRepository {
-					repo := new(mock.TodoRepository)
-					repo.On("GetByOwner", ctx, owner, offset, limit, completed).Return(todos, repository.ErrNotFound)
+				todoRepo: func(ctrl *gomock.Controller, ctx context.Context, owner model.ID, offset, limit int, completed *bool, todos []*model.Todo) repository.TodoRepository {
+					repo := mock.NewTodoRepository(ctrl)
+					repo.EXPECT().GetByOwner(ctx, owner, offset, limit, completed).Return(todos, repository.ErrNotFound)
 					return repo
 				},
 			},
@@ -687,8 +687,8 @@ func TestCachedTodoRepository_GetByOwner(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				todoRepo: func(_ context.Context, _ model.ID, _, _ int, _ *bool, _ []*model.Todo) repository.TodoRepository {
-					return new(mock.TodoRepository)
+				todoRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _, _ int, _ *bool, _ []*model.Todo) repository.TodoRepository {
+					return mock.NewTodoRepository(ctrl)
 				},
 			},
 			args: args{
@@ -732,9 +732,9 @@ func TestCachedTodoRepository_GetByOwner(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				todoRepo: func(ctx context.Context, owner model.ID, offset, limit int, completed *bool, todos []*model.Todo) repository.TodoRepository {
-					repo := new(mock.TodoRepository)
-					repo.On("GetByOwner", ctx, owner, offset, limit, completed).Return(todos, nil)
+				todoRepo: func(ctrl *gomock.Controller, ctx context.Context, owner model.ID, offset, limit int, completed *bool, todos []*model.Todo) repository.TodoRepository {
+					repo := mock.NewTodoRepository(ctrl)
+					repo.EXPECT().GetByOwner(ctx, owner, offset, limit, completed).Return(todos, nil)
 					return repo
 				},
 			},
@@ -755,7 +755,7 @@ func TestCachedTodoRepository_GetByOwner(t *testing.T) {
 			defer ctrl.Finish()
 			r := &CachedTodoRepository{
 				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.owner, tt.args.offset, tt.args.limit, tt.args.completed, tt.want),
-				todoRepo:  tt.fields.todoRepo(tt.args.ctx, tt.args.owner, tt.args.offset, tt.args.limit, tt.args.completed, tt.want),
+				todoRepo:  tt.fields.todoRepo(ctrl, tt.args.ctx, tt.args.owner, tt.args.offset, tt.args.limit, tt.args.completed, tt.want),
 			}
 			got, err := r.GetByOwner(tt.args.ctx, tt.args.owner, tt.args.offset, tt.args.limit, tt.args.completed)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -767,7 +767,7 @@ func TestCachedTodoRepository_GetByOwner(t *testing.T) {
 func TestCachedTodoRepository_Update(t *testing.T) {
 	type fields struct {
 		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, todo *model.Todo) *baseRepository
-		todoRepo  func(ctx context.Context, id model.ID, patch map[string]any, todo *model.Todo) repository.TodoRepository
+		todoRepo  func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, todo *model.Todo) repository.TodoRepository
 	}
 	type args struct {
 		ctx   context.Context
@@ -821,9 +821,9 @@ func TestCachedTodoRepository_Update(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				todoRepo: func(ctx context.Context, id model.ID, patch map[string]any, todo *model.Todo) repository.TodoRepository {
-					repo := new(mock.TodoRepository)
-					repo.On("Update", ctx, id, patch).Return(todo, nil)
+				todoRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, todo *model.Todo) repository.TodoRepository {
+					repo := mock.NewTodoRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, patch).Return(todo, nil)
 					return repo
 				},
 			},
@@ -861,9 +861,9 @@ func TestCachedTodoRepository_Update(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				todoRepo: func(ctx context.Context, id model.ID, patch map[string]any, _ *model.Todo) repository.TodoRepository {
-					repo := new(mock.TodoRepository)
-					repo.On("Update", ctx, id, patch).Return(nil, repository.ErrNotFound)
+				todoRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, _ *model.Todo) repository.TodoRepository {
+					repo := mock.NewTodoRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, patch).Return(nil, repository.ErrNotFound)
 					return repo
 				},
 			},
@@ -919,9 +919,9 @@ func TestCachedTodoRepository_Update(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				todoRepo: func(ctx context.Context, id model.ID, patch map[string]any, todo *model.Todo) repository.TodoRepository {
-					repo := new(mock.TodoRepository)
-					repo.On("Update", ctx, id, patch).Return(todo, nil)
+				todoRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, todo *model.Todo) repository.TodoRepository {
+					repo := mock.NewTodoRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, patch).Return(todo, nil)
 					return repo
 				},
 			},
@@ -984,9 +984,9 @@ func TestCachedTodoRepository_Update(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				todoRepo: func(ctx context.Context, id model.ID, patch map[string]any, todo *model.Todo) repository.TodoRepository {
-					repo := new(mock.TodoRepository)
-					repo.On("Update", ctx, id, patch).Return(todo, nil)
+				todoRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, todo *model.Todo) repository.TodoRepository {
+					repo := mock.NewTodoRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, patch).Return(todo, nil)
 					return repo
 				},
 			},
@@ -1019,7 +1019,7 @@ func TestCachedTodoRepository_Update(t *testing.T) {
 
 			r := &CachedTodoRepository{
 				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, tt.want),
-				todoRepo:  tt.fields.todoRepo(tt.args.ctx, tt.args.id, tt.args.patch, tt.want),
+				todoRepo:  tt.fields.todoRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.patch, tt.want),
 			}
 			got, err := r.Update(tt.args.ctx, tt.args.id, tt.args.patch)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -1033,7 +1033,7 @@ func TestCachedTodoRepository_Update(t *testing.T) {
 func TestCachedTodoRepository_Delete(t *testing.T) {
 	type fields struct {
 		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *baseRepository
-		todoRepo  func(ctx context.Context, id model.ID) repository.TodoRepository
+		todoRepo  func(ctrl *gomock.Controller, ctx context.Context, id model.ID) repository.TodoRepository
 	}
 	type args struct {
 		ctx context.Context
@@ -1081,9 +1081,9 @@ func TestCachedTodoRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				todoRepo: func(ctx context.Context, id model.ID) repository.TodoRepository {
-					repo := new(mock.TodoRepository)
-					repo.On("Delete", ctx, id).Return(nil)
+				todoRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) repository.TodoRepository {
+					repo := mock.NewTodoRepository(ctrl)
+					repo.EXPECT().Delete(ctx, id).Return(nil)
 					return repo
 				},
 			},
@@ -1128,9 +1128,9 @@ func TestCachedTodoRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				todoRepo: func(ctx context.Context, id model.ID) repository.TodoRepository {
-					repo := new(mock.TodoRepository)
-					repo.On("Delete", ctx, id).Return(repository.ErrTodoDelete)
+				todoRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) repository.TodoRepository {
+					repo := mock.NewTodoRepository(ctrl)
+					repo.EXPECT().Delete(ctx, id).Return(repository.ErrTodoDelete)
 					return repo
 				},
 			},
@@ -1169,9 +1169,8 @@ func TestCachedTodoRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				todoRepo: func(ctx context.Context, id model.ID) repository.TodoRepository {
-					repo := new(mock.TodoRepository)
-					repo.On("Delete", ctx, id).Return(nil)
+				todoRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID) repository.TodoRepository {
+					repo := mock.NewTodoRepository(ctrl)
 					return repo
 				},
 			},
@@ -1217,8 +1216,8 @@ func TestCachedTodoRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				todoRepo: func(_ context.Context, _ model.ID) repository.TodoRepository {
-					return new(mock.TodoRepository)
+				todoRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID) repository.TodoRepository {
+					return mock.NewTodoRepository(ctrl)
 				},
 			},
 			args: args{
@@ -1236,7 +1235,7 @@ func TestCachedTodoRepository_Delete(t *testing.T) {
 			defer ctrl.Finish()
 			r := &CachedTodoRepository{
 				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id),
-				todoRepo:  tt.fields.todoRepo(tt.args.ctx, tt.args.id),
+				todoRepo:  tt.fields.todoRepo(ctrl, tt.args.ctx, tt.args.id),
 			}
 			err := r.Delete(tt.args.ctx, tt.args.id)
 			require.ErrorIs(t, err, tt.wantErr)
