@@ -20,7 +20,7 @@ import (
 func TestCachedIssueRepository_Create(t *testing.T) {
 	type fields struct {
 		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, project model.ID, issue *model.Issue) *baseRepository
-		issueRepo func(ctx context.Context, project model.ID, issue *model.Issue) repository.IssueRepository
+		issueRepo func(ctrl *gomock.Controller, ctx context.Context, project model.ID, issue *model.Issue) repository.IssueRepository
 	}
 	type args struct {
 		ctx     context.Context
@@ -72,9 +72,9 @@ func TestCachedIssueRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, project model.ID, issue *model.Issue) repository.IssueRepository {
-					repo := new(mock.IssueRepository)
-					repo.On("Create", ctx, project, issue).Return(nil)
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, project model.ID, issue *model.Issue) repository.IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().Create(ctx, project, issue).Return(nil)
 					return repo
 				},
 			},
@@ -147,9 +147,9 @@ func TestCachedIssueRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, project model.ID, issue *model.Issue) repository.IssueRepository {
-					repo := new(mock.IssueRepository)
-					repo.On("Create", ctx, project, issue).Return(nil)
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, project model.ID, issue *model.Issue) repository.IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().Create(ctx, project, issue).Return(nil)
 					return repo
 				},
 			},
@@ -216,9 +216,9 @@ func TestCachedIssueRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, project model.ID, issue *model.Issue) repository.IssueRepository {
-					repo := new(mock.IssueRepository)
-					repo.On("Create", ctx, project, issue).Return(repository.ErrIssueCreate)
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, project model.ID, issue *model.Issue) repository.IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().Create(ctx, project, issue).Return(repository.ErrIssueCreate)
 					return repo
 				},
 			},
@@ -286,8 +286,8 @@ func TestCachedIssueRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(_ context.Context, _ model.ID, _ *model.Issue) repository.IssueRepository {
-					return new(mock.IssueRepository)
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ *model.Issue) repository.IssueRepository {
+					return mock.NewIssueRepository(ctrl)
 				},
 			},
 			args: args{
@@ -354,9 +354,8 @@ func TestCachedIssueRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, project model.ID, issue *model.Issue) repository.IssueRepository {
-					repo := new(mock.IssueRepository)
-					repo.On("Create", ctx, project, issue).Return(nil)
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ *model.Issue) repository.IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
 					return repo
 				},
 			},
@@ -418,8 +417,8 @@ func TestCachedIssueRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(_ context.Context, _ model.ID, _ *model.Issue) repository.IssueRepository {
-					return new(mock.IssueRepository)
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ *model.Issue) repository.IssueRepository {
+					return mock.NewIssueRepository(ctrl)
 				},
 			},
 			args: args{
@@ -455,7 +454,7 @@ func TestCachedIssueRepository_Create(t *testing.T) {
 			defer ctrl.Finish()
 			r := &CachedIssueRepository{
 				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.project, tt.args.issue),
-				issueRepo: tt.fields.issueRepo(tt.args.ctx, tt.args.project, tt.args.issue),
+				issueRepo: tt.fields.issueRepo(ctrl, tt.args.ctx, tt.args.project, tt.args.issue),
 			}
 			err := r.Create(tt.args.ctx, tt.args.project, tt.args.issue)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -466,7 +465,7 @@ func TestCachedIssueRepository_Create(t *testing.T) {
 func TestCachedIssueRepository_Get(t *testing.T) {
 	type fields struct {
 		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, issue *model.Issue) *baseRepository
-		issueRepo func(ctx context.Context, id model.ID, issue *model.Issue) repository.IssueRepository
+		issueRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, issue *model.Issue) repository.IssueRepository
 	}
 	type args struct {
 		ctx context.Context
@@ -512,9 +511,9 @@ func TestCachedIssueRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, id model.ID, issue *model.Issue) repository.IssueRepository {
-					repo := new(mock.IssueRepository)
-					repo.On("Get", ctx, id).Return(issue, nil)
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, issue *model.Issue) repository.IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().Get(ctx, id).Return(issue, nil)
 					return repo
 				},
 			},
@@ -575,8 +574,8 @@ func TestCachedIssueRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(_ context.Context, _ model.ID, _ *model.Issue) repository.IssueRepository {
-					return new(mock.IssueRepository)
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ *model.Issue) repository.IssueRepository {
+					return mock.NewIssueRepository(ctrl)
 				},
 			},
 			args: args{
@@ -632,9 +631,9 @@ func TestCachedIssueRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, id model.ID, _ *model.Issue) repository.IssueRepository {
-					repo := new(mock.IssueRepository)
-					repo.On("Get", ctx, id).Return(nil, repository.ErrNotFound)
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *model.Issue) repository.IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().Get(ctx, id).Return(nil, repository.ErrNotFound)
 					return repo
 				},
 			},
@@ -671,8 +670,8 @@ func TestCachedIssueRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(_ context.Context, _ model.ID, _ *model.Issue) repository.IssueRepository {
-					return new(mock.IssueRepository)
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ *model.Issue) repository.IssueRepository {
+					return mock.NewIssueRepository(ctrl)
 				},
 			},
 			args: args{
@@ -714,9 +713,9 @@ func TestCachedIssueRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, id model.ID, issue *model.Issue) repository.IssueRepository {
-					repo := new(mock.IssueRepository)
-					repo.On("Get", ctx, id).Return(issue, nil)
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, issue *model.Issue) repository.IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().Get(ctx, id).Return(issue, nil)
 					return repo
 				},
 			},
@@ -739,7 +738,7 @@ func TestCachedIssueRepository_Get(t *testing.T) {
 
 			r := &CachedIssueRepository{
 				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, want),
-				issueRepo: tt.fields.issueRepo(tt.args.ctx, tt.args.id, want),
+				issueRepo: tt.fields.issueRepo(ctrl, tt.args.ctx, tt.args.id, want),
 			}
 			got, err := r.Get(tt.args.ctx, tt.args.id)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -751,7 +750,7 @@ func TestCachedIssueRepository_Get(t *testing.T) {
 func TestCachedIssueRepository_GetAllForProject(t *testing.T) {
 	type fields struct {
 		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, project model.ID, offset, limit int, issues []*model.Issue) *baseRepository
-		issueRepo func(ctx context.Context, project model.ID, offset, limit int, issues []*model.Issue) repository.IssueRepository
+		issueRepo func(ctrl *gomock.Controller, ctx context.Context, project model.ID, offset, limit int, issues []*model.Issue) repository.IssueRepository
 	}
 	type args struct {
 		ctx     context.Context
@@ -799,9 +798,9 @@ func TestCachedIssueRepository_GetAllForProject(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, project model.ID, offset, limit int, issues []*model.Issue) repository.IssueRepository {
-					repo := new(mock.IssueRepository)
-					repo.On("GetAllForProject", ctx, project, offset, limit).Return(issues, nil)
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, project model.ID, offset, limit int, issues []*model.Issue) repository.IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().GetAllForProject(ctx, project, offset, limit).Return(issues, nil)
 					return repo
 				},
 			},
@@ -881,8 +880,8 @@ func TestCachedIssueRepository_GetAllForProject(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(_ context.Context, _ model.ID, _, _ int, _ []*model.Issue) repository.IssueRepository {
-					return new(mock.IssueRepository)
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _, _ int, _ []*model.Issue) repository.IssueRepository {
+					return mock.NewIssueRepository(ctrl)
 				},
 			},
 			args: args{
@@ -958,9 +957,9 @@ func TestCachedIssueRepository_GetAllForProject(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, project model.ID, offset, limit int, _ []*model.Issue) repository.IssueRepository {
-					repo := new(mock.IssueRepository)
-					repo.On("GetAllForProject", ctx, project, offset, limit).Return(nil, repository.ErrNotFound)
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, project model.ID, offset, limit int, _ []*model.Issue) repository.IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().GetAllForProject(ctx, project, offset, limit).Return(nil, repository.ErrNotFound)
 					return repo
 				},
 			},
@@ -998,8 +997,8 @@ func TestCachedIssueRepository_GetAllForProject(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(_ context.Context, _ model.ID, _, _ int, _ []*model.Issue) repository.IssueRepository {
-					return new(mock.IssueRepository)
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _, _ int, _ []*model.Issue) repository.IssueRepository {
+					return mock.NewIssueRepository(ctrl)
 				},
 			},
 			args: args{
@@ -1041,9 +1040,9 @@ func TestCachedIssueRepository_GetAllForProject(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, project model.ID, offset, limit int, issues []*model.Issue) repository.IssueRepository {
-					repo := new(mock.IssueRepository)
-					repo.On("GetAllForProject", ctx, project, offset, limit).Return(issues, nil)
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, project model.ID, offset, limit int, issues []*model.Issue) repository.IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().GetAllForProject(ctx, project, offset, limit).Return(issues, nil)
 					return repo
 				},
 			},
@@ -1061,7 +1060,7 @@ func TestCachedIssueRepository_GetAllForProject(t *testing.T) {
 			defer ctrl.Finish()
 			r := &CachedIssueRepository{
 				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.project, tt.args.offset, tt.args.limit, tt.want),
-				issueRepo: tt.fields.issueRepo(tt.args.ctx, tt.args.project, tt.args.offset, tt.args.limit, tt.want),
+				issueRepo: tt.fields.issueRepo(ctrl, tt.args.ctx, tt.args.project, tt.args.offset, tt.args.limit, tt.want),
 			}
 			got, err := r.GetAllForProject(tt.args.ctx, tt.args.project, tt.args.offset, tt.args.limit)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -1073,7 +1072,7 @@ func TestCachedIssueRepository_GetAllForProject(t *testing.T) {
 func TestCachedIssueRepository_GetAllForIssue(t *testing.T) {
 	type fields struct {
 		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, issue model.ID, offset, limit int, issues []*model.Issue) *baseRepository
-		issueRepo func(ctx context.Context, issue model.ID, offset, limit int, issues []*model.Issue) repository.IssueRepository
+		issueRepo func(ctrl *gomock.Controller, ctx context.Context, issue model.ID, offset, limit int, issues []*model.Issue) repository.IssueRepository
 	}
 	type args struct {
 		ctx    context.Context
@@ -1121,9 +1120,9 @@ func TestCachedIssueRepository_GetAllForIssue(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, issue model.ID, offset, limit int, issues []*model.Issue) repository.IssueRepository {
-					repo := new(mock.IssueRepository)
-					repo.On("GetAllForIssue", ctx, issue, offset, limit).Return(issues, nil)
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, issue model.ID, offset, limit int, issues []*model.Issue) repository.IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().GetAllForIssue(ctx, issue, offset, limit).Return(issues, nil)
 					return repo
 				},
 			},
@@ -1203,8 +1202,8 @@ func TestCachedIssueRepository_GetAllForIssue(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(_ context.Context, _ model.ID, _, _ int, _ []*model.Issue) repository.IssueRepository {
-					return new(mock.IssueRepository)
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _, _ int, _ []*model.Issue) repository.IssueRepository {
+					return mock.NewIssueRepository(ctrl)
 				},
 			},
 			args: args{
@@ -1280,9 +1279,9 @@ func TestCachedIssueRepository_GetAllForIssue(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, issue model.ID, offset, limit int, _ []*model.Issue) repository.IssueRepository {
-					repo := new(mock.IssueRepository)
-					repo.On("GetAllForIssue", ctx, issue, offset, limit).Return(nil, repository.ErrNotFound)
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, issue model.ID, offset, limit int, _ []*model.Issue) repository.IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().GetAllForIssue(ctx, issue, offset, limit).Return(nil, repository.ErrNotFound)
 					return repo
 				},
 			},
@@ -1320,8 +1319,8 @@ func TestCachedIssueRepository_GetAllForIssue(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(_ context.Context, _ model.ID, _, _ int, _ []*model.Issue) repository.IssueRepository {
-					return new(mock.IssueRepository)
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _, _ int, _ []*model.Issue) repository.IssueRepository {
+					return mock.NewIssueRepository(ctrl)
 				},
 			},
 			args: args{
@@ -1363,9 +1362,9 @@ func TestCachedIssueRepository_GetAllForIssue(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, issue model.ID, offset, limit int, issues []*model.Issue) repository.IssueRepository {
-					repo := new(mock.IssueRepository)
-					repo.On("GetAllForIssue", ctx, issue, offset, limit).Return(issues, nil)
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, issue model.ID, offset, limit int, issues []*model.Issue) repository.IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().GetAllForIssue(ctx, issue, offset, limit).Return(issues, nil)
 					return repo
 				},
 			},
@@ -1383,7 +1382,7 @@ func TestCachedIssueRepository_GetAllForIssue(t *testing.T) {
 			defer ctrl.Finish()
 			r := &CachedIssueRepository{
 				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.issue, tt.args.offset, tt.args.limit, tt.want),
-				issueRepo: tt.fields.issueRepo(tt.args.ctx, tt.args.issue, tt.args.offset, tt.args.limit, tt.want),
+				issueRepo: tt.fields.issueRepo(ctrl, tt.args.ctx, tt.args.issue, tt.args.offset, tt.args.limit, tt.want),
 			}
 			got, err := r.GetAllForIssue(tt.args.ctx, tt.args.issue, tt.args.offset, tt.args.limit)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -1395,7 +1394,7 @@ func TestCachedIssueRepository_GetAllForIssue(t *testing.T) {
 func TestCachedIssueRepository_AddWatcher(t *testing.T) {
 	type fields struct {
 		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, id, watcher model.ID) *baseRepository
-		issueRepo func(ctx context.Context, id, watcher model.ID) repository.IssueRepository
+		issueRepo func(ctrl *gomock.Controller, ctx context.Context, id, watcher model.ID) repository.IssueRepository
 	}
 	type args struct {
 		ctx     context.Context
@@ -1456,9 +1455,9 @@ func TestCachedIssueRepository_AddWatcher(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, id, watcher model.ID) repository.IssueRepository {
-					repo := new(mock.IssueRepository)
-					repo.On("AddWatcher", ctx, id, watcher).Return(nil)
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, id, watcher model.ID) repository.IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().AddWatcher(ctx, id, watcher).Return(nil)
 					return repo
 				},
 			},
@@ -1515,9 +1514,9 @@ func TestCachedIssueRepository_AddWatcher(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, id, watcher model.ID) repository.IssueRepository {
-					repo := new(mock.IssueRepository)
-					repo.On("AddWatcher", ctx, id, watcher).Return(repository.ErrNotFound)
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, id, watcher model.ID) repository.IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().AddWatcher(ctx, id, watcher).Return(repository.ErrNotFound)
 					return repo
 				},
 			},
@@ -1554,9 +1553,8 @@ func TestCachedIssueRepository_AddWatcher(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, id, watcher model.ID) repository.IssueRepository {
-					repo := new(mock.IssueRepository)
-					repo.On("AddWatcher", ctx, id, watcher).Return(nil)
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID) repository.IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
 					return repo
 				},
 			},
@@ -1602,9 +1600,8 @@ func TestCachedIssueRepository_AddWatcher(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, id, watcher model.ID) repository.IssueRepository {
-					repo := new(mock.IssueRepository)
-					repo.On("AddWatcher", ctx, id, watcher).Return(nil)
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID) repository.IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
 					return repo
 				},
 			},
@@ -1657,9 +1654,8 @@ func TestCachedIssueRepository_AddWatcher(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, id, watcher model.ID) repository.IssueRepository {
-					repo := new(mock.IssueRepository)
-					repo.On("AddWatcher", ctx, id, watcher).Return(nil)
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID) repository.IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
 					return repo
 				},
 			},
@@ -1717,9 +1713,8 @@ func TestCachedIssueRepository_AddWatcher(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, id, watcher model.ID) repository.IssueRepository {
-					repo := new(mock.IssueRepository)
-					repo.On("AddWatcher", ctx, id, watcher).Return(nil)
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID) repository.IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
 					return repo
 				},
 			},
@@ -1737,7 +1732,7 @@ func TestCachedIssueRepository_AddWatcher(t *testing.T) {
 			defer ctrl.Finish()
 			r := &CachedIssueRepository{
 				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.watcher),
-				issueRepo: tt.fields.issueRepo(tt.args.ctx, tt.args.id, tt.args.watcher),
+				issueRepo: tt.fields.issueRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.watcher),
 			}
 			err := r.AddWatcher(tt.args.ctx, tt.args.id, tt.args.watcher)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -1748,7 +1743,7 @@ func TestCachedIssueRepository_AddWatcher(t *testing.T) {
 func TestCachedIssueRepository_GetWatchers(t *testing.T) {
 	type fields struct {
 		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, watchers []*model.User) *baseRepository
-		issueRepo func(ctx context.Context, id model.ID, watchers []*model.User) repository.IssueRepository
+		issueRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, watchers []*model.User) repository.IssueRepository
 	}
 	type args struct {
 		ctx context.Context
@@ -1794,9 +1789,9 @@ func TestCachedIssueRepository_GetWatchers(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, id model.ID, watchers []*model.User) repository.IssueRepository {
-					repo := new(mock.IssueRepository)
-					repo.On("GetWatchers", ctx, id).Return(watchers, nil)
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, watchers []*model.User) repository.IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().GetWatchers(ctx, id).Return(watchers, nil)
 					return repo
 				},
 			},
@@ -1845,9 +1840,9 @@ func TestCachedIssueRepository_GetWatchers(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, id model.ID, _ []*model.User) repository.IssueRepository {
-					repo := new(mock.IssueRepository)
-					repo.On("GetWatchers", ctx, id).Return(nil, repository.ErrNotFound)
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ []*model.User) repository.IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().GetWatchers(ctx, id).Return(nil, repository.ErrNotFound)
 					return repo
 				},
 			},
@@ -1889,8 +1884,8 @@ func TestCachedIssueRepository_GetWatchers(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(_ context.Context, _ model.ID, _ []*model.User) repository.IssueRepository {
-					return new(mock.IssueRepository)
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ []*model.User) repository.IssueRepository {
+					return mock.NewIssueRepository(ctrl)
 				},
 			},
 			args: args{
@@ -1945,9 +1940,9 @@ func TestCachedIssueRepository_GetWatchers(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, id model.ID, watchers []*model.User) repository.IssueRepository {
-					repo := new(mock.IssueRepository)
-					repo.On("GetWatchers", ctx, id).Return(watchers, nil)
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, watchers []*model.User) repository.IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().GetWatchers(ctx, id).Return(watchers, nil)
 					return repo
 				},
 			},
@@ -1997,8 +1992,8 @@ func TestCachedIssueRepository_GetWatchers(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(_ context.Context, _ model.ID, _ []*model.User) repository.IssueRepository {
-					return new(mock.IssueRepository)
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ []*model.User) repository.IssueRepository {
+					return mock.NewIssueRepository(ctrl)
 				},
 			},
 			args: args{
@@ -2027,7 +2022,7 @@ func TestCachedIssueRepository_GetWatchers(t *testing.T) {
 			defer ctrl.Finish()
 			r := &CachedIssueRepository{
 				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, tt.want),
-				issueRepo: tt.fields.issueRepo(tt.args.ctx, tt.args.id, tt.want),
+				issueRepo: tt.fields.issueRepo(ctrl, tt.args.ctx, tt.args.id, tt.want),
 			}
 			got, err := r.GetWatchers(tt.args.ctx, tt.args.id)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -2041,7 +2036,7 @@ func TestCachedIssueRepository_GetWatchers(t *testing.T) {
 func TestCachedIssueRepository_RemoveWatcher(t *testing.T) {
 	type fields struct {
 		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, id, watcher model.ID) *baseRepository
-		issueRepo func(ctx context.Context, id, watcher model.ID) repository.IssueRepository
+		issueRepo func(ctrl *gomock.Controller, ctx context.Context, id, watcher model.ID) repository.IssueRepository
 	}
 	type args struct {
 		ctx     context.Context
@@ -2103,9 +2098,9 @@ func TestCachedIssueRepository_RemoveWatcher(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, id, watcher model.ID) repository.IssueRepository {
-					repo := new(mock.IssueRepository)
-					repo.On("RemoveWatcher", ctx, id, watcher).Return(nil)
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, id, watcher model.ID) repository.IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().RemoveWatcher(ctx, id, watcher).Return(nil)
 					return repo
 				},
 			},
@@ -2163,9 +2158,9 @@ func TestCachedIssueRepository_RemoveWatcher(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, id, watcher model.ID) repository.IssueRepository {
-					repo := new(mock.IssueRepository)
-					repo.On("RemoveWatcher", ctx, id, watcher).Return(repository.ErrNotFound)
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, id, watcher model.ID) repository.IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().RemoveWatcher(ctx, id, watcher).Return(repository.ErrNotFound)
 					return repo
 				},
 			},
@@ -2202,9 +2197,8 @@ func TestCachedIssueRepository_RemoveWatcher(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, id, watcher model.ID) repository.IssueRepository {
-					repo := new(mock.IssueRepository)
-					repo.On("RemoveWatcher", ctx, id, watcher).Return(nil)
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID) repository.IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
 					return repo
 				},
 			},
@@ -2250,9 +2244,8 @@ func TestCachedIssueRepository_RemoveWatcher(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, id, watcher model.ID) repository.IssueRepository {
-					repo := new(mock.IssueRepository)
-					repo.On("RemoveWatcher", ctx, id, watcher).Return(nil)
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID) repository.IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
 					return repo
 				},
 			},
@@ -2305,9 +2298,8 @@ func TestCachedIssueRepository_RemoveWatcher(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, id, watcher model.ID) repository.IssueRepository {
-					repo := new(mock.IssueRepository)
-					repo.On("RemoveWatcher", ctx, id, watcher).Return(nil)
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID) repository.IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
 					return repo
 				},
 			},
@@ -2366,9 +2358,8 @@ func TestCachedIssueRepository_RemoveWatcher(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, id, watcher model.ID) repository.IssueRepository {
-					repo := new(mock.IssueRepository)
-					repo.On("RemoveWatcher", ctx, id, watcher).Return(nil)
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID) repository.IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
 					return repo
 				},
 			},
@@ -2386,7 +2377,7 @@ func TestCachedIssueRepository_RemoveWatcher(t *testing.T) {
 			defer ctrl.Finish()
 			r := &CachedIssueRepository{
 				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.watcher),
-				issueRepo: tt.fields.issueRepo(tt.args.ctx, tt.args.id, tt.args.watcher),
+				issueRepo: tt.fields.issueRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.watcher),
 			}
 			err := r.RemoveWatcher(tt.args.ctx, tt.args.id, tt.args.watcher)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -2397,7 +2388,7 @@ func TestCachedIssueRepository_RemoveWatcher(t *testing.T) {
 func TestCachedIssueRepository_AddRelation(t *testing.T) {
 	type fields struct {
 		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, relation *model.IssueRelation) *baseRepository
-		issueRepo func(ctx context.Context, relation *model.IssueRelation) repository.IssueRepository
+		issueRepo func(ctrl *gomock.Controller, ctx context.Context, relation *model.IssueRelation) repository.IssueRepository
 	}
 	type args struct {
 		ctx      context.Context
@@ -2458,9 +2449,9 @@ func TestCachedIssueRepository_AddRelation(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, relation *model.IssueRelation) repository.IssueRepository {
-					repo := new(mock.IssueRepository)
-					repo.On("AddRelation", ctx, relation).Return(nil)
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, relation *model.IssueRelation) repository.IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().AddRelation(ctx, relation).Return(nil)
 					return repo
 				},
 			},
@@ -2522,9 +2513,9 @@ func TestCachedIssueRepository_AddRelation(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, relation *model.IssueRelation) repository.IssueRepository {
-					repo := new(mock.IssueRepository)
-					repo.On("AddRelation", ctx, relation).Return(nil)
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, relation *model.IssueRelation) repository.IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().AddRelation(ctx, relation).Return(nil)
 					return repo
 				},
 			},
@@ -2586,9 +2577,9 @@ func TestCachedIssueRepository_AddRelation(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, relation *model.IssueRelation) repository.IssueRepository {
-					repo := new(mock.IssueRepository)
-					repo.On("AddRelation", ctx, relation).Return(repository.ErrNotFound)
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, relation *model.IssueRelation) repository.IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().AddRelation(ctx, relation).Return(repository.ErrNotFound)
 					return repo
 				},
 			},
@@ -2629,9 +2620,8 @@ func TestCachedIssueRepository_AddRelation(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, relation *model.IssueRelation) repository.IssueRepository {
-					repo := new(mock.IssueRepository)
-					repo.On("AddRelation", ctx, relation).Return(nil)
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _ *model.IssueRelation) repository.IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
 					return repo
 				},
 			},
@@ -2681,9 +2671,8 @@ func TestCachedIssueRepository_AddRelation(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, relation *model.IssueRelation) repository.IssueRepository {
-					repo := new(mock.IssueRepository)
-					repo.On("AddRelation", ctx, relation).Return(nil)
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _ *model.IssueRelation) repository.IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
 					return repo
 				},
 			},
@@ -2740,9 +2729,8 @@ func TestCachedIssueRepository_AddRelation(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, relation *model.IssueRelation) repository.IssueRepository {
-					repo := new(mock.IssueRepository)
-					repo.On("AddRelation", ctx, relation).Return(nil)
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _ *model.IssueRelation) repository.IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
 					return repo
 				},
 			},
@@ -2805,9 +2793,8 @@ func TestCachedIssueRepository_AddRelation(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, relation *model.IssueRelation) repository.IssueRepository {
-					repo := new(mock.IssueRepository)
-					repo.On("AddRelation", ctx, relation).Return(nil)
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _ *model.IssueRelation) repository.IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
 					return repo
 				},
 			},
@@ -2829,7 +2816,7 @@ func TestCachedIssueRepository_AddRelation(t *testing.T) {
 			defer ctrl.Finish()
 			r := &CachedIssueRepository{
 				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.relation),
-				issueRepo: tt.fields.issueRepo(tt.args.ctx, tt.args.relation),
+				issueRepo: tt.fields.issueRepo(ctrl, tt.args.ctx, tt.args.relation),
 			}
 			err := r.AddRelation(tt.args.ctx, tt.args.relation)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -2840,7 +2827,7 @@ func TestCachedIssueRepository_AddRelation(t *testing.T) {
 func TestCachedIssueRepository_GetRelations(t *testing.T) {
 	type fields struct {
 		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, relations []*model.IssueRelation) *baseRepository
-		issueRepo func(ctx context.Context, id model.ID, relations []*model.IssueRelation) repository.IssueRepository
+		issueRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, relations []*model.IssueRelation) repository.IssueRepository
 	}
 	type args struct {
 		ctx context.Context
@@ -2886,9 +2873,9 @@ func TestCachedIssueRepository_GetRelations(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, id model.ID, relations []*model.IssueRelation) repository.IssueRepository {
-					repo := new(mock.IssueRepository)
-					repo.On("GetRelations", ctx, id).Return(relations, nil)
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, relations []*model.IssueRelation) repository.IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().GetRelations(ctx, id).Return(relations, nil)
 					return repo
 				},
 			},
@@ -2939,9 +2926,9 @@ func TestCachedIssueRepository_GetRelations(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, id model.ID, _ []*model.IssueRelation) repository.IssueRepository {
-					repo := new(mock.IssueRepository)
-					repo.On("GetRelations", ctx, id).Return(nil, repository.ErrNotFound)
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ []*model.IssueRelation) repository.IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().GetRelations(ctx, id).Return(nil, repository.ErrNotFound)
 					return repo
 				},
 			},
@@ -2983,8 +2970,8 @@ func TestCachedIssueRepository_GetRelations(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(_ context.Context, _ model.ID, _ []*model.IssueRelation) repository.IssueRepository {
-					return new(mock.IssueRepository)
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ []*model.IssueRelation) repository.IssueRepository {
+					return mock.NewIssueRepository(ctrl)
 				},
 			},
 			args: args{
@@ -3039,9 +3026,9 @@ func TestCachedIssueRepository_GetRelations(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, id model.ID, relations []*model.IssueRelation) repository.IssueRepository {
-					repo := new(mock.IssueRepository)
-					repo.On("GetRelations", ctx, id).Return(relations, nil)
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, relations []*model.IssueRelation) repository.IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().GetRelations(ctx, id).Return(relations, nil)
 					return repo
 				},
 			},
@@ -3093,8 +3080,8 @@ func TestCachedIssueRepository_GetRelations(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(_ context.Context, _ model.ID, _ []*model.IssueRelation) repository.IssueRepository {
-					return new(mock.IssueRepository)
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ []*model.IssueRelation) repository.IssueRepository {
+					return mock.NewIssueRepository(ctrl)
 				},
 			},
 			args: args{
@@ -3125,7 +3112,7 @@ func TestCachedIssueRepository_GetRelations(t *testing.T) {
 			defer ctrl.Finish()
 			r := &CachedIssueRepository{
 				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, tt.want),
-				issueRepo: tt.fields.issueRepo(tt.args.ctx, tt.args.id, tt.want),
+				issueRepo: tt.fields.issueRepo(ctrl, tt.args.ctx, tt.args.id, tt.want),
 			}
 			got, err := r.GetRelations(tt.args.ctx, tt.args.id)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -3139,7 +3126,7 @@ func TestCachedIssueRepository_GetRelations(t *testing.T) {
 func TestCachedIssueRepository_RemoveRelation(t *testing.T) {
 	type fields struct {
 		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, source, target model.ID, kind model.IssueRelationKind) *baseRepository
-		issueRepo func(ctx context.Context, source, target model.ID, kind model.IssueRelationKind) repository.IssueRepository
+		issueRepo func(ctrl *gomock.Controller, ctx context.Context, source, target model.ID, kind model.IssueRelationKind) repository.IssueRepository
 	}
 	type args struct {
 		ctx    context.Context
@@ -3202,9 +3189,9 @@ func TestCachedIssueRepository_RemoveRelation(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, source, target model.ID, kind model.IssueRelationKind) repository.IssueRepository {
-					repo := new(mock.IssueRepository)
-					repo.On("RemoveRelation", ctx, source, target, kind).Return(nil)
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, source, target model.ID, kind model.IssueRelationKind) repository.IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().RemoveRelation(ctx, source, target, kind).Return(nil)
 					return repo
 				},
 			},
@@ -3264,9 +3251,9 @@ func TestCachedIssueRepository_RemoveRelation(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, source, target model.ID, kind model.IssueRelationKind) repository.IssueRepository {
-					repo := new(mock.IssueRepository)
-					repo.On("RemoveRelation", ctx, source, target, kind).Return(nil)
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, source, target model.ID, kind model.IssueRelationKind) repository.IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().RemoveRelation(ctx, source, target, kind).Return(nil)
 					return repo
 				},
 			},
@@ -3326,9 +3313,9 @@ func TestCachedIssueRepository_RemoveRelation(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, source, target model.ID, kind model.IssueRelationKind) repository.IssueRepository {
-					repo := new(mock.IssueRepository)
-					repo.On("RemoveRelation", ctx, source, target, kind).Return(repository.ErrNotFound)
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, source, target model.ID, kind model.IssueRelationKind) repository.IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().RemoveRelation(ctx, source, target, kind).Return(repository.ErrNotFound)
 					return repo
 				},
 			},
@@ -3367,9 +3354,8 @@ func TestCachedIssueRepository_RemoveRelation(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, source, target model.ID, kind model.IssueRelationKind) repository.IssueRepository {
-					repo := new(mock.IssueRepository)
-					repo.On("RemoveRelation", ctx, source, target, kind).Return(nil)
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID, _ model.IssueRelationKind) repository.IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
 					return repo
 				},
 			},
@@ -3417,9 +3403,8 @@ func TestCachedIssueRepository_RemoveRelation(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, source, target model.ID, kind model.IssueRelationKind) repository.IssueRepository {
-					repo := new(mock.IssueRepository)
-					repo.On("RemoveRelation", ctx, source, target, kind).Return(nil)
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID, _ model.IssueRelationKind) repository.IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
 					return repo
 				},
 			},
@@ -3474,9 +3459,8 @@ func TestCachedIssueRepository_RemoveRelation(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, source, target model.ID, kind model.IssueRelationKind) repository.IssueRepository {
-					repo := new(mock.IssueRepository)
-					repo.On("RemoveRelation", ctx, source, target, kind).Return(nil)
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID, _ model.IssueRelationKind) repository.IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
 					return repo
 				},
 			},
@@ -3537,9 +3521,8 @@ func TestCachedIssueRepository_RemoveRelation(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, source, target model.ID, kind model.IssueRelationKind) repository.IssueRepository {
-					repo := new(mock.IssueRepository)
-					repo.On("RemoveRelation", ctx, source, target, kind).Return(nil)
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID, _ model.IssueRelationKind) repository.IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
 					return repo
 				},
 			},
@@ -3559,7 +3542,7 @@ func TestCachedIssueRepository_RemoveRelation(t *testing.T) {
 			defer ctrl.Finish()
 			r := &CachedIssueRepository{
 				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.source, tt.args.target, tt.args.kind),
-				issueRepo: tt.fields.issueRepo(tt.args.ctx, tt.args.source, tt.args.target, tt.args.kind),
+				issueRepo: tt.fields.issueRepo(ctrl, tt.args.ctx, tt.args.source, tt.args.target, tt.args.kind),
 			}
 			err := r.RemoveRelation(tt.args.ctx, tt.args.source, tt.args.target, tt.args.kind)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -3570,7 +3553,7 @@ func TestCachedIssueRepository_RemoveRelation(t *testing.T) {
 func TestCachedIssueRepository_Update(t *testing.T) {
 	type fields struct {
 		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, issue *model.Issue) *baseRepository
-		issueRepo func(ctx context.Context, id model.ID, patch map[string]any, issue *model.Issue) repository.IssueRepository
+		issueRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, issue *model.Issue) repository.IssueRepository
 	}
 	type args struct {
 		ctx   context.Context
@@ -3630,9 +3613,9 @@ func TestCachedIssueRepository_Update(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, id model.ID, patch map[string]any, issue *model.Issue) repository.IssueRepository {
-					repo := new(mock.IssueRepository)
-					repo.On("Update", ctx, id, patch).Return(issue, nil)
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, issue *model.Issue) repository.IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, patch).Return(issue, nil)
 					return repo
 				},
 			},
@@ -3680,9 +3663,9 @@ func TestCachedIssueRepository_Update(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, id model.ID, patch map[string]any, _ *model.Issue) repository.IssueRepository {
-					repo := new(mock.IssueRepository)
-					repo.On("Update", ctx, id, patch).Return(nil, repository.ErrNotFound)
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, _ *model.Issue) repository.IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, patch).Return(nil, repository.ErrNotFound)
 					return repo
 				},
 			},
@@ -3748,9 +3731,9 @@ func TestCachedIssueRepository_Update(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, id model.ID, patch map[string]any, issue *model.Issue) repository.IssueRepository {
-					repo := new(mock.IssueRepository)
-					repo.On("Update", ctx, id, patch).Return(issue, nil)
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, issue *model.Issue) repository.IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, patch).Return(issue, nil)
 					return repo
 				},
 			},
@@ -3823,9 +3806,9 @@ func TestCachedIssueRepository_Update(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, id model.ID, patch map[string]any, issue *model.Issue) repository.IssueRepository {
-					repo := new(mock.IssueRepository)
-					repo.On("Update", ctx, id, patch).Return(issue, nil)
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, issue *model.Issue) repository.IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, patch).Return(issue, nil)
 					return repo
 				},
 			},
@@ -3904,9 +3887,9 @@ func TestCachedIssueRepository_Update(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, id model.ID, patch map[string]any, issue *model.Issue) repository.IssueRepository {
-					repo := new(mock.IssueRepository)
-					repo.On("Update", ctx, id, patch).Return(issue, nil)
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, issue *model.Issue) repository.IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, patch).Return(issue, nil)
 					return repo
 				},
 			},
@@ -3948,7 +3931,7 @@ func TestCachedIssueRepository_Update(t *testing.T) {
 
 			r := &CachedIssueRepository{
 				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, tt.want),
-				issueRepo: tt.fields.issueRepo(tt.args.ctx, tt.args.id, tt.args.patch, tt.want),
+				issueRepo: tt.fields.issueRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.patch, tt.want),
 			}
 			got, err := r.Update(tt.args.ctx, tt.args.id, tt.args.patch)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -3962,7 +3945,7 @@ func TestCachedIssueRepository_Update(t *testing.T) {
 func TestCachedIssueRepository_Delete(t *testing.T) {
 	type fields struct {
 		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *baseRepository
-		issueRepo func(ctx context.Context, id model.ID) repository.IssueRepository
+		issueRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID) repository.IssueRepository
 	}
 	type args struct {
 		ctx context.Context
@@ -4034,9 +4017,9 @@ func TestCachedIssueRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, id model.ID) repository.IssueRepository {
-					repo := new(mock.IssueRepository)
-					repo.On("Delete", ctx, id).Return(nil)
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) repository.IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().Delete(ctx, id).Return(nil)
 					return repo
 				},
 			},
@@ -4105,9 +4088,9 @@ func TestCachedIssueRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, id model.ID) repository.IssueRepository {
-					repo := new(mock.IssueRepository)
-					repo.On("Delete", ctx, id).Return(repository.ErrNotFound)
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) repository.IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().Delete(ctx, id).Return(repository.ErrNotFound)
 					return repo
 				},
 			},
@@ -4144,9 +4127,8 @@ func TestCachedIssueRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, id model.ID) repository.IssueRepository {
-					repo := new(mock.IssueRepository)
-					repo.On("Delete", ctx, id).Return(nil)
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID) repository.IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
 					return repo
 				},
 			},
@@ -4192,9 +4174,8 @@ func TestCachedIssueRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, id model.ID) repository.IssueRepository {
-					repo := new(mock.IssueRepository)
-					repo.On("Delete", ctx, id).Return(nil)
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID) repository.IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
 					return repo
 				},
 			},
@@ -4246,9 +4227,8 @@ func TestCachedIssueRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, id model.ID) repository.IssueRepository {
-					repo := new(mock.IssueRepository)
-					repo.On("Delete", ctx, id).Return(nil)
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID) repository.IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
 					return repo
 				},
 			},
@@ -4306,9 +4286,8 @@ func TestCachedIssueRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, id model.ID) repository.IssueRepository {
-					repo := new(mock.IssueRepository)
-					repo.On("Delete", ctx, id).Return(nil)
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID) repository.IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
 					return repo
 				},
 			},
@@ -4372,9 +4351,8 @@ func TestCachedIssueRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, id model.ID) repository.IssueRepository {
-					repo := new(mock.IssueRepository)
-					repo.On("Delete", ctx, id).Return(nil)
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID) repository.IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
 					return repo
 				},
 			},
@@ -4444,9 +4422,8 @@ func TestCachedIssueRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				issueRepo: func(ctx context.Context, id model.ID) repository.IssueRepository {
-					repo := new(mock.IssueRepository)
-					repo.On("Delete", ctx, id).Return(nil)
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID) repository.IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
 					return repo
 				},
 			},
@@ -4464,7 +4441,7 @@ func TestCachedIssueRepository_Delete(t *testing.T) {
 			defer ctrl.Finish()
 			r := &CachedIssueRepository{
 				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id),
-				issueRepo: tt.fields.issueRepo(tt.args.ctx, tt.args.id),
+				issueRepo: tt.fields.issueRepo(ctrl, tt.args.ctx, tt.args.id),
 			}
 			err := r.Delete(tt.args.ctx, tt.args.id)
 			require.ErrorIs(t, err, tt.wantErr)

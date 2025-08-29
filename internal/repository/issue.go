@@ -7,6 +7,8 @@ import (
 )
 
 // IssueRepository is a repository for managing user issues.
+//
+//go:generate mockgen -source=issue.go -destination=../testutil/mock/issue_repo_gen.go -package=mock -mock_names "IssueRepository=IssueRepository"
 type IssueRepository interface {
 	Create(ctx context.Context, project model.ID, issue *model.Issue) error
 	Get(ctx context.Context, id model.ID) (*model.Issue, error)
