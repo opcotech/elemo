@@ -7,6 +7,8 @@ import (
 )
 
 // TodoRepository is a repository for managing todos.
+//
+//go:generate mockgen -source=todo.go -destination=../testutil/mock/todo_repo_gen.go -package=mock -mock_names "TodoRepository=TodoRepository"
 type TodoRepository interface {
 	Create(ctx context.Context, todo *model.Todo) error
 	Get(ctx context.Context, id model.ID) (*model.Todo, error)

@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"go.uber.org/mock/gomock"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -33,7 +34,7 @@ func TestNewTodoService(t *testing.T) {
 				opts: []Option{
 					WithLogger(new(mock.Logger)),
 					WithTracer(new(mock.Tracer)),
-					WithTodoRepository(new(mock.TodoRepository)),
+					WithTodoRepository(mock.NewTodoRepository(nil)),
 					WithPermissionService(new(mock.PermissionService)),
 					WithLicenseService(new(mock.LicenseService)),
 				},
@@ -42,7 +43,7 @@ func TestNewTodoService(t *testing.T) {
 				baseService: &baseService{
 					logger:            new(mock.Logger),
 					tracer:            new(mock.Tracer),
-					todoRepo:          new(mock.TodoRepository),
+					todoRepo:          mock.NewTodoRepository(nil),
 					permissionService: new(mock.PermissionService),
 					licenseService:    new(mock.LicenseService),
 				},
@@ -53,7 +54,7 @@ func TestNewTodoService(t *testing.T) {
 			args: args{
 				opts: []Option{
 					WithLogger(nil),
-					WithTodoRepository(new(mock.TodoRepository)),
+					WithTodoRepository(mock.NewTodoRepository(nil)),
 					WithLicenseService(new(mock.LicenseService)),
 				},
 			},
@@ -76,7 +77,7 @@ func TestNewTodoService(t *testing.T) {
 				opts: []Option{
 					WithLogger(new(mock.Logger)),
 					WithTracer(new(mock.Tracer)),
-					WithTodoRepository(new(mock.TodoRepository)),
+					WithTodoRepository(mock.NewTodoRepository(nil)),
 					WithLicenseService(new(mock.LicenseService)),
 				},
 			},
@@ -88,7 +89,7 @@ func TestNewTodoService(t *testing.T) {
 				opts: []Option{
 					WithLogger(new(mock.Logger)),
 					WithTracer(new(mock.Tracer)),
-					WithTodoRepository(new(mock.TodoRepository)),
+					WithTodoRepository(mock.NewTodoRepository(nil)),
 					WithPermissionService(new(mock.PermissionService)),
 				},
 			},
@@ -115,7 +116,7 @@ func TestTodoService_Create(t *testing.T) {
 		todo *model.Todo
 	}
 	type fields struct {
-		baseService func(ctx context.Context, todo *model.Todo) *baseService
+		baseService func(ctrl *gomock.Controller, ctx context.Context, todo *model.Todo) *baseService
 	}
 	tests := []struct {
 		name    string
@@ -130,7 +131,7 @@ func TestTodoService_Create(t *testing.T) {
 				todo: testModel.NewTodo(userID, userID),
 			},
 			fields: fields{
-				baseService: func(ctx context.Context, todo *model.Todo) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, todo *model.Todo) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -140,8 +141,8 @@ func TestTodoService_Create(t *testing.T) {
 					licenseSvc := new(mock.LicenseService)
 					licenseSvc.On("Expired", ctx).Return(false, nil)
 
-					todoRepo := new(mock.TodoRepository)
-					todoRepo.On("Create", ctx, todo).Return(nil)
+					todoRepo := mock.NewTodoRepository(ctrl)
+					todoRepo.EXPECT().Create(ctx, todo).Return(nil)
 
 					return &baseService{
 						logger:            new(mock.Logger),
@@ -160,7 +161,7 @@ func TestTodoService_Create(t *testing.T) {
 				todo: testModel.NewTodo(userID, peerID),
 			},
 			fields: fields{
-				baseService: func(ctx context.Context, todo *model.Todo) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, todo *model.Todo) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -173,8 +174,8 @@ func TestTodoService_Create(t *testing.T) {
 					permSvc := new(mock.PermissionService)
 					permSvc.On("HasAnyRelation", ctx, peerID, userID).Return(true, nil)
 
-					todoRepo := new(mock.TodoRepository)
-					todoRepo.On("Create", ctx, todo).Return(nil)
+					todoRepo := mock.NewTodoRepository(ctrl)
+					todoRepo.EXPECT().Create(ctx, todo).Return(nil)
 
 					return &baseService{
 						logger:            new(mock.Logger),
@@ -193,7 +194,7 @@ func TestTodoService_Create(t *testing.T) {
 				todo: &model.Todo{},
 			},
 			fields: fields{
-				baseService: func(ctx context.Context, todo *model.Todo) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ *model.Todo) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -203,8 +204,7 @@ func TestTodoService_Create(t *testing.T) {
 					licenseSvc := new(mock.LicenseService)
 					licenseSvc.On("Expired", ctx).Return(false, nil)
 
-					todoRepo := new(mock.TodoRepository)
-					todoRepo.On("Create", ctx, todo).Return(nil)
+					todoRepo := mock.NewTodoRepository(ctrl)
 
 					return &baseService{
 						logger:            new(mock.Logger),
@@ -224,7 +224,7 @@ func TestTodoService_Create(t *testing.T) {
 				todo: testModel.NewTodo(userID, userID),
 			},
 			fields: fields{
-				baseService: func(ctx context.Context, todo *model.Todo) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ *model.Todo) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -234,8 +234,7 @@ func TestTodoService_Create(t *testing.T) {
 					licenseSvc := new(mock.LicenseService)
 					licenseSvc.On("Expired", ctx).Return(true, nil)
 
-					todoRepo := new(mock.TodoRepository)
-					todoRepo.On("Create", ctx, todo).Return(nil)
+					todoRepo := mock.NewTodoRepository(ctrl)
 
 					return &baseService{
 						logger:            new(mock.Logger),
@@ -255,7 +254,7 @@ func TestTodoService_Create(t *testing.T) {
 				todo: testModel.NewTodo(userID, userID),
 			},
 			fields: fields{
-				baseService: func(ctx context.Context, todo *model.Todo) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ *model.Todo) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -265,8 +264,7 @@ func TestTodoService_Create(t *testing.T) {
 					licenseSvc := new(mock.LicenseService)
 					licenseSvc.On("Expired", ctx).Return(false, assert.AnError)
 
-					todoRepo := new(mock.TodoRepository)
-					todoRepo.On("Create", ctx, todo).Return(nil)
+					todoRepo := mock.NewTodoRepository(ctrl)
 
 					return &baseService{
 						logger:            new(mock.Logger),
@@ -286,7 +284,7 @@ func TestTodoService_Create(t *testing.T) {
 				todo: testModel.NewTodo(userID, userID),
 			},
 			fields: fields{
-				baseService: func(ctx context.Context, todo *model.Todo) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, todo *model.Todo) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -296,8 +294,8 @@ func TestTodoService_Create(t *testing.T) {
 					licenseSvc := new(mock.LicenseService)
 					licenseSvc.On("Expired", ctx).Return(false, nil)
 
-					todoRepo := new(mock.TodoRepository)
-					todoRepo.On("Create", ctx, todo).Return(assert.AnError)
+					todoRepo := mock.NewTodoRepository(ctrl)
+					todoRepo.EXPECT().Create(ctx, todo).Return(assert.AnError)
 
 					return &baseService{
 						logger:            new(mock.Logger),
@@ -317,7 +315,7 @@ func TestTodoService_Create(t *testing.T) {
 				todo: testModel.NewTodo(userID, peerID),
 			},
 			fields: fields{
-				baseService: func(ctx context.Context, todo *model.Todo) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ *model.Todo) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -330,8 +328,7 @@ func TestTodoService_Create(t *testing.T) {
 					permSvc := new(mock.PermissionService)
 					permSvc.On("HasAnyRelation", ctx, peerID, userID).Return(false, nil)
 
-					todoRepo := new(mock.TodoRepository)
-					todoRepo.On("Create", ctx, todo).Return(nil)
+					todoRepo := mock.NewTodoRepository(ctrl)
 
 					return &baseService{
 						logger:            new(mock.Logger),
@@ -351,7 +348,7 @@ func TestTodoService_Create(t *testing.T) {
 				todo: testModel.NewTodo(userID, peerID),
 			},
 			fields: fields{
-				baseService: func(ctx context.Context, todo *model.Todo) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ *model.Todo) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -364,8 +361,7 @@ func TestTodoService_Create(t *testing.T) {
 					permSvc := new(mock.PermissionService)
 					permSvc.On("HasAnyRelation", ctx, peerID, userID).Return(false, assert.AnError)
 
-					todoRepo := new(mock.TodoRepository)
-					todoRepo.On("Create", ctx, todo).Return(nil)
+					todoRepo := mock.NewTodoRepository(ctrl)
 
 					return &baseService{
 						logger:            new(mock.Logger),
@@ -385,7 +381,7 @@ func TestTodoService_Create(t *testing.T) {
 				todo: testModel.NewTodo(userID, userID),
 			},
 			fields: fields{
-				baseService: func(ctx context.Context, todo *model.Todo) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, todo *model.Todo) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -395,8 +391,8 @@ func TestTodoService_Create(t *testing.T) {
 					licenseSvc := new(mock.LicenseService)
 					licenseSvc.On("Expired", ctx).Return(false, nil)
 
-					todoRepo := new(mock.TodoRepository)
-					todoRepo.On("Create", ctx, todo).Return(nil)
+					todoRepo := mock.NewTodoRepository(ctrl)
+					todoRepo.EXPECT().Create(ctx, todo).Return(nil)
 
 					return &baseService{
 						logger:            new(mock.Logger),
@@ -414,8 +410,10 @@ func TestTodoService_Create(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 			s := &todoService{
-				baseService: tt.fields.baseService(tt.args.ctx, tt.args.todo),
+				baseService: tt.fields.baseService(ctrl, tt.args.ctx, tt.args.todo),
 			}
 			err := s.Create(tt.args.ctx, tt.args.todo)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -432,7 +430,7 @@ func TestTodoService_Get(t *testing.T) {
 		id  model.ID
 	}
 	type fields struct {
-		baseService func(ctx context.Context, id model.ID, todo *model.Todo) *baseService
+		baseService func(ctrl *gomock.Controller, ctx context.Context, id model.ID, todo *model.Todo) *baseService
 	}
 	tests := []struct {
 		name    string
@@ -448,7 +446,7 @@ func TestTodoService_Get(t *testing.T) {
 				id:  todo.ID,
 			},
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID, todo *model.Todo) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, todo *model.Todo) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -460,8 +458,8 @@ func TestTodoService_Get(t *testing.T) {
 						model.PermissionKindRead,
 					}).Return(true, nil)
 
-					todoRepo := new(mock.TodoRepository)
-					todoRepo.On("Get", ctx, id).Return(todo, nil)
+					todoRepo := mock.NewTodoRepository(ctrl)
+					todoRepo.EXPECT().Get(ctx, id).Return(todo, nil)
 
 					return &baseService{
 						logger:            new(mock.Logger),
@@ -481,7 +479,7 @@ func TestTodoService_Get(t *testing.T) {
 				id:  todo.ID,
 			},
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID, _ *model.Todo) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *model.Todo) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -496,7 +494,7 @@ func TestTodoService_Get(t *testing.T) {
 					return &baseService{
 						logger:            new(mock.Logger),
 						tracer:            tracer,
-						todoRepo:          new(mock.TodoRepository),
+						todoRepo:          mock.NewTodoRepository(ctrl),
 						permissionService: permSvc,
 						licenseService:    new(mock.LicenseService),
 					}
@@ -511,7 +509,7 @@ func TestTodoService_Get(t *testing.T) {
 				id:  todo.ID,
 			},
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID, _ *model.Todo) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *model.Todo) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -526,7 +524,7 @@ func TestTodoService_Get(t *testing.T) {
 					return &baseService{
 						logger:            new(mock.Logger),
 						tracer:            tracer,
-						todoRepo:          new(mock.TodoRepository),
+						todoRepo:          mock.NewTodoRepository(ctrl),
 						permissionService: permSvc,
 						licenseService:    new(mock.LicenseService),
 					}
@@ -541,7 +539,7 @@ func TestTodoService_Get(t *testing.T) {
 				id:  todo.ID,
 			},
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID, _ *model.Todo) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *model.Todo) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -553,8 +551,8 @@ func TestTodoService_Get(t *testing.T) {
 						model.PermissionKindRead,
 					}).Return(true, nil)
 
-					todoRepo := new(mock.TodoRepository)
-					todoRepo.On("Get", ctx, id).Return(nil, assert.AnError)
+					todoRepo := mock.NewTodoRepository(ctrl)
+					todoRepo.EXPECT().Get(ctx, id).Return(nil, assert.AnError)
 
 					return &baseService{
 						logger:            new(mock.Logger),
@@ -574,7 +572,7 @@ func TestTodoService_Get(t *testing.T) {
 				id:  model.ID{},
 			},
 			fields: fields{
-				baseService: func(ctx context.Context, _ model.ID, _ *model.Todo) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ *model.Todo) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -584,7 +582,7 @@ func TestTodoService_Get(t *testing.T) {
 					return &baseService{
 						logger:            new(mock.Logger),
 						tracer:            tracer,
-						todoRepo:          new(mock.TodoRepository),
+						todoRepo:          mock.NewTodoRepository(ctrl),
 						permissionService: new(mock.PermissionService),
 						licenseService:    new(mock.LicenseService),
 					}
@@ -597,8 +595,10 @@ func TestTodoService_Get(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 			s := &todoService{
-				baseService: tt.fields.baseService(tt.args.ctx, tt.args.id, tt.want),
+				baseService: tt.fields.baseService(ctrl, tt.args.ctx, tt.args.id, tt.want),
 			}
 			todo, err := s.Get(tt.args.ctx, tt.args.id)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -616,7 +616,7 @@ func TestTodoService_GetAll(t *testing.T) {
 		completed     *bool
 	}
 	type fields struct {
-		baseService func(ctx context.Context, offset, limit int, completed *bool, todos []*model.Todo) *baseService
+		baseService func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, completed *bool, todos []*model.Todo) *baseService
 	}
 	tests := []struct {
 		name    string
@@ -634,15 +634,15 @@ func TestTodoService_GetAll(t *testing.T) {
 				completed: nil,
 			},
 			fields: fields{
-				baseService: func(ctx context.Context, offset, limit int, completed *bool, todos []*model.Todo) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, completed *bool, todos []*model.Todo) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "service.todoService/GetAll", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					todoRepo := new(mock.TodoRepository)
-					todoRepo.On("GetByOwner", ctx, userID, offset, limit, completed).Return(todos, nil)
+					todoRepo := mock.NewTodoRepository(ctrl)
+					todoRepo.EXPECT().GetByOwner(ctx, userID, offset, limit, completed).Return(todos, nil)
 
 					return &baseService{
 						logger:            new(mock.Logger),
@@ -667,15 +667,15 @@ func TestTodoService_GetAll(t *testing.T) {
 				completed: convert.ToPointer(true),
 			},
 			fields: fields{
-				baseService: func(ctx context.Context, offset, limit int, completed *bool, todos []*model.Todo) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, completed *bool, todos []*model.Todo) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "service.todoService/GetAll", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					todoRepo := new(mock.TodoRepository)
-					todoRepo.On("GetByOwner", ctx, userID, offset, limit, completed).Return(todos, nil)
+					todoRepo := mock.NewTodoRepository(ctrl)
+					todoRepo.EXPECT().GetByOwner(ctx, userID, offset, limit, completed).Return(todos, nil)
 
 					return &baseService{
 						logger:            new(mock.Logger),
@@ -700,15 +700,15 @@ func TestTodoService_GetAll(t *testing.T) {
 				completed: convert.ToPointer(false),
 			},
 			fields: fields{
-				baseService: func(ctx context.Context, offset, limit int, completed *bool, todos []*model.Todo) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, completed *bool, todos []*model.Todo) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "service.todoService/GetAll", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					todoRepo := new(mock.TodoRepository)
-					todoRepo.On("GetByOwner", ctx, userID, offset, limit, completed).Return(todos, nil)
+					todoRepo := mock.NewTodoRepository(ctrl)
+					todoRepo.EXPECT().GetByOwner(ctx, userID, offset, limit, completed).Return(todos, nil)
 
 					return &baseService{
 						logger:            new(mock.Logger),
@@ -733,7 +733,7 @@ func TestTodoService_GetAll(t *testing.T) {
 				completed: nil,
 			},
 			fields: fields{
-				baseService: func(ctx context.Context, _, _ int, _ *bool, _ []*model.Todo) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ int, _ *bool, _ []*model.Todo) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -743,7 +743,7 @@ func TestTodoService_GetAll(t *testing.T) {
 					return &baseService{
 						logger:            new(mock.Logger),
 						tracer:            tracer,
-						todoRepo:          new(mock.TodoRepository),
+						todoRepo:          mock.NewTodoRepository(ctrl),
 						permissionService: new(mock.PermissionService),
 						licenseService:    new(mock.LicenseService),
 					}
@@ -760,15 +760,15 @@ func TestTodoService_GetAll(t *testing.T) {
 				completed: nil,
 			},
 			fields: fields{
-				baseService: func(ctx context.Context, offset, limit int, completed *bool, _ []*model.Todo) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, completed *bool, _ []*model.Todo) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "service.todoService/GetAll", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					todoRepo := new(mock.TodoRepository)
-					todoRepo.On("GetByOwner", ctx, userID, offset, limit, completed).Return(nil, assert.AnError)
+					todoRepo := mock.NewTodoRepository(ctrl)
+					todoRepo.EXPECT().GetByOwner(ctx, userID, offset, limit, completed).Return(nil, assert.AnError)
 
 					return &baseService{
 						logger:            new(mock.Logger),
@@ -786,8 +786,10 @@ func TestTodoService_GetAll(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 			s := &todoService{
-				baseService: tt.fields.baseService(tt.args.ctx, tt.args.offset, tt.args.limit, tt.args.completed, tt.want),
+				baseService: tt.fields.baseService(ctrl, tt.args.ctx, tt.args.offset, tt.args.limit, tt.args.completed, tt.want),
 			}
 			todo, err := s.GetAll(tt.args.ctx, tt.args.offset, tt.args.limit, tt.args.completed)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -806,7 +808,7 @@ func TestTodoService_Update(t *testing.T) {
 		patch map[string]any
 	}
 	type fields struct {
-		baseService func(ctx context.Context, id model.ID, patch map[string]any, todo *model.Todo) *baseService
+		baseService func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, todo *model.Todo) *baseService
 	}
 	tests := []struct {
 		name    string
@@ -825,7 +827,7 @@ func TestTodoService_Update(t *testing.T) {
 				},
 			},
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID, patch map[string]any, todo *model.Todo) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, todo *model.Todo) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -840,8 +842,8 @@ func TestTodoService_Update(t *testing.T) {
 						model.PermissionKindWrite,
 					}).Return(true, nil)
 
-					todoRepo := new(mock.TodoRepository)
-					todoRepo.On("Update", ctx, id, patch).Return(todo, nil)
+					todoRepo := mock.NewTodoRepository(ctrl)
+					todoRepo.EXPECT().Update(ctx, id, patch).Return(todo, nil)
 
 					return &baseService{
 						logger:            new(mock.Logger),
@@ -864,7 +866,7 @@ func TestTodoService_Update(t *testing.T) {
 				},
 			},
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID, _ map[string]any, _ *model.Todo) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ map[string]any, _ *model.Todo) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -882,7 +884,7 @@ func TestTodoService_Update(t *testing.T) {
 					return &baseService{
 						logger:            new(mock.Logger),
 						tracer:            tracer,
-						todoRepo:          new(mock.TodoRepository),
+						todoRepo:          mock.NewTodoRepository(ctrl),
 						permissionService: permSvc,
 						licenseService:    licenseSvc,
 					}
@@ -900,7 +902,7 @@ func TestTodoService_Update(t *testing.T) {
 				},
 			},
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID, _ map[string]any, _ *model.Todo) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ map[string]any, _ *model.Todo) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -918,7 +920,7 @@ func TestTodoService_Update(t *testing.T) {
 					return &baseService{
 						logger:            new(mock.Logger),
 						tracer:            tracer,
-						todoRepo:          new(mock.TodoRepository),
+						todoRepo:          mock.NewTodoRepository(ctrl),
 						permissionService: permSvc,
 						licenseService:    licenseSvc,
 					}
@@ -936,7 +938,7 @@ func TestTodoService_Update(t *testing.T) {
 				},
 			},
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID, patch map[string]any, _ *model.Todo) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, _ *model.Todo) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -951,8 +953,8 @@ func TestTodoService_Update(t *testing.T) {
 						model.PermissionKindWrite,
 					}).Return(true, nil)
 
-					todoRepo := new(mock.TodoRepository)
-					todoRepo.On("Update", ctx, id, patch).Return(nil, assert.AnError)
+					todoRepo := mock.NewTodoRepository(ctrl)
+					todoRepo.EXPECT().Update(ctx, id, patch).Return(nil, assert.AnError)
 
 					return &baseService{
 						logger:            new(mock.Logger),
@@ -975,7 +977,7 @@ func TestTodoService_Update(t *testing.T) {
 				},
 			},
 			fields: fields{
-				baseService: func(ctx context.Context, _ model.ID, _ map[string]any, _ *model.Todo) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ map[string]any, _ *model.Todo) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -988,7 +990,7 @@ func TestTodoService_Update(t *testing.T) {
 					return &baseService{
 						logger:            new(mock.Logger),
 						tracer:            tracer,
-						todoRepo:          new(mock.TodoRepository),
+						todoRepo:          mock.NewTodoRepository(ctrl),
 						permissionService: new(mock.PermissionService),
 						licenseService:    licenseSvc,
 					}
@@ -1006,7 +1008,7 @@ func TestTodoService_Update(t *testing.T) {
 				},
 			},
 			fields: fields{
-				baseService: func(ctx context.Context, _ model.ID, _ map[string]any, _ *model.Todo) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ map[string]any, _ *model.Todo) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1019,7 +1021,7 @@ func TestTodoService_Update(t *testing.T) {
 					return &baseService{
 						logger:            new(mock.Logger),
 						tracer:            tracer,
-						todoRepo:          new(mock.TodoRepository),
+						todoRepo:          mock.NewTodoRepository(ctrl),
 						permissionService: new(mock.PermissionService),
 						licenseService:    licenseSvc,
 					}
@@ -1037,7 +1039,7 @@ func TestTodoService_Update(t *testing.T) {
 				},
 			},
 			fields: fields{
-				baseService: func(ctx context.Context, _ model.ID, _ map[string]any, _ *model.Todo) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ map[string]any, _ *model.Todo) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1050,7 +1052,7 @@ func TestTodoService_Update(t *testing.T) {
 					return &baseService{
 						logger:            new(mock.Logger),
 						tracer:            tracer,
-						todoRepo:          new(mock.TodoRepository),
+						todoRepo:          mock.NewTodoRepository(ctrl),
 						permissionService: new(mock.PermissionService),
 						licenseService:    licenseSvc,
 					}
@@ -1063,8 +1065,10 @@ func TestTodoService_Update(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 			s := &todoService{
-				baseService: tt.fields.baseService(tt.args.ctx, tt.args.id, tt.args.patch, tt.want),
+				baseService: tt.fields.baseService(ctrl, tt.args.ctx, tt.args.id, tt.args.patch, tt.want),
 			}
 			todo, err := s.Update(tt.args.ctx, tt.args.id, tt.args.patch)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -1082,7 +1086,7 @@ func TestTodoService_Delete(t *testing.T) {
 		id  model.ID
 	}
 	type fields struct {
-		baseService func(ctx context.Context, id model.ID) *baseService
+		baseService func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *baseService
 	}
 	tests := []struct {
 		name    string
@@ -1098,7 +1102,7 @@ func TestTodoService_Delete(t *testing.T) {
 				id:  todo.ID,
 			},
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1113,8 +1117,8 @@ func TestTodoService_Delete(t *testing.T) {
 						model.PermissionKindDelete,
 					}).Return(true, nil)
 
-					todoRepo := new(mock.TodoRepository)
-					todoRepo.On("Delete", ctx, id).Return(nil)
+					todoRepo := mock.NewTodoRepository(ctrl)
+					todoRepo.EXPECT().Delete(ctx, id).Return(nil)
 
 					return &baseService{
 						logger:            new(mock.Logger),
@@ -1134,7 +1138,7 @@ func TestTodoService_Delete(t *testing.T) {
 				id:  todo.ID,
 			},
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1152,7 +1156,7 @@ func TestTodoService_Delete(t *testing.T) {
 					return &baseService{
 						logger:            new(mock.Logger),
 						tracer:            tracer,
-						todoRepo:          new(mock.TodoRepository),
+						todoRepo:          mock.NewTodoRepository(ctrl),
 						permissionService: permSvc,
 						licenseService:    licenseSvc,
 					}
@@ -1167,7 +1171,7 @@ func TestTodoService_Delete(t *testing.T) {
 				id:  todo.ID,
 			},
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1185,7 +1189,7 @@ func TestTodoService_Delete(t *testing.T) {
 					return &baseService{
 						logger:            new(mock.Logger),
 						tracer:            tracer,
-						todoRepo:          new(mock.TodoRepository),
+						todoRepo:          mock.NewTodoRepository(ctrl),
 						permissionService: permSvc,
 						licenseService:    licenseSvc,
 					}
@@ -1200,7 +1204,7 @@ func TestTodoService_Delete(t *testing.T) {
 				id:  todo.ID,
 			},
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1215,8 +1219,8 @@ func TestTodoService_Delete(t *testing.T) {
 						model.PermissionKindDelete,
 					}).Return(true, nil)
 
-					todoRepo := new(mock.TodoRepository)
-					todoRepo.On("Delete", ctx, id).Return(assert.AnError)
+					todoRepo := mock.NewTodoRepository(ctrl)
+					todoRepo.EXPECT().Delete(ctx, id).Return(assert.AnError)
 
 					return &baseService{
 						logger:            new(mock.Logger),
@@ -1236,7 +1240,7 @@ func TestTodoService_Delete(t *testing.T) {
 				id:  model.ID{},
 			},
 			fields: fields{
-				baseService: func(ctx context.Context, _ model.ID) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1249,7 +1253,7 @@ func TestTodoService_Delete(t *testing.T) {
 					return &baseService{
 						logger:            new(mock.Logger),
 						tracer:            tracer,
-						todoRepo:          new(mock.TodoRepository),
+						todoRepo:          mock.NewTodoRepository(ctrl),
 						permissionService: new(mock.PermissionService),
 						licenseService:    licenseSvc,
 					}
@@ -1264,7 +1268,7 @@ func TestTodoService_Delete(t *testing.T) {
 				id:  todo.ID,
 			},
 			fields: fields{
-				baseService: func(ctx context.Context, _ model.ID) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1277,7 +1281,7 @@ func TestTodoService_Delete(t *testing.T) {
 					return &baseService{
 						logger:            new(mock.Logger),
 						tracer:            tracer,
-						todoRepo:          new(mock.TodoRepository),
+						todoRepo:          mock.NewTodoRepository(ctrl),
 						permissionService: new(mock.PermissionService),
 						licenseService:    licenseSvc,
 					}
@@ -1292,7 +1296,7 @@ func TestTodoService_Delete(t *testing.T) {
 				id:  todo.ID,
 			},
 			fields: fields{
-				baseService: func(ctx context.Context, _ model.ID) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1305,7 +1309,7 @@ func TestTodoService_Delete(t *testing.T) {
 					return &baseService{
 						logger:            new(mock.Logger),
 						tracer:            tracer,
-						todoRepo:          new(mock.TodoRepository),
+						todoRepo:          mock.NewTodoRepository(ctrl),
 						permissionService: new(mock.PermissionService),
 						licenseService:    licenseSvc,
 					}
@@ -1318,8 +1322,10 @@ func TestTodoService_Delete(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 			s := &todoService{
-				baseService: tt.fields.baseService(tt.args.ctx, tt.args.id),
+				baseService: tt.fields.baseService(ctrl, tt.args.ctx, tt.args.id),
 			}
 			err := s.Delete(tt.args.ctx, tt.args.id)
 			require.ErrorIs(t, err, tt.wantErr)
