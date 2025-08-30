@@ -7,6 +7,8 @@ import (
 )
 
 // PermissionRepository defines the interface for the permission repository.
+//
+//go:generate mockgen -source=permission.go -destination=../testutil/mock/permission_repo_gen.go -package=mock -mock_names "PermissionRepository=PermissionRepository"
 type PermissionRepository interface {
 	Create(ctx context.Context, perm *model.Permission) error
 	Get(ctx context.Context, id model.ID) (*model.Permission, error)
