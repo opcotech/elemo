@@ -19,7 +19,7 @@ import (
 func TestCachedRoleRepository_Create(t *testing.T) {
 	type fields struct {
 		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, createdBy, belongsTo model.ID, role *model.Role) *baseRepository
-		roleRepo  func(ctx context.Context, createdBy, belongsTo model.ID, role *model.Role) repository.RoleRepository
+		roleRepo  func(ctrl *gomock.Controller, ctx context.Context, createdBy, belongsTo model.ID, role *model.Role) repository.RoleRepository
 	}
 	type args struct {
 		ctx       context.Context
@@ -78,9 +78,9 @@ func TestCachedRoleRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				roleRepo: func(ctx context.Context, createdBy, belongsTo model.ID, role *model.Role) repository.RoleRepository {
-					repo := new(mock.RoleRepository)
-					repo.On("Create", ctx, createdBy, belongsTo, role).Return(nil)
+				roleRepo: func(ctrl *gomock.Controller, ctx context.Context, createdBy, belongsTo model.ID, role *model.Role) repository.RoleRepository {
+					repo := mock.NewRoleRepository(ctrl)
+					repo.EXPECT().Create(ctx, createdBy, belongsTo, role).Return(nil)
 					return repo
 				},
 			},
@@ -142,9 +142,9 @@ func TestCachedRoleRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				roleRepo: func(ctx context.Context, createdBy, belongsTo model.ID, role *model.Role) repository.RoleRepository {
-					repo := new(mock.RoleRepository)
-					repo.On("Create", ctx, createdBy, belongsTo, role).Return(repository.ErrNotFound)
+				roleRepo: func(ctrl *gomock.Controller, ctx context.Context, createdBy, belongsTo model.ID, role *model.Role) repository.RoleRepository {
+					repo := mock.NewRoleRepository(ctrl)
+					repo.EXPECT().Create(ctx, createdBy, belongsTo, role).Return(repository.ErrNotFound)
 					return repo
 				},
 			},
@@ -195,9 +195,8 @@ func TestCachedRoleRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				roleRepo: func(ctx context.Context, createdBy, belongsTo model.ID, role *model.Role) repository.RoleRepository {
-					repo := new(mock.RoleRepository)
-					repo.On("Create", ctx, createdBy, belongsTo, role).Return(nil)
+				roleRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID, _ *model.Role) repository.RoleRepository {
+					repo := mock.NewRoleRepository(ctrl)
 					return repo
 				},
 			},
@@ -254,9 +253,8 @@ func TestCachedRoleRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				roleRepo: func(ctx context.Context, createdBy, belongsTo model.ID, role *model.Role) repository.RoleRepository {
-					repo := new(mock.RoleRepository)
-					repo.On("Create", ctx, createdBy, belongsTo, role).Return(nil)
+				roleRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID, _ *model.Role) repository.RoleRepository {
+					repo := mock.NewRoleRepository(ctrl)
 					return repo
 				},
 			},
@@ -319,9 +317,8 @@ func TestCachedRoleRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				roleRepo: func(ctx context.Context, createdBy, belongsTo model.ID, role *model.Role) repository.RoleRepository {
-					repo := new(mock.RoleRepository)
-					repo.On("Create", ctx, createdBy, belongsTo, role).Return(nil)
+				roleRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID, _ *model.Role) repository.RoleRepository {
+					repo := mock.NewRoleRepository(ctrl)
 					return repo
 				},
 			},
@@ -348,7 +345,7 @@ func TestCachedRoleRepository_Create(t *testing.T) {
 			defer ctrl.Finish()
 			r := &CachedRoleRepository{
 				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.createdBy, tt.args.belongsTo, tt.args.role),
-				roleRepo:  tt.fields.roleRepo(tt.args.ctx, tt.args.createdBy, tt.args.belongsTo, tt.args.role),
+				roleRepo:  tt.fields.roleRepo(ctrl, tt.args.ctx, tt.args.createdBy, tt.args.belongsTo, tt.args.role),
 			}
 			err := r.Create(tt.args.ctx, tt.args.createdBy, tt.args.belongsTo, tt.args.role)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -359,7 +356,7 @@ func TestCachedRoleRepository_Create(t *testing.T) {
 func TestCachedRoleRepository_Get(t *testing.T) {
 	type fields struct {
 		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, role *model.Role) *baseRepository
-		roleRepo  func(ctx context.Context, id, belongsTo model.ID, role *model.Role) repository.RoleRepository
+		roleRepo  func(ctrl *gomock.Controller, ctx context.Context, id, belongsTo model.ID, role *model.Role) repository.RoleRepository
 	}
 	type args struct {
 		ctx       context.Context
@@ -406,9 +403,9 @@ func TestCachedRoleRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				roleRepo: func(ctx context.Context, id, belongsTo model.ID, role *model.Role) repository.RoleRepository {
-					repo := new(mock.RoleRepository)
-					repo.On("Get", ctx, id, belongsTo).Return(role, nil)
+				roleRepo: func(ctrl *gomock.Controller, ctx context.Context, id, belongsTo model.ID, role *model.Role) repository.RoleRepository {
+					repo := mock.NewRoleRepository(ctrl)
+					repo.EXPECT().Get(ctx, id, belongsTo).Return(role, nil)
 					return repo
 				},
 			},
@@ -458,8 +455,8 @@ func TestCachedRoleRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				roleRepo: func(_ context.Context, _, _ model.ID, _ *model.Role) repository.RoleRepository {
-					return new(mock.RoleRepository)
+				roleRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID, _ *model.Role) repository.RoleRepository {
+					return mock.NewRoleRepository(ctrl)
 				},
 			},
 			args: args{
@@ -504,9 +501,9 @@ func TestCachedRoleRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				roleRepo: func(ctx context.Context, id, belongsTo model.ID, _ *model.Role) repository.RoleRepository {
-					repo := new(mock.RoleRepository)
-					repo.On("Get", ctx, id, belongsTo).Return(nil, repository.ErrNotFound)
+				roleRepo: func(ctrl *gomock.Controller, ctx context.Context, id, belongsTo model.ID, _ *model.Role) repository.RoleRepository {
+					repo := mock.NewRoleRepository(ctrl)
+					repo.EXPECT().Get(ctx, id, belongsTo).Return(nil, repository.ErrNotFound)
 					return repo
 				},
 			},
@@ -544,8 +541,8 @@ func TestCachedRoleRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				roleRepo: func(_ context.Context, _, _ model.ID, _ *model.Role) repository.RoleRepository {
-					return new(mock.RoleRepository)
+				roleRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID, _ *model.Role) repository.RoleRepository {
+					return mock.NewRoleRepository(ctrl)
 				},
 			},
 			args: args{
@@ -588,9 +585,9 @@ func TestCachedRoleRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				roleRepo: func(ctx context.Context, id, belongsTo model.ID, role *model.Role) repository.RoleRepository {
-					repo := new(mock.RoleRepository)
-					repo.On("Get", ctx, id, belongsTo).Return(role, nil)
+				roleRepo: func(ctrl *gomock.Controller, ctx context.Context, id, belongsTo model.ID, role *model.Role) repository.RoleRepository {
+					repo := mock.NewRoleRepository(ctrl)
+					repo.EXPECT().Get(ctx, id, belongsTo).Return(role, nil)
 					return repo
 				},
 			},
@@ -615,7 +612,7 @@ func TestCachedRoleRepository_Get(t *testing.T) {
 
 			r := &CachedRoleRepository{
 				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, want),
-				roleRepo:  tt.fields.roleRepo(tt.args.ctx, tt.args.id, tt.args.belongsTo, want),
+				roleRepo:  tt.fields.roleRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.belongsTo, want),
 			}
 			got, err := r.Get(tt.args.ctx, tt.args.id, tt.args.belongsTo)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -627,7 +624,7 @@ func TestCachedRoleRepository_Get(t *testing.T) {
 func TestCachedRoleRepository_GetAllBelongsTo(t *testing.T) {
 	type fields struct {
 		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, roles []*model.Role) *baseRepository
-		roleRepo  func(ctx context.Context, belongsTo model.ID, offset, limit int, roles []*model.Role) repository.RoleRepository
+		roleRepo  func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, roles []*model.Role) repository.RoleRepository
 	}
 	type args struct {
 		ctx       context.Context
@@ -675,9 +672,9 @@ func TestCachedRoleRepository_GetAllBelongsTo(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				roleRepo: func(ctx context.Context, belongsTo model.ID, offset, limit int, roles []*model.Role) repository.RoleRepository {
-					repo := new(mock.RoleRepository)
-					repo.On("GetAllBelongsTo", ctx, belongsTo, offset, limit).Return(roles, nil)
+				roleRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, roles []*model.Role) repository.RoleRepository {
+					repo := mock.NewRoleRepository(ctrl)
+					repo.EXPECT().GetAllBelongsTo(ctx, belongsTo, offset, limit).Return(roles, nil)
 					return repo
 				},
 			},
@@ -733,8 +730,8 @@ func TestCachedRoleRepository_GetAllBelongsTo(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				roleRepo: func(_ context.Context, _ model.ID, _, _ int, _ []*model.Role) repository.RoleRepository {
-					return new(mock.RoleRepository)
+				roleRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _, _ int, _ []*model.Role) repository.RoleRepository {
+					return mock.NewRoleRepository(ctrl)
 				},
 			},
 			args: args{
@@ -786,9 +783,9 @@ func TestCachedRoleRepository_GetAllBelongsTo(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				roleRepo: func(ctx context.Context, belongsTo model.ID, offset, limit int, _ []*model.Role) repository.RoleRepository {
-					repo := new(mock.RoleRepository)
-					repo.On("GetAllBelongsTo", ctx, belongsTo, offset, limit).Return(nil, repository.ErrNotFound)
+				roleRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, _ []*model.Role) repository.RoleRepository {
+					repo := mock.NewRoleRepository(ctrl)
+					repo.EXPECT().GetAllBelongsTo(ctx, belongsTo, offset, limit).Return(nil, repository.ErrNotFound)
 					return repo
 				},
 			},
@@ -826,8 +823,8 @@ func TestCachedRoleRepository_GetAllBelongsTo(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				roleRepo: func(_ context.Context, _ model.ID, _, _ int, _ []*model.Role) repository.RoleRepository {
-					return new(mock.RoleRepository)
+				roleRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _, _ int, _ []*model.Role) repository.RoleRepository {
+					return mock.NewRoleRepository(ctrl)
 				},
 			},
 			args: args{
@@ -869,9 +866,9 @@ func TestCachedRoleRepository_GetAllBelongsTo(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				roleRepo: func(ctx context.Context, belongsTo model.ID, offset, limit int, roles []*model.Role) repository.RoleRepository {
-					repo := new(mock.RoleRepository)
-					repo.On("GetAllBelongsTo", ctx, belongsTo, offset, limit).Return(roles, nil)
+				roleRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, roles []*model.Role) repository.RoleRepository {
+					repo := mock.NewRoleRepository(ctrl)
+					repo.EXPECT().GetAllBelongsTo(ctx, belongsTo, offset, limit).Return(roles, nil)
 					return repo
 				},
 			},
@@ -890,7 +887,7 @@ func TestCachedRoleRepository_GetAllBelongsTo(t *testing.T) {
 			defer ctrl.Finish()
 			r := &CachedRoleRepository{
 				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.belongsTo, tt.args.offset, tt.args.limit, tt.want),
-				roleRepo:  tt.fields.roleRepo(tt.args.ctx, tt.args.belongsTo, tt.args.offset, tt.args.limit, tt.want),
+				roleRepo:  tt.fields.roleRepo(ctrl, tt.args.ctx, tt.args.belongsTo, tt.args.offset, tt.args.limit, tt.want),
 			}
 			got, err := r.GetAllBelongsTo(tt.args.ctx, tt.args.belongsTo, tt.args.offset, tt.args.limit)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -902,7 +899,7 @@ func TestCachedRoleRepository_GetAllBelongsTo(t *testing.T) {
 func TestCachedRoleRepository_Update(t *testing.T) {
 	type fields struct {
 		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, role *model.Role) *baseRepository
-		roleRepo  func(ctx context.Context, id, belongsTo model.ID, patch map[string]any, role *model.Role) repository.RoleRepository
+		roleRepo  func(ctrl *gomock.Controller, ctx context.Context, id, belongsTo model.ID, patch map[string]any, role *model.Role) repository.RoleRepository
 	}
 	type args struct {
 		ctx       context.Context
@@ -957,9 +954,9 @@ func TestCachedRoleRepository_Update(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				roleRepo: func(ctx context.Context, id, belongsTo model.ID, patch map[string]any, role *model.Role) repository.RoleRepository {
-					repo := new(mock.RoleRepository)
-					repo.On("Update", ctx, id, belongsTo, patch).Return(role, nil)
+				roleRepo: func(ctrl *gomock.Controller, ctx context.Context, id, belongsTo model.ID, patch map[string]any, role *model.Role) repository.RoleRepository {
+					repo := mock.NewRoleRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, belongsTo, patch).Return(role, nil)
 					return repo
 				},
 			},
@@ -994,9 +991,9 @@ func TestCachedRoleRepository_Update(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				roleRepo: func(ctx context.Context, id, belongsTo model.ID, patch map[string]any, _ *model.Role) repository.RoleRepository {
-					repo := new(mock.RoleRepository)
-					repo.On("Update", ctx, id, belongsTo, patch).Return(nil, repository.ErrNotFound)
+				roleRepo: func(ctrl *gomock.Controller, ctx context.Context, id, belongsTo model.ID, patch map[string]any, _ *model.Role) repository.RoleRepository {
+					repo := mock.NewRoleRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, belongsTo, patch).Return(nil, repository.ErrNotFound)
 					return repo
 				},
 			},
@@ -1042,9 +1039,9 @@ func TestCachedRoleRepository_Update(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				roleRepo: func(ctx context.Context, id, belongsTo model.ID, patch map[string]any, role *model.Role) repository.RoleRepository {
-					repo := new(mock.RoleRepository)
-					repo.On("Update", ctx, id, belongsTo, patch).Return(role, nil)
+				roleRepo: func(ctrl *gomock.Controller, ctx context.Context, id, belongsTo model.ID, patch map[string]any, role *model.Role) repository.RoleRepository {
+					repo := mock.NewRoleRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, belongsTo, patch).Return(role, nil)
 					return repo
 				},
 			},
@@ -1099,9 +1096,9 @@ func TestCachedRoleRepository_Update(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				roleRepo: func(ctx context.Context, id, belongsTo model.ID, patch map[string]any, role *model.Role) repository.RoleRepository {
-					repo := new(mock.RoleRepository)
-					repo.On("Update", ctx, id, belongsTo, patch).Return(role, nil)
+				roleRepo: func(ctrl *gomock.Controller, ctx context.Context, id, belongsTo model.ID, patch map[string]any, role *model.Role) repository.RoleRepository {
+					repo := mock.NewRoleRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, belongsTo, patch).Return(role, nil)
 					return repo
 				},
 			},
@@ -1126,7 +1123,7 @@ func TestCachedRoleRepository_Update(t *testing.T) {
 
 			r := &CachedRoleRepository{
 				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, tt.want),
-				roleRepo:  tt.fields.roleRepo(tt.args.ctx, tt.args.id, tt.args.belongsTo, tt.args.patch, tt.want),
+				roleRepo:  tt.fields.roleRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.belongsTo, tt.args.patch, tt.want),
 			}
 			got, err := r.Update(tt.args.ctx, tt.args.id, tt.args.belongsTo, tt.args.patch)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -1138,7 +1135,7 @@ func TestCachedRoleRepository_Update(t *testing.T) {
 func TestCachedRoleRepository_AddMember(t *testing.T) {
 	type fields struct {
 		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, id, memberID model.ID) *baseRepository
-		roleRepo  func(ctx context.Context, id, memberID, belongsToID model.ID) repository.RoleRepository
+		roleRepo  func(ctrl *gomock.Controller, ctx context.Context, id, memberID, belongsToID model.ID) repository.RoleRepository
 	}
 	type args struct {
 		ctx         context.Context
@@ -1188,9 +1185,9 @@ func TestCachedRoleRepository_AddMember(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				roleRepo: func(ctx context.Context, id, memberID, belongsToID model.ID) repository.RoleRepository {
-					repo := new(mock.RoleRepository)
-					repo.On("AddMember", ctx, id, memberID, belongsToID).Return(nil)
+				roleRepo: func(ctrl *gomock.Controller, ctx context.Context, id, memberID, belongsToID model.ID) repository.RoleRepository {
+					repo := mock.NewRoleRepository(ctrl)
+					repo.EXPECT().AddMember(ctx, id, memberID, belongsToID).Return(nil)
 					return repo
 				},
 			},
@@ -1237,9 +1234,9 @@ func TestCachedRoleRepository_AddMember(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				roleRepo: func(ctx context.Context, id, memberID, belongsToID model.ID) repository.RoleRepository {
-					repo := new(mock.RoleRepository)
-					repo.On("AddMember", ctx, id, memberID, belongsToID).Return(repository.ErrRoleDelete)
+				roleRepo: func(ctrl *gomock.Controller, ctx context.Context, id, memberID, belongsToID model.ID) repository.RoleRepository {
+					repo := mock.NewRoleRepository(ctrl)
+					repo.EXPECT().AddMember(ctx, id, memberID, belongsToID).Return(repository.ErrRoleDelete)
 					return repo
 				},
 			},
@@ -1280,9 +1277,8 @@ func TestCachedRoleRepository_AddMember(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				roleRepo: func(ctx context.Context, id, memberID, belongsToID model.ID) repository.RoleRepository {
-					repo := new(mock.RoleRepository)
-					repo.On("AddMember", ctx, id, memberID, belongsToID).Return(nil)
+				roleRepo: func(ctrl *gomock.Controller, _ context.Context, _, _, _ model.ID) repository.RoleRepository {
+					repo := mock.NewRoleRepository(ctrl)
 					return repo
 				},
 			},
@@ -1330,8 +1326,8 @@ func TestCachedRoleRepository_AddMember(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				roleRepo: func(_ context.Context, _, _, _ model.ID) repository.RoleRepository {
-					return new(mock.RoleRepository)
+				roleRepo: func(ctrl *gomock.Controller, _ context.Context, _, _, _ model.ID) repository.RoleRepository {
+					return mock.NewRoleRepository(ctrl)
 				},
 			},
 			args: args{
@@ -1351,7 +1347,7 @@ func TestCachedRoleRepository_AddMember(t *testing.T) {
 			defer ctrl.Finish()
 			r := &CachedRoleRepository{
 				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.memberID),
-				roleRepo:  tt.fields.roleRepo(tt.args.ctx, tt.args.id, tt.args.memberID, tt.args.belongsToID),
+				roleRepo:  tt.fields.roleRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.memberID, tt.args.belongsToID),
 			}
 			err := r.AddMember(tt.args.ctx, tt.args.id, tt.args.memberID, tt.args.belongsToID)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -1362,7 +1358,7 @@ func TestCachedRoleRepository_AddMember(t *testing.T) {
 func TestCachedRoleRepository_RemoveMember(t *testing.T) {
 	type fields struct {
 		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, id, memberID model.ID) *baseRepository
-		roleRepo  func(ctx context.Context, id, memberID, belongsToID model.ID) repository.RoleRepository
+		roleRepo  func(ctrl *gomock.Controller, ctx context.Context, id, memberID, belongsToID model.ID) repository.RoleRepository
 	}
 	type args struct {
 		ctx         context.Context
@@ -1412,9 +1408,9 @@ func TestCachedRoleRepository_RemoveMember(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				roleRepo: func(ctx context.Context, id, memberID, belongsToID model.ID) repository.RoleRepository {
-					repo := new(mock.RoleRepository)
-					repo.On("RemoveMember", ctx, id, memberID, belongsToID).Return(nil)
+				roleRepo: func(ctrl *gomock.Controller, ctx context.Context, id, memberID, belongsToID model.ID) repository.RoleRepository {
+					repo := mock.NewRoleRepository(ctrl)
+					repo.EXPECT().RemoveMember(ctx, id, memberID, belongsToID).Return(nil)
 					return repo
 				},
 			},
@@ -1461,9 +1457,9 @@ func TestCachedRoleRepository_RemoveMember(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				roleRepo: func(ctx context.Context, id, memberID, belongsToID model.ID) repository.RoleRepository {
-					repo := new(mock.RoleRepository)
-					repo.On("RemoveMember", ctx, id, memberID, belongsToID).Return(repository.ErrRoleDelete)
+				roleRepo: func(ctrl *gomock.Controller, ctx context.Context, id, memberID, belongsToID model.ID) repository.RoleRepository {
+					repo := mock.NewRoleRepository(ctrl)
+					repo.EXPECT().RemoveMember(ctx, id, memberID, belongsToID).Return(repository.ErrRoleDelete)
 					return repo
 				},
 			},
@@ -1504,9 +1500,8 @@ func TestCachedRoleRepository_RemoveMember(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				roleRepo: func(ctx context.Context, id, memberID, belongsToID model.ID) repository.RoleRepository {
-					repo := new(mock.RoleRepository)
-					repo.On("RemoveMember", ctx, id, memberID, belongsToID).Return(nil)
+				roleRepo: func(ctrl *gomock.Controller, _ context.Context, _, _, _ model.ID) repository.RoleRepository {
+					repo := mock.NewRoleRepository(ctrl)
 					return repo
 				},
 			},
@@ -1554,8 +1549,8 @@ func TestCachedRoleRepository_RemoveMember(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				roleRepo: func(_ context.Context, _, _, _ model.ID) repository.RoleRepository {
-					return new(mock.RoleRepository)
+				roleRepo: func(ctrl *gomock.Controller, _ context.Context, _, _, _ model.ID) repository.RoleRepository {
+					return mock.NewRoleRepository(ctrl)
 				},
 			},
 			args: args{
@@ -1575,7 +1570,7 @@ func TestCachedRoleRepository_RemoveMember(t *testing.T) {
 			defer ctrl.Finish()
 			r := &CachedRoleRepository{
 				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.memberID),
-				roleRepo:  tt.fields.roleRepo(tt.args.ctx, tt.args.id, tt.args.memberID, tt.args.belongsToID),
+				roleRepo:  tt.fields.roleRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.memberID, tt.args.belongsToID),
 			}
 			err := r.RemoveMember(tt.args.ctx, tt.args.id, tt.args.memberID, tt.args.belongsToID)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -1586,7 +1581,7 @@ func TestCachedRoleRepository_RemoveMember(t *testing.T) {
 func TestCachedRoleRepository_Delete(t *testing.T) {
 	type fields struct {
 		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *baseRepository
-		roleRepo  func(ctx context.Context, id, belongsTo model.ID) repository.RoleRepository
+		roleRepo  func(ctrl *gomock.Controller, ctx context.Context, id, belongsTo model.ID) repository.RoleRepository
 	}
 	type args struct {
 		ctx       context.Context
@@ -1647,9 +1642,9 @@ func TestCachedRoleRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				roleRepo: func(ctx context.Context, id, belongsTo model.ID) repository.RoleRepository {
-					repo := new(mock.RoleRepository)
-					repo.On("Delete", ctx, id, belongsTo).Return(nil)
+				roleRepo: func(ctrl *gomock.Controller, ctx context.Context, id, belongsTo model.ID) repository.RoleRepository {
+					repo := mock.NewRoleRepository(ctrl)
+					repo.EXPECT().Delete(ctx, id, belongsTo).Return(nil)
 					return repo
 				},
 			},
@@ -1707,9 +1702,9 @@ func TestCachedRoleRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				roleRepo: func(ctx context.Context, id, belongsTo model.ID) repository.RoleRepository {
-					repo := new(mock.RoleRepository)
-					repo.On("Delete", ctx, id, belongsTo).Return(repository.ErrRoleDelete)
+				roleRepo: func(ctrl *gomock.Controller, ctx context.Context, id, belongsTo model.ID) repository.RoleRepository {
+					repo := mock.NewRoleRepository(ctrl)
+					repo.EXPECT().Delete(ctx, id, belongsTo).Return(repository.ErrRoleDelete)
 					return repo
 				},
 			},
@@ -1749,9 +1744,8 @@ func TestCachedRoleRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				roleRepo: func(ctx context.Context, id, belongsTo model.ID) repository.RoleRepository {
-					repo := new(mock.RoleRepository)
-					repo.On("Delete", ctx, id, belongsTo).Return(nil)
+				roleRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID) repository.RoleRepository {
+					repo := mock.NewRoleRepository(ctrl)
 					return repo
 				},
 			},
@@ -1798,8 +1792,8 @@ func TestCachedRoleRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				roleRepo: func(_ context.Context, _, _ model.ID) repository.RoleRepository {
-					return new(mock.RoleRepository)
+				roleRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID) repository.RoleRepository {
+					return mock.NewRoleRepository(ctrl)
 				},
 			},
 			args: args{
@@ -1851,8 +1845,8 @@ func TestCachedRoleRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				roleRepo: func(_ context.Context, _, _ model.ID) repository.RoleRepository {
-					return new(mock.RoleRepository)
+				roleRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID) repository.RoleRepository {
+					return mock.NewRoleRepository(ctrl)
 				},
 			},
 			args: args{
@@ -1910,8 +1904,8 @@ func TestCachedRoleRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				roleRepo: func(_ context.Context, _, _ model.ID) repository.RoleRepository {
-					return new(mock.RoleRepository)
+				roleRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID) repository.RoleRepository {
+					return mock.NewRoleRepository(ctrl)
 				},
 			},
 			args: args{
@@ -1930,7 +1924,7 @@ func TestCachedRoleRepository_Delete(t *testing.T) {
 			defer ctrl.Finish()
 			r := &CachedRoleRepository{
 				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id),
-				roleRepo:  tt.fields.roleRepo(tt.args.ctx, tt.args.id, tt.args.belongsTo),
+				roleRepo:  tt.fields.roleRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.belongsTo),
 			}
 			err := r.Delete(tt.args.ctx, tt.args.id, tt.args.belongsTo)
 			require.ErrorIs(t, err, tt.wantErr)
