@@ -34,7 +34,7 @@ func TestNewOrganizationService(t *testing.T) {
 					WithLogger(new(mock.Logger)),
 					WithTracer(new(mock.Tracer)),
 					WithUserRepository(mock.NewUserRepository(nil)),
-					WithOrganizationRepository(new(mock.OrganizationRepository)),
+					WithOrganizationRepository(mock.NewOrganizationRepository(nil)),
 					WithPermissionService(new(mock.PermissionService)),
 					WithLicenseService(new(mock.LicenseService)),
 				},
@@ -44,7 +44,7 @@ func TestNewOrganizationService(t *testing.T) {
 					logger:            new(mock.Logger),
 					tracer:            new(mock.Tracer),
 					userRepo:          mock.NewUserRepository(nil),
-					organizationRepo:  new(mock.OrganizationRepository),
+					organizationRepo:  mock.NewOrganizationRepository(nil),
 					permissionService: new(mock.PermissionService),
 					licenseService:    new(mock.LicenseService),
 				},
@@ -57,7 +57,7 @@ func TestNewOrganizationService(t *testing.T) {
 					WithLogger(nil),
 					WithTracer(new(mock.Tracer)),
 					WithUserRepository(mock.NewUserRepository(nil)),
-					WithOrganizationRepository(new(mock.OrganizationRepository)),
+					WithOrganizationRepository(mock.NewOrganizationRepository(nil)),
 					WithPermissionService(new(mock.PermissionService)),
 					WithLicenseService(new(mock.LicenseService)),
 				},
@@ -84,7 +84,7 @@ func TestNewOrganizationService(t *testing.T) {
 					WithLogger(new(mock.Logger)),
 					WithTracer(new(mock.Tracer)),
 					WithUserRepository(mock.NewUserRepository(nil)),
-					WithOrganizationRepository(new(mock.OrganizationRepository)),
+					WithOrganizationRepository(mock.NewOrganizationRepository(nil)),
 					WithLicenseService(new(mock.LicenseService)),
 				},
 			},
@@ -97,7 +97,7 @@ func TestNewOrganizationService(t *testing.T) {
 					WithLogger(new(mock.Logger)),
 					WithTracer(new(mock.Tracer)),
 					WithUserRepository(mock.NewUserRepository(nil)),
-					WithOrganizationRepository(new(mock.OrganizationRepository)),
+					WithOrganizationRepository(mock.NewOrganizationRepository(nil)),
 					WithPermissionService(new(mock.PermissionService)),
 				},
 			},
@@ -109,7 +109,7 @@ func TestNewOrganizationService(t *testing.T) {
 				opts: []Option{
 					WithLogger(new(mock.Logger)),
 					WithTracer(new(mock.Tracer)),
-					WithOrganizationRepository(new(mock.OrganizationRepository)),
+					WithOrganizationRepository(mock.NewOrganizationRepository(nil)),
 					WithPermissionService(new(mock.PermissionService)),
 					WithLicenseService(new(mock.LicenseService)),
 				},
@@ -121,6 +121,8 @@ func TestNewOrganizationService(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 			got, err := NewOrganizationService(tt.args.opts...)
 			require.ErrorIs(t, err, tt.wantErr)
 			assert.Equal(t, tt.want, got)
@@ -132,7 +134,7 @@ func TestOrganizationService_Create(t *testing.T) {
 	userID := model.MustNewID(model.ResourceTypeUser)
 
 	type fields struct {
-		baseService func(ctx context.Context, organization *model.Organization) *baseService
+		baseService func(ctrl *gomock.Controller, ctx context.Context, organization *model.Organization) *baseService
 	}
 	type args struct {
 		ctx          context.Context
@@ -148,15 +150,15 @@ func TestOrganizationService_Create(t *testing.T) {
 		{
 			name: "create organization",
 			fields: fields{
-				baseService: func(ctx context.Context, organization *model.Organization) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, organization *model.Organization) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "service.organizationService/Create", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					organizationRepo := new(mock.OrganizationRepository)
-					organizationRepo.On("Create", ctx, userID, organization).Return(nil)
+					organizationRepo := mock.NewOrganizationRepository(ctrl)
+					organizationRepo.EXPECT().Create(ctx, userID, organization).Return(nil)
 
 					permSvc := new(mock.PermissionService)
 					permSvc.On("CtxUserHasPermission", ctx, model.MustNewNilID(model.ResourceTypeOrganization), []model.PermissionKind{
@@ -185,7 +187,7 @@ func TestOrganizationService_Create(t *testing.T) {
 		{
 			name: "create organization with no permission",
 			fields: fields{
-				baseService: func(ctx context.Context, _ *model.Organization) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ *model.Organization) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -204,7 +206,7 @@ func TestOrganizationService_Create(t *testing.T) {
 					return &baseService{
 						logger:            new(mock.Logger),
 						tracer:            tracer,
-						organizationRepo:  new(mock.OrganizationRepository),
+						organizationRepo:  mock.NewOrganizationRepository(ctrl),
 						permissionService: permSvc,
 						licenseService:    licenseSvc,
 					}
@@ -220,7 +222,7 @@ func TestOrganizationService_Create(t *testing.T) {
 		{
 			name: "create organization with permission error",
 			fields: fields{
-				baseService: func(ctx context.Context, _ *model.Organization) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ *model.Organization) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -239,7 +241,7 @@ func TestOrganizationService_Create(t *testing.T) {
 					return &baseService{
 						logger:            new(mock.Logger),
 						tracer:            tracer,
-						organizationRepo:  new(mock.OrganizationRepository),
+						organizationRepo:  mock.NewOrganizationRepository(ctrl),
 						permissionService: permSvc,
 						licenseService:    licenseSvc,
 					}
@@ -255,7 +257,7 @@ func TestOrganizationService_Create(t *testing.T) {
 		{
 			name: "create organization with invalid organization",
 			fields: fields{
-				baseService: func(ctx context.Context, _ *model.Organization) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ *model.Organization) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -268,7 +270,7 @@ func TestOrganizationService_Create(t *testing.T) {
 					return &baseService{
 						logger:           new(mock.Logger),
 						tracer:           tracer,
-						organizationRepo: new(mock.OrganizationRepository),
+						organizationRepo: mock.NewOrganizationRepository(ctrl),
 						licenseService:   licenseSvc,
 					}
 				},
@@ -283,15 +285,15 @@ func TestOrganizationService_Create(t *testing.T) {
 		{
 			name: "create organization with error",
 			fields: fields{
-				baseService: func(ctx context.Context, organization *model.Organization) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, organization *model.Organization) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "service.organizationService/Create", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					organizationRepo := new(mock.OrganizationRepository)
-					organizationRepo.On("Create", ctx, userID, organization).Return(assert.AnError)
+					organizationRepo := mock.NewOrganizationRepository(ctrl)
+					organizationRepo.EXPECT().Create(ctx, userID, organization).Return(assert.AnError)
 
 					permSvc := new(mock.PermissionService)
 					permSvc.On("CtxUserHasPermission", ctx, model.MustNewNilID(model.ResourceTypeOrganization), []model.PermissionKind{
@@ -321,7 +323,7 @@ func TestOrganizationService_Create(t *testing.T) {
 		{
 			name: "create organization out of quota",
 			fields: fields{
-				baseService: func(ctx context.Context, _ *model.Organization) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ *model.Organization) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -340,7 +342,7 @@ func TestOrganizationService_Create(t *testing.T) {
 					return &baseService{
 						logger:            new(mock.Logger),
 						tracer:            tracer,
-						organizationRepo:  new(mock.OrganizationRepository),
+						organizationRepo:  mock.NewOrganizationRepository(ctrl),
 						permissionService: permSvc,
 						licenseService:    licenseSvc,
 					}
@@ -356,7 +358,7 @@ func TestOrganizationService_Create(t *testing.T) {
 		{
 			name: "create organization with expired license",
 			fields: fields{
-				baseService: func(ctx context.Context, _ *model.Organization) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ *model.Organization) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -369,7 +371,7 @@ func TestOrganizationService_Create(t *testing.T) {
 					return &baseService{
 						logger:            new(mock.Logger),
 						tracer:            tracer,
-						organizationRepo:  new(mock.OrganizationRepository),
+						organizationRepo:  mock.NewOrganizationRepository(ctrl),
 						permissionService: new(mock.PermissionService),
 						licenseService:    licenseSvc,
 					}
@@ -385,7 +387,7 @@ func TestOrganizationService_Create(t *testing.T) {
 		{
 			name: "create organization with license expired error",
 			fields: fields{
-				baseService: func(ctx context.Context, _ *model.Organization) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ *model.Organization) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -398,7 +400,7 @@ func TestOrganizationService_Create(t *testing.T) {
 					return &baseService{
 						logger:            new(mock.Logger),
 						tracer:            tracer,
-						organizationRepo:  new(mock.OrganizationRepository),
+						organizationRepo:  mock.NewOrganizationRepository(ctrl),
 						permissionService: new(mock.PermissionService),
 						licenseService:    licenseSvc,
 					}
@@ -416,8 +418,10 @@ func TestOrganizationService_Create(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 			s := &organizationService{
-				baseService: tt.fields.baseService(tt.args.ctx, tt.args.organization),
+				baseService: tt.fields.baseService(ctrl, tt.args.ctx, tt.args.organization),
 			}
 			err := s.Create(tt.args.ctx, tt.args.owner, tt.args.organization)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -427,7 +431,7 @@ func TestOrganizationService_Create(t *testing.T) {
 
 func TestOrganizationService_Get(t *testing.T) {
 	type fields struct {
-		baseService func(ctx context.Context, id model.ID, organization *model.Organization) *baseService
+		baseService func(ctrl *gomock.Controller, ctx context.Context, id model.ID, organization *model.Organization) *baseService
 	}
 	type args struct {
 		ctx context.Context
@@ -443,15 +447,15 @@ func TestOrganizationService_Get(t *testing.T) {
 		{
 			name: "get organization",
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID, organization *model.Organization) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, organization *model.Organization) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "service.organizationService/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					organizationRepo := new(mock.OrganizationRepository)
-					organizationRepo.On("Get", ctx, id).Return(organization, nil)
+					organizationRepo := mock.NewOrganizationRepository(ctrl)
+					organizationRepo.EXPECT().Get(ctx, id).Return(organization, nil)
 
 					return &baseService{
 						logger:           new(mock.Logger),
@@ -469,7 +473,7 @@ func TestOrganizationService_Get(t *testing.T) {
 		{
 			name: "get organization with invalid organization",
 			fields: fields{
-				baseService: func(ctx context.Context, _ model.ID, _ *model.Organization) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ *model.Organization) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -479,7 +483,7 @@ func TestOrganizationService_Get(t *testing.T) {
 					return &baseService{
 						logger:           new(mock.Logger),
 						tracer:           tracer,
-						organizationRepo: new(mock.OrganizationRepository),
+						organizationRepo: mock.NewOrganizationRepository(ctrl),
 					}
 				},
 			},
@@ -492,15 +496,15 @@ func TestOrganizationService_Get(t *testing.T) {
 		{
 			name: "get organization with error",
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID, _ *model.Organization) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *model.Organization) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "service.organizationService/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					organizationRepo := new(mock.OrganizationRepository)
-					organizationRepo.On("Get", ctx, id).Return(nil, assert.AnError)
+					organizationRepo := mock.NewOrganizationRepository(ctrl)
+					organizationRepo.EXPECT().Get(ctx, id).Return(nil, assert.AnError)
 
 					return &baseService{
 						logger:           new(mock.Logger),
@@ -520,8 +524,10 @@ func TestOrganizationService_Get(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 			s := &organizationService{
-				baseService: tt.fields.baseService(tt.args.ctx, tt.args.id, tt.want),
+				baseService: tt.fields.baseService(ctrl, tt.args.ctx, tt.args.id, tt.want),
 			}
 			got, err := s.Get(tt.args.ctx, tt.args.id)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -532,7 +538,7 @@ func TestOrganizationService_Get(t *testing.T) {
 
 func TestOrganizationService_GetAll(t *testing.T) {
 	type fields struct {
-		baseService func(ctx context.Context, offset, limit int, organizations []*model.Organization) *baseService
+		baseService func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, organizations []*model.Organization) *baseService
 	}
 	type args struct {
 		ctx    context.Context
@@ -549,15 +555,15 @@ func TestOrganizationService_GetAll(t *testing.T) {
 		{
 			name: "get all organizations organization",
 			fields: fields{
-				baseService: func(ctx context.Context, offset, limit int, organizations []*model.Organization) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, organizations []*model.Organization) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "service.organizationService/GetAll", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					organizationRepo := new(mock.OrganizationRepository)
-					organizationRepo.On("GetAll", ctx, offset, limit).Return(organizations, nil)
+					organizationRepo := mock.NewOrganizationRepository(ctrl)
+					organizationRepo.EXPECT().GetAll(ctx, offset, limit).Return(organizations, nil)
 
 					return &baseService{
 						logger:           new(mock.Logger),
@@ -579,7 +585,7 @@ func TestOrganizationService_GetAll(t *testing.T) {
 		{
 			name: "get all organizations with invalid offset",
 			fields: fields{
-				baseService: func(ctx context.Context, _, _ int, _ []*model.Organization) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ int, _ []*model.Organization) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -589,7 +595,7 @@ func TestOrganizationService_GetAll(t *testing.T) {
 					return &baseService{
 						logger:           new(mock.Logger),
 						tracer:           tracer,
-						organizationRepo: new(mock.OrganizationRepository),
+						organizationRepo: mock.NewOrganizationRepository(ctrl),
 					}
 				},
 			},
@@ -603,7 +609,7 @@ func TestOrganizationService_GetAll(t *testing.T) {
 		{
 			name: "get all organizations with invalid limit",
 			fields: fields{
-				baseService: func(ctx context.Context, _, _ int, _ []*model.Organization) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ int, _ []*model.Organization) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -613,7 +619,7 @@ func TestOrganizationService_GetAll(t *testing.T) {
 					return &baseService{
 						logger:           new(mock.Logger),
 						tracer:           tracer,
-						organizationRepo: new(mock.OrganizationRepository),
+						organizationRepo: mock.NewOrganizationRepository(ctrl),
 					}
 				},
 			},
@@ -627,15 +633,15 @@ func TestOrganizationService_GetAll(t *testing.T) {
 		{
 			name: "get all organizations with error",
 			fields: fields{
-				baseService: func(ctx context.Context, offset, limit int, _ []*model.Organization) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, _ []*model.Organization) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "service.organizationService/GetAll", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					organizationRepo := new(mock.OrganizationRepository)
-					organizationRepo.On("GetAll", ctx, offset, limit).Return(nil, assert.AnError)
+					organizationRepo := mock.NewOrganizationRepository(ctrl)
+					organizationRepo.EXPECT().GetAll(ctx, offset, limit).Return(nil, assert.AnError)
 
 					return &baseService{
 						logger:           new(mock.Logger),
@@ -656,8 +662,10 @@ func TestOrganizationService_GetAll(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 			s := &organizationService{
-				baseService: tt.fields.baseService(tt.args.ctx, tt.args.offset, tt.args.limit, tt.want),
+				baseService: tt.fields.baseService(ctrl, tt.args.ctx, tt.args.offset, tt.args.limit, tt.want),
 			}
 			got, err := s.GetAll(tt.args.ctx, tt.args.offset, tt.args.limit)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -672,7 +680,7 @@ func TestOrganizationService_Update(t *testing.T) {
 	otherOrganizationID := model.MustNewID(model.ResourceTypeOrganization)
 
 	type fields struct {
-		baseService func(ctx context.Context, id model.ID, patch map[string]any, organization *model.Organization) *baseService
+		baseService func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, organization *model.Organization) *baseService
 	}
 	type args struct {
 		ctx   context.Context
@@ -689,15 +697,15 @@ func TestOrganizationService_Update(t *testing.T) {
 		{
 			name: "update organization",
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID, patch map[string]any, organization *model.Organization) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, organization *model.Organization) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "service.organizationService/Update", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					organizationRepo := new(mock.OrganizationRepository)
-					organizationRepo.On("Update", ctx, id, patch).Return(organization, nil)
+					organizationRepo := mock.NewOrganizationRepository(ctrl)
+					organizationRepo.EXPECT().Update(ctx, id, patch).Return(organization, nil)
 
 					permSvc := new(mock.PermissionService)
 					permSvc.On("CtxUserHasPermission", ctx, id, []model.PermissionKind{
@@ -730,15 +738,14 @@ func TestOrganizationService_Update(t *testing.T) {
 		{
 			name: "update organization with no permission",
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID, patch map[string]any, organization *model.Organization) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ map[string]any, _ *model.Organization) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "service.organizationService/Update", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					organizationRepo := new(mock.OrganizationRepository)
-					organizationRepo.On("Update", ctx, id, patch).Return(organization, nil)
+					organizationRepo := mock.NewOrganizationRepository(ctrl)
 
 					permSvc := new(mock.PermissionService)
 					permSvc.On("CtxUserHasPermission", ctx, id, []model.PermissionKind{
@@ -769,7 +776,7 @@ func TestOrganizationService_Update(t *testing.T) {
 		{
 			name: "update organization with invalid id",
 			fields: fields{
-				baseService: func(ctx context.Context, _ model.ID, _ map[string]any, _ *model.Organization) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ map[string]any, _ *model.Organization) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -782,7 +789,7 @@ func TestOrganizationService_Update(t *testing.T) {
 					return &baseService{
 						logger:           new(mock.Logger),
 						tracer:           tracer,
-						organizationRepo: new(mock.OrganizationRepository),
+						organizationRepo: mock.NewOrganizationRepository(ctrl),
 						licenseService:   licenseSvc,
 					}
 				},
@@ -799,7 +806,7 @@ func TestOrganizationService_Update(t *testing.T) {
 		{
 			name: "update organization with empty patch",
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID, _ map[string]any, _ *model.Organization) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ map[string]any, _ *model.Organization) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -817,7 +824,7 @@ func TestOrganizationService_Update(t *testing.T) {
 					return &baseService{
 						logger:            new(mock.Logger),
 						tracer:            tracer,
-						organizationRepo:  new(mock.OrganizationRepository),
+						organizationRepo:  mock.NewOrganizationRepository(ctrl),
 						permissionService: permSvc,
 						licenseService:    licenseSvc,
 					}
@@ -833,15 +840,15 @@ func TestOrganizationService_Update(t *testing.T) {
 		{
 			name: "update organization with error",
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID, patch map[string]any, _ *model.Organization) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, _ *model.Organization) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "service.organizationService/Update", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					organizationRepo := new(mock.OrganizationRepository)
-					organizationRepo.On("Update", ctx, id, patch).Return(nil, assert.AnError)
+					organizationRepo := mock.NewOrganizationRepository(ctrl)
+					organizationRepo.EXPECT().Update(ctx, id, patch).Return(nil, assert.AnError)
 
 					permSvc := new(mock.PermissionService)
 					permSvc.On("CtxUserHasPermission", ctx, id, []model.PermissionKind{
@@ -873,7 +880,7 @@ func TestOrganizationService_Update(t *testing.T) {
 		{
 			name: "update organization out of quota",
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID, _ map[string]any, _ *model.Organization) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ map[string]any, _ *model.Organization) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -892,7 +899,7 @@ func TestOrganizationService_Update(t *testing.T) {
 					return &baseService{
 						logger:            new(mock.Logger),
 						tracer:            tracer,
-						organizationRepo:  new(mock.OrganizationRepository),
+						organizationRepo:  mock.NewOrganizationRepository(ctrl),
 						permissionService: permSvc,
 						licenseService:    licenseSvc,
 					}
@@ -911,7 +918,7 @@ func TestOrganizationService_Update(t *testing.T) {
 		{
 			name: "update organization with expired license",
 			fields: fields{
-				baseService: func(ctx context.Context, _ model.ID, _ map[string]any, _ *model.Organization) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ map[string]any, _ *model.Organization) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -924,7 +931,7 @@ func TestOrganizationService_Update(t *testing.T) {
 					return &baseService{
 						logger:            new(mock.Logger),
 						tracer:            tracer,
-						organizationRepo:  new(mock.OrganizationRepository),
+						organizationRepo:  mock.NewOrganizationRepository(ctrl),
 						permissionService: new(mock.PermissionService),
 						licenseService:    licenseSvc,
 					}
@@ -943,7 +950,7 @@ func TestOrganizationService_Update(t *testing.T) {
 		{
 			name: "update organization with expired license error",
 			fields: fields{
-				baseService: func(ctx context.Context, _ model.ID, _ map[string]any, _ *model.Organization) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ map[string]any, _ *model.Organization) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -956,7 +963,7 @@ func TestOrganizationService_Update(t *testing.T) {
 					return &baseService{
 						logger:            new(mock.Logger),
 						tracer:            tracer,
-						organizationRepo:  new(mock.OrganizationRepository),
+						organizationRepo:  mock.NewOrganizationRepository(ctrl),
 						permissionService: new(mock.PermissionService),
 						licenseService:    licenseSvc,
 					}
@@ -977,8 +984,10 @@ func TestOrganizationService_Update(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 			s := &organizationService{
-				baseService: tt.fields.baseService(tt.args.ctx, tt.args.id, tt.args.patch, tt.want),
+				baseService: tt.fields.baseService(ctrl, tt.args.ctx, tt.args.id, tt.args.patch, tt.want),
 			}
 			got, err := s.Update(tt.args.ctx, tt.args.id, tt.args.patch)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -991,7 +1000,7 @@ func TestOrganizationService_Delete(t *testing.T) {
 	userID := model.MustNewID(model.ResourceTypeUser)
 
 	type fields struct {
-		baseService func(ctx context.Context, id model.ID) *baseService
+		baseService func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *baseService
 	}
 	type args struct {
 		ctx   context.Context
@@ -1007,7 +1016,7 @@ func TestOrganizationService_Delete(t *testing.T) {
 		{
 			name: "soft delete organization",
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *baseService {
 					patch := map[string]any{
 						"status": model.OrganizationStatusDeleted.String(),
 					}
@@ -1019,8 +1028,8 @@ func TestOrganizationService_Delete(t *testing.T) {
 					tracer.On("Start", ctx, "service.organizationService/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "service.organizationService/Update", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					organizationRepo := new(mock.OrganizationRepository)
-					organizationRepo.On("Update", ctx, id, patch).Return(new(model.Organization), nil)
+					organizationRepo := mock.NewOrganizationRepository(ctrl)
+					organizationRepo.EXPECT().Update(ctx, id, patch).Return(new(model.Organization), nil)
 
 					permSvc := new(mock.PermissionService)
 					permSvc.On("CtxUserHasPermission", ctx, id, []model.PermissionKind{
@@ -1048,15 +1057,15 @@ func TestOrganizationService_Delete(t *testing.T) {
 		{
 			name: "force delete organization",
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "service.organizationService/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					organizationRepo := new(mock.OrganizationRepository)
-					organizationRepo.On("Delete", ctx, id).Return(nil)
+					organizationRepo := mock.NewOrganizationRepository(ctrl)
+					organizationRepo.EXPECT().Delete(ctx, id).Return(nil)
 
 					permSvc := new(mock.PermissionService)
 					permSvc.On("CtxUserHasPermission", ctx, id, []model.PermissionKind{
@@ -1084,7 +1093,7 @@ func TestOrganizationService_Delete(t *testing.T) {
 		{
 			name: "delete organization license expired",
 			fields: fields{
-				baseService: func(ctx context.Context, _ model.ID) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1097,7 +1106,7 @@ func TestOrganizationService_Delete(t *testing.T) {
 					return &baseService{
 						logger:            new(mock.Logger),
 						tracer:            tracer,
-						organizationRepo:  new(mock.OrganizationRepository),
+						organizationRepo:  mock.NewOrganizationRepository(ctrl),
 						permissionService: new(mock.PermissionService),
 						licenseService:    licenseSvc,
 					}
@@ -1113,7 +1122,7 @@ func TestOrganizationService_Delete(t *testing.T) {
 		{
 			name: "delete organization license error",
 			fields: fields{
-				baseService: func(ctx context.Context, _ model.ID) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1126,7 +1135,7 @@ func TestOrganizationService_Delete(t *testing.T) {
 					return &baseService{
 						logger:            new(mock.Logger),
 						tracer:            tracer,
-						organizationRepo:  new(mock.OrganizationRepository),
+						organizationRepo:  mock.NewOrganizationRepository(ctrl),
 						permissionService: new(mock.PermissionService),
 						licenseService:    licenseSvc,
 					}
@@ -1142,11 +1151,7 @@ func TestOrganizationService_Delete(t *testing.T) {
 		{
 			name: "soft delete organization with no permission",
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID) *baseService {
-					patch := map[string]any{
-						"status": model.OrganizationStatusDeleted.String(),
-					}
-
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return().Twice()
 
@@ -1154,8 +1159,7 @@ func TestOrganizationService_Delete(t *testing.T) {
 					tracer.On("Start", ctx, "service.organizationService/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "service.organizationService/Update", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					organizationRepo := new(mock.OrganizationRepository)
-					organizationRepo.On("Update", ctx, id, patch).Return(new(model.Organization), nil)
+					organizationRepo := mock.NewOrganizationRepository(ctrl)
 
 					permSvc := new(mock.PermissionService)
 					permSvc.On("CtxUserHasPermission", ctx, id, []model.PermissionKind{
@@ -1184,15 +1188,14 @@ func TestOrganizationService_Delete(t *testing.T) {
 		{
 			name: "force delete organization with no permission",
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "service.organizationService/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					organizationRepo := new(mock.OrganizationRepository)
-					organizationRepo.On("Delete", ctx, id).Return(nil)
+					organizationRepo := mock.NewOrganizationRepository(ctrl)
 
 					permSvc := new(mock.PermissionService)
 					permSvc.On("CtxUserHasPermission", ctx, id, []model.PermissionKind{
@@ -1221,7 +1224,7 @@ func TestOrganizationService_Delete(t *testing.T) {
 		{
 			name: "delete organization with invalid id",
 			fields: fields{
-				baseService: func(ctx context.Context, _ model.ID) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1234,7 +1237,7 @@ func TestOrganizationService_Delete(t *testing.T) {
 					return &baseService{
 						logger:            new(mock.Logger),
 						tracer:            tracer,
-						organizationRepo:  new(mock.OrganizationRepository),
+						organizationRepo:  mock.NewOrganizationRepository(ctrl),
 						permissionService: new(mock.PermissionService),
 						licenseService:    licenseSvc,
 					}
@@ -1250,7 +1253,7 @@ func TestOrganizationService_Delete(t *testing.T) {
 		{
 			name: "soft delete organization with error",
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *baseService {
 					patch := map[string]any{
 						"status": model.OrganizationStatusDeleted.String(),
 					}
@@ -1262,8 +1265,8 @@ func TestOrganizationService_Delete(t *testing.T) {
 					tracer.On("Start", ctx, "service.organizationService/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
 					tracer.On("Start", ctx, "service.organizationService/Update", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					organizationRepo := new(mock.OrganizationRepository)
-					organizationRepo.On("Update", ctx, id, patch).Return(nil, assert.AnError)
+					organizationRepo := mock.NewOrganizationRepository(ctrl)
+					organizationRepo.EXPECT().Update(ctx, id, patch).Return(nil, assert.AnError)
 
 					permSvc := new(mock.PermissionService)
 					permSvc.On("CtxUserHasPermission", ctx, id, []model.PermissionKind{
@@ -1292,15 +1295,15 @@ func TestOrganizationService_Delete(t *testing.T) {
 		{
 			name: "force delete organization with error",
 			fields: fields{
-				baseService: func(ctx context.Context, id model.ID) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "service.organizationService/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					organizationRepo := new(mock.OrganizationRepository)
-					organizationRepo.On("Delete", ctx, id).Return(assert.AnError)
+					organizationRepo := mock.NewOrganizationRepository(ctrl)
+					organizationRepo.EXPECT().Delete(ctx, id).Return(assert.AnError)
 
 					permSvc := new(mock.PermissionService)
 					permSvc.On("CtxUserHasPermission", ctx, id, []model.PermissionKind{
@@ -1331,8 +1334,10 @@ func TestOrganizationService_Delete(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 			s := &organizationService{
-				baseService: tt.fields.baseService(tt.args.ctx, tt.args.id),
+				baseService: tt.fields.baseService(ctrl, tt.args.ctx, tt.args.id),
 			}
 			err := s.Delete(tt.args.ctx, tt.args.id, tt.args.force)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -1344,7 +1349,7 @@ func TestOrganizationService_AddMember(t *testing.T) {
 	userID := model.MustNewID(model.ResourceTypeUser)
 
 	type fields struct {
-		baseService func(ctx context.Context, organization model.ID) *baseService
+		baseService func(ctrl *gomock.Controller, ctx context.Context, organization model.ID) *baseService
 	}
 	type args struct {
 		ctx          context.Context
@@ -1360,15 +1365,15 @@ func TestOrganizationService_AddMember(t *testing.T) {
 		{
 			name: "add member to organization",
 			fields: fields{
-				baseService: func(ctx context.Context, organization model.ID) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, organization model.ID) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "service.organizationService/AddMember", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					organizationRepo := new(mock.OrganizationRepository)
-					organizationRepo.On("AddMember", ctx, organization, userID).Return(nil)
+					organizationRepo := mock.NewOrganizationRepository(ctrl)
+					organizationRepo.EXPECT().AddMember(ctx, organization, userID).Return(nil)
 
 					permSvc := new(mock.PermissionService)
 					permSvc.On("CtxUserHasPermission", ctx, model.MustNewNilID(model.ResourceTypeOrganization), []model.PermissionKind{
@@ -1397,7 +1402,7 @@ func TestOrganizationService_AddMember(t *testing.T) {
 		{
 			name: "add member to organization with no permission",
 			fields: fields{
-				baseService: func(ctx context.Context, _ model.ID) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1416,7 +1421,7 @@ func TestOrganizationService_AddMember(t *testing.T) {
 					return &baseService{
 						logger:            new(mock.Logger),
 						tracer:            tracer,
-						organizationRepo:  new(mock.OrganizationRepository),
+						organizationRepo:  mock.NewOrganizationRepository(ctrl),
 						permissionService: permSvc,
 						licenseService:    licenseSvc,
 					}
@@ -1432,7 +1437,7 @@ func TestOrganizationService_AddMember(t *testing.T) {
 		{
 			name: "add member to organization with permission error",
 			fields: fields{
-				baseService: func(ctx context.Context, _ model.ID) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1451,7 +1456,7 @@ func TestOrganizationService_AddMember(t *testing.T) {
 					return &baseService{
 						logger:            new(mock.Logger),
 						tracer:            tracer,
-						organizationRepo:  new(mock.OrganizationRepository),
+						organizationRepo:  mock.NewOrganizationRepository(ctrl),
 						permissionService: permSvc,
 						licenseService:    licenseSvc,
 					}
@@ -1467,7 +1472,7 @@ func TestOrganizationService_AddMember(t *testing.T) {
 		{
 			name: "add member to organization with invalid organization",
 			fields: fields{
-				baseService: func(ctx context.Context, _ model.ID) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1485,7 +1490,7 @@ func TestOrganizationService_AddMember(t *testing.T) {
 					return &baseService{
 						logger:            new(mock.Logger),
 						tracer:            tracer,
-						organizationRepo:  new(mock.OrganizationRepository),
+						organizationRepo:  mock.NewOrganizationRepository(ctrl),
 						permissionService: permSvc,
 						licenseService:    licenseSvc,
 					}
@@ -1501,7 +1506,7 @@ func TestOrganizationService_AddMember(t *testing.T) {
 		{
 			name: "add member to organization with invalid user",
 			fields: fields{
-				baseService: func(ctx context.Context, _ model.ID) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1519,7 +1524,7 @@ func TestOrganizationService_AddMember(t *testing.T) {
 					return &baseService{
 						logger:            new(mock.Logger),
 						tracer:            tracer,
-						organizationRepo:  new(mock.OrganizationRepository),
+						organizationRepo:  mock.NewOrganizationRepository(ctrl),
 						permissionService: permSvc,
 						licenseService:    licenseSvc,
 					}
@@ -1535,15 +1540,15 @@ func TestOrganizationService_AddMember(t *testing.T) {
 		{
 			name: "add member to organization with error",
 			fields: fields{
-				baseService: func(ctx context.Context, organization model.ID) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, organization model.ID) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "service.organizationService/AddMember", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					organizationRepo := new(mock.OrganizationRepository)
-					organizationRepo.On("AddMember", ctx, organization, userID).Return(assert.AnError)
+					organizationRepo := mock.NewOrganizationRepository(ctrl)
+					organizationRepo.EXPECT().AddMember(ctx, organization, userID).Return(assert.AnError)
 
 					permSvc := new(mock.PermissionService)
 					permSvc.On("CtxUserHasPermission", ctx, model.MustNewNilID(model.ResourceTypeOrganization), []model.PermissionKind{
@@ -1573,7 +1578,7 @@ func TestOrganizationService_AddMember(t *testing.T) {
 		{
 			name: "add member to organization with license expired error",
 			fields: fields{
-				baseService: func(ctx context.Context, _ model.ID) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1586,7 +1591,7 @@ func TestOrganizationService_AddMember(t *testing.T) {
 					return &baseService{
 						logger:            new(mock.Logger),
 						tracer:            tracer,
-						organizationRepo:  new(mock.OrganizationRepository),
+						organizationRepo:  mock.NewOrganizationRepository(ctrl),
 						permissionService: new(mock.PermissionService),
 						licenseService:    licenseSvc,
 					}
@@ -1604,8 +1609,10 @@ func TestOrganizationService_AddMember(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 			s := &organizationService{
-				baseService: tt.fields.baseService(tt.args.ctx, tt.args.organization),
+				baseService: tt.fields.baseService(ctrl, tt.args.ctx, tt.args.organization),
 			}
 			err := s.AddMember(tt.args.ctx, tt.args.organization, tt.args.member)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -1644,8 +1651,8 @@ func TestOrganizationService_GetMembers(t *testing.T) {
 						userRepo.EXPECT().Get(ctx, userID).Return(members[i], nil)
 					}
 
-					organizationRepo := new(mock.OrganizationRepository)
-					organizationRepo.On("Get", ctx, organizationID).Return(organization, nil)
+					organizationRepo := mock.NewOrganizationRepository(ctrl)
+					organizationRepo.EXPECT().Get(ctx, organizationID).Return(organization, nil)
 
 					return &baseService{
 						logger:           new(mock.Logger),
@@ -1687,7 +1694,7 @@ func TestOrganizationService_GetMembers(t *testing.T) {
 					return &baseService{
 						logger:           new(mock.Logger),
 						tracer:           tracer,
-						organizationRepo: new(mock.OrganizationRepository),
+						organizationRepo: mock.NewOrganizationRepository(ctrl),
 						userRepo:         mock.NewUserRepository(ctrl),
 					}
 				},
@@ -1709,15 +1716,15 @@ func TestOrganizationService_GetMembers(t *testing.T) {
 		{
 			name: "get members of organization with organization get error",
 			fields: fields{
-				baseService: func(_ *gomock.Controller, ctx context.Context, organizationID model.ID, _ *model.Organization, _ []*model.User) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, organizationID model.ID, _ *model.Organization, _ []*model.User) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "service.organizationService/GetMembers", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					organizationRepo := new(mock.OrganizationRepository)
-					organizationRepo.On("Get", ctx, organizationID).Return(nil, assert.AnError)
+					organizationRepo := mock.NewOrganizationRepository(ctrl)
+					organizationRepo.EXPECT().Get(ctx, organizationID).Return(nil, assert.AnError)
 
 					return &baseService{
 						logger:           new(mock.Logger),
@@ -1754,8 +1761,8 @@ func TestOrganizationService_GetMembers(t *testing.T) {
 					userRepo := mock.NewUserRepository(ctrl)
 					userRepo.EXPECT().Get(ctx, organization.Members[0]).Return(nil, assert.AnError)
 
-					organizationRepo := new(mock.OrganizationRepository)
-					organizationRepo.On("Get", ctx, organizationID).Return(organization, nil)
+					organizationRepo := mock.NewOrganizationRepository(ctrl)
+					organizationRepo.EXPECT().Get(ctx, organizationID).Return(organization, nil)
 
 					return &baseService{
 						logger:           new(mock.Logger),
@@ -1800,7 +1807,7 @@ func TestOrganizationService_RemoveMember(t *testing.T) {
 	userID := model.MustNewID(model.ResourceTypeUser)
 
 	type fields struct {
-		baseService func(ctx context.Context, organization model.ID) *baseService
+		baseService func(ctrl *gomock.Controller, ctx context.Context, organization model.ID) *baseService
 	}
 	type args struct {
 		ctx          context.Context
@@ -1816,15 +1823,15 @@ func TestOrganizationService_RemoveMember(t *testing.T) {
 		{
 			name: "add member to organization",
 			fields: fields{
-				baseService: func(ctx context.Context, organization model.ID) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, organization model.ID) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "service.organizationService/RemoveMember", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					organizationRepo := new(mock.OrganizationRepository)
-					organizationRepo.On("RemoveMember", ctx, organization, userID).Return(nil)
+					organizationRepo := mock.NewOrganizationRepository(ctrl)
+					organizationRepo.EXPECT().RemoveMember(ctx, organization, userID).Return(nil)
 
 					permSvc := new(mock.PermissionService)
 					permSvc.On("CtxUserHasPermission", ctx, model.MustNewNilID(model.ResourceTypeOrganization), []model.PermissionKind{
@@ -1853,7 +1860,7 @@ func TestOrganizationService_RemoveMember(t *testing.T) {
 		{
 			name: "add member to organization with no permission",
 			fields: fields{
-				baseService: func(ctx context.Context, _ model.ID) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1872,7 +1879,7 @@ func TestOrganizationService_RemoveMember(t *testing.T) {
 					return &baseService{
 						logger:            new(mock.Logger),
 						tracer:            tracer,
-						organizationRepo:  new(mock.OrganizationRepository),
+						organizationRepo:  mock.NewOrganizationRepository(ctrl),
 						permissionService: permSvc,
 						licenseService:    licenseSvc,
 					}
@@ -1888,7 +1895,7 @@ func TestOrganizationService_RemoveMember(t *testing.T) {
 		{
 			name: "add member to organization with permission error",
 			fields: fields{
-				baseService: func(ctx context.Context, _ model.ID) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1907,7 +1914,7 @@ func TestOrganizationService_RemoveMember(t *testing.T) {
 					return &baseService{
 						logger:            new(mock.Logger),
 						tracer:            tracer,
-						organizationRepo:  new(mock.OrganizationRepository),
+						organizationRepo:  mock.NewOrganizationRepository(ctrl),
 						permissionService: permSvc,
 						licenseService:    licenseSvc,
 					}
@@ -1923,7 +1930,7 @@ func TestOrganizationService_RemoveMember(t *testing.T) {
 		{
 			name: "add member to organization with invalid organization",
 			fields: fields{
-				baseService: func(ctx context.Context, _ model.ID) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1941,7 +1948,7 @@ func TestOrganizationService_RemoveMember(t *testing.T) {
 					return &baseService{
 						logger:            new(mock.Logger),
 						tracer:            tracer,
-						organizationRepo:  new(mock.OrganizationRepository),
+						organizationRepo:  mock.NewOrganizationRepository(ctrl),
 						permissionService: permSvc,
 						licenseService:    licenseSvc,
 					}
@@ -1957,7 +1964,7 @@ func TestOrganizationService_RemoveMember(t *testing.T) {
 		{
 			name: "add member to organization with invalid user",
 			fields: fields{
-				baseService: func(ctx context.Context, _ model.ID) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -1975,7 +1982,7 @@ func TestOrganizationService_RemoveMember(t *testing.T) {
 					return &baseService{
 						logger:            new(mock.Logger),
 						tracer:            tracer,
-						organizationRepo:  new(mock.OrganizationRepository),
+						organizationRepo:  mock.NewOrganizationRepository(ctrl),
 						permissionService: permSvc,
 						licenseService:    licenseSvc,
 					}
@@ -1991,15 +1998,15 @@ func TestOrganizationService_RemoveMember(t *testing.T) {
 		{
 			name: "add member to organization with error",
 			fields: fields{
-				baseService: func(ctx context.Context, organization model.ID) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, organization model.ID) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "service.organizationService/RemoveMember", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					organizationRepo := new(mock.OrganizationRepository)
-					organizationRepo.On("RemoveMember", ctx, organization, userID).Return(assert.AnError)
+					organizationRepo := mock.NewOrganizationRepository(ctrl)
+					organizationRepo.EXPECT().RemoveMember(ctx, organization, userID).Return(assert.AnError)
 
 					permSvc := new(mock.PermissionService)
 					permSvc.On("CtxUserHasPermission", ctx, model.MustNewNilID(model.ResourceTypeOrganization), []model.PermissionKind{
@@ -2029,7 +2036,7 @@ func TestOrganizationService_RemoveMember(t *testing.T) {
 		{
 			name: "add member to organization with license expired error",
 			fields: fields{
-				baseService: func(ctx context.Context, _ model.ID) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -2042,7 +2049,7 @@ func TestOrganizationService_RemoveMember(t *testing.T) {
 					return &baseService{
 						logger:            new(mock.Logger),
 						tracer:            tracer,
-						organizationRepo:  new(mock.OrganizationRepository),
+						organizationRepo:  mock.NewOrganizationRepository(ctrl),
 						permissionService: new(mock.PermissionService),
 						licenseService:    licenseSvc,
 					}
@@ -2060,8 +2067,10 @@ func TestOrganizationService_RemoveMember(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 			s := &organizationService{
-				baseService: tt.fields.baseService(tt.args.ctx, tt.args.organization),
+				baseService: tt.fields.baseService(ctrl, tt.args.ctx, tt.args.organization),
 			}
 			err := s.RemoveMember(tt.args.ctx, tt.args.organization, tt.args.member)
 			require.ErrorIs(t, err, tt.wantErr)

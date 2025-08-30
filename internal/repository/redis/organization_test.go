@@ -22,7 +22,7 @@ func TestCachedOrganizationRepository_Create(t *testing.T) {
 
 	type fields struct {
 		cacheRepo        func(ctrl *gomock.Controller, ctx context.Context, owner model.ID, organization *model.Organization) *baseRepository
-		organizationRepo func(ctx context.Context, owner model.ID, organization *model.Organization) repository.OrganizationRepository
+		organizationRepo func(ctrl *gomock.Controller, ctx context.Context, owner model.ID, organization *model.Organization) repository.OrganizationRepository
 	}
 	type args struct {
 		ctx          context.Context
@@ -68,9 +68,9 @@ func TestCachedOrganizationRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				organizationRepo: func(ctx context.Context, owner model.ID, organization *model.Organization) repository.OrganizationRepository {
-					repo := new(mock.OrganizationRepository)
-					repo.On("Create", ctx, owner, organization).Return(nil)
+				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, owner model.ID, organization *model.Organization) repository.OrganizationRepository {
+					repo := mock.NewOrganizationRepository(ctrl)
+					repo.EXPECT().Create(ctx, owner, organization).Return(nil)
 					return repo
 				},
 			},
@@ -123,9 +123,9 @@ func TestCachedOrganizationRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				organizationRepo: func(ctx context.Context, owner model.ID, organization *model.Organization) repository.OrganizationRepository {
-					repo := new(mock.OrganizationRepository)
-					repo.On("Create", ctx, owner, organization).Return(repository.ErrOrganizationCreate)
+				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, owner model.ID, organization *model.Organization) repository.OrganizationRepository {
+					repo := mock.NewOrganizationRepository(ctrl)
+					repo.EXPECT().Create(ctx, owner, organization).Return(repository.ErrOrganizationCreate)
 					return repo
 				},
 			},
@@ -179,8 +179,8 @@ func TestCachedOrganizationRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				organizationRepo: func(_ context.Context, _ model.ID, _ *model.Organization) repository.OrganizationRepository {
-					return new(mock.OrganizationRepository)
+				organizationRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ *model.Organization) repository.OrganizationRepository {
+					return mock.NewOrganizationRepository(ctrl)
 				},
 			},
 			args: args{
@@ -209,7 +209,7 @@ func TestCachedOrganizationRepository_Create(t *testing.T) {
 			defer ctrl.Finish()
 			r := &CachedOrganizationRepository{
 				cacheRepo:        tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.owner, tt.args.organization),
-				organizationRepo: tt.fields.organizationRepo(tt.args.ctx, tt.args.owner, tt.args.organization),
+				organizationRepo: tt.fields.organizationRepo(ctrl, tt.args.ctx, tt.args.owner, tt.args.organization),
 			}
 			err := r.Create(tt.args.ctx, tt.args.owner, tt.args.organization)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -220,7 +220,7 @@ func TestCachedOrganizationRepository_Create(t *testing.T) {
 func TestCachedOrganizationRepository_Get(t *testing.T) {
 	type fields struct {
 		cacheRepo        func(ctrl *gomock.Controller, ctx context.Context, id model.ID, organization *model.Organization) *baseRepository
-		organizationRepo func(ctx context.Context, id model.ID, organization *model.Organization) repository.OrganizationRepository
+		organizationRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, organization *model.Organization) repository.OrganizationRepository
 	}
 	type args struct {
 		ctx context.Context
@@ -266,9 +266,9 @@ func TestCachedOrganizationRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				organizationRepo: func(ctx context.Context, id model.ID, organization *model.Organization) repository.OrganizationRepository {
-					repo := new(mock.OrganizationRepository)
-					repo.On("Get", ctx, id).Return(organization, nil)
+				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, organization *model.Organization) repository.OrganizationRepository {
+					repo := mock.NewOrganizationRepository(ctrl)
+					repo.EXPECT().Get(ctx, id).Return(organization, nil)
 					return repo
 				},
 			},
@@ -321,8 +321,8 @@ func TestCachedOrganizationRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				organizationRepo: func(_ context.Context, _ model.ID, _ *model.Organization) repository.OrganizationRepository {
-					return new(mock.OrganizationRepository)
+				organizationRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ *model.Organization) repository.OrganizationRepository {
+					return mock.NewOrganizationRepository(ctrl)
 				},
 			},
 			args: args{
@@ -370,9 +370,9 @@ func TestCachedOrganizationRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				organizationRepo: func(ctx context.Context, id model.ID, _ *model.Organization) repository.OrganizationRepository {
-					repo := new(mock.OrganizationRepository)
-					repo.On("Get", ctx, id).Return(nil, repository.ErrNotFound)
+				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *model.Organization) repository.OrganizationRepository {
+					repo := mock.NewOrganizationRepository(ctrl)
+					repo.EXPECT().Get(ctx, id).Return(nil, repository.ErrNotFound)
 					return repo
 				},
 			},
@@ -409,8 +409,8 @@ func TestCachedOrganizationRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				organizationRepo: func(_ context.Context, _ model.ID, _ *model.Organization) repository.OrganizationRepository {
-					return new(mock.OrganizationRepository)
+				organizationRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ *model.Organization) repository.OrganizationRepository {
+					return mock.NewOrganizationRepository(ctrl)
 				},
 			},
 			args: args{
@@ -452,9 +452,9 @@ func TestCachedOrganizationRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				organizationRepo: func(ctx context.Context, id model.ID, organization *model.Organization) repository.OrganizationRepository {
-					repo := new(mock.OrganizationRepository)
-					repo.On("Get", ctx, id).Return(organization, nil)
+				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, organization *model.Organization) repository.OrganizationRepository {
+					repo := mock.NewOrganizationRepository(ctrl)
+					repo.EXPECT().Get(ctx, id).Return(organization, nil)
 					return repo
 				},
 			},
@@ -478,7 +478,7 @@ func TestCachedOrganizationRepository_Get(t *testing.T) {
 
 			r := &CachedOrganizationRepository{
 				cacheRepo:        tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, want),
-				organizationRepo: tt.fields.organizationRepo(tt.args.ctx, tt.args.id, want),
+				organizationRepo: tt.fields.organizationRepo(ctrl, tt.args.ctx, tt.args.id, want),
 			}
 			got, err := r.Get(tt.args.ctx, tt.args.id)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -490,7 +490,7 @@ func TestCachedOrganizationRepository_Get(t *testing.T) {
 func TestCachedOrganizationRepository_GetAll(t *testing.T) {
 	type fields struct {
 		cacheRepo        func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, organizations []*model.Organization) *baseRepository
-		organizationRepo func(ctx context.Context, offset, limit int, organizations []*model.Organization) repository.OrganizationRepository
+		organizationRepo func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, organizations []*model.Organization) repository.OrganizationRepository
 	}
 	type args struct {
 		ctx    context.Context
@@ -537,9 +537,9 @@ func TestCachedOrganizationRepository_GetAll(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				organizationRepo: func(ctx context.Context, offset, limit int, organizations []*model.Organization) repository.OrganizationRepository {
-					repo := new(mock.OrganizationRepository)
-					repo.On("GetAll", ctx, offset, limit).Return(organizations, nil)
+				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, organizations []*model.Organization) repository.OrganizationRepository {
+					repo := mock.NewOrganizationRepository(ctrl)
+					repo.EXPECT().GetAll(ctx, offset, limit).Return(organizations, nil)
 					return repo
 				},
 			},
@@ -604,8 +604,8 @@ func TestCachedOrganizationRepository_GetAll(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				organizationRepo: func(_ context.Context, _, _ int, _ []*model.Organization) repository.OrganizationRepository {
-					return new(mock.OrganizationRepository)
+				organizationRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ int, _ []*model.Organization) repository.OrganizationRepository {
+					return mock.NewOrganizationRepository(ctrl)
 				},
 			},
 			args: args{
@@ -666,9 +666,9 @@ func TestCachedOrganizationRepository_GetAll(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				organizationRepo: func(ctx context.Context, offset, limit int, _ []*model.Organization) repository.OrganizationRepository {
-					repo := new(mock.OrganizationRepository)
-					repo.On("GetAll", ctx, offset, limit).Return(nil, repository.ErrNotFound)
+				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, _ []*model.Organization) repository.OrganizationRepository {
+					repo := mock.NewOrganizationRepository(ctrl)
+					repo.EXPECT().GetAll(ctx, offset, limit).Return(nil, repository.ErrNotFound)
 					return repo
 				},
 			},
@@ -707,8 +707,8 @@ func TestCachedOrganizationRepository_GetAll(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				organizationRepo: func(_ context.Context, _, _ int, _ []*model.Organization) repository.OrganizationRepository {
-					return new(mock.OrganizationRepository)
+				organizationRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ int, _ []*model.Organization) repository.OrganizationRepository {
+					return mock.NewOrganizationRepository(ctrl)
 				},
 			},
 			args: args{
@@ -751,9 +751,9 @@ func TestCachedOrganizationRepository_GetAll(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				organizationRepo: func(ctx context.Context, offset, limit int, organizations []*model.Organization) repository.OrganizationRepository {
-					repo := new(mock.OrganizationRepository)
-					repo.On("GetAll", ctx, offset, limit).Return(organizations, nil)
+				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, organizations []*model.Organization) repository.OrganizationRepository {
+					repo := mock.NewOrganizationRepository(ctrl)
+					repo.EXPECT().GetAll(ctx, offset, limit).Return(organizations, nil)
 					return repo
 				},
 			},
@@ -773,7 +773,7 @@ func TestCachedOrganizationRepository_GetAll(t *testing.T) {
 			defer ctrl.Finish()
 			r := &CachedOrganizationRepository{
 				cacheRepo:        tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.offset, tt.args.limit, tt.want),
-				organizationRepo: tt.fields.organizationRepo(tt.args.ctx, tt.args.offset, tt.args.limit, tt.want),
+				organizationRepo: tt.fields.organizationRepo(ctrl, tt.args.ctx, tt.args.offset, tt.args.limit, tt.want),
 			}
 			got, err := r.GetAll(tt.args.ctx, tt.args.offset, tt.args.limit)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -785,7 +785,7 @@ func TestCachedOrganizationRepository_GetAll(t *testing.T) {
 func TestCachedOrganizationRepository_Update(t *testing.T) {
 	type fields struct {
 		cacheRepo        func(ctrl *gomock.Controller, ctx context.Context, id model.ID, organization *model.Organization) *baseRepository
-		organizationRepo func(ctx context.Context, id model.ID, patch map[string]any, organization *model.Organization) repository.OrganizationRepository
+		organizationRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, organization *model.Organization) repository.OrganizationRepository
 	}
 	type args struct {
 		ctx   context.Context
@@ -839,9 +839,9 @@ func TestCachedOrganizationRepository_Update(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				organizationRepo: func(ctx context.Context, id model.ID, patch map[string]any, organization *model.Organization) repository.OrganizationRepository {
-					repo := new(mock.OrganizationRepository)
-					repo.On("Update", ctx, id, patch).Return(organization, nil)
+				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, organization *model.Organization) repository.OrganizationRepository {
+					repo := mock.NewOrganizationRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, patch).Return(organization, nil)
 					return repo
 				},
 			},
@@ -881,9 +881,9 @@ func TestCachedOrganizationRepository_Update(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				organizationRepo: func(ctx context.Context, id model.ID, patch map[string]any, _ *model.Organization) repository.OrganizationRepository {
-					repo := new(mock.OrganizationRepository)
-					repo.On("Update", ctx, id, patch).Return(nil, repository.ErrNotFound)
+				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, _ *model.Organization) repository.OrganizationRepository {
+					repo := mock.NewOrganizationRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, patch).Return(nil, repository.ErrNotFound)
 					return repo
 				},
 			},
@@ -930,9 +930,9 @@ func TestCachedOrganizationRepository_Update(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				organizationRepo: func(ctx context.Context, id model.ID, patch map[string]any, organization *model.Organization) repository.OrganizationRepository {
-					repo := new(mock.OrganizationRepository)
-					repo.On("Update", ctx, id, patch).Return(organization, nil)
+				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, organization *model.Organization) repository.OrganizationRepository {
+					repo := mock.NewOrganizationRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, patch).Return(organization, nil)
 					return repo
 				},
 			},
@@ -986,9 +986,9 @@ func TestCachedOrganizationRepository_Update(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				organizationRepo: func(ctx context.Context, id model.ID, patch map[string]any, organization *model.Organization) repository.OrganizationRepository {
-					repo := new(mock.OrganizationRepository)
-					repo.On("Update", ctx, id, patch).Return(organization, nil)
+				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, organization *model.Organization) repository.OrganizationRepository {
+					repo := mock.NewOrganizationRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, patch).Return(organization, nil)
 					return repo
 				},
 			},
@@ -1012,7 +1012,7 @@ func TestCachedOrganizationRepository_Update(t *testing.T) {
 
 			r := &CachedOrganizationRepository{
 				cacheRepo:        tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, tt.want),
-				organizationRepo: tt.fields.organizationRepo(tt.args.ctx, tt.args.id, tt.args.patch, tt.want),
+				organizationRepo: tt.fields.organizationRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.patch, tt.want),
 			}
 			got, err := r.Update(tt.args.ctx, tt.args.id, tt.args.patch)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -1024,7 +1024,7 @@ func TestCachedOrganizationRepository_Update(t *testing.T) {
 func TestCachedOrganizationRepository_AddMember(t *testing.T) {
 	type fields struct {
 		cacheRepo        func(ctrl *gomock.Controller, ctx context.Context, id, memberID model.ID) *baseRepository
-		organizationRepo func(ctx context.Context, id, memberID model.ID) repository.OrganizationRepository
+		organizationRepo func(ctrl *gomock.Controller, ctx context.Context, id, memberID model.ID) repository.OrganizationRepository
 	}
 	type args struct {
 		ctx      context.Context
@@ -1073,9 +1073,9 @@ func TestCachedOrganizationRepository_AddMember(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				organizationRepo: func(ctx context.Context, id, memberID model.ID) repository.OrganizationRepository {
-					repo := new(mock.OrganizationRepository)
-					repo.On("AddMember", ctx, id, memberID).Return(nil)
+				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, id, memberID model.ID) repository.OrganizationRepository {
+					repo := mock.NewOrganizationRepository(ctrl)
+					repo.EXPECT().AddMember(ctx, id, memberID).Return(nil)
 					return repo
 				},
 			},
@@ -1121,9 +1121,9 @@ func TestCachedOrganizationRepository_AddMember(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				organizationRepo: func(ctx context.Context, id, memberID model.ID) repository.OrganizationRepository {
-					repo := new(mock.OrganizationRepository)
-					repo.On("AddMember", ctx, id, memberID).Return(repository.ErrOrganizationDelete)
+				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, id, memberID model.ID) repository.OrganizationRepository {
+					repo := mock.NewOrganizationRepository(ctrl)
+					repo.EXPECT().AddMember(ctx, id, memberID).Return(repository.ErrOrganizationDelete)
 					return repo
 				},
 			},
@@ -1163,9 +1163,8 @@ func TestCachedOrganizationRepository_AddMember(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				organizationRepo: func(ctx context.Context, id, memberID model.ID) repository.OrganizationRepository {
-					repo := new(mock.OrganizationRepository)
-					repo.On("AddMember", ctx, id, memberID).Return(nil)
+				organizationRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID) repository.OrganizationRepository {
+					repo := mock.NewOrganizationRepository(ctrl)
 					return repo
 				},
 			},
@@ -1212,8 +1211,8 @@ func TestCachedOrganizationRepository_AddMember(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				organizationRepo: func(_ context.Context, _, _ model.ID) repository.OrganizationRepository {
-					return new(mock.OrganizationRepository)
+				organizationRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID) repository.OrganizationRepository {
+					return mock.NewOrganizationRepository(ctrl)
 				},
 			},
 			args: args{
@@ -1232,7 +1231,7 @@ func TestCachedOrganizationRepository_AddMember(t *testing.T) {
 			defer ctrl.Finish()
 			r := &CachedOrganizationRepository{
 				cacheRepo:        tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.memberID),
-				organizationRepo: tt.fields.organizationRepo(tt.args.ctx, tt.args.id, tt.args.memberID),
+				organizationRepo: tt.fields.organizationRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.memberID),
 			}
 			err := r.AddMember(tt.args.ctx, tt.args.id, tt.args.memberID)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -1243,7 +1242,7 @@ func TestCachedOrganizationRepository_AddMember(t *testing.T) {
 func TestCachedOrganizationRepository_RemoveMember(t *testing.T) {
 	type fields struct {
 		cacheRepo        func(ctrl *gomock.Controller, ctx context.Context, id, memberID model.ID) *baseRepository
-		organizationRepo func(ctx context.Context, id, memberID model.ID) repository.OrganizationRepository
+		organizationRepo func(ctrl *gomock.Controller, ctx context.Context, id, memberID model.ID) repository.OrganizationRepository
 	}
 	type args struct {
 		ctx      context.Context
@@ -1292,9 +1291,9 @@ func TestCachedOrganizationRepository_RemoveMember(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				organizationRepo: func(ctx context.Context, id, memberID model.ID) repository.OrganizationRepository {
-					repo := new(mock.OrganizationRepository)
-					repo.On("RemoveMember", ctx, id, memberID).Return(nil)
+				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, id, memberID model.ID) repository.OrganizationRepository {
+					repo := mock.NewOrganizationRepository(ctrl)
+					repo.EXPECT().RemoveMember(ctx, id, memberID).Return(nil)
 					return repo
 				},
 			},
@@ -1340,9 +1339,9 @@ func TestCachedOrganizationRepository_RemoveMember(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				organizationRepo: func(ctx context.Context, id, memberID model.ID) repository.OrganizationRepository {
-					repo := new(mock.OrganizationRepository)
-					repo.On("RemoveMember", ctx, id, memberID).Return(repository.ErrOrganizationDelete)
+				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, id, memberID model.ID) repository.OrganizationRepository {
+					repo := mock.NewOrganizationRepository(ctrl)
+					repo.EXPECT().RemoveMember(ctx, id, memberID).Return(repository.ErrOrganizationDelete)
 					return repo
 				},
 			},
@@ -1382,9 +1381,8 @@ func TestCachedOrganizationRepository_RemoveMember(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				organizationRepo: func(ctx context.Context, id, memberID model.ID) repository.OrganizationRepository {
-					repo := new(mock.OrganizationRepository)
-					repo.On("RemoveMember", ctx, id, memberID).Return(nil)
+				organizationRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID) repository.OrganizationRepository {
+					repo := mock.NewOrganizationRepository(ctrl)
 					return repo
 				},
 			},
@@ -1431,8 +1429,8 @@ func TestCachedOrganizationRepository_RemoveMember(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				organizationRepo: func(_ context.Context, _, _ model.ID) repository.OrganizationRepository {
-					return new(mock.OrganizationRepository)
+				organizationRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID) repository.OrganizationRepository {
+					return mock.NewOrganizationRepository(ctrl)
 				},
 			},
 			args: args{
@@ -1451,7 +1449,7 @@ func TestCachedOrganizationRepository_RemoveMember(t *testing.T) {
 			defer ctrl.Finish()
 			r := &CachedOrganizationRepository{
 				cacheRepo:        tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.memberID),
-				organizationRepo: tt.fields.organizationRepo(tt.args.ctx, tt.args.id, tt.args.memberID),
+				organizationRepo: tt.fields.organizationRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.memberID),
 			}
 			err := r.RemoveMember(tt.args.ctx, tt.args.id, tt.args.memberID)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -1462,7 +1460,7 @@ func TestCachedOrganizationRepository_RemoveMember(t *testing.T) {
 func TestCachedOrganizationRepository_Delete(t *testing.T) {
 	type fields struct {
 		cacheRepo        func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *baseRepository
-		organizationRepo func(ctx context.Context, id model.ID) repository.OrganizationRepository
+		organizationRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID) repository.OrganizationRepository
 	}
 	type args struct {
 		ctx context.Context
@@ -1510,9 +1508,9 @@ func TestCachedOrganizationRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				organizationRepo: func(ctx context.Context, id model.ID) repository.OrganizationRepository {
-					repo := new(mock.OrganizationRepository)
-					repo.On("Delete", ctx, id).Return(nil)
+				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) repository.OrganizationRepository {
+					repo := mock.NewOrganizationRepository(ctrl)
+					repo.EXPECT().Delete(ctx, id).Return(nil)
 					return repo
 				},
 			},
@@ -1557,9 +1555,9 @@ func TestCachedOrganizationRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				organizationRepo: func(ctx context.Context, id model.ID) repository.OrganizationRepository {
-					repo := new(mock.OrganizationRepository)
-					repo.On("Delete", ctx, id).Return(repository.ErrOrganizationDelete)
+				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) repository.OrganizationRepository {
+					repo := mock.NewOrganizationRepository(ctrl)
+					repo.EXPECT().Delete(ctx, id).Return(repository.ErrOrganizationDelete)
 					return repo
 				},
 			},
@@ -1598,9 +1596,8 @@ func TestCachedOrganizationRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				organizationRepo: func(ctx context.Context, id model.ID) repository.OrganizationRepository {
-					repo := new(mock.OrganizationRepository)
-					repo.On("Delete", ctx, id).Return(nil)
+				organizationRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID) repository.OrganizationRepository {
+					repo := mock.NewOrganizationRepository(ctrl)
 					return repo
 				},
 			},
@@ -1646,8 +1643,8 @@ func TestCachedOrganizationRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				organizationRepo: func(_ context.Context, _ model.ID) repository.OrganizationRepository {
-					return new(mock.OrganizationRepository)
+				organizationRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID) repository.OrganizationRepository {
+					return mock.NewOrganizationRepository(ctrl)
 				},
 			},
 			args: args{
@@ -1665,7 +1662,7 @@ func TestCachedOrganizationRepository_Delete(t *testing.T) {
 			defer ctrl.Finish()
 			r := &CachedOrganizationRepository{
 				cacheRepo:        tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id),
-				organizationRepo: tt.fields.organizationRepo(tt.args.ctx, tt.args.id),
+				organizationRepo: tt.fields.organizationRepo(ctrl, tt.args.ctx, tt.args.id),
 			}
 			err := r.Delete(tt.args.ctx, tt.args.id)
 			require.ErrorIs(t, err, tt.wantErr)
