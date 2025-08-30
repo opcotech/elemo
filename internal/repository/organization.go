@@ -7,6 +7,8 @@ import (
 )
 
 // OrganizationRepository is a repository for managing organizations.
+//
+//go:generate mockgen -source=organization.go -destination=../testutil/mock/organization_repo_gen.go -package=mock -mock_names "OrganizationRepository=OrganizationRepository"
 type OrganizationRepository interface {
 	Create(ctx context.Context, owner model.ID, organization *model.Organization) error
 	Get(ctx context.Context, id model.ID) (*model.Organization, error)
