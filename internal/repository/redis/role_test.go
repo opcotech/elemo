@@ -195,7 +195,7 @@ func TestCachedRoleRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				roleRepo: func(ctrl *gomock.Controller, ctx context.Context, createdBy, belongsTo model.ID, role *model.Role) repository.RoleRepository {
+				roleRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID, _ *model.Role) repository.RoleRepository {
 					repo := mock.NewRoleRepository(ctrl)
 					return repo
 				},
@@ -253,7 +253,7 @@ func TestCachedRoleRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				roleRepo: func(ctrl *gomock.Controller, ctx context.Context, createdBy, belongsTo model.ID, role *model.Role) repository.RoleRepository {
+				roleRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID, _ *model.Role) repository.RoleRepository {
 					repo := mock.NewRoleRepository(ctrl)
 					return repo
 				},
@@ -317,7 +317,7 @@ func TestCachedRoleRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				roleRepo: func(ctrl *gomock.Controller, ctx context.Context, createdBy, belongsTo model.ID, role *model.Role) repository.RoleRepository {
+				roleRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID, _ *model.Role) repository.RoleRepository {
 					repo := mock.NewRoleRepository(ctrl)
 					return repo
 				},
@@ -1277,7 +1277,7 @@ func TestCachedRoleRepository_AddMember(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				roleRepo: func(ctrl *gomock.Controller, ctx context.Context, id, memberID, belongsToID model.ID) repository.RoleRepository {
+				roleRepo: func(ctrl *gomock.Controller, _ context.Context, _, _, _ model.ID) repository.RoleRepository {
 					repo := mock.NewRoleRepository(ctrl)
 					return repo
 				},
@@ -1500,7 +1500,7 @@ func TestCachedRoleRepository_RemoveMember(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				roleRepo: func(ctrl *gomock.Controller, ctx context.Context, id, memberID, belongsToID model.ID) repository.RoleRepository {
+				roleRepo: func(ctrl *gomock.Controller, _ context.Context, _, _, _ model.ID) repository.RoleRepository {
 					repo := mock.NewRoleRepository(ctrl)
 					return repo
 				},
@@ -1744,7 +1744,7 @@ func TestCachedRoleRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				roleRepo: func(ctrl *gomock.Controller, ctx context.Context, id, belongsTo model.ID) repository.RoleRepository {
+				roleRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID) repository.RoleRepository {
 					repo := mock.NewRoleRepository(ctrl)
 					return repo
 				},
