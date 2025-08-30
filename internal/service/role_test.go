@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"go.uber.org/mock/gomock"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -31,7 +32,7 @@ func TestNewRoleService(t *testing.T) {
 				opts: []Option{
 					WithLogger(new(mock.Logger)),
 					WithTracer(new(mock.Tracer)),
-					WithRoleRepository(new(mock.RoleRepository)),
+					WithRoleRepository(mock.NewRoleRepository(nil)),
 					WithUserRepository(new(mock.UserRepository)),
 					WithPermissionService(new(mock.PermissionService)),
 					WithLicenseService(new(mock.LicenseService)),
@@ -41,7 +42,7 @@ func TestNewRoleService(t *testing.T) {
 				baseService: &baseService{
 					logger:            new(mock.Logger),
 					tracer:            new(mock.Tracer),
-					roleRepo:          new(mock.RoleRepository),
+					roleRepo:          mock.NewRoleRepository(nil),
 					userRepo:          new(mock.UserRepository),
 					permissionService: new(mock.PermissionService),
 					licenseService:    new(mock.LicenseService),
@@ -54,7 +55,7 @@ func TestNewRoleService(t *testing.T) {
 				opts: []Option{
 					WithLogger(nil),
 					WithTracer(new(mock.Tracer)),
-					WithRoleRepository(new(mock.RoleRepository)),
+					WithRoleRepository(mock.NewRoleRepository(nil)),
 					WithUserRepository(new(mock.UserRepository)),
 					WithPermissionService(new(mock.PermissionService)),
 					WithLicenseService(new(mock.LicenseService)),
@@ -81,7 +82,7 @@ func TestNewRoleService(t *testing.T) {
 				opts: []Option{
 					WithLogger(new(mock.Logger)),
 					WithTracer(new(mock.Tracer)),
-					WithRoleRepository(new(mock.RoleRepository)),
+					WithRoleRepository(mock.NewRoleRepository(nil)),
 					WithPermissionService(new(mock.PermissionService)),
 					WithLicenseService(new(mock.LicenseService)),
 				},
@@ -94,7 +95,7 @@ func TestNewRoleService(t *testing.T) {
 				opts: []Option{
 					WithLogger(new(mock.Logger)),
 					WithTracer(new(mock.Tracer)),
-					WithRoleRepository(new(mock.RoleRepository)),
+					WithRoleRepository(mock.NewRoleRepository(nil)),
 					WithUserRepository(new(mock.UserRepository)),
 					WithLicenseService(new(mock.LicenseService)),
 				},
@@ -107,7 +108,7 @@ func TestNewRoleService(t *testing.T) {
 				opts: []Option{
 					WithLogger(new(mock.Logger)),
 					WithTracer(new(mock.Tracer)),
-					WithRoleRepository(new(mock.RoleRepository)),
+					WithRoleRepository(mock.NewRoleRepository(nil)),
 					WithUserRepository(new(mock.UserRepository)),
 					WithPermissionService(new(mock.PermissionService)),
 				},
@@ -131,7 +132,7 @@ func TestRoleService_Create(t *testing.T) {
 	userID := model.MustNewID(model.ResourceTypeUser)
 
 	type fields struct {
-		baseService func(ctx context.Context, owner, belongsTo model.ID, role *model.Role) *baseService
+		baseService func(ctrl *gomock.Controller, ctx context.Context, owner, belongsTo model.ID, role *model.Role) *baseService
 	}
 	type args struct {
 		ctx       context.Context
@@ -148,15 +149,15 @@ func TestRoleService_Create(t *testing.T) {
 		{
 			name: "create new role",
 			fields: fields{
-				baseService: func(ctx context.Context, owner, belongsTo model.ID, role *model.Role) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, owner, belongsTo model.ID, role *model.Role) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "service.roleService/Create", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					roleRepo := new(mock.RoleRepository)
-					roleRepo.On("Create", ctx, owner, belongsTo, role).Return(nil)
+					roleRepo := mock.NewRoleRepository(ctrl)
+					roleRepo.EXPECT().Create(ctx, owner, belongsTo, role).Return(nil)
 
 					permSvc := new(mock.PermissionService)
 					permSvc.On("CtxUserHasPermission", ctx, belongsTo, []model.PermissionKind{
@@ -187,15 +188,15 @@ func TestRoleService_Create(t *testing.T) {
 		{
 			name: "create new role with error",
 			fields: fields{
-				baseService: func(ctx context.Context, owner, belongsTo model.ID, role *model.Role) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, owner, belongsTo model.ID, role *model.Role) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "service.roleService/Create", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					roleRepo := new(mock.RoleRepository)
-					roleRepo.On("Create", ctx, owner, belongsTo, role).Return(assert.AnError)
+					roleRepo := mock.NewRoleRepository(ctrl)
+					roleRepo.EXPECT().Create(ctx, owner, belongsTo, role).Return(assert.AnError)
 
 					permSvc := new(mock.PermissionService)
 					permSvc.On("CtxUserHasPermission", ctx, belongsTo, []model.PermissionKind{
@@ -227,7 +228,7 @@ func TestRoleService_Create(t *testing.T) {
 		{
 			name: "create new role license expired",
 			fields: fields{
-				baseService: func(ctx context.Context, _, _ model.ID, _ *model.Role) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ model.ID, _ *model.Role) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -240,7 +241,7 @@ func TestRoleService_Create(t *testing.T) {
 					return &baseService{
 						logger:            new(mock.Logger),
 						tracer:            tracer,
-						roleRepo:          new(mock.RoleRepository),
+						roleRepo:          mock.NewRoleRepository(ctrl),
 						userRepo:          new(mock.UserRepository),
 						permissionService: new(mock.PermissionService),
 						licenseService:    licenseSvc,
@@ -258,7 +259,7 @@ func TestRoleService_Create(t *testing.T) {
 		{
 			name: "create new role invalid role",
 			fields: fields{
-				baseService: func(ctx context.Context, _, _ model.ID, _ *model.Role) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ model.ID, _ *model.Role) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -272,7 +273,7 @@ func TestRoleService_Create(t *testing.T) {
 					return &baseService{
 						logger:            new(mock.Logger),
 						tracer:            tracer,
-						roleRepo:          new(mock.RoleRepository),
+						roleRepo:          mock.NewRoleRepository(ctrl),
 						userRepo:          new(mock.UserRepository),
 						permissionService: new(mock.PermissionService),
 						licenseService:    licenseSvc,
@@ -290,7 +291,7 @@ func TestRoleService_Create(t *testing.T) {
 		{
 			name: "create new role quota exceeded",
 			fields: fields{
-				baseService: func(ctx context.Context, _, belongsTo model.ID, _ *model.Role) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, belongsTo model.ID, _ *model.Role) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -309,7 +310,7 @@ func TestRoleService_Create(t *testing.T) {
 					return &baseService{
 						logger:            new(mock.Logger),
 						tracer:            tracer,
-						roleRepo:          new(mock.RoleRepository),
+						roleRepo:          mock.NewRoleRepository(ctrl),
 						userRepo:          new(mock.UserRepository),
 						permissionService: permSvc,
 						licenseService:    licenseSvc,
@@ -327,7 +328,7 @@ func TestRoleService_Create(t *testing.T) {
 		{
 			name: "create new role with no permission",
 			fields: fields{
-				baseService: func(ctx context.Context, _, belongsTo model.ID, _ *model.Role) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, belongsTo model.ID, _ *model.Role) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -345,7 +346,7 @@ func TestRoleService_Create(t *testing.T) {
 					return &baseService{
 						logger:            new(mock.Logger),
 						tracer:            tracer,
-						roleRepo:          new(mock.RoleRepository),
+						roleRepo:          mock.NewRoleRepository(ctrl),
 						userRepo:          new(mock.UserRepository),
 						permissionService: permSvc,
 						licenseService:    licenseSvc,
@@ -365,8 +366,10 @@ func TestRoleService_Create(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 			s := &roleService{
-				baseService: tt.fields.baseService(tt.args.ctx, tt.args.owner, tt.args.belongsTo, tt.args.role),
+				baseService: tt.fields.baseService(ctrl, tt.args.ctx, tt.args.owner, tt.args.belongsTo, tt.args.role),
 			}
 			err := s.Create(tt.args.ctx, tt.args.owner, tt.args.belongsTo, tt.args.role)
 			assert.ErrorIs(t, err, tt.wantErr)
@@ -376,7 +379,7 @@ func TestRoleService_Create(t *testing.T) {
 
 func TestRoleService_Get(t *testing.T) {
 	type fields struct {
-		baseService func(ctx context.Context, id, belongsTo model.ID, role *model.Role) *baseService
+		baseService func(ctrl *gomock.Controller, ctx context.Context, id, belongsTo model.ID, role *model.Role) *baseService
 	}
 	type args struct {
 		ctx       context.Context
@@ -393,15 +396,15 @@ func TestRoleService_Get(t *testing.T) {
 		{
 			name: "get role",
 			fields: fields{
-				baseService: func(ctx context.Context, id, belongsTo model.ID, role *model.Role) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, id, belongsTo model.ID, role *model.Role) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "service.roleService/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					roleRepo := new(mock.RoleRepository)
-					roleRepo.On("Get", ctx, id, belongsTo).Return(role, nil)
+					roleRepo := mock.NewRoleRepository(ctrl)
+					roleRepo.EXPECT().Get(ctx, id, belongsTo).Return(role, nil)
 
 					permSvc := new(mock.PermissionService)
 					permSvc.On("CtxUserHasPermission", ctx, id, []model.PermissionKind{
@@ -430,15 +433,15 @@ func TestRoleService_Get(t *testing.T) {
 		{
 			name: "get role with error",
 			fields: fields{
-				baseService: func(ctx context.Context, id, belongsTo model.ID, role *model.Role) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, id, belongsTo model.ID, role *model.Role) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "service.roleService/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					roleRepo := new(mock.RoleRepository)
-					roleRepo.On("Get", ctx, id, belongsTo).Return(role, assert.AnError)
+					roleRepo := mock.NewRoleRepository(ctrl)
+					roleRepo.EXPECT().Get(ctx, id, belongsTo).Return(role, assert.AnError)
 
 					permSvc := new(mock.PermissionService)
 					permSvc.On("CtxUserHasPermission", ctx, id, []model.PermissionKind{
@@ -467,7 +470,7 @@ func TestRoleService_Get(t *testing.T) {
 		{
 			name: "get role with invalid role id",
 			fields: fields{
-				baseService: func(ctx context.Context, _, _ model.ID, _ *model.Role) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ model.ID, _ *model.Role) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -477,7 +480,7 @@ func TestRoleService_Get(t *testing.T) {
 					return &baseService{
 						logger:            new(mock.Logger),
 						tracer:            tracer,
-						roleRepo:          new(mock.RoleRepository),
+						roleRepo:          mock.NewRoleRepository(ctrl),
 						userRepo:          new(mock.UserRepository),
 						permissionService: new(mock.PermissionService),
 					}
@@ -493,7 +496,7 @@ func TestRoleService_Get(t *testing.T) {
 		{
 			name: "get role with no role permissions",
 			fields: fields{
-				baseService: func(ctx context.Context, id, belongsTo model.ID, _ *model.Role) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, id, belongsTo model.ID, _ *model.Role) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -511,7 +514,7 @@ func TestRoleService_Get(t *testing.T) {
 					return &baseService{
 						logger:            new(mock.Logger),
 						tracer:            tracer,
-						roleRepo:          new(mock.RoleRepository),
+						roleRepo:          mock.NewRoleRepository(ctrl),
 						userRepo:          new(mock.UserRepository),
 						permissionService: permSvc,
 					}
@@ -527,7 +530,7 @@ func TestRoleService_Get(t *testing.T) {
 		{
 			name: "get role with no related permissions",
 			fields: fields{
-				baseService: func(ctx context.Context, id, belongsTo model.ID, _ *model.Role) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, id, belongsTo model.ID, _ *model.Role) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -545,7 +548,7 @@ func TestRoleService_Get(t *testing.T) {
 					return &baseService{
 						logger:            new(mock.Logger),
 						tracer:            tracer,
-						roleRepo:          new(mock.RoleRepository),
+						roleRepo:          mock.NewRoleRepository(ctrl),
 						userRepo:          new(mock.UserRepository),
 						permissionService: permSvc,
 					}
@@ -563,8 +566,10 @@ func TestRoleService_Get(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 			s := &roleService{
-				baseService: tt.fields.baseService(tt.args.ctx, tt.args.id, tt.args.belongsTo, tt.want),
+				baseService: tt.fields.baseService(ctrl, tt.args.ctx, tt.args.id, tt.args.belongsTo, tt.want),
 			}
 			got, err := s.Get(tt.args.ctx, tt.args.id, tt.args.belongsTo)
 			assert.ErrorIs(t, err, tt.wantErr)
@@ -575,7 +580,7 @@ func TestRoleService_Get(t *testing.T) {
 
 func TestRoleService_GetAllBelongsTo(t *testing.T) {
 	type fields struct {
-		baseService func(ctx context.Context, belongsTo model.ID, offset, limit int, roles []*model.Role) *baseService
+		baseService func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, roles []*model.Role) *baseService
 	}
 	type args struct {
 		ctx       context.Context
@@ -593,15 +598,15 @@ func TestRoleService_GetAllBelongsTo(t *testing.T) {
 		{
 			name: "get roles belongs to",
 			fields: fields{
-				baseService: func(ctx context.Context, belongsTo model.ID, offset, limit int, roles []*model.Role) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, roles []*model.Role) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "service.roleService/GetAllBelongsTo", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					roleRepo := new(mock.RoleRepository)
-					roleRepo.On("GetAllBelongsTo", ctx, belongsTo, offset, limit).Return(roles, nil)
+					roleRepo := mock.NewRoleRepository(ctrl)
+					roleRepo.EXPECT().GetAllBelongsTo(ctx, belongsTo, offset, limit).Return(roles, nil)
 
 					permSvc := new(mock.PermissionService)
 					permSvc.On("CtxUserHasPermission", ctx, belongsTo, []model.PermissionKind{
@@ -631,15 +636,15 @@ func TestRoleService_GetAllBelongsTo(t *testing.T) {
 		{
 			name: "get roles belongs to with error",
 			fields: fields{
-				baseService: func(ctx context.Context, belongsTo model.ID, offset, limit int, roles []*model.Role) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, roles []*model.Role) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
 					tracer := new(mock.Tracer)
 					tracer.On("Start", ctx, "service.roleService/GetAllBelongsTo", []trace.SpanStartOption(nil)).Return(ctx, span)
 
-					roleRepo := new(mock.RoleRepository)
-					roleRepo.On("GetAllBelongsTo", ctx, belongsTo, offset, limit).Return(roles, assert.AnError)
+					roleRepo := mock.NewRoleRepository(ctrl)
+					roleRepo.EXPECT().GetAllBelongsTo(ctx, belongsTo, offset, limit).Return(roles, assert.AnError)
 
 					permSvc := new(mock.PermissionService)
 					permSvc.On("CtxUserHasPermission", ctx, belongsTo, []model.PermissionKind{
@@ -666,7 +671,7 @@ func TestRoleService_GetAllBelongsTo(t *testing.T) {
 		{
 			name: "get roles belongs to with invalid role id",
 			fields: fields{
-				baseService: func(ctx context.Context, _ model.ID, _, _ int, _ []*model.Role) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _, _ int, _ []*model.Role) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -676,7 +681,7 @@ func TestRoleService_GetAllBelongsTo(t *testing.T) {
 					return &baseService{
 						logger:            new(mock.Logger),
 						tracer:            tracer,
-						roleRepo:          new(mock.RoleRepository),
+						roleRepo:          mock.NewRoleRepository(ctrl),
 						userRepo:          new(mock.UserRepository),
 						permissionService: new(mock.PermissionService),
 					}
@@ -693,7 +698,7 @@ func TestRoleService_GetAllBelongsTo(t *testing.T) {
 		{
 			name: "get roles belongs to with no permissions",
 			fields: fields{
-				baseService: func(ctx context.Context, belongsTo model.ID, _, _ int, _ []*model.Role) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, _, _ int, _ []*model.Role) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -708,7 +713,7 @@ func TestRoleService_GetAllBelongsTo(t *testing.T) {
 					return &baseService{
 						logger:            new(mock.Logger),
 						tracer:            tracer,
-						roleRepo:          new(mock.RoleRepository),
+						roleRepo:          mock.NewRoleRepository(ctrl),
 						userRepo:          new(mock.UserRepository),
 						permissionService: permSvc,
 					}
@@ -725,7 +730,7 @@ func TestRoleService_GetAllBelongsTo(t *testing.T) {
 		{
 			name: "get roles belongs to with invalid pagination offset",
 			fields: fields{
-				baseService: func(ctx context.Context, _ model.ID, _, _ int, _ []*model.Role) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _, _ int, _ []*model.Role) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -735,7 +740,7 @@ func TestRoleService_GetAllBelongsTo(t *testing.T) {
 					return &baseService{
 						logger:            new(mock.Logger),
 						tracer:            tracer,
-						roleRepo:          new(mock.RoleRepository),
+						roleRepo:          mock.NewRoleRepository(ctrl),
 						userRepo:          new(mock.UserRepository),
 						permissionService: new(mock.PermissionService),
 					}
@@ -752,7 +757,7 @@ func TestRoleService_GetAllBelongsTo(t *testing.T) {
 		{
 			name: "get roles belongs to with invalid pagination limit",
 			fields: fields{
-				baseService: func(ctx context.Context, _ model.ID, _, _ int, _ []*model.Role) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _, _ int, _ []*model.Role) *baseService {
 					span := new(mock.Span)
 					span.On("End", []trace.SpanEndOption(nil)).Return()
 
@@ -762,7 +767,7 @@ func TestRoleService_GetAllBelongsTo(t *testing.T) {
 					return &baseService{
 						logger:            new(mock.Logger),
 						tracer:            tracer,
-						roleRepo:          new(mock.RoleRepository),
+						roleRepo:          mock.NewRoleRepository(ctrl),
 						userRepo:          new(mock.UserRepository),
 						permissionService: new(mock.PermissionService),
 					}
@@ -781,8 +786,10 @@ func TestRoleService_GetAllBelongsTo(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 			s := &roleService{
-				baseService: tt.fields.baseService(tt.args.ctx, tt.args.belongsTo, tt.args.offset, tt.args.limit, tt.want),
+				baseService: tt.fields.baseService(ctrl, tt.args.ctx, tt.args.belongsTo, tt.args.offset, tt.args.limit, tt.want),
 			}
 			got, err := s.GetAllBelongsTo(tt.args.ctx, tt.args.belongsTo, tt.args.offset, tt.args.limit)
 			assert.ErrorIs(t, err, tt.wantErr)
@@ -836,6 +843,8 @@ func TestRoleService_Update(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 			s := &roleService{
 				baseService: tt.fields.baseService,
 			}
@@ -866,6 +875,8 @@ func TestRoleService_GetMembers(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 			s := &roleService{
 				baseService: tt.fields.baseService,
 			}
@@ -920,6 +931,8 @@ func TestRoleService_AddMember(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 			s := &roleService{
 				baseService: tt.fields.baseService,
 			}
@@ -973,6 +986,8 @@ func TestRoleService_RemoveMember(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 			s := &roleService{
 				baseService: tt.fields.baseService,
 			}
@@ -1021,6 +1036,8 @@ func TestRoleService_Delete(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 			s := &roleService{
 				baseService: tt.fields.baseService,
 			}
