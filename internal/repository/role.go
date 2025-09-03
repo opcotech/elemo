@@ -7,6 +7,8 @@ import (
 )
 
 // RoleRepository is a repository for managing roles.
+//
+//go:generate mockgen -source=role.go -destination=../testutil/mock/role_repo_gen.go -package=mock -mock_names "RoleRepository=RoleRepository"
 type RoleRepository interface {
 	Create(ctx context.Context, createdBy, belongsTo model.ID, role *model.Role) error
 	Get(ctx context.Context, id, belongsTo model.ID) (*model.Role, error)
