@@ -20,7 +20,7 @@ func TestCachedPermissionRepository_Create(t *testing.T) {
 
 	type fields struct {
 		cacheRepo      func(ctrl *gomock.Controller, ctx context.Context, permission *model.Permission) *baseRepository
-		permissionRepo func(ctx context.Context, permission *model.Permission) repository.PermissionRepository
+		permissionRepo func(ctrl *gomock.Controller, ctx context.Context, permission *model.Permission) repository.PermissionRepository
 	}
 	type args struct {
 		ctx        context.Context
@@ -71,9 +71,9 @@ func TestCachedPermissionRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				permissionRepo: func(ctx context.Context, permission *model.Permission) repository.PermissionRepository {
-					repo := new(mock.PermissionRepository)
-					repo.On("Create", ctx, permission).Return(nil)
+				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, permission *model.Permission) repository.PermissionRepository {
+					repo := mock.NewPermissionRepository(ctrl)
+					repo.EXPECT().Create(ctx, permission).Return(nil)
 					return repo
 				},
 			},
@@ -126,9 +126,9 @@ func TestCachedPermissionRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				permissionRepo: func(ctx context.Context, permission *model.Permission) repository.PermissionRepository {
-					repo := new(mock.PermissionRepository)
-					repo.On("Create", ctx, permission).Return(repository.ErrPermissionCreate)
+				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, permission *model.Permission) repository.PermissionRepository {
+					repo := mock.NewPermissionRepository(ctrl)
+					repo.EXPECT().Create(ctx, permission).Return(repository.ErrPermissionCreate)
 					return repo
 				},
 			},
@@ -176,8 +176,8 @@ func TestCachedPermissionRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				permissionRepo: func(_ context.Context, _ *model.Permission) repository.PermissionRepository {
-					return new(mock.PermissionRepository)
+				permissionRepo: func(ctrl *gomock.Controller, _ context.Context, _ *model.Permission) repository.PermissionRepository {
+					return mock.NewPermissionRepository(ctrl)
 				},
 			},
 			args: args{
@@ -230,8 +230,8 @@ func TestCachedPermissionRepository_Create(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				permissionRepo: func(_ context.Context, _ *model.Permission) repository.PermissionRepository {
-					return new(mock.PermissionRepository)
+				permissionRepo: func(ctrl *gomock.Controller, _ context.Context, _ *model.Permission) repository.PermissionRepository {
+					return mock.NewPermissionRepository(ctrl)
 				},
 			},
 			args: args{
@@ -254,7 +254,7 @@ func TestCachedPermissionRepository_Create(t *testing.T) {
 			defer ctrl.Finish()
 			r := &CachedPermissionRepository{
 				cacheRepo:      tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.permission),
-				permissionRepo: tt.fields.permissionRepo(tt.args.ctx, tt.args.permission),
+				permissionRepo: tt.fields.permissionRepo(ctrl, tt.args.ctx, tt.args.permission),
 			}
 			err := r.Create(tt.args.ctx, tt.args.permission)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -265,7 +265,7 @@ func TestCachedPermissionRepository_Create(t *testing.T) {
 func TestCachedPermissionRepository_Get(t *testing.T) {
 	type fields struct {
 		cacheRepo      func(ctrl *gomock.Controller, ctx context.Context, id model.ID, permission *model.Permission) *baseRepository
-		permissionRepo func(ctx context.Context, id model.ID, permission *model.Permission) repository.PermissionRepository
+		permissionRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, permission *model.Permission) repository.PermissionRepository
 	}
 	type args struct {
 		ctx context.Context
@@ -294,9 +294,9 @@ func TestCachedPermissionRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				permissionRepo: func(ctx context.Context, id model.ID, permission *model.Permission) repository.PermissionRepository {
-					repo := new(mock.PermissionRepository)
-					repo.On("Get", ctx, id).Return(permission, nil)
+				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, permission *model.Permission) repository.PermissionRepository {
+					repo := mock.NewPermissionRepository(ctrl)
+					repo.EXPECT().Get(ctx, id).Return(permission, nil)
 					return repo
 				},
 			},
@@ -327,9 +327,9 @@ func TestCachedPermissionRepository_Get(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				permissionRepo: func(ctx context.Context, id model.ID, _ *model.Permission) repository.PermissionRepository {
-					repo := new(mock.PermissionRepository)
-					repo.On("Get", ctx, id).Return(nil, repository.ErrNotFound)
+				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *model.Permission) repository.PermissionRepository {
+					repo := mock.NewPermissionRepository(ctrl)
+					repo.EXPECT().Get(ctx, id).Return(nil, repository.ErrNotFound)
 					return repo
 				},
 			},
@@ -348,7 +348,7 @@ func TestCachedPermissionRepository_Get(t *testing.T) {
 			defer ctrl.Finish()
 			r := &CachedPermissionRepository{
 				cacheRepo:      tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, tt.want),
-				permissionRepo: tt.fields.permissionRepo(tt.args.ctx, tt.args.id, tt.want),
+				permissionRepo: tt.fields.permissionRepo(ctrl, tt.args.ctx, tt.args.id, tt.want),
 			}
 			got, err := r.Get(tt.args.ctx, tt.args.id)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -360,7 +360,7 @@ func TestCachedPermissionRepository_Get(t *testing.T) {
 func TestCachedPermissionRepository_GetBySubject(t *testing.T) {
 	type fields struct {
 		cacheRepo      func(ctrl *gomock.Controller, ctx context.Context, id model.ID, permissions []*model.Permission) *baseRepository
-		permissionRepo func(ctx context.Context, id model.ID, permissions []*model.Permission) repository.PermissionRepository
+		permissionRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, permissions []*model.Permission) repository.PermissionRepository
 	}
 	type args struct {
 		ctx context.Context
@@ -389,9 +389,9 @@ func TestCachedPermissionRepository_GetBySubject(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				permissionRepo: func(ctx context.Context, id model.ID, permissions []*model.Permission) repository.PermissionRepository {
-					repo := new(mock.PermissionRepository)
-					repo.On("GetBySubject", ctx, id).Return(permissions, nil)
+				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, permissions []*model.Permission) repository.PermissionRepository {
+					repo := mock.NewPermissionRepository(ctrl)
+					repo.EXPECT().GetBySubject(ctx, id).Return(permissions, nil)
 					return repo
 				},
 			},
@@ -424,9 +424,9 @@ func TestCachedPermissionRepository_GetBySubject(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				permissionRepo: func(ctx context.Context, id model.ID, _ []*model.Permission) repository.PermissionRepository {
-					repo := new(mock.PermissionRepository)
-					repo.On("GetBySubject", ctx, id).Return(nil, repository.ErrNotFound)
+				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ []*model.Permission) repository.PermissionRepository {
+					repo := mock.NewPermissionRepository(ctrl)
+					repo.EXPECT().GetBySubject(ctx, id).Return(nil, repository.ErrNotFound)
 					return repo
 				},
 			},
@@ -445,7 +445,7 @@ func TestCachedPermissionRepository_GetBySubject(t *testing.T) {
 			defer ctrl.Finish()
 			r := &CachedPermissionRepository{
 				cacheRepo:      tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, tt.want),
-				permissionRepo: tt.fields.permissionRepo(tt.args.ctx, tt.args.id, tt.want),
+				permissionRepo: tt.fields.permissionRepo(ctrl, tt.args.ctx, tt.args.id, tt.want),
 			}
 			got, err := r.GetBySubject(tt.args.ctx, tt.args.id)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -457,7 +457,7 @@ func TestCachedPermissionRepository_GetBySubject(t *testing.T) {
 func TestCachedPermissionRepository_GetByTarget(t *testing.T) {
 	type fields struct {
 		cacheRepo      func(ctrl *gomock.Controller, ctx context.Context, id model.ID, permissions []*model.Permission) *baseRepository
-		permissionRepo func(ctx context.Context, id model.ID, permissions []*model.Permission) repository.PermissionRepository
+		permissionRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, permissions []*model.Permission) repository.PermissionRepository
 	}
 	type args struct {
 		ctx context.Context
@@ -486,9 +486,9 @@ func TestCachedPermissionRepository_GetByTarget(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				permissionRepo: func(ctx context.Context, id model.ID, permissions []*model.Permission) repository.PermissionRepository {
-					repo := new(mock.PermissionRepository)
-					repo.On("GetByTarget", ctx, id).Return(permissions, nil)
+				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, permissions []*model.Permission) repository.PermissionRepository {
+					repo := mock.NewPermissionRepository(ctrl)
+					repo.EXPECT().GetByTarget(ctx, id).Return(permissions, nil)
 					return repo
 				},
 			},
@@ -521,9 +521,9 @@ func TestCachedPermissionRepository_GetByTarget(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				permissionRepo: func(ctx context.Context, id model.ID, _ []*model.Permission) repository.PermissionRepository {
-					repo := new(mock.PermissionRepository)
-					repo.On("GetByTarget", ctx, id).Return(nil, repository.ErrNotFound)
+				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ []*model.Permission) repository.PermissionRepository {
+					repo := mock.NewPermissionRepository(ctrl)
+					repo.EXPECT().GetByTarget(ctx, id).Return(nil, repository.ErrNotFound)
 					return repo
 				},
 			},
@@ -542,7 +542,7 @@ func TestCachedPermissionRepository_GetByTarget(t *testing.T) {
 			defer ctrl.Finish()
 			r := &CachedPermissionRepository{
 				cacheRepo:      tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, tt.want),
-				permissionRepo: tt.fields.permissionRepo(tt.args.ctx, tt.args.id, tt.want),
+				permissionRepo: tt.fields.permissionRepo(ctrl, tt.args.ctx, tt.args.id, tt.want),
 			}
 			got, err := r.GetByTarget(tt.args.ctx, tt.args.id)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -554,7 +554,7 @@ func TestCachedPermissionRepository_GetByTarget(t *testing.T) {
 func TestCachedPermissionRepository_GetBySubjectAndTarget(t *testing.T) {
 	type fields struct {
 		cacheRepo      func(ctrl *gomock.Controller, ctx context.Context, subject, target model.ID, permissions []*model.Permission) *baseRepository
-		permissionRepo func(ctx context.Context, subject, target model.ID, permissions []*model.Permission) repository.PermissionRepository
+		permissionRepo func(ctrl *gomock.Controller, ctx context.Context, subject, target model.ID, permissions []*model.Permission) repository.PermissionRepository
 	}
 	type args struct {
 		ctx     context.Context
@@ -584,9 +584,9 @@ func TestCachedPermissionRepository_GetBySubjectAndTarget(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				permissionRepo: func(ctx context.Context, subject, target model.ID, permissions []*model.Permission) repository.PermissionRepository {
-					repo := new(mock.PermissionRepository)
-					repo.On("GetBySubjectAndTarget", ctx, subject, target).Return(permissions, nil)
+				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, subject, target model.ID, permissions []*model.Permission) repository.PermissionRepository {
+					repo := mock.NewPermissionRepository(ctrl)
+					repo.EXPECT().GetBySubjectAndTarget(ctx, subject, target).Return(permissions, nil)
 					return repo
 				},
 			},
@@ -620,9 +620,9 @@ func TestCachedPermissionRepository_GetBySubjectAndTarget(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				permissionRepo: func(ctx context.Context, subject, target model.ID, _ []*model.Permission) repository.PermissionRepository {
-					repo := new(mock.PermissionRepository)
-					repo.On("GetBySubjectAndTarget", ctx, subject, target).Return(nil, repository.ErrNotFound)
+				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, subject, target model.ID, _ []*model.Permission) repository.PermissionRepository {
+					repo := mock.NewPermissionRepository(ctrl)
+					repo.EXPECT().GetBySubjectAndTarget(ctx, subject, target).Return(nil, repository.ErrNotFound)
 					return repo
 				},
 			},
@@ -642,7 +642,7 @@ func TestCachedPermissionRepository_GetBySubjectAndTarget(t *testing.T) {
 			defer ctrl.Finish()
 			r := &CachedPermissionRepository{
 				cacheRepo:      tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.subject, tt.args.target, tt.want),
-				permissionRepo: tt.fields.permissionRepo(tt.args.ctx, tt.args.subject, tt.args.target, tt.want),
+				permissionRepo: tt.fields.permissionRepo(ctrl, tt.args.ctx, tt.args.subject, tt.args.target, tt.want),
 			}
 			got, err := r.GetBySubjectAndTarget(tt.args.ctx, tt.args.subject, tt.args.target)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -654,7 +654,7 @@ func TestCachedPermissionRepository_GetBySubjectAndTarget(t *testing.T) {
 func TestCachedPermissionRepository_Update(t *testing.T) {
 	type fields struct {
 		cacheRepo      func(ctrl *gomock.Controller, ctx context.Context, id model.ID, kind model.PermissionKind) *baseRepository
-		permissionRepo func(ctx context.Context, id model.ID, kind model.PermissionKind, permission *model.Permission) repository.PermissionRepository
+		permissionRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, kind model.PermissionKind, permission *model.Permission) repository.PermissionRepository
 	}
 	type args struct {
 		ctx  context.Context
@@ -707,9 +707,9 @@ func TestCachedPermissionRepository_Update(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				permissionRepo: func(ctx context.Context, id model.ID, kind model.PermissionKind, permission *model.Permission) repository.PermissionRepository {
-					repo := new(mock.PermissionRepository)
-					repo.On("Update", ctx, id, kind).Return(permission, nil)
+				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, kind model.PermissionKind, permission *model.Permission) repository.PermissionRepository {
+					repo := mock.NewPermissionRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, kind).Return(permission, nil)
 					return repo
 				},
 			},
@@ -764,9 +764,9 @@ func TestCachedPermissionRepository_Update(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				permissionRepo: func(ctx context.Context, id model.ID, kind model.PermissionKind, _ *model.Permission) repository.PermissionRepository {
-					repo := new(mock.PermissionRepository)
-					repo.On("Update", ctx, id, kind).Return(nil, repository.ErrNotFound)
+				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, kind model.PermissionKind, _ *model.Permission) repository.PermissionRepository {
+					repo := mock.NewPermissionRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, kind).Return(nil, repository.ErrNotFound)
 					return repo
 				},
 			},
@@ -810,8 +810,8 @@ func TestCachedPermissionRepository_Update(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				permissionRepo: func(_ context.Context, _ model.ID, _ model.PermissionKind, _ *model.Permission) repository.PermissionRepository {
-					return new(mock.PermissionRepository)
+				permissionRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ model.PermissionKind, _ *model.Permission) repository.PermissionRepository {
+					return mock.NewPermissionRepository(ctrl)
 				},
 			},
 			args: args{
@@ -860,8 +860,8 @@ func TestCachedPermissionRepository_Update(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				permissionRepo: func(_ context.Context, _ model.ID, _ model.PermissionKind, _ *model.Permission) repository.PermissionRepository {
-					return new(mock.PermissionRepository)
+				permissionRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ model.PermissionKind, _ *model.Permission) repository.PermissionRepository {
+					return mock.NewPermissionRepository(ctrl)
 				},
 			},
 			args: args{
@@ -880,7 +880,7 @@ func TestCachedPermissionRepository_Update(t *testing.T) {
 			defer ctrl.Finish()
 			r := &CachedPermissionRepository{
 				cacheRepo:      tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.kind),
-				permissionRepo: tt.fields.permissionRepo(tt.args.ctx, tt.args.id, tt.args.kind, tt.want),
+				permissionRepo: tt.fields.permissionRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.kind, tt.want),
 			}
 			got, err := r.Update(tt.args.ctx, tt.args.id, tt.args.kind)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -892,7 +892,7 @@ func TestCachedPermissionRepository_Update(t *testing.T) {
 func TestCachedPermissionRepository_Delete(t *testing.T) {
 	type fields struct {
 		cacheRepo      func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *baseRepository
-		permissionRepo func(ctx context.Context, id model.ID) repository.PermissionRepository
+		permissionRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID) repository.PermissionRepository
 	}
 	type args struct {
 		ctx context.Context
@@ -943,9 +943,9 @@ func TestCachedPermissionRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				permissionRepo: func(ctx context.Context, id model.ID) repository.PermissionRepository {
-					repo := new(mock.PermissionRepository)
-					repo.On("Delete", ctx, id).Return(nil)
+				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) repository.PermissionRepository {
+					repo := mock.NewPermissionRepository(ctrl)
+					repo.EXPECT().Delete(ctx, id).Return(nil)
 					return repo
 				},
 			},
@@ -993,9 +993,9 @@ func TestCachedPermissionRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				permissionRepo: func(ctx context.Context, id model.ID) repository.PermissionRepository {
-					repo := new(mock.PermissionRepository)
-					repo.On("Delete", ctx, id).Return(repository.ErrNotFound)
+				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) repository.PermissionRepository {
+					repo := mock.NewPermissionRepository(ctrl)
+					repo.EXPECT().Delete(ctx, id).Return(repository.ErrNotFound)
 					return repo
 				},
 			},
@@ -1038,8 +1038,8 @@ func TestCachedPermissionRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				permissionRepo: func(_ context.Context, _ model.ID) repository.PermissionRepository {
-					return new(mock.PermissionRepository)
+				permissionRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID) repository.PermissionRepository {
+					return mock.NewPermissionRepository(ctrl)
 				},
 			},
 			args: args{
@@ -1087,8 +1087,8 @@ func TestCachedPermissionRepository_Delete(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				permissionRepo: func(_ context.Context, _ model.ID) repository.PermissionRepository {
-					return new(mock.PermissionRepository)
+				permissionRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID) repository.PermissionRepository {
+					return mock.NewPermissionRepository(ctrl)
 				},
 			},
 			args: args{
@@ -1106,7 +1106,7 @@ func TestCachedPermissionRepository_Delete(t *testing.T) {
 			defer ctrl.Finish()
 			r := &CachedPermissionRepository{
 				cacheRepo:      tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id),
-				permissionRepo: tt.fields.permissionRepo(tt.args.ctx, tt.args.id),
+				permissionRepo: tt.fields.permissionRepo(ctrl, tt.args.ctx, tt.args.id),
 			}
 			err := r.Delete(tt.args.ctx, tt.args.id)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -1117,7 +1117,7 @@ func TestCachedPermissionRepository_Delete(t *testing.T) {
 func TestCachedPermissionRepository_HasPermission(t *testing.T) {
 	type fields struct {
 		cacheRepo      func(ctrl *gomock.Controller, ctx context.Context, subject, target model.ID, hasPermission bool) *baseRepository
-		permissionRepo func(ctx context.Context, subject, target model.ID, hasPermission bool, kinds []model.PermissionKind) repository.PermissionRepository
+		permissionRepo func(ctrl *gomock.Controller, ctx context.Context, subject, target model.ID, hasPermission bool, kinds []model.PermissionKind) repository.PermissionRepository
 	}
 	type args struct {
 		ctx     context.Context
@@ -1148,9 +1148,9 @@ func TestCachedPermissionRepository_HasPermission(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				permissionRepo: func(ctx context.Context, subject, target model.ID, hasPermission bool, kinds []model.PermissionKind) repository.PermissionRepository {
-					repo := new(mock.PermissionRepository)
-					repo.On("HasPermission", ctx, subject, target, kinds).Return(hasPermission, nil)
+				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, subject, target model.ID, hasPermission bool, kinds []model.PermissionKind) repository.PermissionRepository {
+					repo := mock.NewPermissionRepository(ctrl)
+					repo.EXPECT().HasPermission(ctx, subject, target, kinds).Return(hasPermission, nil)
 					return repo
 				},
 			},
@@ -1180,9 +1180,9 @@ func TestCachedPermissionRepository_HasPermission(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				permissionRepo: func(ctx context.Context, subject, target model.ID, hasPermission bool, kinds []model.PermissionKind) repository.PermissionRepository {
-					repo := new(mock.PermissionRepository)
-					repo.On("HasPermission", ctx, subject, target, kinds).Return(hasPermission, nil)
+				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, subject, target model.ID, hasPermission bool, kinds []model.PermissionKind) repository.PermissionRepository {
+					repo := mock.NewPermissionRepository(ctrl)
+					repo.EXPECT().HasPermission(ctx, subject, target, kinds).Return(hasPermission, nil)
 					return repo
 				},
 			},
@@ -1212,9 +1212,9 @@ func TestCachedPermissionRepository_HasPermission(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				permissionRepo: func(ctx context.Context, subject, target model.ID, _ bool, kinds []model.PermissionKind) repository.PermissionRepository {
-					repo := new(mock.PermissionRepository)
-					repo.On("HasPermission", ctx, subject, target, kinds).Return(false, repository.ErrPermissionRead)
+				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, subject, target model.ID, _ bool, kinds []model.PermissionKind) repository.PermissionRepository {
+					repo := mock.NewPermissionRepository(ctrl)
+					repo.EXPECT().HasPermission(ctx, subject, target, kinds).Return(false, repository.ErrPermissionRead)
 					return repo
 				},
 			},
@@ -1237,7 +1237,7 @@ func TestCachedPermissionRepository_HasPermission(t *testing.T) {
 			defer ctrl.Finish()
 			r := &CachedPermissionRepository{
 				cacheRepo:      tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.subject, tt.args.target, tt.want),
-				permissionRepo: tt.fields.permissionRepo(tt.args.ctx, tt.args.subject, tt.args.target, tt.want, tt.args.kinds),
+				permissionRepo: tt.fields.permissionRepo(ctrl, tt.args.ctx, tt.args.subject, tt.args.target, tt.want, tt.args.kinds),
 			}
 			got, err := r.HasPermission(tt.args.ctx, tt.args.subject, tt.args.target, tt.args.kinds...)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -1249,7 +1249,7 @@ func TestCachedPermissionRepository_HasPermission(t *testing.T) {
 func TestCachedPermissionRepository_HasAnyRelation(t *testing.T) {
 	type fields struct {
 		cacheRepo      func(ctrl *gomock.Controller, ctx context.Context, subject, target model.ID, hasAnyRelation bool) *baseRepository
-		permissionRepo func(ctx context.Context, subject, target model.ID, hasAnyRelation bool) repository.PermissionRepository
+		permissionRepo func(ctrl *gomock.Controller, ctx context.Context, subject, target model.ID, hasAnyRelation bool) repository.PermissionRepository
 	}
 	type args struct {
 		ctx     context.Context
@@ -1279,9 +1279,9 @@ func TestCachedPermissionRepository_HasAnyRelation(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				permissionRepo: func(ctx context.Context, subject, target model.ID, hasAnyRelation bool) repository.PermissionRepository {
-					repo := new(mock.PermissionRepository)
-					repo.On("HasAnyRelation", ctx, subject, target).Return(hasAnyRelation, nil)
+				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, subject, target model.ID, hasAnyRelation bool) repository.PermissionRepository {
+					repo := mock.NewPermissionRepository(ctrl)
+					repo.EXPECT().HasAnyRelation(ctx, subject, target).Return(hasAnyRelation, nil)
 					return repo
 				},
 			},
@@ -1308,9 +1308,9 @@ func TestCachedPermissionRepository_HasAnyRelation(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				permissionRepo: func(ctx context.Context, subject, target model.ID, hasAnyRelation bool) repository.PermissionRepository {
-					repo := new(mock.PermissionRepository)
-					repo.On("HasAnyRelation", ctx, subject, target).Return(hasAnyRelation, nil)
+				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, subject, target model.ID, hasAnyRelation bool) repository.PermissionRepository {
+					repo := mock.NewPermissionRepository(ctrl)
+					repo.EXPECT().HasAnyRelation(ctx, subject, target).Return(hasAnyRelation, nil)
 					return repo
 				},
 			},
@@ -1337,9 +1337,9 @@ func TestCachedPermissionRepository_HasAnyRelation(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				permissionRepo: func(ctx context.Context, subject, target model.ID, _ bool) repository.PermissionRepository {
-					repo := new(mock.PermissionRepository)
-					repo.On("HasAnyRelation", ctx, subject, target).Return(false, repository.ErrPermissionRead)
+				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, subject, target model.ID, _ bool) repository.PermissionRepository {
+					repo := mock.NewPermissionRepository(ctrl)
+					repo.EXPECT().HasAnyRelation(ctx, subject, target).Return(false, repository.ErrPermissionRead)
 					return repo
 				},
 			},
@@ -1359,7 +1359,7 @@ func TestCachedPermissionRepository_HasAnyRelation(t *testing.T) {
 			defer ctrl.Finish()
 			r := &CachedPermissionRepository{
 				cacheRepo:      tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.subject, tt.args.target, tt.want),
-				permissionRepo: tt.fields.permissionRepo(tt.args.ctx, tt.args.subject, tt.args.target, tt.want),
+				permissionRepo: tt.fields.permissionRepo(ctrl, tt.args.ctx, tt.args.subject, tt.args.target, tt.want),
 			}
 			got, err := r.HasAnyRelation(tt.args.ctx, tt.args.subject, tt.args.target)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -1371,7 +1371,7 @@ func TestCachedPermissionRepository_HasAnyRelation(t *testing.T) {
 func TestCachedPermissionRepository_HasSystemRole(t *testing.T) {
 	type fields struct {
 		cacheRepo      func(ctrl *gomock.Controller, ctx context.Context, source model.ID, hasSystemRole bool) *baseRepository
-		permissionRepo func(ctx context.Context, source model.ID, hasSystemRole bool, roles []model.SystemRole) repository.PermissionRepository
+		permissionRepo func(ctrl *gomock.Controller, ctx context.Context, source model.ID, hasSystemRole bool, roles []model.SystemRole) repository.PermissionRepository
 	}
 	type args struct {
 		ctx    context.Context
@@ -1401,9 +1401,9 @@ func TestCachedPermissionRepository_HasSystemRole(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				permissionRepo: func(ctx context.Context, source model.ID, hasSystemRole bool, roles []model.SystemRole) repository.PermissionRepository {
-					repo := new(mock.PermissionRepository)
-					repo.On("HasSystemRole", ctx, source, roles).Return(hasSystemRole, nil)
+				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, source model.ID, hasSystemRole bool, roles []model.SystemRole) repository.PermissionRepository {
+					repo := mock.NewPermissionRepository(ctrl)
+					repo.EXPECT().HasSystemRole(ctx, source, roles).Return(hasSystemRole, nil)
 					return repo
 				},
 			},
@@ -1433,9 +1433,9 @@ func TestCachedPermissionRepository_HasSystemRole(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				permissionRepo: func(ctx context.Context, source model.ID, hasSystemRole bool, roles []model.SystemRole) repository.PermissionRepository {
-					repo := new(mock.PermissionRepository)
-					repo.On("HasSystemRole", ctx, source, roles).Return(hasSystemRole, nil)
+				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, source model.ID, hasSystemRole bool, roles []model.SystemRole) repository.PermissionRepository {
+					repo := mock.NewPermissionRepository(ctrl)
+					repo.EXPECT().HasSystemRole(ctx, source, roles).Return(hasSystemRole, nil)
 					return repo
 				},
 			},
@@ -1465,9 +1465,9 @@ func TestCachedPermissionRepository_HasSystemRole(t *testing.T) {
 						logger: new(mock.Logger),
 					}
 				},
-				permissionRepo: func(ctx context.Context, source model.ID, _ bool, roles []model.SystemRole) repository.PermissionRepository {
-					repo := new(mock.PermissionRepository)
-					repo.On("HasSystemRole", ctx, source, roles).Return(false, repository.ErrPermissionRead)
+				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, source model.ID, _ bool, roles []model.SystemRole) repository.PermissionRepository {
+					repo := mock.NewPermissionRepository(ctrl)
+					repo.EXPECT().HasSystemRole(ctx, source, roles).Return(false, repository.ErrPermissionRead)
 					return repo
 				},
 			},
@@ -1490,7 +1490,7 @@ func TestCachedPermissionRepository_HasSystemRole(t *testing.T) {
 			defer ctrl.Finish()
 			r := &CachedPermissionRepository{
 				cacheRepo:      tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.source, tt.want),
-				permissionRepo: tt.fields.permissionRepo(tt.args.ctx, tt.args.source, tt.want, tt.args.roles),
+				permissionRepo: tt.fields.permissionRepo(ctrl, tt.args.ctx, tt.args.source, tt.want, tt.args.roles),
 			}
 			got, err := r.HasSystemRole(tt.args.ctx, tt.args.source, tt.args.roles...)
 			require.ErrorIs(t, err, tt.wantErr)
