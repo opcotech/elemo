@@ -1,5 +1,5 @@
 import { Link, useRouter } from "@tanstack/react-router";
-import { Shield, User } from "lucide-react";
+import { Building2, Shield, User } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 
@@ -40,6 +40,12 @@ export const settingsNavigation: SettingsNavigationGroup[] = [
         href: "/settings",
         icon: User,
         description: "Manage your personal information",
+      },
+      {
+        label: "Organizations",
+        href: "/settings/organizations",
+        icon: Building2,
+        description: "View and manage organizations",
       },
     ],
   },
@@ -117,7 +123,7 @@ export function SettingsLayout({ children }: SettingsLayoutProps) {
         </SidebarContent>
       </Sidebar>
 
-      <main className="flex-1 overflow-auto p-6">{children}</main>
+      <main className="flex-1 overflow-auto px-12 py-8">{children}</main>
     </SidebarProvider>
   );
 }
