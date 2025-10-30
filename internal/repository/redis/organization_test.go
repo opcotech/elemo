@@ -38,7 +38,7 @@ func TestCachedOrganizationRepository_Create(t *testing.T) {
 			name: "add new organization",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ *model.Organization) *baseRepository {
-					ownerKey := composeCacheKey(model.ResourceTypeOrganization.String(), "GetAll", "*")
+					ownerKey := composeCacheKey(model.ResourceTypeOrganization.String(), "GetAll", "*", "*")
 
 					ownerKeyResult := new(redis.StringSliceCmd)
 					ownerKeyResult.SetVal([]string{ownerKey})
@@ -93,7 +93,7 @@ func TestCachedOrganizationRepository_Create(t *testing.T) {
 			name: "add new organization with error",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ *model.Organization) *baseRepository {
-					ownerKey := composeCacheKey(model.ResourceTypeOrganization.String(), "GetAll", "*")
+					ownerKey := composeCacheKey(model.ResourceTypeOrganization.String(), "GetAll", "*", "*")
 
 					ownerKeyResult := new(redis.StringSliceCmd)
 					ownerKeyResult.SetVal([]string{ownerKey})
@@ -149,7 +149,7 @@ func TestCachedOrganizationRepository_Create(t *testing.T) {
 			name: "add new organization get all cache delete error",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ *model.Organization) *baseRepository {
-					ownerKey := composeCacheKey(model.ResourceTypeOrganization.String(), "GetAll", "*")
+					ownerKey := composeCacheKey(model.ResourceTypeOrganization.String(), "GetAll", "*", "*")
 
 					ownerKeyResult := new(redis.StringSliceCmd)
 					ownerKeyResult.SetVal([]string{ownerKey})
@@ -488,11 +488,12 @@ func TestCachedOrganizationRepository_Get(t *testing.T) {
 
 func TestCachedOrganizationRepository_GetAll(t *testing.T) {
 	type fields struct {
-		cacheRepo        func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, organizations []*model.Organization) *baseRepository
-		organizationRepo func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, organizations []*model.Organization) repository.OrganizationRepository
+		cacheRepo        func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, offset, limit int, organizations []*model.Organization) *baseRepository
+		organizationRepo func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, offset, limit int, organizations []*model.Organization) repository.OrganizationRepository
 	}
 	type args struct {
 		ctx    context.Context
+		userID model.ID
 		offset int
 		limit  int
 	}
@@ -506,8 +507,8 @@ func TestCachedOrganizationRepository_GetAll(t *testing.T) {
 		{
 			name: "get uncached organizations",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, organizations []*model.Organization) *baseRepository {
-					key := composeCacheKey(model.ResourceTypeOrganization.String(), "GetAll", offset, limit)
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, offset, limit int, organizations []*model.Organization) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeOrganization.String(), "GetAll", userID.String(), offset, limit)
 
 					db, err := NewDatabase(
 						WithClient(mock.NewUniversalClient(ctrl)),
@@ -536,14 +537,15 @@ func TestCachedOrganizationRepository_GetAll(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, organizations []*model.Organization) repository.OrganizationRepository {
+				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, offset, limit int, organizations []*model.Organization) repository.OrganizationRepository {
 					repo := mock.NewOrganizationRepository(ctrl)
-					repo.EXPECT().GetAll(ctx, offset, limit).Return(organizations, nil)
+					repo.EXPECT().GetAll(ctx, userID, offset, limit).Return(organizations, nil)
 					return repo
 				},
 			},
 			args: args{
 				ctx:    context.Background(),
+				userID: model.MustNewID(model.ResourceTypeUser),
 				offset: 0,
 				limit:  10,
 			},
@@ -575,8 +577,8 @@ func TestCachedOrganizationRepository_GetAll(t *testing.T) {
 		{
 			name: "get cached organizations",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, organizations []*model.Organization) *baseRepository {
-					key := composeCacheKey(model.ResourceTypeOrganization.String(), "GetAll", offset, limit)
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, offset, limit int, organizations []*model.Organization) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeOrganization.String(), "GetAll", userID.String(), offset, limit)
 
 					db, err := NewDatabase(
 						WithClient(mock.NewUniversalClient(ctrl)),
@@ -603,12 +605,13 @@ func TestCachedOrganizationRepository_GetAll(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				organizationRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ int, _ []*model.Organization) repository.OrganizationRepository {
+				organizationRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _, _ int, _ []*model.Organization) repository.OrganizationRepository {
 					return mock.NewOrganizationRepository(ctrl)
 				},
 			},
 			args: args{
 				ctx:    context.Background(),
+				userID: model.MustNewID(model.ResourceTypeUser),
 				offset: 0,
 				limit:  10,
 			},
@@ -640,8 +643,8 @@ func TestCachedOrganizationRepository_GetAll(t *testing.T) {
 		{
 			name: "get uncached organizations error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, _ []*model.Organization) *baseRepository {
-					key := composeCacheKey(model.ResourceTypeOrganization.String(), "GetAll", offset, limit)
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, offset, limit int, _ []*model.Organization) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeOrganization.String(), "GetAll", userID.String(), offset, limit)
 
 					db, err := NewDatabase(
 						WithClient(mock.NewUniversalClient(ctrl)),
@@ -664,14 +667,15 @@ func TestCachedOrganizationRepository_GetAll(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, _ []*model.Organization) repository.OrganizationRepository {
+				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, offset, limit int, _ []*model.Organization) repository.OrganizationRepository {
 					repo := mock.NewOrganizationRepository(ctrl)
-					repo.EXPECT().GetAll(ctx, offset, limit).Return(nil, repository.ErrNotFound)
+					repo.EXPECT().GetAll(ctx, userID, offset, limit).Return(nil, repository.ErrNotFound)
 					return repo
 				},
 			},
 			args: args{
 				ctx:    context.Background(),
+				userID: model.MustNewID(model.ResourceTypeUser),
 				offset: 0,
 				limit:  10,
 			},
@@ -680,8 +684,8 @@ func TestCachedOrganizationRepository_GetAll(t *testing.T) {
 		{
 			name: "get organizations cache error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, _ []*model.Organization) *baseRepository {
-					key := composeCacheKey(model.ResourceTypeOrganization.String(), "GetAll", offset, limit)
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, offset, limit int, _ []*model.Organization) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeOrganization.String(), "GetAll", userID.String(), offset, limit)
 
 					db, err := NewDatabase(
 						WithClient(mock.NewUniversalClient(ctrl)),
@@ -704,12 +708,13 @@ func TestCachedOrganizationRepository_GetAll(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				organizationRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ int, _ []*model.Organization) repository.OrganizationRepository {
+				organizationRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _, _ int, _ []*model.Organization) repository.OrganizationRepository {
 					return mock.NewOrganizationRepository(ctrl)
 				},
 			},
 			args: args{
 				ctx:    context.Background(),
+				userID: model.MustNewID(model.ResourceTypeUser),
 				offset: 0,
 				limit:  10,
 			},
@@ -718,8 +723,8 @@ func TestCachedOrganizationRepository_GetAll(t *testing.T) {
 		{
 			name: "get uncached organizations cache set error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, organizations []*model.Organization) *baseRepository {
-					key := composeCacheKey(model.ResourceTypeOrganization.String(), "GetAll", offset, limit)
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, offset, limit int, organizations []*model.Organization) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeOrganization.String(), "GetAll", userID.String(), offset, limit)
 
 					db, err := NewDatabase(
 						WithClient(mock.NewUniversalClient(ctrl)),
@@ -748,14 +753,15 @@ func TestCachedOrganizationRepository_GetAll(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, organizations []*model.Organization) repository.OrganizationRepository {
+				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, offset, limit int, organizations []*model.Organization) repository.OrganizationRepository {
 					repo := mock.NewOrganizationRepository(ctrl)
-					repo.EXPECT().GetAll(ctx, offset, limit).Return(organizations, nil)
+					repo.EXPECT().GetAll(ctx, userID, offset, limit).Return(organizations, nil)
 					return repo
 				},
 			},
 			args: args{
 				ctx:    context.Background(),
+				userID: model.MustNewID(model.ResourceTypeUser),
 				offset: 0,
 				limit:  10,
 			},
@@ -769,10 +775,10 @@ func TestCachedOrganizationRepository_GetAll(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			r := &CachedOrganizationRepository{
-				cacheRepo:        tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.offset, tt.args.limit, tt.want),
-				organizationRepo: tt.fields.organizationRepo(ctrl, tt.args.ctx, tt.args.offset, tt.args.limit, tt.want),
+				cacheRepo:        tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.userID, tt.args.offset, tt.args.limit, tt.want),
+				organizationRepo: tt.fields.organizationRepo(ctrl, tt.args.ctx, tt.args.userID, tt.args.offset, tt.args.limit, tt.want),
 			}
-			got, err := r.GetAll(tt.args.ctx, tt.args.offset, tt.args.limit)
+			got, err := r.GetAll(tt.args.ctx, tt.args.userID, tt.args.offset, tt.args.limit)
 			require.ErrorIs(t, err, tt.wantErr)
 			require.ElementsMatch(t, tt.want, got)
 		})
@@ -801,7 +807,7 @@ func TestCachedOrganizationRepository_Update(t *testing.T) {
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, organization *model.Organization) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeOrganization.String(), id.String())
-					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "GetAll", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "GetAll", "*", "*")
 
 					getAllKeyCmd := new(redis.StringSliceCmd)
 					getAllKeyCmd.SetVal([]string{getAllKey})
@@ -948,7 +954,7 @@ func TestCachedOrganizationRepository_Update(t *testing.T) {
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, organization *model.Organization) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeOrganization.String(), id.String())
-					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "GetAll", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "GetAll", "*", "*")
 
 					getAllKeyCmd := new(redis.StringSliceCmd)
 					getAllKeyCmd.SetVal([]string{getAllKey})
@@ -1039,7 +1045,7 @@ func TestCachedOrganizationRepository_AddMember(t *testing.T) {
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id, _ model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeOrganization.String(), id.String())
-					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "GetAll", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "GetAll", "*", "*")
 
 					getAllKeyCmd := new(redis.StringSliceCmd)
 					getAllKeyCmd.SetVal([]string{getAllKey})
@@ -1087,7 +1093,7 @@ func TestCachedOrganizationRepository_AddMember(t *testing.T) {
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id, _ model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeOrganization.String(), id.String())
-					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "GetAll", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "GetAll", "*", "*")
 
 					getAllKeyCmd := new(redis.StringSliceCmd)
 					getAllKeyCmd.SetVal([]string{getAllKey})
@@ -1177,7 +1183,7 @@ func TestCachedOrganizationRepository_AddMember(t *testing.T) {
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id, _ model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeOrganization.String(), id.String())
-					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "GetAll", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "GetAll", "*", "*")
 
 					getAllKeyCmd := new(redis.StringSliceCmd)
 					getAllKeyCmd.SetVal([]string{getAllKey})
@@ -1257,7 +1263,7 @@ func TestCachedOrganizationRepository_RemoveMember(t *testing.T) {
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id, _ model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeOrganization.String(), id.String())
-					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "GetAll", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "GetAll", "*", "*")
 
 					getAllKeyCmd := new(redis.StringSliceCmd)
 					getAllKeyCmd.SetVal([]string{getAllKey})
@@ -1305,7 +1311,7 @@ func TestCachedOrganizationRepository_RemoveMember(t *testing.T) {
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id, _ model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeOrganization.String(), id.String())
-					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "GetAll", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "GetAll", "*", "*")
 
 					getAllKeyCmd := new(redis.StringSliceCmd)
 					getAllKeyCmd.SetVal([]string{getAllKey})
@@ -1395,7 +1401,7 @@ func TestCachedOrganizationRepository_RemoveMember(t *testing.T) {
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id, _ model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeOrganization.String(), id.String())
-					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "GetAll", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "GetAll", "*", "*")
 
 					getAllKeyCmd := new(redis.StringSliceCmd)
 					getAllKeyCmd.SetVal([]string{getAllKey})
@@ -1474,7 +1480,7 @@ func TestCachedOrganizationRepository_Delete(t *testing.T) {
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeOrganization.String(), id.String())
-					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "GetAll", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "GetAll", "*", "*")
 
 					getAllKeyCmd := new(redis.StringSliceCmd)
 					getAllKeyCmd.SetVal([]string{getAllKey})
@@ -1521,7 +1527,7 @@ func TestCachedOrganizationRepository_Delete(t *testing.T) {
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeOrganization.String(), id.String())
-					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "GetAll", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "GetAll", "*", "*")
 
 					getAllKeyCmd := new(redis.StringSliceCmd)
 					getAllKeyCmd.SetVal([]string{getAllKey})
@@ -1609,7 +1615,7 @@ func TestCachedOrganizationRepository_Delete(t *testing.T) {
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeOrganization.String(), id.String())
-					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "GetAll", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "GetAll", "*", "*")
 
 					getAllKeyCmd := new(redis.StringSliceCmd)
 					getAllKeyCmd.SetVal([]string{getAllKey})

@@ -6,6 +6,7 @@ import (
 
 	"github.com/opcotech/elemo/internal/license"
 	"github.com/opcotech/elemo/internal/model"
+	"github.com/opcotech/elemo/internal/pkg"
 )
 
 // OrganizationService serves the business logic of interacting with
@@ -100,7 +101,12 @@ func (s *organizationService) GetAll(ctx context.Context, offset, limit int) ([]
 		return nil, errors.Join(ErrOrganizationGetAll, ErrInvalidPaginationParams)
 	}
 
-	organizations, err := s.organizationRepo.GetAll(ctx, offset, limit)
+	userID, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID)
+	if !ok {
+		return nil, errors.Join(ErrOrganizationGetAll, model.ErrInvalidID)
+	}
+
+	organizations, err := s.organizationRepo.GetAll(ctx, userID, offset, limit)
 	if err != nil {
 		return nil, errors.Join(ErrOrganizationGetAll, err)
 	}

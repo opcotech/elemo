@@ -85,16 +85,16 @@ func (s *CachedOrganizationRepositoryIntegrationTestSuite) TestGetAll() {
 	s.Require().NoError(s.OrganizationRepo.Create(context.Background(), s.testUser.ID, s.organization))
 	s.Require().NoError(s.OrganizationRepo.Create(context.Background(), s.testUser.ID, testModel.NewOrganization()))
 
-	originalOrganizations, err := s.OrganizationRepo.GetAll(context.Background(), 0, 10)
+	originalOrganizations, err := s.OrganizationRepo.GetAll(context.Background(), s.testUser.ID, 0, 10)
 	s.Require().NoError(err)
 
-	usingCacheOrganizations, err := s.organizationRepo.GetAll(context.Background(), 0, 10)
+	usingCacheOrganizations, err := s.organizationRepo.GetAll(context.Background(), s.testUser.ID, 0, 10)
 	s.Require().NoError(err)
 
 	s.Assert().Equal(originalOrganizations, usingCacheOrganizations)
 	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
 
-	cachedOrganizations, err := s.organizationRepo.GetAll(context.Background(), 0, 10)
+	cachedOrganizations, err := s.organizationRepo.GetAll(context.Background(), s.testUser.ID, 0, 10)
 	s.Require().NoError(err)
 	s.Assert().Equal(len(usingCacheOrganizations), len(cachedOrganizations))
 

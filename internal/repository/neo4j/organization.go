@@ -122,22 +122,27 @@ func (r *OrganizationRepository) Get(ctx context.Context, id model.ID) (*model.O
 	return org, nil
 }
 
-func (r *OrganizationRepository) GetAll(ctx context.Context, offset, limit int) ([]*model.Organization, error) {
+func (r *OrganizationRepository) GetAll(ctx context.Context, userID model.ID, offset, limit int) ([]*model.Organization, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.OrganizationRepository/GetAllBelongsTo")
 	defer span.End()
 
+	if err := userID.Validate(); err != nil {
+		return nil, errors.Join(repository.ErrOrganizationRead, err)
+	}
+
 	cypher := `
-	MATCH (o:` + model.ResourceTypeOrganization.String() + `)
-	OPTIONAL MATCH (u:` + model.ResourceTypeUser.String() + `)-[:` + EdgeKindMemberOf.String() + `]->(o)
+	MATCH (u:` + userID.Label() + ` {id: $user_id})-[m:` + EdgeKindMemberOf.String() + `]->(o:` + model.ResourceTypeOrganization.String() + `)
+	OPTIONAL MATCH (u2:` + model.ResourceTypeUser.String() + `)-[:` + EdgeKindMemberOf.String() + `]->(o)
 	OPTIONAL MATCH (o)-[:` + EdgeKindHasNamespace.String() + `]->(n:` + model.ResourceTypeNamespace.String() + `)
 	OPTIONAL MATCH (o)-[:` + EdgeKindHasTeam.String() + `]->(t:` + model.ResourceTypeRole.String() + `)
-	RETURN o, collect(DISTINCT u.id) AS m, collect(DISTINCT n.id) AS n, collect(DISTINCT t.id) AS t
+	RETURN o, collect(DISTINCT u2.id) AS m, collect(DISTINCT n.id) AS n, collect(DISTINCT t.id) AS t
 	ORDER BY o.created_at DESC
 	SKIP $offset LIMIT $limit`
 
 	params := map[string]any{
-		"offset": offset,
-		"limit":  limit,
+		"user_id": userID.String(),
+		"offset":  offset,
+		"limit":   limit,
 	}
 
 	orgs, err := ExecuteReadAndReadAll(ctx, r.db, cypher, params, r.scan("o", "n", "t", "m"))
