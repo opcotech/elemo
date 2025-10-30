@@ -94,7 +94,7 @@ generate.email: ## Generate HTML template emails
 		--static-root "http://0.0.0.0:4566/elemo"
 
 .PHONY: dep
-dep: deb.backend dep.frontend ## Download and install backend and front-end dependencies
+dep: dep.backend dep.frontend ## Download and install backend and front-end dependencies
 
 .PHONY: dep.backend
 dep.backend: ## Download backend dependencies
