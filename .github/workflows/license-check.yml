@@ -16,7 +16,7 @@ jobs:
       - name: Install Feluda
         run: |
           curl -LO https://github.com/anistark/feluda/releases/download/v1.10.2/feluda-v1.10.2-x86_64.deb
-          dpkg -i feluda-v1.10.2-x86_64.deb
+          sudo dpkg -i feluda-v1.10.2-x86_64.deb
 
       - name: Check licenses
         run: |
