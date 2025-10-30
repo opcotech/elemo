@@ -1,6 +1,6 @@
 module github.com/opcotech/elemo
 
-go 1.24.0
+go 1.25
 
 require (
 	github.com/Shopify/gomail v0.0.0-20220729171026-0784ece65e69
