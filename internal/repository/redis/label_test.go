@@ -8,7 +8,6 @@ import (
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/mock/gomock"
 
 	"github.com/opcotech/elemo/internal/model"
@@ -58,11 +57,11 @@ func TestCachedLabelRepository_Create(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(3)
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(3)
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(nil)
@@ -73,7 +72,7 @@ func TestCachedLabelRepository_Create(t *testing.T) {
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 					}
 				},
 				labelRepo: func(ctrl *gomock.Controller, ctx context.Context, label *model.Label) repository.LabelRepository {
@@ -118,11 +117,11 @@ func TestCachedLabelRepository_Create(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(3)
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(3)
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(nil)
@@ -133,7 +132,7 @@ func TestCachedLabelRepository_Create(t *testing.T) {
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 					}
 				},
 				labelRepo: func(ctrl *gomock.Controller, ctx context.Context, label *model.Label) repository.LabelRepository {
@@ -169,11 +168,11 @@ func TestCachedLabelRepository_Create(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(1)
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span)
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(repository.ErrCacheDelete)
@@ -182,7 +181,7 @@ func TestCachedLabelRepository_Create(t *testing.T) {
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 					}
 				},
 				labelRepo: func(_ *gomock.Controller, _ context.Context, _ *model.Label) repository.LabelRepository {
@@ -221,11 +220,11 @@ func TestCachedLabelRepository_Create(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(2)
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(2)
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(nil)
@@ -235,7 +234,7 @@ func TestCachedLabelRepository_Create(t *testing.T) {
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 					}
 				},
 				labelRepo: func(_ *gomock.Controller, _ context.Context, _ *model.Label) repository.LabelRepository {
@@ -279,11 +278,11 @@ func TestCachedLabelRepository_Create(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(3)
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(3)
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(nil)
@@ -294,7 +293,7 @@ func TestCachedLabelRepository_Create(t *testing.T) {
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 					}
 				},
 				labelRepo: func(_ *gomock.Controller, _ context.Context, _ *model.Label) repository.LabelRepository {
@@ -355,11 +354,11 @@ func TestCachedLabelRepository_Get(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(1)
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/Get", gomock.Len(0)).Return(ctx, span)
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Do(func(_ context.Context, _ string, dst any) {
@@ -372,7 +371,7 @@ func TestCachedLabelRepository_Get(t *testing.T) {
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 					}
 				},
 				labelRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID, _ *model.Label) repository.LabelRepository {
@@ -402,11 +401,11 @@ func TestCachedLabelRepository_Get(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(1)
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/Get", gomock.Len(0)).Return(ctx, span)
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Do(func(_ context.Context, _ string, dst any) {
@@ -419,7 +418,7 @@ func TestCachedLabelRepository_Get(t *testing.T) {
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 					}
 				},
 				labelRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID, _ *model.Label) repository.LabelRepository {
@@ -449,11 +448,11 @@ func TestCachedLabelRepository_Get(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(1)
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/Get", gomock.Len(0)).Return(ctx, span)
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(nil)
@@ -462,7 +461,7 @@ func TestCachedLabelRepository_Get(t *testing.T) {
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 					}
 				},
 				labelRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *model.Label) repository.LabelRepository {
@@ -488,11 +487,11 @@ func TestCachedLabelRepository_Get(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(1)
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/Get", gomock.Len(0)).Return(ctx, span)
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(assert.AnError)
@@ -501,7 +500,7 @@ func TestCachedLabelRepository_Get(t *testing.T) {
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 					}
 				},
 				labelRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID, _ *model.Label) repository.LabelRepository {
@@ -525,12 +524,12 @@ func TestCachedLabelRepository_Get(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(2)
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "repository.redis.baseRepository/Set", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/Get", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/Set", gomock.Len(0)).Return(ctx, span)
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(cache.ErrCacheMiss)
@@ -544,7 +543,7 @@ func TestCachedLabelRepository_Get(t *testing.T) {
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 					}
 				},
 				labelRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, label *model.Label) repository.LabelRepository {
@@ -610,12 +609,12 @@ func TestCachedLabelRepository_GetAll(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(2)
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "repository.redis.baseRepository/Set", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/Get", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/Set", gomock.Len(0)).Return(ctx, span)
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(cache.ErrCacheMiss)
@@ -629,7 +628,7 @@ func TestCachedLabelRepository_GetAll(t *testing.T) {
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 					}
 				},
 				labelRepo: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, labels []*model.Label) repository.LabelRepository {
@@ -667,11 +666,11 @@ func TestCachedLabelRepository_GetAll(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(1)
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/Get", gomock.Len(0)).Return(ctx, span)
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Do(func(_ context.Context, _ string, dst any) {
@@ -684,7 +683,7 @@ func TestCachedLabelRepository_GetAll(t *testing.T) {
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 					}
 				},
 				labelRepo: func(_ *gomock.Controller, _ context.Context, _, _ int, _ []*model.Label) repository.LabelRepository {
@@ -720,12 +719,11 @@ func TestCachedLabelRepository_GetAll(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(1)
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "repository.redis.baseRepository/Set", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/Get", gomock.Len(0)).Return(ctx, span)
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(nil)
@@ -734,7 +732,7 @@ func TestCachedLabelRepository_GetAll(t *testing.T) {
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 					}
 				},
 				labelRepo: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, _ []*model.Label) repository.LabelRepository {
@@ -761,12 +759,11 @@ func TestCachedLabelRepository_GetAll(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(1)
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "repository.redis.baseRepository/Set", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/Get", gomock.Len(0)).Return(ctx, span)
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(assert.AnError)
@@ -775,7 +772,7 @@ func TestCachedLabelRepository_GetAll(t *testing.T) {
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 					}
 				},
 				labelRepo: func(_ *gomock.Controller, _ context.Context, _, _ int, _ []*model.Label) repository.LabelRepository {
@@ -800,12 +797,12 @@ func TestCachedLabelRepository_GetAll(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(2)
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "repository.redis.baseRepository/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "repository.redis.baseRepository/Set", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/Get", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/Set", gomock.Len(0)).Return(ctx, span)
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(cache.ErrCacheMiss)
@@ -819,7 +816,7 @@ func TestCachedLabelRepository_GetAll(t *testing.T) {
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 					}
 				},
 				labelRepo: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, labels []*model.Label) repository.LabelRepository {
@@ -894,12 +891,12 @@ func TestCachedLabelRepository_Update(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(2)
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "repository.redis.baseRepository/Set", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/Set", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span)
 
 					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(nil)
 
@@ -907,7 +904,7 @@ func TestCachedLabelRepository_Update(t *testing.T) {
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 					}
 				},
 				labelRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, label *model.Label) repository.LabelRepository {
@@ -942,8 +939,8 @@ func TestCachedLabelRepository_Update(t *testing.T) {
 					return &baseRepository{
 						db:     db,
 						cache:  mock.NewCacheBackend(ctrl),
-						tracer: new(mock.Tracer),
-						logger: new(mock.Logger),
+						tracer: mock.NewMockTracer(ctrl),
+						logger: mock.NewMockLogger(ctrl),
 					}
 				},
 				labelRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, _ *model.Label) repository.LabelRepository {
@@ -976,11 +973,11 @@ func TestCachedLabelRepository_Update(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(1)
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "repository.redis.baseRepository/Set", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/Set", gomock.Len(0)).Return(ctx, span)
 					cacheRepo.EXPECT().Set(&cache.Item{
 						Ctx:   ctx,
 						Key:   key,
@@ -991,7 +988,7 @@ func TestCachedLabelRepository_Update(t *testing.T) {
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 					}
 				},
 				labelRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, label *model.Label) repository.LabelRepository {
@@ -1034,12 +1031,12 @@ func TestCachedLabelRepository_Update(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(2)
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "repository.redis.baseRepository/Set", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/Set", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span)
 
 					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(assert.AnError)
 
@@ -1047,7 +1044,7 @@ func TestCachedLabelRepository_Update(t *testing.T) {
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 					}
 				},
 				labelRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, label *model.Label) repository.LabelRepository {
@@ -1129,12 +1126,12 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(4)
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(3)
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
@@ -1146,7 +1143,7 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 					}
 				},
 				labelRepo: func(ctrl *gomock.Controller, ctx context.Context, id, attachTo model.ID) repository.LabelRepository {
@@ -1189,12 +1186,12 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(4)
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(3)
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
@@ -1206,7 +1203,7 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 					}
 				},
 				labelRepo: func(ctrl *gomock.Controller, ctx context.Context, id, attachTo model.ID) repository.LabelRepository {
@@ -1235,11 +1232,11 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(1)
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/Delete", gomock.Len(0)).Return(ctx, span)
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(repository.ErrCacheDelete)
@@ -1248,7 +1245,7 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 					}
 				},
 				labelRepo: func(_ *gomock.Controller, _ context.Context, _, _ model.ID) repository.LabelRepository {
@@ -1280,12 +1277,12 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(2)
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span)
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
@@ -1295,7 +1292,7 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 					}
 				},
 				labelRepo: func(_ *gomock.Controller, _ context.Context, _, _ model.ID) repository.LabelRepository {
@@ -1332,12 +1329,12 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(3)
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(2)
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
@@ -1348,7 +1345,7 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 					}
 				},
 				labelRepo: func(_ *gomock.Controller, _ context.Context, _, _ model.ID) repository.LabelRepository {
@@ -1390,12 +1387,12 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(4)
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(3)
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
@@ -1407,7 +1404,7 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 					}
 				},
 				labelRepo: func(_ *gomock.Controller, _ context.Context, _, _ model.ID) repository.LabelRepository {
@@ -1482,12 +1479,12 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(4)
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(3)
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
@@ -1499,7 +1496,7 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 					}
 				},
 				labelRepo: func(ctrl *gomock.Controller, ctx context.Context, id, detachFrom model.ID) repository.LabelRepository {
@@ -1542,12 +1539,12 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(4)
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(3)
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
@@ -1559,7 +1556,7 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 					}
 				},
 				labelRepo: func(ctrl *gomock.Controller, ctx context.Context, id, detachFrom model.ID) repository.LabelRepository {
@@ -1588,11 +1585,11 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(1)
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/Delete", gomock.Len(0)).Return(ctx, span)
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(repository.ErrCacheDelete)
@@ -1601,7 +1598,7 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 					}
 				},
 				labelRepo: func(_ *gomock.Controller, _ context.Context, _, _ model.ID) repository.LabelRepository {
@@ -1633,12 +1630,12 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(2)
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span)
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
@@ -1648,7 +1645,7 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 					}
 				},
 				labelRepo: func(_ *gomock.Controller, _ context.Context, _, _ model.ID) repository.LabelRepository {
@@ -1685,12 +1682,12 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(3)
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(2)
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
@@ -1701,7 +1698,7 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 					}
 				},
 				labelRepo: func(_ *gomock.Controller, _ context.Context, _, _ model.ID) repository.LabelRepository {
@@ -1743,12 +1740,12 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(4)
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(3)
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
@@ -1760,7 +1757,7 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 					}
 				},
 				labelRepo: func(_ *gomock.Controller, _ context.Context, _, _ model.ID) repository.LabelRepository {
@@ -1834,12 +1831,12 @@ func TestCachedLabelRepository_Delete(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(4)
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(3)
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
@@ -1851,7 +1848,7 @@ func TestCachedLabelRepository_Delete(t *testing.T) {
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 					}
 				},
 				labelRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) repository.LabelRepository {
@@ -1893,12 +1890,12 @@ func TestCachedLabelRepository_Delete(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(4)
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(3)
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
@@ -1910,7 +1907,7 @@ func TestCachedLabelRepository_Delete(t *testing.T) {
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 					}
 				},
 				labelRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) repository.LabelRepository {
@@ -1938,11 +1935,11 @@ func TestCachedLabelRepository_Delete(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(1)
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/Delete", gomock.Len(0)).Return(ctx, span)
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(repository.ErrCacheDelete)
@@ -1951,7 +1948,7 @@ func TestCachedLabelRepository_Delete(t *testing.T) {
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 					}
 				},
 				labelRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID) repository.LabelRepository {
@@ -1982,12 +1979,12 @@ func TestCachedLabelRepository_Delete(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(2)
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span)
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
@@ -1997,7 +1994,7 @@ func TestCachedLabelRepository_Delete(t *testing.T) {
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 					}
 				},
 				labelRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID) repository.LabelRepository {
@@ -2033,12 +2030,12 @@ func TestCachedLabelRepository_Delete(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(3)
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(2)
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
@@ -2049,7 +2046,7 @@ func TestCachedLabelRepository_Delete(t *testing.T) {
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 					}
 				},
 				labelRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID) repository.LabelRepository {
@@ -2090,12 +2087,12 @@ func TestCachedLabelRepository_Delete(t *testing.T) {
 					)
 					require.NoError(t, err)
 
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(4)
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "repository.redis.baseRepository/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "repository.redis.baseRepository/DeletePattern", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(3)
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
@@ -2107,7 +2104,7 @@ func TestCachedLabelRepository_Delete(t *testing.T) {
 						db:     db,
 						cache:  cacheRepo,
 						tracer: tracer,
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 					}
 				},
 				labelRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID) repository.LabelRepository {

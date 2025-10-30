@@ -5,6 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 
 	"github.com/opcotech/elemo/internal/pkg/log"
 	"github.com/opcotech/elemo/internal/pkg/tracing"
@@ -24,9 +25,9 @@ func TestWithLogger(t *testing.T) {
 		{
 			name: "WithLogger sets the logger for the baseService",
 			args: args{
-				logger: new(mock.Logger),
+				logger: mock.NewMockLogger(nil),
 			},
-			want: new(mock.Logger),
+			want: mock.NewMockLogger(nil),
 		},
 		{
 			name: "WithLogger returns an error if no logger is provided",
@@ -69,9 +70,9 @@ func TestWithTracer(t *testing.T) {
 		{
 			name: "WithTracer sets the tracer for the baseService",
 			args: args{
-				tracer: new(mock.Tracer),
+				tracer: mock.NewMockTracer(nil),
 			},
-			want: new(mock.Tracer),
+			want: mock.NewMockTracer(nil),
 		},
 		{
 			name: "WithTracer returns an error if no tracer is provided",
@@ -107,22 +108,20 @@ func TestWithLicenseService(t *testing.T) {
 	}
 	tests := []struct {
 		name    string
-		args    args
+		argsFn  func(ctrl *gomock.Controller) args
+		want    func(ctrl *gomock.Controller) LicenseService
 		wantErr bool
-		want    LicenseService
 	}{
 		{
 			name: "set the license service for the baseService",
-			args: args{
-				licenseService: new(mock.LicenseService),
+			argsFn: func(ctrl *gomock.Controller) args {
+				return args{licenseService: mock.NewMockLicenseService(ctrl)}
 			},
-			want: new(mock.LicenseService),
+			want: func(ctrl *gomock.Controller) LicenseService { return mock.NewMockLicenseService(ctrl) },
 		},
 		{
-			name: "return an error if no license service is provided",
-			args: args{
-				licenseService: nil,
-			},
+			name:    "return an error if no license service is provided",
+			argsFn:  func(_ *gomock.Controller) args { return args{licenseService: nil} },
 			wantErr: true,
 		},
 	}
@@ -131,16 +130,17 @@ func TestWithLicenseService(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 
 			var s baseService
-
-			err := WithLicenseService(tt.args.licenseService)(&s)
+			args := tt.argsFn(ctrl)
+			err := WithLicenseService(args.licenseService)(&s)
 			if (err != nil) != tt.wantErr {
 				require.NoError(t, err)
 			}
-
 			if !tt.wantErr {
-				assert.Equal(t, tt.want, s.licenseService)
+				assert.Equal(t, tt.want(ctrl), s.licenseService)
 			}
 		})
 	}
@@ -159,9 +159,9 @@ func TestWithPermissionService(t *testing.T) {
 		{
 			name: "set the permission service for the baseService",
 			args: args{
-				permissionService: new(mock.PermissionService),
+				permissionService: mock.NewPermissionService(nil),
 			},
-			want: new(mock.PermissionService),
+			want: mock.NewPermissionService(nil),
 		},
 		{
 			name: "return an error if no permission service is provided",
@@ -205,36 +205,36 @@ func Test_newService(t *testing.T) {
 			name: "newService returns a baseService with the provided options",
 			args: args{
 				opts: []Option{
-					WithLogger(new(mock.Logger)),
-					WithTracer(new(mock.Tracer)),
+					WithLogger(mock.NewMockLogger(nil)),
+					WithTracer(mock.NewMockTracer(nil)),
 				},
 			},
 			want: &baseService{
-				logger: new(mock.Logger),
-				tracer: new(mock.Tracer),
+				logger: mock.NewMockLogger(nil),
+				tracer: mock.NewMockTracer(nil),
 			},
 		},
 		{
 			name: "newService returns default logger if no logger is provided",
 			args: args{
 				opts: []Option{
-					WithTracer(new(mock.Tracer)),
+					WithTracer(mock.NewMockTracer(nil)),
 				},
 			},
 			want: &baseService{
 				logger: log.DefaultLogger(),
-				tracer: new(mock.Tracer),
+				tracer: mock.NewMockTracer(nil),
 			},
 		},
 		{
 			name: "newService returns default tracer if no tracer is provided",
 			args: args{
 				opts: []Option{
-					WithLogger(new(mock.Logger)),
+					WithLogger(mock.NewMockLogger(nil)),
 				},
 			},
 			want: &baseService{
-				logger: new(mock.Logger),
+				logger: mock.NewMockLogger(nil),
 				tracer: tracing.NoopTracer(),
 			},
 		},
@@ -243,7 +243,7 @@ func Test_newService(t *testing.T) {
 			args: args{
 				opts: []Option{
 					WithLogger(nil),
-					WithTracer(new(mock.Tracer)),
+					WithTracer(mock.NewMockTracer(nil)),
 				},
 			},
 			wantErr: log.ErrNoLogger,
@@ -252,7 +252,7 @@ func Test_newService(t *testing.T) {
 			name: "newService returns error if nil tracer is provided",
 			args: args{
 				opts: []Option{
-					WithLogger(new(mock.Logger)),
+					WithLogger(mock.NewMockLogger(nil)),
 					WithTracer(nil),
 				},
 			},

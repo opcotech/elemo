@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 	"go.uber.org/zap/zapcore"
 
 	"github.com/opcotech/elemo/internal/pkg/log"
@@ -44,18 +45,20 @@ func TestHTTPError(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 
 			r, err := http.NewRequestWithContext(context.Background(), "GET", "/", nil)
 			require.NoError(t, err)
 
-			logger := new(mock.Logger)
+			logger := mock.NewMockLogger(ctrl)
 			if tt.args.status >= 500 {
-				logger.On("Log", zapcore.ErrorLevel, tt.args.err.Error(), []zapcore.Field{
+				logger.EXPECT().Log(zapcore.ErrorLevel, tt.args.err.Error(), []zapcore.Field{
 					log.WithTraceID("00000000000000000000000000000000"),
 					log.WithError(tt.args.err),
 				}).Return()
 			} else {
-				logger.On("Log", zapcore.WarnLevel, tt.args.err.Error(), []zapcore.Field{
+				logger.EXPECT().Log(zapcore.WarnLevel, tt.args.err.Error(), []zapcore.Field{
 					log.WithTraceID("00000000000000000000000000000000"),
 				}).Return()
 			}
@@ -107,18 +110,20 @@ func TestHTTPErrorStruct(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 
 			r, err := http.NewRequestWithContext(context.Background(), "GET", "/", nil)
 			require.NoError(t, err)
 
-			logger := new(mock.Logger)
+			logger := mock.NewMockLogger(ctrl)
 			if tt.args.status >= 500 {
-				logger.On("Log", zapcore.ErrorLevel, tt.args.err.Error(), []zapcore.Field{
+				logger.EXPECT().Log(zapcore.ErrorLevel, tt.args.err.Error(), []zapcore.Field{
 					log.WithTraceID("00000000000000000000000000000000"),
 					log.WithError(tt.args.err),
 				}).Return()
 			} else {
-				logger.On("Log", zapcore.WarnLevel, tt.args.err.Error(), []zapcore.Field{
+				logger.EXPECT().Log(zapcore.WarnLevel, tt.args.err.Error(), []zapcore.Field{
 					log.WithTraceID("00000000000000000000000000000000"),
 				}).Return()
 			}

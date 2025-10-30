@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 	"go.uber.org/zap/zapcore"
 
 	"github.com/opcotech/elemo/internal/pkg"
@@ -28,8 +29,11 @@ func TestWithContextObject(t *testing.T) {
 }
 
 func TestWithRequestLogger(t *testing.T) {
-	logger := new(mock.Logger)
-	logger.On("Log", zapcore.InfoLevel, "serve http request", mock.Anything).Return()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	logger := mock.NewMockLogger(ctrl)
+	logger.EXPECT().Log(zapcore.InfoLevel, "serve http request", gomock.Any()).Return()
 
 	ctx := log.WithContext(context.Background(), logger)
 
@@ -38,6 +42,4 @@ func TestWithRequestLogger(t *testing.T) {
 
 	wrappedFunc := http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {})
 	WithRequestLogger(wrappedFunc).ServeHTTP(httptest.NewRecorder(), request)
-
-	logger.AssertExpectations(t)
 }

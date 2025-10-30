@@ -6,7 +6,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/mock/gomock"
 
 	"github.com/opcotech/elemo/internal/config"
@@ -43,14 +42,14 @@ func TestNewDatabase(t *testing.T) {
 			args: args{
 				client: new(mock.WrappedClient),
 				config: new(config.SMTPConfig),
-				logger: new(mock.Logger),
-				tracer: new(mock.Tracer),
+				logger: mock.NewMockLogger(nil),
+				tracer: mock.NewMockTracer(nil),
 			},
 			want: &Client{
 				client: new(mock.WrappedClient),
 				config: new(config.SMTPConfig),
-				logger: new(mock.Logger),
-				tracer: new(mock.Tracer),
+				logger: mock.NewMockLogger(nil),
+				tracer: mock.NewMockTracer(nil),
 			},
 		},
 		{
@@ -58,8 +57,8 @@ func TestNewDatabase(t *testing.T) {
 			args: args{
 				client: nil,
 				config: new(config.SMTPConfig),
-				logger: new(mock.Logger),
-				tracer: new(mock.Tracer),
+				logger: mock.NewMockLogger(nil),
+				tracer: mock.NewMockTracer(nil),
 			},
 			wantErr: ErrNoSMTPClient,
 		},
@@ -68,8 +67,8 @@ func TestNewDatabase(t *testing.T) {
 			args: args{
 				client: new(mock.WrappedClient),
 				config: nil,
-				logger: new(mock.Logger),
-				tracer: new(mock.Tracer),
+				logger: mock.NewMockLogger(nil),
+				tracer: mock.NewMockTracer(nil),
 			},
 			wantErr: config.ErrNoConfig,
 		},
@@ -79,7 +78,7 @@ func TestNewDatabase(t *testing.T) {
 				client: new(mock.WrappedClient),
 				config: new(config.SMTPConfig),
 				logger: nil,
-				tracer: new(mock.Tracer),
+				tracer: mock.NewMockTracer(nil),
 			},
 			wantErr: log.ErrNoLogger,
 		},
@@ -88,7 +87,7 @@ func TestNewDatabase(t *testing.T) {
 			args: args{
 				client: new(mock.WrappedClient),
 				config: new(config.SMTPConfig),
-				logger: new(mock.Logger),
+				logger: mock.NewMockLogger(nil),
 				tracer: nil,
 			},
 			wantErr: tracing.ErrNoTracer,
@@ -197,9 +196,9 @@ func TestWithLogger(t *testing.T) {
 		{
 			name: "create new option with logger",
 			args: args{
-				logger: new(mock.Logger),
+				logger: mock.NewMockLogger(nil),
 			},
-			want: new(mock.Logger),
+			want: mock.NewMockLogger(nil),
 		},
 		{
 			name: "create new option with nil logger",
@@ -234,9 +233,9 @@ func TestWithTracer(t *testing.T) {
 		{
 			name: "create new option with tracer",
 			args: args{
-				tracer: new(mock.Tracer),
+				tracer: mock.NewMockTracer(nil),
 			},
-			want: new(mock.Tracer),
+			want: mock.NewMockTracer(nil),
 		},
 		{
 			name: "create new option with nil tracer",
@@ -285,14 +284,14 @@ func TestClient_SendEmail(t *testing.T) {
 					client := mock.NewWrappedClient(ctrl)
 					client.EXPECT().DialAndSend(gomock.Any()).Return(nil)
 
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End().Return()
 
-					logger := new(mock.Logger)
-					logger.On("Info", "email sent", mock.Anything)
+					logger := mock.NewMockLogger(ctrl)
+					logger.EXPECT().Info("email sent", gomock.Any())
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "smtp.Client/SendEmail", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "smtp.Client/SendEmail").Return(ctx, span)
 
 					return &Client{
 						client: client,
@@ -323,14 +322,14 @@ func TestClient_SendEmail(t *testing.T) {
 					client := mock.NewWrappedClient(ctrl)
 					client.EXPECT().DialAndSend(gomock.Any()).Return(assert.AnError)
 
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End().Return()
 
-					logger := new(mock.Logger)
-					logger.On("Error", "failed to compose email", mock.Anything)
+					logger := mock.NewMockLogger(ctrl)
+					logger.EXPECT().Error("failed to compose email", gomock.Any())
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "smtp.Client/SendEmail", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "smtp.Client/SendEmail").Return(ctx, span)
 
 					return &Client{
 						client: client,

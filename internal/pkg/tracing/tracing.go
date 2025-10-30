@@ -6,13 +6,14 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 	otlptrace "go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
 	"go.opentelemetry.io/otel/trace"
-	"go.opentelemetry.io/otel/trace/embedded"
 	nooptrace "go.opentelemetry.io/otel/trace/noop"
 
 	"github.com/opcotech/elemo/internal/config"
@@ -25,10 +26,42 @@ var (
 	noopTracer         = noopTracerProvider.Tracer("github.com/opcotech/elemo")
 )
 
-// Tracer re-defines the tracing.Tracer interface as the
+// Span re-defines the trace.Span interface to avoid embedding issues
+//
+//go:generate mockgen -destination ../../testutil/mock/span_gen.go -package mock -mock_names Span=MockSpan github.com/opcotech/elemo/internal/pkg/tracing Span
+type Span interface {
+	End(options ...trace.SpanEndOption)
+	AddEvent(name string, options ...trace.EventOption)
+	AddLink(link trace.Link)
+	IsRecording() bool
+	RecordError(err error, options ...trace.EventOption)
+	SpanContext() trace.SpanContext
+	SetStatus(code codes.Code, description string)
+	SetName(name string)
+	SetAttributes(kv ...attribute.KeyValue)
+	TracerProvider() trace.TracerProvider
+}
+
+// Tracer re-defines the tracing.Tracer interface
+//
+//go:generate mockgen -destination ../../testutil/mock/tracer_gen.go -package mock -mock_names Tracer=MockTracer github.com/opcotech/elemo/internal/pkg/tracing Tracer
 type Tracer interface {
-	embedded.Tracer
-	Start(ctx context.Context, spanName string, opts ...trace.SpanStartOption) (context.Context, trace.Span)
+	Start(ctx context.Context, spanName string, opts ...trace.SpanStartOption) (context.Context, Span)
+}
+
+// WrapTracer wraps an OpenTelemetry tracer to implement our custom Tracer interface
+func WrapTracer(otelTracer trace.Tracer) Tracer {
+	return &tracerWrapper{tracer: otelTracer}
+}
+
+// tracerWrapper wraps the OpenTelemetry tracer to implement our custom Tracer interface
+type tracerWrapper struct {
+	tracer trace.Tracer
+}
+
+func (w *tracerWrapper) Start(ctx context.Context, spanName string, opts ...trace.SpanStartOption) (context.Context, Span) {
+	ctx, span := w.tracer.Start(ctx, spanName, opts...)
+	return ctx, &spanWrapper{span: span}
 }
 
 // NewTracerProvider creates a new tracer provider.
@@ -59,7 +92,62 @@ func NewTracerProvider(ctx context.Context, version *model.VersionInfo, service 
 
 // NoopTracer returns a noop tracer.
 func NoopTracer() Tracer {
-	return noopTracer
+	return &noopTracerWrapper{tracer: noopTracer}
+}
+
+// noopTracerWrapper wraps the OpenTelemetry noop tracer to implement our custom Tracer interface
+type noopTracerWrapper struct {
+	tracer trace.Tracer
+}
+
+func (w *noopTracerWrapper) Start(ctx context.Context, spanName string, opts ...trace.SpanStartOption) (context.Context, Span) {
+	ctx, span := w.tracer.Start(ctx, spanName, opts...)
+	return ctx, &spanWrapper{span: span}
+}
+
+// spanWrapper wraps the OpenTelemetry span to implement our custom Span interface
+type spanWrapper struct {
+	span trace.Span
+}
+
+func (w *spanWrapper) End(options ...trace.SpanEndOption) {
+	w.span.End(options...)
+}
+
+func (w *spanWrapper) AddEvent(name string, options ...trace.EventOption) {
+	w.span.AddEvent(name, options...)
+}
+
+func (w *spanWrapper) AddLink(link trace.Link) {
+	w.span.AddLink(link)
+}
+
+func (w *spanWrapper) IsRecording() bool {
+	return w.span.IsRecording()
+}
+
+func (w *spanWrapper) RecordError(err error, options ...trace.EventOption) {
+	w.span.RecordError(err, options...)
+}
+
+func (w *spanWrapper) SpanContext() trace.SpanContext {
+	return w.span.SpanContext()
+}
+
+func (w *spanWrapper) SetStatus(code codes.Code, description string) {
+	w.span.SetStatus(code, description)
+}
+
+func (w *spanWrapper) SetName(name string) {
+	w.span.SetName(name)
+}
+
+func (w *spanWrapper) SetAttributes(kv ...attribute.KeyValue) {
+	w.span.SetAttributes(kv...)
+}
+
+func (w *spanWrapper) TracerProvider() trace.TracerProvider {
+	return w.span.TracerProvider()
 }
 
 // GetTraceID extracts the trace ID from the span context.

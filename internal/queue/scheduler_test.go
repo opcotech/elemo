@@ -65,9 +65,9 @@ func TestWithSchedulerLogger(t *testing.T) {
 		{
 			name: "create new option with logger",
 			args: args{
-				logger: new(mock.Logger),
+				logger: mock.NewMockLogger(nil),
 			},
-			want: new(mock.Logger),
+			want: mock.NewMockLogger(nil),
 		},
 		{
 			name: "create new option with nil logger",
@@ -102,9 +102,9 @@ func TestWithSchedulerTracer(t *testing.T) {
 		{
 			name: "create new option with tracer",
 			args: args{
-				tracer: new(mock.Tracer),
+				tracer: mock.NewMockTracer(nil),
 			},
-			want: new(mock.Tracer),
+			want: mock.NewMockTracer(nil),
 		},
 		{
 			name: "create new option with nil tracer",

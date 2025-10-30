@@ -2,11 +2,9 @@ package service
 
 import (
 	"context"
-	"go.uber.org/mock/gomock"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/mock/gomock"
 
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg"
@@ -14,6 +12,7 @@ import (
 	"github.com/opcotech/elemo/internal/pkg/tracing"
 	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/testutil/mock"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNewPermissionService(t *testing.T) {
@@ -32,14 +31,14 @@ func TestNewPermissionService(t *testing.T) {
 			args: args{
 				permissionRepo: mock.NewPermissionRepository(nil),
 				opts: []Option{
-					WithLogger(new(mock.Logger)),
-					WithTracer(new(mock.Tracer)),
+					WithLogger(mock.NewMockLogger(nil)),
+					WithTracer(mock.NewMockTracer(nil)),
 				},
 			},
 			want: &permissionService{
 				baseService: &baseService{
-					logger: new(mock.Logger),
-					tracer: new(mock.Tracer),
+					logger: mock.NewMockLogger(nil),
+					tracer: mock.NewMockTracer(nil),
 				},
 				permissionRepo: mock.NewPermissionRepository(nil),
 			},
@@ -49,8 +48,8 @@ func TestNewPermissionService(t *testing.T) {
 			args: args{
 				permissionRepo: nil,
 				opts: []Option{
-					WithLogger(new(mock.Logger)),
-					WithTracer(new(mock.Tracer)),
+					WithLogger(mock.NewMockLogger(nil)),
+					WithTracer(mock.NewMockTracer(nil)),
 				},
 			},
 			wantErr: ErrNoPermissionRepository,
@@ -61,7 +60,7 @@ func TestNewPermissionService(t *testing.T) {
 				permissionRepo: mock.NewPermissionRepository(nil),
 				opts: []Option{
 					WithLogger(nil),
-					WithTracer(new(mock.Tracer)),
+					WithTracer(mock.NewMockTracer(nil)),
 				},
 			},
 			wantErr: log.ErrNoLogger,
@@ -71,7 +70,7 @@ func TestNewPermissionService(t *testing.T) {
 			args: args{
 				permissionRepo: mock.NewPermissionRepository(nil),
 				opts: []Option{
-					WithLogger(new(mock.Logger)),
+					WithLogger(mock.NewMockLogger(nil)),
 					WithTracer(nil),
 				},
 			},
@@ -82,13 +81,13 @@ func TestNewPermissionService(t *testing.T) {
 			args: args{
 				permissionRepo: mock.NewPermissionRepository(nil),
 				opts: []Option{
-					WithTracer(new(mock.Tracer)),
+					WithTracer(mock.NewMockTracer(nil)),
 				},
 			},
 			want: &permissionService{
 				baseService: &baseService{
 					logger: log.DefaultLogger(),
-					tracer: new(mock.Tracer),
+					tracer: mock.NewMockTracer(nil),
 				},
 				permissionRepo: mock.NewPermissionRepository(nil),
 			},
@@ -98,12 +97,12 @@ func TestNewPermissionService(t *testing.T) {
 			args: args{
 				permissionRepo: mock.NewPermissionRepository(nil),
 				opts: []Option{
-					WithLogger(new(mock.Logger)),
+					WithLogger(mock.NewMockLogger(nil)),
 				},
 			},
 			want: &permissionService{
 				baseService: &baseService{
-					logger: new(mock.Logger),
+					logger: mock.NewMockLogger(nil),
 					tracer: tracing.NoopTracer(),
 				},
 				permissionRepo: mock.NewPermissionRepository(nil),
@@ -126,7 +125,7 @@ func TestNewPermissionService(t *testing.T) {
 
 func Test_permissionService_Create(t *testing.T) {
 	type fields struct {
-		baseService    func(ctx context.Context, perm *model.Permission) *baseService
+		baseService    func(ctrl *gomock.Controller, ctx context.Context, perm *model.Permission) *baseService
 		permissionRepo func(ctrl *gomock.Controller, ctx context.Context, perm *model.Permission) repository.PermissionRepository
 	}
 	type args struct {
@@ -142,15 +141,15 @@ func Test_permissionService_Create(t *testing.T) {
 		{
 			name: "create permission",
 			fields: fields{
-				baseService: func(ctx context.Context, _ *model.Permission) *baseService {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ *model.Permission) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "service.permissionService/Create", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.permissionService/Create", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 						tracer: tracer,
 					}
 				},
@@ -173,15 +172,15 @@ func Test_permissionService_Create(t *testing.T) {
 		{
 			name: "create permission with error",
 			fields: fields{
-				baseService: func(ctx context.Context, _ *model.Permission) *baseService {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ *model.Permission) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "service.permissionService/Create", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.permissionService/Create", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 						tracer: tracer,
 					}
 				},
@@ -205,15 +204,15 @@ func Test_permissionService_Create(t *testing.T) {
 		{
 			name: "create permission with nil permission",
 			fields: fields{
-				baseService: func(ctx context.Context, _ *model.Permission) *baseService {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ *model.Permission) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "service.permissionService/Create", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.permissionService/Create", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 						tracer: tracer,
 					}
 				},
@@ -235,7 +234,7 @@ func Test_permissionService_Create(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			s := &permissionService{
-				baseService:    tt.fields.baseService(tt.args.ctx, tt.args.perm),
+				baseService:    tt.fields.baseService(ctrl, tt.args.ctx, tt.args.perm),
 				permissionRepo: tt.fields.permissionRepo(ctrl, tt.args.ctx, tt.args.perm),
 			}
 			err := s.Create(tt.args.ctx, tt.args.perm)
@@ -248,7 +247,7 @@ func Test_permissionService_CtxUserCreate(t *testing.T) {
 	userID := model.MustNewID(model.ResourceTypeUser)
 
 	type fields struct {
-		baseService    func(ctx context.Context, userID model.ID, perm *model.Permission) *baseService
+		baseService    func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, perm *model.Permission) *baseService
 		permissionRepo func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, perm *model.Permission) repository.PermissionRepository
 	}
 	type args struct {
@@ -264,20 +263,18 @@ func Test_permissionService_CtxUserCreate(t *testing.T) {
 		{
 			name: "create permission having all permissions",
 			fields: fields{
-				baseService: func(ctx context.Context, _ model.ID, _ *model.Permission) *baseService {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ *model.Permission) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(6)
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserCreate", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/Create", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserHasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/HasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserHasPermission", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/HasPermission", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.permissionService/CtxUserCreate", gomock.Len(0)).Return(ctx, span).Times(1)
+					tracer.EXPECT().Start(ctx, "service.permissionService/CtxUserHasPermission", gomock.Len(0)).Return(ctx, span).Times(2)
+					tracer.EXPECT().Start(ctx, "service.permissionService/HasPermission", gomock.Len(0)).Return(ctx, span).Times(2)
+					tracer.EXPECT().Start(ctx, "service.permissionService/Create", gomock.Len(0)).Return(ctx, span).Times(1)
 
 					return &baseService{
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 						tracer: tracer,
 					}
 				},
@@ -286,7 +283,7 @@ func Test_permissionService_CtxUserCreate(t *testing.T) {
 					repo.EXPECT().HasSystemRole(ctx, userID, []model.SystemRole{
 						model.SystemRoleOwner,
 						model.SystemRoleAdmin,
-					}).Return(true, nil).AnyTimes()
+					}).Return(true, nil).Times(2)
 					repo.EXPECT().HasPermission(ctx, userID, perm.Target, []model.PermissionKind{
 						model.PermissionKindCreate,
 						model.PermissionKindAll,
@@ -313,20 +310,18 @@ func Test_permissionService_CtxUserCreate(t *testing.T) {
 		{
 			name: "create permission having a direct permission",
 			fields: fields{
-				baseService: func(ctx context.Context, _ model.ID, _ *model.Permission) *baseService {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ *model.Permission) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(6)
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserCreate", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/Create", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserHasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/HasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserHasPermission", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/HasPermission", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.permissionService/CtxUserCreate", gomock.Len(0)).Return(ctx, span).Times(1)
+					tracer.EXPECT().Start(ctx, "service.permissionService/CtxUserHasPermission", gomock.Len(0)).Return(ctx, span).Times(2)
+					tracer.EXPECT().Start(ctx, "service.permissionService/HasPermission", gomock.Len(0)).Return(ctx, span).Times(2)
+					tracer.EXPECT().Start(ctx, "service.permissionService/Create", gomock.Len(0)).Return(ctx, span).Times(1)
 
 					return &baseService{
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 						tracer: tracer,
 					}
 				},
@@ -335,7 +330,7 @@ func Test_permissionService_CtxUserCreate(t *testing.T) {
 					repo.EXPECT().HasSystemRole(ctx, userID, []model.SystemRole{
 						model.SystemRoleOwner,
 						model.SystemRoleAdmin,
-					}).Return(false, nil).AnyTimes()
+					}).Return(false, nil).Times(2)
 					repo.EXPECT().HasPermission(ctx, userID, perm.Target, []model.PermissionKind{
 						model.PermissionKindCreate,
 						model.PermissionKindAll,
@@ -362,20 +357,18 @@ func Test_permissionService_CtxUserCreate(t *testing.T) {
 		{
 			name: "create permission having a system role",
 			fields: fields{
-				baseService: func(ctx context.Context, _ model.ID, _ *model.Permission) *baseService {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ *model.Permission) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(6)
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserCreate", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/Create", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserHasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/HasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserHasPermission", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/HasPermission", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.permissionService/CtxUserCreate", gomock.Len(0)).Return(ctx, span).Times(1)
+					tracer.EXPECT().Start(ctx, "service.permissionService/CtxUserHasPermission", gomock.Len(0)).Return(ctx, span).Times(2)
+					tracer.EXPECT().Start(ctx, "service.permissionService/HasPermission", gomock.Len(0)).Return(ctx, span).Times(2)
+					tracer.EXPECT().Start(ctx, "service.permissionService/Create", gomock.Len(0)).Return(ctx, span).Times(1)
 
 					return &baseService{
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 						tracer: tracer,
 					}
 				},
@@ -384,7 +377,7 @@ func Test_permissionService_CtxUserCreate(t *testing.T) {
 					repo.EXPECT().HasSystemRole(ctx, userID, []model.SystemRole{
 						model.SystemRoleOwner,
 						model.SystemRoleAdmin,
-					}).Return(true, nil).AnyTimes()
+					}).Return(true, nil).Times(2)
 					repo.EXPECT().HasPermission(ctx, userID, perm.Target, []model.PermissionKind{
 						model.PermissionKindCreate,
 						model.PermissionKindAll,
@@ -411,20 +404,17 @@ func Test_permissionService_CtxUserCreate(t *testing.T) {
 		{
 			name: "create permission no permission",
 			fields: fields{
-				baseService: func(ctx context.Context, _ model.ID, _ *model.Permission) *baseService {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ *model.Permission) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(3)
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserCreate", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/Create", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserHasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/HasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserHasPermission", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/HasPermission", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.permissionService/CtxUserCreate", gomock.Len(0)).Return(ctx, span).Times(1)
+					tracer.EXPECT().Start(ctx, "service.permissionService/CtxUserHasPermission", gomock.Len(0)).Return(ctx, span).Times(1)
+					tracer.EXPECT().Start(ctx, "service.permissionService/HasPermission", gomock.Len(0)).Return(ctx, span).Times(1)
 
 					return &baseService{
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 						tracer: tracer,
 					}
 				},
@@ -433,11 +423,11 @@ func Test_permissionService_CtxUserCreate(t *testing.T) {
 					repo.EXPECT().HasSystemRole(ctx, userID, []model.SystemRole{
 						model.SystemRoleOwner,
 						model.SystemRoleAdmin,
-					}).Return(false, nil)
+					}).Return(false, nil).Times(1)
 					repo.EXPECT().HasPermission(ctx, userID, perm.Target, []model.PermissionKind{
 						model.PermissionKindWrite,
 						model.PermissionKindAll,
-					}).Return(false, nil)
+					}).Return(false, nil).Times(1)
 
 					return repo
 				},
@@ -461,7 +451,7 @@ func Test_permissionService_CtxUserCreate(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			s := &permissionService{
-				baseService:    tt.fields.baseService(tt.args.ctx, userID, tt.args.perm),
+				baseService:    tt.fields.baseService(ctrl, tt.args.ctx, userID, tt.args.perm),
 				permissionRepo: tt.fields.permissionRepo(ctrl, tt.args.ctx, userID, tt.args.perm),
 			}
 			err := s.CtxUserCreate(tt.args.ctx, tt.args.perm)
@@ -472,7 +462,7 @@ func Test_permissionService_CtxUserCreate(t *testing.T) {
 
 func Test_permissionService_Get(t *testing.T) {
 	type fields struct {
-		baseService    func(ctx context.Context, id model.ID, perm *model.Permission) *baseService
+		baseService    func(ctrl *gomock.Controller, ctx context.Context, id model.ID, perm *model.Permission) *baseService
 		permissionRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, perm *model.Permission) repository.PermissionRepository
 	}
 	type args struct {
@@ -489,15 +479,15 @@ func Test_permissionService_Get(t *testing.T) {
 		{
 			name: "get permission",
 			fields: fields{
-				baseService: func(ctx context.Context, _ model.ID, _ *model.Permission) *baseService {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ *model.Permission) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "service.permissionService/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.permissionService/Get", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 						tracer: tracer,
 					}
 				},
@@ -521,15 +511,15 @@ func Test_permissionService_Get(t *testing.T) {
 		{
 			name: "get permission with error",
 			fields: fields{
-				baseService: func(ctx context.Context, _ model.ID, _ *model.Permission) *baseService {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ *model.Permission) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "service.permissionService/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.permissionService/Get", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 						tracer: tracer,
 					}
 				},
@@ -554,7 +544,7 @@ func Test_permissionService_Get(t *testing.T) {
 			defer ctrl.Finish()
 
 			s := &permissionService{
-				baseService:    tt.fields.baseService(tt.args.ctx, tt.args.id, tt.want),
+				baseService:    tt.fields.baseService(ctrl, tt.args.ctx, tt.args.id, tt.want),
 				permissionRepo: tt.fields.permissionRepo(ctrl, tt.args.ctx, tt.args.id, tt.want),
 			}
 			got, err := s.Get(tt.args.ctx, tt.args.id)
@@ -566,7 +556,7 @@ func Test_permissionService_Get(t *testing.T) {
 
 func Test_permissionService_GetBySubject(t *testing.T) {
 	type fields struct {
-		baseService    func(ctx context.Context, id model.ID, perms []*model.Permission) *baseService
+		baseService    func(ctrl *gomock.Controller, ctx context.Context, id model.ID, perms []*model.Permission) *baseService
 		permissionRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, perms []*model.Permission) repository.PermissionRepository
 	}
 	type args struct {
@@ -583,15 +573,15 @@ func Test_permissionService_GetBySubject(t *testing.T) {
 		{
 			name: "get permissions",
 			fields: fields{
-				baseService: func(ctx context.Context, _ model.ID, _ []*model.Permission) *baseService {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ []*model.Permission) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "service.permissionService/GetBySubject", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.permissionService/GetBySubject", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 						tracer: tracer,
 					}
 				},
@@ -617,15 +607,15 @@ func Test_permissionService_GetBySubject(t *testing.T) {
 		{
 			name: "get permission with error",
 			fields: fields{
-				baseService: func(ctx context.Context, _ model.ID, _ []*model.Permission) *baseService {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ []*model.Permission) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "service.permissionService/GetBySubject", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.permissionService/GetBySubject", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 						tracer: tracer,
 					}
 				},
@@ -650,7 +640,7 @@ func Test_permissionService_GetBySubject(t *testing.T) {
 			defer ctrl.Finish()
 
 			s := &permissionService{
-				baseService:    tt.fields.baseService(tt.args.ctx, tt.args.id, tt.want),
+				baseService:    tt.fields.baseService(ctrl, tt.args.ctx, tt.args.id, tt.want),
 				permissionRepo: tt.fields.permissionRepo(ctrl, tt.args.ctx, tt.args.id, tt.want),
 			}
 			got, err := s.GetBySubject(tt.args.ctx, tt.args.id)
@@ -662,7 +652,7 @@ func Test_permissionService_GetBySubject(t *testing.T) {
 
 func Test_permissionService_GetByTarget(t *testing.T) {
 	type fields struct {
-		baseService    func(ctx context.Context, id model.ID, perms []*model.Permission) *baseService
+		baseService    func(ctrl *gomock.Controller, ctx context.Context, id model.ID, perms []*model.Permission) *baseService
 		permissionRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, perms []*model.Permission) repository.PermissionRepository
 	}
 	type args struct {
@@ -679,15 +669,15 @@ func Test_permissionService_GetByTarget(t *testing.T) {
 		{
 			name: "get permissions",
 			fields: fields{
-				baseService: func(ctx context.Context, _ model.ID, _ []*model.Permission) *baseService {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ []*model.Permission) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "service.permissionService/GetByTarget", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.permissionService/GetByTarget", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 						tracer: tracer,
 					}
 				},
@@ -713,15 +703,15 @@ func Test_permissionService_GetByTarget(t *testing.T) {
 		{
 			name: "get permission with error",
 			fields: fields{
-				baseService: func(ctx context.Context, _ model.ID, _ []*model.Permission) *baseService {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ []*model.Permission) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "service.permissionService/GetByTarget", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.permissionService/GetByTarget", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 						tracer: tracer,
 					}
 				},
@@ -746,7 +736,7 @@ func Test_permissionService_GetByTarget(t *testing.T) {
 			defer ctrl.Finish()
 
 			s := &permissionService{
-				baseService:    tt.fields.baseService(tt.args.ctx, tt.args.id, tt.want),
+				baseService:    tt.fields.baseService(ctrl, tt.args.ctx, tt.args.id, tt.want),
 				permissionRepo: tt.fields.permissionRepo(ctrl, tt.args.ctx, tt.args.id, tt.want),
 			}
 			got, err := s.GetByTarget(tt.args.ctx, tt.args.id)
@@ -758,7 +748,7 @@ func Test_permissionService_GetByTarget(t *testing.T) {
 
 func Test_permissionService_GetBySubjectAndTarget(t *testing.T) {
 	type fields struct {
-		baseService    func(ctx context.Context, subject, target model.ID, perms []*model.Permission) *baseService
+		baseService    func(ctrl *gomock.Controller, ctx context.Context, subject, target model.ID, perms []*model.Permission) *baseService
 		permissionRepo func(ctrl *gomock.Controller, ctx context.Context, subject, target model.ID, perms []*model.Permission) repository.PermissionRepository
 	}
 	type args struct {
@@ -776,15 +766,15 @@ func Test_permissionService_GetBySubjectAndTarget(t *testing.T) {
 		{
 			name: "get permissions",
 			fields: fields{
-				baseService: func(ctx context.Context, _, _ model.ID, _ []*model.Permission) *baseService {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ model.ID, _ []*model.Permission) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "service.permissionService/GetBySubjectAndTarget", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.permissionService/GetBySubjectAndTarget", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 						tracer: tracer,
 					}
 				},
@@ -811,15 +801,15 @@ func Test_permissionService_GetBySubjectAndTarget(t *testing.T) {
 		{
 			name: "get permission with error",
 			fields: fields{
-				baseService: func(ctx context.Context, _, _ model.ID, _ []*model.Permission) *baseService {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ model.ID, _ []*model.Permission) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "service.permissionService/GetBySubjectAndTarget", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.permissionService/GetBySubjectAndTarget", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 						tracer: tracer,
 					}
 				},
@@ -845,7 +835,7 @@ func Test_permissionService_GetBySubjectAndTarget(t *testing.T) {
 			defer ctrl.Finish()
 
 			s := &permissionService{
-				baseService:    tt.fields.baseService(tt.args.ctx, tt.args.subject, tt.args.target, tt.want),
+				baseService:    tt.fields.baseService(ctrl, tt.args.ctx, tt.args.subject, tt.args.target, tt.want),
 				permissionRepo: tt.fields.permissionRepo(ctrl, tt.args.ctx, tt.args.subject, tt.args.target, tt.want),
 			}
 			got, err := s.GetBySubjectAndTarget(tt.args.ctx, tt.args.subject, tt.args.target)
@@ -857,7 +847,7 @@ func Test_permissionService_GetBySubjectAndTarget(t *testing.T) {
 
 func Test_permissionService_HasAnyRelation(t *testing.T) {
 	type fields struct {
-		baseService    func(ctx context.Context, subject, target model.ID, hasRelation bool) *baseService
+		baseService    func(ctrl *gomock.Controller, ctx context.Context, subject, target model.ID, hasRelation bool) *baseService
 		permissionRepo func(ctrl *gomock.Controller, ctx context.Context, subject, target model.ID, hasRelation bool) repository.PermissionRepository
 	}
 	type args struct {
@@ -875,15 +865,15 @@ func Test_permissionService_HasAnyRelation(t *testing.T) {
 		{
 			name: "get relation",
 			fields: fields{
-				baseService: func(ctx context.Context, _, _ model.ID, _ bool) *baseService {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ model.ID, _ bool) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "service.permissionService/HasAnyRelation", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.permissionService/HasAnyRelation", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 						tracer: tracer,
 					}
 				},
@@ -903,15 +893,15 @@ func Test_permissionService_HasAnyRelation(t *testing.T) {
 		{
 			name: "get relation with no relations",
 			fields: fields{
-				baseService: func(ctx context.Context, _, _ model.ID, _ bool) *baseService {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ model.ID, _ bool) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "service.permissionService/HasAnyRelation", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.permissionService/HasAnyRelation", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 						tracer: tracer,
 					}
 				},
@@ -931,15 +921,15 @@ func Test_permissionService_HasAnyRelation(t *testing.T) {
 		{
 			name: "get relation with error",
 			fields: fields{
-				baseService: func(ctx context.Context, _, _ model.ID, _ bool) *baseService {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ model.ID, _ bool) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "service.permissionService/HasAnyRelation", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.permissionService/HasAnyRelation", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 						tracer: tracer,
 					}
 				},
@@ -965,7 +955,7 @@ func Test_permissionService_HasAnyRelation(t *testing.T) {
 			defer ctrl.Finish()
 
 			s := &permissionService{
-				baseService:    tt.fields.baseService(tt.args.ctx, tt.args.subject, tt.args.target, tt.want),
+				baseService:    tt.fields.baseService(ctrl, tt.args.ctx, tt.args.subject, tt.args.target, tt.want),
 				permissionRepo: tt.fields.permissionRepo(ctrl, tt.args.ctx, tt.args.subject, tt.args.target, tt.want),
 			}
 			got, err := s.HasAnyRelation(tt.args.ctx, tt.args.subject, tt.args.target)
@@ -979,7 +969,7 @@ func Test_permissionService_CtxUserHasAnyRelation(t *testing.T) {
 	userID := model.MustNewID(model.ResourceTypeUser)
 
 	type fields struct {
-		baseService    func(ctx context.Context, userID, target model.ID, hasRelation bool) *baseService
+		baseService    func(ctrl *gomock.Controller, ctx context.Context, userID, target model.ID, hasRelation bool) *baseService
 		permissionRepo func(ctrl *gomock.Controller, ctx context.Context, userID, target model.ID, hasRelation bool) repository.PermissionRepository
 	}
 	type args struct {
@@ -995,16 +985,19 @@ func Test_permissionService_CtxUserHasAnyRelation(t *testing.T) {
 		{
 			name: "get relation",
 			fields: fields{
-				baseService: func(ctx context.Context, _, _ model.ID, _ bool) *baseService {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ model.ID, _ bool) *baseService {
+					span1 := mock.NewMockSpan(ctrl)
+					span1.EXPECT().End(gomock.Len(0))
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserHasAnyRelation", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/HasAnyRelation", []trace.SpanStartOption(nil)).Return(ctx, span)
+					span2 := mock.NewMockSpan(ctrl)
+					span2.EXPECT().End(gomock.Len(0))
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.permissionService/CtxUserHasAnyRelation", gomock.Len(0)).Return(ctx, span1)
+					tracer.EXPECT().Start(ctx, "service.permissionService/HasAnyRelation", gomock.Len(0)).Return(ctx, span2)
 
 					return &baseService{
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 						tracer: tracer,
 					}
 				},
@@ -1023,16 +1016,19 @@ func Test_permissionService_CtxUserHasAnyRelation(t *testing.T) {
 		{
 			name: "get relation with no relations",
 			fields: fields{
-				baseService: func(ctx context.Context, _, _ model.ID, _ bool) *baseService {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ model.ID, _ bool) *baseService {
+					span1 := mock.NewMockSpan(ctrl)
+					span1.EXPECT().End(gomock.Len(0))
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserHasAnyRelation", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/HasAnyRelation", []trace.SpanStartOption(nil)).Return(ctx, span)
+					span2 := mock.NewMockSpan(ctrl)
+					span2.EXPECT().End(gomock.Len(0))
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.permissionService/CtxUserHasAnyRelation", gomock.Len(0)).Return(ctx, span1)
+					tracer.EXPECT().Start(ctx, "service.permissionService/HasAnyRelation", gomock.Len(0)).Return(ctx, span2)
 
 					return &baseService{
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 						tracer: tracer,
 					}
 				},
@@ -1051,16 +1047,19 @@ func Test_permissionService_CtxUserHasAnyRelation(t *testing.T) {
 		{
 			name: "get relation with error",
 			fields: fields{
-				baseService: func(ctx context.Context, _, _ model.ID, _ bool) *baseService {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ model.ID, _ bool) *baseService {
+					span1 := mock.NewMockSpan(ctrl)
+					span1.EXPECT().End(gomock.Len(0))
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserHasAnyRelation", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/HasAnyRelation", []trace.SpanStartOption(nil)).Return(ctx, span)
+					span2 := mock.NewMockSpan(ctrl)
+					span2.EXPECT().End(gomock.Len(0))
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.permissionService/CtxUserHasAnyRelation", gomock.Len(0)).Return(ctx, span1)
+					tracer.EXPECT().Start(ctx, "service.permissionService/HasAnyRelation", gomock.Len(0)).Return(ctx, span2)
 
 					return &baseService{
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 						tracer: tracer,
 					}
 				},
@@ -1079,15 +1078,15 @@ func Test_permissionService_CtxUserHasAnyRelation(t *testing.T) {
 		{
 			name: "get relation with no ctx user",
 			fields: fields{
-				baseService: func(ctx context.Context, _, _ model.ID, _ bool) *baseService {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ model.ID, _ bool) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserHasAnyRelation", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.permissionService/CtxUserHasAnyRelation", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 						tracer: tracer,
 					}
 				},
@@ -1110,7 +1109,7 @@ func Test_permissionService_CtxUserHasAnyRelation(t *testing.T) {
 			defer ctrl.Finish()
 
 			s := &permissionService{
-				baseService:    tt.fields.baseService(tt.args.ctx, userID, tt.args.target, tt.want),
+				baseService:    tt.fields.baseService(ctrl, tt.args.ctx, userID, tt.args.target, tt.want),
 				permissionRepo: tt.fields.permissionRepo(ctrl, tt.args.ctx, userID, tt.args.target, tt.want),
 			}
 			got := s.CtxUserHasAnyRelation(tt.args.ctx, tt.args.target)
@@ -1121,7 +1120,7 @@ func Test_permissionService_CtxUserHasAnyRelation(t *testing.T) {
 
 func Test_permissionService_HasSystemRole(t *testing.T) {
 	type fields struct {
-		baseService    func(ctx context.Context, subject model.ID, roles []model.SystemRole, hasRole bool) *baseService
+		baseService    func(ctrl *gomock.Controller, ctx context.Context, subject model.ID, roles []model.SystemRole, hasRole bool) *baseService
 		permissionRepo func(ctrl *gomock.Controller, ctx context.Context, subject model.ID, roles []model.SystemRole, hasRole bool) repository.PermissionRepository
 	}
 	type args struct {
@@ -1139,15 +1138,15 @@ func Test_permissionService_HasSystemRole(t *testing.T) {
 		{
 			name: "get role",
 			fields: fields{
-				baseService: func(ctx context.Context, _ model.ID, _ []model.SystemRole, _ bool) *baseService {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ []model.SystemRole, _ bool) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "service.permissionService/HasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.permissionService/HasSystemRole", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 						tracer: tracer,
 					}
 				},
@@ -1167,15 +1166,15 @@ func Test_permissionService_HasSystemRole(t *testing.T) {
 		{
 			name: "get role with error",
 			fields: fields{
-				baseService: func(ctx context.Context, _ model.ID, _ []model.SystemRole, _ bool) *baseService {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ []model.SystemRole, _ bool) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "service.permissionService/HasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.permissionService/HasSystemRole", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 						tracer: tracer,
 					}
 				},
@@ -1201,7 +1200,7 @@ func Test_permissionService_HasSystemRole(t *testing.T) {
 			defer ctrl.Finish()
 
 			s := &permissionService{
-				baseService:    tt.fields.baseService(tt.args.ctx, tt.args.subject, tt.args.roles, tt.want),
+				baseService:    tt.fields.baseService(ctrl, tt.args.ctx, tt.args.subject, tt.args.roles, tt.want),
 				permissionRepo: tt.fields.permissionRepo(ctrl, tt.args.ctx, tt.args.subject, tt.args.roles, tt.want),
 			}
 			got, err := s.HasSystemRole(tt.args.ctx, tt.args.subject, tt.args.roles...)
@@ -1215,7 +1214,7 @@ func Test_permissionService_CtxUserHasSystemRole(t *testing.T) {
 	userID := model.MustNewID(model.ResourceTypeUser)
 
 	type fields struct {
-		baseService    func(ctx context.Context, userID model.ID, roles []model.SystemRole, hasRole bool) *baseService
+		baseService    func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, roles []model.SystemRole, hasRole bool) *baseService
 		permissionRepo func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, roles []model.SystemRole, hasRole bool) repository.PermissionRepository
 	}
 	type args struct {
@@ -1231,16 +1230,19 @@ func Test_permissionService_CtxUserHasSystemRole(t *testing.T) {
 		{
 			name: "get role",
 			fields: fields{
-				baseService: func(ctx context.Context, _ model.ID, _ []model.SystemRole, _ bool) *baseService {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ []model.SystemRole, _ bool) *baseService {
+					span1 := mock.NewMockSpan(ctrl)
+					span1.EXPECT().End(gomock.Len(0))
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserHasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/HasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
+					span2 := mock.NewMockSpan(ctrl)
+					span2.EXPECT().End(gomock.Len(0))
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.permissionService/CtxUserHasSystemRole", gomock.Len(0)).Return(ctx, span1)
+					tracer.EXPECT().Start(ctx, "service.permissionService/HasSystemRole", gomock.Len(0)).Return(ctx, span2)
 
 					return &baseService{
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 						tracer: tracer,
 					}
 				},
@@ -1259,16 +1261,19 @@ func Test_permissionService_CtxUserHasSystemRole(t *testing.T) {
 		{
 			name: "get role with error",
 			fields: fields{
-				baseService: func(ctx context.Context, _ model.ID, _ []model.SystemRole, _ bool) *baseService {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ []model.SystemRole, _ bool) *baseService {
+					span1 := mock.NewMockSpan(ctrl)
+					span1.EXPECT().End(gomock.Len(0))
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserHasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/HasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
+					span2 := mock.NewMockSpan(ctrl)
+					span2.EXPECT().End(gomock.Len(0))
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.permissionService/CtxUserHasSystemRole", gomock.Len(0)).Return(ctx, span1)
+					tracer.EXPECT().Start(ctx, "service.permissionService/HasSystemRole", gomock.Len(0)).Return(ctx, span2)
 
 					return &baseService{
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 						tracer: tracer,
 					}
 				},
@@ -1286,16 +1291,15 @@ func Test_permissionService_CtxUserHasSystemRole(t *testing.T) {
 		{
 			name: "get role with no ctx user",
 			fields: fields{
-				baseService: func(ctx context.Context, _ model.ID, _ []model.SystemRole, _ bool) *baseService {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ []model.SystemRole, _ bool) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserHasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/HasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.permissionService/CtxUserHasSystemRole", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 						tracer: tracer,
 					}
 				},
@@ -1318,7 +1322,7 @@ func Test_permissionService_CtxUserHasSystemRole(t *testing.T) {
 			defer ctrl.Finish()
 
 			s := &permissionService{
-				baseService:    tt.fields.baseService(tt.args.ctx, userID, tt.args.roles, tt.want),
+				baseService:    tt.fields.baseService(ctrl, tt.args.ctx, userID, tt.args.roles, tt.want),
 				permissionRepo: tt.fields.permissionRepo(ctrl, tt.args.ctx, userID, tt.args.roles, tt.want),
 			}
 			got := s.CtxUserHasSystemRole(tt.args.ctx, tt.args.roles...)
@@ -1329,7 +1333,7 @@ func Test_permissionService_CtxUserHasSystemRole(t *testing.T) {
 
 func Test_permissionService_HasPermission(t *testing.T) {
 	type fields struct {
-		baseService    func(ctx context.Context, subject, target model.ID, kinds []model.PermissionKind) *baseService
+		baseService    func(ctrl *gomock.Controller, ctx context.Context, subject, target model.ID, kinds []model.PermissionKind) *baseService
 		permissionRepo func(ctrl *gomock.Controller, ctx context.Context, subject, target model.ID, kinds []model.PermissionKind) repository.PermissionRepository
 	}
 	type args struct {
@@ -1348,16 +1352,15 @@ func Test_permissionService_HasPermission(t *testing.T) {
 		{
 			name: "has permission",
 			fields: fields{
-				baseService: func(ctx context.Context, _, _ model.ID, _ []model.PermissionKind) *baseService {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ model.ID, _ []model.PermissionKind) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "service.permissionService/HasPermission", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/HasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.permissionService/HasPermission", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 						tracer: tracer,
 					}
 				},
@@ -1379,16 +1382,15 @@ func Test_permissionService_HasPermission(t *testing.T) {
 		{
 			name: "has no permission",
 			fields: fields{
-				baseService: func(ctx context.Context, _, _ model.ID, _ []model.PermissionKind) *baseService {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ model.ID, _ []model.PermissionKind) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "service.permissionService/HasPermission", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/HasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.permissionService/HasPermission", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 						tracer: tracer,
 					}
 				},
@@ -1410,16 +1412,15 @@ func Test_permissionService_HasPermission(t *testing.T) {
 		{
 			name: "has permission system role error",
 			fields: fields{
-				baseService: func(ctx context.Context, _, _ model.ID, _ []model.PermissionKind) *baseService {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ model.ID, _ []model.PermissionKind) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "service.permissionService/HasPermission", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/HasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.permissionService/HasPermission", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 						tracer: tracer,
 					}
 				},
@@ -1440,16 +1441,15 @@ func Test_permissionService_HasPermission(t *testing.T) {
 		{
 			name: "has permission with error",
 			fields: fields{
-				baseService: func(ctx context.Context, _, _ model.ID, _ []model.PermissionKind) *baseService {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ model.ID, _ []model.PermissionKind) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "service.permissionService/HasPermission", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/HasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.permissionService/HasPermission", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 						tracer: tracer,
 					}
 				},
@@ -1477,7 +1477,7 @@ func Test_permissionService_HasPermission(t *testing.T) {
 			defer ctrl.Finish()
 
 			s := &permissionService{
-				baseService:    tt.fields.baseService(tt.args.ctx, tt.args.subject, tt.args.target, tt.args.kinds),
+				baseService:    tt.fields.baseService(ctrl, tt.args.ctx, tt.args.subject, tt.args.target, tt.args.kinds),
 				permissionRepo: tt.fields.permissionRepo(ctrl, tt.args.ctx, tt.args.subject, tt.args.target, tt.args.kinds),
 			}
 			got, err := s.HasPermission(tt.args.ctx, tt.args.subject, tt.args.target, tt.args.kinds...)
@@ -1491,7 +1491,7 @@ func Test_permissionService_CtxUserHasPermission(t *testing.T) {
 	userID := model.MustNewID(model.ResourceTypeUser)
 
 	type fields struct {
-		baseService    func(ctx context.Context, userID, target model.ID, kinds []model.PermissionKind) *baseService
+		baseService    func(ctrl *gomock.Controller, ctx context.Context, userID, target model.ID, kinds []model.PermissionKind) *baseService
 		permissionRepo func(ctrl *gomock.Controller, ctx context.Context, userID, target model.ID, kinds []model.PermissionKind) repository.PermissionRepository
 	}
 	type args struct {
@@ -1508,17 +1508,18 @@ func Test_permissionService_CtxUserHasPermission(t *testing.T) {
 		{
 			name: "has permission",
 			fields: fields{
-				baseService: func(ctx context.Context, _, _ model.ID, _ []model.PermissionKind) *baseService {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ model.ID, _ []model.PermissionKind) *baseService {
+					span1 := mock.NewMockSpan(ctrl)
+					span1.EXPECT().End(gomock.Len(0))
+					span2 := mock.NewMockSpan(ctrl)
+					span2.EXPECT().End(gomock.Len(0))
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserHasPermission", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/HasPermission", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/HasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.permissionService/CtxUserHasPermission", gomock.Len(0)).Return(ctx, span1)
+					tracer.EXPECT().Start(ctx, "service.permissionService/HasPermission", gomock.Len(0)).Return(ctx, span2)
 
 					return &baseService{
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 						tracer: tracer,
 					}
 				},
@@ -1539,17 +1540,18 @@ func Test_permissionService_CtxUserHasPermission(t *testing.T) {
 		{
 			name: "has no permission",
 			fields: fields{
-				baseService: func(ctx context.Context, _, _ model.ID, _ []model.PermissionKind) *baseService {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ model.ID, _ []model.PermissionKind) *baseService {
+					span1 := mock.NewMockSpan(ctrl)
+					span1.EXPECT().End(gomock.Len(0))
+					span2 := mock.NewMockSpan(ctrl)
+					span2.EXPECT().End(gomock.Len(0))
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserHasPermission", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/HasPermission", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/HasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.permissionService/CtxUserHasPermission", gomock.Len(0)).Return(ctx, span1)
+					tracer.EXPECT().Start(ctx, "service.permissionService/HasPermission", gomock.Len(0)).Return(ctx, span2)
 
 					return &baseService{
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 						tracer: tracer,
 					}
 				},
@@ -1570,17 +1572,18 @@ func Test_permissionService_CtxUserHasPermission(t *testing.T) {
 		{
 			name: "has permission with error",
 			fields: fields{
-				baseService: func(ctx context.Context, _, _ model.ID, _ []model.PermissionKind) *baseService {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ model.ID, _ []model.PermissionKind) *baseService {
+					span1 := mock.NewMockSpan(ctrl)
+					span1.EXPECT().End(gomock.Len(0))
+					span2 := mock.NewMockSpan(ctrl)
+					span2.EXPECT().End(gomock.Len(0))
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserHasPermission", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/HasPermission", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/HasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.permissionService/CtxUserHasPermission", gomock.Len(0)).Return(ctx, span1)
+					tracer.EXPECT().Start(ctx, "service.permissionService/HasPermission", gomock.Len(0)).Return(ctx, span2)
 
 					return &baseService{
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 						tracer: tracer,
 					}
 				},
@@ -1601,16 +1604,15 @@ func Test_permissionService_CtxUserHasPermission(t *testing.T) {
 		{
 			name: "has permission with no ctx user",
 			fields: fields{
-				baseService: func(ctx context.Context, _, _ model.ID, _ []model.PermissionKind) *baseService {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ model.ID, _ []model.PermissionKind) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserHasPermission", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/HasPermission", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.permissionService/CtxUserHasPermission", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 						tracer: tracer,
 					}
 				},
@@ -1633,7 +1635,7 @@ func Test_permissionService_CtxUserHasPermission(t *testing.T) {
 			defer ctrl.Finish()
 
 			s := &permissionService{
-				baseService:    tt.fields.baseService(tt.args.ctx, userID, tt.args.target, tt.args.kinds),
+				baseService:    tt.fields.baseService(ctrl, tt.args.ctx, userID, tt.args.target, tt.args.kinds),
 				permissionRepo: tt.fields.permissionRepo(ctrl, tt.args.ctx, userID, tt.args.target, tt.args.kinds),
 			}
 			got := s.CtxUserHasPermission(tt.args.ctx, tt.args.target, tt.args.kinds...)
@@ -1644,7 +1646,7 @@ func Test_permissionService_CtxUserHasPermission(t *testing.T) {
 
 func Test_permissionService_Update(t *testing.T) {
 	type fields struct {
-		baseService    func(ctx context.Context, id model.ID, kind model.PermissionKind) *baseService
+		baseService    func(ctrl *gomock.Controller, ctx context.Context, id model.ID, kind model.PermissionKind) *baseService
 		permissionRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, want *model.Permission, kind model.PermissionKind) repository.PermissionRepository
 	}
 	type args struct {
@@ -1662,15 +1664,15 @@ func Test_permissionService_Update(t *testing.T) {
 		{
 			name: "update permission",
 			fields: fields{
-				baseService: func(ctx context.Context, _ model.ID, _ model.PermissionKind) *baseService {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ model.PermissionKind) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "service.permissionService/Update", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.permissionService/Update", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 						tracer: tracer,
 					}
 				},
@@ -1695,15 +1697,15 @@ func Test_permissionService_Update(t *testing.T) {
 		{
 			name: "update permission with error",
 			fields: fields{
-				baseService: func(ctx context.Context, _ model.ID, _ model.PermissionKind) *baseService {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ model.PermissionKind) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "service.permissionService/Update", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.permissionService/Update", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 						tracer: tracer,
 					}
 				},
@@ -1729,7 +1731,7 @@ func Test_permissionService_Update(t *testing.T) {
 			defer ctrl.Finish()
 
 			s := &permissionService{
-				baseService:    tt.fields.baseService(tt.args.ctx, tt.args.id, tt.args.kind),
+				baseService:    tt.fields.baseService(ctrl, tt.args.ctx, tt.args.id, tt.args.kind),
 				permissionRepo: tt.fields.permissionRepo(ctrl, tt.args.ctx, tt.args.id, tt.want, tt.args.kind),
 			}
 			got, err := s.Update(tt.args.ctx, tt.args.id, tt.args.kind)
@@ -1744,7 +1746,7 @@ func Test_permissionService_CtxUserUpdate(t *testing.T) {
 	userID := model.MustNewID(model.ResourceTypeUser)
 
 	type fields struct {
-		baseService    func(ctx context.Context, userID model.ID, want *model.Permission, kind model.PermissionKind) *baseService
+		baseService    func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, want *model.Permission, kind model.PermissionKind) *baseService
 		permissionRepo func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, want *model.Permission, kind model.PermissionKind) repository.PermissionRepository
 	}
 	type args struct {
@@ -1762,21 +1764,27 @@ func Test_permissionService_CtxUserUpdate(t *testing.T) {
 		{
 			name: "update permission with direct permission",
 			fields: fields{
-				baseService: func(ctx context.Context, _ model.ID, _ *model.Permission, _ model.PermissionKind) *baseService {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ *model.Permission, _ model.PermissionKind) *baseService {
+					span1 := mock.NewMockSpan(ctrl)
+					span1.EXPECT().End(gomock.Len(0))
+					span2 := mock.NewMockSpan(ctrl)
+					span2.EXPECT().End(gomock.Len(0))
+					span3 := mock.NewMockSpan(ctrl)
+					span3.EXPECT().End(gomock.Len(0))
+					span4 := mock.NewMockSpan(ctrl)
+					span4.EXPECT().End(gomock.Len(0))
+					span5 := mock.NewMockSpan(ctrl)
+					span5.EXPECT().End(gomock.Len(0))
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "service.permissionService/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserUpdate", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/Update", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserHasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/HasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserHasPermission", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/HasPermission", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.permissionService/CtxUserUpdate", gomock.Len(0)).Return(ctx, span1)
+					tracer.EXPECT().Start(ctx, "service.permissionService/Get", gomock.Len(0)).Return(ctx, span2)
+					tracer.EXPECT().Start(ctx, "service.permissionService/CtxUserHasPermission", gomock.Len(0)).Return(ctx, span3)
+					tracer.EXPECT().Start(ctx, "service.permissionService/HasPermission", gomock.Len(0)).Return(ctx, span4)
+					tracer.EXPECT().Start(ctx, "service.permissionService/Update", gomock.Len(0)).Return(ctx, span5)
 
 					return &baseService{
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 						tracer: tracer,
 					}
 				},
@@ -1810,21 +1818,27 @@ func Test_permissionService_CtxUserUpdate(t *testing.T) {
 		{
 			name: "update permission with system role",
 			fields: fields{
-				baseService: func(ctx context.Context, _ model.ID, _ *model.Permission, _ model.PermissionKind) *baseService {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ *model.Permission, _ model.PermissionKind) *baseService {
+					span1 := mock.NewMockSpan(ctrl)
+					span1.EXPECT().End(gomock.Len(0))
+					span2 := mock.NewMockSpan(ctrl)
+					span2.EXPECT().End(gomock.Len(0))
+					span3 := mock.NewMockSpan(ctrl)
+					span3.EXPECT().End(gomock.Len(0))
+					span4 := mock.NewMockSpan(ctrl)
+					span4.EXPECT().End(gomock.Len(0))
+					span5 := mock.NewMockSpan(ctrl)
+					span5.EXPECT().End(gomock.Len(0))
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "service.permissionService/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserUpdate", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/Update", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserHasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/HasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserHasPermission", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/HasPermission", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.permissionService/CtxUserUpdate", gomock.Len(0)).Return(ctx, span1)
+					tracer.EXPECT().Start(ctx, "service.permissionService/Get", gomock.Len(0)).Return(ctx, span2)
+					tracer.EXPECT().Start(ctx, "service.permissionService/CtxUserHasPermission", gomock.Len(0)).Return(ctx, span3)
+					tracer.EXPECT().Start(ctx, "service.permissionService/HasPermission", gomock.Len(0)).Return(ctx, span4)
+					tracer.EXPECT().Start(ctx, "service.permissionService/Update", gomock.Len(0)).Return(ctx, span5)
 
 					return &baseService{
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 						tracer: tracer,
 					}
 				},
@@ -1858,21 +1872,27 @@ func Test_permissionService_CtxUserUpdate(t *testing.T) {
 		{
 			name: "update permission with error",
 			fields: fields{
-				baseService: func(ctx context.Context, _ model.ID, _ *model.Permission, _ model.PermissionKind) *baseService {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ *model.Permission, _ model.PermissionKind) *baseService {
+					span1 := mock.NewMockSpan(ctrl)
+					span1.EXPECT().End(gomock.Len(0))
+					span2 := mock.NewMockSpan(ctrl)
+					span2.EXPECT().End(gomock.Len(0))
+					span3 := mock.NewMockSpan(ctrl)
+					span3.EXPECT().End(gomock.Len(0))
+					span4 := mock.NewMockSpan(ctrl)
+					span4.EXPECT().End(gomock.Len(0))
+					span5 := mock.NewMockSpan(ctrl)
+					span5.EXPECT().End(gomock.Len(0))
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "service.permissionService/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserUpdate", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/Update", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserHasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/HasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserHasPermission", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/HasPermission", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.permissionService/CtxUserUpdate", gomock.Len(0)).Return(ctx, span1)
+					tracer.EXPECT().Start(ctx, "service.permissionService/Get", gomock.Len(0)).Return(ctx, span2)
+					tracer.EXPECT().Start(ctx, "service.permissionService/CtxUserHasPermission", gomock.Len(0)).Return(ctx, span3)
+					tracer.EXPECT().Start(ctx, "service.permissionService/HasPermission", gomock.Len(0)).Return(ctx, span4)
+					tracer.EXPECT().Start(ctx, "service.permissionService/Update", gomock.Len(0)).Return(ctx, span5)
 
 					return &baseService{
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 						tracer: tracer,
 					}
 				},
@@ -1907,20 +1927,24 @@ func Test_permissionService_CtxUserUpdate(t *testing.T) {
 		{
 			name: "update permission with no permission",
 			fields: fields{
-				baseService: func(ctx context.Context, _ model.ID, _ *model.Permission, _ model.PermissionKind) *baseService {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ *model.Permission, _ model.PermissionKind) *baseService {
+					span1 := mock.NewMockSpan(ctrl)
+					span1.EXPECT().End(gomock.Len(0))
+					span2 := mock.NewMockSpan(ctrl)
+					span2.EXPECT().End(gomock.Len(0))
+					span3 := mock.NewMockSpan(ctrl)
+					span3.EXPECT().End(gomock.Len(0))
+					span4 := mock.NewMockSpan(ctrl)
+					span4.EXPECT().End(gomock.Len(0))
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "service.permissionService/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserUpdate", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserHasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/HasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserHasPermission", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/HasPermission", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.permissionService/CtxUserUpdate", gomock.Len(0)).Return(ctx, span1)
+					tracer.EXPECT().Start(ctx, "service.permissionService/Get", gomock.Len(0)).Return(ctx, span2)
+					tracer.EXPECT().Start(ctx, "service.permissionService/CtxUserHasPermission", gomock.Len(0)).Return(ctx, span3)
+					tracer.EXPECT().Start(ctx, "service.permissionService/HasPermission", gomock.Len(0)).Return(ctx, span4)
 
 					return &baseService{
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 						tracer: tracer,
 					}
 				},
@@ -1954,16 +1978,18 @@ func Test_permissionService_CtxUserUpdate(t *testing.T) {
 		{
 			name: "update permission no permission found",
 			fields: fields{
-				baseService: func(ctx context.Context, _ model.ID, _ *model.Permission, _ model.PermissionKind) *baseService {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ *model.Permission, _ model.PermissionKind) *baseService {
+					span1 := mock.NewMockSpan(ctrl)
+					span1.EXPECT().End(gomock.Len(0))
+					span2 := mock.NewMockSpan(ctrl)
+					span2.EXPECT().End(gomock.Len(0))
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "service.permissionService/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserUpdate", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.permissionService/CtxUserUpdate", gomock.Len(0)).Return(ctx, span1)
+					tracer.EXPECT().Start(ctx, "service.permissionService/Get", gomock.Len(0)).Return(ctx, span2)
 
 					return &baseService{
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 						tracer: tracer,
 					}
 				},
@@ -1989,15 +2015,15 @@ func Test_permissionService_CtxUserUpdate(t *testing.T) {
 		{
 			name: "update permission with no ctx user",
 			fields: fields{
-				baseService: func(ctx context.Context, _ model.ID, _ *model.Permission, _ model.PermissionKind) *baseService {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ *model.Permission, _ model.PermissionKind) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserUpdate", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.permissionService/CtxUserUpdate", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 						tracer: tracer,
 					}
 				},
@@ -2027,7 +2053,7 @@ func Test_permissionService_CtxUserUpdate(t *testing.T) {
 			defer ctrl.Finish()
 
 			s := &permissionService{
-				baseService:    tt.fields.baseService(tt.args.ctx, userID, tt.want, tt.args.kind),
+				baseService:    tt.fields.baseService(ctrl, tt.args.ctx, userID, tt.want, tt.args.kind),
 				permissionRepo: tt.fields.permissionRepo(ctrl, tt.args.ctx, userID, tt.want, tt.args.kind),
 			}
 			got, err := s.CtxUserUpdate(tt.args.ctx, tt.args.id, tt.args.kind)
@@ -2041,7 +2067,7 @@ func Test_permissionService_CtxUserUpdate(t *testing.T) {
 
 func Test_permissionService_Delete(t *testing.T) {
 	type fields struct {
-		baseService    func(ctx context.Context, id model.ID) *baseService
+		baseService    func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *baseService
 		permissionRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID) repository.PermissionRepository
 	}
 	type args struct {
@@ -2057,15 +2083,15 @@ func Test_permissionService_Delete(t *testing.T) {
 		{
 			name: "delete permission",
 			fields: fields{
-				baseService: func(ctx context.Context, _ model.ID) *baseService {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "service.permissionService/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.permissionService/Delete", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 						tracer: tracer,
 					}
 				},
@@ -2083,15 +2109,15 @@ func Test_permissionService_Delete(t *testing.T) {
 		{
 			name: "delete permission with error",
 			fields: fields{
-				baseService: func(ctx context.Context, _ model.ID) *baseService {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "service.permissionService/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.permissionService/Delete", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 						tracer: tracer,
 					}
 				},
@@ -2113,7 +2139,7 @@ func Test_permissionService_Delete(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			s := &permissionService{
-				baseService:    tt.fields.baseService(tt.args.ctx, tt.args.id),
+				baseService:    tt.fields.baseService(ctrl, tt.args.ctx, tt.args.id),
 				permissionRepo: tt.fields.permissionRepo(ctrl, tt.args.ctx, tt.args.id),
 			}
 			err := s.Delete(tt.args.ctx, tt.args.id)
@@ -2127,7 +2153,7 @@ func Test_permissionService_CtxUserDelete(t *testing.T) {
 	userID := model.MustNewID(model.ResourceTypeUser)
 
 	type fields struct {
-		baseService    func(ctx context.Context, userID, id model.ID, perm *model.Permission) *baseService
+		baseService    func(ctrl *gomock.Controller, ctx context.Context, userID, id model.ID, perm *model.Permission) *baseService
 		permissionRepo func(ctrl *gomock.Controller, ctx context.Context, userID, id model.ID, perm *model.Permission) repository.PermissionRepository
 		perm           *model.Permission
 	}
@@ -2144,21 +2170,27 @@ func Test_permissionService_CtxUserDelete(t *testing.T) {
 		{
 			name: "delete permission using permissions",
 			fields: fields{
-				baseService: func(ctx context.Context, _, _ model.ID, _ *model.Permission) *baseService {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ model.ID, _ *model.Permission) *baseService {
+					span1 := mock.NewMockSpan(ctrl)
+					span1.EXPECT().End(gomock.Len(0))
+					span2 := mock.NewMockSpan(ctrl)
+					span2.EXPECT().End(gomock.Len(0))
+					span3 := mock.NewMockSpan(ctrl)
+					span3.EXPECT().End(gomock.Len(0))
+					span4 := mock.NewMockSpan(ctrl)
+					span4.EXPECT().End(gomock.Len(0))
+					span5 := mock.NewMockSpan(ctrl)
+					span5.EXPECT().End(gomock.Len(0))
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "service.permissionService/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserDelete", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserHasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/HasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserHasPermission", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/HasPermission", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.permissionService/CtxUserDelete", gomock.Len(0)).Return(ctx, span1)
+					tracer.EXPECT().Start(ctx, "service.permissionService/Get", gomock.Len(0)).Return(ctx, span2)
+					tracer.EXPECT().Start(ctx, "service.permissionService/CtxUserHasPermission", gomock.Len(0)).Return(ctx, span3)
+					tracer.EXPECT().Start(ctx, "service.permissionService/HasPermission", gomock.Len(0)).Return(ctx, span4)
+					tracer.EXPECT().Start(ctx, "service.permissionService/Delete", gomock.Len(0)).Return(ctx, span5)
 
 					return &baseService{
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 						tracer: tracer,
 					}
 				},
@@ -2190,21 +2222,27 @@ func Test_permissionService_CtxUserDelete(t *testing.T) {
 		{
 			name: "delete permission when no permissions but system role",
 			fields: fields{
-				baseService: func(ctx context.Context, _, _ model.ID, _ *model.Permission) *baseService {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ model.ID, _ *model.Permission) *baseService {
+					span1 := mock.NewMockSpan(ctrl)
+					span1.EXPECT().End(gomock.Len(0))
+					span2 := mock.NewMockSpan(ctrl)
+					span2.EXPECT().End(gomock.Len(0))
+					span3 := mock.NewMockSpan(ctrl)
+					span3.EXPECT().End(gomock.Len(0))
+					span4 := mock.NewMockSpan(ctrl)
+					span4.EXPECT().End(gomock.Len(0))
+					span5 := mock.NewMockSpan(ctrl)
+					span5.EXPECT().End(gomock.Len(0))
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "service.permissionService/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserDelete", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/Delete", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserHasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/HasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserHasPermission", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/HasPermission", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.permissionService/CtxUserDelete", gomock.Len(0)).Return(ctx, span1)
+					tracer.EXPECT().Start(ctx, "service.permissionService/Get", gomock.Len(0)).Return(ctx, span2)
+					tracer.EXPECT().Start(ctx, "service.permissionService/CtxUserHasPermission", gomock.Len(0)).Return(ctx, span3)
+					tracer.EXPECT().Start(ctx, "service.permissionService/HasPermission", gomock.Len(0)).Return(ctx, span4)
+					tracer.EXPECT().Start(ctx, "service.permissionService/Delete", gomock.Len(0)).Return(ctx, span5)
 
 					return &baseService{
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 						tracer: tracer,
 					}
 				},
@@ -2236,16 +2274,18 @@ func Test_permissionService_CtxUserDelete(t *testing.T) {
 		{
 			name: "delete permission no target found",
 			fields: fields{
-				baseService: func(ctx context.Context, _, _ model.ID, _ *model.Permission) *baseService {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ model.ID, _ *model.Permission) *baseService {
+					span1 := mock.NewMockSpan(ctrl)
+					span1.EXPECT().End(gomock.Len(0))
+					span2 := mock.NewMockSpan(ctrl)
+					span2.EXPECT().End(gomock.Len(0))
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "service.permissionService/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserDelete", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.permissionService/CtxUserDelete", gomock.Len(0)).Return(ctx, span1)
+					tracer.EXPECT().Start(ctx, "service.permissionService/Get", gomock.Len(0)).Return(ctx, span2)
 
 					return &baseService{
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 						tracer: tracer,
 					}
 				},
@@ -2270,20 +2310,24 @@ func Test_permissionService_CtxUserDelete(t *testing.T) {
 		{
 			name: "delete permission with no permissions",
 			fields: fields{
-				baseService: func(ctx context.Context, _, _ model.ID, _ *model.Permission) *baseService {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ model.ID, _ *model.Permission) *baseService {
+					span1 := mock.NewMockSpan(ctrl)
+					span1.EXPECT().End(gomock.Len(0))
+					span2 := mock.NewMockSpan(ctrl)
+					span2.EXPECT().End(gomock.Len(0))
+					span3 := mock.NewMockSpan(ctrl)
+					span3.EXPECT().End(gomock.Len(0))
+					span4 := mock.NewMockSpan(ctrl)
+					span4.EXPECT().End(gomock.Len(0))
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "service.permissionService/Get", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserDelete", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserHasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/HasSystemRole", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserHasPermission", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("Start", ctx, "service.permissionService/HasPermission", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.permissionService/CtxUserDelete", gomock.Len(0)).Return(ctx, span1)
+					tracer.EXPECT().Start(ctx, "service.permissionService/Get", gomock.Len(0)).Return(ctx, span2)
+					tracer.EXPECT().Start(ctx, "service.permissionService/CtxUserHasPermission", gomock.Len(0)).Return(ctx, span3)
+					tracer.EXPECT().Start(ctx, "service.permissionService/HasPermission", gomock.Len(0)).Return(ctx, span4)
 
 					return &baseService{
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 						tracer: tracer,
 					}
 				},
@@ -2315,15 +2359,15 @@ func Test_permissionService_CtxUserDelete(t *testing.T) {
 		{
 			name: "delete permission with no ctx user",
 			fields: fields{
-				baseService: func(ctx context.Context, _, _ model.ID, _ *model.Permission) *baseService {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ model.ID, _ *model.Permission) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "service.permissionService/CtxUserDelete", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.permissionService/CtxUserDelete", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 						tracer: tracer,
 					}
 				},
@@ -2349,7 +2393,7 @@ func Test_permissionService_CtxUserDelete(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			s := &permissionService{
-				baseService:    tt.fields.baseService(tt.args.ctx, userID, tt.args.id, tt.fields.perm),
+				baseService:    tt.fields.baseService(ctrl, tt.args.ctx, userID, tt.args.id, tt.fields.perm),
 				permissionRepo: tt.fields.permissionRepo(ctrl, tt.args.ctx, userID, tt.args.id, tt.fields.perm),
 			}
 			err := s.CtxUserDelete(tt.args.ctx, tt.args.id)

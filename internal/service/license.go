@@ -10,6 +10,8 @@ import (
 )
 
 // LicenseService serves the business logic of retrieving license information.
+//
+//go:generate mockgen -destination ../testutil/mock/license_service_gen.go -package mock github.com/opcotech/elemo/internal/service LicenseService
 type LicenseService interface {
 	// Expired returns true if the license has expired.
 	Expired(ctx context.Context) (bool, error)
