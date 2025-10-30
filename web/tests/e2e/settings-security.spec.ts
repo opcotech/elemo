@@ -28,7 +28,7 @@ test.describe("@settings.security Password Change E2E Tests", () => {
       () => {
         const buttons = document.querySelectorAll("button");
         for (const button of buttons) {
-          if (button.textContent?.includes("Signing in...")) {
+          if (button.textContent.includes("Signing in...")) {
             return false; // Still loading
           }
         }

@@ -49,13 +49,16 @@ function InboxPage() {
     <div className="flex h-full">
       {/* Small screens: Tab view */}
       <div className="w-full lg:hidden">
-        <Tabs defaultValue="inbox" className="w-full h-full">
+        <Tabs defaultValue="inbox" className="h-full w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="inbox">Inbox</TabsTrigger>
             <TabsTrigger value="notifications">
               Notifications
               {unreadCount > 0 && (
-                <Badge variant="default" className="ml-2 bg-blue-500 text-white">
+                <Badge
+                  variant="default"
+                  className="ml-2 bg-blue-500 text-white"
+                >
                   {unreadCount}
                 </Badge>
               )}
@@ -73,7 +76,7 @@ function InboxPage() {
       </div>
 
       {/* Big screens: Two-column layout */}
-      <div className="hidden lg:flex h-full w-full">
+      <div className="hidden h-full w-full lg:flex">
         {/* Left side - Inbox */}
         <div className="flex-1 overflow-auto border-r">
           <div className="p-6">

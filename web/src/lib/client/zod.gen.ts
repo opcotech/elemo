@@ -3,6 +3,147 @@
 import { z } from "zod";
 
 /**
+ * UserStatus
+ *
+ * Status of the user.
+ */
+export const zUserStatus = z.enum(["active", "pending", "inactive", "deleted"]);
+
+/**
+ * OrganizationStatus
+ *
+ * Status of the organization.
+ */
+export const zOrganizationStatus = z.enum(["active", "deleted"]);
+
+/**
+ * Organization
+ *
+ * An organization in the system.
+ */
+export const zOrganization = z.object({
+  id: z.string(),
+  name: z.string().min(1).max(120),
+  email: z.email().min(6).max(254),
+  logo: z.union([z.url().max(2000), z.null()]),
+  website: z.union([z.url().max(2000), z.null()]),
+  status: zOrganizationStatus,
+  members: z.array(z.string()),
+  teams: z.array(z.string()),
+  namespaces: z.array(z.string()),
+  created_at: z.iso.datetime(),
+  updated_at: z.union([z.iso.datetime(), z.null()]),
+});
+
+/**
+ * Priority of the todo item.
+ */
+export const zTodoPriority = z.enum([
+  "normal",
+  "important",
+  "urgent",
+  "critical",
+]);
+
+/**
+ * Todo
+ *
+ * A todo item belonging to a user.
+ */
+export const zTodo = z.object({
+  id: z.string(),
+  title: z.string().min(3).max(250),
+  description: z.string().min(10).max(500),
+  priority: zTodoPriority,
+  completed: z.boolean().default(true),
+  owned_by: z.string(),
+  created_by: z.string(),
+  due_date: z.union([z.iso.datetime(), z.null()]),
+  created_at: z.iso.datetime(),
+  updated_at: z.union([z.iso.datetime(), z.null()]),
+});
+
+/**
+ * Notification
+ *
+ * An in-app notification sent to the user.
+ */
+export const zNotification = z.object({
+  id: z.string(),
+  title: z.string().min(3).max(120),
+  description: z.string().min(5).max(500),
+  recipient: z.string(),
+  read: z.boolean().default(false),
+  created_at: z.iso.datetime(),
+  updated_at: z.union([z.iso.datetime(), z.null()]),
+});
+
+/**
+ * SystemHealth
+ */
+export const zSystemHealth = z.object({
+  cache_database: z.enum(["healthy", "unhealthy", "unknown"]),
+  graph_database: z.enum(["healthy", "unhealthy", "unknown"]),
+  relational_database: z.enum(["healthy", "unhealthy", "unknown"]),
+  license: z.enum(["healthy", "unhealthy", "unknown"]),
+  message_queue: z.enum(["healthy", "unhealthy", "unknown"]),
+});
+
+/**
+ * SystemVersion
+ */
+export const zSystemVersion = z.object({
+  version: z
+    .string()
+    .regex(
+      /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
+    ),
+  commit: z.string().regex(/^[0-9a-f]{5,40}$/),
+  date: z.iso.datetime(),
+  go_version: z
+    .string()
+    .regex(
+      /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
+    ),
+});
+
+/**
+ * SystemLicense
+ */
+export const zSystemLicense = z.object({
+  id: z.string(),
+  organization: z.string(),
+  email: z.email().min(6).max(254),
+  quotas: z.object({
+    documents: z.int().gte(1),
+    namespaces: z.int().gte(1),
+    organizations: z.int().gte(1),
+    projects: z.int().gte(1),
+    roles: z.int().gte(1),
+    users: z.int().gte(1),
+  }),
+  features: z.array(
+    z.enum([
+      "components",
+      "custom_statuses",
+      "custom_fields",
+      "multiple_assignees",
+      "releases",
+    ])
+  ),
+  expires_at: z.iso.datetime(),
+});
+
+/**
+ * HTTPError
+ *
+ * HTTP error description.
+ */
+export const zHttpError = z.object({
+  message: z.string(),
+});
+
+/**
  * Two-letter ISO language code.
  */
 export const zLanguage = z.enum([
@@ -193,13 +334,8 @@ export const zLanguage = z.enum([
 ]);
 
 /**
- * UserStatus
- * Status of the user.
- */
-export const zUserStatus = z.enum(["active", "pending", "inactive", "deleted"]);
-
-/**
  * User
+ *
  * A user in the system.
  */
 export const zUser = z.object({
@@ -225,136 +361,8 @@ export const zUser = z.object({
 });
 
 /**
- * OrganizationStatus
- * Status of the organization.
- */
-export const zOrganizationStatus = z.enum(["active", "deleted"]);
-
-/**
- * Organization
- * An organization in the system.
- */
-export const zOrganization = z.object({
-  id: z.string(),
-  name: z.string().min(1).max(120),
-  email: z.email().min(6).max(254),
-  logo: z.union([z.url().max(2000), z.null()]),
-  website: z.union([z.url().max(2000), z.null()]),
-  status: zOrganizationStatus,
-  members: z.array(z.string()),
-  teams: z.array(z.string()),
-  namespaces: z.array(z.string()),
-  created_at: z.iso.datetime(),
-  updated_at: z.union([z.iso.datetime(), z.null()]),
-});
-
-/**
- * Priority of the todo item.
- */
-export const zTodoPriority = z.enum([
-  "normal",
-  "important",
-  "urgent",
-  "critical",
-]);
-
-/**
- * Todo
- * A todo item belonging to a user.
- */
-export const zTodo = z.object({
-  id: z.string(),
-  title: z.string().min(3).max(250),
-  description: z.string().min(10).max(500),
-  priority: zTodoPriority,
-  completed: z.boolean().default(true),
-  owned_by: z.string(),
-  created_by: z.string(),
-  due_date: z.union([z.iso.datetime(), z.null()]),
-  created_at: z.iso.datetime(),
-  updated_at: z.union([z.iso.datetime(), z.null()]),
-});
-
-/**
- * Notification
- * An in-app notification sent to the user.
- */
-export const zNotification = z.object({
-  id: z.string(),
-  title: z.string().min(3).max(120),
-  description: z.string().min(5).max(500),
-  recipient: z.string(),
-  read: z.boolean().default(false),
-  created_at: z.iso.datetime(),
-  updated_at: z.union([z.iso.datetime(), z.null()]),
-});
-
-/**
- * SystemHealth
- */
-export const zSystemHealth = z.object({
-  cache_database: z.enum(["healthy", "unhealthy", "unknown"]),
-  graph_database: z.enum(["healthy", "unhealthy", "unknown"]),
-  relational_database: z.enum(["healthy", "unhealthy", "unknown"]),
-  license: z.enum(["healthy", "unhealthy", "unknown"]),
-  message_queue: z.enum(["healthy", "unhealthy", "unknown"]),
-});
-
-/**
- * SystemVersion
- */
-export const zSystemVersion = z.object({
-  version: z
-    .string()
-    .regex(
-      /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
-    ),
-  commit: z.string().regex(/^[0-9a-f]{5,40}$/),
-  date: z.iso.datetime(),
-  go_version: z
-    .string()
-    .regex(
-      /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
-    ),
-});
-
-/**
- * SystemLicense
- */
-export const zSystemLicense = z.object({
-  id: z.string(),
-  organization: z.string(),
-  email: z.email().min(6).max(254),
-  quotas: z.object({
-    documents: z.int().gte(1),
-    namespaces: z.int().gte(1),
-    organizations: z.int().gte(1),
-    projects: z.int().gte(1),
-    roles: z.int().gte(1),
-    users: z.int().gte(1),
-  }),
-  features: z.array(
-    z.enum([
-      "components",
-      "custom_statuses",
-      "custom_fields",
-      "multiple_assignees",
-      "releases",
-    ])
-  ),
-  expires_at: z.iso.datetime(),
-});
-
-/**
- * HTTPError
- * HTTP error description.
- */
-export const zHttpError = z.object({
-  message: z.string(),
-});
-
-/**
  * PermissionKind
+ *
  * Kind of a permission.
  */
 export const zPermissionKind = z.enum([
@@ -367,6 +375,7 @@ export const zPermissionKind = z.enum([
 
 /**
  * Permission
+ *
  * A permission in the system.
  */
 export const zPermission = z.object({
@@ -380,6 +389,7 @@ export const zPermission = z.object({
 
 /**
  * Role
+ *
  * A role in the system.
  */
 export const zRole = z.object({
