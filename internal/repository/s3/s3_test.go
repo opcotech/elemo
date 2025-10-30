@@ -147,9 +147,9 @@ func TestWithStorageLogger(t *testing.T) {
 		{
 			name: "create new option with logger",
 			args: args{
-				logger: new(mock.Logger),
+				logger: mock.NewMockLogger(nil),
 			},
-			want: new(mock.Logger),
+			want: mock.NewMockLogger(nil),
 		},
 		{
 			name: "create new option with nil logger",
@@ -184,9 +184,9 @@ func TestWithStorageTracer(t *testing.T) {
 		{
 			name: "create new option with tracer",
 			args: args{
-				tracer: new(mock.Tracer),
+				tracer: mock.NewMockTracer(nil),
 			},
-			want: new(mock.Tracer),
+			want: mock.NewMockTracer(nil),
 		},
 		{
 			name: "create new option with nil tracer",
@@ -226,14 +226,14 @@ func TestNewStorage(t *testing.T) {
 			args: args{
 				client: mock.NewS3Client(nil),
 				bucket: "test-bucket",
-				logger: new(mock.Logger),
-				tracer: new(mock.Tracer),
+				logger: mock.NewMockLogger(nil),
+				tracer: mock.NewMockTracer(nil),
 			},
 			want: &Storage{
 				client: mock.NewS3Client(nil),
 				bucket: "test-bucket",
-				logger: new(mock.Logger),
-				tracer: new(mock.Tracer),
+				logger: mock.NewMockLogger(nil),
+				tracer: mock.NewMockTracer(nil),
 			},
 		},
 		{
@@ -241,8 +241,8 @@ func TestNewStorage(t *testing.T) {
 			args: args{
 				client: nil,
 				bucket: "test-bucket",
-				logger: new(mock.Logger),
-				tracer: new(mock.Tracer),
+				logger: mock.NewMockLogger(nil),
+				tracer: mock.NewMockTracer(nil),
 			},
 			wantErr: repository.ErrNoClient,
 		},
@@ -251,8 +251,8 @@ func TestNewStorage(t *testing.T) {
 			args: args{
 				client: mock.NewS3Client(nil),
 				bucket: "",
-				logger: new(mock.Logger),
-				tracer: new(mock.Tracer),
+				logger: mock.NewMockLogger(nil),
+				tracer: mock.NewMockTracer(nil),
 			},
 			wantErr: repository.ErrNoBucket,
 		},
@@ -262,7 +262,7 @@ func TestNewStorage(t *testing.T) {
 				client: mock.NewS3Client(nil),
 				bucket: "test-bucket",
 				logger: nil,
-				tracer: new(mock.Tracer),
+				tracer: mock.NewMockTracer(nil),
 			},
 			wantErr: log.ErrNoLogger,
 		},
@@ -271,7 +271,7 @@ func TestNewStorage(t *testing.T) {
 			args: args{
 				client: mock.NewS3Client(nil),
 				bucket: "test-bucket",
-				logger: new(mock.Logger),
+				logger: mock.NewMockLogger(nil),
 				tracer: nil,
 			},
 			wantErr: tracing.ErrNoTracer,
@@ -385,15 +385,15 @@ func TestWithStorage(t *testing.T) {
 				storage: &Storage{
 					client: mock.NewS3Client(nil),
 					bucket: "test-bucket",
-					logger: new(mock.Logger),
-					tracer: new(mock.Tracer),
+					logger: mock.NewMockLogger(nil),
+					tracer: mock.NewMockTracer(nil),
 				},
 			},
 			want: &Storage{
 				client: mock.NewS3Client(nil),
 				bucket: "test-bucket",
-				logger: new(mock.Logger),
-				tracer: new(mock.Tracer),
+				logger: mock.NewMockLogger(nil),
+				tracer: mock.NewMockTracer(nil),
 			},
 		},
 		{
@@ -429,9 +429,9 @@ func TestWithRepositoryLogger(t *testing.T) {
 		{
 			name: "create new option with logger",
 			args: args{
-				logger: new(mock.Logger),
+				logger: mock.NewMockLogger(nil),
 			},
-			want: new(mock.Logger),
+			want: mock.NewMockLogger(nil),
 		},
 		{
 			name: "create new option with nil logger",
@@ -466,9 +466,9 @@ func TestWithRepositoryTracer(t *testing.T) {
 		{
 			name: "create new option with tracer",
 			args: args{
-				tracer: new(mock.Tracer),
+				tracer: mock.NewMockTracer(nil),
 			},
-			want: new(mock.Tracer),
+			want: mock.NewMockTracer(nil),
 		},
 		{
 			name: "create new option with nil tracer",
@@ -508,29 +508,29 @@ func TestNewBaseRepository(t *testing.T) {
 				storage: &Storage{
 					client: mock.NewS3Client(nil),
 					bucket: "test-bucket",
-					logger: new(mock.Logger),
-					tracer: new(mock.Tracer),
+					logger: mock.NewMockLogger(nil),
+					tracer: mock.NewMockTracer(nil),
 				},
-				logger: new(mock.Logger),
-				tracer: new(mock.Tracer),
+				logger: mock.NewMockLogger(nil),
+				tracer: mock.NewMockTracer(nil),
 			},
 			want: &baseRepository{
 				storage: &Storage{
 					client: mock.NewS3Client(nil),
 					bucket: "test-bucket",
-					logger: new(mock.Logger),
-					tracer: new(mock.Tracer),
+					logger: mock.NewMockLogger(nil),
+					tracer: mock.NewMockTracer(nil),
 				},
-				logger: new(mock.Logger),
-				tracer: new(mock.Tracer),
+				logger: mock.NewMockLogger(nil),
+				tracer: mock.NewMockTracer(nil),
 			},
 		},
 		{
 			name: "create new base repository with nil storage",
 			args: args{
 				storage: nil,
-				logger:  new(mock.Logger),
-				tracer:  new(mock.Tracer),
+				logger:  mock.NewMockLogger(nil),
+				tracer:  mock.NewMockTracer(nil),
 			},
 			wantErr: repository.ErrNoDriver,
 		},
@@ -540,11 +540,11 @@ func TestNewBaseRepository(t *testing.T) {
 				storage: &Storage{
 					client: mock.NewS3Client(nil),
 					bucket: "test-bucket",
-					logger: new(mock.Logger),
-					tracer: new(mock.Tracer),
+					logger: mock.NewMockLogger(nil),
+					tracer: mock.NewMockTracer(nil),
 				},
 				logger: nil,
-				tracer: new(mock.Tracer),
+				tracer: mock.NewMockTracer(nil),
 			},
 			wantErr: log.ErrNoLogger,
 		},
@@ -554,10 +554,10 @@ func TestNewBaseRepository(t *testing.T) {
 				storage: &Storage{
 					client: mock.NewS3Client(nil),
 					bucket: "test-bucket",
-					logger: new(mock.Logger),
-					tracer: new(mock.Tracer),
+					logger: mock.NewMockLogger(nil),
+					tracer: mock.NewMockTracer(nil),
 				},
-				logger: new(mock.Logger),
+				logger: mock.NewMockLogger(nil),
 				tracer: nil,
 			},
 			wantErr: tracing.ErrNoTracer,

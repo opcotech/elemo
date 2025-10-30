@@ -24,6 +24,8 @@ var (
 type ZapLogger = zap.Logger
 
 // Logger defines the interface for the application logger.
+//
+//go:generate mockgen -destination ../../testutil/mock/logger_gen.go -package mock github.com/opcotech/elemo/internal/pkg/log Logger
 type Logger interface {
 	Sugar() *zap.SugaredLogger
 	Named(s string) *zap.Logger

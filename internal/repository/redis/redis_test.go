@@ -123,9 +123,9 @@ func TestWithDatabaseLogger(t *testing.T) {
 		{
 			name: "create new option with logger",
 			args: args{
-				logger: new(mock.Logger),
+				logger: mock.NewMockLogger(nil),
 			},
-			want: new(mock.Logger),
+			want: mock.NewMockLogger(nil),
 		},
 		{
 			name: "create new option with nil logger",
@@ -160,9 +160,9 @@ func TestWithDatabaseTracer(t *testing.T) {
 		{
 			name: "create new option with tracer",
 			args: args{
-				tracer: new(mock.Tracer),
+				tracer: mock.NewMockTracer(nil),
 			},
-			want: new(mock.Tracer),
+			want: mock.NewMockTracer(nil),
 		},
 		{
 			name: "create new option with nil tracer",
@@ -204,8 +204,8 @@ func TestNewDatabase(t *testing.T) {
 					defer ctrl.Finish()
 					return mock.NewUniversalClient(ctrl)
 				}(),
-				logger: new(mock.Logger),
-				tracer: new(mock.Tracer),
+				logger: mock.NewMockLogger(nil),
+				tracer: mock.NewMockTracer(nil),
 			},
 			want: &Database{
 				client: func() redis.UniversalClient {
@@ -213,16 +213,16 @@ func TestNewDatabase(t *testing.T) {
 					defer ctrl.Finish()
 					return mock.NewUniversalClient(ctrl)
 				}(),
-				logger: new(mock.Logger),
-				tracer: new(mock.Tracer),
+				logger: mock.NewMockLogger(nil),
+				tracer: mock.NewMockTracer(nil),
 			},
 		},
 		{
 			name: "create new database with nil client",
 			args: args{
 				client: nil,
-				logger: new(mock.Logger),
-				tracer: new(mock.Tracer),
+				logger: mock.NewMockLogger(nil),
+				tracer: mock.NewMockTracer(nil),
 			},
 			wantErr: repository.ErrNoClient,
 		},
@@ -235,7 +235,7 @@ func TestNewDatabase(t *testing.T) {
 					return mock.NewUniversalClient(ctrl)
 				}(),
 				logger: nil,
-				tracer: new(mock.Tracer),
+				tracer: mock.NewMockTracer(nil),
 			},
 			wantErr: log.ErrNoLogger,
 		},
@@ -247,7 +247,7 @@ func TestNewDatabase(t *testing.T) {
 					defer ctrl.Finish()
 					return mock.NewUniversalClient(ctrl)
 				}(),
-				logger: new(mock.Logger),
+				logger: mock.NewMockLogger(nil),
 				tracer: nil,
 			},
 			wantErr: tracing.ErrNoTracer,

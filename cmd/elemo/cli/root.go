@@ -134,7 +134,8 @@ func initTracer(service string) {
 	tracerProvider, err = tracing.NewTracerProvider(context.Background(), versionInfo, service, &cfg.Tracing)
 	cobra.CheckErr(err)
 
-	tracer = tracerProvider.Tracer("github.com/opcotech/elemo")
+	otelTracer := tracerProvider.Tracer("github.com/opcotech/elemo")
+	tracer = tracing.WrapTracer(otelTracer)
 }
 
 func initLogger() {

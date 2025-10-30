@@ -2,18 +2,15 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"go.uber.org/mock/gomock"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/otel/trace"
-
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/log"
 	"github.com/opcotech/elemo/internal/testutil/mock"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewSystemService(t *testing.T) {
@@ -38,14 +35,14 @@ func TestNewSystemService(t *testing.T) {
 					Version: "1.0.0",
 				},
 				opts: []Option{
-					WithLogger(new(mock.Logger)),
-					WithTracer(new(mock.Tracer)),
+					WithLogger(mock.NewMockLogger(nil)),
+					WithTracer(mock.NewMockTracer(nil)),
 				},
 			},
 			want: &systemService{
 				baseService: &baseService{
-					logger: new(mock.Logger),
-					tracer: new(mock.Tracer),
+					logger: mock.NewMockLogger(nil),
+					tracer: mock.NewMockTracer(nil),
 				},
 				versionInfo: &model.VersionInfo{
 					Version: "1.0.0",
@@ -63,8 +60,8 @@ func TestNewSystemService(t *testing.T) {
 					Version: "1.0.0",
 				},
 				opts: []Option{
-					WithLogger(new(mock.Logger)),
-					WithTracer(new(mock.Tracer)),
+					WithLogger(mock.NewMockLogger(nil)),
+					WithTracer(mock.NewMockTracer(nil)),
 				},
 			},
 			wantErr: ErrNoResources,
@@ -77,8 +74,8 @@ func TestNewSystemService(t *testing.T) {
 				},
 				version: nil,
 				opts: []Option{
-					WithLogger(new(mock.Logger)),
-					WithTracer(new(mock.Tracer)),
+					WithLogger(mock.NewMockLogger(nil)),
+					WithTracer(mock.NewMockTracer(nil)),
 				},
 			},
 			wantErr: ErrNoVersionInfo,
@@ -111,13 +108,16 @@ func TestNewSystemService(t *testing.T) {
 func Test_systemService_GetHeartbeat(t *testing.T) {
 	t.Parallel()
 
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
 	ctx := context.Background()
 
-	span := new(mock.Span)
-	span.On("End", []trace.SpanEndOption(nil)).Return()
+	span := mock.NewMockSpan(ctrl)
+	span.EXPECT().End(gomock.Len(0))
 
-	tracer := new(mock.Tracer)
-	tracer.On("Start", ctx, "service.systemService/GetHeartbeat", []trace.SpanStartOption(nil)).Return(ctx, span)
+	tracer := mock.NewMockTracer(ctrl)
+	tracer.EXPECT().Start(ctx, "service.systemService/GetHeartbeat", gomock.Len(0)).Return(ctx, span)
 
 	s := &systemService{
 		baseService: &baseService{
@@ -131,13 +131,16 @@ func Test_systemService_GetHeartbeat(t *testing.T) {
 func Test_systemService_GetVersion(t *testing.T) {
 	t.Parallel()
 
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
 	ctx := context.Background()
 
-	span := new(mock.Span)
-	span.On("End", []trace.SpanEndOption(nil)).Return()
+	span := mock.NewMockSpan(ctrl)
+	span.EXPECT().End(gomock.Len(0))
 
-	tracer := new(mock.Tracer)
-	tracer.On("Start", ctx, "service.systemService/GetVersion", []trace.SpanStartOption(nil)).Return(ctx, span)
+	tracer := mock.NewMockTracer(ctrl)
+	tracer.EXPECT().Start(ctx, "service.systemService/GetVersion", gomock.Len(0)).Return(ctx, span)
 
 	s := &systemService{
 		baseService: &baseService{
@@ -157,7 +160,7 @@ func Test_systemService_GetVersion(t *testing.T) {
 
 func Test_systemService_GetHealth(t *testing.T) {
 	type fields struct {
-		baseService func(ctx context.Context) *baseService
+		baseService func(ctrl *gomock.Controller, ctx context.Context) *baseService
 		versionInfo *model.VersionInfo
 		resources   func(ctx context.Context, ctrl *gomock.Controller) map[model.HealthCheckComponent]Pingable
 	}
@@ -174,17 +177,12 @@ func Test_systemService_GetHealth(t *testing.T) {
 		{
 			name: "get health",
 			fields: fields{
-				baseService: func(ctx context.Context) *baseService {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
-					span.On("AddEvent", fmt.Sprintf("Check %s health", model.HealthCheckComponentGraphDB)).Return()
-					span.On("AddEvent", fmt.Sprintf("Check %s health", model.HealthCheckComponentRelationalDB)).Return()
-					span.On("AddEvent", fmt.Sprintf("Check %s health", model.HealthCheckComponentLicense)).Return()
-					span.On("AddEvent", fmt.Sprintf("Check %s health", model.HealthCheckComponentMessageQueue)).Return()
+				baseService: func(ctrl *gomock.Controller, ctx context.Context) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "service.systemService/GetHealth", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("SpanFromContext", ctx).Return(span).Twice()
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.systemService/GetHealth", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
 						tracer: tracer,
@@ -218,17 +216,12 @@ func Test_systemService_GetHealth(t *testing.T) {
 		{
 			name: "get health with error",
 			fields: fields{
-				baseService: func(ctx context.Context) *baseService {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
-					span.On("AddEvent", fmt.Sprintf("Check %s health", model.HealthCheckComponentGraphDB)).Return()
-					span.On("AddEvent", fmt.Sprintf("Check %s health", model.HealthCheckComponentRelationalDB)).Return()
-					span.On("AddEvent", fmt.Sprintf("Check %s health", model.HealthCheckComponentLicense)).Return()
-					span.On("AddEvent", fmt.Sprintf("Check %s health", model.HealthCheckComponentMessageQueue)).Return()
+				baseService: func(ctrl *gomock.Controller, ctx context.Context) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "service.systemService/GetHealth", []trace.SpanStartOption(nil)).Return(ctx, span)
-					tracer.On("SpanFromContext", ctx).Return(span).Twice()
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.systemService/GetHealth", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
 						tracer: tracer,
@@ -268,7 +261,7 @@ func Test_systemService_GetHealth(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			s := &systemService{
-				baseService: tt.fields.baseService(tt.args.ctx),
+				baseService: tt.fields.baseService(ctrl, tt.args.ctx),
 				versionInfo: tt.fields.versionInfo,
 				resources:   tt.fields.resources(tt.args.ctx, ctrl),
 			}

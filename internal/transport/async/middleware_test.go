@@ -9,7 +9,6 @@ import (
 	"github.com/hibiken/asynq"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"golang.org/x/time/rate"
 
@@ -49,13 +48,16 @@ func TestSetRateLimiter(t *testing.T) {
 func TestWithMetricsExporter(t *testing.T) {
 	t.Parallel()
 
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
 	ctx := context.Background()
 
-	span := new(mock.Span)
-	span.On("End", []trace.SpanEndOption(nil)).Return()
+	span := mock.NewMockSpan(ctrl)
+	span.EXPECT().End().Return().Times(2)
 
-	tracer := new(mock.Tracer)
-	tracer.On("Start", ctx, "transport.asynq.middleware/WithMetricsExporter", []trace.SpanStartOption(nil)).Return(ctx, span)
+	tracer := mock.NewMockTracer(ctrl)
+	tracer.EXPECT().Start(ctx, "transport.asynq.middleware/WithMetricsExporter").Return(ctx, span).Times(2)
 
 	assert.NoError(t,
 		WithMetricsExporter(tracer)(asynq.HandlerFunc(func(_ context.Context, _ *asynq.Task) error {
@@ -76,7 +78,7 @@ func TestWithRateLimiter(t *testing.T) {
 		limiter func(ctrl *gomock.Controller) RateLimiter
 	}
 	type args struct {
-		tracer tracing.Tracer
+		tracer func(ctrl *gomock.Controller) tracing.Tracer
 	}
 	tests := []struct {
 		name    string
@@ -94,15 +96,15 @@ func TestWithRateLimiter(t *testing.T) {
 				},
 			},
 			args: args{
-				tracer: func() tracing.Tracer {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+				tracer: func(ctrl *gomock.Controller) tracing.Tracer {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End().Return()
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", mock.Anything, "transport.asynq.middleware/WithRateLimiter", []trace.SpanStartOption(nil)).Return(context.Background(), span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(gomock.Any(), "transport.asynq.middleware/WithRateLimiter").Return(context.Background(), span)
 
 					return tracer
-				}(),
+				},
 			},
 			wantErr: nil,
 		},
@@ -116,15 +118,15 @@ func TestWithRateLimiter(t *testing.T) {
 				},
 			},
 			args: args{
-				tracer: func() tracing.Tracer {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+				tracer: func(ctrl *gomock.Controller) tracing.Tracer {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End().Return()
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", mock.Anything, "transport.asynq.middleware/WithRateLimiter", []trace.SpanStartOption(nil)).Return(context.Background(), span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(gomock.Any(), "transport.asynq.middleware/WithRateLimiter").Return(context.Background(), span)
 
 					return tracer
-				}(),
+				},
 			},
 			wantErr: ErrRateLimitExceeded,
 		},
@@ -140,7 +142,7 @@ func TestWithRateLimiter(t *testing.T) {
 				return nil
 			})
 
-			wrapped := WithRateLimiter(tt.args.tracer, tt.fields.limiter(ctrl))(handler)
+			wrapped := WithRateLimiter(tt.args.tracer(ctrl), tt.fields.limiter(ctrl))(handler)
 			err := wrapped.ProcessTask(context.Background(), new(asynq.Task))
 
 			assert.ErrorIs(t, err, tt.wantErr)
@@ -152,10 +154,10 @@ func TestWithErrorLogger(t *testing.T) {
 	type fields struct {
 		ctx    context.Context
 		task   *asynq.Task
-		logger func(ctx context.Context, task *asynq.Task) log.Logger
+		logger func(ctx context.Context, task *asynq.Task, ctrl *gomock.Controller) log.Logger
 	}
 	type args struct {
-		tracer func(ctx context.Context) tracing.Tracer
+		tracer func(ctx context.Context, ctrl *gomock.Controller) tracing.Tracer
 	}
 	tests := []struct {
 		name    string
@@ -168,17 +170,17 @@ func TestWithErrorLogger(t *testing.T) {
 			fields: fields{
 				ctx:  context.Background(),
 				task: asynq.NewTask("test:task", []byte("hello")),
-				logger: func(_ context.Context, _ *asynq.Task) log.Logger {
-					return new(mock.Logger)
+				logger: func(_ context.Context, _ *asynq.Task, _ *gomock.Controller) log.Logger {
+					return mock.NewMockLogger(nil)
 				},
 			},
 			args: args{
-				tracer: func(ctx context.Context) tracing.Tracer {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+				tracer: func(ctx context.Context, ctrl *gomock.Controller) tracing.Tracer {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End().Return()
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "transport.asynq.middleware/WithErrorLogger", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "transport.asynq.middleware/WithErrorLogger").Return(ctx, span)
 
 					return tracer
 				},
@@ -189,9 +191,9 @@ func TestWithErrorLogger(t *testing.T) {
 			fields: fields{
 				ctx:  context.Background(),
 				task: asynq.NewTask("test:task", []byte("hello")),
-				logger: func(_ context.Context, task *asynq.Task) log.Logger {
-					logger := new(mock.Logger)
-					logger.On("Log", zap.ErrorLevel, assert.AnError.Error(), []zap.Field{
+				logger: func(_ context.Context, task *asynq.Task, ctrl *gomock.Controller) log.Logger {
+					logger := mock.NewMockLogger(ctrl)
+					logger.EXPECT().Log(zap.ErrorLevel, assert.AnError.Error(), []zap.Field{
 						log.WithKey(task.Type()),
 						log.WithInput(string(task.Payload())),
 						log.WithError(assert.AnError),
@@ -201,12 +203,12 @@ func TestWithErrorLogger(t *testing.T) {
 				},
 			},
 			args: args{
-				tracer: func(ctx context.Context) tracing.Tracer {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+				tracer: func(ctx context.Context, ctrl *gomock.Controller) tracing.Tracer {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End().Return()
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "transport.asynq.middleware/WithErrorLogger", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "transport.asynq.middleware/WithErrorLogger").Return(ctx, span)
 
 					return tracer
 				},
@@ -218,15 +220,17 @@ func TestWithErrorLogger(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 
 			handler := asynq.HandlerFunc(func(_ context.Context, _ *asynq.Task) error {
 				return tt.wantErr
 			})
 
 			ctx := tt.fields.ctx
-			ctx = context.WithValue(ctx, pkg.CtxKeyLogger, tt.fields.logger(ctx, tt.fields.task))
+			ctx = context.WithValue(ctx, pkg.CtxKeyLogger, tt.fields.logger(ctx, tt.fields.task, ctrl))
 
-			wrapped := WithErrorLogger(tt.args.tracer(ctx))(handler)
+			wrapped := WithErrorLogger(tt.args.tracer(ctx, ctrl))(handler)
 			err := wrapped.ProcessTask(ctx, tt.fields.task)
 
 			assert.ErrorIs(t, err, tt.wantErr)

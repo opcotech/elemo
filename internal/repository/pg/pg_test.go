@@ -136,9 +136,9 @@ func TestWithDatabaseLogger(t *testing.T) {
 		{
 			name: "create new option with logger",
 			args: args{
-				logger: new(mock.Logger),
+				logger: mock.NewMockLogger(nil),
 			},
-			want: new(mock.Logger),
+			want: mock.NewMockLogger(nil),
 		},
 		{
 			name: "create new option with nil logger",
@@ -173,9 +173,9 @@ func TestWithDatabaseTracer(t *testing.T) {
 		{
 			name: "create new option with tracer",
 			args: args{
-				tracer: new(mock.Tracer),
+				tracer: mock.NewMockTracer(nil),
 			},
-			want: new(mock.Tracer),
+			want: mock.NewMockTracer(nil),
 		},
 		{
 			name: "create new option with nil tracer",
@@ -213,21 +213,21 @@ func TestNewDatabase(t *testing.T) {
 			name: "create new database",
 			args: args{
 				pool:   mock.NewPGPool(nil),
-				logger: new(mock.Logger),
-				tracer: new(mock.Tracer),
+				logger: mock.NewMockLogger(nil),
+				tracer: mock.NewMockTracer(nil),
 			},
 			want: &Database{
 				pool:   mock.NewPGPool(nil),
-				logger: new(mock.Logger),
-				tracer: new(mock.Tracer),
+				logger: mock.NewMockLogger(nil),
+				tracer: mock.NewMockTracer(nil),
 			},
 		},
 		{
 			name: "create new database with nil pool",
 			args: args{
 				pool:   nil,
-				logger: new(mock.Logger),
-				tracer: new(mock.Tracer),
+				logger: mock.NewMockLogger(nil),
+				tracer: mock.NewMockTracer(nil),
 			},
 			wantErr: repository.ErrNoPool,
 		},
@@ -236,7 +236,7 @@ func TestNewDatabase(t *testing.T) {
 			args: args{
 				pool:   mock.NewPGPool(nil),
 				logger: nil,
-				tracer: new(mock.Tracer),
+				tracer: mock.NewMockTracer(nil),
 			},
 			wantErr: log.ErrNoLogger,
 		},
@@ -244,7 +244,7 @@ func TestNewDatabase(t *testing.T) {
 			name: "create new database with nil tracer",
 			args: args{
 				pool:   mock.NewPGPool(nil),
-				logger: new(mock.Logger),
+				logger: mock.NewMockLogger(nil),
 				tracer: nil,
 			},
 			wantErr: tracing.ErrNoTracer,

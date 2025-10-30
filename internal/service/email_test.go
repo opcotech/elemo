@@ -10,7 +10,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/mock/gomock"
 
 	"github.com/opcotech/elemo/internal/config"
@@ -82,14 +81,14 @@ func TestNewEmailService(t *testing.T) {
 				templatesDir: "/templates",
 				smtpConf:     new(config.SMTPConfig),
 				opts: []Option{
-					WithLogger(new(mock.Logger)),
-					WithTracer(new(mock.Tracer)),
+					WithLogger(mock.NewMockLogger(nil)),
+					WithTracer(mock.NewMockTracer(nil)),
 				},
 			},
 			want: &emailService{
 				baseService: &baseService{
-					logger: new(mock.Logger),
-					tracer: new(mock.Tracer),
+					logger: mock.NewMockLogger(nil),
+					tracer: mock.NewMockTracer(nil),
 				},
 				client: func() EmailSender {
 					ctrl := gomock.NewController(t)
@@ -107,8 +106,8 @@ func TestNewEmailService(t *testing.T) {
 				templatesDir: "/templates",
 				smtpConf:     new(config.SMTPConfig),
 				opts: []Option{
-					WithLogger(new(mock.Logger)),
-					WithTracer(new(mock.Tracer)),
+					WithLogger(mock.NewMockLogger(nil)),
+					WithTracer(mock.NewMockTracer(nil)),
 				},
 			},
 			wantErr: smtp.ErrNoSMTPClient,
@@ -140,13 +139,13 @@ func TestNewEmailService(t *testing.T) {
 				templatesDir: "/templates",
 				smtpConf:     new(config.SMTPConfig),
 				opts: []Option{
-					WithTracer(new(mock.Tracer)),
+					WithTracer(mock.NewMockTracer(nil)),
 				},
 			},
 			want: &emailService{
 				baseService: &baseService{
 					logger: log.DefaultLogger(),
-					tracer: new(mock.Tracer),
+					tracer: mock.NewMockTracer(nil),
 				},
 				client: func() EmailSender {
 					ctrl := gomock.NewController(t)
@@ -168,12 +167,12 @@ func TestNewEmailService(t *testing.T) {
 				templatesDir: "/templates",
 				smtpConf:     new(config.SMTPConfig),
 				opts: []Option{
-					WithLogger(new(mock.Logger)),
+					WithLogger(mock.NewMockLogger(nil)),
 				},
 			},
 			want: &emailService{
 				baseService: &baseService{
-					logger: new(mock.Logger),
+					logger: mock.NewMockLogger(nil),
 					tracer: tracing.NoopTracer(),
 				},
 				client: func() EmailSender {
@@ -200,7 +199,7 @@ func TestNewEmailService(t *testing.T) {
 
 func TestEmailService_SendAuthPasswordResetEmail(t *testing.T) {
 	type fields struct {
-		baseService  func(ctx context.Context) *baseService
+		baseService  func(ctrl *gomock.Controller, ctx context.Context) *baseService
 		client       func(ctrl *gomock.Controller, ctx context.Context, templatesDir, token string, smtpConf *config.SMTPConfig, user *model.User) EmailSender
 		templatesDir string
 		smtpConf     *config.SMTPConfig
@@ -219,15 +218,15 @@ func TestEmailService_SendAuthPasswordResetEmail(t *testing.T) {
 		{
 			name: "send auth password reset email",
 			fields: fields{
-				baseService: func(ctx context.Context) *baseService {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+				baseService: func(ctrl *gomock.Controller, ctx context.Context) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "service.emailService/SendAuthPasswordResetEmail", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.emailService/SendAuthPasswordResetEmail", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 						tracer: tracer,
 					}
 				},
@@ -272,15 +271,15 @@ func TestEmailService_SendAuthPasswordResetEmail(t *testing.T) {
 		{
 			name: "send auth password reset email failed",
 			fields: fields{
-				baseService: func(ctx context.Context) *baseService {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+				baseService: func(ctrl *gomock.Controller, ctx context.Context) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "service.emailService/SendAuthPasswordResetEmail", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.emailService/SendAuthPasswordResetEmail", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 						tracer: tracer,
 					}
 				},
@@ -333,7 +332,7 @@ func TestEmailService_SendAuthPasswordResetEmail(t *testing.T) {
 			defer ctrl.Finish()
 
 			s := &emailService{
-				baseService:  tt.fields.baseService(tt.args.ctx),
+				baseService:  tt.fields.baseService(ctrl, tt.args.ctx),
 				client:       tt.fields.client(ctrl, tt.args.ctx, tt.fields.templatesDir, tt.args.token, tt.fields.smtpConf, tt.args.user),
 				templatesDir: tt.fields.templatesDir,
 				smtpConf:     tt.fields.smtpConf,
@@ -345,7 +344,7 @@ func TestEmailService_SendAuthPasswordResetEmail(t *testing.T) {
 
 func TestEmailService_SendOrganizationInvitationEmail(t *testing.T) {
 	type fields struct {
-		baseService  func(ctx context.Context) *baseService
+		baseService  func(ctrl *gomock.Controller, ctx context.Context) *baseService
 		client       func(ctrl *gomock.Controller, ctx context.Context, templatesDir, token string, smtpConf *config.SMTPConfig, organization *model.Organization, user *model.User) EmailSender
 		templatesDir string
 		smtpConf     *config.SMTPConfig
@@ -366,15 +365,15 @@ func TestEmailService_SendOrganizationInvitationEmail(t *testing.T) {
 		{
 			name: "send invitation email",
 			fields: fields{
-				baseService: func(ctx context.Context) *baseService {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+				baseService: func(ctrl *gomock.Controller, ctx context.Context) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "service.emailService/SendOrganizationInvitationEmail", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.emailService/SendOrganizationInvitationEmail", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 						tracer: tracer,
 					}
 				},
@@ -423,15 +422,15 @@ func TestEmailService_SendOrganizationInvitationEmail(t *testing.T) {
 		{
 			name: "send invitation email failed",
 			fields: fields{
-				baseService: func(ctx context.Context) *baseService {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+				baseService: func(ctrl *gomock.Controller, ctx context.Context) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "service.emailService/SendOrganizationInvitationEmail", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.emailService/SendOrganizationInvitationEmail", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 						tracer: tracer,
 					}
 				},
@@ -488,7 +487,7 @@ func TestEmailService_SendOrganizationInvitationEmail(t *testing.T) {
 			defer ctrl.Finish()
 
 			s := &emailService{
-				baseService:  tt.fields.baseService(tt.args.ctx),
+				baseService:  tt.fields.baseService(ctrl, tt.args.ctx),
 				client:       tt.fields.client(ctrl, tt.args.ctx, tt.fields.templatesDir, tt.args.token, tt.fields.smtpConf, tt.args.organization, tt.args.user),
 				templatesDir: tt.fields.templatesDir,
 				smtpConf:     tt.fields.smtpConf,
@@ -500,7 +499,7 @@ func TestEmailService_SendOrganizationInvitationEmail(t *testing.T) {
 
 func TestEmailService_SendSystemLicenseExpiryEmail(t *testing.T) {
 	type fields struct {
-		baseService  func(ctx context.Context) *baseService
+		baseService  func(ctrl *gomock.Controller, ctx context.Context) *baseService
 		client       func(ctrl *gomock.Controller, ctx context.Context, templatesDir string, smtpConf *config.SMTPConfig, licenseID, licenseEmail, licenseOrganization string, licenseExpiresAt time.Time) EmailSender
 		templatesDir string
 		smtpConf     *config.SMTPConfig
@@ -521,15 +520,15 @@ func TestEmailService_SendSystemLicenseExpiryEmail(t *testing.T) {
 		{
 			name: "send license expiry email",
 			fields: fields{
-				baseService: func(ctx context.Context) *baseService {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+				baseService: func(ctrl *gomock.Controller, ctx context.Context) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "service.emailService/SendSystemLicenseExpiryEmail", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.emailService/SendSystemLicenseExpiryEmail", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 						tracer: tracer,
 					}
 				},
@@ -573,15 +572,15 @@ func TestEmailService_SendSystemLicenseExpiryEmail(t *testing.T) {
 		{
 			name: "send auth password reset email failed",
 			fields: fields{
-				baseService: func(ctx context.Context) *baseService {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+				baseService: func(ctrl *gomock.Controller, ctx context.Context) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "service.emailService/SendSystemLicenseExpiryEmail", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.emailService/SendSystemLicenseExpiryEmail", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 						tracer: tracer,
 					}
 				},
@@ -633,7 +632,7 @@ func TestEmailService_SendSystemLicenseExpiryEmail(t *testing.T) {
 			defer ctrl.Finish()
 
 			s := &emailService{
-				baseService: tt.fields.baseService(tt.args.ctx),
+				baseService: tt.fields.baseService(ctrl, tt.args.ctx),
 				client: tt.fields.client(
 					ctrl,
 					tt.args.ctx,
@@ -661,7 +660,7 @@ func TestEmailService_SendSystemLicenseExpiryEmail(t *testing.T) {
 
 func TestEmailService_SendUserWelcomeEmail(t *testing.T) {
 	type fields struct {
-		baseService  func(ctx context.Context) *baseService
+		baseService  func(ctrl *gomock.Controller, ctx context.Context) *baseService
 		client       func(ctrl *gomock.Controller, ctx context.Context, templatesDir string, smtpConf *config.SMTPConfig, user *model.User) EmailSender
 		templatesDir string
 		smtpConf     *config.SMTPConfig
@@ -679,15 +678,15 @@ func TestEmailService_SendUserWelcomeEmail(t *testing.T) {
 		{
 			name: "send welcome email",
 			fields: fields{
-				baseService: func(ctx context.Context) *baseService {
-					span := new(mock.Span)
-					span.On("End", []trace.SpanEndOption(nil)).Return()
+				baseService: func(ctrl *gomock.Controller, ctx context.Context) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
 
-					tracer := new(mock.Tracer)
-					tracer.On("Start", ctx, "service.emailService/SendUserWelcomeEmail", []trace.SpanStartOption(nil)).Return(ctx, span)
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.emailService/SendUserWelcomeEmail", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
-						logger: new(mock.Logger),
+						logger: mock.NewMockLogger(ctrl),
 						tracer: tracer,
 					}
 				},
@@ -738,7 +737,7 @@ func TestEmailService_SendUserWelcomeEmail(t *testing.T) {
 			defer ctrl.Finish()
 
 			s := &emailService{
-				baseService:  tt.fields.baseService(tt.args.ctx),
+				baseService:  tt.fields.baseService(ctrl, tt.args.ctx),
 				client:       tt.fields.client(ctrl, tt.args.ctx, tt.fields.templatesDir, tt.fields.smtpConf, tt.args.user),
 				templatesDir: tt.fields.templatesDir,
 				smtpConf:     tt.fields.smtpConf,
