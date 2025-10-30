@@ -549,8 +549,9 @@ func TestOrganizationService_GetAll(t *testing.T) {
 					tracer := mock.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.organizationService/GetAll", gomock.Len(0)).Return(ctx, span)
 
+					userID := ctx.Value(pkg.CtxKeyUserID).(model.ID)
 					organizationRepo := mock.NewOrganizationRepository(ctrl)
-					organizationRepo.EXPECT().GetAll(ctx, offset, limit).Return(organizations, nil)
+					organizationRepo.EXPECT().GetAll(ctx, userID, offset, limit).Return(organizations, nil)
 
 					return &baseService{
 						logger:           mock.NewMockLogger(ctrl),
@@ -560,7 +561,7 @@ func TestOrganizationService_GetAll(t *testing.T) {
 				},
 			},
 			args: args{
-				ctx:    context.Background(),
+				ctx:    context.WithValue(context.Background(), pkg.CtxKeyUserID, model.MustNewID(model.ResourceTypeUser)),
 				offset: 0,
 				limit:  10,
 			},
@@ -627,13 +628,38 @@ func TestOrganizationService_GetAll(t *testing.T) {
 					tracer := mock.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.organizationService/GetAll", gomock.Len(0)).Return(ctx, span)
 
+					userID := ctx.Value(pkg.CtxKeyUserID).(model.ID)
 					organizationRepo := mock.NewOrganizationRepository(ctrl)
-					organizationRepo.EXPECT().GetAll(ctx, offset, limit).Return(nil, assert.AnError)
+					organizationRepo.EXPECT().GetAll(ctx, userID, offset, limit).Return(nil, assert.AnError)
 
 					return &baseService{
 						logger:           mock.NewMockLogger(ctrl),
 						tracer:           tracer,
 						organizationRepo: organizationRepo,
+					}
+				},
+			},
+			args: args{
+				ctx:    context.WithValue(context.Background(), pkg.CtxKeyUserID, model.MustNewID(model.ResourceTypeUser)),
+				offset: 0,
+				limit:  10,
+			},
+			wantErr: ErrOrganizationGetAll,
+		},
+		{
+			name: "get all organizations with missing user ID",
+			fields: fields{
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ int, _ []*model.Organization) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.organizationService/GetAll", gomock.Len(0)).Return(ctx, span)
+
+					return &baseService{
+						logger:           mock.NewMockLogger(ctrl),
+						tracer:           tracer,
+						organizationRepo: mock.NewOrganizationRepository(ctrl),
 					}
 				},
 			},

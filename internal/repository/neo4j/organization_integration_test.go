@@ -75,19 +75,19 @@ func (s *OrganizationRepositoryIntegrationTestSuite) TestGetAll() {
 	s.Require().NoError(s.OrganizationRepo.Create(context.Background(), s.testUser.ID, testModel.NewOrganization()))
 	s.Require().NoError(s.OrganizationRepo.Create(context.Background(), s.testUser.ID, testModel.NewOrganization()))
 
-	organizations, err := s.OrganizationRepo.GetAll(context.Background(), 0, 10)
+	organizations, err := s.OrganizationRepo.GetAll(context.Background(), s.testUser.ID, 0, 10)
 	s.Require().NoError(err)
 	s.Require().Len(organizations, 3)
 
-	organizations, err = s.OrganizationRepo.GetAll(context.Background(), 1, 2)
+	organizations, err = s.OrganizationRepo.GetAll(context.Background(), s.testUser.ID, 1, 2)
 	s.Require().NoError(err)
 	s.Require().Len(organizations, 2)
 
-	organizations, err = s.OrganizationRepo.GetAll(context.Background(), 2, 2)
+	organizations, err = s.OrganizationRepo.GetAll(context.Background(), s.testUser.ID, 2, 2)
 	s.Require().NoError(err)
 	s.Require().Len(organizations, 1)
 
-	organizations, err = s.OrganizationRepo.GetAll(context.Background(), 3, 2)
+	organizations, err = s.OrganizationRepo.GetAll(context.Background(), s.testUser.ID, 3, 2)
 	s.Require().NoError(err)
 	s.Require().Len(organizations, 0)
 }

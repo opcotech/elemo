@@ -16,7 +16,7 @@ func clearOrganizationsKey(ctx context.Context, r *baseRepository, id model.ID) 
 }
 
 func clearOrganizationAllGetAll(ctx context.Context, r *baseRepository) error {
-	return clearOrganizationsPattern(ctx, r, "GetAll", "*")
+	return clearOrganizationsPattern(ctx, r, "GetAll", "*", "*")
 }
 
 // CachedOrganizationRepository implements caching on the
@@ -58,11 +58,11 @@ func (r *CachedOrganizationRepository) Get(ctx context.Context, id model.ID) (*m
 	return organization, nil
 }
 
-func (r *CachedOrganizationRepository) GetAll(ctx context.Context, offset, limit int) ([]*model.Organization, error) {
+func (r *CachedOrganizationRepository) GetAll(ctx context.Context, userID model.ID, offset, limit int) ([]*model.Organization, error) {
 	var organizations []*model.Organization
 	var err error
 
-	key := composeCacheKey(model.ResourceTypeOrganization.String(), "GetAll", offset, limit)
+	key := composeCacheKey(model.ResourceTypeOrganization.String(), "GetAll", userID.String(), offset, limit)
 	if err = r.cacheRepo.Get(ctx, key, &organizations); err != nil {
 		return nil, err
 	}
@@ -71,7 +71,7 @@ func (r *CachedOrganizationRepository) GetAll(ctx context.Context, offset, limit
 		return organizations, nil
 	}
 
-	if organizations, err = r.organizationRepo.GetAll(ctx, offset, limit); err != nil {
+	if organizations, err = r.organizationRepo.GetAll(ctx, userID, offset, limit); err != nil {
 		return nil, err
 	}
 
