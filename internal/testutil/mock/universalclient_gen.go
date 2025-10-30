@@ -1314,6 +1314,20 @@ func (mr *UniversalClientMockRecorder) ClientList(ctx any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClientList", reflect.TypeOf((*UniversalClient)(nil).ClientList), ctx)
 }
 
+// ClientMaintNotifications mocks base method.
+func (m *UniversalClient) ClientMaintNotifications(ctx context.Context, enabled bool, endpointType string) *redis.StatusCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ClientMaintNotifications", ctx, enabled, endpointType)
+	ret0, _ := ret[0].(*redis.StatusCmd)
+	return ret0
+}
+
+// ClientMaintNotifications indicates an expected call of ClientMaintNotifications.
+func (mr *UniversalClientMockRecorder) ClientMaintNotifications(ctx, enabled, endpointType any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClientMaintNotifications", reflect.TypeOf((*UniversalClient)(nil).ClientMaintNotifications), ctx, enabled, endpointType)
+}
+
 // ClientPause mocks base method.
 func (m *UniversalClient) ClientPause(ctx context.Context, dur time.Duration) *redis.BoolCmd {
 	m.ctrl.T.Helper()

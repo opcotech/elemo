@@ -94,7 +94,7 @@ generate.email: ## Generate HTML template emails
 		--static-root "http://0.0.0.0:4566/elemo"
 
 .PHONY: dep
-dep: deb.backend dep.frontend ## Download and install backend and front-end dependencies
+dep: dep.backend dep.frontend ## Download and install backend and front-end dependencies
 
 .PHONY: dep.backend
 dep.backend: ## Download backend dependencies
@@ -165,13 +165,13 @@ test.backend.bench: ## Run backend benchmarks
 test.backend.unit: ## Run backend unit tests
 	$(call log, execute backend unit tests)
 	@rm -f "$(BACKEND_COVER_OUT_UNIT)"
-	@$(GO_TEST_COVER) -json -race -short -coverprofile="$(BACKEND_COVER_OUT_UNIT)" ./... | $(SCRIPTS_DIR)/pretty-test.sh
+	@bash -c '$(GO_TEST_COVER) -json -race -short -coverprofile="$(BACKEND_COVER_OUT_UNIT)" ./... 2>&1 | $(SCRIPTS_DIR)/pretty-test.sh; exit $${PIPESTATUS[0]}'
 
 .PHONY: test.backend.integration
 test.backend.integration: ## Run backend integration tests
 	$(call log, execute backend integration tests)
 	@rm -f "$(BACKEND_COVER_OUT_INTEGRATION)"
-	@$(GO_TEST_COVER) -json -timeout 900s -run=Integration -coverprofile="$(BACKEND_COVER_OUT_INTEGRATION)" ./... | $(SCRIPTS_DIR)/pretty-test.sh
+	@bash -c '$(GO_TEST_COVER) -json -timeout 900s -run=Integration -coverprofile="$(BACKEND_COVER_OUT_INTEGRATION)" ./... 2>&1 | $(SCRIPTS_DIR)/pretty-test.sh; exit $${PIPESTATUS[0]}'
 
 .PHONY: test.backend.coverage
 test.backend.coverage: ## Combine unit and integration test coverage

@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "^1.24"
+          go-version: "^1.25"
       - name: Go CI Lint
         uses: golangci/golangci-lint-action@v7
         with:
@@ -45,7 +45,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "^1.24"
+          go-version: "^1.25"
       - name: Execute unit tests
         run: make test.backend.unit
       - name: Stash test results
@@ -66,7 +66,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "^1.24"
+          go-version: "^1.25"
       - name: Execute benchmark tests
         run: make test.backend.bench
 
@@ -80,7 +80,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "^1.24"
+          go-version: "^1.25"
       - name: Execute integration tests
         run: make test.backend.integration
       - name: Stash test results
@@ -109,7 +109,7 @@ jobs:
           node-version: "20.x"
       - uses: actions/setup-go@v5
         with:
-          go-version: "^1.24"
+          go-version: "^1.25"
       - name: Install tooling
         run: |
           pip install jq yq
@@ -161,7 +161,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "^1.24"
+          go-version: "^1.25"
       - name: Unstash unit test results
         uses: actions/download-artifact@v4
         with:
@@ -178,4 +178,4 @@ jobs:
           files: .coverage.out
           token: ${{ secrets.CODECOV_TOKEN }}
           slug: opcotech/elemo
-          fail_ci_if_error: true 
+          fail_ci_if_error: true
