@@ -174,6 +174,14 @@ func (s *OrganizationServiceIntegrationTestSuite) TestGetMembers() {
 	}
 
 	s.Assert().ElementsMatch([]model.ID{s.owner.ID}, memberIDs)
+	s.Assert().Len(members, 1)
+
+	// Owner should have roles (includes virtual roles based on permissions)
+	s.Assert().NotNil(members[0].Roles)
+	s.Assert().NotEmpty(members[0].Roles)
+
+	// Owner should have "owner" role (virtual role based on permissions)
+	s.Assert().Contains(members[0].Roles, "Owner")
 }
 
 func (s *OrganizationServiceIntegrationTestSuite) TestRemoveMember() {

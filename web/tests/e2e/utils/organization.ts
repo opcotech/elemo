@@ -187,3 +187,79 @@ export async function addMemberToOrganization(
 
   await session.close();
 }
+
+/**
+ * Creates a role for an organization and adds a creator as a member.
+ */
+export async function createDBRole(
+  orgId: string,
+  creatorId: string,
+  roleName: string,
+  description?: string
+): Promise<string> {
+  const session = getSession();
+  const roleId = await generateXid();
+  const membershipId = await generateXid();
+  const hasTeamId = await generateXid();
+  const permissionId = await generateXid();
+  const createdAt = new Date().toISOString();
+
+  await session.executeWrite((tx: any) => {
+    const query = `
+      MATCH (u:User {id: $creatorId})
+      MATCH (o:Organization {id: $orgId})
+      CREATE (r:Role {id: $roleId, name: $roleName, description: $description, created_at: datetime($created_at)})
+      CREATE (o)-[:HAS_TEAM {id: $hasTeamId, created_at: datetime($created_at)}]->(r)
+      CREATE (u)-[:MEMBER_OF {id: $membershipId, created_at: datetime($created_at)}]->(r)
+      CREATE (u)-[:HAS_PERMISSION {id: $permissionId, created_at: datetime($created_at), kind: $permissionKind}]->(r)
+    `;
+
+    return tx.run(query, {
+      orgId,
+      creatorId,
+      roleId,
+      roleName,
+      description: description || null,
+      membershipId,
+      hasTeamId,
+      permissionId,
+      permissionKind: "*",
+      created_at: createdAt,
+    });
+  });
+
+  await session.close();
+  return roleId;
+}
+
+/**
+ * Adds a member to a role.
+ */
+export async function addMemberToRole(
+  roleId: string,
+  memberId: string,
+  orgId: string
+): Promise<void> {
+  const session = getSession();
+  const membershipId = await generateXid();
+  const createdAt = new Date().toISOString();
+
+  await session.executeWrite((tx: any) => {
+    const query = `
+      MATCH (r:Role {id: $roleId})
+      MATCH (u:User {id: $memberId})
+      MATCH (o:Organization {id: $orgId})
+      MERGE (u)-[:MEMBER_OF {id: $membershipId, created_at: datetime($created_at)}]->(r)
+    `;
+
+    return tx.run(query, {
+      roleId,
+      memberId,
+      orgId,
+      membershipId,
+      created_at: createdAt,
+    });
+  });
+
+  await session.close();
+}

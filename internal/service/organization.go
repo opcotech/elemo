@@ -29,9 +29,9 @@ type OrganizationService interface {
 	// AddMember adds a member to an organization. If the organization or
 	// member does not exist, an error is returned.
 	AddMember(ctx context.Context, orgID, memberID model.ID) error
-	// GetMembers returns all members of an organization. If the organization
+	// GetMembers returns all members of an organization with their roles. If the organization
 	// does not exist, an error is returned.
-	GetMembers(ctx context.Context, orgID model.ID) ([]*model.User, error)
+	GetMembers(ctx context.Context, orgID model.ID) ([]*model.OrganizationMember, error)
 	// RemoveMember removes a member from an organization. If the organization
 	// or member does not exist, an error is returned.
 	RemoveMember(ctx context.Context, orgID, memberID model.ID) error
@@ -211,7 +211,7 @@ func (s *organizationService) AddMember(ctx context.Context, orgID, memberID mod
 	return nil
 }
 
-func (s *organizationService) GetMembers(ctx context.Context, orgID model.ID) ([]*model.User, error) {
+func (s *organizationService) GetMembers(ctx context.Context, orgID model.ID) ([]*model.OrganizationMember, error) {
 	ctx, span := s.tracer.Start(ctx, "service.organizationService/GetMembers")
 	defer span.End()
 
@@ -219,21 +219,42 @@ func (s *organizationService) GetMembers(ctx context.Context, orgID model.ID) ([
 		return nil, errors.Join(ErrOrganizationMembersGet, err)
 	}
 
-	organization, err := s.organizationRepo.Get(ctx, orgID)
+	members, err := s.organizationRepo.GetMembers(ctx, orgID)
 	if err != nil {
 		return nil, errors.Join(ErrOrganizationMembersGet, err)
 	}
 
-	members := make([]*model.User, 0, len(organization.Members))
-	for _, member := range organization.Members {
-		user, err := s.userRepo.Get(ctx, member)
+	result := make([]*model.OrganizationMember, 0, len(members))
+	for _, member := range members {
+		permissions, err := s.permissionService.GetBySubjectAndTarget(ctx, member.ID, orgID)
 		if err != nil {
 			return nil, errors.Join(ErrOrganizationMembersGet, err)
 		}
-		members = append(members, user)
+
+		// Compute virtual roles based on permissions
+		virtualRoles := computeVirtualRoles(permissions)
+
+		// Combine virtual roles with actual roles (deduplicate)
+		allRoles := combineRoles(virtualRoles, member.Roles)
+
+		// Create new OrganizationMember with combined roles
+		updatedMember, err := model.NewOrganizationMember(
+			member.ID,
+			member.FirstName,
+			member.LastName,
+			member.Email,
+			member.Picture,
+			member.Status,
+			allRoles,
+		)
+		if err != nil {
+			return nil, errors.Join(ErrOrganizationMembersGet, err)
+		}
+
+		result = append(result, updatedMember)
 	}
 
-	return members, nil
+	return result, nil
 }
 
 func (s *organizationService) RemoveMember(ctx context.Context, orgID, memberID model.ID) error {
@@ -292,4 +313,64 @@ func NewOrganizationService(opts ...Option) (OrganizationService, error) {
 	}
 
 	return svc, nil
+}
+
+// computeVirtualRoles computes virtual roles based on permissions:
+// - owner: if user has `all` permissions OR has `read` AND `write` AND `delete`
+// - admin: if user has `write` permission
+// - member: if user has ONLY `read` permission
+func computeVirtualRoles(permissions []*model.Permission) []string {
+	virtualRoles := make([]string, 0)
+	hasRead := false
+	hasWrite := false
+	hasDelete := false
+	hasAll := false
+
+	for _, perm := range permissions {
+		switch perm.Kind {
+		case model.PermissionKindAll:
+			hasAll = true
+		case model.PermissionKindRead:
+			hasRead = true
+		case model.PermissionKindWrite:
+			hasWrite = true
+		case model.PermissionKindDelete:
+			hasDelete = true
+		}
+	}
+
+	switch {
+	case hasAll || (hasRead && hasWrite && hasDelete):
+		virtualRoles = append(virtualRoles, "Owner")
+	case hasWrite:
+		virtualRoles = append(virtualRoles, "Admin")
+	case hasRead && !hasWrite && !hasDelete:
+		virtualRoles = append(virtualRoles, "Member")
+	}
+
+	return virtualRoles
+}
+
+// combineRoles combines virtual roles with actual roles, deduplicating
+func combineRoles(virtualRoles, actualRoles []string) []string {
+	roleSet := make(map[string]bool)
+	result := make([]string, 0)
+
+	// Add virtual roles first
+	for _, role := range virtualRoles {
+		if !roleSet[role] {
+			roleSet[role] = true
+			result = append(result, role)
+		}
+	}
+
+	// Add actual roles
+	for _, role := range actualRoles {
+		if !roleSet[role] {
+			roleSet[role] = true
+			result = append(result, role)
+		}
+	}
+
+	return result
 }

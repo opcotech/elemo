@@ -14,6 +14,7 @@ type OrganizationRepository interface {
 	Get(ctx context.Context, id model.ID) (*model.Organization, error)
 	GetAll(ctx context.Context, userID model.ID, offset, limit int) ([]*model.Organization, error)
 	Update(ctx context.Context, id model.ID, patch map[string]any) (*model.Organization, error)
+	GetMembers(ctx context.Context, orgID model.ID) ([]*model.OrganizationMember, error)
 	AddMember(ctx context.Context, orgID, memberID model.ID) error
 	RemoveMember(ctx context.Context, orgID, memberID model.ID) error
 	Delete(ctx context.Context, id model.ID) error

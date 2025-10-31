@@ -77,6 +77,39 @@ export type User = {
 export type UserStatus = "active" | "pending" | "inactive" | "deleted";
 
 /**
+ * OrganizationMember
+ *
+ * A member of an organization with limited information.
+ */
+export type OrganizationMember = {
+  /**
+   * Unique identifier of the user.
+   */
+  id: string;
+  /**
+   * First name of the user.
+   */
+  first_name: string;
+  /**
+   * Last name of the user.
+   */
+  last_name: string;
+  /**
+   * Email address of the user.
+   */
+  email: string;
+  /**
+   * Profile picture of the user.
+   */
+  picture: string | null;
+  status: UserStatus;
+  /**
+   * Organization roles the user belongs to (includes virtual roles based on permissions).
+   */
+  roles: Array<string>;
+};
+
+/**
  * Organization
  *
  * An organization in the system.
@@ -1911,7 +1944,7 @@ export type V1OrganizationMembersGetResponses = {
   /**
    * OK
    */
-  200: Array<User>;
+  200: Array<OrganizationMember>;
 };
 
 export type V1OrganizationMembersGetResponse =

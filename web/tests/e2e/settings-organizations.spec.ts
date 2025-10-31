@@ -422,7 +422,7 @@ test.describe("@settings.organizations Organization Listing E2E Tests", () => {
         page.getByRole("heading", { name: "Organizations" })
       ).toBeVisible();
       await expect(
-        page.getByText("View and manage organizations.")
+        page.getByText("View and manage organizations.").first()
       ).toBeVisible();
 
       await expect(
@@ -435,10 +435,8 @@ test.describe("@settings.organizations Organization Listing E2E Tests", () => {
       await expect(tableHeaders.filter({ hasText: "Name" })).toBeVisible();
       await expect(tableHeaders.filter({ hasText: "Email" })).toBeVisible();
       await expect(tableHeaders.filter({ hasText: "Website" })).toBeVisible();
+      await expect(tableHeaders.filter({ hasText: "Members" })).toBeVisible();
       await expect(tableHeaders.filter({ hasText: "Status" })).toBeVisible();
-      await expect(
-        tableHeaders.filter({ hasText: "Created At" })
-      ).toBeVisible();
       await expect(tableHeaders.filter({ hasText: "Actions" })).toBeVisible();
     });
 

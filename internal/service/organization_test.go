@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"slices"
 	"testing"
 
 	"go.uber.org/mock/gomock"
@@ -1597,8 +1598,7 @@ func TestOrganizationService_AddMember(t *testing.T) {
 
 func TestOrganizationService_GetMembers(t *testing.T) {
 	type fields struct {
-		baseService  func(ctrl *gomock.Controller, ctx context.Context, organizationID model.ID, organization *model.Organization, members []*model.User) *baseService
-		organization *model.Organization
+		baseService func(ctrl *gomock.Controller, ctx context.Context, organizationID model.ID, members []*model.OrganizationMember, expected []*model.OrganizationMember) *baseService
 	}
 	type args struct {
 		ctx            context.Context
@@ -1608,58 +1608,140 @@ func TestOrganizationService_GetMembers(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    []*model.User
+		want    []*model.OrganizationMember
 		wantErr error
 	}{
 		{
 			name: "get members of organization",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, organizationID model.ID, organization *model.Organization, members []*model.User) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, organizationID model.ID, members []*model.OrganizationMember, expected []*model.OrganizationMember) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mock.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.organizationService/GetMembers", gomock.Len(0)).Return(ctx, span)
 
-					userRepo := mock.NewUserRepository(ctrl)
-					for i, userID := range organization.Members {
-						userRepo.EXPECT().Get(ctx, userID).Return(members[i], nil)
+					organizationRepo := mock.NewOrganizationRepository(ctrl)
+					organizationRepo.EXPECT().GetMembers(ctx, organizationID).Return(members, nil)
+
+					permissionService := mock.NewPermissionService(ctrl)
+					// Mock permission fetching for each member
+					// Create a map of member ID to expected roles for easier lookup
+					expectedRolesMap := make(map[model.ID][]string)
+					for _, expectedMember := range expected {
+						expectedRolesMap[expectedMember.ID] = expectedMember.Roles
 					}
 
-					organizationRepo := mock.NewOrganizationRepository(ctrl)
-					organizationRepo.EXPECT().Get(ctx, organizationID).Return(organization, nil)
+					// Set up permissions for each member in the repository
+					for _, member := range members {
+						permissions := []*model.Permission{}
+						// Set up permissions based on expected roles
+						if expectedRoles, ok := expectedRolesMap[member.ID]; ok {
+							// Check if virtual roles are present in expected roles
+							hasOwnerRole := false
+							hasAdminRole := false
+							hasMemberRole := false
+							for _, role := range expectedRoles {
+								switch role {
+								case "Owner":
+									hasOwnerRole = true
+								case "Admin":
+									hasAdminRole = true
+								case "Member":
+									hasMemberRole = true
+								}
+							}
+							// Set up permissions to match expected virtual roles
+							// Priority: owner > admin > member
+							switch {
+							case hasOwnerRole:
+								// Owner: needs PermissionKindAll OR (Read + Write + Delete)
+								permissions = append(permissions, &model.Permission{
+									Kind: model.PermissionKindAll,
+								})
+							case hasAdminRole:
+								// Admin: needs Write permission
+								permissions = append(permissions, &model.Permission{
+									Kind: model.PermissionKindWrite,
+								})
+							case hasMemberRole:
+								// Member: needs ONLY Read permission (no Write, no Delete)
+								permissions = append(permissions, &model.Permission{
+									Kind: model.PermissionKindRead,
+								})
+							}
+						}
+						permissionService.EXPECT().GetBySubjectAndTarget(ctx, member.ID, organizationID).Return(permissions, nil)
+					}
 
 					return &baseService{
-						logger:           mock.NewMockLogger(ctrl),
-						tracer:           tracer,
-						organizationRepo: organizationRepo,
-						userRepo:         userRepo,
+						logger:            mock.NewMockLogger(ctrl),
+						tracer:            tracer,
+						organizationRepo:  organizationRepo,
+						permissionService: permissionService,
 					}
-				},
-				organization: &model.Organization{
-					Members: []model.ID{
-						model.MustNewID(model.ResourceTypeUser),
-						model.MustNewID(model.ResourceTypeUser),
-						model.MustNewID(model.ResourceTypeUser),
-						model.MustNewID(model.ResourceTypeUser),
-					},
 				},
 			},
 			args: args{
 				ctx:            context.WithValue(context.Background(), pkg.CtxKeyUserID, model.MustNewID(model.ResourceTypeUser)),
 				organizationID: model.MustNewID(model.ResourceTypeOrganization),
 			},
-			want: []*model.User{
-				testModel.NewUser(),
-				testModel.NewUser(),
-				testModel.NewUser(),
-				testModel.NewUser(),
-			},
+			want: func() []*model.OrganizationMember {
+				user1 := testModel.NewUser()
+				user1.ID = model.MustNewID(model.ResourceTypeUser)
+				user2 := testModel.NewUser()
+				user2.ID = model.MustNewID(model.ResourceTypeUser)
+				user3 := testModel.NewUser()
+				user3.ID = model.MustNewID(model.ResourceTypeUser)
+				user4 := testModel.NewUser()
+				user4.ID = model.MustNewID(model.ResourceTypeUser)
+
+				picture1 := func() *string {
+					if user1.Picture == "" {
+						return nil
+					}
+					p := user1.Picture
+					return &p
+				}()
+				picture2 := func() *string {
+					if user2.Picture == "" {
+						return nil
+					}
+					p := user2.Picture
+					return &p
+				}()
+				picture3 := func() *string {
+					if user3.Picture == "" {
+						return nil
+					}
+					p := user3.Picture
+					return &p
+				}()
+				picture4 := func() *string {
+					if user4.Picture == "" {
+						return nil
+					}
+					p := user4.Picture
+					return &p
+				}()
+
+				// Expected results with combined virtual and actual roles
+				// User1: has "Owner" permission -> should get "Owner" virtual role
+				expected1, _ := model.NewOrganizationMember(user1.ID, user1.FirstName, user1.LastName, user1.Email, picture1, user1.Status, []string{"Owner"})
+				// User2: has "Member" role -> should get "Admin" virtual role (since write permission)
+				expected2, _ := model.NewOrganizationMember(user2.ID, user2.FirstName, user2.LastName, user2.Email, picture2, user2.Status, []string{"Admin", "Member"})
+				// User3: has "Admin", "Member" roles -> should get "Admin" virtual role (deduplicated)
+				expected3, _ := model.NewOrganizationMember(user3.ID, user3.FirstName, user3.LastName, user3.Email, picture3, user3.Status, []string{"Admin", "Member"})
+				// User4: has no roles -> should get "Member" virtual role (since read permission)
+				expected4, _ := model.NewOrganizationMember(user4.ID, user4.FirstName, user4.LastName, user4.Email, picture4, user4.Status, []string{"Member"})
+
+				return []*model.OrganizationMember{expected1, expected2, expected3, expected4}
+			}(),
 		},
 		{
 			name: "get members of organization with invalid organization id",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ *model.Organization, _ []*model.User) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ []*model.OrganizationMember, _ []*model.OrganizationMember) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
@@ -1670,16 +1752,7 @@ func TestOrganizationService_GetMembers(t *testing.T) {
 						logger:           mock.NewMockLogger(ctrl),
 						tracer:           tracer,
 						organizationRepo: mock.NewOrganizationRepository(ctrl),
-						userRepo:         mock.NewUserRepository(ctrl),
 					}
-				},
-				organization: &model.Organization{
-					Members: []model.ID{
-						model.MustNewID(model.ResourceTypeUser),
-						model.MustNewID(model.ResourceTypeUser),
-						model.MustNewID(model.ResourceTypeUser),
-						model.MustNewID(model.ResourceTypeUser),
-					},
 				},
 			},
 			args: args{
@@ -1689,9 +1762,9 @@ func TestOrganizationService_GetMembers(t *testing.T) {
 			wantErr: ErrOrganizationMembersGet,
 		},
 		{
-			name: "get members of organization with organization get error",
+			name: "get members of organization with repository error",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, organizationID model.ID, _ *model.Organization, _ []*model.User) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, organizationID model.ID, _ []*model.OrganizationMember, _ []*model.OrganizationMember) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
@@ -1699,60 +1772,13 @@ func TestOrganizationService_GetMembers(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.organizationService/GetMembers", gomock.Len(0)).Return(ctx, span)
 
 					organizationRepo := mock.NewOrganizationRepository(ctrl)
-					organizationRepo.EXPECT().Get(ctx, organizationID).Return(nil, assert.AnError)
+					organizationRepo.EXPECT().GetMembers(ctx, organizationID).Return(nil, assert.AnError)
 
 					return &baseService{
 						logger:           mock.NewMockLogger(ctrl),
 						tracer:           tracer,
 						organizationRepo: organizationRepo,
-						userRepo:         mock.NewUserRepository(nil),
 					}
-				},
-				organization: &model.Organization{
-					Members: []model.ID{
-						model.MustNewID(model.ResourceTypeUser),
-						model.MustNewID(model.ResourceTypeUser),
-						model.MustNewID(model.ResourceTypeUser),
-						model.MustNewID(model.ResourceTypeUser),
-					},
-				},
-			},
-			args: args{
-				ctx:            context.WithValue(context.Background(), pkg.CtxKeyUserID, model.MustNewID(model.ResourceTypeUser)),
-				organizationID: model.MustNewID(model.ResourceTypeOrganization),
-			},
-			wantErr: ErrOrganizationMembersGet,
-		},
-		{
-			name: "get members of organization with user get error",
-			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, organizationID model.ID, organization *model.Organization, _ []*model.User) *baseService {
-					span := mock.NewMockSpan(ctrl)
-					span.EXPECT().End(gomock.Len(0))
-
-					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.organizationService/GetMembers", gomock.Len(0)).Return(ctx, span)
-
-					userRepo := mock.NewUserRepository(ctrl)
-					userRepo.EXPECT().Get(ctx, organization.Members[0]).Return(nil, assert.AnError)
-
-					organizationRepo := mock.NewOrganizationRepository(ctrl)
-					organizationRepo.EXPECT().Get(ctx, organizationID).Return(organization, nil)
-
-					return &baseService{
-						logger:           mock.NewMockLogger(ctrl),
-						tracer:           tracer,
-						organizationRepo: organizationRepo,
-						userRepo:         userRepo,
-					}
-				},
-				organization: &model.Organization{
-					Members: []model.ID{
-						model.MustNewID(model.ResourceTypeUser),
-						model.MustNewID(model.ResourceTypeUser),
-						model.MustNewID(model.ResourceTypeUser),
-						model.MustNewID(model.ResourceTypeUser),
-					},
 				},
 			},
 			args: args{
@@ -1768,12 +1794,87 @@ func TestOrganizationService_GetMembers(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
+
+			// Helper function to extract actual roles from expected roles.
+			// Virtual roles ("Owner", "Admin", "Member") are computed from permissions.
+			// "Member" is only actual if "Admin" is also present (meaning user has
+			// both Admin virtual role from write permission AND Member actual role).
+			extractActualRoles := func(roles []string) []string {
+				hasAdminVirtual := slices.Contains(roles, "Admin")
+
+				actualRoles := make([]string, 0)
+				for _, role := range roles {
+					// Owner and Admin are always virtual
+					if role == "Owner" || role == "Admin" {
+						continue
+					}
+					// Member is actual only if Admin virtual role is also present
+					if role == "Member" {
+						if hasAdminVirtual {
+							actualRoles = append(actualRoles, role)
+						}
+						continue
+					}
+					// All other roles are actual
+					actualRoles = append(actualRoles, role)
+				}
+				return actualRoles
+			}
+
+			// Prepare members from repository (without virtual roles)
+			var membersFromRepo []*model.OrganizationMember
+			if len(tt.want) > 0 {
+				membersFromRepo = make([]*model.OrganizationMember, len(tt.want))
+				for i, expected := range tt.want {
+					actualRoles := extractActualRoles(expected.Roles)
+					member, err := model.NewOrganizationMember(
+						expected.ID,
+						expected.FirstName,
+						expected.LastName,
+						expected.Email,
+						expected.Picture,
+						expected.Status,
+						actualRoles,
+					)
+					require.NoError(t, err, "failed to create OrganizationMember for test")
+					require.NotZero(t, member.ID, "member ID should not be zero")
+					membersFromRepo[i] = member
+				}
+			}
+
 			s := &organizationService{
-				baseService: tt.fields.baseService(ctrl, tt.args.ctx, tt.args.organizationID, tt.fields.organization, tt.want),
+				baseService: tt.fields.baseService(ctrl, tt.args.ctx, tt.args.organizationID, membersFromRepo, tt.want),
 			}
 			members, err := s.GetMembers(tt.args.ctx, tt.args.organizationID)
 			require.ErrorIs(t, err, tt.wantErr)
-			require.Equal(t, tt.want, members)
+
+			if err == nil {
+				require.Equal(t, len(tt.want), len(members))
+
+				// Build lookup map for expected members
+				expectedMap := make(map[model.ID]*model.OrganizationMember, len(tt.want))
+				for _, expected := range tt.want {
+					expectedMap[expected.ID] = expected
+				}
+
+				// Verify each member matches expected values
+				for _, member := range members {
+					expected, ok := expectedMap[member.ID]
+					require.True(t, ok, "member with ID %s not found in expected results", member.ID)
+
+					require.Equal(t, expected.ID, member.ID)
+					require.Equal(t, expected.FirstName, member.FirstName, "FirstName mismatch for member %s", member.ID)
+					require.Equal(t, expected.LastName, member.LastName, "LastName mismatch for member %s", member.ID)
+					require.Equal(t, expected.Email, member.Email, "Email mismatch for member %s", member.ID)
+					if expected.Picture == nil {
+						require.Nil(t, member.Picture)
+					} else {
+						require.Equal(t, *expected.Picture, *member.Picture)
+					}
+					require.Equal(t, expected.Status, member.Status)
+					require.ElementsMatch(t, expected.Roles, member.Roles, "roles mismatch for member %s: expected %v, got %v", member.ID, expected.Roles, member.Roles)
+				}
+			}
 		})
 	}
 }

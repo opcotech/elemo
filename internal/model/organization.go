@@ -106,3 +106,47 @@ func NewOrganization(name, email string) (*Organization, error) {
 
 	return org, nil
 }
+
+// OrganizationMember represents a simplified organization member response.
+type OrganizationMember struct {
+	ID        ID         `json:"id" validate:"required"`
+	FirstName string     `json:"first_name" validate:"required,min=1,max=50"`
+	LastName  string     `json:"last_name" validate:"required,min=1,max=50"`
+	Email     string     `json:"email" validate:"required,email"`
+	Picture   *string    `json:"picture" validate:"omitempty,url"`
+	Status    UserStatus `json:"status" validate:"required,min=1,max=4"`
+	Roles     []string   `json:"roles" validate:"required"`
+}
+
+// Validate validates the organization member details.
+func (om *OrganizationMember) Validate() error {
+	if err := validate.Struct(om); err != nil {
+		return errors.Join(ErrInvalidOrganizationMemberDetails, err)
+	}
+	if err := om.ID.Validate(); err != nil {
+		return errors.Join(ErrInvalidOrganizationMemberDetails, err)
+	}
+	if om.ID.Type != ResourceTypeUser {
+		return errors.Join(ErrInvalidOrganizationMemberDetails, ErrInvalidResourceType)
+	}
+	return nil
+}
+
+// NewOrganizationMember creates a new OrganizationMember.
+func NewOrganizationMember(id ID, firstName, lastName, email string, picture *string, status UserStatus, roles []string) (*OrganizationMember, error) {
+	member := &OrganizationMember{
+		ID:        id,
+		FirstName: firstName,
+		LastName:  lastName,
+		Email:     email,
+		Picture:   picture,
+		Status:    status,
+		Roles:     roles,
+	}
+
+	if err := member.Validate(); err != nil {
+		return nil, err
+	}
+
+	return member, nil
+}

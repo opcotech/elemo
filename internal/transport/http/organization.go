@@ -194,12 +194,12 @@ func (c *organizationController) V1OrganizationMembersGet(ctx context.Context, r
 		}}, nil
 	}
 
-	usersDTO := make([]api.User, len(users))
-	for i, user := range users {
-		usersDTO[i] = userToDTO(user)
+	membersDTO := make([]api.OrganizationMember, len(users))
+	for i, member := range users {
+		membersDTO[i] = organizationMemberToDTO(member)
 	}
 
-	return api.V1OrganizationMembersGet200JSONResponse(usersDTO), nil
+	return api.V1OrganizationMembersGet200JSONResponse(membersDTO), nil
 }
 
 func (c *organizationController) V1OrganizationMembersAdd(ctx context.Context, request api.V1OrganizationMembersAddRequestObject) (api.V1OrganizationMembersAddResponseObject, error) {
@@ -587,4 +587,16 @@ func organizationToDTO(organization *model.Organization) api.Organization {
 	}
 
 	return o
+}
+
+func organizationMemberToDTO(member *model.OrganizationMember) api.OrganizationMember {
+	return api.OrganizationMember{
+		Id:        member.ID.String(),
+		FirstName: member.FirstName,
+		LastName:  member.LastName,
+		Email:     oapiTypes.Email(member.Email),
+		Picture:   member.Picture,
+		Status:    api.UserStatus(member.Status.String()),
+		Roles:     member.Roles,
+	}
 }

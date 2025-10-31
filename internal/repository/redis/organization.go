@@ -139,6 +139,10 @@ func (r *CachedOrganizationRepository) Delete(ctx context.Context, id model.ID) 
 	return r.organizationRepo.Delete(ctx, id)
 }
 
+func (r *CachedOrganizationRepository) GetMembers(ctx context.Context, orgID model.ID) ([]*model.OrganizationMember, error) {
+	return r.organizationRepo.GetMembers(ctx, orgID)
+}
+
 // NewCachedOrganizationRepository returns a new CachedOrganizationRepository.
 func NewCachedOrganizationRepository(repo repository.OrganizationRepository, opts ...RepositoryOption) (*CachedOrganizationRepository, error) {
 	r, err := newBaseRepository(opts...)

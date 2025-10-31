@@ -150,7 +150,7 @@ export function TodoSheet() {
               <p className="text-muted-foreground">No todos found</p>
             </div>
           ) : (
-            <div className="space-y-4 pr-2">
+            <div className="space-y-4">
               {sortedTodos.map((todo) => (
                 <TodoItem
                   key={todo.id}

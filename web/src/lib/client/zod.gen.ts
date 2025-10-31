@@ -10,6 +10,21 @@ import { z } from "zod";
 export const zUserStatus = z.enum(["active", "pending", "inactive", "deleted"]);
 
 /**
+ * OrganizationMember
+ *
+ * A member of an organization with limited information.
+ */
+export const zOrganizationMember = z.object({
+  id: z.string(),
+  first_name: z.string().min(1).max(50),
+  last_name: z.string().min(1).max(50),
+  email: z.email().min(6).max(254),
+  picture: z.union([z.url().max(2000), z.null()]),
+  status: zUserStatus,
+  roles: z.array(z.string()),
+});
+
+/**
  * OrganizationStatus
  *
  * Status of the organization.
@@ -865,7 +880,7 @@ export const zV1OrganizationMembersGetData = z.object({
 /**
  * OK
  */
-export const zV1OrganizationMembersGetResponse = z.array(zUser);
+export const zV1OrganizationMembersGetResponse = z.array(zOrganizationMember);
 
 export const zV1OrganizationMembersAddData = z.object({
   body: z.optional(
