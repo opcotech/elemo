@@ -288,7 +288,7 @@ func TestClient_SendEmail(t *testing.T) {
 					span.EXPECT().End().Return()
 
 					logger := mock.NewMockLogger(ctrl)
-					logger.EXPECT().Info("email sent", gomock.Any())
+					logger.EXPECT().Info(gomock.Any(), "email sent", gomock.Any())
 
 					tracer := mock.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "smtp.Client/SendEmail").Return(ctx, span)
@@ -326,7 +326,7 @@ func TestClient_SendEmail(t *testing.T) {
 					span.EXPECT().End().Return()
 
 					logger := mock.NewMockLogger(ctrl)
-					logger.EXPECT().Error("failed to compose email", gomock.Any())
+					logger.EXPECT().Error(gomock.Any(), ErrSendEmail.Error(), gomock.Any())
 
 					tracer := mock.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "smtp.Client/SendEmail").Return(ctx, span)

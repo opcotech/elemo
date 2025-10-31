@@ -22,12 +22,12 @@ type boltLogger struct {
 	logger log.Logger
 }
 
-func (l *boltLogger) LogClientMessage(context string, msg string, args ...any) {
-	l.logger.Debug(msg, log.WithDetails(context), log.WithValue(args))
+func (l *boltLogger) LogClientMessage(ctx string, msg string, args ...any) {
+	l.logger.Debug(context.Background(), msg, log.WithDetails(ctx), log.WithValue(args))
 }
 
-func (l *boltLogger) LogServerMessage(context string, msg string, args ...any) {
-	l.logger.Debug(msg, log.WithDetails(context), log.WithValue(args))
+func (l *boltLogger) LogServerMessage(ctx string, msg string, args ...any) {
+	l.logger.Debug(context.Background(), msg, log.WithDetails(ctx), log.WithValue(args))
 }
 
 // NewDriver creates a new Neo4j driver.

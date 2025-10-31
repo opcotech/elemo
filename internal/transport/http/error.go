@@ -3,10 +3,10 @@ package http
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/opcotech/elemo/internal/pkg/log"
-	"github.com/opcotech/elemo/internal/pkg/tracing"
 	"github.com/opcotech/elemo/internal/repository"
 )
 
@@ -23,10 +23,19 @@ type ErrorResponse struct {
 }
 
 func logError(ctx context.Context, err error, status int) {
+	errorCode := getErrorCode(ErrorCodeUnknown)
 	if status >= 500 {
-		log.Error(ctx, err, log.WithTraceID(tracing.GetTraceIDFromCtx(ctx)))
+		log.Error(ctx, err,
+			log.WithEventType("http.error.server"),
+			log.WithErrorCode(fmt.Sprintf("%d", errorCode)),
+			log.WithStatus(status),
+		)
 	} else {
-		log.Warn(ctx, err.Error(), log.WithTraceID(tracing.GetTraceIDFromCtx(ctx)))
+		log.Warn(ctx, err.Error(),
+			log.WithEventType("http.error.client"),
+			log.WithErrorCode(fmt.Sprintf("%d", errorCode)),
+			log.WithStatus(status),
+		)
 	}
 }
 

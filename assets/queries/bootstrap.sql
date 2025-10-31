@@ -26,6 +26,6 @@ CREATE TABLE IF NOT EXISTS user_tokens (
 );
 
 -- Indexes for performance optimization
-CREATE INDEX user_tokens_sent_to_index ON user_tokens USING btree (sent_to);
-CREATE INDEX user_tokens_context_index ON user_tokens USING btree (context);
-CREATE UNIQUE INDEX user_tokens_sent_to_context_idx ON user_tokens (sent_to, context);
+CREATE INDEX IF NOT EXISTS user_tokens_sent_to_index ON user_tokens USING btree (sent_to);
+CREATE INDEX IF NOT EXISTS user_tokens_context_index ON user_tokens USING btree (context);
+CREATE UNIQUE INDEX IF NOT EXISTS user_tokens_sent_to_context_idx ON user_tokens (sent_to, context);

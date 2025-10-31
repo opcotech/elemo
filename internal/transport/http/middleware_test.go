@@ -8,7 +8,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
-	"go.uber.org/zap/zapcore"
 
 	"github.com/opcotech/elemo/internal/pkg"
 	"github.com/opcotech/elemo/internal/pkg/log"
@@ -33,7 +32,7 @@ func TestWithRequestLogger(t *testing.T) {
 	defer ctrl.Finish()
 
 	logger := mock.NewMockLogger(ctrl)
-	logger.EXPECT().Log(zapcore.InfoLevel, "serve http request", gomock.Any()).Return()
+	logger.EXPECT().Log(gomock.Any(), log.LevelInfo, "serve http request", gomock.Any()).Return()
 
 	ctx := log.WithContext(context.Background(), logger)
 

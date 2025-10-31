@@ -86,3 +86,38 @@ func (a Action) String() string {
 		"health_check",
 	}[a]
 }
+
+// EventType returns the event type in noun.verb format for the action.
+// This provides a mapping from Action types to event_type format.
+func (a Action) EventType() string {
+	return [...]string{
+		"http.request.served",
+		"collection.created",
+		"document.created",
+		"document.deleted",
+		"document.read",
+		"document.updated",
+		"index.created",
+		"database.initialized",
+		"query.executed",
+		"file.put",
+		"file.get",
+		"file.updated",
+		"file.deleted",
+		"request.authorized",
+		"session.created",
+		"auth_store.created",
+		"token.created",
+		"token.introspected",
+		"token.revoked",
+		"user.authenticated",
+		"request.deserialized",
+		"request.transformed",
+		"requester.validated",
+		"email.sent",
+		"certificate.loaded",
+		"config.loaded",
+		"private_key.loaded",
+		"health.checked",
+	}[a]
+}

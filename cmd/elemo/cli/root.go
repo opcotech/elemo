@@ -10,12 +10,13 @@ import (
 	"strings"
 	"time"
 
+	"log/slog"
+
 	"github.com/Shopify/gomail"
 	authStore "github.com/gabor-boros/go-oauth2-pg"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/zap"
 
 	"github.com/opcotech/elemo/assets/keys"
 	"github.com/opcotech/elemo/internal/config"
@@ -54,22 +55,22 @@ type authStoreLogger struct {
 	logger log.Logger
 }
 
-func (l *authStoreLogger) Log(_ context.Context, level authStore.LogLevel, msg string, args ...any) {
-	logArgs := make([]zap.Field, len(args)/2)
+func (l *authStoreLogger) Log(ctx context.Context, level authStore.LogLevel, msg string, args ...any) {
+	logArgs := make([]log.Attr, len(args)/2)
 	for i, j := 0, 0; i < len(args)-1; i += 2 {
-		logArgs[j] = zap.Any(args[i].(string), args[i+1])
+		logArgs[j] = slog.Any(args[i].(string), args[i+1])
 		j++
 	}
 
 	switch level {
 	case authStore.LogLevelDebug:
-		l.logger.Debug(msg, logArgs...)
+		l.logger.Debug(ctx, msg, logArgs...)
 	case authStore.LogLevelInfo:
-		l.logger.Info(msg, logArgs...)
+		l.logger.Info(ctx, msg, logArgs...)
 	case authStore.LogLevelWarn:
-		l.logger.Warn(msg, logArgs...)
+		l.logger.Warn(ctx, msg, logArgs...)
 	case authStore.LogLevelError:
-		l.logger.Error(msg, logArgs...)
+		l.logger.Error(ctx, msg, logArgs...)
 	}
 }
 
@@ -143,8 +144,8 @@ func initLogger() {
 	logger, err = log.ConfigureLogger(cfg.Log.Level)
 	cobra.CheckErr(err)
 
-	logger.Debug("root logger configured", zap.String("level", cfg.Log.Level))
-	logger.Info("config file loaded", log.WithPath(viper.ConfigFileUsed()))
+	logger.Debug(context.Background(), "root logger configured", slog.String("level", cfg.Log.Level))
+	logger.Info(context.Background(), "config file loaded", log.WithPath(viper.ConfigFileUsed()))
 }
 
 func initCacheDatabase() (*redis.Database, error) {
@@ -263,10 +264,11 @@ func parseLicense(licenseConf *config.LicenseConfig) (*license.License, error) {
 	}
 
 	logger.Info(
+		context.Background(),
 		"license parsed",
-		zap.String("id", l.ID.String()),
-		zap.String("licensee", l.Organization),
-		zap.String("expires_at", l.ExpiresAt.String()),
+		slog.String("id", l.ID.String()),
+		slog.String("licensee", l.Organization),
+		slog.String("expires_at", l.ExpiresAt.String()),
 	)
 
 	return l, nil

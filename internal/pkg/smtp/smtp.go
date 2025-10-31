@@ -88,11 +88,11 @@ func (c *Client) SendEmail(ctx context.Context, subject, to string, template *em
 
 	if err := validate.Struct(template); err != nil {
 		c.logger.Error(
+			ctx,
 			ErrSendEmail.Error(),
 			log.WithSubject(subject),
 			log.WithValue(template),
 			log.WithAction(log.ActionEmailSend),
-			log.WithTraceID(tracing.GetTraceIDFromCtx(ctx)),
 			log.WithError(err),
 		)
 		return errors.Join(ErrSendEmail, err)
@@ -101,11 +101,11 @@ func (c *Client) SendEmail(ctx context.Context, subject, to string, template *em
 	htmlBody, err := template.Render()
 	if err != nil {
 		c.logger.Error(
+			ctx,
 			ErrSendEmail.Error(),
 			log.WithSubject(subject),
 			log.WithValue(template),
 			log.WithAction(log.ActionEmailSend),
-			log.WithTraceID(tracing.GetTraceIDFromCtx(ctx)),
 			log.WithError(err),
 		)
 		return errors.Join(ErrSendEmail, err)
@@ -122,21 +122,21 @@ func (c *Client) SendEmail(ctx context.Context, subject, to string, template *em
 
 	if err := c.client.DialAndSend(message); err != nil {
 		c.logger.Error(
+			ctx,
 			ErrSendEmail.Error(),
 			log.WithSubject(subject),
 			log.WithValue(template),
 			log.WithAction(log.ActionEmailSend),
-			log.WithTraceID(tracing.GetTraceIDFromCtx(ctx)),
 			log.WithError(err),
 		)
 		return errors.Join(ErrSendEmail, err)
 	}
 
 	c.logger.Info(
+		ctx,
 		"email sent",
 		log.WithSubject(subject),
 		log.WithAction(log.ActionEmailSend),
-		log.WithTraceID(tracing.GetTraceIDFromCtx(ctx)),
 	)
 
 	return nil
