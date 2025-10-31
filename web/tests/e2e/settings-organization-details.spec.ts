@@ -11,7 +11,6 @@ test.describe("@settings.organization-details Organization Details E2E Tests", (
     ownerUser = await createDBUser("active");
     testOrganization = await createDBOrganization(ownerUser.id, "active", {
       name: "Test Organization Details",
-      email: "test-org@example.com",
       website: "https://test-org.example.com",
     });
   });
@@ -69,15 +68,22 @@ test.describe("@settings.organization-details Organization Details E2E Tests", (
     ).toBeVisible();
 
     // Verify organization fields are displayed
-    await expect(page.getByText("Name")).toBeVisible();
+    await expect(
+      page.locator("label").filter({ hasText: "Name" })
+    ).toBeVisible();
     // Organization name appears in multiple places, check the one in the Name field
     const nameField = page.locator("text=Name").locator("..").locator("p");
     await expect(
       nameField.filter({ hasText: testOrganization.name })
     ).toBeVisible();
 
-    await expect(page.getByText("Email")).toBeVisible();
-    await expect(page.getByText(testOrganization.email)).toBeVisible();
+    await expect(
+      page.locator("label").filter({ hasText: "Email" })
+    ).toBeVisible();
+    const emailField = page.locator("text=Email").locator("..").locator("p");
+    await expect(
+      emailField.filter({ hasText: testOrganization.email })
+    ).toBeVisible();
 
     await expect(page.getByText("Website")).toBeVisible();
     const websiteLink = page
@@ -87,10 +93,20 @@ test.describe("@settings.organization-details Organization Details E2E Tests", (
     await expect(websiteLink).toHaveAttribute("target", "_blank");
     await expect(websiteLink).toHaveAttribute("rel", "noopener noreferrer");
 
-    await expect(page.getByText("Status", { exact: true })).toBeVisible();
-    await expect(page.getByText("Active")).toBeVisible();
+    await expect(
+      page.locator("label").filter({ hasText: "Status" })
+    ).toBeVisible();
+    // "Active" appears in both organization details and members table, check in the details section
+    const statusField = page
+      .locator("label")
+      .filter({ hasText: "Status" })
+      .locator("..")
+      .locator("div.mt-1");
+    await expect(statusField.getByText("Active")).toBeVisible();
 
-    await expect(page.getByText("Created At", { exact: true })).toBeVisible();
+    await expect(
+      page.locator("label").filter({ hasText: "Created At" })
+    ).toBeVisible();
     // Created date should be formatted and visible
     const createdDate = page.locator(
       "text=/.*(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec).*\\d{4}.*/"

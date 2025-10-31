@@ -51,6 +51,71 @@ func (r *OrganizationRepository) scan(op, np, tp, mp string) func(rec *neo4j.Rec
 	}
 }
 
+func (r *OrganizationRepository) scanOrganizationMember(up string) func(rec *neo4j.Record) (model.OrganizationMember, error) {
+	return func(rec *neo4j.Record) (model.OrganizationMember, error) {
+		val, _, err := neo4j.GetRecordValue[neo4j.Node](rec, up)
+		if err != nil {
+			return model.OrganizationMember{}, err
+		}
+
+		userID, err := model.NewIDFromString(val.GetProperties()["id"].(string), model.ResourceTypeUser.String())
+		if err != nil {
+			return model.OrganizationMember{}, err
+		}
+
+		firstName := ""
+		if v, ok := val.GetProperties()["first_name"]; ok {
+			firstName = v.(string)
+		}
+
+		lastName := ""
+		if v, ok := val.GetProperties()["last_name"]; ok {
+			lastName = v.(string)
+		}
+
+		email := ""
+		if v, ok := val.GetProperties()["email"]; ok {
+			email = v.(string)
+		}
+
+		var picture *string
+		if v, ok := val.GetProperties()["picture"]; ok && v != nil {
+			pic := v.(string)
+			if pic != "" {
+				picture = &pic
+			}
+		}
+
+		statusStr := ""
+		if v, ok := val.GetProperties()["status"]; ok {
+			statusStr = v.(string)
+		}
+		var status model.UserStatus
+		if err := status.UnmarshalText([]byte(statusStr)); err != nil {
+			return model.OrganizationMember{}, err
+		}
+
+		roleNamesVal, err := ParseValueFromRecord[[]any](rec, "roles")
+		if err != nil {
+			roleNamesVal = []any{}
+		}
+
+		roleNames := make([]string, 0, len(roleNamesVal))
+		for _, rn := range roleNamesVal {
+			if rn != nil {
+				roleNames = append(roleNames, rn.(string))
+			}
+		}
+
+		member, err := model.NewOrganizationMember(userID, firstName, lastName, email, picture, status, roleNames)
+		if err != nil {
+			return model.OrganizationMember{}, err
+		}
+
+		return *member, nil
+	}
+}
+
 func (r *OrganizationRepository) Create(ctx context.Context, owner model.ID, organization *model.Organization) error {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.OrganizationRepository/Create")
 	defer span.End()
@@ -176,6 +241,38 @@ func (r *OrganizationRepository) Update(ctx context.Context, id model.ID, patch 
 	}
 
 	return org, nil
+}
+
+func (r *OrganizationRepository) GetMembers(ctx context.Context, orgID model.ID) ([]*model.OrganizationMember, error) {
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.OrganizationRepository/GetMembers")
+	defer span.End()
+
+	if err := orgID.Validate(); err != nil {
+		return nil, errors.Join(repository.ErrOrganizationRead, err)
+	}
+
+	cypher := `
+	MATCH (o:` + orgID.Label() + ` {id: $org_id})
+	MATCH (u:` + model.ResourceTypeUser.String() + `)-[:` + EdgeKindMemberOf.String() + `]->(o)
+	OPTIONAL MATCH (u)-[:` + EdgeKindMemberOf.String() + `]->(r:` + model.ResourceTypeRole.String() + `)<-[:` + EdgeKindHasTeam.String() + `]-(o)
+	RETURN u, collect(DISTINCT r.name) AS roles
+	ORDER BY u.created_at ASC`
+
+	params := map[string]any{
+		"org_id": orgID.String(),
+	}
+
+	members, err := ExecuteReadAndReadAll(ctx, r.db, cypher, params, r.scanOrganizationMember("u"))
+	if err != nil {
+		return nil, errors.Join(repository.ErrOrganizationRead, err)
+	}
+
+	membersPtr := make([]*model.OrganizationMember, len(members))
+	for i := range members {
+		membersPtr[i] = &members[i]
+	}
+
+	return membersPtr, nil
 }
 
 func (r *OrganizationRepository) AddMember(ctx context.Context, orgID, memberID model.ID) error {

@@ -113,6 +113,21 @@ func (mr *OrganizationRepositoryMockRecorder) GetAll(ctx, userID, offset, limit 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAll", reflect.TypeOf((*OrganizationRepository)(nil).GetAll), ctx, userID, offset, limit)
 }
 
+// GetMembers mocks base method.
+func (m *OrganizationRepository) GetMembers(ctx context.Context, orgID model.ID) ([]*model.OrganizationMember, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetMembers", ctx, orgID)
+	ret0, _ := ret[0].([]*model.OrganizationMember)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetMembers indicates an expected call of GetMembers.
+func (mr *OrganizationRepositoryMockRecorder) GetMembers(ctx, orgID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMembers", reflect.TypeOf((*OrganizationRepository)(nil).GetMembers), ctx, orgID)
+}
+
 // RemoveMember mocks base method.
 func (m *OrganizationRepository) RemoveMember(ctx context.Context, orgID, memberID model.ID) error {
 	m.ctrl.T.Helper()
