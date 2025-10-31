@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { USER_DEFAULT_PASSWORD, createDBUser } from "./utils/auth";
+import { USER_DEFAULT_PASSWORD, createDBUser, loginUser } from "./utils/auth";
 
 test.describe("@settings.security Password Change E2E Tests", () => {
   let testUser: any;
@@ -10,49 +10,10 @@ test.describe("@settings.security Password Change E2E Tests", () => {
   });
 
   test.beforeEach(async ({ page }) => {
-    // Navigate to login page and login with test credentials
-    await page.goto("/login");
-    await page.waitForLoadState("networkidle");
-
-    await page.getByLabel("Email").fill(testUser.email);
-    await page
-      .getByRole("textbox", { name: "Password" })
-      .fill(USER_DEFAULT_PASSWORD);
-    await page.getByRole("button", { name: "Sign in" }).click();
-
-    // Wait for login to complete - either success or failure
-    await page.waitForLoadState("networkidle");
-
-    // Wait for the loading state to finish
-    await page.waitForFunction(
-      () => {
-        const buttons = document.querySelectorAll("button");
-        for (const button of buttons) {
-          if (button.textContent.includes("Signing in...")) {
-            return false; // Still loading
-          }
-        }
-        return true; // Loading finished
-      },
-      { timeout: 10000 }
-    );
-
-    // Verify we're logged in by checking for dashboard content (works on both mobile and desktop)
-    const isOnDashboard = await page.getByText("Welcome back!").isVisible();
-
-    if (isOnDashboard) {
-      // Login successful, navigate to settings
-      await page.goto("/settings");
-      await page.waitForLoadState("networkidle");
-      await expect(page).toHaveURL(/.*settings/);
-
-      await page.goto("/settings/security");
-      await page.waitForLoadState("networkidle");
-      await expect(page).toHaveURL(/.*settings\/security/);
-    } else {
-      // Login failed, we'll be on login page - tests will handle this appropriately
-      console.log("Login failed - staying on login page");
-    }
+    await loginUser(page, testUser, {
+      destination: "/settings/security",
+    });
+    await expect(page).toHaveURL(/.*settings\/security/);
   });
 
   test("should display password change form with all required elements", async ({

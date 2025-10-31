@@ -10,6 +10,7 @@ import {
   v1TodoUpdateMutation,
 } from "@/lib/client/@tanstack/react-query.gen";
 import { showErrorToast, showSuccessToast } from "@/lib/toast";
+import { formatDate } from "@/lib/utils";
 
 interface TodoItemProps {
   todo: {
@@ -21,17 +22,11 @@ interface TodoItemProps {
     due_date: string | null;
     created_at: string;
   };
-  formatDate: (dateString: string | null) => string;
   getPriorityColor: (priority: TodoPriority) => string;
   onSuccess?: () => void;
 }
 
-export function TodoItem({
-  todo,
-  formatDate,
-  getPriorityColor,
-  onSuccess,
-}: TodoItemProps) {
+export function TodoItem({ todo, getPriorityColor, onSuccess }: TodoItemProps) {
   const updateMutation = useMutation(v1TodoUpdateMutation());
   const deleteMutation = useMutation(v1TodoDeleteMutation());
   const { open: openEditForm } = useEditTodoForm();
