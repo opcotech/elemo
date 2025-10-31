@@ -100,7 +100,12 @@ jobs:
       - backend-integration-test
     strategy:
       matrix:
-        project: [chromium, firefox, webkit, 'Mobile Chrome', 'Mobile Safari']
+        project:
+          - chromium
+          - firefox
+          - webkit
+          # FIXME: enable "Mobile Chrome" once we support mobile viewports
+          # FIXME: enable "Mobile Safari" once we support mobile viewports
       fail-fast: false
     steps:
       - uses: actions/checkout@v4
