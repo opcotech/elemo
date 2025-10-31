@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { USER_DEFAULT_PASSWORD, createDBUser } from "./utils/auth";
+import { createDBUser, loginUser } from "./utils/auth";
 import {
   addMemberToOrganization,
   createDBOrganization,
@@ -29,35 +29,10 @@ test.describe("@settings.organizations Organization Listing E2E Tests", () => {
     });
 
     test.beforeEach(async ({ page }) => {
-      await page.goto("/login");
-      await page.waitForLoadState("networkidle");
-
-      await page.getByLabel("Email").fill(ownerUser.email);
-      await page
-        .getByRole("textbox", { name: "Password" })
-        .fill(USER_DEFAULT_PASSWORD);
-      await page.getByRole("button", { name: "Sign in" }).click();
-
-      await page.waitForLoadState("networkidle");
-      await page.waitForFunction(
-        () => {
-          const buttons = document.querySelectorAll("button");
-          for (const button of buttons) {
-            if (button.textContent.includes("Signing in...")) {
-              return false;
-            }
-          }
-          return true;
-        },
-        { timeout: 10000 }
-      );
-
-      const isOnDashboard = await page.getByText("Welcome back!").isVisible();
-      if (isOnDashboard) {
-        await page.goto("/settings/organizations");
-        await page.waitForLoadState("networkidle");
-        await expect(page).toHaveURL(/.*settings\/organizations/);
-      }
+      await loginUser(page, ownerUser, {
+        destination: "/settings/organizations",
+      });
+      await expect(page).toHaveURL(/.*settings\/organizations/);
     });
 
     test("owner should see all organizations they own", async ({ page }) => {
@@ -72,7 +47,6 @@ test.describe("@settings.organizations Organization Listing E2E Tests", () => {
       page,
     }) => {
       await page.waitForLoadState("networkidle");
-      await page.waitForTimeout(2000); // Wait for permissions to load
 
       const alphaRow = page
         .locator("tbody tr")
@@ -160,35 +134,10 @@ test.describe("@settings.organizations Organization Listing E2E Tests", () => {
     });
 
     test.beforeEach(async ({ page }) => {
-      await page.goto("/login");
-      await page.waitForLoadState("networkidle");
-
-      await page.getByLabel("Email").fill(memberUser.email);
-      await page
-        .getByRole("textbox", { name: "Password" })
-        .fill(USER_DEFAULT_PASSWORD);
-      await page.getByRole("button", { name: "Sign in" }).click();
-
-      await page.waitForLoadState("networkidle");
-      await page.waitForFunction(
-        () => {
-          const buttons = document.querySelectorAll("button");
-          for (const button of buttons) {
-            if (button.textContent.includes("Signing in...")) {
-              return false;
-            }
-          }
-          return true;
-        },
-        { timeout: 10000 }
-      );
-
-      const isOnDashboard = await page.getByText("Welcome back!").isVisible();
-      if (isOnDashboard) {
-        await page.goto("/settings/organizations");
-        await page.waitForLoadState("networkidle");
-        await expect(page).toHaveURL(/.*settings\/organizations/);
-      }
+      await loginUser(page, memberUser, {
+        destination: "/settings/organizations",
+      });
+      await expect(page).toHaveURL(/.*settings\/organizations/);
     });
 
     test("member with read permission should see the organization", async ({
@@ -203,7 +152,6 @@ test.describe("@settings.organizations Organization Listing E2E Tests", () => {
       page,
     }) => {
       await page.waitForLoadState("networkidle");
-      await page.waitForTimeout(2000); // Wait for permissions to load
 
       const memberRow = page
         .locator("tbody tr")
@@ -256,35 +204,10 @@ test.describe("@settings.organizations Organization Listing E2E Tests", () => {
     });
 
     test.beforeEach(async ({ page }) => {
-      await page.goto("/login");
-      await page.waitForLoadState("networkidle");
-
-      await page.getByLabel("Email").fill(memberUser.email);
-      await page
-        .getByRole("textbox", { name: "Password" })
-        .fill(USER_DEFAULT_PASSWORD);
-      await page.getByRole("button", { name: "Sign in" }).click();
-
-      await page.waitForLoadState("networkidle");
-      await page.waitForFunction(
-        () => {
-          const buttons = document.querySelectorAll("button");
-          for (const button of buttons) {
-            if (button.textContent.includes("Signing in...")) {
-              return false;
-            }
-          }
-          return true;
-        },
-        { timeout: 10000 }
-      );
-
-      const isOnDashboard = await page.getByText("Welcome back!").isVisible();
-      if (isOnDashboard) {
-        await page.goto("/settings/organizations");
-        await page.waitForLoadState("networkidle");
-        await expect(page).toHaveURL(/.*settings\/organizations/);
-      }
+      await loginUser(page, memberUser, {
+        destination: "/settings/organizations",
+      });
+      await expect(page).toHaveURL(/.*settings\/organizations/);
     });
 
     test("member should see all organizations they are a member of", async ({
@@ -301,7 +224,6 @@ test.describe("@settings.organizations Organization Listing E2E Tests", () => {
       page,
     }) => {
       await page.waitForLoadState("networkidle");
-      await page.waitForTimeout(2000); // Wait for permissions to load
 
       // Check Org A - Read Only (read permission)
       const orgA = page
@@ -405,32 +327,9 @@ test.describe("@settings.organizations Organization Listing E2E Tests", () => {
     });
 
     test("read-only member should only see view button", async ({ page }) => {
-      await page.goto("/login");
-      await page.waitForLoadState("networkidle");
-
-      await page.getByLabel("Email").fill(readMember.email);
-      await page
-        .getByRole("textbox", { name: "Password" })
-        .fill(USER_DEFAULT_PASSWORD);
-      await page.getByRole("button", { name: "Sign in" }).click();
-
-      await page.waitForLoadState("networkidle");
-      await page.waitForFunction(
-        () => {
-          const buttons = document.querySelectorAll("button");
-          for (const button of buttons) {
-            if (button.textContent.includes("Signing in...")) {
-              return false;
-            }
-          }
-          return true;
-        },
-        { timeout: 10000 }
-      );
-
-      await page.goto("/settings/organizations");
-      await page.waitForLoadState("networkidle");
-      await page.waitForTimeout(2000);
+      await loginUser(page, readMember, {
+        destination: "/settings/organizations",
+      });
 
       const orgRow = page
         .locator("tbody tr")
@@ -449,32 +348,9 @@ test.describe("@settings.organizations Organization Listing E2E Tests", () => {
     });
 
     test("write member should see view and edit buttons", async ({ page }) => {
-      await page.goto("/login");
-      await page.waitForLoadState("networkidle");
-
-      await page.getByLabel("Email").fill(writeMember.email);
-      await page
-        .getByRole("textbox", { name: "Password" })
-        .fill(USER_DEFAULT_PASSWORD);
-      await page.getByRole("button", { name: "Sign in" }).click();
-
-      await page.waitForLoadState("networkidle");
-      await page.waitForFunction(
-        () => {
-          const buttons = document.querySelectorAll("button");
-          for (const button of buttons) {
-            if (button.textContent.includes("Signing in...")) {
-              return false;
-            }
-          }
-          return true;
-        },
-        { timeout: 10000 }
-      );
-
-      await page.goto("/settings/organizations");
-      await page.waitForLoadState("networkidle");
-      await page.waitForTimeout(2000);
+      await loginUser(page, writeMember, {
+        destination: "/settings/organizations",
+      });
 
       const orgRow = page
         .locator("tbody tr")
@@ -495,32 +371,9 @@ test.describe("@settings.organizations Organization Listing E2E Tests", () => {
     test("full access member should see all action buttons", async ({
       page,
     }) => {
-      await page.goto("/login");
-      await page.waitForLoadState("networkidle");
-
-      await page.getByLabel("Email").fill(fullAccessMember.email);
-      await page
-        .getByRole("textbox", { name: "Password" })
-        .fill(USER_DEFAULT_PASSWORD);
-      await page.getByRole("button", { name: "Sign in" }).click();
-
-      await page.waitForLoadState("networkidle");
-      await page.waitForFunction(
-        () => {
-          const buttons = document.querySelectorAll("button");
-          for (const button of buttons) {
-            if (button.textContent.includes("Signing in...")) {
-              return false;
-            }
-          }
-          return true;
-        },
-        { timeout: 10000 }
-      );
-
-      await page.goto("/settings/organizations");
-      await page.waitForLoadState("networkidle");
-      await page.waitForTimeout(2000);
+      await loginUser(page, fullAccessMember, {
+        destination: "/settings/organizations",
+      });
 
       const orgRow = page
         .locator("tbody tr")
@@ -556,35 +409,10 @@ test.describe("@settings.organizations Organization Listing E2E Tests", () => {
     });
 
     test.beforeEach(async ({ page }) => {
-      await page.goto("/login");
-      await page.waitForLoadState("networkidle");
-
-      await page.getByLabel("Email").fill(testUser.email);
-      await page
-        .getByRole("textbox", { name: "Password" })
-        .fill(USER_DEFAULT_PASSWORD);
-      await page.getByRole("button", { name: "Sign in" }).click();
-
-      await page.waitForLoadState("networkidle");
-      await page.waitForFunction(
-        () => {
-          const buttons = document.querySelectorAll("button");
-          for (const button of buttons) {
-            if (button.textContent.includes("Signing in...")) {
-              return false;
-            }
-          }
-          return true;
-        },
-        { timeout: 10000 }
-      );
-
-      const isOnDashboard = await page.getByText("Welcome back!").isVisible();
-      if (isOnDashboard) {
-        await page.goto("/settings/organizations");
-        await page.waitForLoadState("networkidle");
-        await expect(page).toHaveURL(/.*settings\/organizations/);
-      }
+      await loginUser(page, testUser, {
+        destination: "/settings/organizations",
+      });
+      await expect(page).toHaveURL(/.*settings\/organizations/);
     });
 
     test("should display organization list page with all required elements", async ({
@@ -668,7 +496,6 @@ test.describe("@settings.organizations Organization Listing E2E Tests", () => {
       page,
     }) => {
       await page.waitForLoadState("networkidle");
-      await page.waitForTimeout(2000);
 
       const alphaRow = page
         .locator("tbody tr")

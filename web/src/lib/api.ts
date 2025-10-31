@@ -54,3 +54,89 @@ export function normalizeData<T extends Record<string, any>>(
 
   return normalizedData as T;
 }
+
+/**
+ * Checks if an error represents a permission denied (403) response.
+ *
+ * @param error - The error object to check
+ * @returns true if the error is a 403 permission denied error, false otherwise
+ */
+export function isPermissionDenied(error: unknown): boolean {
+  if (!error) return false;
+
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "status" in error &&
+    error.status === 403
+  ) {
+    return true;
+  }
+
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "response" in error &&
+    typeof error.response === "object" &&
+    error.response !== null &&
+    "status" in error.response &&
+    error.response.status === 403
+  ) {
+    return true;
+  }
+
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "message" in error &&
+    typeof error.message === "string"
+  ) {
+    const message = error.message.toLowerCase();
+    return message.includes("403") || message.includes("forbidden");
+  }
+
+  return false;
+}
+
+/**
+ * Checks if an error represents a not found (404) response.
+ *
+ * @param error - The error object to check
+ * @returns true if the error is a 404 not found error, false otherwise
+ */
+export function isNotFound(error: unknown): boolean {
+  if (!error) return false;
+
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "status" in error &&
+    error.status === 404
+  ) {
+    return true;
+  }
+
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "response" in error &&
+    typeof error.response === "object" &&
+    error.response !== null &&
+    "status" in error.response &&
+    error.response.status === 404
+  ) {
+    return true;
+  }
+
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "message" in error &&
+    typeof error.message === "string"
+  ) {
+    const message = error.message.toLowerCase();
+    return message.includes("404") || message.includes("not found");
+  }
+
+  return false;
+}

@@ -105,11 +105,6 @@ export function TodoSheet() {
     });
   }, [todos]);
 
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return "No due date";
-    return new Date(dateString).toLocaleDateString();
-  };
-
   const getPriorityColor = (priority: TodoPriority) => {
     switch (priority) {
       case "critical":
@@ -160,7 +155,6 @@ export function TodoSheet() {
                 <TodoItem
                   key={todo.id}
                   todo={todo}
-                  formatDate={formatDate}
                   getPriorityColor={getPriorityColor}
                   onSuccess={() => {
                     refetch();
