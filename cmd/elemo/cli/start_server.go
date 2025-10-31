@@ -6,12 +6,13 @@ import (
 	"sync"
 	"time"
 
+	"log/slog"
+
 	authStore "github.com/gabor-boros/go-oauth2-pg"
 	authManager "github.com/go-oauth2/oauth2/v4/manage"
 	authServer "github.com/go-oauth2/oauth2/v4/server"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/spf13/cobra"
-	"go.uber.org/zap"
 
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/queue"
@@ -34,27 +35,27 @@ var startServerCmd = &cobra.Command{
 
 		license, err := parseLicense(&cfg.License)
 		if err != nil {
-			logger.Fatal("failed to parse license", zap.Error(err))
+			logger.Fatal(context.Background(), "failed to parse license", slog.Any("error", err))
 		}
 
 		cacheDB, err := initCacheDatabase()
 		if err != nil {
-			logger.Fatal("failed to initialize cache database", zap.Error(err))
+			logger.Fatal(context.Background(), "failed to initialize cache database", slog.Any("error", err))
 		}
 
 		graphDB, err := initGraphDatabase()
 		if err != nil {
-			logger.Fatal("failed to initialize graph database", zap.Error(err))
+			logger.Fatal(context.Background(), "failed to initialize graph database", slog.Any("error", err))
 		}
 
 		relDB, relDBPool, err := initRelationalDatabase()
 		if err != nil {
-			logger.Fatal("failed to initialize relational database", zap.Error(err))
+			logger.Fatal(context.Background(), "failed to initialize relational database", slog.Any("error", err))
 		}
 
 		smtpClient, err := initSMTPClient(&cfg.SMTP)
 		if err != nil {
-			logger.Fatal("failed to initialize SMTP client", zap.Error(err))
+			logger.Fatal(context.Background(), "failed to initialize SMTP client", slog.Any("error", err))
 		}
 
 		messageQueue, err := queue.NewClient(
@@ -63,12 +64,12 @@ var startServerCmd = &cobra.Command{
 			queue.WithClientTracer(tracer),
 		)
 		if err != nil {
-			logger.Fatal("failed to initialize message queue", zap.Error(err))
+			logger.Fatal(context.Background(), "failed to initialize message queue", slog.Any("error", err))
 		}
 		defer func(messageQueue *queue.Client) {
 			err := messageQueue.Close(context.Background())
 			if err != nil {
-				logger.Error("failed to close message queue", zap.Error(err))
+				logger.Error(context.Background(), "failed to close message queue", slog.Any("error", err))
 			}
 		}(messageQueue)
 
@@ -78,7 +79,7 @@ var startServerCmd = &cobra.Command{
 			neo4j.WithRepositoryTracer(tracer),
 		)
 		if err != nil {
-			logger.Fatal("failed to initialize license repository", zap.Error(err))
+			logger.Fatal(context.Background(), "failed to initialize license repository", slog.Any("error", err))
 		}
 
 		var permissionRepo repository.PermissionRepository
@@ -89,7 +90,7 @@ var startServerCmd = &cobra.Command{
 				neo4j.WithRepositoryTracer(tracer),
 			)
 			if err != nil {
-				logger.Fatal("failed to initialize permission repository", zap.Error(err))
+				logger.Fatal(context.Background(), "failed to initialize permission repository", slog.Any("error", err))
 			}
 
 			permissionRepo, err = redis.NewCachedPermissionRepository(
@@ -99,7 +100,7 @@ var startServerCmd = &cobra.Command{
 				redis.WithRepositoryTracer(tracer),
 			)
 			if err != nil {
-				logger.Fatal("failed to initialize cached permission repository", zap.Error(err))
+				logger.Fatal(context.Background(), "failed to initialize cached permission repository", slog.Any("error", err))
 			}
 		}
 
@@ -111,7 +112,7 @@ var startServerCmd = &cobra.Command{
 				neo4j.WithRepositoryTracer(tracer),
 			)
 			if err != nil {
-				logger.Fatal("failed to initialize organization repository", zap.Error(err))
+				logger.Fatal(context.Background(), "failed to initialize organization repository", slog.Any("error", err))
 			}
 
 			organizationRepo, err = redis.NewCachedOrganizationRepository(
@@ -121,7 +122,7 @@ var startServerCmd = &cobra.Command{
 				redis.WithRepositoryTracer(tracer),
 			)
 			if err != nil {
-				logger.Fatal("failed to initialize cached organization repository", zap.Error(err))
+				logger.Fatal(context.Background(), "failed to initialize cached organization repository", slog.Any("error", err))
 			}
 		}
 
@@ -133,7 +134,7 @@ var startServerCmd = &cobra.Command{
 				neo4j.WithRepositoryTracer(tracer),
 			)
 			if err != nil {
-				logger.Fatal("failed to initialize role repository", zap.Error(err))
+				logger.Fatal(context.Background(), "failed to initialize role repository", slog.Any("error", err))
 			}
 
 			roleRepo, err = redis.NewCachedRoleRepository(
@@ -143,7 +144,7 @@ var startServerCmd = &cobra.Command{
 				redis.WithRepositoryTracer(tracer),
 			)
 			if err != nil {
-				logger.Fatal("failed to initialize cached role repository", zap.Error(err))
+				logger.Fatal(context.Background(), "failed to initialize cached role repository", slog.Any("error", err))
 			}
 		}
 
@@ -155,7 +156,7 @@ var startServerCmd = &cobra.Command{
 				neo4j.WithRepositoryTracer(tracer),
 			)
 			if err != nil {
-				logger.Fatal("failed to initialize user repository", zap.Error(err))
+				logger.Fatal(context.Background(), "failed to initialize user repository", slog.Any("error", err))
 			}
 
 			userRepo, err = redis.NewCachedUserRepository(
@@ -165,7 +166,7 @@ var startServerCmd = &cobra.Command{
 				redis.WithRepositoryTracer(tracer),
 			)
 			if err != nil {
-				logger.Fatal("failed to initialize cached user repository", zap.Error(err))
+				logger.Fatal(context.Background(), "failed to initialize cached user repository", slog.Any("error", err))
 			}
 		}
 
@@ -177,7 +178,7 @@ var startServerCmd = &cobra.Command{
 				pg.WithRepositoryTracer(tracer),
 			)
 			if err != nil {
-				logger.Fatal("failed to initialize user token repository", zap.Error(err))
+				logger.Fatal(context.Background(), "failed to initialize user token repository", slog.Any("error", err))
 			}
 
 			userTokenRepo = repo
@@ -191,7 +192,7 @@ var startServerCmd = &cobra.Command{
 				neo4j.WithRepositoryTracer(tracer),
 			)
 			if err != nil {
-				logger.Fatal("failed to initialize todo repository", zap.Error(err))
+				logger.Fatal(context.Background(), "failed to initialize todo repository", slog.Any("error", err))
 			}
 
 			todoRepo, err = redis.NewCachedTodoRepository(
@@ -201,7 +202,7 @@ var startServerCmd = &cobra.Command{
 				redis.WithRepositoryTracer(tracer),
 			)
 			if err != nil {
-				logger.Fatal("failed to initialize cached todo repository", zap.Error(err))
+				logger.Fatal(context.Background(), "failed to initialize cached todo repository", slog.Any("error", err))
 			}
 		}
 
@@ -213,7 +214,7 @@ var startServerCmd = &cobra.Command{
 				pg.WithRepositoryTracer(tracer),
 			)
 			if err != nil {
-				logger.Fatal("failed to initialize notification repository", zap.Error(err))
+				logger.Fatal(context.Background(), "failed to initialize notification repository", slog.Any("error", err))
 			}
 
 			notificationRepo, err = redis.NewCachedNotificationRepository(
@@ -223,7 +224,7 @@ var startServerCmd = &cobra.Command{
 				redis.WithRepositoryTracer(tracer),
 			)
 			if err != nil {
-				logger.Fatal("failed to initialize cached notification repository", zap.Error(err))
+				logger.Fatal(context.Background(), "failed to initialize cached notification repository", slog.Any("error", err))
 			}
 		}
 
@@ -233,7 +234,7 @@ var startServerCmd = &cobra.Command{
 			service.WithTracer(tracer),
 		)
 		if err != nil {
-			logger.Fatal("failed to initialize notification service", zap.Error(err))
+			logger.Fatal(context.Background(), "failed to initialize notification service", slog.Any("error", err))
 		}
 
 		permissionService, err := service.NewPermissionService(
@@ -242,7 +243,7 @@ var startServerCmd = &cobra.Command{
 			service.WithTracer(tracer),
 		)
 		if err != nil {
-			logger.Fatal("failed to initialize permission service", zap.Error(err))
+			logger.Fatal(context.Background(), "failed to initialize permission service", slog.Any("error", err))
 		}
 
 		licenseService, err := service.NewLicenseService(
@@ -253,7 +254,7 @@ var startServerCmd = &cobra.Command{
 			service.WithTracer(tracer),
 		)
 		if err != nil {
-			logger.Fatal("failed to initialize license service", zap.Error(err))
+			logger.Fatal(context.Background(), "failed to initialize license service", slog.Any("error", err))
 		}
 
 		systemService, err := service.NewSystemService(
@@ -269,7 +270,7 @@ var startServerCmd = &cobra.Command{
 			service.WithTracer(tracer),
 		)
 		if err != nil {
-			logger.Fatal("failed to initialize system service", zap.Error(err))
+			logger.Fatal(context.Background(), "failed to initialize system service", slog.Any("error", err))
 		}
 
 		organizationService, err := service.NewOrganizationService(
@@ -281,7 +282,7 @@ var startServerCmd = &cobra.Command{
 			service.WithTracer(tracer),
 		)
 		if err != nil {
-			logger.Fatal("failed to initialize organization service", zap.Error(err))
+			logger.Fatal(context.Background(), "failed to initialize organization service", slog.Any("error", err))
 		}
 
 		roleService, err := service.NewRoleService(
@@ -293,7 +294,7 @@ var startServerCmd = &cobra.Command{
 			service.WithTracer(tracer),
 		)
 		if err != nil {
-			logger.Fatal("failed to initialize role service", zap.Error(err))
+			logger.Fatal(context.Background(), "failed to initialize role service", slog.Any("error", err))
 		}
 
 		userService, err := service.NewUserService(
@@ -305,7 +306,7 @@ var startServerCmd = &cobra.Command{
 			service.WithTracer(tracer),
 		)
 		if err != nil {
-			logger.Fatal("failed to initialize user service", zap.Error(err))
+			logger.Fatal(context.Background(), "failed to initialize user service", slog.Any("error", err))
 		}
 
 		todoService, err := service.NewTodoService(
@@ -316,7 +317,7 @@ var startServerCmd = &cobra.Command{
 			service.WithTracer(tracer),
 		)
 		if err != nil {
-			logger.Fatal("failed to initialize todo service", zap.Error(err))
+			logger.Fatal(context.Background(), "failed to initialize todo service", slog.Any("error", err))
 		}
 
 		emailService, err := service.NewEmailService(
@@ -327,12 +328,12 @@ var startServerCmd = &cobra.Command{
 			service.WithTracer(tracer),
 		)
 		if err != nil {
-			logger.Fatal("failed to initialize email service", zap.Error(err))
+			logger.Fatal(context.Background(), "failed to initialize email service", slog.Any("error", err))
 		}
 
 		authProvider, err := initAuthProvider(relDBPool)
 		if err != nil {
-			logger.Fatal("failed to initialize auth server", zap.Error(err))
+			logger.Fatal(context.Background(), "failed to initialize auth server", slog.Any("error", err))
 		}
 
 		httpServer, err := elemoHttp.NewServer(
@@ -351,12 +352,12 @@ var startServerCmd = &cobra.Command{
 			elemoHttp.WithTracer(tracer),
 		)
 		if err != nil {
-			logger.Fatal("failed to initialize http server", zap.Error(err))
+			logger.Fatal(context.Background(), "failed to initialize http server", slog.Any("error", err))
 		}
 
 		systemLicenseExpiryTask, err := queue.NewSystemLicenseExpiryTask(license)
 		if err != nil {
-			logger.Fatal("failed to initialize system license expiry task", zap.Error(err))
+			logger.Fatal(context.Background(), "failed to initialize system license expiry task", slog.Any("error", err))
 		}
 
 		taskScheduler, err := queue.NewScheduler(
@@ -366,7 +367,7 @@ var startServerCmd = &cobra.Command{
 			queue.WithSchedulerTracer(tracer),
 		)
 		if err != nil {
-			logger.Fatal("failed to initialize scheduler", zap.Error(err))
+			logger.Fatal(context.Background(), "failed to initialize scheduler", slog.Any("error", err))
 		}
 
 		startHTTPServers(httpServer, taskScheduler)
@@ -425,10 +426,10 @@ func initAuthProvider(pool pg.Pool) (*authServer.Server, error) {
 func startHTTPServer(server elemoHttp.StrictServer) error {
 	router, err := elemoHttp.NewRouter(server, &cfg.Server, tracer)
 	if err != nil {
-		logger.Fatal("failed to initialize http router", zap.Error(err))
+		logger.Fatal(context.Background(), "failed to initialize http router", slog.Any("error", err))
 	}
 
-	logger.Info("starting HTTP server", zap.String("address", cfg.Server.Address))
+	logger.Info(context.Background(), "starting HTTP server", slog.String("address", cfg.Server.Address))
 	s := &http.Server{
 		Addr:              cfg.Server.Address,
 		Handler:           router,
@@ -445,17 +446,17 @@ func startHTTPServer(server elemoHttp.StrictServer) error {
 }
 
 func startSchedulerServer(scheduler *queue.Scheduler) error {
-	logger.Info("starting task scheduler")
+	logger.Info(context.Background(), "starting task scheduler")
 	return scheduler.Start()
 }
 
 func startHTTPMetricsServer() error {
 	router, err := elemoHttp.NewMetricsServer(&cfg.MetricsServer, tracer)
 	if err != nil {
-		logger.Fatal("failed to initialize metrics router", zap.Error(err))
+		logger.Fatal(context.Background(), "failed to initialize metrics router", slog.Any("error", err))
 	}
 
-	logger.Info("starting HTTP metrics server", zap.String("address", cfg.MetricsServer.Address))
+	logger.Info(context.Background(), "starting HTTP metrics server", slog.String("address", cfg.MetricsServer.Address))
 	s := &http.Server{
 		Addr:              cfg.MetricsServer.Address,
 		Handler:           router,
@@ -477,19 +478,19 @@ func startHTTPServers(server elemoHttp.StrictServer, taskScheduler *queue.Schedu
 
 	go func(wg *sync.WaitGroup) {
 		err := startSchedulerServer(taskScheduler)
-		logger.Fatal("failed to start task scheduler", zap.Error(err))
+		logger.Fatal(context.Background(), "failed to start task scheduler", slog.Any("error", err))
 		wg.Done()
 	}(wg)
 
 	go func(wg *sync.WaitGroup) {
 		err := startHTTPServer(server)
-		logger.Fatal("failed to start HTTP server", zap.Error(err))
+		logger.Fatal(context.Background(), "failed to start HTTP server", slog.Any("error", err))
 		wg.Done()
 	}(wg)
 
 	go func(wg *sync.WaitGroup) {
 		err := startHTTPMetricsServer()
-		logger.Fatal("failed to start HTTP metrics server", zap.Error(err))
+		logger.Fatal(context.Background(), "failed to start HTTP metrics server", slog.Any("error", err))
 		wg.Done()
 	}(wg)
 

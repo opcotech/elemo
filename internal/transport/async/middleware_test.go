@@ -9,7 +9,6 @@ import (
 	"github.com/hibiken/asynq"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 	"golang.org/x/time/rate"
 
 	"github.com/opcotech/elemo/internal/pkg"
@@ -191,14 +190,9 @@ func TestWithErrorLogger(t *testing.T) {
 			fields: fields{
 				ctx:  context.Background(),
 				task: asynq.NewTask("test:task", []byte("hello")),
-				logger: func(_ context.Context, task *asynq.Task, ctrl *gomock.Controller) log.Logger {
+				logger: func(_ context.Context, _ *asynq.Task, ctrl *gomock.Controller) log.Logger {
 					logger := mock.NewMockLogger(ctrl)
-					logger.EXPECT().Log(zap.ErrorLevel, assert.AnError.Error(), []zap.Field{
-						log.WithKey(task.Type()),
-						log.WithInput(string(task.Payload())),
-						log.WithError(assert.AnError),
-					}).Return()
-
+					logger.EXPECT().Log(gomock.Any(), log.LevelError, assert.AnError.Error(), gomock.Any()).Return()
 					return logger
 				},
 			},

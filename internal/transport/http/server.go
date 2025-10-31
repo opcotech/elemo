@@ -67,7 +67,7 @@ func (s *server) InternalErrorHandler(err error) *authErrors.Response {
 }
 
 func (s *server) ResponseErrorHandler(r *authErrors.Response) {
-	s.logger.Error(r.Description,
+	s.logger.Error(context.Background(), r.Description,
 		log.WithError(r.Error),
 		log.WithStatus(r.StatusCode),
 		log.WithValue(r.ErrorCode),
@@ -75,7 +75,7 @@ func (s *server) ResponseErrorHandler(r *authErrors.Response) {
 }
 
 func (s *server) PreRedirectErrorHandler(_ http.ResponseWriter, r *authServer.AuthorizeRequest, err error) {
-	s.logger.Error(err.Error(),
+	s.logger.Error(context.Background(), err.Error(),
 		log.WithError(err),
 		log.WithUserID(r.UserID),
 		log.WithAuthClientID(r.ClientID),

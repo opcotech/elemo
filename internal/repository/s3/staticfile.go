@@ -10,7 +10,6 @@ import (
 	awsS3 "github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/opcotech/elemo/internal/pkg/convert"
 	"github.com/opcotech/elemo/internal/pkg/log"
-	"github.com/opcotech/elemo/internal/pkg/tracing"
 	"github.com/opcotech/elemo/internal/repository"
 )
 
@@ -31,20 +30,20 @@ func (r *StaticFileRepository) Create(ctx context.Context, path string, data []b
 	})
 	if err != nil {
 		r.logger.Error(
+			ctx,
 			repository.ErrFileCreate.Error(),
 			log.WithPath(path),
 			log.WithAction(log.ActionFilePut),
-			log.WithTraceID(tracing.GetTraceIDFromCtx(ctx)),
 			log.WithError(err),
 		)
 		return errors.Join(repository.ErrFileCreate, err)
 	}
 
 	r.logger.Info(
+		ctx,
 		"new file created",
 		log.WithPath(path),
 		log.WithAction(log.ActionFilePut),
-		log.WithTraceID(tracing.GetTraceIDFromCtx(ctx)),
 	)
 
 	return nil
@@ -63,10 +62,10 @@ func (r *StaticFileRepository) Get(ctx context.Context, path string) ([]byte, er
 			return nil, errors.Join(repository.ErrFileGet, repository.ErrNotFound)
 		}
 		r.logger.Error(
+			ctx,
 			repository.ErrFileGet.Error(),
 			log.WithPath(path),
 			log.WithAction(log.ActionFileGet),
-			log.WithTraceID(tracing.GetTraceIDFromCtx(ctx)),
 			log.WithError(err),
 		)
 		return nil, errors.Join(repository.ErrFileGet, err)
@@ -75,10 +74,10 @@ func (r *StaticFileRepository) Get(ctx context.Context, path string) ([]byte, er
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		r.logger.Error(
+			ctx,
 			repository.ErrFileGet.Error(),
 			log.WithPath(path),
 			log.WithAction(log.ActionFileGet),
-			log.WithTraceID(tracing.GetTraceIDFromCtx(ctx)),
 			log.WithError(err),
 		)
 		return nil, errors.Join(repository.ErrFileGet, err)
@@ -99,20 +98,20 @@ func (r *StaticFileRepository) Update(ctx context.Context, path string, data []b
 	})
 	if err != nil {
 		r.logger.Error(
+			ctx,
 			repository.ErrFileUpdate.Error(),
 			log.WithPath(path),
 			log.WithAction(log.ActionFileUpdate),
-			log.WithTraceID(tracing.GetTraceIDFromCtx(ctx)),
 			log.WithError(err),
 		)
 		return errors.Join(repository.ErrFileUpdate, err)
 	}
 
 	r.logger.Info(
+		ctx,
 		"file updated",
 		log.WithPath(path),
 		log.WithAction(log.ActionFileUpdate),
-		log.WithTraceID(tracing.GetTraceIDFromCtx(ctx)),
 	)
 
 	return nil
@@ -131,20 +130,20 @@ func (r *StaticFileRepository) Delete(ctx context.Context, path string) error {
 			return errors.Join(repository.ErrFileGet, repository.ErrNotFound)
 		}
 		r.logger.Error(
+			ctx,
 			repository.ErrFileDelete.Error(),
 			log.WithPath(path),
 			log.WithAction(log.ActionFileDelete),
-			log.WithTraceID(tracing.GetTraceIDFromCtx(ctx)),
 			log.WithError(err),
 		)
 		return errors.Join(repository.ErrFileDelete, err)
 	}
 
 	r.logger.Info(
+		ctx,
 		"file deleted",
 		log.WithPath(path),
 		log.WithAction(log.ActionFileDelete),
-		log.WithTraceID(tracing.GetTraceIDFromCtx(ctx)),
 	)
 
 	return nil

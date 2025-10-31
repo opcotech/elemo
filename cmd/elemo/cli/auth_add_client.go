@@ -3,12 +3,13 @@ package cli
 import (
 	"context"
 
+	"log/slog"
+
 	authStore "github.com/gabor-boros/go-oauth2-pg"
 	"github.com/go-oauth2/oauth2/v4/models"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/spf13/cobra"
-	"go.uber.org/zap"
 
 	"github.com/opcotech/elemo/internal/model"
 )
@@ -31,28 +32,28 @@ elemo auth add-client --domain example.com --public`,
 	Run: func(cmd *cobra.Command, _ []string) {
 		callbackURL, err := cmd.Flags().GetString("callback-url")
 		if err != nil {
-			logger.Fatal("failed to get callback-url flag value", zap.Error(err))
+			logger.Fatal(context.Background(), "failed to get callback-url flag value", slog.Any("error", err))
 		}
 
 		public, err := cmd.Flags().GetBool("public")
 		if err != nil {
-			logger.Fatal("failed to get public flag value", zap.Error(err))
+			logger.Fatal(context.Background(), "failed to get public flag value", slog.Any("error", err))
 		}
 
 		userID, err := cmd.Flags().GetString("user-id")
 		if err != nil {
-			logger.Fatal("failed to get user-id flag value", zap.Error(err))
+			logger.Fatal(context.Background(), "failed to get user-id flag value", slog.Any("error", err))
 		}
 
 		if callbackURL == "" {
-			logger.Fatal("callback-url is required")
+			logger.Fatal(context.Background(), "callback-url is required")
 		}
 
 		initTracer("cli-auth-add-client")
 
 		_, relDBPool, err := initRelationalDatabase()
 		if err != nil {
-			logger.Fatal("failed to initialize relational database", zap.Error(err))
+			logger.Fatal(context.Background(), "failed to initialize relational database", slog.Any("error", err))
 		}
 
 		clientStore, err := authStore.NewClientStore(
@@ -63,11 +64,11 @@ elemo auth add-client --domain example.com --public`,
 			}),
 		)
 		if err != nil {
-			logger.Fatal("failed to initialize client store", zap.Error(err))
+			logger.Fatal(context.Background(), "failed to initialize client store", slog.Any("error", err))
 		}
 
 		if err := clientStore.InitTable(context.Background()); err != nil {
-			logger.Fatal("failed to initialize client store", zap.Error(err))
+			logger.Fatal(context.Background(), "failed to initialize client store", slog.Any("error", err))
 		}
 
 		client := &models.Client{
@@ -79,15 +80,15 @@ elemo auth add-client --domain example.com --public`,
 		}
 
 		if err = clientStore.Create(client); err != nil {
-			logger.Fatal("failed to create client", zap.Error(err))
+			logger.Fatal(context.Background(), "failed to create client", slog.Any("error", err))
 		}
 
-		logger.Info("client created successfully",
-			zap.String("callback-url", client.GetDomain()),
-			zap.Bool("public", client.IsPublic()),
-			zap.String("user-id", client.GetUserID()),
-			zap.String("client-id", client.GetID()),
-			zap.String("client-secret", client.GetSecret()),
+		logger.Info(context.Background(), "client created successfully",
+			slog.String("callback-url", client.GetDomain()),
+			slog.Bool("public", client.IsPublic()),
+			slog.String("user-id", client.GetUserID()),
+			slog.String("client-id", client.GetID()),
+			slog.String("client-secret", client.GetSecret()),
 		)
 	},
 }

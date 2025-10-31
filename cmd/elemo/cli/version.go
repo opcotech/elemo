@@ -1,12 +1,14 @@
 package cli
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/goccy/go-json"
 
+	"log/slog"
+
 	"github.com/spf13/cobra"
-	"go.uber.org/zap"
 )
 
 // versionCmd represents the version command
@@ -17,7 +19,7 @@ var versionCmd = &cobra.Command{
 	Run: func(_ *cobra.Command, _ []string) {
 		b, err := json.Marshal(versionInfo)
 		if err != nil {
-			logger.Panic("failed to marshal version info", zap.Error(err))
+			logger.Panic(context.Background(), "failed to marshal version info", slog.Any("error", err))
 		}
 
 		fmt.Println(string(b))

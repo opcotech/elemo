@@ -1,12 +1,14 @@
 package cli
 
 import (
+	"context"
 	"net/http"
 	"sync"
 	"time"
 
+	"log/slog"
+
 	"github.com/spf13/cobra"
-	"go.uber.org/zap"
 
 	"github.com/opcotech/elemo/internal/queue"
 	"github.com/opcotech/elemo/internal/service"
@@ -23,12 +25,12 @@ configured port.`,
 		initTracer("worker")
 
 		if _, err := parseLicense(&cfg.License); err != nil {
-			logger.Fatal("failed to parse license", zap.Error(err))
+			logger.Fatal(context.Background(), "failed to parse license", slog.Any("error", err))
 		}
 
 		smtpClient, err := initSMTPClient(&cfg.SMTP)
 		if err != nil {
-			logger.Fatal("failed to initialize SMTP client", zap.Error(err))
+			logger.Fatal(context.Background(), "failed to initialize SMTP client", slog.Any("error", err))
 		}
 
 		emailService, err := service.NewEmailService(
@@ -39,7 +41,7 @@ configured port.`,
 			service.WithTracer(tracer),
 		)
 		if err != nil {
-			logger.Fatal("failed to initialize email service", zap.Error(err))
+			logger.Fatal(context.Background(), "failed to initialize email service", slog.Any("error", err))
 		}
 		_ = emailService
 
@@ -48,7 +50,7 @@ configured port.`,
 			async.WithTaskTracer(tracer),
 		)
 		if err != nil {
-			logger.Fatal("failed to initialize system health check task handler", zap.Error(err))
+			logger.Fatal(context.Background(), "failed to initialize system health check task handler", slog.Any("error", err))
 		}
 
 		systemLicenseExpiryTaskHandler, err := async.NewSystemLicenseExpiryTaskHandler(
@@ -57,7 +59,7 @@ configured port.`,
 			async.WithTaskTracer(tracer),
 		)
 		if err != nil {
-			logger.Fatal("failed to initialize system license expiry task handler", zap.Error(err))
+			logger.Fatal(context.Background(), "failed to initialize system license expiry task handler", slog.Any("error", err))
 		}
 
 		async.SetRateLimiter(cfg.Worker.RateLimit, cfg.Worker.RateLimitBurst)
@@ -69,7 +71,7 @@ configured port.`,
 			async.WithWorkerTracer(tracer),
 		)
 		if err != nil {
-			logger.Fatal("failed to create worker", zap.Error(err))
+			logger.Fatal(context.Background(), "failed to create worker", slog.Any("error", err))
 		}
 
 		startWorkerServers(worker)
@@ -81,17 +83,17 @@ func init() {
 }
 
 func startWorkerServer(worker *async.Worker) error {
-	logger.Info("starting worker server")
+	logger.Info(context.Background(), "starting worker server")
 	return worker.Start()
 }
 
 func startWorkerMetricsServer() error {
 	router, err := async.NewWorkerMetricsServer(&cfg.WorkerMetricsServer, tracer)
 	if err != nil {
-		logger.Fatal("failed to initialize metrics router", zap.Error(err))
+		logger.Fatal(context.Background(), "failed to initialize metrics router", slog.Any("error", err))
 	}
 
-	logger.Info("starting worker metrics server", zap.String("address", cfg.MetricsServer.Address))
+	logger.Info(context.Background(), "starting worker metrics server", slog.String("address", cfg.MetricsServer.Address))
 	s := &http.Server{
 		Addr:              cfg.WorkerMetricsServer.Address,
 		Handler:           router,
@@ -113,13 +115,13 @@ func startWorkerServers(worker *async.Worker) {
 
 	go func(wg *sync.WaitGroup) {
 		err := startWorkerServer(worker)
-		logger.Fatal("failed to start async worker", zap.Error(err))
+		logger.Fatal(context.Background(), "failed to start async worker", slog.Any("error", err))
 		wg.Done()
 	}(wg)
 
 	go func(wg *sync.WaitGroup) {
 		err := startWorkerMetricsServer()
-		logger.Fatal("failed to start worker metrics server", zap.Error(err))
+		logger.Fatal(context.Background(), "failed to start worker metrics server", slog.Any("error", err))
 		wg.Done()
 	}(wg)
 

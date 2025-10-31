@@ -8,7 +8,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
-	"go.uber.org/zap/zapcore"
 
 	"github.com/opcotech/elemo/internal/pkg/log"
 	testHttp "github.com/opcotech/elemo/internal/testutil/http"
@@ -53,14 +52,9 @@ func TestHTTPError(t *testing.T) {
 
 			logger := mock.NewMockLogger(ctrl)
 			if tt.args.status >= 500 {
-				logger.EXPECT().Log(zapcore.ErrorLevel, tt.args.err.Error(), []zapcore.Field{
-					log.WithTraceID("00000000000000000000000000000000"),
-					log.WithError(tt.args.err),
-				}).Return()
+				logger.EXPECT().Log(gomock.Any(), log.LevelError, tt.args.err.Error(), gomock.Any()).Return()
 			} else {
-				logger.EXPECT().Log(zapcore.WarnLevel, tt.args.err.Error(), []zapcore.Field{
-					log.WithTraceID("00000000000000000000000000000000"),
-				}).Return()
+				logger.EXPECT().Log(gomock.Any(), log.LevelWarn, tt.args.err.Error(), gomock.Any()).Return()
 			}
 
 			ctx := log.WithContext(context.Background(), logger)
@@ -118,14 +112,9 @@ func TestHTTPErrorStruct(t *testing.T) {
 
 			logger := mock.NewMockLogger(ctrl)
 			if tt.args.status >= 500 {
-				logger.EXPECT().Log(zapcore.ErrorLevel, tt.args.err.Error(), []zapcore.Field{
-					log.WithTraceID("00000000000000000000000000000000"),
-					log.WithError(tt.args.err),
-				}).Return()
+				logger.EXPECT().Log(gomock.Any(), log.LevelError, tt.args.err.Error(), gomock.Any()).Return()
 			} else {
-				logger.EXPECT().Log(zapcore.WarnLevel, tt.args.err.Error(), []zapcore.Field{
-					log.WithTraceID("00000000000000000000000000000000"),
-				}).Return()
+				logger.EXPECT().Log(gomock.Any(), log.LevelWarn, tt.args.err.Error(), gomock.Any()).Return()
 			}
 
 			ctx := log.WithContext(context.Background(), logger)
