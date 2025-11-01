@@ -6,6 +6,7 @@ export * from "./organization-detail-header";
 export * from "./organization-detail-info";
 export * from "./organization-detail-field";
 export * from "./organization-detail-skeleton";
+export * from "./organization-edit-form";
 export * from "./organization-list";
 export * from "./organization-list-skeleton";
 export * from "./organization-members-list";

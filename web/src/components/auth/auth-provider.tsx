@@ -1,5 +1,5 @@
 import { useNavigate } from "@tanstack/react-router";
-import { useEffect, useReducer } from "react";
+import { useEffect, useReducer, useRef } from "react";
 import type { ReactNode } from "react";
 
 import { client, v1UserGet } from "@/lib/api";
@@ -20,6 +20,7 @@ import type {
   LoginCredentials,
   User,
 } from "@/lib/auth/types";
+import { queryClient } from "@/lib/query-client";
 
 type AuthAction =
   | { type: "SET_LOADING"; payload: boolean }
@@ -74,6 +75,15 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps) {
   const navigate = useNavigate();
   const [state, dispatch] = useReducer(authReducer, initialState);
+  const prevIsAuthenticatedRef = useRef<boolean>(false);
+
+  // Clear query cache when authentication state transitions from authenticated to unauthenticated
+  useEffect(() => {
+    if (prevIsAuthenticatedRef.current && !state.isAuthenticated) {
+      queryClient.clear();
+    }
+    prevIsAuthenticatedRef.current = state.isAuthenticated;
+  }, [state.isAuthenticated]);
 
   // Initialize auth state on mount
   useEffect(() => {
@@ -188,6 +198,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const login = async (credentials: LoginCredentials): Promise<void> => {
     try {
+      queryClient.clear();
       dispatch({ type: "SET_LOADING", payload: true });
       dispatch({ type: "SET_ERROR", payload: null });
 
@@ -220,6 +231,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // eslint-disable-next-line @typescript-eslint/require-await
   const logout = async (): Promise<void> => {
+    queryClient.clear();
     tokenRefreshService.stopAutoRefresh();
     clearAllAuthData();
     dispatch({ type: "CLEAR_AUTH" });

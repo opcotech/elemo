@@ -7,18 +7,21 @@ import {
 } from "@/components/organizations";
 import { useBreadcrumbUtils } from "@/hooks/use-breadcrumbs";
 import { ResourceType } from "@/hooks/use-permissions";
-import { requirePermissionBeforeLoad } from "@/lib/auth/require-auth";
+import { useRequirePermission } from "@/hooks/use-require-permission";
+import { requireAuthBeforeLoad } from "@/lib/auth/require-auth";
 
 export const Route = createFileRoute("/settings/organizations/new")({
-  beforeLoad: requirePermissionBeforeLoad({
-    resourceType: ResourceType.Organization,
-    permissionKind: "create",
-  }),
+  beforeLoad: requireAuthBeforeLoad,
   component: OrganizationCreatePage,
 });
 
 function OrganizationCreatePage() {
   const { setBreadcrumbsFromItems } = useBreadcrumbUtils();
+
+  const { isLoading: isCheckingPermission } = useRequirePermission({
+    resourceType: ResourceType.Organization,
+    permissionKind: "create",
+  });
 
   useEffect(() => {
     setBreadcrumbsFromItems([
@@ -38,6 +41,11 @@ function OrganizationCreatePage() {
       },
     ]);
   }, [setBreadcrumbsFromItems]);
+
+  // Show nothing while checking permissions (redirect will happen if denied)
+  if (isCheckingPermission) {
+    return null;
+  }
 
   return (
     <div className="space-y-6">

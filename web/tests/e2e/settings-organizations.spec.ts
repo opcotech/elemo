@@ -57,9 +57,9 @@ test.describe("@settings.organizations Organization Listing E2E Tests", () => {
       await expect(
         alphaRow.locator('a[href*="/settings/organizations/"]').first()
       ).toBeVisible();
-      // Edit button is disabled but should be visible (getByRole handles sr-only spans)
+      // Edit button is a Link (wrapped in Button with asChild)
       await expect(
-        alphaRow.getByRole("button", { name: "Edit organization" })
+        alphaRow.getByRole("link", { name: "Edit organization" })
       ).toBeVisible();
       await expect(
         alphaRow.getByRole("button", { name: "Delete organization" })
@@ -165,7 +165,7 @@ test.describe("@settings.organizations Organization Listing E2E Tests", () => {
 
       // Should NOT have edit or delete buttons
       await expect(
-        memberRow.getByRole("button", { name: "Edit organization" })
+        memberRow.getByRole("link", { name: "Edit organization" })
       ).not.toBeVisible();
       await expect(
         memberRow.getByRole("button", { name: "Delete organization" })
@@ -235,7 +235,7 @@ test.describe("@settings.organizations Organization Listing E2E Tests", () => {
         orgA.locator('a[href*="/settings/organizations/"]').first()
       ).toBeVisible();
       await expect(
-        orgA.getByRole("button", { name: "Edit organization" })
+        orgA.getByRole("link", { name: "Edit organization" })
       ).not.toBeVisible();
       await expect(
         orgA.getByRole("button", { name: "Delete organization" })
@@ -251,7 +251,7 @@ test.describe("@settings.organizations Organization Listing E2E Tests", () => {
         orgB.locator('a[href*="/settings/organizations/"]').first()
       ).toBeVisible();
       await expect(
-        orgB.getByRole("button", { name: "Edit organization" })
+        orgB.getByRole("link", { name: "Edit organization" })
       ).toBeVisible();
       await expect(
         orgB.getByRole("button", { name: "Delete organization" })
@@ -267,7 +267,7 @@ test.describe("@settings.organizations Organization Listing E2E Tests", () => {
         orgC.locator('a[href*="/settings/organizations/"]').first()
       ).toBeVisible();
       await expect(
-        orgC.getByRole("button", { name: "Edit organization" })
+        orgC.getByRole("link", { name: "Edit organization" })
       ).toBeVisible();
       await expect(
         orgC.getByRole("button", { name: "Delete organization" })
@@ -340,7 +340,7 @@ test.describe("@settings.organizations Organization Listing E2E Tests", () => {
         orgRow.locator('a[href*="/settings/organizations/"]').first()
       ).toBeVisible();
       await expect(
-        orgRow.getByRole("button", { name: "Edit organization" })
+        orgRow.getByRole("link", { name: "Edit organization" })
       ).not.toBeVisible();
       await expect(
         orgRow.getByRole("button", { name: "Delete organization" })
@@ -361,7 +361,7 @@ test.describe("@settings.organizations Organization Listing E2E Tests", () => {
         orgRow.locator('a[href*="/settings/organizations/"]').first()
       ).toBeVisible();
       await expect(
-        orgRow.getByRole("button", { name: "Edit organization" })
+        orgRow.getByRole("link", { name: "Edit organization" })
       ).toBeVisible();
       await expect(
         orgRow.getByRole("button", { name: "Delete organization" })
@@ -384,7 +384,7 @@ test.describe("@settings.organizations Organization Listing E2E Tests", () => {
         orgRow.locator('a[href*="/settings/organizations/"]').first()
       ).toBeVisible();
       await expect(
-        orgRow.getByRole("button", { name: "Edit organization" })
+        orgRow.getByRole("link", { name: "Edit organization" })
       ).toBeVisible();
       await expect(
         orgRow.getByRole("button", { name: "Delete organization" })

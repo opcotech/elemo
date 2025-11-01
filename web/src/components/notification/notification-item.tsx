@@ -20,10 +20,12 @@ export function NotificationItem({
   notification,
   onSuccess,
 }: NotificationItemProps) {
+  const queryClient = useQueryClient();
+
   const deleteMutation = useMutation({
     ...v1NotificationDeleteMutation(),
     onSuccess: () => {
-      useQueryClient().invalidateQueries({
+      queryClient.invalidateQueries({
         queryKey: v1NotificationsGetOptions().queryKey,
       });
       showSuccessToast(
