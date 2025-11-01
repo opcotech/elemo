@@ -8,6 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { ExternalLink } from "@/components/ui/external-link";
 import type { Organization } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
 
@@ -32,14 +33,7 @@ export function OrganizationDetailInfo({
 
           <OrganizationDetailField label="Website">
             {organization.website ? (
-              <a
-                href={organization.website}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary hover:underline"
-              >
-                {organization.website}
-              </a>
+              <ExternalLink href={organization.website} />
             ) : (
               <span className="text-muted-foreground">—</span>
             )}

@@ -10,6 +10,7 @@ import (
 
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/repository"
+	"github.com/opcotech/elemo/internal/repository/neo4j"
 	"github.com/opcotech/elemo/internal/testutil"
 	testModel "github.com/opcotech/elemo/internal/testutil/model"
 	testRepo "github.com/opcotech/elemo/internal/testutil/repository"
@@ -128,6 +129,66 @@ func (s *PermissionRepositoryIntegrationTestSuite) TestGetBySubjectAndTarget() {
 
 	s.Assert().Len(permissions, 1)
 	s.Assert().Equal(s.permission.ID, permissions[0].ID)
+}
+
+func (s *PermissionRepositoryIntegrationTestSuite) TestGetBySubjectAndTargetSystemLevel() {
+	systemTarget := model.MustNewNilID(model.ResourceTypeOrganization)
+
+	permissions, err := s.PermissionRepo.GetBySubjectAndTarget(context.Background(), s.testUser.ID, systemTarget)
+	s.Require().NoError(err)
+	s.Assert().Len(permissions, 0)
+
+	s.Require().NoError(testRepo.MakeUserSystemOwner(s.testUser.ID, s.Neo4jDB))
+
+	permissions, err = s.PermissionRepo.GetBySubjectAndTarget(context.Background(), s.testUser.ID, systemTarget)
+	s.Require().NoError(err)
+	s.Assert().GreaterOrEqual(len(permissions), 1)
+
+	hasAllPermission := false
+	for _, perm := range permissions {
+		if perm.Kind == model.PermissionKindAll {
+			hasAllPermission = true
+			break
+		}
+	}
+	s.Assert().True(hasAllPermission, "System owner should have '*' permission")
+
+	for _, perm := range permissions {
+		s.Assert().True(perm.Target.IsNil(), "Target should be nil ID for system-level permissions")
+		s.Assert().Equal(model.ResourceTypeOrganization, perm.Target.Type)
+	}
+}
+
+func (s *PermissionRepositoryIntegrationTestSuite) TestGetBySubjectAndTargetSystemLevelDirectPermission() {
+	systemTarget := model.MustNewNilID(model.ResourceTypeOrganization)
+
+	directPerm := testModel.NewPermission(
+		s.testUser.ID,
+		systemTarget,
+		model.PermissionKindWrite,
+	)
+	cypher := `
+	MATCH (s:` + s.testUser.ID.Label() + ` {id: $subject})
+	MATCH (rt:` + model.ResourceTypeResourceType.String() + ` {id: $target_label})
+	MERGE (s)-[p:` + neo4j.EdgeKindHasPermission.String() + ` {id: $id, kind: $kind}]->(rt)
+	ON CREATE SET p.created_at = datetime($created_at)
+	`
+	params := map[string]any{
+		"subject":      s.testUser.ID.String(),
+		"target_label": systemTarget.Label(),
+		"id":           directPerm.ID.String(),
+		"kind":         directPerm.Kind.String(),
+		"created_at":   time.Now().UTC().Format(time.RFC3339Nano),
+	}
+	_, err := s.Neo4jDB.GetWriteSession(context.Background()).Run(context.Background(), cypher, params)
+	s.Require().NoError(err)
+
+	permissions, err := s.PermissionRepo.GetBySubjectAndTarget(context.Background(), s.testUser.ID, systemTarget)
+	s.Require().NoError(err)
+	s.Assert().Len(permissions, 1)
+	s.Assert().Equal(model.PermissionKindWrite, permissions[0].Kind)
+	s.Assert().True(permissions[0].Target.IsNil())
+	s.Assert().Equal(model.ResourceTypeOrganization, permissions[0].Target.Type)
 }
 
 func (s *PermissionRepositoryIntegrationTestSuite) TestUpdate() {

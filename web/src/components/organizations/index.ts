@@ -1,5 +1,6 @@
 export * from "./organization-card";
 export * from "./organization-card-skeleton";
+export * from "./organization-create-form";
 export * from "./organization-detail-error";
 export * from "./organization-detail-header";
 export * from "./organization-detail-info";
