@@ -556,7 +556,20 @@ func NewOrganizationController(opts ...ControllerOption) (OrganizationController
 }
 
 func createOrganizationJSONRequestBodyToOrganization(body *api.V1OrganizationsCreateJSONRequestBody) (*model.Organization, error) {
-	return model.NewOrganization(body.Name, string(body.Email))
+	organization, err := model.NewOrganization(body.Name, string(body.Email))
+	if err != nil {
+		return nil, err
+	}
+
+	if body.Website != nil {
+		organization.Website = *body.Website
+	}
+
+	if body.Logo != nil {
+		organization.Logo = *body.Logo
+	}
+
+	return organization, nil
 }
 
 func organizationToDTO(organization *model.Organization) api.Organization {

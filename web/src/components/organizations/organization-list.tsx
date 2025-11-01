@@ -1,11 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
-import { Search } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { Plus, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { OrganizationRow } from "./organization-row";
 import { OrganizationTableSkeletonRows } from "./organization-table-skeleton";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -22,7 +24,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  ResourceType,
+  usePermissions,
+  withResourceType,
+} from "@/hooks/use-permissions";
 import { v1OrganizationsGetOptions } from "@/lib/api";
+import { can } from "@/lib/auth/permissions";
 
 export function OrganizationList() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -32,6 +40,11 @@ export function OrganizationList() {
     isLoading,
     error,
   } = useQuery(v1OrganizationsGetOptions());
+
+  const { data: systemPermissions } = usePermissions(
+    withResourceType(ResourceType.Organization)
+  );
+  const canCreate = can(systemPermissions, "create");
 
   const sortedOrganizations = useMemo(() => {
     if (!organizations) return [];
@@ -72,8 +85,20 @@ export function OrganizationList() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Organizations</CardTitle>
-        <CardDescription>View and manage organizations.</CardDescription>
+        <div className="flex items-start justify-between">
+          <div>
+            <CardTitle>Organizations</CardTitle>
+            <CardDescription>View and manage organizations.</CardDescription>
+          </div>
+          {canCreate && (
+            <Button asChild>
+              <Link to="/settings/organizations/new">
+                <Plus className="size-4" />
+                Create Organization
+              </Link>
+            </Button>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="relative max-w-md flex-1">

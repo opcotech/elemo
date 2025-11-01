@@ -53,6 +53,126 @@ func (r *PermissionRepository) scan(permParam, subjectParam, targetParam string)
 	}
 }
 
+// scanSystemLevelPermission is a helper function for scanning a permission from a ResourceType node.
+// The target is preserved as a nil ID (system-level permission) rather than parsing from the node.
+func (r *PermissionRepository) scanSystemLevelPermission(target model.ID) func(rec *neo4j.Record) (*model.Permission, error) {
+	return func(rec *neo4j.Record) (*model.Permission, error) {
+		val, _, err := neo4j.GetRecordValue[neo4j.Relationship](rec, "p")
+		if err != nil {
+			return nil, err
+		}
+
+		subject, _, err := neo4j.GetRecordValue[neo4j.Node](rec, "s")
+		if err != nil {
+			return nil, err
+		}
+
+		perm := &model.Permission{}
+		if err := ScanIntoStruct(&val, &perm, []string{"id"}); err != nil {
+			return nil, err
+		}
+
+		perm.ID, _ = model.NewIDFromString(val.GetProperties()["id"].(string), model.ResourceTypePermission.String())
+		perm.Subject, _ = model.NewIDFromString(subject.GetProperties()["id"].(string), subject.Labels[0])
+		perm.Target = target // Preserve nil ID for system-level permissions
+
+		kindStr := val.GetProperties()["kind"].(string)
+		if err := perm.Kind.UnmarshalText([]byte(kindStr)); err != nil {
+			return nil, err
+		}
+
+		if err := perm.Validate(); err != nil {
+			return nil, err
+		}
+
+		return perm, nil
+	}
+}
+
+// scanSystemRolePermission is a helper function for scanning permissions from system roles.
+// The target is preserved as a nil ID (system-level permission) rather than parsing from the node.
+func (r *PermissionRepository) scanSystemRolePermission(target model.ID) func(rec *neo4j.Record) (*model.Permission, error) {
+	return func(rec *neo4j.Record) (*model.Permission, error) {
+		val, _, err := neo4j.GetRecordValue[neo4j.Relationship](rec, "p")
+		if err != nil {
+			return nil, err
+		}
+
+		subject, _, err := neo4j.GetRecordValue[neo4j.Node](rec, "s")
+		if err != nil {
+			return nil, err
+		}
+
+		perm := &model.Permission{}
+		if err := ScanIntoStruct(&val, &perm, []string{"id"}); err != nil {
+			return nil, err
+		}
+
+		// Generate a new ID for virtual permission (system role permission)
+		perm.ID = model.MustNewID(model.ResourceTypePermission)
+		perm.Subject, _ = model.NewIDFromString(subject.GetProperties()["id"].(string), subject.Labels[0])
+		perm.Target = target // Preserve nil ID for system-level permissions
+
+		kindStr := val.GetProperties()["kind"].(string)
+		if err := perm.Kind.UnmarshalText([]byte(kindStr)); err != nil {
+			return nil, err
+		}
+
+		// Set default CreatedAt if not set by ScanIntoStruct
+		if perm.CreatedAt == nil {
+			now := time.Now().UTC()
+			perm.CreatedAt = &now
+		}
+
+		if err := perm.Validate(); err != nil {
+			return nil, err
+		}
+
+		return perm, nil
+	}
+}
+
+// getDirectResourceTypePermissions returns direct permissions on a ResourceType node.
+func (r *PermissionRepository) getDirectResourceTypePermissions(ctx context.Context, source, target model.ID) ([]*model.Permission, error) {
+	cypher := `
+	MATCH (s:` + source.Label() + ` {id: $source})-[p:` + EdgeKindHasPermission.String() + `]->(rt:` + model.ResourceTypeResourceType.String() + ` {id: $target_label})
+	RETURN s, p, rt
+	ORDER BY p.created_at DESC`
+
+	params := map[string]any{
+		"source":       source.String(),
+		"target_label": target.Label(),
+	}
+
+	perms, err := ExecuteReadAndReadAll(ctx, r.db, cypher, params, r.scanSystemLevelPermission(target))
+	if err != nil {
+		return nil, errors.Join(err, repository.ErrPermissionRead)
+	}
+
+	return perms, nil
+}
+
+// getSystemRolePermissions returns permissions derived from system roles (Owner, Admin, Support).
+func (r *PermissionRepository) getSystemRolePermissions(ctx context.Context, source, target model.ID) ([]*model.Permission, error) {
+	cypher := `
+	MATCH (s:` + source.Label() + ` {id: $source})-[m:` + EdgeKindMemberOf.String() + `]->(r:` + model.ResourceTypeRole.String() + ` {system: true})
+	MATCH (r)-[p:` + EdgeKindHasPermission.String() + `]->(rt:` + model.ResourceTypeResourceType.String() + ` {id: $target_label})
+	RETURN DISTINCT s, p, rt
+	ORDER BY p.created_at DESC`
+
+	params := map[string]any{
+		"source":       source.String(),
+		"target_label": target.Label(),
+	}
+
+	perms, err := ExecuteReadAndReadAll(ctx, r.db, cypher, params, r.scanSystemRolePermission(target))
+	if err != nil {
+		return nil, errors.Join(err, repository.ErrPermissionRead)
+	}
+
+	return perms, nil
+}
+
 // Create creates a new permission if it does not already exist between the
 // subject and target. If the permission already exists, no action is taken.
 func (r *PermissionRepository) Create(ctx context.Context, perm *model.Permission) error {
@@ -158,10 +278,26 @@ func (r *PermissionRepository) GetByTarget(ctx context.Context, id model.ID) ([]
 }
 
 // GetBySubjectAndTarget returns all permissions for a given target that the
-// source has. If no permissions exist, an empty slice is returned.
+// source has. If no permissions exist, an empty slice is returned. For system
+// level permissions (nil IDs), it checks permissions on ResourceType nodes
+// and system roles.
 func (r *PermissionRepository) GetBySubjectAndTarget(ctx context.Context, source, target model.ID) ([]*model.Permission, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.PermissionRepository/GetBySubjectAndTarget")
 	defer span.End()
+
+	if target.IsNil() {
+		directPerms, err := r.getDirectResourceTypePermissions(ctx, source, target)
+		if err != nil {
+			return nil, err
+		}
+
+		systemRolePerms, err := r.getSystemRolePermissions(ctx, source, target)
+		if err != nil {
+			return nil, err
+		}
+
+		return deduplicatePermissions(directPerms, systemRolePerms), nil
+	}
 
 	cypher := `
 	MATCH (s:` + source.Label() + ` {id: $source})-[p:` + EdgeKindHasPermission.String() + `]->(t:` + target.Label() + ` {id: $target})
@@ -405,4 +541,45 @@ func NewPermissionRepository(opts ...RepositoryOption) (*PermissionRepository, e
 	return &PermissionRepository{
 		baseRepository: baseRepo,
 	}, nil
+}
+
+// deduplicatePermissions merges permissions from different sources, giving precedence to
+// PermissionKindAll ("*") when present. If "*" permission exists, all other permissions are
+// removed as "*" grants all permissions.
+func deduplicatePermissions(directPerms, systemRolePerms []*model.Permission) []*model.Permission {
+	permissionMap := make(map[model.PermissionKind]*model.Permission)
+
+	// Add direct permissions first
+	for _, perm := range directPerms {
+		permissionMap[perm.Kind] = perm
+	}
+
+	// Add system role permissions with deduplication logic
+	for _, perm := range systemRolePerms {
+		// If we already have "*" permission and this is not "*", skip it
+		if _, hasAll := permissionMap[model.PermissionKindAll]; hasAll && perm.Kind != model.PermissionKindAll {
+			continue
+		}
+
+		// If we're adding "*" permission, it overrides all others
+		if perm.Kind == model.PermissionKindAll {
+			permissionMap = map[model.PermissionKind]*model.Permission{
+				model.PermissionKindAll: perm,
+			}
+			break
+		}
+
+		// Add permission if not already present
+		if _, exists := permissionMap[perm.Kind]; !exists {
+			permissionMap[perm.Kind] = perm
+		}
+	}
+
+	// Convert map to slice
+	result := make([]*model.Permission, 0, len(permissionMap))
+	for _, perm := range permissionMap {
+		result = append(result, perm)
+	}
+
+	return result
 }

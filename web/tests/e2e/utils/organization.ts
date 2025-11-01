@@ -153,9 +153,42 @@ export async function createDBOrganizationWithPermission(
 }
 
 /**
- * Adds a member to an organization with specific permissions.
- * This simulates adding a user as a member (not owner) to an existing organization.
+ * Grants a user create permission on the system Organization resource type.
+ * This allows the user to create organizations.
  */
+export async function grantSystemWritePermission(
+  userId: string,
+  resourceType: string = "Organization"
+): Promise<void> {
+  const session = getSession();
+  const permissionId = await generateXid();
+  const createdAt = new Date().toISOString();
+
+  await session.executeWrite((tx: any) => {
+    // First ensure the ResourceType node exists (it uses the resource type string as its id)
+    const ensureResourceTypeQuery = `
+      MERGE (rt:ResourceType {id: $resourceType})
+    `;
+
+    // Grant 'create' permission (backend requires 'create' for organization creation)
+    const createPermissionQuery = `
+      MATCH (u:User {id: $userId})
+      MATCH (rt:ResourceType {id: $resourceType})
+      MERGE (u)-[:HAS_PERMISSION {id: $permissionId, created_at: datetime($created_at), kind: $permissionKind}]->(rt)
+    `;
+
+    tx.run(ensureResourceTypeQuery, { resourceType });
+    return tx.run(createPermissionQuery, {
+      userId,
+      resourceType,
+      permissionId,
+      permissionKind: "create",
+      created_at: createdAt,
+    });
+  });
+
+  await session.close();
+}
 export async function addMemberToOrganization(
   orgId: string,
   memberId: string,

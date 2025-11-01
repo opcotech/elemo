@@ -2,6 +2,8 @@ import { useQuery } from "@tanstack/react-query";
 
 import { v1PermissionResourceGetOptions } from "@/lib/api";
 
+const SYSTEM_NIL_ID = "00000000000000000000";
+
 export enum ResourceType {
   Assignment = "Assignment",
   Attachment = "Attachment",
@@ -21,11 +23,21 @@ export enum ResourceType {
   UserToken = "UserToken",
 }
 
+/**
+ * Constructs a resource ID string for a given resource type and ID.
+ *
+ * If the resource ID is not provided, it will return a resource ID string with
+ * a nil ID -- which is used to check system-level permissions.
+ *
+ * @param resourceType - The type of resource to check permissions for.
+ * @param resourceId - The ID of the resource to check permissions for.
+ * @returns The resource ID string.
+ */
 export function withResourceType(
   resourceType: ResourceType,
-  resourceId: string
+  resourceId?: string
 ) {
-  return `${resourceType}:${resourceId}`;
+  return `${resourceType}:${resourceId ? `${resourceId}` : SYSTEM_NIL_ID}`;
 }
 
 export function usePermissions(

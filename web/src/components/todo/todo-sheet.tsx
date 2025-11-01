@@ -135,7 +135,7 @@ export function TodoSheet() {
           onClick={openAddForm}
           className="h-8 px-3"
         >
-          <Plus className="mr-1.5 h-4 w-4" />
+          <Plus className="h-4 w-4" />
           Add Todo
         </Button>
         <ScrollArea className="h-full">
