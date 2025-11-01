@@ -19,12 +19,12 @@ import {
 import { requireAuthBeforeLoad } from "@/lib/auth/require-auth";
 import { getUser } from "@/lib/auth/session";
 
-export const Route = createFileRoute("/settings/organizations/$organizationId")(
-  {
-    beforeLoad: requireAuthBeforeLoad,
-    component: OrganizationDetailPage,
-  }
-);
+export const Route = createFileRoute(
+  "/settings/organizations/$organizationId/"
+)({
+  beforeLoad: requireAuthBeforeLoad,
+  component: OrganizationDetailPage,
+});
 
 function OrganizationDetailPage() {
   const { setBreadcrumbsFromItems } = useBreadcrumbUtils();

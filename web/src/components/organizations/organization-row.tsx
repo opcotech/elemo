@@ -80,9 +80,14 @@ export function OrganizationRow({
                 </Button>
               )}
               {hasWritePermission && (
-                <Button variant="ghost" size="sm" disabled>
-                  <Edit className="size-4" />
-                  <span className="sr-only">Edit organization</span>
+                <Button variant="ghost" size="sm" asChild>
+                  <Link
+                    to="/settings/organizations/$organizationId/edit"
+                    params={{ organizationId: organization.id }}
+                  >
+                    <Edit className="size-4" />
+                    <span className="sr-only">Edit organization</span>
+                  </Link>
                 </Button>
               )}
               {hasDeletePermission && (
