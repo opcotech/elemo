@@ -11,8 +11,9 @@ import {
 } from "@/components/organizations";
 import { useBreadcrumbUtils } from "@/hooks/use-breadcrumbs";
 import { ResourceType } from "@/hooks/use-permissions";
+import { useRequirePermission } from "@/hooks/use-require-permission";
 import { isNotFound, v1OrganizationGetOptions } from "@/lib/api";
-import { requirePermissionBeforeLoad } from "@/lib/auth/require-auth";
+import { requireAuthBeforeLoad } from "@/lib/auth/require-auth";
 
 type RouteParams = {
   organizationId: string;
@@ -21,11 +22,7 @@ type RouteParams = {
 export const Route = createFileRoute(
   "/settings/organizations/$organizationId/edit"
 )({
-  beforeLoad: requirePermissionBeforeLoad({
-    resourceType: ResourceType.Organization,
-    permissionKind: "write",
-    resourceId: (ctx) => ctx.params?.organizationId,
-  }),
+  beforeLoad: requireAuthBeforeLoad,
   component: OrganizationEditPage,
 });
 
@@ -33,17 +30,25 @@ function OrganizationEditPage() {
   const { setBreadcrumbsFromItems } = useBreadcrumbUtils();
   const { organizationId } = Route.useParams() as RouteParams;
 
+  const { isLoading: isCheckingPermission } = useRequirePermission({
+    resourceType: ResourceType.Organization,
+    permissionKind: "write",
+    resourceId: () => organizationId,
+  });
+
   const {
     data: organization,
     isLoading,
     error,
-  } = useQuery(
-    v1OrganizationGetOptions({
+  } = useQuery({
+    ...v1OrganizationGetOptions({
       path: {
         id: organizationId,
       },
-    })
-  );
+    }),
+    // Don't fetch organization data until permission is confirmed
+    enabled: !isCheckingPermission,
+  });
 
   useEffect(() => {
     if (!organization) return;
@@ -71,7 +76,8 @@ function OrganizationEditPage() {
     ]);
   }, [setBreadcrumbsFromItems, organization]);
 
-  if (isLoading) {
+  // Show loading while checking permissions or loading organization
+  if (isCheckingPermission || isLoading) {
     return <OrganizationDetailSkeleton />;
   }
 

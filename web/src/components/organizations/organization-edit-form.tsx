@@ -29,7 +29,7 @@ import { zOrganizationPatch } from "@/lib/client/zod.gen";
 import { showErrorToast, showSuccessToast } from "@/lib/toast";
 
 // Create a schema without logo and status fields for the form
-// TODO: Add logo field back in when implementing image upload
+// TODO: Add logo field when implementing image upload
 const organizationEditFormSchema = zOrganizationPatch.omit({
   logo: true,
   status: true,

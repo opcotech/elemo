@@ -94,16 +94,14 @@ test.describe("@auth Authentication E2E Tests", () => {
     await page.getByRole("button", { name: "Sign in" }).click();
 
     // Wait for error to appear
-    await page.waitForTimeout(2000);
-
     // Check for error message - be more flexible with the error text
     const errorAlert = page.locator('[role="alert"]');
-    if (await errorAlert.isVisible()) {
-      // Check for any error message, not just specific patterns
-      const errorText = await errorAlert.textContent();
-      expect(errorText).toBeTruthy();
-      expect(errorText?.length).toBeGreaterThan(0);
-    }
+    await expect(errorAlert).toBeVisible({ timeout: 5000 });
+    
+    // Check for any error message, not just specific patterns
+    const errorText = await errorAlert.textContent();
+    expect(errorText).toBeTruthy();
+    expect(errorText?.length).toBeGreaterThan(0);
 
     // Should still be on login page
     await expect(page).toHaveURL(/.*login/);
@@ -177,7 +175,8 @@ test.describe("@auth Authentication E2E Tests", () => {
 
     if (await userMenu.isVisible()) {
       await userMenu.click();
-      await page.waitForTimeout(500);
+      // Wait for menu to expand/logout button to be visible
+      await expect(logoutButton).toBeVisible({ timeout: 3000 });
     }
 
     if (await logoutButton.isVisible()) {
@@ -218,8 +217,8 @@ test.describe("@auth Authentication E2E Tests", () => {
     await page.getByRole("textbox", { name: "Password" }).fill("password123");
     await page.keyboard.press("Enter");
 
-    // Should attempt to submit form
-    await page.waitForTimeout(1000);
+    // Should attempt to submit form - wait for either navigation or error
+    await page.waitForLoadState("networkidle");
   });
 
   test("should handle loading states during login", async ({ page }) => {
@@ -251,11 +250,10 @@ test.describe("@auth Authentication E2E Tests", () => {
     await page.getByLabel("Email").fill("invalid@example.com");
     await page.getByRole("textbox", { name: "Password" }).fill("wrongpassword");
     await page.getByRole("button", { name: "Sign in" }).click();
-    await page.waitForTimeout(2000);
 
     // Check if error is visible
     const errorAlert = page.locator('[role="alert"]');
-    const hasError = await errorAlert.isVisible();
+    const hasError = await errorAlert.isVisible({ timeout: 5000 }).catch(() => false);
 
     if (hasError) {
       // Start typing in email field

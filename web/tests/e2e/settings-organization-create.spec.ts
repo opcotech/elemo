@@ -156,13 +156,10 @@ test.describe("@settings.organization-create Organization Create E2E Tests", () 
       // Try to submit without filling required fields
       await page.getByRole("button", { name: "Create Organization" }).click();
 
-      // Wait a bit for validation to trigger
-      await page.waitForTimeout(1000);
-
       // Should show validation errors - FormMessage displays error messages
       // Check for any error message text in the form
       const formMessages = page.locator('[data-slot="form-message"]');
-      await expect(formMessages.first()).toBeVisible({ timeout: 2000 });
+      await expect(formMessages.first()).toBeVisible({ timeout: 5000 });
     });
 
     test("should show validation error for invalid email", async ({ page }) => {
@@ -176,14 +173,11 @@ test.describe("@settings.organization-create Organization Create E2E Tests", () 
 
       await page.getByRole("button", { name: "Create Organization" }).click();
 
-      // Wait for validation error to appear
-      await page.waitForTimeout(500);
-
       // Should show email validation error - check in the email field's error message
       const emailField = page.getByLabel("Email").locator("..");
       await expect(
         emailField.locator("text=/invalid|email|must/i").first()
-      ).toBeVisible({ timeout: 2000 });
+      ).toBeVisible({ timeout: 5000 });
     });
 
     test("should show validation error for invalid website URL", async ({
@@ -201,14 +195,11 @@ test.describe("@settings.organization-create Organization Create E2E Tests", () 
       // Trigger validation by blurring the field
       await page.getByLabel("Website").blur();
 
-      // Wait for validation to trigger
-      await page.waitForTimeout(1000);
-
       // Submit the form
       await page.getByRole("button", { name: "Create Organization" }).click();
 
-      // Wait a bit to see if validation error appears or form submits
-      await page.waitForTimeout(2000);
+      // Wait a moment for either navigation or validation to occur
+      await page.waitForLoadState("networkidle");
 
       // Check if we're still on the create page (validation prevented submission)
       // or if form message appears
@@ -218,7 +209,7 @@ test.describe("@settings.organization-create Organization Create E2E Tests", () 
 
       // Either validation error should appear OR form should stay on create page
       // (indicating validation prevented submission)
-      const hasError = await formMessage.isVisible().catch(() => false);
+      const hasError = await formMessage.isVisible({ timeout: 2000 }).catch(() => false);
 
       if (!hasError && !isOnCreatePage) {
         // Form submitted successfully - this means validation didn't catch the invalid URL

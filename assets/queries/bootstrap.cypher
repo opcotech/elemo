@@ -30,6 +30,14 @@ ON CREATE SET r.created_at = datetime();
 
 // ============================================================================
 // Create system roles to manage resources
+//
+// The users with system roles assigned are considered superusers. However,
+// they shouldn't access __ALL__ resources. Some resources may contain private
+// or sensitive data to the individual user. For example, a user may create a
+// TODO item for themselves that should not be visible to other users.
+//
+// All other resources are considered public within the platform and can be
+// accessed by all users (with necessary permissions).
 // ============================================================================
 
 // Create roles
@@ -48,7 +56,6 @@ UNWIND [
   'Organization',
   'Project',
   'Role',
-  'Todo',
   'User'
 ] AS t
 UNWIND [
@@ -57,7 +64,8 @@ UNWIND [
   ['Support', 'read', 'write']
 ] AS bindings
 WITH t, bindings[0] AS role, bindings[1..] AS permissions
-MATCH (rt:ResourceType {id: t}), (r:Role {id: role})
+MATCH (rt:ResourceType {id: t})
+OPTIONAL MATCH (r:Role {id: role, system: true})
 WITH rt, r, permissions
 UNWIND permissions AS permission
 MERGE (r)-[p:HAS_PERMISSION {kind: permission}]->(rt)
