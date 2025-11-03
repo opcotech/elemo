@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Edit, Eye, Trash2 } from "lucide-react";
+import { useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,12 +15,15 @@ import {
 import type { Organization } from "@/lib/api";
 import { can } from "@/lib/auth/permissions";
 import { pluralize } from "@/lib/utils";
+import { OrganizationDeleteDialog } from "./organization-delete-dialog";
 
 export function OrganizationRow({
   organization,
 }: {
   organization: Organization;
 }) {
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+
   const { data: permissions, isLoading: isPermissionsLoading } = usePermissions(
     withResourceType(ResourceType.Organization, organization.id)
   );
@@ -90,11 +94,22 @@ export function OrganizationRow({
                   </Link>
                 </Button>
               )}
-              {hasDeletePermission && (
-                <Button variant="ghost" size="sm" disabled>
-                  <Trash2 className="size-4" />
-                  <span className="sr-only">Delete organization</span>
-                </Button>
+              {hasDeletePermission && organization.status === "active" && (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setDeleteDialogOpen(true)}
+                  >
+                    <Trash2 className="size-4" />
+                    <span className="sr-only">Delete organization</span>
+                  </Button>
+                  <OrganizationDeleteDialog
+                    organization={organization}
+                    open={deleteDialogOpen}
+                    onOpenChange={setDeleteDialogOpen}
+                  />
+                </>
               )}
             </>
           )}

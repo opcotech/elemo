@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 
 import {
+  OrganizationDangerZone,
   OrganizationDetailError,
   OrganizationDetailHeader,
   OrganizationDetailInfo,
@@ -127,6 +128,10 @@ function OrganizationDetailPage() {
         error={membersError}
         currentUserId={currentUserId}
       />
+
+      {organization.status === "active" && (
+        <OrganizationDangerZone organization={organization} />
+      )}
     </div>
   );
 }

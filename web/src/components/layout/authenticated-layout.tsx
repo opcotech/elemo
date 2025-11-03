@@ -54,7 +54,7 @@ export function AuthenticatedLayout({
       <EditTodoFormProvider>
         <TodoSheetProvider>
           <SidebarProvider>
-            <div className="flex h-screen w-screen">
+            <div className="flex h-screen w-full overflow-hidden">
               <Sidebar variant="inset">
                 <SidebarHeader>
                   <h2 className="px-2 py-2 text-lg font-semibold">Elemo</h2>
@@ -122,9 +122,9 @@ export function AuthenticatedLayout({
                 </SidebarFooter>
               </Sidebar>
 
-              <SidebarInset className="flex flex-col border">
+              <SidebarInset className="flex flex-col overflow-hidden shadow-sm">
                 <NavHeader />
-                <main className="flex-1 overflow-hidden">{children}</main>
+                <div className="flex-1 overflow-auto">{children}</div>
               </SidebarInset>
             </div>
           </SidebarProvider>
