@@ -46,9 +46,7 @@ test.describe("@settings.organization-delete Organization Delete E2E Tests", () 
       await expect
         .poll(
           async () =>
-        page
-          .getByText("Delete Organization", { exact: false })
-              .count(),
+            page.getByText("Delete Organization", { exact: false }).count(),
           {
             timeout: 15000,
           }
@@ -67,9 +65,7 @@ test.describe("@settings.organization-delete Organization Delete E2E Tests", () 
       await expect
         .poll(
           async () =>
-            page
-              .getByText("Delete Organization", { exact: false })
-              .count(),
+            page.getByText("Delete Organization", { exact: false }).count(),
           {
             timeout: 15000,
           }
@@ -88,9 +84,7 @@ test.describe("@settings.organization-delete Organization Delete E2E Tests", () 
       await expect
         .poll(
           async () =>
-            page
-              .getByText("Delete Organization", { exact: false })
-              .count(),
+            page.getByText("Delete Organization", { exact: false }).count(),
           {
             timeout: 10000,
           }
@@ -109,9 +103,7 @@ test.describe("@settings.organization-delete Organization Delete E2E Tests", () 
       await expect
         .poll(
           async () =>
-            page
-              .getByText("Delete Organization", { exact: false })
-              .count(),
+            page.getByText("Delete Organization", { exact: false }).count(),
           {
             timeout: 10000,
           }
@@ -136,9 +128,7 @@ test.describe("@settings.organization-delete Organization Delete E2E Tests", () 
       await expect
         .poll(
           async () =>
-            page
-              .getByText("Delete Organization", { exact: true })
-              .count(),
+            page.getByText("Delete Organization", { exact: true }).count(),
           {
             timeout: 10000,
           }
@@ -166,9 +156,9 @@ test.describe("@settings.organization-delete Organization Delete E2E Tests", () 
       });
       await page.waitForLoadState("networkidle");
 
-      await expect(
-        page.getByText("Danger Zone", { exact: true })
-      ).toBeVisible({ timeout: 10000 });
+      await expect(page.getByText("Danger Zone", { exact: true })).toBeVisible({
+        timeout: 10000,
+      });
 
       // Wait for delete button to be visible
       await expect(
@@ -176,9 +166,7 @@ test.describe("@settings.organization-delete Organization Delete E2E Tests", () 
       ).toBeVisible({ timeout: 10000 });
 
       // Click delete button
-      await page
-        .getByRole("button", { name: "Delete Organization" })
-        .click();
+      await page.getByRole("button", { name: "Delete Organization" }).click();
 
       const dialog = page.getByRole("alertdialog");
       await expect(dialog).toBeVisible({ timeout: 10000 });
@@ -208,17 +196,15 @@ test.describe("@settings.organization-delete Organization Delete E2E Tests", () 
       });
       await page.waitForLoadState("networkidle");
 
-      await expect(
-        page.getByText("Danger Zone", { exact: true })
-      ).toBeVisible({ timeout: 10000 });
+      await expect(page.getByText("Danger Zone", { exact: true })).toBeVisible({
+        timeout: 10000,
+      });
 
       // Open dialog
       await expect
         .poll(
           async () =>
-            page
-              .getByText("Delete Organization", { exact: true })
-              .count(),
+            page.getByText("Delete Organization", { exact: true }).count(),
           {
             timeout: 15000,
           }
@@ -249,7 +235,6 @@ test.describe("@settings.organization-delete Organization Delete E2E Tests", () 
         `/settings/organizations/${testOrganization.id}`
       );
     });
-
   });
 
   test.describe("Successful Deletion", () => {
@@ -271,17 +256,15 @@ test.describe("@settings.organization-delete Organization Delete E2E Tests", () 
       });
       await page.waitForLoadState("networkidle");
 
-      await expect(
-        page.getByText("Danger Zone", { exact: true })
-      ).toBeVisible({ timeout: 10000 });
+      await expect(page.getByText("Danger Zone", { exact: true })).toBeVisible({
+        timeout: 10000,
+      });
 
       // Open delete dialog
       await expect
         .poll(
           async () =>
-        page
-          .getByText("Delete Organization", { exact: false })
-              .count(),
+            page.getByText("Delete Organization", { exact: false }).count(),
           {
             timeout: 15000,
           }
@@ -324,17 +307,15 @@ test.describe("@settings.organization-delete Organization Delete E2E Tests", () 
       });
       await page.waitForLoadState("networkidle");
 
-      await expect(
-        page.getByText("Danger Zone", { exact: true })
-      ).toBeVisible({ timeout: 10000 });
+      await expect(page.getByText("Danger Zone", { exact: true })).toBeVisible({
+        timeout: 10000,
+      });
 
       // Open delete dialog
       await expect
         .poll(
           async () =>
-        page
-          .getByText("Delete Organization", { exact: false })
-              .count(),
+            page.getByText("Delete Organization", { exact: false }).count(),
           {
             timeout: 15000,
           }
@@ -378,16 +359,14 @@ test.describe("@settings.organization-delete Organization Delete E2E Tests", () 
       await page.goto(`/settings/organizations/${testOrganization.id}`);
       await page.waitForLoadState("networkidle");
 
-      await expect(
-        page.getByText("Danger Zone", { exact: true })
-      ).toBeVisible({ timeout: 10000 });
+      await expect(page.getByText("Danger Zone", { exact: true })).toBeVisible({
+        timeout: 10000,
+      });
 
       await expect
         .poll(
           async () =>
-            page
-              .getByText("Delete Organization", { exact: false })
-              .count(),
+            page.getByText("Delete Organization", { exact: false }).count(),
           {
             timeout: 15000,
           }
@@ -410,17 +389,18 @@ test.describe("@settings.organization-delete Organization Delete E2E Tests", () 
       await page.waitForLoadState("networkidle");
 
       await expect
-        .poll(async () => {
-          const row = page
-            .locator("tbody tr")
-            .filter({ hasText: orgName });
-          const count = await row.count();
-          if (count === 0) {
-            return true;
-          }
-          const deletedCount = await row.getByText("Deleted").count();
-          return deletedCount > 0;
-        }, { timeout: 15000 })
+        .poll(
+          async () => {
+            const row = page.locator("tbody tr").filter({ hasText: orgName });
+            const count = await row.count();
+            if (count === 0) {
+              return true;
+            }
+            const deletedCount = await row.getByText("Deleted").count();
+            return deletedCount > 0;
+          },
+          { timeout: 15000 }
+        )
         .toBe(true);
     });
   });
@@ -536,10 +516,12 @@ test.describe("@settings.organization-delete Organization Delete E2E Tests", () 
       await page.waitForLoadState("networkidle");
 
       // Open dialog
-      await expect(
-        page.getByText("Danger Zone", { exact: true })
-      ).toBeVisible({ timeout: 10000 });
-      const deleteOrgButton = page.locator('button:has-text("Delete Organization")').first();
+      await expect(page.getByText("Danger Zone", { exact: true })).toBeVisible({
+        timeout: 10000,
+      });
+      const deleteOrgButton = page
+        .locator('button:has-text("Delete Organization")')
+        .first();
       await expect(deleteOrgButton).toBeVisible({ timeout: 10000 });
       await deleteOrgButton.click();
 
@@ -579,4 +561,3 @@ test.describe("@settings.organization-delete Organization Delete E2E Tests", () 
     });
   });
 });
-

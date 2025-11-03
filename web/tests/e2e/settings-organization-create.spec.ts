@@ -209,7 +209,9 @@ test.describe("@settings.organization-create Organization Create E2E Tests", () 
 
       // Either validation error should appear OR form should stay on create page
       // (indicating validation prevented submission)
-      const hasError = await formMessage.isVisible({ timeout: 2000 }).catch(() => false);
+      const hasError = await formMessage
+        .isVisible({ timeout: 2000 })
+        .catch(() => false);
 
       if (!hasError && !isOnCreatePage) {
         // Form submitted successfully - this means validation didn't catch the invalid URL

@@ -20,7 +20,6 @@ import {
 import type { Organization } from "@/lib/api";
 import { can } from "@/lib/auth/permissions";
 
-
 interface OrganizationDangerZoneProps {
   organization: Organization;
 }
@@ -62,12 +61,12 @@ export function OrganizationDangerZone({
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <p className="text-sm text-muted-foreground">
+            <p className="text-muted-foreground text-sm">
               Deleting an organization will mark it as deleted and hide it from
               listings. This action cannot be undone.
             </p>
             <p className="text-sm font-medium">Consequences:</p>
-            <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
+            <ul className="text-muted-foreground list-inside list-disc space-y-1 text-sm">
               <li>All organization members will lose access</li>
               <li>Organization data will be hidden from search and listings</li>
               <li>The organization will be marked as deleted</li>
@@ -94,4 +93,3 @@ export function OrganizationDangerZone({
     </>
   );
 }
-

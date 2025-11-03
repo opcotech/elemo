@@ -87,7 +87,7 @@ export function OrganizationDeleteDialog({
               undone.
             </p>
             <p className="font-medium">What will happen:</p>
-            <ul className="list-disc list-inside space-y-1 text-sm">
+            <ul className="list-inside list-disc space-y-1 text-sm">
               <li>The organization will be marked as deleted</li>
               <li>All organization members will lose access</li>
               <li>Organization data will be hidden from listings</li>
@@ -96,7 +96,9 @@ export function OrganizationDeleteDialog({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={mutation.isPending}>Cancel</AlertDialogCancel>
+          <AlertDialogCancel disabled={mutation.isPending}>
+            Cancel
+          </AlertDialogCancel>
           <AlertDialogAction
             variant="destructive"
             onClick={handleDelete}
@@ -118,4 +120,3 @@ export function OrganizationDeleteDialog({
     </AlertDialog>
   );
 }
-
