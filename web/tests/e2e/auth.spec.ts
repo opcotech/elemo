@@ -97,7 +97,7 @@ test.describe("@auth Authentication E2E Tests", () => {
     // Check for error message - be more flexible with the error text
     const errorAlert = page.locator('[role="alert"]');
     await expect(errorAlert).toBeVisible({ timeout: 5000 });
-    
+
     // Check for any error message, not just specific patterns
     const errorText = await errorAlert.textContent();
     expect(errorText).toBeTruthy();
@@ -253,7 +253,9 @@ test.describe("@auth Authentication E2E Tests", () => {
 
     // Check if error is visible
     const errorAlert = page.locator('[role="alert"]');
-    const hasError = await errorAlert.isVisible({ timeout: 5000 }).catch(() => false);
+    const hasError = await errorAlert
+      .isVisible({ timeout: 5000 })
+      .catch(() => false);
 
     if (hasError) {
       // Start typing in email field

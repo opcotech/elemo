@@ -2,6 +2,8 @@ import { Link } from "@tanstack/react-router";
 import { Edit, Eye, Trash2 } from "lucide-react";
 import { useState } from "react";
 
+import { OrganizationDeleteDialog } from "./organization-delete-dialog";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ExternalLink } from "@/components/ui/external-link";
@@ -15,7 +17,6 @@ import {
 import type { Organization } from "@/lib/api";
 import { can } from "@/lib/auth/permissions";
 import { pluralize } from "@/lib/utils";
-import { OrganizationDeleteDialog } from "./organization-delete-dialog";
 
 export function OrganizationRow({
   organization,
