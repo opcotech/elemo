@@ -9,6 +9,7 @@ import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
+  SidebarInset,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -117,13 +118,17 @@ export function SettingsSidebar() {
 export function SettingsLayout({ children }: SettingsLayoutProps) {
   return (
     <SidebarProvider>
-      <Sidebar variant="sidebar" collapsible="none" className="bg-transparent">
-        <SidebarContent className="pt-6">
-          <SettingsSidebar />
-        </SidebarContent>
-      </Sidebar>
+      <div className="flex h-full w-full">
+        <Sidebar variant="inset" collapsible="none" className="bg-transparent">
+          <SidebarContent className="pt-6">
+            <SettingsSidebar />
+          </SidebarContent>
+        </Sidebar>
 
-      <main className="flex-1 overflow-auto px-12 py-8">{children}</main>
+        <SidebarInset className="overflow-auto">
+          <div className="px-12 py-8">{children}</div>
+        </SidebarInset>
+      </div>
     </SidebarProvider>
   );
 }

@@ -12,11 +12,9 @@ export const Route = createFileRoute("/settings")({
 function SettingsRoot() {
   return (
     <AuthenticatedLayout>
-      <div className="px-4">
-        <SettingsLayout>
-          <Outlet />
-        </SettingsLayout>
-      </div>
+      <SettingsLayout>
+        <Outlet />
+      </SettingsLayout>
     </AuthenticatedLayout>
   );
 }

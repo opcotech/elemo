@@ -49,7 +49,7 @@ export function OrganizationDetailInfo({
                 to="/settings/organizations/$organizationId/edit"
                 params={{ organizationId: organization.id }}
               >
-                <Edit className="mr-2 size-4" />
+                <Edit className="size-4" />
                 Edit
               </Link>
             </Button>
