@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import type { z } from "zod";
 
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DatePicker } from "@/components/ui/date-picker";
@@ -34,19 +35,25 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/use-auth";
+import type { TodoCreate } from "@/lib/api";
 import { v1TodosCreateMutation } from "@/lib/client/@tanstack/react-query.gen";
 import { zTodoCreate } from "@/lib/client/zod.gen";
+import {
+  createFormSchema,
+  getFieldValue,
+  normalizeFormData,
+} from "@/lib/forms";
 import { showErrorToast, showSuccessToast } from "@/lib/toast";
 
-// Use the existing generated schema for todo creation
+// Use form schema with empty string handling for optional fields
 // We need to modify it slightly for the form since we don't want to require owned_by in the form
-const todoFormSchema = zTodoCreate.omit({ owned_by: true });
+const todoFormSchema = createFormSchema(zTodoCreate.omit({ owned_by: true }));
 
 type TodoFormValues = z.infer<typeof todoFormSchema>;
 
 const defaultValues: TodoFormValues = {
   title: "",
-  description: undefined,
+  description: "",
   priority: "normal",
   due_date: null,
 };
@@ -73,13 +80,15 @@ export function AddTodoForm({
   const mutation = useMutation(v1TodosCreateMutation());
 
   const onSubmit = (values: TodoFormValues) => {
+    const normalizedBody = normalizeFormData(
+      todoFormSchema,
+      values
+    ) as TodoCreate;
+
     mutation.mutate(
       {
         body: {
-          title: values.title,
-          description: values.description,
-          priority: values.priority,
-          due_date: values.due_date,
+          ...normalizedBody,
           owned_by: user!.id,
         },
       },
@@ -121,9 +130,10 @@ export function AddTodoForm({
             </DialogHeader>
 
             {mutation.isError && (
-              <div className="text-destructive text-sm">
-                <p>{mutation.error.message}</p>
-              </div>
+              <Alert variant="destructive">
+                <AlertTitle>Failed to add todo</AlertTitle>
+                <AlertDescription>{mutation.error.message}</AlertDescription>
+              </Alert>
             )}
             <FormField
               control={form.control}
@@ -150,13 +160,8 @@ export function AddTodoForm({
                       placeholder="Enter todo description (optional)"
                       className="min-h-40 resize-y"
                       rows={6}
-                      value={field.value || ""}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        field.onChange(value === "" ? undefined : value);
-                      }}
-                      onBlur={field.onBlur}
-                      name={field.name}
+                      {...field}
+                      value={getFieldValue(field.value)}
                     />
                   </FormControl>
                   <FormMessage />

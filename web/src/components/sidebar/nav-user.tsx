@@ -25,6 +25,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLogout } from "@/hooks/use-auth";
 import type { User } from "@/lib/auth/types";
+import { getFieldValue } from "@/lib/forms";
 
 export function NavUser({ user }: { user: User }) {
   const { isMobile } = useSidebar();
@@ -32,7 +33,10 @@ export function NavUser({ user }: { user: User }) {
   const { theme, setTheme } = useTheme();
 
   const getInitials = (firstName: string | null, lastName: string | null) => {
-    return `${firstName?.[0] || ""}${lastName?.[0] || ""}`.toUpperCase() || "U";
+    return (
+      `${getFieldValue(firstName?.[0])}${getFieldValue(lastName?.[0])}`.toUpperCase() ||
+      "U"
+    );
   };
 
   return (

@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import type { z } from "zod";
 
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/ui/date-picker";
 import {
@@ -34,10 +35,15 @@ import { Textarea } from "@/components/ui/textarea";
 import type { TodoPriority } from "@/lib/api";
 import { v1TodoUpdateMutation } from "@/lib/client/@tanstack/react-query.gen";
 import { zTodoPatch } from "@/lib/client/zod.gen";
+import {
+  createFormSchema,
+  getFieldValue,
+  normalizePatchData,
+} from "@/lib/forms";
 import { showErrorToast, showSuccessToast } from "@/lib/toast";
 
-// Use the existing generated schema for todo updates
-const todoEditFormSchema = zTodoPatch;
+// Use form schema with empty string handling for optional fields
+const todoEditFormSchema = createFormSchema(zTodoPatch);
 
 type TodoEditFormValues = z.infer<typeof todoEditFormSchema>;
 
@@ -68,7 +74,7 @@ export function EditTodoForm({
     resolver: zodResolver(todoEditFormSchema),
     defaultValues: {
       title: "",
-      description: undefined,
+      description: "",
       priority: "normal",
       due_date: null,
     },
@@ -81,7 +87,7 @@ export function EditTodoForm({
     if (todo && open) {
       form.reset({
         title: todo.title,
-        description: todo.description || undefined,
+        description: getFieldValue(todo.description),
         priority: todo.priority,
         due_date: todo.due_date,
       });
@@ -91,18 +97,18 @@ export function EditTodoForm({
   const onSubmit = (values: TodoEditFormValues) => {
     if (!todo) return;
 
-    // Only include fields that have values
-    const updateData: TodoEditFormValues = {};
-    if (values.title !== undefined) updateData.title = values.title;
-    if (values.description !== undefined)
-      updateData.description = values.description;
-    if (values.priority !== undefined) updateData.priority = values.priority;
-    if (values.due_date !== undefined) updateData.due_date = values.due_date;
+    // Normalize patch data: converts empty strings to null for cleared optional fields
+    const normalizedBody = normalizePatchData(todoEditFormSchema, values, {
+      title: todo.title,
+      description: todo.description,
+      priority: todo.priority,
+      due_date: todo.due_date,
+    });
 
     mutation.mutate(
       {
         path: { id: todo.id },
-        body: updateData,
+        body: normalizedBody,
       },
       {
         onSuccess: () => {
@@ -142,9 +148,10 @@ export function EditTodoForm({
             </DialogHeader>
 
             {mutation.isError && (
-              <div className="text-destructive text-sm">
-                <p>{mutation.error.message}</p>
-              </div>
+              <Alert variant="destructive">
+                <AlertTitle>Failed to update todo</AlertTitle>
+                <AlertDescription>{mutation.error.message}</AlertDescription>
+              </Alert>
             )}
             <FormField
               control={form.control}
@@ -172,7 +179,7 @@ export function EditTodoForm({
                       className="min-h-40 resize-y"
                       rows={6}
                       {...field}
-                      value={field.value || undefined}
+                      value={getFieldValue(field.value)}
                     />
                   </FormControl>
                   <FormMessage />

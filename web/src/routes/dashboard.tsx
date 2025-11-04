@@ -15,6 +15,7 @@ import {
 import { useAuth } from "@/hooks/use-auth";
 import { useBreadcrumbUtils } from "@/hooks/use-breadcrumbs";
 import { requireAuthBeforeLoad } from "@/lib/auth/require-auth";
+import { getFieldValue } from "@/lib/forms";
 
 export const Route = createFileRoute("/dashboard")({
   beforeLoad: requireAuthBeforeLoad,
@@ -26,7 +27,10 @@ function Dashboard() {
   const { setBreadcrumbsFromItems } = useBreadcrumbUtils();
 
   const getInitials = (firstName: string | null, lastName: string | null) => {
-    return `${firstName?.[0] || ""}${lastName?.[0] || ""}`.toUpperCase() || "U";
+    return (
+      `${getFieldValue(firstName?.[0])}${getFieldValue(lastName?.[0])}`.toUpperCase() ||
+      "U"
+    );
   };
 
   useEffect(() => {

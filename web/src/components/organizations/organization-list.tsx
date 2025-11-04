@@ -3,8 +3,8 @@ import { Link } from "@tanstack/react-router";
 import { Plus, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 
+import { OrganizationCardSkeleton } from "./organization-card";
 import { OrganizationRow } from "./organization-row";
-import { OrganizationTableSkeletonRows } from "./organization-table-skeleton";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -31,6 +32,58 @@ import {
 } from "@/hooks/use-permissions";
 import { v1OrganizationsGetOptions } from "@/lib/api";
 import { can } from "@/lib/auth/permissions";
+
+function OrganizationTableSkeletonRow() {
+  return (
+    <TableRow>
+      <TableCell>
+        <Skeleton className="h-5 w-32" />
+      </TableCell>
+      <TableCell>
+        <Skeleton className="h-5 w-40" />
+      </TableCell>
+      <TableCell>
+        <Skeleton className="h-5 w-48" />
+      </TableCell>
+      <TableCell>
+        <Skeleton className="h-6 w-16" />
+      </TableCell>
+      <TableCell>
+        <Skeleton className="h-5 w-24" />
+      </TableCell>
+      <TableCell>
+        <Skeleton className="h-5 w-24" />
+      </TableCell>
+      <TableCell className="text-right">
+        <div className="flex items-center justify-end gap-x-1">
+          <Skeleton className="h-5 w-8" />
+          <Skeleton className="h-5 w-8" />
+          <Skeleton className="h-5 w-8" />
+        </div>
+      </TableCell>
+    </TableRow>
+  );
+}
+
+function OrganizationTableSkeletonRows({ count = 5 }: { count?: number }) {
+  return (
+    <>
+      {Array.from({ length: count }).map((_, i) => (
+        <OrganizationTableSkeletonRow key={i} />
+      ))}
+    </>
+  );
+}
+
+export function OrganizationListSkeleton({ count = 6 }: { count?: number }) {
+  return (
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+      {Array.from({ length: count }).map((_, i) => (
+        <OrganizationCardSkeleton key={i} />
+      ))}
+    </div>
+  );
+}
 
 export function OrganizationList() {
   const [searchTerm, setSearchTerm] = useState("");

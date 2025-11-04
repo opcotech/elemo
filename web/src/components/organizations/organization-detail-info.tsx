@@ -1,8 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Edit } from "lucide-react";
 
-import { OrganizationDetailField } from "./organization-detail-field";
-
+import { DetailField } from "@/components/detail-field";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -58,27 +57,27 @@ export function OrganizationDetailInfo({
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <OrganizationDetailField label="Name" value={organization.name} />
+          <DetailField label="Name" value={organization.name} />
 
-          <OrganizationDetailField label="Email" value={organization.email} />
+          <DetailField label="Email" value={organization.email} />
 
-          <OrganizationDetailField label="Website">
+          <DetailField label="Website">
             {organization.website ? (
               <ExternalLink href={organization.website} />
             ) : (
               <span className="text-muted-foreground">—</span>
             )}
-          </OrganizationDetailField>
+          </DetailField>
 
-          <OrganizationDetailField label="Status">
+          <DetailField label="Status">
             {organization.status === "active" ? (
               <Badge variant="success">Active</Badge>
             ) : (
               <Badge variant="destructive">Deleted</Badge>
             )}
-          </OrganizationDetailField>
+          </DetailField>
 
-          <OrganizationDetailField
+          <DetailField
             label="Created At"
             value={formatDate(organization.created_at)}
           />

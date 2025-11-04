@@ -51,11 +51,6 @@ test.describe("@settings.organization-details Organization Details E2E Tests", (
       page.getByRole("heading", { name: testOrganization.name })
     ).toBeVisible({ timeout: 5000 });
 
-    // Verify description is visible
-    await expect(
-      page.getByText("View organization information.")
-    ).toBeVisible();
-
     // Verify card title - wait for it to appear
     // CardTitle is a div, not a heading, so we use getByText with exact match
     await expect(

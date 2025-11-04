@@ -1,5 +1,3 @@
-import { OrganizationMembersListSkeleton } from "./organization-members-list-skeleton";
-
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -19,6 +18,44 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type { OrganizationMember } from "@/lib/api";
+
+function OrganizationMembersListSkeleton() {
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Name</TableHead>
+          <TableHead>Roles</TableHead>
+          <TableHead>Status</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {Array.from({ length: 5 }).map((_, i) => (
+          <TableRow key={i}>
+            <TableCell>
+              <div className="flex items-center gap-3">
+                <Skeleton className="h-10 w-10 rounded-full" />
+                <div className="space-y-1">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-3 w-24" />
+                </div>
+              </div>
+            </TableCell>
+            <TableCell>
+              <div className="flex gap-1">
+                <Skeleton className="h-6 w-16" />
+                <Skeleton className="h-6 w-16" />
+              </div>
+            </TableCell>
+            <TableCell>
+              <Skeleton className="h-6 w-16" />
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
+}
 
 export function OrganizationMembersList({
   members,

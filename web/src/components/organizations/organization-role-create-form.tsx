@@ -1,7 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import type { z } from "zod";
 
@@ -24,72 +23,51 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
-import type { Organization } from "@/lib/api";
-import { v1OrganizationUpdateMutation } from "@/lib/client/@tanstack/react-query.gen";
-import { zOrganizationPatch } from "@/lib/client/zod.gen";
+import { Textarea } from "@/components/ui/textarea";
+import type { RoleCreate } from "@/lib/api";
+import {
+  v1OrganizationRolesCreateMutation,
+  v1OrganizationRolesGetOptions,
+} from "@/lib/client/@tanstack/react-query.gen";
+import { zRoleCreate } from "@/lib/client/zod.gen";
 import {
   createFormSchema,
   getFieldValue,
-  normalizePatchData,
+  normalizeFormData,
 } from "@/lib/forms";
 import { showErrorToast, showSuccessToast } from "@/lib/toast";
 
-// Create a schema without logo and status fields for the form
-// TODO: Add logo field when implementing image upload
-const organizationEditFormSchema = createFormSchema(
-  zOrganizationPatch.omit({
-    logo: true,
-    status: true,
-  })
-);
+const roleFormSchema = createFormSchema(zRoleCreate);
 
-type OrganizationEditFormValues = z.infer<typeof organizationEditFormSchema>;
+type RoleFormValues = z.infer<typeof roleFormSchema>;
 
-interface OrganizationEditFormProps {
-  organization: Organization;
+const defaultValues: RoleFormValues = {
+  name: "",
+  description: "",
+};
+
+interface OrganizationRoleCreateFormProps {
   organizationId: string;
 }
 
-export function OrganizationEditForm({
-  organization,
+export function OrganizationRoleCreateForm({
   organizationId,
-}: OrganizationEditFormProps) {
+}: OrganizationRoleCreateFormProps) {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
-  const form = useForm<OrganizationEditFormValues>({
-    resolver: zodResolver(organizationEditFormSchema),
-    defaultValues: {
-      name: organization.name,
-      email: organization.email,
-      website: getFieldValue(organization.website),
-    },
+  const form = useForm<RoleFormValues>({
+    resolver: zodResolver(roleFormSchema),
+    defaultValues,
   });
 
-  // Update form when organization data changes (but not while user is editing)
-  useEffect(() => {
-    // Only reset if the form is not being actively edited (isDirty check)
-    if (!form.formState.isDirty) {
-      form.reset({
-        name: organization.name,
-        email: organization.email,
-        website: getFieldValue(organization.website),
-      });
-    }
-  }, [organization.name, organization.email, organization.website, form]);
+  const mutation = useMutation(v1OrganizationRolesCreateMutation());
 
-  const mutation = useMutation(v1OrganizationUpdateMutation());
-
-  const onSubmit = (values: OrganizationEditFormValues) => {
-    // Normalize patch data: converts empty strings to null for cleared optional fields
-    const normalizedBody = normalizePatchData(
-      organizationEditFormSchema,
-      values,
-      {
-        name: organization.name,
-        email: organization.email,
-        website: organization.website,
-      }
-    );
+  const onSubmit = (values: RoleFormValues) => {
+    const normalizedBody = normalizeFormData(
+      roleFormSchema,
+      values
+    ) as RoleCreate;
 
     mutation.mutate(
       {
@@ -100,17 +78,22 @@ export function OrganizationEditForm({
       },
       {
         onSuccess: () => {
-          showSuccessToast(
-            "Organization updated",
-            "Organization updated successfully"
-          );
+          showSuccessToast("Role created", "Role created successfully");
+
+          // Invalidate roles list query
+          queryClient.invalidateQueries({
+            queryKey: v1OrganizationRolesGetOptions({
+              path: { id: organizationId },
+            }).queryKey,
+          });
+
           navigate({
             to: "/settings/organizations/$organizationId",
             params: { organizationId },
           });
         },
         onError: (error) => {
-          showErrorToast("Failed to update organization", error.message);
+          showErrorToast("Failed to create role", error.message);
         },
       }
     );
@@ -119,9 +102,9 @@ export function OrganizationEditForm({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Edit Organization</CardTitle>
+        <CardTitle>Create Role</CardTitle>
         <CardDescription>
-          Update the organization details below.
+          Enter the details below to create a new role.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -132,7 +115,7 @@ export function OrganizationEditForm({
           >
             {mutation.isError && (
               <Alert variant="destructive">
-                <AlertTitle>Failed to update organization</AlertTitle>
+                <AlertTitle>Failed to create role</AlertTitle>
                 <AlertDescription>{mutation.error.message}</AlertDescription>
               </Alert>
             )}
@@ -144,7 +127,7 @@ export function OrganizationEditForm({
                 <FormItem>
                   <FormLabel>Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter organization name" {...field} />
+                    <Input placeholder="Enter role name" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -153,34 +136,16 @@ export function OrganizationEditForm({
 
             <FormField
               control={form.control}
-              name="email"
+              name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email</FormLabel>
+                  <FormLabel>Description</FormLabel>
                   <FormControl>
-                    <Input
-                      type="email"
-                      placeholder="Enter organization email"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="website"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Website</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="url"
-                      placeholder="https://example.com (optional)"
+                    <Textarea
+                      placeholder="Enter role description (optional)"
                       {...field}
                       value={getFieldValue(field.value)}
+                      rows={4}
                     />
                   </FormControl>
                   <FormMessage />
@@ -206,10 +171,10 @@ export function OrganizationEditForm({
                 {mutation.isPending ? (
                   <>
                     <Spinner size="xs" className="mr-0.5 text-white" />
-                    <span>Saving...</span>
+                    <span>Creating...</span>
                   </>
                 ) : (
-                  "Save Changes"
+                  "Create Role"
                 )}
               </Button>
             </div>

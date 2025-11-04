@@ -42,16 +42,25 @@ test.describe("@settings.organization-members Organization Members Listing E2E T
         page.getByText("Organization members and their roles.")
       ).toBeVisible();
 
-      // Check table headers
-      const tableHeaders = page.locator("thead th");
-      await expect(tableHeaders.filter({ hasText: "Name" })).toBeVisible();
+      // Scope to members table card - find the card containing "Organization members and their roles"
+      const membersCard = page
+        .locator("text=Organization members and their roles.")
+        .locator("..")
+        .locator(".."); // Navigate up to Card component
+      const membersTable = membersCard.locator("table").first();
+
+      // Check table headers - scope to members table only
+      const tableHeaders = membersTable.locator("thead th");
+      await expect(
+        tableHeaders.filter({ hasText: "Name" }).first()
+      ).toBeVisible();
       await expect(tableHeaders.filter({ hasText: "Roles" })).toBeVisible();
       await expect(tableHeaders.filter({ hasText: "Status" })).toBeVisible();
 
-      // Check member row
+      // Check member row - scope to members table
       await expect(page.getByText("Owner User")).toBeVisible();
       // Check email in the members table (not in user menu)
-      const ownerRow = page
+      const ownerRow = membersTable
         .locator("tbody tr")
         .filter({ hasText: "Owner User" })
         .first();
@@ -223,7 +232,14 @@ test.describe("@settings.organization-members Organization Members Listing E2E T
     }) => {
       await page.waitForLoadState("networkidle");
 
-      const rows = page.locator("tbody tr");
+      // Scope to members table card
+      const membersCard = page
+        .locator("text=Organization members and their roles.")
+        .locator("..")
+        .locator("..");
+      const membersTable = membersCard.locator("table").first();
+
+      const rows = membersTable.locator("tbody tr");
       const rowCount = await rows.count();
       expect(rowCount).toBe(4);
 
@@ -485,7 +501,14 @@ test.describe("@settings.organization-members Organization Members Listing E2E T
     test("should sort deleted members last", async ({ page }) => {
       await page.waitForLoadState("networkidle");
 
-      const rows = page.locator("tbody tr");
+      // Scope to members table card
+      const membersCard = page
+        .locator("text=Organization members and their roles.")
+        .locator("..")
+        .locator("..");
+      const membersTable = membersCard.locator("table").first();
+
+      const rows = membersTable.locator("tbody tr");
       const rowCount = await rows.count();
       expect(rowCount).toBeGreaterThanOrEqual(3);
 
@@ -544,9 +567,18 @@ test.describe("@settings.organization-members Organization Members Listing E2E T
         page.getByText("Organization members and their roles.")
       ).toBeVisible();
 
-      // Check table headers
-      const tableHeaders = page.locator("thead th");
-      await expect(tableHeaders.filter({ hasText: "Name" })).toBeVisible();
+      // Scope to members table card - find the card containing "Organization members and their roles"
+      const membersCard = page
+        .locator("text=Organization members and their roles.")
+        .locator("..")
+        .locator("..");
+      const membersTable = membersCard.locator("table").first();
+
+      // Check table headers - scope to members table only
+      const tableHeaders = membersTable.locator("thead th");
+      await expect(
+        tableHeaders.filter({ hasText: "Name" }).first()
+      ).toBeVisible();
       await expect(tableHeaders.filter({ hasText: "Roles" })).toBeVisible();
       await expect(tableHeaders.filter({ hasText: "Status" })).toBeVisible();
     });

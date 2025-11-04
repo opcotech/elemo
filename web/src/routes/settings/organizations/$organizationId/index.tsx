@@ -10,12 +10,14 @@ import {
   OrganizationDetailSkeleton,
   OrganizationMembersList,
   OrganizationNotFound,
+  OrganizationRolesList,
 } from "@/components/organizations";
 import { useBreadcrumbUtils } from "@/hooks/use-breadcrumbs";
 import {
   isNotFound,
   v1OrganizationGetOptions,
   v1OrganizationMembersGetOptions,
+  v1OrganizationRolesGetOptions,
 } from "@/lib/api";
 import { requireAuthBeforeLoad } from "@/lib/auth/require-auth";
 import { getUser } from "@/lib/auth/session";
@@ -51,6 +53,19 @@ function OrganizationDetailPage() {
     error: membersError,
   } = useQuery(
     v1OrganizationMembersGetOptions({
+      path: {
+        id: organizationId,
+      },
+    })
+  );
+
+  // Fetch organization roles
+  const {
+    data: roles,
+    isLoading: isLoadingRoles,
+    error: rolesError,
+  } = useQuery(
+    v1OrganizationRolesGetOptions({
       path: {
         id: organizationId,
       },
@@ -127,6 +142,13 @@ function OrganizationDetailPage() {
         isLoading={isLoadingMembers}
         error={membersError}
         currentUserId={currentUserId}
+      />
+
+      <OrganizationRolesList
+        roles={roles || []}
+        isLoading={isLoadingRoles}
+        error={rolesError}
+        organizationId={organizationId}
       />
 
       {organization.status === "active" && (

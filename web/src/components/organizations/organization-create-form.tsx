@@ -4,6 +4,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { useForm } from "react-hook-form";
 import type { z } from "zod";
 
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -24,18 +25,25 @@ import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { v1OrganizationsCreateMutation } from "@/lib/client/@tanstack/react-query.gen";
 import { zOrganizationCreate } from "@/lib/client/zod.gen";
+import {
+  createFormSchema,
+  getFieldValue,
+  normalizeFormData,
+} from "@/lib/forms";
 import { showErrorToast, showSuccessToast } from "@/lib/toast";
 
 // Create a schema without logo field for the form
 // TODO: Add logo field back in when implementing image upload
-const organizationFormSchema = zOrganizationCreate.omit({ logo: true });
+const organizationFormSchema = createFormSchema(
+  zOrganizationCreate.omit({ logo: true })
+);
 
 type OrganizationFormValues = z.infer<typeof organizationFormSchema>;
 
 const defaultValues: OrganizationFormValues = {
   name: "",
   email: "",
-  website: undefined,
+  website: "",
 };
 
 export function OrganizationCreateForm() {
@@ -49,22 +57,19 @@ export function OrganizationCreateForm() {
   const mutation = useMutation(v1OrganizationsCreateMutation());
 
   const onSubmit = (values: OrganizationFormValues) => {
-    const body: {
+    // Normalize form data: converts empty strings to undefined for optional fields
+    const normalizedBody = normalizeFormData(
+      organizationFormSchema,
+      values
+    ) as {
       name: string;
       email: string;
       website?: string;
-    } = {
-      name: values.name,
-      email: values.email,
     };
-
-    if (values.website) {
-      body.website = values.website;
-    }
 
     mutation.mutate(
       {
-        body,
+        body: normalizedBody,
       },
       {
         onSuccess: (data) => {
@@ -99,9 +104,10 @@ export function OrganizationCreateForm() {
             className="flex flex-col gap-y-6"
           >
             {mutation.isError && (
-              <div className="text-destructive text-sm">
-                <p>{mutation.error.message}</p>
-              </div>
+              <Alert variant="destructive">
+                <AlertTitle>Failed to create organization</AlertTitle>
+                <AlertDescription>{mutation.error.message}</AlertDescription>
+              </Alert>
             )}
 
             <FormField
@@ -146,13 +152,8 @@ export function OrganizationCreateForm() {
                     <Input
                       type="url"
                       placeholder="https://example.com (optional)"
-                      value={field.value || ""}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        field.onChange(value === "" ? undefined : value);
-                      }}
-                      onBlur={field.onBlur}
-                      name={field.name}
+                      {...field}
+                      value={getFieldValue(field.value)}
                     />
                   </FormControl>
                   <FormMessage />
