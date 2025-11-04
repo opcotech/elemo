@@ -247,11 +247,12 @@ func createPermissionJSONRequestBodyToPermission(body *api.V1PermissionsCreateJS
 
 func permissionToDTO(permission *model.Permission) api.Permission {
 	return api.Permission{
-		Id:        permission.ID.String(),
-		Subject:   permission.Subject.String(),
-		Target:    permission.Target.String(),
-		Kind:      api.PermissionKind(permission.Kind.String()),
-		CreatedAt: *permission.CreatedAt,
-		UpdatedAt: permission.UpdatedAt,
+		Id:         permission.ID.String(),
+		Subject:    permission.Subject.String(),
+		Target:     permission.Target.String(),
+		TargetType: permission.Target.Type.String(),
+		Kind:       api.PermissionKind(permission.Kind.String()),
+		CreatedAt:  *permission.CreatedAt,
+		UpdatedAt:  permission.UpdatedAt,
 	}
 }

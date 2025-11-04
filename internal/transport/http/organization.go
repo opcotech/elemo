@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	oapiTypes "github.com/oapi-codegen/runtime/types"
 
@@ -12,6 +13,21 @@ import (
 	"github.com/opcotech/elemo/internal/service"
 	"github.com/opcotech/elemo/internal/transport/http/api"
 )
+
+// isOrganizationScopedResource checks if a resource type is organization-scoped.
+// Organization-scoped resources are: Organization, Namespace, Document, Project, Role.
+func isOrganizationScopedResource(resourceType model.ResourceType) bool {
+	switch resourceType {
+	case model.ResourceTypeOrganization,
+		model.ResourceTypeNamespace,
+		model.ResourceTypeDocument,
+		model.ResourceTypeProject,
+		model.ResourceTypeRole:
+		return true
+	default:
+		return false
+	}
+}
 
 // OrganizationController is a controller for organization endpoints.
 type OrganizationController interface {
@@ -31,6 +47,9 @@ type OrganizationController interface {
 	V1OrganizationRoleMembersGet(ctx context.Context, request api.V1OrganizationRoleMembersGetRequestObject) (api.V1OrganizationRoleMembersGetResponseObject, error)
 	V1OrganizationRoleMembersAdd(ctx context.Context, request api.V1OrganizationRoleMembersAddRequestObject) (api.V1OrganizationRoleMembersAddResponseObject, error)
 	V1OrganizationRoleMemberRemove(ctx context.Context, request api.V1OrganizationRoleMemberRemoveRequestObject) (api.V1OrganizationRoleMemberRemoveResponseObject, error)
+	V1OrganizationRolePermissionsGet(ctx context.Context, request api.V1OrganizationRolePermissionsGetRequestObject) (api.V1OrganizationRolePermissionsGetResponseObject, error)
+	V1OrganizationRolePermissionAdd(ctx context.Context, request api.V1OrganizationRolePermissionAddRequestObject) (api.V1OrganizationRolePermissionAddResponseObject, error)
+	V1OrganizationRolePermissionRemove(ctx context.Context, request api.V1OrganizationRolePermissionRemoveRequestObject) (api.V1OrganizationRolePermissionRemoveResponseObject, error)
 }
 
 // organizationController is the concrete implementation of OrganizationController.
@@ -535,6 +554,151 @@ func (c *organizationController) V1OrganizationRoleMemberRemove(ctx context.Cont
 	}
 
 	return api.V1OrganizationRoleMemberRemove204Response{}, nil
+}
+
+func (c *organizationController) V1OrganizationRolePermissionsGet(ctx context.Context, request api.V1OrganizationRolePermissionsGetRequestObject) (api.V1OrganizationRolePermissionsGetResponseObject, error) {
+	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1OrganizationRolePermissionsGet")
+	defer span.End()
+
+	organizationID, err := model.NewIDFromString(request.Id, model.ResourceTypeOrganization.String())
+	if err != nil {
+		return api.V1OrganizationRolePermissionsGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
+	}
+
+	roleID, err := model.NewIDFromString(request.RoleId, model.ResourceTypeRole.String())
+	if err != nil {
+		return api.V1OrganizationRolePermissionsGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
+	}
+
+	permissions, err := c.roleService.GetPermissions(ctx, roleID, organizationID)
+	if err != nil {
+		if errors.Is(err, service.ErrNoPermission) {
+			return api.V1OrganizationRolePermissionsGet403JSONResponse{N403JSONResponse: permissionDenied}, nil
+		}
+		if isNotFoundError(err) {
+			return api.V1OrganizationRolePermissionsGet404JSONResponse{N404JSONResponse: notFound}, nil
+		}
+		return api.V1OrganizationRolePermissionsGet500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+			Message: err.Error(),
+		}}, nil
+	}
+
+	permissionsDTO := make([]api.Permission, len(permissions))
+	for i, perm := range permissions {
+		permissionsDTO[i] = permissionToDTO(perm)
+	}
+
+	return api.V1OrganizationRolePermissionsGet200JSONResponse(permissionsDTO), nil
+}
+
+func (c *organizationController) V1OrganizationRolePermissionAdd(ctx context.Context, request api.V1OrganizationRolePermissionAddRequestObject) (api.V1OrganizationRolePermissionAddResponseObject, error) {
+	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1OrganizationRolePermissionAdd")
+	defer span.End()
+
+	organizationID, err := model.NewIDFromString(request.Id, model.ResourceTypeOrganization.String())
+	if err != nil {
+		return api.V1OrganizationRolePermissionAdd400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
+	}
+
+	roleID, err := model.NewIDFromString(request.RoleId, model.ResourceTypeRole.String())
+	if err != nil {
+		return api.V1OrganizationRolePermissionAdd400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
+	}
+
+	if request.Body == nil {
+		return api.V1OrganizationRolePermissionAdd400JSONResponse{N400JSONResponse: formatBadRequest(fmt.Errorf("request body is required"))}, nil
+	}
+
+	// Parse target string in format "ResourceType:id"
+	parts := strings.Split(request.Body.Target, ":")
+	if len(parts) != 2 {
+		return api.V1OrganizationRolePermissionAdd400JSONResponse{N400JSONResponse: formatBadRequest(fmt.Errorf("invalid target format, expected ResourceType:id"))}, nil
+	}
+
+	targetID, err := model.NewIDFromString(parts[1], parts[0])
+	if err != nil {
+		return api.V1OrganizationRolePermissionAdd400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
+	}
+
+	var kind model.PermissionKind
+	if err := kind.UnmarshalText([]byte(string(request.Body.Kind))); err != nil {
+		return api.V1OrganizationRolePermissionAdd400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
+	}
+
+	if !isOrganizationScopedResource(targetID.Type) {
+		return api.V1OrganizationRolePermissionAdd400JSONResponse{N400JSONResponse: formatBadRequest(model.ErrInvalidResourceType)}, nil
+	}
+
+	if err := c.roleService.AddPermission(ctx, roleID, organizationID, targetID, kind); err != nil {
+		if errors.Is(err, service.ErrNoPermission) {
+			return api.V1OrganizationRolePermissionAdd403JSONResponse{N403JSONResponse: permissionDenied}, nil
+		}
+		if isNotFoundError(err) {
+			return api.V1OrganizationRolePermissionAdd404JSONResponse{N404JSONResponse: notFound}, nil
+		}
+		return api.V1OrganizationRolePermissionAdd500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+			Message: err.Error(),
+		}}, nil
+	}
+
+	permissions, err := c.permissionService.GetBySubjectAndTarget(ctx, roleID, targetID)
+	if err != nil {
+		return api.V1OrganizationRolePermissionAdd500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+			Message: fmt.Errorf("failed to retrieve created permission: %w", err).Error(),
+		}}, nil
+	}
+
+	var createdPermID string
+	for _, p := range permissions {
+		if p.Kind == kind {
+			createdPermID = p.ID.String()
+			break
+		}
+	}
+
+	if createdPermID == "" {
+		return api.V1OrganizationRolePermissionAdd500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+			Message: "permission was created but could not be retrieved",
+		}}, nil
+	}
+
+	return api.V1OrganizationRolePermissionAdd201JSONResponse{N201JSONResponse: api.N201JSONResponse{
+		Id: createdPermID,
+	}}, nil
+}
+
+func (c *organizationController) V1OrganizationRolePermissionRemove(ctx context.Context, request api.V1OrganizationRolePermissionRemoveRequestObject) (api.V1OrganizationRolePermissionRemoveResponseObject, error) {
+	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1OrganizationRolePermissionRemove")
+	defer span.End()
+
+	organizationID, err := model.NewIDFromString(request.Id, model.ResourceTypeOrganization.String())
+	if err != nil {
+		return api.V1OrganizationRolePermissionRemove400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
+	}
+
+	roleID, err := model.NewIDFromString(request.RoleId, model.ResourceTypeRole.String())
+	if err != nil {
+		return api.V1OrganizationRolePermissionRemove400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
+	}
+
+	permissionID, err := model.NewIDFromString(request.PermissionId, model.ResourceTypePermission.String())
+	if err != nil {
+		return api.V1OrganizationRolePermissionRemove400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
+	}
+
+	if err := c.roleService.RemovePermission(ctx, roleID, organizationID, permissionID); err != nil {
+		if errors.Is(err, service.ErrNoPermission) {
+			return api.V1OrganizationRolePermissionRemove403JSONResponse{N403JSONResponse: permissionDenied}, nil
+		}
+		if isNotFoundError(err) {
+			return api.V1OrganizationRolePermissionRemove404JSONResponse{N404JSONResponse: notFound}, nil
+		}
+		return api.V1OrganizationRolePermissionRemove500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+			Message: err.Error(),
+		}}, nil
+	}
+
+	return api.V1OrganizationRolePermissionRemove204Response{}, nil
 }
 
 // NewOrganizationController creates a new OrganizationController.

@@ -24,6 +24,9 @@ import {
   v1OrganizationRoleMemberRemove,
   v1OrganizationRoleMembersAdd,
   v1OrganizationRoleMembersGet,
+  v1OrganizationRolePermissionAdd,
+  v1OrganizationRolePermissionRemove,
+  v1OrganizationRolePermissionsGet,
   v1OrganizationRolesCreate,
   v1OrganizationRolesGet,
   v1OrganizationRoleUpdate,
@@ -87,6 +90,13 @@ import type {
   V1OrganizationRoleMembersAddError,
   V1OrganizationRoleMembersAddResponse,
   V1OrganizationRoleMembersGetData,
+  V1OrganizationRolePermissionAddData,
+  V1OrganizationRolePermissionAddError,
+  V1OrganizationRolePermissionAddResponse,
+  V1OrganizationRolePermissionRemoveData,
+  V1OrganizationRolePermissionRemoveError,
+  V1OrganizationRolePermissionRemoveResponse,
+  V1OrganizationRolePermissionsGetData,
   V1OrganizationRolesCreateData,
   V1OrganizationRolesCreateError,
   V1OrganizationRolesCreateResponse,
@@ -1362,6 +1372,90 @@ export const v1OrganizationRoleMemberRemoveMutation = (
   > = {
     mutationFn: async (fnOptions) => {
       const { data } = await v1OrganizationRoleMemberRemove({
+        ...options,
+        ...fnOptions,
+        throwOnError: true,
+      });
+      return data;
+    },
+  };
+  return mutationOptions;
+};
+
+export const v1OrganizationRolePermissionsGetQueryKey = (
+  options: Options<V1OrganizationRolePermissionsGetData>
+) => createQueryKey("v1OrganizationRolePermissionsGet", options);
+
+/**
+ * Get organization role permissions
+ *
+ * Return the permissions assigned to the organization's role.
+ */
+export const v1OrganizationRolePermissionsGetOptions = (
+  options: Options<V1OrganizationRolePermissionsGetData>
+) => {
+  return queryOptions({
+    queryFn: async ({ queryKey, signal }) => {
+      const { data } = await v1OrganizationRolePermissionsGet({
+        ...options,
+        ...queryKey[0],
+        signal,
+        throwOnError: true,
+      });
+      return data;
+    },
+    queryKey: v1OrganizationRolePermissionsGetQueryKey(options),
+  });
+};
+
+/**
+ * Add permission to organization role
+ *
+ * Add a permission to an organization's role. Only organization-scoped resources (Organization, Namespace, Document, Project, Role) are allowed.
+ */
+export const v1OrganizationRolePermissionAddMutation = (
+  options?: Partial<Options<V1OrganizationRolePermissionAddData>>
+): UseMutationOptions<
+  V1OrganizationRolePermissionAddResponse,
+  V1OrganizationRolePermissionAddError,
+  Options<V1OrganizationRolePermissionAddData>
+> => {
+  const mutationOptions: UseMutationOptions<
+    V1OrganizationRolePermissionAddResponse,
+    V1OrganizationRolePermissionAddError,
+    Options<V1OrganizationRolePermissionAddData>
+  > = {
+    mutationFn: async (fnOptions) => {
+      const { data } = await v1OrganizationRolePermissionAdd({
+        ...options,
+        ...fnOptions,
+        throwOnError: true,
+      });
+      return data;
+    },
+  };
+  return mutationOptions;
+};
+
+/**
+ * Remove permission from organization role
+ *
+ * Removes a permission from the organization's role.
+ */
+export const v1OrganizationRolePermissionRemoveMutation = (
+  options?: Partial<Options<V1OrganizationRolePermissionRemoveData>>
+): UseMutationOptions<
+  V1OrganizationRolePermissionRemoveResponse,
+  V1OrganizationRolePermissionRemoveError,
+  Options<V1OrganizationRolePermissionRemoveData>
+> => {
+  const mutationOptions: UseMutationOptions<
+    V1OrganizationRolePermissionRemoveResponse,
+    V1OrganizationRolePermissionRemoveError,
+    Options<V1OrganizationRolePermissionRemoveData>
+  > = {
+    mutationFn: async (fnOptions) => {
+      const { data } = await v1OrganizationRolePermissionRemove({
         ...options,
         ...fnOptions,
         throwOnError: true,

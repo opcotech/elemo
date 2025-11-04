@@ -5,6 +5,9 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import type { z } from "zod";
 
+import { RoleMemberAssignment } from "./role-member-assignment";
+import { RolePermissionAssignment } from "./role-permission-assignment";
+
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -205,5 +208,30 @@ export function OrganizationRoleEditForm({
         </Form>
       </CardContent>
     </Card>
+  );
+}
+
+export function OrganizationRoleEditFormWithPermissions({
+  role,
+  organizationId,
+  roleId,
+}: OrganizationRoleEditFormProps) {
+  return (
+    <div className="flex flex-col gap-6">
+      <OrganizationRoleEditForm
+        role={role}
+        organizationId={organizationId}
+        roleId={roleId}
+      />
+      <RoleMemberAssignment
+        organizationId={organizationId}
+        roleId={roleId}
+        roleName={role.name}
+      />
+      <RolePermissionAssignment
+        organizationId={organizationId}
+        roleId={roleId}
+      />
+    </div>
   );
 }

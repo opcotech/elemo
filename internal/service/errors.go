@@ -57,6 +57,9 @@ var (
 	ErrRoleGetBelongsTo                = errors.New("failed to get roles that belongs to")            // failed to get roles that belongs to
 	ErrRoleRemoveMember                = errors.New("failed to remove member from role")              // failed to remove member from role
 	ErrRoleUpdate                      = errors.New("failed to update role")                          // failed to update role
+	ErrRoleAddPermission               = errors.New("failed to add permission to role")               // failed to add permission to role
+	ErrRoleRemovePermission            = errors.New("failed to remove permission from role")          // failed to remove permission from role
+	ErrRoleGetPermissions              = errors.New("failed to get role permissions")                 // failed to get role permissions
 	ErrSystemHealthCheck               = errors.New("system health check failed")                     // system health check failed
 	ErrTodoCreate                      = errors.New("failed to create todo")                          // failed to create todo
 	ErrTodoDelete                      = errors.New("failed to delete todo")                          // failed to delete todo

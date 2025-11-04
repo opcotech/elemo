@@ -7,7 +7,7 @@ import {
   OrganizationDetailHeader,
   OrganizationDetailSkeleton,
   OrganizationNotFound,
-  OrganizationRoleEditForm,
+  OrganizationRoleEditFormWithPermissions,
 } from "@/components/organizations";
 import { useBreadcrumbUtils } from "@/hooks/use-breadcrumbs";
 import { ResourceType } from "@/hooks/use-permissions";
@@ -133,7 +133,7 @@ function OrganizationRoleEditPage() {
         description="Update the role details below."
       />
 
-      <OrganizationRoleEditForm
+      <OrganizationRoleEditFormWithPermissions
         role={role}
         organizationId={organizationId}
         roleId={roleId}

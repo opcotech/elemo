@@ -45,6 +45,15 @@ import type {
   V1OrganizationRoleMembersGetData,
   V1OrganizationRoleMembersGetErrors,
   V1OrganizationRoleMembersGetResponses,
+  V1OrganizationRolePermissionAddData,
+  V1OrganizationRolePermissionAddErrors,
+  V1OrganizationRolePermissionAddResponses,
+  V1OrganizationRolePermissionRemoveData,
+  V1OrganizationRolePermissionRemoveErrors,
+  V1OrganizationRolePermissionRemoveResponses,
+  V1OrganizationRolePermissionsGetData,
+  V1OrganizationRolePermissionsGetErrors,
+  V1OrganizationRolePermissionsGetResponses,
   V1OrganizationRolesCreateData,
   V1OrganizationRolesCreateErrors,
   V1OrganizationRolesCreateResponses,
@@ -961,6 +970,88 @@ export const v1OrganizationRoleMemberRemove = <
       },
     ],
     url: "/v1/organizations/{id}/roles/{role_id}/members/{user_id}",
+    ...options,
+  });
+};
+
+/**
+ * Get organization role permissions
+ *
+ * Return the permissions assigned to the organization's role.
+ */
+export const v1OrganizationRolePermissionsGet = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<V1OrganizationRolePermissionsGetData, ThrowOnError>
+) => {
+  return (options.client ?? client).get<
+    V1OrganizationRolePermissionsGetResponses,
+    V1OrganizationRolePermissionsGetErrors,
+    ThrowOnError
+  >({
+    security: [
+      {
+        scheme: "bearer",
+        type: "http",
+      },
+    ],
+    url: "/v1/organizations/{id}/roles/{role_id}/permissions",
+    ...options,
+  });
+};
+
+/**
+ * Add permission to organization role
+ *
+ * Add a permission to an organization's role. Only organization-scoped resources (Organization, Namespace, Document, Project, Role) are allowed.
+ */
+export const v1OrganizationRolePermissionAdd = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<V1OrganizationRolePermissionAddData, ThrowOnError>
+) => {
+  return (options.client ?? client).post<
+    V1OrganizationRolePermissionAddResponses,
+    V1OrganizationRolePermissionAddErrors,
+    ThrowOnError
+  >({
+    security: [
+      {
+        scheme: "bearer",
+        type: "http",
+      },
+    ],
+    url: "/v1/organizations/{id}/roles/{role_id}/permissions",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+};
+
+/**
+ * Remove permission from organization role
+ *
+ * Removes a permission from the organization's role.
+ */
+export const v1OrganizationRolePermissionRemove = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<V1OrganizationRolePermissionRemoveData, ThrowOnError>
+) => {
+  return (options.client ?? client).delete<
+    V1OrganizationRolePermissionRemoveResponses,
+    V1OrganizationRolePermissionRemoveErrors,
+    ThrowOnError
+  >({
+    security: [
+      {
+        scheme: "bearer",
+        type: "http",
+      },
+    ],
+    url: "/v1/organizations/{id}/roles/{role_id}/permissions/{permission_id}",
     ...options,
   });
 };

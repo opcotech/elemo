@@ -220,6 +220,117 @@ func (s *RoleServiceIntegrationTestSuite) TestDelete() {
 	s.Assert().ErrorIs(err, repository.ErrNotFound)
 }
 
+func (s *RoleServiceIntegrationTestSuite) TestAddPermission() {
+	s.Require().NoError(s.roleService.Create(s.ctx, s.owner.ID, s.organization.ID, s.role))
+
+	// Create a document to use as target
+	document := testModel.NewDocument(s.owner.ID)
+	s.Require().NoError(s.DocumentRepo.Create(context.Background(), s.organization.ID, document))
+
+	// Add permission to role
+	err := s.roleService.AddPermission(s.ctx, s.role.ID, s.organization.ID, document.ID, model.PermissionKindRead)
+	s.Require().NoError(err)
+
+	// Verify permission was added
+	permissions, err := s.roleService.GetPermissions(s.ctx, s.role.ID, s.organization.ID)
+	s.Require().NoError(err)
+	s.Assert().Len(permissions, 1)
+	s.Assert().Equal(s.role.ID, permissions[0].Subject)
+	s.Assert().Equal(document.ID, permissions[0].Target)
+	s.Assert().Equal(model.PermissionKindRead, permissions[0].Kind)
+}
+
+func (s *RoleServiceIntegrationTestSuite) TestAddPermissionMultipleKinds() {
+	s.Require().NoError(s.roleService.Create(s.ctx, s.owner.ID, s.organization.ID, s.role))
+
+	// Create a document to use as target
+	document := testModel.NewDocument(s.owner.ID)
+	s.Require().NoError(s.DocumentRepo.Create(context.Background(), s.organization.ID, document))
+
+	// Add multiple permissions with different kinds
+	err := s.roleService.AddPermission(s.ctx, s.role.ID, s.organization.ID, document.ID, model.PermissionKindRead)
+	s.Require().NoError(err)
+
+	err = s.roleService.AddPermission(s.ctx, s.role.ID, s.organization.ID, document.ID, model.PermissionKindWrite)
+	s.Require().NoError(err)
+
+	err = s.roleService.AddPermission(s.ctx, s.role.ID, s.organization.ID, document.ID, model.PermissionKindDelete)
+	s.Require().NoError(err)
+
+	// Verify all permissions were added
+	permissions, err := s.roleService.GetPermissions(s.ctx, s.role.ID, s.organization.ID)
+	s.Require().NoError(err)
+	s.Assert().Len(permissions, 3)
+
+	kinds := make([]model.PermissionKind, len(permissions))
+	for i, p := range permissions {
+		kinds[i] = p.Kind
+	}
+	s.Assert().Contains(kinds, model.PermissionKindRead)
+	s.Assert().Contains(kinds, model.PermissionKindWrite)
+	s.Assert().Contains(kinds, model.PermissionKindDelete)
+}
+
+func (s *RoleServiceIntegrationTestSuite) TestRemovePermission() {
+	s.Require().NoError(s.roleService.Create(s.ctx, s.owner.ID, s.organization.ID, s.role))
+
+	// Create a document to use as target
+	document := testModel.NewDocument(s.owner.ID)
+	s.Require().NoError(s.DocumentRepo.Create(context.Background(), s.organization.ID, document))
+
+	// Add permission to role
+	err := s.roleService.AddPermission(s.ctx, s.role.ID, s.organization.ID, document.ID, model.PermissionKindRead)
+	s.Require().NoError(err)
+
+	// Get the permission ID
+	permissions, err := s.roleService.GetPermissions(s.ctx, s.role.ID, s.organization.ID)
+	s.Require().NoError(err)
+	s.Assert().Len(permissions, 1)
+	permissionID := permissions[0].ID
+
+	// Remove permission
+	err = s.roleService.RemovePermission(s.ctx, s.role.ID, s.organization.ID, permissionID)
+	s.Require().NoError(err)
+
+	// Verify permission was removed
+	permissions, err = s.roleService.GetPermissions(s.ctx, s.role.ID, s.organization.ID)
+	s.Require().NoError(err)
+	s.Assert().Len(permissions, 0)
+}
+
+func (s *RoleServiceIntegrationTestSuite) TestGetPermissions() {
+	s.Require().NoError(s.roleService.Create(s.ctx, s.owner.ID, s.organization.ID, s.role))
+
+	// Initially no permissions
+	permissions, err := s.roleService.GetPermissions(s.ctx, s.role.ID, s.organization.ID)
+	s.Require().NoError(err)
+	s.Assert().Len(permissions, 0)
+
+	// Create multiple documents
+	doc1 := testModel.NewDocument(s.owner.ID)
+	s.Require().NoError(s.DocumentRepo.Create(context.Background(), s.organization.ID, doc1))
+	doc2 := testModel.NewDocument(s.owner.ID)
+	s.Require().NoError(s.DocumentRepo.Create(context.Background(), s.organization.ID, doc2))
+
+	// Add permissions on different targets
+	err = s.roleService.AddPermission(s.ctx, s.role.ID, s.organization.ID, doc1.ID, model.PermissionKindRead)
+	s.Require().NoError(err)
+
+	err = s.roleService.AddPermission(s.ctx, s.role.ID, s.organization.ID, doc2.ID, model.PermissionKindWrite)
+	s.Require().NoError(err)
+
+	// Verify all permissions are returned
+	permissions, err = s.roleService.GetPermissions(s.ctx, s.role.ID, s.organization.ID)
+	s.Require().NoError(err)
+	s.Assert().Len(permissions, 2)
+
+	// Verify permissions have correct subjects and targets
+	for _, p := range permissions {
+		s.Assert().Equal(s.role.ID, p.Subject)
+		s.Assert().True(p.Target == doc1.ID || p.Target == doc2.ID)
+	}
+}
+
 func TestRoleServiceIntegrationTestSuite(t *testing.T) {
 	suite.Run(t, new(RoleServiceIntegrationTestSuite))
 }

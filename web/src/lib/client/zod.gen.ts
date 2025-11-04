@@ -398,6 +398,7 @@ export const zPermission = z.object({
   kind: zPermissionKind,
   subject: z.string(),
   target: z.string(),
+  target_type: z.string(),
   created_at: z.iso.datetime(),
   updated_at: z.union([z.iso.datetime(), z.null()]),
 });
@@ -583,6 +584,11 @@ export const zRoleCreate = z.object({
 export const zRolePatch = z.object({
   name: z.optional(z.string().min(3).max(120)),
   description: z.optional(z.union([z.string().min(5).max(500), z.null()])),
+});
+
+export const zRolePermissionCreate = z.object({
+  target: z.string(),
+  kind: zPermissionKind,
 });
 
 export const zV1UsersGetData = z.object({
@@ -1038,6 +1044,51 @@ export const zV1OrganizationRoleMemberRemoveData = z.object({
  * No Content
  */
 export const zV1OrganizationRoleMemberRemoveResponse = z.void();
+
+export const zV1OrganizationRolePermissionsGetData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+    role_id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+/**
+ * OK
+ */
+export const zV1OrganizationRolePermissionsGetResponse = z.array(zPermission);
+
+export const zV1OrganizationRolePermissionAddData = z.object({
+  body: z.optional(zRolePermissionCreate),
+  path: z.object({
+    id: z.string(),
+    role_id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+/**
+ * Example response
+ */
+export const zV1OrganizationRolePermissionAddResponse = z.object({
+  id: z.string(),
+});
+
+export const zV1OrganizationRolePermissionRemoveData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+    role_id: z.string(),
+    permission_id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+/**
+ * No Content
+ */
+export const zV1OrganizationRolePermissionRemoveResponse = z.void();
 
 export const zV1PermissionsCreateData = z.object({
   body: z.optional(zPermissionCreate),

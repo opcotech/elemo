@@ -1,8 +1,9 @@
 import { Link } from "@tanstack/react-router";
-import { Edit, Plus, Trash2 } from "lucide-react";
+import { Edit, MoreHorizontal, Plus, Trash2, UserPlus } from "lucide-react";
 import { useState } from "react";
 
 import { OrganizationRoleDeleteDialog } from "./organization-role-delete-dialog";
+import { RoleMemberAddDialog } from "./role-member-add-dialog";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +15,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -82,22 +89,17 @@ export function OrganizationRolesList({
   organizationId,
 }: OrganizationRolesListProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [addMemberDialogOpen, setAddMemberDialogOpen] = useState(false);
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
 
-  // Check permissions for organization (write) and role (write)
+  // Check permissions for organization (write) - only organization write is needed for role operations
   const { data: orgPermissions, isLoading: isOrgPermissionsLoading } =
     usePermissions(withResourceType(ResourceType.Organization, organizationId));
 
-  const { data: rolePermissions, isLoading: isRolePermissionsLoading } =
-    usePermissions(withResourceType(ResourceType.Role, ""));
-
   const hasOrgWritePermission = can(orgPermissions, "write");
-  const hasRoleCreatePermission = can(rolePermissions, "create");
-  const hasRoleWritePermission = can(rolePermissions, "write");
-  const hasWritePermission = hasOrgWritePermission && hasRoleWritePermission;
-  const hasCreatePermission = hasOrgWritePermission && hasRoleCreatePermission;
-  const isPermissionsLoading =
-    isOrgPermissionsLoading || isRolePermissionsLoading;
+  const hasWritePermission = hasOrgWritePermission;
+  const hasCreatePermission = hasOrgWritePermission;
+  const isPermissionsLoading = isOrgPermissionsLoading;
 
   const handleDeleteClick = (role: Role) => {
     setSelectedRole(role);
@@ -107,6 +109,11 @@ export function OrganizationRolesList({
   const handleDeleteSuccess = () => {
     setDeleteDialogOpen(false);
     setSelectedRole(null);
+  };
+
+  const handleAddMemberClick = (role: Role) => {
+    setSelectedRole(role);
+    setAddMemberDialogOpen(true);
   };
 
   if (isLoading) {
@@ -213,26 +220,42 @@ export function OrganizationRolesList({
                         <div className="flex items-center justify-end gap-x-1">
                           {hasWritePermission && (
                             <>
-                              <Button variant="ghost" size="sm" asChild>
-                                <Link
-                                  to="/settings/organizations/$organizationId/roles/$roleId/edit"
-                                  params={{
-                                    organizationId,
-                                    roleId: role.id,
-                                  }}
-                                >
-                                  <Edit className="size-4" />
-                                  <span className="sr-only">Edit role</span>
-                                </Link>
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDeleteClick(role)}
-                              >
-                                <Trash2 className="size-4" />
-                                <span className="sr-only">Delete role</span>
-                              </Button>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="sm">
+                                    <MoreHorizontal className="size-4" />
+                                    <span className="sr-only">
+                                      Role actions
+                                    </span>
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent>
+                                  <DropdownMenuItem
+                                    onClick={() => handleAddMemberClick(role)}
+                                  >
+                                    <UserPlus className="mr-2 size-4" />
+                                    <span>Add member</span>
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem asChild>
+                                    <Link
+                                      to="/settings/organizations/$organizationId/roles/$roleId/edit"
+                                      params={{
+                                        organizationId,
+                                        roleId: role.id,
+                                      }}
+                                    >
+                                      <Edit className="mr-2 size-4" />
+                                      <span>Edit role</span>
+                                    </Link>
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => handleDeleteClick(role)}
+                                  >
+                                    <Trash2 className="mr-2 size-4" />
+                                    <span>Delete role</span>
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                             </>
                           )}
                         </div>
@@ -253,6 +276,16 @@ export function OrganizationRolesList({
           open={deleteDialogOpen}
           onOpenChange={setDeleteDialogOpen}
           onSuccess={handleDeleteSuccess}
+        />
+      )}
+
+      {selectedRole && (
+        <RoleMemberAddDialog
+          organizationId={organizationId}
+          roleId={selectedRole.id}
+          open={addMemberDialogOpen}
+          onOpenChange={setAddMemberDialogOpen}
+          onSuccess={() => setAddMemberDialogOpen(false)}
         />
       )}
     </>

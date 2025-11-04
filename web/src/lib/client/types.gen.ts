@@ -573,7 +573,14 @@ export type Permission = {
   id: string;
   kind: PermissionKind;
   subject: string;
+  /**
+   * Resource ID.
+   */
   target: string;
+  /**
+   * Resource type of the target resource.
+   */
+  target_type: string;
   /**
    * Date when the user was created.
    */
@@ -929,6 +936,14 @@ export type RolePatch = {
    * Description of the role.
    */
   description?: string | null;
+};
+
+export type RolePermissionCreate = {
+  /**
+   * Resource ID string in the format "ResourceType:id" or "ResourceType:00000000000000000000" for system-level permissions.
+   */
+  target: string;
+  kind: PermissionKind;
 };
 
 export type V1UsersGetData = {
@@ -2495,6 +2510,171 @@ export type V1OrganizationRoleMemberRemoveResponses = {
 
 export type V1OrganizationRoleMemberRemoveResponse =
   V1OrganizationRoleMemberRemoveResponses[keyof V1OrganizationRoleMemberRemoveResponses];
+
+export type V1OrganizationRolePermissionsGetData = {
+  body?: never;
+  path: {
+    /**
+     * ID of the resource.
+     */
+    id: string;
+    /**
+     * ID of the role.
+     */
+    role_id: string;
+  };
+  query?: never;
+  url: "/v1/organizations/{id}/roles/{role_id}/permissions";
+};
+
+export type V1OrganizationRolePermissionsGetErrors = {
+  /**
+   * Bad request
+   */
+  400: HttpError;
+  /**
+   * Unauthorized request
+   */
+  401: HttpError;
+  /**
+   * Forbidden
+   */
+  403: HttpError;
+  /**
+   * The requested resource not found
+   */
+  404: HttpError;
+  /**
+   * Internal Server Error
+   */
+  500: HttpError;
+};
+
+export type V1OrganizationRolePermissionsGetError =
+  V1OrganizationRolePermissionsGetErrors[keyof V1OrganizationRolePermissionsGetErrors];
+
+export type V1OrganizationRolePermissionsGetResponses = {
+  /**
+   * OK
+   */
+  200: Array<Permission>;
+};
+
+export type V1OrganizationRolePermissionsGetResponse =
+  V1OrganizationRolePermissionsGetResponses[keyof V1OrganizationRolePermissionsGetResponses];
+
+export type V1OrganizationRolePermissionAddData = {
+  body?: RolePermissionCreate;
+  path: {
+    /**
+     * ID of the resource.
+     */
+    id: string;
+    /**
+     * ID of the role.
+     */
+    role_id: string;
+  };
+  query?: never;
+  url: "/v1/organizations/{id}/roles/{role_id}/permissions";
+};
+
+export type V1OrganizationRolePermissionAddErrors = {
+  /**
+   * Bad request
+   */
+  400: HttpError;
+  /**
+   * Unauthorized request
+   */
+  401: HttpError;
+  /**
+   * Forbidden
+   */
+  403: HttpError;
+  /**
+   * The requested resource not found
+   */
+  404: HttpError;
+  /**
+   * Internal Server Error
+   */
+  500: HttpError;
+};
+
+export type V1OrganizationRolePermissionAddError =
+  V1OrganizationRolePermissionAddErrors[keyof V1OrganizationRolePermissionAddErrors];
+
+export type V1OrganizationRolePermissionAddResponses = {
+  /**
+   * Example response
+   */
+  201: {
+    /**
+     * ID of the newly created resource.
+     */
+    id: string;
+  };
+};
+
+export type V1OrganizationRolePermissionAddResponse =
+  V1OrganizationRolePermissionAddResponses[keyof V1OrganizationRolePermissionAddResponses];
+
+export type V1OrganizationRolePermissionRemoveData = {
+  body?: never;
+  path: {
+    /**
+     * ID of the resource.
+     */
+    id: string;
+    /**
+     * ID of the role.
+     */
+    role_id: string;
+    /**
+     * ID of the permission.
+     */
+    permission_id: string;
+  };
+  query?: never;
+  url: "/v1/organizations/{id}/roles/{role_id}/permissions/{permission_id}";
+};
+
+export type V1OrganizationRolePermissionRemoveErrors = {
+  /**
+   * Bad request
+   */
+  400: HttpError;
+  /**
+   * Unauthorized request
+   */
+  401: HttpError;
+  /**
+   * Forbidden
+   */
+  403: HttpError;
+  /**
+   * The requested resource not found
+   */
+  404: HttpError;
+  /**
+   * Internal Server Error
+   */
+  500: HttpError;
+};
+
+export type V1OrganizationRolePermissionRemoveError =
+  V1OrganizationRolePermissionRemoveErrors[keyof V1OrganizationRolePermissionRemoveErrors];
+
+export type V1OrganizationRolePermissionRemoveResponses = {
+  /**
+   * No Content
+   */
+  204: void;
+};
+
+export type V1OrganizationRolePermissionRemoveResponse =
+  V1OrganizationRolePermissionRemoveResponses[keyof V1OrganizationRolePermissionRemoveResponses];
 
 export type V1PermissionsCreateData = {
   body?: PermissionCreate;

@@ -300,8 +300,13 @@ func (r *PermissionRepository) GetBySubjectAndTarget(ctx context.Context, source
 	}
 
 	cypher := `
-	MATCH (s:` + source.Label() + ` {id: $source})-[p:` + EdgeKindHasPermission.String() + `]->(t:` + target.Label() + ` {id: $target})
-	RETURN s, p, t
+	MATCH (s:` + source.Label() + ` {id: $source})
+	MATCH (t:` + target.Label() + ` {id: $target})
+	MATCH path=(s)-[:` + EdgeKindHasPermission.String() + `|` + EdgeKindMemberOf.String() + `*..2]->(t)
+	UNWIND relationships(path) AS rel
+	WITH s, t, rel, startNode(rel) AS relStart, endNode(rel) AS relEnd
+	WHERE type(rel) = "` + EdgeKindHasPermission.String() + `" AND relEnd = t
+	RETURN s, rel AS p, t
 	ORDER BY p.created_at DESC`
 
 	params := map[string]any{

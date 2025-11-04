@@ -7,7 +7,7 @@ import {
   OrganizationDetailHeader,
   OrganizationDetailSkeleton,
   OrganizationNotFound,
-  OrganizationRoleCreateForm,
+  OrganizationRoleCreateFormWithPermissions,
 } from "@/components/organizations";
 import { useBreadcrumbUtils } from "@/hooks/use-breadcrumbs";
 import { ResourceType } from "@/hooks/use-permissions";
@@ -37,16 +37,6 @@ function OrganizationRoleCreatePage() {
     resourceId: () => organizationId,
   });
 
-  // Check role create permission
-  const { isLoading: isCheckingRolePermission } = useRequirePermission({
-    resourceType: ResourceType.Role,
-    permissionKind: "create",
-  });
-
-  const isCheckingPermission =
-    isCheckingOrgPermission || isCheckingRolePermission;
-
-  // Fetch organization data for breadcrumbs
   const {
     data: organization,
     isLoading,
@@ -57,8 +47,7 @@ function OrganizationRoleCreatePage() {
         id: organizationId,
       },
     }),
-    // Don't fetch organization data until permission is confirmed
-    enabled: !isCheckingPermission,
+    enabled: !isCheckingOrgPermission,
   });
 
   useEffect(() => {
@@ -88,7 +77,7 @@ function OrganizationRoleCreatePage() {
   }, [setBreadcrumbsFromItems, organization]);
 
   // Show loading while checking permissions or loading organization
-  if (isCheckingPermission || isLoading) {
+  if (isCheckingOrgPermission || isLoading) {
     return <OrganizationDetailSkeleton />;
   }
 
@@ -107,7 +96,9 @@ function OrganizationRoleCreatePage() {
         description="Create a new role for this organization."
       />
 
-      <OrganizationRoleCreateForm organizationId={organizationId} />
+      <OrganizationRoleCreateFormWithPermissions
+        organizationId={organizationId}
+      />
     </div>
   );
 }
