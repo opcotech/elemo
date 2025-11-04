@@ -14,7 +14,6 @@ var (
 	ErrNoNotificationRepository        = errors.New("no notification repository provided")            // no notification repository provided
 	ErrNoNotificationService           = errors.New("no notification service provided")               // no notification service provided
 	ErrNoOrganizationRepository        = errors.New("no organization repository provided")            // no organization repository provided
-	ErrNoPatchData                     = errors.New("no patch data provided")                         // no patch data provided
 	ErrNoPermission                    = errors.New("no permission")                                  // no permission
 	ErrNoPermissionRepository          = errors.New("no permission repository provided")              // no permission repository provided
 	ErrNoPermissionService             = errors.New("no permission service provided")                 // no permission service provided

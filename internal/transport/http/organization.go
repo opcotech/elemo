@@ -3,12 +3,12 @@ package http
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	oapiTypes "github.com/oapi-codegen/runtime/types"
 
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg"
-	"github.com/opcotech/elemo/internal/pkg/convert"
 	"github.com/opcotech/elemo/internal/service"
 	"github.com/opcotech/elemo/internal/transport/http/api"
 )
@@ -127,8 +127,8 @@ func (c *organizationController) V1OrganizationUpdate(ctx context.Context, reque
 		return api.V1OrganizationUpdate400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
-	patch := make(map[string]any)
-	if err := convert.AnyToAny(request.Body, &patch); err != nil {
+	patch, err := api.ConvertRequestToMap(request.Body)
+	if err != nil {
 		return api.V1OrganizationUpdate400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
@@ -343,7 +343,7 @@ func (c *organizationController) V1OrganizationRoleGet(ctx context.Context, requ
 		return api.V1OrganizationRoleGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
-	roleID, err := model.NewIDFromString(request.RoleId, model.ResourceTypeUser.String())
+	roleID, err := model.NewIDFromString(request.RoleId, model.ResourceTypeRole.String())
 	if err != nil {
 		return api.V1OrganizationRoleGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
@@ -373,13 +373,13 @@ func (c *organizationController) V1OrganizationRoleUpdate(ctx context.Context, r
 		return api.V1OrganizationRoleUpdate400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
-	roleID, err := model.NewIDFromString(request.RoleId, model.ResourceTypeUser.String())
+	roleID, err := model.NewIDFromString(request.RoleId, model.ResourceTypeRole.String())
 	if err != nil {
 		return api.V1OrganizationRoleUpdate400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
-	patch := make(map[string]any)
-	if err := convert.AnyToAny(request.Body, &patch); err != nil {
+	patch, err := api.ConvertRequestToMap(request.Body)
+	if err != nil {
 		return api.V1OrganizationRoleUpdate400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
@@ -408,7 +408,7 @@ func (c *organizationController) V1OrganizationRoleDelete(ctx context.Context, r
 		return api.V1OrganizationRoleDelete400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
-	roleID, err := model.NewIDFromString(request.RoleId, model.ResourceTypeUser.String())
+	roleID, err := model.NewIDFromString(request.RoleId, model.ResourceTypeRole.String())
 	if err != nil {
 		return api.V1OrganizationRoleDelete400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
@@ -437,7 +437,7 @@ func (c *organizationController) V1OrganizationRoleMembersGet(ctx context.Contex
 		return api.V1OrganizationRoleMembersGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
-	roleID, err := model.NewIDFromString(request.RoleId, model.ResourceTypeUser.String())
+	roleID, err := model.NewIDFromString(request.RoleId, model.ResourceTypeRole.String())
 	if err != nil {
 		return api.V1OrganizationRoleMembersGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
@@ -472,12 +472,16 @@ func (c *organizationController) V1OrganizationRoleMembersAdd(ctx context.Contex
 		return api.V1OrganizationRoleMembersAdd400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
-	roleID, err := model.NewIDFromString(request.RoleId, model.ResourceTypeUser.String())
+	roleID, err := model.NewIDFromString(request.RoleId, model.ResourceTypeRole.String())
 	if err != nil {
 		return api.V1OrganizationRoleMembersAdd400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
-	userID, err := model.NewIDFromString(request.Id, model.ResourceTypeUser.String())
+	if request.Body == nil || request.Body.UserId == "" {
+		return api.V1OrganizationRoleMembersAdd400JSONResponse{N400JSONResponse: formatBadRequest(fmt.Errorf("user_id is required"))}, nil
+	}
+
+	userID, err := model.NewIDFromString(request.Body.UserId, model.ResourceTypeUser.String())
 	if err != nil {
 		return api.V1OrganizationRoleMembersAdd400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
@@ -508,7 +512,7 @@ func (c *organizationController) V1OrganizationRoleMemberRemove(ctx context.Cont
 		return api.V1OrganizationRoleMemberRemove400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
-	roleID, err := model.NewIDFromString(request.RoleId, model.ResourceTypeUser.String())
+	roleID, err := model.NewIDFromString(request.RoleId, model.ResourceTypeRole.String())
 	if err != nil {
 		return api.V1OrganizationRoleMemberRemove400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}

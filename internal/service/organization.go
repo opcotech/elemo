@@ -139,10 +139,6 @@ func (s *organizationService) Update(ctx context.Context, id model.ID, patch map
 		}
 	}
 
-	if len(patch) == 0 {
-		return nil, errors.Join(ErrOrganizationUpdate, ErrNoPatchData)
-	}
-
 	organization, err := s.organizationRepo.Update(ctx, id, patch)
 	if err != nil {
 		return nil, errors.Join(ErrOrganizationUpdate, err)

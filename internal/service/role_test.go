@@ -800,10 +800,6 @@ func TestRoleService_Update(t *testing.T) {
 		{
 			name:    "update role with no permissions",
 			wantErr: ErrNoPermission,
-		},
-		{
-			name:    "update role with empty patch data",
-			wantErr: ErrNoPatchData,
 		},*/
 	}
 	for _, tt := range tests {

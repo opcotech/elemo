@@ -885,11 +885,11 @@ export type OrganizationPatch = {
   /**
    * Logo of the organization.
    */
-  logo?: string;
+  logo?: string | null;
   /**
    * Work title of the user.
    */
-  website?: string;
+  website?: string | null;
   status?: OrganizationStatus;
 };
 
@@ -928,7 +928,7 @@ export type RolePatch = {
   /**
    * Description of the role.
    */
-  description?: string;
+  description?: string | null;
 };
 
 export type V1UsersGetData = {

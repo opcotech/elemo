@@ -171,10 +171,6 @@ func (s *userService) Update(ctx context.Context, id model.ID, patch map[string]
 		}
 	}
 
-	if len(patch) == 0 {
-		return nil, errors.Join(ErrUserUpdate, ErrNoPatchData)
-	}
-
 	user, err := s.userRepo.Update(ctx, id, patch)
 	if err != nil {
 		return nil, errors.Join(ErrUserUpdate, err)

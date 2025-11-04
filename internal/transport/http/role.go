@@ -17,7 +17,7 @@ func roleToDTO(role *model.Role) api.Role {
 	}
 
 	for i, memberID := range role.Members {
-		dto.Permissions[i] = api.Id(memberID.String())
+		dto.Members[i] = api.Id(memberID.String())
 	}
 
 	for i, permissionID := range role.Permissions {

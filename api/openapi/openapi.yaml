@@ -1550,12 +1550,18 @@ components:
                 format: uri
                 example: "https://example.com/static/logo.png"
                 maxLength: 2000
+                nullable: true
+                x-go-type: "Optional[string]"
+                x-go-type-skip-optional-pointer: true
               website:
                 type: string
                 description: Work title of the user.
                 format: uri
                 example: "https://example.com"
                 maxLength: 2000
+                nullable: true
+                x-go-type: "Optional[string]"
+                x-go-type-skip-optional-pointer: true
               status:
                 $ref: "#/components/schemas/OrganizationStatus"
     PermissionCreate:
@@ -1642,6 +1648,9 @@ components:
                 maxLength: 500
                 description: Description of the role.
                 example: Users who can collaborate on the project.
+                nullable: true
+                x-go-type: "Optional[string]"
+                x-go-type-skip-optional-pointer: true
 paths:
   /v1/users:
     get:

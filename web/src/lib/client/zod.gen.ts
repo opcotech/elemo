@@ -554,8 +554,8 @@ export const zOrganizationCreate = z.object({
 export const zOrganizationPatch = z.object({
   name: z.optional(z.string().min(1).max(120)),
   email: z.optional(z.email().min(6).max(254)),
-  logo: z.optional(z.url().max(2000)),
-  website: z.optional(z.url().max(2000)),
+  logo: z.optional(z.union([z.url().max(2000), z.null()])),
+  website: z.optional(z.union([z.url().max(2000), z.null()])),
   status: z.optional(zOrganizationStatus),
 });
 
@@ -582,7 +582,7 @@ export const zRoleCreate = z.object({
 
 export const zRolePatch = z.object({
   name: z.optional(z.string().min(3).max(120)),
-  description: z.optional(z.string().min(5).max(500)),
+  description: z.optional(z.union([z.string().min(5).max(500), z.null()])),
 });
 
 export const zV1UsersGetData = z.object({

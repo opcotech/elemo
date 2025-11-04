@@ -140,10 +140,6 @@ func (s *roleService) Update(ctx context.Context, id, belongsTo model.ID, patch 
 		return nil, errors.Join(ErrRoleUpdate, ErrNoPermission)
 	}
 
-	if len(patch) == 0 {
-		return nil, errors.Join(ErrRoleUpdate, ErrNoPatchData)
-	}
-
 	role, err := s.roleRepo.Update(ctx, id, belongsTo, patch)
 	if err != nil {
 		return nil, errors.Join(ErrRoleUpdate, err)
