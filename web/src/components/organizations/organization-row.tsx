@@ -98,7 +98,7 @@ export function OrganizationRow({
               {hasDeletePermission && organization.status === "active" && (
                 <>
                   <Button
-                    variant="ghost"
+                    variant="destructive-ghost"
                     size="sm"
                     onClick={() => setDeleteDialogOpen(true)}
                   >

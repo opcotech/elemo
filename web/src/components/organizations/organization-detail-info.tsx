@@ -36,7 +36,7 @@ export function OrganizationDetailInfo({
     <Card>
       <CardHeader>
         <div className="flex items-start justify-between">
-          <div>
+          <div className="space-y-1">
             <CardTitle>Organization Information</CardTitle>
             <CardDescription>
               Details about the organization and its status.

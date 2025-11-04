@@ -1,23 +1,13 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Trash2 } from "lucide-react";
+import type { QueryKey } from "@tanstack/react-query";
 
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
+import { useDeleteMutation } from "@/hooks/use-delete-mutation";
 import type { Role } from "@/lib/api";
 import {
   v1OrganizationRoleDeleteMutation,
   v1OrganizationRoleGetOptions,
   v1OrganizationRolesGetOptions,
 } from "@/lib/client/@tanstack/react-query.gen";
-import { showErrorToast, showSuccessToast } from "@/lib/toast";
 
 interface OrganizationRoleDeleteDialogProps {
   role: Role;
@@ -34,95 +24,53 @@ export function OrganizationRoleDeleteDialog({
   onOpenChange,
   onSuccess,
 }: OrganizationRoleDeleteDialogProps) {
-  const queryClient = useQueryClient();
-
-  const mutation = useMutation(v1OrganizationRoleDeleteMutation());
-
-  const handleDelete = () => {
-    mutation.mutate(
-      {
-        path: {
-          id: organizationId,
-          role_id: role.id,
-        },
+  const queryKeysToInvalidate: QueryKey[] = [
+    v1OrganizationRolesGetOptions({
+      path: { id: organizationId },
+    }).queryKey,
+    v1OrganizationRoleGetOptions({
+      path: {
+        id: organizationId,
+        role_id: role.id,
       },
-      {
-        onSuccess: () => {
-          showSuccessToast(
-            "Role deleted",
-            "The role has been deleted successfully"
-          );
+    }).queryKey,
+  ];
 
-          // Invalidate queries to refresh the list
-          queryClient.invalidateQueries({
-            queryKey: v1OrganizationRolesGetOptions({
-              path: { id: organizationId },
-            }).queryKey,
-          });
-          queryClient.invalidateQueries({
-            queryKey: v1OrganizationRoleGetOptions({
-              path: {
-                id: organizationId,
-                role_id: role.id,
-              },
-            }).queryKey,
-          });
+  const deleteMutation = useDeleteMutation({
+    mutationOptions: v1OrganizationRoleDeleteMutation(),
+    successMessage: "Role deleted",
+    successDescription: "The role has been deleted successfully",
+    errorMessagePrefix: "Failed to delete role",
+    queryKeysToInvalidate,
+    onSuccess: () => {
+      onSuccess?.();
+      onOpenChange(false);
+    },
+  });
 
-          onSuccess?.();
-          onOpenChange(false);
-        },
-        onError: (error) => {
-          showErrorToast("Failed to delete role", error.message);
-        },
-      }
-    );
+  const handleConfirm = () => {
+    deleteMutation.mutate({
+      path: {
+        id: organizationId,
+        role_id: role.id,
+      },
+    });
   };
 
   return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>
-            Are you sure you want to delete {role.name}?
-          </AlertDialogTitle>
-          <AlertDialogDescription className="space-y-2">
-            <p>
-              This will permanently delete the role. This action cannot be
-              undone.
-            </p>
-            <p className="font-medium">What will happen:</p>
-            <ul className="list-inside list-disc space-y-1 text-sm">
-              <li>The role will be permanently deleted</li>
-              <li>
-                All members assigned to this role will lose their role
-                assignment
-              </li>
-              <li>Role permissions will be removed</li>
-            </ul>
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={mutation.isPending}>
-            Cancel
-          </AlertDialogCancel>
-          <AlertDialogAction
-            variant="destructive"
-            onClick={handleDelete}
-            disabled={mutation.isPending}
-          >
-            {mutation.isPending ? (
-              <>
-                <span>Deleting...</span>
-              </>
-            ) : (
-              <>
-                <Trash2 className="size-4" />
-                Delete
-              </>
-            )}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+    <DeleteConfirmationDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title={`Are you sure you want to delete ${role.name}?`}
+      description="This will permanently delete the role. This action cannot be undone."
+      consequences={[
+        "The role will be permanently deleted",
+        "All members assigned to this role will lose their role assignment",
+        "Role permissions will be removed",
+      ]}
+      deleteButtonText="Delete"
+      onConfirm={handleConfirm}
+      isPending={deleteMutation.isPending}
+    />
   );
 }

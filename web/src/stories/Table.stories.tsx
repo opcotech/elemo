@@ -236,15 +236,15 @@ export const UserManagement: Story = {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem>
-                  <Eye className="mr-2 h-4 w-4" />
+                  <Eye className="size-4" />
                   View
                 </DropdownMenuItem>
                 <DropdownMenuItem>
-                  <Edit className="mr-2 h-4 w-4" />
+                  <Edit className="size-4" />
                   Edit
                 </DropdownMenuItem>
                 <DropdownMenuItem className="text-red-600">
-                  <Trash2 className="mr-2 h-4 w-4" />
+                  <Trash2 className="size-4" />
                   Delete
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -287,15 +287,15 @@ export const UserManagement: Story = {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem>
-                  <Eye className="mr-2 h-4 w-4" />
+                  <Eye className="size-4" />
                   View
                 </DropdownMenuItem>
                 <DropdownMenuItem>
-                  <Edit className="mr-2 h-4 w-4" />
+                  <Edit className="size-4" />
                   Edit
                 </DropdownMenuItem>
                 <DropdownMenuItem className="text-red-600">
-                  <Trash2 className="mr-2 h-4 w-4" />
+                  <Trash2 className="size-4" />
                   Delete
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -338,15 +338,15 @@ export const UserManagement: Story = {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem>
-                  <Eye className="mr-2 h-4 w-4" />
+                  <Eye className="size-4" />
                   View
                 </DropdownMenuItem>
                 <DropdownMenuItem>
-                  <Edit className="mr-2 h-4 w-4" />
+                  <Edit className="size-4" />
                   Edit
                 </DropdownMenuItem>
                 <DropdownMenuItem className="text-red-600">
-                  <Trash2 className="mr-2 h-4 w-4" />
+                  <Trash2 className="size-4" />
                   Delete
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -477,11 +477,11 @@ export const DataTableWithSearch: Story = {
             />
           </div>
           <Button variant="outline">
-            <Filter className="mr-2 h-4 w-4" />
+            <Filter className="size-4" />
             Filter
           </Button>
           <Button variant="outline">
-            <Download className="mr-2 h-4 w-4" />
+            <Download className="size-4" />
             Export
           </Button>
         </div>

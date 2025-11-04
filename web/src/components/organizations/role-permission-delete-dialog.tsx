@@ -1,23 +1,13 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Trash2 } from "lucide-react";
+import type { QueryKey } from "@tanstack/react-query";
 
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
+import { useDeleteMutation } from "@/hooks/use-delete-mutation";
 import type { Permission } from "@/lib/api";
 import {
   v1OrganizationRolePermissionRemoveMutation,
   v1OrganizationRolePermissionsGetOptions,
 } from "@/lib/client/@tanstack/react-query.gen";
 import { getFieldValue } from "@/lib/forms";
-import { showErrorToast, showSuccessToast } from "@/lib/toast";
 
 interface RolePermissionDeleteDialogProps {
   permission: Permission;
@@ -36,51 +26,42 @@ export function RolePermissionDeleteDialog({
   onOpenChange,
   onSuccess,
 }: RolePermissionDeleteDialogProps) {
-  const queryClient = useQueryClient();
-
-  const mutation = useMutation(v1OrganizationRolePermissionRemoveMutation());
-
-  const handleDelete = () => {
-    mutation.mutate(
-      {
-        path: {
-          id: organizationId,
-          role_id: roleId,
-          permission_id: permission.id,
-        },
+  const queryKeysToInvalidate: QueryKey[] = [
+    v1OrganizationRolePermissionsGetOptions({
+      path: {
+        id: organizationId,
+        role_id: roleId,
       },
-      {
-        onSuccess: () => {
-          showSuccessToast(
-            "Permission removed",
-            "Permission removed successfully"
-          );
+    }).queryKey,
+  ];
 
-          // Invalidate queries to refresh the permissions list
-          queryClient.invalidateQueries({
-            queryKey: v1OrganizationRolePermissionsGetOptions({
-              path: {
-                id: organizationId,
-                role_id: roleId,
-              },
-            }).queryKey,
-          });
+  const deleteMutation = useDeleteMutation({
+    mutationOptions: v1OrganizationRolePermissionRemoveMutation(),
+    successMessage: "Permission removed",
+    successDescription: "Permission removed successfully",
+    errorMessagePrefix: "Failed to remove permission",
+    queryKeysToInvalidate,
+    onSuccess: () => {
+      onSuccess?.();
+      onOpenChange(false);
+    },
+  });
 
-          onSuccess?.();
-          onOpenChange(false);
-        },
-        onError: (error) => {
-          showErrorToast("Failed to remove permission", error.message);
-        },
-      }
-    );
+  const handleConfirm = () => {
+    deleteMutation.mutate({
+      path: {
+        id: organizationId,
+        role_id: roleId,
+        permission_id: permission.id,
+      },
+    });
   };
 
   // Parse permission target to show in confirmation
   const parseTarget = (target: string): string => {
-    const [resourceType, resourceId] = target.split(":");
+    const [resourceType, resourceId] = getFieldValue(target).split(":");
     if (!resourceId) {
-      return target;
+      return getFieldValue(target);
     }
     const displayId =
       resourceId === "00000000000000000000"
@@ -93,58 +74,35 @@ export function RolePermissionDeleteDialog({
   const targetType = getFieldValue(permission.target_type);
 
   return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Remove Permission?</AlertDialogTitle>
-          <AlertDialogDescription className="space-y-2">
-            <p>
-              Are you sure you want to remove this permission from the role?
-            </p>
-            <div className="bg-muted rounded-md p-3 text-sm">
-              <div className="font-medium">Permission Details:</div>
-              <div className="mt-1 space-y-1">
-                <div>
-                  <span className="text-muted-foreground">Resource Type: </span>
-                  {targetType}
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Target: </span>
-                  {targetDisplay}
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Kind: </span>
-                  {permission.kind}
-                </div>
-              </div>
-            </div>
-            <p className="text-muted-foreground text-sm">
-              This action cannot be undone.
-            </p>
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={mutation.isPending}>
-            Cancel
-          </AlertDialogCancel>
-          <AlertDialogAction
-            variant="destructive"
-            onClick={handleDelete}
-            disabled={mutation.isPending}
-          >
-            {mutation.isPending ? (
-              <>
-                <span>Removing...</span>
-              </>
-            ) : (
-              <>
-                <Trash2 className="size-4" />
-                Remove Permission
-              </>
-            )}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+    <DeleteConfirmationDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Remove Permission?"
+      description="Are you sure you want to remove this permission from the role?"
+      consequences={[
+        "The permission will be removed from this role",
+        "This action cannot be undone",
+      ]}
+      deleteButtonText="Remove Permission"
+      onConfirm={handleConfirm}
+      isPending={deleteMutation.isPending}
+    >
+      <div className="bg-primary/5 ring-primary/10 mt-2 rounded-md p-3 text-sm ring-1">
+        <div className="space-y-1">
+          <div>
+            <span className="text-muted-foreground">Resource Type: </span>
+            {targetType}
+          </div>
+          <div>
+            <span className="text-muted-foreground">Target: </span>
+            {targetDisplay}
+          </div>
+          <div>
+            <span className="text-muted-foreground">Kind: </span>
+            {permission.kind}
+          </div>
+        </div>
+      </div>
+    </DeleteConfirmationDialog>
   );
 }

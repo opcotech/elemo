@@ -3,7 +3,6 @@ import { User } from "lucide-react";
 import { useEffect } from "react";
 
 import { AuthenticatedLayout } from "@/components/layout/authenticated-layout";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -12,10 +11,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { UserAvatar } from "@/components/ui/user-avatar";
 import { useAuth } from "@/hooks/use-auth";
 import { useBreadcrumbUtils } from "@/hooks/use-breadcrumbs";
 import { requireAuthBeforeLoad } from "@/lib/auth/require-auth";
-import { getFieldValue } from "@/lib/forms";
+import { formatDate } from "@/lib/utils";
 
 export const Route = createFileRoute("/dashboard")({
   beforeLoad: requireAuthBeforeLoad,
@@ -25,13 +25,6 @@ export const Route = createFileRoute("/dashboard")({
 function Dashboard() {
   const { user } = useAuth();
   const { setBreadcrumbsFromItems } = useBreadcrumbUtils();
-
-  const getInitials = (firstName: string | null, lastName: string | null) => {
-    return (
-      `${getFieldValue(firstName?.[0])}${getFieldValue(lastName?.[0])}`.toUpperCase() ||
-      "U"
-    );
-  };
 
   useEffect(() => {
     setBreadcrumbsFromItems([
@@ -58,26 +51,18 @@ function Dashboard() {
           {/* User Profile Card */}
           <Card>
             <CardHeader className="flex flex-row items-center space-y-0 pb-2">
-              <div className="flex items-center space-x-2">
-                <Avatar>
-                  <AvatarImage
-                    src={user?.picture || undefined}
-                    alt={user?.username}
+              {user?.first_name && user?.last_name && (
+                <div className="flex flex-col gap-3">
+                  <UserAvatar
+                    firstName={user.first_name}
+                    lastName={user.last_name}
+                    email={user.email}
+                    picture={user.picture}
+                    size="md"
                   />
-                  <AvatarFallback>
-                    {getInitials(
-                      user?.first_name || null,
-                      user?.last_name || null
-                    )}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <CardTitle className="text-lg">
-                    {user?.first_name} {user?.last_name}
-                  </CardTitle>
-                  <CardDescription>@{user?.username}</CardDescription>
+                  <CardDescription>@{user.username}</CardDescription>
                 </div>
-              </div>
+              )}
             </CardHeader>
             <CardContent>
               <div className="space-y-2 text-sm">
@@ -111,8 +96,10 @@ function Dashboard() {
                   <span className="text-muted-foreground">Member since</span>
                   <span>
                     {user?.created_at
-                      ? new Date(user.created_at).toLocaleDateString()
-                      : "Unknown"}
+                      ? formatDate(user.created_at)
+                      : user?.created_at
+                        ? "Loading..."
+                        : "Unknown"}
                   </span>
                 </div>
                 {user?.languages && user.languages.length > 0 && (

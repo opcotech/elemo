@@ -5,6 +5,7 @@ import type { z } from "zod";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
+  Form,
   FormControl,
   FormField,
   FormItem,
@@ -49,78 +50,80 @@ export function RoleFormFields({
   });
 
   return (
-    <form
-      onSubmit={form.handleSubmit(onSubmit)}
-      className="flex flex-col gap-y-6"
-    >
-      {errorMessage && (
-        <Alert variant="destructive">
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>{errorMessage}</AlertDescription>
-        </Alert>
-      )}
-
-      <FormField
-        control={form.control}
-        name="name"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Name</FormLabel>
-            <FormControl>
-              <Input
-                placeholder="Enter role name"
-                {...field}
-                disabled={isPending}
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
+    <Form {...form}>
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="flex flex-col gap-y-6"
+      >
+        {errorMessage && (
+          <Alert variant="destructive">
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{errorMessage}</AlertDescription>
+          </Alert>
         )}
-      />
 
-      <FormField
-        control={form.control}
-        name="description"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Description</FormLabel>
-            <FormControl>
-              <Textarea
-                placeholder="Enter role description (optional)"
-                {...field}
-                value={getFieldValue(field.value)}
-                rows={4}
-                disabled={isPending}
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      <div className="flex justify-end gap-2">
-        {onCancel && (
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onCancel}
-            disabled={isPending}
-          >
-            Cancel
-          </Button>
-        )}
-        <Button type="submit" disabled={isPending}>
-          {isPending ? (
-            <>
-              <Spinner size="xs" className="mr-0.5 text-white" />
-              <span>Saving...</span>
-            </>
-          ) : (
-            submitButtonText
+        <FormField
+          control={form.control}
+          name="name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Name</FormLabel>
+              <FormControl>
+                <Input
+                  placeholder="Enter role name"
+                  {...field}
+                  disabled={isPending}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
           )}
-        </Button>
-      </div>
-    </form>
+        />
+
+        <FormField
+          control={form.control}
+          name="description"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Description</FormLabel>
+              <FormControl>
+                <Textarea
+                  placeholder="Enter role description (optional)"
+                  {...field}
+                  value={getFieldValue(field.value)}
+                  rows={4}
+                  disabled={isPending}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <div className="flex justify-end gap-2">
+          {onCancel && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onCancel}
+              disabled={isPending}
+            >
+              Cancel
+            </Button>
+          )}
+          <Button type="submit" disabled={isPending}>
+            {isPending ? (
+              <>
+                <Spinner size="xs" className="mr-0.5 text-white" />
+                <span>Saving...</span>
+              </>
+            ) : (
+              submitButtonText
+            )}
+          </Button>
+        </div>
+      </form>
+    </Form>
   );
 }
 

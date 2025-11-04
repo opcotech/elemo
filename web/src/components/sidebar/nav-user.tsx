@@ -25,19 +25,17 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLogout } from "@/hooks/use-auth";
 import type { User } from "@/lib/auth/types";
-import { getFieldValue } from "@/lib/forms";
+import { getInitials } from "@/lib/utils";
 
 export function NavUser({ user }: { user: User }) {
   const { isMobile } = useSidebar();
   const { logout, isLoading: isLoggingOut } = useLogout();
   const { theme, setTheme } = useTheme();
 
-  const getInitials = (firstName: string | null, lastName: string | null) => {
-    return (
-      `${getFieldValue(firstName?.[0])}${getFieldValue(lastName?.[0])}`.toUpperCase() ||
-      "U"
-    );
-  };
+  const userInitials =
+    user.first_name && user.last_name
+      ? getInitials(user.first_name, user.last_name)
+      : "U";
 
   return (
     <SidebarMenuItem>
@@ -53,7 +51,7 @@ export function NavUser({ user }: { user: User }) {
                 alt={`${user.first_name} ${user.last_name}`}
               />
               <AvatarFallback className="rounded-lg">
-                {getInitials(user.first_name, user.last_name)}
+                {userInitials}
               </AvatarFallback>
             </Avatar>
             <div className="grid flex-1 text-left text-sm leading-tight">

@@ -77,7 +77,7 @@ export function OrganizationRoleEditForm({
         description: getFieldValue(role.description),
       });
     }
-  }, [role.name, role.description, form]);
+  }, [role.name, role.description]);
 
   const mutation = useMutation(v1OrganizationRoleUpdateMutation());
 

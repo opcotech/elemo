@@ -3,45 +3,38 @@ import type { QueryKey } from "@tanstack/react-query";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
 import { useDeleteMutation } from "@/hooks/use-delete-mutation";
-import type { User } from "@/lib/api";
+import type { OrganizationMember } from "@/lib/api";
 import {
-  v1OrganizationRoleMemberRemoveMutation,
-  v1OrganizationRoleMembersGetOptions,
+  v1OrganizationMemberRemoveMutation,
+  v1OrganizationMembersGetOptions,
 } from "@/lib/client/@tanstack/react-query.gen";
 import { getInitials } from "@/lib/utils";
 
-interface RoleMemberRemoveDialogProps {
-  member: User;
-  roleName: string;
+interface OrganizationMemberRemoveDialogProps {
+  member: OrganizationMember;
   organizationId: string;
-  roleId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
 }
 
-export function RoleMemberRemoveDialog({
+export function OrganizationMemberRemoveDialog({
   member,
-  roleName,
   organizationId,
-  roleId,
   open,
   onOpenChange,
   onSuccess,
-}: RoleMemberRemoveDialogProps) {
+}: OrganizationMemberRemoveDialogProps) {
   const queryKeysToInvalidate: QueryKey[] = [
-    v1OrganizationRoleMembersGetOptions({
-      path: {
-        id: organizationId,
-        role_id: roleId,
-      },
+    v1OrganizationMembersGetOptions({
+      path: { id: organizationId },
     }).queryKey,
   ];
 
   const deleteMutation = useDeleteMutation({
-    mutationOptions: v1OrganizationRoleMemberRemoveMutation(),
+    mutationOptions: v1OrganizationMemberRemoveMutation(),
     successMessage: "Member removed",
-    successDescription: "Member removed from role successfully",
+    successDescription: "Member removed from organization successfully",
     errorMessagePrefix: "Failed to remove member",
     queryKeysToInvalidate,
     onSuccess: () => {
@@ -54,7 +47,6 @@ export function RoleMemberRemoveDialog({
     deleteMutation.mutate({
       path: {
         id: organizationId,
-        role_id: roleId,
         user_id: member.id,
       },
     });
@@ -66,10 +58,11 @@ export function RoleMemberRemoveDialog({
     <DeleteConfirmationDialog
       open={open}
       onOpenChange={onOpenChange}
-      title="Remove Member from Role?"
-      description="Are you sure you want to remove this member from the role?"
+      title="Remove Member from Organization?"
+      description="Are you sure you want to remove this member from the organization?"
       consequences={[
-        "The member will lose all permissions associated with this role",
+        "The member will lose access to all organization resources",
+        "All roles assigned to this member will be removed",
         "This action cannot be undone",
       ]}
       deleteButtonText="Remove Member"
@@ -90,10 +83,6 @@ export function RoleMemberRemoveDialog({
               {member.email}
             </span>
           </div>
-        </div>
-        <div className="mt-2">
-          <span className="text-muted-foreground">Role: </span>
-          <span className="font-medium">{roleName}</span>
         </div>
       </div>
     </DeleteConfirmationDialog>

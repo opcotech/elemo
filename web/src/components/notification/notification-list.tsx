@@ -2,6 +2,13 @@ import { useQuery } from "@tanstack/react-query";
 import { Bell } from "lucide-react";
 
 import { NotificationItem } from "@/components/notification";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { v1NotificationsGetOptions } from "@/lib/api";
@@ -27,11 +34,15 @@ export function NotificationList() {
 
   if (!notifications || notifications.length === 0) {
     return (
-      <div className="flex h-32 flex-col items-center justify-center space-y-2">
-        <Bell className="text-muted-foreground h-8 w-8" />
-        <p className="text-muted-foreground text-sm">No notifications</p>
-        <p className="text-muted-foreground text-xs">You're all caught up!</p>
-      </div>
+      <Empty>
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <Bell />
+          </EmptyMedia>
+          <EmptyTitle>No notifications</EmptyTitle>
+          <EmptyDescription>You're all caught up!</EmptyDescription>
+        </EmptyHeader>
+      </Empty>
     );
   }
 

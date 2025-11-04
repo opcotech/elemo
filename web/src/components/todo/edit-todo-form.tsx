@@ -4,18 +4,9 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import type { z } from "zod";
 
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/ui/date-picker";
+import { DialogForm } from "@/components/ui/dialog-form";
 import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Form,
   FormControl,
   FormField,
   FormItem,
@@ -30,7 +21,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import type { TodoPriority } from "@/lib/api";
 import { v1TodoUpdateMutation } from "@/lib/client/@tanstack/react-query.gen";
@@ -127,133 +117,100 @@ export function EditTodoForm({
     );
   };
 
-  const handleOpenChange = (newOpen: boolean) => {
-    if (!newOpen) {
-      // Reset form when closing
-      form.reset();
-    }
-    onOpenChange(newOpen);
-  };
-
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent>
-        <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(onSubmit)}
-            className="flex flex-col gap-y-6"
-          >
-            <DialogHeader>
-              <DialogTitle>Edit Todo</DialogTitle>
-            </DialogHeader>
+    <DialogForm
+      form={form}
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Edit Todo"
+      onSubmit={form.handleSubmit(onSubmit)}
+      isPending={mutation.isPending}
+      error={mutation.error as Error | null}
+      submitButtonText="Update todo"
+      onReset={() => form.reset()}
+    >
+      <FormField
+        control={form.control}
+        name="title"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Title</FormLabel>
+            <FormControl>
+              <Input placeholder="Enter todo title" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
 
-            {mutation.isError && (
-              <Alert variant="destructive">
-                <AlertTitle>Failed to update todo</AlertTitle>
-                <AlertDescription>{mutation.error.message}</AlertDescription>
-              </Alert>
-            )}
-            <FormField
-              control={form.control}
-              name="title"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Title</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Enter todo title" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Enter todo description (optional)"
-                      className="min-h-40 resize-y"
-                      rows={6}
-                      {...field}
-                      value={getFieldValue(field.value)}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="flex gap-4">
-              <FormField
-                control={form.control}
-                name="priority"
-                render={({ field }) => (
-                  <FormItem className="w-1/3">
-                    <FormLabel>Priority</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Select priority" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="normal">Normal</SelectItem>
-                        <SelectItem value="important">Important</SelectItem>
-                        <SelectItem value="urgent">Urgent</SelectItem>
-                        <SelectItem value="critical">Critical</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
+      <FormField
+        control={form.control}
+        name="description"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Description</FormLabel>
+            <FormControl>
+              <Textarea
+                placeholder="Enter todo description (optional)"
+                className="min-h-40 resize-y"
+                rows={6}
+                {...field}
+                value={getFieldValue(field.value)}
               />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
 
-              <FormField
-                control={form.control}
-                name="due_date"
-                render={({ field }) => (
-                  <FormItem className="w-2/3">
-                    <FormLabel>Due Date</FormLabel>
-                    <FormControl>
-                      <DatePicker
-                        date={field.value ? new Date(field.value) : null}
-                        onDateChange={(date) => {
-                          field.onChange(date ? date.toISOString() : null);
-                        }}
-                        placeholder="Due date (optional)"
-                        disabledDays={[
-                          { before: new Date(new Date().setHours(0, 0, 0, 0)) },
-                        ]}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+      <div className="flex gap-4">
+        <FormField
+          control={form.control}
+          name="priority"
+          render={({ field }) => (
+            <FormItem className="w-1/3">
+              <FormLabel>Priority</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select priority" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="normal">Normal</SelectItem>
+                  <SelectItem value="important">Important</SelectItem>
+                  <SelectItem value="urgent">Urgent</SelectItem>
+                  <SelectItem value="critical">Critical</SelectItem>
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
-            <DialogFooter>
-              <Button type="submit" disabled={mutation.isPending}>
-                {mutation.isPending ? (
-                  <>
-                    <Spinner size="xs" className="mr-0.5 text-white" />
-                    <span>Updating todo...</span>
-                  </>
-                ) : (
-                  "Update todo"
-                )}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
+        <FormField
+          control={form.control}
+          name="due_date"
+          render={({ field }) => (
+            <FormItem className="w-2/3">
+              <FormLabel>Due Date</FormLabel>
+              <FormControl>
+                <DatePicker
+                  date={field.value ? new Date(field.value) : null}
+                  onDateChange={(date) => {
+                    field.onChange(date ? date.toISOString() : null);
+                  }}
+                  placeholder="Due date (optional)"
+                  disabledDays={[
+                    { before: new Date(new Date().setHours(0, 0, 0, 0)) },
+                  ]}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
+    </DialogForm>
   );
 }

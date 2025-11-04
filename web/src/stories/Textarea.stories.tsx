@@ -239,7 +239,7 @@ export const CommentForm: Story = {
               Cancel
             </Button>
             <Button size="sm" disabled={comment.length === 0}>
-              <MessageCircle className="mr-2 h-4 w-4" />
+              <MessageCircle className="size-4" />
               Post Comment
             </Button>
           </div>
@@ -298,7 +298,7 @@ export const MessageComposer: Story = {
                 Save Draft
               </Button>
               <Button size="sm" disabled={message.length === 0}>
-                <Send className="mr-2 h-4 w-4" />
+                <Send className="size-4" />
                 Send
               </Button>
             </div>
@@ -455,7 +455,7 @@ export const WithPreview: Story = {
             Supports Markdown formatting
           </div>
           <Button size="sm">
-            <Save className="mr-2 h-4 w-4" />
+            <Save className="size-4" />
             Save
           </Button>
         </div>

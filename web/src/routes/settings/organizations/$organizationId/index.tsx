@@ -142,6 +142,7 @@ function OrganizationDetailPage() {
         isLoading={isLoadingMembers}
         error={membersError}
         currentUserId={currentUserId}
+        organizationId={organizationId}
       />
 
       <OrganizationRolesList

@@ -1,21 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Plus, Search } from "lucide-react";
+import { Building2, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { OrganizationCardSkeleton } from "./organization-card";
 import { OrganizationRow } from "./organization-row";
 
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { ListContainer } from "@/components/ui/list-container";
+import { SearchInput } from "@/components/ui/search-input";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -117,91 +110,90 @@ export function OrganizationList() {
     );
   }, [sortedOrganizations, searchTerm]);
 
-  if (error) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Organizations</CardTitle>
-          <CardDescription>View and manage organizations.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Alert variant="destructive">
-            <AlertDescription>
-              Failed to load organizations. Please try again later.
-            </AlertDescription>
-          </Alert>
-        </CardContent>
-      </Card>
-    );
-  }
+  const createButton = canCreate ? (
+    <Button asChild>
+      <Link to="/settings/organizations/new">
+        <Plus className="size-4" />
+        Create Organization
+      </Link>
+    </Button>
+  ) : undefined;
 
-  return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-start justify-between">
-          <div>
-            <CardTitle>Organizations</CardTitle>
-            <CardDescription>View and manage organizations.</CardDescription>
-          </div>
-          {canCreate && (
-            <Button asChild>
+  const emptyState =
+    !organizations || organizations.length === 0
+      ? {
+          icon: <Building2 />,
+          title: "No organizations available",
+          description: "Get started by creating your first organization.",
+          action: canCreate ? (
+            <Button variant="outline" size="sm" asChild>
               <Link to="/settings/organizations/new">
                 <Plus className="size-4" />
                 Create Organization
               </Link>
             </Button>
-          )}
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="relative max-w-md flex-1">
-          <Search className="text-muted-foreground absolute top-3 left-2 h-4 w-4" />
-          <Input
-            placeholder="Search organizations..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            disabled={isLoading}
-            className="pl-8"
-          />
-        </div>
+          ) : undefined,
+        }
+      : filteredOrganizations.length === 0 && searchTerm.trim()
+        ? {
+            icon: <Building2 />,
+            title: "No organizations found",
+            description:
+              "No organizations match your search criteria. Try adjusting your search.",
+          }
+        : undefined;
 
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Website</TableHead>
-              <TableHead>Members</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>
-                <span className="sr-only">Actions</span>
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              <OrganizationTableSkeletonRows />
-            ) : filteredOrganizations.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} className="py-4 text-center">
-                  {searchTerm
-                    ? "No organizations found matching your search."
-                    : "No organizations available."}
-                </TableCell>
-              </TableRow>
-            ) : (
-              <>
-                {filteredOrganizations.map((organization) => (
-                  <OrganizationRow
-                    key={organization.id}
-                    organization={organization}
-                  />
-                ))}
-              </>
-            )}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
+  // Show search input only when there's data to search through OR when search is active
+  const shouldShowSearch =
+    (organizations && organizations.length > 0) || searchTerm.trim() !== "";
+
+  return (
+    <ListContainer
+      title="Organizations"
+      description="View and manage organizations."
+      isLoading={isLoading}
+      error={error}
+      emptyState={emptyState}
+      actionButton={createButton}
+      searchInput={
+        shouldShowSearch ? (
+          <SearchInput
+            value={searchTerm}
+            onChange={setSearchTerm}
+            placeholder="Search organizations..."
+            disabled={isLoading}
+          />
+        ) : undefined
+      }
+    >
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Name</TableHead>
+            <TableHead>Email</TableHead>
+            <TableHead>Website</TableHead>
+            <TableHead>Members</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>
+              <span className="sr-only">Actions</span>
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {isLoading ? (
+            <OrganizationTableSkeletonRows />
+          ) : (
+            <>
+              {filteredOrganizations.map((organization) => (
+                <OrganizationRow
+                  key={organization.id}
+                  organization={organization}
+                />
+              ))}
+            </>
+          )}
+        </TableBody>
+      </Table>
+    </ListContainer>
   );
 }

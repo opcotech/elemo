@@ -1,20 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Users } from "lucide-react";
 import { useState } from "react";
 
 import { RoleMemberAddDialog } from "./role-member-add-dialog";
 import { RoleMemberRemoveDialog } from "./role-member-remove-dialog";
 
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { ListContainer } from "@/components/ui/list-container";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -32,15 +25,12 @@ import {
 import type { User } from "@/lib/api";
 import { can } from "@/lib/auth/permissions";
 import { v1OrganizationRoleMembersGetOptions } from "@/lib/client/@tanstack/react-query.gen";
+import { getInitials } from "@/lib/utils";
 
 interface RoleMemberAssignmentProps {
   organizationId: string;
   roleId: string;
   roleName: string;
-}
-
-function getInitials(firstName: string, lastName: string): string {
-  return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
 }
 
 export function RoleMemberAssignment({
@@ -87,16 +77,51 @@ export function RoleMemberAssignment({
     setSelectedMember(null);
   };
 
-  if (isLoading || isPermissionsLoading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Members</CardTitle>
-          <CardDescription>
-            Manage members assigned to this role.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+  const createButton =
+    !isPermissionsLoading && hasWritePermission ? (
+      <Button
+        type="button"
+        variant="outline"
+        onClick={() => setAddDialogOpen(true)}
+        size="sm"
+      >
+        <Plus className="size-4" />
+        Add Member
+      </Button>
+    ) : undefined;
+
+  const emptyState =
+    !members || members.length === 0
+      ? {
+          icon: <Users />,
+          title: "No members assigned",
+          description:
+            "Add members to grant them the permissions associated with this role.",
+          action: hasWritePermission ? (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setAddDialogOpen(true)}
+              size="sm"
+            >
+              <Plus className="size-4" />
+              Add Member
+            </Button>
+          ) : undefined,
+        }
+      : undefined;
+
+  return (
+    <>
+      <ListContainer
+        title="Members"
+        description="Manage members assigned to this role."
+        isLoading={isLoading || isPermissionsLoading}
+        error={error}
+        emptyState={emptyState}
+        actionButton={createButton}
+      >
+        {isLoading || isPermissionsLoading ? (
           <Table>
             <TableHeader>
               <TableRow>
@@ -126,116 +151,61 @@ export function RoleMemberAssignment({
               ))}
             </TableBody>
           </Table>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (error) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Members</CardTitle>
-          <CardDescription>
-            Manage members assigned to this role.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Alert variant="destructive">
-            <AlertTitle>Failed to load members</AlertTitle>
-            <AlertDescription>
-              {error instanceof Error ? error.message : "Unknown error"}
-            </AlertDescription>
-          </Alert>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  return (
-    <>
-      <Card>
-        <CardHeader>
-          <div className="flex items-start justify-between">
-            <div>
-              <CardTitle>Members</CardTitle>
-              <CardDescription>
-                Manage members assigned to this role.
-              </CardDescription>
-            </div>
-            {!isPermissionsLoading && hasWritePermission && (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setAddDialogOpen(true)}
-                size="sm"
-              >
-                <Plus className="size-4" />
-                Add Member
-              </Button>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent>
-          {!members || members.length === 0 ? (
-            <div className="text-muted-foreground py-8 text-center text-sm">
-              No members assigned to this role yet.
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>
-                    <span className="sr-only">Actions</span>
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {members.map((member) => {
-                  const fullName = `${member.first_name} ${member.last_name}`;
-                  return (
-                    <TableRow key={member.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <Avatar className="h-10 w-10">
-                            <AvatarImage
-                              src={member.picture || undefined}
-                              alt={fullName}
-                            />
-                            <AvatarFallback>
-                              {getInitials(member.first_name, member.last_name)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="font-medium">{fullName}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-muted-foreground text-sm">
-                          {member.email}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {hasWritePermission && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleRemoveClick(member)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>
+                  <span className="sr-only">Actions</span>
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {members?.map((member) => {
+                const fullName = `${member.first_name} ${member.last_name}`;
+                return (
+                  <TableRow key={member.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-10 w-10">
+                          <AvatarImage
+                            src={member.picture || undefined}
+                            alt={fullName}
+                          />
+                          <AvatarFallback>
+                            {getInitials(member.first_name, member.last_name)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="font-medium">{fullName}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-muted-foreground text-sm">
+                        {member.email}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {hasWritePermission && (
+                        <Button
+                          type="button"
+                          variant="destructive-ghost"
+                          size="sm"
+                          onClick={() => handleRemoveClick(member)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          <span className="sr-only">Remove member</span>
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        )}
+      </ListContainer>
 
       <RoleMemberAddDialog
         organizationId={organizationId}

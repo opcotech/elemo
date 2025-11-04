@@ -9,6 +9,14 @@ import { AddTodoForm } from "@/components/todo/add-todo-form";
 import { EditTodoForm } from "@/components/todo/edit-todo-form";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Sheet,
@@ -146,9 +154,23 @@ export function TodoSheet() {
               <Skeleton className="h-24 w-full" />
             </div>
           ) : sortedTodos.length === 0 ? (
-            <div className="flex h-32 items-center justify-center">
-              <p className="text-muted-foreground">No todos found</p>
-            </div>
+            <Empty>
+              <EmptyHeader>
+                <EmptyMedia variant="icon">
+                  <CircleCheckBig />
+                </EmptyMedia>
+                <EmptyTitle>No todos found</EmptyTitle>
+                <EmptyDescription>
+                  Create your first todo to get started
+                </EmptyDescription>
+              </EmptyHeader>
+              <EmptyContent>
+                <Button onClick={openAddForm} variant="outline" size="sm">
+                  <Plus className="size-4" />
+                  Add Todo
+                </Button>
+              </EmptyContent>
+            </Empty>
           ) : (
             <div className="space-y-4">
               {sortedTodos.map((todo) => (

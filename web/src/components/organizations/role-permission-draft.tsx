@@ -237,11 +237,12 @@ export function RolePermissionDraft({
                   <TableCell className="text-right">
                     <Button
                       type="button"
-                      variant="ghost"
+                      variant="destructive-ghost"
                       size="sm"
                       onClick={() => onRemovePermission(index)}
                     >
                       <Trash2 className="h-4 w-4" />
+                      <span className="sr-only">Remove permission</span>
                     </Button>
                   </TableCell>
                 </TableRow>

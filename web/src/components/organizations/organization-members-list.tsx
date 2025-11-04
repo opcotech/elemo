@@ -1,13 +1,12 @@
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Trash2, Users } from "lucide-react";
+import { useMemo, useState } from "react";
+
+import { OrganizationMemberRemoveDialog } from "./organization-member-remove-dialog";
+
 import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { ListContainer } from "@/components/ui/list-container";
+import { SearchInput } from "@/components/ui/search-input";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -17,7 +16,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { UserAvatarCompact } from "@/components/ui/user-avatar";
+import {
+  ResourceType,
+  usePermissions,
+  withResourceType,
+} from "@/hooks/use-permissions";
 import type { OrganizationMember } from "@/lib/api";
+import { can } from "@/lib/auth/permissions";
 
 function OrganizationMembersListSkeleton() {
   return (
@@ -62,144 +68,184 @@ export function OrganizationMembersList({
   isLoading,
   error,
   currentUserId,
+  organizationId,
 }: {
   members: OrganizationMember[];
   isLoading: boolean;
   error: unknown;
   currentUserId?: string | null;
+  organizationId: string;
 }) {
-  const getInitials = (firstName: string, lastName: string) => {
-    return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [removeMemberDialogOpen, setRemoveMemberDialogOpen] = useState(false);
+  const [selectedMember, setSelectedMember] =
+    useState<OrganizationMember | null>(null);
+
+  // Check permissions for organization (write)
+  const { data: orgPermissions, isLoading: isOrgPermissionsLoading } =
+    usePermissions(withResourceType(ResourceType.Organization, organizationId));
+
+  const hasOrgWritePermission = can(orgPermissions, "write");
+  const isPermissionsLoading = isOrgPermissionsLoading;
+
+  const handleRemoveClick = (member: OrganizationMember) => {
+    setSelectedMember(member);
+    setRemoveMemberDialogOpen(true);
   };
 
-  if (isLoading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Members</CardTitle>
-          <CardDescription>
-            Organization members and their roles.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <OrganizationMembersListSkeleton />
-        </CardContent>
-      </Card>
-    );
-  }
+  const handleRemoveSuccess = () => {
+    setRemoveMemberDialogOpen(false);
+    setSelectedMember(null);
+  };
 
-  if (error) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Members</CardTitle>
-          <CardDescription>
-            Organization members and their roles.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Alert variant="destructive">
-            <AlertDescription>
-              Failed to load organization members. Please try again later.
-            </AlertDescription>
-          </Alert>
-        </CardContent>
-      </Card>
+  const filteredMembers = useMemo(() => {
+    if (!members || !searchTerm.trim()) return members || [];
+    const term = searchTerm.toLowerCase();
+    return members.filter(
+      (member) =>
+        member.first_name.toLowerCase().includes(term) ||
+        member.last_name.toLowerCase().includes(term) ||
+        member.email.toLowerCase().includes(term) ||
+        member.roles.some((role) => role.toLowerCase().includes(term))
     );
-  }
+  }, [members, searchTerm]);
 
-  if (!members || members.length === 0) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Members</CardTitle>
-          <CardDescription>
-            Organization members and their roles.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="py-8 text-center">
-            <p className="text-muted-foreground text-sm">
-              No members found in this organization.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
+  // Only show empty state when there's no data at all (not filtered)
+  // When filtered results are empty but original data exists, show search + empty state
+  const emptyState =
+    !members || members.length === 0
+      ? {
+          icon: <Users />,
+          title: "No members found",
+          description:
+            "This organization doesn't have any members yet. Members will appear here once they are added.",
+        }
+      : filteredMembers.length === 0 && searchTerm.trim()
+        ? {
+            icon: <Users />,
+            title: "No members found",
+            description:
+              "No members match your search criteria. Try adjusting your search.",
+          }
+        : undefined;
+
+  // Show search input only when there's data to search through OR when search is active
+  const shouldShowSearch =
+    (members && members.length > 0) || searchTerm.trim() !== "";
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Members</CardTitle>
-        <CardDescription>Organization members and their roles.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Roles</TableHead>
-              <TableHead>Status</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {members.map((member) => {
-              const isCurrentUser = currentUserId === member.id;
-              const fullName = `${member.first_name} ${member.last_name}`;
+    <>
+      <ListContainer
+        title="Members"
+        description="Organization members and their roles."
+        isLoading={isLoading}
+        error={error}
+        emptyState={emptyState}
+        searchInput={
+          shouldShowSearch ? (
+            <SearchInput
+              value={searchTerm}
+              onChange={setSearchTerm}
+              placeholder="Search members..."
+              disabled={isLoading}
+            />
+          ) : undefined
+        }
+      >
+        {isLoading ? (
+          <OrganizationMembersListSkeleton />
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Roles</TableHead>
+                <TableHead>Status</TableHead>
+                {hasOrgWritePermission && (
+                  <TableHead>
+                    <span className="sr-only">Actions</span>
+                  </TableHead>
+                )}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredMembers.map((member) => {
+                const isCurrentUser = currentUserId === member.id;
+                const fullName = `${member.first_name} ${member.last_name}`;
 
-              return (
-                <TableRow key={member.id}>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-10 w-10">
-                        <AvatarImage
-                          src={member.picture || undefined}
-                          alt={fullName}
+                return (
+                  <TableRow key={member.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <UserAvatarCompact
+                          firstName={member.first_name}
+                          lastName={member.last_name}
+                          picture={member.picture}
                         />
-                        <AvatarFallback>
-                          {getInitials(member.first_name, member.last_name)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex flex-col gap-0.5">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">{fullName}</span>
-                          {isCurrentUser && (
-                            <Badge className="px-2 py-0.5 text-xs">You</Badge>
-                          )}
-                        </div>
-                        <div>
+                        <div className="flex flex-col gap-0.5">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">{fullName}</span>
+                            {isCurrentUser && (
+                              <Badge className="px-2 py-0.5 text-xs">You</Badge>
+                            )}
+                          </div>
                           <span className="text-muted-foreground text-sm">
                             {member.email}
                           </span>
                         </div>
                       </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-wrap gap-1">
-                      {member.roles.map((roleName: string) => (
-                        <Badge key={roleName} variant="secondary">
-                          {roleName}
-                        </Badge>
-                      ))}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {member.status === "active" ? (
-                      <Badge variant="success">Active</Badge>
-                    ) : member.status === "deleted" ? (
-                      <Badge variant="destructive">Deleted</Badge>
-                    ) : (
-                      <Badge variant="outline">{member.status}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1">
+                        {member.roles.map((roleName: string) => (
+                          <Badge key={roleName} variant="secondary">
+                            {roleName}
+                          </Badge>
+                        ))}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {member.status === "active" ? (
+                        <Badge variant="success">Active</Badge>
+                      ) : member.status === "deleted" ? (
+                        <Badge variant="destructive">Deleted</Badge>
+                      ) : (
+                        <Badge variant="outline">{member.status}</Badge>
+                      )}
+                    </TableCell>
+                    {hasOrgWritePermission && (
+                      <TableCell className="text-right">
+                        {isPermissionsLoading ? (
+                          <Skeleton className="h-8 w-8" />
+                        ) : (
+                          <Button
+                            variant="destructive-ghost"
+                            size="sm"
+                            onClick={() => handleRemoveClick(member)}
+                          >
+                            <Trash2 className="size-4" />
+                            <span className="sr-only">Remove member</span>
+                          </Button>
+                        )}
+                      </TableCell>
                     )}
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        )}
+      </ListContainer>
+
+      {selectedMember && (
+        <OrganizationMemberRemoveDialog
+          member={selectedMember}
+          organizationId={organizationId}
+          open={removeMemberDialogOpen}
+          onOpenChange={setRemoveMemberDialogOpen}
+          onSuccess={handleRemoveSuccess}
+        />
+      )}
+    </>
   );
 }

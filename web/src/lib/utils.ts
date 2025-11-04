@@ -46,3 +46,14 @@ export function pluralize(
   if (count === 1) return singular;
   return plural;
 }
+
+/**
+ * Get initials from a first and last name.
+ *
+ * @param firstName - The first name
+ * @param lastName - The last name
+ * @returns The initials in uppercase (e.g., "JD" for "John Doe")
+ */
+export function getInitials(firstName: string, lastName: string): string {
+  return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+}

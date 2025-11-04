@@ -1,26 +1,14 @@
 import { Link } from "@tanstack/react-router";
-import { Edit, MoreHorizontal, Plus, Trash2, UserPlus } from "lucide-react";
-import { useState } from "react";
+import { Edit, Plus, Shield, Trash2, UserPlus } from "lucide-react";
+import { useMemo, useState } from "react";
 
 import { OrganizationRoleDeleteDialog } from "./organization-role-delete-dialog";
 import { RoleMemberAddDialog } from "./role-member-add-dialog";
 
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { ListContainer } from "@/components/ui/list-container";
+import { SearchInput } from "@/components/ui/search-input";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -88,6 +76,7 @@ export function OrganizationRolesList({
   error,
   organizationId,
 }: OrganizationRolesListProps) {
+  const [searchTerm, setSearchTerm] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [addMemberDialogOpen, setAddMemberDialogOpen] = useState(false);
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
@@ -116,67 +105,85 @@ export function OrganizationRolesList({
     setAddMemberDialogOpen(true);
   };
 
-  if (isLoading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Roles</CardTitle>
-          <CardDescription>
-            Organization roles and their members.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <OrganizationRolesListSkeleton />
-        </CardContent>
-      </Card>
+  const filteredRoles = useMemo(() => {
+    if (!searchTerm.trim()) return roles;
+    const term = searchTerm.toLowerCase();
+    return roles.filter(
+      (role) =>
+        role.name.toLowerCase().includes(term) ||
+        (role.description && role.description.toLowerCase().includes(term))
     );
-  }
+  }, [roles, searchTerm]);
 
-  if (error) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Roles</CardTitle>
-          <CardDescription>
-            Organization roles and their members.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Alert variant="destructive">
-            <AlertDescription>
-              Failed to load organization roles. Please try again later.
-            </AlertDescription>
-          </Alert>
-        </CardContent>
-      </Card>
-    );
-  }
+  const createButton =
+    !isPermissionsLoading && hasCreatePermission ? (
+      <Button variant="outline" size="sm" asChild>
+        <Link
+          to="/settings/organizations/$organizationId/roles/new"
+          params={{ organizationId }}
+        >
+          <Plus className="size-4" />
+          Create Role
+        </Link>
+      </Button>
+    ) : undefined;
+
+  // Only show empty state when there's no data at all (not filtered)
+  // When filtered results are empty but original data exists, show search + empty state
+  const emptyState =
+    roles.length === 0
+      ? {
+          icon: <Shield />,
+          title: "No roles found",
+          description:
+            "Roles help organize permissions and member access. Create a role to get started.",
+          action: hasCreatePermission ? (
+            <Button variant="outline" size="sm" asChild>
+              <Link
+                to="/settings/organizations/$organizationId/roles/new"
+                params={{ organizationId }}
+              >
+                <Plus className="size-4" />
+                Create Role
+              </Link>
+            </Button>
+          ) : undefined,
+        }
+      : filteredRoles.length === 0 && searchTerm.trim()
+        ? {
+            icon: <Shield />,
+            title: "No roles found",
+            description:
+              "No roles match your search criteria. Try adjusting your search.",
+          }
+        : undefined;
+
+  // Show search input only when there's data to search through OR when search is active
+  const shouldShowSearch = roles.length > 0 || searchTerm.trim() !== "";
 
   return (
     <>
-      <Card>
-        <CardHeader>
-          <div className="flex items-start justify-between">
-            <div>
-              <CardTitle>Roles</CardTitle>
-              <CardDescription>
-                Organization roles and their members.
-              </CardDescription>
-            </div>
-            {!isPermissionsLoading && hasCreatePermission && (
-              <Button variant="outline" size="sm" asChild>
-                <Link
-                  to="/settings/organizations/$organizationId/roles/new"
-                  params={{ organizationId }}
-                >
-                  <Plus className="size-4" />
-                  Create Role
-                </Link>
-              </Button>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent>
+      <ListContainer
+        title="Roles"
+        description="Organization roles and their members."
+        isLoading={isLoading}
+        error={error}
+        emptyState={emptyState}
+        actionButton={createButton}
+        searchInput={
+          shouldShowSearch ? (
+            <SearchInput
+              value={searchTerm}
+              onChange={setSearchTerm}
+              placeholder="Search roles..."
+              disabled={isLoading}
+            />
+          ) : undefined
+        }
+      >
+        {isLoading ? (
+          <OrganizationRolesListSkeleton />
+        ) : (
           <Table>
             <TableHeader>
               <TableRow>
@@ -189,85 +196,70 @@ export function OrganizationRolesList({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {roles.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={4} className="py-4 text-center">
-                    No roles found in this organization.
+              {filteredRoles.map((role) => (
+                <TableRow key={role.id}>
+                  <TableCell className="font-medium">{role.name}</TableCell>
+                  <TableCell>
+                    <span className="text-muted-foreground text-sm">
+                      {role.description || "—"}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="secondary">
+                      {role.members.length}{" "}
+                      {pluralize(role.members.length, "member", "members")}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {isPermissionsLoading ? (
+                      <div className="flex justify-end gap-1">
+                        <Skeleton className="h-8 w-8" />
+                        <Skeleton className="h-8 w-8" />
+                        <Skeleton className="h-8 w-8" />
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-end gap-x-1">
+                        {hasWritePermission && (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleAddMemberClick(role)}
+                            >
+                              <UserPlus className="size-4" />
+                              <span className="sr-only">Add member</span>
+                            </Button>
+                            <Button variant="ghost" size="sm" asChild>
+                              <Link
+                                to="/settings/organizations/$organizationId/roles/$roleId/edit"
+                                params={{
+                                  organizationId,
+                                  roleId: role.id,
+                                }}
+                              >
+                                <Edit className="size-4" />
+                                <span className="sr-only">Edit role</span>
+                              </Link>
+                            </Button>
+                            <Button
+                              variant="destructive-ghost"
+                              size="sm"
+                              onClick={() => handleDeleteClick(role)}
+                            >
+                              <Trash2 className="size-4" />
+                              <span className="sr-only">Delete role</span>
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    )}
                   </TableCell>
                 </TableRow>
-              ) : (
-                roles.map((role) => (
-                  <TableRow key={role.id}>
-                    <TableCell className="font-medium">{role.name}</TableCell>
-                    <TableCell>
-                      <span className="text-muted-foreground text-sm">
-                        {role.description || "—"}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">
-                        {role.members.length}{" "}
-                        {pluralize(role.members.length, "member", "members")}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {isPermissionsLoading ? (
-                        <div className="flex justify-end gap-1">
-                          <div className="h-8 w-8" />
-                          <div className="h-8 w-8" />
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-end gap-x-1">
-                          {hasWritePermission && (
-                            <>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="sm">
-                                    <MoreHorizontal className="size-4" />
-                                    <span className="sr-only">
-                                      Role actions
-                                    </span>
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent>
-                                  <DropdownMenuItem
-                                    onClick={() => handleAddMemberClick(role)}
-                                  >
-                                    <UserPlus className="mr-2 size-4" />
-                                    <span>Add member</span>
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem asChild>
-                                    <Link
-                                      to="/settings/organizations/$organizationId/roles/$roleId/edit"
-                                      params={{
-                                        organizationId,
-                                        roleId: role.id,
-                                      }}
-                                    >
-                                      <Edit className="mr-2 size-4" />
-                                      <span>Edit role</span>
-                                    </Link>
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    onClick={() => handleDeleteClick(role)}
-                                  >
-                                    <Trash2 className="mr-2 size-4" />
-                                    <span>Delete role</span>
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </>
-                          )}
-                        </div>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
+              ))}
             </TableBody>
           </Table>
-        </CardContent>
-      </Card>
+        )}
+      </ListContainer>
 
       {selectedRole && (
         <OrganizationRoleDeleteDialog

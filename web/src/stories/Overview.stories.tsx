@@ -274,7 +274,7 @@ export const AllComponents: Story = {
             <CardContent>
               <div className="space-y-2">
                 <div className="text-muted-foreground flex items-center text-sm">
-                  <Mail className="mr-2 h-4 w-4" />
+                  <Mail className="size-4" />
                   john@example.com
                 </div>
                 <div className="flex space-x-1">

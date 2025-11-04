@@ -1,19 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, ShieldCheck, Trash2 } from "lucide-react";
 import { useState } from "react";
 
 import { RolePermissionAddDialog } from "./role-permission-add-dialog";
 import { RolePermissionDeleteDialog } from "./role-permission-delete-dialog";
 
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { ListContainer } from "@/components/ui/list-container";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -95,16 +88,51 @@ export function RolePermissionAssignment({
     setSelectedPermission(null);
   };
 
-  if (isLoading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Permissions</CardTitle>
-          <CardDescription>
-            Manage permissions assigned to this role.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+  const createButton =
+    !isPermissionsLoading && hasWritePermission ? (
+      <Button
+        type="button"
+        variant="outline"
+        onClick={() => setAddDialogOpen(true)}
+        size="sm"
+      >
+        <Plus className="size-4" />
+        Add Permission
+      </Button>
+    ) : undefined;
+
+  const emptyState =
+    !permissions || permissions.length === 0
+      ? {
+          icon: <ShieldCheck />,
+          title: "No permissions assigned",
+          description:
+            "Add permissions to grant access to organization resources.",
+          action: hasWritePermission ? (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setAddDialogOpen(true)}
+              size="sm"
+            >
+              <Plus className="size-4" />
+              Add Permission
+            </Button>
+          ) : undefined,
+        }
+      : undefined;
+
+  return (
+    <>
+      <ListContainer
+        title="Permissions"
+        description="Manage permissions assigned to this role. Only organization-scoped resources can be assigned."
+        isLoading={isLoading}
+        error={error}
+        emptyState={emptyState}
+        actionButton={createButton}
+      >
+        {isLoading ? (
           <Table>
             <TableHeader>
               <TableRow>
@@ -135,106 +163,50 @@ export function RolePermissionAssignment({
               ))}
             </TableBody>
           </Table>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (error) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Permissions</CardTitle>
-          <CardDescription>
-            Manage permissions assigned to this role.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Alert variant="destructive">
-            <AlertTitle>Failed to load permissions</AlertTitle>
-            <AlertDescription>
-              {error instanceof Error ? error.message : "Unknown error"}
-            </AlertDescription>
-          </Alert>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  return (
-    <>
-      <Card>
-        <CardHeader>
-          <div className="flex items-start justify-between">
-            <div>
-              <CardTitle>Permissions</CardTitle>
-              <CardDescription>
-                Manage permissions assigned to this role. Only
-                organization-scoped resources can be assigned.
-              </CardDescription>
-            </div>
-            {!isPermissionsLoading && hasWritePermission && (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setAddDialogOpen(true)}
-                size="sm"
-              >
-                <Plus className="size-4" />
-                Add Permission
-              </Button>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent>
-          {!permissions || permissions.length === 0 ? (
-            <div className="text-muted-foreground py-8 text-center text-sm">
-              No permissions assigned yet.
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Resource Type</TableHead>
-                  <TableHead>Resource ID</TableHead>
-                  <TableHead>Permission Kind</TableHead>
-                  <TableHead>
-                    <span className="sr-only">Actions</span>
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {permissions.map((permission: Permission) => {
-                  const resourceId = extractResourceId(
-                    getFieldValue(permission.target)
-                  );
-                  return (
-                    <TableRow key={permission.id}>
-                      <TableCell className="font-medium">
-                        {getFieldValue(permission.target_type)}
-                      </TableCell>
-                      <TableCell>{formatResourceId(resourceId)}</TableCell>
-                      <TableCell>{permission.kind}</TableCell>
-                      <TableCell className="text-right">
-                        {hasWritePermission && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteClick(permission)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Resource Type</TableHead>
+                <TableHead>Resource ID</TableHead>
+                <TableHead>Permission Kind</TableHead>
+                <TableHead>
+                  <span className="sr-only">Actions</span>
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {permissions?.map((permission: Permission) => {
+                const resourceId = extractResourceId(
+                  getFieldValue(permission.target)
+                );
+                return (
+                  <TableRow key={permission.id}>
+                    <TableCell className="font-medium">
+                      {getFieldValue(permission.target_type)}
+                    </TableCell>
+                    <TableCell>{formatResourceId(resourceId)}</TableCell>
+                    <TableCell>{permission.kind}</TableCell>
+                    <TableCell className="text-right">
+                      {hasWritePermission && (
+                        <Button
+                          type="button"
+                          variant="destructive-ghost"
+                          size="sm"
+                          onClick={() => handleDeleteClick(permission)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          <span className="sr-only">Delete permission</span>
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        )}
+      </ListContainer>
 
       <RolePermissionAddDialog
         organizationId={organizationId}

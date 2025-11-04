@@ -81,7 +81,7 @@ export function CommandPalette({
                   disabled={command.disabled}
                 >
                   {command.icon && (
-                    <span className="mr-2 h-4 w-4">{command.icon}</span>
+                    <span className="size-4">{command.icon}</span>
                   )}
                   <span className="flex-1">{command.title}</span>
                   {command.shortcut && (
