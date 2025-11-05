@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS user_tokens (
   user_id VARCHAR(35) NOT NULL,
   sent_to TEXT NOT NULL,
   token CHARACTER VARYING(72) NOT NULL,
-  context CHARACTER VARYING(14) CHECK (context IN ('confirm', 'reset_password')) NOT NULL,
+  context CHARACTER VARYING(14) CHECK (context IN ('confirm', 'reset_password', 'invite')) NOT NULL,
   created_at TIMESTAMP(0) WITHOUT TIME ZONE NOT NULL
 );
 

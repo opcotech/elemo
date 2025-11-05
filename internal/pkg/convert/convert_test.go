@@ -246,3 +246,120 @@ func TestMustConvertAnyToAny(t *testing.T) {
 		})
 	}
 }
+
+func TestEmailToNameParts(t *testing.T) {
+	tests := []struct {
+		name      string
+		email     string
+		wantFirst string
+		wantLast  string
+	}{
+		{
+			name:      "email with dot separator",
+			email:     "john.doe@example.com",
+			wantFirst: "John",
+			wantLast:  "Doe",
+		},
+		{
+			name:      "email with hyphen separator",
+			email:     "john-doe@example.com",
+			wantFirst: "John",
+			wantLast:  "Doe",
+		},
+		{
+			name:      "email with underscore separator",
+			email:     "jane_doe@example.com",
+			wantFirst: "Jane",
+			wantLast:  "Doe",
+		},
+		{
+			name:      "email with multiple parts",
+			email:     "john.doe.smith@example.com",
+			wantFirst: "John",
+			wantLast:  "Doe Smith",
+		},
+		{
+			name:      "email with single name",
+			email:     "john@example.com",
+			wantFirst: "John",
+			wantLast:  "",
+		},
+		{
+			name:      "email with uppercase letters",
+			email:     "JOHN.DOE@example.com",
+			wantFirst: "John",
+			wantLast:  "Doe",
+		},
+		{
+			name:      "email with mixed case",
+			email:     "JoHn.DoE@example.com",
+			wantFirst: "John",
+			wantLast:  "Doe",
+		},
+		{
+			name:      "email with numbers",
+			email:     "john.doe123@example.com",
+			wantFirst: "John",
+			wantLast:  "Doe123",
+		},
+		{
+			name:      "email with empty parts",
+			email:     "john..doe@example.com",
+			wantFirst: "John",
+			wantLast:  "Doe",
+		},
+		{
+			name:      "email with whitespace",
+			email:     "john . doe@example.com",
+			wantFirst: "John",
+			wantLast:  "Doe",
+		},
+		{
+			name:      "email without @ symbol",
+			email:     "john.doe",
+			wantFirst: "John",
+			wantLast:  "Doe",
+		},
+		{
+			name:      "empty email",
+			email:     "",
+			wantFirst: "",
+			wantLast:  "",
+		},
+		{
+			name:      "email with only @ symbol",
+			email:     "@example.com",
+			wantFirst: "",
+			wantLast:  "",
+		},
+		{
+			name:      "email with four parts",
+			email:     "jean.pierre.marie.dupont@example.com",
+			wantFirst: "Jean",
+			wantLast:  "Pierre Marie Dupont",
+		},
+		{
+			name:      "email with single character first name",
+			email:     "a.b@example.com",
+			wantFirst: "A",
+			wantLast:  "B",
+		},
+		{
+			name:      "email with special characters in name",
+			email:     "john.doe123@example.com",
+			wantFirst: "John",
+			wantLast:  "Doe123",
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			gotFirst, gotLast := EmailToNameParts(tt.email)
+			assert.Equal(t, tt.wantFirst, gotFirst, "first name mismatch")
+			assert.Equal(t, tt.wantLast, gotLast, "last name mismatch")
+		})
+	}
+}

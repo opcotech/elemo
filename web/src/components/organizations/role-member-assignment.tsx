@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Plus, Trash2, Users } from "lucide-react";
+import { Plus, UserMinus, Users } from "lucide-react";
 import { useState } from "react";
 
 import { RoleMemberAddDialog } from "./role-member-add-dialog";
@@ -194,7 +194,7 @@ export function RoleMemberAssignment({
                           size="sm"
                           onClick={() => handleRemoveClick(member)}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <UserMinus className="h-4 w-4" />
                           <span className="sr-only">Remove member</span>
                         </Button>
                       )}

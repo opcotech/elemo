@@ -6,7 +6,6 @@ import { useEffect } from "react";
 import { AuthenticatedLayout } from "@/components/layout/authenticated-layout";
 import { NotificationList } from "@/components/notification";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -193,7 +192,7 @@ function InboxContent() {
 function NotificationsPanel({ unreadCount }: { unreadCount: number }) {
   return (
     <>
-      <div className="flex-shrink-0 border-b p-4">
+      <div className="shrink-0 border-b p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Bell className="h-5 w-5" />
@@ -204,9 +203,6 @@ function NotificationsPanel({ unreadCount }: { unreadCount: number }) {
               </Badge>
             )}
           </div>
-          <Button variant="ghost" size="sm">
-            Mark all read
-          </Button>
         </div>
         <p className="text-muted-foreground mt-1 text-sm">
           Your in-app notifications

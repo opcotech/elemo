@@ -11,16 +11,19 @@ import (
 const (
 	UserTokenContextConfirm UserTokenContext = iota + 1
 	UserTokenContextResetPassword
+	UserTokenContextInvite
 )
 
 var (
 	userTokenContextKeys = map[string]UserTokenContext{
 		"confirm":        UserTokenContextConfirm,
 		"reset_password": UserTokenContextResetPassword,
+		"invite":         UserTokenContextInvite,
 	}
 	userTokenContextValues = map[UserTokenContext]string{
 		UserTokenContextConfirm:       "confirm",
 		UserTokenContextResetPassword: "reset_password",
+		UserTokenContextInvite:        "invite",
 	}
 )
 
@@ -34,7 +37,7 @@ func (c UserTokenContext) String() string {
 
 // MarshalText implements the encoding.TextMarshaler interface.
 func (c UserTokenContext) MarshalText() (text []byte, err error) {
-	if c < UserTokenContextConfirm || c > UserTokenContextResetPassword {
+	if c < UserTokenContextConfirm || c > UserTokenContextInvite {
 		return nil, ErrInvalidUserTokenContext
 	}
 	return []byte(c.String()), nil
@@ -66,7 +69,7 @@ type UserToken struct {
 	UserID    ID               `json:"user_id" validate:"required"`
 	SentTo    string           `json:"sent_to" validate:"required,email"`
 	Token     string           `json:"token" validate:"required,min=60,max=72"`
-	Context   UserTokenContext `json:"context" validate:"required,min=1,max=2"`
+	Context   UserTokenContext `json:"context" validate:"required,min=1,max=3"`
 	CreatedAt *time.Time       `json:"created_at" validate:"omitempty"`
 }
 

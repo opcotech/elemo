@@ -1,4 +1,5 @@
 import type { QueryKey } from "@tanstack/react-query";
+import { UserMinus } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
@@ -65,6 +66,7 @@ export function OrganizationMemberRemoveDialog({
         "All roles assigned to this member will be removed",
         "This action cannot be undone",
       ]}
+      deleteButtonIcon={UserMinus}
       deleteButtonText="Remove Member"
       onConfirm={handleConfirm}
       isPending={deleteMutation.isPending}

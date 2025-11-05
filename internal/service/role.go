@@ -3,9 +3,12 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
+	"log/slog"
 
 	"github.com/opcotech/elemo/internal/license"
 	"github.com/opcotech/elemo/internal/model"
+	"github.com/opcotech/elemo/internal/pkg/log"
 )
 
 // RoleService is the interface that provides methods for managing roles.
@@ -220,6 +223,45 @@ func (s *roleService) AddMember(ctx context.Context, roleID, memberID, belongsTo
 		return errors.Join(ErrRoleAddMember, err)
 	}
 
+	// Send notification to the member
+	if s.notificationService != nil && s.organizationRepo != nil {
+		// Get role and organization info for notification
+		role, err := s.roleRepo.Get(ctx, roleID, belongsToID)
+		if err != nil {
+			// Log error but don't fail - member is already added
+			s.logger.Warn(ctx, "failed to get role for notification when adding member",
+				log.WithError(err),
+				slog.String("role_id", roleID.String()))
+		} else {
+			organization, err := s.organizationRepo.Get(ctx, belongsToID)
+			if err != nil {
+				// Log error but don't fail - member is already added
+				s.logger.Warn(ctx, "failed to get organization for notification when adding member to role",
+					log.WithError(err),
+					slog.String("organization_id", belongsToID.String()))
+			} else {
+				notificationTitle := fmt.Sprintf("You've been added to the %s role", role.Name)
+				notificationDescription := fmt.Sprintf("You have been added to the %s role in the %s organization.", role.Name, organization.Name)
+
+				notification, err := model.NewNotification(notificationTitle, memberID)
+				if err != nil {
+					// Log error but don't fail - member is already added
+					s.logger.Warn(ctx, "failed to create notification for role member addition",
+						log.WithError(err),
+						log.WithUserID(memberID.String()))
+				} else {
+					notification.Description = notificationDescription
+					if err := s.notificationService.Create(ctx, notification); err != nil {
+						// Log error but don't fail - member is already added
+						s.logger.Warn(ctx, "failed to send notification for role member addition",
+							log.WithError(err),
+							log.WithUserID(memberID.String()))
+					}
+				}
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -250,6 +292,45 @@ func (s *roleService) RemoveMember(ctx context.Context, roleID, memberID, belong
 	err := s.roleRepo.RemoveMember(ctx, roleID, memberID, belongsToID)
 	if err != nil {
 		return errors.Join(ErrRoleRemoveMember, err)
+	}
+
+	// Send notification to the member
+	if s.notificationService != nil && s.organizationRepo != nil {
+		// Get role and organization info for notification
+		role, err := s.roleRepo.Get(ctx, roleID, belongsToID)
+		if err != nil {
+			// Log error but don't fail - member is already removed
+			s.logger.Warn(ctx, "failed to get role for notification when removing member",
+				log.WithError(err),
+				slog.String("role_id", roleID.String()))
+		} else {
+			organization, err := s.organizationRepo.Get(ctx, belongsToID)
+			if err != nil {
+				// Log error but don't fail - member is already removed
+				s.logger.Warn(ctx, "failed to get organization for notification when removing member from role",
+					log.WithError(err),
+					slog.String("organization_id", belongsToID.String()))
+			} else {
+				notificationTitle := fmt.Sprintf("You've been removed from the %s role", role.Name)
+				notificationDescription := fmt.Sprintf("You have been removed from the %s role in the %s organization.", role.Name, organization.Name)
+
+				notification, err := model.NewNotification(notificationTitle, memberID)
+				if err != nil {
+					// Log error but don't fail - member is already removed
+					s.logger.Warn(ctx, "failed to create notification for role member removal",
+						log.WithError(err),
+						log.WithUserID(memberID.String()))
+				} else {
+					notification.Description = notificationDescription
+					if err := s.notificationService.Create(ctx, notification); err != nil {
+						// Log error but don't fail - member is already removed
+						s.logger.Warn(ctx, "failed to send notification for role member removal",
+							log.WithError(err),
+							log.WithUserID(memberID.String()))
+					}
+				}
+			}
+		}
 	}
 
 	return nil

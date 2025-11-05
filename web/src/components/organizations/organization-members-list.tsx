@@ -1,6 +1,8 @@
-import { Trash2, Users } from "lucide-react";
+import { UserMinus, UserPlus, Users, X } from "lucide-react";
 import { useMemo, useState } from "react";
 
+import { OrganizationMemberInviteDialog } from "./organization-member-invite-dialog";
+import { OrganizationMemberInviteRevokeDialog } from "./organization-member-invite-revoke-dialog";
 import { OrganizationMemberRemoveDialog } from "./organization-member-remove-dialog";
 
 import { Badge } from "@/components/ui/badge";
@@ -78,15 +80,23 @@ export function OrganizationMembersList({
 }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [removeMemberDialogOpen, setRemoveMemberDialogOpen] = useState(false);
+  const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
+  const [revokeInviteDialogOpen, setRevokeInviteDialogOpen] = useState(false);
   const [selectedMember, setSelectedMember] =
     useState<OrganizationMember | null>(null);
 
-  // Check permissions for organization (write)
+  // Check permissions for organization (read and write)
   const { data: orgPermissions, isLoading: isOrgPermissionsLoading } =
     usePermissions(withResourceType(ResourceType.Organization, organizationId));
 
+  const hasOrgReadPermission = can(orgPermissions, "read");
   const hasOrgWritePermission = can(orgPermissions, "write");
   const isPermissionsLoading = isOrgPermissionsLoading;
+
+  // Defense in depth: Don't render if user doesn't have read permission
+  if (!isPermissionsLoading && !hasOrgReadPermission) {
+    return null;
+  }
 
   const handleRemoveClick = (member: OrganizationMember) => {
     setSelectedMember(member);
@@ -98,22 +108,55 @@ export function OrganizationMembersList({
     setSelectedMember(null);
   };
 
+  const handleInviteSuccess = () => {
+    setInviteDialogOpen(false);
+  };
+
+  const handleRevokeInviteClick = (member: OrganizationMember) => {
+    setSelectedMember(member);
+    setRevokeInviteDialogOpen(true);
+  };
+
+  const handleRevokeInviteSuccess = () => {
+    setRevokeInviteDialogOpen(false);
+    setSelectedMember(null);
+  };
+
+  // Sort members: pending first, then others sorted alphabetically
+  const sortedMembers = useMemo(() => {
+    if (!members) return [];
+    return [...members].sort((a, b) => {
+      // Pending members come first
+      if (a.status === "pending" && b.status !== "pending") return -1;
+      if (a.status !== "pending" && b.status === "pending") return 1;
+
+      // Deleted members come last
+      if (a.status === "deleted" && b.status !== "deleted") return 1;
+      if (a.status !== "deleted" && b.status === "deleted") return -1;
+
+      // Within same status, sort alphabetically
+      const aName = `${a.first_name} ${a.last_name}`.toLowerCase();
+      const bName = `${b.first_name} ${b.last_name}`.toLowerCase();
+      return aName.localeCompare(bName);
+    });
+  }, [members]);
+
   const filteredMembers = useMemo(() => {
-    if (!members || !searchTerm.trim()) return members || [];
+    if (!sortedMembers || !searchTerm.trim()) return sortedMembers || [];
     const term = searchTerm.toLowerCase();
-    return members.filter(
+    return sortedMembers.filter(
       (member) =>
         member.first_name.toLowerCase().includes(term) ||
         member.last_name.toLowerCase().includes(term) ||
         member.email.toLowerCase().includes(term) ||
         member.roles.some((role) => role.toLowerCase().includes(term))
     );
-  }, [members, searchTerm]);
+  }, [sortedMembers, searchTerm]);
 
   // Only show empty state when there's no data at all (not filtered)
   // When filtered results are empty but original data exists, show search + empty state
   const emptyState =
-    !members || members.length === 0
+    !sortedMembers || sortedMembers.length === 0
       ? {
           icon: <Users />,
           title: "No members found",
@@ -131,7 +174,18 @@ export function OrganizationMembersList({
 
   // Show search input only when there's data to search through OR when search is active
   const shouldShowSearch =
-    (members && members.length > 0) || searchTerm.trim() !== "";
+    (sortedMembers && sortedMembers.length > 0) || searchTerm.trim() !== "";
+
+  const inviteButton = hasOrgWritePermission ? (
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={() => setInviteDialogOpen(true)}
+    >
+      <UserPlus className="size-4" />
+      Invite Member
+    </Button>
+  ) : undefined;
 
   return (
     <>
@@ -141,6 +195,7 @@ export function OrganizationMembersList({
         isLoading={isLoading}
         error={error}
         emptyState={emptyState}
+        actionButton={inviteButton}
         searchInput={
           shouldShowSearch ? (
             <SearchInput
@@ -218,14 +273,32 @@ export function OrganizationMembersList({
                         {isPermissionsLoading ? (
                           <Skeleton className="h-8 w-8" />
                         ) : (
-                          <Button
-                            variant="destructive-ghost"
-                            size="sm"
-                            onClick={() => handleRemoveClick(member)}
-                          >
-                            <Trash2 className="size-4" />
-                            <span className="sr-only">Remove member</span>
-                          </Button>
+                          <div className="flex items-center justify-end gap-2">
+                            {member.status === "pending" && (
+                              <Button
+                                variant="destructive-ghost"
+                                size="sm"
+                                onClick={() => handleRevokeInviteClick(member)}
+                                title="Revoke invitation"
+                              >
+                                <X className="size-4" />
+                                <span className="sr-only">
+                                  Revoke invitation
+                                </span>
+                              </Button>
+                            )}
+                            {member.status !== "pending" && (
+                              <Button
+                                variant="destructive-ghost"
+                                size="sm"
+                                onClick={() => handleRemoveClick(member)}
+                                title="Remove member"
+                              >
+                                <UserMinus className="size-4" />
+                                <span className="sr-only">Remove member</span>
+                              </Button>
+                            )}
+                          </div>
                         )}
                       </TableCell>
                     )}
@@ -238,14 +311,29 @@ export function OrganizationMembersList({
       </ListContainer>
 
       {selectedMember && (
-        <OrganizationMemberRemoveDialog
-          member={selectedMember}
-          organizationId={organizationId}
-          open={removeMemberDialogOpen}
-          onOpenChange={setRemoveMemberDialogOpen}
-          onSuccess={handleRemoveSuccess}
-        />
+        <>
+          <OrganizationMemberRemoveDialog
+            member={selectedMember}
+            organizationId={organizationId}
+            open={removeMemberDialogOpen}
+            onOpenChange={setRemoveMemberDialogOpen}
+            onSuccess={handleRemoveSuccess}
+          />
+          <OrganizationMemberInviteRevokeDialog
+            member={selectedMember}
+            organizationId={organizationId}
+            open={revokeInviteDialogOpen}
+            onOpenChange={setRevokeInviteDialogOpen}
+            onSuccess={handleRevokeInviteSuccess}
+          />
+        </>
       )}
+      <OrganizationMemberInviteDialog
+        organizationId={organizationId}
+        open={inviteDialogOpen}
+        onOpenChange={setInviteDialogOpen}
+        onSuccess={handleInviteSuccess}
+      />
     </>
   );
 }

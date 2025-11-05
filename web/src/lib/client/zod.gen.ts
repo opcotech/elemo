@@ -524,6 +524,14 @@ export const zUserPasswordReset = z.object({
   password: z.string().min(8).max(64),
 });
 
+/**
+ * Organization invitation acceptance request.
+ */
+export const zOrganizationInvitationAccept = z.object({
+  token: z.string(),
+  password: z.optional(z.string().min(8).max(64)),
+});
+
 export const zTodoCreate = z.object({
   title: z.string().min(3).max(250),
   description: z.optional(z.union([z.string().min(10).max(500), z.null()])),
@@ -907,6 +915,26 @@ export const zV1OrganizationMembersAddResponse = z.object({
   id: z.string(),
 });
 
+export const zV1OrganizationMembersInviteData = z.object({
+  body: z.optional(
+    z.object({
+      email: z.email(),
+      role_id: z.optional(z.string()),
+    })
+  ),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+/**
+ * Example response
+ */
+export const zV1OrganizationMembersInviteResponse = z.object({
+  id: z.string(),
+});
+
 export const zV1OrganizationMemberRemoveData = z.object({
   body: z.optional(z.never()),
   path: z.object({
@@ -920,6 +948,33 @@ export const zV1OrganizationMemberRemoveData = z.object({
  * No Content
  */
 export const zV1OrganizationMemberRemoveResponse = z.void();
+
+export const zV1OrganizationMemberInviteRevokeData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+    user_id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+/**
+ * No Content
+ */
+export const zV1OrganizationMemberInviteRevokeResponse = z.void();
+
+export const zV1OrganizationMembersAcceptData = z.object({
+  body: z.optional(zOrganizationInvitationAccept),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zV1OrganizationMembersAcceptResponse = z.union([
+  z.unknown(),
+  z.void(),
+]);
 
 export const zV1OrganizationRolesGetData = z.object({
   body: z.optional(z.never()),

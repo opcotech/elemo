@@ -63,6 +63,90 @@ function OrganizationRolesListSkeleton() {
   );
 }
 
+interface RoleRowProps {
+  role: Role;
+  organizationId: string;
+  onAddMemberClick: (role: Role) => void;
+  onDeleteClick: (role: Role) => void;
+}
+
+function RoleRow({
+  role,
+  organizationId,
+  onAddMemberClick,
+  onDeleteClick,
+}: RoleRowProps) {
+  const { data: rolePermissions, isLoading: isRolePermissionsLoading } =
+    usePermissions(withResourceType(ResourceType.Role, role.id));
+
+  const hasRoleWritePermission = can(rolePermissions, "write");
+  const hasRoleDeletePermission = can(rolePermissions, "delete");
+  const isPermissionsLoading = isRolePermissionsLoading;
+
+  return (
+    <TableRow>
+      <TableCell className="font-medium">{role.name}</TableCell>
+      <TableCell>
+        <span className="text-muted-foreground text-sm">
+          {role.description || "—"}
+        </span>
+      </TableCell>
+      <TableCell>
+        <Badge variant="secondary">
+          {role.members.length}{" "}
+          {pluralize(role.members.length, "member", "members")}
+        </Badge>
+      </TableCell>
+      <TableCell className="text-right">
+        {isPermissionsLoading ? (
+          <div className="flex justify-end gap-1">
+            <Skeleton className="h-8 w-8" />
+            <Skeleton className="h-8 w-8" />
+            <Skeleton className="h-8 w-8" />
+          </div>
+        ) : (
+          <div className="flex items-center justify-end gap-x-1">
+            {hasRoleWritePermission && (
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onAddMemberClick(role)}
+                >
+                  <UserPlus className="size-4" />
+                  <span className="sr-only">Add member</span>
+                </Button>
+                <Button variant="ghost" size="sm" asChild>
+                  <Link
+                    to="/settings/organizations/$organizationId/roles/$roleId/edit"
+                    params={{
+                      organizationId,
+                      roleId: role.id,
+                    }}
+                  >
+                    <Edit className="size-4" />
+                    <span className="sr-only">Edit role</span>
+                  </Link>
+                </Button>
+              </>
+            )}
+            {hasRoleDeletePermission && (
+              <Button
+                variant="destructive-ghost"
+                size="sm"
+                onClick={() => onDeleteClick(role)}
+              >
+                <Trash2 className="size-4" />
+                <span className="sr-only">Delete role</span>
+              </Button>
+            )}
+          </div>
+        )}
+      </TableCell>
+    </TableRow>
+  );
+}
+
 interface OrganizationRolesListProps {
   roles: Role[];
   isLoading: boolean;
@@ -81,14 +165,20 @@ export function OrganizationRolesList({
   const [addMemberDialogOpen, setAddMemberDialogOpen] = useState(false);
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
 
-  // Check permissions for organization (write) - only organization write is needed for role operations
+  // Check permissions for organization (read and write)
   const { data: orgPermissions, isLoading: isOrgPermissionsLoading } =
     usePermissions(withResourceType(ResourceType.Organization, organizationId));
 
+  const hasOrgReadPermission = can(orgPermissions, "read");
   const hasOrgWritePermission = can(orgPermissions, "write");
   const hasWritePermission = hasOrgWritePermission;
   const hasCreatePermission = hasOrgWritePermission;
   const isPermissionsLoading = isOrgPermissionsLoading;
+
+  // Defense in depth: Don't render if user doesn't have read permission
+  if (!isPermissionsLoading && !hasOrgReadPermission) {
+    return null;
+  }
 
   const handleDeleteClick = (role: Role) => {
     setSelectedRole(role);
@@ -197,64 +287,13 @@ export function OrganizationRolesList({
             </TableHeader>
             <TableBody>
               {filteredRoles.map((role) => (
-                <TableRow key={role.id}>
-                  <TableCell className="font-medium">{role.name}</TableCell>
-                  <TableCell>
-                    <span className="text-muted-foreground text-sm">
-                      {role.description || "—"}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="secondary">
-                      {role.members.length}{" "}
-                      {pluralize(role.members.length, "member", "members")}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {isPermissionsLoading ? (
-                      <div className="flex justify-end gap-1">
-                        <Skeleton className="h-8 w-8" />
-                        <Skeleton className="h-8 w-8" />
-                        <Skeleton className="h-8 w-8" />
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-end gap-x-1">
-                        {hasWritePermission && (
-                          <>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleAddMemberClick(role)}
-                            >
-                              <UserPlus className="size-4" />
-                              <span className="sr-only">Add member</span>
-                            </Button>
-                            <Button variant="ghost" size="sm" asChild>
-                              <Link
-                                to="/settings/organizations/$organizationId/roles/$roleId/edit"
-                                params={{
-                                  organizationId,
-                                  roleId: role.id,
-                                }}
-                              >
-                                <Edit className="size-4" />
-                                <span className="sr-only">Edit role</span>
-                              </Link>
-                            </Button>
-                            <Button
-                              variant="destructive-ghost"
-                              size="sm"
-                              onClick={() => handleDeleteClick(role)}
-                            >
-                              <Trash2 className="size-4" />
-                              <span className="sr-only">Delete role</span>
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    )}
-                  </TableCell>
-                </TableRow>
+                <RoleRow
+                  key={role.id}
+                  role={role}
+                  organizationId={organizationId}
+                  onAddMemberClick={handleAddMemberClick}
+                  onDeleteClick={handleDeleteClick}
+                />
               ))}
             </TableBody>
           </Table>

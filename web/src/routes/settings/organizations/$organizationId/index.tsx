@@ -14,11 +14,17 @@ import {
 } from "@/components/organizations";
 import { useBreadcrumbUtils } from "@/hooks/use-breadcrumbs";
 import {
+  ResourceType,
+  usePermissions,
+  withResourceType,
+} from "@/hooks/use-permissions";
+import {
   isNotFound,
   v1OrganizationGetOptions,
   v1OrganizationMembersGetOptions,
   v1OrganizationRolesGetOptions,
 } from "@/lib/api";
+import { can } from "@/lib/auth/permissions";
 import { requireAuthBeforeLoad } from "@/lib/auth/require-auth";
 import { getUser } from "@/lib/auth/session";
 
@@ -72,6 +78,12 @@ function OrganizationDetailPage() {
     })
   );
 
+  // Check if user has read permission (i.e., is a member of the organization)
+  const { data: orgPermissions, isLoading: isOrgPermissionsLoading } =
+    usePermissions(withResourceType(ResourceType.Organization, organizationId));
+
+  const hasOrgReadPermission = can(orgPermissions, "read");
+
   // Get current user ID
   useEffect(() => {
     const loadCurrentUser = async () => {
@@ -83,19 +95,9 @@ function OrganizationDetailPage() {
     loadCurrentUser();
   }, []);
 
+  // No need to sort here - sorting is handled in OrganizationMembersList
   const processedMembers = useMemo(() => {
-    if (!members) return [];
-
-    return [...members].sort((a, b) => {
-      if (a.status !== b.status) {
-        if (a.status === "deleted") return 1;
-        if (b.status === "deleted") return -1;
-      }
-
-      const aName = `${a.first_name} ${a.last_name}`.toLowerCase();
-      const bName = `${b.first_name} ${b.last_name}`.toLowerCase();
-      return aName.localeCompare(bName);
-    });
+    return members || [];
   }, [members]);
 
   useEffect(() => {
@@ -137,20 +139,25 @@ function OrganizationDetailPage() {
 
       <OrganizationDetailInfo organization={organization} />
 
-      <OrganizationMembersList
-        members={processedMembers}
-        isLoading={isLoadingMembers}
-        error={membersError}
-        currentUserId={currentUserId}
-        organizationId={organizationId}
-      />
+      {/* Only show members and roles if user has read permission (is a member) */}
+      {!isOrgPermissionsLoading && hasOrgReadPermission && (
+        <>
+          <OrganizationMembersList
+            members={processedMembers}
+            isLoading={isLoadingMembers}
+            error={membersError}
+            currentUserId={currentUserId}
+            organizationId={organizationId}
+          />
 
-      <OrganizationRolesList
-        roles={roles || []}
-        isLoading={isLoadingRoles}
-        error={rolesError}
-        organizationId={organizationId}
-      />
+          <OrganizationRolesList
+            roles={roles || []}
+            isLoading={isLoadingRoles}
+            error={rolesError}
+            organizationId={organizationId}
+          />
+        </>
+      )}
 
       {organization.status === "active" && (
         <OrganizationDangerZone organization={organization} />

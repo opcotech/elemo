@@ -21,15 +21,24 @@ import type {
   V1OrganizationGetData,
   V1OrganizationGetErrors,
   V1OrganizationGetResponses,
+  V1OrganizationMemberInviteRevokeData,
+  V1OrganizationMemberInviteRevokeErrors,
+  V1OrganizationMemberInviteRevokeResponses,
   V1OrganizationMemberRemoveData,
   V1OrganizationMemberRemoveErrors,
   V1OrganizationMemberRemoveResponses,
+  V1OrganizationMembersAcceptData,
+  V1OrganizationMembersAcceptErrors,
+  V1OrganizationMembersAcceptResponses,
   V1OrganizationMembersAddData,
   V1OrganizationMembersAddErrors,
   V1OrganizationMembersAddResponses,
   V1OrganizationMembersGetData,
   V1OrganizationMembersGetErrors,
   V1OrganizationMembersGetResponses,
+  V1OrganizationMembersInviteData,
+  V1OrganizationMembersInviteErrors,
+  V1OrganizationMembersInviteResponses,
   V1OrganizationRoleDeleteData,
   V1OrganizationRoleDeleteErrors,
   V1OrganizationRoleDeleteResponses,
@@ -739,6 +748,36 @@ export const v1OrganizationMembersAdd = <ThrowOnError extends boolean = false>(
 };
 
 /**
+ * Invite member to organization
+ *
+ * Send an invitation email to a user to join the organization. If the user doesn't exist, a pending user will be created.
+ */
+export const v1OrganizationMembersInvite = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<V1OrganizationMembersInviteData, ThrowOnError>
+) => {
+  return (options.client ?? client).post<
+    V1OrganizationMembersInviteResponses,
+    V1OrganizationMembersInviteErrors,
+    ThrowOnError
+  >({
+    security: [
+      {
+        scheme: "bearer",
+        type: "http",
+      },
+    ],
+    url: "/v1/organizations/{id}/members/invite",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+};
+
+/**
  * Remove organization member
  *
  * Removes a member from the organization
@@ -761,6 +800,56 @@ export const v1OrganizationMemberRemove = <
     ],
     url: "/v1/organizations/{id}/members/{user_id}",
     ...options,
+  });
+};
+
+/**
+ * Revoke invitation
+ *
+ * Revoke an invitation for a user to join the organization
+ */
+export const v1OrganizationMemberInviteRevoke = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<V1OrganizationMemberInviteRevokeData, ThrowOnError>
+) => {
+  return (options.client ?? client).delete<
+    V1OrganizationMemberInviteRevokeResponses,
+    V1OrganizationMemberInviteRevokeErrors,
+    ThrowOnError
+  >({
+    security: [
+      {
+        scheme: "bearer",
+        type: "http",
+      },
+    ],
+    url: "/v1/organizations/{id}/members/{user_id}/invite",
+    ...options,
+  });
+};
+
+/**
+ * Accept organization invitation
+ *
+ * Accept an invitation to join an organization using an invitation token. If the user is pending, they will be activated.
+ */
+export const v1OrganizationMembersAccept = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<V1OrganizationMembersAcceptData, ThrowOnError>
+) => {
+  return (options.client ?? client).post<
+    V1OrganizationMembersAcceptResponses,
+    V1OrganizationMembersAcceptErrors,
+    ThrowOnError
+  >({
+    url: "/v1/organizations/{id}/members/accept",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
   });
 };
 

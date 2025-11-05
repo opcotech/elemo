@@ -12,6 +12,7 @@ export * from "./organization-list";
 export * from "./organization-member-remove-dialog";
 export * from "./organization-members-list";
 export * from "./organization-not-found";
+export * from "./organization-pending-invitations-list";
 export * from "./organization-role-create-form";
 export * from "./organization-role-delete-dialog";
 export * from "./organization-role-edit-form";

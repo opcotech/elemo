@@ -143,6 +143,34 @@ func (r *CachedOrganizationRepository) GetMembers(ctx context.Context, orgID mod
 	return r.organizationRepo.GetMembers(ctx, orgID)
 }
 
+func (r *CachedOrganizationRepository) AddInvitation(ctx context.Context, orgID, userID model.ID) error {
+	if err := clearOrganizationsKey(ctx, r.cacheRepo, orgID); err != nil {
+		return err
+	}
+
+	if err := clearOrganizationAllGetAll(ctx, r.cacheRepo); err != nil {
+		return err
+	}
+
+	return r.organizationRepo.AddInvitation(ctx, orgID, userID)
+}
+
+func (r *CachedOrganizationRepository) RemoveInvitation(ctx context.Context, orgID, userID model.ID) error {
+	if err := clearOrganizationsKey(ctx, r.cacheRepo, orgID); err != nil {
+		return err
+	}
+
+	if err := clearOrganizationAllGetAll(ctx, r.cacheRepo); err != nil {
+		return err
+	}
+
+	return r.organizationRepo.RemoveInvitation(ctx, orgID, userID)
+}
+
+func (r *CachedOrganizationRepository) GetInvitations(ctx context.Context, orgID model.ID) ([]*model.OrganizationMember, error) {
+	return r.organizationRepo.GetInvitations(ctx, orgID)
+}
+
 // NewCachedOrganizationRepository returns a new CachedOrganizationRepository.
 func NewCachedOrganizationRepository(repo repository.OrganizationRepository, opts ...RepositoryOption) (*CachedOrganizationRepository, error) {
 	r, err := newBaseRepository(opts...)

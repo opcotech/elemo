@@ -10,6 +10,7 @@ import (
 
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg"
+	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/service"
 	"github.com/opcotech/elemo/internal/transport/http/api"
 )
@@ -38,7 +39,10 @@ type OrganizationController interface {
 	V1OrganizationUpdate(ctx context.Context, request api.V1OrganizationUpdateRequestObject) (api.V1OrganizationUpdateResponseObject, error)
 	V1OrganizationMembersGet(ctx context.Context, request api.V1OrganizationMembersGetRequestObject) (api.V1OrganizationMembersGetResponseObject, error)
 	V1OrganizationMembersAdd(ctx context.Context, request api.V1OrganizationMembersAddRequestObject) (api.V1OrganizationMembersAddResponseObject, error)
+	V1OrganizationMembersInvite(ctx context.Context, request api.V1OrganizationMembersInviteRequestObject) (api.V1OrganizationMembersInviteResponseObject, error)
+	V1OrganizationMembersAccept(ctx context.Context, request api.V1OrganizationMembersAcceptRequestObject) (api.V1OrganizationMembersAcceptResponseObject, error)
 	V1OrganizationMemberRemove(ctx context.Context, request api.V1OrganizationMemberRemoveRequestObject) (api.V1OrganizationMemberRemoveResponseObject, error)
+	V1OrganizationMemberInviteRevoke(ctx context.Context, request api.V1OrganizationMemberInviteRevokeRequestObject) (api.V1OrganizationMemberInviteRevokeResponseObject, error)
 	V1OrganizationRolesCreate(ctx context.Context, request api.V1OrganizationRolesCreateRequestObject) (api.V1OrganizationRolesCreateResponseObject, error)
 	V1OrganizationRoleGet(ctx context.Context, request api.V1OrganizationRoleGetRequestObject) (api.V1OrganizationRoleGetResponseObject, error)
 	V1OrganizationRolesGet(ctx context.Context, request api.V1OrganizationRolesGetRequestObject) (api.V1OrganizationRolesGetResponseObject, error)
@@ -252,6 +256,108 @@ func (c *organizationController) V1OrganizationMembersAdd(ctx context.Context, r
 	}}, nil
 }
 
+func (c *organizationController) V1OrganizationMembersInvite(ctx context.Context, request api.V1OrganizationMembersInviteRequestObject) (api.V1OrganizationMembersInviteResponseObject, error) {
+	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1OrganizationMembersInvite")
+	defer span.End()
+
+	organizationID, err := model.NewIDFromString(request.Id, model.ResourceTypeOrganization.String())
+	if err != nil {
+		return api.V1OrganizationMembersInvite400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
+	}
+
+	if request.Body == nil || request.Body.Email == "" {
+		return api.V1OrganizationMembersInvite400JSONResponse{N400JSONResponse: formatBadRequest(errors.New("email is required"))}, nil
+	}
+
+	email := string(request.Body.Email)
+
+	// Parse optional role ID
+	var roleID model.ID
+	if request.Body.RoleId != nil && *request.Body.RoleId != "" {
+		var err error
+		roleID, err = model.NewIDFromString(*request.Body.RoleId, model.ResourceTypeRole.String())
+		if err != nil {
+			return api.V1OrganizationMembersInvite400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
+		}
+	}
+
+	// Get user by email to return their ID (will be created if doesn't exist)
+	user, err := c.userService.GetByEmail(ctx, email)
+	if err != nil && !errors.Is(err, repository.ErrNotFound) {
+		return api.V1OrganizationMembersInvite500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+			Message: err.Error(),
+		}}, nil
+	}
+
+	var userID model.ID
+	if errors.Is(err, repository.ErrNotFound) {
+		// User will be created by InviteMember, we'll get it after
+		// For now, we'll call InviteMember and then get the user
+		var inviteErr error
+		if roleID.IsNil() {
+			inviteErr = c.organizationService.InviteMember(ctx, organizationID, email)
+		} else {
+			inviteErr = c.organizationService.InviteMember(ctx, organizationID, email, roleID)
+		}
+		if inviteErr != nil {
+			if errors.Is(inviteErr, service.ErrNoPermission) {
+				return api.V1OrganizationMembersInvite403JSONResponse{N403JSONResponse: permissionDenied}, nil
+			}
+			if errors.Is(inviteErr, service.ErrOrganizationMemberAlreadyExists) {
+				return api.V1OrganizationMembersInvite400JSONResponse{N400JSONResponse: formatBadRequest(service.ErrOrganizationMemberAlreadyExists)}, nil
+			}
+			if errors.Is(inviteErr, service.ErrOrganizationMemberInvalidStatus) {
+				return api.V1OrganizationMembersInvite400JSONResponse{N400JSONResponse: formatBadRequest(service.ErrOrganizationMemberInvalidStatus)}, nil
+			}
+			if isNotFoundError(inviteErr) {
+				return api.V1OrganizationMembersInvite404JSONResponse{N404JSONResponse: notFound}, nil
+			}
+			return api.V1OrganizationMembersInvite500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+				Message: inviteErr.Error(),
+			}}, nil
+		}
+
+		// Get the user after invitation
+		user, err = c.userService.GetByEmail(ctx, email)
+		if err != nil {
+			return api.V1OrganizationMembersInvite500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+				Message: err.Error(),
+			}}, nil
+		}
+		userID = user.ID
+	} else {
+		userID = user.ID
+		// Invite existing user
+		var inviteErr error
+		if roleID.IsNil() {
+			inviteErr = c.organizationService.InviteMember(ctx, organizationID, email)
+		} else {
+			inviteErr = c.organizationService.InviteMember(ctx, organizationID, email, roleID)
+		}
+		if inviteErr != nil {
+			if errors.Is(inviteErr, service.ErrNoPermission) {
+				return api.V1OrganizationMembersInvite403JSONResponse{N403JSONResponse: permissionDenied}, nil
+			}
+			if errors.Is(inviteErr, service.ErrOrganizationMemberAlreadyExists) {
+				return api.V1OrganizationMembersInvite400JSONResponse{N400JSONResponse: formatBadRequest(service.ErrOrganizationMemberAlreadyExists)}, nil
+			}
+			if errors.Is(inviteErr, service.ErrOrganizationMemberInvalidStatus) {
+				return api.V1OrganizationMembersInvite400JSONResponse{N400JSONResponse: formatBadRequest(service.ErrOrganizationMemberInvalidStatus)}, nil
+			}
+			if isNotFoundError(inviteErr) {
+				return api.V1OrganizationMembersInvite404JSONResponse{N404JSONResponse: notFound}, nil
+			}
+			return api.V1OrganizationMembersInvite500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+				Message: inviteErr.Error(),
+			}}, nil
+		}
+	}
+
+	return api.V1OrganizationMembersInvite201JSONResponse{N201JSONResponse: api.N201JSONResponse{
+		Id: userID.String(),
+	}}, nil
+}
+
 func (c *organizationController) V1OrganizationMemberRemove(ctx context.Context, request api.V1OrganizationMemberRemoveRequestObject) (api.V1OrganizationMemberRemoveResponseObject, error) {
 	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1OrganizationMemberRemove")
 	defer span.End()
@@ -279,6 +385,69 @@ func (c *organizationController) V1OrganizationMemberRemove(ctx context.Context,
 	}
 
 	return api.V1OrganizationMemberRemove204Response{}, nil
+}
+
+func (c *organizationController) V1OrganizationMemberInviteRevoke(ctx context.Context, request api.V1OrganizationMemberInviteRevokeRequestObject) (api.V1OrganizationMemberInviteRevokeResponseObject, error) {
+	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1OrganizationMemberInviteRevoke")
+	defer span.End()
+
+	organizationID, err := model.NewIDFromString(request.Id, model.ResourceTypeOrganization.String())
+	if err != nil {
+		return api.V1OrganizationMemberInviteRevoke400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
+	}
+
+	userID, err := model.NewIDFromString(request.UserId, model.ResourceTypeUser.String())
+	if err != nil {
+		return api.V1OrganizationMemberInviteRevoke400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
+	}
+
+	if err := c.organizationService.RevokeInvitation(ctx, organizationID, userID); err != nil {
+		if errors.Is(err, service.ErrNoPermission) {
+			return api.V1OrganizationMemberInviteRevoke403JSONResponse{N403JSONResponse: permissionDenied}, nil
+		}
+		if isNotFoundError(err) {
+			return api.V1OrganizationMemberInviteRevoke404JSONResponse{N404JSONResponse: notFound}, nil
+		}
+		return api.V1OrganizationMemberInviteRevoke500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+			Message: err.Error(),
+		}}, nil
+	}
+
+	return api.V1OrganizationMemberInviteRevoke204Response{}, nil
+}
+
+func (c *organizationController) V1OrganizationMembersAccept(ctx context.Context, request api.V1OrganizationMembersAcceptRequestObject) (api.V1OrganizationMembersAcceptResponseObject, error) {
+	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1OrganizationMembersAccept")
+	defer span.End()
+
+	organizationID, err := model.NewIDFromString(request.Id, model.ResourceTypeOrganization.String())
+	if err != nil {
+		return api.V1OrganizationMembersAccept400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
+	}
+
+	if request.Body == nil || request.Body.Token == "" {
+		return api.V1OrganizationMembersAccept400JSONResponse{N400JSONResponse: formatBadRequest(errors.New("token is required"))}, nil
+	}
+
+	token := string(request.Body.Token)
+	userPassword := ""
+	if request.Body.Password != nil {
+		userPassword = string(*request.Body.Password)
+	}
+
+	if err := c.organizationService.AcceptInvitation(ctx, organizationID, token, userPassword); err != nil {
+		if errors.Is(err, service.ErrInvalidToken) || errors.Is(err, service.ErrExpiredToken) {
+			return api.V1OrganizationMembersAccept400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
+		}
+		if isNotFoundError(err) {
+			return api.V1OrganizationMembersAccept404JSONResponse{N404JSONResponse: notFound}, nil
+		}
+		return api.V1OrganizationMembersAccept500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+			Message: err.Error(),
+		}}, nil
+	}
+
+	return api.V1OrganizationMembersAccept204Response{}, nil
 }
 
 func (c *organizationController) V1OrganizationRolesCreate(ctx context.Context, request api.V1OrganizationRolesCreateRequestObject) (api.V1OrganizationRolesCreateResponseObject, error) {

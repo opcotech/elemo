@@ -16,9 +16,12 @@ import {
   v1NotificationUpdate,
   v1OrganizationDelete,
   v1OrganizationGet,
+  v1OrganizationMemberInviteRevoke,
   v1OrganizationMemberRemove,
+  v1OrganizationMembersAccept,
   v1OrganizationMembersAdd,
   v1OrganizationMembersGet,
+  v1OrganizationMembersInvite,
   v1OrganizationRoleDelete,
   v1OrganizationRoleGet,
   v1OrganizationRoleMemberRemove,
@@ -72,13 +75,22 @@ import type {
   V1OrganizationDeleteError,
   V1OrganizationDeleteResponse,
   V1OrganizationGetData,
+  V1OrganizationMemberInviteRevokeData,
+  V1OrganizationMemberInviteRevokeError,
+  V1OrganizationMemberInviteRevokeResponse,
   V1OrganizationMemberRemoveData,
   V1OrganizationMemberRemoveError,
   V1OrganizationMemberRemoveResponse,
+  V1OrganizationMembersAcceptData,
+  V1OrganizationMembersAcceptError,
+  V1OrganizationMembersAcceptResponse,
   V1OrganizationMembersAddData,
   V1OrganizationMembersAddError,
   V1OrganizationMembersAddResponse,
   V1OrganizationMembersGetData,
+  V1OrganizationMembersInviteData,
+  V1OrganizationMembersInviteError,
+  V1OrganizationMembersInviteResponse,
   V1OrganizationRoleDeleteData,
   V1OrganizationRoleDeleteError,
   V1OrganizationRoleDeleteResponse,
@@ -1078,6 +1090,35 @@ export const v1OrganizationMembersAddMutation = (
 };
 
 /**
+ * Invite member to organization
+ *
+ * Send an invitation email to a user to join the organization. If the user doesn't exist, a pending user will be created.
+ */
+export const v1OrganizationMembersInviteMutation = (
+  options?: Partial<Options<V1OrganizationMembersInviteData>>
+): UseMutationOptions<
+  V1OrganizationMembersInviteResponse,
+  V1OrganizationMembersInviteError,
+  Options<V1OrganizationMembersInviteData>
+> => {
+  const mutationOptions: UseMutationOptions<
+    V1OrganizationMembersInviteResponse,
+    V1OrganizationMembersInviteError,
+    Options<V1OrganizationMembersInviteData>
+  > = {
+    mutationFn: async (fnOptions) => {
+      const { data } = await v1OrganizationMembersInvite({
+        ...options,
+        ...fnOptions,
+        throwOnError: true,
+      });
+      return data;
+    },
+  };
+  return mutationOptions;
+};
+
+/**
  * Remove organization member
  *
  * Removes a member from the organization
@@ -1096,6 +1137,64 @@ export const v1OrganizationMemberRemoveMutation = (
   > = {
     mutationFn: async (fnOptions) => {
       const { data } = await v1OrganizationMemberRemove({
+        ...options,
+        ...fnOptions,
+        throwOnError: true,
+      });
+      return data;
+    },
+  };
+  return mutationOptions;
+};
+
+/**
+ * Revoke invitation
+ *
+ * Revoke an invitation for a user to join the organization
+ */
+export const v1OrganizationMemberInviteRevokeMutation = (
+  options?: Partial<Options<V1OrganizationMemberInviteRevokeData>>
+): UseMutationOptions<
+  V1OrganizationMemberInviteRevokeResponse,
+  V1OrganizationMemberInviteRevokeError,
+  Options<V1OrganizationMemberInviteRevokeData>
+> => {
+  const mutationOptions: UseMutationOptions<
+    V1OrganizationMemberInviteRevokeResponse,
+    V1OrganizationMemberInviteRevokeError,
+    Options<V1OrganizationMemberInviteRevokeData>
+  > = {
+    mutationFn: async (fnOptions) => {
+      const { data } = await v1OrganizationMemberInviteRevoke({
+        ...options,
+        ...fnOptions,
+        throwOnError: true,
+      });
+      return data;
+    },
+  };
+  return mutationOptions;
+};
+
+/**
+ * Accept organization invitation
+ *
+ * Accept an invitation to join an organization using an invitation token. If the user is pending, they will be activated.
+ */
+export const v1OrganizationMembersAcceptMutation = (
+  options?: Partial<Options<V1OrganizationMembersAcceptData>>
+): UseMutationOptions<
+  V1OrganizationMembersAcceptResponse,
+  V1OrganizationMembersAcceptError,
+  Options<V1OrganizationMembersAcceptData>
+> => {
+  const mutationOptions: UseMutationOptions<
+    V1OrganizationMembersAcceptResponse,
+    V1OrganizationMembersAcceptError,
+    Options<V1OrganizationMembersAcceptData>
+  > = {
+    mutationFn: async (fnOptions) => {
+      const { data } = await v1OrganizationMembersAccept({
         ...options,
         ...fnOptions,
         throwOnError: true,

@@ -380,15 +380,13 @@ func TestEmailService_SendOrganizationInvitationEmail(t *testing.T) {
 				client: func(ctrl *gomock.Controller, ctx context.Context, templatesDir, token string, smtpConf *config.SMTPConfig, organization *model.Organization, user *model.User) EmailSender {
 					subject := fmt.Sprintf("[Action Required] You have been invited to join %s", organization.Name)
 
-					invitationURL := fmt.Sprintf("%s/organizations/join?workspace=%s&token=%s", smtpConf.ClientURL, organization.ID.String(), token)
+					invitationURL := fmt.Sprintf("%s/organizations/join?organization=%s&token=%s", smtpConf.ClientURL, organization.ID.String(), token)
 					template, err := email.NewTemplate(
 						path.Join(templatesDir, organizationInviteTemplate),
 						&email.OrganizationInviteTemplateData{
 							Subject:          subject,
-							FirstName:        user.FirstName,
-							LastName:         user.LastName,
 							OrganizationName: organization.Name,
-							InvitationURL:    fmt.Sprintf("%s/redirect?url=%s", smtpConf.ClientURL, url.QueryEscape(invitationURL)),
+							InvitationURL:    invitationURL,
 							SupportEmail:     smtpConf.SupportAddress,
 						},
 					)
@@ -437,15 +435,13 @@ func TestEmailService_SendOrganizationInvitationEmail(t *testing.T) {
 				client: func(ctrl *gomock.Controller, ctx context.Context, templatesDir, token string, smtpConf *config.SMTPConfig, organization *model.Organization, user *model.User) EmailSender {
 					subject := fmt.Sprintf("[Action Required] You have been invited to join %s", organization.Name)
 
-					invitationURL := fmt.Sprintf("%s/organizations/join?workspace=%s&token=%s", smtpConf.ClientURL, organization.ID.String(), token)
+					invitationURL := fmt.Sprintf("%s/organizations/join?organization=%s&token=%s", smtpConf.ClientURL, organization.ID.String(), token)
 					template, err := email.NewTemplate(
 						path.Join(templatesDir, organizationInviteTemplate),
 						&email.OrganizationInviteTemplateData{
 							Subject:          subject,
-							FirstName:        user.FirstName,
-							LastName:         user.LastName,
 							OrganizationName: organization.Name,
-							InvitationURL:    fmt.Sprintf("%s/redirect?url=%s", smtpConf.ClientURL, url.QueryEscape(invitationURL)),
+							InvitationURL:    invitationURL,
 							SupportEmail:     smtpConf.SupportAddress,
 						},
 					)

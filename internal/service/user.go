@@ -16,6 +16,7 @@ import (
 const (
 	UserConfirmationDeadline  = 24 * time.Hour
 	UserPasswordResetDeadline = 15 * time.Minute
+	UserInvitationDeadline    = 7 * 24 * time.Hour
 )
 
 // UserService serves the business logic of interacting with users in the
@@ -286,6 +287,10 @@ func (s *userService) VerifyToken(ctx context.Context, public string) (map[strin
 		deadline = UserConfirmationDeadline
 	case model.UserTokenContextResetPassword.String():
 		deadline = UserPasswordResetDeadline
+	case model.UserTokenContextInvite.String():
+		deadline = UserInvitationDeadline
+	default:
+		return nil, errors.Join(ErrUserVerifyToken, ErrInvalidToken)
 	}
 
 	if time.Now().After(confirmation.CreatedAt.Add(deadline)) {

@@ -119,6 +119,18 @@ func WithPermissionService(permissionService PermissionService) Option {
 	}
 }
 
+// WithEmailService sets the email service for the baseService.
+func WithEmailService(emailService EmailService) Option {
+	return func(s *baseService) error {
+		if emailService == nil {
+			return ErrNoEmailService
+		}
+
+		s.emailService = emailService
+		return nil
+	}
+}
+
 // WithNotificationService sets the notification service for the baseService.
 func WithNotificationService(notificationService NotificationService) Option {
 	return func(s *baseService) error {
@@ -146,6 +158,7 @@ type baseService struct {
 	licenseService      LicenseService
 	permissionService   PermissionService
 	notificationService NotificationService
+	emailService        EmailService
 }
 
 // newService creates a new baseService and defines the default values. Those

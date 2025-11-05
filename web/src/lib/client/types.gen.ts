@@ -810,6 +810,20 @@ export type UserPasswordReset = {
   password: string;
 };
 
+/**
+ * Organization invitation acceptance request.
+ */
+export type OrganizationInvitationAccept = {
+  /**
+   * Invitation token from the invitation email
+   */
+  token: string;
+  /**
+   * Password for the account (required if user is pending)
+   */
+  password?: string;
+};
+
 export type TodoCreate = {
   /**
    * Title of the todo item.
@@ -2023,6 +2037,68 @@ export type V1OrganizationMembersAddResponses = {
 export type V1OrganizationMembersAddResponse =
   V1OrganizationMembersAddResponses[keyof V1OrganizationMembersAddResponses];
 
+export type V1OrganizationMembersInviteData = {
+  body?: {
+    /**
+     * Email address of the user to invite.
+     */
+    email: string;
+    /**
+     * Optional role ID to assign the user to when they accept the invitation.
+     */
+    role_id?: string;
+  };
+  path: {
+    /**
+     * ID of the resource.
+     */
+    id: string;
+  };
+  query?: never;
+  url: "/v1/organizations/{id}/members/invite";
+};
+
+export type V1OrganizationMembersInviteErrors = {
+  /**
+   * Bad request
+   */
+  400: HttpError;
+  /**
+   * Unauthorized request
+   */
+  401: HttpError;
+  /**
+   * Forbidden
+   */
+  403: HttpError;
+  /**
+   * The requested resource not found
+   */
+  404: HttpError;
+  /**
+   * Internal Server Error
+   */
+  500: HttpError;
+};
+
+export type V1OrganizationMembersInviteError =
+  V1OrganizationMembersInviteErrors[keyof V1OrganizationMembersInviteErrors];
+
+export type V1OrganizationMembersInviteResponses = {
+  /**
+   * Example response
+   */
+  201: {
+    /**
+     * ID of the newly created resource.
+     */
+    id: string;
+  };
+};
+
+export type V1OrganizationMembersInviteResponse =
+  V1OrganizationMembersInviteResponses[keyof V1OrganizationMembersInviteResponses];
+
 export type V1OrganizationMemberRemoveData = {
   body?: never;
   path: {
@@ -2074,6 +2150,109 @@ export type V1OrganizationMemberRemoveResponses = {
 
 export type V1OrganizationMemberRemoveResponse =
   V1OrganizationMemberRemoveResponses[keyof V1OrganizationMemberRemoveResponses];
+
+export type V1OrganizationMemberInviteRevokeData = {
+  body?: never;
+  path: {
+    /**
+     * ID of the resource.
+     */
+    id: string;
+    /**
+     * ID of the user.
+     */
+    user_id: string;
+  };
+  query?: never;
+  url: "/v1/organizations/{id}/members/{user_id}/invite";
+};
+
+export type V1OrganizationMemberInviteRevokeErrors = {
+  /**
+   * Bad request
+   */
+  400: HttpError;
+  /**
+   * Unauthorized request
+   */
+  401: HttpError;
+  /**
+   * Forbidden
+   */
+  403: HttpError;
+  /**
+   * The requested resource not found
+   */
+  404: HttpError;
+  /**
+   * Internal Server Error
+   */
+  500: HttpError;
+};
+
+export type V1OrganizationMemberInviteRevokeError =
+  V1OrganizationMemberInviteRevokeErrors[keyof V1OrganizationMemberInviteRevokeErrors];
+
+export type V1OrganizationMemberInviteRevokeResponses = {
+  /**
+   * No Content
+   */
+  204: void;
+};
+
+export type V1OrganizationMemberInviteRevokeResponse =
+  V1OrganizationMemberInviteRevokeResponses[keyof V1OrganizationMemberInviteRevokeResponses];
+
+export type V1OrganizationMembersAcceptData = {
+  /**
+   * Organization invitation acceptance request.
+   */
+  body?: OrganizationInvitationAccept;
+  path: {
+    /**
+     * ID of the resource.
+     */
+    id: string;
+  };
+  query?: never;
+  url: "/v1/organizations/{id}/members/accept";
+};
+
+export type V1OrganizationMembersAcceptErrors = {
+  /**
+   * Bad request
+   */
+  400: HttpError;
+  /**
+   * Unauthorized request
+   */
+  401: HttpError;
+  /**
+   * The requested resource not found
+   */
+  404: HttpError;
+  /**
+   * Internal Server Error
+   */
+  500: HttpError;
+};
+
+export type V1OrganizationMembersAcceptError =
+  V1OrganizationMembersAcceptErrors[keyof V1OrganizationMembersAcceptErrors];
+
+export type V1OrganizationMembersAcceptResponses = {
+  /**
+   * OK
+   */
+  200: unknown;
+  /**
+   * Invitation accepted successfully
+   */
+  204: void;
+};
+
+export type V1OrganizationMembersAcceptResponse =
+  V1OrganizationMembersAcceptResponses[keyof V1OrganizationMembersAcceptResponses];
 
 export type V1OrganizationRolesGetData = {
   body?: never;

@@ -13,6 +13,7 @@ const (
 	EdgeKindHasProject                        // a namespace has a project
 	EdgeKindHasTeam                           // an organization or project has a team
 	EdgeKindInvited                           // a user invited another user
+	EdgeKindInvitedTo                         // a user is invited to an organization
 	EdgeKindKindOf                            // a resource is a kind of another
 	EdgeKindMemberOf                          // a user is a member of a team
 	EdgeKindRelatedTo                         // a resource is related to another
@@ -34,6 +35,7 @@ var (
 		EdgeKindHasProject:    "HAS_PROJECT",
 		EdgeKindHasTeam:       "HAS_TEAM",
 		EdgeKindInvited:       "INVITED",
+		EdgeKindInvitedTo:     "INVITED_TO",
 		EdgeKindKindOf:        "KIND_OF",
 		EdgeKindMemberOf:      "MEMBER_OF",
 		EdgeKindRelatedTo:     "RELATED_TO",

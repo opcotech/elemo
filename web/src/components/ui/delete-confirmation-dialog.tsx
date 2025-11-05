@@ -18,6 +18,7 @@ interface DeleteConfirmationDialogProps {
   title: string;
   description: string | ReactNode;
   consequences?: string[];
+  deleteButtonIcon?: React.ElementType;
   deleteButtonText?: string;
   onConfirm: () => void;
   isPending?: boolean;
@@ -30,11 +31,14 @@ export function DeleteConfirmationDialog({
   title,
   description,
   consequences,
+  deleteButtonIcon = Trash2,
   deleteButtonText = "Delete",
   onConfirm,
   isPending = false,
   children,
 }: DeleteConfirmationDialogProps) {
+  const DeleteButtonIcon = deleteButtonIcon;
+
   const handleConfirm = () => {
     onConfirm();
   };
@@ -76,7 +80,7 @@ export function DeleteConfirmationDialog({
               </>
             ) : (
               <>
-                <Trash2 className="size-4" />
+                <DeleteButtonIcon className="size-4" />
                 {deleteButtonText}
               </>
             )}

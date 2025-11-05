@@ -37,7 +37,12 @@ const initialState: AuthState = {
   error: null,
 };
 
-const publicPaths = ["/login", "/forgot-password", "/reset-password"];
+const publicPaths = [
+  "/login",
+  "/forgot-password",
+  "/reset-password",
+  "/organizations/join",
+];
 
 function authReducer(state: AuthState, action: AuthAction): AuthState {
   switch (action.type) {

@@ -41,6 +41,20 @@ func (m *OrganizationRepository) EXPECT() *OrganizationRepositoryMockRecorder {
 	return m.recorder
 }
 
+// AddInvitation mocks base method.
+func (m *OrganizationRepository) AddInvitation(ctx context.Context, orgID, userID model.ID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddInvitation", ctx, orgID, userID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddInvitation indicates an expected call of AddInvitation.
+func (mr *OrganizationRepositoryMockRecorder) AddInvitation(ctx, orgID, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddInvitation", reflect.TypeOf((*OrganizationRepository)(nil).AddInvitation), ctx, orgID, userID)
+}
+
 // AddMember mocks base method.
 func (m *OrganizationRepository) AddMember(ctx context.Context, orgID, memberID model.ID) error {
 	m.ctrl.T.Helper()
@@ -113,6 +127,21 @@ func (mr *OrganizationRepositoryMockRecorder) GetAll(ctx, userID, offset, limit 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAll", reflect.TypeOf((*OrganizationRepository)(nil).GetAll), ctx, userID, offset, limit)
 }
 
+// GetInvitations mocks base method.
+func (m *OrganizationRepository) GetInvitations(ctx context.Context, orgID model.ID) ([]*model.OrganizationMember, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetInvitations", ctx, orgID)
+	ret0, _ := ret[0].([]*model.OrganizationMember)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetInvitations indicates an expected call of GetInvitations.
+func (mr *OrganizationRepositoryMockRecorder) GetInvitations(ctx, orgID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetInvitations", reflect.TypeOf((*OrganizationRepository)(nil).GetInvitations), ctx, orgID)
+}
+
 // GetMembers mocks base method.
 func (m *OrganizationRepository) GetMembers(ctx context.Context, orgID model.ID) ([]*model.OrganizationMember, error) {
 	m.ctrl.T.Helper()
@@ -126,6 +155,20 @@ func (m *OrganizationRepository) GetMembers(ctx context.Context, orgID model.ID)
 func (mr *OrganizationRepositoryMockRecorder) GetMembers(ctx, orgID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMembers", reflect.TypeOf((*OrganizationRepository)(nil).GetMembers), ctx, orgID)
+}
+
+// RemoveInvitation mocks base method.
+func (m *OrganizationRepository) RemoveInvitation(ctx context.Context, orgID, userID model.ID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RemoveInvitation", ctx, orgID, userID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RemoveInvitation indicates an expected call of RemoveInvitation.
+func (mr *OrganizationRepositoryMockRecorder) RemoveInvitation(ctx, orgID, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveInvitation", reflect.TypeOf((*OrganizationRepository)(nil).RemoveInvitation), ctx, orgID, userID)
 }
 
 // RemoveMember mocks base method.

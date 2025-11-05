@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Bell } from "lucide-react";
+import { useMemo } from "react";
 
 import { NotificationItem } from "@/components/notification";
 import {
@@ -22,6 +23,13 @@ export function NotificationList() {
     ...v1NotificationsGetOptions(),
   });
 
+  const sortedNotifications = useMemo(() => {
+    return notifications?.sort(
+      (a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+  }, [notifications]);
+
   if (isLoading) {
     return (
       <div className="space-y-3">
@@ -32,7 +40,7 @@ export function NotificationList() {
     );
   }
 
-  if (!notifications || notifications.length === 0) {
+  if (!sortedNotifications || sortedNotifications.length === 0) {
     return (
       <Empty>
         <EmptyHeader>
@@ -50,7 +58,7 @@ export function NotificationList() {
     <div className="h-full">
       <ScrollArea className="h-full">
         <div className="space-y-3 pr-2 pb-4">
-          {notifications.map((notification) => (
+          {sortedNotifications.map((notification) => (
             <NotificationItem
               key={notification.id}
               notification={notification}
