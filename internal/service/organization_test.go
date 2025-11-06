@@ -4,13 +4,16 @@ import (
 	"context"
 	"slices"
 	"testing"
+	"time"
 
 	"go.uber.org/mock/gomock"
 
 	"github.com/opcotech/elemo/internal/license"
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg"
+	"github.com/opcotech/elemo/internal/pkg/auth"
 	"github.com/opcotech/elemo/internal/pkg/log"
+	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/testutil/mock"
 	testModel "github.com/opcotech/elemo/internal/testutil/model"
 	"github.com/stretchr/testify/assert"
@@ -35,8 +38,10 @@ func TestNewOrganizationService(t *testing.T) {
 					WithTracer(mock.NewMockTracer(nil)),
 					WithUserRepository(mock.NewUserRepository(nil)),
 					WithOrganizationRepository(mock.NewOrganizationRepository(nil)),
+					WithUserTokenRepository(mock.NewUserTokenRepository(nil)),
 					WithPermissionService(mock.NewPermissionService(nil)),
 					WithLicenseService(mock.NewMockLicenseService(nil)),
+					WithEmailService(mock.NewEmailService(nil)),
 				},
 			},
 			want: &organizationService{
@@ -45,8 +50,10 @@ func TestNewOrganizationService(t *testing.T) {
 					tracer:            mock.NewMockTracer(nil),
 					userRepo:          mock.NewUserRepository(nil),
 					organizationRepo:  mock.NewOrganizationRepository(nil),
+					userTokenRepo:     mock.NewUserTokenRepository(nil),
 					permissionService: mock.NewPermissionService(nil),
 					licenseService:    mock.NewMockLicenseService(nil),
+					emailService:      mock.NewEmailService(nil),
 				},
 			},
 		},
@@ -58,8 +65,10 @@ func TestNewOrganizationService(t *testing.T) {
 					WithTracer(mock.NewMockTracer(nil)),
 					WithUserRepository(mock.NewUserRepository(nil)),
 					WithOrganizationRepository(mock.NewOrganizationRepository(nil)),
+					WithUserTokenRepository(mock.NewUserTokenRepository(nil)),
 					WithPermissionService(mock.NewPermissionService(nil)),
 					WithLicenseService(mock.NewMockLicenseService(nil)),
+					WithEmailService(mock.NewEmailService(nil)),
 				},
 			},
 			wantErr: log.ErrNoLogger,
@@ -85,7 +94,9 @@ func TestNewOrganizationService(t *testing.T) {
 					WithTracer(mock.NewMockTracer(nil)),
 					WithUserRepository(mock.NewUserRepository(nil)),
 					WithOrganizationRepository(mock.NewOrganizationRepository(nil)),
+					WithUserTokenRepository(mock.NewUserTokenRepository(nil)),
 					WithLicenseService(mock.NewMockLicenseService(nil)),
+					WithEmailService(mock.NewEmailService(nil)),
 				},
 			},
 			wantErr: ErrNoPermissionService,
@@ -98,7 +109,9 @@ func TestNewOrganizationService(t *testing.T) {
 					WithTracer(mock.NewMockTracer(nil)),
 					WithUserRepository(mock.NewUserRepository(nil)),
 					WithOrganizationRepository(mock.NewOrganizationRepository(nil)),
+					WithUserTokenRepository(mock.NewUserTokenRepository(nil)),
 					WithPermissionService(mock.NewPermissionService(nil)),
+					WithEmailService(mock.NewEmailService(nil)),
 				},
 			},
 			wantErr: ErrNoLicenseService,
@@ -820,7 +833,7 @@ func TestOrganizationService_Update(t *testing.T) {
 		{
 			name: "update organization with empty patch",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ map[string]any, _ *model.Organization) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, _ *model.Organization) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
@@ -832,13 +845,16 @@ func TestOrganizationService_Update(t *testing.T) {
 						model.PermissionKindWrite,
 					}).Return(true)
 
+					orgRepo := mock.NewOrganizationRepository(ctrl)
+					orgRepo.EXPECT().Update(ctx, id, patch).Return(nil, repository.ErrNotFound)
+
 					licenseSvc := mock.NewMockLicenseService(ctrl)
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
-						organizationRepo:  mock.NewOrganizationRepository(ctrl),
+						organizationRepo:  orgRepo,
 						permissionService: permSvc,
 						licenseService:    licenseSvc,
 					}
@@ -1374,7 +1390,8 @@ func TestOrganizationService_AddMember(t *testing.T) {
 					organizationRepo.EXPECT().AddMember(ctx, organization, userID).Return(nil)
 
 					permSvc := mock.NewPermissionService(ctrl)
-					permSvc.EXPECT().CtxUserHasPermission(ctx, model.MustNewNilID(model.ResourceTypeOrganization), []model.PermissionKind{model.PermissionKindWrite}).Return(true)
+					permSvc.EXPECT().CtxUserHasPermission(ctx, organization, model.PermissionKindWrite).Return(true)
+					permSvc.EXPECT().Create(ctx, gomock.Any()).Return(nil)
 
 					licenseSvc := mock.NewMockLicenseService(ctrl)
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
@@ -1625,6 +1642,8 @@ func TestOrganizationService_GetMembers(t *testing.T) {
 					organizationRepo.EXPECT().GetMembers(ctx, organizationID).Return(members, nil)
 
 					permissionService := mock.NewPermissionService(ctrl)
+					// Mock permission check for the context user
+					permissionService.EXPECT().CtxUserHasPermission(ctx, organizationID, model.PermissionKindRead).Return(true)
 					// Mock permission fetching for each member
 					// Create a map of member ID to expected roles for easier lookup
 					expectedRolesMap := make(map[model.ID][]string)
@@ -1774,10 +1793,14 @@ func TestOrganizationService_GetMembers(t *testing.T) {
 					organizationRepo := mock.NewOrganizationRepository(ctrl)
 					organizationRepo.EXPECT().GetMembers(ctx, organizationID).Return(nil, assert.AnError)
 
+					permissionService := mock.NewPermissionService(ctrl)
+					permissionService.EXPECT().CtxUserHasPermission(ctx, organizationID, model.PermissionKindRead).Return(true)
+
 					return &baseService{
-						logger:           mock.NewMockLogger(ctrl),
-						tracer:           tracer,
-						organizationRepo: organizationRepo,
+						logger:            mock.NewMockLogger(ctrl),
+						tracer:            tracer,
+						organizationRepo:  organizationRepo,
+						permissionService: permissionService,
 					}
 				},
 			},
@@ -1897,7 +1920,7 @@ func TestOrganizationService_RemoveMember(t *testing.T) {
 		wantErr error
 	}{
 		{
-			name: "add member to organization",
+			name: "remove member from organization",
 			fields: fields{
 				baseService: func(ctrl *gomock.Controller, ctx context.Context, organization model.ID) *baseService {
 					span := mock.NewMockSpan(ctrl)
@@ -1910,7 +1933,8 @@ func TestOrganizationService_RemoveMember(t *testing.T) {
 					organizationRepo.EXPECT().RemoveMember(ctx, organization, userID).Return(nil)
 
 					permSvc := mock.NewPermissionService(ctrl)
-					permSvc.EXPECT().CtxUserHasPermission(ctx, model.MustNewNilID(model.ResourceTypeOrganization), []model.PermissionKind{model.PermissionKindWrite}).Return(true)
+					permSvc.EXPECT().CtxUserHasPermission(ctx, organization, model.PermissionKindWrite).Return(true)
+					permSvc.EXPECT().GetBySubjectAndTarget(ctx, userID, organization).Return([]*model.Permission{}, nil)
 
 					licenseSvc := mock.NewMockLicenseService(ctrl)
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
@@ -2066,7 +2090,8 @@ func TestOrganizationService_RemoveMember(t *testing.T) {
 					organizationRepo.EXPECT().RemoveMember(ctx, organization, userID).Return(assert.AnError)
 
 					permSvc := mock.NewPermissionService(ctrl)
-					permSvc.EXPECT().CtxUserHasPermission(ctx, model.MustNewNilID(model.ResourceTypeOrganization), []model.PermissionKind{model.PermissionKindWrite}).Return(true)
+					permSvc.EXPECT().CtxUserHasPermission(ctx, organization, model.PermissionKindWrite).Return(true)
+					permSvc.EXPECT().GetBySubjectAndTarget(ctx, userID, organization).Return([]*model.Permission{}, nil)
 
 					licenseSvc := mock.NewMockLicenseService(ctrl)
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
@@ -2127,6 +2152,1528 @@ func TestOrganizationService_RemoveMember(t *testing.T) {
 				baseService: tt.fields.baseService(ctrl, tt.args.ctx, tt.args.organization),
 			}
 			err := s.RemoveMember(tt.args.ctx, tt.args.organization, tt.args.member)
+			require.ErrorIs(t, err, tt.wantErr)
+		})
+	}
+}
+
+func TestOrganizationService_InviteMember(t *testing.T) {
+	userID := model.MustNewID(model.ResourceTypeUser)
+	orgID := model.MustNewID(model.ResourceTypeOrganization)
+	roleID := model.MustNewID(model.ResourceTypeRole)
+	email := "test@example.com"
+
+	type fields struct {
+		baseService func(ctrl *gomock.Controller, ctx context.Context, orgID model.ID, email string, roleID model.ID) *baseService
+	}
+	type args struct {
+		ctx    context.Context
+		orgID  model.ID
+		email  string
+		roleID []model.ID
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr error
+	}{
+		{
+			name: "invite member to organization with existing user",
+			fields: fields{
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, orgID model.ID, email string, _ model.ID) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.organizationService/InviteMember", gomock.Len(0)).Return(ctx, span)
+
+					user := testModel.NewUser()
+					user.Email = email
+					user.Status = model.UserStatusActive
+
+					organization := testModel.NewOrganization()
+					organization.ID = orgID
+
+					userRepo := mock.NewUserRepository(ctrl)
+					userRepo.EXPECT().GetByEmail(ctx, email).Return(user, nil)
+
+					orgRepo := mock.NewOrganizationRepository(ctrl)
+					orgRepo.EXPECT().Get(ctx, orgID).Return(organization, nil)
+					orgRepo.EXPECT().AddInvitation(ctx, orgID, user.ID).Return(nil)
+
+					permSvc := mock.NewPermissionService(ctrl)
+					permSvc.EXPECT().CtxUserHasPermission(ctx, orgID, model.PermissionKindWrite).Return(true)
+					permSvc.EXPECT().HasPermission(ctx, user.ID, orgID, model.PermissionKindRead).Return(false, nil)
+
+					userTokenRepo := mock.NewUserTokenRepository(ctrl)
+					userTokenRepo.EXPECT().Get(ctx, user.ID, model.UserTokenContextInvite).Return(nil, repository.ErrNotFound)
+					userTokenRepo.EXPECT().Create(ctx, gomock.Any()).Return(nil)
+
+					emailService := mock.NewEmailService(ctrl)
+					emailService.EXPECT().SendOrganizationInvitationEmail(ctx, organization, user, gomock.Any()).Return(nil)
+
+					licenseSvc := mock.NewMockLicenseService(ctrl)
+					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+
+					logger := mock.NewMockLogger(ctrl)
+					logger.EXPECT().Warn(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
+
+					return &baseService{
+						logger:            logger,
+						tracer:            tracer,
+						userRepo:          userRepo,
+						organizationRepo:  orgRepo,
+						userTokenRepo:     userTokenRepo,
+						permissionService: permSvc,
+						licenseService:    licenseSvc,
+						emailService:      emailService,
+					}
+				},
+			},
+			args: args{
+				ctx:    context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
+				orgID:  orgID,
+				email:  email,
+				roleID: []model.ID{},
+			},
+		},
+		{
+			name: "invite member to organization with new pending user",
+			fields: fields{
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, orgID model.ID, email string, _ model.ID) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.organizationService/InviteMember", gomock.Len(0)).Return(ctx, span)
+
+					// Use an email that will generate both firstName and lastName
+					testEmail := "john.doe@example.com"
+
+					user := testModel.NewUser()
+					user.Email = testEmail
+					user.Status = model.UserStatusPending
+
+					organization := testModel.NewOrganization()
+					organization.ID = orgID
+
+					userRepo := mock.NewUserRepository(ctrl)
+					userRepo.EXPECT().GetByEmail(ctx, testEmail).Return(nil, repository.ErrNotFound)
+					userRepo.EXPECT().Create(ctx, gomock.Any()).DoAndReturn(func(_ context.Context, u *model.User) error {
+						user.ID = u.ID
+						user.Status = model.UserStatusPending
+						user.FirstName = u.FirstName
+						user.LastName = u.LastName
+						user.Email = u.Email
+						return nil
+					})
+
+					orgRepo := mock.NewOrganizationRepository(ctrl)
+					orgRepo.EXPECT().Get(ctx, orgID).Return(organization, nil)
+					orgRepo.EXPECT().AddInvitation(ctx, orgID, gomock.Any()).Return(nil)
+
+					permSvc := mock.NewPermissionService(ctrl)
+					permSvc.EXPECT().CtxUserHasPermission(ctx, orgID, model.PermissionKindWrite).Return(true)
+					permSvc.EXPECT().HasPermission(ctx, gomock.Any(), orgID, model.PermissionKindRead).Return(false, nil)
+
+					userTokenRepo := mock.NewUserTokenRepository(ctrl)
+					userTokenRepo.EXPECT().Get(ctx, gomock.Any(), model.UserTokenContextInvite).Return(nil, repository.ErrNotFound)
+					userTokenRepo.EXPECT().Create(ctx, gomock.Any()).Return(nil)
+
+					emailService := mock.NewEmailService(ctrl)
+					emailService.EXPECT().SendOrganizationInvitationEmail(ctx, organization, gomock.Any(), gomock.Any()).Return(nil)
+
+					licenseSvc := mock.NewMockLicenseService(ctrl)
+					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+
+					logger := mock.NewMockLogger(ctrl)
+					logger.EXPECT().Warn(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
+
+					return &baseService{
+						logger:            logger,
+						tracer:            tracer,
+						userRepo:          userRepo,
+						organizationRepo:  orgRepo,
+						userTokenRepo:     userTokenRepo,
+						permissionService: permSvc,
+						licenseService:    licenseSvc,
+						emailService:      emailService,
+					}
+				},
+			},
+			args: args{
+				ctx:    context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
+				orgID:  orgID,
+				email:  "john.doe@example.com", // Use email that generates both firstName and lastName
+				roleID: []model.ID{},
+			},
+		},
+		{
+			name: "invite member to organization with roleID",
+			fields: fields{
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, orgID model.ID, email string, roleID model.ID) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.organizationService/InviteMember", gomock.Len(0)).Return(ctx, span)
+
+					user := testModel.NewUser()
+					user.Email = email
+					user.Status = model.UserStatusActive
+
+					organization := testModel.NewOrganization()
+					organization.ID = orgID
+
+					userRepo := mock.NewUserRepository(ctrl)
+					userRepo.EXPECT().GetByEmail(ctx, email).Return(user, nil)
+
+					orgRepo := mock.NewOrganizationRepository(ctrl)
+					orgRepo.EXPECT().Get(ctx, orgID).Return(organization, nil)
+					orgRepo.EXPECT().AddInvitation(ctx, orgID, user.ID).Return(nil)
+
+					permSvc := mock.NewPermissionService(ctrl)
+					permSvc.EXPECT().CtxUserHasPermission(ctx, orgID, model.PermissionKindWrite).Return(true)
+					permSvc.EXPECT().HasPermission(ctx, user.ID, orgID, model.PermissionKindRead).Return(false, nil)
+
+					userTokenRepo := mock.NewUserTokenRepository(ctrl)
+					userTokenRepo.EXPECT().Get(ctx, user.ID, model.UserTokenContextInvite).Return(nil, repository.ErrNotFound)
+					userTokenRepo.EXPECT().Create(ctx, gomock.Any()).Return(nil)
+
+					emailService := mock.NewEmailService(ctrl)
+					emailService.EXPECT().SendOrganizationInvitationEmail(ctx, organization, user, gomock.Any()).Return(nil)
+
+					licenseSvc := mock.NewMockLicenseService(ctrl)
+					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+
+					logger := mock.NewMockLogger(ctrl)
+					logger.EXPECT().Warn(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
+
+					return &baseService{
+						logger:            logger,
+						tracer:            tracer,
+						userRepo:          userRepo,
+						organizationRepo:  orgRepo,
+						userTokenRepo:     userTokenRepo,
+						permissionService: permSvc,
+						licenseService:    licenseSvc,
+						emailService:      emailService,
+					}
+				},
+			},
+			args: args{
+				ctx:    context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
+				orgID:  orgID,
+				email:  email,
+				roleID: []model.ID{roleID},
+			},
+		},
+		{
+			name: "invite member with license expired",
+			fields: fields{
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ string, _ model.ID) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.organizationService/InviteMember", gomock.Len(0)).Return(ctx, span)
+
+					licenseSvc := mock.NewMockLicenseService(ctrl)
+					licenseSvc.EXPECT().Expired(ctx).Return(true, nil)
+
+					return &baseService{
+						logger:            mock.NewMockLogger(ctrl),
+						tracer:            tracer,
+						organizationRepo:  mock.NewOrganizationRepository(ctrl),
+						permissionService: mock.NewPermissionService(ctrl),
+						licenseService:    licenseSvc,
+					}
+				},
+			},
+			args: args{
+				ctx:    context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
+				orgID:  orgID,
+				email:  email,
+				roleID: []model.ID{},
+			},
+			wantErr: license.ErrLicenseExpired,
+		},
+		{
+			name: "invite member with invalid orgID",
+			fields: fields{
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, invalidOrgID model.ID, _ string, _ model.ID) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.organizationService/InviteMember", gomock.Len(0)).Return(ctx, span)
+
+					// Permission check happens after orgID validation, but if validation passes (nil ID might pass),
+					// we need to expect the permission call
+					permSvc := mock.NewPermissionService(ctrl)
+					permSvc.EXPECT().CtxUserHasPermission(ctx, invalidOrgID, model.PermissionKindWrite).Return(false).AnyTimes()
+
+					licenseSvc := mock.NewMockLicenseService(ctrl)
+					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+
+					return &baseService{
+						logger:            mock.NewMockLogger(ctrl),
+						tracer:            tracer,
+						organizationRepo:  mock.NewOrganizationRepository(ctrl),
+						permissionService: permSvc,
+						licenseService:    licenseSvc,
+					}
+				},
+			},
+			args: args{
+				ctx:    context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
+				orgID:  model.MustNewNilID(model.ResourceTypeOrganization),
+				email:  email,
+				roleID: []model.ID{},
+			},
+			wantErr: ErrOrganizationMemberInvite,
+		},
+		{
+			name: "invite member with empty email",
+			fields: fields{
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ string, _ model.ID) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.organizationService/InviteMember", gomock.Len(0)).Return(ctx, span)
+
+					licenseSvc := mock.NewMockLicenseService(ctrl)
+					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+
+					return &baseService{
+						logger:            mock.NewMockLogger(ctrl),
+						tracer:            tracer,
+						organizationRepo:  mock.NewOrganizationRepository(ctrl),
+						permissionService: mock.NewPermissionService(ctrl),
+						licenseService:    licenseSvc,
+					}
+				},
+			},
+			args: args{
+				ctx:    context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
+				orgID:  orgID,
+				email:  "",
+				roleID: []model.ID{},
+			},
+			wantErr: ErrInvalidEmail,
+		},
+		{
+			name: "invite member with no permission",
+			fields: fields{
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, orgID model.ID, _ string, _ model.ID) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.organizationService/InviteMember", gomock.Len(0)).Return(ctx, span)
+
+					permSvc := mock.NewPermissionService(ctrl)
+					permSvc.EXPECT().CtxUserHasPermission(ctx, orgID, model.PermissionKindWrite).Return(false)
+
+					licenseSvc := mock.NewMockLicenseService(ctrl)
+					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+
+					return &baseService{
+						logger:            mock.NewMockLogger(ctrl),
+						tracer:            tracer,
+						organizationRepo:  mock.NewOrganizationRepository(ctrl),
+						permissionService: permSvc,
+						licenseService:    licenseSvc,
+					}
+				},
+			},
+			args: args{
+				ctx:    context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
+				orgID:  orgID,
+				email:  email,
+				roleID: []model.ID{},
+			},
+			wantErr: ErrNoPermission,
+		},
+		{
+			name: "invite member when user already exists as member",
+			fields: fields{
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, orgID model.ID, email string, _ model.ID) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.organizationService/InviteMember", gomock.Len(0)).Return(ctx, span)
+
+					user := testModel.NewUser()
+					user.Email = email
+					user.Status = model.UserStatusActive
+
+					permSvc := mock.NewPermissionService(ctrl)
+					permSvc.EXPECT().CtxUserHasPermission(ctx, orgID, model.PermissionKindWrite).Return(true)
+					permSvc.EXPECT().HasPermission(ctx, user.ID, orgID, model.PermissionKindRead).Return(true, nil)
+
+					userRepo := mock.NewUserRepository(ctrl)
+					userRepo.EXPECT().GetByEmail(ctx, email).Return(user, nil)
+
+					licenseSvc := mock.NewMockLicenseService(ctrl)
+					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+
+					return &baseService{
+						logger:            mock.NewMockLogger(ctrl),
+						tracer:            tracer,
+						userRepo:          userRepo,
+						organizationRepo:  mock.NewOrganizationRepository(ctrl),
+						permissionService: permSvc,
+						licenseService:    licenseSvc,
+					}
+				},
+			},
+			args: args{
+				ctx:    context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
+				orgID:  orgID,
+				email:  email,
+				roleID: []model.ID{},
+			},
+			wantErr: ErrOrganizationMemberAlreadyExists,
+		},
+		{
+			name: "invite member with invalid user status",
+			fields: fields{
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, orgID model.ID, email string, _ model.ID) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.organizationService/InviteMember", gomock.Len(0)).Return(ctx, span)
+
+					user := testModel.NewUser()
+					user.Email = email
+					user.Status = model.UserStatusDeleted
+
+					userRepo := mock.NewUserRepository(ctrl)
+					userRepo.EXPECT().GetByEmail(ctx, email).Return(user, nil)
+
+					permSvc := mock.NewPermissionService(ctrl)
+					permSvc.EXPECT().CtxUserHasPermission(ctx, orgID, model.PermissionKindWrite).Return(true)
+					// HasPermission is not called when user status is invalid - code returns early
+
+					licenseSvc := mock.NewMockLicenseService(ctrl)
+					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+
+					return &baseService{
+						logger:            mock.NewMockLogger(ctrl),
+						tracer:            tracer,
+						userRepo:          userRepo,
+						organizationRepo:  mock.NewOrganizationRepository(ctrl),
+						permissionService: permSvc,
+						licenseService:    licenseSvc,
+					}
+				},
+			},
+			args: args{
+				ctx:    context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
+				orgID:  orgID,
+				email:  email,
+				roleID: []model.ID{},
+			},
+			wantErr: ErrOrganizationMemberInvalidStatus,
+		},
+		{
+			name: "invite member with email service error",
+			fields: fields{
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, orgID model.ID, email string, _ model.ID) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.organizationService/InviteMember", gomock.Len(0)).Return(ctx, span)
+
+					user := testModel.NewUser()
+					user.Email = email
+					user.Status = model.UserStatusActive
+
+					organization := testModel.NewOrganization()
+					organization.ID = orgID
+
+					userRepo := mock.NewUserRepository(ctrl)
+					userRepo.EXPECT().GetByEmail(ctx, email).Return(user, nil)
+
+					orgRepo := mock.NewOrganizationRepository(ctrl)
+					orgRepo.EXPECT().Get(ctx, orgID).Return(organization, nil)
+					orgRepo.EXPECT().AddInvitation(ctx, orgID, user.ID).Return(nil)
+
+					permSvc := mock.NewPermissionService(ctrl)
+					permSvc.EXPECT().CtxUserHasPermission(ctx, orgID, model.PermissionKindWrite).Return(true)
+					permSvc.EXPECT().HasPermission(ctx, user.ID, orgID, model.PermissionKindRead).Return(false, nil)
+
+					userTokenRepo := mock.NewUserTokenRepository(ctrl)
+					userTokenRepo.EXPECT().Get(ctx, user.ID, model.UserTokenContextInvite).Return(nil, repository.ErrNotFound)
+					userTokenRepo.EXPECT().Create(ctx, gomock.Any()).Return(nil)
+
+					emailService := mock.NewEmailService(ctrl)
+					emailService.EXPECT().SendOrganizationInvitationEmail(ctx, organization, user, gomock.Any()).Return(assert.AnError)
+
+					licenseSvc := mock.NewMockLicenseService(ctrl)
+					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+
+					logger := mock.NewMockLogger(ctrl)
+					logger.EXPECT().Warn(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
+
+					return &baseService{
+						logger:            logger,
+						tracer:            tracer,
+						userRepo:          userRepo,
+						organizationRepo:  orgRepo,
+						userTokenRepo:     userTokenRepo,
+						permissionService: permSvc,
+						licenseService:    licenseSvc,
+						emailService:      emailService,
+					}
+				},
+			},
+			args: args{
+				ctx:    context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
+				orgID:  orgID,
+				email:  email,
+				roleID: []model.ID{},
+			},
+			wantErr: ErrOrganizationMemberInvite,
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			s := &organizationService{
+				baseService: tt.fields.baseService(ctrl, tt.args.ctx, tt.args.orgID, tt.args.email, func() model.ID {
+					if len(tt.args.roleID) > 0 {
+						return tt.args.roleID[0]
+					}
+					return model.MustNewNilID(model.ResourceTypeRole)
+				}()),
+			}
+			err := s.InviteMember(tt.args.ctx, tt.args.orgID, tt.args.email, tt.args.roleID...)
+			require.ErrorIs(t, err, tt.wantErr)
+		})
+	}
+}
+
+func TestOrganizationService_RevokeInvitation(t *testing.T) {
+	userID := model.MustNewID(model.ResourceTypeUser)
+	orgID := model.MustNewID(model.ResourceTypeOrganization)
+
+	type fields struct {
+		baseService func(ctrl *gomock.Controller, ctx context.Context, orgID, userID model.ID) *baseService
+	}
+	type args struct {
+		ctx    context.Context
+		orgID  model.ID
+		userID model.ID
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr error
+	}{
+		{
+			name: "revoke invitation successfully",
+			fields: fields{
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, orgID, userID model.ID) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.organizationService/RevokeInvitation", gomock.Len(0)).Return(ctx, span)
+
+					user := testModel.NewUser()
+					user.ID = userID
+					user.Status = model.UserStatusActive
+
+					userRepo := mock.NewUserRepository(ctrl)
+					userRepo.EXPECT().Get(ctx, userID).Return(user, nil)
+
+					orgRepo := mock.NewOrganizationRepository(ctrl)
+					orgRepo.EXPECT().RemoveInvitation(ctx, orgID, userID).Return(nil)
+					orgRepo.EXPECT().RemoveMember(ctx, orgID, userID).Return(nil)
+					// GetAll is only called for pending users, not active users
+
+					userTokenRepo := mock.NewUserTokenRepository(ctrl)
+					userTokenRepo.EXPECT().Delete(ctx, userID, model.UserTokenContextInvite).Return(nil)
+
+					permSvc := mock.NewPermissionService(ctrl)
+					permSvc.EXPECT().CtxUserHasPermission(ctx, orgID, model.PermissionKindWrite).Return(true)
+
+					licenseSvc := mock.NewMockLicenseService(ctrl)
+					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+
+					logger := mock.NewMockLogger(ctrl)
+					logger.EXPECT().Warn(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
+
+					return &baseService{
+						logger:            logger,
+						tracer:            tracer,
+						userRepo:          userRepo,
+						organizationRepo:  orgRepo,
+						userTokenRepo:     userTokenRepo,
+						permissionService: permSvc,
+						licenseService:    licenseSvc,
+					}
+				},
+			},
+			args: args{
+				ctx:    context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
+				orgID:  orgID,
+				userID: userID,
+			},
+		},
+		{
+			name: "revoke invitation with license expired",
+			fields: fields{
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ model.ID) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.organizationService/RevokeInvitation", gomock.Len(0)).Return(ctx, span)
+
+					licenseSvc := mock.NewMockLicenseService(ctrl)
+					licenseSvc.EXPECT().Expired(ctx).Return(true, nil)
+
+					return &baseService{
+						logger:            mock.NewMockLogger(ctrl),
+						tracer:            tracer,
+						organizationRepo:  mock.NewOrganizationRepository(ctrl),
+						permissionService: mock.NewPermissionService(ctrl),
+						licenseService:    licenseSvc,
+					}
+				},
+			},
+			args: args{
+				ctx:    context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
+				orgID:  orgID,
+				userID: userID,
+			},
+			wantErr: license.ErrLicenseExpired,
+		},
+		{
+			name: "revoke invitation with invalid orgID",
+			fields: fields{
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, invalidOrgID, _ model.ID) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.organizationService/RevokeInvitation", gomock.Len(0)).Return(ctx, span)
+
+					// Permission check happens after orgID validation, but if validation passes (nil ID might pass),
+					// we need to expect the permission call
+					permSvc := mock.NewPermissionService(ctrl)
+					permSvc.EXPECT().CtxUserHasPermission(ctx, invalidOrgID, model.PermissionKindWrite).Return(false).AnyTimes()
+
+					licenseSvc := mock.NewMockLicenseService(ctrl)
+					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+
+					return &baseService{
+						logger:            mock.NewMockLogger(ctrl),
+						tracer:            tracer,
+						organizationRepo:  mock.NewOrganizationRepository(ctrl),
+						permissionService: permSvc,
+						licenseService:    licenseSvc,
+					}
+				},
+			},
+			args: args{
+				ctx:    context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
+				orgID:  model.MustNewNilID(model.ResourceTypeOrganization),
+				userID: userID,
+			},
+			wantErr: ErrOrganizationInviteRevoke,
+		},
+		{
+			name: "revoke invitation with invalid userID",
+			fields: fields{
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, orgID, invalidUserID model.ID) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.organizationService/RevokeInvitation", gomock.Len(0)).Return(ctx, span)
+
+					// Permission check happens after userID validation, but if validation passes (nil ID might pass),
+					// we need to expect the permission call
+					permSvc := mock.NewPermissionService(ctrl)
+					permSvc.EXPECT().CtxUserHasPermission(ctx, orgID, model.PermissionKindWrite).Return(false).AnyTimes()
+
+					licenseSvc := mock.NewMockLicenseService(ctrl)
+					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+
+					return &baseService{
+						logger:            mock.NewMockLogger(ctrl),
+						tracer:            tracer,
+						organizationRepo:  mock.NewOrganizationRepository(ctrl),
+						permissionService: permSvc,
+						licenseService:    licenseSvc,
+					}
+				},
+			},
+			args: args{
+				ctx:    context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
+				orgID:  orgID,
+				userID: model.MustNewNilID(model.ResourceTypeUser),
+			},
+			wantErr: ErrOrganizationInviteRevoke,
+		},
+		{
+			name: "revoke invitation with no permission",
+			fields: fields{
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, orgID, _ model.ID) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.organizationService/RevokeInvitation", gomock.Len(0)).Return(ctx, span)
+
+					permSvc := mock.NewPermissionService(ctrl)
+					permSvc.EXPECT().CtxUserHasPermission(ctx, orgID, model.PermissionKindWrite).Return(false)
+
+					licenseSvc := mock.NewMockLicenseService(ctrl)
+					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+
+					return &baseService{
+						logger:            mock.NewMockLogger(ctrl),
+						tracer:            tracer,
+						organizationRepo:  mock.NewOrganizationRepository(ctrl),
+						permissionService: permSvc,
+						licenseService:    licenseSvc,
+					}
+				},
+			},
+			args: args{
+				ctx:    context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
+				orgID:  orgID,
+				userID: userID,
+			},
+			wantErr: ErrNoPermission,
+		},
+		{
+			name: "revoke invitation with user not found",
+			fields: fields{
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, orgID, userID model.ID) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.organizationService/RevokeInvitation", gomock.Len(0)).Return(ctx, span)
+
+					userRepo := mock.NewUserRepository(ctrl)
+					userRepo.EXPECT().Get(ctx, userID).Return(nil, repository.ErrNotFound)
+
+					permSvc := mock.NewPermissionService(ctrl)
+					permSvc.EXPECT().CtxUserHasPermission(ctx, orgID, model.PermissionKindWrite).Return(true)
+
+					licenseSvc := mock.NewMockLicenseService(ctrl)
+					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+
+					return &baseService{
+						logger:            mock.NewMockLogger(ctrl),
+						tracer:            tracer,
+						userRepo:          userRepo,
+						organizationRepo:  mock.NewOrganizationRepository(ctrl),
+						permissionService: permSvc,
+						licenseService:    licenseSvc,
+					}
+				},
+			},
+			args: args{
+				ctx:    context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
+				orgID:  orgID,
+				userID: userID,
+			},
+			wantErr: ErrOrganizationInviteRevoke,
+		},
+		{
+			name: "revoke invitation and cleanup pending user",
+			fields: fields{
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, orgID, userID model.ID) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.organizationService/RevokeInvitation", gomock.Len(0)).Return(ctx, span)
+
+					user := testModel.NewUser()
+					user.ID = userID
+					user.Status = model.UserStatusPending
+
+					userRepo := mock.NewUserRepository(ctrl)
+					userRepo.EXPECT().Get(ctx, userID).Return(user, nil)
+					userRepo.EXPECT().Delete(ctx, userID).Return(nil)
+
+					orgRepo := mock.NewOrganizationRepository(ctrl)
+					orgRepo.EXPECT().RemoveInvitation(ctx, orgID, userID).Return(nil)
+					orgRepo.EXPECT().RemoveMember(ctx, orgID, userID).Return(nil)
+					orgRepo.EXPECT().GetAll(ctx, userID, 0, 1).Return([]*model.Organization{}, nil)
+
+					userTokenRepo := mock.NewUserTokenRepository(ctrl)
+					userTokenRepo.EXPECT().Delete(ctx, userID, model.UserTokenContextInvite).Return(nil)
+
+					permSvc := mock.NewPermissionService(ctrl)
+					permSvc.EXPECT().CtxUserHasPermission(ctx, orgID, model.PermissionKindWrite).Return(true)
+
+					licenseSvc := mock.NewMockLicenseService(ctrl)
+					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+
+					logger := mock.NewMockLogger(ctrl)
+					logger.EXPECT().Warn(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
+					logger.EXPECT().Info(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
+
+					return &baseService{
+						logger:            logger,
+						tracer:            tracer,
+						userRepo:          userRepo,
+						organizationRepo:  orgRepo,
+						userTokenRepo:     userTokenRepo,
+						permissionService: permSvc,
+						licenseService:    licenseSvc,
+					}
+				},
+			},
+			args: args{
+				ctx:    context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
+				orgID:  orgID,
+				userID: userID,
+			},
+		},
+		{
+			name: "revoke invitation with pending user in multiple organizations",
+			fields: fields{
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, orgID, userID model.ID) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.organizationService/RevokeInvitation", gomock.Len(0)).Return(ctx, span)
+
+					user := testModel.NewUser()
+					user.ID = userID
+					user.Status = model.UserStatusPending
+
+					otherOrg := testModel.NewOrganization()
+
+					userRepo := mock.NewUserRepository(ctrl)
+					userRepo.EXPECT().Get(ctx, userID).Return(user, nil)
+
+					orgRepo := mock.NewOrganizationRepository(ctrl)
+					orgRepo.EXPECT().RemoveInvitation(ctx, orgID, userID).Return(nil)
+					orgRepo.EXPECT().RemoveMember(ctx, orgID, userID).Return(nil)
+					orgRepo.EXPECT().GetAll(ctx, userID, 0, 1).Return([]*model.Organization{otherOrg}, nil)
+
+					userTokenRepo := mock.NewUserTokenRepository(ctrl)
+					userTokenRepo.EXPECT().Delete(ctx, userID, model.UserTokenContextInvite).Return(nil)
+
+					permSvc := mock.NewPermissionService(ctrl)
+					permSvc.EXPECT().CtxUserHasPermission(ctx, orgID, model.PermissionKindWrite).Return(true)
+
+					licenseSvc := mock.NewMockLicenseService(ctrl)
+					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+
+					logger := mock.NewMockLogger(ctrl)
+					logger.EXPECT().Warn(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
+
+					return &baseService{
+						logger:            logger,
+						tracer:            tracer,
+						userRepo:          userRepo,
+						organizationRepo:  orgRepo,
+						userTokenRepo:     userTokenRepo,
+						permissionService: permSvc,
+						licenseService:    licenseSvc,
+					}
+				},
+			},
+			args: args{
+				ctx:    context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
+				orgID:  orgID,
+				userID: userID,
+			},
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			s := &organizationService{
+				baseService: tt.fields.baseService(ctrl, tt.args.ctx, tt.args.orgID, tt.args.userID),
+			}
+			err := s.RevokeInvitation(tt.args.ctx, tt.args.orgID, tt.args.userID)
+			require.ErrorIs(t, err, tt.wantErr)
+		})
+	}
+}
+
+func TestOrganizationService_AcceptInvitation(t *testing.T) {
+	userID := model.MustNewID(model.ResourceTypeUser)
+	orgID := model.MustNewID(model.ResourceTypeOrganization)
+	roleID := model.MustNewID(model.ResourceTypeRole)
+
+	type fields struct {
+		baseService func(ctrl *gomock.Controller, ctx context.Context, orgID model.ID, userID model.ID, token string, userPassword string, roleID model.ID) *baseService
+	}
+	type args struct {
+		ctx          context.Context
+		orgID        model.ID
+		token        string
+		userPassword string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr error
+	}{
+		{
+			name: "accept invitation with pending user",
+			fields: fields{
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, orgID, userID model.ID, token string, userPassword string, _ model.ID) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.organizationService/AcceptInvitation", gomock.Len(0)).Return(ctx, span)
+
+					user := testModel.NewUser()
+					user.ID = userID
+					user.Status = model.UserStatusPending
+
+					organization := testModel.NewOrganization()
+					organization.ID = orgID
+
+					// Extract secret from the public token passed in
+					// The token parameter contains the public token, we need to extract the secret from it
+					_, secret, _ := auth.SplitToken(token)
+					// Hash the secret to match what's stored in userToken
+					secretToken := auth.HashPassword(secret)
+
+					userToken, _ := model.NewUserToken(userID, user.Email, secretToken, model.UserTokenContextInvite)
+					now := time.Now()
+					userToken.CreatedAt = &now
+
+					userRepo := mock.NewUserRepository(ctrl)
+					userRepo.EXPECT().Get(ctx, userID).Return(user, nil)
+					userRepo.EXPECT().Update(ctx, userID, gomock.Any()).Return(user, nil)
+
+					orgRepo := mock.NewOrganizationRepository(ctrl)
+					orgRepo.EXPECT().RemoveInvitation(ctx, orgID, userID).Return(nil)
+					orgRepo.EXPECT().Get(ctx, orgID).Return(organization, nil)
+					orgRepo.EXPECT().AddMember(ctx, orgID, userID).Return(nil)
+
+					userTokenRepo := mock.NewUserTokenRepository(ctrl)
+					userTokenRepo.EXPECT().Get(ctx, userID, model.UserTokenContextInvite).Return(userToken, nil)
+					userTokenRepo.EXPECT().Delete(ctx, userID, model.UserTokenContextInvite).Return(nil)
+
+					permSvc := mock.NewPermissionService(ctrl)
+					permSvc.EXPECT().Create(ctx, gomock.Any()).Return(nil)
+
+					logger := mock.NewMockLogger(ctrl)
+					logger.EXPECT().Warn(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
+
+					return &baseService{
+						logger:            logger,
+						tracer:            tracer,
+						userRepo:          userRepo,
+						organizationRepo:  orgRepo,
+						userTokenRepo:     userTokenRepo,
+						permissionService: permSvc,
+					}
+				},
+			},
+			args: args{
+				ctx:          context.Background(),
+				orgID:        orgID,
+				token:        "",
+				userPassword: "password123",
+			},
+		},
+		{
+			name: "accept invitation with active user",
+			fields: fields{
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, orgID, userID model.ID, token string, _ string, _ model.ID) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.organizationService/AcceptInvitation", gomock.Len(0)).Return(ctx, span)
+
+					user := testModel.NewUser()
+					user.ID = userID
+					user.Status = model.UserStatusActive
+
+					organization := testModel.NewOrganization()
+					organization.ID = orgID
+
+					// Extract secret from the public token passed in
+					// The token parameter contains the public token, we need to extract the secret from it
+					_, secret, _ := auth.SplitToken(token)
+					// Hash the secret to match what's stored in userToken
+					secretToken := auth.HashPassword(secret)
+
+					userToken, _ := model.NewUserToken(userID, user.Email, secretToken, model.UserTokenContextInvite)
+					now := time.Now()
+					userToken.CreatedAt = &now
+
+					userRepo := mock.NewUserRepository(ctrl)
+					userRepo.EXPECT().Get(ctx, userID).Return(user, nil)
+
+					orgRepo := mock.NewOrganizationRepository(ctrl)
+					orgRepo.EXPECT().RemoveInvitation(ctx, orgID, userID).Return(nil)
+					orgRepo.EXPECT().Get(ctx, orgID).Return(organization, nil)
+					orgRepo.EXPECT().AddMember(ctx, orgID, userID).Return(nil)
+
+					userTokenRepo := mock.NewUserTokenRepository(ctrl)
+					userTokenRepo.EXPECT().Get(ctx, userID, model.UserTokenContextInvite).Return(userToken, nil)
+					userTokenRepo.EXPECT().Delete(ctx, userID, model.UserTokenContextInvite).Return(nil)
+
+					permSvc := mock.NewPermissionService(ctrl)
+					permSvc.EXPECT().Create(ctx, gomock.Any()).Return(nil)
+
+					logger := mock.NewMockLogger(ctrl)
+					logger.EXPECT().Warn(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
+
+					return &baseService{
+						logger:            logger,
+						tracer:            tracer,
+						userRepo:          userRepo,
+						organizationRepo:  orgRepo,
+						userTokenRepo:     userTokenRepo,
+						permissionService: permSvc,
+					}
+				},
+			},
+			args: args{
+				ctx:          context.Background(),
+				orgID:        orgID,
+				token:        "",
+				userPassword: "",
+			},
+		},
+		{
+			name: "accept invitation with roleID",
+			fields: fields{
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, orgID, userID model.ID, token string, _ string, roleID model.ID) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.organizationService/AcceptInvitation", gomock.Len(0)).Return(ctx, span)
+
+					user := testModel.NewUser()
+					user.ID = userID
+					user.Status = model.UserStatusActive
+
+					organization := testModel.NewOrganization()
+					organization.ID = orgID
+
+					role := testModel.NewRole()
+					role.ID = roleID
+
+					// Extract secret from the public token passed in
+					_, secret, _ := auth.SplitToken(token)
+					secretToken := auth.HashPassword(secret)
+
+					userToken, _ := model.NewUserToken(userID, user.Email, secretToken, model.UserTokenContextInvite)
+					now := time.Now()
+					userToken.CreatedAt = &now
+
+					userRepo := mock.NewUserRepository(ctrl)
+					userRepo.EXPECT().Get(ctx, userID).Return(user, nil)
+
+					orgRepo := mock.NewOrganizationRepository(ctrl)
+					orgRepo.EXPECT().RemoveInvitation(ctx, orgID, userID).Return(nil)
+					orgRepo.EXPECT().Get(ctx, orgID).Return(organization, nil)
+					orgRepo.EXPECT().AddMember(ctx, orgID, userID).Return(nil)
+
+					roleRepo := mock.NewRoleRepository(ctrl)
+					roleRepo.EXPECT().Get(ctx, roleID, orgID).Return(role, nil)
+					roleRepo.EXPECT().AddMember(ctx, roleID, userID, orgID).Return(nil)
+
+					userTokenRepo := mock.NewUserTokenRepository(ctrl)
+					userTokenRepo.EXPECT().Get(ctx, userID, model.UserTokenContextInvite).Return(userToken, nil)
+					userTokenRepo.EXPECT().Delete(ctx, userID, model.UserTokenContextInvite).Return(nil)
+
+					permSvc := mock.NewPermissionService(ctrl)
+					permSvc.EXPECT().Create(ctx, gomock.Any()).Return(nil)
+
+					logger := mock.NewMockLogger(ctrl)
+					logger.EXPECT().Warn(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
+
+					return &baseService{
+						logger:            logger,
+						tracer:            tracer,
+						userRepo:          userRepo,
+						organizationRepo:  orgRepo,
+						roleRepo:          roleRepo,
+						userTokenRepo:     userTokenRepo,
+						permissionService: permSvc,
+					}
+				},
+			},
+			args: args{
+				ctx:          context.Background(),
+				orgID:        orgID,
+				token:        "",
+				userPassword: "",
+			},
+		},
+		{
+			name: "accept invitation with invalid orgID",
+			fields: fields{
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ model.ID, _ string, _ string, _ model.ID) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.organizationService/AcceptInvitation", gomock.Len(0)).Return(ctx, span)
+
+					return &baseService{
+						logger: mock.NewMockLogger(ctrl),
+						tracer: tracer,
+					}
+				},
+			},
+			args: args{
+				ctx:          context.Background(),
+				orgID:        model.MustNewNilID(model.ResourceTypeOrganization),
+				token:        "valid-token",
+				userPassword: "",
+			},
+			wantErr: ErrOrganizationInviteAccept,
+		},
+		{
+			name: "accept invitation with empty token",
+			fields: fields{
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, orgID, _ model.ID, _ string, _ string, _ model.ID) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.organizationService/AcceptInvitation", gomock.Len(0)).Return(ctx, span)
+
+					return &baseService{
+						logger: mock.NewMockLogger(ctrl),
+						tracer: tracer,
+					}
+				},
+			},
+			args: args{
+				ctx:          context.Background(),
+				orgID:        orgID,
+				token:        "",
+				userPassword: "",
+			},
+			wantErr: ErrInvalidToken,
+		},
+		{
+			name: "accept invitation with invalid token format",
+			fields: fields{
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, orgID, _ model.ID, _ string, _ string, _ model.ID) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.organizationService/AcceptInvitation", gomock.Len(0)).Return(ctx, span)
+
+					return &baseService{
+						logger: mock.NewMockLogger(ctrl),
+						tracer: tracer,
+					}
+				},
+			},
+			args: args{
+				ctx:          context.Background(),
+				orgID:        orgID,
+				token:        "invalid-token",
+				userPassword: "",
+			},
+			wantErr: ErrInvalidToken,
+		},
+		{
+			name: "accept invitation with expired token",
+			fields: fields{
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, orgID, userID model.ID, token string, _ string, _ model.ID) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.organizationService/AcceptInvitation", gomock.Len(0)).Return(ctx, span)
+
+					// Extract secret from the public token passed in
+					_, secret, _ := auth.SplitToken(token)
+					secretToken := auth.HashPassword(secret)
+
+					userToken, _ := model.NewUserToken(userID, "test@example.com", secretToken, model.UserTokenContextInvite)
+					now := time.Now()
+					userToken.CreatedAt = &now
+					// Set CreatedAt to be older than deadline
+					oldTime := time.Now().Add(-8 * 24 * time.Hour)
+					userToken.CreatedAt = &oldTime
+
+					userTokenRepo := mock.NewUserTokenRepository(ctrl)
+					userTokenRepo.EXPECT().Get(ctx, userID, model.UserTokenContextInvite).Return(userToken, nil)
+
+					return &baseService{
+						logger:        mock.NewMockLogger(ctrl),
+						tracer:        tracer,
+						userTokenRepo: userTokenRepo,
+					}
+				},
+			},
+			args: args{
+				ctx:   context.Background(),
+				orgID: orgID,
+				token: func() string {
+					tokenData := map[string]any{
+						"organization_id": orgID.String(),
+						"user_id":         userID.String(),
+					}
+					publicToken, _, _ := auth.GenerateToken(model.UserTokenContextInvite.String(), tokenData)
+					return publicToken
+				}(),
+				userPassword: "",
+			},
+			wantErr: ErrExpiredToken,
+		},
+		{
+			name: "accept invitation with wrong organization ID",
+			fields: fields{
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, orgID, userID model.ID, token string, _ string, _ model.ID) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.organizationService/AcceptInvitation", gomock.Len(0)).Return(ctx, span)
+
+					wrongOrgID := model.MustNewID(model.ResourceTypeOrganization)
+					tokenData := map[string]any{
+						"organization_id": wrongOrgID.String(),
+						"user_id":         userID.String(),
+					}
+					_, secretToken, _ := auth.GenerateToken(model.UserTokenContextInvite.String(), tokenData)
+
+					userToken, _ := model.NewUserToken(userID, "test@example.com", secretToken, model.UserTokenContextInvite)
+
+					userTokenRepo := mock.NewUserTokenRepository(ctrl)
+					userTokenRepo.EXPECT().Get(ctx, userID, model.UserTokenContextInvite).Return(userToken, nil)
+
+					return &baseService{
+						logger:        mock.NewMockLogger(ctrl),
+						tracer:        tracer,
+						userTokenRepo: userTokenRepo,
+					}
+				},
+			},
+			args: args{
+				ctx:   context.Background(),
+				orgID: orgID,
+				token: func() string {
+					wrongOrgID := model.MustNewID(model.ResourceTypeOrganization)
+					tokenData := map[string]any{
+						"organization_id": wrongOrgID.String(),
+						"user_id":         userID.String(),
+					}
+					publicToken, _, _ := auth.GenerateToken(model.UserTokenContextInvite.String(), tokenData)
+					return publicToken
+				}(),
+				userPassword: "",
+			},
+			wantErr: ErrInvalidToken,
+		},
+		{
+			name: "accept invitation with user not found",
+			fields: fields{
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, orgID, userID model.ID, token string, _ string, _ model.ID) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.organizationService/AcceptInvitation", gomock.Len(0)).Return(ctx, span)
+
+					// Extract secret from the public token passed in
+					_, secret, _ := auth.SplitToken(token)
+					secretToken := auth.HashPassword(secret)
+
+					userToken, _ := model.NewUserToken(userID, "test@example.com", secretToken, model.UserTokenContextInvite)
+					now := time.Now()
+					userToken.CreatedAt = &now
+
+					userTokenRepo := mock.NewUserTokenRepository(ctrl)
+					userTokenRepo.EXPECT().Get(ctx, userID, model.UserTokenContextInvite).Return(userToken, nil)
+
+					userRepo := mock.NewUserRepository(ctrl)
+					userRepo.EXPECT().Get(ctx, userID).Return(nil, repository.ErrNotFound)
+
+					return &baseService{
+						logger:        mock.NewMockLogger(ctrl),
+						tracer:        tracer,
+						userRepo:      userRepo,
+						userTokenRepo: userTokenRepo,
+					}
+				},
+			},
+			args: args{
+				ctx:   context.Background(),
+				orgID: orgID,
+				token: func() string {
+					tokenData := map[string]any{
+						"organization_id": orgID.String(),
+						"user_id":         userID.String(),
+					}
+					publicToken, _, _ := auth.GenerateToken(model.UserTokenContextInvite.String(), tokenData)
+					return publicToken
+				}(),
+				userPassword: "",
+			},
+			wantErr: ErrOrganizationInviteAccept,
+		},
+		{
+			name: "accept invitation with invalid user status",
+			fields: fields{
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, orgID, userID model.ID, token string, _ string, _ model.ID) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.organizationService/AcceptInvitation", gomock.Len(0)).Return(ctx, span)
+
+					user := testModel.NewUser()
+					user.ID = userID
+					user.Status = model.UserStatusDeleted
+
+					// Extract secret from the public token passed in
+					_, secret, _ := auth.SplitToken(token)
+					secretToken := auth.HashPassword(secret)
+
+					userToken, _ := model.NewUserToken(userID, user.Email, secretToken, model.UserTokenContextInvite)
+					now := time.Now()
+					userToken.CreatedAt = &now
+
+					userTokenRepo := mock.NewUserTokenRepository(ctrl)
+					userTokenRepo.EXPECT().Get(ctx, userID, model.UserTokenContextInvite).Return(userToken, nil)
+
+					userRepo := mock.NewUserRepository(ctrl)
+					userRepo.EXPECT().Get(ctx, userID).Return(user, nil)
+
+					return &baseService{
+						logger:        mock.NewMockLogger(ctrl),
+						tracer:        tracer,
+						userRepo:      userRepo,
+						userTokenRepo: userTokenRepo,
+					}
+				},
+			},
+			args: args{
+				ctx:   context.Background(),
+				orgID: orgID,
+				token: func() string {
+					tokenData := map[string]any{
+						"organization_id": orgID.String(),
+						"user_id":         userID.String(),
+					}
+					publicToken, _, _ := auth.GenerateToken(model.UserTokenContextInvite.String(), tokenData)
+					return publicToken
+				}(),
+				userPassword: "",
+			},
+			wantErr: ErrOrganizationInviteAccept,
+		},
+		{
+			name: "accept invitation with pending user missing password",
+			fields: fields{
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, orgID, userID model.ID, token string, _ string, _ model.ID) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.organizationService/AcceptInvitation", gomock.Len(0)).Return(ctx, span)
+
+					user := testModel.NewUser()
+					user.ID = userID
+					user.Status = model.UserStatusPending
+
+					// Extract secret from the public token passed in
+					_, secret, _ := auth.SplitToken(token)
+					secretToken := auth.HashPassword(secret)
+
+					userToken, _ := model.NewUserToken(userID, user.Email, secretToken, model.UserTokenContextInvite)
+					now := time.Now()
+					userToken.CreatedAt = &now
+
+					userTokenRepo := mock.NewUserTokenRepository(ctrl)
+					userTokenRepo.EXPECT().Get(ctx, userID, model.UserTokenContextInvite).Return(userToken, nil)
+
+					userRepo := mock.NewUserRepository(ctrl)
+					userRepo.EXPECT().Get(ctx, userID).Return(user, nil)
+
+					return &baseService{
+						logger:        mock.NewMockLogger(ctrl),
+						tracer:        tracer,
+						userRepo:      userRepo,
+						userTokenRepo: userTokenRepo,
+					}
+				},
+			},
+			args: args{
+				ctx:   context.Background(),
+				orgID: orgID,
+				token: func() string {
+					tokenData := map[string]any{
+						"organization_id": orgID.String(),
+						"user_id":         userID.String(),
+					}
+					publicToken, _, _ := auth.GenerateToken(model.UserTokenContextInvite.String(), tokenData)
+					return publicToken
+				}(),
+				userPassword: "",
+			},
+			wantErr: ErrOrganizationInviteAccept,
+		},
+		{
+			name: "accept invitation with token not found",
+			fields: fields{
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, orgID, userID model.ID, token string, _ string, _ model.ID) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.organizationService/AcceptInvitation", gomock.Len(0)).Return(ctx, span)
+
+					userTokenRepo := mock.NewUserTokenRepository(ctrl)
+					userTokenRepo.EXPECT().Get(ctx, userID, model.UserTokenContextInvite).Return(nil, repository.ErrNotFound)
+
+					return &baseService{
+						logger:        mock.NewMockLogger(ctrl),
+						tracer:        tracer,
+						userTokenRepo: userTokenRepo,
+					}
+				},
+			},
+			args: args{
+				ctx:   context.Background(),
+				orgID: orgID,
+				token: func() string {
+					tokenData := map[string]any{
+						"organization_id": orgID.String(),
+						"user_id":         userID.String(),
+					}
+					publicToken, _, _ := auth.GenerateToken(model.UserTokenContextInvite.String(), tokenData)
+					return publicToken
+				}(),
+				userPassword: "",
+			},
+			wantErr: ErrInvalidToken,
+		},
+		{
+			name: "accept invitation when user already member",
+			fields: fields{
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, orgID, userID model.ID, token string, _ string, _ model.ID) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.organizationService/AcceptInvitation", gomock.Len(0)).Return(ctx, span)
+
+					user := testModel.NewUser()
+					user.ID = userID
+					user.Status = model.UserStatusActive
+
+					organization := testModel.NewOrganization()
+					organization.ID = orgID
+					organization.Members = []model.ID{userID}
+
+					// Extract secret from the public token passed in
+					_, secret, _ := auth.SplitToken(token)
+					secretToken := auth.HashPassword(secret)
+
+					userToken, _ := model.NewUserToken(userID, user.Email, secretToken, model.UserTokenContextInvite)
+					now := time.Now()
+					userToken.CreatedAt = &now
+
+					userRepo := mock.NewUserRepository(ctrl)
+					userRepo.EXPECT().Get(ctx, userID).Return(user, nil)
+
+					orgRepo := mock.NewOrganizationRepository(ctrl)
+					orgRepo.EXPECT().RemoveInvitation(ctx, orgID, userID).Return(nil)
+					orgRepo.EXPECT().Get(ctx, orgID).Return(organization, nil)
+
+					userTokenRepo := mock.NewUserTokenRepository(ctrl)
+					userTokenRepo.EXPECT().Get(ctx, userID, model.UserTokenContextInvite).Return(userToken, nil)
+					userTokenRepo.EXPECT().Delete(ctx, userID, model.UserTokenContextInvite).Return(nil)
+
+					logger := mock.NewMockLogger(ctrl)
+					logger.EXPECT().Warn(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
+
+					return &baseService{
+						logger:            logger,
+						tracer:            tracer,
+						userRepo:          userRepo,
+						organizationRepo:  orgRepo,
+						userTokenRepo:     userTokenRepo,
+						permissionService: mock.NewPermissionService(ctrl),
+					}
+				},
+			},
+			args: args{
+				ctx:   context.Background(),
+				orgID: orgID,
+				token: func() string {
+					tokenData := map[string]any{
+						"organization_id": orgID.String(),
+						"user_id":         userID.String(),
+					}
+					publicToken, _, _ := auth.GenerateToken(model.UserTokenContextInvite.String(), tokenData)
+					return publicToken
+				}(),
+				userPassword: "",
+			},
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			// Generate token if needed for args - this must happen before baseService is called
+			// so the token can be used in both the args and the baseService mocks
+			var publicToken string
+			if tt.args.token == "" && tt.wantErr == nil {
+				tokenData := map[string]any{
+					"organization_id": tt.args.orgID.String(),
+					"user_id":         userID.String(),
+				}
+				if roleID != model.MustNewNilID(model.ResourceTypeRole) {
+					tokenData["role_id"] = roleID.String()
+				}
+				var err error
+				publicToken, _, err = auth.GenerateToken(model.UserTokenContextInvite.String(), tokenData)
+				require.NoError(t, err)
+				tt.args.token = publicToken
+			} else if tt.args.token != "" {
+				publicToken = tt.args.token
+			}
+
+			s := &organizationService{
+				baseService: tt.fields.baseService(ctrl, tt.args.ctx, tt.args.orgID, userID, publicToken, tt.args.userPassword, roleID),
+			}
+			err := s.AcceptInvitation(tt.args.ctx, tt.args.orgID, tt.args.token, tt.args.userPassword)
 			require.ErrorIs(t, err, tt.wantErr)
 		})
 	}

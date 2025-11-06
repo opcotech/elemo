@@ -1131,7 +1131,7 @@ func TestCachedRoleRepository_Update(t *testing.T) {
 
 func TestCachedRoleRepository_AddMember(t *testing.T) {
 	type fields struct {
-		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, id, memberID model.ID) *baseRepository
+		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, id, belongsToID model.ID) *baseRepository
 		roleRepo  func(ctrl *gomock.Controller, ctx context.Context, id, memberID, belongsToID model.ID) repository.RoleRepository
 	}
 	type args struct {
@@ -1147,11 +1147,12 @@ func TestCachedRoleRepository_AddMember(t *testing.T) {
 		wantErr error
 	}{
 		{
-			name: "delete role success",
+			name: "add member success",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id, _ model.ID) *baseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id, belongsToID model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeRole.String(), id.String())
 					getAllKey := composeCacheKey(model.ResourceTypeRole.String(), "GetAllBelongsTo", "*")
+					orgKey := composeCacheKey(model.ResourceTypeOrganization.String(), belongsToID.String())
 
 					getAllKeyCmd := new(redis.StringSliceCmd)
 					getAllKeyCmd.SetVal([]string{getAllKey})
@@ -1165,15 +1166,16 @@ func TestCachedRoleRepository_AddMember(t *testing.T) {
 					require.NoError(t, err)
 
 					span := mock.NewMockSpan(ctrl)
-					span.EXPECT().End(gomock.Len(0)).Times(2)
+					span.EXPECT().End(gomock.Len(0)).Times(3)
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/Delete", gomock.Len(0)).Return(ctx, span).Times(2)
 					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span)
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
 					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, orgKey).Return(nil)
 
 					return &baseRepository{
 						db:     db,
@@ -1196,11 +1198,12 @@ func TestCachedRoleRepository_AddMember(t *testing.T) {
 			},
 		},
 		{
-			name: "delete role with role deletion error",
+			name: "add member with role deletion error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id, _ model.ID) *baseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id, belongsToID model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeRole.String(), id.String())
 					getAllKey := composeCacheKey(model.ResourceTypeRole.String(), "GetAllBelongsTo", "*")
+					orgKey := composeCacheKey(model.ResourceTypeOrganization.String(), belongsToID.String())
 
 					getAllKeyCmd := new(redis.StringSliceCmd)
 					getAllKeyCmd.SetVal([]string{getAllKey})
@@ -1214,15 +1217,16 @@ func TestCachedRoleRepository_AddMember(t *testing.T) {
 					require.NoError(t, err)
 
 					span := mock.NewMockSpan(ctrl)
-					span.EXPECT().End(gomock.Len(0)).Times(2)
+					span.EXPECT().End(gomock.Len(0)).Times(3)
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/Delete", gomock.Len(0)).Return(ctx, span).Times(2)
 					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span)
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
 					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, orgKey).Return(nil)
 
 					return &baseRepository{
 						db:     db,
@@ -1343,7 +1347,7 @@ func TestCachedRoleRepository_AddMember(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			r := &CachedRoleRepository{
-				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.memberID),
+				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.belongsToID),
 				roleRepo:  tt.fields.roleRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.memberID, tt.args.belongsToID),
 			}
 			err := r.AddMember(tt.args.ctx, tt.args.id, tt.args.memberID, tt.args.belongsToID)
@@ -1354,7 +1358,7 @@ func TestCachedRoleRepository_AddMember(t *testing.T) {
 
 func TestCachedRoleRepository_RemoveMember(t *testing.T) {
 	type fields struct {
-		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, id, memberID model.ID) *baseRepository
+		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, id, belongsToID model.ID) *baseRepository
 		roleRepo  func(ctrl *gomock.Controller, ctx context.Context, id, memberID, belongsToID model.ID) repository.RoleRepository
 	}
 	type args struct {
@@ -1372,9 +1376,10 @@ func TestCachedRoleRepository_RemoveMember(t *testing.T) {
 		{
 			name: "delete role success",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id, _ model.ID) *baseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id, belongsToID model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeRole.String(), id.String())
 					getAllKey := composeCacheKey(model.ResourceTypeRole.String(), "GetAllBelongsTo", "*")
+					orgKey := composeCacheKey(model.ResourceTypeOrganization.String(), belongsToID.String())
 
 					getAllKeyCmd := new(redis.StringSliceCmd)
 					getAllKeyCmd.SetVal([]string{getAllKey})
@@ -1388,15 +1393,16 @@ func TestCachedRoleRepository_RemoveMember(t *testing.T) {
 					require.NoError(t, err)
 
 					span := mock.NewMockSpan(ctrl)
-					span.EXPECT().End(gomock.Len(0)).Times(2)
+					span.EXPECT().End(gomock.Len(0)).Times(3)
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/Delete", gomock.Len(0)).Return(ctx, span).Times(2)
 					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span)
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
 					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, orgKey).Return(nil)
 
 					return &baseRepository{
 						db:     db,
@@ -1421,9 +1427,10 @@ func TestCachedRoleRepository_RemoveMember(t *testing.T) {
 		{
 			name: "delete role with role deletion error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id, _ model.ID) *baseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id, belongsToID model.ID) *baseRepository {
 					key := composeCacheKey(model.ResourceTypeRole.String(), id.String())
 					getAllKey := composeCacheKey(model.ResourceTypeRole.String(), "GetAllBelongsTo", "*")
+					orgKey := composeCacheKey(model.ResourceTypeOrganization.String(), belongsToID.String())
 
 					getAllKeyCmd := new(redis.StringSliceCmd)
 					getAllKeyCmd.SetVal([]string{getAllKey})
@@ -1437,15 +1444,16 @@ func TestCachedRoleRepository_RemoveMember(t *testing.T) {
 					require.NoError(t, err)
 
 					span := mock.NewMockSpan(ctrl)
-					span.EXPECT().End(gomock.Len(0)).Times(2)
+					span.EXPECT().End(gomock.Len(0)).Times(3)
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/Delete", gomock.Len(0)).Return(ctx, span).Times(2)
 					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span)
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
 					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, orgKey).Return(nil)
 
 					return &baseRepository{
 						db:     db,
@@ -1566,7 +1574,7 @@ func TestCachedRoleRepository_RemoveMember(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			r := &CachedRoleRepository{
-				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.memberID),
+				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.belongsToID),
 				roleRepo:  tt.fields.roleRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.memberID, tt.args.belongsToID),
 			}
 			err := r.RemoveMember(tt.args.ctx, tt.args.id, tt.args.memberID, tt.args.belongsToID)

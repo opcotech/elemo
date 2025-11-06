@@ -6,12 +6,15 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/suite"
+	"go.uber.org/mock/gomock"
 
+	"github.com/opcotech/elemo/internal/config"
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg"
 	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/service"
 	"github.com/opcotech/elemo/internal/testutil"
+	"github.com/opcotech/elemo/internal/testutil/mock"
 	testModel "github.com/opcotech/elemo/internal/testutil/model"
 	testRepo "github.com/opcotech/elemo/internal/testutil/repository"
 )
@@ -19,9 +22,11 @@ import (
 type RoleServiceIntegrationTestSuite struct {
 	testutil.ContainerIntegrationTestSuite
 	testutil.Neo4jContainerIntegrationTestSuite
+	testutil.PgContainerIntegrationTestSuite
 
 	roleService         service.RoleService
 	organizationService service.OrganizationService
+	emailService        service.EmailService
 
 	owner        *model.User
 	role         *model.Role
@@ -36,6 +41,7 @@ func (s *RoleServiceIntegrationTestSuite) SetupSuite() {
 	}
 	container := reflect.TypeOf(s).Elem().String()
 	s.SetupNeo4j(&s.ContainerIntegrationTestSuite, container)
+	s.SetupPg(&s.ContainerIntegrationTestSuite, container)
 
 	permissionService, err := service.NewPermissionService(s.PermissionRepo)
 	s.Require().NoError(err)
@@ -55,11 +61,25 @@ func (s *RoleServiceIntegrationTestSuite) SetupSuite() {
 	)
 	s.Require().NoError(err)
 
+	// Create a mock email sender for integration tests
+	ctrl := gomock.NewController(s.T())
+	emailSender := mock.NewEmailSender(ctrl)
+
+	// Create a real EmailService with mock sender
+	smtpConf := &config.SMTPConfig{
+		ClientURL:      "http://localhost:3000",
+		SupportAddress: "support@example.com",
+	}
+	s.emailService, err = service.NewEmailService(emailSender, "templates", smtpConf)
+	s.Require().NoError(err)
+
 	s.organizationService, err = service.NewOrganizationService(
 		service.WithUserRepository(s.UserRepo),
 		service.WithOrganizationRepository(s.OrganizationRepo),
 		service.WithPermissionService(permissionService),
 		service.WithLicenseService(licenseService),
+		service.WithUserTokenRepository(s.UserTokenRepository),
+		service.WithEmailService(s.emailService),
 	)
 	s.Require().NoError(err)
 }
@@ -79,6 +99,7 @@ func (s *RoleServiceIntegrationTestSuite) SetupTest() {
 
 func (s *RoleServiceIntegrationTestSuite) TearDownTest() {
 	defer s.CleanupNeo4j(&s.ContainerIntegrationTestSuite)
+	defer s.CleanupPg(&s.ContainerIntegrationTestSuite)
 }
 
 func (s *RoleServiceIntegrationTestSuite) TearDownSuite() {
