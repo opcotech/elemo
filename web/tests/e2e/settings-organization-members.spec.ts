@@ -42,12 +42,11 @@ test.describe("@settings.organization-members Organization Members Listing E2E T
         page.getByText("Organization members and their roles.")
       ).toBeVisible();
 
-      // Scope to members table card - find the card containing "Organization members and their roles"
-      const membersCard = page
-        .locator("text=Organization members and their roles.")
-        .locator("..")
-        .locator(".."); // Navigate up to Card component
-      const membersTable = membersCard.locator("table").first();
+      // Scope to members table - find table that contains member data
+      const membersTable = page.locator("table").filter({
+        has: page.locator("thead th", { hasText: "Name" })
+      }).first();
+      await expect(membersTable).toBeVisible({ timeout: 10000 });
 
       // Check table headers - scope to members table only
       const tableHeaders = membersTable.locator("thead th");
@@ -57,8 +56,8 @@ test.describe("@settings.organization-members Organization Members Listing E2E T
       await expect(tableHeaders.filter({ hasText: "Roles" })).toBeVisible();
       await expect(tableHeaders.filter({ hasText: "Status" })).toBeVisible();
 
-      // Check member row - scope to members table
-      await expect(page.getByText("Owner User")).toBeVisible();
+      // Check member row - scope to members table to avoid duplicates
+      await expect(membersTable.getByText("Owner User")).toBeVisible();
       // Check email in the members table (not in user menu)
       const ownerRow = membersTable
         .locator("tbody tr")
@@ -139,11 +138,22 @@ test.describe("@settings.organization-members Organization Members Listing E2E T
     test("should display all members correctly", async ({ page }) => {
       await page.waitForLoadState("networkidle");
 
-      // Check all members are visible
-      await expect(page.getByText("Owner User")).toBeVisible();
-      await expect(page.getByText("Admin User")).toBeVisible();
-      await expect(page.getByText("Member User")).toBeVisible();
-      await expect(page.getByText("ReadOnly User")).toBeVisible();
+      // Wait for members section to load
+      await page.waitForSelector("text=Members", { timeout: 10000 });
+      await expect(page.getByText("Members").first()).toBeVisible();
+      await expect(
+        page.getByText("Organization members and their roles.")
+      ).toBeVisible();
+
+      // Check all members are visible - scope to table to avoid duplicates
+      const membersTable = page.locator("table").filter({
+        has: page.locator("thead th", { hasText: "Name" })
+      }).first();
+      await expect(membersTable).toBeVisible({ timeout: 10000 });
+      await expect(membersTable.getByText("Owner User")).toBeVisible();
+      await expect(membersTable.getByText("Admin User")).toBeVisible();
+      await expect(membersTable.getByText("Member User")).toBeVisible();
+      await expect(membersTable.getByText("ReadOnly User")).toBeVisible();
 
       // Check emails in the members table
       const ownerRow = page
@@ -232,12 +242,18 @@ test.describe("@settings.organization-members Organization Members Listing E2E T
     }) => {
       await page.waitForLoadState("networkidle");
 
-      // Scope to members table card
-      const membersCard = page
-        .locator("text=Organization members and their roles.")
-        .locator("..")
-        .locator("..");
-      const membersTable = membersCard.locator("table").first();
+      // Wait for members section to load
+      await page.waitForSelector("text=Members", { timeout: 10000 });
+      await expect(page.getByText("Members").first()).toBeVisible();
+      await expect(
+        page.getByText("Organization members and their roles.")
+      ).toBeVisible();
+
+      // Scope to members table
+      const membersTable = page.locator("table").filter({
+        has: page.locator("thead th", { hasText: "Name" })
+      }).first();
+      await expect(membersTable).toBeVisible({ timeout: 10000 });
 
       const rows = membersTable.locator("tbody tr");
       const rowCount = await rows.count();
@@ -345,11 +361,22 @@ test.describe("@settings.organization-members Organization Members Listing E2E T
     }) => {
       await page.waitForLoadState("networkidle");
 
-      // Check all members are visible
-      await expect(page.getByText("Owner User")).toBeVisible();
-      await expect(page.getByText("Developer User")).toBeVisible();
-      await expect(page.getByText("Designer User")).toBeVisible();
-      await expect(page.getByText("Manager User")).toBeVisible();
+      // Wait for members section to load
+      await page.waitForSelector("text=Members", { timeout: 10000 });
+      await expect(page.getByText("Members").first()).toBeVisible();
+      await expect(
+        page.getByText("Organization members and their roles.")
+      ).toBeVisible();
+
+      // Check all members are visible - scope to table to avoid duplicates
+      const membersTable = page.locator("table").filter({
+        has: page.locator("thead th", { hasText: "Name" })
+      }).first();
+      await expect(membersTable).toBeVisible({ timeout: 10000 });
+      await expect(membersTable.getByText("Owner User")).toBeVisible();
+      await expect(membersTable.getByText("Developer User")).toBeVisible();
+      await expect(membersTable.getByText("Designer User")).toBeVisible();
+      await expect(membersTable.getByText("Manager User")).toBeVisible();
     });
 
     test("should display role badges for members", async ({ page }) => {
@@ -501,12 +528,19 @@ test.describe("@settings.organization-members Organization Members Listing E2E T
     test("should sort deleted members last", async ({ page }) => {
       await page.waitForLoadState("networkidle");
 
-      // Scope to members table card
-      const membersCard = page
-        .locator("text=Organization members and their roles.")
-        .locator("..")
-        .locator("..");
-      const membersTable = membersCard.locator("table").first();
+      // Wait for members section to load
+      await page.waitForSelector("text=Members", { timeout: 10000 });
+      await expect(page.getByText("Members").first()).toBeVisible();
+      await expect(
+        page.getByText("Organization members and their roles.")
+      ).toBeVisible();
+
+      // Wait for table to be visible - find table that contains member data
+      // The table should be visible once members are loaded
+      const membersTable = page.locator("table").filter({
+        has: page.locator("thead th", { hasText: "Name" })
+      }).first();
+      await expect(membersTable).toBeVisible({ timeout: 10000 });
 
       const rows = membersTable.locator("tbody tr");
       const rowCount = await rows.count();
@@ -561,18 +595,18 @@ test.describe("@settings.organization-members Organization Members Listing E2E T
     test("should display members table structure", async ({ page }) => {
       await page.waitForLoadState("networkidle");
 
-      // Check table structure exists
+      // Wait for members section to load
+      await page.waitForSelector("text=Members", { timeout: 10000 });
       await expect(page.getByText("Members").first()).toBeVisible();
       await expect(
         page.getByText("Organization members and their roles.")
       ).toBeVisible();
 
-      // Scope to members table card - find the card containing "Organization members and their roles"
-      const membersCard = page
-        .locator("text=Organization members and their roles.")
-        .locator("..")
-        .locator("..");
-      const membersTable = membersCard.locator("table").first();
+      // Wait for table to be visible - find table that contains member data
+      const membersTable = page.locator("table").filter({
+        has: page.locator("thead th", { hasText: "Name" })
+      }).first();
+      await expect(membersTable).toBeVisible({ timeout: 10000 });
 
       // Check table headers - scope to members table only
       const tableHeaders = membersTable.locator("thead th");

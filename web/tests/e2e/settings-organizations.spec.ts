@@ -469,7 +469,7 @@ test.describe("@settings.organizations Organization Listing E2E Tests", () => {
       await page.waitForLoadState("networkidle");
 
       await expect(
-        page.getByText("No organizations found matching your search.")
+        page.getByText("No organizations match your search criteria. Try adjusting your search.")
       ).toBeVisible();
     });
 

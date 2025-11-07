@@ -296,3 +296,63 @@ export async function addMemberToRole(
 
   await session.close();
 }
+
+/**
+ * Grants a user write permission on a role.
+ */
+export async function grantRoleWritePermission(
+  userId: string,
+  roleId: string
+): Promise<void> {
+  const session = getSession();
+  const permissionId = await generateXid();
+  const createdAt = new Date().toISOString();
+
+  await session.executeWrite((tx: any) => {
+    const query = `
+      MATCH (u:User {id: $userId})
+      MATCH (r:Role {id: $roleId})
+      MERGE (u)-[:HAS_PERMISSION {id: $permissionId, created_at: datetime($created_at), kind: $permissionKind}]->(r)
+    `;
+
+    return tx.run(query, {
+      userId,
+      roleId,
+      permissionId,
+      permissionKind: "write",
+      created_at: createdAt,
+    });
+  });
+
+  await session.close();
+}
+
+/**
+ * Grants a user delete permission on a role.
+ */
+export async function grantRoleDeletePermission(
+  userId: string,
+  roleId: string
+): Promise<void> {
+  const session = getSession();
+  const permissionId = await generateXid();
+  const createdAt = new Date().toISOString();
+
+  await session.executeWrite((tx: any) => {
+    const query = `
+      MATCH (u:User {id: $userId})
+      MATCH (r:Role {id: $roleId})
+      MERGE (u)-[:HAS_PERMISSION {id: $permissionId, created_at: datetime($created_at), kind: $permissionKind}]->(r)
+    `;
+
+    return tx.run(query, {
+      userId,
+      roleId,
+      permissionId,
+      permissionKind: "delete",
+      created_at: createdAt,
+    });
+  });
+
+  await session.close();
+}

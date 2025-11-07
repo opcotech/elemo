@@ -28,8 +28,9 @@ test.describe("@settings.organization-create Organization Create E2E Tests", () 
       await page.waitForLoadState("networkidle");
 
       // The button is wrapped in a Link component, so we need to find it as a link
+      // Use .first() to handle cases where multiple buttons might exist
       await expect(
-        page.getByRole("link", { name: /Create Organization/i })
+        page.getByRole("link", { name: /Create Organization/i }).first()
       ).toBeVisible();
     });
 
@@ -51,7 +52,7 @@ test.describe("@settings.organization-create Organization Create E2E Tests", () 
     }) => {
       await page.waitForLoadState("networkidle");
 
-      await page.getByRole("link", { name: /Create Organization/i }).click();
+      await page.getByRole("link", { name: /Create Organization/i }).first().click();
       await page.waitForLoadState("networkidle");
 
       await expect(page).toHaveURL(/.*settings\/organizations\/new/);
@@ -63,7 +64,7 @@ test.describe("@settings.organization-create Organization Create E2E Tests", () 
     test("should create organization with all fields", async ({ page }) => {
       await page.waitForLoadState("networkidle");
 
-      await page.getByRole("link", { name: /Create Organization/i }).click();
+      await page.getByRole("link", { name: /Create Organization/i }).first().click();
       await page.waitForLoadState("networkidle");
 
       const orgName = `Test Org ${Date.now()}`;
@@ -108,7 +109,7 @@ test.describe("@settings.organization-create Organization Create E2E Tests", () 
     }) => {
       await page.waitForLoadState("networkidle");
 
-      await page.getByRole("link", { name: /Create Organization/i }).click();
+      await page.getByRole("link", { name: /Create Organization/i }).first().click();
       await page.waitForLoadState("networkidle");
 
       const orgName = `Required Fields Org ${Date.now()}`;
@@ -150,7 +151,7 @@ test.describe("@settings.organization-create Organization Create E2E Tests", () 
     }) => {
       await page.waitForLoadState("networkidle");
 
-      await page.getByRole("link", { name: /Create Organization/i }).click();
+      await page.getByRole("link", { name: /Create Organization/i }).first().click();
       await page.waitForLoadState("networkidle");
 
       // Try to submit without filling required fields
@@ -165,7 +166,7 @@ test.describe("@settings.organization-create Organization Create E2E Tests", () 
     test("should show validation error for invalid email", async ({ page }) => {
       await page.waitForLoadState("networkidle");
 
-      await page.getByRole("link", { name: /Create Organization/i }).click();
+      await page.getByRole("link", { name: /Create Organization/i }).first().click();
       await page.waitForLoadState("networkidle");
 
       await page.getByLabel("Name").fill("Test Org");
@@ -185,7 +186,7 @@ test.describe("@settings.organization-create Organization Create E2E Tests", () 
     }) => {
       await page.waitForLoadState("networkidle");
 
-      await page.getByRole("link", { name: /Create Organization/i }).click();
+      await page.getByRole("link", { name: /Create Organization/i }).first().click();
       await page.waitForLoadState("networkidle");
 
       await page.getByLabel("Name").fill("Test Org");
@@ -227,7 +228,7 @@ test.describe("@settings.organization-create Organization Create E2E Tests", () 
     test("should cancel creation and return to list page", async ({ page }) => {
       await page.waitForLoadState("networkidle");
 
-      await page.getByRole("link", { name: /Create Organization/i }).click();
+      await page.getByRole("link", { name: /Create Organization/i }).first().click();
       await page.waitForLoadState("networkidle");
 
       await page.getByRole("button", { name: "Cancel" }).click();

@@ -37,13 +37,22 @@ func (r *PermissionRepository) scan(permParam, subjectParam, targetParam string)
 			return nil, err
 		}
 
-		if err := ScanIntoStruct(&val, &parsed, []string{"id"}); err != nil {
+		// Exclude "id" and "kind" from ScanIntoStruct to handle them manually
+		// "kind" must be manually unmarshaled because JSON unmarshaling doesn't properly call UnmarshalText for uint8 types
+		if err := ScanIntoStruct(&val, &parsed, []string{"id", "kind"}); err != nil {
 			return nil, err
 		}
 
 		parsed.ID, _ = model.NewIDFromString(val.GetProperties()["id"].(string), model.ResourceTypePermission.String())
 		parsed.Subject, _ = model.NewIDFromString(subject.GetProperties()["id"].(string), subject.Labels[0])
 		parsed.Target, _ = model.NewIDFromString(target.GetProperties()["id"].(string), target.Labels[0])
+
+		// Manually extract and unmarshal kind to ensure proper conversion from string to PermissionKind
+		// This is necessary because JSON unmarshaling might not properly call UnmarshalText for uint8 types
+		kindStr := val.GetProperties()["kind"].(string)
+		if err := parsed.Kind.UnmarshalText([]byte(kindStr)); err != nil {
+			return nil, err
+		}
 
 		if err := parsed.Validate(); err != nil {
 			return nil, err
