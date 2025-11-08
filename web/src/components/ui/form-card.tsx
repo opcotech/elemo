@@ -12,8 +12,8 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 
 interface FormCardProps {
-  title: string;
-  description: string;
+  title?: string;
+  description?: string;
   onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
   onCancel?: () => void;
   isPending?: boolean;
@@ -41,10 +41,12 @@ export function FormCard({
 
   return (
     <Card className={className}>
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
-        <CardDescription>{description}</CardDescription>
-      </CardHeader>
+      {(title || description) && (
+        <CardHeader>
+          {title && <CardTitle>{title}</CardTitle>}
+          {description && <CardDescription>{description}</CardDescription>}
+        </CardHeader>
+      )}
       <CardContent>
         <form onSubmit={onSubmit} className="flex flex-col gap-y-6">
           {errorMessage && (

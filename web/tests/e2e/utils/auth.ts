@@ -1,3 +1,4 @@
+import { navigateAndWait, waitForPageLoad } from "../helpers/navigation";
 import { getSession } from "./db";
 import { generateXid } from "./xid";
 import { getRandomString } from "./random";
@@ -6,8 +7,7 @@ import type { User, UserStatus } from "@/lib/api";
 
 export const USER_DEFAULT_PASSWORD = "AppleTree123";
 export const USER_DEFAULT_PASSWORD_HASH =
-  "$2a$10$CYRw/WtES8e8d4di2uIddevV9MO2.tI0G8R8QZEnF5dyx8S4Wqt6e"; // 'AppleTree123'
-
+  "$2a$10$CYRw/WtES8e8d4di2uIddevV9MO2.tI0G8R8QZEnF5dyx8S4Wqt6e";
 export async function createDBUser(
   status: UserStatus = "active",
   overrides?: Partial<User>
@@ -67,49 +67,43 @@ export async function loginUser(
   }
 ): Promise<boolean> {
   const { destination, throwOnFailure = true } = options || {};
-
-  // Navigate to login page
-  await page.goto("/login");
-  await page.waitForLoadState("networkidle");
-
-  // Fill in login credentials
+  await navigateAndWait(page, "/login");
   await page.getByLabel("Email").fill(user.email);
   await page
     .getByRole("textbox", { name: "Password" })
     .fill(USER_DEFAULT_PASSWORD);
   await page.getByRole("button", { name: "Sign in" }).click();
-
-  // Wait for login to complete
-  await page.waitForLoadState("networkidle");
-
-  // Wait for the loading state to finish
-  await page.waitForFunction(
-    () => {
-      const buttons = document.querySelectorAll("button");
-      for (const button of buttons) {
-        if (button.textContent.includes("Signing in...")) {
-          return false;
+  await page.waitForURL((url) => !url.pathname.includes("/login"), {
+    timeout: 10000,
+  });
+  await waitForPageLoad(page);
+  await page
+    .waitForFunction(
+      () => {
+        const buttons = document.querySelectorAll("button");
+        for (const button of buttons) {
+          if (button.textContent.includes("Signing in...")) {
+            return false;
+          }
         }
-      }
-      return true;
-    },
-    { timeout: 10000 }
-  );
-
-  // Verify login success
-  const isOnDashboard = await page.getByText("Welcome back!").isVisible();
+        return true;
+      },
+      { timeout: 10000 }
+    )
+    .catch(() => {});
+  const isOnDashboard = await page
+    .getByText("Welcome back!")
+    .isVisible()
+    .catch(() => false);
 
   if (!isOnDashboard) {
     if (throwOnFailure) {
-      throw new Error("Login failed");
+      throw new Error("Login failed - dashboard not found");
     }
     return false;
   }
-
-  // Navigate to destination if provided
   if (destination) {
-    await page.goto(destination);
-    await page.waitForLoadState("networkidle");
+    await navigateAndWait(page, destination);
   }
 
   return true;

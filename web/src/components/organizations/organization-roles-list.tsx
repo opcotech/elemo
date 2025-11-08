@@ -171,7 +171,6 @@ export function OrganizationRolesList({
 
   const hasOrgReadPermission = can(orgPermissions, "read");
   const hasOrgWritePermission = can(orgPermissions, "write");
-  const hasWritePermission = hasOrgWritePermission;
   const hasCreatePermission = hasOrgWritePermission;
   const isPermissionsLoading = isOrgPermissionsLoading;
 

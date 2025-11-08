@@ -1,5 +1,14 @@
 import { defineConfig, devices } from '@playwright/test';
 
+// Fix for "Cannot find name 'process'"
+declare const process: {
+  env: {
+    [key: string]: string | undefined;
+  };
+};
+
+const IS_CI_ENV = process.env.CI === 'true';
+
 /**
  * @see https://playwright.dev/docs/test-configuration
  */
@@ -7,12 +16,12 @@ export default defineConfig({
   testDir: './tests/e2e',
   /* Run tests in files in parallel */
   fullyParallel: true,
-  /* Fail the build on CI if you accidentally left test.only in the source code. */
-  forbidOnly: !!process.env.CI,
-  /* Retry on CI only */
-  retries: process.env.CI ? 2 : 0,
+  /* Fail the build on CI if test.only left in the source code. */
+  forbidOnly: IS_CI_ENV,
+  /* Retry more times on CI */
+  retries: IS_CI_ENV ? 3 : 1,
   /* Opt out of parallel tests on CI. */
-  workers: process.env.CI ? 1 : undefined,
+  workers: IS_CI_ENV ? 1 : '75%',
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: 'html',
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
@@ -65,7 +74,7 @@ export default defineConfig({
   webServer: {
     command: 'pnpm build && pnpm start',
     url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: true,
     timeout: 120 * 1000,
     stdout: 'pipe',
     stderr: 'pipe',

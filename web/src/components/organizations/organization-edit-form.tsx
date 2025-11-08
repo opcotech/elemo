@@ -109,8 +109,6 @@ export function OrganizationEditForm({
 
   return (
     <FormCard
-      title="Edit Organization"
-      description="Update the organization details below."
       onSubmit={form.handleSubmit(onSubmit)}
       onCancel={() =>
         navigate({

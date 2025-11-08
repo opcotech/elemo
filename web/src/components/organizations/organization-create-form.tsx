@@ -82,7 +82,6 @@ export function OrganizationCreateForm() {
 
   return (
     <FormCard
-      title="Create Organization"
       description="Enter the details below to create a new organization."
       onSubmit={form.handleSubmit(onSubmit)}
       onCancel={() => navigate({ to: "/settings/organizations" })}

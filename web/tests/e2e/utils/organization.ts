@@ -58,7 +58,7 @@ export async function createDBOrganization(
       ownerId: ownerId,
       membershipId: membershipId,
       permissionId: permissionId,
-      permissionKind: "*", // All permissions
+      permissionKind: "*",
     });
   });
 
@@ -165,12 +165,9 @@ export async function grantSystemWritePermission(
   const createdAt = new Date().toISOString();
 
   await session.executeWrite((tx: any) => {
-    // First ensure the ResourceType node exists (it uses the resource type string as its id)
     const ensureResourceTypeQuery = `
       MERGE (rt:ResourceType {id: $resourceType})
     `;
-
-    // Grant 'create' permission (backend requires 'create' for organization creation)
     const createPermissionQuery = `
       MATCH (u:User {id: $userId})
       MATCH (rt:ResourceType {id: $resourceType})

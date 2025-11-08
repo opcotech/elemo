@@ -15,7 +15,6 @@ import {
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import {
   Form,
@@ -130,7 +129,6 @@ export function OrganizationRoleEditForm({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Edit Role</CardTitle>
         <CardDescription>Update the role details below.</CardDescription>
       </CardHeader>
       <CardContent>

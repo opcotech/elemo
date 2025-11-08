@@ -157,7 +157,6 @@ export function OrganizationRoleCreateForm({
     <div className="flex flex-col gap-6">
       <Card>
         <CardHeader>
-          <CardTitle>Create Role</CardTitle>
           <CardDescription>
             Enter the role details below and optionally add permissions.
           </CardDescription>

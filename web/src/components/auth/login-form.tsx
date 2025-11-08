@@ -131,7 +131,7 @@ export function LoginForm({ redirectTo }: LoginFormProps) {
               <Button
                 type="submit"
                 className="flex w-full items-center"
-                disabled={isLoading || !email || !password}
+                disabled={isLoading}
                 aria-label="Sign in"
               >
                 {isLoading ? (
