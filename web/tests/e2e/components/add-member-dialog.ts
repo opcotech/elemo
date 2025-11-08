@@ -1,4 +1,3 @@
-import { expect } from "@playwright/test";
 import { waitForDropdownOpen } from "../helpers/elements";
 import { Dialog } from "./dialog";
 import type { Page } from "@playwright/test";
