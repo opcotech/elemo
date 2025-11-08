@@ -2181,7 +2181,7 @@ func TestOrganizationService_InviteMember(t *testing.T) {
 		{
 			name: "invite member to organization with existing user",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, orgID model.ID, email string, _ model.ID) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, orgID model.ID, _ string, _ model.ID) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
@@ -2241,7 +2241,7 @@ func TestOrganizationService_InviteMember(t *testing.T) {
 		{
 			name: "invite member to organization with new pending user",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, orgID model.ID, email string, _ model.ID) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, orgID model.ID, _ string, _ model.ID) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
@@ -2312,7 +2312,7 @@ func TestOrganizationService_InviteMember(t *testing.T) {
 		{
 			name: "invite member to organization with roleID",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, orgID model.ID, email string, roleID model.ID) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, orgID model.ID, email string, _ model.ID) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
@@ -2798,7 +2798,7 @@ func TestOrganizationService_RevokeInvitation(t *testing.T) {
 		{
 			name: "revoke invitation with invalid userID",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, orgID, invalidUserID model.ID) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, orgID, _ model.ID) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
@@ -3042,7 +3042,7 @@ func TestOrganizationService_AcceptInvitation(t *testing.T) {
 		{
 			name: "accept invitation with pending user",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, orgID, userID model.ID, token string, userPassword string, _ model.ID) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, orgID, userID model.ID, token string, _ string, _ model.ID) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
@@ -3259,7 +3259,7 @@ func TestOrganizationService_AcceptInvitation(t *testing.T) {
 		{
 			name: "accept invitation with empty token",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, orgID, _ model.ID, _ string, _ string, _ model.ID) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ model.ID, _ string, _ string, _ model.ID) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
@@ -3283,7 +3283,7 @@ func TestOrganizationService_AcceptInvitation(t *testing.T) {
 		{
 			name: "accept invitation with invalid token format",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, orgID, _ model.ID, _ string, _ string, _ model.ID) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ model.ID, _ string, _ string, _ model.ID) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
@@ -3307,7 +3307,7 @@ func TestOrganizationService_AcceptInvitation(t *testing.T) {
 		{
 			name: "accept invitation with expired token",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, orgID, userID model.ID, token string, _ string, _ model.ID) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, userID model.ID, token string, _ string, _ model.ID) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
@@ -3353,7 +3353,7 @@ func TestOrganizationService_AcceptInvitation(t *testing.T) {
 		{
 			name: "accept invitation with wrong organization ID",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, orgID, userID model.ID, token string, _ string, _ model.ID) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, userID model.ID, _ string, _ string, _ model.ID) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
@@ -3398,7 +3398,7 @@ func TestOrganizationService_AcceptInvitation(t *testing.T) {
 		{
 			name: "accept invitation with user not found",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, orgID, userID model.ID, token string, _ string, _ model.ID) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, userID model.ID, token string, _ string, _ model.ID) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
@@ -3445,7 +3445,7 @@ func TestOrganizationService_AcceptInvitation(t *testing.T) {
 		{
 			name: "accept invitation with invalid user status",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, orgID, userID model.ID, token string, _ string, _ model.ID) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, userID model.ID, token string, _ string, _ model.ID) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
@@ -3496,7 +3496,7 @@ func TestOrganizationService_AcceptInvitation(t *testing.T) {
 		{
 			name: "accept invitation with pending user missing password",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, orgID, userID model.ID, token string, _ string, _ model.ID) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, userID model.ID, token string, _ string, _ model.ID) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
@@ -3547,7 +3547,7 @@ func TestOrganizationService_AcceptInvitation(t *testing.T) {
 		{
 			name: "accept invitation with token not found",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, orgID, userID model.ID, token string, _ string, _ model.ID) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, userID model.ID, _ string, _ string, _ model.ID) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
