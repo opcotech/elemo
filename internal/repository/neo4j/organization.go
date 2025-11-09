@@ -373,12 +373,20 @@ func (r *OrganizationRepository) AddInvitation(ctx context.Context, orgID, userI
 		return errors.Join(repository.ErrOrganizationAddMember, err)
 	}
 
+	// Check if IDs are nil (invalid)
+	if orgID.IsNil() || userID.IsNil() {
+		return errors.Join(repository.ErrOrganizationAddMember, model.ErrInvalidID)
+	}
+
 	cypher := `
 	MATCH (o:` + orgID.Label() + ` {id: $org_id})
 	MATCH (u:` + userID.Label() + ` {id: $user_id})
+	WITH o, u
+	WHERE o IS NOT NULL AND u IS NOT NULL
 	MERGE (u)-[i:` + EdgeKindInvitedTo.String() + `]->(o)
 	ON CREATE SET i.created_at = datetime($now), i.id = $invitation_id
-	ON MATCH SET i.updated_at = datetime($now)`
+	ON MATCH SET i.updated_at = datetime($now)
+	RETURN i`
 
 	params := map[string]any{
 		"org_id":        orgID.String(),
@@ -387,8 +395,24 @@ func (r *OrganizationRepository) AddInvitation(ctx context.Context, orgID, userI
 		"now":           time.Now().UTC().Format(time.RFC3339Nano),
 	}
 
-	if err := ExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
+	result, err := r.db.GetWriteSession(ctx).Run(ctx, cypher, params)
+	if err != nil {
 		return errors.Join(repository.ErrOrganizationAddMember, err)
+	}
+
+	// Check if any records were returned (nodes were found)
+	hasRecord := false
+	for result.Next(ctx) {
+		hasRecord = true
+		break
+	}
+
+	if err := result.Err(); err != nil {
+		return errors.Join(repository.ErrOrganizationAddMember, err)
+	}
+
+	if !hasRecord {
+		return errors.Join(repository.ErrOrganizationAddMember, repository.ErrNotFound)
 	}
 
 	return nil
@@ -404,6 +428,11 @@ func (r *OrganizationRepository) RemoveInvitation(ctx context.Context, orgID, us
 
 	if err := userID.Validate(); err != nil {
 		return errors.Join(repository.ErrOrganizationRemoveMember, err)
+	}
+
+	// Check if IDs are nil (invalid)
+	if orgID.IsNil() || userID.IsNil() {
+		return errors.Join(repository.ErrOrganizationRemoveMember, model.ErrInvalidID)
 	}
 
 	cypher := `
@@ -428,6 +457,11 @@ func (r *OrganizationRepository) GetInvitations(ctx context.Context, orgID model
 
 	if err := orgID.Validate(); err != nil {
 		return nil, errors.Join(repository.ErrOrganizationRead, err)
+	}
+
+	// Check if ID is nil (invalid)
+	if orgID.IsNil() {
+		return nil, errors.Join(repository.ErrOrganizationRead, model.ErrInvalidID)
 	}
 
 	cypher := `

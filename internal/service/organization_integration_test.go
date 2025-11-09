@@ -3,15 +3,16 @@ package service_test
 import (
 	"context"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/suite"
 	"go.uber.org/mock/gomock"
 
 	"github.com/opcotech/elemo/internal/config"
+	"github.com/opcotech/elemo/internal/email"
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg"
-	"github.com/opcotech/elemo/internal/pkg/auth"
 	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/service"
 	"github.com/opcotech/elemo/internal/testutil"
@@ -27,11 +28,13 @@ type OrganizationServiceIntegrationTestSuite struct {
 
 	organizationService service.OrganizationService
 	emailService        service.EmailService
+	emailSender         *mock.EmailSender
 
 	owner        *model.User
 	organization *model.Organization
 
-	ctx context.Context
+	ctx            context.Context
+	capturedTokens map[string]string
 }
 
 func (s *OrganizationServiceIntegrationTestSuite) SetupSuite() {
@@ -54,19 +57,40 @@ func (s *OrganizationServiceIntegrationTestSuite) SetupSuite() {
 
 	// Create a mock email sender for integration tests
 	ctrl := gomock.NewController(s.T())
-	emailSender := mock.NewEmailSender(ctrl)
+	s.emailSender = mock.NewEmailSender(ctrl)
+	s.capturedTokens = make(map[string]string)
+	// Capture tokens from invitation emails
+	s.emailSender.EXPECT().SendEmail(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+		AnyTimes().
+		Do(func(_ context.Context, _, to string, template any) {
+			// Extract token from the template data if it's an organization invitation
+			if tmpl, ok := template.(*email.Template); ok && tmpl != nil {
+				if data, ok := tmpl.Data.Get().(*email.OrganizationInviteTemplateData); ok && data != nil {
+					// Extract token from invitation URL
+					// URL format: http://localhost:3000/organizations/join?organization=ORG_ID&token=TOKEN
+					if strings.Contains(data.InvitationURL, "token=") {
+						parts := strings.Split(data.InvitationURL, "token=")
+						if len(parts) > 1 {
+							s.capturedTokens[to] = parts[1]
+						}
+					}
+				}
+			}
+		}).
+		Return(nil)
 
 	// Create a real EmailService with mock sender
 	smtpConf := &config.SMTPConfig{
 		ClientURL:      "http://localhost:3000",
 		SupportAddress: "support@example.com",
 	}
-	s.emailService, err = service.NewEmailService(emailSender, "templates", smtpConf)
+	s.emailService, err = service.NewEmailService(s.emailSender, "templates", smtpConf)
 	s.Require().NoError(err)
 
 	s.organizationService, err = service.NewOrganizationService(
 		service.WithUserRepository(s.UserRepo),
 		service.WithOrganizationRepository(s.OrganizationRepo),
+		service.WithRoleRepository(s.RoleRepo),
 		service.WithPermissionService(permissionService),
 		service.WithLicenseService(licenseService),
 		service.WithUserTokenRepository(s.UserTokenRepository),
@@ -83,6 +107,7 @@ func (s *OrganizationServiceIntegrationTestSuite) SetupTest() {
 	s.Require().NoError(testRepo.MakeUserSystemOwner(s.owner.ID, s.Neo4jDB))
 
 	s.organization = testModel.NewOrganization()
+	s.capturedTokens = make(map[string]string)
 }
 
 func (s *OrganizationServiceIntegrationTestSuite) TearDownTest() {
@@ -247,7 +272,7 @@ func (s *OrganizationServiceIntegrationTestSuite) TestDelete() {
 func (s *OrganizationServiceIntegrationTestSuite) TestInviteMember() {
 	s.Require().NoError(s.organizationService.Create(s.ctx, s.owner.ID, s.organization))
 
-	email := "newuser@example.com"
+	email := "new.user@example.com"
 
 	// Invite a new user
 	err := s.organizationService.InviteMember(s.ctx, s.organization.ID, email)
@@ -307,7 +332,7 @@ func (s *OrganizationServiceIntegrationTestSuite) TestInviteMemberWithRoleID() {
 	role := testModel.NewRole()
 	s.Require().NoError(s.RoleRepo.Create(context.Background(), s.owner.ID, s.organization.ID, role))
 
-	email := "roleuser@example.com"
+	email := "role.user@example.com"
 
 	// Invite with role ID
 	err := s.organizationService.InviteMember(s.ctx, s.organization.ID, email, role.ID)
@@ -346,7 +371,7 @@ func (s *OrganizationServiceIntegrationTestSuite) TestInviteMemberAlreadyMember(
 func (s *OrganizationServiceIntegrationTestSuite) TestRevokeInvitation() {
 	s.Require().NoError(s.organizationService.Create(s.ctx, s.owner.ID, s.organization))
 
-	email := "torevoke@example.com"
+	email := "to.revoke@example.com"
 
 	// Invite user
 	err := s.organizationService.InviteMember(s.ctx, s.organization.ID, email)
@@ -408,7 +433,7 @@ func (s *OrganizationServiceIntegrationTestSuite) TestRevokeInvitationWithActive
 func (s *OrganizationServiceIntegrationTestSuite) TestAcceptInvitation() {
 	s.Require().NoError(s.organizationService.Create(s.ctx, s.owner.ID, s.organization))
 
-	email := "toaccept@example.com"
+	email := "to.accept@example.com"
 	password := "securepassword123"
 
 	// Invite user
@@ -419,20 +444,13 @@ func (s *OrganizationServiceIntegrationTestSuite) TestAcceptInvitation() {
 	user, err := s.UserRepo.GetByEmail(context.Background(), email)
 	s.Require().NoError(err)
 
-	// Get invitation token
-	_, err = s.UserTokenRepository.Get(context.Background(), user.ID, model.UserTokenContextInvite)
-	s.Require().NoError(err)
-
-	// Generate public token from secret
-	tokenData := map[string]any{
-		"organization_id": s.organization.ID.String(),
-		"user_id":         user.ID.String(),
-	}
-	publicToken, _, err := auth.GenerateToken(model.UserTokenContextInvite.String(), tokenData)
-	s.Require().NoError(err)
+	// Get the token that was captured from the email
+	token, ok := s.capturedTokens[email]
+	s.Require().True(ok, "token should have been captured from email")
+	s.Require().NotEmpty(token, "token should not be empty")
 
 	// Accept invitation
-	err = s.organizationService.AcceptInvitation(context.Background(), s.organization.ID, publicToken, password)
+	err = s.organizationService.AcceptInvitation(context.Background(), s.organization.ID, token, password)
 	s.Require().NoError(err)
 
 	// Verify user is now a member
@@ -464,7 +482,7 @@ func (s *OrganizationServiceIntegrationTestSuite) TestAcceptInvitationWithRoleID
 	role := testModel.NewRole()
 	s.Require().NoError(s.RoleRepo.Create(context.Background(), s.owner.ID, s.organization.ID, role))
 
-	email := "roleuser@example.com"
+	email := "role.user@example.com"
 	password := "securepassword123"
 
 	// Invite with role ID
@@ -475,21 +493,13 @@ func (s *OrganizationServiceIntegrationTestSuite) TestAcceptInvitationWithRoleID
 	user, err := s.UserRepo.GetByEmail(context.Background(), email)
 	s.Require().NoError(err)
 
-	// Get invitation token
-	_, err = s.UserTokenRepository.Get(context.Background(), user.ID, model.UserTokenContextInvite)
-	s.Require().NoError(err)
-
-	// Generate public token with role_id
-	tokenData := map[string]any{
-		"organization_id": s.organization.ID.String(),
-		"user_id":         user.ID.String(),
-		"role_id":         role.ID.String(),
-	}
-	publicToken, _, err := auth.GenerateToken(model.UserTokenContextInvite.String(), tokenData)
-	s.Require().NoError(err)
+	// Get the token that was captured from the email
+	token, ok := s.capturedTokens[email]
+	s.Require().True(ok, "token should have been captured from email")
+	s.Require().NotEmpty(token, "token should not be empty")
 
 	// Accept invitation
-	err = s.organizationService.AcceptInvitation(context.Background(), s.organization.ID, publicToken, password)
+	err = s.organizationService.AcceptInvitation(context.Background(), s.organization.ID, token, password)
 	s.Require().NoError(err)
 
 	// Verify user is now a member
@@ -515,20 +525,13 @@ func (s *OrganizationServiceIntegrationTestSuite) TestAcceptInvitationWithActive
 	err := s.organizationService.InviteMember(s.ctx, s.organization.ID, activeUser.Email)
 	s.Require().NoError(err)
 
-	// Get invitation token
-	_, err = s.UserTokenRepository.Get(context.Background(), activeUser.ID, model.UserTokenContextInvite)
-	s.Require().NoError(err)
-
-	// Generate public token
-	tokenData := map[string]any{
-		"organization_id": s.organization.ID.String(),
-		"user_id":         activeUser.ID.String(),
-	}
-	publicToken, _, err := auth.GenerateToken(model.UserTokenContextInvite.String(), tokenData)
-	s.Require().NoError(err)
+	// Get the token that was captured from the email
+	token, ok := s.capturedTokens[activeUser.Email]
+	s.Require().True(ok, "token should have been captured from email")
+	s.Require().NotEmpty(token, "token should not be empty")
 
 	// Accept invitation (no password needed for active user)
-	err = s.organizationService.AcceptInvitation(context.Background(), s.organization.ID, publicToken, "")
+	err = s.organizationService.AcceptInvitation(context.Background(), s.organization.ID, token, "")
 	s.Require().NoError(err)
 
 	// Verify user is now a member
