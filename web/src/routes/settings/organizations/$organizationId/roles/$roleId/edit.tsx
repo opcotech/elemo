@@ -6,9 +6,9 @@ import {
   OrganizationDetailError,
   OrganizationDetailSkeleton,
   OrganizationNotFound,
-  OrganizationRoleEditFormWithPermissions,
 } from "@/components/organizations";
 import { PageHeader } from "@/components/page-header";
+import { RoleEditFormWithPermissions } from "@/components/roles";
 import { useBreadcrumbUtils } from "@/hooks/use-breadcrumbs";
 import { ResourceType } from "@/hooks/use-permissions";
 import { useRequirePermission } from "@/hooks/use-require-permission";
@@ -129,7 +129,7 @@ function OrganizationRoleEditPage() {
         description="Update the role details below."
       />
 
-      <OrganizationRoleEditFormWithPermissions
+      <RoleEditFormWithPermissions
         role={role}
         organizationId={organizationId}
         roleId={roleId}

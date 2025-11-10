@@ -10,7 +10,9 @@ import {
   CommandSeparator,
   CommandShortcut,
 } from "@/components/ui/command";
+import { useNavigationContext } from "@/hooks/use-navigation-context";
 import { commandRegistry } from "@/lib/commands/registry";
+import type { CommandContext } from "@/lib/commands/registry";
 
 interface CommandPaletteProps {
   open: boolean;
@@ -18,6 +20,7 @@ interface CommandPaletteProps {
   title?: string;
   placeholder?: string;
   emptyText?: string;
+  context?: CommandContext;
 }
 
 export function CommandPalette({
@@ -26,18 +29,31 @@ export function CommandPalette({
   title = "Quick Actions",
   placeholder = "Type a command or select an action...",
   emptyText = "No commands found.",
+  context: contextProp,
 }: CommandPaletteProps) {
   const [searchQuery, setSearchQuery] = useState("");
+  const navigationContext = useNavigationContext();
+
+  // Use provided context or derive from navigation context
+  const context: CommandContext | undefined =
+    contextProp ||
+    (navigationContext.type === "global"
+      ? "global"
+      : navigationContext.type === "namespace"
+        ? "namespace"
+        : navigationContext.type === "project"
+          ? "project"
+          : undefined);
 
   const handleSelect = (commandId: string) => {
     commandRegistry.execute(commandId);
     onOpenChange(false);
   };
 
-  // Get commands based on search query
+  // Get commands based on search query and context
   const commands = searchQuery.trim()
-    ? commandRegistry.searchCommands(searchQuery)
-    : commandRegistry.getCommands();
+    ? commandRegistry.searchCommands(searchQuery, context)
+    : commandRegistry.getCommands(context);
 
   // Group commands by category
   const groupedCommands = commands.reduce(

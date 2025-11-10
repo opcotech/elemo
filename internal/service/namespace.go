@@ -6,6 +6,7 @@ import (
 
 	"github.com/opcotech/elemo/internal/license"
 	"github.com/opcotech/elemo/internal/model"
+	"github.com/opcotech/elemo/internal/pkg"
 )
 
 // NamespaceService serves the business logic of interacting with namespaces.
@@ -54,7 +55,12 @@ func (s *namespaceService) Create(ctx context.Context, orgID model.ID, namespace
 		return errors.Join(ErrNamespaceCreate, ErrNoPermission)
 	}
 
-	if err := s.namespaceRepo.Create(ctx, orgID, namespace); err != nil {
+	userID, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID)
+	if !ok {
+		return errors.Join(ErrNamespaceCreate, model.ErrInvalidID)
+	}
+
+	if err := s.namespaceRepo.Create(ctx, userID, orgID, namespace); err != nil {
 		return errors.Join(ErrNamespaceCreate, err)
 	}
 

@@ -1,5 +1,4 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import type { z } from "zod";
@@ -22,14 +21,18 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import type { TodoPriority } from "@/lib/api";
-import { v1TodoUpdateMutation } from "@/lib/client/@tanstack/react-query.gen";
-import { zTodoPatch } from "@/lib/client/zod.gen";
+import { useFormMutation } from "@/hooks/use-form-mutation";
+import type { Options, TodoPriority, V1TodoUpdateData } from "@/lib/api";
+import { v1TodoUpdate } from "@/lib/client/sdk.gen";
+import { zTodoCreate, zTodoPatch } from "@/lib/client/zod.gen";
 import { createFormSchema, normalizePatchData } from "@/lib/forms";
-import { showErrorToast, showSuccessToast } from "@/lib/toast";
 import { getDefaultValue } from "@/lib/utils";
 
-const todoEditFormSchema = createFormSchema(zTodoPatch);
+const todoEditFormSchema = createFormSchema(
+  zTodoPatch.extend({
+    title: zTodoCreate.def.shape.title,
+  })
+);
 
 type TodoEditFormValues = z.infer<typeof todoEditFormSchema>;
 
@@ -66,7 +69,42 @@ export function EditTodoForm({
     },
   });
 
-  const mutation = useMutation(v1TodoUpdateMutation());
+  const mutation = useFormMutation<
+    unknown,
+    Options<V1TodoUpdateData>,
+    TodoEditFormValues
+  >({
+    mutationFn: async (variables) => {
+      const { data } = await v1TodoUpdate({
+        ...variables,
+        throwOnError: true,
+      });
+      return data;
+    },
+    form,
+    successMessage: "Todo updated successfully",
+    errorMessagePrefix: "Failed to update todo",
+    resetFormOnSuccess: true,
+    transformValues: (values) => {
+      if (!todo) {
+        throw new Error("Todo is required");
+      }
+      const normalizedBody = normalizePatchData(todoEditFormSchema, values, {
+        title: todo.title,
+        description: todo.description,
+        priority: todo.priority,
+        due_date: todo.due_date,
+      });
+      return {
+        path: { id: todo.id },
+        body: normalizedBody,
+      };
+    },
+    onSuccess: () => {
+      onOpenChange(false);
+      onSuccess?.();
+    },
+  });
 
   // Update form values when todo changes
   useEffect(() => {
@@ -80,47 +118,15 @@ export function EditTodoForm({
     }
   }, [todo, open, form]);
 
-  const onSubmit = (values: TodoEditFormValues) => {
-    if (!todo) return;
-
-    const normalizedBody = normalizePatchData(todoEditFormSchema, values, {
-      title: todo.title,
-      description: todo.description,
-      priority: todo.priority,
-      due_date: todo.due_date,
-    });
-
-    mutation.mutate(
-      {
-        path: { id: todo.id },
-        body: normalizedBody,
-      },
-      {
-        onSuccess: () => {
-          onOpenChange(false);
-          onSuccess?.();
-          form.reset();
-          showSuccessToast(
-            "Todo updated successfully",
-            `Todo "${values.title || todo.title}" has been updated`
-          );
-        },
-        onError: (error) => {
-          showErrorToast("Failed to update todo", error.message);
-        },
-      }
-    );
-  };
-
   return (
     <DialogForm
       form={form}
       open={open}
       onOpenChange={onOpenChange}
       title="Edit Todo"
-      onSubmit={form.handleSubmit(onSubmit)}
+      onSubmit={mutation.handleSubmit}
       isPending={mutation.isPending}
-      error={mutation.error as Error | null}
+      error={mutation.error || null}
       submitButtonText="Update todo"
       onReset={() => form.reset()}
     >

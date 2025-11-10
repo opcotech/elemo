@@ -1,11 +1,12 @@
 import { Link } from "@tanstack/react-router";
-import { Edit, Eye, Trash2 } from "lucide-react";
+import { Edit, Trash2 } from "lucide-react";
 import { useState } from "react";
 
 import { OrganizationDeleteDialog } from "./organization-delete-dialog";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ConditionalLink } from "@/components/ui/conditional-link";
 import { ExternalLink } from "@/components/ui/external-link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TableCell, TableRow } from "@/components/ui/table";
@@ -36,13 +37,13 @@ export function OrganizationRow({
   return (
     <TableRow>
       <TableCell className="font-medium">
-        <Link
+        <ConditionalLink
           to="/settings/organizations/$organizationId"
           params={{ organizationId: organization.id }}
-          className="text-primary hover:underline"
+          condition={hasReadPermission}
         >
           {organization.name}
-        </Link>
+        </ConditionalLink>
       </TableCell>
       <TableCell>{organization.email}</TableCell>
       <TableCell>
@@ -53,8 +54,10 @@ export function OrganizationRow({
         )}
       </TableCell>
       <TableCell>
-        {organization.members.length}{" "}
-        {pluralize(organization.members.length, "member", "members")}
+        <Badge variant="secondary">
+          {organization.members.length}{" "}
+          {pluralize(organization.members.length, "member", "members")}
+        </Badge>
       </TableCell>
       <TableCell>
         {organization.status === "active" ? (
@@ -73,17 +76,6 @@ export function OrganizationRow({
             </div>
           ) : (
             <>
-              {hasReadPermission && (
-                <Button variant="ghost" size="sm" asChild>
-                  <Link
-                    to="/settings/organizations/$organizationId"
-                    params={{ organizationId: organization.id }}
-                  >
-                    <Eye className="size-4" />
-                    <span className="sr-only">View organization</span>
-                  </Link>
-                </Button>
-              )}
               {hasWritePermission && (
                 <Button variant="ghost" size="sm" asChild>
                   <Link

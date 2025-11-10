@@ -1730,10 +1730,10 @@ components:
             properties:
               name:
                 type: string
-                description: Name of the organization.
-                maxLength: 120
                 example: ACME Inc.
                 minLength: 1
+                maxLength: 120
+                description: Name of the organization.
               email:
                 type: string
                 format: email

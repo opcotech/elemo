@@ -126,12 +126,16 @@ func (r *NamespaceRepository) scan(nsp, pp, dp string) func(rec *neo4j.Record) (
 	}
 }
 
-func (r *NamespaceRepository) Create(ctx context.Context, orgID model.ID, namespace *model.Namespace) error {
+func (r *NamespaceRepository) Create(ctx context.Context, creatorID, orgID model.ID, namespace *model.Namespace) error {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.NamespaceRepository/Create")
 	defer span.End()
 
+	if err := creatorID.Validate(); err != nil {
+		return errors.Join(repository.ErrNamespaceCreate, err)
+	}
+
 	if err := orgID.Validate(); err != nil {
-		return errors.Join(repository.ErrAttachmentCreate, err)
+		return errors.Join(repository.ErrNamespaceCreate, err)
 	}
 
 	if err := namespace.Validate(); err != nil {
@@ -145,17 +149,22 @@ func (r *NamespaceRepository) Create(ctx context.Context, orgID model.ID, namesp
 	namespace.UpdatedAt = nil
 
 	cypher := `
+	MATCH (u:` + creatorID.Label() + ` {id: $creator_id})
 	MATCH (org:` + orgID.Label() + ` {id: $org_id})
 	CREATE (ns:` + namespace.ID.Label() + ` {id: $id, name: $name, description: $description, created_at: datetime($created_at)}),
-		(org)-[:` + EdgeKindHasNamespace.String() + ` {id: $has_ns_id, created_at: datetime($created_at)}]->(ns)`
+		(org)-[:` + EdgeKindHasNamespace.String() + ` {id: $has_ns_id, created_at: datetime($created_at)}]->(ns),
+		(u)-[:` + EdgeKindHasPermission.String() + ` {id: $perm_id, kind: $perm_kind, created_at: datetime($created_at)}]->(ns)`
 
 	params := map[string]any{
 		"id":          namespace.ID.String(),
 		"name":        namespace.Name,
 		"description": namespace.Description,
 		"created_at":  createdAt.Format(time.RFC3339Nano),
+		"creator_id":  creatorID.String(),
 		"org_id":      orgID.String(),
 		"has_ns_id":   model.NewRawID(),
+		"perm_id":     model.NewRawID(),
+		"perm_kind":   model.PermissionKindAll.String(),
 	}
 
 	if err := ExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {

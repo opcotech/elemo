@@ -22,6 +22,7 @@ interface FormCardProps {
   submitButtonText?: string;
   cancelButtonText?: string;
   className?: string;
+  "data-section"?: string;
 }
 
 export function FormCard({
@@ -35,12 +36,13 @@ export function FormCard({
   submitButtonText = "Save Changes",
   cancelButtonText = "Cancel",
   className,
+  "data-section": dataSection,
 }: FormCardProps) {
   const errorMessage =
     typeof error === "string" ? error : error?.message || null;
 
   return (
-    <Card className={className}>
+    <Card data-section={dataSection} className={className}>
       {(title || description) && (
         <CardHeader>
           {title && <CardTitle>{title}</CardTitle>}

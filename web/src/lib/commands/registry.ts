@@ -1,5 +1,12 @@
 import type { ReactNode } from "react";
 
+export type CommandContext =
+  | "global"
+  | "namespace"
+  | "project"
+  | "document"
+  | "issue";
+
 export interface Command {
   id: string;
   title: string;
@@ -10,6 +17,7 @@ export interface Command {
   category?: string;
   disabled?: boolean;
   hidden?: boolean;
+  context?: CommandContext | CommandContext[];
   action: () => void;
 }
 
@@ -32,23 +40,37 @@ class CommandRegistry {
     return this.commands.get(commandId);
   }
 
-  getCommands(): Command[] {
-    return Array.from(this.commands.values());
+  getCommands(context?: CommandContext): Command[] {
+    const allCommands = Array.from(this.commands.values());
+    if (!context) {
+      return allCommands;
+    }
+    // Filter commands that are available in the given context
+    return allCommands.filter((cmd) => {
+      if (!cmd.context) {
+        return true;
+      }
+      if (Array.isArray(cmd.context)) {
+        return cmd.context.includes(context);
+      }
+      return cmd.context === context;
+    });
   }
 
-  getCommandsByCategory(category: string): Command[] {
-    return this.getCommands().filter((cmd) => cmd.category === category);
+  getCommandsByCategory(category: string, context?: CommandContext): Command[] {
+    return this.getCommands(context).filter((cmd) => cmd.category === category);
   }
 
   getCategories(): string[] {
     return Array.from(this.categories);
   }
 
-  searchCommands(query: string): Command[] {
+  searchCommands(query: string, context?: CommandContext): Command[] {
     const normalizedQuery = query.toLowerCase().trim();
-    if (!normalizedQuery) return this.getCommands();
+    const commands = this.getCommands(context);
+    if (!normalizedQuery) return commands;
 
-    return this.getCommands().filter((command) => {
+    return commands.filter((command) => {
       // Search in title
       if (command.title.toLowerCase().includes(normalizedQuery)) {
         return true;

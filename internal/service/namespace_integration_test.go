@@ -89,6 +89,16 @@ func (s *NamespaceServiceIntegrationTestSuite) TestCreate() {
 	s.Require().NotEmpty(s.namespace.ID)
 	s.Assert().NotNil(s.namespace.CreatedAt)
 	s.Assert().Nil(s.namespace.UpdatedAt)
+
+	// Verify that the creator has * permission on the namespace
+	hasPermission, err := s.PermissionRepo.HasPermission(
+		context.Background(),
+		s.owner.ID,
+		s.namespace.ID,
+		model.PermissionKindAll,
+	)
+	s.Require().NoError(err)
+	s.Assert().True(hasPermission)
 }
 
 func (s *NamespaceServiceIntegrationTestSuite) TestCreateWithoutPermission() {
