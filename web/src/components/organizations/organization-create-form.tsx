@@ -16,12 +16,9 @@ import { FormCard } from "@/components/ui/form-card";
 import { Input } from "@/components/ui/input";
 import { v1OrganizationsCreateMutation } from "@/lib/client/@tanstack/react-query.gen";
 import { zOrganizationCreate } from "@/lib/client/zod.gen";
-import {
-  createFormSchema,
-  getFieldValue,
-  normalizeFormData,
-} from "@/lib/forms";
+import { createFormSchema, normalizeFormData } from "@/lib/forms";
 import { showErrorToast, showSuccessToast } from "@/lib/toast";
+import { getDefaultValue } from "@/lib/utils";
 
 // Create a schema without logo field for the form
 // TODO: Add logo field back in when implementing image upload
@@ -48,7 +45,6 @@ export function OrganizationCreateForm() {
   const mutation = useMutation(v1OrganizationsCreateMutation());
 
   const onSubmit = (values: OrganizationFormValues) => {
-    // Normalize form data: converts empty strings to undefined for optional fields
     const normalizedBody = normalizeFormData(
       organizationFormSchema,
       values
@@ -86,7 +82,7 @@ export function OrganizationCreateForm() {
       onSubmit={form.handleSubmit(onSubmit)}
       onCancel={() => navigate({ to: "/settings/organizations" })}
       isPending={mutation.isPending}
-      error={mutation.error}
+      error={mutation.error as Error}
       submitButtonText="Create Organization"
     >
       <Form {...form}>
@@ -133,7 +129,7 @@ export function OrganizationCreateForm() {
                   type="url"
                   placeholder="https://example.com (optional)"
                   {...field}
-                  value={getFieldValue(field.value)}
+                  value={getDefaultValue(field.value)}
                 />
               </FormControl>
               <FormMessage />

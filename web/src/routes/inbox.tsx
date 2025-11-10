@@ -46,7 +46,6 @@ function InboxPage() {
 
   return (
     <div className="flex h-full">
-      {/* Small screens: Tab view */}
       <div className="w-full lg:hidden">
         <Tabs defaultValue="inbox" className="h-full w-full">
           <TabsList className="grid w-full grid-cols-2">
@@ -74,16 +73,13 @@ function InboxPage() {
         </Tabs>
       </div>
 
-      {/* Big screens: Two-column layout */}
       <div className="hidden h-full w-full lg:flex">
-        {/* Left side - Inbox */}
         <div className="flex-1 overflow-auto border-r">
           <div className="p-6">
             <InboxContent />
           </div>
         </div>
 
-        {/* Right side - Notifications */}
         <div className="flex h-full w-96 flex-col">
           <NotificationsPanel unreadCount={unreadCount} />
         </div>

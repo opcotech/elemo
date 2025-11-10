@@ -165,7 +165,6 @@ export function OrganizationRolesList({
   const [addMemberDialogOpen, setAddMemberDialogOpen] = useState(false);
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
 
-  // Check permissions for organization (read and write)
   const { data: orgPermissions, isLoading: isOrgPermissionsLoading } =
     usePermissions(withResourceType(ResourceType.Organization, organizationId));
 
@@ -174,7 +173,6 @@ export function OrganizationRolesList({
   const hasCreatePermission = hasOrgWritePermission;
   const isPermissionsLoading = isOrgPermissionsLoading;
 
-  // Defense in depth: Don't render if user doesn't have read permission
   if (!isPermissionsLoading && !hasOrgReadPermission) {
     return null;
   }
@@ -217,8 +215,6 @@ export function OrganizationRolesList({
       </Button>
     ) : undefined;
 
-  // Only show empty state when there's no data at all (not filtered)
-  // When filtered results are empty but original data exists, show search + empty state
   const emptyState =
     roles.length === 0
       ? {
@@ -247,7 +243,6 @@ export function OrganizationRolesList({
           }
         : undefined;
 
-  // Show search input only when there's data to search through OR when search is active
   const shouldShowSearch = roles.length > 0 || searchTerm.trim() !== "";
 
   return (

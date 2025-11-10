@@ -48,7 +48,6 @@ function Dashboard() {
         </div>
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {/* User Profile Card */}
           <Card>
             <CardHeader className="flex flex-row items-center space-y-0 pb-2">
               {user?.first_name && user?.last_name && (
@@ -80,7 +79,6 @@ function Dashboard() {
             </CardContent>
           </Card>
 
-          {/* Quick Stats */}
           <Card>
             <CardHeader>
               <CardTitle>Quick Stats</CardTitle>
@@ -112,7 +110,6 @@ function Dashboard() {
             </CardContent>
           </Card>
 
-          {/* Quick Actions */}
           <Card>
             <CardHeader>
               <CardTitle>Quick Actions</CardTitle>
@@ -136,7 +133,6 @@ function Dashboard() {
           </Card>
         </div>
 
-        {/* Additional sections can be added here */}
         <div className="mt-8">
           <Card>
             <CardHeader>

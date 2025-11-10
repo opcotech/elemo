@@ -24,7 +24,11 @@ import {
 import type { Permission } from "@/lib/api";
 import { can } from "@/lib/auth/permissions";
 import { v1OrganizationRolePermissionsGetOptions } from "@/lib/client/@tanstack/react-query.gen";
-import { getFieldValue } from "@/lib/forms";
+import {
+  extractResourceId,
+  formatResourceId,
+  getDefaultValue,
+} from "@/lib/utils";
 
 interface RolePermissionAssignmentProps {
   organizationId: string;
@@ -64,19 +68,6 @@ export function RolePermissionAssignment({
       },
     })
   );
-
-  const extractResourceId = (target: string): string => {
-    const targetValue = getFieldValue(target);
-    const parts = targetValue.split(":");
-    return parts.length > 1 ? parts[1] : targetValue;
-  };
-
-  const formatResourceId = (resourceId: string): string => {
-    if (resourceId === "00000000000000000000") {
-      return "System";
-    }
-    return resourceId;
-  };
 
   const handleDeleteClick = (permission: Permission) => {
     setSelectedPermission(permission);
@@ -178,12 +169,12 @@ export function RolePermissionAssignment({
             <TableBody>
               {permissions?.map((permission: Permission) => {
                 const resourceId = extractResourceId(
-                  getFieldValue(permission.target)
+                  getDefaultValue(permission.target)
                 );
                 return (
                   <TableRow key={permission.id}>
                     <TableCell className="font-medium">
-                      {getFieldValue(permission.target_type)}
+                      {getDefaultValue(permission.target_type)}
                     </TableCell>
                     <TableCell>{formatResourceId(resourceId)}</TableCell>
                     <TableCell>{permission.kind}</TableCell>

@@ -18,12 +18,9 @@ import { Input } from "@/components/ui/input";
 import type { Organization } from "@/lib/api";
 import { v1OrganizationUpdateMutation } from "@/lib/client/@tanstack/react-query.gen";
 import { zOrganizationPatch } from "@/lib/client/zod.gen";
-import {
-  createFormSchema,
-  getFieldValue,
-  normalizePatchData,
-} from "@/lib/forms";
+import { createFormSchema, normalizePatchData } from "@/lib/forms";
 import { showErrorToast, showSuccessToast } from "@/lib/toast";
+import { getDefaultValue } from "@/lib/utils";
 
 // Create a schema without logo and status fields for the form
 // TODO: Add logo field when implementing image upload
@@ -52,18 +49,16 @@ export function OrganizationEditForm({
     defaultValues: {
       name: organization.name,
       email: organization.email,
-      website: getFieldValue(organization.website),
+      website: getDefaultValue(organization.website),
     },
   });
 
-  // Update form when organization data changes (but not while user is editing)
   useEffect(() => {
-    // Only reset if the form is not being actively edited (isDirty check)
     if (!form.formState.isDirty) {
       form.reset({
         name: organization.name,
         email: organization.email,
-        website: getFieldValue(organization.website),
+        website: getDefaultValue(organization.website),
       });
     }
   }, [organization.name, organization.email, organization.website]);
@@ -71,7 +66,6 @@ export function OrganizationEditForm({
   const mutation = useMutation(v1OrganizationUpdateMutation());
 
   const onSubmit = (values: OrganizationEditFormValues) => {
-    // Normalize patch data: converts empty strings to null for cleared optional fields
     const normalizedBody = normalizePatchData(
       organizationEditFormSchema,
       values,
@@ -164,7 +158,7 @@ export function OrganizationEditForm({
                   type="url"
                   placeholder="https://example.com (optional)"
                   {...field}
-                  value={getFieldValue(field.value)}
+                  value={getDefaultValue(field.value)}
                 />
               </FormControl>
               <FormMessage />

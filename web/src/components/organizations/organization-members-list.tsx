@@ -85,7 +85,6 @@ export function OrganizationMembersList({
   const [selectedMember, setSelectedMember] =
     useState<OrganizationMember | null>(null);
 
-  // Check permissions for organization (read and write)
   const { data: orgPermissions, isLoading: isOrgPermissionsLoading } =
     usePermissions(withResourceType(ResourceType.Organization, organizationId));
 
@@ -93,7 +92,6 @@ export function OrganizationMembersList({
   const hasOrgWritePermission = can(orgPermissions, "write");
   const isPermissionsLoading = isOrgPermissionsLoading;
 
-  // Defense in depth: Don't render if user doesn't have read permission
   if (!isPermissionsLoading && !hasOrgReadPermission) {
     return null;
   }
@@ -122,7 +120,6 @@ export function OrganizationMembersList({
     setSelectedMember(null);
   };
 
-  // Sort members: pending first, then others sorted alphabetically
   const sortedMembers = useMemo(() => {
     if (!members) return [];
     return [...members].sort((a, b) => {
@@ -153,8 +150,6 @@ export function OrganizationMembersList({
     );
   }, [sortedMembers, searchTerm]);
 
-  // Only show empty state when there's no data at all (not filtered)
-  // When filtered results are empty but original data exists, show search + empty state
   const emptyState =
     !sortedMembers || sortedMembers.length === 0
       ? {
@@ -172,7 +167,6 @@ export function OrganizationMembersList({
           }
         : undefined;
 
-  // Show search input only when there's data to search through OR when search is active
   const shouldShowSearch =
     (sortedMembers && sortedMembers.length > 0) || searchTerm.trim() !== "";
 

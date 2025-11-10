@@ -37,8 +37,8 @@ func (r *PermissionRepository) scan(permParam, subjectParam, targetParam string)
 			return nil, err
 		}
 
-		// Exclude "id" and "kind" from ScanIntoStruct to handle them manually
-		// "kind" must be manually unmarshaled because JSON unmarshaling doesn't properly call UnmarshalText for uint8 types
+		// Exclude "id" and "kind" from ScanIntoStruct to handle them manually. "kind" must be manually
+		// unmarshaled because JSON unmarshaling doesn't properly call UnmarshalText for uint8 types.
 		if err := ScanIntoStruct(&val, &parsed, []string{"id", "kind"}); err != nil {
 			return nil, err
 		}
@@ -47,8 +47,7 @@ func (r *PermissionRepository) scan(permParam, subjectParam, targetParam string)
 		parsed.Subject, _ = model.NewIDFromString(subject.GetProperties()["id"].(string), subject.Labels[0])
 		parsed.Target, _ = model.NewIDFromString(target.GetProperties()["id"].(string), target.Labels[0])
 
-		// Manually extract and unmarshal kind to ensure proper conversion from string to PermissionKind
-		// This is necessary because JSON unmarshaling might not properly call UnmarshalText for uint8 types
+		// Manually extract and unmarshal kind to ensure proper conversion from string to PermissionKind.
 		kindStr := val.GetProperties()["kind"].(string)
 		if err := parsed.Kind.UnmarshalText([]byte(kindStr)); err != nil {
 			return nil, err
@@ -309,13 +308,11 @@ func (r *PermissionRepository) GetBySubjectAndTarget(ctx context.Context, source
 	}
 
 	cypher := `
-	MATCH (s:` + source.Label() + ` {id: $source})
-	MATCH (t:` + target.Label() + ` {id: $target})
+	MATCH (s:` + source.Label() + ` {id: $source}), (t:` + target.Label() + ` {id: $target})
 	MATCH path=(s)-[:` + EdgeKindHasPermission.String() + `|` + EdgeKindMemberOf.String() + `*..2]->(t)
-	UNWIND relationships(path) AS rel
-	WITH s, t, rel, startNode(rel) AS relStart, endNode(rel) AS relEnd
-	WHERE type(rel) = "` + EdgeKindHasPermission.String() + `" AND relEnd = t
-	RETURN s, rel AS p, t
+	WITH s, t, last(relationships(path)) AS p
+	WHERE type(p) = "` + EdgeKindHasPermission.String() + `"
+	RETURN s, p, t
 	ORDER BY p.created_at DESC`
 
 	params := map[string]any{

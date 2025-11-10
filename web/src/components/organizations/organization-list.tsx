@@ -143,7 +143,6 @@ export function OrganizationList() {
           }
         : undefined;
 
-  // Show search input only when there's data to search through OR when search is active
   const shouldShowSearch =
     (organizations && organizations.length > 0) || searchTerm.trim() !== "";
 

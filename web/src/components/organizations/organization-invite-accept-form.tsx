@@ -49,7 +49,7 @@ export function OrganizationInviteAcceptForm() {
 
   const acceptInvitationMutation = useMutation({
     ...v1OrganizationMembersAcceptMutation({
-      auth: () => undefined, // Public endpoint, no authentication required
+      auth: () => undefined,
     }),
     onSuccess: () => {
       showSuccessToast(
@@ -66,11 +66,9 @@ export function OrganizationInviteAcceptForm() {
         errorMessage.toLowerCase().includes("password") &&
         errorMessage.toLowerCase().includes("required")
       ) {
-        // This is expected for pending users - show password form without error toast
         setNeedsPassword(true);
-        return; // Don't show error toast for this expected case
+        return;
       }
-      // Show error toast for actual errors
       showErrorToast("Failed to accept invitation", errorMessage);
     },
   });

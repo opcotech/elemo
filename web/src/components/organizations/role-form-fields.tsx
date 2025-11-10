@@ -16,7 +16,8 @@ import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { zRoleCreate } from "@/lib/client/zod.gen";
-import { createFormSchema, getFieldValue } from "@/lib/forms";
+import { createFormSchema } from "@/lib/forms";
+import { getDefaultValue } from "@/lib/utils";
 
 const roleFormSchema = createFormSchema(zRoleCreate);
 
@@ -90,7 +91,7 @@ export function RoleFormFields({
                 <Textarea
                   placeholder="Enter role description (optional)"
                   {...field}
-                  value={getFieldValue(field.value)}
+                  value={getDefaultValue(field.value)}
                   rows={4}
                   disabled={isPending}
                 />

@@ -78,12 +78,10 @@ export function OrganizationPendingInvitationsList({
   const [selectedMember, setSelectedMember] =
     useState<OrganizationMember | null>(null);
 
-  // Filter to only pending members
   const pendingMembers = useMemo(() => {
     return (members || []).filter((member) => member.status === "pending");
   }, [members]);
 
-  // Check permissions for organization (write)
   const { data: orgPermissions, isLoading: isOrgPermissionsLoading } =
     usePermissions(withResourceType(ResourceType.Organization, organizationId));
 
@@ -111,8 +109,6 @@ export function OrganizationPendingInvitationsList({
     );
   }, [pendingMembers, searchTerm]);
 
-  // Only show empty state when there's no data at all (not filtered)
-  // When filtered results are empty but original data exists, show search + empty state
   const emptyState =
     !pendingMembers || pendingMembers.length === 0
       ? {
@@ -130,7 +126,6 @@ export function OrganizationPendingInvitationsList({
           }
         : undefined;
 
-  // Show search input only when there's data to search through OR when search is active
   const shouldShowSearch =
     (pendingMembers && pendingMembers.length > 0) || searchTerm.trim() !== "";
 

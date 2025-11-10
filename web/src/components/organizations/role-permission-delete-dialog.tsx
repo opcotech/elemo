@@ -7,7 +7,7 @@ import {
   v1OrganizationRolePermissionRemoveMutation,
   v1OrganizationRolePermissionsGetOptions,
 } from "@/lib/client/@tanstack/react-query.gen";
-import { getFieldValue } from "@/lib/forms";
+import { extractResourceId, formatResourceId } from "@/lib/utils";
 
 interface RolePermissionDeleteDialogProps {
   permission: Permission;
@@ -57,21 +57,8 @@ export function RolePermissionDeleteDialog({
     });
   };
 
-  // Parse permission target to show in confirmation
-  const parseTarget = (target: string): string => {
-    const [resourceType, resourceId] = getFieldValue(target).split(":");
-    if (!resourceId) {
-      return getFieldValue(target);
-    }
-    const displayId =
-      resourceId === "00000000000000000000"
-        ? "System"
-        : resourceId.slice(0, 8) + "...";
-    return `${resourceType}: ${displayId}`;
-  };
-
-  const targetDisplay = parseTarget(getFieldValue(permission.target));
-  const targetType = getFieldValue(permission.target_type);
+  const targetDisplay = formatResourceId(extractResourceId(permission.target));
+  const targetType = permission.target_type;
 
   return (
     <DeleteConfirmationDialog

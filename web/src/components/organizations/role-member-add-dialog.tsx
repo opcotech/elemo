@@ -58,14 +58,12 @@ export function RoleMemberAddDialog({
     },
   });
 
-  // Get organization members
   const { data: organizationMembers, isLoading: isLoadingMembers } = useQuery(
     v1OrganizationMembersGetOptions({
       path: { id: organizationId },
     })
   );
 
-  // Get current role members to filter them out
   const { data: roleMembers, isLoading: isLoadingRoleMembers } = useQuery(
     v1OrganizationRoleMembersGetOptions({
       path: {

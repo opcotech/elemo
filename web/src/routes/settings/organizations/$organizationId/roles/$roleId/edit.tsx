@@ -4,11 +4,11 @@ import { useEffect } from "react";
 
 import {
   OrganizationDetailError,
-  OrganizationDetailHeader,
   OrganizationDetailSkeleton,
   OrganizationNotFound,
   OrganizationRoleEditFormWithPermissions,
 } from "@/components/organizations";
+import { PageHeader } from "@/components/page-header";
 import { useBreadcrumbUtils } from "@/hooks/use-breadcrumbs";
 import { ResourceType } from "@/hooks/use-permissions";
 import { useRequirePermission } from "@/hooks/use-require-permission";
@@ -35,7 +35,6 @@ function OrganizationRoleEditPage() {
   const { setBreadcrumbsFromItems } = useBreadcrumbUtils();
   const { organizationId, roleId } = Route.useParams() as RouteParams;
 
-  // Check permissions for both organization write and role write
   const { isLoading: isCheckingOrgPermission } = useRequirePermission({
     resourceType: ResourceType.Organization,
     permissionKind: "write",
@@ -51,7 +50,6 @@ function OrganizationRoleEditPage() {
   const isCheckingPermission =
     isCheckingOrgPermission || isCheckingRolePermission;
 
-  // Fetch organization data for breadcrumbs
   const {
     data: organization,
     isLoading: isLoadingOrg,
@@ -65,7 +63,6 @@ function OrganizationRoleEditPage() {
     enabled: !isCheckingPermission,
   });
 
-  // Fetch role data
   const {
     data: role,
     isLoading: isLoadingRole,
@@ -113,7 +110,6 @@ function OrganizationRoleEditPage() {
     ]);
   }, [setBreadcrumbsFromItems, organization, role]);
 
-  // Show loading while checking permissions or loading data
   if (isCheckingPermission || isLoading) {
     return <OrganizationDetailSkeleton />;
   }
@@ -128,7 +124,7 @@ function OrganizationRoleEditPage() {
 
   return (
     <div className="space-y-6">
-      <OrganizationDetailHeader
+      <PageHeader
         title="Edit Role"
         description="Update the role details below."
       />

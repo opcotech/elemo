@@ -25,14 +25,10 @@ import { Textarea } from "@/components/ui/textarea";
 import type { TodoPriority } from "@/lib/api";
 import { v1TodoUpdateMutation } from "@/lib/client/@tanstack/react-query.gen";
 import { zTodoPatch } from "@/lib/client/zod.gen";
-import {
-  createFormSchema,
-  getFieldValue,
-  normalizePatchData,
-} from "@/lib/forms";
+import { createFormSchema, normalizePatchData } from "@/lib/forms";
 import { showErrorToast, showSuccessToast } from "@/lib/toast";
+import { getDefaultValue } from "@/lib/utils";
 
-// Use form schema with empty string handling for optional fields
 const todoEditFormSchema = createFormSchema(zTodoPatch);
 
 type TodoEditFormValues = z.infer<typeof todoEditFormSchema>;
@@ -77,7 +73,7 @@ export function EditTodoForm({
     if (todo && open) {
       form.reset({
         title: todo.title,
-        description: getFieldValue(todo.description),
+        description: getDefaultValue(todo.description),
         priority: todo.priority,
         due_date: todo.due_date,
       });
@@ -87,7 +83,6 @@ export function EditTodoForm({
   const onSubmit = (values: TodoEditFormValues) => {
     if (!todo) return;
 
-    // Normalize patch data: converts empty strings to null for cleared optional fields
     const normalizedBody = normalizePatchData(todoEditFormSchema, values, {
       title: todo.title,
       description: todo.description,
@@ -155,7 +150,7 @@ export function EditTodoForm({
                 className="min-h-40 resize-y"
                 rows={6}
                 {...field}
-                value={getFieldValue(field.value)}
+                value={getDefaultValue(field.value)}
               />
             </FormControl>
             <FormMessage />

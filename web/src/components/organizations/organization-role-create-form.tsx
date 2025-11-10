@@ -70,7 +70,6 @@ export function OrganizationRoleCreateForm({
     ) as RoleCreate;
 
     try {
-      // Create the role first
       const data = await roleMutation.mutateAsync({
         path: {
           id: organizationId,
@@ -81,7 +80,6 @@ export function OrganizationRoleCreateForm({
       const roleId = data.id;
       setCreatedRoleId(roleId);
 
-      // Create pending permissions if any
       if (hasPendingPermissions) {
         const { success, failed, total } = await createPermissions(roleId);
 
@@ -125,7 +123,6 @@ export function OrganizationRoleCreateForm({
 
   const isSubmitting = roleMutation.isPending || isCreatingPermissions;
 
-  // Show success state after role creation
   if (createdRoleId) {
     return (
       <div className="flex flex-col gap-6">

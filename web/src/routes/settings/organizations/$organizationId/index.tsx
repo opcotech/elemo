@@ -5,13 +5,13 @@ import { useEffect, useMemo, useState } from "react";
 import {
   OrganizationDangerZone,
   OrganizationDetailError,
-  OrganizationDetailHeader,
   OrganizationDetailInfo,
   OrganizationDetailSkeleton,
   OrganizationMembersList,
   OrganizationNotFound,
   OrganizationRolesList,
 } from "@/components/organizations";
+import { PageHeader } from "@/components/page-header";
 import { useBreadcrumbUtils } from "@/hooks/use-breadcrumbs";
 import {
   ResourceType,
@@ -52,7 +52,6 @@ function OrganizationDetailPage() {
     })
   );
 
-  // Fetch organization members
   const {
     data: members,
     isLoading: isLoadingMembers,
@@ -65,7 +64,6 @@ function OrganizationDetailPage() {
     })
   );
 
-  // Fetch organization roles
   const {
     data: roles,
     isLoading: isLoadingRoles,
@@ -78,13 +76,11 @@ function OrganizationDetailPage() {
     })
   );
 
-  // Check if user has read permission (i.e., is a member of the organization)
   const { data: orgPermissions, isLoading: isOrgPermissionsLoading } =
     usePermissions(withResourceType(ResourceType.Organization, organizationId));
 
   const hasOrgReadPermission = can(orgPermissions, "read");
 
-  // Get current user ID
   useEffect(() => {
     const loadCurrentUser = async () => {
       const user = await getUser();
@@ -95,7 +91,6 @@ function OrganizationDetailPage() {
     loadCurrentUser();
   }, []);
 
-  // No need to sort here - sorting is handled in OrganizationMembersList
   const processedMembers = useMemo(() => {
     return members || [];
   }, [members]);
@@ -135,11 +130,10 @@ function OrganizationDetailPage() {
 
   return (
     <div className="space-y-6">
-      <OrganizationDetailHeader title={organization.name} />
+      <PageHeader title={organization.name} />
 
       <OrganizationDetailInfo organization={organization} />
 
-      {/* Only show members and roles if user has read permission (is a member) */}
       {!isOrgPermissionsLoading && hasOrgReadPermission && (
         <>
           <OrganizationMembersList

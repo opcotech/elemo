@@ -143,6 +143,88 @@ func (s *CachedOrganizationRepositoryIntegrationTestSuite) TestDelete() {
 	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }
 
+func (s *CachedOrganizationRepositoryIntegrationTestSuite) TestAddInvitation() {
+	s.Require().NoError(s.OrganizationRepo.Create(context.Background(), s.testUser.ID, s.organization))
+
+	invitedUser := testModel.NewUser()
+	s.Require().NoError(s.UserRepo.Create(context.Background(), invitedUser))
+
+	// Cache the organization first
+	_, err := s.organizationRepo.Get(context.Background(), s.organization.ID)
+	s.Require().NoError(err)
+	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
+
+	// Add invitation - should clear cache
+	s.Require().NoError(s.organizationRepo.AddInvitation(context.Background(), s.organization.ID, invitedUser.ID))
+
+	// Verify cache is cleared
+	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
+
+	// Verify invitation exists
+	invitations, err := s.OrganizationRepo.GetInvitations(context.Background(), s.organization.ID)
+	s.Require().NoError(err)
+	s.Require().Len(invitations, 1)
+	s.Assert().Equal(invitedUser.ID, invitations[0].ID)
+}
+
+func (s *CachedOrganizationRepositoryIntegrationTestSuite) TestRemoveInvitation() {
+	s.Require().NoError(s.OrganizationRepo.Create(context.Background(), s.testUser.ID, s.organization))
+
+	invitedUser := testModel.NewUser()
+	s.Require().NoError(s.UserRepo.Create(context.Background(), invitedUser))
+
+	// Add invitation first
+	s.Require().NoError(s.OrganizationRepo.AddInvitation(context.Background(), s.organization.ID, invitedUser.ID))
+
+	// Cache the organization
+	_, err := s.organizationRepo.Get(context.Background(), s.organization.ID)
+	s.Require().NoError(err)
+	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
+
+	// Remove invitation - should clear cache
+	s.Require().NoError(s.organizationRepo.RemoveInvitation(context.Background(), s.organization.ID, invitedUser.ID))
+
+	// Verify cache is cleared
+	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
+
+	// Verify invitation is removed
+	invitations, err := s.OrganizationRepo.GetInvitations(context.Background(), s.organization.ID)
+	s.Require().NoError(err)
+	s.Assert().Len(invitations, 0)
+}
+
+func (s *CachedOrganizationRepositoryIntegrationTestSuite) TestGetInvitations() {
+	s.Require().NoError(s.OrganizationRepo.Create(context.Background(), s.testUser.ID, s.organization))
+
+	// Initially no invitations
+	invitations, err := s.organizationRepo.GetInvitations(context.Background(), s.organization.ID)
+	s.Require().NoError(err)
+	s.Assert().Len(invitations, 0)
+
+	// Add multiple invitations
+	invitedUser1 := testModel.NewUser()
+	s.Require().NoError(s.UserRepo.Create(context.Background(), invitedUser1))
+	s.Require().NoError(s.OrganizationRepo.AddInvitation(context.Background(), s.organization.ID, invitedUser1.ID))
+
+	invitedUser2 := testModel.NewUser()
+	s.Require().NoError(s.UserRepo.Create(context.Background(), invitedUser2))
+	s.Require().NoError(s.OrganizationRepo.AddInvitation(context.Background(), s.organization.ID, invitedUser2.ID))
+
+	// Get invitations - should delegate to underlying repo (no caching)
+	invitations, err = s.organizationRepo.GetInvitations(context.Background(), s.organization.ID)
+	s.Require().NoError(err)
+	s.Require().Len(invitations, 2)
+
+	invitedIDs := make([]model.ID, len(invitations))
+	for i, inv := range invitations {
+		invitedIDs[i] = inv.ID
+	}
+	s.Assert().ElementsMatch([]model.ID{invitedUser1.ID, invitedUser2.ID}, invitedIDs)
+
+	// Verify no cache keys were created (GetInvitations doesn't cache)
+	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
+}
+
 func TestCachedOrganizationRepositoryIntegrationTestSuite(t *testing.T) {
 	suite.Run(t, new(CachedOrganizationRepositoryIntegrationTestSuite))
 }

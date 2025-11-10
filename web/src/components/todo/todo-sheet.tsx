@@ -77,7 +77,6 @@ export function TodoSheet() {
     close: closeEditForm,
   } = useEditTodoForm();
 
-  // Sort todos by due date, priority, then creation date
   const sortedTodos = useMemo(() => {
     if (!todos) return [];
 

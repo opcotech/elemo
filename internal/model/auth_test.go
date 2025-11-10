@@ -74,6 +74,12 @@ func TestUserTokenContext_MarshalText(t *testing.T) {
 			wantErr: nil,
 		},
 		{
+			name:    "marshal invite context",
+			context: UserTokenContextInvite,
+			want:    []byte("invite"),
+			wantErr: nil,
+		},
+		{
 			name:    "marshal invalid context",
 			context: UserTokenContext(99),
 			want:    nil,

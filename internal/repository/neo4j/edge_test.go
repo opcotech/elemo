@@ -24,6 +24,7 @@ func TestEdgeKind_String(t *testing.T) {
 		{"HAS_PROJECT", EdgeKindHasProject, "HAS_PROJECT"},
 		{"HAS_TEAM", EdgeKindHasTeam, "HAS_TEAM"},
 		{"INVITED", EdgeKindInvited, "INVITED"},
+		{"INVITED_TO", EdgeKindInvitedTo, "INVITED_TO"},
 		{"KIND_OF", EdgeKindKindOf, "KIND_OF"},
 		{"MEMBER_OF", EdgeKindMemberOf, "MEMBER_OF"},
 		{"RELATED_TO", EdgeKindRelatedTo, "RELATED_TO"},

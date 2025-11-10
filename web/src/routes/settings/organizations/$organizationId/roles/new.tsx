@@ -4,11 +4,11 @@ import { useEffect } from "react";
 
 import {
   OrganizationDetailError,
-  OrganizationDetailHeader,
   OrganizationDetailSkeleton,
   OrganizationNotFound,
   OrganizationRoleCreateFormWithPermissions,
 } from "@/components/organizations";
+import { PageHeader } from "@/components/page-header";
 import { useBreadcrumbUtils } from "@/hooks/use-breadcrumbs";
 import { ResourceType } from "@/hooks/use-permissions";
 import { useRequirePermission } from "@/hooks/use-require-permission";
@@ -76,7 +76,6 @@ function OrganizationRoleCreatePage() {
     ]);
   }, [setBreadcrumbsFromItems, organization]);
 
-  // Show loading while checking permissions or loading organization
   if (isCheckingOrgPermission || isLoading) {
     return <OrganizationDetailSkeleton />;
   }
@@ -91,7 +90,7 @@ function OrganizationRoleCreatePage() {
 
   return (
     <div className="space-y-6">
-      <OrganizationDetailHeader
+      <PageHeader
         title="Create Role"
         description="Create a new role for this organization."
       />

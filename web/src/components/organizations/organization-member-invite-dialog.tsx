@@ -49,7 +49,6 @@ export function OrganizationMemberInviteDialog({
 }: OrganizationMemberInviteDialogProps) {
   const queryClient = useQueryClient();
 
-  // Fetch organization roles for the role selector
   const { data: roles, isLoading: isLoadingRoles } = useQuery(
     v1OrganizationRolesGetOptions({
       path: { id: organizationId },

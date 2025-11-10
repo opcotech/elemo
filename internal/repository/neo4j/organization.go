@@ -251,19 +251,17 @@ func (r *OrganizationRepository) GetMembers(ctx context.Context, orgID model.ID)
 		return nil, errors.Join(repository.ErrOrganizationRead, err)
 	}
 
-	// Query both MEMBER_OF (active members) and INVITED_TO (pending invitations)
-	// Single query using UNION to combine active members with pending invitations
 	cypher := `
 	MATCH (o:` + orgID.Label() + ` {id: $org_id})
-	MATCH (u:` + model.ResourceTypeUser.String() + `)-[:` + EdgeKindMemberOf.String() + `]->(o)
+	MATCH (u:` + model.ResourceTypeUser.String() + `)-[rel:` + EdgeKindMemberOf.String() + `|` + EdgeKindInvitedTo.String() + `]->(o)
+	WITH DISTINCT u, o, collect(DISTINCT type(rel)) AS relTypes
+	WITH u, o, relTypes, CASE WHEN '` + EdgeKindMemberOf.String() + `' IN relTypes THEN true ELSE false END AS isMember
+	WHERE isMember = true OR NOT EXISTS((u)-[:` + EdgeKindMemberOf.String() + `]->(o))
 	OPTIONAL MATCH (u)-[:` + EdgeKindMemberOf.String() + `]->(r:` + model.ResourceTypeRole.String() + `)<-[:` + EdgeKindHasTeam.String() + `]-(o)
-	WITH u, [r IN collect(DISTINCT r) WHERE r IS NOT NULL | r.name] AS roles, true AS isMember
+	WITH u, isMember, collect(DISTINCT r) AS roleNodes
+	WITH u, isMember,
+	CASE WHEN isMember THEN [role IN roleNodes WHERE role IS NOT NULL | role.name] ELSE [] END AS roles
 	RETURN u AS u, roles AS roles, isMember AS isMember
-	UNION
-	MATCH (o:` + orgID.Label() + ` {id: $org_id})
-	MATCH (u:` + model.ResourceTypeUser.String() + `)-[:` + EdgeKindInvitedTo.String() + `]->(o)
-	WHERE NOT EXISTS((u)-[:` + EdgeKindMemberOf.String() + `]->(o))
-	RETURN u AS u, [] AS roles, false AS isMember
 	ORDER BY isMember DESC, u.created_at ASC`
 
 	params := map[string]any{
@@ -381,12 +379,10 @@ func (r *OrganizationRepository) AddInvitation(ctx context.Context, orgID, userI
 	cypher := `
 	MATCH (o:` + orgID.Label() + ` {id: $org_id})
 	MATCH (u:` + userID.Label() + ` {id: $user_id})
-	WITH o, u
-	WHERE o IS NOT NULL AND u IS NOT NULL
 	MERGE (u)-[i:` + EdgeKindInvitedTo.String() + `]->(o)
 	ON CREATE SET i.created_at = datetime($now), i.id = $invitation_id
 	ON MATCH SET i.updated_at = datetime($now)
-	RETURN i`
+	RETURN o.id AS org_id`
 
 	params := map[string]any{
 		"org_id":        orgID.String(),
@@ -395,24 +391,11 @@ func (r *OrganizationRepository) AddInvitation(ctx context.Context, orgID, userI
 		"now":           time.Now().UTC().Format(time.RFC3339Nano),
 	}
 
-	result, err := r.db.GetWriteSession(ctx).Run(ctx, cypher, params)
+	_, err := ExecuteWriteAndReadSingle(ctx, r.db, cypher, params, func(_ *neo4j.Record) (*struct{}, error) {
+		return &struct{}{}, nil
+	})
 	if err != nil {
 		return errors.Join(repository.ErrOrganizationAddMember, err)
-	}
-
-	// Check if any records were returned (nodes were found)
-	hasRecord := false
-	for result.Next(ctx) {
-		hasRecord = true
-		break
-	}
-
-	if err := result.Err(); err != nil {
-		return errors.Join(repository.ErrOrganizationAddMember, err)
-	}
-
-	if !hasRecord {
-		return errors.Join(repository.ErrOrganizationAddMember, repository.ErrNotFound)
 	}
 
 	return nil
@@ -465,8 +448,7 @@ func (r *OrganizationRepository) GetInvitations(ctx context.Context, orgID model
 	}
 
 	cypher := `
-	MATCH (o:` + orgID.Label() + ` {id: $org_id})
-	MATCH (u:` + model.ResourceTypeUser.String() + `)-[:` + EdgeKindInvitedTo.String() + `]->(o)
+	MATCH (u:` + model.ResourceTypeUser.String() + `)-[:` + EdgeKindInvitedTo.String() + `]->(o:` + orgID.Label() + ` {id: $org_id})
 	RETURN u, [] AS roles
 	ORDER BY u.created_at ASC`
 

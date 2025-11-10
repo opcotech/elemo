@@ -34,12 +34,9 @@ import {
   v1OrganizationRolesGetOptions,
 } from "@/lib/client/@tanstack/react-query.gen";
 import { zRolePatch } from "@/lib/client/zod.gen";
-import {
-  createFormSchema,
-  getFieldValue,
-  normalizePatchData,
-} from "@/lib/forms";
+import { createFormSchema, normalizePatchData } from "@/lib/forms";
 import { showErrorToast, showSuccessToast } from "@/lib/toast";
+import { getDefaultValue } from "@/lib/utils";
 
 const roleEditFormSchema = createFormSchema(zRolePatch);
 
@@ -63,17 +60,15 @@ export function OrganizationRoleEditForm({
     resolver: zodResolver(roleEditFormSchema),
     defaultValues: {
       name: role.name,
-      description: getFieldValue(role.description),
+      description: getDefaultValue(role.description),
     },
   });
 
-  // Update form when role data changes (but not while user is editing)
   useEffect(() => {
-    // Only reset if the form is not being actively edited (isDirty check)
     if (!form.formState.isDirty) {
       form.reset({
         name: role.name,
-        description: getFieldValue(role.description),
+        description: getDefaultValue(role.description),
       });
     }
   }, [role.name, role.description]);
@@ -81,7 +76,6 @@ export function OrganizationRoleEditForm({
   const mutation = useMutation(v1OrganizationRoleUpdateMutation());
 
   const onSubmit = (values: RoleEditFormValues) => {
-    // Normalize patch data: converts empty strings to null for cleared optional fields
     const normalizedBody = normalizePatchData(roleEditFormSchema, values, {
       name: role.name,
       description: role.description,
@@ -99,7 +93,6 @@ export function OrganizationRoleEditForm({
         onSuccess: () => {
           showSuccessToast("Role updated", "Role updated successfully");
 
-          // Invalidate queries to refresh the list and detail views
           queryClient.invalidateQueries({
             queryKey: v1OrganizationRolesGetOptions({
               path: { id: organizationId },
@@ -168,7 +161,7 @@ export function OrganizationRoleEditForm({
                     <Textarea
                       placeholder="Enter role description (optional)"
                       {...field}
-                      value={getFieldValue(field.value)}
+                      value={getDefaultValue(field.value)}
                       rows={4}
                     />
                   </FormControl>

@@ -1,10 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect } from "react";
 
-import {
-  OrganizationCreateForm,
-  OrganizationDetailHeader,
-} from "@/components/organizations";
+import { OrganizationCreateForm } from "@/components/organizations";
+import { PageHeader } from "@/components/page-header";
 import { useBreadcrumbUtils } from "@/hooks/use-breadcrumbs";
 import { ResourceType } from "@/hooks/use-permissions";
 import { useRequirePermission } from "@/hooks/use-require-permission";
@@ -49,7 +47,7 @@ function OrganizationCreatePage() {
 
   return (
     <div className="space-y-6">
-      <OrganizationDetailHeader
+      <PageHeader
         title="Create Organization"
         description="Create a new organization to manage your team and projects."
       />

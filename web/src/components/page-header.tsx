@@ -1,6 +1,3 @@
-/**
- * Reusable component for page headers with title and optional description.
- */
 export function PageHeader({
   title,
   description,

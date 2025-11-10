@@ -1,5 +1,7 @@
 import type { z } from "zod";
 
+import { isEmpty } from "./utils";
+
 import { config } from "@/config";
 import { getAccessToken } from "@/lib/auth/session";
 import { tokenRefreshService } from "@/lib/auth/token-refresh-service";
@@ -49,14 +51,6 @@ export function normalizeData<T extends Record<string, any>>(
   data: T
 ): Partial<T> {
   const normalizedData: Partial<T> = { ...data };
-
-  function isEmpty(value: any) {
-    return (
-      value === null ||
-      value === undefined ||
-      (typeof value === "string" && value.trim() === "")
-    );
-  }
 
   for (const [key, value] of Object.entries(data)) {
     if (schema.shape[key as keyof T]?.isOptional() && isEmpty(value)) {

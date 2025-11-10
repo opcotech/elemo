@@ -1,7 +1,3 @@
-/**
- * Reusable component for displaying a label-value pair in detail views.
- * Can display either a simple string value or custom children content.
- */
 export function DetailField({
   label,
   value,

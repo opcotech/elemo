@@ -86,7 +86,6 @@ export function RolePermissionAddDialog({
   const mutation = useMutation(v1OrganizationRolePermissionAddMutation());
 
   const onSubmit = (values: PermissionFormValues) => {
-    // Validate that resource type is organization-scoped
     if (!ORGANIZATION_SCOPED_RESOURCE_TYPES.includes(values.resourceType)) {
       showErrorToast(
         "Invalid resource type",

@@ -28,15 +28,10 @@ import { useAuth } from "@/hooks/use-auth";
 import type { TodoCreate } from "@/lib/api";
 import { v1TodosCreateMutation } from "@/lib/client/@tanstack/react-query.gen";
 import { zTodoCreate } from "@/lib/client/zod.gen";
-import {
-  createFormSchema,
-  getFieldValue,
-  normalizeFormData,
-} from "@/lib/forms";
+import { createFormSchema, normalizeFormData } from "@/lib/forms";
 import { showErrorToast, showSuccessToast } from "@/lib/toast";
+import { getDefaultValue } from "@/lib/utils";
 
-// Use form schema with empty string handling for optional fields
-// We need to modify it slightly for the form since we don't want to require owned_by in the form
 const todoFormSchema = createFormSchema(zTodoCreate.omit({ owned_by: true }));
 
 type TodoFormValues = z.infer<typeof todoFormSchema>;
@@ -142,7 +137,7 @@ export function AddTodoForm({
                 className="min-h-40 resize-y"
                 rows={6}
                 {...field}
-                value={getFieldValue(field.value)}
+                value={getDefaultValue(field.value)}
               />
             </FormControl>
             <FormMessage />

@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { isEmpty } from "./utils";
+
 /**
  * Creates a form schema that allows empty strings for optional fields.
  * Empty strings are transformed to undefined before validation.
@@ -83,14 +85,6 @@ export function normalizeFormData<T extends Record<string, any>>(
 ): Partial<T> {
   const normalizedData: Partial<T> = {};
 
-  function isEmpty(value: any) {
-    return (
-      value === null ||
-      value === undefined ||
-      (typeof value === "string" && value.trim() === "")
-    );
-  }
-
   for (const [key, value] of Object.entries(data)) {
     // Skip undefined values (field not set)
     if (value === undefined) {
@@ -128,14 +122,6 @@ export function normalizePatchData<T extends Record<string, any>>(
 ): Partial<T> {
   const normalizedData: Partial<T> = {};
 
-  function isEmpty(value: any) {
-    return (
-      value === null ||
-      value === undefined ||
-      (typeof value === "string" && value.trim() === "")
-    );
-  }
-
   // Check all fields that exist in either form data or original data
   const allKeys = new Set([...Object.keys(data), ...Object.keys(originalData)]);
 
@@ -149,12 +135,7 @@ export function normalizePatchData<T extends Record<string, any>>(
     }
 
     if (fieldSchema.isOptional()) {
-      if (
-        isEmpty(value) &&
-        originalValue !== undefined &&
-        originalValue !== null &&
-        !isEmpty(originalValue)
-      ) {
+      if (isEmpty(value) && !isEmpty(originalValue)) {
         normalizedData[key as keyof T] = null as any;
       } else if (value !== undefined && !isEmpty(value)) {
         normalizedData[key as keyof T] = value;
@@ -183,18 +164,4 @@ export function createOptionalFieldHandler<
     const value = e.target.value;
     field.onChange((value === "" ? undefined : value) as T);
   };
-}
-
-/**
- * Returns the value of the field if not empty, otherwise returns the default value.
- *
- * @param value - The value of the field
- * @param defaultValue - The default value of the field
- * @returns The value of the field if not empty, otherwise returns the default value
- */
-export function getFieldValue<T extends string | undefined | null>(
-  value: T,
-  defaultValue: string = ""
-): string {
-  return value || defaultValue;
 }

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"slices"
 	"time"
 
 	"github.com/opcotech/elemo/internal/license"
@@ -313,16 +314,13 @@ func (s *organizationService) RemoveMember(ctx context.Context, orgID, memberID 
 	// Remove all permissions for the member on the organization before removing the member
 	permissions, err := s.permissionService.GetBySubjectAndTarget(ctx, memberID, orgID)
 	if err != nil && !errors.Is(err, repository.ErrPermissionRead) {
-		// Log error but continue - we'll still remove the member
 		s.logger.Warn(ctx, "failed to get permissions when removing member",
 			log.WithError(err),
 			log.WithUserID(memberID.String()),
 			slog.String("organization_id", orgID.String()))
 	} else {
-		// Delete all permissions for this member on this organization
 		for _, perm := range permissions {
 			if err := s.permissionService.Delete(ctx, perm.ID); err != nil {
-				// Log error but continue - we'll still remove the member
 				s.logger.Warn(ctx, "failed to delete permission when removing member",
 					log.WithError(err),
 					slog.String("permission_id", perm.ID.String()),
@@ -338,10 +336,8 @@ func (s *organizationService) RemoveMember(ctx context.Context, orgID, memberID 
 
 	// Send notification to the removed member
 	if s.notificationService != nil {
-		// Get organization name for notification
 		organization, err := s.organizationRepo.Get(ctx, orgID)
 		if err != nil {
-			// Log error but don't fail - member is already removed
 			s.logger.Warn(ctx, "failed to get organization for notification when removing member",
 				log.WithError(err),
 				slog.String("organization_id", orgID.String()))
@@ -351,14 +347,12 @@ func (s *organizationService) RemoveMember(ctx context.Context, orgID, memberID 
 
 			notification, err := model.NewNotification(notificationTitle, memberID)
 			if err != nil {
-				// Log error but don't fail - member is already removed
 				s.logger.Warn(ctx, "failed to create notification for member removal",
 					log.WithError(err),
 					log.WithUserID(memberID.String()))
 			} else {
 				notification.Description = notificationDescription
 				if err := s.notificationService.Create(ctx, notification); err != nil {
-					// Log error but don't fail - member is already removed
 					s.logger.Warn(ctx, "failed to send notification for member removal",
 						log.WithError(err),
 						log.WithUserID(memberID.String()))
@@ -386,40 +380,32 @@ func (s *organizationService) InviteMember(ctx context.Context, orgID model.ID, 
 		return errors.Join(ErrOrganizationMemberInvite, ErrInvalidEmail)
 	}
 
-	// Validate roleID if provided
 	var targetRoleID model.ID
 	if len(roleID) > 0 && !roleID[0].IsNil() {
 		targetRoleID = roleID[0]
 		if err := targetRoleID.Validate(); err != nil {
 			return errors.Join(ErrOrganizationMemberInvite, err)
 		}
-		// Verify role ID is of the correct type
 		if targetRoleID.Type != model.ResourceTypeRole {
 			return errors.Join(ErrOrganizationMemberInvite, model.ErrInvalidID)
 		}
-		// Note: We don't verify the role exists here as it might be deleted between
-		// invitation and acceptance. The role will be validated when the user accepts.
 	}
 
 	if !s.permissionService.CtxUserHasPermission(ctx, orgID, model.PermissionKindWrite) {
 		return errors.Join(ErrOrganizationMemberInvite, ErrNoPermission)
 	}
 
-	// Check if user exists by email
 	user, err := s.userRepo.GetByEmail(ctx, email)
 	if err != nil && !errors.Is(err, repository.ErrNotFound) {
 		return errors.Join(ErrOrganizationMemberInvite, err)
 	}
 
-	// If user doesn't exist, create a pending user
 	userExists := true
 	if errors.Is(err, repository.ErrNotFound) {
 		userExists = false
 
-		// Generate first/last name from email
 		firstName, lastName := convert.EmailToNameParts(email)
 
-		// Create user with pending status
 		user, err = model.NewUser(xid.New().String(), firstName, lastName, email, password.UnusablePassword)
 		if err != nil {
 			return errors.Join(ErrOrganizationMemberInvite, err)
@@ -427,20 +413,17 @@ func (s *organizationService) InviteMember(ctx context.Context, orgID model.ID, 
 
 		user.Status = model.UserStatusPending
 
-		// Create user (skip license quota check for pending users, same as in Create method)
 		if err := s.userRepo.Create(ctx, user); err != nil {
 			return errors.Join(ErrOrganizationMemberInvite, err)
 		}
 	}
 
-	// Validate user status for existing users (newly created users are always pending, which is valid)
 	if userExists {
 		if user.Status != model.UserStatusActive && user.Status != model.UserStatusPending {
 			return errors.Join(ErrOrganizationMemberInvite, ErrOrganizationMemberInvalidStatus)
 		}
 	}
 
-	// Check if user is already a member of the organization
 	hasPermission, err := s.permissionService.HasPermission(ctx, user.ID, orgID, model.PermissionKindRead)
 	if err != nil {
 		return errors.Join(ErrOrganizationMemberInvite, err)
@@ -449,7 +432,6 @@ func (s *organizationService) InviteMember(ctx context.Context, orgID model.ID, 
 		return errors.Join(ErrOrganizationMemberInvite, ErrOrganizationMemberAlreadyExists)
 	}
 
-	// Get organization info (needed for email and notifications)
 	organization, err := s.organizationRepo.Get(ctx, orgID)
 	if err != nil {
 		return errors.Join(ErrOrganizationMemberInvite, err)
@@ -470,36 +452,30 @@ func (s *organizationService) InviteMember(ctx context.Context, orgID model.ID, 
 		}
 	}
 
-	// Generate token data with user_id
 	tokenData := pkg.MergeMaps(map[string]any{
 		"organization_id": orgID.String(),
 	}, map[string]any{"user_id": user.ID.String()})
 
-	// Add role_id to token data if provided
 	if !targetRoleID.IsNil() {
 		tokenData["role_id"] = targetRoleID.String()
 	}
 
-	// Generate public and secret tokens
 	public, secret, err := auth.GenerateToken(model.UserTokenContextInvite.String(), tokenData)
 	if err != nil {
 		return errors.Join(ErrOrganizationMemberInvite, err)
 	}
 
-	// Create token model
 	newToken, err := model.NewUserToken(user.ID, email, secret, model.UserTokenContextInvite)
 	if err != nil {
 		return errors.Join(ErrOrganizationMemberInvite, err)
 	}
 
-	// Save token to repository
 	if err := s.userTokenRepo.Create(ctx, newToken); err != nil {
 		return errors.Join(ErrOrganizationMemberInvite, err)
 	}
 
 	token := public
 
-	// Send invitation email
 	if err := s.emailService.SendOrganizationInvitationEmail(ctx, organization, user, token); err != nil {
 		return errors.Join(ErrOrganizationMemberInvite, err)
 	}
@@ -511,14 +487,12 @@ func (s *organizationService) InviteMember(ctx context.Context, orgID model.ID, 
 
 		notification, err := model.NewNotification(notificationTitle, user.ID)
 		if err != nil {
-			// Log error but don't fail the invitation - notification is optional
 			s.logger.Warn(ctx, "failed to create notification for invitation",
 				log.WithError(err),
 				log.WithUserID(user.ID.String()))
 		} else {
 			notification.Description = notificationDescription
 			if err := s.notificationService.Create(ctx, notification); err != nil {
-				// Log error but don't fail the invitation - notification is optional
 				s.logger.Warn(ctx, "failed to send notification for invitation",
 					log.WithError(err),
 					log.WithUserID(user.ID.String()))
@@ -555,50 +529,37 @@ func (s *organizationService) RevokeInvitation(ctx context.Context, orgID, userI
 		return errors.Join(ErrOrganizationInviteRevoke, err)
 	}
 
-	// Remove INVITED_TO edge first
 	if err := s.organizationRepo.RemoveInvitation(ctx, orgID, userID); err != nil {
-		// Log error but don't fail - invitation edge might not exist if user already accepted
 		s.logger.Warn(ctx, "failed to remove invitation edge during revocation",
 			log.WithError(err),
 			log.WithUserID(userID.String()),
 			slog.String("organization_id", orgID.String()))
 	}
 
-	// Delete invitation token
 	if err := s.userTokenRepo.Delete(ctx, userID, model.UserTokenContextInvite); err != nil {
-		// Log error but don't fail - token might not exist
 		s.logger.Warn(ctx, "failed to delete invitation token during revocation",
 			log.WithError(err),
 			log.WithUserID(userID.String()))
 	}
 
-	// Remove user from the organization if they're a member
-	// This handles the case where user was added but invitation wasn't properly cleaned up
 	if err := s.organizationRepo.RemoveMember(ctx, orgID, userID); err != nil {
-		// Log error but don't fail - user might not be a member
 		s.logger.Warn(ctx, "failed to remove member during invitation revocation",
 			log.WithError(err),
 			log.WithUserID(userID.String()),
 			slog.String("organization_id", orgID.String()))
 	}
 
-	// If user is pending and not a member of any organization, clean up the dangling account
 	if user.Status == model.UserStatusPending {
-		// Check if user is a member of any other organization (after removing from current)
 		organizations, err := s.organizationRepo.GetAll(ctx, userID, 0, 1)
 		if err != nil {
-			// If we can't check, log error but don't delete the user - err on the side of caution
 			s.logger.Warn(ctx, "failed to check user organization membership during invitation revocation",
 				log.WithError(err),
 				log.WithUserID(userID.String()))
 			return nil
 		}
 
-		// If user is not a member of any organization, delete the dangling account
 		if len(organizations) == 0 {
 			if err := s.userRepo.Delete(ctx, userID); err != nil {
-				// Log error but don't fail the revocation - token is already deleted
-				// The user cleanup can be retried later if needed
 				s.logger.Error(ctx, "failed to delete pending user account during invitation revocation",
 					log.WithError(err),
 					log.WithUserID(userID.String()))
@@ -624,7 +585,6 @@ func (s *organizationService) AcceptInvitation(ctx context.Context, orgID model.
 		return errors.Join(ErrOrganizationInviteAccept, ErrInvalidToken)
 	}
 
-	// Verify the invitation token
 	kind, _, tokenData := auth.SplitToken(token)
 
 	userIDStr, ok := tokenData["user_id"].(string)
@@ -646,7 +606,6 @@ func (s *organizationService) AcceptInvitation(ctx context.Context, orgID model.
 		return errors.Join(ErrOrganizationInviteAccept, ErrInvalidToken)
 	}
 
-	// Verify token exists and matches
 	confirmation, err := s.userTokenRepo.Get(ctx, userID, tokenContext)
 	if err != nil {
 		return errors.Join(ErrOrganizationInviteAccept, ErrInvalidToken)
@@ -656,12 +615,10 @@ func (s *organizationService) AcceptInvitation(ctx context.Context, orgID model.
 		return errors.Join(ErrOrganizationInviteAccept, ErrInvalidToken)
 	}
 
-	// Check token expiration
 	if time.Now().After(confirmation.CreatedAt.Add(UserInvitationDeadline)) {
 		return errors.Join(ErrOrganizationInviteAccept, ErrExpiredToken)
 	}
 
-	// Verify organization ID matches
 	orgIDStr, ok := tokenData["organization_id"].(string)
 	if !ok {
 		return errors.Join(ErrOrganizationInviteAccept, ErrInvalidToken)
@@ -676,7 +633,6 @@ func (s *organizationService) AcceptInvitation(ctx context.Context, orgID model.
 		return errors.Join(ErrOrganizationInviteAccept, ErrInvalidToken)
 	}
 
-	// Get user
 	user, err := s.userRepo.Get(ctx, userID)
 	if err != nil {
 		return errors.Join(ErrOrganizationInviteAccept, err)
@@ -686,16 +642,13 @@ func (s *organizationService) AcceptInvitation(ctx context.Context, orgID model.
 		return errors.Join(ErrOrganizationInviteAccept, errors.New("user account is not in a valid state to accept invitations"))
 	}
 
-	// If user is pending, activate them and set password if provided
 	if user.Status == model.UserStatusPending {
 		if userPassword == "" {
 			return errors.Join(ErrOrganizationInviteAccept, errors.New("password is required for pending users"))
 		}
 
-		// Hash the password
 		hashedPassword := password.HashPassword(userPassword)
 
-		// Update user: activate and set password
 		patch := map[string]any{
 			"status":   model.UserStatusActive.String(),
 			"password": hashedPassword,
@@ -706,31 +659,19 @@ func (s *organizationService) AcceptInvitation(ctx context.Context, orgID model.
 		}
 	}
 
-	// Remove INVITED_TO edge and add user as active member
-	// Remove invitation edge first
 	if err := s.organizationRepo.RemoveInvitation(ctx, orgID, userID); err != nil {
-		// Log error but don't fail - invitation edge might not exist
 		s.logger.Warn(ctx, "failed to remove invitation edge during acceptance",
 			log.WithError(err),
 			log.WithUserID(userID.String()),
 			slog.String("organization_id", orgID.String()))
 	}
 
-	// Check if user is already a member (shouldn't happen, but handle gracefully)
 	organization, err := s.organizationRepo.Get(ctx, orgID)
 	if err != nil {
 		return errors.Join(ErrOrganizationInviteAccept, err)
 	}
 
-	isMember := false
-	for _, memberID := range organization.Members {
-		if memberID == userID {
-			isMember = true
-			break
-		}
-	}
-
-	if !isMember {
+	if !slices.Contains(organization.Members, userID) {
 		if err := s.organizationRepo.AddMember(ctx, orgID, userID); err != nil {
 			return errors.Join(ErrOrganizationInviteAccept, err)
 		}
@@ -741,7 +682,6 @@ func (s *organizationService) AcceptInvitation(ctx context.Context, orgID model.
 		}
 
 		if err := s.permissionService.Create(ctx, perm); err != nil {
-			// Log error but don't fail - member is already added
 			s.logger.Warn(ctx, "failed to assign read permission to new member during invitation acceptance",
 				log.WithError(err),
 				log.WithUserID(userID.String()),
@@ -749,24 +689,19 @@ func (s *organizationService) AcceptInvitation(ctx context.Context, orgID model.
 		}
 	}
 
-	// If role_id is in token data, assign user to role
 	if roleIDStr, ok := tokenData["role_id"].(string); ok && roleIDStr != "" {
 		roleID, err := model.NewIDFromString(roleIDStr, model.ResourceTypeRole.String())
 		if err == nil && !roleID.IsNil() {
-			// Verify role exists and belongs to organization
 			if s.roleRepo != nil {
 				_, err := s.roleRepo.Get(ctx, roleID, orgID)
 				if err == nil {
-					// Assign user to role (ignore errors - user is already in organization)
 					_ = s.roleRepo.AddMember(ctx, roleID, userID, orgID)
 				}
 			}
 		}
 	}
 
-	// Delete invitation token
 	if err := s.userTokenRepo.Delete(ctx, userID, model.UserTokenContextInvite); err != nil {
-		// Log but don't fail - invitation is already accepted
 		s.logger.Warn(ctx, "failed to delete invitation token after acceptance",
 			log.WithError(err),
 			log.WithUserID(userID.String()))

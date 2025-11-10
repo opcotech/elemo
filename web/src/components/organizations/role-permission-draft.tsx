@@ -36,6 +36,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ResourceType, withResourceType } from "@/hooks/use-permissions";
+import { formatResourceId } from "@/lib/utils";
 
 const permissionFormSchema = z.object({
   resourceType: z.enum([
@@ -112,13 +113,6 @@ export function RolePermissionDraft({
       resourceId: "",
       kind: "read",
     });
-  };
-
-  const formatResourceId = (resourceId: string): string => {
-    if (resourceId === "00000000000000000000") {
-      return "System";
-    }
-    return resourceId;
   };
 
   return (

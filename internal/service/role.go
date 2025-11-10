@@ -223,19 +223,15 @@ func (s *roleService) AddMember(ctx context.Context, roleID, memberID, belongsTo
 		return errors.Join(ErrRoleAddMember, err)
 	}
 
-	// Send notification to the member
 	if s.notificationService != nil && s.organizationRepo != nil {
-		// Get role and organization info for notification
 		role, err := s.roleRepo.Get(ctx, roleID, belongsToID)
 		if err != nil {
-			// Log error but don't fail - member is already added
 			s.logger.Warn(ctx, "failed to get role for notification when adding member",
 				log.WithError(err),
 				slog.String("role_id", roleID.String()))
 		} else {
 			organization, err := s.organizationRepo.Get(ctx, belongsToID)
 			if err != nil {
-				// Log error but don't fail - member is already added
 				s.logger.Warn(ctx, "failed to get organization for notification when adding member to role",
 					log.WithError(err),
 					slog.String("organization_id", belongsToID.String()))
@@ -245,14 +241,12 @@ func (s *roleService) AddMember(ctx context.Context, roleID, memberID, belongsTo
 
 				notification, err := model.NewNotification(notificationTitle, memberID)
 				if err != nil {
-					// Log error but don't fail - member is already added
 					s.logger.Warn(ctx, "failed to create notification for role member addition",
 						log.WithError(err),
 						log.WithUserID(memberID.String()))
 				} else {
 					notification.Description = notificationDescription
 					if err := s.notificationService.Create(ctx, notification); err != nil {
-						// Log error but don't fail - member is already added
 						s.logger.Warn(ctx, "failed to send notification for role member addition",
 							log.WithError(err),
 							log.WithUserID(memberID.String()))
@@ -294,19 +288,15 @@ func (s *roleService) RemoveMember(ctx context.Context, roleID, memberID, belong
 		return errors.Join(ErrRoleRemoveMember, err)
 	}
 
-	// Send notification to the member
 	if s.notificationService != nil && s.organizationRepo != nil {
-		// Get role and organization info for notification
 		role, err := s.roleRepo.Get(ctx, roleID, belongsToID)
 		if err != nil {
-			// Log error but don't fail - member is already removed
 			s.logger.Warn(ctx, "failed to get role for notification when removing member",
 				log.WithError(err),
 				slog.String("role_id", roleID.String()))
 		} else {
 			organization, err := s.organizationRepo.Get(ctx, belongsToID)
 			if err != nil {
-				// Log error but don't fail - member is already removed
 				s.logger.Warn(ctx, "failed to get organization for notification when removing member from role",
 					log.WithError(err),
 					slog.String("organization_id", belongsToID.String()))
@@ -316,14 +306,12 @@ func (s *roleService) RemoveMember(ctx context.Context, roleID, memberID, belong
 
 				notification, err := model.NewNotification(notificationTitle, memberID)
 				if err != nil {
-					// Log error but don't fail - member is already removed
 					s.logger.Warn(ctx, "failed to create notification for role member removal",
 						log.WithError(err),
 						log.WithUserID(memberID.String()))
 				} else {
 					notification.Description = notificationDescription
 					if err := s.notificationService.Create(ctx, notification); err != nil {
-						// Log error but don't fail - member is already removed
 						s.logger.Warn(ctx, "failed to send notification for role member removal",
 							log.WithError(err),
 							log.WithUserID(memberID.String()))
@@ -384,17 +372,14 @@ func (s *roleService) AddPermission(ctx context.Context, roleID, belongsToID, ta
 		return errors.Join(ErrRoleAddPermission, err)
 	}
 
-	// Verify the role belongs to the organization
 	if _, err := s.roleRepo.Get(ctx, roleID, belongsToID); err != nil {
 		return errors.Join(ErrRoleAddPermission, err)
 	}
 
-	// Check write permission on organization
 	if !s.permissionService.CtxUserHasPermission(ctx, belongsToID, model.PermissionKindWrite) {
 		return errors.Join(ErrRoleAddPermission, ErrNoPermission)
 	}
 
-	// Create permission with role as subject and target as target
 	perm, err := model.NewPermission(roleID, targetID, kind)
 	if err != nil {
 		return errors.Join(ErrRoleAddPermission, err)
@@ -427,28 +412,23 @@ func (s *roleService) RemovePermission(ctx context.Context, roleID, belongsToID,
 		return errors.Join(ErrRoleRemovePermission, err)
 	}
 
-	// Verify the role belongs to the organization
 	if _, err := s.roleRepo.Get(ctx, roleID, belongsToID); err != nil {
 		return errors.Join(ErrRoleRemovePermission, err)
 	}
 
-	// Check write permission on organization
 	if !s.permissionService.CtxUserHasPermission(ctx, belongsToID, model.PermissionKindWrite) {
 		return errors.Join(ErrRoleRemovePermission, ErrNoPermission)
 	}
 
-	// Get the permission to verify it belongs to the role
 	perm, err := s.permissionService.Get(ctx, permissionID)
 	if err != nil {
 		return errors.Join(ErrRoleRemovePermission, err)
 	}
 
-	// Verify the permission's subject is the role
 	if perm.Subject.String() != roleID.String() {
 		return errors.Join(ErrRoleRemovePermission, ErrNoPermission)
 	}
 
-	// Delete the permission
 	if err := s.permissionService.Delete(ctx, permissionID); err != nil {
 		return errors.Join(ErrRoleRemovePermission, err)
 	}
@@ -468,17 +448,14 @@ func (s *roleService) GetPermissions(ctx context.Context, roleID, belongsToID mo
 		return nil, errors.Join(ErrRoleGetPermissions, err)
 	}
 
-	// Verify the role belongs to the organization
 	if _, err := s.roleRepo.Get(ctx, roleID, belongsToID); err != nil {
 		return nil, errors.Join(ErrRoleGetPermissions, err)
 	}
 
-	// Check read permission on organization
 	if !s.permissionService.CtxUserHasPermission(ctx, belongsToID, model.PermissionKindRead) {
 		return nil, errors.Join(ErrRoleGetPermissions, ErrNoPermission)
 	}
 
-	// Get all permissions where role is subject
 	permissions, err := s.permissionService.GetBySubject(ctx, roleID)
 	if err != nil {
 		return nil, errors.Join(ErrRoleGetPermissions, err)

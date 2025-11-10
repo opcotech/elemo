@@ -321,7 +321,6 @@ var startServerCmd = &cobra.Command{
 			logger.Fatal(context.Background(), "failed to initialize email service", slog.Any("error", err))
 		}
 
-		// Initialize organizationService after userRepo, roleRepo, emailService, and notificationService are created
 		organizationService, err := service.NewOrganizationService(
 			service.WithOrganizationRepository(organizationRepo),
 			service.WithUserRepository(userRepo),
