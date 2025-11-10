@@ -143,6 +143,18 @@ func WithNotificationService(notificationService NotificationService) Option {
 	}
 }
 
+// WithNamespaceRepository sets the namespace repository for the baseService.
+func WithNamespaceRepository(namespaceRepo repository.NamespaceRepository) Option {
+	return func(s *baseService) error {
+		if namespaceRepo == nil {
+			return ErrNoNamespaceRepository
+		}
+
+		s.namespaceRepo = namespaceRepo
+		return nil
+	}
+}
+
 // baseService defines the dependencies that are required to interact with the
 // core functionality.
 type baseService struct {
@@ -150,6 +162,7 @@ type baseService struct {
 	tracer tracing.Tracer
 
 	organizationRepo repository.OrganizationRepository
+	namespaceRepo    repository.NamespaceRepository
 	roleRepo         repository.RoleRepository
 	todoRepo         repository.TodoRepository
 	userRepo         repository.UserRepository
