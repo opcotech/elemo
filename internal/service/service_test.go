@@ -9,6 +9,7 @@ import (
 
 	"github.com/opcotech/elemo/internal/pkg/log"
 	"github.com/opcotech/elemo/internal/pkg/tracing"
+	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/testutil/mock"
 )
 
@@ -231,6 +232,56 @@ func TestWithEmailService(t *testing.T) {
 
 			if !tt.wantErr {
 				assert.Equal(t, tt.want, s.emailService)
+			}
+		})
+	}
+}
+
+func TestWithNamespaceRepository(t *testing.T) {
+	type args struct {
+		namespaceRepo repository.NamespaceRepository
+	}
+	tests := []struct {
+		name    string
+		argsFn  func(ctrl *gomock.Controller) args
+		want    func(ctrl *gomock.Controller) repository.NamespaceRepository
+		wantErr bool
+	}{
+		{
+			name: "set the namespace repository for the baseService",
+			argsFn: func(ctrl *gomock.Controller) args {
+				return args{namespaceRepo: mock.NewNamespaceRepository(ctrl)}
+			},
+			want: func(ctrl *gomock.Controller) repository.NamespaceRepository {
+				return mock.NewNamespaceRepository(ctrl)
+			},
+		},
+		{
+			name: "return an error if no namespace repository is provided",
+			argsFn: func(_ *gomock.Controller) args {
+				return args{namespaceRepo: nil}
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			var s baseService
+			args := tt.argsFn(ctrl)
+			err := WithNamespaceRepository(args.namespaceRepo)(&s)
+			if (err != nil) != tt.wantErr {
+				require.NoError(t, err)
+			}
+			if !tt.wantErr {
+				assert.Equal(t, tt.want(ctrl), s.namespaceRepo)
+			} else {
+				assert.ErrorIs(t, err, ErrNoNamespaceRepository)
 			}
 		})
 	}

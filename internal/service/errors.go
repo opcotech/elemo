@@ -13,6 +13,7 @@ var (
 	ErrNoLicenseService                = errors.New("no license service provided")                    // no license service provided
 	ErrNoNotificationRepository        = errors.New("no notification repository provided")            // no notification repository provided
 	ErrNoNotificationService           = errors.New("no notification service provided")               // no notification service provided
+	ErrNoNamespaceRepository           = errors.New("no namespace repository provided")               // no namespace repository provided
 	ErrNoOrganizationRepository        = errors.New("no organization repository provided")            // no organization repository provided
 	ErrNoPermission                    = errors.New("no permission")                                  // no permission
 	ErrNoPermissionRepository          = errors.New("no permission repository provided")              // no permission repository provided
@@ -24,6 +25,11 @@ var (
 	ErrNotificationGet                 = errors.New("failed to get notification")                     // failed to get notification
 	ErrNotificationGetAllByRecipient   = errors.New("failed to get notifications")                    // failed to get notifications
 	ErrNotificationUpdate              = errors.New("failed to update notification")                  // failed to update notification
+	ErrNamespaceCreate                 = errors.New("failed to create namespace")                     // failed to create namespace
+	ErrNamespaceDelete                 = errors.New("failed to delete namespace")                     // failed to delete namespace
+	ErrNamespaceGet                    = errors.New("failed to get namespace")                        // failed to get namespace
+	ErrNamespaceGetAll                 = errors.New("failed to get namespaces")                       // failed to get namespaces
+	ErrNamespaceUpdate                 = errors.New("failed to update namespace")                     // failed to update namespace
 	ErrNoTodoRepository                = errors.New("no todo repository provided")                    // no todo repository provided
 	ErrNoUser                          = errors.New("no user provided")                               // no user provided
 	ErrNoUserRepository                = errors.New("no user repository provided")                    // no user repository provided
