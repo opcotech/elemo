@@ -59,6 +59,8 @@ tags:
     description: User todo items.
   - name: Organization
     description: Organizations in the system.
+  - name: Namespace
+    description: Namespaces in organizations.
   - name: User
     description: Users in the system.
   - name: Notification
@@ -359,6 +361,176 @@ components:
       example: active
       description: Status of the organization.
       title: OrganizationStatus
+    ProjectStatus:
+      type: string
+      enum:
+        - active
+        - pending
+      example: active
+      description: Status of the project.
+      title: ProjectStatus
+    Namespace:
+      title: Namespace
+      type: object
+      description: A namespace in an organization.
+      x-examples:
+        example:
+          id: 9bsv0s46s6s002p9ltq0
+          name: Engineering
+          description: Engineering team namespace
+          projects:
+            - id: 9bsv0s46s6s002p9ltq0
+              key: ENG
+              name: Engineering Project
+              description: Main engineering project
+              logo: "https://example.com/logo.png"
+              status: active
+          documents:
+            - id: 9bsv0s46s6s002p9ltq0
+              name: Project Plan
+              excerpt: Overview of the project plan
+              created_by: 9bsv0s46s6s002p9ltq0
+              created_at: "2023-01-01T00:00:00Z"
+          created_at: "2023-01-01T00:00:00Z"
+          updated_at: null
+      properties:
+        id:
+          type: string
+          description: Unique identifier of the namespace.
+          example: 9bsv0s46s6s002p9ltq0
+        name:
+          type: string
+          description: Name of the namespace.
+          maxLength: 120
+          example: Engineering
+          minLength: 3
+        description:
+          type: string
+          description: Description of the namespace.
+          maxLength: 500
+          example: Engineering team namespace
+          minLength: 5
+          nullable: true
+        projects:
+          type: array
+          description: Projects in the namespace.
+          uniqueItems: true
+          items:
+            $ref: "#/components/schemas/NamespaceProject"
+        documents:
+          type: array
+          description: Documents in the namespace.
+          uniqueItems: true
+          items:
+            $ref: "#/components/schemas/NamespaceDocument"
+        created_at:
+          type: string
+          format: date-time
+          description: Date when the namespace was created.
+        updated_at:
+          type: string
+          format: date-time
+          description: Date when the namespace was updated.
+          nullable: true
+      required:
+        - id
+        - name
+        - projects
+        - documents
+        - created_at
+        - updated_at
+    NamespaceProject:
+      title: NamespaceProject
+      type: object
+      description: A project in a namespace with limited information.
+      x-examples:
+        example:
+          id: 9bsv0s46s6s002p9ltq0
+          key: ENG
+          name: Engineering Project
+          description: Main engineering project
+          logo: "https://example.com/logo.png"
+          status: active
+      properties:
+        id:
+          type: string
+          description: Unique identifier of the project.
+          example: 9bsv0s46s6s002p9ltq0
+        key:
+          type: string
+          description: Key of the project.
+          minLength: 3
+          maxLength: 6
+          example: ENG
+        name:
+          type: string
+          description: Name of the project.
+          minLength: 3
+          maxLength: 120
+          example: Engineering Project
+        description:
+          type: string
+          description: Description of the project.
+          maxLength: 500
+          example: Main engineering project
+          minLength: 10
+          nullable: true
+        logo:
+          type: string
+          description: Logo of the project.
+          format: uri
+          example: "https://example.com/logo.png"
+          maxLength: 2000
+          nullable: true
+        status:
+          $ref: "#/components/schemas/ProjectStatus"
+      required:
+        - id
+        - key
+        - name
+        - status
+    NamespaceDocument:
+      title: NamespaceDocument
+      type: object
+      description: A document in a namespace with limited information.
+      x-examples:
+        example:
+          id: 9bsv0s46s6s002p9ltq0
+          name: Project Plan
+          excerpt: Overview of the project plan
+          created_by: 9bsv0s46s6s002p9ltq0
+          created_at: "2023-01-01T00:00:00Z"
+      properties:
+        id:
+          type: string
+          description: Unique identifier of the document.
+          example: 9bsv0s46s6s002p9ltq0
+        name:
+          type: string
+          description: Name of the document.
+          minLength: 3
+          maxLength: 120
+          example: Project Plan
+        excerpt:
+          type: string
+          description: Excerpt of the document.
+          maxLength: 500
+          example: Overview of the project plan
+          minLength: 10
+          nullable: true
+        created_by:
+          type: string
+          description: ID of the user who created the document.
+          example: 9bsv0s46s6s002p9ltq0
+        created_at:
+          type: string
+          format: date-time
+          description: Date when the document was created.
+          nullable: true
+      required:
+        - id
+        - name
+        - created_by
     Todo:
       title: Todo
       type: object
@@ -1589,6 +1761,50 @@ components:
                 x-go-type-skip-optional-pointer: true
               status:
                 $ref: "#/components/schemas/OrganizationStatus"
+    NamespaceCreate:
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              name:
+                type: string
+                description: Name of the namespace.
+                maxLength: 120
+                example: Engineering
+                minLength: 3
+              description:
+                type: string
+                description: Description of the namespace.
+                maxLength: 500
+                example: Engineering team namespace
+                minLength: 5
+                nullable: true
+                x-go-type: "Optional[string]"
+                x-go-type-skip-optional-pointer: true
+            required:
+              - name
+    NamespacePatch:
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              name:
+                type: string
+                description: Name of the namespace.
+                maxLength: 120
+                example: Engineering
+                minLength: 3
+              description:
+                type: string
+                description: Description of the namespace.
+                maxLength: 500
+                example: Engineering team namespace
+                minLength: 5
+                nullable: true
+                x-go-type: "Optional[string]"
+                x-go-type-skip-optional-pointer: true
     PermissionCreate:
       content:
         application/json:
@@ -2837,6 +3053,148 @@ paths:
             - organization
             - role
             - permission
+  "/v1/organizations/{id}/namespaces":
+    parameters:
+      - $ref: "#/components/parameters/id"
+    get:
+      summary: Get organization namespaces
+      tags:
+        - Organization
+        - Namespace
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                uniqueItems: true
+                items:
+                  $ref: "#/components/schemas/Namespace"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+      operationId: v1OrganizationsNamespacesGet
+      security:
+        - oauth2:
+            - organization.read
+            - namespace.read
+      description: Return the namespaces that belong to the organization.
+      parameters:
+        - $ref: "#/components/parameters/offset"
+        - $ref: "#/components/parameters/limit"
+    post:
+      summary: Create namespace in organization
+      operationId: v1OrganizationsNamespacesCreate
+      responses:
+        "201":
+          $ref: "#/components/responses/201"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+      description: Create a new namespace in the organization.
+      security:
+        - oauth2:
+            - organization
+            - namespace
+      tags:
+        - Organization
+        - Namespace
+      requestBody:
+        $ref: "#/components/requestBodies/NamespaceCreate"
+  "/v1/namespaces/{id}":
+    parameters:
+      - $ref: "#/components/parameters/id"
+    get:
+      summary: Get namespace
+      tags:
+        - Namespace
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Namespace"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+      operationId: v1NamespaceGet
+      security:
+        - oauth2:
+            - namespace.read
+      description: Return the requested namespace by its ID.
+    patch:
+      summary: Update namespace
+      operationId: v1NamespaceUpdate
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Namespace"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+      description: Update the namespace by its ID.
+      security:
+        - oauth2:
+            - namespace
+      tags:
+        - Namespace
+      requestBody:
+        $ref: "#/components/requestBodies/NamespacePatch"
+    delete:
+      summary: Delete namespace
+      operationId: v1NamespaceDelete
+      responses:
+        "204":
+          description: No Content
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+      description: Delete the namespace by its ID.
+      security:
+        - oauth2:
+            - namespace
+      tags:
+        - Namespace
   /v1/permissions:
     post:
       summary: Create permission

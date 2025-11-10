@@ -206,6 +206,28 @@ var startServerCmd = &cobra.Command{
 			}
 		}
 
+		var namespaceRepo repository.NamespaceRepository
+		{
+			repo, err := neo4j.NewNamespaceRepository(
+				neo4j.WithDatabase(graphDB),
+				neo4j.WithRepositoryLogger(logger.Named("namespace_repository")),
+				neo4j.WithRepositoryTracer(tracer),
+			)
+			if err != nil {
+				logger.Fatal(context.Background(), "failed to initialize namespace repository", slog.Any("error", err))
+			}
+
+			namespaceRepo, err = redis.NewCachedNamespaceRepository(
+				repo,
+				redis.WithDatabase(cacheDB),
+				redis.WithRepositoryLogger(logger.Named("cached_namespace_repository")),
+				redis.WithRepositoryTracer(tracer),
+			)
+			if err != nil {
+				logger.Fatal(context.Background(), "failed to initialize cached namespace repository", slog.Any("error", err))
+			}
+		}
+
 		var notificationRepo repository.NotificationRepository
 		{
 			repo, err := pg.NewNotificationRepository(
@@ -321,6 +343,17 @@ var startServerCmd = &cobra.Command{
 			logger.Fatal(context.Background(), "failed to initialize email service", slog.Any("error", err))
 		}
 
+		namespaceService, err := service.NewNamespaceService(
+			service.WithNamespaceRepository(namespaceRepo),
+			service.WithPermissionService(permissionService),
+			service.WithLicenseService(licenseService),
+			service.WithLogger(logger.Named("namespace_service")),
+			service.WithTracer(tracer),
+		)
+		if err != nil {
+			logger.Fatal(context.Background(), "failed to initialize namespace service", slog.Any("error", err))
+		}
+
 		organizationService, err := service.NewOrganizationService(
 			service.WithOrganizationRepository(organizationRepo),
 			service.WithUserRepository(userRepo),
@@ -346,6 +379,7 @@ var startServerCmd = &cobra.Command{
 			elemoHttp.WithConfig(cfg.Server),
 			elemoHttp.WithAuthProvider(authProvider),
 			elemoHttp.WithOrganizationService(organizationService),
+			elemoHttp.WithNamespaceService(namespaceService),
 			elemoHttp.WithRoleService(roleService),
 			elemoHttp.WithUserService(userService),
 			elemoHttp.WithTodoService(todoService),

@@ -166,6 +166,106 @@ export type Organization = {
 export type OrganizationStatus = "active" | "deleted";
 
 /**
+ * ProjectStatus
+ *
+ * Status of the project.
+ */
+export type ProjectStatus = "active" | "pending";
+
+/**
+ * Namespace
+ *
+ * A namespace in an organization.
+ */
+export type Namespace = {
+  /**
+   * Unique identifier of the namespace.
+   */
+  id: string;
+  /**
+   * Name of the namespace.
+   */
+  name: string;
+  /**
+   * Description of the namespace.
+   */
+  description?: string | null;
+  /**
+   * Projects in the namespace.
+   */
+  projects: Array<NamespaceProject>;
+  /**
+   * Documents in the namespace.
+   */
+  documents: Array<NamespaceDocument>;
+  /**
+   * Date when the namespace was created.
+   */
+  created_at: string;
+  /**
+   * Date when the namespace was updated.
+   */
+  updated_at: string | null;
+};
+
+/**
+ * NamespaceProject
+ *
+ * A project in a namespace with limited information.
+ */
+export type NamespaceProject = {
+  /**
+   * Unique identifier of the project.
+   */
+  id: string;
+  /**
+   * Key of the project.
+   */
+  key: string;
+  /**
+   * Name of the project.
+   */
+  name: string;
+  /**
+   * Description of the project.
+   */
+  description?: string | null;
+  /**
+   * Logo of the project.
+   */
+  logo?: string | null;
+  status: ProjectStatus;
+};
+
+/**
+ * NamespaceDocument
+ *
+ * A document in a namespace with limited information.
+ */
+export type NamespaceDocument = {
+  /**
+   * Unique identifier of the document.
+   */
+  id: string;
+  /**
+   * Name of the document.
+   */
+  name: string;
+  /**
+   * Excerpt of the document.
+   */
+  excerpt?: string | null;
+  /**
+   * ID of the user who created the document.
+   */
+  created_by: string;
+  /**
+   * Date when the document was created.
+   */
+  created_at?: string | null;
+};
+
+/**
  * Todo
  *
  * A todo item belonging to a user.
@@ -912,6 +1012,28 @@ export type OrganizationPatch = {
    */
   website?: string | null;
   status?: OrganizationStatus;
+};
+
+export type NamespaceCreate = {
+  /**
+   * Name of the namespace.
+   */
+  name: string;
+  /**
+   * Description of the namespace.
+   */
+  description?: string | null;
+};
+
+export type NamespacePatch = {
+  /**
+   * Name of the namespace.
+   */
+  name?: string;
+  /**
+   * Description of the namespace.
+   */
+  description?: string | null;
 };
 
 export type PermissionCreate = {
@@ -2854,6 +2976,260 @@ export type V1OrganizationRolePermissionRemoveResponses = {
 
 export type V1OrganizationRolePermissionRemoveResponse =
   V1OrganizationRolePermissionRemoveResponses[keyof V1OrganizationRolePermissionRemoveResponses];
+
+export type V1OrganizationsNamespacesGetData = {
+  body?: never;
+  path: {
+    /**
+     * ID of the resource.
+     */
+    id: string;
+  };
+  query?: {
+    /**
+     * Number of resources to skip.
+     */
+    offset?: number;
+    /**
+     * Number of resources to return.
+     */
+    limit?: number;
+  };
+  url: "/v1/organizations/{id}/namespaces";
+};
+
+export type V1OrganizationsNamespacesGetErrors = {
+  /**
+   * Bad request
+   */
+  400: HttpError;
+  /**
+   * Unauthorized request
+   */
+  401: HttpError;
+  /**
+   * Forbidden
+   */
+  403: HttpError;
+  /**
+   * The requested resource not found
+   */
+  404: HttpError;
+  /**
+   * Internal Server Error
+   */
+  500: HttpError;
+};
+
+export type V1OrganizationsNamespacesGetError =
+  V1OrganizationsNamespacesGetErrors[keyof V1OrganizationsNamespacesGetErrors];
+
+export type V1OrganizationsNamespacesGetResponses = {
+  /**
+   * OK
+   */
+  200: Array<Namespace>;
+};
+
+export type V1OrganizationsNamespacesGetResponse =
+  V1OrganizationsNamespacesGetResponses[keyof V1OrganizationsNamespacesGetResponses];
+
+export type V1OrganizationsNamespacesCreateData = {
+  body?: NamespaceCreate;
+  path: {
+    /**
+     * ID of the resource.
+     */
+    id: string;
+  };
+  query?: never;
+  url: "/v1/organizations/{id}/namespaces";
+};
+
+export type V1OrganizationsNamespacesCreateErrors = {
+  /**
+   * Bad request
+   */
+  400: HttpError;
+  /**
+   * Unauthorized request
+   */
+  401: HttpError;
+  /**
+   * Forbidden
+   */
+  403: HttpError;
+  /**
+   * The requested resource not found
+   */
+  404: HttpError;
+  /**
+   * Internal Server Error
+   */
+  500: HttpError;
+};
+
+export type V1OrganizationsNamespacesCreateError =
+  V1OrganizationsNamespacesCreateErrors[keyof V1OrganizationsNamespacesCreateErrors];
+
+export type V1OrganizationsNamespacesCreateResponses = {
+  /**
+   * Example response
+   */
+  201: {
+    /**
+     * ID of the newly created resource.
+     */
+    id: string;
+  };
+};
+
+export type V1OrganizationsNamespacesCreateResponse =
+  V1OrganizationsNamespacesCreateResponses[keyof V1OrganizationsNamespacesCreateResponses];
+
+export type V1NamespaceDeleteData = {
+  body?: never;
+  path: {
+    /**
+     * ID of the resource.
+     */
+    id: string;
+  };
+  query?: never;
+  url: "/v1/namespaces/{id}";
+};
+
+export type V1NamespaceDeleteErrors = {
+  /**
+   * Bad request
+   */
+  400: HttpError;
+  /**
+   * Unauthorized request
+   */
+  401: HttpError;
+  /**
+   * Forbidden
+   */
+  403: HttpError;
+  /**
+   * The requested resource not found
+   */
+  404: HttpError;
+  /**
+   * Internal Server Error
+   */
+  500: HttpError;
+};
+
+export type V1NamespaceDeleteError =
+  V1NamespaceDeleteErrors[keyof V1NamespaceDeleteErrors];
+
+export type V1NamespaceDeleteResponses = {
+  /**
+   * No Content
+   */
+  204: void;
+};
+
+export type V1NamespaceDeleteResponse =
+  V1NamespaceDeleteResponses[keyof V1NamespaceDeleteResponses];
+
+export type V1NamespaceGetData = {
+  body?: never;
+  path: {
+    /**
+     * ID of the resource.
+     */
+    id: string;
+  };
+  query?: never;
+  url: "/v1/namespaces/{id}";
+};
+
+export type V1NamespaceGetErrors = {
+  /**
+   * Bad request
+   */
+  400: HttpError;
+  /**
+   * Unauthorized request
+   */
+  401: HttpError;
+  /**
+   * Forbidden
+   */
+  403: HttpError;
+  /**
+   * The requested resource not found
+   */
+  404: HttpError;
+  /**
+   * Internal Server Error
+   */
+  500: HttpError;
+};
+
+export type V1NamespaceGetError =
+  V1NamespaceGetErrors[keyof V1NamespaceGetErrors];
+
+export type V1NamespaceGetResponses = {
+  /**
+   * OK
+   */
+  200: Namespace;
+};
+
+export type V1NamespaceGetResponse =
+  V1NamespaceGetResponses[keyof V1NamespaceGetResponses];
+
+export type V1NamespaceUpdateData = {
+  body?: NamespacePatch;
+  path: {
+    /**
+     * ID of the resource.
+     */
+    id: string;
+  };
+  query?: never;
+  url: "/v1/namespaces/{id}";
+};
+
+export type V1NamespaceUpdateErrors = {
+  /**
+   * Bad request
+   */
+  400: HttpError;
+  /**
+   * Unauthorized request
+   */
+  401: HttpError;
+  /**
+   * Forbidden
+   */
+  403: HttpError;
+  /**
+   * The requested resource not found
+   */
+  404: HttpError;
+  /**
+   * Internal Server Error
+   */
+  500: HttpError;
+};
+
+export type V1NamespaceUpdateError =
+  V1NamespaceUpdateErrors[keyof V1NamespaceUpdateErrors];
+
+export type V1NamespaceUpdateResponses = {
+  /**
+   * OK
+   */
+  200: Namespace;
+};
+
+export type V1NamespaceUpdateResponse =
+  V1NamespaceUpdateResponses[keyof V1NamespaceUpdateResponses];
 
 export type V1PermissionsCreateData = {
   body?: PermissionCreate;
