@@ -7,50 +7,7 @@ import type { Page } from "@playwright/test";
 export async function waitForPageLoad(page: Page): Promise<void> {
   await page.waitForLoadState("domcontentloaded");
   try {
-    await page.waitForLoadState("networkidle", { timeout: 5000 });
-  } catch {}
-}
-
-/**
- * Wait for a specific API response to complete.
- * @param page - Playwright page object
- * @param urlPattern - URL pattern to match (string or RegExp)
- * @param options - Optional timeout and other options
- */
-export async function waitForAPIResponse(
-  page: Page,
-  urlPattern: string | RegExp,
-  options?: { timeout?: number }
-): Promise<void> {
-  const timeout = options?.timeout ?? 10000;
-  await page.waitForResponse(
-    (response) => {
-      const url = response.url();
-      if (typeof urlPattern === "string") {
-        return url.includes(urlPattern);
-      }
-      return urlPattern.test(url);
-    },
-    { timeout }
-  );
-}
-
-/**
- * Wait for permission API calls to complete.
- * This waits for the permissions endpoint that's commonly used across the app.
- */
-export async function waitForPermissionsLoad(
-  page: Page,
-  resourceId?: string
-): Promise<void> {
-  const pattern = resourceId
-    ? new RegExp(
-        `/v1/permissions/resources/${resourceId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`
-      )
-    : /\/v1\/permissions\/resources\//;
-
-  try {
-    await waitForAPIResponse(page, pattern, { timeout: 3000 });
+    await page.waitForLoadState("networkidle");
   } catch {}
 }
 
@@ -70,7 +27,7 @@ export async function navigateAndWait(
 ): Promise<void> {
   await page.goto(url, {
     waitUntil: options?.waitUntil ?? "domcontentloaded",
-    timeout: options?.timeout ?? 30000,
+    timeout: options?.timeout ?? 5000,
   });
   await waitForPageLoad(page);
 }

@@ -1,7 +1,11 @@
 import { Link } from "@tanstack/react-router";
 import { Home, Inbox } from "lucide-react";
+import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 
+import { CommandPalette } from "@/components/command-palette/command-palette";
+import { ContextualNavigationSection } from "@/components/sidebar/contextual-navigation-section";
+import { GlobalContextSection } from "@/components/sidebar/global-context-section";
 import { NavHeader } from "@/components/sidebar/nav-header";
 import { NavUser, NavUserSkeleton } from "@/components/sidebar/nav-user";
 import { TodoSheet } from "@/components/todo/todo-sheet";
@@ -11,7 +15,6 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarInset,
   SidebarMenu,
@@ -23,6 +26,7 @@ import { AddTodoFormProvider } from "@/contexts/add-todo-form-context";
 import { EditTodoFormProvider } from "@/contexts/edit-todo-form-context";
 import { TodoSheetProvider } from "@/contexts/todo-sheet-context";
 import { useAuth } from "@/hooks/use-auth";
+import { useNavigationContext } from "@/hooks/use-navigation-context";
 
 interface AuthenticatedLayoutProps {
   children: ReactNode;
@@ -40,14 +44,26 @@ export function AuthenticatedLayout({
   sidebarContent,
 }: AuthenticatedLayoutProps) {
   const { user } = useAuth();
+  const navigationContext = useNavigationContext();
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
 
   const navigation: SidebarNavigationItem[] = [
     { label: "Dashboard", href: "/dashboard", icon: Home },
     { label: "Inbox", href: "/inbox", icon: Inbox },
   ];
 
-  const workspaceNavigation: SidebarNavigationItem[] = [];
-  const projectsNavigation: SidebarNavigationItem[] = [];
+  // Add Command-K keyboard shortcut
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key === "k") {
+        event.preventDefault();
+        setCommandPaletteOpen((open) => !open);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   return (
     <AddTodoFormProvider>
@@ -61,6 +77,7 @@ export function AuthenticatedLayout({
                 </SidebarHeader>
 
                 <SidebarContent>
+                  {/* Global Navigation */}
                   <SidebarGroup>
                     <SidebarGroupContent>
                       <SidebarMenu>
@@ -78,41 +95,18 @@ export function AuthenticatedLayout({
                     </SidebarGroupContent>
                   </SidebarGroup>
 
+                  {/* Custom sidebar content (for settings pages, etc.) */}
                   {sidebarContent}
 
-                  <SidebarGroup>
-                    <SidebarGroupLabel>Workspace</SidebarGroupLabel>
-                    <SidebarGroupContent>
-                      <SidebarMenu>
-                        {workspaceNavigation.map((item) => (
-                          <SidebarMenuItem key={item.href}>
-                            <SidebarMenuButton asChild>
-                              <Link to={item.href}>
-                                <item.icon className="h-4 w-4" />
-                                <span>{item.label}</span>
-                              </Link>
-                            </SidebarMenuButton>
-                          </SidebarMenuItem>
-                        ))}
-                      </SidebarMenu>
-                    </SidebarGroupContent>
-                  </SidebarGroup>
+                  {/* Global Context Section - Namespaces with projects */}
+                  {navigationContext.type === "global" && (
+                    <GlobalContextSection />
+                  )}
 
-                  <SidebarGroup>
-                    <SidebarGroupLabel>Projects</SidebarGroupLabel>
-                    <SidebarGroupContent>
-                      {projectsNavigation.map((item) => (
-                        <SidebarMenuItem key={item.href}>
-                          <SidebarMenuButton asChild>
-                            <Link to={item.href}>
-                              <item.icon className="h-4 w-4" />
-                              <span>{item.label}</span>
-                            </Link>
-                          </SidebarMenuButton>
-                        </SidebarMenuItem>
-                      ))}
-                    </SidebarGroupContent>
-                  </SidebarGroup>
+                  {/* Contextual Navigation Section - Dynamic menu based on context */}
+                  {navigationContext.type !== "global" && (
+                    <ContextualNavigationSection />
+                  )}
                 </SidebarContent>
 
                 <SidebarFooter>
@@ -130,6 +124,12 @@ export function AuthenticatedLayout({
           </SidebarProvider>
 
           <TodoSheet />
+
+          {/* Global Command Palette */}
+          <CommandPalette
+            open={commandPaletteOpen}
+            onOpenChange={setCommandPaletteOpen}
+          />
         </TodoSheetProvider>
       </EditTodoFormProvider>
     </AddTodoFormProvider>

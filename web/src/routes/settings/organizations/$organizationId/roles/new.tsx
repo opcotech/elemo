@@ -6,9 +6,9 @@ import {
   OrganizationDetailError,
   OrganizationDetailSkeleton,
   OrganizationNotFound,
-  OrganizationRoleCreateFormWithPermissions,
 } from "@/components/organizations";
 import { PageHeader } from "@/components/page-header";
+import { RoleCreateFormWithPermissions } from "@/components/roles";
 import { useBreadcrumbUtils } from "@/hooks/use-breadcrumbs";
 import { ResourceType } from "@/hooks/use-permissions";
 import { useRequirePermission } from "@/hooks/use-require-permission";
@@ -95,9 +95,7 @@ function OrganizationRoleCreatePage() {
         description="Create a new role for this organization."
       />
 
-      <OrganizationRoleCreateFormWithPermissions
-        organizationId={organizationId}
-      />
+      <RoleCreateFormWithPermissions organizationId={organizationId} />
     </div>
   );
 }

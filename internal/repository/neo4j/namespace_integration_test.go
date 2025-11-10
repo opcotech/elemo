@@ -49,14 +49,14 @@ func (s *NamespaceRepositoryIntegrationTestSuite) TearDownSuite() {
 }
 
 func (s *NamespaceRepositoryIntegrationTestSuite) TestCreate() {
-	s.Require().NoError(s.NamespaceRepo.Create(context.Background(), s.testOrg.ID, s.namespace))
+	s.Require().NoError(s.NamespaceRepo.Create(context.Background(), s.testUser.ID, s.testOrg.ID, s.namespace))
 	s.Assert().NotEqual(model.MustNewNilID(model.ResourceTypeNamespace), s.namespace.ID)
 	s.Assert().NotNil(s.namespace.CreatedAt)
 	s.Assert().Nil(s.namespace.UpdatedAt)
 }
 
 func (s *NamespaceRepositoryIntegrationTestSuite) TestGet() {
-	s.Require().NoError(s.NamespaceRepo.Create(context.Background(), s.testOrg.ID, s.namespace))
+	s.Require().NoError(s.NamespaceRepo.Create(context.Background(), s.testUser.ID, s.testOrg.ID, s.namespace))
 
 	namespace, err := s.NamespaceRepo.Get(context.Background(), s.namespace.ID)
 	s.Require().NoError(err)
@@ -71,9 +71,9 @@ func (s *NamespaceRepositoryIntegrationTestSuite) TestGet() {
 }
 
 func (s *NamespaceRepositoryIntegrationTestSuite) TestGetAll() {
-	s.Require().NoError(s.NamespaceRepo.Create(context.Background(), s.testOrg.ID, s.namespace))
-	s.Require().NoError(s.NamespaceRepo.Create(context.Background(), s.testOrg.ID, testModel.NewNamespace()))
-	s.Require().NoError(s.NamespaceRepo.Create(context.Background(), s.testOrg.ID, testModel.NewNamespace()))
+	s.Require().NoError(s.NamespaceRepo.Create(context.Background(), s.testUser.ID, s.testOrg.ID, s.namespace))
+	s.Require().NoError(s.NamespaceRepo.Create(context.Background(), s.testUser.ID, s.testOrg.ID, testModel.NewNamespace()))
+	s.Require().NoError(s.NamespaceRepo.Create(context.Background(), s.testUser.ID, s.testOrg.ID, testModel.NewNamespace()))
 
 	namespaces, err := s.NamespaceRepo.GetAll(context.Background(), s.testOrg.ID, 0, 10)
 	s.Require().NoError(err)
@@ -93,7 +93,7 @@ func (s *NamespaceRepositoryIntegrationTestSuite) TestGetAll() {
 }
 
 func (s *NamespaceRepositoryIntegrationTestSuite) TestUpdate() {
-	s.Require().NoError(s.NamespaceRepo.Create(context.Background(), s.testOrg.ID, s.namespace))
+	s.Require().NoError(s.NamespaceRepo.Create(context.Background(), s.testUser.ID, s.testOrg.ID, s.namespace))
 
 	patch := map[string]any{
 		"name":        "new name",
@@ -113,7 +113,7 @@ func (s *NamespaceRepositoryIntegrationTestSuite) TestUpdate() {
 }
 
 func (s *NamespaceRepositoryIntegrationTestSuite) TestDelete() {
-	s.Require().NoError(s.NamespaceRepo.Create(context.Background(), s.testOrg.ID, s.namespace))
+	s.Require().NoError(s.NamespaceRepo.Create(context.Background(), s.testUser.ID, s.testOrg.ID, s.namespace))
 
 	s.Require().NoError(s.NamespaceRepo.Delete(context.Background(), s.namespace.ID))
 

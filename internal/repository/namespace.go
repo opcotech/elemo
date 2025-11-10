@@ -10,7 +10,7 @@ import (
 //
 //go:generate mockgen -source=namespace.go -destination=../testutil/mock/namespace_repo_gen.go -package=mock -mock_names "NamespaceRepository=NamespaceRepository"
 type NamespaceRepository interface {
-	Create(ctx context.Context, orgID model.ID, namespace *model.Namespace) error
+	Create(ctx context.Context, creatorID, orgID model.ID, namespace *model.Namespace) error
 	Get(ctx context.Context, id model.ID) (*model.Namespace, error)
 	GetAll(ctx context.Context, orgID model.ID, offset, limit int) ([]*model.Namespace, error)
 	Update(ctx context.Context, id model.ID, patch map[string]any) (*model.Namespace, error)

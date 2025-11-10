@@ -78,7 +78,10 @@ export function OrganizationDangerZone({
 
   return (
     <>
-      <Card className="border-destructive bg-transparent">
+      <Card
+        data-section="organization-danger-zone"
+        className="border-destructive bg-transparent"
+      >
         <CardHeader>
           <CardTitle className="text-destructive">Danger Zone</CardTitle>
           <CardDescription>

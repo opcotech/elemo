@@ -1,16 +1,21 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { QueryKey } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import type { UseFormReturn } from "react-hook-form";
+import type { FieldValues, UseFormReturn } from "react-hook-form";
 
 import { showErrorToast, showSuccessToast } from "@/lib/toast";
 
-interface UseFormMutationOptions<TData, TVariables, TFormValues> {
+interface UseFormMutationOptions<
+  TData,
+  TVariables,
+  TFormValues extends FieldValues,
+  TError extends Error = Error,
+> {
   mutationFn: (variables: TVariables) => Promise<TData>;
   form: UseFormReturn<TFormValues>;
   onSuccess?: (data: TData) => void;
-  onError?: (error: Error) => void;
-  successMessage: string;
+  onError?: (error: TError) => void;
+  successMessage?: string;
   successDescription?: string;
   errorMessagePrefix?: string;
   queryKeysToInvalidate?: QueryKey[];
@@ -28,7 +33,12 @@ interface UseFormMutationOptions<TData, TVariables, TFormValues> {
  * - Optional navigation on success
  * - Optional form reset on success
  */
-export function useFormMutation<TData, TVariables, TFormValues>({
+export function useFormMutation<
+  TData,
+  TVariables,
+  TFormValues extends FieldValues,
+  TError extends Error = Error,
+>({
   mutationFn,
   form,
   onSuccess,
@@ -40,11 +50,11 @@ export function useFormMutation<TData, TVariables, TFormValues>({
   navigateOnSuccess,
   resetFormOnSuccess = false,
   transformValues,
-}: UseFormMutationOptions<TData, TVariables, TFormValues>) {
+}: UseFormMutationOptions<TData, TVariables, TFormValues, TError>) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
-  const mutation = useMutation({
+  const mutation = useMutation<TData, TError, TVariables>({
     mutationFn,
     onSuccess: (data) => {
       // Invalidate queries
@@ -52,11 +62,13 @@ export function useFormMutation<TData, TVariables, TFormValues>({
         queryClient.invalidateQueries({ queryKey });
       });
 
-      // Show success toast
-      showSuccessToast(
-        successMessage,
-        successDescription || `${successMessage} successfully`
-      );
+      if (successMessage) {
+        // Show success toast
+        showSuccessToast(
+          successMessage,
+          successDescription || `${successMessage} successfully`
+        );
+      }
 
       // Reset form if requested
       if (resetFormOnSuccess) {
@@ -78,7 +90,7 @@ export function useFormMutation<TData, TVariables, TFormValues>({
         }
       }
     },
-    onError: (error: Error) => {
+    onError: (error: TError) => {
       const errorMessage = error.message || "Unknown error occurred";
       showErrorToast(errorMessagePrefix, errorMessage);
       onError?.(error);

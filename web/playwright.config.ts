@@ -14,6 +14,8 @@ const IS_CI_ENV = process.env.CI === 'true';
  */
 export default defineConfig({
   testDir: './tests/e2e',
+  /* Global setup runs once before all tests */
+  globalSetup: './tests/e2e/global-setup.ts',
   /* Run tests in files in parallel */
   fullyParallel: true,
   /* Fail the build on CI if test.only left in the source code. */
@@ -70,9 +72,15 @@ export default defineConfig({
     },*/
   ],
 
+  /* Expectation configuration */
+  expect: {
+    /* Timeout for each expectation, intentionally low to speed up tests */
+    timeout: 3000,
+  },
+
   /* Run your local dev server before starting the tests */
   webServer: {
-    command: 'pnpm build && pnpm start',
+    command: process.env.NO_COMMAND === 'true' ? '' : 'pnpm build && pnpm start',
     url: 'http://localhost:3000',
     reuseExistingServer: true,
     timeout: 120 * 1000,

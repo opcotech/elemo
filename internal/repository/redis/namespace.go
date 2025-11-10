@@ -40,7 +40,7 @@ type CachedNamespaceRepository struct {
 	namespaceRepo repository.NamespaceRepository
 }
 
-func (r *CachedNamespaceRepository) Create(ctx context.Context, orgID model.ID, namespace *model.Namespace) error {
+func (r *CachedNamespaceRepository) Create(ctx context.Context, creatorID, orgID model.ID, namespace *model.Namespace) error {
 	if err := clearNamespacesAllGetAll(ctx, r.cacheRepo); err != nil {
 		return err
 	}
@@ -48,7 +48,7 @@ func (r *CachedNamespaceRepository) Create(ctx context.Context, orgID model.ID, 
 		return err
 	}
 
-	return r.namespaceRepo.Create(ctx, orgID, namespace)
+	return r.namespaceRepo.Create(ctx, creatorID, orgID, namespace)
 }
 
 func (r *CachedNamespaceRepository) Get(ctx context.Context, id model.ID) (*model.Namespace, error) {

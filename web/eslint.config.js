@@ -24,7 +24,7 @@ export default [...tanstackConfig, {
     "vite.config.ts",
   ],
 }, {
-  files: ["src/**/*.{js,jsx,ts,tsx}"],
+  files: ["src/**/*.{js,jsx,ts,tsx}", "tests/**/*.{js,jsx,ts,tsx}"],
   languageOptions: {
     globals: {
       console: "readonly",

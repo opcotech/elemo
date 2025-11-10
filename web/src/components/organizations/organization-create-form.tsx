@@ -1,5 +1,4 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useForm } from "react-hook-form";
 import type { z } from "zod";
@@ -14,10 +13,11 @@ import {
 } from "@/components/ui/form";
 import { FormCard } from "@/components/ui/form-card";
 import { Input } from "@/components/ui/input";
-import { v1OrganizationsCreateMutation } from "@/lib/client/@tanstack/react-query.gen";
+import { useFormMutation } from "@/hooks/use-form-mutation";
+import type { Options, V1OrganizationsCreateData } from "@/lib/api";
+import { v1OrganizationsCreate } from "@/lib/client/sdk.gen";
 import { zOrganizationCreate } from "@/lib/client/zod.gen";
 import { createFormSchema, normalizeFormData } from "@/lib/forms";
-import { showErrorToast, showSuccessToast } from "@/lib/toast";
 import { getDefaultValue } from "@/lib/utils";
 
 // Create a schema without logo field for the form
@@ -42,47 +42,50 @@ export function OrganizationCreateForm() {
     defaultValues,
   });
 
-  const mutation = useMutation(v1OrganizationsCreateMutation());
-
-  const onSubmit = (values: OrganizationFormValues) => {
-    const normalizedBody = normalizeFormData(
-      organizationFormSchema,
-      values
-    ) as {
-      name: string;
-      email: string;
-      website?: string;
-    };
-
-    mutation.mutate(
-      {
+  const mutation = useFormMutation<
+    { id: string },
+    Options<V1OrganizationsCreateData>,
+    OrganizationFormValues
+  >({
+    mutationFn: async (variables) => {
+      const { data } = await v1OrganizationsCreate({
+        ...variables,
+        throwOnError: true,
+      });
+      return data;
+    },
+    form,
+    successMessage: "Organization created",
+    errorMessagePrefix: "Failed to create organization",
+    transformValues: (values) => {
+      const normalizedBody = normalizeFormData(
+        organizationFormSchema,
+        values
+      ) as {
+        name: string;
+        email: string;
+        website?: string;
+      };
+      return {
         body: normalizedBody,
-      },
-      {
-        onSuccess: (data) => {
-          showSuccessToast(
-            "Organization created",
-            "Organization created successfully"
-          );
-          navigate({
-            to: "/settings/organizations/$organizationId",
-            params: { organizationId: data.id },
-          });
-        },
-        onError: (error) => {
-          showErrorToast("Failed to create organization", error.message);
-        },
-      }
-    );
-  };
+      };
+    },
+    onSuccess: (data) => {
+      navigate({
+        to: "/settings/organizations/$organizationId",
+        params: { organizationId: data.id },
+      });
+    },
+  });
 
   return (
     <FormCard
+      data-section="organization-create-form"
       description="Enter the details below to create a new organization."
-      onSubmit={form.handleSubmit(onSubmit)}
+      onSubmit={mutation.handleSubmit}
       onCancel={() => navigate({ to: "/settings/organizations" })}
       isPending={mutation.isPending}
-      error={mutation.error as Error}
+      error={mutation.error || null}
       submitButtonText="Create Organization"
     >
       <Form {...form}>

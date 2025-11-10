@@ -1,0 +1,12 @@
+export { SettingsSecurityPage } from "./settings-security-page";
+export { SettingsOrganizationsPage } from "./settings-organizations-page";
+export { SettingsOrganizationCreatePage } from "./settings-organization-create-page";
+export { SettingsOrganizationDetailsPage } from "./settings-organization-details-page";
+export { SettingsOrganizationEditPage } from "./settings-organization-edit-page";
+export { SettingsOrganizationRoleCreatePage } from "./settings-organization-role-create-page";
+export { SettingsOrganizationRoleEditPage } from "./settings-organization-role-edit-page";
+export { LoginPage } from "./login-page";
+export { OrganizationsJoinPage } from "./organizations-join-page";
+export { SettingsOrganizationNamespaceCreatePage } from "./settings-organization-namespace-create-page";
+export { SettingsOrganizationNamespaceEditPage } from "./settings-organization-namespace-edit-page";
+export { SettingsOrganizationNamespaceDetailsPage } from "./settings-organization-namespace-details-page";

@@ -12,7 +12,7 @@ export async function waitForDialog(
   title?: string,
   options?: { timeout?: number }
 ): Promise<void> {
-  const timeout = options?.timeout ?? 10000;
+  const timeout = options?.timeout ?? 5000;
 
   if (title) {
     const dialogLocator = page
@@ -77,5 +77,5 @@ export async function confirmDialog(
     });
     await confirmButton.click();
   }
-  await expect(dialog).not.toBeVisible({ timeout: 5000 });
+  await expect(dialog).not.toBeVisible();
 }

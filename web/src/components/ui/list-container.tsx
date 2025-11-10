@@ -32,6 +32,7 @@ interface ListContainerProps {
   searchInput?: ReactNode;
   children: ReactNode;
   className?: string;
+  "data-section"?: string;
 }
 
 export function ListContainer({
@@ -44,12 +45,13 @@ export function ListContainer({
   searchInput,
   children,
   className,
+  "data-section": dataSection,
 }: ListContainerProps) {
   const showEmpty = !isLoading && !error && emptyState;
   const showSearchWithEmpty = showEmpty && searchInput;
 
   return (
-    <Card className={className}>
+    <Card data-section={dataSection} className={className}>
       <CardHeader>
         <div className="flex items-start justify-between">
           <div className="space-y-1">

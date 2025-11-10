@@ -1,5 +1,4 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import type { z } from "zod";
@@ -25,11 +24,11 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/use-auth";
-import type { TodoCreate } from "@/lib/api";
-import { v1TodosCreateMutation } from "@/lib/client/@tanstack/react-query.gen";
+import { useFormMutation } from "@/hooks/use-form-mutation";
+import type { Options, TodoCreate, V1TodosCreateData } from "@/lib/api";
+import { v1TodosCreate } from "@/lib/client/sdk.gen";
 import { zTodoCreate } from "@/lib/client/zod.gen";
 import { createFormSchema, normalizeFormData } from "@/lib/forms";
-import { showErrorToast, showSuccessToast } from "@/lib/toast";
 import { getDefaultValue } from "@/lib/utils";
 
 const todoFormSchema = createFormSchema(zTodoCreate.omit({ owned_by: true }));
@@ -62,37 +61,43 @@ export function AddTodoForm({
     defaultValues,
   });
 
-  const mutation = useMutation(v1TodosCreateMutation());
-
-  const onSubmit = (values: TodoFormValues) => {
-    const normalizedBody = normalizeFormData(
-      todoFormSchema,
-      values
-    ) as TodoCreate;
-
-    mutation.mutate(
-      {
+  const mutation = useFormMutation<
+    unknown,
+    Options<V1TodosCreateData>,
+    TodoFormValues
+  >({
+    mutationFn: async (variables) => {
+      const { data } = await v1TodosCreate({
+        ...variables,
+        throwOnError: true,
+      });
+      return data;
+    },
+    form,
+    successMessage: "Todo added successfully",
+    errorMessagePrefix: "Failed to add todo",
+    resetFormOnSuccess: false, // We'll handle reset manually based on createMore
+    transformValues: (values) => {
+      const normalizedBody = normalizeFormData(
+        todoFormSchema,
+        values
+      ) as TodoCreate;
+      return {
         body: {
           ...normalizedBody,
           owned_by: user!.id,
         },
-      },
-      {
-        onSuccess: () => {
-          if (!createMore) onOpenChange(false);
-          onSuccess?.();
-          form.reset(defaultValues);
-          showSuccessToast(
-            "Todo added successfully",
-            `Todo "${values.title}" with priority "${values.priority}" added successfully`
-          );
-        },
-        onError: (error) => {
-          showErrorToast("Failed to add todo", error.message);
-        },
+      };
+    },
+    onSuccess: () => {
+      if (!createMore) {
+        onOpenChange(false);
       }
-    );
-  };
+      onSuccess?.();
+      form.reset(defaultValues);
+      setCreateMore(false);
+    },
+  });
 
   const handleReset = () => {
     form.reset(defaultValues);
@@ -105,9 +110,9 @@ export function AddTodoForm({
       open={open}
       onOpenChange={onOpenChange}
       title="Add Todo"
-      onSubmit={form.handleSubmit(onSubmit)}
+      onSubmit={mutation.handleSubmit}
       isPending={mutation.isPending}
-      error={mutation.error as Error | null}
+      error={mutation.error || null}
       submitButtonText="Add todo"
       onReset={handleReset}
     >

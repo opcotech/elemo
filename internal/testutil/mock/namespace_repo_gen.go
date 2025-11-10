@@ -42,17 +42,17 @@ func (m *NamespaceRepository) EXPECT() *NamespaceRepositoryMockRecorder {
 }
 
 // Create mocks base method.
-func (m *NamespaceRepository) Create(ctx context.Context, orgID model.ID, namespace *model.Namespace) error {
+func (m *NamespaceRepository) Create(ctx context.Context, creatorID, orgID model.ID, namespace *model.Namespace) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Create", ctx, orgID, namespace)
+	ret := m.ctrl.Call(m, "Create", ctx, creatorID, orgID, namespace)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Create indicates an expected call of Create.
-func (mr *NamespaceRepositoryMockRecorder) Create(ctx, orgID, namespace any) *gomock.Call {
+func (mr *NamespaceRepositoryMockRecorder) Create(ctx, creatorID, orgID, namespace any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*NamespaceRepository)(nil).Create), ctx, orgID, namespace)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*NamespaceRepository)(nil).Create), ctx, creatorID, orgID, namespace)
 }
 
 // Delete mocks base method.
