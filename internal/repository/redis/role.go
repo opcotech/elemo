@@ -132,6 +132,10 @@ func (r *CachedRoleRepository) AddMember(ctx context.Context, roleID, memberID, 
 	if err := clearRolesAllBelongsTo(ctx, r.cacheRepo); err != nil {
 		return err
 	}
+	// Clear organization cache since GetMembers includes role information
+	if err := clearOrganizationsKey(ctx, r.cacheRepo, belongsToID); err != nil {
+		return err
+	}
 
 	return r.roleRepo.AddMember(ctx, roleID, memberID, belongsToID)
 }
@@ -141,6 +145,10 @@ func (r *CachedRoleRepository) RemoveMember(ctx context.Context, roleID, memberI
 		return err
 	}
 	if err := clearRolesAllBelongsTo(ctx, r.cacheRepo); err != nil {
+		return err
+	}
+	// Clear organization cache since GetMembers includes role information
+	if err := clearOrganizationsKey(ctx, r.cacheRepo, belongsToID); err != nil {
 		return err
 	}
 

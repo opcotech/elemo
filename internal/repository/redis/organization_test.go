@@ -1672,3 +1672,533 @@ func TestCachedOrganizationRepository_Delete(t *testing.T) {
 		})
 	}
 }
+
+func TestCachedOrganizationRepository_AddInvitation(t *testing.T) {
+	type fields struct {
+		cacheRepo        func(ctrl *gomock.Controller, ctx context.Context, orgID, userID model.ID) *baseRepository
+		organizationRepo func(ctrl *gomock.Controller, ctx context.Context, orgID, userID model.ID) repository.OrganizationRepository
+	}
+	type args struct {
+		ctx    context.Context
+		orgID  model.ID
+		userID model.ID
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr error
+	}{
+		{
+			name: "add invitation success",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, orgID, _ model.ID) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeOrganization.String(), orgID.String())
+					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "GetAll", "*", "*")
+
+					getAllKeyCmd := new(redis.StringSliceCmd)
+					getAllKeyCmd.SetVal([]string{getAllKey})
+
+					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, getAllKey).Return(getAllKeyCmd)
+
+					db, err := NewDatabase(
+						WithClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(2)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(nil)
+
+					return &baseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, orgID, userID model.ID) repository.OrganizationRepository {
+					repo := mock.NewOrganizationRepository(ctrl)
+					repo.EXPECT().AddInvitation(ctx, orgID, userID).Return(nil)
+					return repo
+				},
+			},
+			args: args{
+				ctx:    context.Background(),
+				orgID:  model.MustNewID(model.ResourceTypeOrganization),
+				userID: model.MustNewID(model.ResourceTypeUser),
+			},
+		},
+		{
+			name: "add invitation with organization error",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, orgID, _ model.ID) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeOrganization.String(), orgID.String())
+					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "GetAll", "*", "*")
+
+					getAllKeyCmd := new(redis.StringSliceCmd)
+					getAllKeyCmd.SetVal([]string{getAllKey})
+
+					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, getAllKey).Return(getAllKeyCmd)
+
+					db, err := NewDatabase(
+						WithClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(2)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(nil)
+
+					return &baseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, orgID, userID model.ID) repository.OrganizationRepository {
+					repo := mock.NewOrganizationRepository(ctrl)
+					repo.EXPECT().AddInvitation(ctx, orgID, userID).Return(repository.ErrOrganizationAddMember)
+					return repo
+				},
+			},
+			args: args{
+				ctx:    context.Background(),
+				orgID:  model.MustNewID(model.ResourceTypeOrganization),
+				userID: model.MustNewID(model.ResourceTypeUser),
+			},
+			wantErr: repository.ErrOrganizationAddMember,
+		},
+		{
+			name: "add invitation with cache deletion error",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, orgID, _ model.ID) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeOrganization.String(), orgID.String())
+
+					dbClient := mock.NewUniversalClient(ctrl)
+
+					db, err := NewDatabase(
+						WithClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(1)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/Delete", gomock.Len(0)).Return(ctx, span)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, key).Return(repository.ErrCacheDelete)
+
+					return &baseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				organizationRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID) repository.OrganizationRepository {
+					return mock.NewOrganizationRepository(ctrl)
+				},
+			},
+			args: args{
+				ctx:    context.Background(),
+				orgID:  model.MustNewID(model.ResourceTypeOrganization),
+				userID: model.MustNewID(model.ResourceTypeUser),
+			},
+			wantErr: repository.ErrCacheDelete,
+		},
+		{
+			name: "add invitation cache by related key error",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, orgID, _ model.ID) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeOrganization.String(), orgID.String())
+					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "GetAll", "*", "*")
+
+					getAllKeyCmd := new(redis.StringSliceCmd)
+					getAllKeyCmd.SetVal([]string{getAllKey})
+
+					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, getAllKey).Return(getAllKeyCmd)
+
+					db, err := NewDatabase(
+						WithClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(2)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(repository.ErrCacheDelete)
+
+					return &baseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				organizationRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID) repository.OrganizationRepository {
+					return mock.NewOrganizationRepository(ctrl)
+				},
+			},
+			args: args{
+				ctx:    context.Background(),
+				orgID:  model.MustNewID(model.ResourceTypeOrganization),
+				userID: model.MustNewID(model.ResourceTypeUser),
+			},
+			wantErr: repository.ErrCacheDelete,
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			r := &CachedOrganizationRepository{
+				cacheRepo:        tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.orgID, tt.args.userID),
+				organizationRepo: tt.fields.organizationRepo(ctrl, tt.args.ctx, tt.args.orgID, tt.args.userID),
+			}
+			err := r.AddInvitation(tt.args.ctx, tt.args.orgID, tt.args.userID)
+			require.ErrorIs(t, err, tt.wantErr)
+		})
+	}
+}
+
+func TestCachedOrganizationRepository_RemoveInvitation(t *testing.T) {
+	type fields struct {
+		cacheRepo        func(ctrl *gomock.Controller, ctx context.Context, orgID, userID model.ID) *baseRepository
+		organizationRepo func(ctrl *gomock.Controller, ctx context.Context, orgID, userID model.ID) repository.OrganizationRepository
+	}
+	type args struct {
+		ctx    context.Context
+		orgID  model.ID
+		userID model.ID
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr error
+	}{
+		{
+			name: "remove invitation success",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, orgID, _ model.ID) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeOrganization.String(), orgID.String())
+					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "GetAll", "*", "*")
+
+					getAllKeyCmd := new(redis.StringSliceCmd)
+					getAllKeyCmd.SetVal([]string{getAllKey})
+
+					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, getAllKey).Return(getAllKeyCmd)
+
+					db, err := NewDatabase(
+						WithClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(2)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(nil)
+
+					return &baseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, orgID, userID model.ID) repository.OrganizationRepository {
+					repo := mock.NewOrganizationRepository(ctrl)
+					repo.EXPECT().RemoveInvitation(ctx, orgID, userID).Return(nil)
+					return repo
+				},
+			},
+			args: args{
+				ctx:    context.Background(),
+				orgID:  model.MustNewID(model.ResourceTypeOrganization),
+				userID: model.MustNewID(model.ResourceTypeUser),
+			},
+		},
+		{
+			name: "remove invitation with organization error",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, orgID, _ model.ID) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeOrganization.String(), orgID.String())
+					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "GetAll", "*", "*")
+
+					getAllKeyCmd := new(redis.StringSliceCmd)
+					getAllKeyCmd.SetVal([]string{getAllKey})
+
+					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, getAllKey).Return(getAllKeyCmd)
+
+					db, err := NewDatabase(
+						WithClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(2)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(nil)
+
+					return &baseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, orgID, userID model.ID) repository.OrganizationRepository {
+					repo := mock.NewOrganizationRepository(ctrl)
+					repo.EXPECT().RemoveInvitation(ctx, orgID, userID).Return(repository.ErrOrganizationRemoveMember)
+					return repo
+				},
+			},
+			args: args{
+				ctx:    context.Background(),
+				orgID:  model.MustNewID(model.ResourceTypeOrganization),
+				userID: model.MustNewID(model.ResourceTypeUser),
+			},
+			wantErr: repository.ErrOrganizationRemoveMember,
+		},
+		{
+			name: "remove invitation with cache deletion error",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, orgID, _ model.ID) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeOrganization.String(), orgID.String())
+
+					dbClient := mock.NewUniversalClient(ctrl)
+
+					db, err := NewDatabase(
+						WithClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(1)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/Delete", gomock.Len(0)).Return(ctx, span)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, key).Return(repository.ErrCacheDelete)
+
+					return &baseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				organizationRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID) repository.OrganizationRepository {
+					return mock.NewOrganizationRepository(ctrl)
+				},
+			},
+			args: args{
+				ctx:    context.Background(),
+				orgID:  model.MustNewID(model.ResourceTypeOrganization),
+				userID: model.MustNewID(model.ResourceTypeUser),
+			},
+			wantErr: repository.ErrCacheDelete,
+		},
+		{
+			name: "remove invitation cache by related key error",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, orgID, _ model.ID) *baseRepository {
+					key := composeCacheKey(model.ResourceTypeOrganization.String(), orgID.String())
+					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "GetAll", "*", "*")
+
+					getAllKeyCmd := new(redis.StringSliceCmd)
+					getAllKeyCmd.SetVal([]string{getAllKey})
+
+					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, getAllKey).Return(getAllKeyCmd)
+
+					db, err := NewDatabase(
+						WithClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(2)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redis.baseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(repository.ErrCacheDelete)
+
+					return &baseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				organizationRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID) repository.OrganizationRepository {
+					return mock.NewOrganizationRepository(ctrl)
+				},
+			},
+			args: args{
+				ctx:    context.Background(),
+				orgID:  model.MustNewID(model.ResourceTypeOrganization),
+				userID: model.MustNewID(model.ResourceTypeUser),
+			},
+			wantErr: repository.ErrCacheDelete,
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			r := &CachedOrganizationRepository{
+				cacheRepo:        tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.orgID, tt.args.userID),
+				organizationRepo: tt.fields.organizationRepo(ctrl, tt.args.ctx, tt.args.orgID, tt.args.userID),
+			}
+			err := r.RemoveInvitation(tt.args.ctx, tt.args.orgID, tt.args.userID)
+			require.ErrorIs(t, err, tt.wantErr)
+		})
+	}
+}
+
+func TestCachedOrganizationRepository_GetInvitations(t *testing.T) {
+	type fields struct {
+		cacheRepo        func(ctrl *gomock.Controller, ctx context.Context, orgID model.ID) *baseRepository
+		organizationRepo func(ctrl *gomock.Controller, ctx context.Context, orgID model.ID, invitations []*model.OrganizationMember) repository.OrganizationRepository
+	}
+	type args struct {
+		ctx   context.Context
+		orgID model.ID
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    []*model.OrganizationMember
+		wantErr error
+	}{
+		{
+			name: "get invitations success",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID) *baseRepository {
+					db, err := NewDatabase(
+						WithClient(mock.NewUniversalClient(ctrl)),
+					)
+					require.NoError(t, err)
+
+					return &baseRepository{
+						db:     db,
+						cache:  mock.NewCacheBackend(ctrl),
+						tracer: mock.NewMockTracer(ctrl),
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, orgID model.ID, invitations []*model.OrganizationMember) repository.OrganizationRepository {
+					repo := mock.NewOrganizationRepository(ctrl)
+					repo.EXPECT().GetInvitations(ctx, orgID).Return(invitations, nil)
+					return repo
+				},
+			},
+			args: args{
+				ctx:   context.Background(),
+				orgID: model.MustNewID(model.ResourceTypeOrganization),
+			},
+			want: []*model.OrganizationMember{
+				{
+					ID:    model.MustNewID(model.ResourceTypeUser),
+					Email: "user1@example.com",
+					Roles: []string{},
+				},
+			},
+		},
+		{
+			name: "get invitations with error",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID) *baseRepository {
+					db, err := NewDatabase(
+						WithClient(mock.NewUniversalClient(ctrl)),
+					)
+					require.NoError(t, err)
+
+					return &baseRepository{
+						db:     db,
+						cache:  mock.NewCacheBackend(ctrl),
+						tracer: mock.NewMockTracer(ctrl),
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, orgID model.ID, _ []*model.OrganizationMember) repository.OrganizationRepository {
+					repo := mock.NewOrganizationRepository(ctrl)
+					repo.EXPECT().GetInvitations(ctx, orgID).Return(nil, repository.ErrNotFound)
+					return repo
+				},
+			},
+			args: args{
+				ctx:   context.Background(),
+				orgID: model.MustNewID(model.ResourceTypeOrganization),
+			},
+			wantErr: repository.ErrNotFound,
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			r := &CachedOrganizationRepository{
+				cacheRepo:        tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.orgID),
+				organizationRepo: tt.fields.organizationRepo(ctrl, tt.args.ctx, tt.args.orgID, tt.want),
+			}
+			got, err := r.GetInvitations(tt.args.ctx, tt.args.orgID)
+			require.ErrorIs(t, err, tt.wantErr)
+			require.Equal(t, tt.want, got)
+		})
+	}
+}

@@ -37,7 +37,12 @@ const initialState: AuthState = {
   error: null,
 };
 
-const publicPaths = ["/login", "/forgot-password", "/reset-password"];
+const publicPaths = [
+  "/login",
+  "/forgot-password",
+  "/reset-password",
+  "/organizations/join",
+];
 
 function authReducer(state: AuthState, action: AuthAction): AuthState {
   switch (action.type) {
@@ -206,7 +211,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       await storeTokens(tokens);
 
-      // Fetch user data using generated API client
       const userResponse = await v1UserGet({
         client,
         auth: () => tokens.access_token,

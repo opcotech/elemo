@@ -5,14 +5,6 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import type { z } from "zod";
 
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import {
   Form,
   FormControl,
@@ -21,19 +13,23 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { FormCard } from "@/components/ui/form-card";
 import { Input } from "@/components/ui/input";
-import { Spinner } from "@/components/ui/spinner";
 import type { Organization } from "@/lib/api";
 import { v1OrganizationUpdateMutation } from "@/lib/client/@tanstack/react-query.gen";
 import { zOrganizationPatch } from "@/lib/client/zod.gen";
+import { createFormSchema, normalizePatchData } from "@/lib/forms";
 import { showErrorToast, showSuccessToast } from "@/lib/toast";
+import { getDefaultValue } from "@/lib/utils";
 
 // Create a schema without logo and status fields for the form
 // TODO: Add logo field when implementing image upload
-const organizationEditFormSchema = zOrganizationPatch.omit({
-  logo: true,
-  status: true,
-});
+const organizationEditFormSchema = createFormSchema(
+  zOrganizationPatch.omit({
+    logo: true,
+    status: true,
+  })
+);
 
 type OrganizationEditFormValues = z.infer<typeof organizationEditFormSchema>;
 
@@ -53,54 +49,39 @@ export function OrganizationEditForm({
     defaultValues: {
       name: organization.name,
       email: organization.email,
-      website: organization.website || undefined,
+      website: getDefaultValue(organization.website),
     },
   });
 
-  // Update form when organization data changes
   useEffect(() => {
-    form.reset({
-      name: organization.name,
-      email: organization.email,
-      website: organization.website || undefined,
-    });
-  }, [organization, form]);
+    if (!form.formState.isDirty) {
+      form.reset({
+        name: organization.name,
+        email: organization.email,
+        website: getDefaultValue(organization.website),
+      });
+    }
+  }, [organization.name, organization.email, organization.website]);
 
   const mutation = useMutation(v1OrganizationUpdateMutation());
 
   const onSubmit = (values: OrganizationEditFormValues) => {
-    const body: {
-      name?: string;
-      email?: string;
-      website?: string;
-    } = {};
-
-    // Only include fields that have changed or are explicitly provided
-    if (values.name !== organization.name) {
-      body.name = values.name;
-    }
-    if (values.email !== organization.email) {
-      body.email = values.email;
-    }
-    if (values.website !== (organization.website || undefined)) {
-      body.website = values.website;
-    }
-
-    // If no changes, don't submit
-    if (Object.keys(body).length === 0) {
-      showErrorToast(
-        "No changes",
-        "Please make changes to the organization before saving."
-      );
-      return;
-    }
+    const normalizedBody = normalizePatchData(
+      organizationEditFormSchema,
+      values,
+      {
+        name: organization.name,
+        email: organization.email,
+        website: organization.website,
+      }
+    );
 
     mutation.mutate(
       {
         path: {
           id: organizationId,
         },
-        body,
+        body: normalizedBody,
       },
       {
         onSuccess: () => {
@@ -121,109 +102,70 @@ export function OrganizationEditForm({
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Edit Organization</CardTitle>
-        <CardDescription>
-          Update the organization details below.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(onSubmit)}
-            className="flex flex-col gap-y-6"
-          >
-            {mutation.isError && (
-              <div className="text-destructive text-sm">
-                <p>{mutation.error.message}</p>
-              </div>
-            )}
+    <FormCard
+      onSubmit={form.handleSubmit(onSubmit)}
+      onCancel={() =>
+        navigate({
+          to: "/settings/organizations/$organizationId",
+          params: { organizationId },
+        })
+      }
+      isPending={mutation.isPending}
+      error={mutation.error as Error}
+      submitButtonText="Save Changes"
+    >
+      <Form {...form}>
+        <FormField
+          control={form.control}
+          name="name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Name</FormLabel>
+              <FormControl>
+                <Input placeholder="Enter organization name" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Enter organization name" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+        <FormField
+          control={form.control}
+          name="email"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Email</FormLabel>
+              <FormControl>
+                <Input
+                  type="email"
+                  placeholder="Enter organization email"
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="email"
-                      placeholder="Enter organization email"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="website"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Website</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="url"
-                      placeholder="https://example.com (optional)"
-                      value={field.value || ""}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        field.onChange(value === "" ? undefined : value);
-                      }}
-                      onBlur={field.onBlur}
-                      name={field.name}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="flex justify-end gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() =>
-                  navigate({
-                    to: "/settings/organizations/$organizationId",
-                    params: { organizationId },
-                  })
-                }
-                disabled={mutation.isPending}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={mutation.isPending}>
-                {mutation.isPending ? (
-                  <>
-                    <Spinner size="xs" className="mr-0.5 text-white" />
-                    <span>Saving...</span>
-                  </>
-                ) : (
-                  "Save Changes"
-                )}
-              </Button>
-            </div>
-          </form>
-        </Form>
-      </CardContent>
-    </Card>
+        <FormField
+          control={form.control}
+          name="website"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Website</FormLabel>
+              <FormControl>
+                <Input
+                  type="url"
+                  placeholder="https://example.com (optional)"
+                  {...field}
+                  value={getDefaultValue(field.value)}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </Form>
+    </FormCard>
   );
 }

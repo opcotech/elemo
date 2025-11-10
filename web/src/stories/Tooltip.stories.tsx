@@ -421,7 +421,7 @@ export const RichContent: Story = {
         <Tooltip>
           <TooltipTrigger asChild>
             <Button variant="outline" className="cursor-help">
-              <Calendar className="mr-2 h-4 w-4" />
+              <Calendar className="size-4" />
               Event Details
             </Button>
           </TooltipTrigger>
@@ -470,7 +470,7 @@ export const KeyboardShortcuts: Story = {
         <Tooltip>
           <TooltipTrigger asChild>
             <Button variant="outline">
-              <Plus className="mr-2 h-4 w-4" />
+              <Plus className="size-4" />
               New File
             </Button>
           </TooltipTrigger>
@@ -487,7 +487,7 @@ export const KeyboardShortcuts: Story = {
         <Tooltip>
           <TooltipTrigger asChild>
             <Button variant="outline">
-              <Copy className="mr-2 h-4 w-4" />
+              <Copy className="size-4" />
               Search
             </Button>
           </TooltipTrigger>
@@ -504,7 +504,7 @@ export const KeyboardShortcuts: Story = {
         <Tooltip>
           <TooltipTrigger asChild>
             <Button variant="outline">
-              <Settings className="mr-2 h-4 w-4" />
+              <Settings className="size-4" />
               Settings
             </Button>
           </TooltipTrigger>
@@ -521,7 +521,7 @@ export const KeyboardShortcuts: Story = {
         <Tooltip>
           <TooltipTrigger asChild>
             <Button variant="outline">
-              <Copy className="mr-2 h-4 w-4" />
+              <Copy className="size-4" />
               Copy
             </Button>
           </TooltipTrigger>

@@ -49,9 +49,16 @@ func BootstrapNeo4jDatabase(ctx context.Context, t *testing.T, db *neo4j.Databas
 		if statement != "" {
 			_, err := db.GetWriteSession(ctx).Run(ctx, statement, nil)
 			if err != nil {
+				// Ignore errors for already existing indexes/constraints
+				errStr := err.Error()
+				if strings.Contains(errStr, "EquivalentSchemaRuleAlreadyExists") ||
+					strings.Contains(errStr, "ConstraintCreationFailed") ||
+					strings.Contains(errStr, "already exists") {
+					continue
+				}
 				t.Log(statement)
+				require.NoError(t, err)
 			}
-			require.NoError(t, err)
 		}
 	}
 }

@@ -1,6 +1,6 @@
-export function OrganizationDetailHeader({
+export function PageHeader({
   title,
-  description = "View organization information.",
+  description,
 }: {
   title: string;
   description?: string;
@@ -8,7 +8,9 @@ export function OrganizationDetailHeader({
   return (
     <div className="mb-6">
       <h1 className="text-2xl font-bold">{title}</h1>
-      <p className="mt-2 text-gray-600">{description}</p>
+      {description && (
+        <p className="text-muted-foreground mt-2">{description}</p>
+      )}
     </div>
   );
 }

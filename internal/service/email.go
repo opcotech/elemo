@@ -92,14 +92,12 @@ func (s *emailService) SendOrganizationInvitationEmail(ctx context.Context, orga
 	ctx, span := s.tracer.Start(ctx, "service.emailService/SendOrganizationInvitationEmail")
 	defer span.End()
 
-	invitationURL := fmt.Sprintf("%s/organizations/join?workspace=%s&token=%s", s.smtpConf.ClientURL, organization.ID.String(), token)
+	invitationURL := fmt.Sprintf("%s/organizations/join?organization=%s&token=%s", s.smtpConf.ClientURL, organization.ID.String(), token)
 
 	data := &email.OrganizationInviteTemplateData{
 		Subject:          fmt.Sprintf("[Action Required] You have been invited to join %s", organization.Name),
-		FirstName:        user.FirstName,
-		LastName:         user.LastName,
 		OrganizationName: organization.Name,
-		InvitationURL:    fmt.Sprintf("%s/redirect?url=%s", s.smtpConf.ClientURL, url.QueryEscape(invitationURL)),
+		InvitationURL:    invitationURL,
 		SupportEmail:     s.smtpConf.SupportAddress,
 	}
 

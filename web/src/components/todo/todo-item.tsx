@@ -81,7 +81,6 @@ export function TodoItem({ todo, getPriorityColor, onSuccess }: TodoItemProps) {
         todo.completed ? "opacity-75" : ""
       }`}
     >
-      {/* Header with title, priority, and status */}
       <div className="mb-3 flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex items-start gap-2">
@@ -101,7 +100,6 @@ export function TodoItem({ todo, getPriorityColor, onSuccess }: TodoItemProps) {
           </div>
         </div>
 
-        {/* Status badge */}
         {todo.completed && (
           <Badge
             variant="success"
@@ -112,7 +110,6 @@ export function TodoItem({ todo, getPriorityColor, onSuccess }: TodoItemProps) {
         )}
       </div>
 
-      {/* Description */}
       {todo.description && (
         <p
           className={`text-muted-foreground mb-3 text-xs leading-relaxed ${
@@ -123,13 +120,11 @@ export function TodoItem({ todo, getPriorityColor, onSuccess }: TodoItemProps) {
         </p>
       )}
 
-      {/* Footer with metadata and actions */}
       <div className="flex items-center justify-between">
         <div className="text-muted-foreground text-xs">
           <span>Due: {formatDate(todo.due_date)}</span>
         </div>
 
-        {/* Action buttons - only visible on hover or when focused */}
         <div className="flex items-center gap-1 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100">
           <Button
             size="sm"

@@ -36,7 +36,7 @@ export function PermissionDenied() {
           <div className="flex flex-col gap-2 sm:flex-row">
             <Button asChild className="flex-1">
               <Link to="/dashboard">
-                <Home className="mr-2 h-4 w-4" />
+                <Home className="size-4" />
                 Go to Dashboard
               </Link>
             </Button>

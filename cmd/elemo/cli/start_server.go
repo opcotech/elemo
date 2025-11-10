@@ -273,23 +273,13 @@ var startServerCmd = &cobra.Command{
 			logger.Fatal(context.Background(), "failed to initialize system service", slog.Any("error", err))
 		}
 
-		organizationService, err := service.NewOrganizationService(
-			service.WithOrganizationRepository(organizationRepo),
-			service.WithUserRepository(userRepo),
-			service.WithPermissionService(permissionService),
-			service.WithLicenseService(licenseService),
-			service.WithLogger(logger.Named("organization_service")),
-			service.WithTracer(tracer),
-		)
-		if err != nil {
-			logger.Fatal(context.Background(), "failed to initialize organization service", slog.Any("error", err))
-		}
-
 		roleService, err := service.NewRoleService(
 			service.WithRoleRepository(roleRepo),
 			service.WithUserRepository(userRepo),
 			service.WithPermissionService(permissionService),
 			service.WithLicenseService(licenseService),
+			service.WithOrganizationRepository(organizationRepo),
+			service.WithNotificationService(notificationService),
 			service.WithLogger(logger.Named("role_service")),
 			service.WithTracer(tracer),
 		)
@@ -329,6 +319,22 @@ var startServerCmd = &cobra.Command{
 		)
 		if err != nil {
 			logger.Fatal(context.Background(), "failed to initialize email service", slog.Any("error", err))
+		}
+
+		organizationService, err := service.NewOrganizationService(
+			service.WithOrganizationRepository(organizationRepo),
+			service.WithUserRepository(userRepo),
+			service.WithUserTokenRepository(userTokenRepo),
+			service.WithRoleRepository(roleRepo),
+			service.WithPermissionService(permissionService),
+			service.WithLicenseService(licenseService),
+			service.WithEmailService(emailService),
+			service.WithNotificationService(notificationService),
+			service.WithLogger(logger.Named("organization_service")),
+			service.WithTracer(tracer),
+		)
+		if err != nil {
+			logger.Fatal(context.Background(), "failed to initialize organization service", slog.Any("error", err))
 		}
 
 		authProvider, err := initAuthProvider(relDBPool)

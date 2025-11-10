@@ -14,7 +14,6 @@ var (
 	ErrNoNotificationRepository        = errors.New("no notification repository provided")            // no notification repository provided
 	ErrNoNotificationService           = errors.New("no notification service provided")               // no notification service provided
 	ErrNoOrganizationRepository        = errors.New("no organization repository provided")            // no organization repository provided
-	ErrNoPatchData                     = errors.New("no patch data provided")                         // no patch data provided
 	ErrNoPermission                    = errors.New("no permission")                                  // no permission
 	ErrNoPermissionRepository          = errors.New("no permission repository provided")              // no permission repository provided
 	ErrNoPermissionService             = errors.New("no permission service provided")                 // no permission service provided
@@ -29,13 +28,19 @@ var (
 	ErrNoUser                          = errors.New("no user provided")                               // no user provided
 	ErrNoUserRepository                = errors.New("no user repository provided")                    // no user repository provided
 	ErrNoUserTokenRepository           = errors.New("no user token repository provided")              // no user token repository provided
+	ErrNoEmailService                  = errors.New("no email service provided")                      // no email service provided
 	ErrNoVersionInfo                   = errors.New("no version info provided")                       // no version info provided
 	ErrOrganizationCreate              = errors.New("failed to create organization")                  // failed to create organization
 	ErrOrganizationDelete              = errors.New("failed to delete organization")                  // failed to delete organization
 	ErrOrganizationGet                 = errors.New("failed to get organization")                     // failed to get organization
 	ErrOrganizationGetAll              = errors.New("failed to get organizations")                    // failed to get organizations
 	ErrOrganizationMemberAdd           = errors.New("failed to add member to organization")           // failed to add member to organization
+	ErrOrganizationMemberAlreadyExists = errors.New("user is already a member of the organization")   // user is already a member of the organization
+	ErrOrganizationMemberInvite        = errors.New("failed to invite member to organization")        // failed to invite member to organization
+	ErrOrganizationMemberInvalidStatus = errors.New("user status is not valid for invitation")        // user status is not valid for invitation
 	ErrOrganizationMemberRemove        = errors.New("failed to remove member from organization")      // failed to remove member from organization
+	ErrOrganizationInviteRevoke        = errors.New("failed to revoke invitation")                    // failed to revoke invitation
+	ErrOrganizationInviteAccept        = errors.New("failed to accept invitation")                    // failed to accept invitation
 	ErrOrganizationMembersGet          = errors.New("failed to get members of organization")          // failed to get members of organization
 	ErrOrganizationUpdate              = errors.New("failed to update organization")                  // failed to update organization
 	ErrPermissionCreate                = errors.New("failed to create permission")                    // failed to create permission
@@ -58,6 +63,9 @@ var (
 	ErrRoleGetBelongsTo                = errors.New("failed to get roles that belongs to")            // failed to get roles that belongs to
 	ErrRoleRemoveMember                = errors.New("failed to remove member from role")              // failed to remove member from role
 	ErrRoleUpdate                      = errors.New("failed to update role")                          // failed to update role
+	ErrRoleAddPermission               = errors.New("failed to add permission to role")               // failed to add permission to role
+	ErrRoleRemovePermission            = errors.New("failed to remove permission from role")          // failed to remove permission from role
+	ErrRoleGetPermissions              = errors.New("failed to get role permissions")                 // failed to get role permissions
 	ErrSystemHealthCheck               = errors.New("system health check failed")                     // system health check failed
 	ErrTodoCreate                      = errors.New("failed to create todo")                          // failed to create todo
 	ErrTodoDelete                      = errors.New("failed to delete todo")                          // failed to delete todo

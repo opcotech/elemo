@@ -73,7 +73,8 @@ func (p *Permission) Validate() error {
 	if err := validate.Struct(p); err != nil {
 		return errors.Join(ErrInvalidPermissionDetails, err)
 	}
-	if p.Subject.Inner == p.Target.Inner {
+	// Allow roles to have permissions on themselves, but reject for all other resource types
+	if p.Subject.Inner == p.Target.Inner && (p.Subject.Type != ResourceTypeRole || p.Target.Type != ResourceTypeRole) {
 		return errors.Join(ErrInvalidPermissionDetails, ErrPermissionSubjectTargetEqual)
 	}
 	if err := p.ID.Validate(); err != nil {

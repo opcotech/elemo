@@ -4,6 +4,8 @@ import {
   addMemberToOrganization,
   createDBOrganization,
 } from "./utils/organization";
+import { waitForPageLoad, waitForPermissionsLoad } from "./helpers/navigation";
+import { getTableByHeader, getTableRow } from "./helpers/elements";
 
 test.describe("@settings.organizations Organization Listing E2E Tests", () => {
   test.describe("Owner Scenarios", () => {
@@ -13,10 +15,7 @@ test.describe("@settings.organizations Organization Listing E2E Tests", () => {
     let deletedOwnedOrg: any;
 
     test.beforeAll(async () => {
-      // Create an owner user
       ownerUser = await createDBUser("active");
-
-      // Create organizations owned by this user
       ownedOrg1 = await createDBOrganization(ownerUser.id, "active", {
         name: "Owner Org Alpha",
       });
@@ -33,11 +32,10 @@ test.describe("@settings.organizations Organization Listing E2E Tests", () => {
         destination: "/settings/organizations",
       });
       await expect(page).toHaveURL(/.*settings\/organizations/);
+      await waitForPageLoad(page);
     });
 
     test("owner should see all organizations they own", async ({ page }) => {
-      await page.waitForLoadState("networkidle");
-
       await expect(page.getByText("Owner Org Alpha")).toBeVisible();
       await expect(page.getByText("Owner Org Beta")).toBeVisible();
       await expect(page.getByText("Owner Org Deleted")).toBeVisible();
@@ -46,18 +44,13 @@ test.describe("@settings.organizations Organization Listing E2E Tests", () => {
     test("owner should have all action buttons (read, write, delete permissions)", async ({
       page,
     }) => {
-      await page.waitForLoadState("networkidle");
+      await waitForPermissionsLoad(page);
 
-      const alphaRow = page
-        .locator("tbody tr")
-        .filter({ hasText: "Owner Org Alpha" })
-        .first();
-
-      // Owner has "*" permission, so should see all buttons
+      const organizationsTable = getTableByHeader(page, "Name");
+      const alphaRow = getTableRow(organizationsTable, "Owner Org Alpha");
       await expect(
         alphaRow.locator('a[href*="/settings/organizations/"]').first()
       ).toBeVisible();
-      // Edit button is a Link (wrapped in Button with asChild)
       await expect(
         alphaRow.getByRole("link", { name: "Edit organization" })
       ).toBeVisible();
@@ -69,13 +62,10 @@ test.describe("@settings.organizations Organization Listing E2E Tests", () => {
     test("owner should see organizations sorted correctly (active first, then alphabetically)", async ({
       page,
     }) => {
-      await page.waitForLoadState("networkidle");
-
-      const rows = page.locator("tbody tr");
+      const organizationsTable = getTableByHeader(page, "Name");
+      const rows = organizationsTable.locator("tbody tr");
       const rowCount = await rows.count();
       expect(rowCount).toBeGreaterThanOrEqual(3);
-
-      // Check that active organizations appear before deleted ones
       let foundDeleted = false;
       let lastActiveIndex = -1;
 
@@ -98,8 +88,6 @@ test.describe("@settings.organizations Organization Listing E2E Tests", () => {
           lastActiveIndex = i;
         }
       }
-
-      // Within active organizations, check alphabetical order
       const activeRows: Array<string> = [];
       for (let i = 0; i <= lastActiveIndex; i++) {
         const row = rows.nth(i);
@@ -123,13 +111,9 @@ test.describe("@settings.organizations Organization Listing E2E Tests", () => {
     test.beforeAll(async () => {
       ownerUser = await createDBUser("active");
       memberUser = await createDBUser("active");
-
-      // Create organization owned by ownerUser
       memberOrg = await createDBOrganization(ownerUser.id, "active", {
         name: "Member Organization",
       });
-
-      // Add memberUser as a member with read permission
       await addMemberToOrganization(memberOrg.id, memberUser.id, "read");
     });
 
@@ -138,32 +122,25 @@ test.describe("@settings.organizations Organization Listing E2E Tests", () => {
         destination: "/settings/organizations",
       });
       await expect(page).toHaveURL(/.*settings\/organizations/);
+      await waitForPageLoad(page);
     });
 
     test("member with read permission should see the organization", async ({
       page,
     }) => {
-      await page.waitForLoadState("networkidle");
-
       await expect(page.getByText("Member Organization")).toBeVisible();
     });
 
     test("member with read permission should only see view button", async ({
       page,
     }) => {
-      await page.waitForLoadState("networkidle");
+      await waitForPermissionsLoad(page);
 
-      const memberRow = page
-        .locator("tbody tr")
-        .filter({ hasText: "Member Organization" })
-        .first();
-
-      // Should have view button
+      const organizationsTable = getTableByHeader(page, "Name");
+      const memberRow = getTableRow(organizationsTable, "Member Organization");
       await expect(
         memberRow.locator('a[href*="/settings/organizations/"]').first()
       ).toBeVisible();
-
-      // Should NOT have edit or delete buttons
       await expect(
         memberRow.getByRole("link", { name: "Edit organization" })
       ).not.toBeVisible();
@@ -185,8 +162,6 @@ test.describe("@settings.organizations Organization Listing E2E Tests", () => {
       ownerUser1 = await createDBUser("active");
       ownerUser2 = await createDBUser("active");
       memberUser = await createDBUser("active");
-
-      // Create multiple organizations
       org1 = await createDBOrganization(ownerUser1.id, "active", {
         name: "Org A - Read Only",
       });
@@ -196,8 +171,6 @@ test.describe("@settings.organizations Organization Listing E2E Tests", () => {
       org3 = await createDBOrganization(ownerUser2.id, "active", {
         name: "Org C - Full Access",
       });
-
-      // Add memberUser to all organizations with different permissions
       await addMemberToOrganization(org1.id, memberUser.id, "read");
       await addMemberToOrganization(org2.id, memberUser.id, "write");
       await addMemberToOrganization(org3.id, memberUser.id, "*");
@@ -208,13 +181,12 @@ test.describe("@settings.organizations Organization Listing E2E Tests", () => {
         destination: "/settings/organizations",
       });
       await expect(page).toHaveURL(/.*settings\/organizations/);
+      await waitForPageLoad(page);
     });
 
     test("member should see all organizations they are a member of", async ({
       page,
     }) => {
-      await page.waitForLoadState("networkidle");
-
       await expect(page.getByText("Org A - Read Only")).toBeVisible();
       await expect(page.getByText("Org B - Write Access")).toBeVisible();
       await expect(page.getByText("Org C - Full Access")).toBeVisible();
@@ -223,14 +195,10 @@ test.describe("@settings.organizations Organization Listing E2E Tests", () => {
     test("member should see correct action buttons based on permissions", async ({
       page,
     }) => {
-      await page.waitForLoadState("networkidle");
+      await waitForPermissionsLoad(page);
 
-      // Check Org A - Read Only (read permission)
-      const orgA = page
-        .locator("tbody tr")
-        .filter({ hasText: "Org A - Read Only" })
-        .first();
-
+      const organizationsTable = getTableByHeader(page, "Name");
+      const orgA = getTableRow(organizationsTable, "Org A - Read Only");
       await expect(
         orgA.locator('a[href*="/settings/organizations/"]').first()
       ).toBeVisible();
@@ -240,13 +208,7 @@ test.describe("@settings.organizations Organization Listing E2E Tests", () => {
       await expect(
         orgA.getByRole("button", { name: "Delete organization" })
       ).not.toBeVisible();
-
-      // Check Org B - Write Access (write permission)
-      const orgB = page
-        .locator("tbody tr")
-        .filter({ hasText: "Org B - Write Access" })
-        .first();
-
+      const orgB = getTableRow(organizationsTable, "Org B - Write Access");
       await expect(
         orgB.locator('a[href*="/settings/organizations/"]').first()
       ).toBeVisible();
@@ -256,13 +218,7 @@ test.describe("@settings.organizations Organization Listing E2E Tests", () => {
       await expect(
         orgB.getByRole("button", { name: "Delete organization" })
       ).not.toBeVisible();
-
-      // Check Org C - Full Access (* permission)
-      const orgC = page
-        .locator("tbody tr")
-        .filter({ hasText: "Org C - Full Access" })
-        .first();
-
+      const orgC = getTableRow(organizationsTable, "Org C - Full Access");
       await expect(
         orgC.locator('a[href*="/settings/organizations/"]').first()
       ).toBeVisible();
@@ -277,13 +233,10 @@ test.describe("@settings.organizations Organization Listing E2E Tests", () => {
     test("member should see organizations sorted correctly", async ({
       page,
     }) => {
-      await page.waitForLoadState("networkidle");
-
-      const rows = page.locator("tbody tr");
+      const organizationsTable = getTableByHeader(page, "Name");
+      const rows = organizationsTable.locator("tbody tr");
       const rowCount = await rows.count();
       expect(rowCount).toBeGreaterThanOrEqual(3);
-
-      // Get organization names in order
       const orgNames: Array<string> = [];
       for (let i = 0; i < rowCount; i++) {
         const row = rows.nth(i);
@@ -293,8 +246,6 @@ test.describe("@settings.organizations Organization Listing E2E Tests", () => {
           orgNames.push(nameText.trim());
         }
       }
-
-      // Organizations should be sorted alphabetically (all are active)
       const sortedNames = [...orgNames].sort();
       expect(orgNames).toEqual(sortedNames);
     });
@@ -318,8 +269,6 @@ test.describe("@settings.organizations Organization Listing E2E Tests", () => {
       testOrg = await createDBOrganization(ownerUser.id, "active", {
         name: "Permission Test Org",
       });
-
-      // Add members with different permissions
       await addMemberToOrganization(testOrg.id, readMember.id, "read");
       await addMemberToOrganization(testOrg.id, writeMember.id, "write");
       await addMemberToOrganization(testOrg.id, deleteMember.id, "delete");
@@ -330,11 +279,11 @@ test.describe("@settings.organizations Organization Listing E2E Tests", () => {
       await loginUser(page, readMember, {
         destination: "/settings/organizations",
       });
+      await waitForPageLoad(page);
+      await waitForPermissionsLoad(page);
 
-      const orgRow = page
-        .locator("tbody tr")
-        .filter({ hasText: "Permission Test Org" })
-        .first();
+      const organizationsTable = getTableByHeader(page, "Name");
+      const orgRow = getTableRow(organizationsTable, "Permission Test Org");
 
       await expect(
         orgRow.locator('a[href*="/settings/organizations/"]').first()
@@ -351,11 +300,11 @@ test.describe("@settings.organizations Organization Listing E2E Tests", () => {
       await loginUser(page, writeMember, {
         destination: "/settings/organizations",
       });
+      await waitForPageLoad(page);
+      await waitForPermissionsLoad(page);
 
-      const orgRow = page
-        .locator("tbody tr")
-        .filter({ hasText: "Permission Test Org" })
-        .first();
+      const organizationsTable = getTableByHeader(page, "Name");
+      const orgRow = getTableRow(organizationsTable, "Permission Test Org");
 
       await expect(
         orgRow.locator('a[href*="/settings/organizations/"]').first()
@@ -374,11 +323,11 @@ test.describe("@settings.organizations Organization Listing E2E Tests", () => {
       await loginUser(page, fullAccessMember, {
         destination: "/settings/organizations",
       });
+      await waitForPageLoad(page);
+      await waitForPermissionsLoad(page);
 
-      const orgRow = page
-        .locator("tbody tr")
-        .filter({ hasText: "Permission Test Org" })
-        .first();
+      const organizationsTable = getTableByHeader(page, "Name");
+      const orgRow = getTableRow(organizationsTable, "Permission Test Org");
 
       await expect(
         orgRow.locator('a[href*="/settings/organizations/"]').first()
@@ -413,13 +362,14 @@ test.describe("@settings.organizations Organization Listing E2E Tests", () => {
         destination: "/settings/organizations",
       });
       await expect(page).toHaveURL(/.*settings\/organizations/);
+      await waitForPageLoad(page);
     });
 
     test("should display organization list page with all required elements", async ({
       page,
     }) => {
       await expect(
-        page.getByRole("heading", { name: "Organizations" })
+        page.getByRole("heading", { name: "Organizations", level: 1 })
       ).toBeVisible();
       await expect(
         page.getByText("View and manage organizations.").first()
@@ -428,10 +378,8 @@ test.describe("@settings.organizations Organization Listing E2E Tests", () => {
       await expect(
         page.getByPlaceholder("Search organizations...")
       ).toBeVisible();
-
-      // Check table headers using text content instead of exact role match
-      await page.waitForLoadState("networkidle");
-      const tableHeaders = page.locator("thead th");
+      const organizationsTable = getTableByHeader(page, "Name");
+      const tableHeaders = organizationsTable.locator("thead th");
       await expect(tableHeaders.filter({ hasText: "Name" })).toBeVisible();
       await expect(tableHeaders.filter({ hasText: "Email" })).toBeVisible();
       await expect(tableHeaders.filter({ hasText: "Website" })).toBeVisible();
@@ -441,18 +389,16 @@ test.describe("@settings.organizations Organization Listing E2E Tests", () => {
     });
 
     test("should filter organizations by search term", async ({ page }) => {
-      await page.waitForLoadState("networkidle");
-
       const searchInput = page.getByPlaceholder("Search organizations...");
 
       await searchInput.fill("Alpha");
-      await page.waitForLoadState("networkidle");
+      await waitForPageLoad(page);
 
       await expect(page.getByText("Alpha Organization")).toBeVisible();
       await expect(page.getByText("Beta Organization")).not.toBeVisible();
 
       await searchInput.clear();
-      await page.waitForLoadState("networkidle");
+      await waitForPageLoad(page);
 
       await expect(page.getByText("Alpha Organization")).toBeVisible();
       await expect(page.getByText("Beta Organization")).toBeVisible();
@@ -461,31 +407,29 @@ test.describe("@settings.organizations Organization Listing E2E Tests", () => {
     test("should show empty state when search has no results", async ({
       page,
     }) => {
-      await page.waitForLoadState("networkidle");
-
       const searchInput = page.getByPlaceholder("Search organizations...");
 
       await searchInput.fill("NonExistentOrganization123");
-      await page.waitForLoadState("networkidle");
+      await waitForPageLoad(page);
 
       await expect(
-        page.getByText("No organizations found matching your search.")
+        page.getByText(
+          "No organizations match your search criteria. Try adjusting your search."
+        )
       ).toBeVisible();
     });
 
     test("should handle case-insensitive search", async ({ page }) => {
-      await page.waitForLoadState("networkidle");
-
       const searchInput = page.getByPlaceholder("Search organizations...");
 
       await searchInput.fill("alpha");
-      await page.waitForLoadState("networkidle");
+      await waitForPageLoad(page);
 
       await expect(page.getByText("Alpha Organization")).toBeVisible();
 
       await searchInput.clear();
       await searchInput.fill("BETA");
-      await page.waitForLoadState("networkidle");
+      await waitForPageLoad(page);
 
       await expect(page.getByText("Beta Organization")).toBeVisible();
     });
@@ -493,32 +437,24 @@ test.describe("@settings.organizations Organization Listing E2E Tests", () => {
     test("should navigate to organization detail page on view click", async ({
       page,
     }) => {
-      await page.waitForLoadState("networkidle");
-
-      const alphaRow = page
-        .locator("tbody tr")
-        .filter({ hasText: "Alpha Organization" })
-        .first();
+      const organizationsTable = getTableByHeader(page, "Name");
+      const alphaRow = getTableRow(organizationsTable, "Alpha Organization");
 
       const viewButton = alphaRow
         .locator('a[href*="/settings/organizations/"]')
         .first();
 
-      if (await viewButton.isVisible()) {
+      if (await viewButton.isVisible().catch(() => false)) {
         await viewButton.click();
-        await page.waitForLoadState("networkidle");
+        await waitForPageLoad(page);
 
         await expect(page).toHaveURL(/.*settings\/organizations\/.*/);
       }
     });
 
     test("should display status badges correctly", async ({ page }) => {
-      await page.waitForLoadState("networkidle");
-
-      const activeRow = page
-        .locator("tbody tr")
-        .filter({ hasText: "Alpha Organization" })
-        .first();
+      const organizationsTable = getTableByHeader(page, "Name");
+      const activeRow = getTableRow(organizationsTable, "Alpha Organization");
       const activeStatusBadge = activeRow
         .locator('[data-slot="badge"]')
         .filter({ hasText: "Active" })

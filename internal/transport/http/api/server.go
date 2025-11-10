@@ -423,7 +423,12 @@ type Permission struct {
 	// Kind Kind of a permission.
 	Kind    PermissionKind `json:"kind"`
 	Subject string         `json:"subject"`
-	Target  string         `json:"target"`
+
+	// Target Resource ID.
+	Target string `json:"target"`
+
+	// TargetType Resource type of the target resource.
+	TargetType string `json:"target_type"`
 
 	// UpdatedAt Date when the user was updated.
 	UpdatedAt *time.Time `json:"updated_at"`
@@ -699,13 +704,22 @@ type OrganizationCreate struct {
 	Website *string `json:"website,omitempty"`
 }
 
+// OrganizationInvitationAccept defines model for OrganizationInvitationAccept.
+type OrganizationInvitationAccept struct {
+	// Password Password for the account (required if user is pending)
+	Password *string `json:"password,omitempty"`
+
+	// Token Invitation token from the invitation email
+	Token string `json:"token"`
+}
+
 // OrganizationPatch defines model for OrganizationPatch.
 type OrganizationPatch struct {
 	// Email Email address of the organization.
 	Email *openapi_types.Email `json:"email,omitempty"`
 
 	// Logo Logo of the organization.
-	Logo *string `json:"logo,omitempty"`
+	Logo Optional[string] `json:"logo"`
 
 	// Name Name of the organization.
 	Name *string `json:"name,omitempty"`
@@ -714,7 +728,7 @@ type OrganizationPatch struct {
 	Status *OrganizationStatus `json:"status,omitempty"`
 
 	// Website Work title of the user.
-	Website *string `json:"website,omitempty"`
+	Website Optional[string] `json:"website"`
 }
 
 // PermissionCreate defines model for PermissionCreate.
@@ -749,10 +763,19 @@ type RoleCreate struct {
 // RolePatch defines model for RolePatch.
 type RolePatch struct {
 	// Description Description of the role.
-	Description *string `json:"description,omitempty"`
+	Description Optional[string] `json:"description"`
 
 	// Name Name of the role.
 	Name *string `json:"name,omitempty"`
+}
+
+// RolePermissionCreate defines model for RolePermissionCreate.
+type RolePermissionCreate struct {
+	// Kind Kind of a permission.
+	Kind PermissionKind `json:"kind"`
+
+	// Target Resource ID string in the format "ResourceType:id" or "ResourceType:00000000000000000000" for system-level permissions.
+	Target string `json:"target"`
 }
 
 // TodoCreate defines model for TodoCreate.
@@ -947,7 +970,7 @@ type V1OrganizationRolesCreateJSONBody struct {
 // V1OrganizationRoleUpdateJSONBody defines parameters for V1OrganizationRoleUpdate.
 type V1OrganizationRoleUpdateJSONBody struct {
 	// Description Description of the role.
-	Description *string `json:"description,omitempty"`
+	Description Optional[string] `json:"description"`
 
 	// Name Name of the role.
 	Name *string `json:"name,omitempty"`
@@ -965,7 +988,7 @@ type V1OrganizationUpdateJSONBody struct {
 	Email *openapi_types.Email `json:"email,omitempty"`
 
 	// Logo Logo of the organization.
-	Logo *string `json:"logo,omitempty"`
+	Logo Optional[string] `json:"logo"`
 
 	// Name Name of the organization.
 	Name *string `json:"name,omitempty"`
@@ -974,7 +997,7 @@ type V1OrganizationUpdateJSONBody struct {
 	Status *OrganizationStatus `json:"status,omitempty"`
 
 	// Website Work title of the user.
-	Website *string `json:"website,omitempty"`
+	Website Optional[string] `json:"website"`
 }
 
 // V1OrganizationMembersAddJSONBody defines parameters for V1OrganizationMembersAdd.
@@ -983,10 +1006,37 @@ type V1OrganizationMembersAddJSONBody struct {
 	UserId string `json:"user_id"`
 }
 
+// V1OrganizationMembersAcceptJSONBody defines parameters for V1OrganizationMembersAccept.
+type V1OrganizationMembersAcceptJSONBody struct {
+	// Password Password for the account (required if user is pending)
+	Password *string `json:"password,omitempty"`
+
+	// Token Invitation token from the invitation email
+	Token string `json:"token"`
+}
+
+// V1OrganizationMembersInviteJSONBody defines parameters for V1OrganizationMembersInvite.
+type V1OrganizationMembersInviteJSONBody struct {
+	// Email Email address of the user to invite.
+	Email openapi_types.Email `json:"email"`
+
+	// RoleId Optional role ID to assign the user to when they accept the invitation.
+	RoleId *string `json:"role_id,omitempty"`
+}
+
 // V1OrganizationRoleMembersAddJSONBody defines parameters for V1OrganizationRoleMembersAdd.
 type V1OrganizationRoleMembersAddJSONBody struct {
 	// UserId ID of the user to add.
 	UserId string `json:"user_id"`
+}
+
+// V1OrganizationRolePermissionAddJSONBody defines parameters for V1OrganizationRolePermissionAdd.
+type V1OrganizationRolePermissionAddJSONBody struct {
+	// Kind Kind of a permission.
+	Kind PermissionKind `json:"kind"`
+
+	// Target Resource ID string in the format "ResourceType:id" or "ResourceType:00000000000000000000" for system-level permissions.
+	Target string `json:"target"`
 }
 
 // V1PermissionsCreateJSONBody defines parameters for V1PermissionsCreate.
@@ -1201,8 +1251,17 @@ type V1OrganizationUpdateJSONRequestBody V1OrganizationUpdateJSONBody
 // V1OrganizationMembersAddJSONRequestBody defines body for V1OrganizationMembersAdd for application/json ContentType.
 type V1OrganizationMembersAddJSONRequestBody V1OrganizationMembersAddJSONBody
 
+// V1OrganizationMembersAcceptJSONRequestBody defines body for V1OrganizationMembersAccept for application/json ContentType.
+type V1OrganizationMembersAcceptJSONRequestBody V1OrganizationMembersAcceptJSONBody
+
+// V1OrganizationMembersInviteJSONRequestBody defines body for V1OrganizationMembersInvite for application/json ContentType.
+type V1OrganizationMembersInviteJSONRequestBody V1OrganizationMembersInviteJSONBody
+
 // V1OrganizationRoleMembersAddJSONRequestBody defines body for V1OrganizationRoleMembersAdd for application/json ContentType.
 type V1OrganizationRoleMembersAddJSONRequestBody V1OrganizationRoleMembersAddJSONBody
+
+// V1OrganizationRolePermissionAddJSONRequestBody defines body for V1OrganizationRolePermissionAdd for application/json ContentType.
+type V1OrganizationRolePermissionAddJSONRequestBody V1OrganizationRolePermissionAddJSONBody
 
 // V1PermissionsCreateJSONRequestBody defines body for V1PermissionsCreate for application/json ContentType.
 type V1PermissionsCreateJSONRequestBody V1PermissionsCreateJSONBody
@@ -1275,9 +1334,18 @@ type ServerInterface interface {
 	// Add organization member
 	// (POST /v1/organizations/{id}/members)
 	V1OrganizationMembersAdd(w http.ResponseWriter, r *http.Request, id Id)
+	// Accept organization invitation
+	// (POST /v1/organizations/{id}/members/accept)
+	V1OrganizationMembersAccept(w http.ResponseWriter, r *http.Request, id Id)
+	// Invite member to organization
+	// (POST /v1/organizations/{id}/members/invite)
+	V1OrganizationMembersInvite(w http.ResponseWriter, r *http.Request, id Id)
 	// Remove organization member
 	// (DELETE /v1/organizations/{id}/members/{user_id})
 	V1OrganizationMemberRemove(w http.ResponseWriter, r *http.Request, id Id, userId string)
+	// Revoke invitation
+	// (DELETE /v1/organizations/{id}/members/{user_id}/invite)
+	V1OrganizationMemberInviteRevoke(w http.ResponseWriter, r *http.Request, id Id, userId string)
 	// Get organization role members
 	// (GET /v1/organizations/{id}/roles/{role_id}/members)
 	V1OrganizationRoleMembersGet(w http.ResponseWriter, r *http.Request, id Id, roleId string)
@@ -1287,6 +1355,15 @@ type ServerInterface interface {
 	// Remove organization role member
 	// (DELETE /v1/organizations/{id}/roles/{role_id}/members/{user_id})
 	V1OrganizationRoleMemberRemove(w http.ResponseWriter, r *http.Request, id Id, roleId string, userId string)
+	// Get organization role permissions
+	// (GET /v1/organizations/{id}/roles/{role_id}/permissions)
+	V1OrganizationRolePermissionsGet(w http.ResponseWriter, r *http.Request, id Id, roleId string)
+	// Add permission to organization role
+	// (POST /v1/organizations/{id}/roles/{role_id}/permissions)
+	V1OrganizationRolePermissionAdd(w http.ResponseWriter, r *http.Request, id Id, roleId string)
+	// Remove permission from organization role
+	// (DELETE /v1/organizations/{id}/roles/{role_id}/permissions/{permission_id})
+	V1OrganizationRolePermissionRemove(w http.ResponseWriter, r *http.Request, id Id, roleId string, permissionId string)
 	// Create permission
 	// (POST /v1/permissions)
 	V1PermissionsCreate(w http.ResponseWriter, r *http.Request)
@@ -1458,9 +1535,27 @@ func (_ Unimplemented) V1OrganizationMembersAdd(w http.ResponseWriter, r *http.R
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// Accept organization invitation
+// (POST /v1/organizations/{id}/members/accept)
+func (_ Unimplemented) V1OrganizationMembersAccept(w http.ResponseWriter, r *http.Request, id Id) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Invite member to organization
+// (POST /v1/organizations/{id}/members/invite)
+func (_ Unimplemented) V1OrganizationMembersInvite(w http.ResponseWriter, r *http.Request, id Id) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // Remove organization member
 // (DELETE /v1/organizations/{id}/members/{user_id})
 func (_ Unimplemented) V1OrganizationMemberRemove(w http.ResponseWriter, r *http.Request, id Id, userId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Revoke invitation
+// (DELETE /v1/organizations/{id}/members/{user_id}/invite)
+func (_ Unimplemented) V1OrganizationMemberInviteRevoke(w http.ResponseWriter, r *http.Request, id Id, userId string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -1479,6 +1574,24 @@ func (_ Unimplemented) V1OrganizationRoleMembersAdd(w http.ResponseWriter, r *ht
 // Remove organization role member
 // (DELETE /v1/organizations/{id}/roles/{role_id}/members/{user_id})
 func (_ Unimplemented) V1OrganizationRoleMemberRemove(w http.ResponseWriter, r *http.Request, id Id, roleId string, userId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get organization role permissions
+// (GET /v1/organizations/{id}/roles/{role_id}/permissions)
+func (_ Unimplemented) V1OrganizationRolePermissionsGet(w http.ResponseWriter, r *http.Request, id Id, roleId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Add permission to organization role
+// (POST /v1/organizations/{id}/roles/{role_id}/permissions)
+func (_ Unimplemented) V1OrganizationRolePermissionAdd(w http.ResponseWriter, r *http.Request, id Id, roleId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Remove permission from organization role
+// (DELETE /v1/organizations/{id}/roles/{role_id}/permissions/{permission_id})
+func (_ Unimplemented) V1OrganizationRolePermissionRemove(w http.ResponseWriter, r *http.Request, id Id, roleId string, permissionId string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -2191,6 +2304,62 @@ func (siw *ServerInterfaceWrapper) V1OrganizationMembersAdd(w http.ResponseWrite
 	handler.ServeHTTP(w, r)
 }
 
+// V1OrganizationMembersAccept operation middleware
+func (siw *ServerInterfaceWrapper) V1OrganizationMembersAccept(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1OrganizationMembersAccept(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// V1OrganizationMembersInvite operation middleware
+func (siw *ServerInterfaceWrapper) V1OrganizationMembersInvite(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, Oauth2Scopes, []string{"organization"})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1OrganizationMembersInvite(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // V1OrganizationMemberRemove operation middleware
 func (siw *ServerInterfaceWrapper) V1OrganizationMemberRemove(w http.ResponseWriter, r *http.Request) {
 
@@ -2222,6 +2391,46 @@ func (siw *ServerInterfaceWrapper) V1OrganizationMemberRemove(w http.ResponseWri
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.V1OrganizationMemberRemove(w, r, id, userId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// V1OrganizationMemberInviteRevoke operation middleware
+func (siw *ServerInterfaceWrapper) V1OrganizationMemberInviteRevoke(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "user_id" -------------
+	var userId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "user_id", chi.URLParam(r, "user_id"), &userId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "user_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, Oauth2Scopes, []string{"organization"})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1OrganizationMemberInviteRevoke(w, r, id, userId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -2351,6 +2560,135 @@ func (siw *ServerInterfaceWrapper) V1OrganizationRoleMemberRemove(w http.Respons
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.V1OrganizationRoleMemberRemove(w, r, id, roleId, userId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// V1OrganizationRolePermissionsGet operation middleware
+func (siw *ServerInterfaceWrapper) V1OrganizationRolePermissionsGet(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "role_id" -------------
+	var roleId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "role_id", chi.URLParam(r, "role_id"), &roleId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "role_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, Oauth2Scopes, []string{"organization.read", "role.read", "permission.read"})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1OrganizationRolePermissionsGet(w, r, id, roleId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// V1OrganizationRolePermissionAdd operation middleware
+func (siw *ServerInterfaceWrapper) V1OrganizationRolePermissionAdd(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "role_id" -------------
+	var roleId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "role_id", chi.URLParam(r, "role_id"), &roleId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "role_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, Oauth2Scopes, []string{"organization", "role", "permission"})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1OrganizationRolePermissionAdd(w, r, id, roleId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// V1OrganizationRolePermissionRemove operation middleware
+func (siw *ServerInterfaceWrapper) V1OrganizationRolePermissionRemove(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "role_id" -------------
+	var roleId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "role_id", chi.URLParam(r, "role_id"), &roleId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "role_id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "permission_id" -------------
+	var permissionId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "permission_id", chi.URLParam(r, "permission_id"), &permissionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "permission_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, Oauth2Scopes, []string{"organization", "role", "permission"})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1OrganizationRolePermissionRemove(w, r, id, roleId, permissionId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -3174,7 +3512,16 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Post(options.BaseURL+"/v1/organizations/{id}/members", wrapper.V1OrganizationMembersAdd)
 	})
 	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/organizations/{id}/members/accept", wrapper.V1OrganizationMembersAccept)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/organizations/{id}/members/invite", wrapper.V1OrganizationMembersInvite)
+	})
+	r.Group(func(r chi.Router) {
 		r.Delete(options.BaseURL+"/v1/organizations/{id}/members/{user_id}", wrapper.V1OrganizationMemberRemove)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/v1/organizations/{id}/members/{user_id}/invite", wrapper.V1OrganizationMemberInviteRevoke)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/v1/organizations/{id}/roles/{role_id}/members", wrapper.V1OrganizationRoleMembersGet)
@@ -3184,6 +3531,15 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Delete(options.BaseURL+"/v1/organizations/{id}/roles/{role_id}/members/{user_id}", wrapper.V1OrganizationRoleMemberRemove)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/organizations/{id}/roles/{role_id}/permissions", wrapper.V1OrganizationRolePermissionsGet)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/organizations/{id}/roles/{role_id}/permissions", wrapper.V1OrganizationRolePermissionAdd)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/v1/organizations/{id}/roles/{role_id}/permissions/{permission_id}", wrapper.V1OrganizationRolePermissionRemove)
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/v1/permissions", wrapper.V1PermissionsCreate)
@@ -4236,6 +4592,130 @@ func (response V1OrganizationMembersAdd500JSONResponse) VisitV1OrganizationMembe
 	return json.NewEncoder(w).Encode(response)
 }
 
+type V1OrganizationMembersAcceptRequestObject struct {
+	Id   Id `json:"id"`
+	Body *V1OrganizationMembersAcceptJSONRequestBody
+}
+
+type V1OrganizationMembersAcceptResponseObject interface {
+	VisitV1OrganizationMembersAcceptResponse(w http.ResponseWriter) error
+}
+
+type V1OrganizationMembersAccept200Response struct {
+}
+
+func (response V1OrganizationMembersAccept200Response) VisitV1OrganizationMembersAcceptResponse(w http.ResponseWriter) error {
+	w.WriteHeader(200)
+	return nil
+}
+
+type V1OrganizationMembersAccept204Response struct {
+}
+
+func (response V1OrganizationMembersAccept204Response) VisitV1OrganizationMembersAcceptResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type V1OrganizationMembersAccept400JSONResponse struct{ N400JSONResponse }
+
+func (response V1OrganizationMembersAccept400JSONResponse) VisitV1OrganizationMembersAcceptResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationMembersAccept401JSONResponse struct{ N401JSONResponse }
+
+func (response V1OrganizationMembersAccept401JSONResponse) VisitV1OrganizationMembersAcceptResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationMembersAccept404JSONResponse struct{ N404JSONResponse }
+
+func (response V1OrganizationMembersAccept404JSONResponse) VisitV1OrganizationMembersAcceptResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationMembersAccept500JSONResponse struct{ N500JSONResponse }
+
+func (response V1OrganizationMembersAccept500JSONResponse) VisitV1OrganizationMembersAcceptResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationMembersInviteRequestObject struct {
+	Id   Id `json:"id"`
+	Body *V1OrganizationMembersInviteJSONRequestBody
+}
+
+type V1OrganizationMembersInviteResponseObject interface {
+	VisitV1OrganizationMembersInviteResponse(w http.ResponseWriter) error
+}
+
+type V1OrganizationMembersInvite201JSONResponse struct{ N201JSONResponse }
+
+func (response V1OrganizationMembersInvite201JSONResponse) VisitV1OrganizationMembersInviteResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationMembersInvite400JSONResponse struct{ N400JSONResponse }
+
+func (response V1OrganizationMembersInvite400JSONResponse) VisitV1OrganizationMembersInviteResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationMembersInvite401JSONResponse struct{ N401JSONResponse }
+
+func (response V1OrganizationMembersInvite401JSONResponse) VisitV1OrganizationMembersInviteResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationMembersInvite403JSONResponse struct{ N403JSONResponse }
+
+func (response V1OrganizationMembersInvite403JSONResponse) VisitV1OrganizationMembersInviteResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationMembersInvite404JSONResponse struct{ N404JSONResponse }
+
+func (response V1OrganizationMembersInvite404JSONResponse) VisitV1OrganizationMembersInviteResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationMembersInvite500JSONResponse struct{ N500JSONResponse }
+
+func (response V1OrganizationMembersInvite500JSONResponse) VisitV1OrganizationMembersInviteResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type V1OrganizationMemberRemoveRequestObject struct {
 	Id     Id     `json:"id"`
 	UserId string `json:"user_id"`
@@ -4292,6 +4772,68 @@ func (response V1OrganizationMemberRemove404JSONResponse) VisitV1OrganizationMem
 type V1OrganizationMemberRemove500JSONResponse struct{ N500JSONResponse }
 
 func (response V1OrganizationMemberRemove500JSONResponse) VisitV1OrganizationMemberRemoveResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationMemberInviteRevokeRequestObject struct {
+	Id     Id     `json:"id"`
+	UserId string `json:"user_id"`
+}
+
+type V1OrganizationMemberInviteRevokeResponseObject interface {
+	VisitV1OrganizationMemberInviteRevokeResponse(w http.ResponseWriter) error
+}
+
+type V1OrganizationMemberInviteRevoke204Response struct {
+}
+
+func (response V1OrganizationMemberInviteRevoke204Response) VisitV1OrganizationMemberInviteRevokeResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type V1OrganizationMemberInviteRevoke400JSONResponse struct{ N400JSONResponse }
+
+func (response V1OrganizationMemberInviteRevoke400JSONResponse) VisitV1OrganizationMemberInviteRevokeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationMemberInviteRevoke401JSONResponse struct{ N401JSONResponse }
+
+func (response V1OrganizationMemberInviteRevoke401JSONResponse) VisitV1OrganizationMemberInviteRevokeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationMemberInviteRevoke403JSONResponse struct{ N403JSONResponse }
+
+func (response V1OrganizationMemberInviteRevoke403JSONResponse) VisitV1OrganizationMemberInviteRevokeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationMemberInviteRevoke404JSONResponse struct{ N404JSONResponse }
+
+func (response V1OrganizationMemberInviteRevoke404JSONResponse) VisitV1OrganizationMemberInviteRevokeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationMemberInviteRevoke500JSONResponse struct{ N500JSONResponse }
+
+func (response V1OrganizationMemberInviteRevoke500JSONResponse) VisitV1OrganizationMemberInviteRevokeResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(500)
 
@@ -4482,6 +5024,196 @@ func (response V1OrganizationRoleMemberRemove404JSONResponse) VisitV1Organizatio
 type V1OrganizationRoleMemberRemove500JSONResponse struct{ N500JSONResponse }
 
 func (response V1OrganizationRoleMemberRemove500JSONResponse) VisitV1OrganizationRoleMemberRemoveResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationRolePermissionsGetRequestObject struct {
+	Id     Id     `json:"id"`
+	RoleId string `json:"role_id"`
+}
+
+type V1OrganizationRolePermissionsGetResponseObject interface {
+	VisitV1OrganizationRolePermissionsGetResponse(w http.ResponseWriter) error
+}
+
+type V1OrganizationRolePermissionsGet200JSONResponse []Permission
+
+func (response V1OrganizationRolePermissionsGet200JSONResponse) VisitV1OrganizationRolePermissionsGetResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationRolePermissionsGet400JSONResponse struct{ N400JSONResponse }
+
+func (response V1OrganizationRolePermissionsGet400JSONResponse) VisitV1OrganizationRolePermissionsGetResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationRolePermissionsGet401JSONResponse struct{ N401JSONResponse }
+
+func (response V1OrganizationRolePermissionsGet401JSONResponse) VisitV1OrganizationRolePermissionsGetResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationRolePermissionsGet403JSONResponse struct{ N403JSONResponse }
+
+func (response V1OrganizationRolePermissionsGet403JSONResponse) VisitV1OrganizationRolePermissionsGetResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationRolePermissionsGet404JSONResponse struct{ N404JSONResponse }
+
+func (response V1OrganizationRolePermissionsGet404JSONResponse) VisitV1OrganizationRolePermissionsGetResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationRolePermissionsGet500JSONResponse struct{ N500JSONResponse }
+
+func (response V1OrganizationRolePermissionsGet500JSONResponse) VisitV1OrganizationRolePermissionsGetResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationRolePermissionAddRequestObject struct {
+	Id     Id     `json:"id"`
+	RoleId string `json:"role_id"`
+	Body   *V1OrganizationRolePermissionAddJSONRequestBody
+}
+
+type V1OrganizationRolePermissionAddResponseObject interface {
+	VisitV1OrganizationRolePermissionAddResponse(w http.ResponseWriter) error
+}
+
+type V1OrganizationRolePermissionAdd201JSONResponse struct{ N201JSONResponse }
+
+func (response V1OrganizationRolePermissionAdd201JSONResponse) VisitV1OrganizationRolePermissionAddResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationRolePermissionAdd400JSONResponse struct{ N400JSONResponse }
+
+func (response V1OrganizationRolePermissionAdd400JSONResponse) VisitV1OrganizationRolePermissionAddResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationRolePermissionAdd401JSONResponse struct{ N401JSONResponse }
+
+func (response V1OrganizationRolePermissionAdd401JSONResponse) VisitV1OrganizationRolePermissionAddResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationRolePermissionAdd403JSONResponse struct{ N403JSONResponse }
+
+func (response V1OrganizationRolePermissionAdd403JSONResponse) VisitV1OrganizationRolePermissionAddResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationRolePermissionAdd404JSONResponse struct{ N404JSONResponse }
+
+func (response V1OrganizationRolePermissionAdd404JSONResponse) VisitV1OrganizationRolePermissionAddResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationRolePermissionAdd500JSONResponse struct{ N500JSONResponse }
+
+func (response V1OrganizationRolePermissionAdd500JSONResponse) VisitV1OrganizationRolePermissionAddResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationRolePermissionRemoveRequestObject struct {
+	Id           Id     `json:"id"`
+	RoleId       string `json:"role_id"`
+	PermissionId string `json:"permission_id"`
+}
+
+type V1OrganizationRolePermissionRemoveResponseObject interface {
+	VisitV1OrganizationRolePermissionRemoveResponse(w http.ResponseWriter) error
+}
+
+type V1OrganizationRolePermissionRemove204Response struct {
+}
+
+func (response V1OrganizationRolePermissionRemove204Response) VisitV1OrganizationRolePermissionRemoveResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type V1OrganizationRolePermissionRemove400JSONResponse struct{ N400JSONResponse }
+
+func (response V1OrganizationRolePermissionRemove400JSONResponse) VisitV1OrganizationRolePermissionRemoveResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationRolePermissionRemove401JSONResponse struct{ N401JSONResponse }
+
+func (response V1OrganizationRolePermissionRemove401JSONResponse) VisitV1OrganizationRolePermissionRemoveResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationRolePermissionRemove403JSONResponse struct{ N403JSONResponse }
+
+func (response V1OrganizationRolePermissionRemove403JSONResponse) VisitV1OrganizationRolePermissionRemoveResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationRolePermissionRemove404JSONResponse struct{ N404JSONResponse }
+
+func (response V1OrganizationRolePermissionRemove404JSONResponse) VisitV1OrganizationRolePermissionRemoveResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationRolePermissionRemove500JSONResponse struct{ N500JSONResponse }
+
+func (response V1OrganizationRolePermissionRemove500JSONResponse) VisitV1OrganizationRolePermissionRemoveResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(500)
 
@@ -5707,9 +6439,18 @@ type StrictServerInterface interface {
 	// Add organization member
 	// (POST /v1/organizations/{id}/members)
 	V1OrganizationMembersAdd(ctx context.Context, request V1OrganizationMembersAddRequestObject) (V1OrganizationMembersAddResponseObject, error)
+	// Accept organization invitation
+	// (POST /v1/organizations/{id}/members/accept)
+	V1OrganizationMembersAccept(ctx context.Context, request V1OrganizationMembersAcceptRequestObject) (V1OrganizationMembersAcceptResponseObject, error)
+	// Invite member to organization
+	// (POST /v1/organizations/{id}/members/invite)
+	V1OrganizationMembersInvite(ctx context.Context, request V1OrganizationMembersInviteRequestObject) (V1OrganizationMembersInviteResponseObject, error)
 	// Remove organization member
 	// (DELETE /v1/organizations/{id}/members/{user_id})
 	V1OrganizationMemberRemove(ctx context.Context, request V1OrganizationMemberRemoveRequestObject) (V1OrganizationMemberRemoveResponseObject, error)
+	// Revoke invitation
+	// (DELETE /v1/organizations/{id}/members/{user_id}/invite)
+	V1OrganizationMemberInviteRevoke(ctx context.Context, request V1OrganizationMemberInviteRevokeRequestObject) (V1OrganizationMemberInviteRevokeResponseObject, error)
 	// Get organization role members
 	// (GET /v1/organizations/{id}/roles/{role_id}/members)
 	V1OrganizationRoleMembersGet(ctx context.Context, request V1OrganizationRoleMembersGetRequestObject) (V1OrganizationRoleMembersGetResponseObject, error)
@@ -5719,6 +6460,15 @@ type StrictServerInterface interface {
 	// Remove organization role member
 	// (DELETE /v1/organizations/{id}/roles/{role_id}/members/{user_id})
 	V1OrganizationRoleMemberRemove(ctx context.Context, request V1OrganizationRoleMemberRemoveRequestObject) (V1OrganizationRoleMemberRemoveResponseObject, error)
+	// Get organization role permissions
+	// (GET /v1/organizations/{id}/roles/{role_id}/permissions)
+	V1OrganizationRolePermissionsGet(ctx context.Context, request V1OrganizationRolePermissionsGetRequestObject) (V1OrganizationRolePermissionsGetResponseObject, error)
+	// Add permission to organization role
+	// (POST /v1/organizations/{id}/roles/{role_id}/permissions)
+	V1OrganizationRolePermissionAdd(ctx context.Context, request V1OrganizationRolePermissionAddRequestObject) (V1OrganizationRolePermissionAddResponseObject, error)
+	// Remove permission from organization role
+	// (DELETE /v1/organizations/{id}/roles/{role_id}/permissions/{permission_id})
+	V1OrganizationRolePermissionRemove(ctx context.Context, request V1OrganizationRolePermissionRemoveRequestObject) (V1OrganizationRolePermissionRemoveResponseObject, error)
 	// Create permission
 	// (POST /v1/permissions)
 	V1PermissionsCreate(ctx context.Context, request V1PermissionsCreateRequestObject) (V1PermissionsCreateResponseObject, error)
@@ -6280,6 +7030,72 @@ func (sh *strictHandler) V1OrganizationMembersAdd(w http.ResponseWriter, r *http
 	}
 }
 
+// V1OrganizationMembersAccept operation middleware
+func (sh *strictHandler) V1OrganizationMembersAccept(w http.ResponseWriter, r *http.Request, id Id) {
+	var request V1OrganizationMembersAcceptRequestObject
+
+	request.Id = id
+
+	var body V1OrganizationMembersAcceptJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1OrganizationMembersAccept(ctx, request.(V1OrganizationMembersAcceptRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1OrganizationMembersAccept")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1OrganizationMembersAcceptResponseObject); ok {
+		if err := validResponse.VisitV1OrganizationMembersAcceptResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1OrganizationMembersInvite operation middleware
+func (sh *strictHandler) V1OrganizationMembersInvite(w http.ResponseWriter, r *http.Request, id Id) {
+	var request V1OrganizationMembersInviteRequestObject
+
+	request.Id = id
+
+	var body V1OrganizationMembersInviteJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1OrganizationMembersInvite(ctx, request.(V1OrganizationMembersInviteRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1OrganizationMembersInvite")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1OrganizationMembersInviteResponseObject); ok {
+		if err := validResponse.VisitV1OrganizationMembersInviteResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // V1OrganizationMemberRemove operation middleware
 func (sh *strictHandler) V1OrganizationMemberRemove(w http.ResponseWriter, r *http.Request, id Id, userId string) {
 	var request V1OrganizationMemberRemoveRequestObject
@@ -6300,6 +7116,33 @@ func (sh *strictHandler) V1OrganizationMemberRemove(w http.ResponseWriter, r *ht
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(V1OrganizationMemberRemoveResponseObject); ok {
 		if err := validResponse.VisitV1OrganizationMemberRemoveResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1OrganizationMemberInviteRevoke operation middleware
+func (sh *strictHandler) V1OrganizationMemberInviteRevoke(w http.ResponseWriter, r *http.Request, id Id, userId string) {
+	var request V1OrganizationMemberInviteRevokeRequestObject
+
+	request.Id = id
+	request.UserId = userId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1OrganizationMemberInviteRevoke(ctx, request.(V1OrganizationMemberInviteRevokeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1OrganizationMemberInviteRevoke")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1OrganizationMemberInviteRevokeResponseObject); ok {
+		if err := validResponse.VisitV1OrganizationMemberInviteRevokeResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -6389,6 +7232,95 @@ func (sh *strictHandler) V1OrganizationRoleMemberRemove(w http.ResponseWriter, r
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(V1OrganizationRoleMemberRemoveResponseObject); ok {
 		if err := validResponse.VisitV1OrganizationRoleMemberRemoveResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1OrganizationRolePermissionsGet operation middleware
+func (sh *strictHandler) V1OrganizationRolePermissionsGet(w http.ResponseWriter, r *http.Request, id Id, roleId string) {
+	var request V1OrganizationRolePermissionsGetRequestObject
+
+	request.Id = id
+	request.RoleId = roleId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1OrganizationRolePermissionsGet(ctx, request.(V1OrganizationRolePermissionsGetRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1OrganizationRolePermissionsGet")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1OrganizationRolePermissionsGetResponseObject); ok {
+		if err := validResponse.VisitV1OrganizationRolePermissionsGetResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1OrganizationRolePermissionAdd operation middleware
+func (sh *strictHandler) V1OrganizationRolePermissionAdd(w http.ResponseWriter, r *http.Request, id Id, roleId string) {
+	var request V1OrganizationRolePermissionAddRequestObject
+
+	request.Id = id
+	request.RoleId = roleId
+
+	var body V1OrganizationRolePermissionAddJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1OrganizationRolePermissionAdd(ctx, request.(V1OrganizationRolePermissionAddRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1OrganizationRolePermissionAdd")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1OrganizationRolePermissionAddResponseObject); ok {
+		if err := validResponse.VisitV1OrganizationRolePermissionAddResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1OrganizationRolePermissionRemove operation middleware
+func (sh *strictHandler) V1OrganizationRolePermissionRemove(w http.ResponseWriter, r *http.Request, id Id, roleId string, permissionId string) {
+	var request V1OrganizationRolePermissionRemoveRequestObject
+
+	request.Id = id
+	request.RoleId = roleId
+	request.PermissionId = permissionId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1OrganizationRolePermissionRemove(ctx, request.(V1OrganizationRolePermissionRemoveRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1OrganizationRolePermissionRemove")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1OrganizationRolePermissionRemoveResponseObject); ok {
+		if err := validResponse.VisitV1OrganizationRolePermissionRemoveResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -7031,138 +7963,148 @@ func (sh *strictHandler) V1UserUpdate(w http.ResponseWriter, r *http.Request, id
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"H4sIAAAAAAAC/+x9jXPbNvLov4LH3sy1PdmWnaTXeuZNn5vkWk/TJi9xevMu8YshEpJQk4BCgFacxP/7",
-	"b3YBkiAJfkiWP5pTpsNaJD4Wu4vdxWKx+BSEMllIwYRWweGnYEFTmjDNUvw1lWnI4I+IqTDlC82lCA6D",
-	"4zRlFyxVfBJfkojFTDOi54xkiqW7wSjgUOh9xtLLYBQImrDg0DY1ClQ4ZwmFNvXlAj5MpIwZFcHV1Sjg",
-	"kaezJ0ROsfmUKZmlISu6WFA9L3vgUTAKUvY+4ymLgkOdZsztjn2gySKGgj9M1MVYPfxOfafG44PFD7F+",
-	"Pw5GOTxKp1zMEJyYJ1w3Ifo9SyYsBahyiBTRkqRMZ6loG79pywUoYlOaxTo43B+PR0FCP/AkS/AX/OTC",
-	"/iwA40KzGUsRMjmdKjYcNHXOF22A2aa8kLmAjL2A5N0cD6IcCWUy4YJFZMn1nHCtyk/QeAtlnU6GUfhE",
-	"RvJwMJlTGTPVBj4l8LkNeaZqF1BcswQbZwKw+CZ4vhQsDUbBUZRwEYyCV9liIVMdnDZAK17QNKWXCCrM",
-	"sHcsoTxuwvsUXhMaRSlTKsd815Q07QzDKLTzf+zP3VAmwQhmdEK1004ds1emaab0TzLiBsW/S82nPKQA",
-	"8wuqwzm8DKXQTCA708Uitp/3/lQwrk8OPItULliqbVspox6u+/ec6TlLcfTC6Y0sKXAbjcjksoIajxwq",
-	"MfLG9FISR07+ZKGG0V2NgufpjAr+Edt/nDKq2TWGswpZpdMxjKEkFBdT2UeohH54xsRMz4PDg0cPcY7n",
-	"v7/zcGEsZ7IJ1zM5k/3gzLVeqMO9PQeiPaWp5uEeNLu7EDMXwizlNfhQGjZAMhzckH40Yf0gHT3+7Sk5",
-	"FuFutaf9g3EFE/uebpdsorj29PxvmZ4TzXXM6hOvExWrD73GnIiHkSXsACa97pTb8ui951GAPENi/S1l",
-	"0+Aw+GqvNPH2DGHVnssUr0yN+8LfPh5+wdKEK7UJMXvORdSHnbK7X6E0YDUz4DSUYpuZUe3UGLarmqCl",
-	"eXWCH7qBfumWbWox5yMa2k1pMQo0TWfsyx5krQpyQ0neAgWnfXx4XUm6Dhv6YG8B9KWM2bWnSkUG1EXC",
-	"k/JXYeZbS7lkgdeKpYos55KEVJBQxjGdyJRqRqTAKotUAtQ1OfdoXJVzj9YSr01wHkuhUz7JtExVt2R9",
-	"MEjzdiD/uvyxxX2/VoBl3q0zuZaRJLCqqw7v+O9xTBJ6bjwhS5nGEaFkwrRmKVnENMSa9LIH2/vjUSAy",
-	"IBW0atZjVWSMgg87M7ljXz5H2Gj8xnw9dT/vwLJ/R9oSOwsJC/fUtHo1CqKMvYuoT9s/ljAoHHSUMRIh",
-	"z3hGX+h2KLGjOdqia0H/LVTePeEJW2UEcilY9G5y2eV6APWFk0AuhWoOocHai5TLlOvLPtkMvPciLwv8",
-	"CcZRE5AT12ZqYZ0nkiiZMD3nYkZmwM91+3dF2WRgccbioOq0fSpdV2SFhm1Y1MlRxj71oqS+Eh9tJ+d2",
-	"cn4Jk9M340A9X1t52SW3f8EGELe4A8vxvWSJ1Kyb7x/0Mc7VKJhwz/r7FYunJGpO0yYYx39PYF4izCqh",
-	"qQYjRcmpXtKU+aZlL0DreElX83eu6KKY8lTpd37T6V/wjQjHgGqCdMKUriOi1xsQUzHL6Mzn336Wf2r4",
-	"inOXddcUy2ujOeinhXFbj4JM8PcZOzatWukQ01ZcPKO9qIC5szoquDj3oQFe4ybJXC6B6xapnPKYkQWd",
-	"sQo6uj1GyeVOZsBa3VO0Ov4WVKmlTD2q9oX90o49lS1YuqNYmOK+TwFu0WYF5u+qnP29TyzPpfAQ8gW8",
-	"JqLYkvJD84/9R/hv/+DBw9q64LtKz/8cMOkXPNRZ6oMlJ6opsJIXaw9KqZzAA92BvaC26KQhnrZXTHCZ",
-	"kldWPJKnYsYF65kSQ4Q4dOWflCcACPIhyQu1w6eZ0vlk6ARoQcECg/b//xu683G888POu9NPD0aPxld/",
-	"C/qs3ALYUSGRHQ52pK0rbU7blXE+cV4yu7W6pk6+V1NTy3PmMZ1P4DUIvQuW8ulllXpPHv+hfhEf2fM/",
-	"D/75/c/HJ98/+vB6rN71EsQB0nTrQ/aoDScpoJ3YDcPdoCDKsDWJBb8qpz8FFzTOWMVQKg0etFj6DQ9r",
-	"R3gtAkej5+rZUbhvAkoBB46uyzWX1UVvOjXJaSFZ60KyEHODxVW+KxDQUPMLGL6VP13CpBQHzpRGGt5z",
-	"e3Rjy7D7ZdVubFhb2/jWbOOtLbyaLTwAX4It37Ur2d/ZkizuwAZeTeuTl1ZxEi1nJmAFQ6IwasUZH5ly",
-	"Fkf/Hfb7xsTbX2UVsLEBD9vzB0lR7vXfu/XHxrBx71cxzRWI2QVfSKGMNjoY76+0AqFRxA02Xjj22JTG",
-	"ivl36ds8soIt40sSol8yqkTcdtv+/r32hrX/1GCX5IMFRnw4Hm/AwE+YUqByD4NjcUFjHhEuFpkmM37B",
-	"RN1o7Zolv5ycvHiapjL1wf8TjfIligF9f6OgvxY003OZ8o/M6WdDsPsbh0E82OggTjDgF5tnEQHWM/GX",
-	"XJGpTCc8ijZIkH+VLcJIHt7gSIpIZSE1mcoMIzI2M4r+jkbBo41PExBaNCavWHrBUuIAt4ERtbWeN44A",
-	"li00JBJ8Igy+uSut3UbMUTGeAZuD2Fy/KMubPC3XyCWgnqCpwtpvqpul3InNJuPxq+ckX2+QUEbGtWBD",
-	"wikNRgGdwANWvnQKj3N4wNqKCnhA11TB4wIeYBvTj8EomEDdCfozQIVO5ujZgAfUnUDdiYQHNDCBBkKo",
-	"gWcxQigcwtcQvob4NYMH9BFCHxEUjqBwBO8i6JKhyy3GAcADGsAoeDRHGTQwhWrTKfpI4PEn2krwwEUB",
-	"tDyDIjMwVmfQ1AyamkHdGXQ0h69z6GgODcyh7hzqzqGPOZSbQytzAIhTE+01CjjGfQEiOFTjgEQOdbnC",
-	"1Qs8oO6fUONP6Ogc/jqHGudQ4xwgPYdq5wDVOSDxHEA7h1bOAYJzaOocWjnHBpbwuETXDzyAjPEMfTzw",
-	"gLox1I3ROwTVYqiWQJEECJCg5QhdJrhyhhoJGh0YJ4PrWhO1Dw9oHkPWBO7nQisCqgmoJqAjAXUF9CFw",
-	"5z+EBwwLV+rIw1KhsxQ9SfBA3ym+g97eA5ApFE6h0RQaTfEdDFVRPCsCD4ycw0M96GKCphSMQ0F7ChpQ",
-	"0ICCBtR7eEDnSqE/CqPu4AGQqiWG3sEDfVPQHp4A0dCohkY1HjEQ6FyEB85FaEpj2B42gCtGqJtBjQx9",
-	"WMAg6PC6gKYuoO4SOlrCXx+gj0v4cAk/P8KHj/DuYwbz37XnK1bfgWcV5R5taMqCI0G42KGLRfVQgmJC",
-	"w4LbNUFrURXGFntHPcd9nlDNyHLORHUHG4862HqtoQAN+FeNtfAMp2pA/9YVcPG/Vo8681mur401zyMm",
-	"AIxyodoL3fDo1PyUiT0UZa3qDZ86gY5CvuBWt/dGTMykth0ZGg/dX6rEPPQiqS/6oT90bxRki2ggA/sm",
-	"CODPtrBmVItnqTIqQqRccFwSWLqP3OlXGYpjHVQmft1AgGVri1HmzmxY8f2wM/5+5+Dhyf7Dw/1HhwcH",
-	"/wnqXNY7o2CKtHG2YWTLvQ6ztc4EOzwvD7hEBfQ3Tpp4JaB74IFwQ3R1qWzQzbpyr9LqWqLv3h5rWUnk",
-	"tUM2VNbd/Sma3i3qhCUTezq5LiMrznqV81cdYo8Leyh6hvim7+bQD3SrFjRk3Ygpi90Ndq5zNkkzmnSP",
-	"DkvczcCG67iGsLqmcruTQ1trKNxapAZKmhL2gjXKCZ5TvMLcg/RxRQ15Fuzu99+wN4+yIgYOPAJeU1y4",
-	"UYPn+VlEQOgDsrzeie0+68pKrNnnYOV1+9uof6Fws5YkB+5cwEM7qlxmTFgsxQz3g7/mIoyziClywVOd",
-	"0diWnVDFItwoLo6qqW8qI3yDgeDovcKEB6eOKL45FeJudfmkUUt0mBNJZinrCCaDwRY5Y+VIj7R5VQBf",
-	"iyipnIloWAi5mzAP3TEpV3DHpeSkRmCPp2MPX5RnDH1CsCTr5sx1s4Rdx0y/JUGywRPCg00Mz8HboXWH",
-	"2x4F5m9gQd12kHaQxnaYcP3188GDnfH+znj/ZDw+xP/+07MgNnQOvm1bztZo3EAuvDUpYspp4s7Xb4vB",
-	"g6WTGjvHuhXMFPbj4FeDygahX9bOSef9HCnFZyIxbosjrWk4tz8ey8T+9USGmf3zWKmM5f9/yeLcTnpG",
-	"J+jU/z03t4JR3ZSq0OmFOT4a1AAzx18Dc6QsMFGc7jhrhZujlD631REqnPvkM7hPB3R7tf9KkrMJ6VBR",
-	"NHxxTpFnMfyp0uddr85955ZzuqxxcHkUOIZRJ1qccneEnLtbw3asF8vVoIvIQUrFiqGNqpPaDFphAncp",
-	"omLavPGXOC1SdtWZscJd7bW96u0VCtFfGI313HOYl4ZzPIJKwcb3bNBjvZx7sTTJS7tKcI7lDM+5f58L",
-	"uRS1PbYf6vGCDTaepXQxHwwVlr4FqGIeMtEPji12c3DYyIV37zOW9UJjCxMsfHMwpdbAoPFgspVVbpx2",
-	"NclTY/oGv/mHUzJAnQSONKrMtlWkUm0eOsOvTwbnU8GRzrsadzhfvDQqvjvC4lnJ6Os7uixs7MY3T9iH",
-	"BU+ZaldoVEQENFSp2SxsxFYdbg1OGdVZ6vOw/Mt+IUyACiw2gh1p0MgR6eRkHQVhprRM3hk/BHPeYGg4",
-	"miRZrPkiZu+s4WBTUsaMKuuxWMMc6DAZj5/kVuMlF7P6aBqdyc5twba9kQo9SleUt4f3mdTUg/v/i+8J",
-	"vaAc7Q8ylWkd3Fo2GLtOUl25VYtCqPfZB650c2XSlcG1e8Om7MjZr1m7JxennZ1VChLjTlq/W2v6dPaY",
-	"l1m/lxavppMGF92Ua7ePi5Wu9i2aZEoWTEQwG8z6Zs0ea/qo5MbaLkiVqA62R0VKWgN6bwI0NLZldZmf",
-	"y1s7rRzpVhGqDe32rFCDDS+oKfAHS3NPYyN1jDfV8mN8T+ZUFdbBJOPmQIwbdj/e+YHuTE8/PRo99Abd",
-	"jwJ/MpWfoDGTQ6VQBrYfJ7p2uBqYyXcX5Rirff2Mp23Rl5ops7jDsfh6c8b29fjzm/2dH07fvo2+/ebt",
-	"293O31//eLjz9dc/HjrvPsPjDd35eLTzn51TgynzNxaHFgaX/+bbb775ESv942v3yz9MQ5VXWNZLilYM",
-	"WfZoocAXjJPanMwRNMrnhWXfCn81Zt8fRa3G7ENXnMenVkYMGgWL2lwS2haKWE3wZOPhzJK+a0OjJ8nT",
-	"rUU45h0NTEqUn4Lpz0t0/9JUNUG8i4RSq3oeob/1PI/bbFNr7AdVp9OtRVk6aelKieKQsDJRHc4d5PWz",
-	"uw7D19elTDPDGhKV6QqS8vhije9WmMzl5AQkdzsLS04vey45NRBAunit8M0KH3tCGswXPwfbhWvRO08W",
-	"MtUUN5yydGZ2nsKUax7SuLpxXXxu9dv4Fve4reRRaTjJe7aJtlnTWgG6jW38bVTUrUZFbZNcfBEJ37Y5",
-	"1lYPevsi8iLcSYjPXywXHFqbTkK4FeL7cht1gudEc9Mgn3C5FHEFqRMTOMAgtaJrsEG6fqayIRvYeTYz",
-	"IMvuwJRmXdZoJd0ZHgeeZ/ct55nJeZEHSF4NS31WM5C7kqE58qMnsrOYHvWITus8xou6VgzzdHr3zRLF",
-	"wgzM9lcg7AyzSZrp+QHe7xfLpbGIbWYIc5OVjFjj5esU2GYP6+4ViSRwn2maMjWvfDfp/0aBCuXC9Ckq",
-	"h2ODl4xG6HHFsDhCwxBsPi19RwBxF65yRNGcZLON9Fatbj+1d13xqdcrtvTZqJNKuz5o6QS983nBlkaL",
-	"Mhrddu2NFUuwonRLi9WCyLkdzeJcygu2tGjL5BkmPdSHxUTMmdCPU4b2LI3trW1NfnH5acsz/9U84+ZR",
-	"27LKllVaWcXJo2X0GepiLqYej8pX5FjoVEZZCC/eircCbNinMUskOXpxTGgMipBcygw6T6igMxuoOqpv",
-	"i4uISDzpX16wuuR6zoVtjgtCYUU5S2mSUM1DsqSXuwT6g564IiFdYCwCBhKgtymOyzRJiug51bh/PGGE",
-	"fWBhpllEpqlMSgMf851Nach2YSz/T2YkoZfwiVBxSbSUsWllTkUUM0Uwm45NMGSZWbOUhrpMOnj04niX",
-	"/CKX7IKlIxuGZcurucziCMBJaAQQ5EEf0OwrGKyWoYyJkqZXndLplIcwVibC9HIB65AcUMHM1qecaAq4",
-	"EuTNkSE75iQ+/bqw7sTukp/zBYs43ZXpbA9+7Zmy75AHvoF2QsBeIpXObSzAMhMRJoVTBvFYWhEw8SYy",
-	"E1HBYTjQlE1lypD4SaYAaRfMboFVHYmEKrJkcbxLkFsTqEUnMtN2MEhLUXLxORO4r7bEwX/1FeZ8BIzm",
-	"DFiAafpU5ibYIkgFqZYwPZeRsg2RFxjUA1KIGWQLqZGByrZgmLYpgAgIeum2hdB8Jr/hD/KZvMYwwDv6",
-	"9/mt+LxT/HP+vIt/AAw5+/npyRmCRl7bbfqU6ZSzC+Ye9swpLzD4I4F5V0iE3U1hhpy9eP4KoflMzF0h",
-	"ilAi2LLMzEec3GGGf+1RPeSKfI1MqDaXb60JnAXmdYEZXB6BODRRLsBotwaSBebo5PEvZwDMC5qCdRlf",
-	"WqfHELDKznG+wCzKAdslvznipBTztXmF/e9aYJ48ffb05OkZ+UyemOvQaZnFrRDddjuCvFYZQAvChyuQ",
-	"klQQXl6pzjCoSIrdtciEguYo03MwuY2ZAi+rb6BTDgvKhAnQLsUxTgDzzXMoTA52x6UwRhW7K5jeO9j7",
-	"hqgFC50URiVOMOY9z1wLqrKyhMS8ZwTXnLvkCDg5zXJ3WpZMRujFAiygLM4VhVdVGV3nbxw7ntI4ntDw",
-	"HFooc+nCVz61ChwBAUULxJ+wCkJABJspTZUUKDGPptrm9zGS3ch8Fo0QlvI9VWSBzhnDP2dHLpRnRhDP",
-	"GY1K7WJkCpHTw1rpQ/IToylLySfqqL2rM0vlF3TGRUnhihJA3QAca26lR9VEYm74uuRpSztj19gJAPDn",
-	"DZtJY0M90EFOFP/IgH/O9sfjM2P1jUgowb6KnfDWMzwgf0bwznHACE2YZukuOZEk0zyGVsp+Rkb90kvo",
-	"iwtGzsy19GdoT9nkpmQ55+EcL7M32/emLCZMzGKr7I02HwGZyzYUUQzTbCHQxrzJcUWWHKUSoMmmQP1g",
-	"hvp3Vbb8Ks9biuLjEBB+dnam5iyO34q/kTBLY7LzC3kbDCHg24DkE+tTJBPKxdUeXfC9i33jx/oRcfe/",
-	"98fjt9l4fPCdGQf+hl4NtfVcZrO5nXI5HmGoqO+nMfsAsmREuLZ4UrgPDKRSOqXAJTiMb5HECf3Akywp",
-	"yFZOC9wyRs6nAvE3PisqmUhGT6UYLSBTo1k8p4u3/DhnbxvPxMXMvPgKJr7HdgIut0FRzEgdwEkeame3",
-	"Rnh1Vi6onu+Sf+de80InmZyxMrX8AEIx0/gK00AUPANm/JyKGUx/PP+SpSkTuuiVg8EGky5ii5SFGEaE",
-	"8hCV90U1zq3Sqt1MJU/KitWhpiyRFywyLn/TXkL/BHlVhsu5cNg48Gg3x+IJaJ2KCIcvx8JMYqqqklZZ",
-	"NVWV+VNpVkyKJRS0St4hF7Pdt8LxThZrrMCJ+wvGu/u7YwzbWTBBFzw4DB7sjncfmCi/OS7pYTZUFtvw",
-	"0h6Srq7uXiKtlDsVWFQIO9+6PcCezYLrGJaff+y7SbzUz3hwuRBaKjh8499CKovsGaYOrka9JXG2BFen",
-	"jZzP45VyPg/apa3kJhuyU9tM5fr8VydLs6+vYhR7UKhMi9xXdt/JPtxX9oGTAre7LBRyHd9Iu9zl/cbj",
-	"6TkFSqgsSWh6GRwGPzOzoPIloytsQtQCebQ3ekfoDPc2Kvg+BTgafLz3iUdXhovxDLgnYNCakJW+J5eE",
-	"a0WOn+z2cK+pHjS466Enjl2Sx5bd7gmJbQrnvrIPb4Id6pxg6dBM6ZiLR8wtbinSwgCjLpHlMhOL1iS3",
-	"kVXXkiTDBch9lg53yTrtksSb9rWLX1bTOjxCRbLIr8mqxRPhetjh1VxcdTGUqRSYDXam9E8yumxHVl6E",
-	"syqvmIu7rracec+EmmWJVfnSKrLGYbJegyw3w6pu9EaAZp0h3cQjX5A5Vsmncj1z7P6aWM2NLY9grJ9g",
-	"y/mugiGUh1L5DobhOsmuf+oJszqZ6XGekWdl8eY2Y1tpubelG30HOVm+DItaVilWobQlU+18YQutfTJm",
-	"729gLe8V5zx7rSmbws56v+qZVFbhlJfQ1JcjejAdyl99BXjbmrQpytyt9R6xRvKjuF5+t5mu1jf5+uUi",
-	"psxCtxNOA8L12vNgfakJ1b8QaXmX3JcHf/gFrENvT/7jXhbsk7x7n+B/7wb5LXBfBwBBIczVtWXw1p+x",
-	"WZaxbo2GpBogqHqtfbPKrDTd6cio0/qGnRlGB24V3CYV3I3ot1H7Kd4iGZ7AK08xm5KNy7ZCKnDPBpjT",
-	"DSV7rHqCaph3pYGV1dh+fZcL1L55V8t23qwhZy17rD5hvNp44KZBgxkH82GhZlebrVOZhsy3hNmq5xXX",
-	"yh693OUXuVFdfMN6uOoG28qVa/jOOl1nN7OVsB5Lra/j3FZuXtdteXMd4eVRdis6+nC16SSQ7vP0mTxr",
-	"hafP1my7Q6GLM83dDWoDMm/lPQB7bcTWLXf9VUt5mqRv1eLcMOS3w0zK+s065o6iqBKWjMcLtKxfLjSQ",
-	"V4+iqClJB7NpNRsKQPKu+1b4AtgoWicLRe2wdt6h78L4rYtwczIZWM7D+L183yue9z5ZEnauSF5ioKIi",
-	"NL9KqwiEr2mJfn43TW1dgNdmCYPItbhiw26cItdM042Ty4fNunHaubrm4r4ZI+TvqvBc9XmDbtkeQfpu",
-	"LZBN+k1XsUbQW9hrktjLLG5mLt6FS/U6RtLqc2lrL23tpaF+24bZ5MzQoRN0ZWWzSZPKTo/Bs2NrXW2W",
-	"gXxG1ho89BcX8vfQ9qvdxTUggsa5/xKPhBJ7v2Eey2B87OaqQ586Ki/Mu0YETdnINuown4f+MJhF5R5J",
-	"O8mcSwsLwexwwt6cqp38BhyQzPZw7LERxd4VwOM5C88Jz+++imOWkjlV9shwnCfykIRaDikOoXfyyC9U",
-	"5fcxquua/vU067dvvN+qXK7zAxKoQoqcBG2csaq4Lfkk8AkYZCsT376T2ist+3nJJB1RzuXjeYIJmRZp",
-	"SIoEPp2cZC4FsCplxaFh3OK1w1LvmgVviq0cMtjgNnuz6lCJU5y/HyZt8hOJ7hWRFcFzwax2WkXY5Pew",
-	"3pabwUFK3dmw9Sy0chzQ3qW7ofNty7LBJ1Yde6lzY7iEdhvduTZvWKz3Gz2jDrmyBsluODjEFRT/XVZL",
-	"dbJvanIPiuuo32HeTv314zjKNm4+iuNumeivIkEs8Qcvm4zlszcv7gzuDUKbFze7pmzGlWYpi0gJuI/V",
-	"ajel3hiLVPppZZJ1kd6Y2NZqnBc3wFo8GzB8OE71hJmM751oPhiPyfNf8xWEYukFD5nJ/ELDOZ34HeXF",
-	"6G0vvYjW7IPeW8SU11Cc57J+/qvnptEbx+rcGUAPRp1bmvu29fJrR518fyYTlucDYFqK+NK5ZVRLwgRm",
-	"wInKbKd+ApRXJt4wn+cddUjDu3TgAC1d5PaT07lFsFcKFemQHLJZX2T7EfT6rXo3TKC8o1uTROUtg22Y",
-	"1jKS/af8YWlaZgCu3iTo5sZqyz1xAr3cyjnbUcfVd6qSqL9IZowuasxhV/qo3UvLOrwdt3KqF687u4+J",
-	"BG57X6ZMT+2RLAV7OsyOmBuYYKBy15mXf9f37kP1rV+/QseWQ64dVHQF1uCjMtBc55IXGt/6J65JPBfb",
-	"bVOwyx6j7i21bp5a8zpaT+HcsA/DiOXtwnMj8vkmE2Jpc12oj0XWd3TgRZo37uLY8tgQ8ZNT3F4L61Ub",
-	"xS3/a6QXNXWbHPRaFSGcX0L2mA0Eid5fm6MzWBOWNzmRc/YpI3T6bcc2LYQMsr7ZCNW3ZmOFhC1mY06E",
-	"Jv3c6Q9dsXZn27HgmqOvNE8mj+UxiXwbde11Hy9sjZfYwariAAOizK19bTP9+uL/5sV0hTAtyBw+wRCV",
-	"ZcBE3kw7IRQryLDuZKuS8Wo4KfxrBVxVnjNBZkwAxCy692QzWK9gvGdODd43xkbLtRj6WvNYGCE1sVch",
-	"utdkXJJMaB4jF7wNMA3B26C8aMBJ+g96qY01tlkPbsEu8wlnJ1+FubO2K6lyIQ6GJ1OucVQL+W94Gfi6",
-	"uCN0a6IPMLX8WvqOUiJD7+svAY3GuOkl4Ja/hogaS/IWGxDbSi9y5qpd38vi6c5cokThQmkqTFhdhhcS",
-	"+i5xCUbBBU05ndiEpeaT4UO8RSc4DKpXLld7tOWvcP/AwtqAygYgFveNlXsTdgunudXx2hxJci9qzG95",
-	"NlsIDeOlO2GzrVxLaOzrtb2yXVQ2be3mjR31owO2hdr1Fo0b6Z3IuTYg3EiR06v/CQAA//9wa2vwEOkA",
-	"AA==",
+	"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",
+	"Obv5nwAAAP//tTgJoi8CAQA=",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

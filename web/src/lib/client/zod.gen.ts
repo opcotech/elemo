@@ -398,6 +398,7 @@ export const zPermission = z.object({
   kind: zPermissionKind,
   subject: z.string(),
   target: z.string(),
+  target_type: z.string(),
   created_at: z.iso.datetime(),
   updated_at: z.union([z.iso.datetime(), z.null()]),
 });
@@ -523,6 +524,14 @@ export const zUserPasswordReset = z.object({
   password: z.string().min(8).max(64),
 });
 
+/**
+ * Organization invitation acceptance request.
+ */
+export const zOrganizationInvitationAccept = z.object({
+  token: z.string(),
+  password: z.optional(z.string().min(8).max(64)),
+});
+
 export const zTodoCreate = z.object({
   title: z.string().min(3).max(250),
   description: z.optional(z.union([z.string().min(10).max(500), z.null()])),
@@ -554,8 +563,8 @@ export const zOrganizationCreate = z.object({
 export const zOrganizationPatch = z.object({
   name: z.optional(z.string().min(1).max(120)),
   email: z.optional(z.email().min(6).max(254)),
-  logo: z.optional(z.url().max(2000)),
-  website: z.optional(z.url().max(2000)),
+  logo: z.optional(z.union([z.url().max(2000), z.null()])),
+  website: z.optional(z.union([z.url().max(2000), z.null()])),
   status: z.optional(zOrganizationStatus),
 });
 
@@ -582,7 +591,12 @@ export const zRoleCreate = z.object({
 
 export const zRolePatch = z.object({
   name: z.optional(z.string().min(3).max(120)),
-  description: z.optional(z.string().min(5).max(500)),
+  description: z.optional(z.union([z.string().min(5).max(500), z.null()])),
+});
+
+export const zRolePermissionCreate = z.object({
+  target: z.string(),
+  kind: zPermissionKind,
 });
 
 export const zV1UsersGetData = z.object({
@@ -901,6 +915,26 @@ export const zV1OrganizationMembersAddResponse = z.object({
   id: z.string(),
 });
 
+export const zV1OrganizationMembersInviteData = z.object({
+  body: z.optional(
+    z.object({
+      email: z.email(),
+      role_id: z.optional(z.string()),
+    })
+  ),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+/**
+ * Example response
+ */
+export const zV1OrganizationMembersInviteResponse = z.object({
+  id: z.string(),
+});
+
 export const zV1OrganizationMemberRemoveData = z.object({
   body: z.optional(z.never()),
   path: z.object({
@@ -914,6 +948,33 @@ export const zV1OrganizationMemberRemoveData = z.object({
  * No Content
  */
 export const zV1OrganizationMemberRemoveResponse = z.void();
+
+export const zV1OrganizationMemberInviteRevokeData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+    user_id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+/**
+ * No Content
+ */
+export const zV1OrganizationMemberInviteRevokeResponse = z.void();
+
+export const zV1OrganizationMembersAcceptData = z.object({
+  body: z.optional(zOrganizationInvitationAccept),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zV1OrganizationMembersAcceptResponse = z.union([
+  z.unknown(),
+  z.void(),
+]);
 
 export const zV1OrganizationRolesGetData = z.object({
   body: z.optional(z.never()),
@@ -1038,6 +1099,51 @@ export const zV1OrganizationRoleMemberRemoveData = z.object({
  * No Content
  */
 export const zV1OrganizationRoleMemberRemoveResponse = z.void();
+
+export const zV1OrganizationRolePermissionsGetData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+    role_id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+/**
+ * OK
+ */
+export const zV1OrganizationRolePermissionsGetResponse = z.array(zPermission);
+
+export const zV1OrganizationRolePermissionAddData = z.object({
+  body: z.optional(zRolePermissionCreate),
+  path: z.object({
+    id: z.string(),
+    role_id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+/**
+ * Example response
+ */
+export const zV1OrganizationRolePermissionAddResponse = z.object({
+  id: z.string(),
+});
+
+export const zV1OrganizationRolePermissionRemoveData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+    role_id: z.string(),
+    permission_id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+/**
+ * No Content
+ */
+export const zV1OrganizationRolePermissionRemoveResponse = z.void();
 
 export const zV1PermissionsCreateData = z.object({
   body: z.optional(zPermissionCreate),

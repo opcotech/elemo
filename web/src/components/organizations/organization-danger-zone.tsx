@@ -1,7 +1,6 @@
 import { Trash2 } from "lucide-react";
 import { useState } from "react";
 
-import { OrganizationDangerZoneSkeleton } from "./organization-danger-zone-skeleton";
 import { OrganizationDeleteDialog } from "./organization-delete-dialog";
 
 import { Button } from "@/components/ui/button";
@@ -12,6 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   ResourceType,
   usePermissions,
@@ -19,6 +19,32 @@ import {
 } from "@/hooks/use-permissions";
 import type { Organization } from "@/lib/api";
 import { can } from "@/lib/auth/permissions";
+
+export function OrganizationDangerZoneSkeleton() {
+  return (
+    <Card className="border-destructive bg-transparent">
+      <CardHeader>
+        <CardTitle className="text-destructive">Danger Zone</CardTitle>
+        <CardDescription>
+          Irreversible actions for this organization
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="space-y-2">
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-3/4" />
+          <Skeleton className="mt-3 h-4 w-full" />
+          <Skeleton className="h-4 w-5/6" />
+          <Skeleton className="h-4 w-4/5" />
+          <Skeleton className="h-4 w-3/4" />
+        </div>
+        <div className="flex justify-end">
+          <Skeleton className="h-10 w-40" />
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
 interface OrganizationDangerZoneProps {
   organization: Organization;

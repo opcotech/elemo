@@ -1,8 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { v1PermissionResourceGetOptions } from "@/lib/api";
-
-const SYSTEM_NIL_ID = "00000000000000000000";
+import { SYSTEM_NIL_ID } from "@/lib/utils";
 
 export enum ResourceType {
   Assignment = "Assignment",

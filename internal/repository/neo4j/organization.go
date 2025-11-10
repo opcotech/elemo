@@ -253,16 +253,39 @@ func (r *OrganizationRepository) GetMembers(ctx context.Context, orgID model.ID)
 
 	cypher := `
 	MATCH (o:` + orgID.Label() + ` {id: $org_id})
-	MATCH (u:` + model.ResourceTypeUser.String() + `)-[:` + EdgeKindMemberOf.String() + `]->(o)
+	MATCH (u:` + model.ResourceTypeUser.String() + `)-[rel:` + EdgeKindMemberOf.String() + `|` + EdgeKindInvitedTo.String() + `]->(o)
+	WITH DISTINCT u, o, collect(DISTINCT type(rel)) AS relTypes
+	WITH u, o, relTypes, CASE WHEN '` + EdgeKindMemberOf.String() + `' IN relTypes THEN true ELSE false END AS isMember
+	WHERE isMember = true OR NOT EXISTS((u)-[:` + EdgeKindMemberOf.String() + `]->(o))
 	OPTIONAL MATCH (u)-[:` + EdgeKindMemberOf.String() + `]->(r:` + model.ResourceTypeRole.String() + `)<-[:` + EdgeKindHasTeam.String() + `]-(o)
-	RETURN u, collect(DISTINCT r.name) AS roles
-	ORDER BY u.created_at ASC`
+	WITH u, isMember, collect(DISTINCT r) AS roleNodes
+	WITH u, isMember,
+	CASE WHEN isMember THEN [role IN roleNodes WHERE role IS NOT NULL | role.name] ELSE [] END AS roles
+	RETURN u AS u, roles AS roles, isMember AS isMember
+	ORDER BY isMember DESC, u.created_at ASC`
 
 	params := map[string]any{
 		"org_id": orgID.String(),
 	}
 
-	members, err := ExecuteReadAndReadAll(ctx, r.db, cypher, params, r.scanOrganizationMember("u"))
+	members, err := ExecuteReadAndReadAll(ctx, r.db, cypher, params, func(rec *neo4j.Record) (model.OrganizationMember, error) {
+		member, err := r.scanOrganizationMember("u")(rec)
+		if err != nil {
+			return model.OrganizationMember{}, err
+		}
+
+		isMemberVal, err := ParseValueFromRecord[bool](rec, "isMember")
+		if err != nil {
+			isMemberVal = false
+		}
+
+		// If user is not a member (has INVITED_TO but not MEMBER_OF), set status to pending
+		if !isMemberVal {
+			member.Status = model.UserStatusPending
+		}
+
+		return member, nil
+	})
 	if err != nil {
 		return nil, errors.Join(repository.ErrOrganizationRead, err)
 	}
@@ -334,6 +357,116 @@ func (r *OrganizationRepository) RemoveMember(ctx context.Context, orgID, member
 	}
 
 	return nil
+}
+
+func (r *OrganizationRepository) AddInvitation(ctx context.Context, orgID, userID model.ID) error {
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.OrganizationRepository/AddInvitation")
+	defer span.End()
+
+	if err := orgID.Validate(); err != nil {
+		return errors.Join(repository.ErrOrganizationAddMember, err)
+	}
+
+	if err := userID.Validate(); err != nil {
+		return errors.Join(repository.ErrOrganizationAddMember, err)
+	}
+
+	// Check if IDs are nil (invalid)
+	if orgID.IsNil() || userID.IsNil() {
+		return errors.Join(repository.ErrOrganizationAddMember, model.ErrInvalidID)
+	}
+
+	cypher := `
+	MATCH (o:` + orgID.Label() + ` {id: $org_id})
+	MATCH (u:` + userID.Label() + ` {id: $user_id})
+	MERGE (u)-[i:` + EdgeKindInvitedTo.String() + `]->(o)
+	ON CREATE SET i.created_at = datetime($now), i.id = $invitation_id
+	ON MATCH SET i.updated_at = datetime($now)
+	RETURN o.id AS org_id`
+
+	params := map[string]any{
+		"org_id":        orgID.String(),
+		"user_id":       userID.String(),
+		"invitation_id": model.NewRawID(),
+		"now":           time.Now().UTC().Format(time.RFC3339Nano),
+	}
+
+	_, err := ExecuteWriteAndReadSingle(ctx, r.db, cypher, params, func(_ *neo4j.Record) (*struct{}, error) {
+		return &struct{}{}, nil
+	})
+	if err != nil {
+		return errors.Join(repository.ErrOrganizationAddMember, err)
+	}
+
+	return nil
+}
+
+func (r *OrganizationRepository) RemoveInvitation(ctx context.Context, orgID, userID model.ID) error {
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.OrganizationRepository/RemoveInvitation")
+	defer span.End()
+
+	if err := orgID.Validate(); err != nil {
+		return errors.Join(repository.ErrOrganizationRemoveMember, err)
+	}
+
+	if err := userID.Validate(); err != nil {
+		return errors.Join(repository.ErrOrganizationRemoveMember, err)
+	}
+
+	// Check if IDs are nil (invalid)
+	if orgID.IsNil() || userID.IsNil() {
+		return errors.Join(repository.ErrOrganizationRemoveMember, model.ErrInvalidID)
+	}
+
+	cypher := `
+	MATCH (:` + userID.Label() + ` {id: $user_id})-[r:` + EdgeKindInvitedTo.String() + `]->(:` + orgID.Label() + ` {id: $org_id})
+	DELETE r`
+
+	params := map[string]any{
+		"org_id":  orgID.String(),
+		"user_id": userID.String(),
+	}
+
+	if err := ExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
+		return errors.Join(repository.ErrOrganizationRemoveMember, err)
+	}
+
+	return nil
+}
+
+func (r *OrganizationRepository) GetInvitations(ctx context.Context, orgID model.ID) ([]*model.OrganizationMember, error) {
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.OrganizationRepository/GetInvitations")
+	defer span.End()
+
+	if err := orgID.Validate(); err != nil {
+		return nil, errors.Join(repository.ErrOrganizationRead, err)
+	}
+
+	// Check if ID is nil (invalid)
+	if orgID.IsNil() {
+		return nil, errors.Join(repository.ErrOrganizationRead, model.ErrInvalidID)
+	}
+
+	cypher := `
+	MATCH (u:` + model.ResourceTypeUser.String() + `)-[:` + EdgeKindInvitedTo.String() + `]->(o:` + orgID.Label() + ` {id: $org_id})
+	RETURN u, [] AS roles
+	ORDER BY u.created_at ASC`
+
+	params := map[string]any{
+		"org_id": orgID.String(),
+	}
+
+	members, err := ExecuteReadAndReadAll(ctx, r.db, cypher, params, r.scanOrganizationMember("u"))
+	if err != nil {
+		return nil, errors.Join(repository.ErrOrganizationRead, err)
+	}
+
+	membersPtr := make([]*model.OrganizationMember, len(members))
+	for i := range members {
+		membersPtr[i] = &members[i]
+	}
+
+	return membersPtr, nil
 }
 
 func (r *OrganizationRepository) Delete(ctx context.Context, id model.ID) error {

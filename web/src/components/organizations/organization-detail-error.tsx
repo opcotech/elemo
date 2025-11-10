@@ -1,11 +1,10 @@
-import { OrganizationDetailHeader } from "./organization-detail-header";
-
+import { PageHeader } from "@/components/page-header";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export function OrganizationDetailError() {
   return (
     <div className="space-y-6">
-      <OrganizationDetailHeader title="Organization Details" />
+      <PageHeader title="Organization Details" />
 
       <Alert variant="destructive">
         <AlertDescription>

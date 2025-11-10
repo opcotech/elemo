@@ -191,6 +191,51 @@ func TestWithPermissionService(t *testing.T) {
 	}
 }
 
+func TestWithEmailService(t *testing.T) {
+	type args struct {
+		emailService EmailService
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+		want    EmailService
+	}{
+		{
+			name: "set the email service for the baseService",
+			args: args{
+				emailService: mock.NewEmailService(nil),
+			},
+			want: mock.NewEmailService(nil),
+		},
+		{
+			name: "return an error if no email service is provided",
+			args: args{
+				emailService: nil,
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			var s baseService
+
+			err := WithEmailService(tt.args.emailService)(&s)
+			if (err != nil) != tt.wantErr {
+				require.NoError(t, err)
+			}
+
+			if !tt.wantErr {
+				assert.Equal(t, tt.want, s.emailService)
+			}
+		})
+	}
+}
+
 func Test_newService(t *testing.T) {
 	type args struct {
 		opts []Option

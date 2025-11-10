@@ -147,6 +147,20 @@ func TestNewPermission(t *testing.T) {
 			},
 			wantErr: ErrInvalidPermissionDetails,
 		},
+		{
+			name: "create new permission with role having permission on itself",
+			args: args{
+				subject: ID{Inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x9, 0xa, 0xb, 0xc}, Type: ResourceTypeRole},
+				target:  ID{Inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x9, 0xa, 0xb, 0xc}, Type: ResourceTypeRole},
+				kind:    PermissionKindWrite,
+			},
+			want: Permission{
+				ID:      ID{Inner: xid.NilID(), Type: ResourceTypePermission},
+				Subject: ID{Inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x9, 0xa, 0xb, 0xc}, Type: ResourceTypeRole},
+				Target:  ID{Inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x9, 0xa, 0xb, 0xc}, Type: ResourceTypeRole},
+				Kind:    PermissionKindWrite,
+			},
+		},
 	}
 	for _, tt := range tests {
 		tt := tt
@@ -234,6 +248,17 @@ func TestPermission_Validate(t *testing.T) {
 				UpdatedAt: &time.Time{},
 			},
 			wantErr: ErrInvalidPermissionDetails,
+		},
+		{
+			name: "valid permission with role having permission on itself",
+			fields: fields{
+				ID:        ID{Inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, Type: ResourceTypePermission},
+				Kind:      PermissionKindWrite,
+				Subject:   ID{Inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, Type: ResourceTypeRole},
+				Target:    ID{Inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, Type: ResourceTypeRole},
+				CreatedAt: &time.Time{},
+				UpdatedAt: &time.Time{},
+			},
 		},
 	}
 	for _, tt := range tests {

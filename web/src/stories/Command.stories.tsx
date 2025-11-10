@@ -80,32 +80,32 @@ export const Default: Story = {
         <CommandEmpty>No results found.</CommandEmpty>
         <CommandGroup heading="Suggestions">
           <CommandItem>
-            <Calendar className="mr-2 h-4 w-4" />
+            <Calendar className="size-4" />
             <span>Calendar</span>
           </CommandItem>
           <CommandItem>
-            <Smile className="mr-2 h-4 w-4" />
+            <Smile className="size-4" />
             <span>Search Emoji</span>
           </CommandItem>
           <CommandItem>
-            <Calculator className="mr-2 h-4 w-4" />
+            <Calculator className="size-4" />
             <span>Calculator</span>
           </CommandItem>
         </CommandGroup>
         <CommandSeparator />
         <CommandGroup heading="Settings">
           <CommandItem>
-            <User className="mr-2 h-4 w-4" />
+            <User className="size-4" />
             <span>Profile</span>
             <CommandShortcut>⌘P</CommandShortcut>
           </CommandItem>
           <CommandItem>
-            <CreditCard className="mr-2 h-4 w-4" />
+            <CreditCard className="size-4" />
             <span>Billing</span>
             <CommandShortcut>⌘B</CommandShortcut>
           </CommandItem>
           <CommandItem>
-            <Settings className="mr-2 h-4 w-4" />
+            <Settings className="size-4" />
             <span>Settings</span>
             <CommandShortcut>⌘S</CommandShortcut>
           </CommandItem>
@@ -129,17 +129,17 @@ export const Dialog: Story = {
             <CommandEmpty>No results found.</CommandEmpty>
             <CommandGroup heading="Quick Actions">
               <CommandItem onSelect={() => setOpen(false)}>
-                <Search className="mr-2 h-4 w-4" />
+                <Search className="size-4" />
                 <span>Search Files</span>
                 <CommandShortcut>⌘K</CommandShortcut>
               </CommandItem>
               <CommandItem onSelect={() => setOpen(false)}>
-                <Mail className="mr-2 h-4 w-4" />
+                <Mail className="size-4" />
                 <span>Send Email</span>
                 <CommandShortcut>⌘E</CommandShortcut>
               </CommandItem>
               <CommandItem onSelect={() => setOpen(false)}>
-                <Phone className="mr-2 h-4 w-4" />
+                <Phone className="size-4" />
                 <span>Make Call</span>
                 <CommandShortcut>⌘C</CommandShortcut>
               </CommandItem>
@@ -147,15 +147,15 @@ export const Dialog: Story = {
             <CommandSeparator />
             <CommandGroup heading="Navigation">
               <CommandItem onSelect={() => setOpen(false)}>
-                <Home className="mr-2 h-4 w-4" />
+                <Home className="size-4" />
                 <span>Go Home</span>
               </CommandItem>
               <CommandItem onSelect={() => setOpen(false)}>
-                <Bell className="mr-2 h-4 w-4" />
+                <Bell className="size-4" />
                 <span>Notifications</span>
               </CommandItem>
               <CommandItem onSelect={() => setOpen(false)}>
-                <Settings className="mr-2 h-4 w-4" />
+                <Settings className="size-4" />
                 <span>Settings</span>
               </CommandItem>
             </CommandGroup>
@@ -175,46 +175,46 @@ export const FileManager: Story = {
         <CommandEmpty>No files found.</CommandEmpty>
         <CommandGroup heading="Recent Files">
           <CommandItem>
-            <File className="mr-2 h-4 w-4" />
+            <File className="size-4" />
             <span>document.pdf</span>
           </CommandItem>
           <CommandItem>
-            <Image className="mr-2 h-4 w-4" />
+            <Image className="size-4" />
             <span>screenshot.png</span>
           </CommandItem>
           <CommandItem>
-            <Music className="mr-2 h-4 w-4" />
+            <Music className="size-4" />
             <span>song.mp3</span>
           </CommandItem>
           <CommandItem>
-            <Video className="mr-2 h-4 w-4" />
+            <Video className="size-4" />
             <span>video.mp4</span>
           </CommandItem>
         </CommandGroup>
         <CommandSeparator />
         <CommandGroup heading="Folders">
           <CommandItem>
-            <Folder className="mr-2 h-4 w-4" />
+            <Folder className="size-4" />
             <span>Documents</span>
           </CommandItem>
           <CommandItem>
-            <Folder className="mr-2 h-4 w-4" />
+            <Folder className="size-4" />
             <span>Downloads</span>
           </CommandItem>
           <CommandItem>
-            <Folder className="mr-2 h-4 w-4" />
+            <Folder className="size-4" />
             <span>Pictures</span>
           </CommandItem>
         </CommandGroup>
         <CommandSeparator />
         <CommandGroup heading="Actions">
           <CommandItem>
-            <Upload className="mr-2 h-4 w-4" />
+            <Upload className="size-4" />
             <span>Upload File</span>
             <CommandShortcut>⌘U</CommandShortcut>
           </CommandItem>
           <CommandItem>
-            <Download className="mr-2 h-4 w-4" />
+            <Download className="size-4" />
             <span>Download</span>
             <CommandShortcut>⌘D</CommandShortcut>
           </CommandItem>
@@ -233,17 +233,17 @@ export const TextEditor: Story = {
         <CommandEmpty>No commands found.</CommandEmpty>
         <CommandGroup heading="Edit">
           <CommandItem>
-            <Copy className="mr-2 h-4 w-4" />
+            <Copy className="size-4" />
             <span>Copy</span>
             <CommandShortcut>⌘C</CommandShortcut>
           </CommandItem>
           <CommandItem>
-            <Scissors className="mr-2 h-4 w-4" />
+            <Scissors className="size-4" />
             <span>Cut</span>
             <CommandShortcut>⌘X</CommandShortcut>
           </CommandItem>
           <CommandItem>
-            <ClipboardPaste className="mr-2 h-4 w-4" />
+            <ClipboardPaste className="size-4" />
             <span>Paste</span>
             <CommandShortcut>⌘V</CommandShortcut>
           </CommandItem>
@@ -269,17 +269,17 @@ export const TextEditor: Story = {
         <CommandSeparator />
         <CommandGroup heading="File">
           <CommandItem>
-            <File className="mr-2 h-4 w-4" />
+            <File className="size-4" />
             <span>New File</span>
             <CommandShortcut>⌘N</CommandShortcut>
           </CommandItem>
           <CommandItem>
-            <Edit className="mr-2 h-4 w-4" />
+            <Edit className="size-4" />
             <span>Save</span>
             <CommandShortcut>⌘S</CommandShortcut>
           </CommandItem>
           <CommandItem>
-            <Trash2 className="mr-2 h-4 w-4" />
+            <Trash2 className="size-4" />
             <span>Delete</span>
             <CommandShortcut>⌫</CommandShortcut>
           </CommandItem>

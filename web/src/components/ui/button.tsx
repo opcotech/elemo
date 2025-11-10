@@ -23,6 +23,8 @@ const buttonVariants = cva(
           "bg-secondary text-secondary-foreground hover:bg-secondary/80 focus-visible:ring focus-visible:ring-ring",
         ghost:
           "bg-transparent text-foreground hover:bg-primary/5 hover:text-primary focus-visible:ring focus-visible:ring-ring",
+        "destructive-ghost":
+          "bg-transparent text-destructive hover:bg-destructive/10 hover:text-destructive focus-visible:ring focus-visible:ring-destructive",
         link: "bg-transparent text-primary underline-offset-4 hover:underline focus-visible:ring focus-visible:ring-ring",
         success:
           "bg-success text-success-foreground hover:bg-success/90 focus-visible:ring focus-visible:ring-success",

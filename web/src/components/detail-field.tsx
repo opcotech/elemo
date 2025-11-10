@@ -1,4 +1,4 @@
-export function OrganizationDetailField({
+export function DetailField({
   label,
   value,
   children,

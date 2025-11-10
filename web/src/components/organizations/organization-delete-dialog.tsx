@@ -1,24 +1,13 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
-import { Trash2 } from "lucide-react";
+import type { QueryKey } from "@tanstack/react-query";
 
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
+import { useDeleteMutation } from "@/hooks/use-delete-mutation";
 import type { Organization } from "@/lib/api";
 import {
   v1OrganizationDeleteMutation,
   v1OrganizationGetOptions,
   v1OrganizationsGetOptions,
 } from "@/lib/client/@tanstack/react-query.gen";
-import { showErrorToast, showSuccessToast } from "@/lib/toast";
 
 interface OrganizationDeleteDialogProps {
   organization: Organization;
@@ -33,90 +22,48 @@ export function OrganizationDeleteDialog({
   onOpenChange,
   onSuccess,
 }: OrganizationDeleteDialogProps) {
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
+  const queryKeysToInvalidate: QueryKey[] = [
+    v1OrganizationGetOptions({
+      path: { id: organization.id },
+    }).queryKey,
+    v1OrganizationsGetOptions().queryKey,
+  ];
 
-  const mutation = useMutation(v1OrganizationDeleteMutation());
+  const deleteMutation = useDeleteMutation({
+    mutationOptions: v1OrganizationDeleteMutation(),
+    successMessage: "Organization deleted",
+    successDescription: "The organization has been deleted successfully",
+    errorMessagePrefix: "Failed to delete organization",
+    queryKeysToInvalidate,
+    onSuccess: () => {
+      onSuccess?.();
+      onOpenChange(false);
+    },
+    navigateOnSuccess: "/settings/organizations",
+  });
 
-  const handleDelete = () => {
-    mutation.mutate(
-      {
-        path: { id: organization.id },
-        query: { force: false }, // Soft delete (default)
-      },
-      {
-        onSuccess: () => {
-          showSuccessToast(
-            "Organization deleted",
-            "The organization has been deleted successfully"
-          );
-
-          // Invalidate queries to refresh the list and detail views
-          queryClient.invalidateQueries({
-            queryKey: v1OrganizationGetOptions({
-              path: { id: organization.id },
-            }).queryKey,
-          });
-          queryClient.invalidateQueries({
-            queryKey: v1OrganizationsGetOptions().queryKey,
-          });
-
-          onSuccess?.();
-          onOpenChange(false);
-
-          // Redirect to organizations list
-          navigate({ to: "/settings/organizations" });
-        },
-        onError: (error) => {
-          showErrorToast("Failed to delete organization", error.message);
-        },
-      }
-    );
+  const handleConfirm = () => {
+    deleteMutation.mutate({
+      path: { id: organization.id },
+      query: { force: false }, // Soft delete (default)
+    });
   };
 
   return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>
-            Are you sure you want to delete {organization.name}?
-          </AlertDialogTitle>
-          <AlertDialogDescription className="space-y-2">
-            <p>
-              This will mark the organization as deleted. This action cannot be
-              undone.
-            </p>
-            <p className="font-medium">What will happen:</p>
-            <ul className="list-inside list-disc space-y-1 text-sm">
-              <li>The organization will be marked as deleted</li>
-              <li>All organization members will lose access</li>
-              <li>Organization data will be hidden from listings</li>
-              <li>You will be redirected to the organizations list</li>
-            </ul>
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={mutation.isPending}>
-            Cancel
-          </AlertDialogCancel>
-          <AlertDialogAction
-            variant="destructive"
-            onClick={handleDelete}
-            disabled={mutation.isPending}
-          >
-            {mutation.isPending ? (
-              <>
-                <span>Deleting...</span>
-              </>
-            ) : (
-              <>
-                <Trash2 className="size-4" />
-                Delete
-              </>
-            )}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+    <DeleteConfirmationDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title={`Are you sure you want to delete ${organization.name}?`}
+      description="This will mark the organization as deleted. This action cannot be undone."
+      consequences={[
+        "The organization will be marked as deleted",
+        "All organization members will lose access",
+        "Organization data will be hidden from listings",
+        "You will be redirected to the organizations list",
+      ]}
+      deleteButtonText="Delete"
+      onConfirm={handleConfirm}
+      isPending={deleteMutation.isPending}
+    />
   );
 }

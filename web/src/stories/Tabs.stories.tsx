@@ -197,19 +197,19 @@ export const DashboardTabs: Story = {
     <Tabs defaultValue="overview" className="w-[600px]">
       <TabsList>
         <TabsTrigger value="overview">
-          <BarChart3 className="mr-2 h-4 w-4" />
+          <BarChart3 className="size-4" />
           Overview
         </TabsTrigger>
         <TabsTrigger value="analytics">
-          <Database className="mr-2 h-4 w-4" />
+          <Database className="size-4" />
           Analytics
         </TabsTrigger>
         <TabsTrigger value="reports">
-          <FileText className="mr-2 h-4 w-4" />
+          <FileText className="size-4" />
           Reports
         </TabsTrigger>
         <TabsTrigger value="users">
-          <Users className="mr-2 h-4 w-4" />
+          <Users className="size-4" />
           Users
         </TabsTrigger>
       </TabsList>
@@ -277,7 +277,7 @@ export const DashboardTabs: Story = {
               </div>
             </div>
             <Button variant="outline" size="sm">
-              <Download className="mr-2 h-4 w-4" />
+              <Download className="size-4" />
               Download
             </Button>
           </div>
@@ -292,7 +292,7 @@ export const DashboardTabs: Story = {
               </div>
             </div>
             <Button variant="outline" size="sm">
-              <Download className="mr-2 h-4 w-4" />
+              <Download className="size-4" />
               Download
             </Button>
           </div>
@@ -302,7 +302,7 @@ export const DashboardTabs: Story = {
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-medium">User Management</h3>
           <Button>
-            <Plus className="mr-2 h-4 w-4" />
+            <Plus className="size-4" />
             Add User
           </Button>
         </div>
@@ -442,11 +442,11 @@ export const ContentManagement: Story = {
           <h3 className="text-lg font-medium">Blog Posts</h3>
           <div className="flex space-x-2">
             <Button variant="outline" size="sm">
-              <Filter className="mr-2 h-4 w-4" />
+              <Filter className="size-4" />
               Filter
             </Button>
             <Button size="sm">
-              <Plus className="mr-2 h-4 w-4" />
+              <Plus className="size-4" />
               New Post
             </Button>
           </div>
@@ -497,7 +497,7 @@ export const ContentManagement: Story = {
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-medium">Pages</h3>
           <Button size="sm">
-            <Plus className="mr-2 h-4 w-4" />
+            <Plus className="size-4" />
             New Page
           </Button>
         </div>
@@ -532,7 +532,7 @@ export const ContentManagement: Story = {
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-medium">Media Library</h3>
           <Button size="sm">
-            <Upload className="mr-2 h-4 w-4" />
+            <Upload className="size-4" />
             Upload
           </Button>
         </div>
@@ -557,7 +557,7 @@ export const ContentManagement: Story = {
           <h3 className="text-lg font-medium">Comments</h3>
           <div className="flex space-x-2">
             <Button variant="outline" size="sm">
-              <Filter className="mr-2 h-4 w-4" />
+              <Filter className="size-4" />
               Filter
             </Button>
           </div>
@@ -610,19 +610,19 @@ export const VerticalTabs: Story = {
     >
       <TabsList className="h-auto w-[200px] flex-col p-1">
         <TabsTrigger value="general" className="w-full justify-start">
-          <Settings className="mr-2 h-4 w-4" />
+          <Settings className="size-4" />
           General
         </TabsTrigger>
         <TabsTrigger value="security" className="w-full justify-start">
-          <Lock className="mr-2 h-4 w-4" />
+          <Lock className="size-4" />
           Security
         </TabsTrigger>
         <TabsTrigger value="billing" className="w-full justify-start">
-          <CreditCard className="mr-2 h-4 w-4" />
+          <CreditCard className="size-4" />
           Billing
         </TabsTrigger>
         <TabsTrigger value="notifications" className="w-full justify-start">
-          <Bell className="mr-2 h-4 w-4" />
+          <Bell className="size-4" />
           Notifications
         </TabsTrigger>
       </TabsList>

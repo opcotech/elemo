@@ -6,7 +6,6 @@ import { useEffect } from "react";
 import { AuthenticatedLayout } from "@/components/layout/authenticated-layout";
 import { NotificationList } from "@/components/notification";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -47,7 +46,6 @@ function InboxPage() {
 
   return (
     <div className="flex h-full">
-      {/* Small screens: Tab view */}
       <div className="w-full lg:hidden">
         <Tabs defaultValue="inbox" className="h-full w-full">
           <TabsList className="grid w-full grid-cols-2">
@@ -75,16 +73,13 @@ function InboxPage() {
         </Tabs>
       </div>
 
-      {/* Big screens: Two-column layout */}
       <div className="hidden h-full w-full lg:flex">
-        {/* Left side - Inbox */}
         <div className="flex-1 overflow-auto border-r">
           <div className="p-6">
             <InboxContent />
           </div>
         </div>
 
-        {/* Right side - Notifications */}
         <div className="flex h-full w-96 flex-col">
           <NotificationsPanel unreadCount={unreadCount} />
         </div>
@@ -193,7 +188,7 @@ function InboxContent() {
 function NotificationsPanel({ unreadCount }: { unreadCount: number }) {
   return (
     <>
-      <div className="flex-shrink-0 border-b p-4">
+      <div className="shrink-0 border-b p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Bell className="h-5 w-5" />
@@ -204,9 +199,6 @@ function NotificationsPanel({ unreadCount }: { unreadCount: number }) {
               </Badge>
             )}
           </div>
-          <Button variant="ghost" size="sm">
-            Mark all read
-          </Button>
         </div>
         <p className="text-muted-foreground mt-1 text-sm">
           Your in-app notifications

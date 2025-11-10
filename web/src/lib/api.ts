@@ -1,5 +1,7 @@
 import type { z } from "zod";
 
+import { isEmpty } from "./utils";
+
 import { config } from "@/config";
 import { getAccessToken } from "@/lib/auth/session";
 import { tokenRefreshService } from "@/lib/auth/token-refresh-service";
@@ -36,23 +38,27 @@ export * from "@/lib/client/client.gen";
 export * from "@/lib/client/sdk.gen";
 export * from "@/lib/client/types.gen";
 
+/**
+ * Normalizes form data by converting empty strings to undefined for optional fields.
+ * This ensures that empty optional fields are omitted from the request body rather than sent as null.
+ *
+ * @param schema - The Zod schema to check which fields are optional
+ * @param data - The data to normalize
+ * @returns The normalized data with empty strings converted to undefined for optional fields
+ */
 export function normalizeData<T extends Record<string, any>>(
   schema: z.ZodObject<any>,
   data: T
-): T {
+): Partial<T> {
   const normalizedData: Partial<T> = { ...data };
-
-  function isEmpty(value: any) {
-    return value === null || (value !== undefined && value.trim?.() === "");
-  }
 
   for (const [key, value] of Object.entries(data)) {
     if (schema.shape[key as keyof T]?.isOptional() && isEmpty(value)) {
-      normalizedData[key as keyof T] = null as T[keyof T];
+      delete normalizedData[key as keyof T];
     }
   }
 
-  return normalizedData as T;
+  return normalizedData;
 }
 
 /**

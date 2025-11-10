@@ -878,7 +878,12 @@ components:
           example: 9bsv0s46s6s002p9ltq0
         target:
           type: string
-          example: 9bsv0s46s6s002p9ltq0
+          description: Resource ID.
+          example: "9bsv0s46s6s002p9ltq0"
+        target_type:
+          type: string
+          description: Resource type of the target resource.
+          example: "Organization"
         created_at:
           type: string
           format: date-time
@@ -893,6 +898,7 @@ components:
         - kind
         - subject
         - target
+        - target_type
         - created_at
         - updated_at
     PermissionKind:
@@ -1407,6 +1413,25 @@ components:
             required:
               - password
               - token
+    OrganizationInvitationAccept:
+      description: "Organization invitation acceptance request."
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              token:
+                type: string
+                example: tDCVsHnzeOj278GIT85xU0s_
+                description: Invitation token from the invitation email
+              password:
+                type: string
+                format: password
+                maxLength: 64
+                minLength: 8
+                description: Password for the account (required if user is pending)
+            required:
+              - token
     TodoCreate:
       content:
         application/json:
@@ -1550,12 +1575,18 @@ components:
                 format: uri
                 example: "https://example.com/static/logo.png"
                 maxLength: 2000
+                nullable: true
+                x-go-type: "Optional[string]"
+                x-go-type-skip-optional-pointer: true
               website:
                 type: string
                 description: Work title of the user.
                 format: uri
                 example: "https://example.com"
                 maxLength: 2000
+                nullable: true
+                x-go-type: "Optional[string]"
+                x-go-type-skip-optional-pointer: true
               status:
                 $ref: "#/components/schemas/OrganizationStatus"
     PermissionCreate:
@@ -1642,6 +1673,24 @@ components:
                 maxLength: 500
                 description: Description of the role.
                 example: Users who can collaborate on the project.
+                nullable: true
+                x-go-type: "Optional[string]"
+                x-go-type-skip-optional-pointer: true
+    RolePermissionCreate:
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              target:
+                type: string
+                description: Resource ID string in the format "ResourceType:id" or "ResourceType:00000000000000000000" for system-level permissions.
+                example: "Organization:9bsv0s46s6s002p9ltq0"
+              kind:
+                $ref: "#/components/schemas/PermissionKind"
+            required:
+              - target
+              - kind
 paths:
   /v1/users:
     get:
@@ -2262,6 +2311,49 @@ paths:
                   example: 9bsv0s46s6s002p9ltq0
               required:
                 - user_id
+  "/v1/organizations/{id}/members/invite":
+    parameters:
+      - $ref: "#/components/parameters/id"
+    post:
+      summary: Invite member to organization
+      operationId: v1OrganizationMembersInvite
+      responses:
+        "201":
+          $ref: "#/components/responses/201"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+      description: Send an invitation email to a user to join the organization. If the user doesn't exist, a pending user will be created.
+      security:
+        - oauth2:
+            - organization
+      tags:
+        - Organization
+        - User
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                  description: Email address of the user to invite.
+                  example: user@example.com
+                role_id:
+                  type: string
+                  description: Optional role ID to assign the user to when they accept the invitation.
+                  example: 9bsv0s46s6s002p9ltq0
+              required:
+                - email
   "/v1/organizations/{id}/members/{user_id}":
     parameters:
       - $ref: "#/components/parameters/id"
@@ -2295,6 +2387,65 @@ paths:
       tags:
         - Organization
         - User
+  "/v1/organizations/{id}/members/{user_id}/invite":
+    parameters:
+      - $ref: "#/components/parameters/id"
+      - schema:
+          type: string
+          example: 9bsv0s46s6s002p9ltq0
+        name: user_id
+        in: path
+        required: true
+        description: ID of the user.
+    delete:
+      summary: Revoke invitation
+      operationId: v1OrganizationMemberInviteRevoke
+      responses:
+        "204":
+          description: No Content
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+      description: Revoke an invitation for a user to join the organization
+      security:
+        - oauth2:
+            - organization
+      tags:
+        - Organization
+        - User
+  "/v1/organizations/{id}/members/accept":
+    parameters:
+      - $ref: "#/components/parameters/id"
+    post:
+      summary: Accept organization invitation
+      operationId: v1OrganizationMembersAccept
+      responses:
+        "200":
+          description: OK
+        "204":
+          description: Invitation accepted successfully
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+      description: Accept an invitation to join an organization using an invitation token. If the user is pending, they will be activated.
+      security: []
+      tags:
+        - Organization
+        - User
+      requestBody:
+        $ref: "#/components/requestBodies/OrganizationInvitationAccept"
   "/v1/organizations/${id}/roles":
     parameters:
       - $ref: "#/components/parameters/id"
@@ -2572,6 +2723,120 @@ paths:
         - Organization
         - Role
         - User
+  "/v1/organizations/{id}/roles/{role_id}/permissions":
+    parameters:
+      - $ref: "#/components/parameters/id"
+      - schema:
+          type: string
+          example: 9bsv0s46s6s002p9ltq0
+        name: role_id
+        in: path
+        required: true
+        description: ID of the role.
+    get:
+      summary: Get organization role permissions
+      operationId: v1OrganizationRolePermissionsGet
+      tags:
+        - Organization
+        - Role
+        - Permission
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                uniqueItems: true
+                items:
+                  $ref: "#/components/schemas/Permission"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+      description: Return the permissions assigned to the organization's role.
+      security:
+        - oauth2:
+            - organization.read
+            - role.read
+            - permission.read
+    post:
+      summary: Add permission to organization role
+      operationId: v1OrganizationRolePermissionAdd
+      tags:
+        - Organization
+        - Role
+        - Permission
+      responses:
+        "201":
+          $ref: "#/components/responses/201"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+      description: Add a permission to an organization's role. Only organization-scoped resources (Organization, Namespace, Document, Project, Role) are allowed.
+      security:
+        - oauth2:
+            - organization
+            - role
+            - permission
+      requestBody:
+        $ref: "#/components/requestBodies/RolePermissionCreate"
+  "/v1/organizations/{id}/roles/{role_id}/permissions/{permission_id}":
+    parameters:
+      - $ref: "#/components/parameters/id"
+      - schema:
+          type: string
+          example: 9bsv0s46s6s002p9ltq0
+        name: role_id
+        in: path
+        required: true
+        description: ID of the role.
+      - schema:
+          type: string
+          example: 9bsv0s46s6s002p9ltq0
+        name: permission_id
+        in: path
+        required: true
+        description: ID of the permission.
+    delete:
+      summary: Remove permission from organization role
+      operationId: v1OrganizationRolePermissionRemove
+      tags:
+        - Organization
+        - Role
+        - Permission
+      responses:
+        "204":
+          description: No Content
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+      description: Removes a permission from the organization's role.
+      security:
+        - oauth2:
+            - organization
+            - role
+            - permission
   /v1/permissions:
     post:
       summary: Create permission

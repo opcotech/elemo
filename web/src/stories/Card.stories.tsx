@@ -181,11 +181,11 @@ export const UserProfile: Story = {
       <CardContent>
         <div className="space-y-2">
           <div className="text-muted-foreground flex items-center text-sm">
-            <MapPin className="mr-2 h-4 w-4" />
+            <MapPin className="size-4" />
             San Francisco, CA
           </div>
           <div className="text-muted-foreground flex items-center text-sm">
-            <Users className="mr-2 h-4 w-4" />
+            <Users className="size-4" />
             2.5k followers
           </div>
           <p className="text-sm">
@@ -278,15 +278,15 @@ export const InteractiveCard: Story = {
           </div>
           <ul className="space-y-2 text-sm">
             <li className="flex items-center">
-              <Star className="mr-2 h-4 w-4 text-yellow-500" />
+              <Star className="size-4 text-yellow-500" />
               Unlimited projects
             </li>
             <li className="flex items-center">
-              <Star className="mr-2 h-4 w-4 text-yellow-500" />
+              <Star className="size-4 text-yellow-500" />
               Priority support
             </li>
             <li className="flex items-center">
-              <Star className="mr-2 h-4 w-4 text-yellow-500" />
+              <Star className="size-4 text-yellow-500" />
               Advanced analytics
             </li>
           </ul>

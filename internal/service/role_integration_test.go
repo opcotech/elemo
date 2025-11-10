@@ -6,12 +6,15 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/suite"
+	"go.uber.org/mock/gomock"
 
+	"github.com/opcotech/elemo/internal/config"
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg"
 	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/service"
 	"github.com/opcotech/elemo/internal/testutil"
+	"github.com/opcotech/elemo/internal/testutil/mock"
 	testModel "github.com/opcotech/elemo/internal/testutil/model"
 	testRepo "github.com/opcotech/elemo/internal/testutil/repository"
 )
@@ -19,9 +22,11 @@ import (
 type RoleServiceIntegrationTestSuite struct {
 	testutil.ContainerIntegrationTestSuite
 	testutil.Neo4jContainerIntegrationTestSuite
+	testutil.PgContainerIntegrationTestSuite
 
 	roleService         service.RoleService
 	organizationService service.OrganizationService
+	emailService        service.EmailService
 
 	owner        *model.User
 	role         *model.Role
@@ -36,6 +41,7 @@ func (s *RoleServiceIntegrationTestSuite) SetupSuite() {
 	}
 	container := reflect.TypeOf(s).Elem().String()
 	s.SetupNeo4j(&s.ContainerIntegrationTestSuite, container)
+	s.SetupPg(&s.ContainerIntegrationTestSuite, container)
 
 	permissionService, err := service.NewPermissionService(s.PermissionRepo)
 	s.Require().NoError(err)
@@ -55,11 +61,25 @@ func (s *RoleServiceIntegrationTestSuite) SetupSuite() {
 	)
 	s.Require().NoError(err)
 
+	// Create a mock email sender for integration tests
+	ctrl := gomock.NewController(s.T())
+	emailSender := mock.NewEmailSender(ctrl)
+
+	// Create a real EmailService with mock sender
+	smtpConf := &config.SMTPConfig{
+		ClientURL:      "http://localhost:3000",
+		SupportAddress: "support@example.com",
+	}
+	s.emailService, err = service.NewEmailService(emailSender, "templates", smtpConf)
+	s.Require().NoError(err)
+
 	s.organizationService, err = service.NewOrganizationService(
 		service.WithUserRepository(s.UserRepo),
 		service.WithOrganizationRepository(s.OrganizationRepo),
 		service.WithPermissionService(permissionService),
 		service.WithLicenseService(licenseService),
+		service.WithUserTokenRepository(s.UserTokenRepository),
+		service.WithEmailService(s.emailService),
 	)
 	s.Require().NoError(err)
 }
@@ -79,6 +99,7 @@ func (s *RoleServiceIntegrationTestSuite) SetupTest() {
 
 func (s *RoleServiceIntegrationTestSuite) TearDownTest() {
 	defer s.CleanupNeo4j(&s.ContainerIntegrationTestSuite)
+	defer s.CleanupPg(&s.ContainerIntegrationTestSuite)
 }
 
 func (s *RoleServiceIntegrationTestSuite) TearDownSuite() {
@@ -218,6 +239,117 @@ func (s *RoleServiceIntegrationTestSuite) TestDelete() {
 
 	_, err = s.roleService.Get(s.ctx, s.role.ID, s.organization.ID)
 	s.Assert().ErrorIs(err, repository.ErrNotFound)
+}
+
+func (s *RoleServiceIntegrationTestSuite) TestAddPermission() {
+	s.Require().NoError(s.roleService.Create(s.ctx, s.owner.ID, s.organization.ID, s.role))
+
+	// Create a document to use as target
+	document := testModel.NewDocument(s.owner.ID)
+	s.Require().NoError(s.DocumentRepo.Create(context.Background(), s.organization.ID, document))
+
+	// Add permission to role
+	err := s.roleService.AddPermission(s.ctx, s.role.ID, s.organization.ID, document.ID, model.PermissionKindRead)
+	s.Require().NoError(err)
+
+	// Verify permission was added
+	permissions, err := s.roleService.GetPermissions(s.ctx, s.role.ID, s.organization.ID)
+	s.Require().NoError(err)
+	s.Assert().Len(permissions, 1)
+	s.Assert().Equal(s.role.ID, permissions[0].Subject)
+	s.Assert().Equal(document.ID, permissions[0].Target)
+	s.Assert().Equal(model.PermissionKindRead, permissions[0].Kind)
+}
+
+func (s *RoleServiceIntegrationTestSuite) TestAddPermissionMultipleKinds() {
+	s.Require().NoError(s.roleService.Create(s.ctx, s.owner.ID, s.organization.ID, s.role))
+
+	// Create a document to use as target
+	document := testModel.NewDocument(s.owner.ID)
+	s.Require().NoError(s.DocumentRepo.Create(context.Background(), s.organization.ID, document))
+
+	// Add multiple permissions with different kinds
+	err := s.roleService.AddPermission(s.ctx, s.role.ID, s.organization.ID, document.ID, model.PermissionKindRead)
+	s.Require().NoError(err)
+
+	err = s.roleService.AddPermission(s.ctx, s.role.ID, s.organization.ID, document.ID, model.PermissionKindWrite)
+	s.Require().NoError(err)
+
+	err = s.roleService.AddPermission(s.ctx, s.role.ID, s.organization.ID, document.ID, model.PermissionKindDelete)
+	s.Require().NoError(err)
+
+	// Verify all permissions were added
+	permissions, err := s.roleService.GetPermissions(s.ctx, s.role.ID, s.organization.ID)
+	s.Require().NoError(err)
+	s.Assert().Len(permissions, 3)
+
+	kinds := make([]model.PermissionKind, len(permissions))
+	for i, p := range permissions {
+		kinds[i] = p.Kind
+	}
+	s.Assert().Contains(kinds, model.PermissionKindRead)
+	s.Assert().Contains(kinds, model.PermissionKindWrite)
+	s.Assert().Contains(kinds, model.PermissionKindDelete)
+}
+
+func (s *RoleServiceIntegrationTestSuite) TestRemovePermission() {
+	s.Require().NoError(s.roleService.Create(s.ctx, s.owner.ID, s.organization.ID, s.role))
+
+	// Create a document to use as target
+	document := testModel.NewDocument(s.owner.ID)
+	s.Require().NoError(s.DocumentRepo.Create(context.Background(), s.organization.ID, document))
+
+	// Add permission to role
+	err := s.roleService.AddPermission(s.ctx, s.role.ID, s.organization.ID, document.ID, model.PermissionKindRead)
+	s.Require().NoError(err)
+
+	// Get the permission ID
+	permissions, err := s.roleService.GetPermissions(s.ctx, s.role.ID, s.organization.ID)
+	s.Require().NoError(err)
+	s.Assert().Len(permissions, 1)
+	permissionID := permissions[0].ID
+
+	// Remove permission
+	err = s.roleService.RemovePermission(s.ctx, s.role.ID, s.organization.ID, permissionID)
+	s.Require().NoError(err)
+
+	// Verify permission was removed
+	permissions, err = s.roleService.GetPermissions(s.ctx, s.role.ID, s.organization.ID)
+	s.Require().NoError(err)
+	s.Assert().Len(permissions, 0)
+}
+
+func (s *RoleServiceIntegrationTestSuite) TestGetPermissions() {
+	s.Require().NoError(s.roleService.Create(s.ctx, s.owner.ID, s.organization.ID, s.role))
+
+	// Initially no permissions
+	permissions, err := s.roleService.GetPermissions(s.ctx, s.role.ID, s.organization.ID)
+	s.Require().NoError(err)
+	s.Assert().Len(permissions, 0)
+
+	// Create multiple documents
+	doc1 := testModel.NewDocument(s.owner.ID)
+	s.Require().NoError(s.DocumentRepo.Create(context.Background(), s.organization.ID, doc1))
+	doc2 := testModel.NewDocument(s.owner.ID)
+	s.Require().NoError(s.DocumentRepo.Create(context.Background(), s.organization.ID, doc2))
+
+	// Add permissions on different targets
+	err = s.roleService.AddPermission(s.ctx, s.role.ID, s.organization.ID, doc1.ID, model.PermissionKindRead)
+	s.Require().NoError(err)
+
+	err = s.roleService.AddPermission(s.ctx, s.role.ID, s.organization.ID, doc2.ID, model.PermissionKindWrite)
+	s.Require().NoError(err)
+
+	// Verify all permissions are returned
+	permissions, err = s.roleService.GetPermissions(s.ctx, s.role.ID, s.organization.ID)
+	s.Require().NoError(err)
+	s.Assert().Len(permissions, 2)
+
+	// Verify permissions have correct subjects and targets
+	for _, p := range permissions {
+		s.Assert().Equal(s.role.ID, p.Subject)
+		s.Assert().True(p.Target == doc1.ID || p.Target == doc2.ID)
+	}
 }
 
 func TestRoleServiceIntegrationTestSuite(t *testing.T) {

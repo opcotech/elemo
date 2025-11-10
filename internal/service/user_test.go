@@ -11,6 +11,7 @@ import (
 	"github.com/opcotech/elemo/internal/pkg"
 	"github.com/opcotech/elemo/internal/pkg/log"
 	"github.com/opcotech/elemo/internal/pkg/password"
+	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/testutil/mock"
 	testModel "github.com/opcotech/elemo/internal/testutil/model"
 	"github.com/stretchr/testify/assert"
@@ -848,12 +849,15 @@ func TestUserService_Update(t *testing.T) {
 		{
 			name: "update user with empty patch",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ map[string]any, _ *model.User) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, _ *model.User) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mock.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.userService/Update", gomock.Len(0)).Return(ctx, span)
+
+					userRepo := mock.NewUserRepository(ctrl)
+					userRepo.EXPECT().Update(ctx, id, patch).Return(nil, repository.ErrNotFound)
 
 					licenseSvc := mock.NewMockLicenseService(ctrl)
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
@@ -861,7 +865,7 @@ func TestUserService_Update(t *testing.T) {
 					return &baseService{
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
-						userRepo:          mock.NewUserRepository(ctrl),
+						userRepo:          userRepo,
 						permissionService: mock.NewPermissionService(ctrl),
 						licenseService:    licenseSvc,
 					}

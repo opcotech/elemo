@@ -6,8 +6,6 @@ import { dirname, join } from "node:path";
 const execAsync = promisify(exec);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-
-// Generate a new XID using the xid-generator tool.
 export async function generateXid(): Promise<string> {
   const generator = join(__dirname, "../../../../tools/xid-generator/main.go");
   const { stdout } = await execAsync(`go run ${generator}`);

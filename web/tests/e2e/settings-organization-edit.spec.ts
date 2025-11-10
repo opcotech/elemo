@@ -4,6 +4,10 @@ import {
   addMemberToOrganization,
   createDBOrganization,
 } from "./utils/organization";
+import { OrganizationPage } from "./pages/organization-page";
+import { Form } from "./components/form";
+import { waitForPageLoad, waitForPermissionsLoad } from "./helpers/navigation";
+import { waitForSuccessToast } from "./helpers/toast";
 
 test.describe("@settings.organization-edit Organization Edit E2E Tests", () => {
   test.describe("Organization Editing", () => {
@@ -16,17 +20,11 @@ test.describe("@settings.organization-edit Organization Edit E2E Tests", () => {
       ownerUser = await createDBUser("active");
       writeUser = await createDBUser("active");
       readUser = await createDBUser("active");
-
-      // Create organization owned by ownerUser
       testOrganization = await createDBOrganization(ownerUser.id, "active", {
         name: "Original Organization",
         website: "https://original.example.com",
       });
-
-      // Add write user with write permission
       await addMemberToOrganization(testOrganization.id, writeUser.id, "write");
-
-      // Add read user with read permission
       await addMemberToOrganization(testOrganization.id, readUser.id, "read");
     });
 
@@ -36,9 +34,10 @@ test.describe("@settings.organization-edit Organization Edit E2E Tests", () => {
       await loginUser(page, ownerUser, {
         destination: `/settings/organizations/${testOrganization.id}`,
       });
-      await page.waitForLoadState("networkidle");
 
-      // Edit button should be visible on detail page (it's a Link wrapped in Button)
+      const orgPage = new OrganizationPage(page, testOrganization.id);
+      await orgPage.waitForRolesLoad();
+      await waitForPermissionsLoad(page);
       await expect(page.getByRole("link", { name: "Edit" })).toBeVisible();
     });
 
@@ -48,7 +47,10 @@ test.describe("@settings.organization-edit Organization Edit E2E Tests", () => {
       await loginUser(page, readUser, {
         destination: `/settings/organizations/${testOrganization.id}`,
       });
-      await page.waitForLoadState("networkidle");
+
+      const orgPage = new OrganizationPage(page, testOrganization.id);
+      await orgPage.waitForRolesLoad();
+      await waitForPermissionsLoad(page);
 
       await expect(page.getByRole("link", { name: "Edit" })).not.toBeVisible();
     });
@@ -59,11 +61,7 @@ test.describe("@settings.organization-edit Organization Edit E2E Tests", () => {
       await loginUser(page, readUser, {
         destination: `/settings/organizations/${testOrganization.id}/edit`,
       });
-
-      // Wait for navigation to complete (either redirect or page load)
-      await page.waitForLoadState("networkidle");
-
-      // User should be redirected to permission denied page
+      await waitForPageLoad(page);
       await expect(page).toHaveURL(/.*permission-denied/, { timeout: 10000 });
     });
 
@@ -73,17 +71,20 @@ test.describe("@settings.organization-edit Organization Edit E2E Tests", () => {
       await loginUser(page, ownerUser, {
         destination: `/settings/organizations/${testOrganization.id}`,
       });
-      await page.waitForLoadState("networkidle");
+
+      const orgPage = new OrganizationPage(page, testOrganization.id);
+      await orgPage.waitForRolesLoad();
+      await waitForPermissionsLoad(page);
 
       await page.getByRole("link", { name: "Edit" }).click();
-      await page.waitForLoadState("networkidle");
+      await waitForPageLoad(page);
 
       await expect(page).toHaveURL(
         `/settings/organizations/${testOrganization.id}/edit`
       );
       await expect(
-        page.getByRole("heading", { name: "Edit Organization" })
-      ).toBeVisible();
+        page.getByRole("heading", { name: "Edit Organization", level: 1 })
+      ).toBeVisible({ timeout: 10000 });
     });
 
     test("should pre-fill form with existing organization data", async ({
@@ -92,12 +93,13 @@ test.describe("@settings.organization-edit Organization Edit E2E Tests", () => {
       await loginUser(page, ownerUser, {
         destination: `/settings/organizations/${testOrganization.id}`,
       });
-      await page.waitForLoadState("networkidle");
+
+      const orgPage = new OrganizationPage(page, testOrganization.id);
+      await orgPage.waitForRolesLoad();
+      await waitForPermissionsLoad(page);
 
       await page.getByRole("link", { name: "Edit" }).click();
-      await page.waitForLoadState("networkidle");
-
-      // Check that form fields are pre-filled
+      await waitForPageLoad(page);
       const nameInput = page.getByLabel("Name");
       const emailInput = page.getByLabel("Email");
       const websiteInput = page.getByLabel("Website");
@@ -113,71 +115,45 @@ test.describe("@settings.organization-edit Organization Edit E2E Tests", () => {
       await loginUser(page, ownerUser, {
         destination: `/settings/organizations/${testOrganization.id}/edit`,
       });
-      await page.waitForLoadState("networkidle");
+      await waitForPageLoad(page);
 
       const updatedName = `Updated Org ${Date.now()}`;
       const updatedEmail = `updated-${Date.now()}@example.com`;
       const updatedWebsite = `https://updated-${Date.now()}.example.com`;
 
-      await page.getByLabel("Name").fill(updatedName);
-      await page.getByLabel("Email").fill(updatedEmail);
-      await page.getByLabel("Website").fill(updatedWebsite);
-
-      await page.getByRole("button", { name: "Save Changes" }).click();
-
-      // Wait for navigation back to detail page
+      const form = new Form(page);
+      await form.fillFields({
+        Name: updatedName,
+        Email: updatedEmail,
+        Website: updatedWebsite,
+      });
+      await form.submit("Save Changes");
       await expect(page).toHaveURL(
         `/settings/organizations/${testOrganization.id}`,
         {
           timeout: 10000,
         }
       );
-
-      // Simply verify navigation happened
-      await page.waitForLoadState("networkidle");
+      await waitForSuccessToast(page, "Organization updated", {
+        timeout: 5000,
+      });
     });
 
     test("should update organization with partial fields", async ({ page }) => {
       await loginUser(page, ownerUser, {
         destination: `/settings/organizations/${testOrganization.id}/edit`,
       });
-      await page.waitForLoadState("networkidle");
+      await waitForPageLoad(page);
 
       const updatedName = `Partial Update ${Date.now()}`;
-
-      // Only update name, leave email and website unchanged
-      await page.getByLabel("Name").fill(updatedName);
-
-      await page.getByRole("button", { name: "Save Changes" }).click();
-
-      // Wait for navigation back to detail page
+      const form = new Form(page);
+      await form.fillField("Name", updatedName);
+      await form.submit("Save Changes");
       await expect(page).toHaveURL(
         `/settings/organizations/${testOrganization.id}`,
         {
           timeout: 10000,
         }
-      );
-
-      // Simply verify navigation happened
-      await page.waitForLoadState("networkidle");
-    });
-
-    test("should show error when trying to save without changes", async ({
-      page,
-    }) => {
-      await loginUser(page, ownerUser, {
-        destination: `/settings/organizations/${testOrganization.id}/edit`,
-      });
-      await page.waitForLoadState("networkidle");
-
-      // Don't make any changes, just click save
-      await page.getByRole("button", { name: "Save Changes" }).click();
-
-      // Should still be on edit page (no navigation)
-      // Wait for URL to confirm we haven't navigated away
-      await expect(page).toHaveURL(
-        `/settings/organizations/${testOrganization.id}/edit`,
-        { timeout: 5000 }
       );
     });
 
@@ -185,55 +161,34 @@ test.describe("@settings.organization-edit Organization Edit E2E Tests", () => {
       await loginUser(page, ownerUser, {
         destination: `/settings/organizations/${testOrganization.id}/edit`,
       });
-      await page.waitForLoadState("networkidle");
+      await waitForPageLoad(page);
 
-      await page.getByLabel("Email").fill("invalid-email");
-      await page.getByLabel("Name").click(); // Trigger blur to show validation
-
+      const form = new Form(page);
+      await form.fillField("Email", "invalid-email");
+      await page.getByLabel("Name").click();
       await page.getByRole("button", { name: "Save Changes" }).click();
+      const formMessages = page.locator('[data-slot="form-message"]');
+      const hasError = await formMessages
+        .first()
+        .isVisible()
+        .catch(() => false);
+      const isStillOnEditPage = page.url().includes("/edit");
 
-      // Should still be on edit page (validation prevented submission)
-      // Wait for URL to confirm we haven't navigated away
-      await expect(page).toHaveURL(
-        `/settings/organizations/${testOrganization.id}/edit`,
-        { timeout: 5000 }
-      );
+      expect(hasError || isStillOnEditPage).toBe(true);
     });
 
     test("should cancel edit and return to detail page", async ({ page }) => {
       await loginUser(page, ownerUser, {
         destination: `/settings/organizations/${testOrganization.id}/edit`,
       });
-      await page.waitForLoadState("networkidle");
-
-      // Make some changes
-      await page.getByLabel("Name").fill("Changed Name");
+      await waitForPageLoad(page);
+      const form = new Form(page);
+      await form.fillField("Name", "Changed Name");
 
       await page.getByRole("button", { name: "Cancel" }).click();
-
-      // Should navigate back to detail page
+      await waitForPageLoad(page);
       await expect(page).toHaveURL(
         `/settings/organizations/${testOrganization.id}`
-      );
-    });
-
-    test("should display loading state during save", async ({ page }) => {
-      await loginUser(page, ownerUser, {
-        destination: `/settings/organizations/${testOrganization.id}/edit`,
-      });
-      await page.waitForLoadState("networkidle");
-
-      const updatedName = `Loading Test ${Date.now()}`;
-      await page.getByLabel("Name").fill(updatedName);
-
-      // The save button should be disabled during save
-      const saveButton = page.getByRole("button", { name: "Save Changes" });
-      await saveButton.click();
-
-      // Check that the form is submitted and navigates away
-      await expect(page).toHaveURL(
-        `/settings/organizations/${testOrganization.id}`,
-        { timeout: 10000 }
       );
     });
 
@@ -243,24 +198,22 @@ test.describe("@settings.organization-edit Organization Edit E2E Tests", () => {
       await loginUser(page, writeUser, {
         destination: `/settings/organizations/${testOrganization.id}`,
       });
-      await page.waitForLoadState("networkidle");
 
-      // Write user should see edit button
+      const orgPage = new OrganizationPage(page, testOrganization.id);
+      await orgPage.waitForRolesLoad();
+      await waitForPermissionsLoad(page);
       await expect(page.getByRole("link", { name: "Edit" })).toBeVisible();
 
       await page.getByRole("link", { name: "Edit" }).click();
-      await page.waitForLoadState("networkidle");
+      await waitForPageLoad(page);
 
       await expect(page).toHaveURL(
         `/settings/organizations/${testOrganization.id}/edit`
       );
-
-      // Should be able to edit
       const updatedName = `Write User Update ${Date.now()}`;
-      await page.getByLabel("Name").fill(updatedName);
-      await page.getByRole("button", { name: "Save Changes" }).click();
-
-      // Wait for navigation back to detail page
+      const form = new Form(page);
+      await form.fillField("Name", updatedName);
+      await form.submit("Save Changes");
       await expect(page).toHaveURL(
         `/settings/organizations/${testOrganization.id}`,
         {

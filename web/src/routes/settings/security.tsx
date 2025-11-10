@@ -130,6 +130,7 @@ function SecuritySettings() {
                   <Lock className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
                   <Input
                     id="currentPassword"
+                    aria-label="Current Password"
                     type={showCurrentPassword ? "text" : "password"}
                     placeholder="Enter your current password"
                     className="pr-10 pl-10"
@@ -167,6 +168,7 @@ function SecuritySettings() {
                   <Lock className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
                   <Input
                     id="newPassword"
+                    aria-label="New Password"
                     type={showNewPassword ? "text" : "password"}
                     placeholder="Enter your new password"
                     className="pr-10 pl-10"
@@ -204,6 +206,7 @@ function SecuritySettings() {
                   <Lock className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
                   <Input
                     id="confirmPassword"
+                    aria-label="Confirm New Password"
                     type={showConfirmPassword ? "text" : "password"}
                     placeholder="Confirm your new password"
                     className="pr-10 pl-10"

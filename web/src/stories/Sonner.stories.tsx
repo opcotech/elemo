@@ -187,7 +187,7 @@ export const CustomStyling: Story = {
             })
           }
         >
-          <Mail className="mr-2 h-4 w-4" />
+          <Mail className="size-4" />
           Message
         </Button>
         <Button
@@ -199,7 +199,7 @@ export const CustomStyling: Story = {
             })
           }
         >
-          <Download className="mr-2 h-4 w-4" />
+          <Download className="size-4" />
           Download
         </Button>
         <Button
@@ -211,7 +211,7 @@ export const CustomStyling: Story = {
             })
           }
         >
-          <Upload className="mr-2 h-4 w-4" />
+          <Upload className="size-4" />
           Upload
         </Button>
         <Button
@@ -227,7 +227,7 @@ export const CustomStyling: Story = {
             })
           }
         >
-          <Trash2 className="mr-2 h-4 w-4" />
+          <Trash2 className="size-4" />
           Delete
         </Button>
       </div>
@@ -480,7 +480,7 @@ export const ApplicationNotifications: Story = {
             })
           }
         >
-          <Bell className="mr-2 h-4 w-4" />
+          <Bell className="size-4" />
           Notification
         </Button>
         <Button
@@ -492,7 +492,7 @@ export const ApplicationNotifications: Story = {
             })
           }
         >
-          <User className="mr-2 h-4 w-4" />
+          <User className="size-4" />
           Profile
         </Button>
         <Button
@@ -508,7 +508,7 @@ export const ApplicationNotifications: Story = {
             })
           }
         >
-          <Calendar className="mr-2 h-4 w-4" />
+          <Calendar className="size-4" />
           Reminder
         </Button>
         <Button
@@ -520,7 +520,7 @@ export const ApplicationNotifications: Story = {
             })
           }
         >
-          <Settings className="mr-2 h-4 w-4" />
+          <Settings className="size-4" />
           Settings
         </Button>
       </div>
@@ -546,7 +546,7 @@ export const SocialInteractions: Story = {
             })
           }
         >
-          <Heart className="mr-2 h-4 w-4" />
+          <Heart className="size-4" />
           Like
         </Button>
         <Button
@@ -558,7 +558,7 @@ export const SocialInteractions: Story = {
             })
           }
         >
-          <Share className="mr-2 h-4 w-4" />
+          <Share className="size-4" />
           Share
         </Button>
         <Button
@@ -574,7 +574,7 @@ export const SocialInteractions: Story = {
             })
           }
         >
-          <Star className="mr-2 h-4 w-4" />
+          <Star className="size-4" />
           Favorite
         </Button>
       </div>

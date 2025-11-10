@@ -92,16 +92,16 @@ export const Default: Story = {
       </DropdownMenuTrigger>
       <DropdownMenuContent>
         <DropdownMenuItem>
-          <User className="mr-2 h-4 w-4" />
+          <User className="size-4" />
           Profile
         </DropdownMenuItem>
         <DropdownMenuItem>
-          <Settings className="mr-2 h-4 w-4" />
+          <Settings className="size-4" />
           Settings
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem>
-          <LogOut className="mr-2 h-4 w-4" />
+          <LogOut className="size-4" />
           Logout
         </DropdownMenuItem>
       </DropdownMenuContent>
@@ -120,29 +120,29 @@ export const ActionMenu: Story = {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuItem>
-          <Eye className="mr-2 h-4 w-4" />
+          <Eye className="size-4" />
           View
         </DropdownMenuItem>
         <DropdownMenuItem>
-          <Edit className="mr-2 h-4 w-4" />
+          <Edit className="size-4" />
           Edit
         </DropdownMenuItem>
         <DropdownMenuItem>
-          <Copy className="mr-2 h-4 w-4" />
+          <Copy className="size-4" />
           Duplicate
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem>
-          <Share className="mr-2 h-4 w-4" />
+          <Share className="size-4" />
           Share
         </DropdownMenuItem>
         <DropdownMenuItem>
-          <Download className="mr-2 h-4 w-4" />
+          <Download className="size-4" />
           Download
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem variant="destructive">
-          <Trash2 className="mr-2 h-4 w-4" />
+          <Trash2 className="size-4" />
           Delete
         </DropdownMenuItem>
       </DropdownMenuContent>
@@ -182,22 +182,22 @@ export const UserProfileMenu: Story = {
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
           <DropdownMenuItem>
-            <User className="mr-2 h-4 w-4" />
+            <User className="size-4" />
             Profile
             <DropdownMenuShortcut>⇧⌘P</DropdownMenuShortcut>
           </DropdownMenuItem>
           <DropdownMenuItem>
-            <CreditCard className="mr-2 h-4 w-4" />
+            <CreditCard className="size-4" />
             Billing
             <DropdownMenuShortcut>⌘B</DropdownMenuShortcut>
           </DropdownMenuItem>
           <DropdownMenuItem>
-            <Settings className="mr-2 h-4 w-4" />
+            <Settings className="size-4" />
             Settings
             <DropdownMenuShortcut>⌘S</DropdownMenuShortcut>
           </DropdownMenuItem>
           <DropdownMenuItem>
-            <Keyboard className="mr-2 h-4 w-4" />
+            <Keyboard className="size-4" />
             Keyboard shortcuts
             <DropdownMenuShortcut>⌘K</DropdownMenuShortcut>
           </DropdownMenuItem>
@@ -205,48 +205,48 @@ export const UserProfileMenu: Story = {
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
           <DropdownMenuItem>
-            <Users className="mr-2 h-4 w-4" />
+            <Users className="size-4" />
             Team
           </DropdownMenuItem>
           <DropdownMenuSub>
             <DropdownMenuSubTrigger>
-              <Plus className="mr-2 h-4 w-4" />
+              <Plus className="size-4" />
               Invite users
             </DropdownMenuSubTrigger>
             <DropdownMenuSubContent>
               <DropdownMenuItem>
-                <Mail className="mr-2 h-4 w-4" />
+                <Mail className="size-4" />
                 Email
               </DropdownMenuItem>
               <DropdownMenuItem>
-                <MessageSquare className="mr-2 h-4 w-4" />
+                <MessageSquare className="size-4" />
                 Message
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem>
-                <Plus className="mr-2 h-4 w-4" />
+                <Plus className="size-4" />
                 More...
               </DropdownMenuItem>
             </DropdownMenuSubContent>
           </DropdownMenuSub>
           <DropdownMenuItem>
-            <Plus className="mr-2 h-4 w-4" />
+            <Plus className="size-4" />
             New Team
             <DropdownMenuShortcut>⌘+T</DropdownMenuShortcut>
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem>
-          <HelpCircle className="mr-2 h-4 w-4" />
+          <HelpCircle className="size-4" />
           Support
         </DropdownMenuItem>
         <DropdownMenuItem disabled>
-          <Bell className="mr-2 h-4 w-4" />
+          <Bell className="size-4" />
           API
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem>
-          <LogOut className="mr-2 h-4 w-4" />
+          <LogOut className="size-4" />
           Log out
           <DropdownMenuShortcut>⇧⌘Q</DropdownMenuShortcut>
         </DropdownMenuItem>
@@ -354,7 +354,7 @@ export const NavigationMenu: Story = {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost">
-          <Home className="mr-2 h-4 w-4" />
+          <Home className="size-4" />
           Dashboard
           <ChevronDown className="ml-2 h-4 w-4" />
         </Button>
@@ -364,15 +364,15 @@ export const NavigationMenu: Story = {
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
           <DropdownMenuItem>
-            <Home className="mr-2 h-4 w-4" />
+            <Home className="size-4" />
             Home
           </DropdownMenuItem>
           <DropdownMenuItem>
-            <User className="mr-2 h-4 w-4" />
+            <User className="size-4" />
             Profile
           </DropdownMenuItem>
           <DropdownMenuItem>
-            <FileText className="mr-2 h-4 w-4" />
+            <FileText className="size-4" />
             Documents
             <Badge variant="secondary" className="ml-auto">
               3
@@ -382,17 +382,17 @@ export const NavigationMenu: Story = {
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
           <DropdownMenuItem>
-            <BookOpen className="mr-2 h-4 w-4" />
+            <BookOpen className="size-4" />
             Projects
           </DropdownMenuItem>
           <DropdownMenuItem>
-            <Users className="mr-2 h-4 w-4" />
+            <Users className="size-4" />
             Team
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem>
-          <Settings className="mr-2 h-4 w-4" />
+          <Settings className="size-4" />
           Settings
         </DropdownMenuItem>
       </DropdownMenuContent>
@@ -418,39 +418,39 @@ export const ContextMenu: Story = {
         </DropdownMenuTrigger>
         <DropdownMenuContent>
           <DropdownMenuItem>
-            <Copy className="mr-2 h-4 w-4" />
+            <Copy className="size-4" />
             Copy
             <DropdownMenuShortcut>⌘C</DropdownMenuShortcut>
           </DropdownMenuItem>
           <DropdownMenuItem>
-            <Edit className="mr-2 h-4 w-4" />
+            <Edit className="size-4" />
             Edit
             <DropdownMenuShortcut>⌘E</DropdownMenuShortcut>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuSub>
             <DropdownMenuSubTrigger>
-              <Share className="mr-2 h-4 w-4" />
+              <Share className="size-4" />
               Share
             </DropdownMenuSubTrigger>
             <DropdownMenuSubContent>
               <DropdownMenuItem>
-                <Mail className="mr-2 h-4 w-4" />
+                <Mail className="size-4" />
                 Email
               </DropdownMenuItem>
               <DropdownMenuItem>
-                <ExternalLink className="mr-2 h-4 w-4" />
+                <ExternalLink className="size-4" />
                 Copy Link
               </DropdownMenuItem>
               <DropdownMenuItem>
-                <MessageSquare className="mr-2 h-4 w-4" />
+                <MessageSquare className="size-4" />
                 Social Media
               </DropdownMenuItem>
             </DropdownMenuSubContent>
           </DropdownMenuSub>
           <DropdownMenuSeparator />
           <DropdownMenuItem variant="destructive">
-            <Trash2 className="mr-2 h-4 w-4" />
+            <Trash2 className="size-4" />
             Delete
             <DropdownMenuShortcut>⌫</DropdownMenuShortcut>
           </DropdownMenuItem>
@@ -476,19 +476,19 @@ export const FileMenu: Story = {
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56">
         <DropdownMenuItem>
-          <Plus className="mr-2 h-4 w-4" />
+          <Plus className="size-4" />
           New File
           <DropdownMenuShortcut>⌘N</DropdownMenuShortcut>
         </DropdownMenuItem>
         <DropdownMenuItem>
-          <FileText className="mr-2 h-4 w-4" />
+          <FileText className="size-4" />
           Open File
           <DropdownMenuShortcut>⌘O</DropdownMenuShortcut>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuSub>
           <DropdownMenuSubTrigger>
-            <FileText className="mr-2 h-4 w-4" />
+            <FileText className="size-4" />
             Open Recent
           </DropdownMenuSubTrigger>
           <DropdownMenuSubContent>
@@ -510,7 +510,7 @@ export const FileMenu: Story = {
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem>
-          <Download className="mr-2 h-4 w-4" />
+          <Download className="size-4" />
           Export
         </DropdownMenuItem>
         <DropdownMenuItem>
@@ -585,7 +585,7 @@ export const SettingsMenu: Story = {
 
           <DropdownMenuSub>
             <DropdownMenuSubTrigger>
-              <Palette className="mr-2 h-4 w-4" />
+              <Palette className="size-4" />
               Color Theme
             </DropdownMenuSubTrigger>
             <DropdownMenuSubContent>
@@ -613,7 +613,7 @@ export const SettingsMenu: Story = {
           <DropdownMenuSeparator />
 
           <DropdownMenuItem>
-            <HelpCircle className="mr-2 h-4 w-4" />
+            <HelpCircle className="size-4" />
             Help & Support
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -636,7 +636,7 @@ export const FavoritesMenu: Story = {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="outline">
-          <Star className="mr-2 h-4 w-4" />
+          <Star className="size-4" />
           Favorites
         </Button>
       </DropdownMenuTrigger>
@@ -686,7 +686,7 @@ export const FavoritesMenu: Story = {
         <DropdownMenuSeparator />
 
         <DropdownMenuItem>
-          <Search className="mr-2 h-4 w-4" />
+          <Search className="size-4" />
           Search Favorites
           <DropdownMenuShortcut>⌘F</DropdownMenuShortcut>
         </DropdownMenuItem>

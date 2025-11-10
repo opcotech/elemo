@@ -202,15 +202,15 @@ export const NavigationMenu: Story = {
             <h4 className="text-sm font-medium">Main</h4>
             <div className="space-y-1">
               <Button variant="ghost" className="w-full justify-start">
-                <User className="mr-2 h-4 w-4" />
+                <User className="size-4" />
                 Profile
               </Button>
               <Button variant="ghost" className="w-full justify-start">
-                <Settings className="mr-2 h-4 w-4" />
+                <Settings className="size-4" />
                 Settings
               </Button>
               <Button variant="ghost" className="w-full justify-start">
-                <Bell className="mr-2 h-4 w-4" />
+                <Bell className="size-4" />
                 Notifications
               </Button>
             </div>
@@ -222,11 +222,11 @@ export const NavigationMenu: Story = {
             <h4 className="text-sm font-medium">Tools</h4>
             <div className="space-y-1">
               <Button variant="ghost" className="w-full justify-start">
-                <Search className="mr-2 h-4 w-4" />
+                <Search className="size-4" />
                 Search
               </Button>
               <Button variant="ghost" className="w-full justify-start">
-                <Filter className="mr-2 h-4 w-4" />
+                <Filter className="size-4" />
                 Filters
               </Button>
             </div>
@@ -238,14 +238,14 @@ export const NavigationMenu: Story = {
             <h4 className="text-sm font-medium">Account</h4>
             <div className="space-y-1">
               <Button variant="ghost" className="w-full justify-start">
-                <Edit className="mr-2 h-4 w-4" />
+                <Edit className="size-4" />
                 Edit Profile
               </Button>
               <Button
                 variant="ghost"
                 className="w-full justify-start text-red-600"
               >
-                <Trash2 className="mr-2 h-4 w-4" />
+                <Trash2 className="size-4" />
                 Delete Account
               </Button>
             </div>
@@ -262,7 +262,7 @@ export const AddItemForm: Story = {
     <Sheet>
       <SheetTrigger asChild>
         <Button>
-          <Plus className="mr-2 h-4 w-4" />
+          <Plus className="size-4" />
           Add Item
         </Button>
       </SheetTrigger>
@@ -364,15 +364,15 @@ export const UserProfile: Story = {
               <Label className="text-sm font-medium">Contact Information</Label>
               <div className="space-y-2">
                 <div className="flex items-center text-sm">
-                  <Mail className="mr-2 h-4 w-4" />
+                  <Mail className="size-4" />
                   john.doe@example.com
                 </div>
                 <div className="flex items-center text-sm">
-                  <Phone className="mr-2 h-4 w-4" />
+                  <Phone className="size-4" />
                   +1 (555) 123-4567
                 </div>
                 <div className="flex items-center text-sm">
-                  <MapPin className="mr-2 h-4 w-4" />
+                  <MapPin className="size-4" />
                   San Francisco, CA
                 </div>
               </div>
@@ -408,15 +408,15 @@ export const UserProfile: Story = {
               <Label className="text-sm font-medium">Quick Actions</Label>
               <div className="grid gap-2">
                 <Button variant="outline" className="justify-start">
-                  <Edit className="mr-2 h-4 w-4" />
+                  <Edit className="size-4" />
                   Edit Profile
                 </Button>
                 <Button variant="outline" className="justify-start">
-                  <Settings className="mr-2 h-4 w-4" />
+                  <Settings className="size-4" />
                   Account Settings
                 </Button>
                 <Button variant="outline" className="justify-start">
-                  <Share className="mr-2 h-4 w-4" />
+                  <Share className="size-4" />
                   Share Profile
                 </Button>
               </div>
@@ -434,7 +434,7 @@ export const FilterPanel: Story = {
     <Sheet>
       <SheetTrigger asChild>
         <Button variant="outline">
-          <Filter className="mr-2 h-4 w-4" />
+          <Filter className="size-4" />
           Filters
         </Button>
       </SheetTrigger>
@@ -592,7 +592,7 @@ export const FileUploadSheet: Story = {
     <Sheet>
       <SheetTrigger asChild>
         <Button>
-          <Upload className="mr-2 h-4 w-4" />
+          <Upload className="size-4" />
           Upload Files
         </Button>
       </SheetTrigger>

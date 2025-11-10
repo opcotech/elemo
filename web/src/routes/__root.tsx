@@ -55,7 +55,7 @@ function RootComponent() {
               {config.auth().debugBanner && <AuthDebug />}
               <TopProgressBar />
               <Outlet />
-              <Toaster />
+              <Toaster position="top-center" duration={3000} richColors />
             </AuthProvider>
           </BreadcrumbProvider>
         </ThemeProvider>

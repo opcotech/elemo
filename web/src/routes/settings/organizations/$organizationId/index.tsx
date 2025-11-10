@@ -5,18 +5,26 @@ import { useEffect, useMemo, useState } from "react";
 import {
   OrganizationDangerZone,
   OrganizationDetailError,
-  OrganizationDetailHeader,
   OrganizationDetailInfo,
   OrganizationDetailSkeleton,
   OrganizationMembersList,
   OrganizationNotFound,
+  OrganizationRolesList,
 } from "@/components/organizations";
+import { PageHeader } from "@/components/page-header";
 import { useBreadcrumbUtils } from "@/hooks/use-breadcrumbs";
+import {
+  ResourceType,
+  usePermissions,
+  withResourceType,
+} from "@/hooks/use-permissions";
 import {
   isNotFound,
   v1OrganizationGetOptions,
   v1OrganizationMembersGetOptions,
+  v1OrganizationRolesGetOptions,
 } from "@/lib/api";
+import { can } from "@/lib/auth/permissions";
 import { requireAuthBeforeLoad } from "@/lib/auth/require-auth";
 import { getUser } from "@/lib/auth/session";
 
@@ -44,7 +52,6 @@ function OrganizationDetailPage() {
     })
   );
 
-  // Fetch organization members
   const {
     data: members,
     isLoading: isLoadingMembers,
@@ -57,7 +64,23 @@ function OrganizationDetailPage() {
     })
   );
 
-  // Get current user ID
+  const {
+    data: roles,
+    isLoading: isLoadingRoles,
+    error: rolesError,
+  } = useQuery(
+    v1OrganizationRolesGetOptions({
+      path: {
+        id: organizationId,
+      },
+    })
+  );
+
+  const { data: orgPermissions, isLoading: isOrgPermissionsLoading } =
+    usePermissions(withResourceType(ResourceType.Organization, organizationId));
+
+  const hasOrgReadPermission = can(orgPermissions, "read");
+
   useEffect(() => {
     const loadCurrentUser = async () => {
       const user = await getUser();
@@ -69,18 +92,7 @@ function OrganizationDetailPage() {
   }, []);
 
   const processedMembers = useMemo(() => {
-    if (!members) return [];
-
-    return [...members].sort((a, b) => {
-      if (a.status !== b.status) {
-        if (a.status === "deleted") return 1;
-        if (b.status === "deleted") return -1;
-      }
-
-      const aName = `${a.first_name} ${a.last_name}`.toLowerCase();
-      const bName = `${b.first_name} ${b.last_name}`.toLowerCase();
-      return aName.localeCompare(bName);
-    });
+    return members || [];
   }, [members]);
 
   useEffect(() => {
@@ -118,16 +130,28 @@ function OrganizationDetailPage() {
 
   return (
     <div className="space-y-6">
-      <OrganizationDetailHeader title={organization.name} />
+      <PageHeader title={organization.name} />
 
       <OrganizationDetailInfo organization={organization} />
 
-      <OrganizationMembersList
-        members={processedMembers}
-        isLoading={isLoadingMembers}
-        error={membersError}
-        currentUserId={currentUserId}
-      />
+      {!isOrgPermissionsLoading && hasOrgReadPermission && (
+        <>
+          <OrganizationMembersList
+            members={processedMembers}
+            isLoading={isLoadingMembers}
+            error={membersError}
+            currentUserId={currentUserId}
+            organizationId={organizationId}
+          />
+
+          <OrganizationRolesList
+            roles={roles || []}
+            isLoading={isLoadingRoles}
+            error={rolesError}
+            organizationId={organizationId}
+          />
+        </>
+      )}
 
       {organization.status === "active" && (
         <OrganizationDangerZone organization={organization} />
