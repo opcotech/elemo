@@ -22,7 +22,6 @@ PNPM_RUN=$(PNPM_EXEC) run --prefix "$(ROOT_DIR)/web"
 PNPM_EMAILS_RUN=$(PNPM_EXEC) run --prefix "$(ROOT_DIR)/build/email"
 
 GO_EXEC:=$(shell which go)
-GO_TEST_COVER=$(GO_EXEC) test -shuffle=on -cover -covermode=atomic -ldflags="-extldflags=-Wl,-ld_classic"
 GO_TEST_IGNORE:=(mode: atomic|testutil|tools|cmd|http\/api)
 
 TMPDIR:=$(shell echo "${TMPDIR:-/tmp}")
@@ -165,13 +164,13 @@ test.backend.bench: ## Run backend benchmarks
 test.backend.unit: ## Run backend unit tests
 	$(call log, execute backend unit tests)
 	@rm -f "$(BACKEND_COVER_OUT_UNIT)"
-	@bash -c '$(GO_TEST_COVER) -json -race -short -coverprofile="$(BACKEND_COVER_OUT_UNIT)" ./... 2>&1 | $(SCRIPTS_DIR)/pretty-test.sh; exit $${PIPESTATUS[0]}'
+	@gotestsum --format testname -- -shuffle=on -cover -covermode=atomic -ldflags="-extldflags=-Wl,-ld_classic" -race -short -coverprofile="$(BACKEND_COVER_OUT_UNIT)" ./...
 
 .PHONY: test.backend.integration
 test.backend.integration: ## Run backend integration tests
 	$(call log, execute backend integration tests)
 	@rm -f "$(BACKEND_COVER_OUT_INTEGRATION)"
-	@bash -c '$(GO_TEST_COVER) -json -timeout 900s -run=Integration -coverprofile="$(BACKEND_COVER_OUT_INTEGRATION)" ./... 2>&1 | $(SCRIPTS_DIR)/pretty-test.sh; exit $${PIPESTATUS[0]}'
+	@gotestsum --format testname -- -shuffle=on -cover -covermode=atomic -ldflags="-extldflags=-Wl,-ld_classic" -timeout 900s -run=Integration -coverprofile="$(BACKEND_COVER_OUT_INTEGRATION)" ./...
 
 .PHONY: test.backend.coverage
 test.backend.coverage: ## Combine unit and integration test coverage

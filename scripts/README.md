@@ -19,11 +19,6 @@ This script generates development configuration files and key.
 Takes the Open API specification in the `api/openapi` directory, and generates
 a TypeScript client from it.
 
-## pretty-test.sh
-
-Takes the JSON output of `go test` command and pretty-formats it using `jq` to
-make it more readable.
-
 ## setup.sh
 
 This script prepares the whole development environment. Generates a new

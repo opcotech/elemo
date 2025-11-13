@@ -46,6 +46,8 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: "^1.25"
+      - name: Install gotestsum
+        run: go install gotest.tools/gotestsum@latest
       - name: Execute unit tests
         run: make test.backend.unit
       - name: Stash test results
@@ -81,6 +83,8 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: "^1.25"
+      - name: Install gotestsum
+        run: go install gotest.tools/gotestsum@latest
       - name: Execute integration tests
         run: make test.backend.integration
       - name: Stash test results
