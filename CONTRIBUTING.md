@@ -190,7 +190,7 @@ test                           # Run all k6, backend and front-end tests
 ## Code Quality and Tests
 
 The project ensures code quality and code coverage in multiple ways. Besides third-party online tools, with the lack of
-completeness, `gofmt` `go-imports`, `golangci-lint`, `go test`, `k6`, `playwright` and `eslint` are used to keep up with
+completeness, `gofmt` `go-imports`, `golangci-lint`, `gotestsum`, `k6`, `playwright` and `eslint` are used to keep up with
 industry standards.
 
 Although front-end unit tests are not created yet, linters and some end-to-end tests are available. In order to run
