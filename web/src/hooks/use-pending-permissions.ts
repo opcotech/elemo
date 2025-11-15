@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
 
-import type { PendingPermission } from "@/components/organizations/role-permission-draft";
+import type { PendingPermission } from "@/components/roles/role-permission-draft";
 import {
   v1OrganizationRolePermissionAddMutation,
   v1OrganizationRolePermissionsGetOptions,

@@ -1,5 +1,5 @@
 import { Link, useRouter } from "@tanstack/react-router";
-import { Building2, Shield, User } from "lucide-react";
+import { Building2, Folder, Shield, User } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 
@@ -47,6 +47,12 @@ export const settingsNavigation: SettingsNavigationGroup[] = [
         href: "/settings/organizations",
         icon: Building2,
         description: "View and manage organizations",
+      },
+      {
+        label: "Namespaces",
+        href: "/settings/namespaces",
+        icon: Folder,
+        description: "View and manage namespaces",
       },
     ],
   },

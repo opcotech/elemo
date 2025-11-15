@@ -104,9 +104,9 @@ function InboxContent() {
             <Folder className="h-4 w-4" />
             Projects
           </TabsTrigger>
-          <TabsTrigger value="workspace" className="flex items-center gap-2">
+          <TabsTrigger value="namespaces" className="flex items-center gap-2">
             <GitBranch className="h-4 w-4" />
-            Workspace
+            Namespaces
           </TabsTrigger>
           <TabsTrigger value="watched" className="flex items-center gap-2">
             <Eye className="h-4 w-4" />
@@ -137,21 +137,21 @@ function InboxContent() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="workspace" className="mt-6">
+        <TabsContent value="namespaces" className="mt-6">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                Workspace Activities
+                Namespace Activities
                 <Badge variant="secondary" className="ml-auto">
                   Coming Soon
                 </Badge>
               </CardTitle>
-              <CardDescription>Activities from your workspace</CardDescription>
+              <CardDescription>Activities from your namespaces</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex h-32 items-center justify-center">
                 <p className="text-muted-foreground text-sm">
-                  Workspace activities will be displayed here
+                  Namespace activities will be displayed here
                 </p>
               </div>
             </CardContent>

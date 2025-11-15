@@ -184,6 +184,7 @@ export function OrganizationMembersList({
   return (
     <>
       <ListContainer
+        data-section="organization-members"
         title="Members"
         description="Organization members and their roles."
         isLoading={isLoading}

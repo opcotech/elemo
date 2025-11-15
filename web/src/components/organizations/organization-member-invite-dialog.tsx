@@ -1,5 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
@@ -20,12 +21,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useFormMutation } from "@/hooks/use-form-mutation";
+import type { Options, V1OrganizationMembersInviteData } from "@/lib/api";
 import {
   v1OrganizationMembersGetOptions,
-  v1OrganizationMembersInviteMutation,
   v1OrganizationRolesGetOptions,
 } from "@/lib/client/@tanstack/react-query.gen";
-import { showErrorToast, showSuccessToast } from "@/lib/toast";
+import { v1OrganizationMembersInvite } from "@/lib/client/sdk.gen";
 
 const inviteFormSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -47,8 +49,6 @@ export function OrganizationMemberInviteDialog({
   onOpenChange,
   onSuccess,
 }: OrganizationMemberInviteDialogProps) {
-  const queryClient = useQueryClient();
-
   const { data: roles, isLoading: isLoadingRoles } = useQuery(
     v1OrganizationRolesGetOptions({
       path: { id: organizationId },
@@ -63,11 +63,30 @@ export function OrganizationMemberInviteDialog({
     },
   });
 
-  const mutation = useMutation(v1OrganizationMembersInviteMutation());
-
-  const onSubmit = (values: InviteFormValues) => {
-    mutation.mutate(
-      {
+  const mutation = useFormMutation<
+    unknown,
+    Options<V1OrganizationMembersInviteData>,
+    InviteFormValues
+  >({
+    mutationFn: async (variables) => {
+      const { data } = await v1OrganizationMembersInvite({
+        ...variables,
+        throwOnError: true,
+      });
+      return data;
+    },
+    form,
+    successMessage: "Invitation sent",
+    successDescription: "Invitation email sent successfully",
+    errorMessagePrefix: "Failed to send invitation",
+    queryKeysToInvalidate: [
+      v1OrganizationMembersGetOptions({
+        path: { id: organizationId },
+      }).queryKey,
+    ],
+    resetFormOnSuccess: true,
+    transformValues: (values) => {
+      return {
         path: {
           id: organizationId,
         },
@@ -78,31 +97,22 @@ export function OrganizationMemberInviteDialog({
               ? values.role_id
               : undefined,
         },
-      },
-      {
-        onSuccess: () => {
-          showSuccessToast(
-            "Invitation sent",
-            "Invitation email sent successfully"
-          );
-          form.reset();
-          onOpenChange(false);
+      };
+    },
+    onSuccess: () => {
+      onOpenChange(false);
+      onSuccess?.();
+    },
+  });
 
-          // Invalidate queries to refresh the members list
-          queryClient.invalidateQueries({
-            queryKey: v1OrganizationMembersGetOptions({
-              path: { id: organizationId },
-            }).queryKey,
-          });
-
-          onSuccess?.();
-        },
-        onError: (error) => {
-          showErrorToast("Failed to send invitation", error.message);
-        },
-      }
-    );
-  };
+  useEffect(() => {
+    if (open) {
+      form.reset({
+        email: "",
+        role_id: undefined,
+      });
+    }
+  }, [open, form]);
 
   return (
     <DialogForm
@@ -110,9 +120,9 @@ export function OrganizationMemberInviteDialog({
       open={open}
       onOpenChange={onOpenChange}
       title="Invite Member"
-      onSubmit={form.handleSubmit(onSubmit)}
+      onSubmit={mutation.handleSubmit}
       isPending={mutation.isPending}
-      error={mutation.error as Error | null}
+      error={mutation.error || null}
       submitButtonText="Send Invitation"
       onReset={() => form.reset()}
       className="sm:max-w-[500px]"

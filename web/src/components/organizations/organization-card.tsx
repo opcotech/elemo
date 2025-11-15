@@ -1,5 +1,4 @@
-import { Link } from "@tanstack/react-router";
-import { Edit, Eye, Trash2 } from "lucide-react";
+import { Edit, Trash2 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,6 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { ConditionalLink } from "@/components/ui/conditional-link";
 import { ExternalLink } from "@/components/ui/external-link";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -68,13 +68,13 @@ export function OrganizationCard({
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <CardTitle className="text-lg">
-              <Link
+              <ConditionalLink
                 to="/settings/organizations/$organizationId"
                 params={{ organizationId: organization.id }}
-                className="text-primary hover:underline"
+                condition={hasReadPermission}
               >
                 {organization.name}
-              </Link>
+              </ConditionalLink>
             </CardTitle>
             <CardDescription className="mt-1">
               {organization.email}
@@ -113,17 +113,6 @@ export function OrganizationCard({
           </div>
         ) : (
           <div className="flex items-center gap-x-1 pt-2">
-            {hasReadPermission && (
-              <Button variant="ghost" size="sm" asChild>
-                <Link
-                  to="/settings/organizations/$organizationId"
-                  params={{ organizationId: organization.id }}
-                >
-                  <Eye className="size-4" />
-                  <span className="sr-only">View organization</span>
-                </Link>
-              </Button>
-            )}
             {hasWritePermission && (
               <Button variant="ghost" size="sm" disabled>
                 <Edit className="size-4" />

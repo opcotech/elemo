@@ -18,7 +18,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
-import { v1OrganizationMembersAcceptMutation } from "@/lib/api";
+import { useFormMutation } from "@/hooks/use-form-mutation";
+import {
+  v1OrganizationMembersAccept,
+  v1OrganizationMembersAcceptMutation,
+} from "@/lib/api";
+import type { Options, V1OrganizationMembersAcceptData } from "@/lib/api";
 import { showErrorToast, showSuccessToast } from "@/lib/toast";
 
 const passwordSchema = z
@@ -47,7 +52,61 @@ export function OrganizationInviteAcceptForm() {
     resolver: zodResolver(passwordSchema),
   });
 
-  const acceptInvitationMutation = useMutation({
+  // Mutation for accepting with password (using use-form-mutation)
+  const acceptWithPasswordMutation = useFormMutation<
+    unknown,
+    Options<V1OrganizationMembersAcceptData>,
+    PasswordFormData
+  >({
+    mutationFn: async (variables) => {
+      const { data } = await v1OrganizationMembersAccept({
+        path: variables.path,
+        body: variables.body,
+        auth: () => undefined,
+        throwOnError: true,
+      });
+      return data;
+    },
+    form,
+    successMessage: "Invitation accepted",
+    successDescription:
+      "You have successfully joined the organization. You can now log in.",
+    errorMessagePrefix: "Failed to accept invitation",
+    navigateOnSuccess: {
+      to: "/login",
+      params: {},
+    },
+    transformValues: (values) => {
+      if (!organization || !token) {
+        throw new Error(
+          "Invalid invitation link - missing required parameters"
+        );
+      }
+      return {
+        path: {
+          id: organization,
+        },
+        body: {
+          token,
+          password: values.password,
+        },
+      };
+    },
+    onError: (error) => {
+      const errorMessage = error.message || "Failed to accept invitation";
+
+      // Check if error indicates password is required for pending users
+      if (
+        errorMessage.toLowerCase().includes("password") &&
+        errorMessage.toLowerCase().includes("required")
+      ) {
+        setNeedsPassword(true);
+      }
+    },
+  });
+
+  // Mutation for accepting without password (needs to stay separate)
+  const acceptWithoutPasswordMutation = useMutation({
     ...v1OrganizationMembersAcceptMutation({
       auth: () => undefined,
     }),
@@ -73,26 +132,6 @@ export function OrganizationInviteAcceptForm() {
     },
   });
 
-  const onSubmit = (values: PasswordFormData) => {
-    if (!organization || !token) {
-      showErrorToast(
-        "Invalid invitation link",
-        "The invitation link is invalid or missing required parameters."
-      );
-      return;
-    }
-
-    acceptInvitationMutation.mutate({
-      path: {
-        id: organization,
-      },
-      body: {
-        token,
-        password: values.password,
-      },
-    });
-  };
-
   const handleAcceptWithoutPassword = () => {
     if (!organization || !token) {
       showErrorToast(
@@ -102,7 +141,7 @@ export function OrganizationInviteAcceptForm() {
       return;
     }
 
-    acceptInvitationMutation.mutate({
+    acceptWithoutPasswordMutation.mutate({
       path: {
         id: organization,
       },
@@ -169,15 +208,18 @@ export function OrganizationInviteAcceptForm() {
         </CardHeader>
         <CardContent>
           {showPasswordForm ? (
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              {acceptInvitationMutation.isError &&
-                acceptInvitationMutation.error?.message &&
-                !acceptInvitationMutation.error.message
+            <form
+              onSubmit={acceptWithPasswordMutation.handleSubmit}
+              className="space-y-4"
+            >
+              {acceptWithPasswordMutation.isError &&
+                acceptWithPasswordMutation.error?.message &&
+                !acceptWithPasswordMutation.error.message
                   .toLowerCase()
                   .includes("password") && (
                   <Alert variant="destructive">
                     <AlertDescription>
-                      {acceptInvitationMutation.error.message}
+                      {acceptWithPasswordMutation.error.message}
                     </AlertDescription>
                   </Alert>
                 )}
@@ -192,7 +234,7 @@ export function OrganizationInviteAcceptForm() {
                     placeholder="Enter your password"
                     className="pr-10 pl-10"
                     {...form.register("password")}
-                    disabled={acceptInvitationMutation.isPending}
+                    disabled={acceptWithPasswordMutation.isPending}
                     autoComplete="new-password"
                   />
                   <Button
@@ -201,7 +243,7 @@ export function OrganizationInviteAcceptForm() {
                     size="sm"
                     className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-transparent"
                     onClick={() => setShowPassword(!showPassword)}
-                    disabled={acceptInvitationMutation.isPending}
+                    disabled={acceptWithPasswordMutation.isPending}
                     aria-label={
                       showPassword ? "Hide password" : "Show password"
                     }
@@ -230,7 +272,7 @@ export function OrganizationInviteAcceptForm() {
                     placeholder="Confirm your password"
                     className="pr-10 pl-10"
                     {...form.register("confirmPassword")}
-                    disabled={acceptInvitationMutation.isPending}
+                    disabled={acceptWithPasswordMutation.isPending}
                     autoComplete="new-password"
                   />
                   <Button
@@ -239,7 +281,7 @@ export function OrganizationInviteAcceptForm() {
                     size="sm"
                     className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-transparent"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    disabled={acceptInvitationMutation.isPending}
+                    disabled={acceptWithPasswordMutation.isPending}
                     aria-label={
                       showConfirmPassword ? "Hide password" : "Show password"
                     }
@@ -262,10 +304,10 @@ export function OrganizationInviteAcceptForm() {
                 <Button
                   type="submit"
                   className="flex w-full items-center"
-                  disabled={acceptInvitationMutation.isPending}
+                  disabled={acceptWithPasswordMutation.isPending}
                   aria-label="Accept invitation"
                 >
-                  {acceptInvitationMutation.isPending ? (
+                  {acceptWithPasswordMutation.isPending ? (
                     <>
                       <Spinner size="xs" className="mr-2" />
                       <span>Accepting invitation...</span>
@@ -278,10 +320,10 @@ export function OrganizationInviteAcceptForm() {
             </form>
           ) : (
             <div className="space-y-4">
-              {acceptInvitationMutation.isError && !needsPassword && (
+              {acceptWithoutPasswordMutation.isError && !needsPassword && (
                 <Alert variant="destructive">
                   <AlertDescription>
-                    {acceptInvitationMutation.error?.message}
+                    {acceptWithoutPasswordMutation.error?.message}
                   </AlertDescription>
                 </Alert>
               )}
@@ -291,10 +333,10 @@ export function OrganizationInviteAcceptForm() {
                   type="button"
                   onClick={handleAcceptWithoutPassword}
                   className="flex w-full items-center"
-                  disabled={acceptInvitationMutation.isPending}
+                  disabled={acceptWithoutPasswordMutation.isPending}
                   aria-label="Accept invitation"
                 >
-                  {acceptInvitationMutation.isPending ? (
+                  {acceptWithoutPasswordMutation.isPending ? (
                     <>
                       <Spinner size="xs" className="mr-2" />
                       <span>Accepting invitation...</span>

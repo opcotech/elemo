@@ -1,209 +1,167 @@
-import { expect, test } from "@playwright/test";
-import { createDBUser, loginUser } from "./utils/auth";
-import { grantSystemWritePermission } from "./utils/organization";
-import { Form } from "./components/form";
-import { waitForPageLoad } from "./helpers/navigation";
-import { waitForSuccessToast } from "./helpers/toast";
+import { createOrganization } from "./api";
+import { expect, test } from "./fixtures";
+import { waitForErrorToast, waitForSuccessToast } from "./helpers";
+import {
+  SettingsOrganizationCreatePage,
+  SettingsOrganizationDetailsPage,
+  SettingsOrganizationsPage,
+} from "./pages";
+import { USER_DEFAULT_PASSWORD, loginUser } from "./utils/auth";
+import { createUser, grantSystemOwnerMembershipToUser } from "./utils/db";
+import { getRandomString } from "./utils/random";
 
-test.describe("@settings.organization-create Organization Create E2E Tests", () => {
-  test.describe("Organization Creation", () => {
-    let ownerUser: any;
-    let regularUser: any;
+import type { User } from "@/lib/api";
 
-    test.beforeAll(async () => {
-      ownerUser = await createDBUser("active");
-      regularUser = await createDBUser("active");
-      await grantSystemWritePermission(ownerUser.id, "Organization");
+test.describe("@settings.organization-create Organization Creation E2E Tests", () => {
+  let testUser: User;
+  let readOnlyUser: User;
+
+  test.beforeAll(async ({ testConfig }) => {
+    testUser = await createUser(testConfig);
+    readOnlyUser = await createUser(testConfig);
+
+    // Grant system owner membership so user can create organizations
+    // Using DB helper since API doesn't allow creating system-level permissions
+    await grantSystemOwnerMembershipToUser(testConfig, testUser.email);
+  });
+
+  test("should create organization and display in list", async ({ page }) => {
+    await loginUser(page, {
+      email: testUser.email,
+      password: USER_DEFAULT_PASSWORD,
     });
 
-    test.beforeEach(async ({ page }) => {
-      await loginUser(page, ownerUser, {
-        destination: "/settings/organizations",
-      });
-      await expect(page).toHaveURL(/.*settings\/organizations/);
-      await waitForPageLoad(page);
+    const orgsPage = new SettingsOrganizationsPage(page);
+    await orgsPage.goto();
+    await orgsPage.organizations.waitForLoad();
+
+    // Click create button
+    await orgsPage.organizations.clickCreateOrganizationButton();
+
+    const orgCreatePage = new SettingsOrganizationCreatePage(page);
+    await orgCreatePage.organizationCreateForm.waitForLoad();
+
+    // Fill organization form
+    const orgName = `Test Org ${Date.now()}`;
+    const orgEmail = `test-${Date.now()}@example.com`;
+    await orgCreatePage.organizationCreateForm.fillFields({
+      Name: orgName,
+      Email: orgEmail,
+    });
+    await orgCreatePage.organizationCreateForm.submit("Create");
+
+    // Then check for success toast
+    await waitForSuccessToast(page, "created");
+
+    // Verify organization details page shows the created organization
+    const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
+    await orgDetailsPage.organizationInfo.waitForLoad();
+
+    // Navigate back to list and verify organization appears
+    await orgsPage.goto();
+    await orgsPage.organizations.waitForLoad();
+    expect(await orgsPage.organizations.hasOrganization(orgName)).toBeTruthy();
+  });
+
+  test("should show validation errors for invalid form inputs", async ({
+    page,
+  }) => {
+    await loginUser(page, {
+      email: testUser.email,
+      password: USER_DEFAULT_PASSWORD,
     });
 
-    test("user with write permission should see create button", async ({
-      page,
-    }) => {
-      await expect(
-        page.getByRole("link", { name: /Create Organization/i }).first()
-      ).toBeVisible();
+    const orgCreatePage = new SettingsOrganizationCreatePage(page);
+    await orgCreatePage.goto();
+    await orgCreatePage.organizationCreateForm.waitForLoad();
+
+    // Try submitting empty form
+    await orgCreatePage.organizationCreateForm.submit("Create");
+    await expect(
+      page.getByText(/too small: expected string to have >=1 characters/i)
+    ).toHaveCount(1);
+    await expect(page.getByText(/invalid email address/i)).toHaveCount(1);
+
+    // Fill name but invalid email
+    await orgCreatePage.organizationCreateForm.fillField("Name", "Test Org");
+    await orgCreatePage.organizationCreateForm.fillField(
+      "Email",
+      "invalid-email"
+    );
+    await orgCreatePage.organizationCreateForm.submit("Create");
+    await expect(page.getByText(/invalid email address/i)).toHaveCount(1);
+
+    // Fill valid email but empty name
+    await orgCreatePage.organizationCreateForm.fillField("Name", "");
+    await orgCreatePage.organizationCreateForm.fillField(
+      "Email",
+      "test@example.com"
+    );
+    await orgCreatePage.organizationCreateForm.submit("Create");
+    await expect(
+      page.getByText(/too small: expected string to have >=1 characters/i)
+    ).toHaveCount(1);
+  });
+
+  test("should show error when creating duplicate organization", async ({
+    page,
+    createApiClient,
+  }) => {
+    const orgData = {
+      name: `Existing Org ${getRandomString()}`,
+      email: `duplicate-${getRandomString()}@example.com`,
+    };
+
+    // Create organization via API first
+    const apiClient = await createApiClient(
+      testUser.email,
+      USER_DEFAULT_PASSWORD
+    );
+    await createOrganization(apiClient, orgData);
+
+    await loginUser(page, {
+      email: testUser.email,
+      password: USER_DEFAULT_PASSWORD,
     });
 
-    test("user without write permission should not see create button", async ({
-      page,
-    }) => {
-      await loginUser(page, regularUser, {
-        destination: "/settings/organizations",
-      });
-      await waitForPageLoad(page);
+    // Wait for create page to load
+    const orgCreatePage = new SettingsOrganizationCreatePage(page);
+    await orgCreatePage.goto();
+    await orgCreatePage.organizationCreateForm.waitForLoad();
 
-      await expect(
-        page.getByRole("link", { name: /Create Organization/i })
-      ).not.toBeVisible();
+    // Fill form with existing organization name
+    await orgCreatePage.organizationCreateForm.fillFields({
+      Name: orgData.name,
+      Email: `${getRandomString()}@example.com`,
+    });
+    await orgCreatePage.organizationCreateForm.submit("Create");
+    await waitForErrorToast(page);
+
+    // Fill form with existing organization email
+    await orgCreatePage.organizationCreateForm.fillFields({
+      Name: `${getRandomString()}`,
+      Email: orgData.email,
+    });
+    await orgCreatePage.organizationCreateForm.submit("Create");
+    await waitForErrorToast(page);
+  });
+
+  test("should not see the create organization button without create permission", async ({
+    page,
+  }) => {
+    await loginUser(page, {
+      email: readOnlyUser.email,
+      password: USER_DEFAULT_PASSWORD,
     });
 
-    test("should navigate to create page when create button is clicked", async ({
-      page,
-    }) => {
-      await page
-        .getByRole("link", { name: /Create Organization/i })
-        .first()
-        .click();
-      await waitForPageLoad(page);
+    // Wait for organizations page to load
+    const orgsPage = new SettingsOrganizationsPage(page);
+    await orgsPage.goto();
+    await orgsPage.organizations.waitForLoad();
 
-      await expect(page).toHaveURL(/.*settings\/organizations\/new/);
-      await expect(
-        page.getByRole("heading", { name: "Create Organization", level: 1 })
-      ).toBeVisible({ timeout: 10000 });
-    });
-
-    test("should create organization with all fields", async ({ page }) => {
-      await page
-        .getByRole("link", { name: /Create Organization/i })
-        .first()
-        .click();
-      await waitForPageLoad(page);
-
-      const orgName = `Test Org ${Date.now()}`;
-      const orgEmail = `test-${Date.now()}@example.com`;
-      const orgWebsite = `https://test-${Date.now()}.example.com`;
-
-      const form = new Form(page);
-      await form.fillFields({
-        Name: orgName,
-        Email: orgEmail,
-        Website: orgWebsite,
-      });
-      await form.submit("Create Organization");
-      await waitForSuccessToast(page, "Organization created", {
-        timeout: 10000,
-      });
-      await expect(page).toHaveURL(/.*settings\/organizations\/.*/, {
-        timeout: 10000,
-      });
-      await expect(page.getByRole("heading", { name: orgName })).toBeVisible({
-        timeout: 10000,
-      });
-      await expect(page.getByText(orgEmail)).toBeVisible();
-      await expect(page.getByText(orgWebsite)).toBeVisible();
-    });
-
-    test("should create organization with required fields only", async ({
-      page,
-    }) => {
-      await page
-        .getByRole("link", { name: /Create Organization/i })
-        .first()
-        .click();
-      await waitForPageLoad(page);
-
-      const orgName = `Required Fields Org ${Date.now()}`;
-      const orgEmail = `required-${Date.now()}@example.com`;
-
-      const form = new Form(page);
-      await form.fillFields({
-        Name: orgName,
-        Email: orgEmail,
-      });
-      await form.submit("Create Organization");
-      await waitForSuccessToast(page, "Organization created", {
-        timeout: 10000,
-      });
-      await expect(page).toHaveURL(/.*settings\/organizations\/.*/, {
-        timeout: 10000,
-      });
-      await expect(page.getByRole("heading", { name: orgName })).toBeVisible({
-        timeout: 10000,
-      });
-      await expect(page.getByText(orgEmail)).toBeVisible();
-    });
-
-    test("should show validation errors for invalid inputs", async ({
-      page,
-    }) => {
-      await page
-        .getByRole("link", { name: /Create Organization/i })
-        .first()
-        .click();
-      await waitForPageLoad(page);
-      await page.getByRole("button", { name: "Create Organization" }).click();
-      const formMessages = page.locator('[data-slot="form-message"]');
-      await expect(formMessages.first()).toBeVisible({ timeout: 5000 });
-    });
-
-    test("should show validation error for invalid email", async ({ page }) => {
-      await page
-        .getByRole("link", { name: /Create Organization/i })
-        .first()
-        .click();
-      await waitForPageLoad(page);
-
-      const form = new Form(page);
-      await form.fillField("Name", "Test Org");
-      await form.fillField("Email", "invalid-email");
-
-      await page.getByRole("button", { name: "Create Organization" }).click();
-      const emailField = page.getByLabel("Email").locator("..");
-      await expect(
-        emailField.locator("text=/invalid|email|must/i").first()
-      ).toBeVisible({ timeout: 5000 });
-    });
-
-    test("should show validation error for invalid website URL", async ({
-      page,
-    }) => {
-      await page
-        .getByRole("link", { name: /Create Organization/i })
-        .first()
-        .click();
-      await waitForPageLoad(page);
-
-      const form = new Form(page);
-      await form.fillFields({
-        Name: "Test Org",
-        Email: "test@example.com",
-        Website: "not-a-valid-url",
-      });
-      await page.getByLabel("Website").blur();
-      await page
-        .waitForFunction(
-          () => {
-            const input = document.querySelector(
-              'input[aria-label="Website"]'
-            ) as HTMLInputElement;
-            return input.value === "not-a-valid-url";
-          },
-          { timeout: 1000 }
-        )
-        .catch(() => {});
-      await page.getByRole("button", { name: "Create Organization" }).click();
-      const isOnCreatePage = page.url().includes("/new");
-      const websiteField = page.getByLabel("Website").locator("..");
-      const formMessage = websiteField.locator('[data-slot="form-message"]');
-      const hasError = await formMessage
-        .isVisible({ timeout: 2000 })
-        .catch(() => false);
-
-      if (!hasError && !isOnCreatePage) {
-        return;
-      }
-      expect(isOnCreatePage || hasError).toBe(true);
-    });
-
-    test("should cancel creation and return to list page", async ({ page }) => {
-      await page
-        .getByRole("link", { name: /Create Organization/i })
-        .first()
-        .click();
-      await waitForPageLoad(page);
-
-      await page.getByRole("button", { name: "Cancel" }).click();
-      await waitForPageLoad(page);
-
-      await expect(page).toHaveURL(/.*settings\/organizations$/);
-    });
+    // Verify the create button is not visible
+    expect(
+      await orgsPage.organizations.hasCreateOrganizationButton()
+    ).toBeFalsy();
   });
 });

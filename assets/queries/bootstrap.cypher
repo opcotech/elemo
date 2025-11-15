@@ -83,7 +83,6 @@ CREATE CONSTRAINT resource_type_id_unique IF NOT EXISTS FOR (n:ResourceType) REQ
 CREATE TEXT INDEX role_id_idx IF NOT EXISTS FOR (n:Role) ON (n.id);
 CREATE TEXT INDEX role_name_idx IF NOT EXISTS FOR (n:Role) ON (n.name);
 CREATE CONSTRAINT role_id_unique IF NOT EXISTS FOR (n:Role) REQUIRE n.id IS UNIQUE;
-CREATE CONSTRAINT role_name_unique IF NOT EXISTS FOR (n:Role) REQUIRE n.id IS UNIQUE;
 
 // Permission index
 CREATE INDEX has_permission_kind_idx IF NOT EXISTS FOR (r:HAS_PERMISSION) ON (r.kind);
@@ -94,3 +93,11 @@ CREATE TEXT INDEX user_email_idx IF NOT EXISTS FOR (n:User) ON (n.email);
 CREATE CONSTRAINT user_id_unique IF NOT EXISTS FOR (n:User) REQUIRE n.id IS UNIQUE;
 CREATE CONSTRAINT user_username_unique IF NOT EXISTS FOR (n:User) REQUIRE n.username IS UNIQUE;
 CREATE CONSTRAINT user_email_unique IF NOT EXISTS FOR (n:User) REQUIRE n.email IS UNIQUE;
+
+// Organization index
+CREATE TEXT INDEX organization_id_idx IF NOT EXISTS FOR (n:Organization) ON (n.id);
+CREATE TEXT INDEX organization_name_idx IF NOT EXISTS FOR (n:Organization) ON (n.name);
+CREATE TEXT INDEX organization_email_idx IF NOT EXISTS FOR (n:Organization) ON (n.email);
+CREATE CONSTRAINT organization_id_unique IF NOT EXISTS FOR (n:Organization) REQUIRE n.id IS UNIQUE;
+CREATE CONSTRAINT organization_name_unique IF NOT EXISTS FOR (n:Organization) REQUIRE n.name IS UNIQUE;
+CREATE CONSTRAINT organization_email_unique IF NOT EXISTS FOR (n:Organization) REQUIRE n.email IS UNIQUE;

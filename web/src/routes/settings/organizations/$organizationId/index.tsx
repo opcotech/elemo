@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 
+import { NamespacesList } from "@/components/namespaces";
 import {
   OrganizationDangerZone,
   OrganizationDetailError,
@@ -9,9 +10,9 @@ import {
   OrganizationDetailSkeleton,
   OrganizationMembersList,
   OrganizationNotFound,
-  OrganizationRolesList,
 } from "@/components/organizations";
 import { PageHeader } from "@/components/page-header";
+import { RolesList } from "@/components/roles";
 import { useBreadcrumbUtils } from "@/hooks/use-breadcrumbs";
 import {
   ResourceType,
@@ -23,6 +24,7 @@ import {
   v1OrganizationGetOptions,
   v1OrganizationMembersGetOptions,
   v1OrganizationRolesGetOptions,
+  v1OrganizationsNamespacesGetOptions,
 } from "@/lib/api";
 import { can } from "@/lib/auth/permissions";
 import { requireAuthBeforeLoad } from "@/lib/auth/require-auth";
@@ -58,6 +60,18 @@ function OrganizationDetailPage() {
     error: membersError,
   } = useQuery(
     v1OrganizationMembersGetOptions({
+      path: {
+        id: organizationId,
+      },
+    })
+  );
+
+  const {
+    data: namespaces,
+    isLoading: isLoadingNamespaces,
+    error: namespacesError,
+  } = useQuery(
+    v1OrganizationsNamespacesGetOptions({
       path: {
         id: organizationId,
       },
@@ -136,6 +150,13 @@ function OrganizationDetailPage() {
 
       {!isOrgPermissionsLoading && hasOrgReadPermission && (
         <>
+          <NamespacesList
+            namespaces={namespaces || []}
+            isLoading={isLoadingNamespaces}
+            error={namespacesError}
+            organizationId={organizationId}
+          />
+
           <OrganizationMembersList
             members={processedMembers}
             isLoading={isLoadingMembers}
@@ -144,7 +165,7 @@ function OrganizationDetailPage() {
             organizationId={organizationId}
           />
 
-          <OrganizationRolesList
+          <RolesList
             roles={roles || []}
             isLoading={isLoadingRoles}
             error={rolesError}

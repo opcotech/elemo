@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/go-redis/cache/v9"
 	"github.com/redis/go-redis/v9"
@@ -145,7 +144,7 @@ func newBaseRepository(opts ...RepositoryOption) (*baseRepository, error) {
 
 	r.cache = cache.New(&cache.Options{
 		Redis:      r.db.GetClient(),
-		LocalCache: cache.NewTinyLFU(1000, 1*time.Minute),
+		LocalCache: nil, // turn off the local cache as it is buggy
 	})
 
 	if err := validate.Struct(r); err != nil {
