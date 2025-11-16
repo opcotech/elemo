@@ -1,6 +1,10 @@
 import { createOrganization } from "./api";
 import { expect, test } from "./fixtures";
-import { waitForErrorToast, waitForSuccessToast } from "./helpers";
+import {
+  getFormFieldMessage,
+  waitForErrorToast,
+  waitForSuccessToast,
+} from "./helpers";
 import {
   SettingsOrganizationDetailsPage,
   SettingsOrganizationEditPage,
@@ -112,6 +116,8 @@ test.describe("@settings.organization-edit Organization Edit E2E Tests", () => {
   test("should show validation errors for invalid form inputs", async ({
     page,
   }) => {
+    const fieldMessage = (label: string) => getFormFieldMessage(page, label);
+
     await loginUser(page, {
       email: ownerUser.email,
       password: USER_DEFAULT_PASSWORD,
@@ -128,21 +134,19 @@ test.describe("@settings.organization-edit Organization Edit E2E Tests", () => {
       "test@example.com"
     );
     await orgEditPage.organizationEditForm.submit("Save Changes");
-    await expect(
-      page.getByText(/too small: expected string to have >=1 characters/i)
-    ).toBeVisible();
+    await expect(fieldMessage("Name")).toHaveText(/invalid input/i);
 
     // Try submitting with empty email
     await orgEditPage.organizationEditForm.fillField("Name", "Test Org");
     await orgEditPage.organizationEditForm.clearField("Email");
     await orgEditPage.organizationEditForm.submit("Save Changes");
-    await expect(page.getByText(/invalid email address/i)).toBeVisible();
+    await expect(fieldMessage("Email")).toHaveText(/invalid input/i);
 
     // Fill name but invalid email
     await orgEditPage.organizationEditForm.fillField("Name", "Test Org");
     await orgEditPage.organizationEditForm.fillField("Email", "invalid-email");
     await orgEditPage.organizationEditForm.submit("Save Changes");
-    await expect(page.getByText(/invalid email address/i)).toBeVisible();
+    await expect(fieldMessage("Email")).toHaveText(/invalid input/i);
   });
 
   test("should show error when updating to a duplicate organization", async ({

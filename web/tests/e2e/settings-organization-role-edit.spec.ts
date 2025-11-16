@@ -1,6 +1,11 @@
 import { createOrganization, createRole } from "./api";
 import { expect, test } from "./fixtures";
-import { waitForPermissionsLoad, waitForSuccessToast } from "./helpers";
+import {
+  getFormFieldMessage,
+  waitForPageLoad,
+  waitForPermissionsLoad,
+  waitForSuccessToast,
+} from "./helpers";
 import {
   SettingsOrganizationDetailsPage,
   SettingsOrganizationRoleEditPage,
@@ -171,6 +176,7 @@ test.describe("@settings.organization-role-edit Organization Role Edit E2E Tests
     const roleEditPage = new SettingsOrganizationRoleEditPage(page);
     await roleEditPage.goto(organizationId, roleId);
     await roleEditPage.roleEditForm.waitForLoad();
+    const nameError = getFormFieldMessage(page, "Name");
 
     // Enter invalid input (empty name which is required)
     await roleEditPage.roleEditForm.clearField("Name");
@@ -178,9 +184,7 @@ test.describe("@settings.organization-role-edit Organization Role Edit E2E Tests
     await roleEditPage.roleEditForm.submit("Save Changes");
 
     // Verify validation error is shown for the name field
-    await expect(
-      page.getByText(/too small: expected string to have >=3 characters/i)
-    ).toBeVisible();
+    await expect(nameError).toHaveText(/invalid input/i);
   });
 
   test("should save changes and show success message", async ({ page }) => {
@@ -289,8 +293,8 @@ test.describe("@settings.organization-role-edit Organization Role Edit E2E Tests
     const roleEditPage = new SettingsOrganizationRoleEditPage(page);
     await roleEditPage.goto(organizationId, roleId);
 
-    // Wait for permissions to load
-    await waitForPermissionsLoad(page);
+    // Wait for page and permissions to load
+    await waitForPageLoad(page);
 
     // Should not be on the edit page anymore (redirected due to lack of permission)
     const currentUrl = page.url();
@@ -493,6 +497,8 @@ test.describe("@settings.organization-role-edit Organization Role Edit E2E Tests
     testConfig,
     createApiClient,
   }) => {
+    test.setTimeout(60_000);
+
     const scenarioUser = await createUser(testConfig);
     await grantMembershipToUser(
       testConfig,

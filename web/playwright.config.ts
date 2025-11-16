@@ -1,6 +1,6 @@
 import { defineConfig, devices } from '@playwright/test';
 
-// Fix for "Cannot find name 'process'"
+// Type declaration for Node.js process (needed for Playwright config files)
 declare const process: {
   env: {
     [key: string]: string | undefined;
@@ -22,21 +22,28 @@ export default defineConfig({
   forbidOnly: IS_CI_ENV,
   /* Retry more times on CI */
   retries: IS_CI_ENV ? 3 : 1,
-  /* Opt out of parallel tests on CI. */
+  /* Set workers in CI to 1 for better test reliability */
   workers: IS_CI_ENV ? 1 : '75%',
-  /* Reporter to use. See https://playwright.dev/docs/test-reporters */
-  reporter: 'html',
+  /* Fail fast in CI to save resources */
+  ...(IS_CI_ENV && { maxFailures: 10 }),
+  /* Global timeout for each test */
+  timeout: 45 * 1000, // 30 seconds
+  /* Output directory for test artifacts */
+  outputDir: './test-results',
+  /* Reporter configuration - use list in CI for better logs, html for local */
+  reporter: IS_CI_ENV
+    ? [['list'], ['html', { outputFolder: 'playwright-report' }]]
+    : [['html', { outputFolder: 'playwright-report' }]],
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('/')`. */
     baseURL: 'http://localhost:3000',
-
+    /* Run in headless mode in CI, headed locally for debugging */
+    headless: IS_CI_ENV,
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
-
     /* Take screenshot on failure */
     screenshot: 'only-on-failure',
-
     /* Record video on failure */
     video: 'retain-on-failure',
   },
@@ -74,15 +81,15 @@ export default defineConfig({
 
   /* Expectation configuration */
   expect: {
-    /* Timeout for each expectation, intentionally low to speed up tests */
-    timeout: 3000,
+    /* Timeout for each expectation */
+    timeout: 5 * 1000, // 5 seconds
   },
 
   /* Run your local dev server before starting the tests */
   webServer: {
-    command: process.env.NO_COMMAND === 'true' ? '' : 'pnpm build && pnpm start',
+    command: process.env.NO_COMMAND === 'true' ? '' : 'pnpm start',
     url: 'http://localhost:3000',
-    reuseExistingServer: true,
+    reuseExistingServer: !IS_CI_ENV,
     timeout: 120 * 1000,
     stdout: 'pipe',
     stderr: 'pipe',

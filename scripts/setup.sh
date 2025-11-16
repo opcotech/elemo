@@ -14,7 +14,7 @@ function setupOAuthClient() {
 
   local api_host
   local webapp_host
-  
+
   if [ -n "${CODESPACE_NAME:-}" ]; then
     api_host="https://${CODESPACE_NAME}-35478.app.github.dev"
     webapp_host="https://${CODESPACE_NAME}-3000.app.github.dev"
@@ -50,7 +50,8 @@ function installFrontEnd() {
   fi
   pnpm --prefix web install --unsafe-perm
   pnpm --prefix web generate
-  pnpm --prefix web exec playwright install
+  pnpm --prefix web exec playwright install --with-deps
+  pnpm --prefix web build
 }
 
 # Run preflight

@@ -1,6 +1,10 @@
 import { createOrganization, createRole } from "./api";
 import { expect, test } from "./fixtures";
-import { waitForPermissionsLoad, waitForSuccessToast } from "./helpers";
+import {
+  getFormFieldMessage,
+  waitForPermissionsLoad,
+  waitForSuccessToast,
+} from "./helpers";
 import {
   SettingsOrganizationDetailsPage,
   SettingsOrganizationRoleCreatePage,
@@ -208,6 +212,7 @@ test.describe("@settings.organization-role-create Organization Role Creation E2E
     const roleCreatePage = new SettingsOrganizationRoleCreatePage(page);
     await roleCreatePage.goto(organizationId);
     await roleCreatePage.roleCreateForm.waitForLoad();
+    const nameError = getFormFieldMessage(page, "Name");
 
     // Fill in a name that's too short (less than 3 characters)
     await roleCreatePage.roleCreateForm.fillFields({
@@ -218,9 +223,7 @@ test.describe("@settings.organization-role-create Organization Role Creation E2E
     await roleCreatePage.roleCreateForm.submit("Create Role");
 
     // Verify validation error is shown for the name field
-    await expect(
-      page.getByText(/too small: expected string to have >=3 characters/i)
-    ).toBeVisible();
+    await expect(nameError).toHaveText(/invalid input/i);
   });
 
   test("should save role and show success message", async ({ page }) => {

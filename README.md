@@ -36,11 +36,11 @@ size of company an easy use.
 _The features listed below are part of the roadmap, but not necessarily implemented yet. The __fully__ implemented features are
 marked with a checkmark._
 
-- [ ] **Organizations:** Collaborate on projects across multiple organizations, whether it is your client, vendor, your
+- [x] **Organizations:** Collaborate on projects across multiple organizations, whether it is your client, vendor, your
       subsidiary, or else.
 - [x] **Roles:** Create roles for organizations, namespaces, or projects. Be flexible. You decide on what permissions
       the role has.
-- [ ] **Namespaces:** Organize your projects into namespaces, create namespace-specific roles and forget about
+- [x] **Namespaces:** Organize your projects into namespaces, create namespace-specific roles and forget about
       team-named projects as a workaround.
 - [ ] **Projects:** Group issues and documents into projects and keep everything related at one place. No more
       unnecessary back-and-forth between tabs.

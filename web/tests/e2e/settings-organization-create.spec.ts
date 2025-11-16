@@ -1,6 +1,10 @@
 import { createOrganization } from "./api";
 import { expect, test } from "./fixtures";
-import { waitForErrorToast, waitForSuccessToast } from "./helpers";
+import {
+  getFormFieldMessage,
+  waitForErrorToast,
+  waitForSuccessToast,
+} from "./helpers";
 import {
   SettingsOrganizationCreatePage,
   SettingsOrganizationDetailsPage,
@@ -66,6 +70,8 @@ test.describe("@settings.organization-create Organization Creation E2E Tests", (
   test("should show validation errors for invalid form inputs", async ({
     page,
   }) => {
+    const fieldMessage = (label: string) => getFormFieldMessage(page, label);
+
     await loginUser(page, {
       email: testUser.email,
       password: USER_DEFAULT_PASSWORD,
@@ -77,10 +83,8 @@ test.describe("@settings.organization-create Organization Creation E2E Tests", (
 
     // Try submitting empty form
     await orgCreatePage.organizationCreateForm.submit("Create");
-    await expect(
-      page.getByText(/too small: expected string to have >=1 characters/i)
-    ).toHaveCount(1);
-    await expect(page.getByText(/invalid email address/i)).toHaveCount(1);
+    await expect(fieldMessage("Name")).toHaveText(/invalid input/i);
+    await expect(fieldMessage("Email")).toHaveText(/invalid input/i);
 
     // Fill name but invalid email
     await orgCreatePage.organizationCreateForm.fillField("Name", "Test Org");
@@ -89,7 +93,8 @@ test.describe("@settings.organization-create Organization Creation E2E Tests", (
       "invalid-email"
     );
     await orgCreatePage.organizationCreateForm.submit("Create");
-    await expect(page.getByText(/invalid email address/i)).toHaveCount(1);
+    await expect(fieldMessage("Name")).toHaveCount(0);
+    await expect(fieldMessage("Email")).toHaveText(/invalid input/i);
 
     // Fill valid email but empty name
     await orgCreatePage.organizationCreateForm.fillField("Name", "");
@@ -98,9 +103,8 @@ test.describe("@settings.organization-create Organization Creation E2E Tests", (
       "test@example.com"
     );
     await orgCreatePage.organizationCreateForm.submit("Create");
-    await expect(
-      page.getByText(/too small: expected string to have >=1 characters/i)
-    ).toHaveCount(1);
+    await expect(fieldMessage("Name")).toHaveText(/invalid input/i);
+    await expect(fieldMessage("Email")).toHaveCount(0);
   });
 
   test("should show error when creating duplicate organization", async ({

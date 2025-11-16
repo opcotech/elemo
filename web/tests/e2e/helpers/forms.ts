@@ -56,3 +56,16 @@ export async function waitForFormSubmission(page: Page): Promise<void> {
   await page.waitForLoadState("networkidle").catch(() => {});
   await waitForPageLoad(page);
 }
+
+/**
+ * Returns the form message locator associated with a specific field label.
+ * Useful for asserting validation errors scoped to a particular input.
+ * @param page - Playwright page object
+ * @param label - Label text of the form field
+ */
+export function getFormFieldMessage(page: Page, label: string) {
+  return page
+    .locator("[data-slot='form-item']")
+    .filter({ has: page.getByLabel(label, { exact: true }) })
+    .locator("[data-slot='form-message']");
+}
