@@ -17,11 +17,12 @@ import (
 
 func TestCachedNamespaceRepository_Create(t *testing.T) {
 	type fields struct {
-		cacheRepo     func(ctrl *gomock.Controller, ctx context.Context, organization model.ID, namespace *model.Namespace) *baseRepository
-		namespaceRepo func(ctx context.Context, ctrl *gomock.Controller, organization model.ID, namespace *model.Namespace) repository.NamespaceRepository
+		cacheRepo     func(ctrl *gomock.Controller, ctx context.Context, creatorID, organization model.ID, namespace *model.Namespace) *baseRepository
+		namespaceRepo func(ctx context.Context, ctrl *gomock.Controller, creatorID, organization model.ID, namespace *model.Namespace) repository.NamespaceRepository
 	}
 	type args struct {
 		ctx          context.Context
+		creatorID    model.ID
 		organization model.ID
 		namespace    *model.Namespace
 	}
@@ -34,7 +35,7 @@ func TestCachedNamespaceRepository_Create(t *testing.T) {
 		{
 			name: "add new namespace",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ *model.Namespace) *baseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ model.ID, _ *model.Namespace) *baseRepository {
 					getAllKey := composeCacheKey(model.ResourceTypeNamespace.String(), "GetAll", "*")
 					organizationKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*")
 
@@ -70,28 +71,29 @@ func TestCachedNamespaceRepository_Create(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				namespaceRepo: func(ctx context.Context, ctrl *gomock.Controller, organization model.ID, namespace *model.Namespace) repository.NamespaceRepository {
+				namespaceRepo: func(ctx context.Context, ctrl *gomock.Controller, creatorID, organization model.ID, namespace *model.Namespace) repository.NamespaceRepository {
 					repo := mock.NewNamespaceRepository(ctrl)
-					repo.EXPECT().Create(ctx, organization, namespace).Return(nil)
+					repo.EXPECT().Create(ctx, creatorID, organization, namespace).Return(nil)
 					return repo
 				},
 			},
 			args: args{
 				ctx:          context.Background(),
+				creatorID:    model.MustNewID(model.ResourceTypeUser),
 				organization: model.MustNewID(model.ResourceTypeOrganization),
 				namespace: &model.Namespace{
 					ID:          model.MustNewID(model.ResourceTypeNamespace),
 					Name:        "test namespace",
 					Description: "test description",
-					Projects:    make([]model.ID, 0),
-					Documents:   make([]model.ID, 0),
+					Projects:    make([]*model.NamespaceProject, 0),
+					Documents:   make([]*model.NamespaceDocument, 0),
 				},
 			},
 		},
 		{
 			name: "add new namespace with error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ *model.Namespace) *baseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ model.ID, _ *model.Namespace) *baseRepository {
 					getAllKey := composeCacheKey(model.ResourceTypeNamespace.String(), "GetAll", "*")
 					organizationKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*")
 
@@ -127,21 +129,22 @@ func TestCachedNamespaceRepository_Create(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				namespaceRepo: func(ctx context.Context, ctrl *gomock.Controller, organization model.ID, namespace *model.Namespace) repository.NamespaceRepository {
+				namespaceRepo: func(ctx context.Context, ctrl *gomock.Controller, creatorID, organization model.ID, namespace *model.Namespace) repository.NamespaceRepository {
 					repo := mock.NewNamespaceRepository(ctrl)
-					repo.EXPECT().Create(ctx, organization, namespace).Return(repository.ErrNamespaceCreate)
+					repo.EXPECT().Create(ctx, creatorID, organization, namespace).Return(repository.ErrNamespaceCreate)
 					return repo
 				},
 			},
 			args: args{
 				ctx:          context.Background(),
+				creatorID:    model.MustNewID(model.ResourceTypeUser),
 				organization: model.MustNewID(model.ResourceTypeOrganization),
 				namespace: &model.Namespace{
 					ID:          model.MustNewID(model.ResourceTypeNamespace),
 					Name:        "test namespace",
 					Description: "test description",
-					Projects:    make([]model.ID, 0),
-					Documents:   make([]model.ID, 0),
+					Projects:    make([]*model.NamespaceProject, 0),
+					Documents:   make([]*model.NamespaceDocument, 0),
 				},
 			},
 			wantErr: repository.ErrNamespaceCreate,
@@ -149,7 +152,7 @@ func TestCachedNamespaceRepository_Create(t *testing.T) {
 		{
 			name: "add new namespace with cache delete error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ *model.Namespace) *baseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ model.ID, _ *model.Namespace) *baseRepository {
 					getAllKey := composeCacheKey(model.ResourceTypeNamespace.String(), "GetAll", "*")
 
 					getAllKeyResult := new(redis.StringSliceCmd)
@@ -179,19 +182,20 @@ func TestCachedNamespaceRepository_Create(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				namespaceRepo: func(_ context.Context, _ *gomock.Controller, _ model.ID, _ *model.Namespace) repository.NamespaceRepository {
+				namespaceRepo: func(_ context.Context, _ *gomock.Controller, _ model.ID, _ model.ID, _ *model.Namespace) repository.NamespaceRepository {
 					return mock.NewNamespaceRepository(nil)
 				},
 			},
 			args: args{
 				ctx:          context.Background(),
+				creatorID:    model.MustNewID(model.ResourceTypeUser),
 				organization: model.MustNewID(model.ResourceTypeOrganization),
 				namespace: &model.Namespace{
 					ID:          model.MustNewID(model.ResourceTypeNamespace),
 					Name:        "test namespace",
 					Description: "test description",
-					Projects:    make([]model.ID, 0),
-					Documents:   make([]model.ID, 0),
+					Projects:    make([]*model.NamespaceProject, 0),
+					Documents:   make([]*model.NamespaceDocument, 0),
 				},
 			},
 			wantErr: repository.ErrCacheDelete,
@@ -199,7 +203,7 @@ func TestCachedNamespaceRepository_Create(t *testing.T) {
 		{
 			name: "add new namespace with organization cache delete error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ *model.Namespace) *baseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ model.ID, _ *model.Namespace) *baseRepository {
 					getAllKey := composeCacheKey(model.ResourceTypeNamespace.String(), "GetAll", "*")
 					organizationKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*")
 
@@ -235,19 +239,20 @@ func TestCachedNamespaceRepository_Create(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				namespaceRepo: func(_ context.Context, _ *gomock.Controller, _ model.ID, _ *model.Namespace) repository.NamespaceRepository {
+				namespaceRepo: func(_ context.Context, _ *gomock.Controller, _ model.ID, _ model.ID, _ *model.Namespace) repository.NamespaceRepository {
 					return mock.NewNamespaceRepository(nil)
 				},
 			},
 			args: args{
 				ctx:          context.Background(),
+				creatorID:    model.MustNewID(model.ResourceTypeUser),
 				organization: model.MustNewID(model.ResourceTypeOrganization),
 				namespace: &model.Namespace{
 					ID:          model.MustNewID(model.ResourceTypeNamespace),
 					Name:        "test namespace",
 					Description: "test description",
-					Projects:    make([]model.ID, 0),
-					Documents:   make([]model.ID, 0),
+					Projects:    make([]*model.NamespaceProject, 0),
+					Documents:   make([]*model.NamespaceDocument, 0),
 				},
 			},
 			wantErr: repository.ErrCacheDelete,
@@ -260,10 +265,10 @@ func TestCachedNamespaceRepository_Create(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			r := &CachedNamespaceRepository{
-				cacheRepo:     tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.organization, tt.args.namespace),
-				namespaceRepo: tt.fields.namespaceRepo(tt.args.ctx, ctrl, tt.args.organization, tt.args.namespace),
+				cacheRepo:     tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.creatorID, tt.args.organization, tt.args.namespace),
+				namespaceRepo: tt.fields.namespaceRepo(tt.args.ctx, ctrl, tt.args.creatorID, tt.args.organization, tt.args.namespace),
 			}
-			err := r.Create(tt.args.ctx, tt.args.organization, tt.args.namespace)
+			err := r.Create(tt.args.ctx, tt.args.creatorID, tt.args.organization, tt.args.namespace)
 			require.ErrorIs(t, err, tt.wantErr)
 		})
 	}
@@ -336,8 +341,8 @@ func TestCachedNamespaceRepository_Get(t *testing.T) {
 					ID:          id,
 					Name:        "test namespace",
 					Description: "test description",
-					Projects:    make([]model.ID, 0),
-					Documents:   make([]model.ID, 0),
+					Projects:    make([]*model.NamespaceProject, 0),
+					Documents:   make([]*model.NamespaceDocument, 0),
 				}
 			},
 		},
@@ -385,8 +390,8 @@ func TestCachedNamespaceRepository_Get(t *testing.T) {
 					ID:          id,
 					Name:        "test namespace",
 					Description: "test description",
-					Projects:    make([]model.ID, 0),
-					Documents:   make([]model.ID, 0),
+					Projects:    make([]*model.NamespaceProject, 0),
+					Documents:   make([]*model.NamespaceDocument, 0),
 				}
 			},
 		},
@@ -600,15 +605,15 @@ func TestCachedNamespaceRepository_GetAll(t *testing.T) {
 					ID:          model.MustNewID(model.ResourceTypeNamespace),
 					Name:        "test namespace",
 					Description: "test description",
-					Projects:    make([]model.ID, 0),
-					Documents:   make([]model.ID, 0),
+					Projects:    make([]*model.NamespaceProject, 0),
+					Documents:   make([]*model.NamespaceDocument, 0),
 				},
 				{
 					ID:          model.MustNewID(model.ResourceTypeNamespace),
 					Name:        "test namespace",
 					Description: "test description",
-					Projects:    make([]model.ID, 0),
-					Documents:   make([]model.ID, 0),
+					Projects:    make([]*model.NamespaceProject, 0),
+					Documents:   make([]*model.NamespaceDocument, 0),
 				},
 			},
 		},
@@ -656,15 +661,15 @@ func TestCachedNamespaceRepository_GetAll(t *testing.T) {
 					ID:          model.MustNewID(model.ResourceTypeNamespace),
 					Name:        "test namespace",
 					Description: "test description",
-					Projects:    make([]model.ID, 0),
-					Documents:   make([]model.ID, 0),
+					Projects:    make([]*model.NamespaceProject, 0),
+					Documents:   make([]*model.NamespaceDocument, 0),
 				},
 				{
 					ID:          model.MustNewID(model.ResourceTypeNamespace),
 					Name:        "test namespace",
 					Description: "test description",
-					Projects:    make([]model.ID, 0),
-					Documents:   make([]model.ID, 0),
+					Projects:    make([]*model.NamespaceProject, 0),
+					Documents:   make([]*model.NamespaceDocument, 0),
 				},
 			},
 		},
@@ -883,8 +888,8 @@ func TestCachedNamespaceRepository_Update(t *testing.T) {
 				ID:          model.MustNewID(model.ResourceTypeNamespace),
 				Name:        "test namespace",
 				Description: "test description",
-				Projects:    make([]model.ID, 0),
-				Documents:   make([]model.ID, 0),
+				Projects:    make([]*model.NamespaceProject, 0),
+				Documents:   make([]*model.NamespaceDocument, 0),
 			},
 		},
 		{

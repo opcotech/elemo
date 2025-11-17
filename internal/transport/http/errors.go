@@ -10,6 +10,7 @@ var (
 	ErrNoEmailService        = errors.New("no email service provided")        // no email service provided
 	ErrNoLicenseService      = errors.New("no license service provided")      // no license service provided
 	ErrNoLogger              = errors.New("no logger provided")               // no logger provided
+	ErrNoNamespaceService    = errors.New("no namespace service provided")    // no namespace service provided
 	ErrNoNotificationService = errors.New("no notification service provided") // no notification service provided
 	ErrNoOrganizationService = errors.New("no organization service provided") // no organization service provided
 	ErrNoPermissionService   = errors.New("no permission service provided")   // no permission service provided

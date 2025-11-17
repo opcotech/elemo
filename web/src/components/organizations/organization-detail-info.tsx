@@ -33,7 +33,7 @@ export function OrganizationDetailInfo({
   const hasWritePermission = can(permissions, "write");
 
   return (
-    <Card>
+    <Card data-section="organization-info">
       <CardHeader>
         <div className="flex items-start justify-between">
           <div className="space-y-1">

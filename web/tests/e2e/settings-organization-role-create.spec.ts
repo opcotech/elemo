@@ -1,330 +1,466 @@
-import { expect, test } from "@playwright/test";
-import { createDBUser, loginUser } from "./utils/auth";
+import { createOrganization, createRole } from "./api";
+import { expect, test } from "./fixtures";
 import {
-  addMemberToOrganization,
-  createDBOrganization,
-} from "./utils/organization";
-import { OrganizationPage } from "./pages/organization-page";
-import { Form } from "./components/form";
-import { waitForPageLoad, waitForPermissionsLoad } from "./helpers/navigation";
+  getFormFieldMessage,
+  waitForPermissionsLoad,
+  waitForSuccessToast,
+} from "./helpers";
+import {
+  SettingsOrganizationDetailsPage,
+  SettingsOrganizationRoleCreatePage,
+  SettingsOrganizationRoleEditPage,
+} from "./pages";
+import { USER_DEFAULT_PASSWORD, loginUser } from "./utils/auth";
+import {
+  createUser,
+  grantMembershipToUser,
+  grantPermissionToUser,
+  grantSystemOwnerMembershipToUser,
+} from "./utils/db";
+import { getRandomString } from "./utils/random";
 
-test.describe("@settings.organization-role-create Organization Role Create E2E Tests", () => {
-  test.describe("Permission-Based Visibility", () => {
-    let ownerUser: any;
-    let writeUser: any;
-    let readUser: any;
-    let testOrg: any;
+import type { User } from "@/lib/api";
 
-    test.beforeAll(async () => {
-      ownerUser = await createDBUser("active", {
-        first_name: "Owner",
-        last_name: "User",
-      });
-      writeUser = await createDBUser("active", {
-        first_name: "Write",
-        last_name: "User",
-      });
-      readUser = await createDBUser("active", {
-        first_name: "Read",
-        last_name: "User",
-      });
+test.describe("@settings.organization-role-create Organization Role Creation E2E Tests", () => {
+  let testUser: User;
+  let readOnlyUser: User;
+  let organizationId: string;
 
-      testOrg = await createDBOrganization(ownerUser.id, "active", {
-        name: "Role Create Permission Test Org",
-      });
-      await addMemberToOrganization(testOrg.id, writeUser.id, "read");
-      await addMemberToOrganization(testOrg.id, writeUser.id, "write");
-      await addMemberToOrganization(testOrg.id, readUser.id, "read");
+  test.beforeAll(async ({ testConfig, createApiClient }) => {
+    testUser = await createUser(testConfig);
+    readOnlyUser = await createUser(testConfig);
+
+    // Grant system owner membership so user can create organizations
+    await grantSystemOwnerMembershipToUser(testConfig, testUser.email);
+
+    // Create organization via API
+    const uniqueId = getRandomString(8);
+    const apiClient = await createApiClient(
+      testUser.email,
+      USER_DEFAULT_PASSWORD
+    );
+    const organization = await createOrganization(apiClient, {
+      name: `Test Org Role Create ${uniqueId}`,
+      email: `test-role-create-${uniqueId}@example.com`,
     });
+    organizationId = organization.id;
 
-    test("user with write permission should see create button", async ({
-      page,
-    }) => {
-      await loginUser(page, writeUser, {
-        destination: `/settings/organizations/${testOrg.id}`,
-      });
+    // Grant read-only user read permission on the organization
+    await grantMembershipToUser(
+      testConfig,
+      readOnlyUser.email,
+      "Organization",
+      organizationId
+    );
+    await grantPermissionToUser(
+      testConfig,
+      readOnlyUser.email,
+      "Organization",
+      organizationId,
+      "read"
+    );
+  });
 
-      const orgPage = new OrganizationPage(page, testOrg.id);
-      await orgPage.waitForRolesLoad();
-      await waitForPermissionsLoad(page);
-      await expect(
-        page.getByRole("link", { name: /Create Role/i }).first()
-      ).toBeVisible();
-    });
-
-    test("user with read permission should not see create button", async ({
-      page,
-    }) => {
-      await loginUser(page, readUser, {
-        destination: `/settings/organizations/${testOrg.id}`,
-      });
-
-      const orgPage = new OrganizationPage(page, testOrg.id);
-      await orgPage.waitForRolesLoad();
-      await waitForPermissionsLoad(page);
-      await expect(
-        page.getByRole("link", { name: /Create Role/i })
-      ).not.toBeVisible();
-    });
-
-    test("owner should see create button", async ({ page }) => {
-      await loginUser(page, ownerUser, {
-        destination: `/settings/organizations/${testOrg.id}`,
-      });
-
-      const orgPage = new OrganizationPage(page, testOrg.id);
-      await orgPage.waitForRolesLoad();
-      await waitForPermissionsLoad(page);
-      await expect(
-        page.getByRole("link", { name: /Create Role/i }).first()
-      ).toBeVisible();
+  test.beforeEach(async ({ page }) => {
+    await loginUser(page, {
+      email: testUser.email,
+      password: USER_DEFAULT_PASSWORD,
     });
   });
 
-  test.describe("Navigation", () => {
-    let ownerUser: any;
-    let testOrg: any;
+  test("should display list of organization roles", async ({ page }) => {
+    const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
+    await orgDetailsPage.goto(organizationId);
+    await orgDetailsPage.roles.waitForLoad();
 
-    test.beforeAll(async () => {
-      ownerUser = await createDBUser("active", {
-        first_name: "Owner",
-        last_name: "User",
-      });
-
-      testOrg = await createDBOrganization(ownerUser.id, "active", {
-        name: "Role Create Navigation Test Org",
-      });
-    });
-
-    test("should navigate to create page when create button is clicked", async ({
-      page,
-    }) => {
-      await loginUser(page, ownerUser, {
-        destination: `/settings/organizations/${testOrg.id}`,
-      });
-
-      const orgPage = new OrganizationPage(page, testOrg.id);
-      await orgPage.waitForRolesLoad();
-      await waitForPermissionsLoad(page);
-      await orgPage.clickCreateRole();
-      await waitForPageLoad(page);
-      await expect(page).toHaveURL(
-        `/settings/organizations/${testOrg.id}/roles/new`
-      );
-      await expect(
-        page.getByRole("heading", { name: "Create Role" })
-      ).toBeVisible();
-    });
+    // Verify roles section is visible (by checking the section container)
+    await expect(orgDetailsPage.roles.getSectionContainer()).toBeVisible();
   });
 
-  test.describe("Form Validation", () => {
-    let ownerUser: any;
-    let testOrg: any;
+  test("should allow creating a new role", async ({ page }) => {
+    // Navigate to role create page via the create button
+    const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
+    await orgDetailsPage.goto(organizationId);
+    await orgDetailsPage.roles.waitForLoad();
 
-    test.beforeAll(async () => {
-      ownerUser = await createDBUser("active", {
-        first_name: "Owner",
-        last_name: "User",
-      });
+    // Click create role button
+    await orgDetailsPage.roles.clickCreateRoleButton();
 
-      testOrg = await createDBOrganization(ownerUser.id, "active", {
-        name: "Role Create Validation Test Org",
-      });
+    // Fill role form
+    const roleCreatePage = new SettingsOrganizationRoleCreatePage(page);
+    await roleCreatePage.roleCreateForm.waitForLoad();
+
+    const roleName = `Test Role ${getRandomString(8)}`;
+    const roleDescription = `Test role description ${getRandomString(8)}`;
+    await roleCreatePage.roleCreateForm.fillFields({
+      Name: roleName,
+      Description: roleDescription,
     });
 
-    test.beforeEach(async ({ page }) => {
-      await loginUser(page, ownerUser, {
-        destination: `/settings/organizations/${testOrg.id}/roles/new`,
-      });
-      await waitForPageLoad(page);
-    });
+    // Submit form
+    await roleCreatePage.roleCreateForm.submit("Create Role");
 
-    test("should show validation error for empty name", async ({ page }) => {
-      await page.getByRole("button", { name: "Create Role" }).click();
-      const formMessages = page.locator('[data-slot="form-message"]');
-      await expect(formMessages.first()).toBeVisible({ timeout: 5000 });
-    });
+    // Wait for success toast
+    await waitForSuccessToast(page, "created");
 
-    test("should allow submission with name only", async ({ page }) => {
-      const roleName = `Test Role ${Date.now()}`;
-
-      const form = new Form(page);
-      await form.fillField("Name", roleName);
-      await form.submit("Create Role");
-      await expect(page).toHaveURL(`/settings/organizations/${testOrg.id}`, {
-        timeout: 10000,
-      });
-      await expect(page.getByText("Role created", { exact: true })).toBeVisible(
-        { timeout: 5000 }
-      );
-    });
+    // Verify role appears in the list
+    await orgDetailsPage.roles.waitForLoad();
+    await expect(orgDetailsPage.roles.getRowByRoleName(roleName)).toBeVisible();
   });
 
-  test.describe("Successful Creation", () => {
-    let ownerUser: any;
-    let testOrg: any;
+  test("should grant organization write access to role members when creating role with permissions", async ({
+    page,
+    testConfig,
+  }) => {
+    test.setTimeout(60_000);
 
-    test.beforeAll(async () => {
-      ownerUser = await createDBUser("active", {
-        first_name: "Owner",
-        last_name: "User",
-      });
+    const scenarioUser = await createUser(testConfig);
+    await grantMembershipToUser(
+      testConfig,
+      scenarioUser.email,
+      "Organization",
+      organizationId
+    );
+    await grantPermissionToUser(
+      testConfig,
+      scenarioUser.email,
+      "Organization",
+      organizationId,
+      "read"
+    );
+    const scenarioFullName = `${scenarioUser.first_name} ${scenarioUser.last_name}`;
 
-      testOrg = await createDBOrganization(ownerUser.id, "active", {
-        name: "Role Create Success Test Org",
-      });
+    // Baseline: read-only member cannot edit organization
+    await loginUser(page, {
+      email: scenarioUser.email,
+      password: USER_DEFAULT_PASSWORD,
+    });
+    let orgDetailsPage = new SettingsOrganizationDetailsPage(page);
+    await orgDetailsPage.goto(organizationId);
+    await orgDetailsPage.organizationInfo.waitForLoad();
+    await waitForPermissionsLoad(page, organizationId);
+    expect(
+      await orgDetailsPage.organizationInfo.hasEditOrganizationButton()
+    ).toBeFalsy();
+
+    // Owner logs in to create role with permissions
+    await loginUser(page, {
+      email: testUser.email,
+      password: USER_DEFAULT_PASSWORD,
+    });
+    orgDetailsPage = new SettingsOrganizationDetailsPage(page);
+    await orgDetailsPage.goto(organizationId);
+    await orgDetailsPage.roles.waitForLoad();
+    await orgDetailsPage.roles.clickCreateRoleButton();
+
+    const roleCreatePage = new SettingsOrganizationRoleCreatePage(page);
+    await roleCreatePage.roleCreateForm.waitForLoad();
+
+    const roleName = `Permission Role ${getRandomString(8)}`;
+    const roleDescription = `Permission role description ${getRandomString(8)}`;
+    await roleCreatePage.roleCreateForm.fillFields({
+      Name: roleName,
+      Description: roleDescription,
     });
 
-    test("should create role with name only", async ({ page }) => {
-      await loginUser(page, ownerUser, {
-        destination: `/settings/organizations/${testOrg.id}/roles/new`,
-      });
-      await waitForPageLoad(page);
-
-      const roleName = `Required Role ${Date.now()}`;
-
-      const form = new Form(page);
-      await form.fillField("Name", roleName);
-      await form.submit("Create Role");
-      await expect(page).toHaveURL(`/settings/organizations/${testOrg.id}`, {
-        timeout: 10000,
-      });
-      await expect(page.getByText("Role created", { exact: true })).toBeVisible(
-        { timeout: 5000 }
-      );
-      const orgPage = new OrganizationPage(page, testOrg.id);
-      await orgPage.waitForRolesLoad();
-      await expect(page.getByText(roleName).first()).toBeVisible({
-        timeout: 5000,
-      });
+    // Add organization write permission via the Permissions card
+    await roleCreatePage.rolePermissionDraft.waitForLoad();
+    await roleCreatePage.rolePermissionDraft.addPermission({
+      resourceType: "Organization",
+      resourceId: organizationId,
+      permissionKind: "write",
     });
 
-    test("should create role with name and description", async ({ page }) => {
-      await loginUser(page, ownerUser, {
-        destination: `/settings/organizations/${testOrg.id}/roles/new`,
-      });
-      await waitForPageLoad(page);
+    // Submit creation with pending permission
+    const permissionSubmitLabel = "Create Role with 1 Permission(s)";
+    await roleCreatePage.roleCreateForm.submit(permissionSubmitLabel);
+    await waitForSuccessToast(page, "created");
 
-      const roleName = `Full Role ${Date.now()}`;
-      const roleDescription = `This is a test role created at ${new Date().toISOString()}`;
+    // Navigate back to organization details and verify role exists
+    orgDetailsPage = new SettingsOrganizationDetailsPage(page);
+    await orgDetailsPage.goto(organizationId);
+    await orgDetailsPage.roles.waitForLoad();
+    const newRoleRow = orgDetailsPage.roles.getRowByRoleName(roleName);
+    await expect(newRoleRow).toBeVisible();
 
-      const form = new Form(page);
-      await form.fillFields({
-        Name: roleName,
-        Description: roleDescription,
-      });
-      await form.submit("Create Role");
-      await expect(page).toHaveURL(`/settings/organizations/${testOrg.id}`, {
-        timeout: 10000,
-      });
-      await expect(page.getByText("Role created", { exact: true })).toBeVisible(
-        { timeout: 5000 }
-      );
-      const orgPage = new OrganizationPage(page, testOrg.id);
-      await orgPage.waitForRolesLoad();
-      await expect(page.getByText(roleName).first()).toBeVisible({
-        timeout: 5000,
-      });
+    // Assign the read-only member to the newly created role
+    const editButton = newRoleRow.getByRole("link", { name: /edit role/i });
+    await editButton.click();
+    const roleEditPage = new SettingsOrganizationRoleEditPage(page);
+    await roleEditPage.roleEditForm.waitForLoad();
+    await roleEditPage.members.waitForLoad();
+    await roleEditPage.members.addMember(scenarioFullName);
+    await expect(
+      roleEditPage.members.getRowByMemberName(scenarioFullName)
+    ).toBeVisible();
+
+    // After assignment and permission, member should now see edit button
+    await loginUser(page, {
+      email: scenarioUser.email,
+      password: USER_DEFAULT_PASSWORD,
     });
-
-    test("should show success toast after creation", async ({ page }) => {
-      await loginUser(page, ownerUser, {
-        destination: `/settings/organizations/${testOrg.id}/roles/new`,
-      });
-      await waitForPageLoad(page);
-
-      const roleName = `Toast Test Role ${Date.now()}`;
-
-      const form = new Form(page);
-      await form.fillField("Name", roleName);
-      await form.submit("Create Role");
-      await expect(page.getByText("Role created", { exact: true })).toBeVisible(
-        { timeout: 10000 }
-      );
-      await expect(page.getByText("Role created successfully")).toBeVisible({
-        timeout: 5000,
-      });
-    });
+    orgDetailsPage = new SettingsOrganizationDetailsPage(page);
+    await orgDetailsPage.goto(organizationId);
+    await orgDetailsPage.organizationInfo.waitForLoad();
+    await waitForPermissionsLoad(page, organizationId);
+    expect(
+      await orgDetailsPage.organizationInfo.hasEditOrganizationButton()
+    ).toBeTruthy();
   });
 
-  test.describe("Cancel Functionality", () => {
-    let ownerUser: any;
-    let testOrg: any;
+  test("should show validation errors for invalid inputs", async ({ page }) => {
+    const roleCreatePage = new SettingsOrganizationRoleCreatePage(page);
+    await roleCreatePage.goto(organizationId);
+    await roleCreatePage.roleCreateForm.waitForLoad();
+    const nameError = getFormFieldMessage(page, "Name");
 
-    test.beforeAll(async () => {
-      ownerUser = await createDBUser("active", {
-        first_name: "Owner",
-        last_name: "User",
-      });
-
-      testOrg = await createDBOrganization(ownerUser.id, "active", {
-        name: "Role Create Cancel Test Org",
-      });
+    // Fill in a name that's too short (less than 3 characters)
+    await roleCreatePage.roleCreateForm.fillFields({
+      Name: "AB", // Only 2 characters
     });
 
-    test("should cancel creation and return to organization page", async ({
-      page,
-    }) => {
-      await loginUser(page, ownerUser, {
-        destination: `/settings/organizations/${testOrg.id}/roles/new`,
-      });
-      await waitForPageLoad(page);
-      const form = new Form(page);
-      await form.fillFields({
-        Name: "Test Role",
-        Description: "Test Description",
-      });
-      await page.getByRole("button", { name: "Cancel" }).click();
-      await waitForPageLoad(page);
-      await expect(page).toHaveURL(`/settings/organizations/${testOrg.id}`);
-      await expect(page.getByText("Test Role")).not.toBeVisible();
-    });
+    // Try submitting the form with invalid data
+    await roleCreatePage.roleCreateForm.submit("Create Role");
+
+    // Verify validation error is shown for the name field
+    await expect(nameError).toHaveText(/invalid input/i);
   });
 
-  test.describe("Error Handling", () => {
-    let ownerUser: any;
-    let testOrg: any;
+  test("should save role and show success message", async ({ page }) => {
+    const roleCreatePage = new SettingsOrganizationRoleCreatePage(page);
+    await roleCreatePage.goto(organizationId);
+    await roleCreatePage.roleCreateForm.waitForLoad();
 
-    test.beforeAll(async () => {
-      ownerUser = await createDBUser("active", {
-        first_name: "Owner",
-        last_name: "User",
-      });
+    // Fill and submit form
+    const roleName = `Success Test Role ${getRandomString(8)}`;
+    await roleCreatePage.roleCreateForm.fillFields({
+      Name: roleName,
+    });
+    await roleCreatePage.roleCreateForm.submit("Create Role");
 
-      testOrg = await createDBOrganization(ownerUser.id, "active", {
-        name: "Role Create Error Test Org",
-      });
+    // Verify success toast is shown and we're redirected to org details
+    await waitForSuccessToast(page, "created");
+
+    // Verify we're on the roles list page and the role exists
+    const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
+    await orgDetailsPage.roles.waitForLoad();
+
+    await expect(orgDetailsPage.roles.getRowByRoleName(roleName)).toBeVisible();
+  });
+
+  test("should persist role after page reload", async ({ page }) => {
+    // Create role
+    const roleCreatePage = new SettingsOrganizationRoleCreatePage(page);
+    await roleCreatePage.goto(organizationId);
+    await roleCreatePage.roleCreateForm.waitForLoad();
+
+    const roleName = `Persist Test Role ${getRandomString(8)}`;
+    await roleCreatePage.roleCreateForm.fillFields({
+      Name: roleName,
+    });
+    await roleCreatePage.roleCreateForm.submit("Create Role");
+    await waitForSuccessToast(page, "created");
+
+    // Reload page
+    await page.reload();
+
+    // Verify role still exists
+    const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
+    await orgDetailsPage.roles.waitForLoad();
+    await expect(orgDetailsPage.roles.getRowByRoleName(roleName)).toBeVisible();
+  });
+
+  test("should not show create role button without organization write permission", async ({
+    page,
+  }) => {
+    // Login as read-only user
+    await loginUser(page, {
+      email: readOnlyUser.email,
+      password: USER_DEFAULT_PASSWORD,
     });
 
-    test("should handle creation errors gracefully", async ({ page }) => {
-      await loginUser(page, ownerUser, {
-        destination: `/settings/organizations/${testOrg.id}/roles/new`,
-      });
-      await waitForPageLoad(page);
-      const longName = "A".repeat(1000);
-      const form = new Form(page);
-      await form.fillField("Name", longName);
-      await page.getByRole("button", { name: "Create Role" }).click();
-      await Promise.race([
-        page
-          .waitForURL((url) => !url.pathname.includes("/roles/new"), {
-            timeout: 5000,
-          })
-          .catch(() => null),
-        page
-          .waitForSelector('[role="alert"]', { timeout: 5000 })
-          .catch(() => null),
-        page
-          .waitForSelector('[data-slot="form-message"]', { timeout: 5000 })
-          .catch(() => null),
-      ]);
-      const errorAlert = page.locator('[role="alert"]');
-      const hasError = await errorAlert.isVisible().catch(() => false);
-      const isOnOrgPage =
-        page.url().includes(`/settings/organizations/${testOrg.id}`) &&
-        !page.url().includes("/roles/new");
-      const isStillOnCreatePage = page.url().includes("/roles/new");
-      expect(hasError || isOnOrgPage || isStillOnCreatePage).toBe(true);
+    // Navigate to organization details
+    const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
+    await orgDetailsPage.goto(organizationId);
+    await orgDetailsPage.roles.waitForLoad();
+
+    // Verify create button is not visible
+    expect(await orgDetailsPage.roles.hasCreateRoleButton()).toBeFalsy();
+  });
+
+  test("should not show add member button without role write permission", async ({
+    page,
+    createApiClient,
+  }) => {
+    // Create a role as testUser (who has write permission)
+    const apiClient = await createApiClient(
+      testUser.email,
+      USER_DEFAULT_PASSWORD
+    );
+    const role = await createRole(apiClient, organizationId, {
+      name: `Test Role Member Perm ${getRandomString(8)}`,
     });
+
+    // Login as read-only user
+    await loginUser(page, {
+      email: readOnlyUser.email,
+      password: USER_DEFAULT_PASSWORD,
+    });
+
+    // Navigate to organization details
+    const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
+    await orgDetailsPage.goto(organizationId);
+    await orgDetailsPage.roles.waitForLoad();
+
+    // Verify role is visible but add member button is not
+    const roleRow = orgDetailsPage.roles.getRowByRoleName(role.name);
+    await expect(roleRow).toBeVisible();
+
+    // Verify add member button (UserPlus icon) is not visible
+    const addMemberButton = roleRow.getByRole("button", {
+      name: /add member/i,
+    });
+    await expect(addMemberButton).not.toBeVisible();
+  });
+
+  test("should not show edit role button without role write permission", async ({
+    page,
+    createApiClient,
+  }) => {
+    // Create a role as testUser (who has write permission)
+    const apiClient = await createApiClient(
+      testUser.email,
+      USER_DEFAULT_PASSWORD
+    );
+    const role = await createRole(apiClient, organizationId, {
+      name: `Test Role Edit Perm ${getRandomString(8)}`,
+    });
+
+    // Login as read-only user
+    await loginUser(page, {
+      email: readOnlyUser.email,
+      password: USER_DEFAULT_PASSWORD,
+    });
+
+    // Navigate to organization details
+    const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
+    await orgDetailsPage.goto(organizationId);
+    await orgDetailsPage.roles.waitForLoad();
+
+    // Verify role is visible but edit button is not
+    const roleRow = orgDetailsPage.roles.getRowByRoleName(role.name);
+    await expect(roleRow).toBeVisible();
+
+    // Verify edit button (Edit icon) is not visible
+    const editButton = roleRow.getByRole("button", { name: /edit role/i });
+    await expect(editButton).not.toBeVisible();
+  });
+
+  test("should not show delete role button without role delete permission", async ({
+    page,
+    createApiClient,
+  }) => {
+    // Create a role as testUser (who has write permission)
+    const apiClient = await createApiClient(
+      testUser.email,
+      USER_DEFAULT_PASSWORD
+    );
+    const role = await createRole(apiClient, organizationId, {
+      name: `Test Role Delete Perm ${getRandomString(8)}`,
+    });
+
+    // Login as read-only user
+    await loginUser(page, {
+      email: readOnlyUser.email,
+      password: USER_DEFAULT_PASSWORD,
+    });
+
+    // Navigate to organization details
+    const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
+    await orgDetailsPage.goto(organizationId);
+    await orgDetailsPage.roles.waitForLoad();
+
+    // Verify role is visible but delete button is not
+    const roleRow = orgDetailsPage.roles.getRowByRoleName(role.name);
+    await expect(roleRow).toBeVisible();
+
+    // Verify delete button (Trash2 icon) is not visible
+    const deleteButton = roleRow.getByRole("button", {
+      name: /delete role/i,
+    });
+    await expect(deleteButton).not.toBeVisible();
+  });
+
+  test("should create role with only name (description optional)", async ({
+    page,
+  }) => {
+    const roleCreatePage = new SettingsOrganizationRoleCreatePage(page);
+    await roleCreatePage.goto(organizationId);
+    await roleCreatePage.roleCreateForm.waitForLoad();
+
+    // Fill only name field
+    const roleName = `Name Only Role ${getRandomString(8)}`;
+    await roleCreatePage.roleCreateForm.fillField("Name", roleName);
+
+    // Submit form
+    await roleCreatePage.roleCreateForm.submit("Create Role");
+
+    // Verify success
+    await waitForSuccessToast(page, "created");
+
+    // Verify role appears in list
+    const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
+    await orgDetailsPage.roles.waitForLoad();
+    await expect(orgDetailsPage.roles.getRowByRoleName(roleName)).toBeVisible();
+  });
+
+  test("should allow canceling role creation and return to organization details", async ({
+    page,
+  }) => {
+    const roleCreatePage = new SettingsOrganizationRoleCreatePage(page);
+    await roleCreatePage.goto(organizationId);
+    await roleCreatePage.roleCreateForm.waitForLoad();
+
+    // Fill some data
+    await roleCreatePage.roleCreateForm.fillField(
+      "Name",
+      `Cancel Test ${getRandomString(8)}`
+    );
+
+    // Click cancel button
+    await roleCreatePage.roleCreateForm.cancel();
+
+    // Verify navigated back to organization details
+    const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
+    await orgDetailsPage.roles.waitForLoad();
+  });
+
+  test("should show role in list with correct details", async ({ page }) => {
+    const roleName = `Details Test Role ${getRandomString(8)}`;
+    const roleDescription = `This is a detailed description ${getRandomString(8)}`;
+
+    // Create role via UI
+    const roleCreatePage = new SettingsOrganizationRoleCreatePage(page);
+    await roleCreatePage.goto(organizationId);
+    await roleCreatePage.roleCreateForm.waitForLoad();
+
+    await roleCreatePage.roleCreateForm.fillFields({
+      Name: roleName,
+      Description: roleDescription,
+    });
+    await roleCreatePage.roleCreateForm.submit("Create Role");
+    await waitForSuccessToast(page, "created");
+
+    // Navigate to roles list
+    const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
+    await orgDetailsPage.goto(organizationId);
+    await orgDetailsPage.roles.waitForLoad();
+
+    // Verify role details in the table
+    const roleRow = orgDetailsPage.roles.getRowByRoleName(roleName);
+    await expect(roleRow).toBeVisible();
+    await expect(roleRow.getByText(roleName)).toBeVisible();
+    await expect(roleRow.getByText(roleDescription)).toBeVisible();
+    await expect(roleRow.getByText("1 member")).toBeVisible();
   });
 });

@@ -10,6 +10,9 @@ import {
 import { client } from "../client.gen";
 import {
   type Options,
+  v1NamespaceDelete,
+  v1NamespaceGet,
+  v1NamespaceUpdate,
   v1NotificationDelete,
   v1NotificationGet,
   v1NotificationsGet,
@@ -35,6 +38,8 @@ import {
   v1OrganizationRoleUpdate,
   v1OrganizationsCreate,
   v1OrganizationsGet,
+  v1OrganizationsNamespacesCreate,
+  v1OrganizationsNamespacesGet,
   v1OrganizationUpdate,
   v1PermissionDelete,
   v1PermissionGet,
@@ -61,6 +66,13 @@ import {
   v1UserUpdate,
 } from "../sdk.gen";
 import type {
+  V1NamespaceDeleteData,
+  V1NamespaceDeleteError,
+  V1NamespaceDeleteResponse,
+  V1NamespaceGetData,
+  V1NamespaceUpdateData,
+  V1NamespaceUpdateError,
+  V1NamespaceUpdateResponse,
   V1NotificationDeleteData,
   V1NotificationDeleteError,
   V1NotificationDeleteResponse,
@@ -124,6 +136,12 @@ import type {
   V1OrganizationsGetData,
   V1OrganizationsGetError,
   V1OrganizationsGetResponse,
+  V1OrganizationsNamespacesCreateData,
+  V1OrganizationsNamespacesCreateError,
+  V1OrganizationsNamespacesCreateResponse,
+  V1OrganizationsNamespacesGetData,
+  V1OrganizationsNamespacesGetError,
+  V1OrganizationsNamespacesGetResponse,
   V1OrganizationUpdateData,
   V1OrganizationUpdateError,
   V1OrganizationUpdateResponse,
@@ -1555,6 +1573,195 @@ export const v1OrganizationRolePermissionRemoveMutation = (
   > = {
     mutationFn: async (fnOptions) => {
       const { data } = await v1OrganizationRolePermissionRemove({
+        ...options,
+        ...fnOptions,
+        throwOnError: true,
+      });
+      return data;
+    },
+  };
+  return mutationOptions;
+};
+
+export const v1OrganizationsNamespacesGetQueryKey = (
+  options: Options<V1OrganizationsNamespacesGetData>
+) => createQueryKey("v1OrganizationsNamespacesGet", options);
+
+/**
+ * Get organization namespaces
+ *
+ * Return the namespaces that belong to the organization.
+ */
+export const v1OrganizationsNamespacesGetOptions = (
+  options: Options<V1OrganizationsNamespacesGetData>
+) => {
+  return queryOptions({
+    queryFn: async ({ queryKey, signal }) => {
+      const { data } = await v1OrganizationsNamespacesGet({
+        ...options,
+        ...queryKey[0],
+        signal,
+        throwOnError: true,
+      });
+      return data;
+    },
+    queryKey: v1OrganizationsNamespacesGetQueryKey(options),
+  });
+};
+
+export const v1OrganizationsNamespacesGetInfiniteQueryKey = (
+  options: Options<V1OrganizationsNamespacesGetData>
+): QueryKey<Options<V1OrganizationsNamespacesGetData>> =>
+  createQueryKey("v1OrganizationsNamespacesGet", options, true);
+
+/**
+ * Get organization namespaces
+ *
+ * Return the namespaces that belong to the organization.
+ */
+export const v1OrganizationsNamespacesGetInfiniteOptions = (
+  options: Options<V1OrganizationsNamespacesGetData>
+) => {
+  return infiniteQueryOptions<
+    V1OrganizationsNamespacesGetResponse,
+    V1OrganizationsNamespacesGetError,
+    InfiniteData<V1OrganizationsNamespacesGetResponse>,
+    QueryKey<Options<V1OrganizationsNamespacesGetData>>,
+    | number
+    | Pick<
+        QueryKey<Options<V1OrganizationsNamespacesGetData>>[0],
+        "body" | "headers" | "path" | "query"
+      >
+  >(
+    // @ts-ignore
+    {
+      queryFn: async ({ pageParam, queryKey, signal }) => {
+        // @ts-ignore
+        const page: Pick<
+          QueryKey<Options<V1OrganizationsNamespacesGetData>>[0],
+          "body" | "headers" | "path" | "query"
+        > =
+          typeof pageParam === "object"
+            ? pageParam
+            : {
+                query: {
+                  offset: pageParam,
+                },
+              };
+        const params = createInfiniteParams(queryKey, page);
+        const { data } = await v1OrganizationsNamespacesGet({
+          ...options,
+          ...params,
+          signal,
+          throwOnError: true,
+        });
+        return data;
+      },
+      queryKey: v1OrganizationsNamespacesGetInfiniteQueryKey(options),
+    }
+  );
+};
+
+/**
+ * Create namespace in organization
+ *
+ * Create a new namespace in the organization.
+ */
+export const v1OrganizationsNamespacesCreateMutation = (
+  options?: Partial<Options<V1OrganizationsNamespacesCreateData>>
+): UseMutationOptions<
+  V1OrganizationsNamespacesCreateResponse,
+  V1OrganizationsNamespacesCreateError,
+  Options<V1OrganizationsNamespacesCreateData>
+> => {
+  const mutationOptions: UseMutationOptions<
+    V1OrganizationsNamespacesCreateResponse,
+    V1OrganizationsNamespacesCreateError,
+    Options<V1OrganizationsNamespacesCreateData>
+  > = {
+    mutationFn: async (fnOptions) => {
+      const { data } = await v1OrganizationsNamespacesCreate({
+        ...options,
+        ...fnOptions,
+        throwOnError: true,
+      });
+      return data;
+    },
+  };
+  return mutationOptions;
+};
+
+/**
+ * Delete namespace
+ *
+ * Delete the namespace by its ID.
+ */
+export const v1NamespaceDeleteMutation = (
+  options?: Partial<Options<V1NamespaceDeleteData>>
+): UseMutationOptions<
+  V1NamespaceDeleteResponse,
+  V1NamespaceDeleteError,
+  Options<V1NamespaceDeleteData>
+> => {
+  const mutationOptions: UseMutationOptions<
+    V1NamespaceDeleteResponse,
+    V1NamespaceDeleteError,
+    Options<V1NamespaceDeleteData>
+  > = {
+    mutationFn: async (fnOptions) => {
+      const { data } = await v1NamespaceDelete({
+        ...options,
+        ...fnOptions,
+        throwOnError: true,
+      });
+      return data;
+    },
+  };
+  return mutationOptions;
+};
+
+export const v1NamespaceGetQueryKey = (options: Options<V1NamespaceGetData>) =>
+  createQueryKey("v1NamespaceGet", options);
+
+/**
+ * Get namespace
+ *
+ * Return the requested namespace by its ID.
+ */
+export const v1NamespaceGetOptions = (options: Options<V1NamespaceGetData>) => {
+  return queryOptions({
+    queryFn: async ({ queryKey, signal }) => {
+      const { data } = await v1NamespaceGet({
+        ...options,
+        ...queryKey[0],
+        signal,
+        throwOnError: true,
+      });
+      return data;
+    },
+    queryKey: v1NamespaceGetQueryKey(options),
+  });
+};
+
+/**
+ * Update namespace
+ *
+ * Update the namespace by its ID.
+ */
+export const v1NamespaceUpdateMutation = (
+  options?: Partial<Options<V1NamespaceUpdateData>>
+): UseMutationOptions<
+  V1NamespaceUpdateResponse,
+  V1NamespaceUpdateError,
+  Options<V1NamespaceUpdateData>
+> => {
+  const mutationOptions: UseMutationOptions<
+    V1NamespaceUpdateResponse,
+    V1NamespaceUpdateError,
+    Options<V1NamespaceUpdateData>
+  > = {
+    mutationFn: async (fnOptions) => {
+      const { data } = await v1NamespaceUpdate({
         ...options,
         ...fnOptions,
         throwOnError: true,

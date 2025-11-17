@@ -17,24 +17,13 @@ export async function waitForToast(
   text: string,
   options?: { timeout?: number; exact?: boolean }
 ): Promise<void> {
-  const timeout = options?.timeout ?? 10000;
+  const timeout = options?.timeout ?? 5000;
   const exact = options?.exact ?? false;
-  const titleLocator = page.locator(`[data-title="${text}"]`);
-  const textLocator = page.getByText(text, { exact });
-  try {
-    await expect(titleLocator).toBeVisible({
-      timeout: Math.min(timeout, 2000),
-    });
-    return;
-  } catch {
-    const count = await textLocator.count();
-    if (count > 0) {
-      await expect(textLocator.first()).toBeVisible({ timeout });
-    } else {
-      await page.waitForTimeout(500);
-      await expect(textLocator.first()).toBeVisible({ timeout });
-    }
-  }
+  const searchValue = buildTextMatcher(text, exact);
+  const toastLocator = page.locator("[data-sonner-toast]").filter({
+    hasText: searchValue,
+  });
+  await expect(toastLocator.first()).toBeVisible({ timeout });
 }
 
 /**
@@ -75,7 +64,7 @@ export async function waitForErrorToast(
     await waitForToast(page, text, options);
   } else {
     await expect(page.locator('[role="alert"]')).toBeVisible({
-      timeout: options?.timeout ?? 10000,
+      timeout: options?.timeout ?? 5000,
     });
   }
 }
@@ -94,4 +83,17 @@ export async function isToastVisible(
     .getByText(text)
     .isVisible()
     .catch(() => false);
+}
+
+function buildTextMatcher(text: string, exact: boolean): string | RegExp {
+  const normalized = text.trim();
+  if (!normalized) {
+    throw new Error("Toast text must be a non-empty string");
+  }
+
+  return exact ? normalized : new RegExp(escapeRegExp(normalized), "i");
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }

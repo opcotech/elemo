@@ -15,6 +15,7 @@ export function useDeleteMutation<
   TData = unknown,
   TVariables = unknown,
   TError = Error,
+  TContext = unknown,
 >({
   mutationOptions,
   successMessage,
@@ -25,7 +26,7 @@ export function useDeleteMutation<
   onError,
   navigateOnSuccess,
 }: {
-  mutationOptions: UseMutationOptions<TData, TError, TVariables>;
+  mutationOptions: UseMutationOptions<TData, TError, TVariables, TContext>;
   successMessage: string;
   successDescription?: string;
   errorMessagePrefix?: string;
@@ -37,11 +38,11 @@ export function useDeleteMutation<
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
-  return useMutation({
+  return useMutation<TData, TError, TVariables, TContext>({
     ...mutationOptions,
-    onSuccess: (data, variables, context) => {
+    onSuccess: (data, variables, context, mutation) => {
       // Call original onSuccess if provided
-      mutationOptions.onSuccess?.(data, variables, context);
+      mutationOptions.onSuccess?.(data, variables, context, mutation);
 
       // Invalidate queries
       queryKeysToInvalidate.forEach((queryKey) => {
@@ -69,9 +70,9 @@ export function useDeleteMutation<
         }
       }
     },
-    onError: (error, variables, context) => {
+    onError: (error, variables, context, mutation) => {
       // Call original onError if provided
-      mutationOptions.onError?.(error, variables, context);
+      mutationOptions.onError?.(error, variables, context, mutation);
 
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error occurred";

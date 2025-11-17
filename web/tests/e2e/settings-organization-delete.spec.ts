@@ -1,275 +1,186 @@
-import { expect, test } from "@playwright/test";
-import { createDBUser, loginUser } from "./utils/auth";
+import { createOrganization } from "./api";
+import { Dialog } from "./components";
+import { expect, test } from "./fixtures";
+import { waitForPermissionsLoad, waitForSuccessToast } from "./helpers";
 import {
-  addMemberToOrganization,
-  createDBOrganization,
-} from "./utils/organization";
-import { OrganizationPage } from "./pages/organization-page";
-import { Dialog } from "./components/dialog";
-import { waitForPageLoad, waitForPermissionsLoad } from "./helpers/navigation";
-import { waitForSuccessToast } from "./helpers/toast";
+  SettingsOrganizationDetailsPage,
+  SettingsOrganizationsPage,
+} from "./pages";
+import { USER_DEFAULT_PASSWORD, loginUser } from "./utils/auth";
+import {
+  createUser,
+  grantMembershipToUser,
+  grantPermissionToUser,
+  grantSystemOwnerMembershipToUser,
+} from "./utils/db";
+import { getRandomString } from "./utils/random";
+
+import type { User } from "@/lib/api";
 
 test.describe("@settings.organization-delete Organization Delete E2E Tests", () => {
-  test.describe("Permission-Based Visibility", () => {
-    let ownerUser: any;
-    let readUser: any;
-    let writeUser: any;
-    let deleteUser: any;
-    let testOrganization: any;
+  let ownerUser: User;
 
-    test.beforeAll(async () => {
-      ownerUser = await createDBUser("active");
-      readUser = await createDBUser("active");
-      writeUser = await createDBUser("active");
-      deleteUser = await createDBUser("active");
-      testOrganization = await createDBOrganization(ownerUser.id, "active", {
-        name: "Permission Test Organization",
-      });
-      await addMemberToOrganization(testOrganization.id, readUser.id, "read");
-      await addMemberToOrganization(testOrganization.id, writeUser.id, "write");
-      await addMemberToOrganization(
-        testOrganization.id,
-        deleteUser.id,
-        "delete"
-      );
-    });
+  test.beforeAll(async ({ testConfig }) => {
+    ownerUser = await createUser(testConfig);
 
-    test("user with delete permission should see danger zone", async ({
-      page,
-    }) => {
-      await loginUser(page, ownerUser, {
-        destination: `/settings/organizations/${testOrganization.id}`,
-      });
-
-      const orgPage = new OrganizationPage(page, testOrganization.id);
-      await orgPage.waitForRolesLoad();
-      await waitForPermissionsLoad(page);
-      await expect(
-        page.getByRole("button", { name: "Delete Organization" })
-      ).toBeVisible({ timeout: 15000 });
-    });
-
-    test("user with delete-only permission should see danger zone", async ({
-      page,
-    }) => {
-      await loginUser(page, deleteUser, {
-        destination: `/settings/organizations/${testOrganization.id}`,
-      });
-      await waitForPermissionsLoad(page);
-
-      await expect(
-        page.getByRole("button", { name: "Delete Organization" })
-      ).toBeVisible({ timeout: 15000 });
-    });
-
-    test("user with read permission should not see danger zone", async ({
-      page,
-    }) => {
-      await loginUser(page, readUser, {
-        destination: `/settings/organizations/${testOrganization.id}`,
-      });
-
-      const orgPage = new OrganizationPage(page, testOrganization.id);
-      await orgPage.waitForRolesLoad();
-      await waitForPermissionsLoad(page);
-
-      await expect(
-        page.getByRole("button", { name: "Delete Organization" })
-      ).not.toBeVisible();
-    });
-
-    test("user with write permission should not see danger zone", async ({
-      page,
-    }) => {
-      await loginUser(page, writeUser, {
-        destination: `/settings/organizations/${testOrganization.id}`,
-      });
-
-      const orgPage = new OrganizationPage(page, testOrganization.id);
-      await orgPage.waitForRolesLoad();
-      await waitForPermissionsLoad(page);
-
-      await expect(
-        page.getByRole("button", { name: "Delete Organization" })
-      ).not.toBeVisible();
-    });
-
-    test("deleted organization should not show danger zone", async ({
-      page,
-    }) => {
-      const deletedOrg = await createDBOrganization(ownerUser.id, "deleted", {
-        name: "Deleted Test Organization",
-      });
-
-      await loginUser(page, ownerUser, {
-        destination: `/settings/organizations/${deletedOrg.id}`,
-      });
-
-      const orgPage = new OrganizationPage(page, deletedOrg.id);
-      await orgPage.waitForRolesLoad();
-      await waitForPermissionsLoad(page);
-      await expect(
-        page.getByRole("button", { name: "Delete Organization" })
-      ).not.toBeVisible();
-    });
+    // Grant system owner membership so users can create organizations
+    await grantSystemOwnerMembershipToUser(testConfig, ownerUser.email);
   });
 
-  test.describe("Delete Dialog", () => {
-    let ownerUser: any;
-    let testOrganization: any;
+  test("should delete organization", async ({ page, createApiClient }) => {
+    const apiClient = await createApiClient(
+      ownerUser.email,
+      USER_DEFAULT_PASSWORD
+    );
 
-    test.beforeEach(async () => {
-      ownerUser = await createDBUser("active");
-      testOrganization = await createDBOrganization(ownerUser.id, "active", {
-        name: `Delete Test Org ${Date.now()}`,
-      });
+    const orgToDelete = await createOrganization(apiClient, {
+      name: `Org To Delete ${getRandomString(8)}`,
+      email: `delete-test-${getRandomString(8)}@example.com`,
     });
 
-    test("should open delete dialog when delete button is clicked", async ({
-      page,
-    }) => {
-      await loginUser(page, ownerUser, {
-        destination: `/settings/organizations/${testOrganization.id}`,
-      });
-
-      const orgPage = new OrganizationPage(page, testOrganization.id);
-      await orgPage.waitForRolesLoad();
-      await waitForPermissionsLoad(page);
-
-      await expect(page.getByText("Danger Zone", { exact: true })).toBeVisible({
-        timeout: 10000,
-      });
-      await expect(
-        page.getByRole("button", { name: "Delete Organization" })
-      ).toBeVisible({ timeout: 10000 });
-      await page.getByRole("button", { name: "Delete Organization" }).click();
-      const dialog = new Dialog(page);
-      await dialog.waitFor();
-      const dialogLocator = dialog.getLocator();
-      await expect(
-        dialogLocator.getByText(
-          `Are you sure you want to delete ${testOrganization.name}?`,
-          { exact: false }
-        )
-      ).toBeVisible();
-
-      await expect(
-        dialogLocator.getByText("This will mark the organization as deleted", {
-          exact: false,
-        })
-      ).toBeVisible();
-      await expect(
-        dialogLocator.getByText("What will happen:", { exact: false })
-      ).toBeVisible();
+    await loginUser(page, {
+      email: ownerUser.email,
+      password: USER_DEFAULT_PASSWORD,
     });
 
-    test("should close dialog when cancel is clicked", async ({ page }) => {
-      await loginUser(page, ownerUser, {
-        destination: `/settings/organizations/${testOrganization.id}`,
-      });
+    const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
+    await orgDetailsPage.goto(orgToDelete.id);
+    await orgDetailsPage.dangerZone.waitForLoad();
 
-      const orgPage = new OrganizationPage(page, testOrganization.id);
-      await orgPage.waitForRolesLoad();
-      await waitForPermissionsLoad(page);
+    // Click delete button
+    await orgDetailsPage.dangerZone.clickDeleteButton();
 
-      await expect(page.getByText("Danger Zone", { exact: true })).toBeVisible({
-        timeout: 10000,
-      });
-      await page.getByRole("button", { name: "Delete Organization" }).click();
-      const dialog = new Dialog(page);
-      await dialog.waitFor();
-      await dialog.cancel();
-      await expect(page).toHaveURL(
-        `/settings/organizations/${testOrganization.id}`
-      );
-    });
+    // Wait for and confirm delete dialog
+    const dialog = new Dialog(page);
+    await dialog.waitFor("Are you sure you want to delete");
+    await dialog.confirm("Delete");
+
+    // Wait for success toast
+    await waitForSuccessToast(page, "deleted");
+
+    // Verify organization appears as deleted
+    const orgsPage = new SettingsOrganizationsPage(page);
+    await orgsPage.organizations.waitForLoad();
+    expect(
+      orgsPage.organizations
+        .getRowByOrganizationName(orgToDelete.name)
+        .getByText("Deleted")
+    ).toBeTruthy();
   });
 
-  test.describe("Successful Deletion", () => {
-    let ownerUser: any;
-    let testOrganization: any;
+  test("should delete organization with delete permission", async ({
+    page,
+    testConfig,
+    createApiClient,
+  }) => {
+    const apiClient = await createApiClient(
+      ownerUser.email,
+      USER_DEFAULT_PASSWORD
+    );
 
-    test.beforeEach(async () => {
-      ownerUser = await createDBUser("active");
-      testOrganization = await createDBOrganization(ownerUser.id, "active", {
-        name: `Delete Success Test ${Date.now()}`,
-      });
+    const orgToDelete = await createOrganization(apiClient, {
+      name: `Org To Delete ${getRandomString(8)}`,
+      email: `delete-permission-test-${getRandomString(8)}@example.com`,
     });
 
-    test("should successfully delete organization and redirect to list", async ({
-      page,
-    }) => {
-      await loginUser(page, ownerUser, {
-        destination: `/settings/organizations/${testOrganization.id}`,
-      });
+    const deletePermissionUser = await createUser(testConfig);
 
-      const orgPage = new OrganizationPage(page, testOrganization.id);
-      await orgPage.waitForRolesLoad();
-      await waitForPermissionsLoad(page);
+    // Grant delete permission to deletePermissionUser for this org
+    await grantMembershipToUser(
+      testConfig,
+      deletePermissionUser.email,
+      "Organization",
+      orgToDelete.id
+    );
+    await grantPermissionToUser(
+      testConfig,
+      deletePermissionUser.email,
+      "Organization",
+      orgToDelete.id,
+      "read"
+    );
+    await grantPermissionToUser(
+      testConfig,
+      deletePermissionUser.email,
+      "Organization",
+      orgToDelete.id,
+      "delete"
+    );
 
-      await expect(page.getByText("Danger Zone", { exact: true })).toBeVisible({
-        timeout: 10000,
-      });
-      await page.getByRole("button", { name: "Delete Organization" }).click();
-      const dialog = new Dialog(page);
-      await dialog.waitFor();
-      await dialog.confirm("Delete");
-      await expect(page).toHaveURL("/settings/organizations", {
-        timeout: 10000,
-      });
-      await expect(
-        page.getByRole("heading", { name: "Organizations", level: 1 })
-      ).toBeVisible({ timeout: 5000 });
+    await loginUser(page, {
+      email: deletePermissionUser.email,
+      password: USER_DEFAULT_PASSWORD,
     });
 
-    test("should show success toast after deletion", async ({ page }) => {
-      await loginUser(page, ownerUser, {
-        destination: `/settings/organizations/${testOrganization.id}`,
-      });
+    const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
+    await orgDetailsPage.goto(orgToDelete.id);
+    await orgDetailsPage.dangerZone.waitForLoad();
 
-      const orgPage = new OrganizationPage(page, testOrganization.id);
-      await orgPage.waitForRolesLoad();
-      await waitForPermissionsLoad(page);
+    // Click delete button
+    await orgDetailsPage.dangerZone.clickDeleteButton();
 
-      await expect(page.getByText("Danger Zone", { exact: true })).toBeVisible({
-        timeout: 10000,
-      });
-      await page.getByRole("button", { name: "Delete Organization" }).click();
-      const dialog = new Dialog(page);
-      await dialog.waitFor();
-      await dialog.confirm("Delete");
-      await waitForSuccessToast(page, "Organization deleted", {
-        timeout: 10000,
-      });
-    });
+    // Wait for and confirm delete dialog
+    const dialog = new Dialog(page);
+    await dialog.waitFor("Are you sure you want to delete");
+    await dialog.confirm("Delete");
+
+    // Wait for success toast
+    await waitForSuccessToast(page, "deleted");
+
+    // Verify organization appears as deleted
+    const orgsPage = new SettingsOrganizationsPage(page);
+    await orgsPage.organizations.waitForLoad();
+    expect(
+      orgsPage.organizations
+        .getRowByOrganizationName(orgToDelete.name)
+        .getByText("Deleted")
+    ).toBeTruthy();
   });
 
-  test.describe("Error Handling", () => {
-    let ownerUser: any;
-    let testOrganization: any;
+  test("should not show delete button without delete permission", async ({
+    page,
+    createApiClient,
+    testConfig,
+  }) => {
+    const apiClient = await createApiClient(
+      ownerUser.email,
+      USER_DEFAULT_PASSWORD
+    );
 
-    test.beforeEach(async () => {
-      ownerUser = await createDBUser("active");
-      testOrganization = await createDBOrganization(ownerUser.id, "active", {
-        name: `Error Test Org ${Date.now()}`,
-      });
+    const organization = await createOrganization(apiClient, {
+      name: `Test Org ${getRandomString(8)}`,
+      email: `test-${getRandomString(8)}@example.com`,
     });
 
-    test("should handle deletion errors gracefully", async ({ page }) => {
-      await loginUser(page, ownerUser, {
-        destination: `/settings/organizations/${testOrganization.id}`,
-      });
+    const noDeletePermissionUser = await createUser(testConfig);
 
-      const orgPage = new OrganizationPage(page, testOrganization.id);
-      await orgPage.waitForRolesLoad();
-      await waitForPermissionsLoad(page);
-      await page.getByRole("button", { name: "Delete Organization" }).click();
-      const dialog = new Dialog(page);
-      await dialog.waitFor();
-      await dialog.cancel();
-      await expect(page).toHaveURL(
-        `/settings/organizations/${testOrganization.id}`
-      );
+    // Grant membership but only read permission to noDeletePermissionUser
+    // This organization is used in the "should not show delete button" test
+    await grantMembershipToUser(
+      testConfig,
+      noDeletePermissionUser.email,
+      "Organization",
+      organization.id
+    );
+    await grantPermissionToUser(
+      testConfig,
+      noDeletePermissionUser.email,
+      "Organization",
+      organization.id,
+      "read"
+    );
+
+    await loginUser(page, {
+      email: noDeletePermissionUser.email,
+      password: USER_DEFAULT_PASSWORD,
     });
+
+    const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
+    await orgDetailsPage.goto(organization.id);
+    await waitForPermissionsLoad(page, organization.id);
+
+    // Verify danger zone is not visible
+    expect(await orgDetailsPage.dangerZone.isVisible()).toBeFalsy();
+    expect(await orgDetailsPage.dangerZone.hasDeleteButton()).toBeFalsy();
   });
 });

@@ -51,6 +51,55 @@ export const zOrganization = z.object({
 });
 
 /**
+ * ProjectStatus
+ *
+ * Status of the project.
+ */
+export const zProjectStatus = z.enum(["active", "pending"]);
+
+/**
+ * NamespaceProject
+ *
+ * A project in a namespace with limited information.
+ */
+export const zNamespaceProject = z.object({
+  id: z.string(),
+  key: z.string().min(3).max(6),
+  name: z.string().min(3).max(120),
+  description: z.optional(z.union([z.string().min(10).max(500), z.null()])),
+  logo: z.optional(z.union([z.url().max(2000), z.null()])),
+  status: zProjectStatus,
+});
+
+/**
+ * NamespaceDocument
+ *
+ * A document in a namespace with limited information.
+ */
+export const zNamespaceDocument = z.object({
+  id: z.string(),
+  name: z.string().min(3).max(120),
+  excerpt: z.optional(z.union([z.string().min(10).max(500), z.null()])),
+  created_by: z.string(),
+  created_at: z.optional(z.union([z.iso.datetime(), z.null()])),
+});
+
+/**
+ * Namespace
+ *
+ * A namespace in an organization.
+ */
+export const zNamespace = z.object({
+  id: z.string(),
+  name: z.string().min(3).max(120),
+  description: z.optional(z.union([z.string().min(5).max(500), z.null()])),
+  projects: z.array(zNamespaceProject),
+  documents: z.array(zNamespaceDocument),
+  created_at: z.iso.datetime(),
+  updated_at: z.union([z.iso.datetime(), z.null()]),
+});
+
+/**
  * Priority of the todo item.
  */
 export const zTodoPriority = z.enum([
@@ -566,6 +615,16 @@ export const zOrganizationPatch = z.object({
   logo: z.optional(z.union([z.url().max(2000), z.null()])),
   website: z.optional(z.union([z.url().max(2000), z.null()])),
   status: z.optional(zOrganizationStatus),
+});
+
+export const zNamespaceCreate = z.object({
+  name: z.string().min(3).max(120),
+  description: z.optional(z.union([z.string().min(5).max(500), z.null()])),
+});
+
+export const zNamespacePatch = z.object({
+  name: z.optional(z.string().min(3).max(120)),
+  description: z.optional(z.union([z.string().min(5).max(500), z.null()])),
 });
 
 export const zPermissionCreate = z.object({
@@ -1144,6 +1203,78 @@ export const zV1OrganizationRolePermissionRemoveData = z.object({
  * No Content
  */
 export const zV1OrganizationRolePermissionRemoveResponse = z.void();
+
+export const zV1OrganizationsNamespacesGetData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(
+    z.object({
+      offset: z.optional(z.int().gte(0)).default(0),
+      limit: z.optional(z.int().gte(1).lte(1000)).default(100),
+    })
+  ),
+});
+
+/**
+ * OK
+ */
+export const zV1OrganizationsNamespacesGetResponse = z.array(zNamespace);
+
+export const zV1OrganizationsNamespacesCreateData = z.object({
+  body: z.optional(zNamespaceCreate),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+/**
+ * Example response
+ */
+export const zV1OrganizationsNamespacesCreateResponse = z.object({
+  id: z.string(),
+});
+
+export const zV1NamespaceDeleteData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+/**
+ * No Content
+ */
+export const zV1NamespaceDeleteResponse = z.void();
+
+export const zV1NamespaceGetData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+/**
+ * OK
+ */
+export const zV1NamespaceGetResponse = zNamespace;
+
+export const zV1NamespaceUpdateData = z.object({
+  body: z.optional(zNamespacePatch),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+/**
+ * OK
+ */
+export const zV1NamespaceUpdateResponse = zNamespace;
 
 export const zV1PermissionsCreateData = z.object({
   body: z.optional(zPermissionCreate),

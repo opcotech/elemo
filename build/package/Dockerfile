@@ -22,8 +22,8 @@ COPY . .
 
 FROM golang:1.25-trixie AS build
 
-ENV GOOS linux
-ENV CGO_ENABLED 0
+ENV GOOS=linux
+ENV CGO_ENABLED=0
 
 COPY --from=common /common /build
 COPY --from=common $GOPATH/pkg/mod $GOPATH/pkg/mod
@@ -35,13 +35,13 @@ RUN go build -ldflags="-s -w -extldflags=-Wl,-ld_classic" -o /usr/bin/elemo cmd/
 # Production image
 ##############################################################################
 
-FROM gcr.io/distroless/static-debian11:nonroot AS production
+FROM gcr.io/distroless/static-debian12:nonroot AS production
 
-ENV TZ UTC
+ENV TZ=UTC
 
 COPY --chown=nonroot:nonroot assets /opt/opcotech/elemo/assets
 COPY --chown=nonroot:nonroot configs /opt/opcotech/elemo/configs
 COPY --chown=nonroot:nonroot templates /opt/opcotech/elemo/templates
-COPY --from=build /usr/bin/elemo /opt/opcotech/elemo/bin/elemo
+COPY --chown=nonroot:nonroot --from=build /usr/bin/elemo /opt/opcotech/elemo/bin/elemo
 
 WORKDIR /opt/opcotech/elemo

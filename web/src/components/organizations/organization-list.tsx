@@ -148,6 +148,7 @@ export function OrganizationList() {
 
   return (
     <ListContainer
+      data-section="organizations"
       title="Organizations"
       description="View and manage organizations."
       isLoading={isLoading}

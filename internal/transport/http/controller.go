@@ -181,6 +181,19 @@ func WithNotificationService(notificationService service.NotificationService) Co
 	}
 }
 
+// WithNamespaceService sets the namespace service for the controller.
+func WithNamespaceService(namespaceService service.NamespaceService) ControllerOption {
+	return func(c *baseController) error {
+		if namespaceService == nil {
+			return ErrNoNamespaceService
+		}
+
+		c.namespaceService = namespaceService
+
+		return nil
+	}
+}
+
 // baseController defines the dependencies that are required to be injected
 // into a controller.
 type baseController struct {
@@ -191,6 +204,7 @@ type baseController struct {
 	authProvider *authServer.Server
 
 	organizationService service.OrganizationService
+	namespaceService    service.NamespaceService
 	roleService         service.RoleService
 	userService         service.UserService
 	emailService        service.EmailService

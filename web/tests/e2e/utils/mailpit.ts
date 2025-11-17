@@ -13,10 +13,10 @@ interface MailpitMessage {
     Name: string;
     Address: string;
   };
-  To: Array<{
+  To: {
     Name: string;
     Address: string;
-  }>;
+  }[];
   Subject: string;
   Size: number;
 }
@@ -40,7 +40,7 @@ export async function getLatestEmailForRecipient(
     }
 
     const data = await response.json();
-    const messages: Array<MailpitMessage> = data.messages || [];
+    const messages: MailpitMessage[] = data.messages || [];
     const message = messages
       .filter((msg) =>
         msg.To.some(

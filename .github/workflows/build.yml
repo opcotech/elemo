@@ -97,13 +97,15 @@ jobs:
           retention-days: 7
 
   frontend-e2e-test:
-    name: Frontend E2E Tests - ${{ matrix.project }}
+    name: Frontend E2E Tests - ${{ matrix.project }} (shard ${{ matrix.shard }}/${{ matrix.total-shards }})
     runs-on: "ubuntu-latest"
     needs:
       - frontend-lint
       - backend-integration-test
     strategy:
       matrix:
+        shard: [1, 2, 3]
+        total-shards: [3]
         project:
           - chromium
           - firefox
@@ -119,41 +121,36 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: "^1.25"
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
       - name: Install tooling
         run: |
           pip install jq yq
           npm install -g pnpm
-      - name: Install dependencies
-        run: |
-          cd web
-          pnpm install
-      - name: Install Playwright browsers
-        run: |
-          cd web
-          pnpm exec playwright install --with-deps
       - name: Setup local env
         run: |
           ./scripts/setup.sh
           sed -i s/CI=false/CI=true/g web/.env.test.local
-      - name: Start backend services
-        run: |
-          make start.backend
       - name: Execute end-to-end tests
         run: |
-          cd web
-          pnpm test:e2e --project "${{ matrix.project }}"
+          make start.backend
+          pnpm --prefix web test:e2e --project "${{ matrix.project }}" --shard=${{ matrix.shard }}/${{ matrix.total-shards }}
       - name: Upload test results
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: "e2e-test-results-${{ matrix.project }}"
+          name: "e2e-test-results-${{ matrix.project }}-shard-${{ matrix.shard }}"
           path: web/test-results
           retention-days: 7
       - name: Upload Playwright report
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: "playwright-report-${{ matrix.project }}"
+          name: "playwright-report-${{ matrix.project }}-shard-${{ matrix.shard }}"
           path: web/playwright-report
           retention-days: 7
       - name: Stop backend services

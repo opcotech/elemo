@@ -1,47 +1,47 @@
 import { expect } from "@playwright/test";
 import type { Locator, Page } from "@playwright/test";
 
-/**
- * Find a table by its header text.
- * @param page - Playwright page object
- * @param headerText - Text that appears in one of the table headers
- * @returns Locator for the table
- */
-export function getTableByHeader(page: Page, headerText: string): Locator {
-  return page
-    .locator("table")
-    .filter({
-      has: page.locator("thead th", { hasText: headerText }),
-    })
-    .first();
-}
+import { waitForPageLoad } from "./navigation";
 
 /**
- * Find a row in a table that contains the specified text.
- * @param table - Table locator
- * @param text - Text to search for in the row
- * @returns Locator for the table row
- */
-export function getTableRow(table: Locator, text: string): Locator {
-  return table.locator("tbody tr").filter({ hasText: text }).first();
-}
-
-/**
- * Find a button by its accessible name (text content or aria-label).
- * @param page - Playwright page object
- * @param text - Button text or accessible name
+ * Find an element by text with optional role filter.
+ * @param locator - Locator to search within
+ * @param text - Text to search for
+ * @param role - Optional ARIA role to filter by
  * @param options - Optional options for matching (exact, case-insensitive)
- * @returns Locator for the button
+ * @returns Locator for the element
  */
-export function getButtonByText(
-  page: Page,
+export function getElementByText(
+  locator: Locator,
   text: string,
-  options?: { exact?: boolean; caseInsensitive?: boolean }
-): Locator {
-  if (options?.caseInsensitive) {
-    return page.getByRole("button", { name: new RegExp(text, "i") });
+  options?: {
+    role?: string;
+    exact?: boolean;
+    caseInsensitive?: boolean;
+    nth?: number;
   }
-  return page.getByRole("button", { name: text, exact: options?.exact });
+): Locator {
+  const { role, exact, caseInsensitive, nth } = options ?? {
+    role: undefined,
+    exact: true,
+    caseInsensitive: false,
+    nth: 0,
+  };
+
+  if (role) {
+    if (caseInsensitive) {
+      return locator
+        .getByRole(role as any, { name: new RegExp(text, "i") })
+        .nth(nth ?? 0);
+    }
+    return locator.getByRole(role as any, { name: text, exact }).nth(nth ?? 0);
+  }
+
+  if (caseInsensitive) {
+    return locator.getByText(new RegExp(text, "i")).nth(nth ?? 0);
+  }
+
+  return locator.getByText(text, { exact }).nth(nth ?? 0);
 }
 
 /**
@@ -60,46 +60,23 @@ export async function waitForElementVisible(
 }
 
 /**
- * Find an element by text with optional role filter.
- * @param page - Playwright page object
- * @param text - Text to search for
- * @param role - Optional ARIA role to filter by
- * @returns Locator for the element
- */
-export function getElementByText(
-  page: Page,
-  text: string,
-  role?: string
-): Locator {
-  if (role) {
-    return page.getByRole(role as any, { name: text });
-  }
-  return page.getByText(text);
-}
-
-/**
  * Wait for a dropdown/combobox to open and be ready for interaction.
  * @param combobox - The combobox locator
  */
 export async function waitForDropdownOpen(combobox: Locator): Promise<void> {
   await expect(combobox)
-    .toHaveAttribute("aria-expanded", "true", {
-      timeout: 5000,
-    })
+    .toHaveAttribute("aria-expanded", "true")
     .catch(() => {});
   await combobox
     .page()
-    .waitForFunction(
-      () => {
-        const dropdowns = document.querySelectorAll(
-          '[role="listbox"], [role="menu"]'
-        );
-        return Array.from(dropdowns).some(
-          (d) => window.getComputedStyle(d).display !== "none"
-        );
-      },
-      { timeout: 5000 }
-    )
+    .waitForFunction(() => {
+      const dropdowns = document.querySelectorAll(
+        '[role="listbox"], [role="menu"]'
+      );
+      return Array.from(dropdowns).some(
+        (d) => window.getComputedStyle(d).display !== "none"
+      );
+    })
     .catch(() => {});
 }
 
@@ -115,6 +92,7 @@ export async function waitForSkeletonToDisappear(
   const selector = options?.selector ?? '[data-slot="skeleton"]';
   const skeleton = container.locator(selector);
   let hasSkeleton = false;
+
   try {
     hasSkeleton = (await skeleton.count()) > 0;
   } catch {
@@ -125,14 +103,13 @@ export async function waitForSkeletonToDisappear(
     return;
   }
 
-  try {
-    await skeleton.first().waitFor({
+  await skeleton
+    .first()
+    .waitFor({
       state: "hidden",
       timeout: options?.timeout ?? 5000,
-    });
-  } catch {
-    // ignore timeout to keep flow resilient
-  }
+    })
+    .catch(() => {});
 }
 
 /**
@@ -155,42 +132,18 @@ export async function waitForLocatorAttached(
 }
 
 /**
- * Wait for a table to be visible when it exists.
- * @param table - Table locator
- * @param options - Optional timeout override
+ * Wait for URL to be loaded.
+ *
+ * @param page - Playwright page object
+ * @param url - URL to wait for
  */
-export async function waitForTableReady(
-  table: Locator,
+export async function waitForUrlLoaded(
+  page: Page,
+  url: string | RegExp,
   options?: { timeout?: number }
 ): Promise<void> {
-  let count = 0;
-  try {
-    count = await table.count();
-  } catch {
-    count = 0;
-  }
-
-  if (count === 0) {
-    return;
-  }
-
-  await waitForElementVisible(table, options);
-}
-
-/**
- * Find a button within a container by accessible text or aria-label.
- * @param container - Locator that scopes the search
- * @param name - Accessible name to match
- * @param options - Matching options (exact match)
- * @returns Locator for the first matching button
- */
-export function getButtonIn(
-  container: Locator,
-  name: string,
-  options?: { exact?: boolean }
-): Locator {
-  const hasText = options?.exact ? name : new RegExp(name, "i");
-  const textMatch = container.locator("button").filter({ hasText });
-  const ariaMatch = container.locator(`button[aria-label="${name}"]`);
-  return textMatch.or(ariaMatch).first();
+  await page.waitForURL(url, {
+    timeout: options?.timeout,
+  });
+  await waitForPageLoad(page);
 }

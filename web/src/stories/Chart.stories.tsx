@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import type { ComponentProps } from "react";
 import {
   Area,
   AreaChart,
@@ -14,6 +15,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import type { PieLabelRenderProps } from "recharts";
 
 import {
   ChartContainer,
@@ -112,6 +114,10 @@ const chartConfig = {
   },
 };
 
+const renderTooltip = (props: ComponentProps<typeof ChartTooltipContent>) => (
+  <ChartTooltipContent {...props} />
+);
+
 // Bar Chart
 export const BarChartExample: Story = {
   render: () => (
@@ -120,7 +126,7 @@ export const BarChartExample: Story = {
         <CartesianGrid strokeDasharray="3 3" />
         <XAxis dataKey="name" />
         <YAxis />
-        <ChartTooltip content={<ChartTooltipContent />} />
+        <ChartTooltip content={renderTooltip} />
         <ChartLegend content={<ChartLegendContent />} />
         <Bar dataKey="desktop" fill="var(--color-desktop)" />
         <Bar dataKey="mobile" fill="var(--color-mobile)" />
@@ -137,7 +143,7 @@ export const LineChartExample: Story = {
         <CartesianGrid strokeDasharray="3 3" />
         <XAxis dataKey="name" />
         <YAxis />
-        <ChartTooltip content={<ChartTooltipContent />} />
+        <ChartTooltip content={renderTooltip} />
         <ChartLegend content={<ChartLegendContent />} />
         <Line
           type="monotone"
@@ -161,15 +167,19 @@ export const PieChartExample: Story = {
   render: () => (
     <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
       <PieChart>
-        <ChartTooltip content={<ChartTooltipContent />} />
+        <ChartTooltip content={renderTooltip} />
         <Pie
           data={pieData}
           cx="50%"
           cy="50%"
           labelLine={false}
-          label={({ name, percent }) =>
-            `${name} ${(percent * 100).toFixed(0)}%`
-          }
+          label={({ name, percent }: PieLabelRenderProps) => {
+            const percentValue =
+              typeof percent === "number" ? percent : undefined;
+            return percentValue !== undefined
+              ? `${String(name)} ${(percentValue * 100).toFixed(0)}%`
+              : String(name);
+          }}
           outerRadius={80}
           fill="#8884d8"
           dataKey="value"
@@ -191,7 +201,7 @@ export const AreaChartExample: Story = {
         <CartesianGrid strokeDasharray="3 3" />
         <XAxis dataKey="name" />
         <YAxis />
-        <ChartTooltip content={<ChartTooltipContent />} />
+        <ChartTooltip content={renderTooltip} />
         <ChartLegend content={<ChartLegendContent />} />
         <Area
           type="monotone"
@@ -219,7 +229,7 @@ export const SimpleBarChart: Story = {
       <BarChart data={barData}>
         <XAxis dataKey="name" />
         <YAxis />
-        <ChartTooltip content={<ChartTooltipContent />} />
+        <ChartTooltip content={renderTooltip} />
         <Bar dataKey="desktop" fill="var(--color-desktop)" />
       </BarChart>
     </ChartContainer>
@@ -236,7 +246,7 @@ export const ResponsiveChart: Story = {
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="name" />
             <YAxis />
-            <ChartTooltip content={<ChartTooltipContent />} />
+            <ChartTooltip content={renderTooltip} />
             <Line
               type="monotone"
               dataKey="visitors"
@@ -260,7 +270,7 @@ export const MultipleCharts: Story = {
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="name" />
           <YAxis />
-          <ChartTooltip content={<ChartTooltipContent />} />
+          <ChartTooltip content={renderTooltip} />
           <Bar dataKey="desktop" fill="var(--color-desktop)" />
         </BarChart>
       </ChartContainer>
@@ -270,7 +280,7 @@ export const MultipleCharts: Story = {
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="name" />
           <YAxis />
-          <ChartTooltip content={<ChartTooltipContent />} />
+          <ChartTooltip content={renderTooltip} />
           <Line
             type="monotone"
             dataKey="visitors"
@@ -282,7 +292,7 @@ export const MultipleCharts: Story = {
 
       <ChartContainer config={chartConfig} className="min-h-[200px]">
         <PieChart>
-          <ChartTooltip content={<ChartTooltipContent />} />
+          <ChartTooltip content={renderTooltip} />
           <Pie
             data={pieData}
             cx="50%"
@@ -303,7 +313,7 @@ export const MultipleCharts: Story = {
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="name" />
           <YAxis />
-          <ChartTooltip content={<ChartTooltipContent />} />
+          <ChartTooltip content={renderTooltip} />
           <Area
             type="monotone"
             dataKey="revenue"
@@ -340,7 +350,7 @@ export const CustomStyled: Story = {
         />
         <YAxis tick={{ fontSize: 12 }} axisLine={{ stroke: "#374151" }} />
         <ChartTooltip
-          content={<ChartTooltipContent />}
+          content={renderTooltip}
           cursor={{ fill: "rgba(59, 130, 246, 0.1)" }}
         />
         <ChartLegend content={<ChartLegendContent />} />

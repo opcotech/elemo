@@ -34,7 +34,7 @@ func (s *LicenseRepositoryIntegrationTestSuite) SetupTest() {
 	s.Require().NoError(s.DocumentRepo.Create(context.Background(), testUser.ID, testDoc))
 
 	testNamespace := testModel.NewNamespace()
-	s.Require().NoError(s.NamespaceRepo.Create(context.Background(), testOrg.ID, testNamespace))
+	s.Require().NoError(s.NamespaceRepo.Create(context.Background(), testUser.ID, testOrg.ID, testNamespace))
 
 	testProject := testModel.NewProject()
 	s.Require().NoError(s.ProjectRepo.Create(context.Background(), testNamespace.ID, testProject))

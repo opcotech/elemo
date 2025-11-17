@@ -47,7 +47,7 @@ func (s *CachedProjectRepositoryIntegrationTestSuite) SetupTest() {
 	s.Require().NoError(s.OrganizationRepo.Create(context.Background(), s.testUser.ID, s.testOrg))
 
 	s.testNamespace = testModel.NewNamespace()
-	s.Require().NoError(s.NamespaceRepo.Create(context.Background(), s.testOrg.ID, s.testNamespace))
+	s.Require().NoError(s.NamespaceRepo.Create(context.Background(), s.testUser.ID, s.testOrg.ID, s.testNamespace))
 
 	s.project = testModel.NewProject()
 

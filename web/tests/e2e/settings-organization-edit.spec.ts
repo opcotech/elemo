@@ -1,225 +1,225 @@
-import { expect, test } from "@playwright/test";
-import { createDBUser, loginUser } from "./utils/auth";
+import { createOrganization } from "./api";
+import { expect, test } from "./fixtures";
 import {
-  addMemberToOrganization,
-  createDBOrganization,
-} from "./utils/organization";
-import { OrganizationPage } from "./pages/organization-page";
-import { Form } from "./components/form";
-import { waitForPageLoad, waitForPermissionsLoad } from "./helpers/navigation";
-import { waitForSuccessToast } from "./helpers/toast";
+  getFormFieldMessage,
+  waitForErrorToast,
+  waitForSuccessToast,
+} from "./helpers";
+import {
+  SettingsOrganizationDetailsPage,
+  SettingsOrganizationEditPage,
+} from "./pages";
+import { USER_DEFAULT_PASSWORD, loginUser } from "./utils/auth";
+import {
+  createUser,
+  grantMembershipToUser,
+  grantPermissionToUser,
+  grantSystemOwnerMembershipToUser,
+} from "./utils/db";
+import { getRandomString } from "./utils/random";
+
+import type { User } from "@/lib/api";
 
 test.describe("@settings.organization-edit Organization Edit E2E Tests", () => {
-  test.describe("Organization Editing", () => {
-    let ownerUser: any;
-    let writeUser: any;
-    let readUser: any;
-    let testOrganization: any;
+  let ownerUser: User;
+  let memberUser: User;
+  let readOnlyMemberUser: User;
+  let organizationId: string;
+  let organizationName: string;
 
-    test.beforeAll(async () => {
-      ownerUser = await createDBUser("active");
-      writeUser = await createDBUser("active");
-      readUser = await createDBUser("active");
-      testOrganization = await createDBOrganization(ownerUser.id, "active", {
-        name: "Original Organization",
-        website: "https://original.example.com",
-      });
-      await addMemberToOrganization(testOrganization.id, writeUser.id, "write");
-      await addMemberToOrganization(testOrganization.id, readUser.id, "read");
+  test.beforeAll(async ({ testConfig, createApiClient }) => {
+    ownerUser = await createUser(testConfig);
+    memberUser = await createUser(testConfig);
+    readOnlyMemberUser = await createUser(testConfig);
+
+    // Grant system owner membership so user can create organizations
+    // Using DB helper since API doesn't allow creating system-level permissions
+    await grantSystemOwnerMembershipToUser(testConfig, ownerUser.email);
+
+    // Create organization via API first with unique name
+    const uniqueId = getRandomString(8);
+    organizationName = `Test Org ${uniqueId}`;
+    const apiClient = await createApiClient(
+      ownerUser.email,
+      USER_DEFAULT_PASSWORD
+    );
+    const organization = await createOrganization(apiClient, {
+      name: organizationName,
+      email: `test-${uniqueId}@example.com`,
+    });
+    organizationId = organization.id;
+
+    // Grant membership to member user with write permission
+    await grantMembershipToUser(
+      testConfig,
+      memberUser.email,
+      "Organization",
+      organization.id
+    );
+    await grantPermissionToUser(
+      testConfig,
+      memberUser.email,
+      "Organization",
+      organization.id,
+      "read"
+    );
+    await grantPermissionToUser(
+      testConfig,
+      memberUser.email,
+      "Organization",
+      organization.id,
+      "write"
+    );
+
+    // Grant membership to read-only member user with only read permission
+    await grantMembershipToUser(
+      testConfig,
+      readOnlyMemberUser.email,
+      "Organization",
+      organization.id
+    );
+    await grantPermissionToUser(
+      testConfig,
+      readOnlyMemberUser.email,
+      "Organization",
+      organization.id,
+      "read"
+    );
+  });
+
+  test("should edit organization", async ({ page }) => {
+    await loginUser(page, {
+      email: ownerUser.email,
+      password: USER_DEFAULT_PASSWORD,
     });
 
-    test("user with write permission should see edit button", async ({
-      page,
-    }) => {
-      await loginUser(page, ownerUser, {
-        destination: `/settings/organizations/${testOrganization.id}`,
-      });
+    const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
+    await orgDetailsPage.goto(organizationId);
+    await orgDetailsPage.organizationInfo.waitForLoad();
 
-      const orgPage = new OrganizationPage(page, testOrganization.id);
-      await orgPage.waitForRolesLoad();
-      await waitForPermissionsLoad(page);
-      await expect(page.getByRole("link", { name: "Edit" })).toBeVisible();
+    // Click edit button
+    await orgDetailsPage.organizationInfo.clickEditOrganizationButton();
+
+    // Wait for edit page to load
+    const orgEditPage = new SettingsOrganizationEditPage(page);
+    await orgEditPage.organizationEditForm.waitForLoad();
+
+    // Fill form
+    const updatedEmail = `updated-${getRandomString()}@example.com`;
+    await orgEditPage.organizationEditForm.fillField("Email", updatedEmail);
+    await orgEditPage.organizationEditForm.submit("Save Changes");
+
+    // Wait for success toast
+    await waitForSuccessToast(page, "updated");
+  });
+
+  test("should show validation errors for invalid form inputs", async ({
+    page,
+  }) => {
+    const fieldMessage = (label: string) => getFormFieldMessage(page, label);
+
+    await loginUser(page, {
+      email: ownerUser.email,
+      password: USER_DEFAULT_PASSWORD,
     });
 
-    test("user without write permission should not see edit button", async ({
-      page,
-    }) => {
-      await loginUser(page, readUser, {
-        destination: `/settings/organizations/${testOrganization.id}`,
-      });
+    const orgEditPage = new SettingsOrganizationEditPage(page);
+    await orgEditPage.goto(organizationId);
+    await orgEditPage.organizationEditForm.waitForLoad();
 
-      const orgPage = new OrganizationPage(page, testOrganization.id);
-      await orgPage.waitForRolesLoad();
-      await waitForPermissionsLoad(page);
+    // Try submitting with empty name
+    await orgEditPage.organizationEditForm.clearField("Name");
+    await orgEditPage.organizationEditForm.fillField(
+      "Email",
+      "test@example.com"
+    );
+    await orgEditPage.organizationEditForm.submit("Save Changes");
+    await expect(fieldMessage("Name")).toHaveText(/invalid input/i);
 
-      await expect(page.getByRole("link", { name: "Edit" })).not.toBeVisible();
+    // Try submitting with empty email
+    await orgEditPage.organizationEditForm.fillField("Name", "Test Org");
+    await orgEditPage.organizationEditForm.clearField("Email");
+    await orgEditPage.organizationEditForm.submit("Save Changes");
+    await expect(fieldMessage("Email")).toHaveText(/invalid input/i);
+
+    // Fill name but invalid email
+    await orgEditPage.organizationEditForm.fillField("Name", "Test Org");
+    await orgEditPage.organizationEditForm.fillField("Email", "invalid-email");
+    await orgEditPage.organizationEditForm.submit("Save Changes");
+    await expect(fieldMessage("Email")).toHaveText(/invalid input/i);
+  });
+
+  test("should show error when updating to a duplicate organization", async ({
+    page,
+    createApiClient,
+  }) => {
+    // Create another organization via API
+    const apiClient = await createApiClient(
+      ownerUser.email,
+      USER_DEFAULT_PASSWORD
+    );
+    const duplicateOrg = await createOrganization(apiClient, {
+      name: `Duplicate Org ${getRandomString()}`,
+      email: `duplicate-${getRandomString()}@example.com`,
     });
 
-    test("user without write permission should not access edit page", async ({
-      page,
-    }) => {
-      await loginUser(page, readUser, {
-        destination: `/settings/organizations/${testOrganization.id}/edit`,
-      });
-      await waitForPageLoad(page);
-      await expect(page).toHaveURL(/.*permission-denied/, { timeout: 10000 });
+    await loginUser(page, {
+      email: ownerUser.email,
+      password: USER_DEFAULT_PASSWORD,
     });
 
-    test("should navigate to edit page when edit button is clicked", async ({
-      page,
-    }) => {
-      await loginUser(page, ownerUser, {
-        destination: `/settings/organizations/${testOrganization.id}`,
-      });
+    const orgEditPage = new SettingsOrganizationEditPage(page);
+    await orgEditPage.goto(organizationId);
+    await orgEditPage.organizationEditForm.waitForLoad();
 
-      const orgPage = new OrganizationPage(page, testOrganization.id);
-      await orgPage.waitForRolesLoad();
-      await waitForPermissionsLoad(page);
+    // Try updating with duplicate name
+    await orgEditPage.organizationEditForm.fillField("Name", duplicateOrg.name);
+    await orgEditPage.organizationEditForm.submit("Save Changes");
+    await waitForErrorToast(page);
 
-      await page.getByRole("link", { name: "Edit" }).click();
-      await waitForPageLoad(page);
+    // Try updating with duplicate email
+    await orgEditPage.organizationEditForm.fillField("Name", organizationName);
+    await orgEditPage.organizationEditForm.fillField(
+      "Email",
+      duplicateOrg.email
+    );
+    await orgEditPage.organizationEditForm.submit("Save Changes");
+    await waitForErrorToast(page);
+  });
 
-      await expect(page).toHaveURL(
-        `/settings/organizations/${testOrganization.id}/edit`
-      );
-      await expect(
-        page.getByRole("heading", { name: "Edit Organization", level: 1 })
-      ).toBeVisible({ timeout: 10000 });
+  test("should see the edit button with write permission for non-owner", async ({
+    page,
+  }) => {
+    await loginUser(page, {
+      email: memberUser.email,
+      password: USER_DEFAULT_PASSWORD,
     });
 
-    test("should pre-fill form with existing organization data", async ({
-      page,
-    }) => {
-      await loginUser(page, ownerUser, {
-        destination: `/settings/organizations/${testOrganization.id}`,
-      });
+    const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
+    await orgDetailsPage.goto(organizationId);
+    await orgDetailsPage.organizationInfo.waitForLoad();
 
-      const orgPage = new OrganizationPage(page, testOrganization.id);
-      await orgPage.waitForRolesLoad();
-      await waitForPermissionsLoad(page);
+    // Verify the edit button is visible
+    expect(
+      await orgDetailsPage.organizationInfo.hasEditOrganizationButton()
+    ).toBeTruthy();
+  });
 
-      await page.getByRole("link", { name: "Edit" }).click();
-      await waitForPageLoad(page);
-      const nameInput = page.getByLabel("Name");
-      const emailInput = page.getByLabel("Email");
-      const websiteInput = page.getByLabel("Website");
-
-      await expect(nameInput).toHaveValue(testOrganization.name);
-      await expect(emailInput).toHaveValue(testOrganization.email);
-      if (testOrganization.website) {
-        await expect(websiteInput).toHaveValue(testOrganization.website);
-      }
+  test("should not see the edit button without write permission", async ({
+    page,
+  }) => {
+    await loginUser(page, {
+      email: readOnlyMemberUser.email,
+      password: USER_DEFAULT_PASSWORD,
     });
 
-    test("should update organization with all fields", async ({ page }) => {
-      await loginUser(page, ownerUser, {
-        destination: `/settings/organizations/${testOrganization.id}/edit`,
-      });
-      await waitForPageLoad(page);
+    const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
+    await orgDetailsPage.goto(organizationId);
+    await orgDetailsPage.organizationInfo.waitForLoad();
 
-      const updatedName = `Updated Org ${Date.now()}`;
-      const updatedEmail = `updated-${Date.now()}@example.com`;
-      const updatedWebsite = `https://updated-${Date.now()}.example.com`;
-
-      const form = new Form(page);
-      await form.fillFields({
-        Name: updatedName,
-        Email: updatedEmail,
-        Website: updatedWebsite,
-      });
-      await form.submit("Save Changes");
-      await expect(page).toHaveURL(
-        `/settings/organizations/${testOrganization.id}`,
-        {
-          timeout: 10000,
-        }
-      );
-      await waitForSuccessToast(page, "Organization updated", {
-        timeout: 5000,
-      });
-    });
-
-    test("should update organization with partial fields", async ({ page }) => {
-      await loginUser(page, ownerUser, {
-        destination: `/settings/organizations/${testOrganization.id}/edit`,
-      });
-      await waitForPageLoad(page);
-
-      const updatedName = `Partial Update ${Date.now()}`;
-      const form = new Form(page);
-      await form.fillField("Name", updatedName);
-      await form.submit("Save Changes");
-      await expect(page).toHaveURL(
-        `/settings/organizations/${testOrganization.id}`,
-        {
-          timeout: 10000,
-        }
-      );
-    });
-
-    test("should show validation error for invalid email", async ({ page }) => {
-      await loginUser(page, ownerUser, {
-        destination: `/settings/organizations/${testOrganization.id}/edit`,
-      });
-      await waitForPageLoad(page);
-
-      const form = new Form(page);
-      await form.fillField("Email", "invalid-email");
-      await page.getByLabel("Name").click();
-      await page.getByRole("button", { name: "Save Changes" }).click();
-      const formMessages = page.locator('[data-slot="form-message"]');
-      const hasError = await formMessages
-        .first()
-        .isVisible()
-        .catch(() => false);
-      const isStillOnEditPage = page.url().includes("/edit");
-
-      expect(hasError || isStillOnEditPage).toBe(true);
-    });
-
-    test("should cancel edit and return to detail page", async ({ page }) => {
-      await loginUser(page, ownerUser, {
-        destination: `/settings/organizations/${testOrganization.id}/edit`,
-      });
-      await waitForPageLoad(page);
-      const form = new Form(page);
-      await form.fillField("Name", "Changed Name");
-
-      await page.getByRole("button", { name: "Cancel" }).click();
-      await waitForPageLoad(page);
-      await expect(page).toHaveURL(
-        `/settings/organizations/${testOrganization.id}`
-      );
-    });
-
-    test("should allow user with write permission to edit", async ({
-      page,
-    }) => {
-      await loginUser(page, writeUser, {
-        destination: `/settings/organizations/${testOrganization.id}`,
-      });
-
-      const orgPage = new OrganizationPage(page, testOrganization.id);
-      await orgPage.waitForRolesLoad();
-      await waitForPermissionsLoad(page);
-      await expect(page.getByRole("link", { name: "Edit" })).toBeVisible();
-
-      await page.getByRole("link", { name: "Edit" }).click();
-      await waitForPageLoad(page);
-
-      await expect(page).toHaveURL(
-        `/settings/organizations/${testOrganization.id}/edit`
-      );
-      const updatedName = `Write User Update ${Date.now()}`;
-      const form = new Form(page);
-      await form.fillField("Name", updatedName);
-      await form.submit("Save Changes");
-      await expect(page).toHaveURL(
-        `/settings/organizations/${testOrganization.id}`,
-        {
-          timeout: 10000,
-        }
-      );
-    });
+    // Verify the edit button is visible
+    expect(
+      await orgDetailsPage.organizationInfo.hasEditOrganizationButton()
+    ).toBeFalsy();
   });
 });

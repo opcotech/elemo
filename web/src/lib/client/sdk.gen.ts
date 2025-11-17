@@ -3,6 +3,15 @@
 import type { Client, Options as Options2, TDataShape } from "./client";
 import { client } from "./client.gen";
 import type {
+  V1NamespaceDeleteData,
+  V1NamespaceDeleteErrors,
+  V1NamespaceDeleteResponses,
+  V1NamespaceGetData,
+  V1NamespaceGetErrors,
+  V1NamespaceGetResponses,
+  V1NamespaceUpdateData,
+  V1NamespaceUpdateErrors,
+  V1NamespaceUpdateResponses,
   V1NotificationDeleteData,
   V1NotificationDeleteErrors,
   V1NotificationDeleteResponses,
@@ -78,6 +87,12 @@ import type {
   V1OrganizationsGetData,
   V1OrganizationsGetErrors,
   V1OrganizationsGetResponses,
+  V1OrganizationsNamespacesCreateData,
+  V1OrganizationsNamespacesCreateErrors,
+  V1OrganizationsNamespacesCreateResponses,
+  V1OrganizationsNamespacesGetData,
+  V1OrganizationsNamespacesGetErrors,
+  V1OrganizationsNamespacesGetResponses,
   V1OrganizationUpdateData,
   V1OrganizationUpdateErrors,
   V1OrganizationUpdateResponses,
@@ -1142,6 +1157,138 @@ export const v1OrganizationRolePermissionRemove = <
     ],
     url: "/v1/organizations/{id}/roles/{role_id}/permissions/{permission_id}",
     ...options,
+  });
+};
+
+/**
+ * Get organization namespaces
+ *
+ * Return the namespaces that belong to the organization.
+ */
+export const v1OrganizationsNamespacesGet = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<V1OrganizationsNamespacesGetData, ThrowOnError>
+) => {
+  return (options.client ?? client).get<
+    V1OrganizationsNamespacesGetResponses,
+    V1OrganizationsNamespacesGetErrors,
+    ThrowOnError
+  >({
+    security: [
+      {
+        scheme: "bearer",
+        type: "http",
+      },
+    ],
+    url: "/v1/organizations/{id}/namespaces",
+    ...options,
+  });
+};
+
+/**
+ * Create namespace in organization
+ *
+ * Create a new namespace in the organization.
+ */
+export const v1OrganizationsNamespacesCreate = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<V1OrganizationsNamespacesCreateData, ThrowOnError>
+) => {
+  return (options.client ?? client).post<
+    V1OrganizationsNamespacesCreateResponses,
+    V1OrganizationsNamespacesCreateErrors,
+    ThrowOnError
+  >({
+    security: [
+      {
+        scheme: "bearer",
+        type: "http",
+      },
+    ],
+    url: "/v1/organizations/{id}/namespaces",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+};
+
+/**
+ * Delete namespace
+ *
+ * Delete the namespace by its ID.
+ */
+export const v1NamespaceDelete = <ThrowOnError extends boolean = false>(
+  options: Options<V1NamespaceDeleteData, ThrowOnError>
+) => {
+  return (options.client ?? client).delete<
+    V1NamespaceDeleteResponses,
+    V1NamespaceDeleteErrors,
+    ThrowOnError
+  >({
+    security: [
+      {
+        scheme: "bearer",
+        type: "http",
+      },
+    ],
+    url: "/v1/namespaces/{id}",
+    ...options,
+  });
+};
+
+/**
+ * Get namespace
+ *
+ * Return the requested namespace by its ID.
+ */
+export const v1NamespaceGet = <ThrowOnError extends boolean = false>(
+  options: Options<V1NamespaceGetData, ThrowOnError>
+) => {
+  return (options.client ?? client).get<
+    V1NamespaceGetResponses,
+    V1NamespaceGetErrors,
+    ThrowOnError
+  >({
+    security: [
+      {
+        scheme: "bearer",
+        type: "http",
+      },
+    ],
+    url: "/v1/namespaces/{id}",
+    ...options,
+  });
+};
+
+/**
+ * Update namespace
+ *
+ * Update the namespace by its ID.
+ */
+export const v1NamespaceUpdate = <ThrowOnError extends boolean = false>(
+  options: Options<V1NamespaceUpdateData, ThrowOnError>
+) => {
+  return (options.client ?? client).patch<
+    V1NamespaceUpdateResponses,
+    V1NamespaceUpdateErrors,
+    ThrowOnError
+  >({
+    security: [
+      {
+        scheme: "bearer",
+        type: "http",
+      },
+    ],
+    url: "/v1/namespaces/{id}",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
   });
 };
 
