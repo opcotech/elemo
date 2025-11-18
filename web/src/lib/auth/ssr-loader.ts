@@ -37,7 +37,7 @@ export async function runSsrLoader<T>({
         const { exp } = JSON.parse(decoded ?? "{}");
         return exp ? exp * 1000 < Date.now() + 30000 : false;
       } catch {
-        return false;
+        return true;
       }
     });
 
