@@ -118,8 +118,10 @@ services:
         condition: service_healthy
       smtp:
         condition: service_started
+    volumes:
+      - ../../configs:/opt/opcotech/elemo/configs:ro
     environment:
-      ELEMO_CONFIG: configs/development/config.gen.yml
+      ELEMO_CONFIG: /opt/opcotech/elemo/configs/development/config.gen.yml
     ports:
       - "35478:35478"
       - "35479:35479"
@@ -147,7 +149,9 @@ services:
         condition: service_started
       smtp:
         condition: service_started
+    volumes:
+      - ../../configs:/opt/opcotech/elemo/configs:ro
     environment:
-      ELEMO_CONFIG: configs/development/config.gen.yml
+      ELEMO_CONFIG: /opt/opcotech/elemo/configs/development/config.gen.yml
     ports:
       - "35480:35480"
