@@ -82,7 +82,7 @@ test.describe("@todo.complete TODO Complete/Uncomplete E2E Tests", () => {
     const title = todoItem.locator("h4").first();
     await expect(title).toHaveClass(/line-through/);
     
-    // Check for reduced opacity
+    // Check for reduced opacity on todo item
     await expect(todoItem).toHaveClass(/opacity-75/);
   });
 });
