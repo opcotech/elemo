@@ -17,7 +17,8 @@ server:
   cors:
     enabled: true
     allowed_origins:
-      - "*"
+      - "http://localhost:3000"
+      - "http://127.0.0.1:3000"
     allowed_methods:
       - GET
       - POST
@@ -27,7 +28,7 @@ server:
       - OPTIONS
     allowed_headers:
       - "*"
-    allow_credentials: false
+    allow_credentials: true
     max_age: 86400
   session:
     cookie_name: elemo_session
