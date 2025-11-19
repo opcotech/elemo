@@ -25,9 +25,7 @@ import (
 	"github.com/opcotech/elemo/internal/pkg/log"
 	elemoSMTP "github.com/opcotech/elemo/internal/pkg/smtp"
 	"github.com/opcotech/elemo/internal/pkg/tracing"
-	"github.com/opcotech/elemo/internal/repository/neo4j"
-	"github.com/opcotech/elemo/internal/repository/pg"
-	"github.com/opcotech/elemo/internal/repository/redis"
+	"github.com/opcotech/elemo/internal/repository"
 )
 
 const (
@@ -148,16 +146,16 @@ func initLogger() {
 	logger.Info(context.Background(), "config file loaded", log.WithPath(viper.ConfigFileUsed()))
 }
 
-func initCacheDatabase() (*redis.Database, error) {
-	client, err := redis.NewClient(&cfg.CacheDatabase)
+func initCacheDatabase() (*repository.RedisDatabase, error) {
+	client, err := repository.NewRedisClient(&cfg.CacheDatabase)
 	if err != nil {
 		return nil, err
 	}
 
-	db, err := redis.NewDatabase(
-		redis.WithClient(client),
-		redis.WithDatabaseLogger(logger.Named("redis")),
-		redis.WithDatabaseTracer(tracer),
+	db, err := repository.NewRedisDatabase(
+		repository.WithRedisClient(client),
+		repository.WithRedisDatabaseLogger(logger.Named("redis")),
+		repository.WithRedisDatabaseTracer(tracer),
 	)
 	if err != nil {
 		return nil, err
@@ -170,17 +168,17 @@ func initCacheDatabase() (*redis.Database, error) {
 	return db, nil
 }
 
-func initGraphDatabase() (*neo4j.Database, error) {
-	driver, err := neo4j.NewDriver(&cfg.GraphDatabase)
+func initGraphDatabase() (*repository.Neo4jDatabase, error) {
+	driver, err := repository.NewNeo4jDriver(&cfg.GraphDatabase)
 	if err != nil {
 		return nil, err
 	}
 
-	db, err := neo4j.NewDatabase(
-		neo4j.WithDriver(driver),
-		neo4j.WithDatabaseName(cfg.GraphDatabase.Database),
-		neo4j.WithDatabaseLogger(logger.Named("neo4j")),
-		neo4j.WithDatabaseTracer(tracer),
+	db, err := repository.NewNeo4jDatabase(
+		repository.WithNeo4jDriver(driver),
+		repository.WithNeo4jDatabaseName(cfg.GraphDatabase.Database),
+		repository.WithNeo4jDatabaseLogger(logger.Named("neo4j")),
+		repository.WithNeo4jDatabaseTracer(tracer),
 	)
 	if err != nil {
 		return nil, err
@@ -193,16 +191,16 @@ func initGraphDatabase() (*neo4j.Database, error) {
 	return db, nil
 }
 
-func initRelationalDatabase() (*pg.Database, pg.Pool, error) {
-	pool, err := pg.NewPool(context.Background(), &cfg.RelationalDatabase)
+func initRelationalDatabase() (*repository.PGDatabase, repository.PGPool, error) {
+	pool, err := repository.NewPool(context.Background(), &cfg.RelationalDatabase)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	db, err := pg.NewDatabase(
-		pg.WithDatabasePool(pool),
-		pg.WithDatabaseLogger(logger.Named("postgres")),
-		pg.WithDatabaseTracer(tracer),
+	db, err := repository.NewPGDatabase(
+		repository.WithDatabasePool(pool),
+		repository.WithPGDatabaseLogger(logger.Named("postgres")),
+		repository.WithPGDatabaseTracer(tracer),
 	)
 	if err != nil {
 		return nil, nil, err

@@ -10,10 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/opcotech/elemo/internal/config"
-	"github.com/opcotech/elemo/internal/repository/neo4j"
-	"github.com/opcotech/elemo/internal/repository/pg"
-	"github.com/opcotech/elemo/internal/repository/redis"
-	"github.com/opcotech/elemo/internal/repository/s3"
+	"github.com/opcotech/elemo/internal/repository"
 	testConfig "github.com/opcotech/elemo/internal/testutil/config"
 )
 
@@ -24,13 +21,13 @@ var (
 )
 
 // NewNeo4jDatabase creates a new Neo4j database connection for testing.
-func NewNeo4jDatabase(t *testing.T, conf *config.GraphDatabaseConfig) (*neo4j.Database, func(ctx context.Context) error) {
-	driver, err := neo4j.NewDriver(conf)
+func NewNeo4jDatabase(t *testing.T, conf *config.GraphDatabaseConfig) (*repository.Neo4jDatabase, func(ctx context.Context) error) {
+	driver, err := repository.NewNeo4jDriver(conf)
 	require.NoError(t, err)
 
-	db, err := neo4j.NewDatabase(
-		neo4j.WithDriver(driver),
-		neo4j.WithDatabaseName(conf.Database),
+	db, err := repository.NewNeo4jDatabase(
+		repository.WithNeo4jDriver(driver),
+		repository.WithNeo4jDatabaseName(conf.Database),
 	)
 	require.NoError(t, err)
 
@@ -41,7 +38,7 @@ func NewNeo4jDatabase(t *testing.T, conf *config.GraphDatabaseConfig) (*neo4j.Da
 }
 
 // BootstrapNeo4jDatabase creates the initial database schema for the system.
-func BootstrapNeo4jDatabase(ctx context.Context, t *testing.T, db *neo4j.Database) {
+func BootstrapNeo4jDatabase(ctx context.Context, t *testing.T, db *repository.Neo4jDatabase) {
 	statements := strings.Split(string(neo4jBootstrapScript), ";")
 
 	for _, statement := range statements {
@@ -64,18 +61,18 @@ func BootstrapNeo4jDatabase(ctx context.Context, t *testing.T, db *neo4j.Databas
 }
 
 // CleanupNeo4jStore deletes all nodes and relationships from the database.
-func CleanupNeo4jStore(ctx context.Context, t *testing.T, db *neo4j.Database) {
+func CleanupNeo4jStore(ctx context.Context, t *testing.T, db *repository.Neo4jDatabase) {
 	_, err := db.GetWriteSession(ctx).Run(ctx, "MATCH (n) WHERE n.system IS NULL OR n.system = false DETACH DELETE n", nil)
 	require.NoError(t, err)
 }
 
 // NewPgDatabase creates a new PostgreSQL database connection for testing.
-func NewPgDatabase(t *testing.T, conf *config.RelationalDatabaseConfig) (*pg.Database, func() error) {
-	pool, err := pg.NewPool(context.Background(), conf)
+func NewPgDatabase(t *testing.T, conf *config.RelationalDatabaseConfig) (*repository.PGDatabase, func() error) {
+	pool, err := repository.NewPool(context.Background(), conf)
 	require.NoError(t, err)
 
-	db, err := pg.NewDatabase(
-		pg.WithDatabasePool(pool),
+	db, err := repository.NewPGDatabase(
+		repository.WithDatabasePool(pool),
 	)
 	require.NoError(t, err)
 
@@ -86,7 +83,7 @@ func NewPgDatabase(t *testing.T, conf *config.RelationalDatabaseConfig) (*pg.Dat
 }
 
 // BootstrapPgDatabase creates the initial database schema for the system.
-func BootstrapPgDatabase(ctx context.Context, t *testing.T, db *pg.Database) {
+func BootstrapPgDatabase(ctx context.Context, t *testing.T, db *repository.PGDatabase) {
 	statements := strings.Split(string(pgBootstrapScript), ";")
 
 	for _, statement := range statements {
@@ -101,7 +98,7 @@ func BootstrapPgDatabase(ctx context.Context, t *testing.T, db *pg.Database) {
 	}
 }
 
-func CleanupPgStore(ctx context.Context, t *testing.T, db *pg.Database) {
+func CleanupPgStore(ctx context.Context, t *testing.T, db *repository.PGDatabase) {
 	_, err := db.GetPool().Exec(ctx, `
 	DO $$ DECLARE table_name text;
 	BEGIN
@@ -113,12 +110,12 @@ func CleanupPgStore(ctx context.Context, t *testing.T, db *pg.Database) {
 }
 
 // NewRedisDatabase creates a new Redis database connection for testing.
-func NewRedisDatabase(t *testing.T, conf *config.CacheDatabaseConfig) (*redis.Database, func() error) {
-	client, err := redis.NewClient(conf)
+func NewRedisDatabase(t *testing.T, conf *config.CacheDatabaseConfig) (*repository.RedisDatabase, func() error) {
+	client, err := repository.NewRedisClient(conf)
 	require.NoError(t, err)
 
-	db, err := redis.NewDatabase(
-		redis.WithClient(client),
+	db, err := repository.NewRedisDatabase(
+		repository.WithRedisClient(client),
 	)
 	require.NoError(t, err)
 
@@ -129,19 +126,19 @@ func NewRedisDatabase(t *testing.T, conf *config.CacheDatabaseConfig) (*redis.Da
 }
 
 // CleanupRedisStore deletes all keys from the database.
-func CleanupRedisStore(ctx context.Context, t *testing.T, db *redis.Database) {
+func CleanupRedisStore(ctx context.Context, t *testing.T, db *repository.RedisDatabase) {
 	err := db.GetClient().FlushDB(ctx).Err()
 	require.NoError(t, err)
 }
 
 // NewS3Storage creates a new S3 storage for testing with LocalStack.
-func NewS3Storage(t *testing.T, conf *config.S3StorageConfig) *s3.Storage {
-	client, err := s3.NewClient(context.Background(), conf)
+func NewS3Storage(t *testing.T, conf *config.S3StorageConfig) *repository.S3Storage {
+	client, err := repository.NewS3Client(context.Background(), conf)
 	require.NoError(t, err)
 
-	storage, err := s3.NewStorage(
-		s3.WithStorageClient(client),
-		s3.WithStorageBucket(s3TestBucketName),
+	storage, err := repository.NewStorage(
+		repository.WithStorageClient(client),
+		repository.WithStorageBucket(s3TestBucketName),
 	)
 	require.NoError(t, err)
 
@@ -149,12 +146,12 @@ func NewS3Storage(t *testing.T, conf *config.S3StorageConfig) *s3.Storage {
 }
 
 // BootstrapS3Storage creates the initial bucket.
-func BootstrapS3Storage(ctx context.Context, t *testing.T, storage *s3.Storage) {
+func BootstrapS3Storage(ctx context.Context, t *testing.T, storage *repository.S3Storage) {
 	_, err := storage.GetClient().CreateBucket(ctx, &awsS3.CreateBucketInput{Bucket: &s3TestBucketName})
 	require.NoError(t, err)
 }
 
-func CleanupS3Storage(ctx context.Context, t *testing.T, storage *s3.Storage) {
+func CleanupS3Storage(ctx context.Context, t *testing.T, storage *repository.S3Storage) {
 	client := storage.GetClient()
 
 	out, err := client.ListObjectsV2(ctx, &awsS3.ListObjectsV2Input{Bucket: &s3TestBucketName})

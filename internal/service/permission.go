@@ -10,6 +10,8 @@ import (
 )
 
 // PermissionService serves the business logic of interacting with permissions.
+//
+//go:generate mockgen -destination ../testutil/mock/permission_service_gen.go -package mock -mock_names PermissionService=PermissionService github.com/opcotech/elemo/internal/service PermissionService
 type PermissionService interface {
 	// Create creates a new permission. If the permission already exists, an
 	// additional permission is created.

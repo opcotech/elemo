@@ -20,6 +20,9 @@ function generateSigningKey() {
     -subj "/C=AE/ST=Dubai/L=Dubai/O=Opcotech/OU=Developers/CN=elemo.app" \
     -key "${CONFIG_DIR}/signing-key.gen.pem" \
     -out "${CONFIG_DIR}/signing-cert.gen.pem"
+
+  # Ensure files are readable by the nonroot user in the container (UID 65532)
+  chmod 0644 "${CONFIG_DIR}/signing-key.gen.pem" "${CONFIG_DIR}/signing-cert.gen.pem"
 }
 
 function generateLicenseKey() {
@@ -31,6 +34,9 @@ function generateLicenseKey() {
     -private-key configs/test/generator.key \
     -license "${CONFIG_DIR}/license.gen.key" \
     -quota "users=999,organizations=999,documents=999,namespaces=999,roles=999"
+
+  # Ensure files are readable by the nonroot user in the container (UID 65532)
+  chmod 0644 "${CONFIG_DIR}/license.gen.key"
 }
 
 function generateConfigFile() {

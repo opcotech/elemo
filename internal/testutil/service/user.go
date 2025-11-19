@@ -8,7 +8,7 @@ import (
 
 	"github.com/opcotech/elemo/internal/config"
 	"github.com/opcotech/elemo/internal/model"
-	"github.com/opcotech/elemo/internal/repository/neo4j"
+	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/service"
 	"github.com/opcotech/elemo/internal/testutil"
 	testModel "github.com/opcotech/elemo/internal/testutil/model"
@@ -19,18 +19,18 @@ import (
 func NewUserService(t *testing.T, neo4jDBConf *config.GraphDatabaseConfig) service.UserService {
 	neo4jDB, _ := testRepo.NewNeo4jDatabase(t, neo4jDBConf)
 
-	permissionRepo, err := neo4j.NewPermissionRepository(
-		neo4j.WithDatabase(neo4jDB),
+	permissionRepo, err := repository.NewNeo4jPermissionRepository(
+		repository.WithNeo4jDatabase(neo4jDB),
 	)
 	require.NoError(t, err)
 
-	userRepo, err := neo4j.NewUserRepository(
-		neo4j.WithDatabase(neo4jDB),
+	userRepo, err := repository.NewNeo4jUserRepository(
+		repository.WithNeo4jDatabase(neo4jDB),
 	)
 	require.NoError(t, err)
 
-	licenseRepo, err := neo4j.NewLicenseRepository(
-		neo4j.WithDatabase(neo4jDB),
+	licenseRepo, err := repository.NewNeo4jLicenseRepository(
+		repository.WithNeo4jDatabase(neo4jDB),
 	)
 	require.NoError(t, err)
 
@@ -60,8 +60,8 @@ func NewUserService(t *testing.T, neo4jDBConf *config.GraphDatabaseConfig) servi
 func NewResourceOwner(t *testing.T, neo4jDBConf *config.GraphDatabaseConfig) *model.User {
 	neo4jDB, _ := testRepo.NewNeo4jDatabase(t, neo4jDBConf)
 
-	userRepo, err := neo4j.NewUserRepository(
-		neo4j.WithDatabase(neo4jDB),
+	userRepo, err := repository.NewNeo4jUserRepository(
+		repository.WithNeo4jDatabase(neo4jDB),
 	)
 	require.NoError(t, err)
 
@@ -72,7 +72,7 @@ func NewResourceOwner(t *testing.T, neo4jDBConf *config.GraphDatabaseConfig) *mo
 	cypher := `
 	MATCH (u:` + owner.ID.Label() + ` {id: $id})
 	MATCH (r:` + model.ResourceTypeRole.String() + ` {id: $role_label, system: true})
-	CREATE (u)-[:` + neo4j.EdgeKindMemberOf.String() + `]->(r)`
+	CREATE (u)-[:` + repository.EdgeKindMemberOf.String() + `]->(r)`
 
 	params := map[string]any{
 		"id":         owner.ID.String(),

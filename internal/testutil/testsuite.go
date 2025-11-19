@@ -8,10 +8,6 @@ import (
 
 	"github.com/opcotech/elemo/internal/config"
 	"github.com/opcotech/elemo/internal/repository"
-	"github.com/opcotech/elemo/internal/repository/neo4j"
-	"github.com/opcotech/elemo/internal/repository/pg"
-	"github.com/opcotech/elemo/internal/repository/redis"
-	"github.com/opcotech/elemo/internal/repository/s3"
 	testConfig "github.com/opcotech/elemo/internal/testutil/config"
 	testContainer "github.com/opcotech/elemo/internal/testutil/container"
 	testRepo "github.com/opcotech/elemo/internal/testutil/repository"
@@ -53,22 +49,22 @@ func (s *ContainerIntegrationTestSuite) CleanupContainers() {
 // Neo4jContainerIntegrationTestSuite is a test suite which sets up a Neo4j
 // container to run tests.
 type Neo4jContainerIntegrationTestSuite struct {
-	Neo4jDB *neo4j.Database
+	Neo4jDB *repository.Neo4jDatabase
 
-	AssignmentRepo   *neo4j.AssignmentRepository
-	AttachmentRepo   *neo4j.AttachmentRepository
-	CommentRepo      *neo4j.CommentRepository
-	DocumentRepo     *neo4j.DocumentRepository
-	IssueRepo        *neo4j.IssueRepository
-	LabelRepo        *neo4j.LabelRepository
-	LicenseRepo      *neo4j.LicenseRepository
-	NamespaceRepo    *neo4j.NamespaceRepository
-	OrganizationRepo *neo4j.OrganizationRepository
-	PermissionRepo   *neo4j.PermissionRepository
-	ProjectRepo      *neo4j.ProjectRepository
-	RoleRepo         *neo4j.RoleRepository
-	TodoRepo         *neo4j.TodoRepository
-	UserRepo         *neo4j.UserRepository
+	AssignmentRepo   *repository.Neo4jAssignmentRepository
+	AttachmentRepo   *repository.Neo4jAttachmentRepository
+	CommentRepo      *repository.Neo4jCommentRepository
+	DocumentRepo     *repository.Neo4jDocumentRepository
+	IssueRepo        *repository.Neo4jIssueRepository
+	LabelRepo        *repository.Neo4jLabelRepository
+	LicenseRepo      *repository.Neo4jLicenseRepository
+	NamespaceRepo    *repository.Neo4jNamespaceRepository
+	OrganizationRepo *repository.Neo4jOrganizationRepository
+	PermissionRepo   *repository.Neo4jPermissionRepository
+	ProjectRepo      *repository.Neo4jProjectRepository
+	RoleRepo         *repository.Neo4jRoleRepository
+	TodoRepo         *repository.Neo4jTodoRepository
+	UserRepo         *repository.Neo4jUserRepository
 }
 
 func (s *Neo4jContainerIntegrationTestSuite) BootstrapNeo4jDatabase(ts *ContainerIntegrationTestSuite) {
@@ -83,46 +79,46 @@ func (s *Neo4jContainerIntegrationTestSuite) SetupNeo4j(ts *ContainerIntegration
 
 	s.Neo4jDB, _ = testRepo.NewNeo4jDatabase(ts.T(), neo4jDBConf)
 
-	s.AssignmentRepo, err = neo4j.NewAssignmentRepository(neo4j.WithDatabase(s.Neo4jDB))
+	s.AssignmentRepo, err = repository.NewNeo4jAssignmentRepository(repository.WithNeo4jDatabase(s.Neo4jDB))
 	ts.Require().NoError(err)
 
-	s.AttachmentRepo, err = neo4j.NewAttachmentRepository(neo4j.WithDatabase(s.Neo4jDB))
+	s.AttachmentRepo, err = repository.NewNeo4jAttachmentRepository(repository.WithNeo4jDatabase(s.Neo4jDB))
 	ts.Require().NoError(err)
 
-	s.CommentRepo, err = neo4j.NewCommentRepository(neo4j.WithDatabase(s.Neo4jDB))
+	s.CommentRepo, err = repository.NewNeo4jCommentRepository(repository.WithNeo4jDatabase(s.Neo4jDB))
 	ts.Require().NoError(err)
 
-	s.DocumentRepo, err = neo4j.NewDocumentRepository(neo4j.WithDatabase(s.Neo4jDB))
+	s.DocumentRepo, err = repository.NewNeo4jDocumentRepository(repository.WithNeo4jDatabase(s.Neo4jDB))
 	ts.Require().NoError(err)
 
-	s.IssueRepo, err = neo4j.NewIssueRepository(neo4j.WithDatabase(s.Neo4jDB))
+	s.IssueRepo, err = repository.NewNeo4jIssueRepository(repository.WithNeo4jDatabase(s.Neo4jDB))
 	ts.Require().NoError(err)
 
-	s.LabelRepo, err = neo4j.NewLabelRepository(neo4j.WithDatabase(s.Neo4jDB))
+	s.LabelRepo, err = repository.NewNeo4jLabelRepository(repository.WithNeo4jDatabase(s.Neo4jDB))
 	ts.Require().NoError(err)
 
-	s.LicenseRepo, err = neo4j.NewLicenseRepository(neo4j.WithDatabase(s.Neo4jDB))
+	s.LicenseRepo, err = repository.NewNeo4jLicenseRepository(repository.WithNeo4jDatabase(s.Neo4jDB))
 	ts.Require().NoError(err)
 
-	s.NamespaceRepo, err = neo4j.NewNamespaceRepository(neo4j.WithDatabase(s.Neo4jDB))
+	s.NamespaceRepo, err = repository.NewNeo4jNamespaceRepository(repository.WithNeo4jDatabase(s.Neo4jDB))
 	ts.Require().NoError(err)
 
-	s.OrganizationRepo, err = neo4j.NewOrganizationRepository(neo4j.WithDatabase(s.Neo4jDB))
+	s.OrganizationRepo, err = repository.NewNeo4jOrganizationRepository(repository.WithNeo4jDatabase(s.Neo4jDB))
 	ts.Require().NoError(err)
 
-	s.PermissionRepo, err = neo4j.NewPermissionRepository(neo4j.WithDatabase(s.Neo4jDB))
+	s.PermissionRepo, err = repository.NewNeo4jPermissionRepository(repository.WithNeo4jDatabase(s.Neo4jDB))
 	ts.Require().NoError(err)
 
-	s.ProjectRepo, err = neo4j.NewProjectRepository(neo4j.WithDatabase(s.Neo4jDB))
+	s.ProjectRepo, err = repository.NewNeo4jProjectRepository(repository.WithNeo4jDatabase(s.Neo4jDB))
 	ts.Require().NoError(err)
 
-	s.RoleRepo, err = neo4j.NewRoleRepository(neo4j.WithDatabase(s.Neo4jDB))
+	s.RoleRepo, err = repository.NewNeo4jRoleRepository(repository.WithNeo4jDatabase(s.Neo4jDB))
 	ts.Require().NoError(err)
 
-	s.TodoRepo, err = neo4j.NewTodoRepository(neo4j.WithDatabase(s.Neo4jDB))
+	s.TodoRepo, err = repository.NewNeo4jTodoRepository(repository.WithNeo4jDatabase(s.Neo4jDB))
 	ts.Require().NoError(err)
 
-	s.UserRepo, err = neo4j.NewUserRepository(neo4j.WithDatabase(s.Neo4jDB))
+	s.UserRepo, err = repository.NewNeo4jUserRepository(repository.WithNeo4jDatabase(s.Neo4jDB))
 	ts.Require().NoError(err)
 
 	s.BootstrapNeo4jDatabase(ts)
@@ -135,10 +131,10 @@ func (s *Neo4jContainerIntegrationTestSuite) CleanupNeo4j(ts *ContainerIntegrati
 // PgContainerIntegrationTestSuite is a test suite which sets up a Postgres
 // container to run tests.
 type PgContainerIntegrationTestSuite struct {
-	PostgresDB *pg.Database
+	PostgresDB *repository.PGDatabase
 
-	NotificationRepo    *pg.NotificationRepository
-	UserTokenRepository *pg.UserTokenRepository
+	NotificationRepo    *repository.PGNotificationRepository
+	UserTokenRepository *repository.PGUserTokenRepository
 }
 
 func (s *PgContainerIntegrationTestSuite) BootstrapPgDatabase(ts *ContainerIntegrationTestSuite) {
@@ -153,10 +149,10 @@ func (s *PgContainerIntegrationTestSuite) SetupPg(ts *ContainerIntegrationTestSu
 
 	s.PostgresDB, _ = testRepo.NewPgDatabase(ts.T(), pgDBConf)
 
-	s.NotificationRepo, err = pg.NewNotificationRepository(pg.WithDatabase(s.PostgresDB))
+	s.NotificationRepo, err = repository.NewNotificationRepository(repository.WithPGDatabase(s.PostgresDB))
 	ts.Require().NoError(err)
 
-	s.UserTokenRepository, err = pg.NewUserTokenRepository(pg.WithDatabase(s.PostgresDB))
+	s.UserTokenRepository, err = repository.NewUserTokenRepository(repository.WithPGDatabase(s.PostgresDB))
 	ts.Require().NoError(err)
 
 	s.BootstrapPgDatabase(ts)
@@ -169,10 +165,10 @@ func (s *PgContainerIntegrationTestSuite) CleanupPg(ts *ContainerIntegrationTest
 // RedisContainerIntegrationTestSuite is a test suite which sets up a Redis
 // container to run tests.
 type RedisContainerIntegrationTestSuite struct {
-	RedisDB   *redis.Database
+	RedisDB   *repository.RedisDatabase
 	RedisConf *config.CacheDatabaseConfig
 
-	CachedTodoRepo *redis.CachedTodoRepository
+	CachedTodoRepo *repository.RedisCachedTodoRepository
 }
 
 func (s *RedisContainerIntegrationTestSuite) SetupRedis(ts *ContainerIntegrationTestSuite, name string) {
@@ -196,7 +192,7 @@ func (s *RedisContainerIntegrationTestSuite) GetKeys(ts *ContainerIntegrationTes
 // LocalStackContainerIntegrationTestSuite is a test suite which sets up a
 // LocalStack container to run tests.
 type LocalStackContainerIntegrationTestSuite struct {
-	S3Storage *s3.Storage
+	S3Storage *repository.S3Storage
 
 	StaticFileRepository repository.StaticFileRepository
 }
@@ -213,7 +209,7 @@ func (s *LocalStackContainerIntegrationTestSuite) SetupLocalStack(ts *ContainerI
 
 	s.S3Storage = testRepo.NewS3Storage(ts.T(), localStackConf)
 
-	s.StaticFileRepository, err = s3.NewStaticFileRepository(s3.WithStorage(s.S3Storage))
+	s.StaticFileRepository, err = repository.NewStaticFileRepository(repository.WithS3Storage(s.S3Storage))
 	ts.Require().NoError(err)
 
 	s.BootstrapLocalStack(ts)
