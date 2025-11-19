@@ -72,4 +72,13 @@ function generateConfigIfMissing() {
   if [ ! -f "${ELEMO_CONFIG}" ]; then
       bash "${SCRIPTS_DIR}/generate-dev-config.sh"
   fi
+
+  # Ensure config files have correct permissions for the nonroot user in container (UID 65532)
+  local license_file="${CONFIG_DIR}/license.gen.key"
+  local signing_key="${CONFIG_DIR}/signing-key.gen.pem"
+  local signing_cert="${CONFIG_DIR}/signing-cert.gen.pem"
+
+  [ -f "${license_file}" ] && chmod 0644 "${license_file}"
+  [ -f "${signing_key}" ] && chmod 0644 "${signing_key}"
+  [ -f "${signing_cert}" ] && chmod 0644 "${signing_cert}"
 }

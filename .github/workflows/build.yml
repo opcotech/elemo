@@ -135,9 +135,32 @@ jobs:
         run: |
           ./scripts/setup.sh
           sed -i s/CI=false/CI=true/g web/.env.test.local
+
+          make start.backend
+
+          # Wait for elemo-server to be ready
+          timeout=15
+          attempt=0
+
+          while [ $attempt -lt $timeout ]; do
+            if curl -sf "http://127.0.0.1:35478/v1/system/heartbeat" > /dev/null 2>&1; then
+              echo "elemo-server is ready"
+              break
+            fi
+            echo "Waiting for elemo-server to be ready... (attempt $((attempt + 1))/$timeout)"
+            sleep 2
+            attempt=$((attempt + 1))
+          done
+
+          if [ $attempt -eq $timeout ]; then
+            echo "ERROR: elemo-server did not become ready within $((timeout * 2)) seconds"
+            docker compose -f deploy/docker/docker-compose.yml ps
+            docker compose -f deploy/docker/docker-compose.yml logs elemo-server
+            exit 1
+          fi
+
       - name: Execute end-to-end tests
         run: |
-          make start.backend
           pnpm --prefix web test:e2e --project "${{ matrix.project }}" --shard=${{ matrix.shard }}/${{ matrix.total-shards }}
       - name: Upload test results
         uses: actions/upload-artifact@v4

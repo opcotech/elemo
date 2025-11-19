@@ -39,9 +39,10 @@ FROM gcr.io/distroless/static-debian12:nonroot AS production
 
 ENV TZ=UTC
 
+WORKDIR /opt/opcotech/elemo
+
 COPY --chown=nonroot:nonroot assets/keys /opt/opcotech/elemo/assets/keys
 COPY --chown=nonroot:nonroot templates/email /opt/opcotech/elemo/templates/email
 COPY --chown=nonroot:nonroot --from=build /usr/bin/elemo /opt/opcotech/elemo/bin/elemo
 
-WORKDIR /opt/opcotech/elemo
 CMD ["bin/elemo", "start", "server"]
