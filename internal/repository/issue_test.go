@@ -1,0 +1,4436 @@
+package repository
+
+import (
+	"context"
+	"testing"
+
+	"github.com/go-redis/cache/v9"
+	"github.com/opcotech/elemo/internal/model"
+	"github.com/opcotech/elemo/internal/pkg/convert"
+	"github.com/opcotech/elemo/internal/testutil/mock"
+	"github.com/redis/go-redis/v9"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
+)
+
+func TestCachedIssueRepository_Create(t *testing.T) {
+	type fields struct {
+		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, project model.ID, issue *model.Issue) *redisBaseRepository
+		issueRepo func(ctrl *gomock.Controller, ctx context.Context, project model.ID, issue *model.Issue) IssueRepository
+	}
+	type args struct {
+		ctx     context.Context
+		project model.ID
+		issue   *model.Issue
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr error
+	}{
+		{
+			name: "add new issue with no parent",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, project model.ID, _ *model.Issue) *redisBaseRepository {
+					allProjectsKey := composeCacheKey(model.ResourceTypeProject.String(), "*")
+					projectsKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForProject", project.String(), "*")
+
+					allProjectsKeyResult := new(redis.StringSliceCmd)
+					allProjectsKeyResult.SetVal([]string{allProjectsKey})
+
+					projectsKeyResult := new(redis.StringSliceCmd)
+					projectsKeyResult.SetVal([]string{projectsKey})
+
+					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, allProjectsKey).Return(allProjectsKeyResult)
+					dbClient.EXPECT().Keys(ctx, projectsKey).Return(projectsKeyResult)
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(2)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(2)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, projectsKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, allProjectsKey).Return(nil)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, project model.ID, issue *model.Issue) IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().Create(ctx, project, issue).Return(nil)
+					return repo
+				},
+			},
+			args: args{
+				ctx:     context.Background(),
+				project: model.MustNewID(model.ResourceTypeProject),
+				issue: &model.Issue{
+					ID:          model.MustNewID(model.ResourceTypeIssue),
+					NumericID:   1,
+					Parent:      nil,
+					Kind:        model.IssueKindStory,
+					Title:       "test issue",
+					Description: "test description",
+					Status:      model.IssueStatusOpen,
+					Priority:    model.IssuePriorityLow,
+					Resolution:  model.IssueResolutionNone,
+					ReportedBy:  model.MustNewID(model.ResourceTypeUser),
+					Assignees:   make([]model.ID, 0),
+					Labels:      make([]model.ID, 0),
+					Comments:    make([]model.ID, 0),
+					Attachments: make([]model.ID, 0),
+					Watchers:    make([]model.ID, 0),
+					Relations:   make([]model.ID, 0),
+					Links:       make([]string, 0),
+				},
+			},
+		},
+		{
+			name: "add new issue with parent",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, project model.ID, issue *model.Issue) *redisBaseRepository {
+					allProjectsKey := composeCacheKey(model.ResourceTypeProject.String(), "*")
+					projectsKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForProject", project.String(), "*")
+					parentIssueKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForIssue", issue.Parent.String(), "*")
+
+					allProjectsKeyResult := new(redis.StringSliceCmd)
+					allProjectsKeyResult.SetVal([]string{allProjectsKey})
+
+					projectsKeyResult := new(redis.StringSliceCmd)
+					projectsKeyResult.SetVal([]string{projectsKey})
+
+					parentIssueKeyResult := new(redis.StringSliceCmd)
+					parentIssueKeyResult.SetVal([]string{parentIssueKey})
+
+					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, allProjectsKey).Return(allProjectsKeyResult)
+					dbClient.EXPECT().Keys(ctx, projectsKey).Return(projectsKeyResult)
+					dbClient.EXPECT().Keys(ctx, parentIssueKey).Return(parentIssueKeyResult)
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(3)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(3)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, projectsKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, allProjectsKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, parentIssueKey).Return(nil)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, project model.ID, issue *model.Issue) IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().Create(ctx, project, issue).Return(nil)
+					return repo
+				},
+			},
+			args: args{
+				ctx:     context.Background(),
+				project: model.MustNewID(model.ResourceTypeProject),
+				issue: &model.Issue{
+					ID:          model.MustNewID(model.ResourceTypeIssue),
+					NumericID:   1,
+					Parent:      convert.ToPointer(model.MustNewID(model.ResourceTypeIssue)),
+					Kind:        model.IssueKindStory,
+					Title:       "test issue",
+					Description: "test description",
+					Status:      model.IssueStatusOpen,
+					Priority:    model.IssuePriorityLow,
+					Resolution:  model.IssueResolutionNone,
+					ReportedBy:  model.MustNewID(model.ResourceTypeUser),
+					Assignees:   make([]model.ID, 0),
+					Labels:      make([]model.ID, 0),
+					Comments:    make([]model.ID, 0),
+					Attachments: make([]model.ID, 0),
+					Watchers:    make([]model.ID, 0),
+					Relations:   make([]model.ID, 0),
+					Links:       make([]string, 0),
+				},
+			},
+		},
+		{
+			name: "add new issue with error",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, project model.ID, _ *model.Issue) *redisBaseRepository {
+					allProjectsKey := composeCacheKey(model.ResourceTypeProject.String(), "*")
+					projectsKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForProject", project.String(), "*")
+
+					allProjectsKeyResult := new(redis.StringSliceCmd)
+					allProjectsKeyResult.SetVal([]string{allProjectsKey})
+
+					projectsKeyResult := new(redis.StringSliceCmd)
+					projectsKeyResult.SetVal([]string{projectsKey})
+
+					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, allProjectsKey).Return(allProjectsKeyResult)
+					dbClient.EXPECT().Keys(ctx, projectsKey).Return(projectsKeyResult)
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(2)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(2)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, projectsKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, allProjectsKey).Return(nil)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, project model.ID, issue *model.Issue) IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().Create(ctx, project, issue).Return(ErrIssueCreate)
+					return repo
+				},
+			},
+			args: args{
+				ctx:     context.Background(),
+				project: model.MustNewID(model.ResourceTypeProject),
+				issue: &model.Issue{
+					ID:          model.MustNewID(model.ResourceTypeIssue),
+					NumericID:   1,
+					Parent:      nil,
+					Kind:        model.IssueKindStory,
+					Title:       "test issue",
+					Description: "test description",
+					Status:      model.IssueStatusOpen,
+					Priority:    model.IssuePriorityLow,
+					Resolution:  model.IssueResolutionNone,
+					ReportedBy:  model.MustNewID(model.ResourceTypeUser),
+					Assignees:   make([]model.ID, 0),
+					Labels:      make([]model.ID, 0),
+					Comments:    make([]model.ID, 0),
+					Attachments: make([]model.ID, 0),
+					Watchers:    make([]model.ID, 0),
+					Relations:   make([]model.ID, 0),
+					Links:       make([]string, 0),
+				},
+			},
+			wantErr: ErrIssueCreate,
+		},
+		{
+			name: "add new issue with cache delete error",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, project model.ID, _ *model.Issue) *redisBaseRepository {
+					allProjectsKey := composeCacheKey(model.ResourceTypeProject.String(), "*")
+					projectsKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForProject", project.String(), "*")
+
+					allProjectsKeyResult := new(redis.StringSliceCmd)
+					allProjectsKeyResult.SetVal([]string{allProjectsKey})
+
+					projectsKeyResult := new(redis.StringSliceCmd)
+					projectsKeyResult.SetVal([]string{projectsKey})
+
+					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, projectsKey).Return(projectsKeyResult)
+					dbClient.EXPECT().Keys(ctx, allProjectsKey).Return(allProjectsKeyResult)
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(2)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(2)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, projectsKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, allProjectsKey).Return(ErrCacheDelete)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ *model.Issue) IssueRepository {
+					return mock.NewIssueRepository(ctrl)
+				},
+			},
+			args: args{
+				ctx:     context.Background(),
+				project: model.MustNewID(model.ResourceTypeProject),
+				issue: &model.Issue{
+					ID:          model.MustNewID(model.ResourceTypeIssue),
+					NumericID:   1,
+					Parent:      nil,
+					Kind:        model.IssueKindStory,
+					Title:       "test issue",
+					Description: "test description",
+					Status:      model.IssueStatusOpen,
+					Priority:    model.IssuePriorityLow,
+					Resolution:  model.IssueResolutionNone,
+					ReportedBy:  model.MustNewID(model.ResourceTypeUser),
+					Assignees:   make([]model.ID, 0),
+					Labels:      make([]model.ID, 0),
+					Comments:    make([]model.ID, 0),
+					Attachments: make([]model.ID, 0),
+					Watchers:    make([]model.ID, 0),
+					Relations:   make([]model.ID, 0),
+					Links:       make([]string, 0),
+				},
+			},
+			wantErr: ErrCacheDelete,
+		},
+		{
+			name: "add new issue with parent issue cache delete error",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, project model.ID, issue *model.Issue) *redisBaseRepository {
+					projectsKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForProject", project.String(), "*")
+					parentIssueKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForIssue", issue.Parent.String(), "*")
+
+					projectsKeyResult := new(redis.StringSliceCmd)
+					projectsKeyResult.SetVal([]string{projectsKey})
+
+					parentIssueKeyResult := new(redis.StringSliceCmd)
+					parentIssueKeyResult.SetVal([]string{parentIssueKey})
+
+					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, projectsKey).Return(projectsKeyResult)
+					dbClient.EXPECT().Keys(ctx, parentIssueKey).Return(parentIssueKeyResult)
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(2)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(2)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, projectsKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, parentIssueKey).Return(ErrCacheDelete)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ *model.Issue) IssueRepository {
+					return mock.NewIssueRepository(ctrl)
+				},
+			},
+			args: args{
+				ctx:     context.Background(),
+				project: model.MustNewID(model.ResourceTypeProject),
+				issue: &model.Issue{
+					ID:          model.MustNewID(model.ResourceTypeIssue),
+					NumericID:   1,
+					Parent:      convert.ToPointer(model.MustNewID(model.ResourceTypeIssue)),
+					Kind:        model.IssueKindStory,
+					Title:       "test issue",
+					Description: "test description",
+					Status:      model.IssueStatusOpen,
+					Priority:    model.IssuePriorityLow,
+					Resolution:  model.IssueResolutionNone,
+					ReportedBy:  model.MustNewID(model.ResourceTypeUser),
+					Assignees:   make([]model.ID, 0),
+					Labels:      make([]model.ID, 0),
+					Comments:    make([]model.ID, 0),
+					Attachments: make([]model.ID, 0),
+					Watchers:    make([]model.ID, 0),
+					Relations:   make([]model.ID, 0),
+					Links:       make([]string, 0),
+				},
+			},
+			wantErr: ErrCacheDelete,
+		},
+		{
+			name: "add new issue with project cache delete error",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, project model.ID, _ *model.Issue) *redisBaseRepository {
+					projectsKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForProject", project.String(), "*")
+
+					projectsKeyResult := new(redis.StringSliceCmd)
+					projectsKeyResult.SetVal([]string{projectsKey})
+
+					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, projectsKey).Return(projectsKeyResult)
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(1)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, projectsKey).Return(ErrCacheDelete)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ *model.Issue) IssueRepository {
+					return mock.NewIssueRepository(ctrl)
+				},
+			},
+			args: args{
+				ctx:     context.Background(),
+				project: model.MustNewID(model.ResourceTypeProject),
+				issue: &model.Issue{
+					ID:          model.MustNewID(model.ResourceTypeIssue),
+					NumericID:   1,
+					Parent:      nil,
+					Kind:        model.IssueKindStory,
+					Title:       "test issue",
+					Description: "test description",
+					Status:      model.IssueStatusOpen,
+					Priority:    model.IssuePriorityLow,
+					Resolution:  model.IssueResolutionNone,
+					ReportedBy:  model.MustNewID(model.ResourceTypeUser),
+					Assignees:   make([]model.ID, 0),
+					Labels:      make([]model.ID, 0),
+					Comments:    make([]model.ID, 0),
+					Attachments: make([]model.ID, 0),
+					Watchers:    make([]model.ID, 0),
+					Relations:   make([]model.ID, 0),
+					Links:       make([]string, 0),
+				},
+			},
+			wantErr: ErrCacheDelete,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			r := &RedisCachedIssueRepository{
+				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.project, tt.args.issue),
+				issueRepo: tt.fields.issueRepo(ctrl, tt.args.ctx, tt.args.project, tt.args.issue),
+			}
+			err := r.Create(tt.args.ctx, tt.args.project, tt.args.issue)
+			require.ErrorIs(t, err, tt.wantErr)
+		})
+	}
+}
+
+func TestCachedIssueRepository_Get(t *testing.T) {
+	type fields struct {
+		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, issue *model.Issue) *redisBaseRepository
+		issueRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, issue *model.Issue) IssueRepository
+	}
+	type args struct {
+		ctx context.Context
+		id  model.ID
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    func(id model.ID) *model.Issue
+		wantErr error
+	}{
+		{
+			name: "get uncached issue",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, issue *model.Issue) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), id.String())
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(2)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Set", gomock.Len(0)).Return(ctx, span)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(nil)
+					cacheRepo.EXPECT().Set(&cache.Item{
+						Ctx:   ctx,
+						Key:   key,
+						Value: issue,
+					}).Return(nil)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, issue *model.Issue) IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().Get(ctx, id).Return(issue, nil)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeIssue),
+			},
+			want: func(id model.ID) *model.Issue {
+				return &model.Issue{
+					ID:          id,
+					NumericID:   1,
+					Parent:      nil,
+					Kind:        model.IssueKindStory,
+					Title:       "test issue",
+					Description: "test description",
+					Status:      model.IssueStatusOpen,
+					Priority:    model.IssuePriorityLow,
+					Resolution:  model.IssueResolutionNone,
+					ReportedBy:  model.MustNewID(model.ResourceTypeUser),
+					Assignees:   make([]model.ID, 0),
+					Labels:      make([]model.ID, 0),
+					Comments:    make([]model.ID, 0),
+					Attachments: make([]model.ID, 0),
+					Watchers:    make([]model.ID, 0),
+					Relations:   make([]model.ID, 0),
+					Links:       make([]string, 0),
+				}
+			},
+		},
+		{
+			name: "get cached issue",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, issue *model.Issue) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), id.String())
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(1)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Do(func(_ context.Context, _ string, dst any) {
+						if ptr, ok := dst.(**model.Issue); ok {
+							*ptr = issue
+						}
+					}).Return(nil)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ *model.Issue) IssueRepository {
+					return mock.NewIssueRepository(ctrl)
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeIssue),
+			},
+			want: func(id model.ID) *model.Issue {
+				return &model.Issue{
+					ID:          id,
+					NumericID:   1,
+					Parent:      nil,
+					Kind:        model.IssueKindStory,
+					Title:       "test issue",
+					Description: "test description",
+					Status:      model.IssueStatusOpen,
+					Priority:    model.IssuePriorityLow,
+					Resolution:  model.IssueResolutionNone,
+					ReportedBy:  model.MustNewID(model.ResourceTypeUser),
+					Assignees:   make([]model.ID, 0),
+					Labels:      make([]model.ID, 0),
+					Comments:    make([]model.ID, 0),
+					Attachments: make([]model.ID, 0),
+					Watchers:    make([]model.ID, 0),
+					Relations:   make([]model.ID, 0),
+					Links:       make([]string, 0),
+				}
+			},
+		},
+		{
+			name: "get uncached issue error",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *model.Issue) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), id.String())
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(1)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(cache.ErrCacheMiss)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *model.Issue) IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().Get(ctx, id).Return(nil, ErrNotFound)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeIssue),
+			},
+			wantErr: ErrNotFound,
+		},
+		{
+			name: "get cached issue error",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *model.Issue) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), id.String())
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(1)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(assert.AnError)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ *model.Issue) IssueRepository {
+					return mock.NewIssueRepository(ctrl)
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeIssue),
+			},
+			wantErr: ErrCacheRead,
+		},
+		{
+			name: "get uncached issue cache set error",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, issue *model.Issue) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), id.String())
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(2)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Set", gomock.Len(0)).Return(ctx, span)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(cache.ErrCacheMiss)
+					cacheRepo.EXPECT().Set(&cache.Item{
+						Ctx:   ctx,
+						Key:   key,
+						Value: issue,
+					}).Return(assert.AnError)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, issue *model.Issue) IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().Get(ctx, id).Return(issue, nil)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeIssue),
+			},
+			wantErr: ErrCacheWrite,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			var want *model.Issue
+			if tt.want != nil {
+				want = tt.want(tt.args.id)
+			}
+
+			r := &RedisCachedIssueRepository{
+				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, want),
+				issueRepo: tt.fields.issueRepo(ctrl, tt.args.ctx, tt.args.id, want),
+			}
+			got, err := r.Get(tt.args.ctx, tt.args.id)
+			require.ErrorIs(t, err, tt.wantErr)
+			require.Equal(t, want, got)
+		})
+	}
+}
+
+func TestCachedIssueRepository_GetAllForProject(t *testing.T) {
+	type fields struct {
+		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, project model.ID, offset, limit int, issues []*model.Issue) *redisBaseRepository
+		issueRepo func(ctrl *gomock.Controller, ctx context.Context, project model.ID, offset, limit int, issues []*model.Issue) IssueRepository
+	}
+	type args struct {
+		ctx     context.Context
+		project model.ID
+		offset  int
+		limit   int
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    []*model.Issue
+		wantErr error
+	}{
+		{
+			name: "get uncached issues",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, project model.ID, offset, limit int, issues []*model.Issue) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForProject", project.String(), offset, limit)
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(2)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Set", gomock.Len(0)).Return(ctx, span)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(cache.ErrCacheMiss)
+					cacheRepo.EXPECT().Set(&cache.Item{
+						Ctx:   ctx,
+						Key:   key,
+						Value: issues,
+					}).Return(nil)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, project model.ID, offset, limit int, issues []*model.Issue) IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().GetAllForProject(ctx, project, offset, limit).Return(issues, nil)
+					return repo
+				},
+			},
+			args: args{
+				ctx:     context.Background(),
+				project: model.MustNewID(model.ResourceTypeProject),
+			},
+			want: []*model.Issue{
+				{
+					ID:          model.MustNewID(model.ResourceTypeIssue),
+					NumericID:   1,
+					Parent:      nil,
+					Kind:        model.IssueKindStory,
+					Title:       "test issue",
+					Description: "test description",
+					Status:      model.IssueStatusOpen,
+					Priority:    model.IssuePriorityLow,
+					Resolution:  model.IssueResolutionNone,
+					ReportedBy:  model.MustNewID(model.ResourceTypeUser),
+					Assignees:   make([]model.ID, 0),
+					Labels:      make([]model.ID, 0),
+					Comments:    make([]model.ID, 0),
+					Attachments: make([]model.ID, 0),
+					Watchers:    make([]model.ID, 0),
+					Relations:   make([]model.ID, 0),
+					Links:       make([]string, 0),
+				},
+				{
+					ID:          model.MustNewID(model.ResourceTypeIssue),
+					NumericID:   1,
+					Parent:      nil,
+					Kind:        model.IssueKindStory,
+					Title:       "test issue",
+					Description: "test description",
+					Status:      model.IssueStatusOpen,
+					Priority:    model.IssuePriorityLow,
+					Resolution:  model.IssueResolutionNone,
+					ReportedBy:  model.MustNewID(model.ResourceTypeUser),
+					Assignees:   make([]model.ID, 0),
+					Labels:      make([]model.ID, 0),
+					Comments:    make([]model.ID, 0),
+					Attachments: make([]model.ID, 0),
+					Watchers:    make([]model.ID, 0),
+					Relations:   make([]model.ID, 0),
+					Links:       make([]string, 0),
+				},
+			},
+		},
+		{
+			name: "get cached issues",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, project model.ID, offset, limit int, issues []*model.Issue) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForProject", project.String(), offset, limit)
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(1)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Do(func(_ context.Context, _ string, dst any) {
+						if ptr, ok := dst.(*[]*model.Issue); ok {
+							*ptr = issues
+						}
+					}).Return(nil)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _, _ int, _ []*model.Issue) IssueRepository {
+					return mock.NewIssueRepository(ctrl)
+				},
+			},
+			args: args{
+				ctx:     context.Background(),
+				project: model.MustNewID(model.ResourceTypeProject),
+			},
+			want: []*model.Issue{
+				{
+					ID:          model.MustNewID(model.ResourceTypeIssue),
+					NumericID:   1,
+					Parent:      nil,
+					Kind:        model.IssueKindStory,
+					Title:       "test issue",
+					Description: "test description",
+					Status:      model.IssueStatusOpen,
+					Priority:    model.IssuePriorityLow,
+					Resolution:  model.IssueResolutionNone,
+					ReportedBy:  model.MustNewID(model.ResourceTypeUser),
+					Assignees:   make([]model.ID, 0),
+					Labels:      make([]model.ID, 0),
+					Comments:    make([]model.ID, 0),
+					Attachments: make([]model.ID, 0),
+					Watchers:    make([]model.ID, 0),
+					Relations:   make([]model.ID, 0),
+					Links:       make([]string, 0),
+				},
+				{
+					ID:          model.MustNewID(model.ResourceTypeIssue),
+					NumericID:   1,
+					Parent:      nil,
+					Kind:        model.IssueKindStory,
+					Title:       "test issue",
+					Description: "test description",
+					Status:      model.IssueStatusOpen,
+					Priority:    model.IssuePriorityLow,
+					Resolution:  model.IssueResolutionNone,
+					ReportedBy:  model.MustNewID(model.ResourceTypeUser),
+					Assignees:   make([]model.ID, 0),
+					Labels:      make([]model.ID, 0),
+					Comments:    make([]model.ID, 0),
+					Attachments: make([]model.ID, 0),
+					Watchers:    make([]model.ID, 0),
+					Relations:   make([]model.ID, 0),
+					Links:       make([]string, 0),
+				},
+			},
+		},
+		{
+			name: "get uncached issues error",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, project model.ID, offset, limit int, _ []*model.Issue) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForProject", project.String(), offset, limit)
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(1)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(cache.ErrCacheMiss)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, project model.ID, offset, limit int, _ []*model.Issue) IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().GetAllForProject(ctx, project, offset, limit).Return(nil, ErrNotFound)
+					return repo
+				},
+			},
+			args: args{
+				ctx:     context.Background(),
+				project: model.MustNewID(model.ResourceTypeProject),
+			},
+			wantErr: ErrNotFound,
+		},
+		{
+			name: "get get issues cache error",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, project model.ID, offset, limit int, _ []*model.Issue) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForProject", project.String(), offset, limit)
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(1)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(assert.AnError)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _, _ int, _ []*model.Issue) IssueRepository {
+					return mock.NewIssueRepository(ctrl)
+				},
+			},
+			args: args{
+				ctx:     context.Background(),
+				project: model.MustNewID(model.ResourceTypeProject),
+			},
+			wantErr: ErrCacheRead,
+		},
+		{
+			name: "get uncached issues cache set error",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, project model.ID, offset, limit int, issues []*model.Issue) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForProject", project.String(), offset, limit)
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(2)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Set", gomock.Len(0)).Return(ctx, span)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(cache.ErrCacheMiss)
+					cacheRepo.EXPECT().Set(&cache.Item{
+						Ctx:   ctx,
+						Key:   key,
+						Value: issues,
+					}).Return(assert.AnError)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, project model.ID, offset, limit int, issues []*model.Issue) IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().GetAllForProject(ctx, project, offset, limit).Return(issues, nil)
+					return repo
+				},
+			},
+			args: args{
+				ctx:     context.Background(),
+				project: model.MustNewID(model.ResourceTypeProject),
+			},
+			wantErr: ErrCacheWrite,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			r := &RedisCachedIssueRepository{
+				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.project, tt.args.offset, tt.args.limit, tt.want),
+				issueRepo: tt.fields.issueRepo(ctrl, tt.args.ctx, tt.args.project, tt.args.offset, tt.args.limit, tt.want),
+			}
+			got, err := r.GetAllForProject(tt.args.ctx, tt.args.project, tt.args.offset, tt.args.limit)
+			require.ErrorIs(t, err, tt.wantErr)
+			require.ElementsMatch(t, tt.want, got)
+		})
+	}
+}
+
+func TestCachedIssueRepository_GetAllForIssue(t *testing.T) {
+	type fields struct {
+		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, issue model.ID, offset, limit int, issues []*model.Issue) *redisBaseRepository
+		issueRepo func(ctrl *gomock.Controller, ctx context.Context, issue model.ID, offset, limit int, issues []*model.Issue) IssueRepository
+	}
+	type args struct {
+		ctx    context.Context
+		issue  model.ID
+		offset int
+		limit  int
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    []*model.Issue
+		wantErr error
+	}{
+		{
+			name: "get uncached issues",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, issue model.ID, offset, limit int, issues []*model.Issue) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForIssue", issue.String(), offset, limit)
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(2)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Set", gomock.Len(0)).Return(ctx, span)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(cache.ErrCacheMiss)
+					cacheRepo.EXPECT().Set(&cache.Item{
+						Ctx:   ctx,
+						Key:   key,
+						Value: issues,
+					}).Return(nil)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, issue model.ID, offset, limit int, issues []*model.Issue) IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().GetAllForIssue(ctx, issue, offset, limit).Return(issues, nil)
+					return repo
+				},
+			},
+			args: args{
+				ctx:   context.Background(),
+				issue: model.MustNewID(model.ResourceTypeIssue),
+			},
+			want: []*model.Issue{
+				{
+					ID:          model.MustNewID(model.ResourceTypeIssue),
+					NumericID:   1,
+					Parent:      nil,
+					Kind:        model.IssueKindStory,
+					Title:       "test issue",
+					Description: "test description",
+					Status:      model.IssueStatusOpen,
+					Priority:    model.IssuePriorityLow,
+					Resolution:  model.IssueResolutionNone,
+					ReportedBy:  model.MustNewID(model.ResourceTypeUser),
+					Assignees:   make([]model.ID, 0),
+					Labels:      make([]model.ID, 0),
+					Comments:    make([]model.ID, 0),
+					Attachments: make([]model.ID, 0),
+					Watchers:    make([]model.ID, 0),
+					Relations:   make([]model.ID, 0),
+					Links:       make([]string, 0),
+				},
+				{
+					ID:          model.MustNewID(model.ResourceTypeIssue),
+					NumericID:   1,
+					Parent:      nil,
+					Kind:        model.IssueKindStory,
+					Title:       "test issue",
+					Description: "test description",
+					Status:      model.IssueStatusOpen,
+					Priority:    model.IssuePriorityLow,
+					Resolution:  model.IssueResolutionNone,
+					ReportedBy:  model.MustNewID(model.ResourceTypeUser),
+					Assignees:   make([]model.ID, 0),
+					Labels:      make([]model.ID, 0),
+					Comments:    make([]model.ID, 0),
+					Attachments: make([]model.ID, 0),
+					Watchers:    make([]model.ID, 0),
+					Relations:   make([]model.ID, 0),
+					Links:       make([]string, 0),
+				},
+			},
+		},
+		{
+			name: "get cached issues",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, issue model.ID, offset, limit int, issues []*model.Issue) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForIssue", issue.String(), offset, limit)
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(1)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Do(func(_ context.Context, _ string, dst any) {
+						if ptr, ok := dst.(*[]*model.Issue); ok {
+							*ptr = issues
+						}
+					}).Return(nil)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _, _ int, _ []*model.Issue) IssueRepository {
+					return mock.NewIssueRepository(ctrl)
+				},
+			},
+			args: args{
+				ctx:   context.Background(),
+				issue: model.MustNewID(model.ResourceTypeIssue),
+			},
+			want: []*model.Issue{
+				{
+					ID:          model.MustNewID(model.ResourceTypeIssue),
+					NumericID:   1,
+					Parent:      nil,
+					Kind:        model.IssueKindStory,
+					Title:       "test issue",
+					Description: "test description",
+					Status:      model.IssueStatusOpen,
+					Priority:    model.IssuePriorityLow,
+					Resolution:  model.IssueResolutionNone,
+					ReportedBy:  model.MustNewID(model.ResourceTypeUser),
+					Assignees:   make([]model.ID, 0),
+					Labels:      make([]model.ID, 0),
+					Comments:    make([]model.ID, 0),
+					Attachments: make([]model.ID, 0),
+					Watchers:    make([]model.ID, 0),
+					Relations:   make([]model.ID, 0),
+					Links:       make([]string, 0),
+				},
+				{
+					ID:          model.MustNewID(model.ResourceTypeIssue),
+					NumericID:   1,
+					Parent:      nil,
+					Kind:        model.IssueKindStory,
+					Title:       "test issue",
+					Description: "test description",
+					Status:      model.IssueStatusOpen,
+					Priority:    model.IssuePriorityLow,
+					Resolution:  model.IssueResolutionNone,
+					ReportedBy:  model.MustNewID(model.ResourceTypeUser),
+					Assignees:   make([]model.ID, 0),
+					Labels:      make([]model.ID, 0),
+					Comments:    make([]model.ID, 0),
+					Attachments: make([]model.ID, 0),
+					Watchers:    make([]model.ID, 0),
+					Relations:   make([]model.ID, 0),
+					Links:       make([]string, 0),
+				},
+			},
+		},
+		{
+			name: "get uncached issues error",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, issue model.ID, offset, limit int, _ []*model.Issue) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForIssue", issue.String(), offset, limit)
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(1)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(cache.ErrCacheMiss)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, issue model.ID, offset, limit int, _ []*model.Issue) IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().GetAllForIssue(ctx, issue, offset, limit).Return(nil, ErrNotFound)
+					return repo
+				},
+			},
+			args: args{
+				ctx:   context.Background(),
+				issue: model.MustNewID(model.ResourceTypeIssue),
+			},
+			wantErr: ErrNotFound,
+		},
+		{
+			name: "get get issues cache error",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, issue model.ID, offset, limit int, _ []*model.Issue) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForIssue", issue.String(), offset, limit)
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(1)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(assert.AnError)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _, _ int, _ []*model.Issue) IssueRepository {
+					return mock.NewIssueRepository(ctrl)
+				},
+			},
+			args: args{
+				ctx:   context.Background(),
+				issue: model.MustNewID(model.ResourceTypeIssue),
+			},
+			wantErr: ErrCacheRead,
+		},
+		{
+			name: "get uncached issues cache set error",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, issue model.ID, offset, limit int, issues []*model.Issue) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForIssue", issue.String(), offset, limit)
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(2)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Set", gomock.Len(0)).Return(ctx, span)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(cache.ErrCacheMiss)
+					cacheRepo.EXPECT().Set(&cache.Item{
+						Ctx:   ctx,
+						Key:   key,
+						Value: issues,
+					}).Return(assert.AnError)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, issue model.ID, offset, limit int, issues []*model.Issue) IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().GetAllForIssue(ctx, issue, offset, limit).Return(issues, nil)
+					return repo
+				},
+			},
+			args: args{
+				ctx:   context.Background(),
+				issue: model.MustNewID(model.ResourceTypeIssue),
+			},
+			wantErr: ErrCacheWrite,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			r := &RedisCachedIssueRepository{
+				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.issue, tt.args.offset, tt.args.limit, tt.want),
+				issueRepo: tt.fields.issueRepo(ctrl, tt.args.ctx, tt.args.issue, tt.args.offset, tt.args.limit, tt.want),
+			}
+			got, err := r.GetAllForIssue(tt.args.ctx, tt.args.issue, tt.args.offset, tt.args.limit)
+			require.ErrorIs(t, err, tt.wantErr)
+			require.ElementsMatch(t, tt.want, got)
+		})
+	}
+}
+
+func TestCachedIssueRepository_AddWatcher(t *testing.T) {
+	type fields struct {
+		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, id, watcher model.ID) *redisBaseRepository
+		issueRepo func(ctrl *gomock.Controller, ctx context.Context, id, watcher model.ID) IssueRepository
+	}
+	type args struct {
+		ctx     context.Context
+		id      model.ID
+		watcher model.ID
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr error
+	}{
+		{
+			name: "add watcher",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id, _ model.ID) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), id.String())
+					watchersKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetWatchers", id.String(), "*")
+					allForIssueKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForIssue", "*")
+					allForProjectKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForProject", "*")
+
+					watchersKeyResult := new(redis.StringSliceCmd)
+					watchersKeyResult.SetVal([]string{watchersKey})
+
+					allForIssueKeyResult := new(redis.StringSliceCmd)
+					allForIssueKeyResult.SetVal([]string{allForIssueKey})
+
+					allForProjectKeyResult := new(redis.StringSliceCmd)
+					allForProjectKeyResult.SetVal([]string{allForProjectKey})
+
+					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, watchersKey).Return(watchersKeyResult)
+					dbClient.EXPECT().Keys(ctx, allForIssueKey).Return(allForIssueKeyResult)
+					dbClient.EXPECT().Keys(ctx, allForProjectKey).Return(allForProjectKeyResult)
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(4)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(3)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, watchersKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, allForIssueKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, allForProjectKey).Return(nil)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, id, watcher model.ID) IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().AddWatcher(ctx, id, watcher).Return(nil)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeIssue),
+			},
+		},
+		{
+			name: "add watcher with deletion error",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id, _ model.ID) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), id.String())
+					watchersKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetWatchers", id.String(), "*")
+					allForIssueKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForIssue", "*")
+					allForProjectKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForProject", "*")
+
+					watchersKeyResult := new(redis.StringSliceCmd)
+					watchersKeyResult.SetVal([]string{watchersKey})
+
+					allForIssueKeyResult := new(redis.StringSliceCmd)
+					allForIssueKeyResult.SetVal([]string{allForIssueKey})
+
+					allForProjectKeyResult := new(redis.StringSliceCmd)
+					allForProjectKeyResult.SetVal([]string{allForProjectKey})
+
+					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, watchersKey).Return(watchersKeyResult)
+					dbClient.EXPECT().Keys(ctx, allForIssueKey).Return(allForIssueKeyResult)
+					dbClient.EXPECT().Keys(ctx, allForProjectKey).Return(allForProjectKeyResult)
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(4)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(3)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, watchersKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, allForIssueKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, allForProjectKey).Return(nil)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, id, watcher model.ID) IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().AddWatcher(ctx, id, watcher).Return(ErrNotFound)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeIssue),
+			},
+			wantErr: ErrNotFound,
+		},
+		{
+			name: "add watcher with clear cache error",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id, _ model.ID) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), id.String())
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(1)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Delete", gomock.Len(0)).Return(ctx, span)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, key).Return(ErrCacheDelete)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID) IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeIssue),
+			},
+			wantErr: ErrCacheDelete,
+		},
+		{
+			name: "add watcher with clear watchers cache error",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id, _ model.ID) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), id.String())
+					watchersKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetWatchers", id.String(), "*")
+
+					watchersKeyResult := new(redis.StringSliceCmd)
+					watchersKeyResult.SetVal([]string{watchersKey})
+
+					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, watchersKey).Return(watchersKeyResult)
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(2)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Delete", gomock.Len(0)).Return(ctx, span)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, watchersKey).Return(ErrCacheDelete)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID) IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeIssue),
+			},
+			wantErr: ErrCacheDelete,
+		},
+
+		{
+			name: "add watcher with clear for issue cache error",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id, _ model.ID) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), id.String())
+					watchersKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetWatchers", id.String(), "*")
+					allForIssueKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForIssue", "*")
+
+					watchersKeyResult := new(redis.StringSliceCmd)
+					watchersKeyResult.SetVal([]string{watchersKey})
+
+					allForIssueKeyResult := new(redis.StringSliceCmd)
+					allForIssueKeyResult.SetVal([]string{allForIssueKey})
+
+					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, watchersKey).Return(watchersKeyResult)
+					dbClient.EXPECT().Keys(ctx, allForIssueKey).Return(allForIssueKeyResult)
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(3)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(2)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, watchersKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, allForIssueKey).Return(ErrCacheDelete)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID) IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeIssue),
+			},
+			wantErr: ErrCacheDelete,
+		},
+		{
+			name: "add watcher with clear for project cache error",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id, _ model.ID) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), id.String())
+					watchersKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetWatchers", id.String(), "*")
+					allForIssueKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForIssue", "*")
+					allForProjectKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForProject", "*")
+
+					watchersKeyResult := new(redis.StringSliceCmd)
+					watchersKeyResult.SetVal([]string{watchersKey})
+
+					allForIssueKeyResult := new(redis.StringSliceCmd)
+					allForIssueKeyResult.SetVal([]string{allForIssueKey})
+
+					allForProjectKeyResult := new(redis.StringSliceCmd)
+					allForProjectKeyResult.SetVal([]string{allForProjectKey})
+
+					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, watchersKey).Return(watchersKeyResult)
+					dbClient.EXPECT().Keys(ctx, allForIssueKey).Return(allForIssueKeyResult)
+					dbClient.EXPECT().Keys(ctx, allForProjectKey).Return(allForProjectKeyResult)
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(4)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(3)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, watchersKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, allForIssueKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, allForProjectKey).Return(ErrCacheDelete)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID) IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeIssue),
+			},
+			wantErr: ErrCacheDelete,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			r := &RedisCachedIssueRepository{
+				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.watcher),
+				issueRepo: tt.fields.issueRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.watcher),
+			}
+			err := r.AddWatcher(tt.args.ctx, tt.args.id, tt.args.watcher)
+			require.ErrorIs(t, err, tt.wantErr)
+		})
+	}
+}
+
+func TestCachedIssueRepository_GetWatchers(t *testing.T) {
+	type fields struct {
+		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, watchers []*model.User) *redisBaseRepository
+		issueRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, watchers []*model.User) IssueRepository
+	}
+	type args struct {
+		ctx context.Context
+		id  model.ID
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    []*model.User
+		wantErr error
+	}{
+		{
+			name: "get issue watchers",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, watchers []*model.User) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), "GetWatchers", id.String())
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(2)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Set", gomock.Len(0)).Return(ctx, span)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(cache.ErrCacheMiss)
+					cacheRepo.EXPECT().Set(&cache.Item{
+						Ctx:   ctx,
+						Key:   key,
+						Value: watchers,
+					}).Return(nil)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, watchers []*model.User) IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().GetWatchers(ctx, id).Return(watchers, nil)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeIssue),
+			},
+			want: []*model.User{
+				{
+					ID:       model.MustNewID(model.ResourceTypeUser),
+					Username: "test-user",
+					Email:    "test@example.com",
+				},
+				{
+					ID:       model.MustNewID(model.ResourceTypeUser),
+					Username: "test-user",
+					Email:    "test@example.com",
+				},
+			},
+		},
+		{
+			name: "get issue watchers with error",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ []*model.User) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), "GetWatchers", id.String())
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(1)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(cache.ErrCacheMiss)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ []*model.User) IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().GetWatchers(ctx, id).Return(nil, ErrNotFound)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeIssue),
+			},
+			wantErr: ErrNotFound,
+		},
+		{
+			name: "get issue watchers from cache",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, watchers []*model.User) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), "GetWatchers", id.String())
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(1)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Do(func(_ context.Context, _ string, dst any) {
+						if ptr, ok := dst.(*[]*model.User); ok {
+							*ptr = watchers
+						}
+					}).Return(nil)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ []*model.User) IssueRepository {
+					return mock.NewIssueRepository(ctrl)
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeIssue),
+			},
+			want: []*model.User{
+				{
+					ID:       model.MustNewID(model.ResourceTypeUser),
+					Username: "test-user",
+					Email:    "test@example.com",
+					Status:   model.UserStatusActive,
+				},
+				{
+					ID:       model.MustNewID(model.ResourceTypeUser),
+					Username: "test-user",
+					Email:    "test@example.com",
+					Status:   model.UserStatusActive,
+				},
+			},
+		},
+		{
+			name: "get issue watchers with cache set error",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, watchers []*model.User) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), "GetWatchers", id.String())
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(2)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Set", gomock.Len(0)).Return(ctx, span)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(cache.ErrCacheMiss)
+					cacheRepo.EXPECT().Set(&cache.Item{
+						Ctx:   ctx,
+						Key:   key,
+						Value: watchers,
+					}).Return(ErrCacheWrite)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, watchers []*model.User) IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().GetWatchers(ctx, id).Return(watchers, nil)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeIssue),
+			},
+			want: []*model.User{
+				{
+					ID:       model.MustNewID(model.ResourceTypeUser),
+					Username: "test-user",
+					Email:    "test@example.com",
+				},
+				{
+					ID:       model.MustNewID(model.ResourceTypeUser),
+					Username: "test-user",
+					Email:    "test@example.com",
+				},
+			},
+			wantErr: ErrCacheWrite,
+		},
+		{
+			name: "get issue watchers with get cache error",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ []*model.User) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), "GetWatchers", id.String())
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(1)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(ErrCacheRead)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ []*model.User) IssueRepository {
+					return mock.NewIssueRepository(ctrl)
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeIssue),
+			},
+			want: []*model.User{
+				{
+					ID:       model.MustNewID(model.ResourceTypeUser),
+					Username: "test-user",
+					Email:    "test@example.com",
+				},
+				{
+					ID:       model.MustNewID(model.ResourceTypeUser),
+					Username: "test-user",
+					Email:    "test@example.com",
+				},
+			},
+			wantErr: ErrCacheRead,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			r := &RedisCachedIssueRepository{
+				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, tt.want),
+				issueRepo: tt.fields.issueRepo(ctrl, tt.args.ctx, tt.args.id, tt.want),
+			}
+			got, err := r.GetWatchers(tt.args.ctx, tt.args.id)
+			require.ErrorIs(t, err, tt.wantErr)
+			if tt.wantErr == nil {
+				require.Equal(t, tt.want, got)
+			}
+		})
+	}
+}
+
+func TestCachedIssueRepository_RemoveWatcher(t *testing.T) {
+	type fields struct {
+		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, id, watcher model.ID) *redisBaseRepository
+		issueRepo func(ctrl *gomock.Controller, ctx context.Context, id, watcher model.ID) IssueRepository
+	}
+	type args struct {
+		ctx     context.Context
+		id      model.ID
+		watcher model.ID
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr error
+	}{
+		{
+			name: "remove issue watcher",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id, _ model.ID) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), id.String())
+					watchersKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetWatchers", id.String(), "*")
+
+					allForIssueKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForIssue", "*")
+					allForProjectKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForProject", "*")
+
+					watchersKeyResult := new(redis.StringSliceCmd)
+					watchersKeyResult.SetVal([]string{watchersKey})
+
+					allForIssueKeyResult := new(redis.StringSliceCmd)
+					allForIssueKeyResult.SetVal([]string{allForIssueKey})
+
+					allForProjectKeyResult := new(redis.StringSliceCmd)
+					allForProjectKeyResult.SetVal([]string{allForProjectKey})
+
+					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, watchersKey).Return(watchersKeyResult)
+					dbClient.EXPECT().Keys(ctx, allForIssueKey).Return(allForIssueKeyResult)
+					dbClient.EXPECT().Keys(ctx, allForProjectKey).Return(allForProjectKeyResult)
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(4)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(3)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, watchersKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, allForIssueKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, allForProjectKey).Return(nil)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, id, watcher model.ID) IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().RemoveWatcher(ctx, id, watcher).Return(nil)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeIssue),
+			},
+		},
+		{
+			name: "remove issue watcher with deletion error",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id, _ model.ID) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), id.String())
+					watchersKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetWatchers", id.String(), "*")
+
+					allForIssueKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForIssue", "*")
+					allForProjectKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForProject", "*")
+
+					watchersKeyResult := new(redis.StringSliceCmd)
+					watchersKeyResult.SetVal([]string{watchersKey})
+
+					allForIssueKeyResult := new(redis.StringSliceCmd)
+					allForIssueKeyResult.SetVal([]string{allForIssueKey})
+
+					allForProjectKeyResult := new(redis.StringSliceCmd)
+					allForProjectKeyResult.SetVal([]string{allForProjectKey})
+
+					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, watchersKey).Return(watchersKeyResult)
+					dbClient.EXPECT().Keys(ctx, allForIssueKey).Return(allForIssueKeyResult)
+					dbClient.EXPECT().Keys(ctx, allForProjectKey).Return(allForProjectKeyResult)
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(4)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(3)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, watchersKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, allForIssueKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, allForProjectKey).Return(nil)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, id, watcher model.ID) IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().RemoveWatcher(ctx, id, watcher).Return(ErrNotFound)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeIssue),
+			},
+			wantErr: ErrNotFound,
+		},
+		{
+			name: "remove issue watcher with clear cache error",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id, _ model.ID) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), id.String())
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(1)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Delete", gomock.Len(0)).Return(ctx, span)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, key).Return(ErrCacheDelete)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID) IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeIssue),
+			},
+			wantErr: ErrCacheDelete,
+		},
+		{
+			name: "remove issue watcher with clear watchers cache error",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id, _ model.ID) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), id.String())
+					watchersKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetWatchers", id.String(), "*")
+
+					watchersKeyResult := new(redis.StringSliceCmd)
+					watchersKeyResult.SetVal([]string{watchersKey})
+
+					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, watchersKey).Return(watchersKeyResult)
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(2)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Delete", gomock.Len(0)).Return(ctx, span)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, watchersKey).Return(ErrCacheDelete)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID) IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeIssue),
+			},
+			wantErr: ErrCacheDelete,
+		},
+		{
+			name: "remove issue watcher with clear for issue cache error",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id, _ model.ID) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), id.String())
+					watchersKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetWatchers", id.String(), "*")
+
+					allForIssueKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForIssue", "*")
+
+					watchersKeyResult := new(redis.StringSliceCmd)
+					watchersKeyResult.SetVal([]string{watchersKey})
+
+					allForIssueKeyResult := new(redis.StringSliceCmd)
+					allForIssueKeyResult.SetVal([]string{allForIssueKey})
+
+					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, watchersKey).Return(watchersKeyResult)
+					dbClient.EXPECT().Keys(ctx, allForIssueKey).Return(allForIssueKeyResult)
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(3)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(2)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, watchersKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, allForIssueKey).Return(ErrCacheDelete)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID) IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeIssue),
+			},
+			wantErr: ErrCacheDelete,
+		},
+		{
+			name: "remove issue watcher with clear for project cache error",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id, _ model.ID) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), id.String())
+					watchersKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetWatchers", id.String(), "*")
+
+					allForIssueKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForIssue", "*")
+					allForProjectKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForProject", "*")
+
+					watchersKeyResult := new(redis.StringSliceCmd)
+					watchersKeyResult.SetVal([]string{watchersKey})
+
+					allForIssueKeyResult := new(redis.StringSliceCmd)
+					allForIssueKeyResult.SetVal([]string{allForIssueKey})
+
+					allForProjectKeyResult := new(redis.StringSliceCmd)
+					allForProjectKeyResult.SetVal([]string{allForProjectKey})
+
+					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, watchersKey).Return(watchersKeyResult)
+					dbClient.EXPECT().Keys(ctx, allForIssueKey).Return(allForIssueKeyResult)
+					dbClient.EXPECT().Keys(ctx, allForProjectKey).Return(allForProjectKeyResult)
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(4)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(3)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, watchersKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, allForIssueKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, allForProjectKey).Return(ErrCacheDelete)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID) IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeIssue),
+			},
+			wantErr: ErrCacheDelete,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			r := &RedisCachedIssueRepository{
+				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.watcher),
+				issueRepo: tt.fields.issueRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.watcher),
+			}
+			err := r.RemoveWatcher(tt.args.ctx, tt.args.id, tt.args.watcher)
+			require.ErrorIs(t, err, tt.wantErr)
+		})
+	}
+}
+
+func TestCachedIssueRepository_AddRelation(t *testing.T) {
+	type fields struct {
+		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, relation *model.IssueRelation) *redisBaseRepository
+		issueRepo func(ctrl *gomock.Controller, ctx context.Context, relation *model.IssueRelation) IssueRepository
+	}
+	type args struct {
+		ctx      context.Context
+		relation *model.IssueRelation
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr error
+	}{
+		{
+			name: "add issue relation",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, relation *model.IssueRelation) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), relation.Source.String())
+					relationsKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetRelations", relation.Source.String(), "*")
+
+					allForIssueKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForIssue", "*")
+					allForProjectKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForProject", "*")
+
+					relationsKeyResult := new(redis.StringSliceCmd)
+					relationsKeyResult.SetVal([]string{relationsKey})
+
+					allForIssueKeyResult := new(redis.StringSliceCmd)
+					allForIssueKeyResult.SetVal([]string{allForIssueKey})
+
+					allForProjectKeyResult := new(redis.StringSliceCmd)
+					allForProjectKeyResult.SetVal([]string{allForProjectKey})
+
+					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, relationsKey).Return(relationsKeyResult)
+					dbClient.EXPECT().Keys(ctx, allForIssueKey).Return(allForIssueKeyResult)
+					dbClient.EXPECT().Keys(ctx, allForProjectKey).Return(allForProjectKeyResult)
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(4)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(3)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, relationsKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, allForIssueKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, allForProjectKey).Return(nil)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, relation *model.IssueRelation) IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().AddRelation(ctx, relation).Return(nil)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				relation: &model.IssueRelation{
+					Source: model.MustNewID(model.ResourceTypeIssue),
+					Target: model.MustNewID(model.ResourceTypeIssue),
+					Kind:   model.IssueRelationKindBlocks,
+				},
+			},
+		},
+		{
+			name: "add issue relation non-issue relation",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, relation *model.IssueRelation) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), relation.Target.String())
+					relationsKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetRelations", relation.Target.String(), "*")
+
+					allForIssueKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForIssue", "*")
+					allForProjectKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForProject", "*")
+
+					relationsKeyResult := new(redis.StringSliceCmd)
+					relationsKeyResult.SetVal([]string{relationsKey})
+
+					allForIssueKeyResult := new(redis.StringSliceCmd)
+					allForIssueKeyResult.SetVal([]string{allForIssueKey})
+
+					allForProjectKeyResult := new(redis.StringSliceCmd)
+					allForProjectKeyResult.SetVal([]string{allForProjectKey})
+
+					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, relationsKey).Return(relationsKeyResult)
+					dbClient.EXPECT().Keys(ctx, allForIssueKey).Return(allForIssueKeyResult)
+					dbClient.EXPECT().Keys(ctx, allForProjectKey).Return(allForProjectKeyResult)
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(4)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(3)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, relationsKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, allForIssueKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, allForProjectKey).Return(nil)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, relation *model.IssueRelation) IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().AddRelation(ctx, relation).Return(nil)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				relation: &model.IssueRelation{
+					Source: model.MustNewID(model.ResourceTypeDocument),
+					Target: model.MustNewID(model.ResourceTypeIssue),
+					Kind:   model.IssueRelationKindBlocks,
+				},
+			},
+		},
+		{
+			name: "add issue relation with deletion error",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, relation *model.IssueRelation) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), relation.Source.String())
+					relationsKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetRelations", relation.Source.String(), "*")
+
+					allForIssueKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForIssue", "*")
+					allForProjectKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForProject", "*")
+
+					relationsKeyResult := new(redis.StringSliceCmd)
+					relationsKeyResult.SetVal([]string{relationsKey})
+
+					allForIssueKeyResult := new(redis.StringSliceCmd)
+					allForIssueKeyResult.SetVal([]string{allForIssueKey})
+
+					allForProjectKeyResult := new(redis.StringSliceCmd)
+					allForProjectKeyResult.SetVal([]string{allForProjectKey})
+
+					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, relationsKey).Return(relationsKeyResult)
+					dbClient.EXPECT().Keys(ctx, allForIssueKey).Return(allForIssueKeyResult)
+					dbClient.EXPECT().Keys(ctx, allForProjectKey).Return(allForProjectKeyResult)
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(4)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(3)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, relationsKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, allForIssueKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, allForProjectKey).Return(nil)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, relation *model.IssueRelation) IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().AddRelation(ctx, relation).Return(ErrNotFound)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				relation: &model.IssueRelation{
+					Source: model.MustNewID(model.ResourceTypeIssue),
+					Target: model.MustNewID(model.ResourceTypeIssue),
+					Kind:   model.IssueRelationKindBlocks,
+				},
+			},
+			wantErr: ErrNotFound,
+		},
+		{
+			name: "add issue relation with clear cache error",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, relation *model.IssueRelation) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), relation.Source.String())
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(1)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Delete", gomock.Len(0)).Return(ctx, span)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, key).Return(ErrCacheDelete)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _ *model.IssueRelation) IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				relation: &model.IssueRelation{
+					Source: model.MustNewID(model.ResourceTypeIssue),
+					Target: model.MustNewID(model.ResourceTypeIssue),
+					Kind:   model.IssueRelationKindBlocks,
+				},
+			},
+			wantErr: ErrCacheDelete,
+		},
+		{
+			name: "add issue relation with clear relations cache error",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, relation *model.IssueRelation) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), relation.Source.String())
+					relationsKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetRelations", relation.Source.String(), "*")
+
+					relationsKeyResult := new(redis.StringSliceCmd)
+					relationsKeyResult.SetVal([]string{relationsKey})
+
+					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, relationsKey).Return(relationsKeyResult)
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(2)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Delete", gomock.Len(0)).Return(ctx, span)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, relationsKey).Return(ErrCacheDelete)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _ *model.IssueRelation) IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				relation: &model.IssueRelation{
+					Source: model.MustNewID(model.ResourceTypeIssue),
+					Target: model.MustNewID(model.ResourceTypeIssue),
+					Kind:   model.IssueRelationKindBlocks,
+				},
+			},
+			wantErr: ErrCacheDelete,
+		},
+		{
+			name: "add issue relation with clear for issue cache error",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, relation *model.IssueRelation) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), relation.Source.String())
+					relationsKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetRelations", relation.Source.String(), "*")
+
+					allForIssueKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForIssue", "*")
+
+					relationsKeyResult := new(redis.StringSliceCmd)
+					relationsKeyResult.SetVal([]string{relationsKey})
+
+					allForIssueKeyResult := new(redis.StringSliceCmd)
+					allForIssueKeyResult.SetVal([]string{allForIssueKey})
+
+					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, relationsKey).Return(relationsKeyResult)
+					dbClient.EXPECT().Keys(ctx, allForIssueKey).Return(allForIssueKeyResult)
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(3)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(2)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, relationsKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, allForIssueKey).Return(ErrCacheDelete)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _ *model.IssueRelation) IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				relation: &model.IssueRelation{
+					Source: model.MustNewID(model.ResourceTypeIssue),
+					Target: model.MustNewID(model.ResourceTypeIssue),
+					Kind:   model.IssueRelationKindBlocks,
+				},
+			},
+			wantErr: ErrCacheDelete,
+		},
+		{
+			name: "add issue relation with clear for project cache error",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, relation *model.IssueRelation) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), relation.Source.String())
+					relationsKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetRelations", relation.Source.String(), "*")
+
+					allForIssueKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForIssue", "*")
+					allForProjectKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForProject", "*")
+
+					relationsKeyResult := new(redis.StringSliceCmd)
+					relationsKeyResult.SetVal([]string{relationsKey})
+
+					allForIssueKeyResult := new(redis.StringSliceCmd)
+					allForIssueKeyResult.SetVal([]string{allForIssueKey})
+
+					allForProjectKeyResult := new(redis.StringSliceCmd)
+					allForProjectKeyResult.SetVal([]string{allForProjectKey})
+
+					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, relationsKey).Return(relationsKeyResult)
+					dbClient.EXPECT().Keys(ctx, allForIssueKey).Return(allForIssueKeyResult)
+					dbClient.EXPECT().Keys(ctx, allForProjectKey).Return(allForProjectKeyResult)
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(4)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(3)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, relationsKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, allForIssueKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, allForProjectKey).Return(ErrCacheDelete)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _ *model.IssueRelation) IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				relation: &model.IssueRelation{
+					Source: model.MustNewID(model.ResourceTypeIssue),
+					Target: model.MustNewID(model.ResourceTypeIssue),
+					Kind:   model.IssueRelationKindBlocks,
+				},
+			},
+			wantErr: ErrCacheDelete,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			r := &RedisCachedIssueRepository{
+				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.relation),
+				issueRepo: tt.fields.issueRepo(ctrl, tt.args.ctx, tt.args.relation),
+			}
+			err := r.AddRelation(tt.args.ctx, tt.args.relation)
+			require.ErrorIs(t, err, tt.wantErr)
+		})
+	}
+}
+
+func TestCachedIssueRepository_GetRelations(t *testing.T) {
+	type fields struct {
+		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, relations []*model.IssueRelation) *redisBaseRepository
+		issueRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, relations []*model.IssueRelation) IssueRepository
+	}
+	type args struct {
+		ctx context.Context
+		id  model.ID
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    []*model.IssueRelation
+		wantErr error
+	}{
+		{
+			name: "get issue relations",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, relations []*model.IssueRelation) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), "GetRelations", id.String())
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(2)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Set", gomock.Len(0)).Return(ctx, span)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(cache.ErrCacheMiss)
+					cacheRepo.EXPECT().Set(&cache.Item{
+						Ctx:   ctx,
+						Key:   key,
+						Value: relations,
+					}).Return(nil)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, relations []*model.IssueRelation) IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().GetRelations(ctx, id).Return(relations, nil)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeIssue),
+			},
+			want: []*model.IssueRelation{
+				{
+					ID:     model.MustNewID(model.ResourceTypeIssueRelation),
+					Source: model.MustNewID(model.ResourceTypeIssue),
+					Target: model.MustNewID(model.ResourceTypeIssue),
+					Kind:   model.IssueRelationKindBlocks,
+				},
+				{
+					ID:     model.MustNewID(model.ResourceTypeIssueRelation),
+					Source: model.MustNewID(model.ResourceTypeIssue),
+					Target: model.MustNewID(model.ResourceTypeIssue),
+					Kind:   model.IssueRelationKindBlocks,
+				},
+			},
+		},
+		{
+			name: "get issue relations with error",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ []*model.IssueRelation) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), "GetRelations", id.String())
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(1)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(cache.ErrCacheMiss)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ []*model.IssueRelation) IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().GetRelations(ctx, id).Return(nil, ErrNotFound)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeIssue),
+			},
+			wantErr: ErrNotFound,
+		},
+		{
+			name: "get issue relations from cache",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, relations []*model.IssueRelation) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), "GetRelations", id.String())
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(1)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Do(func(_ context.Context, _ string, dst any) {
+						if ptr, ok := dst.(*[]*model.IssueRelation); ok {
+							*ptr = relations
+						}
+					}).Return(nil)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ []*model.IssueRelation) IssueRepository {
+					return mock.NewIssueRepository(ctrl)
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeIssue),
+			},
+			want: []*model.IssueRelation{
+				{
+					ID:     model.MustNewID(model.ResourceTypeIssueRelation),
+					Source: model.MustNewID(model.ResourceTypeIssue),
+					Target: model.MustNewID(model.ResourceTypeIssue),
+					Kind:   model.IssueRelationKindBlocks,
+				},
+				{
+					ID:     model.MustNewID(model.ResourceTypeIssueRelation),
+					Source: model.MustNewID(model.ResourceTypeIssue),
+					Target: model.MustNewID(model.ResourceTypeIssue),
+					Kind:   model.IssueRelationKindBlocks,
+				},
+			},
+		},
+		{
+			name: "get issue relations with cache set error",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, relations []*model.IssueRelation) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), "GetRelations", id.String())
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(2)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Set", gomock.Len(0)).Return(ctx, span)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(cache.ErrCacheMiss)
+					cacheRepo.EXPECT().Set(&cache.Item{
+						Ctx:   ctx,
+						Key:   key,
+						Value: relations,
+					}).Return(ErrCacheWrite)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, relations []*model.IssueRelation) IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().GetRelations(ctx, id).Return(relations, nil)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeIssue),
+			},
+			want: []*model.IssueRelation{
+				{
+					ID:     model.MustNewID(model.ResourceTypeIssueRelation),
+					Source: model.MustNewID(model.ResourceTypeIssue),
+					Target: model.MustNewID(model.ResourceTypeIssue),
+					Kind:   model.IssueRelationKindBlocks,
+				},
+				{
+					ID:     model.MustNewID(model.ResourceTypeIssueRelation),
+					Source: model.MustNewID(model.ResourceTypeIssue),
+					Target: model.MustNewID(model.ResourceTypeIssue),
+					Kind:   model.IssueRelationKindBlocks,
+				},
+			},
+			wantErr: ErrCacheWrite,
+		},
+		{
+			name: "get issue relations with get cache error",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ []*model.IssueRelation) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), "GetRelations", id.String())
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(1)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(ErrCacheRead)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ []*model.IssueRelation) IssueRepository {
+					return mock.NewIssueRepository(ctrl)
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeIssue),
+			},
+			want: []*model.IssueRelation{
+				{
+					ID:     model.MustNewID(model.ResourceTypeIssueRelation),
+					Source: model.MustNewID(model.ResourceTypeIssue),
+					Target: model.MustNewID(model.ResourceTypeIssue),
+					Kind:   model.IssueRelationKindBlocks,
+				},
+				{
+					ID:     model.MustNewID(model.ResourceTypeIssueRelation),
+					Source: model.MustNewID(model.ResourceTypeIssue),
+					Target: model.MustNewID(model.ResourceTypeIssue),
+					Kind:   model.IssueRelationKindBlocks,
+				},
+			},
+			wantErr: ErrCacheRead,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			r := &RedisCachedIssueRepository{
+				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, tt.want),
+				issueRepo: tt.fields.issueRepo(ctrl, tt.args.ctx, tt.args.id, tt.want),
+			}
+			got, err := r.GetRelations(tt.args.ctx, tt.args.id)
+			require.ErrorIs(t, err, tt.wantErr)
+			if tt.wantErr == nil {
+				require.Equal(t, tt.want, got)
+			}
+		})
+	}
+}
+
+func TestCachedIssueRepository_RemoveRelation(t *testing.T) {
+	type fields struct {
+		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, source, target model.ID, kind model.IssueRelationKind) *redisBaseRepository
+		issueRepo func(ctrl *gomock.Controller, ctx context.Context, source, target model.ID, kind model.IssueRelationKind) IssueRepository
+	}
+	type args struct {
+		ctx    context.Context
+		source model.ID
+		target model.ID
+		kind   model.IssueRelationKind
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr error
+	}{
+		{
+			name: "remove issue relation",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, source, _ model.ID, _ model.IssueRelationKind) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), source.String())
+					relationsKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetRelations", source.String(), "*")
+
+					allForIssueKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForIssue", "*")
+					allForProjectKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForProject", "*")
+
+					relationsKeyResult := new(redis.StringSliceCmd)
+					relationsKeyResult.SetVal([]string{relationsKey})
+
+					allForIssueKeyResult := new(redis.StringSliceCmd)
+					allForIssueKeyResult.SetVal([]string{allForIssueKey})
+
+					allForProjectKeyResult := new(redis.StringSliceCmd)
+					allForProjectKeyResult.SetVal([]string{allForProjectKey})
+
+					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, relationsKey).Return(relationsKeyResult)
+					dbClient.EXPECT().Keys(ctx, allForIssueKey).Return(allForIssueKeyResult)
+					dbClient.EXPECT().Keys(ctx, allForProjectKey).Return(allForProjectKeyResult)
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(4)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(3)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, relationsKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, allForIssueKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, allForProjectKey).Return(nil)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, source, target model.ID, kind model.IssueRelationKind) IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().RemoveRelation(ctx, source, target, kind).Return(nil)
+					return repo
+				},
+			},
+			args: args{
+				ctx:    context.Background(),
+				source: model.MustNewID(model.ResourceTypeIssue),
+				target: model.MustNewID(model.ResourceTypeIssue),
+				kind:   model.IssueRelationKindBlocks,
+			},
+		},
+		{
+			name: "remove issue relation non-issue relation",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, _, target model.ID, _ model.IssueRelationKind) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), target.String())
+					relationsKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetRelations", target.String(), "*")
+
+					allForIssueKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForIssue", "*")
+					allForProjectKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForProject", "*")
+
+					relationsKeyResult := new(redis.StringSliceCmd)
+					relationsKeyResult.SetVal([]string{relationsKey})
+
+					allForIssueKeyResult := new(redis.StringSliceCmd)
+					allForIssueKeyResult.SetVal([]string{allForIssueKey})
+
+					allForProjectKeyResult := new(redis.StringSliceCmd)
+					allForProjectKeyResult.SetVal([]string{allForProjectKey})
+
+					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, relationsKey).Return(relationsKeyResult)
+					dbClient.EXPECT().Keys(ctx, allForIssueKey).Return(allForIssueKeyResult)
+					dbClient.EXPECT().Keys(ctx, allForProjectKey).Return(allForProjectKeyResult)
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(4)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(3)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, relationsKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, allForIssueKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, allForProjectKey).Return(nil)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, source, target model.ID, kind model.IssueRelationKind) IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().RemoveRelation(ctx, source, target, kind).Return(nil)
+					return repo
+				},
+			},
+			args: args{
+				ctx:    context.Background(),
+				source: model.MustNewID(model.ResourceTypeDocument),
+				target: model.MustNewID(model.ResourceTypeIssue),
+				kind:   model.IssueRelationKindBlocks,
+			},
+		},
+		{
+			name: "remove issue relation with deletion error",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, source, _ model.ID, _ model.IssueRelationKind) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), source.String())
+					relationsKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetRelations", source.String(), "*")
+
+					allForIssueKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForIssue", "*")
+					allForProjectKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForProject", "*")
+
+					relationsKeyResult := new(redis.StringSliceCmd)
+					relationsKeyResult.SetVal([]string{relationsKey})
+
+					allForIssueKeyResult := new(redis.StringSliceCmd)
+					allForIssueKeyResult.SetVal([]string{allForIssueKey})
+
+					allForProjectKeyResult := new(redis.StringSliceCmd)
+					allForProjectKeyResult.SetVal([]string{allForProjectKey})
+
+					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, relationsKey).Return(relationsKeyResult)
+					dbClient.EXPECT().Keys(ctx, allForIssueKey).Return(allForIssueKeyResult)
+					dbClient.EXPECT().Keys(ctx, allForProjectKey).Return(allForProjectKeyResult)
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(4)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(3)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, relationsKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, allForIssueKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, allForProjectKey).Return(nil)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, source, target model.ID, kind model.IssueRelationKind) IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().RemoveRelation(ctx, source, target, kind).Return(ErrNotFound)
+					return repo
+				},
+			},
+			args: args{
+				ctx:    context.Background(),
+				source: model.MustNewID(model.ResourceTypeIssue),
+				target: model.MustNewID(model.ResourceTypeIssue),
+				kind:   model.IssueRelationKindBlocks,
+			},
+			wantErr: ErrNotFound,
+		},
+		{
+			name: "remove issue relation with clear cache error",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, source, _ model.ID, _ model.IssueRelationKind) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), source.String())
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(1)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Delete", gomock.Len(0)).Return(ctx, span)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, key).Return(ErrCacheDelete)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID, _ model.IssueRelationKind) IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					return repo
+				},
+			},
+			args: args{
+				ctx:    context.Background(),
+				source: model.MustNewID(model.ResourceTypeIssue),
+				target: model.MustNewID(model.ResourceTypeIssue),
+				kind:   model.IssueRelationKindBlocks,
+			},
+			wantErr: ErrCacheDelete,
+		},
+		{
+			name: "remove issue relation with clear relations cache error",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, source, _ model.ID, _ model.IssueRelationKind) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), source.String())
+					relationsKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetRelations", source.String(), "*")
+
+					relationsKeyResult := new(redis.StringSliceCmd)
+					relationsKeyResult.SetVal([]string{relationsKey})
+
+					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, relationsKey).Return(relationsKeyResult)
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(2)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Delete", gomock.Len(0)).Return(ctx, span)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, relationsKey).Return(ErrCacheDelete)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID, _ model.IssueRelationKind) IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					return repo
+				},
+			},
+			args: args{
+				ctx:    context.Background(),
+				source: model.MustNewID(model.ResourceTypeIssue),
+				target: model.MustNewID(model.ResourceTypeIssue),
+				kind:   model.IssueRelationKindBlocks,
+			},
+			wantErr: ErrCacheDelete,
+		},
+		{
+			name: "remove issue relation with clear for issue cache error",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, source, _ model.ID, _ model.IssueRelationKind) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), source.String())
+					relationsKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetRelations", source.String(), "*")
+
+					allForIssueKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForIssue", "*")
+
+					relationsKeyResult := new(redis.StringSliceCmd)
+					relationsKeyResult.SetVal([]string{relationsKey})
+
+					allForIssueKeyResult := new(redis.StringSliceCmd)
+					allForIssueKeyResult.SetVal([]string{allForIssueKey})
+
+					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, relationsKey).Return(relationsKeyResult)
+					dbClient.EXPECT().Keys(ctx, allForIssueKey).Return(allForIssueKeyResult)
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(3)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(2)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, relationsKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, allForIssueKey).Return(ErrCacheDelete)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID, _ model.IssueRelationKind) IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					return repo
+				},
+			},
+			args: args{
+				ctx:    context.Background(),
+				source: model.MustNewID(model.ResourceTypeIssue),
+				target: model.MustNewID(model.ResourceTypeIssue),
+				kind:   model.IssueRelationKindBlocks,
+			},
+			wantErr: ErrCacheDelete,
+		},
+		{
+			name: "remove issue relation with clear for project cache error",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, source, _ model.ID, _ model.IssueRelationKind) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), source.String())
+					relationsKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetRelations", source.String(), "*")
+
+					allForIssueKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForIssue", "*")
+					allForProjectKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForProject", "*")
+
+					relationsKeyResult := new(redis.StringSliceCmd)
+					relationsKeyResult.SetVal([]string{relationsKey})
+
+					allForIssueKeyResult := new(redis.StringSliceCmd)
+					allForIssueKeyResult.SetVal([]string{allForIssueKey})
+
+					allForProjectKeyResult := new(redis.StringSliceCmd)
+					allForProjectKeyResult.SetVal([]string{allForProjectKey})
+
+					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, relationsKey).Return(relationsKeyResult)
+					dbClient.EXPECT().Keys(ctx, allForIssueKey).Return(allForIssueKeyResult)
+					dbClient.EXPECT().Keys(ctx, allForProjectKey).Return(allForProjectKeyResult)
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(4)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(3)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, relationsKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, allForIssueKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, allForProjectKey).Return(ErrCacheDelete)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID, _ model.IssueRelationKind) IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					return repo
+				},
+			},
+			args: args{
+				ctx:    context.Background(),
+				source: model.MustNewID(model.ResourceTypeIssue),
+				target: model.MustNewID(model.ResourceTypeIssue),
+				kind:   model.IssueRelationKindBlocks,
+			},
+			wantErr: ErrCacheDelete,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			r := &RedisCachedIssueRepository{
+				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.source, tt.args.target, tt.args.kind),
+				issueRepo: tt.fields.issueRepo(ctrl, tt.args.ctx, tt.args.source, tt.args.target, tt.args.kind),
+			}
+			err := r.RemoveRelation(tt.args.ctx, tt.args.source, tt.args.target, tt.args.kind)
+			require.ErrorIs(t, err, tt.wantErr)
+		})
+	}
+}
+
+func TestCachedIssueRepository_Update(t *testing.T) {
+	type fields struct {
+		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, issue *model.Issue) *redisBaseRepository
+		issueRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, issue *model.Issue) IssueRepository
+	}
+	type args struct {
+		ctx   context.Context
+		id    model.ID
+		patch map[string]any
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    *model.Issue
+		wantErr error
+	}{
+		{
+			name: "update issue",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, issue *model.Issue) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), id.String())
+					projectsKey := composeCacheKey(model.ResourceTypeProject.String(), "*")
+					forIssueKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForIssue", issue.Parent.String(), "*")
+
+					projectsKeyCmd := new(redis.StringSliceCmd)
+					projectsKeyCmd.SetVal([]string{projectsKey})
+
+					forIssueKeyCmd := new(redis.StringSliceCmd)
+					forIssueKeyCmd.SetVal([]string{forIssueKey})
+
+					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, forIssueKey).Return(forIssueKeyCmd)
+					dbClient.EXPECT().Keys(ctx, projectsKey).Return(projectsKeyCmd)
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(3)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Set", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(2)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, projectsKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, forIssueKey).Return(nil)
+					cacheRepo.EXPECT().Set(&cache.Item{
+						Ctx:   ctx,
+						Key:   key,
+						Value: issue,
+					}).Return(nil)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, issue *model.Issue) IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, patch).Return(issue, nil)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeIssue),
+				patch: map[string]any{
+					"title":       "new title",
+					"description": "new description",
+				},
+			},
+			want: &model.Issue{
+				ID:          model.MustNewID(model.ResourceTypeIssue),
+				NumericID:   1,
+				Parent:      convert.ToPointer(model.MustNewID(model.ResourceTypeIssue)),
+				Kind:        model.IssueKindStory,
+				Title:       "test issue",
+				Description: "test description",
+				Status:      model.IssueStatusOpen,
+				Priority:    model.IssuePriorityLow,
+				Resolution:  model.IssueResolutionNone,
+				ReportedBy:  model.MustNewID(model.ResourceTypeUser),
+				Assignees:   make([]model.ID, 0),
+				Labels:      make([]model.ID, 0),
+				Comments:    make([]model.ID, 0),
+				Attachments: make([]model.ID, 0),
+				Watchers:    make([]model.ID, 0),
+				Relations:   make([]model.ID, 0),
+				Links:       make([]string, 0),
+			},
+		},
+		{
+			name: "update issue with error",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ *model.Issue) *redisBaseRepository {
+					db, err := NewRedisDatabase(
+						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					)
+					require.NoError(t, err)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  mock.NewCacheBackend(ctrl),
+						tracer: mock.NewMockTracer(ctrl),
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, _ *model.Issue) IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, patch).Return(nil, ErrNotFound)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeIssue),
+				patch: map[string]any{
+					"title":       "new title",
+					"description": "new description",
+				},
+			},
+			want: &model.Issue{
+				ID:          model.MustNewID(model.ResourceTypeIssue),
+				NumericID:   1,
+				Parent:      convert.ToPointer(model.MustNewID(model.ResourceTypeIssue)),
+				Kind:        model.IssueKindStory,
+				Title:       "test issue",
+				Description: "test description",
+				Status:      model.IssueStatusOpen,
+				Priority:    model.IssuePriorityLow,
+				Resolution:  model.IssueResolutionNone,
+				ReportedBy:  model.MustNewID(model.ResourceTypeUser),
+				Assignees:   make([]model.ID, 0),
+				Labels:      make([]model.ID, 0),
+				Comments:    make([]model.ID, 0),
+				Attachments: make([]model.ID, 0),
+				Watchers:    make([]model.ID, 0),
+				Relations:   make([]model.ID, 0),
+				Links:       make([]string, 0),
+			},
+			wantErr: ErrNotFound,
+		},
+		{
+			name: "update issue set cache error",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, issue *model.Issue) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), id.String())
+
+					dbClient := mock.NewUniversalClient(ctrl)
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(1)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Set", gomock.Len(0)).Return(ctx, span)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Set(&cache.Item{
+						Ctx:   ctx,
+						Key:   key,
+						Value: issue,
+					}).Return(assert.AnError)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, issue *model.Issue) IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, patch).Return(issue, nil)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeIssue),
+				patch: map[string]any{
+					"title":       "new title",
+					"description": "new description",
+				},
+			},
+			want: &model.Issue{
+				ID:          model.MustNewID(model.ResourceTypeIssue),
+				NumericID:   1,
+				Parent:      convert.ToPointer(model.MustNewID(model.ResourceTypeIssue)),
+				Kind:        model.IssueKindStory,
+				Title:       "test issue",
+				Description: "test description",
+				Status:      model.IssueStatusOpen,
+				Priority:    model.IssuePriorityLow,
+				Resolution:  model.IssueResolutionNone,
+				ReportedBy:  model.MustNewID(model.ResourceTypeUser),
+				Assignees:   make([]model.ID, 0),
+				Labels:      make([]model.ID, 0),
+				Comments:    make([]model.ID, 0),
+				Attachments: make([]model.ID, 0),
+				Watchers:    make([]model.ID, 0),
+				Relations:   make([]model.ID, 0),
+				Links:       make([]string, 0),
+			},
+			wantErr: ErrCacheWrite,
+		},
+		{
+			name: "update issue delete for issue to cache error",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, issue *model.Issue) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), id.String())
+					forIssueKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForIssue", issue.Parent.String(), "*")
+
+					forIssueKeyCmd := new(redis.StringSliceCmd)
+					forIssueKeyCmd.SetVal([]string{forIssueKey})
+
+					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, forIssueKey).Return(forIssueKeyCmd)
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(2)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Set", gomock.Len(0)).Return(ctx, span)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, forIssueKey).Return(assert.AnError)
+					cacheRepo.EXPECT().Set(&cache.Item{
+						Ctx:   ctx,
+						Key:   key,
+						Value: issue,
+					}).Return(nil)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, issue *model.Issue) IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, patch).Return(issue, nil)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeIssue),
+				patch: map[string]any{
+					"title":       "new title",
+					"description": "new description",
+				},
+			},
+			want: &model.Issue{
+				ID:          model.MustNewID(model.ResourceTypeIssue),
+				NumericID:   1,
+				Parent:      convert.ToPointer(model.MustNewID(model.ResourceTypeIssue)),
+				Kind:        model.IssueKindStory,
+				Title:       "test issue",
+				Description: "test description",
+				Status:      model.IssueStatusOpen,
+				Priority:    model.IssuePriorityLow,
+				Resolution:  model.IssueResolutionNone,
+				ReportedBy:  model.MustNewID(model.ResourceTypeUser),
+				Assignees:   make([]model.ID, 0),
+				Labels:      make([]model.ID, 0),
+				Comments:    make([]model.ID, 0),
+				Attachments: make([]model.ID, 0),
+				Watchers:    make([]model.ID, 0),
+				Relations:   make([]model.ID, 0),
+				Links:       make([]string, 0),
+			},
+			wantErr: ErrCacheDelete,
+		},
+		{
+			name: "update issue with delete projects cache error",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, issue *model.Issue) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), id.String())
+					projectsKey := composeCacheKey(model.ResourceTypeProject.String(), "*")
+					forIssueKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForIssue", issue.Parent.String(), "*")
+
+					projectsKeyCmd := new(redis.StringSliceCmd)
+					projectsKeyCmd.SetVal([]string{projectsKey})
+
+					forIssueKeyCmd := new(redis.StringSliceCmd)
+					forIssueKeyCmd.SetVal([]string{forIssueKey})
+
+					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, forIssueKey).Return(forIssueKeyCmd)
+					dbClient.EXPECT().Keys(ctx, projectsKey).Return(projectsKeyCmd)
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(3)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Set", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(2)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, projectsKey).Return(ErrCacheDelete)
+					cacheRepo.EXPECT().Delete(ctx, forIssueKey).Return(nil)
+					cacheRepo.EXPECT().Set(&cache.Item{
+						Ctx:   ctx,
+						Key:   key,
+						Value: issue,
+					}).Return(nil)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, issue *model.Issue) IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, patch).Return(issue, nil)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeIssue),
+				patch: map[string]any{
+					"title":       "new title",
+					"description": "new description",
+				},
+			},
+			want: &model.Issue{
+				ID:          model.MustNewID(model.ResourceTypeIssue),
+				NumericID:   1,
+				Parent:      convert.ToPointer(model.MustNewID(model.ResourceTypeIssue)),
+				Kind:        model.IssueKindStory,
+				Title:       "test issue",
+				Description: "test description",
+				Status:      model.IssueStatusOpen,
+				Priority:    model.IssuePriorityLow,
+				Resolution:  model.IssueResolutionNone,
+				ReportedBy:  model.MustNewID(model.ResourceTypeUser),
+				Assignees:   make([]model.ID, 0),
+				Labels:      make([]model.ID, 0),
+				Comments:    make([]model.ID, 0),
+				Attachments: make([]model.ID, 0),
+				Watchers:    make([]model.ID, 0),
+				Relations:   make([]model.ID, 0),
+				Links:       make([]string, 0),
+			},
+			wantErr: ErrCacheDelete,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			r := &RedisCachedIssueRepository{
+				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, tt.want),
+				issueRepo: tt.fields.issueRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.patch, tt.want),
+			}
+			got, err := r.Update(tt.args.ctx, tt.args.id, tt.args.patch)
+			require.ErrorIs(t, err, tt.wantErr)
+			if tt.wantErr == nil {
+				require.Equal(t, tt.want, got)
+			}
+		})
+	}
+}
+
+func TestCachedIssueRepository_Delete(t *testing.T) {
+	type fields struct {
+		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *redisBaseRepository
+		issueRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID) IssueRepository
+	}
+	type args struct {
+		ctx context.Context
+		id  model.ID
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr error
+	}{
+		{
+			name: "delete issue",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), id.String())
+					watchersKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetWatchers", id.String(), "*")
+					relationsKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetRelations", id.String(), "*")
+					allForIssueKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForIssue", "*")
+					allForProjectKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForProject", "*")
+					projectsKey := composeCacheKey(model.ResourceTypeProject.String(), "*")
+
+					watchersKeyResult := new(redis.StringSliceCmd)
+					watchersKeyResult.SetVal([]string{watchersKey})
+
+					relationsKeyResult := new(redis.StringSliceCmd)
+					relationsKeyResult.SetVal([]string{relationsKey})
+
+					allForIssueKeyResult := new(redis.StringSliceCmd)
+					allForIssueKeyResult.SetVal([]string{allForIssueKey})
+
+					allForProjectKeyResult := new(redis.StringSliceCmd)
+					allForProjectKeyResult.SetVal([]string{allForProjectKey})
+
+					projectsKeyResult := new(redis.StringSliceCmd)
+					projectsKeyResult.SetVal([]string{projectsKey})
+
+					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, watchersKey).Return(watchersKeyResult)
+					dbClient.EXPECT().Keys(ctx, relationsKey).Return(relationsKeyResult)
+					dbClient.EXPECT().Keys(ctx, allForIssueKey).Return(allForIssueKeyResult)
+					dbClient.EXPECT().Keys(ctx, allForProjectKey).Return(allForProjectKeyResult)
+					dbClient.EXPECT().Keys(ctx, projectsKey).Return(projectsKeyResult)
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(6)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(5)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, watchersKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, relationsKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, allForIssueKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, allForProjectKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, projectsKey).Return(nil)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().Delete(ctx, id).Return(nil)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeIssue),
+			},
+		},
+		{
+			name: "delete issue with deletion error",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), id.String())
+					watchersKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetWatchers", id.String(), "*")
+					relationsKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetRelations", id.String(), "*")
+					allForIssueKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForIssue", "*")
+					allForProjectKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForProject", "*")
+					projectsKey := composeCacheKey(model.ResourceTypeProject.String(), "*")
+
+					watchersKeyResult := new(redis.StringSliceCmd)
+					watchersKeyResult.SetVal([]string{watchersKey})
+
+					relationsKeyResult := new(redis.StringSliceCmd)
+					relationsKeyResult.SetVal([]string{relationsKey})
+
+					allForIssueKeyResult := new(redis.StringSliceCmd)
+					allForIssueKeyResult.SetVal([]string{allForIssueKey})
+
+					allForProjectKeyResult := new(redis.StringSliceCmd)
+					allForProjectKeyResult.SetVal([]string{allForProjectKey})
+
+					projectsKeyResult := new(redis.StringSliceCmd)
+					projectsKeyResult.SetVal([]string{projectsKey})
+
+					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, watchersKey).Return(watchersKeyResult)
+					dbClient.EXPECT().Keys(ctx, relationsKey).Return(relationsKeyResult)
+					dbClient.EXPECT().Keys(ctx, allForIssueKey).Return(allForIssueKeyResult)
+					dbClient.EXPECT().Keys(ctx, allForProjectKey).Return(allForProjectKeyResult)
+					dbClient.EXPECT().Keys(ctx, projectsKey).Return(projectsKeyResult)
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(6)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(5)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, watchersKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, relationsKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, allForIssueKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, allForProjectKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, projectsKey).Return(nil)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					repo.EXPECT().Delete(ctx, id).Return(ErrNotFound)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeIssue),
+			},
+			wantErr: ErrNotFound,
+		},
+		{
+			name: "delete issue with clear cache error",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), id.String())
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(1)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Delete", gomock.Len(0)).Return(ctx, span)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, key).Return(ErrCacheDelete)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID) IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeIssue),
+			},
+			wantErr: ErrCacheDelete,
+		},
+		{
+			name: "delete issue with clear watchers cache error",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), id.String())
+					watchersKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetWatchers", id.String(), "*")
+
+					watchersKeyResult := new(redis.StringSliceCmd)
+					watchersKeyResult.SetVal([]string{watchersKey})
+
+					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, watchersKey).Return(watchersKeyResult)
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(2)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Delete", gomock.Len(0)).Return(ctx, span)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, watchersKey).Return(ErrCacheDelete)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID) IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeIssue),
+			},
+			wantErr: ErrCacheDelete,
+		},
+		{
+			name: "delete issue with clear relations cache error",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), id.String())
+					watchersKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetWatchers", id.String(), "*")
+					relationsKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetRelations", id.String(), "*")
+
+					watchersKeyResult := new(redis.StringSliceCmd)
+					watchersKeyResult.SetVal([]string{watchersKey})
+
+					relationsKeyResult := new(redis.StringSliceCmd)
+					relationsKeyResult.SetVal([]string{relationsKey})
+
+					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, watchersKey).Return(watchersKeyResult)
+					dbClient.EXPECT().Keys(ctx, relationsKey).Return(relationsKeyResult)
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(3)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(2)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, watchersKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, relationsKey).Return(ErrCacheDelete)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID) IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeIssue),
+			},
+			wantErr: ErrCacheDelete,
+		},
+		{
+			name: "delete issue with clear for issue cache error",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), id.String())
+					watchersKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetWatchers", id.String(), "*")
+					relationsKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetRelations", id.String(), "*")
+					allForIssueKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForIssue", "*")
+
+					watchersKeyResult := new(redis.StringSliceCmd)
+					watchersKeyResult.SetVal([]string{watchersKey})
+
+					relationsKeyResult := new(redis.StringSliceCmd)
+					relationsKeyResult.SetVal([]string{relationsKey})
+
+					allForIssueKeyResult := new(redis.StringSliceCmd)
+					allForIssueKeyResult.SetVal([]string{allForIssueKey})
+
+					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, watchersKey).Return(watchersKeyResult)
+					dbClient.EXPECT().Keys(ctx, relationsKey).Return(relationsKeyResult)
+					dbClient.EXPECT().Keys(ctx, allForIssueKey).Return(allForIssueKeyResult)
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(4)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(3)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, watchersKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, relationsKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, allForIssueKey).Return(ErrCacheDelete)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID) IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeIssue),
+			},
+			wantErr: ErrCacheDelete,
+		},
+		{
+			name: "delete issue with clear for project cache error",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), id.String())
+					watchersKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetWatchers", id.String(), "*")
+					relationsKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetRelations", id.String(), "*")
+					allForIssueKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForIssue", "*")
+					allForProjectKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForProject", "*")
+
+					watchersKeyResult := new(redis.StringSliceCmd)
+					watchersKeyResult.SetVal([]string{watchersKey})
+
+					relationsKeyResult := new(redis.StringSliceCmd)
+					relationsKeyResult.SetVal([]string{relationsKey})
+
+					allForIssueKeyResult := new(redis.StringSliceCmd)
+					allForIssueKeyResult.SetVal([]string{allForIssueKey})
+
+					allForProjectKeyResult := new(redis.StringSliceCmd)
+					allForProjectKeyResult.SetVal([]string{allForProjectKey})
+
+					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, watchersKey).Return(watchersKeyResult)
+					dbClient.EXPECT().Keys(ctx, relationsKey).Return(relationsKeyResult)
+					dbClient.EXPECT().Keys(ctx, allForIssueKey).Return(allForIssueKeyResult)
+					dbClient.EXPECT().Keys(ctx, allForProjectKey).Return(allForProjectKeyResult)
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(5)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(4)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, watchersKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, relationsKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, allForIssueKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, allForProjectKey).Return(ErrCacheDelete)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID) IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeIssue),
+			},
+			wantErr: ErrCacheDelete,
+		},
+		{
+			name: "delete issue with clear projects cache error",
+			fields: fields{
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeIssue.String(), id.String())
+					watchersKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetWatchers", id.String(), "*")
+					relationsKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetRelations", id.String(), "*")
+					allForIssueKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForIssue", "*")
+					allForProjectKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForProject", "*")
+					projectsKey := composeCacheKey(model.ResourceTypeProject.String(), "*")
+
+					watchersKeyResult := new(redis.StringSliceCmd)
+					watchersKeyResult.SetVal([]string{watchersKey})
+
+					relationsKeyResult := new(redis.StringSliceCmd)
+					relationsKeyResult.SetVal([]string{relationsKey})
+
+					allForIssueKeyResult := new(redis.StringSliceCmd)
+					allForIssueKeyResult.SetVal([]string{allForIssueKey})
+
+					allForProjectKeyResult := new(redis.StringSliceCmd)
+					allForProjectKeyResult.SetVal([]string{allForProjectKey})
+
+					projectsKeyResult := new(redis.StringSliceCmd)
+					projectsKeyResult.SetVal([]string{projectsKey})
+
+					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, watchersKey).Return(watchersKeyResult)
+					dbClient.EXPECT().Keys(ctx, relationsKey).Return(relationsKeyResult)
+					dbClient.EXPECT().Keys(ctx, allForIssueKey).Return(allForIssueKeyResult)
+					dbClient.EXPECT().Keys(ctx, allForProjectKey).Return(allForProjectKeyResult)
+					dbClient.EXPECT().Keys(ctx, projectsKey).Return(projectsKeyResult)
+
+					db, err := NewRedisDatabase(
+						WithRedisClient(dbClient),
+					)
+					require.NoError(t, err)
+
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0)).Times(6)
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(5)
+
+					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, watchersKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, relationsKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, allForIssueKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, allForProjectKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, projectsKey).Return(ErrCacheDelete)
+
+					return &redisBaseRepository{
+						db:     db,
+						cache:  cacheRepo,
+						tracer: tracer,
+						logger: mock.NewMockLogger(ctrl),
+					}
+				},
+				issueRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID) IssueRepository {
+					repo := mock.NewIssueRepository(ctrl)
+					return repo
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  model.MustNewID(model.ResourceTypeIssue),
+			},
+			wantErr: ErrCacheDelete,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			r := &RedisCachedIssueRepository{
+				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id),
+				issueRepo: tt.fields.issueRepo(ctrl, tt.args.ctx, tt.args.id),
+			}
+			err := r.Delete(tt.args.ctx, tt.args.id)
+			require.ErrorIs(t, err, tt.wantErr)
+		})
+	}
+}

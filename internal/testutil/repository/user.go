@@ -5,17 +5,17 @@ import (
 	"time"
 
 	"github.com/opcotech/elemo/internal/model"
-	"github.com/opcotech/elemo/internal/repository/neo4j"
+	"github.com/opcotech/elemo/internal/repository"
 )
 
 // MakeUserSystemOwner elevates the user to system owner.
-func MakeUserSystemOwner(userID model.ID, db *neo4j.Database) error {
+func MakeUserSystemOwner(userID model.ID, db *repository.Neo4jDatabase) error {
 	ctx := context.Background()
 
 	cypher := `
 	MATCH (u:` + userID.Label() + ` {id: $id})
 	MATCH (r:` + model.ResourceTypeRole.String() + ` {id: $role_label, system: true})
-	CREATE (u)-[:` + neo4j.EdgeKindMemberOf.String() + `]->(r)`
+	CREATE (u)-[:` + repository.EdgeKindMemberOf.String() + `]->(r)`
 
 	params := map[string]any{
 		"id":         userID.String(),

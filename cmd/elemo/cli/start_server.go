@@ -17,9 +17,6 @@ import (
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/queue"
 	"github.com/opcotech/elemo/internal/repository"
-	"github.com/opcotech/elemo/internal/repository/neo4j"
-	"github.com/opcotech/elemo/internal/repository/pg"
-	"github.com/opcotech/elemo/internal/repository/redis"
 	"github.com/opcotech/elemo/internal/service"
 
 	elemoHttp "github.com/opcotech/elemo/internal/transport/http"
@@ -73,10 +70,10 @@ var startServerCmd = &cobra.Command{
 			}
 		}(messageQueue)
 
-		licenseRepo, err := neo4j.NewLicenseRepository(
-			neo4j.WithDatabase(graphDB),
-			neo4j.WithRepositoryLogger(logger.Named("license_repository")),
-			neo4j.WithRepositoryTracer(tracer),
+		licenseRepo, err := repository.NewNeo4jLicenseRepository(
+			repository.WithNeo4jDatabase(graphDB),
+			repository.WithNeo4jRepositoryLogger(logger.Named("license_repository")),
+			repository.WithNeo4jRepositoryTracer(tracer),
 		)
 		if err != nil {
 			logger.Fatal(context.Background(), "failed to initialize license repository", slog.Any("error", err))
@@ -84,20 +81,20 @@ var startServerCmd = &cobra.Command{
 
 		var permissionRepo repository.PermissionRepository
 		{
-			repo, err := neo4j.NewPermissionRepository(
-				neo4j.WithDatabase(graphDB),
-				neo4j.WithRepositoryLogger(logger.Named("permission_repository")),
-				neo4j.WithRepositoryTracer(tracer),
+			repo, err := repository.NewNeo4jPermissionRepository(
+				repository.WithNeo4jDatabase(graphDB),
+				repository.WithNeo4jRepositoryLogger(logger.Named("permission_repository")),
+				repository.WithNeo4jRepositoryTracer(tracer),
 			)
 			if err != nil {
 				logger.Fatal(context.Background(), "failed to initialize permission repository", slog.Any("error", err))
 			}
 
-			permissionRepo, err = redis.NewCachedPermissionRepository(
+			permissionRepo, err = repository.NewCachedPermissionRepository(
 				repo,
-				redis.WithDatabase(cacheDB),
-				redis.WithRepositoryLogger(logger.Named("cached_permission_repository")),
-				redis.WithRepositoryTracer(tracer),
+				repository.WithRedisDatabase(cacheDB),
+				repository.WithRedisRepositoryLogger(logger.Named("cached_permission_repository")),
+				repository.WithRedisRepositoryTracer(tracer),
 			)
 			if err != nil {
 				logger.Fatal(context.Background(), "failed to initialize cached permission repository", slog.Any("error", err))
@@ -106,20 +103,20 @@ var startServerCmd = &cobra.Command{
 
 		var organizationRepo repository.OrganizationRepository
 		{
-			repo, err := neo4j.NewOrganizationRepository(
-				neo4j.WithDatabase(graphDB),
-				neo4j.WithRepositoryLogger(logger.Named("organization_repository")),
-				neo4j.WithRepositoryTracer(tracer),
+			repo, err := repository.NewNeo4jOrganizationRepository(
+				repository.WithNeo4jDatabase(graphDB),
+				repository.WithNeo4jRepositoryLogger(logger.Named("organization_repository")),
+				repository.WithNeo4jRepositoryTracer(tracer),
 			)
 			if err != nil {
 				logger.Fatal(context.Background(), "failed to initialize organization repository", slog.Any("error", err))
 			}
 
-			organizationRepo, err = redis.NewCachedOrganizationRepository(
+			organizationRepo, err = repository.NewCachedOrganizationRepository(
 				repo,
-				redis.WithDatabase(cacheDB),
-				redis.WithRepositoryLogger(logger.Named("cached_organization_repository")),
-				redis.WithRepositoryTracer(tracer),
+				repository.WithRedisDatabase(cacheDB),
+				repository.WithRedisRepositoryLogger(logger.Named("cached_organization_repository")),
+				repository.WithRedisRepositoryTracer(tracer),
 			)
 			if err != nil {
 				logger.Fatal(context.Background(), "failed to initialize cached organization repository", slog.Any("error", err))
@@ -128,20 +125,20 @@ var startServerCmd = &cobra.Command{
 
 		var roleRepo repository.RoleRepository
 		{
-			repo, err := neo4j.NewRoleRepository(
-				neo4j.WithDatabase(graphDB),
-				neo4j.WithRepositoryLogger(logger.Named("role_repository")),
-				neo4j.WithRepositoryTracer(tracer),
+			repo, err := repository.NewNeo4jRoleRepository(
+				repository.WithNeo4jDatabase(graphDB),
+				repository.WithNeo4jRepositoryLogger(logger.Named("role_repository")),
+				repository.WithNeo4jRepositoryTracer(tracer),
 			)
 			if err != nil {
 				logger.Fatal(context.Background(), "failed to initialize role repository", slog.Any("error", err))
 			}
 
-			roleRepo, err = redis.NewCachedRoleRepository(
+			roleRepo, err = repository.NewCachedRoleRepository(
 				repo,
-				redis.WithDatabase(cacheDB),
-				redis.WithRepositoryLogger(logger.Named("cached_role_repository")),
-				redis.WithRepositoryTracer(tracer),
+				repository.WithRedisDatabase(cacheDB),
+				repository.WithRedisRepositoryLogger(logger.Named("cached_role_repository")),
+				repository.WithRedisRepositoryTracer(tracer),
 			)
 			if err != nil {
 				logger.Fatal(context.Background(), "failed to initialize cached role repository", slog.Any("error", err))
@@ -150,20 +147,20 @@ var startServerCmd = &cobra.Command{
 
 		var userRepo repository.UserRepository
 		{
-			repo, err := neo4j.NewUserRepository(
-				neo4j.WithDatabase(graphDB),
-				neo4j.WithRepositoryLogger(logger.Named("user_repository")),
-				neo4j.WithRepositoryTracer(tracer),
+			repo, err := repository.NewNeo4jUserRepository(
+				repository.WithNeo4jDatabase(graphDB),
+				repository.WithNeo4jRepositoryLogger(logger.Named("user_repository")),
+				repository.WithNeo4jRepositoryTracer(tracer),
 			)
 			if err != nil {
 				logger.Fatal(context.Background(), "failed to initialize user repository", slog.Any("error", err))
 			}
 
-			userRepo, err = redis.NewCachedUserRepository(
+			userRepo, err = repository.NewCachedUserRepository(
 				repo,
-				redis.WithDatabase(cacheDB),
-				redis.WithRepositoryLogger(logger.Named("cached_user_repository")),
-				redis.WithRepositoryTracer(tracer),
+				repository.WithRedisDatabase(cacheDB),
+				repository.WithRedisRepositoryLogger(logger.Named("cached_user_repository")),
+				repository.WithRedisRepositoryTracer(tracer),
 			)
 			if err != nil {
 				logger.Fatal(context.Background(), "failed to initialize cached user repository", slog.Any("error", err))
@@ -172,10 +169,10 @@ var startServerCmd = &cobra.Command{
 
 		var userTokenRepo repository.UserTokenRepository
 		{
-			repo, err := pg.NewUserTokenRepository(
-				pg.WithDatabase(relDB),
-				pg.WithRepositoryLogger(logger.Named("user_token_repository")),
-				pg.WithRepositoryTracer(tracer),
+			repo, err := repository.NewUserTokenRepository(
+				repository.WithPGDatabase(relDB),
+				repository.WithPGRepositoryLogger(logger.Named("user_token_repository")),
+				repository.WithPGRepositoryTracer(tracer),
 			)
 			if err != nil {
 				logger.Fatal(context.Background(), "failed to initialize user token repository", slog.Any("error", err))
@@ -186,20 +183,20 @@ var startServerCmd = &cobra.Command{
 
 		var todoRepo repository.TodoRepository
 		{
-			repo, err := neo4j.NewTodoRepository(
-				neo4j.WithDatabase(graphDB),
-				neo4j.WithRepositoryLogger(logger.Named("todo_repository")),
-				neo4j.WithRepositoryTracer(tracer),
+			repo, err := repository.NewNeo4jTodoRepository(
+				repository.WithNeo4jDatabase(graphDB),
+				repository.WithNeo4jRepositoryLogger(logger.Named("todo_repository")),
+				repository.WithNeo4jRepositoryTracer(tracer),
 			)
 			if err != nil {
 				logger.Fatal(context.Background(), "failed to initialize todo repository", slog.Any("error", err))
 			}
 
-			todoRepo, err = redis.NewCachedTodoRepository(
+			todoRepo, err = repository.NewCachedTodoRepository(
 				repo,
-				redis.WithDatabase(cacheDB),
-				redis.WithRepositoryLogger(logger.Named("cached_todo_repository")),
-				redis.WithRepositoryTracer(tracer),
+				repository.WithRedisDatabase(cacheDB),
+				repository.WithRedisRepositoryLogger(logger.Named("cached_todo_repository")),
+				repository.WithRedisRepositoryTracer(tracer),
 			)
 			if err != nil {
 				logger.Fatal(context.Background(), "failed to initialize cached todo repository", slog.Any("error", err))
@@ -208,20 +205,20 @@ var startServerCmd = &cobra.Command{
 
 		var namespaceRepo repository.NamespaceRepository
 		{
-			repo, err := neo4j.NewNamespaceRepository(
-				neo4j.WithDatabase(graphDB),
-				neo4j.WithRepositoryLogger(logger.Named("namespace_repository")),
-				neo4j.WithRepositoryTracer(tracer),
+			repo, err := repository.NewNeo4jNamespaceRepository(
+				repository.WithNeo4jDatabase(graphDB),
+				repository.WithNeo4jRepositoryLogger(logger.Named("namespace_repository")),
+				repository.WithNeo4jRepositoryTracer(tracer),
 			)
 			if err != nil {
 				logger.Fatal(context.Background(), "failed to initialize namespace repository", slog.Any("error", err))
 			}
 
-			namespaceRepo, err = redis.NewCachedNamespaceRepository(
+			namespaceRepo, err = repository.NewCachedNamespaceRepository(
 				repo,
-				redis.WithDatabase(cacheDB),
-				redis.WithRepositoryLogger(logger.Named("cached_namespace_repository")),
-				redis.WithRepositoryTracer(tracer),
+				repository.WithRedisDatabase(cacheDB),
+				repository.WithRedisRepositoryLogger(logger.Named("cached_namespace_repository")),
+				repository.WithRedisRepositoryTracer(tracer),
 			)
 			if err != nil {
 				logger.Fatal(context.Background(), "failed to initialize cached namespace repository", slog.Any("error", err))
@@ -230,20 +227,20 @@ var startServerCmd = &cobra.Command{
 
 		var notificationRepo repository.NotificationRepository
 		{
-			repo, err := pg.NewNotificationRepository(
-				pg.WithDatabase(relDB),
-				pg.WithRepositoryLogger(logger.Named("notification_repository")),
-				pg.WithRepositoryTracer(tracer),
+			repo, err := repository.NewNotificationRepository(
+				repository.WithPGDatabase(relDB),
+				repository.WithPGRepositoryLogger(logger.Named("notification_repository")),
+				repository.WithPGRepositoryTracer(tracer),
 			)
 			if err != nil {
 				logger.Fatal(context.Background(), "failed to initialize notification repository", slog.Any("error", err))
 			}
 
-			notificationRepo, err = redis.NewCachedNotificationRepository(
+			notificationRepo, err = repository.NewCachedNotificationRepository(
 				repo,
-				redis.WithDatabase(cacheDB),
-				redis.WithRepositoryLogger(logger.Named("cached_notification_repository")),
-				redis.WithRepositoryTracer(tracer),
+				repository.WithRedisDatabase(cacheDB),
+				repository.WithRedisRepositoryLogger(logger.Named("cached_notification_repository")),
+				repository.WithRedisRepositoryTracer(tracer),
 			)
 			if err != nil {
 				logger.Fatal(context.Background(), "failed to initialize cached notification repository", slog.Any("error", err))
@@ -418,7 +415,7 @@ func init() {
 	startCmd.AddCommand(startServerCmd)
 }
 
-func initAuthProvider(pool pg.Pool) (*authServer.Server, error) {
+func initAuthProvider(pool repository.PGPool) (*authServer.Server, error) {
 	storeLogger := &authStoreLogger{
 		logger: logger.Named("auth_store"),
 	}
