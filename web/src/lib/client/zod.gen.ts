@@ -72,6 +72,25 @@ export const zNamespaceProject = z.object({
 });
 
 /**
+ * Project
+ *
+ * A project in a namespace.
+ */
+export const zProject = z.object({
+  id: z.string(),
+  key: z.string().min(3).max(6),
+  name: z.string().min(3).max(120),
+  description: z.optional(z.union([z.string().min(10).max(500), z.null()])),
+  logo: z.optional(z.union([z.url().max(2000), z.null()])),
+  status: zProjectStatus,
+  teams: z.array(z.string()),
+  documents: z.array(z.string()),
+  issues: z.array(z.string()),
+  created_at: z.iso.datetime(),
+  updated_at: z.union([z.iso.datetime(), z.null()]),
+});
+
+/**
  * NamespaceDocument
  *
  * A document in a namespace with limited information.
@@ -625,6 +644,22 @@ export const zNamespaceCreate = z.object({
 export const zNamespacePatch = z.object({
   name: z.optional(z.string().min(3).max(120)),
   description: z.optional(z.union([z.string().min(5).max(500), z.null()])),
+});
+
+export const zProjectCreate = z.object({
+  key: z.string().min(3).max(6),
+  name: z.string().min(3).max(120),
+  description: z.optional(z.union([z.string().min(10).max(500), z.null()])),
+  logo: z.optional(z.union([z.url().max(2000), z.null()])),
+  status: z.optional(zProjectStatus),
+});
+
+export const zProjectPatch = z.object({
+  key: z.optional(z.string().min(3).max(6)),
+  name: z.optional(z.string().min(3).max(120)),
+  description: z.optional(z.union([z.string().min(10).max(500), z.null()])),
+  logo: z.optional(z.union([z.url().max(2000), z.null()])),
+  status: z.optional(zProjectStatus),
 });
 
 export const zPermissionCreate = z.object({
@@ -1275,6 +1310,78 @@ export const zV1NamespaceUpdateData = z.object({
  * OK
  */
 export const zV1NamespaceUpdateResponse = zNamespace;
+
+export const zV1NamespacesProjectsGetData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(
+    z.object({
+      offset: z.optional(z.int().gte(0)).default(0),
+      limit: z.optional(z.int().gte(1).lte(1000)).default(100),
+    })
+  ),
+});
+
+/**
+ * OK
+ */
+export const zV1NamespacesProjectsGetResponse = z.array(zProject);
+
+export const zV1NamespacesProjectsCreateData = z.object({
+  body: z.optional(zProjectCreate),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+/**
+ * Example response
+ */
+export const zV1NamespacesProjectsCreateResponse = z.object({
+  id: z.string(),
+});
+
+export const zV1ProjectDeleteData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+/**
+ * No Content
+ */
+export const zV1ProjectDeleteResponse = z.void();
+
+export const zV1ProjectGetData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+/**
+ * OK
+ */
+export const zV1ProjectGetResponse = zProject;
+
+export const zV1ProjectUpdateData = z.object({
+  body: z.optional(zProjectPatch),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+/**
+ * OK
+ */
+export const zV1ProjectUpdateResponse = zProject;
 
 export const zV1PermissionsCreateData = z.object({
   body: z.optional(zPermissionCreate),

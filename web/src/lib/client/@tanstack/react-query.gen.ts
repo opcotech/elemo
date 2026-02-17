@@ -12,6 +12,8 @@ import {
   type Options,
   v1NamespaceDelete,
   v1NamespaceGet,
+  v1NamespacesProjectsCreate,
+  v1NamespacesProjectsGet,
   v1NamespaceUpdate,
   v1NotificationDelete,
   v1NotificationGet,
@@ -48,6 +50,9 @@ import {
   v1PermissionResourceGet,
   v1PermissionsCreate,
   v1PermissionUpdate,
+  v1ProjectDelete,
+  v1ProjectGet,
+  v1ProjectUpdate,
   v1SystemHealth,
   v1SystemHeartbeat,
   v1SystemLicense,
@@ -72,6 +77,12 @@ import type {
   V1NamespaceGetData,
   V1NamespaceGetError,
   V1NamespaceGetResponse,
+  V1NamespacesProjectsCreateData,
+  V1NamespacesProjectsCreateError,
+  V1NamespacesProjectsCreateResponse,
+  V1NamespacesProjectsGetData,
+  V1NamespacesProjectsGetError,
+  V1NamespacesProjectsGetResponse,
   V1NamespaceUpdateData,
   V1NamespaceUpdateError,
   V1NamespaceUpdateResponse,
@@ -180,6 +191,15 @@ import type {
   V1PermissionUpdateData,
   V1PermissionUpdateError,
   V1PermissionUpdateResponse,
+  V1ProjectDeleteData,
+  V1ProjectDeleteError,
+  V1ProjectDeleteResponse,
+  V1ProjectGetData,
+  V1ProjectGetError,
+  V1ProjectGetResponse,
+  V1ProjectUpdateData,
+  V1ProjectUpdateError,
+  V1ProjectUpdateResponse,
   V1SystemHealthData,
   V1SystemHealthError,
   V1SystemHealthResponse,
@@ -1861,6 +1881,203 @@ export const v1NamespaceUpdateMutation = (
   > = {
     mutationFn: async (fnOptions) => {
       const { data } = await v1NamespaceUpdate({
+        ...options,
+        ...fnOptions,
+        throwOnError: true,
+      });
+      return data;
+    },
+  };
+  return mutationOptions;
+};
+
+export const v1NamespacesProjectsGetQueryKey = (
+  options: Options<V1NamespacesProjectsGetData>
+) => createQueryKey("v1NamespacesProjectsGet", options);
+
+/**
+ * Get namespace projects
+ *
+ * Return the projects that belong to the namespace.
+ */
+export const v1NamespacesProjectsGetOptions = (
+  options: Options<V1NamespacesProjectsGetData>
+) =>
+  queryOptions<
+    V1NamespacesProjectsGetResponse,
+    V1NamespacesProjectsGetError,
+    V1NamespacesProjectsGetResponse,
+    ReturnType<typeof v1NamespacesProjectsGetQueryKey>
+  >({
+    queryFn: async ({ queryKey, signal }) => {
+      const { data } = await v1NamespacesProjectsGet({
+        ...options,
+        ...queryKey[0],
+        signal,
+        throwOnError: true,
+      });
+      return data;
+    },
+    queryKey: v1NamespacesProjectsGetQueryKey(options),
+  });
+
+export const v1NamespacesProjectsGetInfiniteQueryKey = (
+  options: Options<V1NamespacesProjectsGetData>
+): QueryKey<Options<V1NamespacesProjectsGetData>> =>
+  createQueryKey("v1NamespacesProjectsGet", options, true);
+
+/**
+ * Get namespace projects
+ *
+ * Return the projects that belong to the namespace.
+ */
+export const v1NamespacesProjectsGetInfiniteOptions = (
+  options: Options<V1NamespacesProjectsGetData>
+) => {
+  return infiniteQueryOptions<
+    V1NamespacesProjectsGetResponse,
+    V1NamespacesProjectsGetError,
+    InfiniteData<V1NamespacesProjectsGetResponse>,
+    QueryKey<Options<V1NamespacesProjectsGetData>>,
+    | number
+    | Pick<
+        QueryKey<Options<V1NamespacesProjectsGetData>>[0],
+        "body" | "headers" | "path" | "query"
+      >
+  >(
+    // @ts-ignore
+    {
+      queryFn: async ({ pageParam, queryKey, signal }) => {
+        // @ts-ignore
+        const page: Pick<
+          QueryKey<Options<V1NamespacesProjectsGetData>>[0],
+          "body" | "headers" | "path" | "query"
+        > =
+          typeof pageParam === "object"
+            ? pageParam
+            : {
+                query: {
+                  offset: pageParam,
+                },
+              };
+        const params = createInfiniteParams(queryKey, page);
+        const { data } = await v1NamespacesProjectsGet({
+          ...options,
+          ...params,
+          signal,
+          throwOnError: true,
+        });
+        return data;
+      },
+      queryKey: v1NamespacesProjectsGetInfiniteQueryKey(options),
+    }
+  );
+};
+
+/**
+ * Create project in namespace
+ *
+ * Create a new project in the namespace.
+ */
+export const v1NamespacesProjectsCreateMutation = (
+  options?: Partial<Options<V1NamespacesProjectsCreateData>>
+): UseMutationOptions<
+  V1NamespacesProjectsCreateResponse,
+  V1NamespacesProjectsCreateError,
+  Options<V1NamespacesProjectsCreateData>
+> => {
+  const mutationOptions: UseMutationOptions<
+    V1NamespacesProjectsCreateResponse,
+    V1NamespacesProjectsCreateError,
+    Options<V1NamespacesProjectsCreateData>
+  > = {
+    mutationFn: async (fnOptions) => {
+      const { data } = await v1NamespacesProjectsCreate({
+        ...options,
+        ...fnOptions,
+        throwOnError: true,
+      });
+      return data;
+    },
+  };
+  return mutationOptions;
+};
+
+/**
+ * Delete project
+ *
+ * Delete the project by its ID.
+ */
+export const v1ProjectDeleteMutation = (
+  options?: Partial<Options<V1ProjectDeleteData>>
+): UseMutationOptions<
+  V1ProjectDeleteResponse,
+  V1ProjectDeleteError,
+  Options<V1ProjectDeleteData>
+> => {
+  const mutationOptions: UseMutationOptions<
+    V1ProjectDeleteResponse,
+    V1ProjectDeleteError,
+    Options<V1ProjectDeleteData>
+  > = {
+    mutationFn: async (fnOptions) => {
+      const { data } = await v1ProjectDelete({
+        ...options,
+        ...fnOptions,
+        throwOnError: true,
+      });
+      return data;
+    },
+  };
+  return mutationOptions;
+};
+
+export const v1ProjectGetQueryKey = (options: Options<V1ProjectGetData>) =>
+  createQueryKey("v1ProjectGet", options);
+
+/**
+ * Get project
+ *
+ * Return the requested project by its ID.
+ */
+export const v1ProjectGetOptions = (options: Options<V1ProjectGetData>) =>
+  queryOptions<
+    V1ProjectGetResponse,
+    V1ProjectGetError,
+    V1ProjectGetResponse,
+    ReturnType<typeof v1ProjectGetQueryKey>
+  >({
+    queryFn: async ({ queryKey, signal }) => {
+      const { data } = await v1ProjectGet({
+        ...options,
+        ...queryKey[0],
+        signal,
+        throwOnError: true,
+      });
+      return data;
+    },
+    queryKey: v1ProjectGetQueryKey(options),
+  });
+
+/**
+ * Update project
+ *
+ * Update the project by its ID.
+ */
+export const v1ProjectUpdateMutation = (
+  options?: Partial<Options<V1ProjectUpdateData>>
+): UseMutationOptions<
+  V1ProjectUpdateResponse,
+  V1ProjectUpdateError,
+  Options<V1ProjectUpdateData>
+> => {
+  const mutationOptions: UseMutationOptions<
+    V1ProjectUpdateResponse,
+    V1ProjectUpdateError,
+    Options<V1ProjectUpdateData>
+  > = {
+    mutationFn: async (fnOptions) => {
+      const { data } = await v1ProjectUpdate({
         ...options,
         ...fnOptions,
         throwOnError: true,
