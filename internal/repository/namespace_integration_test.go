@@ -139,6 +139,7 @@ func (s *CachedNamespaceRepositoryIntegrationTestSuite) SetupTest() {
 }
 
 func (s *CachedNamespaceRepositoryIntegrationTestSuite) TearDownTest() {
+	defer s.CleanupNeo4j(&s.ContainerIntegrationTestSuite)
 	defer s.CleanupRedis(&s.ContainerIntegrationTestSuite)
 }
 

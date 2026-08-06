@@ -3,6 +3,7 @@ package container
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -12,14 +13,16 @@ import (
 	"github.com/opcotech/elemo/internal/config"
 )
 
+const startupTimeout = 2 * time.Minute
+
 var (
 	neo4jContainerRequest = func(name string) testcontainers.GenericContainerRequest {
 		return testcontainers.GenericContainerRequest{
 			ContainerRequest: testcontainers.ContainerRequest{
 				Image:        "neo4j:2026.06-community",
-				Name:         name + "-neo4j",
+				Name:         reusableName(name, "neo4j"),
 				ExposedPorts: []string{"7687/tcp"},
-				WaitingFor:   wait.ForLog("Started."),
+				WaitingFor:   wait.ForLog("Bolt enabled on").WithStartupTimeout(startupTimeout),
 				Env: map[string]string{
 					"NEO4J_AUTH": "neo4j/neo4jsecret",
 				},
@@ -33,9 +36,9 @@ var (
 		return testcontainers.GenericContainerRequest{
 			ContainerRequest: testcontainers.ContainerRequest{
 				Image:        "postgres:18.4",
-				Name:         name + "-pg",
+				Name:         reusableName(name, "pg"),
 				ExposedPorts: []string{"5432/tcp"},
-				WaitingFor:   wait.ForLog("database system is ready to accept connections").WithOccurrence(2).WithStartupTimeout(5 * time.Second),
+				WaitingFor:   wait.ForLog("database system is ready to accept connections").WithOccurrence(2).WithStartupTimeout(startupTimeout),
 				Env: map[string]string{
 					"POSTGRES_USER":     "elemo",
 					"POSTGRES_PASSWORD": "pgsecret",
@@ -51,9 +54,9 @@ var (
 		return testcontainers.GenericContainerRequest{
 			ContainerRequest: testcontainers.ContainerRequest{
 				Image:        "redis:8.10",
-				Name:         name + "-redis",
+				Name:         reusableName(name, "redis"),
 				ExposedPorts: []string{"6379/tcp"},
-				WaitingFor:   wait.ForLog("* Ready to accept connections"),
+				WaitingFor:   wait.ForLog("* Ready to accept connections").WithStartupTimeout(startupTimeout),
 			},
 			Started: true,
 			Reuse:   true,
@@ -64,11 +67,11 @@ var (
 		return testcontainers.GenericContainerRequest{
 			ContainerRequest: testcontainers.ContainerRequest{
 				Image: "localstack/localstack:4.14.0",
-				Name:  name + "-localstack",
+				Name:  reusableName(name, "localstack"),
 				ExposedPorts: []string{
 					"4566/tcp",
 				},
-				WaitingFor: wait.ForLog("Ready."),
+				WaitingFor: wait.ForLog("Ready.").WithStartupTimeout(startupTimeout),
 				Env: map[string]string{
 					"DEBUG":                 "1",
 					"SERVICES":              "s3",
@@ -82,6 +85,16 @@ var (
 		}
 	}
 )
+
+// reusableName derives a package-scoped container name so suites in the same
+// test package share one container via testcontainers Reuse instead of
+// starting a fresh instance per suite.
+func reusableName(name, suffix string) string {
+	if i := strings.IndexByte(name, '.'); i > 0 {
+		name = name[:i]
+	}
+	return name + "-" + suffix
+}
 
 // NewNeo4jContainer creates a new test container for the Neo4j image.
 func NewNeo4jContainer(ctx context.Context, t *testing.T, name string) (testcontainers.Container, *config.GraphDatabaseConfig) {

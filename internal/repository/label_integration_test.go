@@ -197,6 +197,7 @@ func (s *CachedLabelRepositoryIntegrationTestSuite) SetupTest() {
 }
 
 func (s *CachedLabelRepositoryIntegrationTestSuite) TearDownTest() {
+	defer s.CleanupNeo4j(&s.ContainerIntegrationTestSuite)
 	defer s.CleanupRedis(&s.ContainerIntegrationTestSuite)
 }
 

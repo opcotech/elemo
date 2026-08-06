@@ -165,6 +165,7 @@ func (s *CachedTodoRepositoryIntegrationTestSuite) SetupTest() {
 }
 
 func (s *CachedTodoRepositoryIntegrationTestSuite) TearDownTest() {
+	defer s.CleanupNeo4j(&s.ContainerIntegrationTestSuite)
 	defer s.CleanupRedis(&s.ContainerIntegrationTestSuite)
 }
 

@@ -315,6 +315,7 @@ func (s *CachedPermissionRepositoryIntegrationTestSuite) SetupTest() {
 }
 
 func (s *CachedPermissionRepositoryIntegrationTestSuite) TearDownTest() {
+	defer s.CleanupNeo4j(&s.ContainerIntegrationTestSuite)
 	defer s.CleanupRedis(&s.ContainerIntegrationTestSuite)
 }
 
