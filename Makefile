@@ -14,8 +14,8 @@ BACKEND_COVER_OUT_INTEGRATION:=$(ROOT_DIR)/.coverage.integration.out
 
 PNPM_EXEC:=$(shell which pnpm)
 # Use ROOT_DIR for consistent path handling
-PNPM_RUN=$(PNPM_EXEC) run --prefix "$(ROOT_DIR)/web"
-PNPM_EMAILS_RUN=$(PNPM_EXEC) run --prefix "$(ROOT_DIR)/build/email"
+PNPM_RUN=$(PNPM_EXEC) run --dir "$(ROOT_DIR)/web"
+PNPM_EMAILS_RUN=$(PNPM_EXEC) run --dir "$(ROOT_DIR)/build/email"
 
 GO_EXEC:=$(shell which go)
 GO_TEST_IGNORE:=(mode: atomic|testutil|tools|cmd|http\/api)

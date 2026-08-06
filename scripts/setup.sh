@@ -48,10 +48,10 @@ function installFrontEnd() {
   if ! type "pnpm" 2>&1 > /dev/null; then
     npm install -g pnpm
   fi
-  pnpm --prefix web install --unsafe-perm
-  pnpm --prefix web generate
-  pnpm --prefix web exec playwright install --with-deps
-  pnpm --prefix web build
+  pnpm --dir web install --unsafe-perm
+  pnpm --dir web generate
+  pnpm --dir web exec playwright install --with-deps
+  pnpm --dir web build
 }
 
 # Run preflight
