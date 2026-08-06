@@ -103,12 +103,16 @@ func WithRequestLogger(next http.Handler) http.Handler {
 
 		currentTime := time.Now().UTC()
 		defer func(ctx context.Context, w middleware.WrapResponseWriter, r *http.Request, t time.Time) {
+			remoteAddr := middleware.GetClientIP(ctx)
+			if remoteAddr == "" {
+				remoteAddr = r.RemoteAddr
+			}
 			log.Info(ctx, "serve http request",
 				log.WithEventType("http.request.served"),
 				log.WithProtocol(r.Proto),
 				log.WithMethod(r.Method),
 				log.WithPath(r.URL.Path),
-				log.WithRemoteAddr(r.RemoteAddr),
+				log.WithRemoteAddr(remoteAddr),
 				log.WithUserAgent(r.UserAgent()),
 				log.WithSize(int64(w.BytesWritten())),
 				log.WithStatus(w.Status()),

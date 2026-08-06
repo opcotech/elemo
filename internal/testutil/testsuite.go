@@ -36,14 +36,12 @@ func (s *ContainerIntegrationTestSuite) AddContainer(container testcontainers.Co
 	s.containers = append(s.containers, container)
 }
 
-// CleanupContainers cleans up any containers created during the test.
+// CleanupContainers releases suite-local container references without
+// terminating them. Containers are reused across suites in the same package
+// and are reaped by Ryuk when the test process exits. Terminating here would
+// defeat reuse and make integration tests exceed CI timeouts.
 func (s *ContainerIntegrationTestSuite) CleanupContainers() {
-	for i, c := range s.containers {
-		s.containers = s.containers[:i]
-		if err := c.Terminate(context.Background()); err != nil {
-			s.T().Errorf("failed to terminate container: %s", err.Error())
-		}
-	}
+	s.containers = nil
 }
 
 // Neo4jContainerIntegrationTestSuite is a test suite which sets up a Neo4j
@@ -122,6 +120,7 @@ func (s *Neo4jContainerIntegrationTestSuite) SetupNeo4j(ts *ContainerIntegration
 	ts.Require().NoError(err)
 
 	s.BootstrapNeo4jDatabase(ts)
+	s.CleanupNeo4j(ts)
 }
 
 func (s *Neo4jContainerIntegrationTestSuite) CleanupNeo4j(ts *ContainerIntegrationTestSuite) {
@@ -156,6 +155,7 @@ func (s *PgContainerIntegrationTestSuite) SetupPg(ts *ContainerIntegrationTestSu
 	ts.Require().NoError(err)
 
 	s.BootstrapPgDatabase(ts)
+	s.CleanupPg(ts)
 }
 
 func (s *PgContainerIntegrationTestSuite) CleanupPg(ts *ContainerIntegrationTestSuite) {

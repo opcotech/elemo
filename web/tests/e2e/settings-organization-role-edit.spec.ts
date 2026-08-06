@@ -2,7 +2,6 @@ import { createOrganization, createRole } from "./api";
 import { expect, test } from "./fixtures";
 import {
   getFormFieldMessage,
-  waitForPageLoad,
   waitForPermissionsLoad,
   waitForSuccessToast,
 } from "./helpers";
@@ -293,12 +292,8 @@ test.describe("@settings.organization-role-edit Organization Role Edit E2E Tests
     const roleEditPage = new SettingsOrganizationRoleEditPage(page);
     await roleEditPage.goto(organizationId, roleId);
 
-    // Wait for page and permissions to load
-    await waitForPageLoad(page);
-
-    // Should not be on the edit page anymore (redirected due to lack of permission)
-    const currentUrl = page.url();
-    expect(currentUrl).not.toContain("/edit");
+    // Permission checks are async; wait for the redirect away from /edit
+    await expect(page).toHaveURL(/\/permission-denied(?:\?|$)/);
   });
 
   test("should show edit button in roles list for users with write permission", async ({

@@ -1,0 +1,59 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":semanticCommits",
+    ":semanticCommitTypeAll(chore)",
+    ":disableRateLimiting"
+  ],
+  "labels": ["dependencies"],
+  "prConcurrentLimit": 5,
+  "rangeStrategy": "bump",
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 6am on monday"]
+  },
+  "packageRules": [
+    {
+      "description": "Group non-major Go module updates",
+      "matchManagers": ["gomod"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "go modules non-major"
+    },
+    {
+      "description": "Group non-major npm updates in web/",
+      "matchManagers": ["npm"],
+      "matchPaths": ["web/**"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "web npm non-major"
+    },
+    {
+      "description": "Group non-major npm updates in website/",
+      "matchManagers": ["npm"],
+      "matchPaths": ["website/**"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "website npm non-major"
+    },
+    {
+      "description": "Group non-major npm updates in build/email/",
+      "matchManagers": ["npm"],
+      "matchPaths": ["build/email/**"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "email npm non-major"
+    },
+    {
+      "description": "Group GitHub Actions digest and version updates",
+      "matchManagers": ["github-actions"],
+      "groupName": "github-actions"
+    },
+    {
+      "description": "Keep GitHub Actions pinned by digest",
+      "matchManagers": ["github-actions"],
+      "pinDigests": true
+    }
+  ],
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "labels": ["security"]
+  }
+}

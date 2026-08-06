@@ -74,7 +74,7 @@ test.describe("@auth.login Login E2E Tests", () => {
     await page.waitForURL((url) => !url.pathname.includes("/login"));
     await waitForPageLoad(page);
 
-    await page.reload();
+    await page.reload({ waitUntil: "domcontentloaded" });
     await waitForPageLoad(page);
     await expect(page).not.toHaveURL(/.*login/);
   });

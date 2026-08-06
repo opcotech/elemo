@@ -16,7 +16,7 @@ const configuration = {
    * To see full list, check https://github.com/conventional-changelog/commitlint/blob/master/%40commitlint/is-ignored/src/defaults.ts.
    * To disable those ignores and run rules always, set `defaultIgnores: false` as shown below.
    */
-  ignores: [(message) => /^chore\(deps\): bump .*/m.test(message)],
+  ignores: [(message) => /^chore\(deps\): (bump|update) .*/m.test(message)],
 };
 
 export default configuration;

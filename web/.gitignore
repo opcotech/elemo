@@ -30,6 +30,7 @@ yarn.lock
 # production
 /api
 /build
+/dist
 /server/build
 /public/build
 

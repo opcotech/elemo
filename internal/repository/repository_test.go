@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsS3 "github.com/aws/aws-sdk-go-v2/service/s3"
@@ -119,6 +120,48 @@ func TestNewPGPool(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestNewPGPoolPreservesDefaultLifetimes(t *testing.T) {
+	t.Parallel()
+
+	pool, err := NewPool(context.Background(), &config.RelationalDatabaseConfig{
+		Host:           "localhost",
+		Port:           5432,
+		Username:       "postgres",
+		Password:       "postgres",
+		Database:       "postgres",
+		MaxConnections: 10,
+	})
+	require.NoError(t, err)
+	t.Cleanup(pool.Close)
+
+	conf := pool.Config()
+	require.NotNil(t, conf)
+	assert.Positive(t, conf.MaxConnLifetime)
+	assert.Positive(t, conf.MaxConnIdleTime)
+}
+
+func TestNewPGPoolAppliesConfiguredLifetimes(t *testing.T) {
+	t.Parallel()
+
+	pool, err := NewPool(context.Background(), &config.RelationalDatabaseConfig{
+		Host:                  "localhost",
+		Port:                  5432,
+		Username:              "postgres",
+		Password:              "postgres",
+		Database:              "postgres",
+		MaxConnections:        10,
+		MaxConnectionLifetime: 300,
+		MaxConnectionIdleTime: 10,
+	})
+	require.NoError(t, err)
+	t.Cleanup(pool.Close)
+
+	conf := pool.Config()
+	require.NotNil(t, conf)
+	assert.Equal(t, 300*time.Second, conf.MaxConnLifetime)
+	assert.Equal(t, 10*time.Second, conf.MaxConnIdleTime)
 }
 
 func TestWithDatabasePool(t *testing.T) {

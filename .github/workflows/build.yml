@@ -13,12 +13,12 @@ jobs:
     name: Backend Lint
     runs-on: "ubuntu-latest"
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: "^1.25"
+          go-version: "^1.26"
       - name: Go CI Lint
-        uses: golangci/golangci-lint-action@v7
+        uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
         with:
           version: latest
           args: --timeout 5m
@@ -27,8 +27,8 @@ jobs:
     name: Frontend Lint
     runs-on: "ubuntu-latest"
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: "20.x"
       - name: Install tooling
@@ -42,16 +42,16 @@ jobs:
     needs:
       - backend-lint
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: "^1.25"
+          go-version: "^1.26"
       - name: Install gotestsum
         run: go install gotest.tools/gotestsum@latest
       - name: Execute unit tests
         run: make test.backend.unit
       - name: Stash test results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: ${{ !cancelled() }}
         with:
           name: "unit-test-results"
@@ -65,10 +65,10 @@ jobs:
     needs:
       - backend-lint
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: "^1.25"
+          go-version: "^1.26"
       - name: Execute benchmark tests
         run: make test.backend.bench
 
@@ -79,16 +79,16 @@ jobs:
       - backend-unit-test
       - backend-benchmark-test
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: "^1.25"
+          go-version: "^1.26"
       - name: Install gotestsum
         run: go install gotest.tools/gotestsum@latest
       - name: Execute integration tests
         run: make test.backend.integration
       - name: Stash test results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: ${{ !cancelled() }}
         with:
           name: "integration-test-results"
@@ -114,15 +114,15 @@ jobs:
           # FIXME: enable "Mobile Safari" once we support mobile viewports
       fail-fast: false
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: "20.x"
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: "^1.25"
+          go-version: "^1.26"
       - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -161,16 +161,16 @@ jobs:
 
       - name: Execute end-to-end tests
         run: |
-          pnpm --prefix web test:e2e --project "${{ matrix.project }}" --shard=${{ matrix.shard }}/${{ matrix.total-shards }}
+          pnpm --dir web test:e2e --project "${{ matrix.project }}" --shard=${{ matrix.shard }}/${{ matrix.total-shards }}
       - name: Upload test results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:
           name: "e2e-test-results-${{ matrix.project }}-shard-${{ matrix.shard }}"
           path: web/test-results
           retention-days: 7
       - name: Upload Playwright report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:
           name: "playwright-report-${{ matrix.project }}-shard-${{ matrix.shard }}"
@@ -187,22 +187,22 @@ jobs:
     needs:
       - backend-integration-test
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: "^1.25"
+          go-version: "^1.26"
       - name: Unstash unit test results
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: "unit-test-results"
       - name: Unstash integration test results
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: "integration-test-results"
       - name: Combine coverage reports
         run: make test.backend.coverage
       - name: Upload coverage report
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
         with:
           files: .coverage.out
           token: ${{ secrets.CODECOV_TOKEN }}

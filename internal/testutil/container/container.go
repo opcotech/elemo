@@ -3,6 +3,7 @@ package container
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -12,14 +13,16 @@ import (
 	"github.com/opcotech/elemo/internal/config"
 )
 
+const startupTimeout = 2 * time.Minute
+
 var (
 	neo4jContainerRequest = func(name string) testcontainers.GenericContainerRequest {
 		return testcontainers.GenericContainerRequest{
 			ContainerRequest: testcontainers.ContainerRequest{
-				Image:        "neo4j:5.26",
-				Name:         name + "-neo4j",
+				Image:        "neo4j:2026.06-community",
+				Name:         reusableName(name, "neo4j"),
 				ExposedPorts: []string{"7687/tcp"},
-				WaitingFor:   wait.ForLog("Started."),
+				WaitingFor:   wait.ForLog("Bolt enabled on").WithStartupTimeout(startupTimeout),
 				Env: map[string]string{
 					"NEO4J_AUTH": "neo4j/neo4jsecret",
 				},
@@ -32,10 +35,10 @@ var (
 	pgContainerRequest = func(name string) testcontainers.GenericContainerRequest {
 		return testcontainers.GenericContainerRequest{
 			ContainerRequest: testcontainers.ContainerRequest{
-				Image:        "postgres:17.5",
-				Name:         name + "-pg",
+				Image:        "postgres:18.4",
+				Name:         reusableName(name, "pg"),
 				ExposedPorts: []string{"5432/tcp"},
-				WaitingFor:   wait.ForLog("database system is ready to accept connections").WithOccurrence(2).WithStartupTimeout(5 * time.Second),
+				WaitingFor:   wait.ForLog("database system is ready to accept connections").WithOccurrence(2).WithStartupTimeout(startupTimeout),
 				Env: map[string]string{
 					"POSTGRES_USER":     "elemo",
 					"POSTGRES_PASSWORD": "pgsecret",
@@ -50,10 +53,10 @@ var (
 	redisContainerRequest = func(name string) testcontainers.GenericContainerRequest {
 		return testcontainers.GenericContainerRequest{
 			ContainerRequest: testcontainers.ContainerRequest{
-				Image:        "redis:8.0",
-				Name:         name + "-redis",
+				Image:        "redis:8.10",
+				Name:         reusableName(name, "redis"),
 				ExposedPorts: []string{"6379/tcp"},
-				WaitingFor:   wait.ForLog("* Ready to accept connections"),
+				WaitingFor:   wait.ForLog("* Ready to accept connections").WithStartupTimeout(startupTimeout),
 			},
 			Started: true,
 			Reuse:   true,
@@ -64,11 +67,11 @@ var (
 		return testcontainers.GenericContainerRequest{
 			ContainerRequest: testcontainers.ContainerRequest{
 				Image: "localstack/localstack:4.14.0",
-				Name:  name + "-localstack",
+				Name:  reusableName(name, "localstack"),
 				ExposedPorts: []string{
 					"4566/tcp",
 				},
-				WaitingFor: wait.ForLog("Ready."),
+				WaitingFor: wait.ForLog("Ready.").WithStartupTimeout(startupTimeout),
 				Env: map[string]string{
 					"DEBUG":                 "1",
 					"SERVICES":              "s3",
@@ -82,6 +85,16 @@ var (
 		}
 	}
 )
+
+// reusableName derives a package-scoped container name so suites in the same
+// test package share one container via testcontainers Reuse instead of
+// starting a fresh instance per suite.
+func reusableName(name, suffix string) string {
+	if i := strings.IndexByte(name, '.'); i > 0 {
+		name = name[:i]
+	}
+	return name + "-" + suffix
+}
 
 // NewNeo4jContainer creates a new test container for the Neo4j image.
 func NewNeo4jContainer(ctx context.Context, t *testing.T, name string) (testcontainers.Container, *config.GraphDatabaseConfig) {
@@ -102,7 +115,7 @@ func NewNeo4jContainer(ctx context.Context, t *testing.T, name string) (testcont
 
 	conf := &config.GraphDatabaseConfig{
 		Host:                  host,
-		Port:                  port.Int(),
+		Port:                  int(port.Num()),
 		Username:              "neo4j",
 		Password:              "neo4jsecret",
 		Database:              "neo4j",
@@ -130,12 +143,15 @@ func NewPgContainer(ctx context.Context, t *testing.T, name string) (testcontain
 	}
 
 	conf := &config.RelationalDatabaseConfig{
-		Host:           host,
-		Port:           port.Int(),
-		Username:       "elemo",
-		Password:       "pgsecret",
-		Database:       "elemo",
-		MaxConnections: 100,
+		Host:                  host,
+		Port:                  int(port.Num()),
+		Username:              "elemo",
+		Password:              "pgsecret",
+		Database:              "elemo",
+		MaxConnections:        100,
+		MaxConnectionLifetime: 300,
+		MaxConnectionIdleTime: 10,
+		MinConnections:        5,
 	}
 
 	return container, conf
@@ -161,7 +177,7 @@ func NewRedisContainer(ctx context.Context, t *testing.T, name string) (testcont
 	conf := &config.CacheDatabaseConfig{
 		RedisConfig: config.RedisConfig{
 			Host:     host,
-			Port:     port.Int(),
+			Port:     int(port.Num()),
 			Username: "",
 			Password: "",
 			Database: 0,
@@ -192,7 +208,7 @@ func NewLocalStackContainer(ctx context.Context, t *testing.T, name string) (tes
 		Region:          "us-east-1",
 		AccessKeyID:     "aws-access-key",
 		SecretAccessKey: "aws-secret-key",
-		BaseEndpoint:    fmt.Sprintf("http://%s:%d", host, port.Int()),
+		BaseEndpoint:    fmt.Sprintf("http://%s:%d", host, int(port.Num())),
 	}
 
 	return container, conf

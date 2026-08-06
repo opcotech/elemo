@@ -169,6 +169,7 @@ func (s *CachedRoleRepositoryIntegrationTestSuite) SetupTest() {
 }
 
 func (s *CachedRoleRepositoryIntegrationTestSuite) TearDownTest() {
+	defer s.CleanupNeo4j(&s.ContainerIntegrationTestSuite)
 	defer s.CleanupRedis(&s.ContainerIntegrationTestSuite)
 }
 

@@ -2,7 +2,6 @@ labelPRBasedOnFilePath:
   "component: api":
     - api/**/*
     - internal/transport/http/**/*
-    - web/packages/elemo-client/**/*
   "component: auth":
     - internal/transport/http/auth.go
   "component: build":

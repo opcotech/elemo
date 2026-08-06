@@ -2,7 +2,7 @@ import { RouterProvider } from "@tanstack/react-router";
 import { StrictMode } from "react";
 import { renderToReadableStream } from "react-dom/server";
 
-import { createRouter } from "./router";
+import { getRouter } from "./router";
 
 function parseCookie(header = "") {
   return header.split(";").reduce<Record<string, string>>((acc, part) => {
@@ -20,7 +20,7 @@ export async function render(opts: {
 }) {
   const cookies = parseCookie(opts.req.headers.get("cookie") ?? "");
 
-  const router = createRouter({
+  const router = getRouter({
     context: {
       request: opts.req,
       accessToken: cookies.elemo_at,
