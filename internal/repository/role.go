@@ -65,7 +65,7 @@ func (o UpdateRoleOpts) patch() map[string]any {
 	return p
 }
 
-//go:generate mockgen -source=role.go -destination=role_mock_gen.go -package=repository -mock_names "RoleRepository=MockRoleRepository"
+//go:generate go tool mockgen -source=role.go -destination=role_mock_gen.go -package=repository -mock_names "RoleRepository=MockRoleRepository"
 type RoleRepository interface {
 	Create(ctx context.Context, opts CreateRoleOpts) (*Role, error)
 	Get(ctx context.Context, id, belongsTo model.ID) (*Role, error)

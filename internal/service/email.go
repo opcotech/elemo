@@ -25,7 +25,7 @@ const (
 
 // EmailSender defines the interface to send emails.
 //
-//go:generate mockgen -destination=../testutil/mock/email_sender_gen.go -package=mock -mock_names EmailSender=EmailSender github.com/opcotech/elemo/internal/service EmailSender
+//go:generate go tool mockgen -destination=../testutil/mock/email_sender_gen.go -package=mock -mock_names EmailSender=EmailSender github.com/opcotech/elemo/internal/service EmailSender
 type EmailSender interface {
 	// SendEmail sends an email to the given address using a template.
 	SendEmail(ctx context.Context, subject, to string, template *email.Template) error
@@ -33,7 +33,7 @@ type EmailSender interface {
 
 // EmailService defines the interface to send emails from templates.
 //
-//go:generate mockgen -destination=../testutil/mock/email_service_gen.go -package=mock -mock_names EmailService=EmailService github.com/opcotech/elemo/internal/service EmailService
+//go:generate go tool mockgen -destination=../testutil/mock/email_service_gen.go -package=mock -mock_names EmailService=EmailService github.com/opcotech/elemo/internal/service EmailService
 type EmailService interface {
 	// SendAuthPasswordResetEmail sends an email to the user with a link to
 	// reset the password.

@@ -34,7 +34,7 @@ type CreatePermissionOpts struct {
 	Target  model.ID
 }
 
-//go:generate mockgen -source=permission.go -destination=permission_mock_gen.go -package=repository -mock_names "PermissionRepository=MockPermissionRepository"
+//go:generate go tool mockgen -source=permission.go -destination=permission_mock_gen.go -package=repository -mock_names "PermissionRepository=MockPermissionRepository"
 type PermissionRepository interface {
 	Create(ctx context.Context, opts CreatePermissionOpts) (*Permission, error)
 	Get(ctx context.Context, id model.ID) (*Permission, error)

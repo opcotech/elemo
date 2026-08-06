@@ -31,7 +31,7 @@ export const config = {
     };
   },
   env: () => {
-    const nodeEnv = getEnv("NODE_ENV") || "development";
+    const nodeEnv = getEnv("NODE_ENV") || getEnv("MODE") || "development";
     return {
       nodeEnv,
       isDevelopment: nodeEnv !== "production",

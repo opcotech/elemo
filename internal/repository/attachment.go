@@ -41,7 +41,7 @@ type UpdateAttachmentOpts struct {
 	Name string
 }
 
-//go:generate mockgen -source=attachment.go -destination=attachment_mock_gen.go -package=repository -mock_names "AttachmentRepository=MockAttachmentRepository"
+//go:generate go tool mockgen -source=attachment.go -destination=attachment_mock_gen.go -package=repository -mock_names "AttachmentRepository=MockAttachmentRepository"
 type AttachmentRepository interface {
 	Create(ctx context.Context, opts CreateAttachmentOpts) (*Attachment, error)
 	Get(ctx context.Context, id model.ID) (*Attachment, error)

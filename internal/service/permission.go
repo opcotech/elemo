@@ -48,7 +48,7 @@ func (o *CreatePermissionOpts) Validate() error {
 
 // PermissionService serves the business logic of interacting with permissions.
 //
-//go:generate mockgen -destination=permission_mock_gen.go -package=service -mock_names PermissionService=MockPermissionService . PermissionService
+//go:generate go tool mockgen -destination=permission_mock_gen.go -package=service -mock_names PermissionService=MockPermissionService . PermissionService
 type PermissionService interface {
 	// Create creates a new permission. If the permission already exists, an
 	// additional permission is created.

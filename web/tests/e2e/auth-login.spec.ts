@@ -72,10 +72,18 @@ test.describe("@auth.login Login E2E Tests", () => {
 
     await loginPage.login.login(testUser.email, USER_DEFAULT_PASSWORD);
     await page.waitForURL((url) => !url.pathname.includes("/login"));
-    await waitForPageLoad(page);
+    // SPA navigations do not re-fire document load events, so wait for
+    // dashboard UI before reloading (avoids Firefox NS_BINDING_ABORTED).
+    await expect(
+      page.getByRole("heading", { name: /welcome back/i })
+    ).toBeVisible();
 
-    await page.reload({ waitUntil: "domcontentloaded" });
-    await waitForPageLoad(page);
+    // Prefer goto(current URL) over reload — more reliable on Firefox when
+    // in-flight module loads would otherwise abort the navigation.
+    await page.goto(page.url(), { waitUntil: "domcontentloaded" });
+    await expect(
+      page.getByRole("heading", { name: /welcome back/i })
+    ).toBeVisible();
     await expect(page).not.toHaveURL(/.*login/);
   });
 

@@ -155,7 +155,7 @@ func (o UpdateUserOpts) patch() map[string]any {
 	return p
 }
 
-//go:generate mockgen -source=user.go -destination=user_mock_gen.go -package=repository -mock_names "UserRepository=MockUserRepository"
+//go:generate go tool mockgen -source=user.go -destination=user_mock_gen.go -package=repository -mock_names "UserRepository=MockUserRepository"
 type UserRepository interface {
 	Create(ctx context.Context, opts CreateUserOpts) (*User, error)
 	Get(ctx context.Context, id model.ID) (*User, error)

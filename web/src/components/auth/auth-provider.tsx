@@ -2,8 +2,8 @@ import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useReducer, useRef } from "react";
 import type { ReactNode } from "react";
 
-import { client, v1UserGet } from "@/lib/api";
-import { authClient } from "@/lib/auth/auth-client";
+import { client, ensureApiClientConfigured, v1UserGet } from "@/lib/api";
+import { authClient } from "@/lib/auth/auth-client-instance";
 import { AuthContext } from "@/lib/auth/auth-context";
 import {
   clearAllAuthData,
@@ -21,6 +21,8 @@ import type {
   User,
 } from "@/lib/auth/types";
 import { queryClient } from "@/lib/query-client";
+
+ensureApiClientConfigured();
 
 type AuthAction =
   | { type: "SET_LOADING"; payload: boolean }

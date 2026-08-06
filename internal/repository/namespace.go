@@ -82,7 +82,7 @@ func (o UpdateNamespaceOpts) patch() map[string]any {
 	return p
 }
 
-//go:generate mockgen -source=namespace.go -destination=namespace_mock_gen.go -package=repository -mock_names "NamespaceRepository=MockNamespaceRepository"
+//go:generate go tool mockgen -source=namespace.go -destination=namespace_mock_gen.go -package=repository -mock_names "NamespaceRepository=MockNamespaceRepository"
 type NamespaceRepository interface {
 	Create(ctx context.Context, opts CreateNamespaceOpts) (*Namespace, error)
 	Get(ctx context.Context, id model.ID) (*Namespace, error)

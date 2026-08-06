@@ -1,8 +1,5 @@
 package log
 
-// Action represents the action that is being performed upon logging.
-type Action int
-
 const (
 	// HTTP request actions
 
@@ -52,6 +49,9 @@ const (
 
 	ActionHealthCheck // check the health of a component
 )
+
+// Action represents the action that is being performed upon logging.
+type Action int
 
 // String returns the string representation of the action.
 func (a Action) String() string {

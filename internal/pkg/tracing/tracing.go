@@ -28,7 +28,7 @@ var (
 
 // Span re-defines the trace.Span interface to avoid embedding issues
 //
-//go:generate mockgen -destination ../../testutil/mock/span_gen.go -package mock -mock_names Span=MockSpan github.com/opcotech/elemo/internal/pkg/tracing Span
+//go:generate go tool mockgen -destination ../../testutil/mock/span_gen.go -package mock -mock_names Span=MockSpan github.com/opcotech/elemo/internal/pkg/tracing Span
 type Span interface {
 	End(options ...trace.SpanEndOption)
 	AddEvent(name string, options ...trace.EventOption)
@@ -44,7 +44,7 @@ type Span interface {
 
 // Tracer re-defines the tracing.Tracer interface
 //
-//go:generate mockgen -destination ../../testutil/mock/tracer_gen.go -package mock -mock_names Tracer=MockTracer github.com/opcotech/elemo/internal/pkg/tracing Tracer
+//go:generate go tool mockgen -destination ../../testutil/mock/tracer_gen.go -package mock -mock_names Tracer=MockTracer github.com/opcotech/elemo/internal/pkg/tracing Tracer
 type Tracer interface {
 	Start(ctx context.Context, spanName string, opts ...trace.SpanStartOption) (context.Context, Span)
 }

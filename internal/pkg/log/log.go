@@ -39,7 +39,7 @@ var (
 
 // Logger defines the interface for the application logger.
 //
-//go:generate mockgen -destination ../../testutil/mock/logger_gen.go -package mock github.com/opcotech/elemo/internal/pkg/log Logger
+//go:generate go tool mockgen -destination ../../testutil/mock/logger_gen.go -package mock github.com/opcotech/elemo/internal/pkg/log Logger
 type Logger interface {
 	Named(s string) Logger
 	With(fields ...Attr) Logger

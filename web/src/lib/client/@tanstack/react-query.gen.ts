@@ -322,9 +322,7 @@ const createInfiniteParams = <
   queryKey: QueryKey<Options>,
   page: K
 ) => {
-  const params = {
-    ...queryKey[0],
-  };
+  const params = { ...queryKey[0] };
   if (page.body) {
     params.body = {
       ...(queryKey[0].body as any),
@@ -365,7 +363,7 @@ export const v1UsersGetInfiniteQueryKey = (
 export const v1UsersGetInfiniteOptions = (
   options?: Options<V1UsersGetData>
 ) => {
-  return infiniteQueryOptions<
+  const opts = infiniteQueryOptions<
     V1UsersGetResponse,
     V1UsersGetError,
     InfiniteData<V1UsersGetResponse>,
@@ -403,6 +401,7 @@ export const v1UsersGetInfiniteOptions = (
       queryKey: v1UsersGetInfiniteQueryKey(options),
     }
   );
+  return opts as Omit<typeof opts, "initialData">;
 };
 
 /**
@@ -618,7 +617,7 @@ export const v1TodosGetInfiniteQueryKey = (
 export const v1TodosGetInfiniteOptions = (
   options?: Options<V1TodosGetData>
 ) => {
-  return infiniteQueryOptions<
+  const opts = infiniteQueryOptions<
     V1TodosGetResponse,
     V1TodosGetError,
     InfiniteData<V1TodosGetResponse>,
@@ -656,6 +655,7 @@ export const v1TodosGetInfiniteOptions = (
       queryKey: v1TodosGetInfiniteQueryKey(options),
     }
   );
+  return opts as Omit<typeof opts, "initialData">;
 };
 
 /**
@@ -815,7 +815,7 @@ export const v1NotificationsGetInfiniteQueryKey = (
 export const v1NotificationsGetInfiniteOptions = (
   options?: Options<V1NotificationsGetData>
 ) => {
-  return infiniteQueryOptions<
+  const opts = infiniteQueryOptions<
     V1NotificationsGetResponse,
     V1NotificationsGetError,
     InfiniteData<V1NotificationsGetResponse>,
@@ -853,6 +853,7 @@ export const v1NotificationsGetInfiniteOptions = (
       queryKey: v1NotificationsGetInfiniteQueryKey(options),
     }
   );
+  return opts as Omit<typeof opts, "initialData">;
 };
 
 /**
@@ -986,7 +987,7 @@ export const v1OrganizationsGetInfiniteQueryKey = (
 export const v1OrganizationsGetInfiniteOptions = (
   options?: Options<V1OrganizationsGetData>
 ) => {
-  return infiniteQueryOptions<
+  const opts = infiniteQueryOptions<
     V1OrganizationsGetResponse,
     V1OrganizationsGetError,
     InfiniteData<V1OrganizationsGetResponse>,
@@ -1024,6 +1025,7 @@ export const v1OrganizationsGetInfiniteOptions = (
       queryKey: v1OrganizationsGetInfiniteQueryKey(options),
     }
   );
+  return opts as Omit<typeof opts, "initialData">;
 };
 
 /**
@@ -1361,7 +1363,7 @@ export const v1OrganizationRolesGetInfiniteQueryKey = (
 export const v1OrganizationRolesGetInfiniteOptions = (
   options: Options<V1OrganizationRolesGetData>
 ) => {
-  return infiniteQueryOptions<
+  const opts = infiniteQueryOptions<
     V1OrganizationRolesGetResponse,
     V1OrganizationRolesGetError,
     InfiniteData<V1OrganizationRolesGetResponse>,
@@ -1399,6 +1401,7 @@ export const v1OrganizationRolesGetInfiniteOptions = (
       queryKey: v1OrganizationRolesGetInfiniteQueryKey(options),
     }
   );
+  return opts as Omit<typeof opts, "initialData">;
 };
 
 /**
@@ -1737,7 +1740,7 @@ export const v1OrganizationsNamespacesGetInfiniteQueryKey = (
 export const v1OrganizationsNamespacesGetInfiniteOptions = (
   options: Options<V1OrganizationsNamespacesGetData>
 ) => {
-  return infiniteQueryOptions<
+  const opts = infiniteQueryOptions<
     V1OrganizationsNamespacesGetResponse,
     V1OrganizationsNamespacesGetError,
     InfiniteData<V1OrganizationsNamespacesGetResponse>,
@@ -1775,6 +1778,7 @@ export const v1OrganizationsNamespacesGetInfiniteOptions = (
       queryKey: v1OrganizationsNamespacesGetInfiniteQueryKey(options),
     }
   );
+  return opts as Omit<typeof opts, "initialData">;
 };
 
 /**
@@ -1934,7 +1938,7 @@ export const v1NamespacesProjectsGetInfiniteQueryKey = (
 export const v1NamespacesProjectsGetInfiniteOptions = (
   options: Options<V1NamespacesProjectsGetData>
 ) => {
-  return infiniteQueryOptions<
+  const opts = infiniteQueryOptions<
     V1NamespacesProjectsGetResponse,
     V1NamespacesProjectsGetError,
     InfiniteData<V1NamespacesProjectsGetResponse>,
@@ -1972,6 +1976,7 @@ export const v1NamespacesProjectsGetInfiniteOptions = (
       queryKey: v1NamespacesProjectsGetInfiniteQueryKey(options),
     }
   );
+  return opts as Omit<typeof opts, "initialData">;
 };
 
 /**

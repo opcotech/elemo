@@ -77,7 +77,7 @@ func (o UpdateProjectOpts) patch() map[string]any {
 	return p
 }
 
-//go:generate mockgen -source=project.go -destination=project_mock_gen.go -package=repository -mock_names "ProjectRepository=MockProjectRepository"
+//go:generate go tool mockgen -source=project.go -destination=project_mock_gen.go -package=repository -mock_names "ProjectRepository=MockProjectRepository"
 type ProjectRepository interface {
 	Create(ctx context.Context, opts CreateProjectOpts) (*Project, error)
 	Get(ctx context.Context, id model.ID) (*Project, error)

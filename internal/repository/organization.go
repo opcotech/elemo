@@ -98,7 +98,7 @@ func (o UpdateOrganizationOpts) patch() map[string]any {
 	return p
 }
 
-//go:generate mockgen -source=organization.go -destination=organization_mock_gen.go -package=repository -mock_names "OrganizationRepository=MockOrganizationRepository"
+//go:generate go tool mockgen -source=organization.go -destination=organization_mock_gen.go -package=repository -mock_names "OrganizationRepository=MockOrganizationRepository"
 type OrganizationRepository interface {
 	Create(ctx context.Context, opts CreateOrganizationOpts) (*Organization, error)
 	Get(ctx context.Context, id model.ID) (*Organization, error)
