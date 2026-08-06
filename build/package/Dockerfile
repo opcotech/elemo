@@ -2,7 +2,7 @@
 # Common image
 ##############################################################################
 
-FROM golang:1.25-trixie AS common
+FROM golang:1.26-trixie AS common
 
 WORKDIR /common
 
@@ -20,7 +20,7 @@ COPY . .
 # Build image
 ##############################################################################
 
-FROM golang:1.25-trixie AS build
+FROM golang:1.26-trixie AS build
 
 ENV GOOS=linux
 ENV CGO_ENABLED=0

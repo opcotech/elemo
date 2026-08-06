@@ -1,6 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useEffect, useState } from "react";
 
+import { withRouter } from "../../.storybook/with-router";
+
 import { BreadcrumbNav, BreadcrumbProvider } from "@/components/breadcrumb";
 import { useBreadcrumbUtils } from "@/hooks/use-breadcrumbs";
 
@@ -18,6 +20,7 @@ const meta: Meta<typeof BreadcrumbNav> = {
   },
   tags: ["autodocs"],
   decorators: [
+    withRouter,
     (Story) => (
       <BreadcrumbProvider>
         <Story />

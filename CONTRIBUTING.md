@@ -12,6 +12,7 @@ _Pull requests, bug reports, and all other forms of contribution are welcomed an
 - [Triaging Issues](#triaging-issues)
 - [Submitting Pull Requests](#submitting-pull-requests)
 - [Running the services](#running-the-services)
+- [Releases](#releases)
 - [Code Quality and Tests](#code-quality-and-tests)
 - [Updating The APIs](#updating-the-apis)
 - [Writing Commit Messages](#writing-commit-messages)
@@ -128,8 +129,9 @@ _Note: All contributions will be licensed under the project's license._
 - **Add documentation.** Document your changes with code doc comments or in existing guides.
 - **Look up the existing [ADRs](https://adr.github.io/) before changing a questionable piece of code.** Code is
   opinionated and may not fit your preferred coding practices. However, almost everything have a good reason.
-- **Update the CHANGELOG** for all enhancements and bug fixes. Include the corresponding issue number if one exists, and
-  your GitHub username. (example: "- Fixed crash in profile view. #123 @jessesquires")
+- **Use conventional commits.** The changelog is generated automatically from conventional commit messages by
+  [Release Please](https://github.com/googleapis/release-please). Prefer `feat` and `fix` for user-facing changes;
+  include the issue number in the commit body or PR description when one exists.
 - **Use the repo's default branch.** Branch from
   and [submit your pull request](https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/creating-a-pull-request-from-a-fork)
   to the repo's default branch. This is the `main` branch.
@@ -152,7 +154,6 @@ Below, you can find more useful make targets to run (`make <target>`):
 build.backend                  # Build backend images
 build.frontend                 # Build front-end app
 build                          # Build backend and front-end
-changelog                      # Update the changelog
 clean                          # Destroys all backend resources and cleans up untracked files
 dep.backend                    # Download backend dependencies
 dep.frontend                   # Install front-end dependencies
@@ -171,7 +172,6 @@ help                           # Show help message
 lint.backend                   # Run linters for the backend
 lint.frontend                  # Run linters for the front-end
 lint                           # Run linters for the backend and front-end
-release                        # Cut a new release
 start.backend                  # Start backend services
 start.frontend                 # Start front-end app
 start                          # Start backend and front-end
@@ -186,6 +186,12 @@ test.backend                   # Run all backend tests
 test.frontend                  # Run all front-end tests
 test                           # Run all k6, backend and front-end tests
 ```
+
+## Releases
+
+Releases are automated with [Release Please](https://github.com/googleapis/release-please). Conventional commits on
+`main` drive a release pull request that updates `CHANGELOG.md` and package versions. Merging that PR creates a draft
+GitHub Release and tag; publish the draft when ready.
 
 ## Code Quality and Tests
 

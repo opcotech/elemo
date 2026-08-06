@@ -1,6 +1,6 @@
 module github.com/opcotech/elemo-pre-mailer
 
-go 1.25
+go 1.26
 
 require (
 	github.com/tdewolff/minify/v2 v2.24.5

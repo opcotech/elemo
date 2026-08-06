@@ -2,7 +2,7 @@ import { createRouter as createTanStackRouter } from "@tanstack/react-router";
 
 import { routeTree } from "./routeTree.gen";
 
-export function createRouter(options?: { context?: Record<string, unknown> }) {
+export function getRouter(options?: { context?: Record<string, unknown> }) {
   const router = createTanStackRouter({
     routeTree,
     scrollRestoration: false,
@@ -40,6 +40,6 @@ export function createRouter(options?: { context?: Record<string, unknown> }) {
 
 declare module "@tanstack/react-router" {
   interface Register {
-    router: ReturnType<typeof createRouter>;
+    router: ReturnType<typeof getRouter>;
   }
 }

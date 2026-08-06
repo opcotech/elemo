@@ -1,0 +1,40 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "release-type": "simple",
+  "include-component-in-tag": false,
+  "draft": true,
+  "force-tag-creation": true,
+  "packages": {
+    ".": {
+      "package-name": "elemo",
+      "changelog-path": "CHANGELOG.md",
+      "changelog-sections": [
+        { "type": "feat", "section": "Features", "hidden": false },
+        { "type": "fix", "section": "Bug Fixes", "hidden": false },
+        { "type": "perf", "section": "Performance Improvements", "hidden": false },
+        { "type": "refactor", "section": "Refactorings", "hidden": false },
+        { "type": "docs", "section": "Documentation", "hidden": true },
+        { "type": "test", "section": "Test Changes", "hidden": true },
+        { "type": "style", "section": "Style Changes", "hidden": true },
+        { "type": "chore", "section": "Miscellaneous", "hidden": true },
+        { "type": "build", "section": "Build Changes", "hidden": true },
+        { "type": "ci", "section": "CI Changes", "hidden": true }
+      ],
+      "exclude-paths": [
+        "website"
+      ],
+      "extra-files": [
+        {
+          "type": "json",
+          "path": "web/package.json",
+          "jsonpath": "$.version"
+        },
+        {
+          "type": "yaml",
+          "path": "api/openapi/openapi.yaml",
+          "yamlpath": "$.info.version"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,34 @@
+name: Release Please
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# GITHUB_TOKEN can open release PRs only when the repository setting
+# Settings → Actions → General → Workflow permissions →
+# "Allow GitHub Actions to create and approve pull requests" is enabled.
+#
+# Optional: set repository secret RELEASE_PLEASE_TOKEN to a PAT (classic or
+# fine-grained) with contents:write and pull-requests:write. Prefer that when
+# release PRs must trigger other workflows (GITHUB_TOKEN PRs do not).
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: release-please-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release-please:
+    name: Release Please
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create release PR or GitHub Release
+        uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
+        with:
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || github.token }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+          target-branch: main

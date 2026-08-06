@@ -16,7 +16,7 @@ var (
 	neo4jContainerRequest = func(name string) testcontainers.GenericContainerRequest {
 		return testcontainers.GenericContainerRequest{
 			ContainerRequest: testcontainers.ContainerRequest{
-				Image:        "neo4j:5.26",
+				Image:        "neo4j:2026.06-community",
 				Name:         name + "-neo4j",
 				ExposedPorts: []string{"7687/tcp"},
 				WaitingFor:   wait.ForLog("Started."),
@@ -32,7 +32,7 @@ var (
 	pgContainerRequest = func(name string) testcontainers.GenericContainerRequest {
 		return testcontainers.GenericContainerRequest{
 			ContainerRequest: testcontainers.ContainerRequest{
-				Image:        "postgres:17.5",
+				Image:        "postgres:18.4",
 				Name:         name + "-pg",
 				ExposedPorts: []string{"5432/tcp"},
 				WaitingFor:   wait.ForLog("database system is ready to accept connections").WithOccurrence(2).WithStartupTimeout(5 * time.Second),
@@ -50,7 +50,7 @@ var (
 	redisContainerRequest = func(name string) testcontainers.GenericContainerRequest {
 		return testcontainers.GenericContainerRequest{
 			ContainerRequest: testcontainers.ContainerRequest{
-				Image:        "redis:8.0",
+				Image:        "redis:8.10",
 				Name:         name + "-redis",
 				ExposedPorts: []string{"6379/tcp"},
 				WaitingFor:   wait.ForLog("* Ready to accept connections"),
@@ -102,7 +102,7 @@ func NewNeo4jContainer(ctx context.Context, t *testing.T, name string) (testcont
 
 	conf := &config.GraphDatabaseConfig{
 		Host:                  host,
-		Port:                  port.Int(),
+		Port:                  int(port.Num()),
 		Username:              "neo4j",
 		Password:              "neo4jsecret",
 		Database:              "neo4j",
@@ -131,7 +131,7 @@ func NewPgContainer(ctx context.Context, t *testing.T, name string) (testcontain
 
 	conf := &config.RelationalDatabaseConfig{
 		Host:           host,
-		Port:           port.Int(),
+		Port:           int(port.Num()),
 		Username:       "elemo",
 		Password:       "pgsecret",
 		Database:       "elemo",
@@ -161,7 +161,7 @@ func NewRedisContainer(ctx context.Context, t *testing.T, name string) (testcont
 	conf := &config.CacheDatabaseConfig{
 		RedisConfig: config.RedisConfig{
 			Host:     host,
-			Port:     port.Int(),
+			Port:     int(port.Num()),
 			Username: "",
 			Password: "",
 			Database: 0,
@@ -192,7 +192,7 @@ func NewLocalStackContainer(ctx context.Context, t *testing.T, name string) (tes
 		Region:          "us-east-1",
 		AccessKeyID:     "aws-access-key",
 		SecretAccessKey: "aws-secret-key",
-		BaseEndpoint:    fmt.Sprintf("http://%s:%d", host, port.Int()),
+		BaseEndpoint:    fmt.Sprintf("http://%s:%d", host, int(port.Num())),
 	}
 
 	return container, conf

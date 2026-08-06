@@ -11,7 +11,7 @@ networks:
 
 services:
   redis:
-    image: redis:8.0
+    image: redis:8.10
     container_name: elemo-redis
     ports:
       - "6379:6379"
@@ -22,7 +22,7 @@ services:
       retries: 3
 
   neo4j:
-    image: neo4j:5.26
+    image: neo4j:2026.06-community
     container_name: elemo-neo4j
     ports:
       - "7474:7474"
@@ -41,12 +41,12 @@ services:
       retries: 3
 
   postgres:
-    image: postgres:17.5
+    image: postgres:18.4
     container_name: elemo-postgres
     ports:
       - "5432:5432"
     volumes:
-      - pg_data:/var/lib/postgresql/data
+      - pg_data:/var/lib/postgresql
     environment:
       - POSTGRES_USER=elemo
       - POSTGRES_PASSWORD=pgsecret

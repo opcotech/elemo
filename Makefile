@@ -8,10 +8,6 @@ API_DIR:=$(ROOT_DIR)/api/openapi
 API_SERVER_DIR:=$(ROOT_DIR)/internal/transport/http/api
 EMAILS_DIR:=$(BUILD_DIR)/email
 
-FRONTEND_DIR:=$(ROOT_DIR)/web
-FRONTEND_CLIENT:=elemo-client
-FRONTEND_CLIENT_DIR:=$(ROOT_DIR)/web/packages/$(FRONTEND_CLIENT)
-
 BACKEND_COVER_OUT:=$(ROOT_DIR)/.coverage.out
 BACKEND_COVER_OUT_UNIT:=$(ROOT_DIR)/.coverage.unit.out
 BACKEND_COVER_OUT_INTEGRATION:=$(ROOT_DIR)/.coverage.integration.out
@@ -24,8 +20,6 @@ PNPM_EMAILS_RUN=$(PNPM_EXEC) run --prefix "$(ROOT_DIR)/build/email"
 GO_EXEC:=$(shell which go)
 GO_TEST_IGNORE:=(mode: atomic|testutil|tools|cmd|http\/api)
 
-TMPDIR:=$(shell echo "${TMPDIR:-/tmp}")
-
 define log
 	@echo "[\033[36mINFO\033[0m]\t$(1)" 1>&2;
 endef
@@ -34,35 +28,6 @@ endef
 help: ## Show help message
 	@echo "Available targets:";
 	@grep -E '^[a-z.A-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}';
-
-.PHONY: changelog
-changelog: ## Update the changelog
-	$(call log, updating changelog)
-
-	@if [ -z "$(RELEASE_VERSION)" ]; then \
-		git cliff > CHANGELOG.md; \
-	else \
-		git cliff --tag "v$(RELEASE_VERSION)" --unreleased --prepend CHANGELOG.md; \
-	fi
-
-.PHONY: release
-release: ## Cut a new release
-	$(if $(value RELEASE_VERSION),,$(error No RELEASE_VERSION set))
-
-	$(call log, bumping front-end version)
-	@jq '.version="$(RELEASE_VERSION)"' '$(FRONTEND_CLIENT_DIR)/package.json' > '$(TMPDIR)/package.json.tmp' && \
-		mv '$(TMPDIR)/package.json.tmp' '$(FRONTEND_CLIENT_DIR)/package.json';
-	@jq '.version="$(RELEASE_VERSION)"' '$(FRONTEND_DIR)/package.json' > '$(TMPDIR)/package.json.tmp' && \
-		mv '$(TMPDIR)/package.json.tmp' '$(FRONTEND_DIR)/package.json';
-	@$(PNPM_EXEC) update --prefix '$(FRONTEND_CLIENT)'
-
-	@$(MAKE) changelog;
-
-	$(call log, committing changelog)
-	@git commit -sm "chore(changelog): update changelog for v$(RELEASE_VERSION)"
-
-	$(call log, cutting new tag)
-	@git tag -sm "chore(release): v$(RELEASE_VERSION)"
 
 .PHONY: generate
 generate: generate.email generate.server generate.client ## Generate resources
@@ -105,7 +70,7 @@ dep.backend: ## Download backend dependencies
 dep.frontend: ## Install front-end dependencies
 	$(call log, download and install front-end dependencies)
 	@rm -rf "$(ROOT_DIR)/web/node_modules"
-	@$(PNPM_EXEC) install --prefix "$(ROOT_DIR)/web"
+	@$(PNPM_EXEC) install --dir "$(ROOT_DIR)/web"
 
 .PHONY: build
 build: build.backend build.frontend ## Build backend and front-end
