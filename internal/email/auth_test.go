@@ -9,7 +9,7 @@ import (
 func TestPasswordResetTemplateData_Get(t *testing.T) {
 	t.Parallel()
 
-	data := &PasswordResetTemplateData{
+	data := &PasswordResetTemplateData{ // #nosec G101 -- test fixture template data
 		Subject:          "[Action Required] Reset your password",
 		FirstName:        "Test",
 		LastName:         "Bob",

@@ -30,7 +30,7 @@ func (t *Template) Validate() error {
 
 // Render returns the rendered template.
 func (t *Template) Render() (string, error) {
-	return emailBody[*template.Template](t.Path, t.Data.Get(), template.ParseFiles)
+	return emailBody(t.Path, t.Data.Get(), template.ParseFiles)
 }
 
 // NewTemplate returns a new email template.

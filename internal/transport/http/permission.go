@@ -31,12 +31,13 @@ func (c *permissionController) V1PermissionsCreate(ctx context.Context, request 
 	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1PermissionsCreate")
 	defer span.End()
 
-	permission, err := createPermissionJSONRequestBodyToPermission(request.Body)
+	opts, err := createPermissionJSONRequestBodyToCreatePermissionOpts(request.Body)
 	if err != nil {
 		return api.V1PermissionsCreate400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
-	if err := c.permissionService.CtxUserCreate(ctx, permission); err != nil {
+	permission, err := c.permissionService.CtxUserCreate(ctx, opts)
+	if err != nil {
 		if errors.Is(err, service.ErrNoPermission) {
 			return api.V1PermissionsCreate403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		}
@@ -221,31 +222,30 @@ func NewPermissionController(opts ...ControllerOption) (PermissionController, er
 	return controller, nil
 }
 
-func createPermissionJSONRequestBodyToPermission(body *api.V1PermissionsCreateJSONRequestBody) (*model.Permission, error) {
+func createPermissionJSONRequestBodyToCreatePermissionOpts(body *api.V1PermissionsCreateJSONRequestBody) (service.CreatePermissionOpts, error) {
 	var kind model.PermissionKind
 	if err := kind.UnmarshalText([]byte(body.Kind)); err != nil {
-		return nil, err
+		return service.CreatePermissionOpts{}, err
 	}
 
 	subject, err := model.NewIDFromString(body.Subject.Id, string(body.Subject.ResourceType))
 	if err != nil {
-		return nil, err
+		return service.CreatePermissionOpts{}, err
 	}
 
 	target, err := model.NewIDFromString(body.Target.Id, string(body.Target.ResourceType))
 	if err != nil {
-		return nil, err
+		return service.CreatePermissionOpts{}, err
 	}
 
-	permission, err := model.NewPermission(subject, target, kind)
-	if err != nil {
-		return nil, err
-	}
-
-	return permission, nil
+	return service.CreatePermissionOpts{
+		Kind:    kind,
+		Subject: subject,
+		Target:  target,
+	}, nil
 }
 
-func permissionToDTO(permission *model.Permission) api.Permission {
+func permissionToDTO(permission *service.Permission) api.Permission {
 	return api.Permission{
 		Id:         permission.ID.String(),
 		Subject:    permission.Subject.String(),

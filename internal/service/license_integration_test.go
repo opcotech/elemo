@@ -70,8 +70,8 @@ func (s *LicenseServiceIntegrationTestSuite) TestWithinThreshold() {
 }
 
 func (s *LicenseServiceIntegrationTestSuite) TestGetLicense() {
-	user := testModel.NewUser()
-	s.Require().NoError(s.UserRepo.Create(context.Background(), user))
+	user, err := s.UserRepo.Create(context.Background(), testModel.NewCreateUserOpts())
+	s.Require().NoError(err)
 	s.Require().NoError(testRepo.MakeUserSystemOwner(user.ID, s.Neo4jDB))
 
 	retrievedLicense, err := s.licenseService.GetLicense(context.WithValue(context.Background(), pkg.CtxKeyUserID, user.ID))

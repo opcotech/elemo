@@ -15,12 +15,12 @@ import (
 
 func TestCachedLabelRepository_Create(t *testing.T) {
 	type fields struct {
-		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, label *model.Label) *redisBaseRepository
-		labelRepo func(ctrl *gomock.Controller, ctx context.Context, label *model.Label) LabelRepository
+		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, opts CreateLabelOpts) *redisBaseRepository
+		labelRepo func(ctrl *gomock.Controller, ctx context.Context, opts CreateLabelOpts) LabelRepository
 	}
 	type args struct {
-		ctx   context.Context
-		label *model.Label
+		ctx  context.Context
+		opts CreateLabelOpts
 	}
 	tests := []struct {
 		name    string
@@ -31,7 +31,7 @@ func TestCachedLabelRepository_Create(t *testing.T) {
 		{
 			name: "create new label",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, _ *model.Label) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, _ CreateLabelOpts) *redisBaseRepository {
 					getAllKey := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
 					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
 					issuesKey := composeCacheKey(model.ResourceTypeIssue.String(), "*")
@@ -73,16 +73,15 @@ func TestCachedLabelRepository_Create(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				labelRepo: func(ctrl *gomock.Controller, ctx context.Context, label *model.Label) LabelRepository {
-					repo := mock.NewLabelRepository(ctrl)
-					repo.EXPECT().Create(ctx, label).Return(nil)
+				labelRepo: func(ctrl *gomock.Controller, ctx context.Context, opts CreateLabelOpts) LabelRepository {
+					repo := NewMockLabelRepository(ctrl)
+					repo.EXPECT().Create(ctx, opts).Return(&Label{}, nil)
 					return repo
 				},
 			},
 			args: args{
 				ctx: context.Background(),
-				label: &model.Label{
-					ID:          model.MustNewID(model.ResourceTypeLabel),
+				opts: CreateLabelOpts{
 					Name:        "test label",
 					Description: "test description",
 				},
@@ -91,7 +90,7 @@ func TestCachedLabelRepository_Create(t *testing.T) {
 		{
 			name: "add new label with error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, _ *model.Label) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, _ CreateLabelOpts) *redisBaseRepository {
 					getAllKey := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
 					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
 					issuesKey := composeCacheKey(model.ResourceTypeIssue.String(), "*")
@@ -133,16 +132,15 @@ func TestCachedLabelRepository_Create(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				labelRepo: func(ctrl *gomock.Controller, ctx context.Context, label *model.Label) LabelRepository {
-					repo := mock.NewLabelRepository(ctrl)
-					repo.EXPECT().Create(ctx, label).Return(ErrLabelCreate)
+				labelRepo: func(ctrl *gomock.Controller, ctx context.Context, opts CreateLabelOpts) LabelRepository {
+					repo := NewMockLabelRepository(ctrl)
+					repo.EXPECT().Create(ctx, opts).Return(nil, ErrLabelCreate)
 					return repo
 				},
 			},
 			args: args{
 				ctx: context.Background(),
-				label: &model.Label{
-					ID:          model.MustNewID(model.ResourceTypeLabel),
+				opts: CreateLabelOpts{
 					Name:        "test label",
 					Description: "test description",
 				},
@@ -152,7 +150,7 @@ func TestCachedLabelRepository_Create(t *testing.T) {
 		{
 			name: "add new label get all cache delete error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, _ *model.Label) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, _ CreateLabelOpts) *redisBaseRepository {
 					getAllKey := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
 
 					getAllKeyResult := new(redis.StringSliceCmd)
@@ -182,14 +180,13 @@ func TestCachedLabelRepository_Create(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				labelRepo: func(_ *gomock.Controller, _ context.Context, _ *model.Label) LabelRepository {
-					return mock.NewLabelRepository(nil)
+				labelRepo: func(_ *gomock.Controller, _ context.Context, _ CreateLabelOpts) LabelRepository {
+					return NewMockLabelRepository(nil)
 				},
 			},
 			args: args{
 				ctx: context.Background(),
-				label: &model.Label{
-					ID:          model.MustNewID(model.ResourceTypeLabel),
+				opts: CreateLabelOpts{
 					Name:        "test label",
 					Description: "test description",
 				},
@@ -199,7 +196,7 @@ func TestCachedLabelRepository_Create(t *testing.T) {
 		{
 			name: "create new label documents cache delete error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, _ *model.Label) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, _ CreateLabelOpts) *redisBaseRepository {
 					getAllKey := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
 					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
 
@@ -235,14 +232,13 @@ func TestCachedLabelRepository_Create(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				labelRepo: func(_ *gomock.Controller, _ context.Context, _ *model.Label) LabelRepository {
-					return mock.NewLabelRepository(nil)
+				labelRepo: func(_ *gomock.Controller, _ context.Context, _ CreateLabelOpts) LabelRepository {
+					return NewMockLabelRepository(nil)
 				},
 			},
 			args: args{
 				ctx: context.Background(),
-				label: &model.Label{
-					ID:          model.MustNewID(model.ResourceTypeLabel),
+				opts: CreateLabelOpts{
 					Name:        "test label",
 					Description: "test description",
 				},
@@ -252,7 +248,7 @@ func TestCachedLabelRepository_Create(t *testing.T) {
 		{
 			name: "create new label issues cache delete error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, _ *model.Label) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, _ CreateLabelOpts) *redisBaseRepository {
 					getAllKey := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
 					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
 					issuesKey := composeCacheKey(model.ResourceTypeIssue.String(), "*")
@@ -294,14 +290,13 @@ func TestCachedLabelRepository_Create(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				labelRepo: func(_ *gomock.Controller, _ context.Context, _ *model.Label) LabelRepository {
-					return mock.NewLabelRepository(nil)
+				labelRepo: func(_ *gomock.Controller, _ context.Context, _ CreateLabelOpts) LabelRepository {
+					return NewMockLabelRepository(nil)
 				},
 			},
 			args: args{
 				ctx: context.Background(),
-				label: &model.Label{
-					ID:          model.MustNewID(model.ResourceTypeLabel),
+				opts: CreateLabelOpts{
 					Name:        "test label",
 					Description: "test description",
 				},
@@ -316,10 +311,10 @@ func TestCachedLabelRepository_Create(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			r := &RedisCachedLabelRepository{
-				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.label),
-				labelRepo: tt.fields.labelRepo(ctrl, tt.args.ctx, tt.args.label),
+				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.opts),
+				labelRepo: tt.fields.labelRepo(ctrl, tt.args.ctx, tt.args.opts),
 			}
-			err := r.Create(tt.args.ctx, tt.args.label)
+			_, err := r.Create(tt.args.ctx, tt.args.opts)
 			require.ErrorIs(t, err, tt.wantErr)
 		})
 	}
@@ -327,8 +322,8 @@ func TestCachedLabelRepository_Create(t *testing.T) {
 
 func TestCachedLabelRepository_Get(t *testing.T) {
 	type fields struct {
-		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, label *model.Label) *redisBaseRepository
-		labelRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, label *model.Label) LabelRepository
+		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, label *Label) *redisBaseRepository
+		labelRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, label *Label) LabelRepository
 	}
 	type args struct {
 		ctx context.Context
@@ -338,13 +333,13 @@ func TestCachedLabelRepository_Get(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    func(id model.ID) *model.Label
+		want    func(id model.ID) *Label
 		wantErr error
 	}{
 		{
 			name: "get uncached label",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, label *model.Label) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, label *Label) *redisBaseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), id.String())
 
 					db, err := NewRedisDatabase(
@@ -360,7 +355,7 @@ func TestCachedLabelRepository_Get(t *testing.T) {
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Do(func(_ context.Context, _ string, dst any) {
-						if ptr, ok := dst.(**model.Label); ok {
+						if ptr, ok := dst.(**Label); ok {
 							*ptr = label
 						}
 					}).Return(nil)
@@ -372,16 +367,16 @@ func TestCachedLabelRepository_Get(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				labelRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID, _ *model.Label) LabelRepository {
-					return mock.NewLabelRepository(nil)
+				labelRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID, _ *Label) LabelRepository {
+					return NewMockLabelRepository(nil)
 				},
 			},
 			args: args{
 				ctx: context.Background(),
 				id:  model.MustNewID(model.ResourceTypeLabel),
 			},
-			want: func(id model.ID) *model.Label {
-				return &model.Label{
+			want: func(id model.ID) *Label {
+				return &Label{
 					ID:          id,
 					Name:        "test label",
 					Description: "test description",
@@ -391,7 +386,7 @@ func TestCachedLabelRepository_Get(t *testing.T) {
 		{
 			name: "get cached label",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, label *model.Label) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, label *Label) *redisBaseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), id.String())
 
 					db, err := NewRedisDatabase(
@@ -407,7 +402,7 @@ func TestCachedLabelRepository_Get(t *testing.T) {
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Do(func(_ context.Context, _ string, dst any) {
-						if ptr, ok := dst.(**model.Label); ok {
+						if ptr, ok := dst.(**Label); ok {
 							*ptr = label
 						}
 					}).Return(nil)
@@ -419,16 +414,16 @@ func TestCachedLabelRepository_Get(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				labelRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID, _ *model.Label) LabelRepository {
-					return mock.NewLabelRepository(nil)
+				labelRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID, _ *Label) LabelRepository {
+					return NewMockLabelRepository(nil)
 				},
 			},
 			args: args{
 				ctx: context.Background(),
 				id:  model.MustNewID(model.ResourceTypeLabel),
 			},
-			want: func(id model.ID) *model.Label {
-				return &model.Label{
+			want: func(id model.ID) *Label {
+				return &Label{
 					ID:          id,
 					Name:        "test label",
 					Description: "test description",
@@ -438,7 +433,7 @@ func TestCachedLabelRepository_Get(t *testing.T) {
 		{
 			name: "get uncached label error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *model.Label) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *Label) *redisBaseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), id.String())
 
 					db, err := NewRedisDatabase(
@@ -462,8 +457,8 @@ func TestCachedLabelRepository_Get(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				labelRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *model.Label) LabelRepository {
-					repo := mock.NewLabelRepository(ctrl)
+				labelRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *Label) LabelRepository {
+					repo := NewMockLabelRepository(ctrl)
 					repo.EXPECT().Get(ctx, id).Return(nil, ErrNotFound)
 					return repo
 				},
@@ -477,7 +472,7 @@ func TestCachedLabelRepository_Get(t *testing.T) {
 		{
 			name: "get cached label error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *model.Label) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *Label) *redisBaseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), id.String())
 
 					db, err := NewRedisDatabase(
@@ -501,8 +496,8 @@ func TestCachedLabelRepository_Get(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				labelRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID, _ *model.Label) LabelRepository {
-					return mock.NewLabelRepository(nil)
+				labelRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID, _ *Label) LabelRepository {
+					return NewMockLabelRepository(nil)
 				},
 			},
 			args: args{
@@ -514,7 +509,7 @@ func TestCachedLabelRepository_Get(t *testing.T) {
 		{
 			name: "get uncached label cache set error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, label *model.Label) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, label *Label) *redisBaseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), id.String())
 
 					db, err := NewRedisDatabase(
@@ -544,8 +539,8 @@ func TestCachedLabelRepository_Get(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				labelRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, label *model.Label) LabelRepository {
-					repo := mock.NewLabelRepository(ctrl)
+				labelRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, label *Label) LabelRepository {
+					repo := NewMockLabelRepository(ctrl)
 					repo.EXPECT().Get(ctx, id).Return(label, nil)
 					return repo
 				},
@@ -563,7 +558,7 @@ func TestCachedLabelRepository_Get(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			var want *model.Label
+			var want *Label
 			if tt.want != nil {
 				want = tt.want(tt.args.id)
 			}
@@ -581,8 +576,8 @@ func TestCachedLabelRepository_Get(t *testing.T) {
 
 func TestCachedLabelRepository_GetAll(t *testing.T) {
 	type fields struct {
-		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, labels []*model.Label) *redisBaseRepository
-		labelRepo func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, labels []*model.Label) LabelRepository
+		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, labels []*Label) *redisBaseRepository
+		labelRepo func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, labels []*Label) LabelRepository
 	}
 	type args struct {
 		ctx    context.Context
@@ -593,13 +588,13 @@ func TestCachedLabelRepository_GetAll(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    []*model.Label
+		want    []*Label
 		wantErr error
 	}{
 		{
 			name: "get uncached labels",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, labels []*model.Label) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, labels []*Label) *redisBaseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", offset, limit)
 
 					db, err := NewRedisDatabase(
@@ -629,8 +624,8 @@ func TestCachedLabelRepository_GetAll(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				labelRepo: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, labels []*model.Label) LabelRepository {
-					repo := mock.NewLabelRepository(ctrl)
+				labelRepo: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, labels []*Label) LabelRepository {
+					repo := NewMockLabelRepository(ctrl)
 					repo.EXPECT().GetAll(ctx, offset, limit).Return(labels, nil)
 					return repo
 				},
@@ -640,7 +635,7 @@ func TestCachedLabelRepository_GetAll(t *testing.T) {
 				offset: 0,
 				limit:  10,
 			},
-			want: []*model.Label{
+			want: []*Label{
 				{
 					ID:          model.MustNewID(model.ResourceTypeLabel),
 					Name:        "test label",
@@ -656,7 +651,7 @@ func TestCachedLabelRepository_GetAll(t *testing.T) {
 		{
 			name: "get cached labels",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, labels []*model.Label) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, labels []*Label) *redisBaseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", offset, limit)
 
 					db, err := NewRedisDatabase(
@@ -672,7 +667,7 @@ func TestCachedLabelRepository_GetAll(t *testing.T) {
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Do(func(_ context.Context, _ string, dst any) {
-						if ptr, ok := dst.(*[]*model.Label); ok {
+						if ptr, ok := dst.(*[]*Label); ok {
 							*ptr = labels
 						}
 					}).Return(nil)
@@ -684,8 +679,8 @@ func TestCachedLabelRepository_GetAll(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				labelRepo: func(_ *gomock.Controller, _ context.Context, _, _ int, _ []*model.Label) LabelRepository {
-					return mock.NewLabelRepository(nil)
+				labelRepo: func(_ *gomock.Controller, _ context.Context, _, _ int, _ []*Label) LabelRepository {
+					return NewMockLabelRepository(nil)
 				},
 			},
 			args: args{
@@ -693,7 +688,7 @@ func TestCachedLabelRepository_GetAll(t *testing.T) {
 				offset: 0,
 				limit:  10,
 			},
-			want: []*model.Label{
+			want: []*Label{
 				{
 					ID:          model.MustNewID(model.ResourceTypeLabel),
 					Name:        "test label",
@@ -709,7 +704,7 @@ func TestCachedLabelRepository_GetAll(t *testing.T) {
 		{
 			name: "get uncached labels error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, _ []*model.Label) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, _ []*Label) *redisBaseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", offset, limit)
 
 					db, err := NewRedisDatabase(
@@ -733,8 +728,8 @@ func TestCachedLabelRepository_GetAll(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				labelRepo: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, _ []*model.Label) LabelRepository {
-					repo := mock.NewLabelRepository(ctrl)
+				labelRepo: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, _ []*Label) LabelRepository {
+					repo := NewMockLabelRepository(ctrl)
 					repo.EXPECT().GetAll(ctx, offset, limit).Return(nil, ErrNotFound)
 					return repo
 				},
@@ -749,7 +744,7 @@ func TestCachedLabelRepository_GetAll(t *testing.T) {
 		{
 			name: "get get labels cache error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, _ []*model.Label) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, _ []*Label) *redisBaseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", offset, limit)
 
 					db, err := NewRedisDatabase(
@@ -773,8 +768,8 @@ func TestCachedLabelRepository_GetAll(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				labelRepo: func(_ *gomock.Controller, _ context.Context, _, _ int, _ []*model.Label) LabelRepository {
-					return mock.NewLabelRepository(nil)
+				labelRepo: func(_ *gomock.Controller, _ context.Context, _, _ int, _ []*Label) LabelRepository {
+					return NewMockLabelRepository(nil)
 				},
 			},
 			args: args{
@@ -787,7 +782,7 @@ func TestCachedLabelRepository_GetAll(t *testing.T) {
 		{
 			name: "get uncached labels cache set error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, labels []*model.Label) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, labels []*Label) *redisBaseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", offset, limit)
 
 					db, err := NewRedisDatabase(
@@ -817,8 +812,8 @@ func TestCachedLabelRepository_GetAll(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				labelRepo: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, labels []*model.Label) LabelRepository {
-					repo := mock.NewLabelRepository(ctrl)
+				labelRepo: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, labels []*Label) LabelRepository {
+					repo := NewMockLabelRepository(ctrl)
 					repo.EXPECT().GetAll(ctx, offset, limit).Return(labels, nil)
 					return repo
 				},
@@ -850,25 +845,25 @@ func TestCachedLabelRepository_GetAll(t *testing.T) {
 
 func TestCachedLabelRepository_Update(t *testing.T) {
 	type fields struct {
-		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, label *model.Label) *redisBaseRepository
-		labelRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, label *model.Label) LabelRepository
+		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, label *Label) *redisBaseRepository
+		labelRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, opts UpdateLabelOpts, label *Label) LabelRepository
 	}
 	type args struct {
-		ctx   context.Context
-		id    model.ID
-		patch map[string]any
+		ctx  context.Context
+		id   model.ID
+		opts UpdateLabelOpts
 	}
 	tests := []struct {
 		name    string
 		fields  fields
 		args    args
-		want    *model.Label
+		want    *Label
 		wantErr error
 	}{
 		{
 			name: "update label",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, label *model.Label) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, label *Label) *redisBaseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), id.String())
 					getAllKey := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
 
@@ -905,21 +900,18 @@ func TestCachedLabelRepository_Update(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				labelRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, label *model.Label) LabelRepository {
-					repo := mock.NewLabelRepository(ctrl)
-					repo.EXPECT().Update(ctx, id, patch).Return(label, nil)
+				labelRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, opts UpdateLabelOpts, label *Label) LabelRepository {
+					repo := NewMockLabelRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, opts).Return(label, nil)
 					return repo
 				},
 			},
 			args: args{
-				ctx: context.Background(),
-				id:  model.MustNewID(model.ResourceTypeLabel),
-				patch: map[string]any{
-					"name":        "updated label",
-					"description": "updated description",
-				},
+				ctx:  context.Background(),
+				id:   model.MustNewID(model.ResourceTypeLabel),
+				opts: UpdateLabelOpts{},
 			},
-			want: &model.Label{
+			want: &Label{
 				ID:          model.MustNewID(model.ResourceTypeLabel),
 				Name:        "test label",
 				Description: "test description",
@@ -928,7 +920,7 @@ func TestCachedLabelRepository_Update(t *testing.T) {
 		{
 			name: "update label with error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ *model.Label) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ *Label) *redisBaseRepository {
 					db, err := NewRedisDatabase(
 						WithRedisClient(mock.NewUniversalClient(ctrl)),
 					)
@@ -941,26 +933,23 @@ func TestCachedLabelRepository_Update(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				labelRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, _ *model.Label) LabelRepository {
-					repo := mock.NewLabelRepository(ctrl)
-					repo.EXPECT().Update(ctx, id, patch).Return(nil, ErrNotFound)
+				labelRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, opts UpdateLabelOpts, _ *Label) LabelRepository {
+					repo := NewMockLabelRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, opts).Return(nil, ErrNotFound)
 					return repo
 				},
 			},
 			args: args{
-				ctx: context.Background(),
-				id:  model.MustNewID(model.ResourceTypeLabel),
-				patch: map[string]any{
-					"name":        "updated label",
-					"description": "updated description",
-				},
+				ctx:  context.Background(),
+				id:   model.MustNewID(model.ResourceTypeLabel),
+				opts: UpdateLabelOpts{},
 			},
 			wantErr: ErrNotFound,
 		},
 		{
 			name: "update label set cache error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, label *model.Label) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, label *Label) *redisBaseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), id.String())
 
 					dbClient := mock.NewUniversalClient(ctrl)
@@ -989,26 +978,23 @@ func TestCachedLabelRepository_Update(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				labelRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, label *model.Label) LabelRepository {
-					repo := mock.NewLabelRepository(ctrl)
-					repo.EXPECT().Update(ctx, id, patch).Return(label, nil)
+				labelRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, opts UpdateLabelOpts, label *Label) LabelRepository {
+					repo := NewMockLabelRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, opts).Return(label, nil)
 					return repo
 				},
 			},
 			args: args{
-				ctx: context.Background(),
-				id:  model.MustNewID(model.ResourceTypeLabel),
-				patch: map[string]any{
-					"name":        "updated label",
-					"description": "updated description",
-				},
+				ctx:  context.Background(),
+				id:   model.MustNewID(model.ResourceTypeLabel),
+				opts: UpdateLabelOpts{},
 			},
 			wantErr: ErrCacheWrite,
 		},
 		{
 			name: "update label delete get all cache error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, label *model.Label) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, label *Label) *redisBaseRepository {
 					key := composeCacheKey(model.ResourceTypeLabel.String(), id.String())
 					getAllKey := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", "*")
 
@@ -1045,19 +1031,16 @@ func TestCachedLabelRepository_Update(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				labelRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, label *model.Label) LabelRepository {
-					repo := mock.NewLabelRepository(ctrl)
-					repo.EXPECT().Update(ctx, id, patch).Return(label, nil)
+				labelRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, opts UpdateLabelOpts, label *Label) LabelRepository {
+					repo := NewMockLabelRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, opts).Return(label, nil)
 					return repo
 				},
 			},
 			args: args{
-				ctx: context.Background(),
-				id:  model.MustNewID(model.ResourceTypeLabel),
-				patch: map[string]any{
-					"name":        "updated label",
-					"description": "updated description",
-				},
+				ctx:  context.Background(),
+				id:   model.MustNewID(model.ResourceTypeLabel),
+				opts: UpdateLabelOpts{},
 			},
 			wantErr: ErrCacheDelete,
 		},
@@ -1071,9 +1054,9 @@ func TestCachedLabelRepository_Update(t *testing.T) {
 
 			r := &RedisCachedLabelRepository{
 				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, tt.want),
-				labelRepo: tt.fields.labelRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.patch, tt.want),
+				labelRepo: tt.fields.labelRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.opts, tt.want),
 			}
-			got, err := r.Update(tt.args.ctx, tt.args.id, tt.args.patch)
+			got, err := r.Update(tt.args.ctx, tt.args.id, tt.args.opts)
 			require.ErrorIs(t, err, tt.wantErr)
 			require.Equal(t, tt.want, got)
 		})
@@ -1145,7 +1128,7 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 					}
 				},
 				labelRepo: func(ctrl *gomock.Controller, ctx context.Context, id, attachTo model.ID) LabelRepository {
-					repo := mock.NewLabelRepository(ctrl)
+					repo := NewMockLabelRepository(ctrl)
 					repo.EXPECT().AttachTo(ctx, id, attachTo).Return(nil)
 					return repo
 				},
@@ -1205,7 +1188,7 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 					}
 				},
 				labelRepo: func(ctrl *gomock.Controller, ctx context.Context, id, attachTo model.ID) LabelRepository {
-					repo := mock.NewLabelRepository(ctrl)
+					repo := NewMockLabelRepository(ctrl)
 					repo.EXPECT().AttachTo(ctx, id, attachTo).Return(ErrLabelDelete)
 					return repo
 				},
@@ -1247,7 +1230,7 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 					}
 				},
 				labelRepo: func(_ *gomock.Controller, _ context.Context, _, _ model.ID) LabelRepository {
-					return mock.NewLabelRepository(nil)
+					return NewMockLabelRepository(nil)
 				},
 			},
 			args: args{
@@ -1294,7 +1277,7 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 					}
 				},
 				labelRepo: func(_ *gomock.Controller, _ context.Context, _, _ model.ID) LabelRepository {
-					return mock.NewLabelRepository(nil)
+					return NewMockLabelRepository(nil)
 				},
 			},
 			args: args{
@@ -1347,7 +1330,7 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 					}
 				},
 				labelRepo: func(_ *gomock.Controller, _ context.Context, _, _ model.ID) LabelRepository {
-					return mock.NewLabelRepository(nil)
+					return NewMockLabelRepository(nil)
 				},
 			},
 			args: args{
@@ -1406,7 +1389,7 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 					}
 				},
 				labelRepo: func(_ *gomock.Controller, _ context.Context, _, _ model.ID) LabelRepository {
-					return mock.NewLabelRepository(nil)
+					return NewMockLabelRepository(nil)
 				},
 			},
 			args: args{
@@ -1498,7 +1481,7 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 					}
 				},
 				labelRepo: func(ctrl *gomock.Controller, ctx context.Context, id, detachFrom model.ID) LabelRepository {
-					repo := mock.NewLabelRepository(ctrl)
+					repo := NewMockLabelRepository(ctrl)
 					repo.EXPECT().DetachFrom(ctx, id, detachFrom).Return(nil)
 					return repo
 				},
@@ -1558,7 +1541,7 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 					}
 				},
 				labelRepo: func(ctrl *gomock.Controller, ctx context.Context, id, detachFrom model.ID) LabelRepository {
-					repo := mock.NewLabelRepository(ctrl)
+					repo := NewMockLabelRepository(ctrl)
 					repo.EXPECT().DetachFrom(ctx, id, detachFrom).Return(ErrLabelDelete)
 					return repo
 				},
@@ -1600,7 +1583,7 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 					}
 				},
 				labelRepo: func(_ *gomock.Controller, _ context.Context, _, _ model.ID) LabelRepository {
-					return mock.NewLabelRepository(nil)
+					return NewMockLabelRepository(nil)
 				},
 			},
 			args: args{
@@ -1647,7 +1630,7 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 					}
 				},
 				labelRepo: func(_ *gomock.Controller, _ context.Context, _, _ model.ID) LabelRepository {
-					return mock.NewLabelRepository(nil)
+					return NewMockLabelRepository(nil)
 				},
 			},
 			args: args{
@@ -1700,7 +1683,7 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 					}
 				},
 				labelRepo: func(_ *gomock.Controller, _ context.Context, _, _ model.ID) LabelRepository {
-					return mock.NewLabelRepository(nil)
+					return NewMockLabelRepository(nil)
 				},
 			},
 			args: args{
@@ -1759,7 +1742,7 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 					}
 				},
 				labelRepo: func(_ *gomock.Controller, _ context.Context, _, _ model.ID) LabelRepository {
-					return mock.NewLabelRepository(nil)
+					return NewMockLabelRepository(nil)
 				},
 			},
 			args: args{
@@ -1850,7 +1833,7 @@ func TestCachedLabelRepository_Delete(t *testing.T) {
 					}
 				},
 				labelRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) LabelRepository {
-					repo := mock.NewLabelRepository(ctrl)
+					repo := NewMockLabelRepository(ctrl)
 					repo.EXPECT().Delete(ctx, id).Return(nil)
 					return repo
 				},
@@ -1909,7 +1892,7 @@ func TestCachedLabelRepository_Delete(t *testing.T) {
 					}
 				},
 				labelRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) LabelRepository {
-					repo := mock.NewLabelRepository(ctrl)
+					repo := NewMockLabelRepository(ctrl)
 					repo.EXPECT().Delete(ctx, id).Return(ErrLabelDelete)
 					return repo
 				},
@@ -1950,7 +1933,7 @@ func TestCachedLabelRepository_Delete(t *testing.T) {
 					}
 				},
 				labelRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID) LabelRepository {
-					return mock.NewLabelRepository(nil)
+					return NewMockLabelRepository(nil)
 				},
 			},
 			args: args{
@@ -1996,7 +1979,7 @@ func TestCachedLabelRepository_Delete(t *testing.T) {
 					}
 				},
 				labelRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID) LabelRepository {
-					return mock.NewLabelRepository(nil)
+					return NewMockLabelRepository(nil)
 				},
 			},
 			args: args{
@@ -2048,7 +2031,7 @@ func TestCachedLabelRepository_Delete(t *testing.T) {
 					}
 				},
 				labelRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID) LabelRepository {
-					return mock.NewLabelRepository(nil)
+					return NewMockLabelRepository(nil)
 				},
 			},
 			args: args{
@@ -2106,7 +2089,7 @@ func TestCachedLabelRepository_Delete(t *testing.T) {
 					}
 				},
 				labelRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID) LabelRepository {
-					return mock.NewLabelRepository(nil)
+					return NewMockLabelRepository(nil)
 				},
 			},
 			args: args{

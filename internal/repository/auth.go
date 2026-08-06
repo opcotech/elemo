@@ -6,7 +6,9 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+
 	"github.com/opcotech/elemo/internal/model"
+	"github.com/opcotech/elemo/internal/pkg/convert"
 )
 
 var (
@@ -15,26 +17,50 @@ var (
 	ErrTokenRead   = errors.New("failed to read token")   // token cannot be read
 )
 
-//go:generate mockgen -source=auth.go -destination=../testutil/mock/user_token_repo_gen.go -package=mock -mock_names "UserTokenRepository=UserTokenRepository"
+// UserToken represents a user token persisted by the repository.
+type UserToken struct {
+	ID        model.ID               `json:"id"`
+	UserID    model.ID               `json:"user_id"`
+	SentTo    string                 `json:"sent_to"`
+	Token     string                 `json:"token"`
+	Context   model.UserTokenContext `json:"context"`
+	CreatedAt *time.Time             `json:"created_at"`
+}
+
+// CreateUserTokenOpts holds the data required to create a user token.
+type CreateUserTokenOpts struct {
+	UserID  model.ID
+	SentTo  string
+	Token   string
+	Context model.UserTokenContext
+}
+
+//go:generate mockgen -source=auth.go -destination=auth_mock_gen.go -package=repository -mock_names "UserTokenRepository=MockUserTokenRepository"
 type UserTokenRepository interface {
-	Create(ctx context.Context, token *model.UserToken) error
-	Get(ctx context.Context, userID model.ID, tokenCtx model.UserTokenContext) (*model.UserToken, error)
+	Create(ctx context.Context, opts CreateUserTokenOpts) (*UserToken, error)
+	Get(ctx context.Context, userID model.ID, tokenCtx model.UserTokenContext) (*UserToken, error)
 	Delete(ctx context.Context, userID model.ID, tokenCtx model.UserTokenContext) error
 }
 
-// UserTokenRepository is a repository for managing user tokens.
+// PGUserTokenRepository is a repository for managing user tokens.
 type PGUserTokenRepository struct {
 	*pgBaseRepository
 }
 
-func (r *PGUserTokenRepository) Create(ctx context.Context, token *model.UserToken) error {
+func (r *PGUserTokenRepository) Create(ctx context.Context, opts CreateUserTokenOpts) (*UserToken, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.pg.UserTokenRepository/Create")
 	defer span.End()
 
 	createdAt := time.Now().UTC().Round(time.Microsecond)
 
-	token.ID = model.MustNewID(model.ResourceTypeUserToken)
-	token.CreatedAt = &createdAt
+	token := &UserToken{
+		ID:        model.MustNewID(model.ResourceTypeUserToken),
+		UserID:    opts.UserID,
+		SentTo:    opts.SentTo,
+		Token:     opts.Token,
+		Context:   opts.Context,
+		CreatedAt: convert.ToPointer(createdAt),
+	}
 
 	query := `
 	INSERT INTO user_tokens (id, user_id, sent_to, token, context, created_at)
@@ -45,13 +71,13 @@ func (r *PGUserTokenRepository) Create(ctx context.Context, token *model.UserTok
 		token.Context.String(), createdAt,
 	)
 	if err != nil {
-		return errors.Join(ErrTokenCreate, err)
+		return nil, errors.Join(ErrTokenCreate, err)
 	}
 
-	return nil
+	return token, nil
 }
 
-func (r *PGUserTokenRepository) Get(ctx context.Context, userID model.ID, tokenCtx model.UserTokenContext) (*model.UserToken, error) {
+func (r *PGUserTokenRepository) Get(ctx context.Context, userID model.ID, tokenCtx model.UserTokenContext) (*UserToken, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.pg.UserTokenRepository/Get")
 	defer span.End()
 
@@ -60,7 +86,7 @@ func (r *PGUserTokenRepository) Get(ctx context.Context, userID model.ID, tokenC
 	FROM user_tokens
 	WHERE user_id = $1 AND context = $2`
 
-	var t model.UserToken
+	var t UserToken
 	row := r.db.pool.QueryRow(ctx, query, userID, tokenCtx.String())
 	if err := row.Scan(&t.ID, &t.UserID, &t.SentTo, &t.Token, &t.Context, &t.CreatedAt); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {

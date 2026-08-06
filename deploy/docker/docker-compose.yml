@@ -69,7 +69,7 @@ services:
       MP_SMTP_AUTH_ALLOW_INSECURE: 1
 
   localstack:
-    image: localstack/localstack:latest
+    image: localstack/localstack:4.14.0
     container_name: elemo-localstack
     volumes:
       - localstack_data:/store

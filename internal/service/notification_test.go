@@ -4,6 +4,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
 	"github.com/opcotech/elemo/internal/model"
@@ -12,9 +14,75 @@ import (
 	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/testutil/mock"
 	testModel "github.com/opcotech/elemo/internal/testutil/model"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
+
+func newCreateNotificationOpts(recipient model.ID) CreateNotificationOpts {
+	return CreateNotificationOpts{
+		Title:       "test notification",
+		Description: "test description",
+		Recipient:   recipient,
+	}
+}
+
+func TestCreateNotificationOpts_Validate(t *testing.T) {
+	tests := []struct {
+		name    string
+		opts    CreateNotificationOpts
+		wantErr error
+	}{
+		{
+			name: "valid notification",
+			opts: CreateNotificationOpts{
+				Title:       "Test Notification",
+				Description: "Test description",
+				Recipient:   model.MustNewNilID(model.ResourceTypeUser),
+			},
+		},
+		{
+			name: "invalid notification title",
+			opts: CreateNotificationOpts{
+				Title:       "he",
+				Description: "Test description",
+				Recipient:   model.MustNewNilID(model.ResourceTypeUser),
+			},
+			wantErr: model.ErrInvalidNotificationDetails,
+		},
+		{
+			name: "invalid notification description",
+			opts: CreateNotificationOpts{
+				Title:       "Test Notification",
+				Description: "Test",
+				Recipient:   model.MustNewNilID(model.ResourceTypeUser),
+			},
+			wantErr: model.ErrInvalidNotificationDetails,
+		},
+		{
+			name: "invalid recipient ID",
+			opts: CreateNotificationOpts{
+				Title:       "Test Notification",
+				Description: "Test description",
+				Recipient:   model.ID{},
+			},
+			wantErr: model.ErrInvalidNotificationRecipient,
+		},
+		{
+			name: "invalid recipient ID type",
+			opts: CreateNotificationOpts{
+				Title:       "Test Notification",
+				Description: "Test description",
+				Recipient:   model.MustNewNilID(model.ResourceTypeOrganization),
+			},
+			wantErr: model.ErrInvalidNotificationRecipient,
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			require.ErrorIs(t, tt.opts.Validate(), tt.wantErr)
+		})
+	}
+}
 
 func TestNewNotificationService(t *testing.T) {
 	type args struct {
@@ -30,7 +98,7 @@ func TestNewNotificationService(t *testing.T) {
 		{
 			name: "new notification service",
 			args: args{
-				repo: mock.NewNotificationRepository(nil),
+				repo: repository.NewMockNotificationRepository(nil),
 				opts: []Option{
 					WithLogger(mock.NewMockLogger(nil)),
 					WithTracer(mock.NewMockTracer(nil)),
@@ -41,13 +109,13 @@ func TestNewNotificationService(t *testing.T) {
 					logger: mock.NewMockLogger(nil),
 					tracer: mock.NewMockTracer(nil),
 				},
-				notificationRepo: mock.NewNotificationRepository(nil),
+				notificationRepo: repository.NewMockNotificationRepository(nil),
 			},
 		},
 		{
 			name: "new notification service with invalid options",
 			args: args{
-				repo: mock.NewNotificationRepository(nil),
+				repo: repository.NewMockNotificationRepository(nil),
 				opts: []Option{
 					WithLogger(nil),
 					WithTracer(mock.NewMockTracer(nil)),
@@ -78,13 +146,15 @@ func TestNewNotificationService(t *testing.T) {
 }
 
 func TestNotificationService_Create(t *testing.T) {
+	recipientID := model.MustNewID(model.ResourceTypeUser)
+
 	type fields struct {
-		baseService      func(ctrl *gomock.Controller, ctx context.Context, notification *model.Notification) *baseService
-		notificationRepo func(ctrl *gomock.Controller, ctx context.Context, notification *model.Notification) repository.NotificationRepository
+		baseService      func(ctrl *gomock.Controller, ctx context.Context, opts CreateNotificationOpts) *baseService
+		notificationRepo func(ctrl *gomock.Controller, ctx context.Context, opts CreateNotificationOpts) repository.NotificationRepository
 	}
 	type args struct {
-		ctx          context.Context
-		notification *model.Notification
+		ctx  context.Context
+		opts CreateNotificationOpts
 	}
 	tests := []struct {
 		name    string
@@ -95,7 +165,7 @@ func TestNotificationService_Create(t *testing.T) {
 		{
 			name: "create notification",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ *model.Notification) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ CreateNotificationOpts) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
@@ -107,21 +177,25 @@ func TestNotificationService_Create(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				notificationRepo: func(ctrl *gomock.Controller, ctx context.Context, notification *model.Notification) repository.NotificationRepository {
-					repo := mock.NewNotificationRepository(ctrl)
-					repo.EXPECT().Create(ctx, notification).Return(nil)
+				notificationRepo: func(ctrl *gomock.Controller, ctx context.Context, opts CreateNotificationOpts) repository.NotificationRepository {
+					repo := repository.NewMockNotificationRepository(ctrl)
+					repo.EXPECT().Create(ctx, repository.CreateNotificationOpts{
+						Title:       opts.Title,
+						Description: opts.Description,
+						Recipient:   opts.Recipient,
+					}).Return(testModel.NewRepositoryNotification(opts.Recipient), nil)
 					return repo
 				},
 			},
 			args: args{
-				ctx:          context.Background(),
-				notification: testModel.NewNotification(model.MustNewID(model.ResourceTypeUser)),
+				ctx:  context.Background(),
+				opts: newCreateNotificationOpts(recipientID),
 			},
 		},
 		{
 			name: "create notification with error",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ *model.Notification) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ CreateNotificationOpts) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
@@ -133,22 +207,26 @@ func TestNotificationService_Create(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				notificationRepo: func(ctrl *gomock.Controller, ctx context.Context, notification *model.Notification) repository.NotificationRepository {
-					repo := mock.NewNotificationRepository(ctrl)
-					repo.EXPECT().Create(ctx, notification).Return(assert.AnError)
+				notificationRepo: func(ctrl *gomock.Controller, ctx context.Context, opts CreateNotificationOpts) repository.NotificationRepository {
+					repo := repository.NewMockNotificationRepository(ctrl)
+					repo.EXPECT().Create(ctx, repository.CreateNotificationOpts{
+						Title:       opts.Title,
+						Description: opts.Description,
+						Recipient:   opts.Recipient,
+					}).Return(nil, assert.AnError)
 					return repo
 				},
 			},
 			args: args{
-				ctx:          context.Background(),
-				notification: testModel.NewNotification(model.MustNewID(model.ResourceTypeUser)),
+				ctx:  context.Background(),
+				opts: newCreateNotificationOpts(recipientID),
 			},
 			wantErr: ErrNotificationCreate,
 		},
 		{
 			name: "create notification with invalid notification",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ *model.Notification) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ CreateNotificationOpts) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
@@ -160,14 +238,15 @@ func TestNotificationService_Create(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				notificationRepo: func(ctrl *gomock.Controller, _ context.Context, _ *model.Notification) repository.NotificationRepository {
-					repo := mock.NewNotificationRepository(ctrl)
-					return repo
+				notificationRepo: func(ctrl *gomock.Controller, _ context.Context, _ CreateNotificationOpts) repository.NotificationRepository {
+					return repository.NewMockNotificationRepository(ctrl)
 				},
 			},
 			args: args{
-				ctx:          context.Background(),
-				notification: &model.Notification{Recipient: model.ID{}},
+				ctx: context.Background(),
+				opts: CreateNotificationOpts{
+					Recipient: model.ID{},
+				},
 			},
 			wantErr: ErrNotificationCreate,
 		},
@@ -179,10 +258,10 @@ func TestNotificationService_Create(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			s := &notificationService{
-				baseService:      tt.fields.baseService(ctrl, tt.args.ctx, tt.args.notification),
-				notificationRepo: tt.fields.notificationRepo(ctrl, tt.args.ctx, tt.args.notification),
+				baseService:      tt.fields.baseService(ctrl, tt.args.ctx, tt.args.opts),
+				notificationRepo: tt.fields.notificationRepo(ctrl, tt.args.ctx, tt.args.opts),
 			}
-			err := s.Create(tt.args.ctx, tt.args.notification)
+			_, err := s.Create(tt.args.ctx, tt.args.opts)
 			require.ErrorIs(t, err, tt.wantErr)
 		})
 	}
@@ -193,8 +272,8 @@ func TestNotificationService_Get(t *testing.T) {
 	recipientID := model.MustNewID(model.ResourceTypeUser)
 
 	type fields struct {
-		baseService      func(ctrl *gomock.Controller, ctx context.Context, id, recipient model.ID, notification *model.Notification) *baseService
-		notificationRepo func(ctrl *gomock.Controller, ctx context.Context, id, recipient model.ID, notification *model.Notification) repository.NotificationRepository
+		baseService      func(ctrl *gomock.Controller, ctx context.Context, id, recipient model.ID, notification *repository.Notification) *baseService
+		notificationRepo func(ctrl *gomock.Controller, ctx context.Context, id, recipient model.ID, notification *repository.Notification) repository.NotificationRepository
 	}
 	type args struct {
 		ctx       context.Context
@@ -205,13 +284,14 @@ func TestNotificationService_Get(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    *model.Notification
+		repoN   *repository.Notification
+		want    *Notification
 		wantErr error
 	}{
 		{
 			name: "get notification",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ model.ID, _ *model.Notification) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ model.ID, _ *repository.Notification) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
@@ -223,8 +303,8 @@ func TestNotificationService_Get(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				notificationRepo: func(ctrl *gomock.Controller, ctx context.Context, id, recipient model.ID, notification *model.Notification) repository.NotificationRepository {
-					repo := mock.NewNotificationRepository(ctrl)
+				notificationRepo: func(ctrl *gomock.Controller, ctx context.Context, id, recipient model.ID, notification *repository.Notification) repository.NotificationRepository {
+					repo := repository.NewMockNotificationRepository(ctrl)
 					repo.EXPECT().Get(ctx, id, recipient).Return(notification, nil)
 					return repo
 				},
@@ -234,7 +314,13 @@ func TestNotificationService_Get(t *testing.T) {
 				id:        notificationID,
 				recipient: recipientID,
 			},
-			want: &model.Notification{
+			repoN: &repository.Notification{
+				ID:          notificationID,
+				Title:       "test",
+				Description: "test notification",
+				Recipient:   recipientID,
+			},
+			want: &Notification{
 				ID:          notificationID,
 				Title:       "test",
 				Description: "test notification",
@@ -244,7 +330,7 @@ func TestNotificationService_Get(t *testing.T) {
 		{
 			name: "get notification with error",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ model.ID, _ *model.Notification) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ model.ID, _ *repository.Notification) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
@@ -256,8 +342,8 @@ func TestNotificationService_Get(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				notificationRepo: func(ctrl *gomock.Controller, ctx context.Context, id, recipient model.ID, _ *model.Notification) repository.NotificationRepository {
-					repo := mock.NewNotificationRepository(ctrl)
+				notificationRepo: func(ctrl *gomock.Controller, ctx context.Context, id, recipient model.ID, _ *repository.Notification) repository.NotificationRepository {
+					repo := repository.NewMockNotificationRepository(ctrl)
 					repo.EXPECT().Get(ctx, id, recipient).Return(nil, assert.AnError)
 					return repo
 				},
@@ -270,9 +356,9 @@ func TestNotificationService_Get(t *testing.T) {
 			wantErr: ErrNotificationGet,
 		},
 		{
-			name: "get notification for other user",
+			name: "get notification with invalid notification ID",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ model.ID, _ *model.Notification) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ model.ID, _ *repository.Notification) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
@@ -284,34 +370,8 @@ func TestNotificationService_Get(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				notificationRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID, _ *model.Notification) repository.NotificationRepository {
-					return mock.NewNotificationRepository(ctrl)
-				},
-			},
-			args: args{
-				ctx:       context.WithValue(context.Background(), pkg.CtxKeyUserID, model.MustNewID(model.ResourceTypeUser)),
-				id:        notificationID,
-				recipient: recipientID,
-			},
-			wantErr: ErrNotificationGet,
-		},
-		{
-			name: "get notification with invalid id",
-			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ model.ID, _ *model.Notification) *baseService {
-					span := mock.NewMockSpan(ctrl)
-					span.EXPECT().End(gomock.Len(0))
-
-					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.notificationService/Get", gomock.Len(0)).Return(ctx, span)
-
-					return &baseService{
-						logger: mock.NewMockLogger(ctrl),
-						tracer: tracer,
-					}
-				},
-				notificationRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID, _ *model.Notification) repository.NotificationRepository {
-					return mock.NewNotificationRepository(ctrl)
+				notificationRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID, _ *repository.Notification) repository.NotificationRepository {
+					return repository.NewMockNotificationRepository(ctrl)
 				},
 			},
 			args: args{
@@ -322,9 +382,9 @@ func TestNotificationService_Get(t *testing.T) {
 			wantErr: ErrNotificationGet,
 		},
 		{
-			name: "get notification with invalid recipient",
+			name: "get notification with invalid recipient ID",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ model.ID, _ *model.Notification) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ model.ID, _ *repository.Notification) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
@@ -336,8 +396,8 @@ func TestNotificationService_Get(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				notificationRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID, _ *model.Notification) repository.NotificationRepository {
-					return mock.NewNotificationRepository(ctrl)
+				notificationRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID, _ *repository.Notification) repository.NotificationRepository {
+					return repository.NewMockNotificationRepository(ctrl)
 				},
 			},
 			args: args{
@@ -347,6 +407,32 @@ func TestNotificationService_Get(t *testing.T) {
 			},
 			wantErr: ErrNotificationGet,
 		},
+		{
+			name: "get notification with permission denied",
+			fields: fields{
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ model.ID, _ *repository.Notification) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.notificationService/Get", gomock.Len(0)).Return(ctx, span)
+
+					return &baseService{
+						logger: mock.NewMockLogger(ctrl),
+						tracer: tracer,
+					}
+				},
+				notificationRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID, _ *repository.Notification) repository.NotificationRepository {
+					return repository.NewMockNotificationRepository(ctrl)
+				},
+			},
+			args: args{
+				ctx:       context.WithValue(context.Background(), pkg.CtxKeyUserID, model.MustNewID(model.ResourceTypeUser)),
+				id:        notificationID,
+				recipient: recipientID,
+			},
+			wantErr: ErrNoPermission,
+		},
 	}
 	for _, tt := range tests {
 		tt := tt
@@ -355,12 +441,12 @@ func TestNotificationService_Get(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			s := &notificationService{
-				baseService:      tt.fields.baseService(ctrl, tt.args.ctx, tt.args.id, tt.args.recipient, tt.want),
-				notificationRepo: tt.fields.notificationRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.recipient, tt.want),
+				baseService:      tt.fields.baseService(ctrl, tt.args.ctx, tt.args.id, tt.args.recipient, tt.repoN),
+				notificationRepo: tt.fields.notificationRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.recipient, tt.repoN),
 			}
-			notification, err := s.Get(tt.args.ctx, tt.args.id, tt.args.recipient)
+			got, err := s.Get(tt.args.ctx, tt.args.id, tt.args.recipient)
 			require.ErrorIs(t, err, tt.wantErr)
-			require.Equal(t, tt.want, notification)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
@@ -369,8 +455,8 @@ func TestNotificationService_GetAllByRecipient(t *testing.T) {
 	recipientID := model.MustNewID(model.ResourceTypeUser)
 
 	type fields struct {
-		baseService      func(ctrl *gomock.Controller, ctx context.Context, recipient model.ID, offset, limit int, notifications []*model.Notification) *baseService
-		notificationRepo func(ctrl *gomock.Controller, ctx context.Context, recipient model.ID, offset, limit int, notifications []*model.Notification) repository.NotificationRepository
+		baseService      func(ctrl *gomock.Controller, ctx context.Context, recipient model.ID, offset, limit int, notifications []*repository.Notification) *baseService
+		notificationRepo func(ctrl *gomock.Controller, ctx context.Context, recipient model.ID, offset, limit int, notifications []*repository.Notification) repository.NotificationRepository
 	}
 	type args struct {
 		ctx       context.Context
@@ -382,13 +468,14 @@ func TestNotificationService_GetAllByRecipient(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    []*model.Notification
+		repoN   []*repository.Notification
+		want    []*Notification
 		wantErr error
 	}{
 		{
-			name: "get notifications",
+			name: "get all notifications by recipient",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _, _ int, _ []*model.Notification) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _, _ int, _ []*repository.Notification) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
@@ -400,8 +487,8 @@ func TestNotificationService_GetAllByRecipient(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				notificationRepo: func(ctrl *gomock.Controller, ctx context.Context, recipient model.ID, offset, limit int, notifications []*model.Notification) repository.NotificationRepository {
-					repo := mock.NewNotificationRepository(ctrl)
+				notificationRepo: func(ctrl *gomock.Controller, ctx context.Context, recipient model.ID, offset, limit int, notifications []*repository.Notification) repository.NotificationRepository {
+					repo := repository.NewMockNotificationRepository(ctrl)
 					repo.EXPECT().GetAllByRecipient(ctx, recipient, offset, limit).Return(notifications, nil)
 					return repo
 				},
@@ -410,9 +497,23 @@ func TestNotificationService_GetAllByRecipient(t *testing.T) {
 				ctx:       context.WithValue(context.Background(), pkg.CtxKeyUserID, recipientID),
 				recipient: recipientID,
 				offset:    0,
-				limit:     2,
+				limit:     10,
 			},
-			want: []*model.Notification{
+			repoN: []*repository.Notification{
+				{
+					ID:          model.MustNewID(model.ResourceTypeNotification),
+					Title:       "test",
+					Description: "test notification",
+					Recipient:   recipientID,
+				},
+				{
+					ID:          model.MustNewID(model.ResourceTypeNotification),
+					Title:       "test",
+					Description: "test notification",
+					Recipient:   recipientID,
+				},
+			},
+			want: []*Notification{
 				{
 					ID:          model.MustNewID(model.ResourceTypeNotification),
 					Title:       "test",
@@ -428,9 +529,9 @@ func TestNotificationService_GetAllByRecipient(t *testing.T) {
 			},
 		},
 		{
-			name: "get notifications with error",
+			name: "get all notifications by recipient with error",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _, _ int, _ []*model.Notification) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _, _ int, _ []*repository.Notification) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
@@ -442,8 +543,8 @@ func TestNotificationService_GetAllByRecipient(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				notificationRepo: func(ctrl *gomock.Controller, ctx context.Context, recipient model.ID, offset, limit int, _ []*model.Notification) repository.NotificationRepository {
-					repo := mock.NewNotificationRepository(ctrl)
+				notificationRepo: func(ctrl *gomock.Controller, ctx context.Context, recipient model.ID, offset, limit int, _ []*repository.Notification) repository.NotificationRepository {
+					repo := repository.NewMockNotificationRepository(ctrl)
 					repo.EXPECT().GetAllByRecipient(ctx, recipient, offset, limit).Return(nil, assert.AnError)
 					return repo
 				},
@@ -452,14 +553,14 @@ func TestNotificationService_GetAllByRecipient(t *testing.T) {
 				ctx:       context.WithValue(context.Background(), pkg.CtxKeyUserID, recipientID),
 				recipient: recipientID,
 				offset:    0,
-				limit:     2,
+				limit:     10,
 			},
 			wantErr: ErrNotificationGetAllByRecipient,
 		},
 		{
-			name: "get notifications for other user",
+			name: "get all notifications by recipient with invalid recipient ID",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _, _ int, _ []*model.Notification) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _, _ int, _ []*repository.Notification) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
@@ -471,49 +572,22 @@ func TestNotificationService_GetAllByRecipient(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				notificationRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _, _ int, _ []*model.Notification) repository.NotificationRepository {
-					return mock.NewNotificationRepository(ctrl)
-				},
-			},
-			args: args{
-				ctx:       context.WithValue(context.Background(), pkg.CtxKeyUserID, model.MustNewID(model.ResourceTypeUser)),
-				recipient: recipientID,
-				offset:    0,
-				limit:     2,
-			},
-			wantErr: ErrNotificationGetAllByRecipient,
-		},
-		{
-			name: "get notifications with invalid recipient",
-			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _, _ int, _ []*model.Notification) *baseService {
-					span := mock.NewMockSpan(ctrl)
-					span.EXPECT().End(gomock.Len(0))
-
-					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.notificationService/GetAllByRecipient", gomock.Len(0)).Return(ctx, span)
-
-					return &baseService{
-						logger: mock.NewMockLogger(ctrl),
-						tracer: tracer,
-					}
-				},
-				notificationRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _, _ int, _ []*model.Notification) repository.NotificationRepository {
-					return mock.NewNotificationRepository(ctrl)
+				notificationRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _, _ int, _ []*repository.Notification) repository.NotificationRepository {
+					return repository.NewMockNotificationRepository(ctrl)
 				},
 			},
 			args: args{
 				ctx:       context.WithValue(context.Background(), pkg.CtxKeyUserID, model.ID{}),
 				recipient: model.ID{},
 				offset:    0,
-				limit:     2,
+				limit:     10,
 			},
 			wantErr: ErrNotificationGetAllByRecipient,
 		},
 		{
-			name: "get notifications with invalid pagination params",
+			name: "get all notifications by recipient with invalid pagination",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _, _ int, _ []*model.Notification) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _, _ int, _ []*repository.Notification) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
@@ -525,17 +599,44 @@ func TestNotificationService_GetAllByRecipient(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				notificationRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _, _ int, _ []*model.Notification) repository.NotificationRepository {
-					return mock.NewNotificationRepository(ctrl)
+				notificationRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _, _ int, _ []*repository.Notification) repository.NotificationRepository {
+					return repository.NewMockNotificationRepository(ctrl)
 				},
 			},
 			args: args{
 				ctx:       context.WithValue(context.Background(), pkg.CtxKeyUserID, recipientID),
 				recipient: recipientID,
-				offset:    0,
+				offset:    -1,
 				limit:     0,
 			},
-			wantErr: ErrNotificationGetAllByRecipient,
+			wantErr: ErrInvalidPaginationParams,
+		},
+		{
+			name: "get all notifications by recipient with permission denied",
+			fields: fields{
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _, _ int, _ []*repository.Notification) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.notificationService/GetAllByRecipient", gomock.Len(0)).Return(ctx, span)
+
+					return &baseService{
+						logger: mock.NewMockLogger(ctrl),
+						tracer: tracer,
+					}
+				},
+				notificationRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _, _ int, _ []*repository.Notification) repository.NotificationRepository {
+					return repository.NewMockNotificationRepository(ctrl)
+				},
+			},
+			args: args{
+				ctx:       context.WithValue(context.Background(), pkg.CtxKeyUserID, model.MustNewID(model.ResourceTypeUser)),
+				recipient: recipientID,
+				offset:    0,
+				limit:     10,
+			},
+			wantErr: ErrNoPermission,
 		},
 	}
 	for _, tt := range tests {
@@ -544,13 +645,21 @@ func TestNotificationService_GetAllByRecipient(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			s := &notificationService{
-				baseService:      tt.fields.baseService(ctrl, tt.args.ctx, tt.args.recipient, tt.args.offset, tt.args.limit, tt.want),
-				notificationRepo: tt.fields.notificationRepo(ctrl, tt.args.ctx, tt.args.recipient, tt.args.offset, tt.args.limit, tt.want),
+
+			// Align want IDs with repo fixtures when both are set with matching length.
+			if len(tt.repoN) > 0 && len(tt.want) == len(tt.repoN) {
+				for i := range tt.want {
+					tt.want[i].ID = tt.repoN[i].ID
+				}
 			}
-			notification, err := s.GetAllByRecipient(tt.args.ctx, tt.args.recipient, tt.args.offset, tt.args.limit)
+
+			s := &notificationService{
+				baseService:      tt.fields.baseService(ctrl, tt.args.ctx, tt.args.recipient, tt.args.offset, tt.args.limit, tt.repoN),
+				notificationRepo: tt.fields.notificationRepo(ctrl, tt.args.ctx, tt.args.recipient, tt.args.offset, tt.args.limit, tt.repoN),
+			}
+			got, err := s.GetAllByRecipient(tt.args.ctx, tt.args.recipient, tt.args.offset, tt.args.limit)
 			require.ErrorIs(t, err, tt.wantErr)
-			require.Equal(t, tt.want, notification)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
@@ -560,26 +669,27 @@ func TestNotificationService_Update(t *testing.T) {
 	recipientID := model.MustNewID(model.ResourceTypeUser)
 
 	type fields struct {
-		baseService      func(ctrl *gomock.Controller, ctx context.Context, id, recipient model.ID, read bool, notification *model.Notification) *baseService
-		notificationRepo func(ctrl *gomock.Controller, ctx context.Context, id, recipient model.ID, read bool, notification *model.Notification) repository.NotificationRepository
+		baseService      func(ctrl *gomock.Controller, ctx context.Context, id, recipient model.ID, opts UpdateNotificationOpts, notification *repository.Notification) *baseService
+		notificationRepo func(ctrl *gomock.Controller, ctx context.Context, id, recipient model.ID, opts UpdateNotificationOpts, notification *repository.Notification) repository.NotificationRepository
 	}
 	type args struct {
 		ctx       context.Context
 		id        model.ID
 		recipient model.ID
-		read      bool
+		opts      UpdateNotificationOpts
 	}
 	tests := []struct {
 		name    string
 		fields  fields
 		args    args
-		want    *model.Notification
+		repoN   *repository.Notification
+		want    *Notification
 		wantErr error
 	}{
 		{
 			name: "update notification",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ model.ID, _ bool, _ *model.Notification) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ model.ID, _ UpdateNotificationOpts, _ *repository.Notification) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
@@ -591,9 +701,9 @@ func TestNotificationService_Update(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				notificationRepo: func(ctrl *gomock.Controller, ctx context.Context, id, recipient model.ID, read bool, notification *model.Notification) repository.NotificationRepository {
-					repo := mock.NewNotificationRepository(ctrl)
-					repo.EXPECT().Update(ctx, id, recipient, read).Return(notification, nil)
+				notificationRepo: func(ctrl *gomock.Controller, ctx context.Context, id, recipient model.ID, opts UpdateNotificationOpts, notification *repository.Notification) repository.NotificationRepository {
+					repo := repository.NewMockNotificationRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, recipient, repository.UpdateNotificationOpts{Read: opts.Read}).Return(notification, nil)
 					return repo
 				},
 			},
@@ -601,9 +711,16 @@ func TestNotificationService_Update(t *testing.T) {
 				ctx:       context.WithValue(context.Background(), pkg.CtxKeyUserID, recipientID),
 				id:        notificationID,
 				recipient: recipientID,
-				read:      true,
+				opts:      UpdateNotificationOpts{Read: true},
 			},
-			want: &model.Notification{
+			repoN: &repository.Notification{
+				ID:          notificationID,
+				Title:       "test",
+				Description: "test notification",
+				Recipient:   recipientID,
+				Read:        true,
+			},
+			want: &Notification{
 				ID:          notificationID,
 				Title:       "test",
 				Description: "test notification",
@@ -614,7 +731,7 @@ func TestNotificationService_Update(t *testing.T) {
 		{
 			name: "update notification with error",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ model.ID, _ bool, _ *model.Notification) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ model.ID, _ UpdateNotificationOpts, _ *repository.Notification) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
@@ -626,9 +743,9 @@ func TestNotificationService_Update(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				notificationRepo: func(ctrl *gomock.Controller, ctx context.Context, id, recipient model.ID, read bool, _ *model.Notification) repository.NotificationRepository {
-					repo := mock.NewNotificationRepository(ctrl)
-					repo.EXPECT().Update(ctx, id, recipient, read).Return(nil, assert.AnError)
+				notificationRepo: func(ctrl *gomock.Controller, ctx context.Context, id, recipient model.ID, opts UpdateNotificationOpts, _ *repository.Notification) repository.NotificationRepository {
+					repo := repository.NewMockNotificationRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, recipient, repository.UpdateNotificationOpts{Read: opts.Read}).Return(nil, assert.AnError)
 					return repo
 				},
 			},
@@ -636,14 +753,14 @@ func TestNotificationService_Update(t *testing.T) {
 				ctx:       context.WithValue(context.Background(), pkg.CtxKeyUserID, recipientID),
 				id:        notificationID,
 				recipient: recipientID,
-				read:      true,
+				opts:      UpdateNotificationOpts{Read: true},
 			},
 			wantErr: ErrNotificationUpdate,
 		},
 		{
-			name: "update notification for other user",
+			name: "update notification with invalid notification ID",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ model.ID, _ bool, _ *model.Notification) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ model.ID, _ UpdateNotificationOpts, _ *repository.Notification) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
@@ -655,49 +772,22 @@ func TestNotificationService_Update(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				notificationRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID, _ bool, _ *model.Notification) repository.NotificationRepository {
-					return mock.NewNotificationRepository(ctrl)
-				},
-			},
-			args: args{
-				ctx:       context.WithValue(context.Background(), pkg.CtxKeyUserID, model.MustNewID(model.ResourceTypeUser)),
-				id:        notificationID,
-				recipient: recipientID,
-				read:      true,
-			},
-			wantErr: ErrNotificationUpdate,
-		},
-		{
-			name: "update notification with invalid id",
-			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ model.ID, _ bool, _ *model.Notification) *baseService {
-					span := mock.NewMockSpan(ctrl)
-					span.EXPECT().End(gomock.Len(0))
-
-					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.notificationService/Update", gomock.Len(0)).Return(ctx, span)
-
-					return &baseService{
-						logger: mock.NewMockLogger(ctrl),
-						tracer: tracer,
-					}
-				},
-				notificationRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID, _ bool, _ *model.Notification) repository.NotificationRepository {
-					return mock.NewNotificationRepository(ctrl)
+				notificationRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID, _ UpdateNotificationOpts, _ *repository.Notification) repository.NotificationRepository {
+					return repository.NewMockNotificationRepository(ctrl)
 				},
 			},
 			args: args{
 				ctx:       context.WithValue(context.Background(), pkg.CtxKeyUserID, recipientID),
 				id:        model.ID{},
 				recipient: recipientID,
-				read:      true,
+				opts:      UpdateNotificationOpts{Read: true},
 			},
 			wantErr: ErrNotificationUpdate,
 		},
 		{
-			name: "update notification with invalid recipient",
+			name: "update notification with invalid recipient ID",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ model.ID, _ bool, _ *model.Notification) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ model.ID, _ UpdateNotificationOpts, _ *repository.Notification) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
@@ -709,17 +799,44 @@ func TestNotificationService_Update(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				notificationRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID, _ bool, _ *model.Notification) repository.NotificationRepository {
-					return mock.NewNotificationRepository(ctrl)
+				notificationRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID, _ UpdateNotificationOpts, _ *repository.Notification) repository.NotificationRepository {
+					return repository.NewMockNotificationRepository(ctrl)
 				},
 			},
 			args: args{
 				ctx:       context.WithValue(context.Background(), pkg.CtxKeyUserID, model.ID{}),
 				id:        notificationID,
 				recipient: model.ID{},
-				read:      true,
+				opts:      UpdateNotificationOpts{Read: true},
 			},
 			wantErr: ErrNotificationUpdate,
+		},
+		{
+			name: "update notification with permission denied",
+			fields: fields{
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ model.ID, _ UpdateNotificationOpts, _ *repository.Notification) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.notificationService/Update", gomock.Len(0)).Return(ctx, span)
+
+					return &baseService{
+						logger: mock.NewMockLogger(ctrl),
+						tracer: tracer,
+					}
+				},
+				notificationRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID, _ UpdateNotificationOpts, _ *repository.Notification) repository.NotificationRepository {
+					return repository.NewMockNotificationRepository(ctrl)
+				},
+			},
+			args: args{
+				ctx:       context.WithValue(context.Background(), pkg.CtxKeyUserID, model.MustNewID(model.ResourceTypeUser)),
+				id:        notificationID,
+				recipient: recipientID,
+				opts:      UpdateNotificationOpts{Read: true},
+			},
+			wantErr: ErrNoPermission,
 		},
 	}
 	for _, tt := range tests {
@@ -729,12 +846,12 @@ func TestNotificationService_Update(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			s := &notificationService{
-				baseService:      tt.fields.baseService(ctrl, tt.args.ctx, tt.args.id, tt.args.recipient, tt.args.read, tt.want),
-				notificationRepo: tt.fields.notificationRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.recipient, tt.args.read, tt.want),
+				baseService:      tt.fields.baseService(ctrl, tt.args.ctx, tt.args.id, tt.args.recipient, tt.args.opts, tt.repoN),
+				notificationRepo: tt.fields.notificationRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.recipient, tt.args.opts, tt.repoN),
 			}
-			notification, err := s.Update(tt.args.ctx, tt.args.id, tt.args.recipient, tt.args.read)
+			got, err := s.Update(tt.args.ctx, tt.args.id, tt.args.recipient, tt.args.opts)
 			require.ErrorIs(t, err, tt.wantErr)
-			require.Equal(t, tt.want, notification)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
@@ -774,7 +891,7 @@ func TestNotificationService_Delete(t *testing.T) {
 					}
 				},
 				notificationRepo: func(ctrl *gomock.Controller, ctx context.Context, id, recipient model.ID) repository.NotificationRepository {
-					repo := mock.NewNotificationRepository(ctrl)
+					repo := repository.NewMockNotificationRepository(ctrl)
 					repo.EXPECT().Delete(ctx, id, recipient).Return(nil)
 					return repo
 				},
@@ -801,7 +918,7 @@ func TestNotificationService_Delete(t *testing.T) {
 					}
 				},
 				notificationRepo: func(ctrl *gomock.Controller, ctx context.Context, id, recipient model.ID) repository.NotificationRepository {
-					repo := mock.NewNotificationRepository(ctrl)
+					repo := repository.NewMockNotificationRepository(ctrl)
 					repo.EXPECT().Delete(ctx, id, recipient).Return(assert.AnError)
 					return repo
 				},
@@ -814,7 +931,7 @@ func TestNotificationService_Delete(t *testing.T) {
 			wantErr: ErrNotificationDelete,
 		},
 		{
-			name: "delete notification for other user",
+			name: "delete notification with invalid notification ID",
 			fields: fields{
 				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ model.ID) *baseService {
 					span := mock.NewMockSpan(ctrl)
@@ -829,33 +946,7 @@ func TestNotificationService_Delete(t *testing.T) {
 					}
 				},
 				notificationRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID) repository.NotificationRepository {
-					return mock.NewNotificationRepository(ctrl)
-				},
-			},
-			args: args{
-				ctx:       context.WithValue(context.Background(), pkg.CtxKeyUserID, model.MustNewID(model.ResourceTypeUser)),
-				id:        notificationID,
-				recipient: recipientID,
-			},
-			wantErr: ErrNotificationDelete,
-		},
-		{
-			name: "delete notification with invalid id",
-			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ model.ID) *baseService {
-					span := mock.NewMockSpan(ctrl)
-					span.EXPECT().End(gomock.Len(0))
-
-					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.notificationService/Delete", gomock.Len(0)).Return(ctx, span)
-
-					return &baseService{
-						logger: mock.NewMockLogger(ctrl),
-						tracer: tracer,
-					}
-				},
-				notificationRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID) repository.NotificationRepository {
-					return mock.NewNotificationRepository(ctrl)
+					return repository.NewMockNotificationRepository(ctrl)
 				},
 			},
 			args: args{
@@ -866,7 +957,7 @@ func TestNotificationService_Delete(t *testing.T) {
 			wantErr: ErrNotificationDelete,
 		},
 		{
-			name: "delete notification with invalid recipient",
+			name: "delete notification with invalid recipient ID",
 			fields: fields{
 				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ model.ID) *baseService {
 					span := mock.NewMockSpan(ctrl)
@@ -881,7 +972,7 @@ func TestNotificationService_Delete(t *testing.T) {
 					}
 				},
 				notificationRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID) repository.NotificationRepository {
-					return mock.NewNotificationRepository(ctrl)
+					return repository.NewMockNotificationRepository(ctrl)
 				},
 			},
 			args: args{
@@ -890,6 +981,32 @@ func TestNotificationService_Delete(t *testing.T) {
 				recipient: model.ID{},
 			},
 			wantErr: ErrNotificationDelete,
+		},
+		{
+			name: "delete notification with permission denied",
+			fields: fields{
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ model.ID) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.notificationService/Delete", gomock.Len(0)).Return(ctx, span)
+
+					return &baseService{
+						logger: mock.NewMockLogger(ctrl),
+						tracer: tracer,
+					}
+				},
+				notificationRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID) repository.NotificationRepository {
+					return repository.NewMockNotificationRepository(ctrl)
+				},
+			},
+			args: args{
+				ctx:       context.WithValue(context.Background(), pkg.CtxKeyUserID, model.MustNewID(model.ResourceTypeUser)),
+				id:        notificationID,
+				recipient: recipientID,
+			},
+			wantErr: ErrNoPermission,
 		},
 	}
 	for _, tt := range tests {

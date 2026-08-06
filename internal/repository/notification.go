@@ -6,7 +6,9 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+
 	"github.com/opcotech/elemo/internal/model"
+	"github.com/opcotech/elemo/internal/pkg/convert"
 )
 
 var (
@@ -16,61 +18,74 @@ var (
 	ErrNotificationUpdate = errors.New("failed to update notification") // the notification could not be updates
 )
 
-//go:generate mockgen -source=notification.go -destination=../testutil/mock/notification_repo_gen.go -package=mock -mock_names "NotificationRepository=NotificationRepository"
+// Notification represents a notification persisted by the repository.
+type Notification struct {
+	ID          model.ID   `json:"id"`
+	Title       string     `json:"title"`
+	Description string     `json:"description"`
+	Recipient   model.ID   `json:"recipient"`
+	Read        bool       `json:"read"`
+	CreatedAt   *time.Time `json:"created_at"`
+	UpdatedAt   *time.Time `json:"updated_at"`
+}
+
+// CreateNotificationOpts holds the data required to create a notification.
+type CreateNotificationOpts struct {
+	Title       string
+	Description string
+	Recipient   model.ID
+}
+
+// UpdateNotificationOpts holds the fields that can be updated on a notification.
+type UpdateNotificationOpts struct {
+	Read bool
+}
+
+//go:generate mockgen -source=notification.go -destination=notification_mock_gen.go -package=repository -mock_names "NotificationRepository=MockNotificationRepository"
 type NotificationRepository interface {
-	Create(ctx context.Context, notification *model.Notification) error
-	Get(ctx context.Context, id, recipient model.ID) (*model.Notification, error)
-	GetAllByRecipient(ctx context.Context, recipient model.ID, offset, limit int) ([]*model.Notification, error)
-	Update(ctx context.Context, id, recipient model.ID, read bool) (*model.Notification, error)
+	Create(ctx context.Context, opts CreateNotificationOpts) (*Notification, error)
+	Get(ctx context.Context, id, recipient model.ID) (*Notification, error)
+	GetAllByRecipient(ctx context.Context, recipient model.ID, offset, limit int) ([]*Notification, error)
+	Update(ctx context.Context, id, recipient model.ID, opts UpdateNotificationOpts) (*Notification, error)
 	Delete(ctx context.Context, id, recipient model.ID) error
 }
 
-// NotificationRepository is a repository for managing notifications.
+// PGNotificationRepository is a repository for managing notifications.
 type PGNotificationRepository struct {
 	*pgBaseRepository
 }
 
-func (r *PGNotificationRepository) Create(ctx context.Context, notification *model.Notification) error {
+func (r *PGNotificationRepository) Create(ctx context.Context, opts CreateNotificationOpts) (*Notification, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.pg.NotificationRepository/Create")
 	defer span.End()
 
-	if err := notification.Validate(); err != nil {
-		return errors.Join(ErrNotificationCreate, err)
+	notification := &Notification{
+		ID:          model.MustNewID(model.ResourceTypeNotification),
+		Title:       opts.Title,
+		Description: opts.Description,
+		Recipient:   opts.Recipient,
+		Read:        false,
+		CreatedAt:   convert.ToPointer(time.Now().UTC().Round(time.Microsecond)),
+		UpdatedAt:   nil,
 	}
-
-	createdAt := time.Now().UTC().Round(time.Microsecond)
-
-	notification.ID = model.MustNewID(model.ResourceTypeNotification)
-	notification.Read = false
-	notification.CreatedAt = &createdAt
-	notification.UpdatedAt = nil
 
 	_, err := r.db.pool.Exec(ctx,
 		"INSERT INTO notifications (id, title, description, recipient, read, created_at) VALUES ($1, $2, $3, $4, $5, $6)",
 		notification.ID, notification.Title, notification.Description, notification.Recipient,
-		notification.Read, createdAt,
+		notification.Read, *notification.CreatedAt,
 	)
-
 	if err != nil {
-		return errors.Join(ErrNotificationCreate, err)
+		return nil, errors.Join(ErrNotificationCreate, err)
 	}
 
-	return nil
+	return notification, nil
 }
 
-func (r *PGNotificationRepository) Get(ctx context.Context, id, recipient model.ID) (*model.Notification, error) {
+func (r *PGNotificationRepository) Get(ctx context.Context, id, recipient model.ID) (*Notification, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.pg.NotificationRepository/Get")
 	defer span.End()
 
-	if err := id.Validate(); err != nil {
-		return nil, errors.Join(ErrNotificationRead, err)
-	}
-
-	if err := recipient.Validate(); err != nil {
-		return nil, errors.Join(ErrNotificationRead, err)
-	}
-
-	var n model.Notification
+	var n Notification
 	row := r.db.pool.QueryRow(ctx, "SELECT * FROM notifications WHERE id = $1 AND recipient = $2", id, recipient)
 	if err := row.Scan(&n.ID, &n.Title, &n.Description, &n.Recipient, &n.Read, &n.CreatedAt, &n.UpdatedAt); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -82,13 +97,9 @@ func (r *PGNotificationRepository) Get(ctx context.Context, id, recipient model.
 	return &n, nil
 }
 
-func (r *PGNotificationRepository) GetAllByRecipient(ctx context.Context, recipient model.ID, offset, limit int) ([]*model.Notification, error) {
+func (r *PGNotificationRepository) GetAllByRecipient(ctx context.Context, recipient model.ID, offset, limit int) ([]*Notification, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.pg.NotificationRepository/GetAllByRecipient")
 	defer span.End()
-
-	if err := recipient.Validate(); err != nil {
-		return nil, errors.Join(ErrNotificationRead, err)
-	}
 
 	rows, err := r.db.pool.Query(ctx,
 		"SELECT * FROM notifications WHERE recipient = $1 LIMIT $2 OFFSET $3",
@@ -99,10 +110,10 @@ func (r *PGNotificationRepository) GetAllByRecipient(ctx context.Context, recipi
 	}
 	defer rows.Close()
 
-	notifications := make([]*model.Notification, 0)
+	notifications := make([]*Notification, 0)
 
 	for rows.Next() {
-		var n model.Notification
+		var n Notification
 		if err := rows.Scan(&n.ID, &n.Title, &n.Description, &n.Recipient, &n.Read, &n.CreatedAt, &n.UpdatedAt); err != nil {
 			return nil, errors.Join(ErrNotificationRead, err)
 		}
@@ -112,22 +123,14 @@ func (r *PGNotificationRepository) GetAllByRecipient(ctx context.Context, recipi
 	return notifications, nil
 }
 
-func (r *PGNotificationRepository) Update(ctx context.Context, id, recipient model.ID, read bool) (*model.Notification, error) {
+func (r *PGNotificationRepository) Update(ctx context.Context, id, recipient model.ID, opts UpdateNotificationOpts) (*Notification, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.pg.NotificationRepository/Update")
 	defer span.End()
 
-	if err := id.Validate(); err != nil {
-		return nil, errors.Join(ErrNotificationUpdate, err)
-	}
-
-	if err := recipient.Validate(); err != nil {
-		return nil, errors.Join(ErrNotificationUpdate, err)
-	}
-
-	var n model.Notification
+	var n Notification
 	row := r.db.pool.QueryRow(ctx,
 		"UPDATE notifications SET read = $3, updated_at = timezone('utc', now()) WHERE id = $1 AND recipient = $2 RETURNING *",
-		id, recipient, read,
+		id, recipient, opts.Read,
 	)
 	if err := row.Scan(&n.ID, &n.Title, &n.Description, &n.Recipient, &n.Read, &n.CreatedAt, &n.UpdatedAt); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -142,14 +145,6 @@ func (r *PGNotificationRepository) Update(ctx context.Context, id, recipient mod
 func (r *PGNotificationRepository) Delete(ctx context.Context, id, recipient model.ID) error {
 	ctx, span := r.tracer.Start(ctx, "repository.pg.NotificationRepository/Delete")
 	defer span.End()
-
-	if err := id.Validate(); err != nil {
-		return errors.Join(ErrNotificationDelete, err)
-	}
-
-	if err := recipient.Validate(); err != nil {
-		return errors.Join(ErrNotificationDelete, err)
-	}
 
 	_, err := r.db.pool.Exec(ctx,
 		"DELETE FROM notifications WHERE id = $1 AND recipient = $2",
@@ -189,23 +184,23 @@ func clearNotificationGetAllByRecipient(ctx context.Context, r *redisBaseReposit
 	return clearNotificationsPattern(ctx, r, "GetAllByRecipient", recipient.String(), "*")
 }
 
-// CachedNotificationRepository implements caching on the
-// repository.NotificationRepository.
+// RedisCachedNotificationRepository implements caching on the
+// NotificationRepository.
 type RedisCachedNotificationRepository struct {
 	cacheRepo        *redisBaseRepository
 	notificationRepo NotificationRepository
 }
 
-func (r *RedisCachedNotificationRepository) Create(ctx context.Context, notification *model.Notification) error {
-	if err := clearNotificationGetAllByRecipient(ctx, r.cacheRepo, notification.Recipient); err != nil {
-		return err
+func (r *RedisCachedNotificationRepository) Create(ctx context.Context, opts CreateNotificationOpts) (*Notification, error) {
+	if err := clearNotificationGetAllByRecipient(ctx, r.cacheRepo, opts.Recipient); err != nil {
+		return nil, err
 	}
 
-	return r.notificationRepo.Create(ctx, notification)
+	return r.notificationRepo.Create(ctx, opts)
 }
 
-func (r *RedisCachedNotificationRepository) Get(ctx context.Context, id, recipient model.ID) (*model.Notification, error) {
-	var notification *model.Notification
+func (r *RedisCachedNotificationRepository) Get(ctx context.Context, id, recipient model.ID) (*Notification, error) {
+	var notification *Notification
 	var err error
 
 	key := composeCacheKey(model.ResourceTypeNotification.String(), id.String())
@@ -228,8 +223,8 @@ func (r *RedisCachedNotificationRepository) Get(ctx context.Context, id, recipie
 	return notification, nil
 }
 
-func (r *RedisCachedNotificationRepository) GetAllByRecipient(ctx context.Context, recipient model.ID, offset, limit int) ([]*model.Notification, error) {
-	var notifications []*model.Notification
+func (r *RedisCachedNotificationRepository) GetAllByRecipient(ctx context.Context, recipient model.ID, offset, limit int) ([]*Notification, error) {
+	var notifications []*Notification
 	var err error
 
 	key := composeCacheKey(model.ResourceTypeNotification.String(), "GetAllByRecipient", recipient.String(), offset, limit)
@@ -253,7 +248,7 @@ func (r *RedisCachedNotificationRepository) GetAllByRecipient(ctx context.Contex
 	return notifications, nil
 }
 
-func (r *RedisCachedNotificationRepository) Update(ctx context.Context, id, recipient model.ID, read bool) (*model.Notification, error) {
+func (r *RedisCachedNotificationRepository) Update(ctx context.Context, id, recipient model.ID, opts UpdateNotificationOpts) (*Notification, error) {
 	if err := clearNotificationsKey(ctx, r.cacheRepo, id); err != nil {
 		return nil, err
 	}
@@ -263,7 +258,7 @@ func (r *RedisCachedNotificationRepository) Update(ctx context.Context, id, reci
 		return nil, err
 	}
 
-	return r.notificationRepo.Update(ctx, id, recipient, read)
+	return r.notificationRepo.Update(ctx, id, recipient, opts)
 }
 
 func (r *RedisCachedNotificationRepository) Delete(ctx context.Context, id, recipient model.ID) error {

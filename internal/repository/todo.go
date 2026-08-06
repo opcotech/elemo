@@ -6,8 +6,10 @@ import (
 	"time"
 
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
+
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/convert"
+	"github.com/opcotech/elemo/internal/pkg/optional"
 )
 
 var (
@@ -17,23 +19,85 @@ var (
 	ErrTodoUpdate = errors.New("failed to update todo") // todo cannot be updated
 )
 
-//go:generate mockgen -source=todo.go -destination=../testutil/mock/todo_repo_gen.go -package=mock -mock_names "TodoRepository=TodoRepository"
+// Todo represents a todo persisted by the repository.
+type Todo struct {
+	ID          model.ID           `json:"id"`
+	Title       string             `json:"title"`
+	Description string             `json:"description"`
+	Priority    model.TodoPriority `json:"priority"`
+	Completed   bool               `json:"completed"`
+	OwnedBy     model.ID           `json:"owned_by"`
+	CreatedBy   model.ID           `json:"created_by"`
+	DueDate     *time.Time         `json:"due_date"`
+	CreatedAt   *time.Time         `json:"created_at"`
+	UpdatedAt   *time.Time         `json:"updated_at"`
+}
+
+// CreateTodoOpts holds the data required to create a todo.
+type CreateTodoOpts struct {
+	Title       string
+	Description string
+	Priority    model.TodoPriority
+	Completed   bool
+	OwnedBy     model.ID
+	CreatedBy   model.ID
+	DueDate     *time.Time
+}
+
+// UpdateTodoOpts holds the fields that can be updated on a todo.
+// Undefined fields (Defined == false) are left unchanged.
+type UpdateTodoOpts struct {
+	Title       optional.Optional[string]
+	Description optional.Optional[string]
+	Priority    optional.Optional[model.TodoPriority]
+	Completed   optional.Optional[bool]
+	DueDate     optional.Optional[time.Time]
+}
+
+// patch builds a Neo4j property map from defined optional fields.
+func (o UpdateTodoOpts) patch() map[string]any {
+	p := make(map[string]any)
+
+	if o.Title.Defined {
+		p["title"] = *o.Title.Value
+	}
+	if o.Description.Defined {
+		p["description"] = *o.Description.Value
+	}
+	if o.Priority.Defined {
+		p["priority"] = o.Priority.Value.String()
+	}
+	if o.Completed.Defined {
+		p["completed"] = *o.Completed.Value
+	}
+	if o.DueDate.Defined {
+		if o.DueDate.Value == nil {
+			p["due_date"] = nil
+		} else {
+			p["due_date"] = o.DueDate.Value.Format(time.RFC3339Nano)
+		}
+	}
+
+	return p
+}
+
+//go:generate mockgen -source=todo.go -destination=todo_mock_gen.go -package=repository -mock_names "TodoRepository=MockTodoRepository"
 type TodoRepository interface {
-	Create(ctx context.Context, todo *model.Todo) error
-	Get(ctx context.Context, id model.ID) (*model.Todo, error)
-	GetByOwner(ctx context.Context, ownerID model.ID, offset, limit int, completed *bool) ([]*model.Todo, error)
-	Update(ctx context.Context, id model.ID, patch map[string]any) (*model.Todo, error)
+	Create(ctx context.Context, opts CreateTodoOpts) (*Todo, error)
+	Get(ctx context.Context, id model.ID) (*Todo, error)
+	GetByOwner(ctx context.Context, ownerID model.ID, offset, limit int, completed *bool) ([]*Todo, error)
+	Update(ctx context.Context, id model.ID, opts UpdateTodoOpts) (*Todo, error)
 	Delete(ctx context.Context, id model.ID) error
 }
 
-// TodoRepository is a repository for managing todos.
+// Neo4jTodoRepository is a repository for managing todos.
 type Neo4jTodoRepository struct {
 	*neo4jBaseRepository
 }
 
-func (r *Neo4jTodoRepository) scan(tp, op, cp string) func(rec *neo4j.Record) (*model.Todo, error) {
-	return func(rec *neo4j.Record) (*model.Todo, error) {
-		todo := new(model.Todo)
+func (r *Neo4jTodoRepository) scan(tp, op, cp string) func(rec *neo4j.Record) (*Todo, error) {
+	return func(rec *neo4j.Record) (*Todo, error) {
+		todo := new(Todo)
 
 		val, _, err := neo4j.GetRecordValue[neo4j.Node](rec, tp)
 		if err != nil {
@@ -58,27 +122,28 @@ func (r *Neo4jTodoRepository) scan(tp, op, cp string) func(rec *neo4j.Record) (*
 		todo.OwnedBy, _ = model.NewIDFromString(ownerID, model.ResourceTypeUser.String())
 		todo.CreatedBy, _ = model.NewIDFromString(creatorID, model.ResourceTypeUser.String())
 
-		if err := todo.Validate(); err != nil {
-			return nil, err
-		}
-
 		return todo, nil
 	}
 }
 
-func (r *Neo4jTodoRepository) Create(ctx context.Context, todo *model.Todo) error {
+func (r *Neo4jTodoRepository) Create(ctx context.Context, opts CreateTodoOpts) (*Todo, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.TodoRepository/Create")
 	defer span.End()
 
-	if err := todo.Validate(); err != nil {
-		return errors.Join(ErrTodoCreate, err)
-	}
-
 	createdAt := convert.ToPointer(time.Now().UTC())
 
-	todo.ID = model.MustNewID(model.ResourceTypeTodo)
-	todo.CreatedAt = createdAt
-	todo.UpdatedAt = nil
+	todo := &Todo{
+		ID:          model.MustNewID(model.ResourceTypeTodo),
+		Title:       opts.Title,
+		Description: opts.Description,
+		Priority:    opts.Priority,
+		Completed:   opts.Completed,
+		OwnedBy:     opts.OwnedBy,
+		CreatedBy:   opts.CreatedBy,
+		DueDate:     opts.DueDate,
+		CreatedAt:   createdAt,
+		UpdatedAt:   nil,
+	}
 
 	cypher := `
 	MATCH (o:` + todo.OwnedBy.Label() + ` {id: $owner_id})
@@ -117,13 +182,13 @@ func (r *Neo4jTodoRepository) Create(ctx context.Context, todo *model.Todo) erro
 	}
 
 	if err := Neo4jExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
-		return errors.Join(err, ErrTodoCreate)
+		return nil, errors.Join(err, ErrTodoCreate)
 	}
 
-	return nil
+	return todo, nil
 }
 
-func (r *Neo4jTodoRepository) Get(ctx context.Context, id model.ID) (*model.Todo, error) {
+func (r *Neo4jTodoRepository) Get(ctx context.Context, id model.ID) (*Todo, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.TodoRepository/Get")
 	defer span.End()
 
@@ -145,7 +210,7 @@ func (r *Neo4jTodoRepository) Get(ctx context.Context, id model.ID) (*model.Todo
 	return todo, nil
 }
 
-func (r *Neo4jTodoRepository) GetByOwner(ctx context.Context, ownerID model.ID, offset, limit int, completed *bool) ([]*model.Todo, error) {
+func (r *Neo4jTodoRepository) GetByOwner(ctx context.Context, ownerID model.ID, offset, limit int, completed *bool) ([]*Todo, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.TodoRepository/GetByOwner")
 	defer span.End()
 
@@ -172,7 +237,7 @@ func (r *Neo4jTodoRepository) GetByOwner(ctx context.Context, ownerID model.ID, 
 	return todos, nil
 }
 
-func (r *Neo4jTodoRepository) Update(ctx context.Context, id model.ID, patch map[string]any) (*model.Todo, error) {
+func (r *Neo4jTodoRepository) Update(ctx context.Context, id model.ID, opts UpdateTodoOpts) (*Todo, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.TodoRepository/Update")
 	defer span.End()
 
@@ -186,7 +251,7 @@ func (r *Neo4jTodoRepository) Update(ctx context.Context, id model.ID, patch map
 
 	params := map[string]any{
 		"id":    id.String(),
-		"patch": patch,
+		"patch": opts.patch(),
 	}
 
 	todo, err := Neo4jExecuteWriteAndReadSingle(ctx, r.db, cypher, params, r.scan("t", "o", "c"))
@@ -225,24 +290,23 @@ func NewNeo4jTodoRepository(opts ...Neo4jRepositoryOption) (*Neo4jTodoRepository
 	}, nil
 }
 
-// CachedTodoRepository is implements caching on the
-// repository.TodoRepository.
+// RedisCachedTodoRepository implements caching on the TodoRepository.
 type RedisCachedTodoRepository struct {
 	cacheRepo *redisBaseRepository
 	todoRepo  TodoRepository
 }
 
-func (r *RedisCachedTodoRepository) Create(ctx context.Context, todo *model.Todo) error {
-	pattern := composeCacheKey(model.ResourceTypeTodo.String(), "GetByOwner", todo.OwnedBy.String(), "*")
+func (r *RedisCachedTodoRepository) Create(ctx context.Context, opts CreateTodoOpts) (*Todo, error) {
+	pattern := composeCacheKey(model.ResourceTypeTodo.String(), "GetByOwner", opts.OwnedBy.String(), "*")
 	if err := r.cacheRepo.DeletePattern(ctx, pattern); err != nil {
-		return err
+		return nil, err
 	}
 
-	return r.todoRepo.Create(ctx, todo)
+	return r.todoRepo.Create(ctx, opts)
 }
 
-func (r *RedisCachedTodoRepository) Get(ctx context.Context, id model.ID) (*model.Todo, error) {
-	var todo *model.Todo
+func (r *RedisCachedTodoRepository) Get(ctx context.Context, id model.ID) (*Todo, error) {
+	var todo *Todo
 	var err error
 
 	key := composeCacheKey(model.ResourceTypeTodo.String(), id.String())
@@ -265,8 +329,8 @@ func (r *RedisCachedTodoRepository) Get(ctx context.Context, id model.ID) (*mode
 	return todo, nil
 }
 
-func (r *RedisCachedTodoRepository) GetByOwner(ctx context.Context, ownerID model.ID, offset, limit int, completed *bool) ([]*model.Todo, error) {
-	var todos []*model.Todo
+func (r *RedisCachedTodoRepository) GetByOwner(ctx context.Context, ownerID model.ID, offset, limit int, completed *bool) ([]*Todo, error) {
+	var todos []*Todo
 	var err error
 
 	key := composeCacheKey(model.ResourceTypeTodo.String(), "GetByOwner", ownerID.String(), offset, limit, completed)
@@ -290,11 +354,8 @@ func (r *RedisCachedTodoRepository) GetByOwner(ctx context.Context, ownerID mode
 	return todos, nil
 }
 
-func (r *RedisCachedTodoRepository) Update(ctx context.Context, id model.ID, patch map[string]any) (*model.Todo, error) {
-	var todo *model.Todo
-	var err error
-
-	todo, err = r.todoRepo.Update(ctx, id, patch)
+func (r *RedisCachedTodoRepository) Update(ctx context.Context, id model.ID, opts UpdateTodoOpts) (*Todo, error) {
+	todo, err := r.todoRepo.Update(ctx, id, opts)
 	if err != nil {
 		return nil, err
 	}

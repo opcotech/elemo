@@ -9,7 +9,9 @@ import (
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg"
 	"github.com/opcotech/elemo/internal/pkg/auth"
+	"github.com/opcotech/elemo/internal/pkg/optional"
 	"github.com/opcotech/elemo/internal/pkg/password"
+	"github.com/opcotech/elemo/internal/pkg/validate"
 	"github.com/opcotech/elemo/internal/repository"
 )
 
@@ -19,6 +21,103 @@ const (
 	UserInvitationDeadline    = 7 * 24 * time.Hour
 )
 
+// User represents a user returned by the service.
+type User struct {
+	ID          model.ID
+	Username    string
+	Email       string
+	Password    string
+	Status      model.UserStatus
+	FirstName   string
+	LastName    string
+	Picture     string
+	Title       string
+	Bio         string
+	Phone       string
+	Address     string
+	Links       []string
+	Languages   []model.Language
+	Documents   []model.ID
+	Permissions []model.ID
+	CreatedAt   *time.Time
+	UpdatedAt   *time.Time
+}
+
+// CreateUserOpts holds the data required to create a user.
+type CreateUserOpts struct {
+	Username  string           `json:"username" validate:"required,lowercase,min=3,max=50,containsany=0123456789abcdefghijklmnopqrstuvwxyz-_"`
+	Email     string           `json:"email" validate:"required,email"`
+	Password  string           `json:"password" validate:"required,min=8,max=64"`
+	Status    model.UserStatus `json:"status" validate:"omitempty,min=1,max=4"`
+	FirstName string           `json:"first_name" validate:"required,min=1,max=50"`
+	LastName  string           `json:"last_name" validate:"required,min=1,max=50"`
+	Picture   string           `json:"picture" validate:"omitempty,url"`
+	Title     string           `json:"title" validate:"omitempty,min=3,max=50"`
+	Bio       string           `json:"bio" validate:"omitempty,min=10,max=500"`
+	Phone     string           `json:"phone" validate:"omitempty,min=7,max=16"`
+	Address   string           `json:"address" validate:"omitempty,min=3,max=500"`
+	Links     []string         `json:"links" validate:"omitempty,dive,url"`
+	Languages []model.Language `json:"languages" validate:"omitempty,dive"`
+}
+
+// Validate validates the create options.
+func (o *CreateUserOpts) Validate() error {
+	if o.Status == 0 {
+		o.Status = model.UserStatusActive
+	}
+	if err := validate.Struct(o); err != nil {
+		return errors.Join(model.ErrInvalidUserDetails, err)
+	}
+	return nil
+}
+
+// UpdateUserOpts holds the fields that can be updated on a user.
+// Undefined fields (Defined == false) are left unchanged.
+type UpdateUserOpts struct {
+	Username  optional.Optional[string]
+	Email     optional.Optional[string]
+	Password  optional.Optional[string]
+	Status    optional.Optional[model.UserStatus]
+	FirstName optional.Optional[string]
+	LastName  optional.Optional[string]
+	Picture   optional.Optional[string]
+	Title     optional.Optional[string]
+	Bio       optional.Optional[string]
+	Phone     optional.Optional[string]
+	Address   optional.Optional[string]
+	Links     optional.Optional[[]string]
+	Languages optional.Optional[[]model.Language]
+}
+
+// UserToken represents a user token returned by the service.
+type UserToken struct {
+	ID        model.ID
+	UserID    model.ID
+	SentTo    string
+	Token     string
+	Context   model.UserTokenContext
+	CreatedAt *time.Time
+}
+
+// CreateUserTokenOpts holds the data required to create a user token.
+type CreateUserTokenOpts struct {
+	UserID  model.ID               `json:"user_id" validate:"required"`
+	SentTo  string                 `json:"sent_to" validate:"required,email"`
+	Token   string                 `json:"token" validate:"required,min=60,max=72"`
+	Context model.UserTokenContext `json:"context" validate:"required,min=1,max=3"`
+}
+
+// Validate validates the create token options.
+func (o *CreateUserTokenOpts) Validate() error {
+	if err := validate.Struct(o); err != nil {
+		return errors.Join(model.ErrInvalidUserToken, err)
+	}
+	if err := o.UserID.Validate(); err != nil {
+		return errors.Join(model.ErrInvalidUserToken, err)
+	}
+	return nil
+}
+
 // UserService serves the business logic of interacting with users in the
 // system.
 type UserService interface {
@@ -26,20 +125,20 @@ type UserService interface {
 	// hashed before being stored in the database. Make sure to hash the
 	// password before trying to create the user. If the user already exists,
 	// an error is returned.
-	Create(ctx context.Context, user *model.User) error
+	Create(ctx context.Context, opts CreateUserOpts) (*User, error)
 	// Get returns a user by its ID. If the user does not exist, an error is
 	// returned.
-	Get(ctx context.Context, id model.ID) (*model.User, error)
+	Get(ctx context.Context, id model.ID) (*User, error)
 	// GetByEmail returns a user by their email address. If the user does not
 	// exist, an error is returned.
-	GetByEmail(ctx context.Context, email string) (*model.User, error)
+	GetByEmail(ctx context.Context, email string) (*User, error)
 	// GetAll returns all users in the system. The offset and limit parameters
 	// are used to paginate the results. If the offset is greater than the
 	// number of users in the system, an empty slice is returned.
-	GetAll(ctx context.Context, offset, limit int) ([]*model.User, error)
+	GetAll(ctx context.Context, offset, limit int) ([]*User, error)
 	// Update updates a user in the system. If the user does not exist, an
 	// error is returned.
-	Update(ctx context.Context, id model.ID, patch map[string]any) (*model.User, error)
+	Update(ctx context.Context, id model.ID, opts UpdateUserOpts) (*User, error)
 	// Delete updates the user's status to delete and sets the password to
 	// pkg.UnusablePassword. This method does not actually delete the user from
 	// the database to preserve the user's history and relations unless the
@@ -62,39 +161,88 @@ type userService struct {
 	*baseService
 }
 
-func (s *userService) Create(ctx context.Context, user *model.User) error {
+func userFromRepository(u *repository.User) *User {
+	if u == nil {
+		return nil
+	}
+	return &User{
+		ID:          u.ID,
+		Username:    u.Username,
+		Email:       u.Email,
+		Password:    u.Password,
+		Status:      u.Status,
+		FirstName:   u.FirstName,
+		LastName:    u.LastName,
+		Picture:     u.Picture,
+		Title:       u.Title,
+		Bio:         u.Bio,
+		Phone:       u.Phone,
+		Address:     u.Address,
+		Links:       u.Links,
+		Languages:   u.Languages,
+		Documents:   u.Documents,
+		Permissions: u.Permissions,
+		CreatedAt:   u.CreatedAt,
+		UpdatedAt:   u.UpdatedAt,
+	}
+}
+
+func usersFromRepository(users []*repository.User) []*User {
+	out := make([]*User, len(users))
+	for i, u := range users {
+		out[i] = userFromRepository(u)
+	}
+	return out
+}
+
+func (s *userService) Create(ctx context.Context, opts CreateUserOpts) (*User, error) {
 	ctx, span := s.tracer.Start(ctx, "service.userService/Create")
 	defer span.End()
 
 	if expired, err := s.licenseService.Expired(ctx); expired || err != nil {
-		return errors.Join(ErrUserCreate, license.ErrLicenseExpired)
+		return nil, errors.Join(ErrUserCreate, license.ErrLicenseExpired)
 	}
 
-	if err := user.Validate(); err != nil {
-		return errors.Join(ErrUserCreate, err)
+	if err := opts.Validate(); err != nil {
+		return nil, errors.Join(ErrUserCreate, err)
 	}
 
 	if !s.permissionService.CtxUserHasPermission(ctx, model.MustNewNilID(model.ResourceTypeUser), model.PermissionKindCreate) {
-		return errors.Join(ErrUserCreate, ErrNoPermission)
+		return nil, errors.Join(ErrUserCreate, ErrNoPermission)
 	}
 
 	// If the newly created user is not active, e.g. a company is migrating
 	// ex-employees, do not check the license quota as that only counts
 	// against active users.
-	if user.Status == model.UserStatusActive {
+	if opts.Status == model.UserStatusActive {
 		if ok, err := s.licenseService.WithinThreshold(ctx, license.QuotaUsers); !ok || err != nil {
-			return errors.Join(ErrUserCreate, ErrQuotaExceeded)
+			return nil, errors.Join(ErrUserCreate, ErrQuotaExceeded)
 		}
 	}
 
-	if err := s.userRepo.Create(ctx, user); err != nil {
-		return errors.Join(ErrUserCreate, err)
+	user, err := s.userRepo.Create(ctx, repository.CreateUserOpts{
+		Username:  opts.Username,
+		Email:     opts.Email,
+		Password:  opts.Password,
+		Status:    opts.Status,
+		FirstName: opts.FirstName,
+		LastName:  opts.LastName,
+		Picture:   opts.Picture,
+		Title:     opts.Title,
+		Bio:       opts.Bio,
+		Phone:     opts.Phone,
+		Address:   opts.Address,
+		Links:     opts.Links,
+		Languages: opts.Languages,
+	})
+	if err != nil {
+		return nil, errors.Join(ErrUserCreate, err)
 	}
 
-	return nil
+	return userFromRepository(user), nil
 }
 
-func (s *userService) Get(ctx context.Context, id model.ID) (*model.User, error) {
+func (s *userService) Get(ctx context.Context, id model.ID) (*User, error) {
 	ctx, span := s.tracer.Start(ctx, "service.userService/Get")
 	defer span.End()
 
@@ -107,10 +255,10 @@ func (s *userService) Get(ctx context.Context, id model.ID) (*model.User, error)
 		return nil, errors.Join(ErrUserGet, err)
 	}
 
-	return user, nil
+	return userFromRepository(user), nil
 }
 
-func (s *userService) GetByEmail(ctx context.Context, email string) (*model.User, error) {
+func (s *userService) GetByEmail(ctx context.Context, email string) (*User, error) {
 	ctx, span := s.tracer.Start(ctx, "service.userService/GetByEmail")
 	defer span.End()
 
@@ -123,10 +271,10 @@ func (s *userService) GetByEmail(ctx context.Context, email string) (*model.User
 		return nil, errors.Join(ErrUserGet, err)
 	}
 
-	return user, nil
+	return userFromRepository(user), nil
 }
 
-func (s *userService) GetAll(ctx context.Context, offset, limit int) ([]*model.User, error) {
+func (s *userService) GetAll(ctx context.Context, offset, limit int) ([]*User, error) {
 	ctx, span := s.tracer.Start(ctx, "service.userService/GetAll")
 	defer span.End()
 
@@ -139,10 +287,10 @@ func (s *userService) GetAll(ctx context.Context, offset, limit int) ([]*model.U
 		return nil, errors.Join(ErrUserGetAll, err)
 	}
 
-	return users, nil
+	return usersFromRepository(users), nil
 }
 
-func (s *userService) Update(ctx context.Context, id model.ID, patch map[string]any) (*model.User, error) {
+func (s *userService) Update(ctx context.Context, id model.ID, opts UpdateUserOpts) (*User, error) {
 	ctx, span := s.tracer.Start(ctx, "service.userService/Update")
 	defer span.End()
 
@@ -166,18 +314,32 @@ func (s *userService) Update(ctx context.Context, id model.ID, patch map[string]
 	// Check if the user is being activated is within the license quota. It
 	// could be a possible loophole to activate a previously deleted user to
 	// bypass the quota check.
-	if patchStatus, ok := patch["status"]; ok && patchStatus == model.UserStatusActive.String() {
+	if opts.Status.Defined && opts.Status.Value != nil && *opts.Status.Value == model.UserStatusActive {
 		if ok, err := s.licenseService.WithinThreshold(ctx, license.QuotaUsers); !ok || err != nil {
 			return nil, errors.Join(ErrUserUpdate, ErrQuotaExceeded)
 		}
 	}
 
-	user, err := s.userRepo.Update(ctx, id, patch)
+	user, err := s.userRepo.Update(ctx, id, repository.UpdateUserOpts{
+		Username:  opts.Username,
+		Email:     opts.Email,
+		Password:  opts.Password,
+		Status:    opts.Status,
+		FirstName: opts.FirstName,
+		LastName:  opts.LastName,
+		Picture:   opts.Picture,
+		Title:     opts.Title,
+		Bio:       opts.Bio,
+		Phone:     opts.Phone,
+		Address:   opts.Address,
+		Links:     opts.Links,
+		Languages: opts.Languages,
+	})
 	if err != nil {
 		return nil, errors.Join(ErrUserUpdate, err)
 	}
 
-	return user, nil
+	return userFromRepository(user), nil
 }
 
 func (s *userService) Delete(ctx context.Context, id model.ID, force bool) error {
@@ -206,12 +368,10 @@ func (s *userService) Delete(ctx context.Context, id model.ID, force bool) error
 			return errors.Join(ErrUserDelete, err)
 		}
 	} else {
-		patch := map[string]any{
-			"status":   model.UserStatusDeleted.String(),
-			"password": password.UnusablePassword,
-		}
-
-		if _, err := s.userRepo.Update(ctx, id, patch); err != nil {
+		if _, err := s.userRepo.Update(ctx, id, repository.UpdateUserOpts{
+			Status:   optional.Some(model.UserStatusDeleted),
+			Password: optional.Some(password.UnusablePassword),
+		}); err != nil {
 			return errors.Join(ErrUserDelete, err)
 		}
 	}
@@ -244,12 +404,22 @@ func (s *userService) CreateToken(ctx context.Context, id model.ID, sendTo strin
 		return "", errors.Join(ErrUserCreateUserToken, err)
 	}
 
-	newToken, err := model.NewUserToken(id, sendTo, secret, tokenContext)
-	if err != nil {
+	createOpts := CreateUserTokenOpts{
+		UserID:  id,
+		SentTo:  sendTo,
+		Token:   secret,
+		Context: tokenContext,
+	}
+	if err := createOpts.Validate(); err != nil {
 		return "", errors.Join(ErrUserCreateUserToken, err)
 	}
 
-	if err := s.userTokenRepo.Create(ctx, newToken); err != nil {
+	if _, err := s.userTokenRepo.Create(ctx, repository.CreateUserTokenOpts{
+		UserID:  createOpts.UserID,
+		SentTo:  createOpts.SentTo,
+		Token:   createOpts.Token,
+		Context: createOpts.Context,
+	}); err != nil {
 		return "", errors.Join(ErrUserCreateUserToken, err)
 	}
 

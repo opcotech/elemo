@@ -28,10 +28,11 @@ type PermissionServiceIntegrationTestSuite struct {
 	permissionService   service.PermissionService
 	emailService        service.EmailService
 
-	owner        *model.User
-	guest        *model.User
-	organization *model.Organization
-	permission   *model.Permission
+	owner        *repository.User
+	guest        *repository.User
+	organization *service.Organization
+	permission   *service.Permission
+	createOpts   service.CreatePermissionOpts
 
 	ctx context.Context
 }
@@ -55,11 +56,9 @@ func (s *PermissionServiceIntegrationTestSuite) SetupSuite() {
 	)
 	s.Require().NoError(err)
 
-	// Create a mock email sender for integration tests
 	ctrl := gomock.NewController(s.T())
 	emailSender := mock.NewEmailSender(ctrl)
 
-	// Create a real EmailService with mock sender
 	smtpConf := &config.SMTPConfig{
 		ClientURL:      "http://localhost:3000",
 		SupportAddress: "support@example.com",
@@ -79,19 +78,32 @@ func (s *PermissionServiceIntegrationTestSuite) SetupSuite() {
 }
 
 func (s *PermissionServiceIntegrationTestSuite) SetupTest() {
-	s.owner = testModel.NewUser()
-	s.Require().NoError(s.UserRepo.Create(context.Background(), s.owner))
+	var err error
+	s.owner, err = s.UserRepo.Create(context.Background(), testModel.NewCreateUserOpts())
+	s.Require().NoError(err)
 
-	s.guest = testModel.NewUser()
-	s.Require().NoError(s.UserRepo.Create(context.Background(), s.guest))
+	s.guest, err = s.UserRepo.Create(context.Background(), testModel.NewCreateUserOpts())
+	s.Require().NoError(err)
 
 	s.ctx = context.WithValue(context.Background(), pkg.CtxKeyUserID, s.owner.ID)
 	s.Require().NoError(testRepo.MakeUserSystemOwner(s.owner.ID, s.Neo4jDB))
 
-	s.organization = testModel.NewOrganization()
-	s.Require().NoError(s.organizationService.Create(s.ctx, s.owner.ID, s.organization))
+	repoOrgOpts := testModel.NewCreateOrganizationOpts(s.owner.ID)
+	s.organization, err = s.organizationService.Create(s.ctx, s.owner.ID, service.CreateOrganizationOpts{
+		Name:    repoOrgOpts.Name,
+		Email:   repoOrgOpts.Email,
+		Logo:    repoOrgOpts.Logo,
+		Website: repoOrgOpts.Website,
+		Status:  repoOrgOpts.Status,
+	})
+	s.Require().NoError(err)
 
-	s.permission = testModel.NewPermission(s.guest.ID, s.organization.ID, model.PermissionKindRead)
+	s.createOpts = service.CreatePermissionOpts{
+		Subject: s.guest.ID,
+		Target:  s.organization.ID,
+		Kind:    model.PermissionKindRead,
+	}
+	s.permission = nil
 }
 
 func (s *PermissionServiceIntegrationTestSuite) TearDownTest() {
@@ -104,58 +116,73 @@ func (s *PermissionServiceIntegrationTestSuite) TearDownSuite() {
 }
 
 func (s *PermissionServiceIntegrationTestSuite) TestCreate() {
-	err := s.permissionService.Create(s.ctx, s.permission)
+	permission, err := s.permissionService.Create(s.ctx, s.createOpts)
 	s.Require().NoError(err)
-	s.Require().NotEmpty(s.permission.ID)
-	s.Assert().NotNil(s.permission.CreatedAt)
-	s.Assert().Nil(s.permission.UpdatedAt)
+	s.permission = permission
+
+	s.Require().NotEmpty(permission.ID)
+	s.Assert().NotNil(permission.CreatedAt)
+	s.Assert().Nil(permission.UpdatedAt)
 }
 
 func (s *PermissionServiceIntegrationTestSuite) TestCtxUserCreate() {
 	ctx := context.WithValue(context.Background(), pkg.CtxKeyUserID, s.guest.ID)
-	err := s.permissionService.CtxUserCreate(ctx, s.permission)
+	_, err := s.permissionService.CtxUserCreate(ctx, s.createOpts)
 	s.Require().ErrorIs(err, service.ErrNoPermission)
 
 	ctx = context.WithValue(context.Background(), pkg.CtxKeyUserID, s.owner.ID)
-	err = s.permissionService.CtxUserCreate(ctx, s.permission)
+	permission, err := s.permissionService.CtxUserCreate(ctx, s.createOpts)
 	s.Require().NoError(err)
+	s.permission = permission
 }
 
 func (s *PermissionServiceIntegrationTestSuite) TestGetBySubject() {
-	s.Require().NoError(s.permissionService.Create(s.ctx, s.permission))
+	permission, err := s.permissionService.Create(s.ctx, s.createOpts)
+	s.Require().NoError(err)
+	s.permission = permission
 
 	permissions, err := s.permissionService.GetBySubject(s.ctx, s.guest.ID)
 	s.Require().NoError(err)
 	s.Assert().Len(permissions, 1)
-	s.Assert().Equal(s.permission.ID, permissions[0].ID)
+	s.Assert().Equal(permission.ID, permissions[0].ID)
 }
 
 func (s *PermissionServiceIntegrationTestSuite) TestGetByTarget() {
-	s.Require().NoError(s.permissionService.Create(s.ctx, s.permission))
+	permission, err := s.permissionService.Create(s.ctx, s.createOpts)
+	s.Require().NoError(err)
+	s.permission = permission
 
 	permissions, err := s.permissionService.GetByTarget(s.ctx, s.organization.ID)
 	s.Require().NoError(err)
 	s.Assert().Len(permissions, 2) // +1 for organization owner permission
 
 	userIDs := make([]model.ID, 0, len(permissions))
-	for _, permission := range permissions {
-		userIDs = append(userIDs, permission.Subject)
+	for _, p := range permissions {
+		userIDs = append(userIDs, p.Subject)
 	}
 
 	s.Assert().ElementsMatch([]model.ID{s.owner.ID, s.guest.ID}, userIDs)
 }
 
 func (s *PermissionServiceIntegrationTestSuite) TestGetBySubjectAndTarget() {
-	s.Require().NoError(s.permissionService.Create(s.ctx, s.permission))
+	permission, err := s.permissionService.Create(s.ctx, s.createOpts)
+	s.Require().NoError(err)
+	s.permission = permission
 
-	// Create an organization for the guest user
-	s.Require().NoError(s.organizationService.Create(s.ctx, s.guest.ID, testModel.NewOrganization()))
+	repoOrgOpts := testModel.NewCreateOrganizationOpts(s.guest.ID)
+	_, err = s.organizationService.Create(s.ctx, s.guest.ID, service.CreateOrganizationOpts{
+		Name:    repoOrgOpts.Name,
+		Email:   repoOrgOpts.Email,
+		Logo:    repoOrgOpts.Logo,
+		Website: repoOrgOpts.Website,
+		Status:  repoOrgOpts.Status,
+	})
+	s.Require().NoError(err)
 
-	// Check for specific subject and target permissions
 	permissions, err := s.permissionService.GetBySubjectAndTarget(s.ctx, s.guest.ID, s.organization.ID)
 	s.Require().NoError(err)
 	s.Assert().Len(permissions, 1)
-	s.Assert().Equal(s.permission.ID, permissions[0].ID)
+	s.Assert().Equal(permission.ID, permissions[0].ID)
 }
 
 func (s *PermissionServiceIntegrationTestSuite) TestHasAnyRelation() {
@@ -163,7 +190,9 @@ func (s *PermissionServiceIntegrationTestSuite) TestHasAnyRelation() {
 	s.Require().NoError(err)
 	s.Assert().False(hasRelation)
 
-	s.Require().NoError(s.permissionService.Create(s.ctx, s.permission))
+	permission, err := s.permissionService.Create(s.ctx, s.createOpts)
+	s.Require().NoError(err)
+	s.permission = permission
 
 	hasRelation, err = s.permissionService.HasAnyRelation(s.ctx, s.guest.ID, s.organization.ID)
 	s.Require().NoError(err)
@@ -176,7 +205,9 @@ func (s *PermissionServiceIntegrationTestSuite) TestCtxUserHasAnyRelation() {
 	hasRelation := s.permissionService.CtxUserHasAnyRelation(ctx, s.organization.ID)
 	s.Assert().False(hasRelation)
 
-	s.Require().NoError(s.permissionService.Create(ctx, s.permission))
+	permission, err := s.permissionService.Create(ctx, s.createOpts)
+	s.Require().NoError(err)
+	s.permission = permission
 
 	hasRelation = s.permissionService.CtxUserHasAnyRelation(ctx, s.organization.ID)
 	s.Assert().True(hasRelation)
@@ -207,24 +238,25 @@ func (s *PermissionServiceIntegrationTestSuite) TestCtxUserHasSystemRole() {
 }
 
 func (s *PermissionServiceIntegrationTestSuite) TestHasPermission() {
-	s.Require().NoError(s.permissionService.Create(s.ctx, s.permission))
+	permission, err := s.permissionService.Create(s.ctx, s.createOpts)
+	s.Require().NoError(err)
+	s.permission = permission
 
 	tests := []struct {
-		userID  model.ID
-		kind    model.PermissionKind
-		want    bool
-		wantErr bool
+		userID model.ID
+		kind   model.PermissionKind
+		want   bool
 	}{
-		{s.guest.ID, model.PermissionKindAll, false, false},
-		{s.guest.ID, model.PermissionKindCreate, false, false},
-		{s.guest.ID, model.PermissionKindRead, true, false},
-		{s.guest.ID, model.PermissionKindWrite, false, false},
-		{s.guest.ID, model.PermissionKindDelete, false, false},
-		{s.owner.ID, model.PermissionKindAll, true, false},
-		{s.owner.ID, model.PermissionKindCreate, true, false},
-		{s.owner.ID, model.PermissionKindRead, true, false},
-		{s.owner.ID, model.PermissionKindWrite, true, false},
-		{s.owner.ID, model.PermissionKindDelete, true, false},
+		{s.guest.ID, model.PermissionKindAll, false},
+		{s.guest.ID, model.PermissionKindCreate, false},
+		{s.guest.ID, model.PermissionKindRead, true},
+		{s.guest.ID, model.PermissionKindWrite, false},
+		{s.guest.ID, model.PermissionKindDelete, false},
+		{s.owner.ID, model.PermissionKindAll, true},
+		{s.owner.ID, model.PermissionKindCreate, true},
+		{s.owner.ID, model.PermissionKindRead, true},
+		{s.owner.ID, model.PermissionKindWrite, true},
+		{s.owner.ID, model.PermissionKindDelete, true},
 	}
 
 	for _, tt := range tests {
@@ -235,24 +267,25 @@ func (s *PermissionServiceIntegrationTestSuite) TestHasPermission() {
 }
 
 func (s *PermissionServiceIntegrationTestSuite) TestCtxUserHasPermission() {
-	s.Require().NoError(s.permissionService.Create(s.ctx, s.permission))
+	permission, err := s.permissionService.Create(s.ctx, s.createOpts)
+	s.Require().NoError(err)
+	s.permission = permission
 
 	tests := []struct {
-		userID  model.ID
-		kind    model.PermissionKind
-		want    bool
-		wantErr bool
+		userID model.ID
+		kind   model.PermissionKind
+		want   bool
 	}{
-		{s.guest.ID, model.PermissionKindAll, false, false},
-		{s.guest.ID, model.PermissionKindCreate, false, false},
-		{s.guest.ID, model.PermissionKindRead, true, false},
-		{s.guest.ID, model.PermissionKindWrite, false, false},
-		{s.guest.ID, model.PermissionKindDelete, false, false},
-		{s.owner.ID, model.PermissionKindAll, true, false},
-		{s.owner.ID, model.PermissionKindCreate, true, false},
-		{s.owner.ID, model.PermissionKindRead, true, false},
-		{s.owner.ID, model.PermissionKindWrite, true, false},
-		{s.owner.ID, model.PermissionKindDelete, true, false},
+		{s.guest.ID, model.PermissionKindAll, false},
+		{s.guest.ID, model.PermissionKindCreate, false},
+		{s.guest.ID, model.PermissionKindRead, true},
+		{s.guest.ID, model.PermissionKindWrite, false},
+		{s.guest.ID, model.PermissionKindDelete, false},
+		{s.owner.ID, model.PermissionKindAll, true},
+		{s.owner.ID, model.PermissionKindCreate, true},
+		{s.owner.ID, model.PermissionKindRead, true},
+		{s.owner.ID, model.PermissionKindWrite, true},
+		{s.owner.ID, model.PermissionKindDelete, true},
 	}
 
 	for _, tt := range tests {
@@ -263,48 +296,56 @@ func (s *PermissionServiceIntegrationTestSuite) TestCtxUserHasPermission() {
 }
 
 func (s *PermissionServiceIntegrationTestSuite) TestUpdate() {
-	s.Require().NoError(s.permissionService.Create(s.ctx, s.permission))
+	permission, err := s.permissionService.Create(s.ctx, s.createOpts)
+	s.Require().NoError(err)
+	s.permission = permission
 
-	updated, err := s.permissionService.Update(s.ctx, s.permission.ID, model.PermissionKindWrite)
+	updated, err := s.permissionService.Update(s.ctx, permission.ID, model.PermissionKindWrite)
 	s.Require().NoError(err)
 	s.Require().Equal(model.PermissionKindWrite, updated.Kind)
 }
 
 func (s *PermissionServiceIntegrationTestSuite) TestCtxUserUpdate() {
-	s.Require().NoError(s.permissionService.Create(s.ctx, s.permission))
+	permission, err := s.permissionService.Create(s.ctx, s.createOpts)
+	s.Require().NoError(err)
+	s.permission = permission
 
 	ctx := context.WithValue(context.Background(), pkg.CtxKeyUserID, s.guest.ID)
-	_, err := s.permissionService.CtxUserUpdate(ctx, s.permission.ID, model.PermissionKindWrite)
+	_, err = s.permissionService.CtxUserUpdate(ctx, permission.ID, model.PermissionKindWrite)
 	s.Require().ErrorIs(err, service.ErrNoPermission)
 
 	ctx = context.WithValue(context.Background(), pkg.CtxKeyUserID, s.owner.ID)
-	updated, err := s.permissionService.CtxUserUpdate(ctx, s.permission.ID, model.PermissionKindWrite)
+	updated, err := s.permissionService.CtxUserUpdate(ctx, permission.ID, model.PermissionKindWrite)
 	s.Require().NoError(err)
 	s.Require().Equal(model.PermissionKindWrite, updated.Kind)
 }
 
 func (s *PermissionServiceIntegrationTestSuite) TestDelete() {
-	s.Require().NoError(s.permissionService.Create(s.ctx, s.permission))
+	permission, err := s.permissionService.Create(s.ctx, s.createOpts)
+	s.Require().NoError(err)
+	s.permission = permission
 
-	_, err := s.permissionService.Get(s.ctx, s.permission.ID)
+	_, err = s.permissionService.Get(s.ctx, permission.ID)
 	s.Require().NoError(err)
 
-	err = s.permissionService.Delete(s.ctx, s.permission.ID)
+	err = s.permissionService.Delete(s.ctx, permission.ID)
 	s.Require().NoError(err)
 
-	_, err = s.permissionService.Get(s.ctx, s.permission.ID)
+	_, err = s.permissionService.Get(s.ctx, permission.ID)
 	s.Require().ErrorIs(err, repository.ErrNotFound)
 }
 
 func (s *PermissionServiceIntegrationTestSuite) TestCtxUserDelete() {
-	s.Require().NoError(s.permissionService.Create(s.ctx, s.permission))
+	permission, err := s.permissionService.Create(s.ctx, s.createOpts)
+	s.Require().NoError(err)
+	s.permission = permission
 
 	ctx := context.WithValue(context.Background(), pkg.CtxKeyUserID, s.guest.ID)
-	err := s.permissionService.CtxUserDelete(ctx, s.permission.ID)
+	err = s.permissionService.CtxUserDelete(ctx, permission.ID)
 	s.Require().ErrorIs(err, service.ErrNoPermission)
 
 	ctx = context.WithValue(context.Background(), pkg.CtxKeyUserID, s.owner.ID)
-	err = s.permissionService.CtxUserDelete(ctx, s.permission.ID)
+	err = s.permissionService.CtxUserDelete(ctx, permission.ID)
 	s.Require().NoError(err)
 }
 

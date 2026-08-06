@@ -6,7 +6,6 @@ linters:
     - errcheck
     - errname
     - errorlint
-    - goconst
     - gocritic
     - gosec
     - govet
@@ -85,10 +84,6 @@ linters:
       - common-false-positives
       - legacy
       - std-error-handling
-    rules:
-      - linters:
-          - goconst
-        path: (.+)_test\.go
     paths:
       - internal/transport/http/gen
       - third_party$

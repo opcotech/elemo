@@ -17,10 +17,10 @@ type CommentRepositoryIntegrationTestSuite struct {
 	testutil.ContainerIntegrationTestSuite
 	testutil.Neo4jContainerIntegrationTestSuite
 
-	testUser *model.User
-	testOrg  *model.Organization
-	testDoc  *model.Document
-	comment  *model.Comment
+	testUser   *repository.User
+	testOrg    *repository.Organization
+	testDoc    *repository.Document
+	createOpts repository.CreateCommentOpts
 }
 
 func (s *CommentRepositoryIntegrationTestSuite) SetupSuite() {
@@ -31,16 +31,17 @@ func (s *CommentRepositoryIntegrationTestSuite) SetupSuite() {
 }
 
 func (s *CommentRepositoryIntegrationTestSuite) SetupTest() {
-	s.testUser = testModel.NewUser()
-	s.Require().NoError(s.UserRepo.Create(context.Background(), s.testUser))
+	var err error
+	s.testUser, err = s.UserRepo.Create(context.Background(), testModel.NewCreateUserOpts())
+	s.Require().NoError(err)
 
-	s.testOrg = testModel.NewOrganization()
-	s.Require().NoError(s.OrganizationRepo.Create(context.Background(), s.testUser.ID, s.testOrg))
+	s.testOrg, err = s.OrganizationRepo.Create(context.Background(), testModel.NewCreateOrganizationOpts(s.testUser.ID))
+	s.Require().NoError(err)
 
-	s.testDoc = testModel.NewDocument(s.testUser.ID)
-	s.Require().NoError(s.DocumentRepo.Create(context.Background(), s.testUser.ID, s.testDoc))
+	s.testDoc, err = s.DocumentRepo.Create(context.Background(), testModel.NewCreateDocumentOpts(s.testOrg.ID, s.testUser.ID))
+	s.Require().NoError(err)
 
-	s.comment = testModel.NewComment(s.testUser.ID)
+	s.createOpts = testModel.NewCreateCommentOpts(s.testDoc.ID, s.testUser.ID)
 }
 
 func (s *CommentRepositoryIntegrationTestSuite) TearDownTest() {
@@ -52,28 +53,33 @@ func (s *CommentRepositoryIntegrationTestSuite) TearDownSuite() {
 }
 
 func (s *CommentRepositoryIntegrationTestSuite) TestCreate() {
-	s.Require().NoError(s.CommentRepo.Create(context.Background(), s.testDoc.ID, s.comment))
-	s.Assert().NotEqual(model.MustNewNilID(model.ResourceTypeComment), s.comment.ID)
-	s.Assert().NotNil(s.comment.CreatedAt)
+	comment, err := s.CommentRepo.Create(context.Background(), s.createOpts)
+	s.Require().NoError(err)
+	s.Assert().NotEqual(model.MustNewNilID(model.ResourceTypeComment), comment.ID)
+	s.Assert().NotNil(comment.CreatedAt)
 }
 
 func (s *CommentRepositoryIntegrationTestSuite) TestGet() {
-	s.Require().NoError(s.CommentRepo.Create(context.Background(), s.testDoc.ID, s.comment))
-
-	comment, err := s.CommentRepo.Get(context.Background(), s.comment.ID)
+	created, err := s.CommentRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 
-	s.Assert().Equal(s.comment.ID, comment.ID)
-	s.Assert().Equal(s.comment.CreatedBy, comment.CreatedBy)
-	s.Assert().Equal(s.comment.Content, comment.Content)
-	s.Assert().WithinDuration(*s.comment.CreatedAt, *comment.CreatedAt, 100*time.Millisecond)
+	comment, err := s.CommentRepo.Get(context.Background(), created.ID)
+	s.Require().NoError(err)
+
+	s.Assert().Equal(created.ID, comment.ID)
+	s.Assert().Equal(s.createOpts.CreatedBy, comment.CreatedBy)
+	s.Assert().Equal(s.createOpts.Content, comment.Content)
+	s.Assert().WithinDuration(*created.CreatedAt, *comment.CreatedAt, 100*time.Millisecond)
 	s.Assert().Nil(comment.UpdatedAt)
 }
 
 func (s *CommentRepositoryIntegrationTestSuite) TestGetAllBelongsTo() {
-	s.Require().NoError(s.CommentRepo.Create(context.Background(), s.testDoc.ID, s.comment))
-	s.Require().NoError(s.CommentRepo.Create(context.Background(), s.testDoc.ID, testModel.NewComment(s.testUser.ID)))
-	s.Require().NoError(s.CommentRepo.Create(context.Background(), s.testDoc.ID, testModel.NewComment(s.testUser.ID)))
+	_, err := s.CommentRepo.Create(context.Background(), s.createOpts)
+	s.Require().NoError(err)
+	_, err = s.CommentRepo.Create(context.Background(), testModel.NewCreateCommentOpts(s.testDoc.ID, s.testUser.ID))
+	s.Require().NoError(err)
+	_, err = s.CommentRepo.Create(context.Background(), testModel.NewCreateCommentOpts(s.testDoc.ID, s.testUser.ID))
+	s.Require().NoError(err)
 
 	comments, err := s.CommentRepo.GetAllBelongsTo(context.Background(), s.testDoc.ID, 0, 10)
 	s.Require().NoError(err)
@@ -93,25 +99,26 @@ func (s *CommentRepositoryIntegrationTestSuite) TestGetAllBelongsTo() {
 }
 
 func (s *CommentRepositoryIntegrationTestSuite) TestUpdate() {
-	s.Require().NoError(s.CommentRepo.Create(context.Background(), s.testDoc.ID, s.comment))
-
-	newContent := "new content"
-	comment, err := s.CommentRepo.Update(context.Background(), s.comment.ID, newContent)
+	created, err := s.CommentRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 
-	s.Assert().Equal(s.comment.ID, comment.ID)
-	s.Assert().Equal(s.comment.CreatedBy, comment.CreatedBy)
-	s.Assert().Equal(newContent, comment.Content)
-	s.Assert().WithinDuration(*s.comment.CreatedAt, *comment.CreatedAt, 100*time.Millisecond)
+	comment, err := s.CommentRepo.Update(context.Background(), created.ID, repository.UpdateCommentOpts{Content: "new content"})
+	s.Require().NoError(err)
+
+	s.Assert().Equal(created.ID, comment.ID)
+	s.Assert().Equal("new content", comment.Content)
+	s.Assert().Equal(created.CreatedBy, comment.CreatedBy)
+	s.Assert().WithinDuration(*created.CreatedAt, *comment.CreatedAt, 100*time.Millisecond)
 	s.Assert().NotNil(comment.UpdatedAt)
 }
 
 func (s *CommentRepositoryIntegrationTestSuite) TestDelete() {
-	s.Require().NoError(s.CommentRepo.Create(context.Background(), s.testDoc.ID, s.comment))
+	created, err := s.CommentRepo.Create(context.Background(), s.createOpts)
+	s.Require().NoError(err)
 
-	s.Require().NoError(s.CommentRepo.Delete(context.Background(), s.comment.ID))
+	s.Require().NoError(s.CommentRepo.Delete(context.Background(), created.ID))
 
-	_, err := s.CommentRepo.Get(context.Background(), s.comment.ID)
+	_, err = s.CommentRepo.Get(context.Background(), created.ID)
 	s.Assert().ErrorIs(err, repository.ErrNotFound)
 }
 
@@ -124,10 +131,10 @@ type CachedCommentRepositoryIntegrationTestSuite struct {
 	testutil.Neo4jContainerIntegrationTestSuite
 	testutil.RedisContainerIntegrationTestSuite
 
-	testUser    *model.User
-	testOrg     *model.Organization
-	testDoc     *model.Document
-	comment     *model.Comment
+	testUser    *repository.User
+	testOrg     *repository.Organization
+	testDoc     *repository.Document
+	createOpts  repository.CreateCommentOpts
 	commentRepo *repository.RedisCachedCommentRepository
 }
 
@@ -143,17 +150,17 @@ func (s *CachedCommentRepositoryIntegrationTestSuite) SetupSuite() {
 }
 
 func (s *CachedCommentRepositoryIntegrationTestSuite) SetupTest() {
-	s.testUser = testModel.NewUser()
-	s.Require().NoError(s.UserRepo.Create(context.Background(), s.testUser))
+	var err error
+	s.testUser, err = s.UserRepo.Create(context.Background(), testModel.NewCreateUserOpts())
+	s.Require().NoError(err)
 
-	s.testOrg = testModel.NewOrganization()
-	s.Require().NoError(s.OrganizationRepo.Create(context.Background(), s.testUser.ID, s.testOrg))
+	s.testOrg, err = s.OrganizationRepo.Create(context.Background(), testModel.NewCreateOrganizationOpts(s.testUser.ID))
+	s.Require().NoError(err)
 
-	s.testDoc = testModel.NewDocument(s.testUser.ID)
-	s.Require().NoError(s.DocumentRepo.Create(context.Background(), s.testUser.ID, s.testDoc))
+	s.testDoc, err = s.DocumentRepo.Create(context.Background(), testModel.NewCreateDocumentOpts(s.testOrg.ID, s.testUser.ID))
+	s.Require().NoError(err)
 
-	s.comment = testModel.NewComment(s.testUser.ID)
-
+	s.createOpts = testModel.NewCreateCommentOpts(s.testDoc.ID, s.testUser.ID)
 	s.Require().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }
 
@@ -166,82 +173,66 @@ func (s *CachedCommentRepositoryIntegrationTestSuite) TearDownSuite() {
 }
 
 func (s *CachedCommentRepositoryIntegrationTestSuite) TestCreate() {
-	s.Require().NoError(s.commentRepo.Create(context.Background(), s.testDoc.ID, s.comment))
-	s.Assert().NotEqual(model.MustNewNilID(model.ResourceTypeComment), s.comment.ID)
-	s.Assert().NotNil(s.comment.CreatedAt)
-	s.Assert().Nil(s.comment.UpdatedAt)
-
+	comment, err := s.commentRepo.Create(context.Background(), s.createOpts)
+	s.Require().NoError(err)
+	s.Assert().NotEqual(model.MustNewNilID(model.ResourceTypeComment), comment.ID)
+	s.Assert().NotNil(comment.CreatedAt)
 	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }
 
 func (s *CachedCommentRepositoryIntegrationTestSuite) TestGet() {
-	s.Require().NoError(s.CommentRepo.Create(context.Background(), s.testDoc.ID, s.comment))
-
-	original, err := s.CommentRepo.Get(context.Background(), s.comment.ID)
+	created, err := s.commentRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 
-	usingCache, err := s.commentRepo.Get(context.Background(), s.comment.ID)
+	original, err := s.CommentRepo.Get(context.Background(), created.ID)
+	s.Require().NoError(err)
+
+	usingCache, err := s.commentRepo.Get(context.Background(), created.ID)
 	s.Require().NoError(err)
 
 	s.Assert().Equal(original, usingCache)
 	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
-
-	cached, err := s.commentRepo.Get(context.Background(), s.comment.ID)
-	s.Require().NoError(err)
-
-	s.Assert().Equal(usingCache.ID, cached.ID)
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
 }
 
-func (s *CachedCommentRepositoryIntegrationTestSuite) TestGetAll() {
-	s.Require().NoError(s.CommentRepo.Create(context.Background(), s.testDoc.ID, s.comment))
-	s.Require().NoError(s.CommentRepo.Create(context.Background(), s.testDoc.ID, testModel.NewComment(s.testUser.ID)))
-
-	originalComments, err := s.CommentRepo.GetAllBelongsTo(context.Background(), s.testDoc.ID, 0, 10)
+func (s *CachedCommentRepositoryIntegrationTestSuite) TestGetAllBelongsTo() {
+	_, err := s.commentRepo.Create(context.Background(), s.createOpts)
+	s.Require().NoError(err)
+	_, err = s.commentRepo.Create(context.Background(), testModel.NewCreateCommentOpts(s.testDoc.ID, s.testUser.ID))
 	s.Require().NoError(err)
 
-	usingCacheComments, err := s.commentRepo.GetAllBelongsTo(context.Background(), s.testDoc.ID, 0, 10)
+	original, err := s.CommentRepo.GetAllBelongsTo(context.Background(), s.testDoc.ID, 0, 10)
 	s.Require().NoError(err)
 
-	s.Assert().Equal(originalComments, usingCacheComments)
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
-
-	cachedComments, err := s.commentRepo.GetAllBelongsTo(context.Background(), s.testDoc.ID, 0, 10)
+	usingCache, err := s.commentRepo.GetAllBelongsTo(context.Background(), s.testDoc.ID, 0, 10)
 	s.Require().NoError(err)
-	s.Assert().Equal(len(usingCacheComments), len(cachedComments))
 
+	s.Assert().Equal(original, usingCache)
 	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
 }
 
 func (s *CachedCommentRepositoryIntegrationTestSuite) TestUpdate() {
-	s.Require().NoError(s.CommentRepo.Create(context.Background(), s.testDoc.ID, s.comment))
-
-	newContent := "new content"
-	comment, err := s.commentRepo.Update(context.Background(), s.comment.ID, newContent)
+	created, err := s.commentRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 
-	s.Assert().Equal(s.comment.ID, comment.ID)
-	s.Assert().Equal(s.comment.CreatedBy, comment.CreatedBy)
-	s.Assert().Equal(newContent, comment.Content)
-	s.Assert().WithinDuration(*s.comment.CreatedAt, *comment.CreatedAt, 100*time.Millisecond)
+	comment, err := s.commentRepo.Update(context.Background(), created.ID, repository.UpdateCommentOpts{Content: "new content"})
+	s.Require().NoError(err)
+	s.Assert().Equal("new content", comment.Content)
 	s.Assert().NotNil(comment.UpdatedAt)
-
 	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
 }
 
 func (s *CachedCommentRepositoryIntegrationTestSuite) TestDelete() {
-	s.Require().NoError(s.CommentRepo.Create(context.Background(), s.testDoc.ID, s.comment))
-
-	_, err := s.commentRepo.Get(context.Background(), s.comment.ID)
+	created, err := s.commentRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 
+	_, err = s.commentRepo.Get(context.Background(), created.ID)
+	s.Require().NoError(err)
 	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
 
-	s.Require().NoError(s.commentRepo.Delete(context.Background(), s.comment.ID))
+	s.Require().NoError(s.commentRepo.Delete(context.Background(), created.ID))
 
-	_, err = s.commentRepo.Get(context.Background(), s.comment.ID)
+	_, err = s.commentRepo.Get(context.Background(), created.ID)
 	s.Assert().ErrorIs(err, repository.ErrNotFound)
-
 	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }
 

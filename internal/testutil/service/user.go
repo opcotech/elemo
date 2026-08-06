@@ -57,7 +57,7 @@ func NewUserService(t *testing.T, neo4jDBConf *config.GraphDatabaseConfig) servi
 }
 
 // NewResourceOwner creates a new user with the Owner role.
-func NewResourceOwner(t *testing.T, neo4jDBConf *config.GraphDatabaseConfig) *model.User {
+func NewResourceOwner(t *testing.T, neo4jDBConf *config.GraphDatabaseConfig) *repository.User {
 	neo4jDB, _ := testRepo.NewNeo4jDatabase(t, neo4jDBConf)
 
 	userRepo, err := repository.NewNeo4jUserRepository(
@@ -65,8 +65,7 @@ func NewResourceOwner(t *testing.T, neo4jDBConf *config.GraphDatabaseConfig) *mo
 	)
 	require.NoError(t, err)
 
-	owner := testModel.NewUser()
-	err = userRepo.Create(context.Background(), owner)
+	owner, err := userRepo.Create(context.Background(), testModel.NewCreateUserOpts())
 	require.NoError(t, err)
 
 	cypher := `

@@ -70,6 +70,8 @@ import type {
   V1NamespaceDeleteError,
   V1NamespaceDeleteResponse,
   V1NamespaceGetData,
+  V1NamespaceGetError,
+  V1NamespaceGetResponse,
   V1NamespaceUpdateData,
   V1NamespaceUpdateError,
   V1NamespaceUpdateResponse,
@@ -77,6 +79,8 @@ import type {
   V1NotificationDeleteError,
   V1NotificationDeleteResponse,
   V1NotificationGetData,
+  V1NotificationGetError,
+  V1NotificationGetResponse,
   V1NotificationsGetData,
   V1NotificationsGetError,
   V1NotificationsGetResponse,
@@ -87,6 +91,8 @@ import type {
   V1OrganizationDeleteError,
   V1OrganizationDeleteResponse,
   V1OrganizationGetData,
+  V1OrganizationGetError,
+  V1OrganizationGetResponse,
   V1OrganizationMemberInviteRevokeData,
   V1OrganizationMemberInviteRevokeError,
   V1OrganizationMemberInviteRevokeResponse,
@@ -100,6 +106,8 @@ import type {
   V1OrganizationMembersAddError,
   V1OrganizationMembersAddResponse,
   V1OrganizationMembersGetData,
+  V1OrganizationMembersGetError,
+  V1OrganizationMembersGetResponse,
   V1OrganizationMembersInviteData,
   V1OrganizationMembersInviteError,
   V1OrganizationMembersInviteResponse,
@@ -107,6 +115,8 @@ import type {
   V1OrganizationRoleDeleteError,
   V1OrganizationRoleDeleteResponse,
   V1OrganizationRoleGetData,
+  V1OrganizationRoleGetError,
+  V1OrganizationRoleGetResponse,
   V1OrganizationRoleMemberRemoveData,
   V1OrganizationRoleMemberRemoveError,
   V1OrganizationRoleMemberRemoveResponse,
@@ -114,6 +124,8 @@ import type {
   V1OrganizationRoleMembersAddError,
   V1OrganizationRoleMembersAddResponse,
   V1OrganizationRoleMembersGetData,
+  V1OrganizationRoleMembersGetError,
+  V1OrganizationRoleMembersGetResponse,
   V1OrganizationRolePermissionAddData,
   V1OrganizationRolePermissionAddError,
   V1OrganizationRolePermissionAddResponse,
@@ -121,6 +133,8 @@ import type {
   V1OrganizationRolePermissionRemoveError,
   V1OrganizationRolePermissionRemoveResponse,
   V1OrganizationRolePermissionsGetData,
+  V1OrganizationRolePermissionsGetError,
+  V1OrganizationRolePermissionsGetResponse,
   V1OrganizationRolesCreateData,
   V1OrganizationRolesCreateError,
   V1OrganizationRolesCreateResponse,
@@ -149,9 +163,17 @@ import type {
   V1PermissionDeleteError,
   V1PermissionDeleteResponse,
   V1PermissionGetData,
+  V1PermissionGetError,
+  V1PermissionGetResponse,
   V1PermissionHasRelationsData,
+  V1PermissionHasRelationsError,
+  V1PermissionHasRelationsResponse,
   V1PermissionHasSystemRoleData,
+  V1PermissionHasSystemRoleError,
+  V1PermissionHasSystemRoleResponse,
   V1PermissionResourceGetData,
+  V1PermissionResourceGetError,
+  V1PermissionResourceGetResponse,
   V1PermissionsCreateData,
   V1PermissionsCreateError,
   V1PermissionsCreateResponse,
@@ -159,13 +181,23 @@ import type {
   V1PermissionUpdateError,
   V1PermissionUpdateResponse,
   V1SystemHealthData,
+  V1SystemHealthError,
+  V1SystemHealthResponse,
   V1SystemHeartbeatData,
+  V1SystemHeartbeatError,
+  V1SystemHeartbeatResponse,
   V1SystemLicenseData,
+  V1SystemLicenseError,
+  V1SystemLicenseResponse,
   V1SystemVersionData,
+  V1SystemVersionError,
+  V1SystemVersionResponse,
   V1TodoDeleteData,
   V1TodoDeleteError,
   V1TodoDeleteResponse,
   V1TodoGetData,
+  V1TodoGetError,
+  V1TodoGetResponse,
   V1TodosCreateData,
   V1TodosCreateError,
   V1TodosCreateResponse,
@@ -179,7 +211,10 @@ import type {
   V1UserDeleteError,
   V1UserDeleteResponse,
   V1UserGetData,
+  V1UserGetError,
+  V1UserGetResponse,
   V1UserRequestPasswordResetData,
+  V1UserRequestPasswordResetError,
   V1UserResetPasswordData,
   V1UserResetPasswordError,
   V1UserResetPasswordResponse,
@@ -242,8 +277,13 @@ export const v1UsersGetQueryKey = (options?: Options<V1UsersGetData>) =>
  *
  * Returns the paginated list of users
  */
-export const v1UsersGetOptions = (options?: Options<V1UsersGetData>) => {
-  return queryOptions({
+export const v1UsersGetOptions = (options?: Options<V1UsersGetData>) =>
+  queryOptions<
+    V1UsersGetResponse,
+    V1UsersGetError,
+    V1UsersGetResponse,
+    ReturnType<typeof v1UsersGetQueryKey>
+  >({
     queryFn: async ({ queryKey, signal }) => {
       const { data } = await v1UsersGet({
         ...options,
@@ -255,7 +295,6 @@ export const v1UsersGetOptions = (options?: Options<V1UsersGetData>) => {
     },
     queryKey: v1UsersGetQueryKey(options),
   });
-};
 
 const createInfiniteParams = <
   K extends Pick<QueryKey<Options>[0], "body" | "headers" | "path" | "query">,
@@ -386,8 +425,13 @@ export const v1UserRequestPasswordResetQueryKey = (
  */
 export const v1UserRequestPasswordResetOptions = (
   options: Options<V1UserRequestPasswordResetData>
-) => {
-  return queryOptions({
+) =>
+  queryOptions<
+    unknown,
+    V1UserRequestPasswordResetError,
+    unknown,
+    ReturnType<typeof v1UserRequestPasswordResetQueryKey>
+  >({
     queryFn: async ({ queryKey, signal }) => {
       const { data } = await v1UserRequestPasswordReset({
         ...options,
@@ -399,7 +443,6 @@ export const v1UserRequestPasswordResetOptions = (
     },
     queryKey: v1UserRequestPasswordResetQueryKey(options),
   });
-};
 
 /**
  * Reset user password
@@ -467,8 +510,13 @@ export const v1UserGetQueryKey = (options: Options<V1UserGetData>) =>
  *
  * Return the requested user by its ID.
  */
-export const v1UserGetOptions = (options: Options<V1UserGetData>) => {
-  return queryOptions({
+export const v1UserGetOptions = (options: Options<V1UserGetData>) =>
+  queryOptions<
+    V1UserGetResponse,
+    V1UserGetError,
+    V1UserGetResponse,
+    ReturnType<typeof v1UserGetQueryKey>
+  >({
     queryFn: async ({ queryKey, signal }) => {
       const { data } = await v1UserGet({
         ...options,
@@ -480,7 +528,6 @@ export const v1UserGetOptions = (options: Options<V1UserGetData>) => {
     },
     queryKey: v1UserGetQueryKey(options),
   });
-};
 
 /**
  * Update user
@@ -519,8 +566,13 @@ export const v1TodosGetQueryKey = (options?: Options<V1TodosGetData>) =>
  *
  * Returns all todo items belonging to the current user.
  */
-export const v1TodosGetOptions = (options?: Options<V1TodosGetData>) => {
-  return queryOptions({
+export const v1TodosGetOptions = (options?: Options<V1TodosGetData>) =>
+  queryOptions<
+    V1TodosGetResponse,
+    V1TodosGetError,
+    V1TodosGetResponse,
+    ReturnType<typeof v1TodosGetQueryKey>
+  >({
     queryFn: async ({ queryKey, signal }) => {
       const { data } = await v1TodosGet({
         ...options,
@@ -532,7 +584,6 @@ export const v1TodosGetOptions = (options?: Options<V1TodosGetData>) => {
     },
     queryKey: v1TodosGetQueryKey(options),
   });
-};
 
 export const v1TodosGetInfiniteQueryKey = (
   options?: Options<V1TodosGetData>
@@ -653,8 +704,13 @@ export const v1TodoGetQueryKey = (options: Options<V1TodoGetData>) =>
  *
  * Return a todo item based on the todo id belonging to the current user.
  */
-export const v1TodoGetOptions = (options: Options<V1TodoGetData>) => {
-  return queryOptions({
+export const v1TodoGetOptions = (options: Options<V1TodoGetData>) =>
+  queryOptions<
+    V1TodoGetResponse,
+    V1TodoGetError,
+    V1TodoGetResponse,
+    ReturnType<typeof v1TodoGetQueryKey>
+  >({
     queryFn: async ({ queryKey, signal }) => {
       const { data } = await v1TodoGet({
         ...options,
@@ -666,7 +722,6 @@ export const v1TodoGetOptions = (options: Options<V1TodoGetData>) => {
     },
     queryKey: v1TodoGetQueryKey(options),
   });
-};
 
 /**
  * Update todo
@@ -708,8 +763,13 @@ export const v1NotificationsGetQueryKey = (
  */
 export const v1NotificationsGetOptions = (
   options?: Options<V1NotificationsGetData>
-) => {
-  return queryOptions({
+) =>
+  queryOptions<
+    V1NotificationsGetResponse,
+    V1NotificationsGetError,
+    V1NotificationsGetResponse,
+    ReturnType<typeof v1NotificationsGetQueryKey>
+  >({
     queryFn: async ({ queryKey, signal }) => {
       const { data } = await v1NotificationsGet({
         ...options,
@@ -721,7 +781,6 @@ export const v1NotificationsGetOptions = (
     },
     queryKey: v1NotificationsGetQueryKey(options),
   });
-};
 
 export const v1NotificationsGetInfiniteQueryKey = (
   options?: Options<V1NotificationsGetData>
@@ -816,8 +875,13 @@ export const v1NotificationGetQueryKey = (
  */
 export const v1NotificationGetOptions = (
   options: Options<V1NotificationGetData>
-) => {
-  return queryOptions({
+) =>
+  queryOptions<
+    V1NotificationGetResponse,
+    V1NotificationGetError,
+    V1NotificationGetResponse,
+    ReturnType<typeof v1NotificationGetQueryKey>
+  >({
     queryFn: async ({ queryKey, signal }) => {
       const { data } = await v1NotificationGet({
         ...options,
@@ -829,7 +893,6 @@ export const v1NotificationGetOptions = (
     },
     queryKey: v1NotificationGetQueryKey(options),
   });
-};
 
 /**
  * Update an in-app notification
@@ -871,8 +934,13 @@ export const v1OrganizationsGetQueryKey = (
  */
 export const v1OrganizationsGetOptions = (
   options?: Options<V1OrganizationsGetData>
-) => {
-  return queryOptions({
+) =>
+  queryOptions<
+    V1OrganizationsGetResponse,
+    V1OrganizationsGetError,
+    V1OrganizationsGetResponse,
+    ReturnType<typeof v1OrganizationsGetQueryKey>
+  >({
     queryFn: async ({ queryKey, signal }) => {
       const { data } = await v1OrganizationsGet({
         ...options,
@@ -884,7 +952,6 @@ export const v1OrganizationsGetOptions = (
     },
     queryKey: v1OrganizationsGetQueryKey(options),
   });
-};
 
 export const v1OrganizationsGetInfiniteQueryKey = (
   options?: Options<V1OrganizationsGetData>
@@ -1008,8 +1075,13 @@ export const v1OrganizationGetQueryKey = (
  */
 export const v1OrganizationGetOptions = (
   options: Options<V1OrganizationGetData>
-) => {
-  return queryOptions({
+) =>
+  queryOptions<
+    V1OrganizationGetResponse,
+    V1OrganizationGetError,
+    V1OrganizationGetResponse,
+    ReturnType<typeof v1OrganizationGetQueryKey>
+  >({
     queryFn: async ({ queryKey, signal }) => {
       const { data } = await v1OrganizationGet({
         ...options,
@@ -1021,7 +1093,6 @@ export const v1OrganizationGetOptions = (
     },
     queryKey: v1OrganizationGetQueryKey(options),
   });
-};
 
 /**
  * Update organization
@@ -1063,8 +1134,13 @@ export const v1OrganizationMembersGetQueryKey = (
  */
 export const v1OrganizationMembersGetOptions = (
   options: Options<V1OrganizationMembersGetData>
-) => {
-  return queryOptions({
+) =>
+  queryOptions<
+    V1OrganizationMembersGetResponse,
+    V1OrganizationMembersGetError,
+    V1OrganizationMembersGetResponse,
+    ReturnType<typeof v1OrganizationMembersGetQueryKey>
+  >({
     queryFn: async ({ queryKey, signal }) => {
       const { data } = await v1OrganizationMembersGet({
         ...options,
@@ -1076,7 +1152,6 @@ export const v1OrganizationMembersGetOptions = (
     },
     queryKey: v1OrganizationMembersGetQueryKey(options),
   });
-};
 
 /**
  * Add organization member
@@ -1234,8 +1309,13 @@ export const v1OrganizationRolesGetQueryKey = (
  */
 export const v1OrganizationRolesGetOptions = (
   options: Options<V1OrganizationRolesGetData>
-) => {
-  return queryOptions({
+) =>
+  queryOptions<
+    V1OrganizationRolesGetResponse,
+    V1OrganizationRolesGetError,
+    V1OrganizationRolesGetResponse,
+    ReturnType<typeof v1OrganizationRolesGetQueryKey>
+  >({
     queryFn: async ({ queryKey, signal }) => {
       const { data } = await v1OrganizationRolesGet({
         ...options,
@@ -1247,7 +1327,6 @@ export const v1OrganizationRolesGetOptions = (
     },
     queryKey: v1OrganizationRolesGetQueryKey(options),
   });
-};
 
 export const v1OrganizationRolesGetInfiniteQueryKey = (
   options: Options<V1OrganizationRolesGetData>
@@ -1371,8 +1450,13 @@ export const v1OrganizationRoleGetQueryKey = (
  */
 export const v1OrganizationRoleGetOptions = (
   options: Options<V1OrganizationRoleGetData>
-) => {
-  return queryOptions({
+) =>
+  queryOptions<
+    V1OrganizationRoleGetResponse,
+    V1OrganizationRoleGetError,
+    V1OrganizationRoleGetResponse,
+    ReturnType<typeof v1OrganizationRoleGetQueryKey>
+  >({
     queryFn: async ({ queryKey, signal }) => {
       const { data } = await v1OrganizationRoleGet({
         ...options,
@@ -1384,7 +1468,6 @@ export const v1OrganizationRoleGetOptions = (
     },
     queryKey: v1OrganizationRoleGetQueryKey(options),
   });
-};
 
 /**
  * Update organization role
@@ -1426,8 +1509,13 @@ export const v1OrganizationRoleMembersGetQueryKey = (
  */
 export const v1OrganizationRoleMembersGetOptions = (
   options: Options<V1OrganizationRoleMembersGetData>
-) => {
-  return queryOptions({
+) =>
+  queryOptions<
+    V1OrganizationRoleMembersGetResponse,
+    V1OrganizationRoleMembersGetError,
+    V1OrganizationRoleMembersGetResponse,
+    ReturnType<typeof v1OrganizationRoleMembersGetQueryKey>
+  >({
     queryFn: async ({ queryKey, signal }) => {
       const { data } = await v1OrganizationRoleMembersGet({
         ...options,
@@ -1439,7 +1527,6 @@ export const v1OrganizationRoleMembersGetOptions = (
     },
     queryKey: v1OrganizationRoleMembersGetQueryKey(options),
   });
-};
 
 /**
  * Add organization role member
@@ -1510,8 +1597,13 @@ export const v1OrganizationRolePermissionsGetQueryKey = (
  */
 export const v1OrganizationRolePermissionsGetOptions = (
   options: Options<V1OrganizationRolePermissionsGetData>
-) => {
-  return queryOptions({
+) =>
+  queryOptions<
+    V1OrganizationRolePermissionsGetResponse,
+    V1OrganizationRolePermissionsGetError,
+    V1OrganizationRolePermissionsGetResponse,
+    ReturnType<typeof v1OrganizationRolePermissionsGetQueryKey>
+  >({
     queryFn: async ({ queryKey, signal }) => {
       const { data } = await v1OrganizationRolePermissionsGet({
         ...options,
@@ -1523,7 +1615,6 @@ export const v1OrganizationRolePermissionsGetOptions = (
     },
     queryKey: v1OrganizationRolePermissionsGetQueryKey(options),
   });
-};
 
 /**
  * Add permission to organization role
@@ -1594,8 +1685,13 @@ export const v1OrganizationsNamespacesGetQueryKey = (
  */
 export const v1OrganizationsNamespacesGetOptions = (
   options: Options<V1OrganizationsNamespacesGetData>
-) => {
-  return queryOptions({
+) =>
+  queryOptions<
+    V1OrganizationsNamespacesGetResponse,
+    V1OrganizationsNamespacesGetError,
+    V1OrganizationsNamespacesGetResponse,
+    ReturnType<typeof v1OrganizationsNamespacesGetQueryKey>
+  >({
     queryFn: async ({ queryKey, signal }) => {
       const { data } = await v1OrganizationsNamespacesGet({
         ...options,
@@ -1607,7 +1703,6 @@ export const v1OrganizationsNamespacesGetOptions = (
     },
     queryKey: v1OrganizationsNamespacesGetQueryKey(options),
   });
-};
 
 export const v1OrganizationsNamespacesGetInfiniteQueryKey = (
   options: Options<V1OrganizationsNamespacesGetData>
@@ -1728,8 +1823,13 @@ export const v1NamespaceGetQueryKey = (options: Options<V1NamespaceGetData>) =>
  *
  * Return the requested namespace by its ID.
  */
-export const v1NamespaceGetOptions = (options: Options<V1NamespaceGetData>) => {
-  return queryOptions({
+export const v1NamespaceGetOptions = (options: Options<V1NamespaceGetData>) =>
+  queryOptions<
+    V1NamespaceGetResponse,
+    V1NamespaceGetError,
+    V1NamespaceGetResponse,
+    ReturnType<typeof v1NamespaceGetQueryKey>
+  >({
     queryFn: async ({ queryKey, signal }) => {
       const { data } = await v1NamespaceGet({
         ...options,
@@ -1741,7 +1841,6 @@ export const v1NamespaceGetOptions = (options: Options<V1NamespaceGetData>) => {
     },
     queryKey: v1NamespaceGetQueryKey(options),
   });
-};
 
 /**
  * Update namespace
@@ -1839,10 +1938,13 @@ export const v1PermissionGetQueryKey = (
  *
  * Get a permission by its ID.
  */
-export const v1PermissionGetOptions = (
-  options: Options<V1PermissionGetData>
-) => {
-  return queryOptions({
+export const v1PermissionGetOptions = (options: Options<V1PermissionGetData>) =>
+  queryOptions<
+    V1PermissionGetResponse,
+    V1PermissionGetError,
+    V1PermissionGetResponse,
+    ReturnType<typeof v1PermissionGetQueryKey>
+  >({
     queryFn: async ({ queryKey, signal }) => {
       const { data } = await v1PermissionGet({
         ...options,
@@ -1854,7 +1956,6 @@ export const v1PermissionGetOptions = (
     },
     queryKey: v1PermissionGetQueryKey(options),
   });
-};
 
 /**
  * Update permission
@@ -1896,8 +1997,13 @@ export const v1PermissionResourceGetQueryKey = (
  */
 export const v1PermissionResourceGetOptions = (
   options: Options<V1PermissionResourceGetData>
-) => {
-  return queryOptions({
+) =>
+  queryOptions<
+    V1PermissionResourceGetResponse,
+    V1PermissionResourceGetError,
+    V1PermissionResourceGetResponse,
+    ReturnType<typeof v1PermissionResourceGetQueryKey>
+  >({
     queryFn: async ({ queryKey, signal }) => {
       const { data } = await v1PermissionResourceGet({
         ...options,
@@ -1909,7 +2015,6 @@ export const v1PermissionResourceGetOptions = (
     },
     queryKey: v1PermissionResourceGetQueryKey(options),
   });
-};
 
 export const v1PermissionHasRelationsQueryKey = (
   options: Options<V1PermissionHasRelationsData>
@@ -1922,8 +2027,13 @@ export const v1PermissionHasRelationsQueryKey = (
  */
 export const v1PermissionHasRelationsOptions = (
   options: Options<V1PermissionHasRelationsData>
-) => {
-  return queryOptions({
+) =>
+  queryOptions<
+    V1PermissionHasRelationsResponse,
+    V1PermissionHasRelationsError,
+    V1PermissionHasRelationsResponse,
+    ReturnType<typeof v1PermissionHasRelationsQueryKey>
+  >({
     queryFn: async ({ queryKey, signal }) => {
       const { data } = await v1PermissionHasRelations({
         ...options,
@@ -1935,7 +2045,6 @@ export const v1PermissionHasRelationsOptions = (
     },
     queryKey: v1PermissionHasRelationsQueryKey(options),
   });
-};
 
 export const v1PermissionHasSystemRoleQueryKey = (
   options: Options<V1PermissionHasSystemRoleData>
@@ -1948,8 +2057,13 @@ export const v1PermissionHasSystemRoleQueryKey = (
  */
 export const v1PermissionHasSystemRoleOptions = (
   options: Options<V1PermissionHasSystemRoleData>
-) => {
-  return queryOptions({
+) =>
+  queryOptions<
+    V1PermissionHasSystemRoleResponse,
+    V1PermissionHasSystemRoleError,
+    V1PermissionHasSystemRoleResponse,
+    ReturnType<typeof v1PermissionHasSystemRoleQueryKey>
+  >({
     queryFn: async ({ queryKey, signal }) => {
       const { data } = await v1PermissionHasSystemRole({
         ...options,
@@ -1961,7 +2075,6 @@ export const v1PermissionHasSystemRoleOptions = (
     },
     queryKey: v1PermissionHasSystemRoleQueryKey(options),
   });
-};
 
 export const v1SystemHealthQueryKey = (options?: Options<V1SystemHealthData>) =>
   createQueryKey("v1SystemHealth", options);
@@ -1971,10 +2084,13 @@ export const v1SystemHealthQueryKey = (options?: Options<V1SystemHealthData>) =>
  *
  * Returns the health of registered components.
  */
-export const v1SystemHealthOptions = (
-  options?: Options<V1SystemHealthData>
-) => {
-  return queryOptions({
+export const v1SystemHealthOptions = (options?: Options<V1SystemHealthData>) =>
+  queryOptions<
+    V1SystemHealthResponse,
+    V1SystemHealthError,
+    V1SystemHealthResponse,
+    ReturnType<typeof v1SystemHealthQueryKey>
+  >({
     queryFn: async ({ queryKey, signal }) => {
       const { data } = await v1SystemHealth({
         ...options,
@@ -1986,7 +2102,6 @@ export const v1SystemHealthOptions = (
     },
     queryKey: v1SystemHealthQueryKey(options),
   });
-};
 
 export const v1SystemHeartbeatQueryKey = (
   options?: Options<V1SystemHeartbeatData>
@@ -1999,8 +2114,13 @@ export const v1SystemHeartbeatQueryKey = (
  */
 export const v1SystemHeartbeatOptions = (
   options?: Options<V1SystemHeartbeatData>
-) => {
-  return queryOptions({
+) =>
+  queryOptions<
+    V1SystemHeartbeatResponse,
+    V1SystemHeartbeatError,
+    V1SystemHeartbeatResponse,
+    ReturnType<typeof v1SystemHeartbeatQueryKey>
+  >({
     queryFn: async ({ queryKey, signal }) => {
       const { data } = await v1SystemHeartbeat({
         ...options,
@@ -2012,7 +2132,6 @@ export const v1SystemHeartbeatOptions = (
     },
     queryKey: v1SystemHeartbeatQueryKey(options),
   });
-};
 
 export const v1SystemLicenseQueryKey = (
   options?: Options<V1SystemLicenseData>
@@ -2025,8 +2144,13 @@ export const v1SystemLicenseQueryKey = (
  */
 export const v1SystemLicenseOptions = (
   options?: Options<V1SystemLicenseData>
-) => {
-  return queryOptions({
+) =>
+  queryOptions<
+    V1SystemLicenseResponse,
+    V1SystemLicenseError,
+    V1SystemLicenseResponse,
+    ReturnType<typeof v1SystemLicenseQueryKey>
+  >({
     queryFn: async ({ queryKey, signal }) => {
       const { data } = await v1SystemLicense({
         ...options,
@@ -2038,7 +2162,6 @@ export const v1SystemLicenseOptions = (
     },
     queryKey: v1SystemLicenseQueryKey(options),
   });
-};
 
 export const v1SystemVersionQueryKey = (
   options?: Options<V1SystemVersionData>
@@ -2051,8 +2174,13 @@ export const v1SystemVersionQueryKey = (
  */
 export const v1SystemVersionOptions = (
   options?: Options<V1SystemVersionData>
-) => {
-  return queryOptions({
+) =>
+  queryOptions<
+    V1SystemVersionResponse,
+    V1SystemVersionError,
+    V1SystemVersionResponse,
+    ReturnType<typeof v1SystemVersionQueryKey>
+  >({
     queryFn: async ({ queryKey, signal }) => {
       const { data } = await v1SystemVersion({
         ...options,
@@ -2064,4 +2192,3 @@ export const v1SystemVersionOptions = (
     },
     queryKey: v1SystemVersionQueryKey(options),
   });
-};

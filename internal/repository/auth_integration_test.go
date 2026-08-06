@@ -18,7 +18,8 @@ type UserTokenIntegrationTestSuite struct {
 	testutil.Neo4jContainerIntegrationTestSuite
 	testutil.PgContainerIntegrationTestSuite
 
-	token *model.UserToken
+	createOpts repository.CreateUserTokenOpts
+	userID     model.ID
 }
 
 func (s *UserTokenIntegrationTestSuite) SetupSuite() {
@@ -31,11 +32,11 @@ func (s *UserTokenIntegrationTestSuite) SetupSuite() {
 }
 
 func (s *UserTokenIntegrationTestSuite) SetupTest() {
-	testUser := testModel.NewUser()
-	s.Require().NoError(s.UserRepo.Create(context.Background(), testUser))
+	testUser, err := s.UserRepo.Create(context.Background(), testModel.NewCreateUserOpts())
+	s.Require().NoError(err)
+	s.userID = testUser.ID
 
-	_, s.token = testModel.NewUserToken(testUser.ID)
-
+	_, s.createOpts = testModel.NewCreateUserTokenOpts(testUser.ID)
 }
 
 func (s *UserTokenIntegrationTestSuite) TearDownTest() {
@@ -47,25 +48,28 @@ func (s *UserTokenIntegrationTestSuite) TearDownSuite() {
 }
 
 func (s *UserTokenIntegrationTestSuite) TestCreate() {
-	s.Require().NoError(s.UserTokenRepository.Create(context.Background(), s.token))
-	s.Assert().NotEqual(model.MustNewNilID(model.ResourceTypeUserToken), s.token.ID)
-	s.Assert().NotEmpty(s.token.CreatedAt)
+	token, err := s.UserTokenRepository.Create(context.Background(), s.createOpts)
+	s.Require().NoError(err)
+	s.Assert().NotEqual(model.MustNewNilID(model.ResourceTypeUserToken), token.ID)
+	s.Assert().NotEmpty(token.CreatedAt)
 }
 
 func (s *UserTokenIntegrationTestSuite) TestGet() {
-	s.Require().NoError(s.UserTokenRepository.Create(context.Background(), s.token))
-
-	token, err := s.UserTokenRepository.Get(context.Background(), s.token.UserID, s.token.Context)
+	created, err := s.UserTokenRepository.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
-	s.Assert().Equal(s.token.ID, token.ID)
+
+	token, err := s.UserTokenRepository.Get(context.Background(), created.UserID, created.Context)
+	s.Require().NoError(err)
+	s.Assert().Equal(created.ID, token.ID)
 }
 
 func (s *UserTokenIntegrationTestSuite) TestDelete() {
-	s.Require().NoError(s.UserTokenRepository.Create(context.Background(), s.token))
+	created, err := s.UserTokenRepository.Create(context.Background(), s.createOpts)
+	s.Require().NoError(err)
 
-	s.Require().NoError(s.UserTokenRepository.Delete(context.Background(), s.token.UserID, s.token.Context))
+	s.Require().NoError(s.UserTokenRepository.Delete(context.Background(), created.UserID, created.Context))
 
-	_, err := s.UserTokenRepository.Get(context.Background(), s.token.UserID, s.token.Context)
+	_, err = s.UserTokenRepository.Get(context.Background(), created.UserID, created.Context)
 	s.Assert().ErrorIs(err, repository.ErrNotFound)
 }
 

@@ -1,12 +1,5 @@
 package model
 
-import (
-	"errors"
-	"time"
-
-	"github.com/opcotech/elemo/internal/pkg/validate"
-)
-
 const (
 	TodoPriorityNormal    TodoPriority = iota + 1 // the todo is normal
 	TodoPriorityImportant                         // the todo is important
@@ -52,51 +45,4 @@ func (p *TodoPriority) UnmarshalText(text []byte) error {
 		return nil
 	}
 	return ErrInvalidTodoPriority
-}
-
-// Todo represents a todo in the system.
-type Todo struct {
-	ID          ID           `json:"id" validate:"required"`
-	Title       string       `json:"title" validate:"required,min=3,max=120"`
-	Description string       `json:"description" validate:"omitempty,min=10,max=500"`
-	Priority    TodoPriority `json:"priority" validate:"required,min=1,max=4"`
-	Completed   bool         `json:"completed"`
-	OwnedBy     ID           `json:"owned_by" validate:"required"`
-	CreatedBy   ID           `json:"created_by" validate:"required"`
-	DueDate     *time.Time   `json:"due_date" validate:"omitempty"`
-	CreatedAt   *time.Time   `json:"created_at" validate:"omitempty"`
-	UpdatedAt   *time.Time   `json:"updated_at" validate:"omitempty"`
-}
-
-func (t *Todo) Validate() error {
-	if err := validate.Struct(t); err != nil {
-		return errors.Join(ErrInvalidTodoDetails, err)
-	}
-	if err := t.ID.Validate(); err != nil {
-		return errors.Join(ErrInvalidTodoDetails, err)
-	}
-	if err := t.OwnedBy.Validate(); err != nil {
-		return errors.Join(ErrInvalidTodoDetails, err)
-	}
-	if err := t.CreatedBy.Validate(); err != nil {
-		return errors.Join(ErrInvalidTodoDetails, err)
-	}
-	return nil
-}
-
-// NewTodo creates a new todo.
-func NewTodo(title string, ownedBy, createdBy ID) (*Todo, error) {
-	todo := &Todo{
-		ID:        MustNewNilID(ResourceTypeTodo),
-		Title:     title,
-		Priority:  TodoPriorityNormal,
-		OwnedBy:   ownedBy,
-		CreatedBy: createdBy,
-	}
-
-	if err := todo.Validate(); err != nil {
-		return nil, err
-	}
-
-	return todo, nil
 }

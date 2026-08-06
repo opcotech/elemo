@@ -15,13 +15,12 @@ import (
 
 func TestCachedCommentRepository_Create(t *testing.T) {
 	type fields struct {
-		cacheRepo   func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, comment *model.Comment) *redisBaseRepository
-		commentRepo func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, comment *model.Comment) CommentRepository
+		cacheRepo   func(ctrl *gomock.Controller, ctx context.Context, opts CreateCommentOpts) *redisBaseRepository
+		commentRepo func(ctrl *gomock.Controller, ctx context.Context, opts CreateCommentOpts) CommentRepository
 	}
 	type args struct {
-		ctx       context.Context
-		belongsTo model.ID
-		comment   *model.Comment
+		ctx  context.Context
+		opts CreateCommentOpts
 	}
 	tests := []struct {
 		name    string
@@ -32,8 +31,8 @@ func TestCachedCommentRepository_Create(t *testing.T) {
 		{
 			name: "add new comment to an issue",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, _ *model.Comment) *redisBaseRepository {
-					belongsToKey := composeCacheKey(model.ResourceTypeComment.String(), "GetAllBelongsTo", belongsTo.String(), "*")
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, opts CreateCommentOpts) *redisBaseRepository {
+					belongsToKey := composeCacheKey(model.ResourceTypeComment.String(), "GetAllBelongsTo", opts.BelongsTo.String(), "*")
 					issuesKey := composeCacheKey(model.ResourceTypeIssue.String(), "*")
 
 					belongsToKeyResult := new(redis.StringSliceCmd)
@@ -68,17 +67,16 @@ func TestCachedCommentRepository_Create(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, comment *model.Comment) CommentRepository {
-					repo := mock.NewCommentRepository(ctrl)
-					repo.EXPECT().Create(ctx, belongsTo, comment).Return(nil)
+				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, opts CreateCommentOpts) CommentRepository {
+					repo := NewMockCommentRepository(ctrl)
+					repo.EXPECT().Create(ctx, opts).Return(&Comment{}, nil)
 					return repo
 				},
 			},
 			args: args{
-				ctx:       context.Background(),
-				belongsTo: model.MustNewID(model.ResourceTypeIssue),
-				comment: &model.Comment{
-					ID:        model.MustNewID(model.ResourceTypeComment),
+				ctx: context.Background(),
+				opts: CreateCommentOpts{
+					BelongsTo: model.MustNewID(model.ResourceTypeIssue),
 					Content:   "test comment content",
 					CreatedBy: model.MustNewID(model.ResourceTypeUser),
 				},
@@ -87,8 +85,8 @@ func TestCachedCommentRepository_Create(t *testing.T) {
 		{
 			name: "add new comment to a document",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, _ *model.Comment) *redisBaseRepository {
-					belongsToKey := composeCacheKey(model.ResourceTypeComment.String(), "GetAllBelongsTo", belongsTo.String(), "*")
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, opts CreateCommentOpts) *redisBaseRepository {
+					belongsToKey := composeCacheKey(model.ResourceTypeComment.String(), "GetAllBelongsTo", opts.BelongsTo.String(), "*")
 					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
 
 					belongsToKeyResult := new(redis.StringSliceCmd)
@@ -123,17 +121,16 @@ func TestCachedCommentRepository_Create(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, comment *model.Comment) CommentRepository {
-					repo := mock.NewCommentRepository(ctrl)
-					repo.EXPECT().Create(ctx, belongsTo, comment).Return(nil)
+				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, opts CreateCommentOpts) CommentRepository {
+					repo := NewMockCommentRepository(ctrl)
+					repo.EXPECT().Create(ctx, opts).Return(&Comment{}, nil)
 					return repo
 				},
 			},
 			args: args{
-				ctx:       context.Background(),
-				belongsTo: model.MustNewID(model.ResourceTypeDocument),
-				comment: &model.Comment{
-					ID:        model.MustNewID(model.ResourceTypeComment),
+				ctx: context.Background(),
+				opts: CreateCommentOpts{
+					BelongsTo: model.MustNewID(model.ResourceTypeDocument),
 					Content:   "test comment content",
 					CreatedBy: model.MustNewID(model.ResourceTypeUser),
 				},
@@ -142,8 +139,8 @@ func TestCachedCommentRepository_Create(t *testing.T) {
 		{
 			name: "add new comment with error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, _ *model.Comment) *redisBaseRepository {
-					belongsToKey := composeCacheKey(model.ResourceTypeComment.String(), "GetAllBelongsTo", belongsTo.String(), "*")
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, opts CreateCommentOpts) *redisBaseRepository {
+					belongsToKey := composeCacheKey(model.ResourceTypeComment.String(), "GetAllBelongsTo", opts.BelongsTo.String(), "*")
 					issuesKey := composeCacheKey(model.ResourceTypeIssue.String(), "*")
 
 					belongsToKeyResult := new(redis.StringSliceCmd)
@@ -178,17 +175,16 @@ func TestCachedCommentRepository_Create(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, comment *model.Comment) CommentRepository {
-					repo := mock.NewCommentRepository(ctrl)
-					repo.EXPECT().Create(ctx, belongsTo, comment).Return(ErrCommentCreate)
+				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, opts CreateCommentOpts) CommentRepository {
+					repo := NewMockCommentRepository(ctrl)
+					repo.EXPECT().Create(ctx, opts).Return(nil, ErrCommentCreate)
 					return repo
 				},
 			},
 			args: args{
-				ctx:       context.Background(),
-				belongsTo: model.MustNewID(model.ResourceTypeIssue),
-				comment: &model.Comment{
-					ID:        model.MustNewID(model.ResourceTypeComment),
+				ctx: context.Background(),
+				opts: CreateCommentOpts{
+					BelongsTo: model.MustNewID(model.ResourceTypeIssue),
 					Content:   "test comment content",
 					CreatedBy: model.MustNewID(model.ResourceTypeUser),
 				},
@@ -198,8 +194,8 @@ func TestCachedCommentRepository_Create(t *testing.T) {
 		{
 			name: "add new comment belongs to cache delete error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, _ *model.Comment) *redisBaseRepository {
-					belongsToKey := composeCacheKey(model.ResourceTypeComment.String(), "GetAllBelongsTo", belongsTo.String(), "*")
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, opts CreateCommentOpts) *redisBaseRepository {
+					belongsToKey := composeCacheKey(model.ResourceTypeComment.String(), "GetAllBelongsTo", opts.BelongsTo.String(), "*")
 					issuesKey := composeCacheKey(model.ResourceTypeIssue.String(), "*")
 
 					belongsToKeyResult := new(redis.StringSliceCmd)
@@ -234,15 +230,14 @@ func TestCachedCommentRepository_Create(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				commentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID, _ *model.Comment) CommentRepository {
-					return mock.NewCommentRepository(nil)
+				commentRepo: func(_ *gomock.Controller, _ context.Context, _ CreateCommentOpts) CommentRepository {
+					return NewMockCommentRepository(nil)
 				},
 			},
 			args: args{
-				ctx:       context.Background(),
-				belongsTo: model.MustNewID(model.ResourceTypeIssue),
-				comment: &model.Comment{
-					ID:        model.MustNewID(model.ResourceTypeComment),
+				ctx: context.Background(),
+				opts: CreateCommentOpts{
+					BelongsTo: model.MustNewID(model.ResourceTypeIssue),
 					Content:   "test comment content",
 					CreatedBy: model.MustNewID(model.ResourceTypeUser),
 				},
@@ -258,10 +253,10 @@ func TestCachedCommentRepository_Create(t *testing.T) {
 			var ctrl = gomock.NewController(t)
 			defer ctrl.Finish()
 			r := &RedisCachedCommentRepository{
-				cacheRepo:   tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.belongsTo, tt.args.comment),
-				commentRepo: tt.fields.commentRepo(ctrl, tt.args.ctx, tt.args.belongsTo, tt.args.comment),
+				cacheRepo:   tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.opts),
+				commentRepo: tt.fields.commentRepo(ctrl, tt.args.ctx, tt.args.opts),
 			}
-			err := r.Create(tt.args.ctx, tt.args.belongsTo, tt.args.comment)
+			_, err := r.Create(tt.args.ctx, tt.args.opts)
 			require.ErrorIs(t, err, tt.wantErr)
 		})
 	}
@@ -269,8 +264,8 @@ func TestCachedCommentRepository_Create(t *testing.T) {
 
 func TestCachedCommentRepository_Get(t *testing.T) {
 	type fields struct {
-		cacheRepo   func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *model.Comment) *redisBaseRepository
-		commentRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *model.Comment) CommentRepository
+		cacheRepo   func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *Comment) *redisBaseRepository
+		commentRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *Comment) CommentRepository
 	}
 	type args struct {
 		ctx context.Context
@@ -280,13 +275,13 @@ func TestCachedCommentRepository_Get(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    func(id model.ID) *model.Comment
+		want    func(id model.ID) *Comment
 		wantErr error
 	}{
 		{
 			name: "get uncached comment",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *model.Comment) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *Comment) *redisBaseRepository {
 					key := composeCacheKey(model.ResourceTypeComment.String(), id.String())
 
 					db, err := NewRedisDatabase(
@@ -316,8 +311,8 @@ func TestCachedCommentRepository_Get(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *model.Comment) CommentRepository {
-					repo := mock.NewCommentRepository(ctrl)
+				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *Comment) CommentRepository {
+					repo := NewMockCommentRepository(ctrl)
 					repo.EXPECT().Get(ctx, id).Return(comment, nil)
 					return repo
 				},
@@ -326,8 +321,8 @@ func TestCachedCommentRepository_Get(t *testing.T) {
 				ctx: context.Background(),
 				id:  model.MustNewID(model.ResourceTypeComment),
 			},
-			want: func(id model.ID) *model.Comment {
-				return &model.Comment{
+			want: func(id model.ID) *Comment {
+				return &Comment{
 					ID:        id,
 					Content:   "test comment content",
 					CreatedBy: model.MustNewID(model.ResourceTypeUser),
@@ -337,7 +332,7 @@ func TestCachedCommentRepository_Get(t *testing.T) {
 		{
 			name: "get cached comment",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *model.Comment) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *Comment) *redisBaseRepository {
 					key := composeCacheKey(model.ResourceTypeComment.String(), id.String())
 
 					db, err := NewRedisDatabase(
@@ -353,7 +348,7 @@ func TestCachedCommentRepository_Get(t *testing.T) {
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Do(func(_ context.Context, _ string, dst any) {
-						if ptr, ok := dst.(**model.Comment); ok {
+						if ptr, ok := dst.(**Comment); ok {
 							*ptr = comment
 						}
 					}).Return(nil)
@@ -365,16 +360,16 @@ func TestCachedCommentRepository_Get(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				commentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID, _ *model.Comment) CommentRepository {
-					return mock.NewCommentRepository(nil)
+				commentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID, _ *Comment) CommentRepository {
+					return NewMockCommentRepository(nil)
 				},
 			},
 			args: args{
 				ctx: context.Background(),
 				id:  model.MustNewID(model.ResourceTypeComment),
 			},
-			want: func(id model.ID) *model.Comment {
-				return &model.Comment{
+			want: func(id model.ID) *Comment {
+				return &Comment{
 					ID:        id,
 					Content:   "test comment content",
 					CreatedBy: model.MustNewID(model.ResourceTypeUser),
@@ -384,7 +379,7 @@ func TestCachedCommentRepository_Get(t *testing.T) {
 		{
 			name: "get uncached comment error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *model.Comment) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *Comment) *redisBaseRepository {
 					key := composeCacheKey(model.ResourceTypeComment.String(), id.String())
 
 					db, err := NewRedisDatabase(
@@ -408,8 +403,8 @@ func TestCachedCommentRepository_Get(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *model.Comment) CommentRepository {
-					repo := mock.NewCommentRepository(ctrl)
+				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *Comment) CommentRepository {
+					repo := NewMockCommentRepository(ctrl)
 					repo.EXPECT().Get(ctx, id).Return(nil, ErrNotFound)
 					return repo
 				},
@@ -423,7 +418,7 @@ func TestCachedCommentRepository_Get(t *testing.T) {
 		{
 			name: "get cached comment error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *model.Comment) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *Comment) *redisBaseRepository {
 					key := composeCacheKey(model.ResourceTypeComment.String(), id.String())
 
 					db, err := NewRedisDatabase(
@@ -447,8 +442,8 @@ func TestCachedCommentRepository_Get(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				commentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID, _ *model.Comment) CommentRepository {
-					return mock.NewCommentRepository(nil)
+				commentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID, _ *Comment) CommentRepository {
+					return NewMockCommentRepository(nil)
 				},
 			},
 			args: args{
@@ -460,7 +455,7 @@ func TestCachedCommentRepository_Get(t *testing.T) {
 		{
 			name: "get uncached comment cache set error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *model.Comment) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *Comment) *redisBaseRepository {
 					key := composeCacheKey(model.ResourceTypeComment.String(), id.String())
 
 					db, err := NewRedisDatabase(
@@ -490,8 +485,8 @@ func TestCachedCommentRepository_Get(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *model.Comment) CommentRepository {
-					repo := mock.NewCommentRepository(ctrl)
+				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *Comment) CommentRepository {
+					repo := NewMockCommentRepository(ctrl)
 					repo.EXPECT().Get(ctx, id).Return(comment, nil)
 					return repo
 				},
@@ -510,7 +505,7 @@ func TestCachedCommentRepository_Get(t *testing.T) {
 			tt := tt
 			var ctrl = gomock.NewController(t)
 			defer ctrl.Finish()
-			var want *model.Comment
+			var want *Comment
 			if tt.want != nil {
 				want = tt.want(tt.args.id)
 			}
@@ -528,8 +523,8 @@ func TestCachedCommentRepository_Get(t *testing.T) {
 
 func TestCachedCommentRepository_GetAllBelongsTo(t *testing.T) {
 	type fields struct {
-		cacheRepo   func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, comments []*model.Comment) *redisBaseRepository
-		commentRepo func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, comments []*model.Comment) CommentRepository
+		cacheRepo   func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, comments []*Comment) *redisBaseRepository
+		commentRepo func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, comments []*Comment) CommentRepository
 	}
 	type args struct {
 		ctx       context.Context
@@ -541,13 +536,13 @@ func TestCachedCommentRepository_GetAllBelongsTo(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    []*model.Comment
+		want    []*Comment
 		wantErr error
 	}{
 		{
 			name: "get uncached comments",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, comments []*model.Comment) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, comments []*Comment) *redisBaseRepository {
 					key := composeCacheKey(model.ResourceTypeComment.String(), "GetAllBelongsTo", belongsTo.String(), offset, limit)
 
 					db, err := NewRedisDatabase(
@@ -577,8 +572,8 @@ func TestCachedCommentRepository_GetAllBelongsTo(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, comments []*model.Comment) CommentRepository {
-					repo := mock.NewCommentRepository(ctrl)
+				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, comments []*Comment) CommentRepository {
+					repo := NewMockCommentRepository(ctrl)
 					repo.EXPECT().GetAllBelongsTo(ctx, belongsTo, offset, limit).Return(comments, nil)
 					return repo
 				},
@@ -587,7 +582,7 @@ func TestCachedCommentRepository_GetAllBelongsTo(t *testing.T) {
 				ctx:       context.Background(),
 				belongsTo: model.MustNewID(model.ResourceTypeUser),
 			},
-			want: []*model.Comment{
+			want: []*Comment{
 				{
 					ID:        model.MustNewID(model.ResourceTypeComment),
 					Content:   "test comment content",
@@ -603,7 +598,7 @@ func TestCachedCommentRepository_GetAllBelongsTo(t *testing.T) {
 		{
 			name: "get cached comments",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, comments []*model.Comment) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, comments []*Comment) *redisBaseRepository {
 					key := composeCacheKey(model.ResourceTypeComment.String(), "GetAllBelongsTo", belongsTo.String(), offset, limit)
 
 					db, err := NewRedisDatabase(
@@ -619,7 +614,7 @@ func TestCachedCommentRepository_GetAllBelongsTo(t *testing.T) {
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Do(func(_ context.Context, _ string, dst any) {
-						if listPtr, ok := dst.(*[]*model.Comment); ok {
+						if listPtr, ok := dst.(*[]*Comment); ok {
 							*listPtr = comments
 						}
 					}).Return(nil)
@@ -631,15 +626,15 @@ func TestCachedCommentRepository_GetAllBelongsTo(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				commentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID, _, _ int, _ []*model.Comment) CommentRepository {
-					return mock.NewCommentRepository(nil)
+				commentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID, _, _ int, _ []*Comment) CommentRepository {
+					return NewMockCommentRepository(nil)
 				},
 			},
 			args: args{
 				ctx:       context.Background(),
 				belongsTo: model.MustNewID(model.ResourceTypeUser),
 			},
-			want: []*model.Comment{
+			want: []*Comment{
 				{
 					ID:        model.MustNewID(model.ResourceTypeComment),
 					Content:   "test comment content",
@@ -655,7 +650,7 @@ func TestCachedCommentRepository_GetAllBelongsTo(t *testing.T) {
 		{
 			name: "get uncached comments error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, _ []*model.Comment) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, _ []*Comment) *redisBaseRepository {
 					key := composeCacheKey(model.ResourceTypeComment.String(), "GetAllBelongsTo", belongsTo.String(), offset, limit)
 
 					db, err := NewRedisDatabase(
@@ -679,8 +674,8 @@ func TestCachedCommentRepository_GetAllBelongsTo(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, _ []*model.Comment) CommentRepository {
-					repo := mock.NewCommentRepository(ctrl)
+				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, _ []*Comment) CommentRepository {
+					repo := NewMockCommentRepository(ctrl)
 					repo.EXPECT().GetAllBelongsTo(ctx, belongsTo, offset, limit).Return(nil, ErrNotFound)
 					return repo
 				},
@@ -694,7 +689,7 @@ func TestCachedCommentRepository_GetAllBelongsTo(t *testing.T) {
 		{
 			name: "get get comments cache error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, _ []*model.Comment) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, _ []*Comment) *redisBaseRepository {
 					key := composeCacheKey(model.ResourceTypeComment.String(), "GetAllBelongsTo", belongsTo.String(), offset, limit)
 
 					db, err := NewRedisDatabase(
@@ -718,8 +713,8 @@ func TestCachedCommentRepository_GetAllBelongsTo(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				commentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID, _, _ int, _ []*model.Comment) CommentRepository {
-					return mock.NewCommentRepository(nil)
+				commentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID, _, _ int, _ []*Comment) CommentRepository {
+					return NewMockCommentRepository(nil)
 				},
 			},
 			args: args{
@@ -731,7 +726,7 @@ func TestCachedCommentRepository_GetAllBelongsTo(t *testing.T) {
 		{
 			name: "get uncached comments cache set error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, comments []*model.Comment) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, comments []*Comment) *redisBaseRepository {
 					key := composeCacheKey(model.ResourceTypeComment.String(), "GetAllBelongsTo", belongsTo.String(), offset, limit)
 
 					db, err := NewRedisDatabase(
@@ -761,8 +756,8 @@ func TestCachedCommentRepository_GetAllBelongsTo(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, comments []*model.Comment) CommentRepository {
-					repo := mock.NewCommentRepository(ctrl)
+				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, comments []*Comment) CommentRepository {
+					repo := NewMockCommentRepository(ctrl)
 					repo.EXPECT().GetAllBelongsTo(ctx, belongsTo, offset, limit).Return(comments, nil)
 					return repo
 				},
@@ -794,25 +789,25 @@ func TestCachedCommentRepository_GetAllBelongsTo(t *testing.T) {
 
 func TestCachedCommentRepository_Update(t *testing.T) {
 	type fields struct {
-		cacheRepo   func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *model.Comment) *redisBaseRepository
-		commentRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *model.Comment) CommentRepository
+		cacheRepo   func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *Comment) *redisBaseRepository
+		commentRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *Comment) CommentRepository
 	}
 	type args struct {
-		ctx     context.Context
-		id      model.ID
-		content string
+		ctx  context.Context
+		id   model.ID
+		opts UpdateCommentOpts
 	}
 	tests := []struct {
 		name    string
 		fields  fields
 		args    args
-		want    *model.Comment
+		want    *Comment
 		wantErr error
 	}{
 		{
 			name: "update comment",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *model.Comment) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *Comment) *redisBaseRepository {
 					key := composeCacheKey(model.ResourceTypeComment.String(), id.String())
 					belongsToKey := composeCacheKey(model.ResourceTypeComment.String(), "GetAllBelongsTo", "*")
 
@@ -849,18 +844,18 @@ func TestCachedCommentRepository_Update(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *model.Comment) CommentRepository {
-					repo := mock.NewCommentRepository(ctrl)
-					repo.EXPECT().Update(ctx, id, comment.Content).Return(comment, nil)
+				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *Comment) CommentRepository {
+					repo := NewMockCommentRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, UpdateCommentOpts{Content: comment.Content}).Return(comment, nil)
 					return repo
 				},
 			},
 			args: args{
-				ctx:     context.Background(),
-				id:      model.MustNewID(model.ResourceTypeComment),
-				content: "new content",
+				ctx:  context.Background(),
+				id:   model.MustNewID(model.ResourceTypeComment),
+				opts: UpdateCommentOpts{Content: "new content"},
 			},
-			want: &model.Comment{
+			want: &Comment{
 				ID:        model.MustNewID(model.ResourceTypeComment),
 				Content:   "new content",
 				CreatedBy: model.MustNewID(model.ResourceTypeUser),
@@ -869,7 +864,7 @@ func TestCachedCommentRepository_Update(t *testing.T) {
 		{
 			name: "update comment with error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ *model.Comment) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ *Comment) *redisBaseRepository {
 					db, err := NewRedisDatabase(
 						WithRedisClient(mock.NewUniversalClient(ctrl)),
 					)
@@ -882,23 +877,23 @@ func TestCachedCommentRepository_Update(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *model.Comment) CommentRepository {
-					repo := mock.NewCommentRepository(ctrl)
-					repo.EXPECT().Update(ctx, id, "new content").Return(nil, ErrNotFound)
+				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *Comment) CommentRepository {
+					repo := NewMockCommentRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, UpdateCommentOpts{Content: "new content"}).Return(nil, ErrNotFound)
 					return repo
 				},
 			},
 			args: args{
-				ctx:     context.Background(),
-				id:      model.MustNewID(model.ResourceTypeComment),
-				content: "new content",
+				ctx:  context.Background(),
+				id:   model.MustNewID(model.ResourceTypeComment),
+				opts: UpdateCommentOpts{Content: "new content"},
 			},
 			wantErr: ErrNotFound,
 		},
 		{
 			name: "update comment set cache error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *model.Comment) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *Comment) *redisBaseRepository {
 					key := composeCacheKey(model.ResourceTypeComment.String(), id.String())
 
 					db, err := NewRedisDatabase(
@@ -926,23 +921,23 @@ func TestCachedCommentRepository_Update(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *model.Comment) CommentRepository {
-					repo := mock.NewCommentRepository(ctrl)
-					repo.EXPECT().Update(ctx, id, "new content").Return(comment, nil)
+				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *Comment) CommentRepository {
+					repo := NewMockCommentRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, UpdateCommentOpts{Content: "new content"}).Return(comment, nil)
 					return repo
 				},
 			},
 			args: args{
-				ctx:     context.Background(),
-				id:      model.MustNewID(model.ResourceTypeComment),
-				content: "new content",
+				ctx:  context.Background(),
+				id:   model.MustNewID(model.ResourceTypeComment),
+				opts: UpdateCommentOpts{Content: "new content"},
 			},
 			wantErr: ErrCacheWrite,
 		},
 		{
 			name: "update comment delete cache error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *model.Comment) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *Comment) *redisBaseRepository {
 					key := composeCacheKey(model.ResourceTypeComment.String(), id.String())
 					belongsToKey := composeCacheKey(model.ResourceTypeComment.String(), "GetAllBelongsTo", "*")
 
@@ -979,16 +974,16 @@ func TestCachedCommentRepository_Update(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *model.Comment) CommentRepository {
-					repo := mock.NewCommentRepository(ctrl)
-					repo.EXPECT().Update(ctx, id, "new content").Return(comment, nil)
+				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *Comment) CommentRepository {
+					repo := NewMockCommentRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, UpdateCommentOpts{Content: "new content"}).Return(comment, nil)
 					return repo
 				},
 			},
 			args: args{
-				ctx:     context.Background(),
-				id:      model.MustNewID(model.ResourceTypeComment),
-				content: "new content",
+				ctx:  context.Background(),
+				id:   model.MustNewID(model.ResourceTypeComment),
+				opts: UpdateCommentOpts{Content: "new content"},
 			},
 			wantErr: ErrCacheDelete,
 		},
@@ -1005,7 +1000,7 @@ func TestCachedCommentRepository_Update(t *testing.T) {
 				cacheRepo:   tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, tt.want),
 				commentRepo: tt.fields.commentRepo(ctrl, tt.args.ctx, tt.args.id, tt.want),
 			}
-			got, err := r.Update(tt.args.ctx, tt.args.id, tt.args.content)
+			got, err := r.Update(tt.args.ctx, tt.args.id, tt.args.opts)
 			assert.ErrorIs(t, err, tt.wantErr)
 			assert.Equal(t, tt.want, got)
 		})
@@ -1076,7 +1071,7 @@ func TestCachedCommentRepository_Delete(t *testing.T) {
 					}
 				},
 				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) CommentRepository {
-					repo := mock.NewCommentRepository(ctrl)
+					repo := NewMockCommentRepository(ctrl)
 					repo.EXPECT().Delete(ctx, id).Return(nil)
 					return repo
 				},
@@ -1135,7 +1130,7 @@ func TestCachedCommentRepository_Delete(t *testing.T) {
 					}
 				},
 				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) CommentRepository {
-					repo := mock.NewCommentRepository(ctrl)
+					repo := NewMockCommentRepository(ctrl)
 					repo.EXPECT().Delete(ctx, id).Return(ErrCommentDelete)
 					return repo
 				},
@@ -1176,7 +1171,7 @@ func TestCachedCommentRepository_Delete(t *testing.T) {
 					}
 				},
 				commentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID) CommentRepository {
-					return mock.NewCommentRepository(nil)
+					return NewMockCommentRepository(nil)
 				},
 			},
 			args: args{
@@ -1222,7 +1217,7 @@ func TestCachedCommentRepository_Delete(t *testing.T) {
 					}
 				},
 				commentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID) CommentRepository {
-					return mock.NewCommentRepository(nil)
+					return NewMockCommentRepository(nil)
 				},
 			},
 			args: args{
@@ -1275,7 +1270,7 @@ func TestCachedCommentRepository_Delete(t *testing.T) {
 					}
 				},
 				commentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID) CommentRepository {
-					return mock.NewCommentRepository(nil)
+					return NewMockCommentRepository(nil)
 				},
 			},
 			args: args{
@@ -1333,7 +1328,7 @@ func TestCachedCommentRepository_Delete(t *testing.T) {
 					}
 				},
 				commentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID) CommentRepository {
-					return mock.NewCommentRepository(nil)
+					return NewMockCommentRepository(nil)
 				},
 			},
 			args: args{

@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-redis/cache/v9"
 	"github.com/opcotech/elemo/internal/model"
+	"github.com/opcotech/elemo/internal/pkg/optional"
 	"github.com/opcotech/elemo/internal/testutil/mock"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
@@ -15,14 +16,12 @@ import (
 
 func TestCachedRoleRepository_Create(t *testing.T) {
 	type fields struct {
-		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, createdBy, belongsTo model.ID, role *model.Role) *redisBaseRepository
-		roleRepo  func(ctrl *gomock.Controller, ctx context.Context, createdBy, belongsTo model.ID, role *model.Role) RoleRepository
+		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, opts CreateRoleOpts) *redisBaseRepository
+		roleRepo  func(ctrl *gomock.Controller, ctx context.Context, opts CreateRoleOpts) RoleRepository
 	}
 	type args struct {
-		ctx       context.Context
-		createdBy model.ID
-		belongsTo model.ID
-		role      *model.Role
+		ctx  context.Context
+		opts CreateRoleOpts
 	}
 	tests := []struct {
 		name    string
@@ -33,7 +32,8 @@ func TestCachedRoleRepository_Create(t *testing.T) {
 		{
 			name: "add new role",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, _, belongsTo model.ID, _ *model.Role) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, opts CreateRoleOpts) *redisBaseRepository {
+					belongsTo := opts.BelongsTo
 					belongsToKey := composeCacheKey(model.ResourceTypeRole.String(), "GetAllBelongsTo", belongsTo.String(), "*")
 					organizationsKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*")
 					projectsKey := composeCacheKey(model.ResourceTypeProject.String(), "*")
@@ -75,29 +75,27 @@ func TestCachedRoleRepository_Create(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				roleRepo: func(ctrl *gomock.Controller, ctx context.Context, createdBy, belongsTo model.ID, role *model.Role) RoleRepository {
-					repo := mock.NewRoleRepository(ctrl)
-					repo.EXPECT().Create(ctx, createdBy, belongsTo, role).Return(nil)
+				roleRepo: func(ctrl *gomock.Controller, ctx context.Context, opts CreateRoleOpts) RoleRepository {
+					repo := NewMockRoleRepository(ctrl)
+					repo.EXPECT().Create(ctx, opts).Return(&Role{}, nil)
 					return repo
 				},
 			},
 			args: args{
-				ctx:       context.Background(),
-				createdBy: model.MustNewID(model.ResourceTypeUser),
-				belongsTo: model.MustNewID(model.ResourceTypeOrganization),
-				role: &model.Role{
-					ID:          model.MustNewID(model.ResourceTypeRole),
+				ctx: context.Background(),
+				opts: CreateRoleOpts{
 					Name:        "test role",
 					Description: "test description",
-					Members:     make([]model.ID, 0),
-					Permissions: make([]model.ID, 0),
+					CreatedBy:   model.MustNewID(model.ResourceTypeUser),
+					BelongsTo:   model.MustNewID(model.ResourceTypeOrganization),
 				},
 			},
 		},
 		{
 			name: "add new role with error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, _, belongsTo model.ID, _ *model.Role) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, opts CreateRoleOpts) *redisBaseRepository {
+					belongsTo := opts.BelongsTo
 					belongsToKey := composeCacheKey(model.ResourceTypeRole.String(), "GetAllBelongsTo", belongsTo.String(), "*")
 					organizationsKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*")
 					projectsKey := composeCacheKey(model.ResourceTypeProject.String(), "*")
@@ -139,22 +137,19 @@ func TestCachedRoleRepository_Create(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				roleRepo: func(ctrl *gomock.Controller, ctx context.Context, createdBy, belongsTo model.ID, role *model.Role) RoleRepository {
-					repo := mock.NewRoleRepository(ctrl)
-					repo.EXPECT().Create(ctx, createdBy, belongsTo, role).Return(ErrNotFound)
+				roleRepo: func(ctrl *gomock.Controller, ctx context.Context, opts CreateRoleOpts) RoleRepository {
+					repo := NewMockRoleRepository(ctrl)
+					repo.EXPECT().Create(ctx, opts).Return(nil, ErrNotFound)
 					return repo
 				},
 			},
 			args: args{
-				ctx:       context.Background(),
-				createdBy: model.MustNewID(model.ResourceTypeUser),
-				belongsTo: model.MustNewID(model.ResourceTypeOrganization),
-				role: &model.Role{
-					ID:          model.MustNewID(model.ResourceTypeRole),
+				ctx: context.Background(),
+				opts: CreateRoleOpts{
 					Name:        "test role",
 					Description: "test description",
-					Members:     make([]model.ID, 0),
-					Permissions: make([]model.ID, 0),
+					CreatedBy:   model.MustNewID(model.ResourceTypeUser),
+					BelongsTo:   model.MustNewID(model.ResourceTypeOrganization),
 				},
 			},
 			wantErr: ErrNotFound,
@@ -162,7 +157,8 @@ func TestCachedRoleRepository_Create(t *testing.T) {
 		{
 			name: "add new role with belongs to cache error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, _, belongsTo model.ID, _ *model.Role) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, opts CreateRoleOpts) *redisBaseRepository {
+					belongsTo := opts.BelongsTo
 					belongsToKey := composeCacheKey(model.ResourceTypeRole.String(), "GetAllBelongsTo", belongsTo.String(), "*")
 
 					belongsToKeyResult := new(redis.StringSliceCmd)
@@ -192,21 +188,18 @@ func TestCachedRoleRepository_Create(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				roleRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID, _ *model.Role) RoleRepository {
-					repo := mock.NewRoleRepository(ctrl)
+				roleRepo: func(ctrl *gomock.Controller, _ context.Context, _ CreateRoleOpts) RoleRepository {
+					repo := NewMockRoleRepository(ctrl)
 					return repo
 				},
 			},
 			args: args{
-				ctx:       context.Background(),
-				createdBy: model.MustNewID(model.ResourceTypeUser),
-				belongsTo: model.MustNewID(model.ResourceTypeOrganization),
-				role: &model.Role{
-					ID:          model.MustNewID(model.ResourceTypeRole),
+				ctx: context.Background(),
+				opts: CreateRoleOpts{
 					Name:        "test role",
 					Description: "test description",
-					Members:     make([]model.ID, 0),
-					Permissions: make([]model.ID, 0),
+					CreatedBy:   model.MustNewID(model.ResourceTypeUser),
+					BelongsTo:   model.MustNewID(model.ResourceTypeOrganization),
 				},
 			},
 			wantErr: ErrCacheDelete,
@@ -214,7 +207,8 @@ func TestCachedRoleRepository_Create(t *testing.T) {
 		{
 			name: "add new role with organization cache error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, _, belongsTo model.ID, _ *model.Role) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, opts CreateRoleOpts) *redisBaseRepository {
+					belongsTo := opts.BelongsTo
 					belongsToKey := composeCacheKey(model.ResourceTypeRole.String(), "GetAllBelongsTo", belongsTo.String(), "*")
 					organizationsKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*")
 
@@ -250,21 +244,18 @@ func TestCachedRoleRepository_Create(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				roleRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID, _ *model.Role) RoleRepository {
-					repo := mock.NewRoleRepository(ctrl)
+				roleRepo: func(ctrl *gomock.Controller, _ context.Context, _ CreateRoleOpts) RoleRepository {
+					repo := NewMockRoleRepository(ctrl)
 					return repo
 				},
 			},
 			args: args{
-				ctx:       context.Background(),
-				createdBy: model.MustNewID(model.ResourceTypeUser),
-				belongsTo: model.MustNewID(model.ResourceTypeOrganization),
-				role: &model.Role{
-					ID:          model.MustNewID(model.ResourceTypeRole),
+				ctx: context.Background(),
+				opts: CreateRoleOpts{
 					Name:        "test role",
 					Description: "test description",
-					Members:     make([]model.ID, 0),
-					Permissions: make([]model.ID, 0),
+					CreatedBy:   model.MustNewID(model.ResourceTypeUser),
+					BelongsTo:   model.MustNewID(model.ResourceTypeOrganization),
 				},
 			},
 			wantErr: ErrCacheDelete,
@@ -272,7 +263,8 @@ func TestCachedRoleRepository_Create(t *testing.T) {
 		{
 			name: "add new role with project cache error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, _, belongsTo model.ID, _ *model.Role) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, opts CreateRoleOpts) *redisBaseRepository {
+					belongsTo := opts.BelongsTo
 					belongsToKey := composeCacheKey(model.ResourceTypeRole.String(), "GetAllBelongsTo", belongsTo.String(), "*")
 					organizationsKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*")
 					projectsKey := composeCacheKey(model.ResourceTypeProject.String(), "*")
@@ -314,21 +306,18 @@ func TestCachedRoleRepository_Create(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				roleRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID, _ *model.Role) RoleRepository {
-					repo := mock.NewRoleRepository(ctrl)
+				roleRepo: func(ctrl *gomock.Controller, _ context.Context, _ CreateRoleOpts) RoleRepository {
+					repo := NewMockRoleRepository(ctrl)
 					return repo
 				},
 			},
 			args: args{
-				ctx:       context.Background(),
-				createdBy: model.MustNewID(model.ResourceTypeUser),
-				belongsTo: model.MustNewID(model.ResourceTypeOrganization),
-				role: &model.Role{
-					ID:          model.MustNewID(model.ResourceTypeRole),
+				ctx: context.Background(),
+				opts: CreateRoleOpts{
 					Name:        "test role",
 					Description: "test description",
-					Members:     make([]model.ID, 0),
-					Permissions: make([]model.ID, 0),
+					CreatedBy:   model.MustNewID(model.ResourceTypeUser),
+					BelongsTo:   model.MustNewID(model.ResourceTypeOrganization),
 				},
 			},
 			wantErr: ErrCacheDelete,
@@ -341,10 +330,10 @@ func TestCachedRoleRepository_Create(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			r := &RedisCachedRoleRepository{
-				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.createdBy, tt.args.belongsTo, tt.args.role),
-				roleRepo:  tt.fields.roleRepo(ctrl, tt.args.ctx, tt.args.createdBy, tt.args.belongsTo, tt.args.role),
+				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.opts),
+				roleRepo:  tt.fields.roleRepo(ctrl, tt.args.ctx, tt.args.opts),
 			}
-			err := r.Create(tt.args.ctx, tt.args.createdBy, tt.args.belongsTo, tt.args.role)
+			_, err := r.Create(tt.args.ctx, tt.args.opts)
 			require.ErrorIs(t, err, tt.wantErr)
 		})
 	}
@@ -352,8 +341,8 @@ func TestCachedRoleRepository_Create(t *testing.T) {
 
 func TestCachedRoleRepository_Get(t *testing.T) {
 	type fields struct {
-		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, role *model.Role) *redisBaseRepository
-		roleRepo  func(ctrl *gomock.Controller, ctx context.Context, id, belongsTo model.ID, role *model.Role) RoleRepository
+		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, role *Role) *redisBaseRepository
+		roleRepo  func(ctrl *gomock.Controller, ctx context.Context, id, belongsTo model.ID, role *Role) RoleRepository
 	}
 	type args struct {
 		ctx       context.Context
@@ -364,13 +353,13 @@ func TestCachedRoleRepository_Get(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    func(id model.ID) *model.Role
+		want    func(id model.ID) *Role
 		wantErr error
 	}{
 		{
 			name: "get uncached role",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, role *model.Role) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, role *Role) *redisBaseRepository {
 					key := composeCacheKey(model.ResourceTypeRole.String(), id.String())
 
 					db, err := NewRedisDatabase(
@@ -400,8 +389,8 @@ func TestCachedRoleRepository_Get(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				roleRepo: func(ctrl *gomock.Controller, ctx context.Context, id, belongsTo model.ID, role *model.Role) RoleRepository {
-					repo := mock.NewRoleRepository(ctrl)
+				roleRepo: func(ctrl *gomock.Controller, ctx context.Context, id, belongsTo model.ID, role *Role) RoleRepository {
+					repo := NewMockRoleRepository(ctrl)
 					repo.EXPECT().Get(ctx, id, belongsTo).Return(role, nil)
 					return repo
 				},
@@ -411,8 +400,8 @@ func TestCachedRoleRepository_Get(t *testing.T) {
 				id:        model.MustNewID(model.ResourceTypeRole),
 				belongsTo: model.MustNewID(model.ResourceTypeOrganization),
 			},
-			want: func(id model.ID) *model.Role {
-				return &model.Role{
+			want: func(id model.ID) *Role {
+				return &Role{
 					ID:          id,
 					Name:        "test role",
 					Description: "test description",
@@ -424,7 +413,7 @@ func TestCachedRoleRepository_Get(t *testing.T) {
 		{
 			name: "get cached role",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, role *model.Role) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, role *Role) *redisBaseRepository {
 					key := composeCacheKey(model.ResourceTypeRole.String(), id.String())
 
 					db, err := NewRedisDatabase(
@@ -440,7 +429,7 @@ func TestCachedRoleRepository_Get(t *testing.T) {
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Do(func(_ context.Context, _ string, dst any) {
-						if rolePtr, ok := dst.(**model.Role); ok {
+						if rolePtr, ok := dst.(**Role); ok {
 							*rolePtr = role
 						}
 					}).Return(nil)
@@ -452,8 +441,8 @@ func TestCachedRoleRepository_Get(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				roleRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID, _ *model.Role) RoleRepository {
-					return mock.NewRoleRepository(ctrl)
+				roleRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID, _ *Role) RoleRepository {
+					return NewMockRoleRepository(ctrl)
 				},
 			},
 			args: args{
@@ -461,8 +450,8 @@ func TestCachedRoleRepository_Get(t *testing.T) {
 				id:        model.MustNewID(model.ResourceTypeRole),
 				belongsTo: model.MustNewID(model.ResourceTypeOrganization),
 			},
-			want: func(_ model.ID) *model.Role {
-				return &model.Role{
+			want: func(_ model.ID) *Role {
+				return &Role{
 					ID:          model.MustNewID(model.ResourceTypeRole),
 					Name:        "test role",
 					Description: "test description",
@@ -474,7 +463,7 @@ func TestCachedRoleRepository_Get(t *testing.T) {
 		{
 			name: "get uncached role error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *model.Role) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *Role) *redisBaseRepository {
 					key := composeCacheKey(model.ResourceTypeRole.String(), id.String())
 
 					db, err := NewRedisDatabase(
@@ -498,8 +487,8 @@ func TestCachedRoleRepository_Get(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				roleRepo: func(ctrl *gomock.Controller, ctx context.Context, id, belongsTo model.ID, _ *model.Role) RoleRepository {
-					repo := mock.NewRoleRepository(ctrl)
+				roleRepo: func(ctrl *gomock.Controller, ctx context.Context, id, belongsTo model.ID, _ *Role) RoleRepository {
+					repo := NewMockRoleRepository(ctrl)
 					repo.EXPECT().Get(ctx, id, belongsTo).Return(nil, ErrNotFound)
 					return repo
 				},
@@ -514,7 +503,7 @@ func TestCachedRoleRepository_Get(t *testing.T) {
 		{
 			name: "get cached role error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *model.Role) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *Role) *redisBaseRepository {
 					key := composeCacheKey(model.ResourceTypeRole.String(), id.String())
 
 					db, err := NewRedisDatabase(
@@ -538,8 +527,8 @@ func TestCachedRoleRepository_Get(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				roleRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID, _ *model.Role) RoleRepository {
-					return mock.NewRoleRepository(ctrl)
+				roleRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID, _ *Role) RoleRepository {
+					return NewMockRoleRepository(ctrl)
 				},
 			},
 			args: args{
@@ -552,7 +541,7 @@ func TestCachedRoleRepository_Get(t *testing.T) {
 		{
 			name: "get uncached role cache set error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, role *model.Role) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, role *Role) *redisBaseRepository {
 					key := composeCacheKey(model.ResourceTypeRole.String(), id.String())
 
 					db, err := NewRedisDatabase(
@@ -582,8 +571,8 @@ func TestCachedRoleRepository_Get(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				roleRepo: func(ctrl *gomock.Controller, ctx context.Context, id, belongsTo model.ID, role *model.Role) RoleRepository {
-					repo := mock.NewRoleRepository(ctrl)
+				roleRepo: func(ctrl *gomock.Controller, ctx context.Context, id, belongsTo model.ID, role *Role) RoleRepository {
+					repo := NewMockRoleRepository(ctrl)
 					repo.EXPECT().Get(ctx, id, belongsTo).Return(role, nil)
 					return repo
 				},
@@ -602,7 +591,7 @@ func TestCachedRoleRepository_Get(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			var want *model.Role
+			var want *Role
 			if tt.want != nil {
 				want = tt.want(tt.args.id)
 			}
@@ -620,8 +609,8 @@ func TestCachedRoleRepository_Get(t *testing.T) {
 
 func TestCachedRoleRepository_GetAllBelongsTo(t *testing.T) {
 	type fields struct {
-		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, roles []*model.Role) *redisBaseRepository
-		roleRepo  func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, roles []*model.Role) RoleRepository
+		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, roles []*Role) *redisBaseRepository
+		roleRepo  func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, roles []*Role) RoleRepository
 	}
 	type args struct {
 		ctx       context.Context
@@ -633,13 +622,13 @@ func TestCachedRoleRepository_GetAllBelongsTo(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    []*model.Role
+		want    []*Role
 		wantErr error
 	}{
 		{
 			name: "get uncached roles",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, roles []*model.Role) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, roles []*Role) *redisBaseRepository {
 					key := composeCacheKey(model.ResourceTypeRole.String(), "GetAllBelongsTo", belongsTo.String(), offset, limit)
 
 					db, err := NewRedisDatabase(
@@ -669,8 +658,8 @@ func TestCachedRoleRepository_GetAllBelongsTo(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				roleRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, roles []*model.Role) RoleRepository {
-					repo := mock.NewRoleRepository(ctrl)
+				roleRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, roles []*Role) RoleRepository {
+					repo := NewMockRoleRepository(ctrl)
 					repo.EXPECT().GetAllBelongsTo(ctx, belongsTo, offset, limit).Return(roles, nil)
 					return repo
 				},
@@ -679,7 +668,7 @@ func TestCachedRoleRepository_GetAllBelongsTo(t *testing.T) {
 				ctx:       context.Background(),
 				belongsTo: model.MustNewID(model.ResourceTypeOrganization),
 			},
-			want: []*model.Role{
+			want: []*Role{
 				{
 					ID:          model.MustNewID(model.ResourceTypeRole),
 					Name:        "test role",
@@ -699,7 +688,7 @@ func TestCachedRoleRepository_GetAllBelongsTo(t *testing.T) {
 		{
 			name: "get cached roles",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, roles []*model.Role) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, roles []*Role) *redisBaseRepository {
 					key := composeCacheKey(model.ResourceTypeRole.String(), "GetAllBelongsTo", belongsTo.String(), offset, limit)
 
 					db, err := NewRedisDatabase(
@@ -715,7 +704,7 @@ func TestCachedRoleRepository_GetAllBelongsTo(t *testing.T) {
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Do(func(_ context.Context, _ string, dst any) {
-						if rolesPtr, ok := dst.(*[]*model.Role); ok {
+						if rolesPtr, ok := dst.(*[]*Role); ok {
 							*rolesPtr = roles
 						}
 					}).Return(nil)
@@ -727,15 +716,15 @@ func TestCachedRoleRepository_GetAllBelongsTo(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				roleRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _, _ int, _ []*model.Role) RoleRepository {
-					return mock.NewRoleRepository(ctrl)
+				roleRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _, _ int, _ []*Role) RoleRepository {
+					return NewMockRoleRepository(ctrl)
 				},
 			},
 			args: args{
 				ctx:       context.Background(),
 				belongsTo: model.MustNewID(model.ResourceTypeOrganization),
 			},
-			want: []*model.Role{
+			want: []*Role{
 				{
 					ID:          model.MustNewID(model.ResourceTypeRole),
 					Name:        "test role",
@@ -755,7 +744,7 @@ func TestCachedRoleRepository_GetAllBelongsTo(t *testing.T) {
 		{
 			name: "get uncached roles error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, _ []*model.Role) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, _ []*Role) *redisBaseRepository {
 					key := composeCacheKey(model.ResourceTypeRole.String(), "GetAllBelongsTo", belongsTo.String(), offset, limit)
 
 					db, err := NewRedisDatabase(
@@ -779,8 +768,8 @@ func TestCachedRoleRepository_GetAllBelongsTo(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				roleRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, _ []*model.Role) RoleRepository {
-					repo := mock.NewRoleRepository(ctrl)
+				roleRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, _ []*Role) RoleRepository {
+					repo := NewMockRoleRepository(ctrl)
 					repo.EXPECT().GetAllBelongsTo(ctx, belongsTo, offset, limit).Return(nil, ErrNotFound)
 					return repo
 				},
@@ -794,7 +783,7 @@ func TestCachedRoleRepository_GetAllBelongsTo(t *testing.T) {
 		{
 			name: "get get roles cache error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, _ []*model.Role) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, _ []*Role) *redisBaseRepository {
 					key := composeCacheKey(model.ResourceTypeRole.String(), "GetAllBelongsTo", belongsTo.String(), offset, limit)
 
 					db, err := NewRedisDatabase(
@@ -818,8 +807,8 @@ func TestCachedRoleRepository_GetAllBelongsTo(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				roleRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _, _ int, _ []*model.Role) RoleRepository {
-					return mock.NewRoleRepository(ctrl)
+				roleRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _, _ int, _ []*Role) RoleRepository {
+					return NewMockRoleRepository(ctrl)
 				},
 			},
 			args: args{
@@ -831,7 +820,7 @@ func TestCachedRoleRepository_GetAllBelongsTo(t *testing.T) {
 		{
 			name: "get uncached roles cache set error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, roles []*model.Role) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, roles []*Role) *redisBaseRepository {
 					key := composeCacheKey(model.ResourceTypeRole.String(), "GetAllBelongsTo", belongsTo.String(), offset, limit)
 
 					db, err := NewRedisDatabase(
@@ -861,8 +850,8 @@ func TestCachedRoleRepository_GetAllBelongsTo(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				roleRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, roles []*model.Role) RoleRepository {
-					repo := mock.NewRoleRepository(ctrl)
+				roleRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, roles []*Role) RoleRepository {
+					repo := NewMockRoleRepository(ctrl)
 					repo.EXPECT().GetAllBelongsTo(ctx, belongsTo, offset, limit).Return(roles, nil)
 					return repo
 				},
@@ -893,26 +882,26 @@ func TestCachedRoleRepository_GetAllBelongsTo(t *testing.T) {
 
 func TestCachedRoleRepository_Update(t *testing.T) {
 	type fields struct {
-		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, role *model.Role) *redisBaseRepository
-		roleRepo  func(ctrl *gomock.Controller, ctx context.Context, id, belongsTo model.ID, patch map[string]any, role *model.Role) RoleRepository
+		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, role *Role) *redisBaseRepository
+		roleRepo  func(ctrl *gomock.Controller, ctx context.Context, id, belongsTo model.ID, opts UpdateRoleOpts, role *Role) RoleRepository
 	}
 	type args struct {
 		ctx       context.Context
 		id        model.ID
 		belongsTo model.ID
-		patch     map[string]any
+		opts      UpdateRoleOpts
 	}
 	tests := []struct {
 		name    string
 		fields  fields
 		args    args
-		want    *model.Role
+		want    *Role
 		wantErr error
 	}{
 		{
 			name: "update role",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, role *model.Role) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, role *Role) *redisBaseRepository {
 					key := composeCacheKey(model.ResourceTypeRole.String(), id.String())
 					getAllKey := composeCacheKey(model.ResourceTypeRole.String(), "GetAllBelongsTo", "*")
 
@@ -949,9 +938,9 @@ func TestCachedRoleRepository_Update(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				roleRepo: func(ctrl *gomock.Controller, ctx context.Context, id, belongsTo model.ID, patch map[string]any, role *model.Role) RoleRepository {
-					repo := mock.NewRoleRepository(ctrl)
-					repo.EXPECT().Update(ctx, id, belongsTo, patch).Return(role, nil)
+				roleRepo: func(ctrl *gomock.Controller, ctx context.Context, id, belongsTo model.ID, opts UpdateRoleOpts, role *Role) RoleRepository {
+					repo := NewMockRoleRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, belongsTo, opts).Return(role, nil)
 					return repo
 				},
 			},
@@ -959,12 +948,12 @@ func TestCachedRoleRepository_Update(t *testing.T) {
 				ctx:       context.Background(),
 				id:        model.MustNewID(model.ResourceTypeRole),
 				belongsTo: model.MustNewID(model.ResourceTypeOrganization),
-				patch: map[string]any{
-					"name":        "updated role",
-					"description": "updated description",
+				opts: UpdateRoleOpts{
+					Name:        optional.Some("updated role"),
+					Description: optional.Some("updated description"),
 				},
 			},
-			want: &model.Role{
+			want: &Role{
 				ID:          model.MustNewID(model.ResourceTypeRole),
 				Name:        "test role",
 				Description: "test description",
@@ -973,7 +962,7 @@ func TestCachedRoleRepository_Update(t *testing.T) {
 		{
 			name: "update role with error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ *model.Role) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ *Role) *redisBaseRepository {
 					db, err := NewRedisDatabase(
 						WithRedisClient(mock.NewUniversalClient(ctrl)),
 					)
@@ -986,9 +975,9 @@ func TestCachedRoleRepository_Update(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				roleRepo: func(ctrl *gomock.Controller, ctx context.Context, id, belongsTo model.ID, patch map[string]any, _ *model.Role) RoleRepository {
-					repo := mock.NewRoleRepository(ctrl)
-					repo.EXPECT().Update(ctx, id, belongsTo, patch).Return(nil, ErrNotFound)
+				roleRepo: func(ctrl *gomock.Controller, ctx context.Context, id, belongsTo model.ID, opts UpdateRoleOpts, _ *Role) RoleRepository {
+					repo := NewMockRoleRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, belongsTo, opts).Return(nil, ErrNotFound)
 					return repo
 				},
 			},
@@ -996,9 +985,9 @@ func TestCachedRoleRepository_Update(t *testing.T) {
 				ctx:       context.Background(),
 				id:        model.MustNewID(model.ResourceTypeRole),
 				belongsTo: model.MustNewID(model.ResourceTypeOrganization),
-				patch: map[string]any{
-					"name":        "updated role",
-					"description": "updated description",
+				opts: UpdateRoleOpts{
+					Name:        optional.Some("updated role"),
+					Description: optional.Some("updated description"),
 				},
 			},
 			wantErr: ErrNotFound,
@@ -1006,7 +995,7 @@ func TestCachedRoleRepository_Update(t *testing.T) {
 		{
 			name: "update role set cache error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, role *model.Role) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, role *Role) *redisBaseRepository {
 					key := composeCacheKey(model.ResourceTypeRole.String(), id.String())
 
 					db, err := NewRedisDatabase(
@@ -1034,9 +1023,9 @@ func TestCachedRoleRepository_Update(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				roleRepo: func(ctrl *gomock.Controller, ctx context.Context, id, belongsTo model.ID, patch map[string]any, role *model.Role) RoleRepository {
-					repo := mock.NewRoleRepository(ctrl)
-					repo.EXPECT().Update(ctx, id, belongsTo, patch).Return(role, nil)
+				roleRepo: func(ctrl *gomock.Controller, ctx context.Context, id, belongsTo model.ID, opts UpdateRoleOpts, role *Role) RoleRepository {
+					repo := NewMockRoleRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, belongsTo, opts).Return(role, nil)
 					return repo
 				},
 			},
@@ -1044,9 +1033,9 @@ func TestCachedRoleRepository_Update(t *testing.T) {
 				ctx:       context.Background(),
 				id:        model.MustNewID(model.ResourceTypeRole),
 				belongsTo: model.MustNewID(model.ResourceTypeOrganization),
-				patch: map[string]any{
-					"name":        "updated role",
-					"description": "updated description",
+				opts: UpdateRoleOpts{
+					Name:        optional.Some("updated role"),
+					Description: optional.Some("updated description"),
 				},
 			},
 			wantErr: ErrCacheWrite,
@@ -1054,7 +1043,7 @@ func TestCachedRoleRepository_Update(t *testing.T) {
 		{
 			name: "update role delete get all cache error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, role *model.Role) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, role *Role) *redisBaseRepository {
 					key := composeCacheKey(model.ResourceTypeRole.String(), id.String())
 					getAllKey := composeCacheKey(model.ResourceTypeRole.String(), "GetAllBelongsTo", "*")
 
@@ -1091,9 +1080,9 @@ func TestCachedRoleRepository_Update(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				roleRepo: func(ctrl *gomock.Controller, ctx context.Context, id, belongsTo model.ID, patch map[string]any, role *model.Role) RoleRepository {
-					repo := mock.NewRoleRepository(ctrl)
-					repo.EXPECT().Update(ctx, id, belongsTo, patch).Return(role, nil)
+				roleRepo: func(ctrl *gomock.Controller, ctx context.Context, id, belongsTo model.ID, opts UpdateRoleOpts, role *Role) RoleRepository {
+					repo := NewMockRoleRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, belongsTo, opts).Return(role, nil)
 					return repo
 				},
 			},
@@ -1101,9 +1090,9 @@ func TestCachedRoleRepository_Update(t *testing.T) {
 				ctx:       context.Background(),
 				id:        model.MustNewID(model.ResourceTypeRole),
 				belongsTo: model.MustNewID(model.ResourceTypeOrganization),
-				patch: map[string]any{
-					"name":        "updated role",
-					"description": "updated description",
+				opts: UpdateRoleOpts{
+					Name:        optional.Some("updated role"),
+					Description: optional.Some("updated description"),
 				},
 			},
 			wantErr: ErrCacheDelete,
@@ -1118,9 +1107,9 @@ func TestCachedRoleRepository_Update(t *testing.T) {
 
 			r := &RedisCachedRoleRepository{
 				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, tt.want),
-				roleRepo:  tt.fields.roleRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.belongsTo, tt.args.patch, tt.want),
+				roleRepo:  tt.fields.roleRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.belongsTo, tt.args.opts, tt.want),
 			}
-			got, err := r.Update(tt.args.ctx, tt.args.id, tt.args.belongsTo, tt.args.patch)
+			got, err := r.Update(tt.args.ctx, tt.args.id, tt.args.belongsTo, tt.args.opts)
 			require.ErrorIs(t, err, tt.wantErr)
 			require.Equal(t, tt.want, got)
 		})
@@ -1183,7 +1172,7 @@ func TestCachedRoleRepository_AddMember(t *testing.T) {
 					}
 				},
 				roleRepo: func(ctrl *gomock.Controller, ctx context.Context, id, memberID, belongsToID model.ID) RoleRepository {
-					repo := mock.NewRoleRepository(ctrl)
+					repo := NewMockRoleRepository(ctrl)
 					repo.EXPECT().AddMember(ctx, id, memberID, belongsToID).Return(nil)
 					return repo
 				},
@@ -1234,7 +1223,7 @@ func TestCachedRoleRepository_AddMember(t *testing.T) {
 					}
 				},
 				roleRepo: func(ctrl *gomock.Controller, ctx context.Context, id, memberID, belongsToID model.ID) RoleRepository {
-					repo := mock.NewRoleRepository(ctrl)
+					repo := NewMockRoleRepository(ctrl)
 					repo.EXPECT().AddMember(ctx, id, memberID, belongsToID).Return(ErrRoleDelete)
 					return repo
 				},
@@ -1277,7 +1266,7 @@ func TestCachedRoleRepository_AddMember(t *testing.T) {
 					}
 				},
 				roleRepo: func(ctrl *gomock.Controller, _ context.Context, _, _, _ model.ID) RoleRepository {
-					repo := mock.NewRoleRepository(ctrl)
+					repo := NewMockRoleRepository(ctrl)
 					return repo
 				},
 			},
@@ -1326,7 +1315,7 @@ func TestCachedRoleRepository_AddMember(t *testing.T) {
 					}
 				},
 				roleRepo: func(ctrl *gomock.Controller, _ context.Context, _, _, _ model.ID) RoleRepository {
-					return mock.NewRoleRepository(ctrl)
+					return NewMockRoleRepository(ctrl)
 				},
 			},
 			args: args{
@@ -1410,7 +1399,7 @@ func TestCachedRoleRepository_RemoveMember(t *testing.T) {
 					}
 				},
 				roleRepo: func(ctrl *gomock.Controller, ctx context.Context, id, memberID, belongsToID model.ID) RoleRepository {
-					repo := mock.NewRoleRepository(ctrl)
+					repo := NewMockRoleRepository(ctrl)
 					repo.EXPECT().RemoveMember(ctx, id, memberID, belongsToID).Return(nil)
 					return repo
 				},
@@ -1461,7 +1450,7 @@ func TestCachedRoleRepository_RemoveMember(t *testing.T) {
 					}
 				},
 				roleRepo: func(ctrl *gomock.Controller, ctx context.Context, id, memberID, belongsToID model.ID) RoleRepository {
-					repo := mock.NewRoleRepository(ctrl)
+					repo := NewMockRoleRepository(ctrl)
 					repo.EXPECT().RemoveMember(ctx, id, memberID, belongsToID).Return(ErrRoleDelete)
 					return repo
 				},
@@ -1504,7 +1493,7 @@ func TestCachedRoleRepository_RemoveMember(t *testing.T) {
 					}
 				},
 				roleRepo: func(ctrl *gomock.Controller, _ context.Context, _, _, _ model.ID) RoleRepository {
-					repo := mock.NewRoleRepository(ctrl)
+					repo := NewMockRoleRepository(ctrl)
 					return repo
 				},
 			},
@@ -1553,7 +1542,7 @@ func TestCachedRoleRepository_RemoveMember(t *testing.T) {
 					}
 				},
 				roleRepo: func(ctrl *gomock.Controller, _ context.Context, _, _, _ model.ID) RoleRepository {
-					return mock.NewRoleRepository(ctrl)
+					return NewMockRoleRepository(ctrl)
 				},
 			},
 			args: args{
@@ -1646,7 +1635,7 @@ func TestCachedRoleRepository_Delete(t *testing.T) {
 					}
 				},
 				roleRepo: func(ctrl *gomock.Controller, ctx context.Context, id, belongsTo model.ID) RoleRepository {
-					repo := mock.NewRoleRepository(ctrl)
+					repo := NewMockRoleRepository(ctrl)
 					repo.EXPECT().Delete(ctx, id, belongsTo).Return(nil)
 					return repo
 				},
@@ -1706,7 +1695,7 @@ func TestCachedRoleRepository_Delete(t *testing.T) {
 					}
 				},
 				roleRepo: func(ctrl *gomock.Controller, ctx context.Context, id, belongsTo model.ID) RoleRepository {
-					repo := mock.NewRoleRepository(ctrl)
+					repo := NewMockRoleRepository(ctrl)
 					repo.EXPECT().Delete(ctx, id, belongsTo).Return(ErrRoleDelete)
 					return repo
 				},
@@ -1748,7 +1737,7 @@ func TestCachedRoleRepository_Delete(t *testing.T) {
 					}
 				},
 				roleRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID) RoleRepository {
-					repo := mock.NewRoleRepository(ctrl)
+					repo := NewMockRoleRepository(ctrl)
 					return repo
 				},
 			},
@@ -1796,7 +1785,7 @@ func TestCachedRoleRepository_Delete(t *testing.T) {
 					}
 				},
 				roleRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID) RoleRepository {
-					return mock.NewRoleRepository(ctrl)
+					return NewMockRoleRepository(ctrl)
 				},
 			},
 			args: args{
@@ -1849,7 +1838,7 @@ func TestCachedRoleRepository_Delete(t *testing.T) {
 					}
 				},
 				roleRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID) RoleRepository {
-					return mock.NewRoleRepository(ctrl)
+					return NewMockRoleRepository(ctrl)
 				},
 			},
 			args: args{
@@ -1908,7 +1897,7 @@ func TestCachedRoleRepository_Delete(t *testing.T) {
 					}
 				},
 				roleRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID) RoleRepository {
-					return mock.NewRoleRepository(ctrl)
+					return NewMockRoleRepository(ctrl)
 				},
 			},
 			args: args{

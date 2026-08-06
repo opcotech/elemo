@@ -6,8 +6,10 @@ import (
 	"time"
 
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
+
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/convert"
+	"github.com/opcotech/elemo/internal/pkg/optional"
 )
 
 var (
@@ -17,13 +19,149 @@ var (
 	ErrUserUpdate = errors.New("failed to update user") // user cannot be updated
 )
 
-//go:generate mockgen -source=user.go -destination=../testutil/mock/user_repo_gen.go -package=mock -mock_names "UserRepository=UserRepository"
+// User represents a user persisted by the repository.
+type User struct {
+	ID          model.ID         `json:"id"`
+	Username    string           `json:"username"`
+	Email       string           `json:"email"`
+	Password    string           `json:"password"`
+	Status      model.UserStatus `json:"status"`
+	FirstName   string           `json:"first_name"`
+	LastName    string           `json:"last_name"`
+	Picture     string           `json:"picture"`
+	Title       string           `json:"title"`
+	Bio         string           `json:"bio"`
+	Phone       string           `json:"phone"`
+	Address     string           `json:"address"`
+	Links       []string         `json:"links"`
+	Languages   []model.Language `json:"languages"`
+	Documents   []model.ID       `json:"documents"`
+	Permissions []model.ID       `json:"permissions"`
+	CreatedAt   *time.Time       `json:"created_at"`
+	UpdatedAt   *time.Time       `json:"updated_at"`
+}
+
+// CreateUserOpts holds the data required to create a user.
+type CreateUserOpts struct {
+	Username  string
+	Email     string
+	Password  string
+	Status    model.UserStatus
+	FirstName string
+	LastName  string
+	Picture   string
+	Title     string
+	Bio       string
+	Phone     string
+	Address   string
+	Links     []string
+	Languages []model.Language
+}
+
+// UpdateUserOpts holds the fields that can be updated on a user.
+// Undefined fields (Defined == false) are left unchanged.
+type UpdateUserOpts struct {
+	Username  optional.Optional[string]
+	Email     optional.Optional[string]
+	Password  optional.Optional[string]
+	Status    optional.Optional[model.UserStatus]
+	FirstName optional.Optional[string]
+	LastName  optional.Optional[string]
+	Picture   optional.Optional[string]
+	Title     optional.Optional[string]
+	Bio       optional.Optional[string]
+	Phone     optional.Optional[string]
+	Address   optional.Optional[string]
+	Links     optional.Optional[[]string]
+	Languages optional.Optional[[]model.Language]
+}
+
+// patch builds a Neo4j property map from defined optional fields.
+func (o UpdateUserOpts) patch() map[string]any {
+	p := make(map[string]any)
+
+	if o.Username.Defined {
+		p["username"] = *o.Username.Value
+	}
+	if o.Email.Defined {
+		p["email"] = *o.Email.Value
+	}
+	if o.Password.Defined {
+		p["password"] = *o.Password.Value
+	}
+	if o.Status.Defined {
+		p["status"] = o.Status.Value.String()
+	}
+	if o.FirstName.Defined {
+		p["first_name"] = *o.FirstName.Value
+	}
+	if o.LastName.Defined {
+		p["last_name"] = *o.LastName.Value
+	}
+	if o.Picture.Defined {
+		if o.Picture.Value == nil {
+			p["picture"] = nil
+		} else {
+			p["picture"] = *o.Picture.Value
+		}
+	}
+	if o.Title.Defined {
+		if o.Title.Value == nil {
+			p["title"] = nil
+		} else {
+			p["title"] = *o.Title.Value
+		}
+	}
+	if o.Bio.Defined {
+		if o.Bio.Value == nil {
+			p["bio"] = nil
+		} else {
+			p["bio"] = *o.Bio.Value
+		}
+	}
+	if o.Phone.Defined {
+		if o.Phone.Value == nil {
+			p["phone"] = nil
+		} else {
+			p["phone"] = *o.Phone.Value
+		}
+	}
+	if o.Address.Defined {
+		if o.Address.Value == nil {
+			p["address"] = nil
+		} else {
+			p["address"] = *o.Address.Value
+		}
+	}
+	if o.Links.Defined {
+		if o.Links.Value == nil {
+			p["links"] = nil
+		} else {
+			p["links"] = *o.Links.Value
+		}
+	}
+	if o.Languages.Defined {
+		if o.Languages.Value == nil {
+			p["languages"] = nil
+		} else {
+			languages := make([]string, len(*o.Languages.Value))
+			for i, l := range *o.Languages.Value {
+				languages[i] = l.String()
+			}
+			p["languages"] = languages
+		}
+	}
+
+	return p
+}
+
+//go:generate mockgen -source=user.go -destination=user_mock_gen.go -package=repository -mock_names "UserRepository=MockUserRepository"
 type UserRepository interface {
-	Create(ctx context.Context, user *model.User) error
-	Get(ctx context.Context, id model.ID) (*model.User, error)
-	GetByEmail(ctx context.Context, email string) (*model.User, error)
-	GetAll(ctx context.Context, offset, limit int) ([]*model.User, error)
-	Update(ctx context.Context, id model.ID, patch map[string]any) (*model.User, error)
+	Create(ctx context.Context, opts CreateUserOpts) (*User, error)
+	Get(ctx context.Context, id model.ID) (*User, error)
+	GetByEmail(ctx context.Context, email string) (*User, error)
+	GetAll(ctx context.Context, offset, limit int) ([]*User, error)
+	Update(ctx context.Context, id model.ID, opts UpdateUserOpts) (*User, error)
 	Delete(ctx context.Context, id model.ID) error
 }
 
@@ -31,15 +169,15 @@ const (
 	languageIDType = "Language" // label for language nodes
 )
 
-// UserRepository is a repository for managing users.
+// Neo4jUserRepository is a repository for managing users.
 type Neo4jUserRepository struct {
 	*neo4jBaseRepository
 }
 
 // scan is a helper function for scanning a user from a Neo4j Record.
-func (r *Neo4jUserRepository) scan(up, pp, dp string) func(rec *neo4j.Record) (*model.User, error) {
-	return func(rec *neo4j.Record) (*model.User, error) {
-		user := new(model.User)
+func (r *Neo4jUserRepository) scan(up, pp, dp string) func(rec *neo4j.Record) (*User, error) {
+	return func(rec *neo4j.Record) (*User, error) {
+		user := new(User)
 		user.Links = make([]string, 0)
 
 		val, _, err := neo4j.GetRecordValue[neo4j.Node](rec, up)
@@ -61,29 +199,47 @@ func (r *Neo4jUserRepository) scan(up, pp, dp string) func(rec *neo4j.Record) (*
 			return nil, err
 		}
 
-		if err := user.Validate(); err != nil {
-			return nil, err
-		}
-
 		return user, nil
 	}
 }
 
-// Create creates a new user if it does not already exist. Also, create all
-// missing languages and user-language relationships.
-func (r *Neo4jUserRepository) Create(ctx context.Context, user *model.User) error {
+// Create creates a new user if it does not already exist.
+func (r *Neo4jUserRepository) Create(ctx context.Context, opts CreateUserOpts) (*User, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.UserRepository/Create")
 	defer span.End()
 
-	if err := user.Validate(); err != nil {
-		return errors.Join(ErrUserCreate, err)
-	}
-
 	createdAt := time.Now().UTC()
 
-	user.ID = model.MustNewID(model.ResourceTypeUser)
-	user.CreatedAt = convert.ToPointer(createdAt)
-	user.UpdatedAt = nil
+	user := &User{
+		ID:          model.MustNewID(model.ResourceTypeUser),
+		Username:    opts.Username,
+		Email:       opts.Email,
+		Password:    opts.Password,
+		Status:      opts.Status,
+		FirstName:   opts.FirstName,
+		LastName:    opts.LastName,
+		Picture:     opts.Picture,
+		Title:       opts.Title,
+		Bio:         opts.Bio,
+		Phone:       opts.Phone,
+		Address:     opts.Address,
+		Links:       opts.Links,
+		Languages:   opts.Languages,
+		Documents:   make([]model.ID, 0),
+		Permissions: make([]model.ID, 0),
+		CreatedAt:   convert.ToPointer(createdAt),
+		UpdatedAt:   nil,
+	}
+
+	if user.Links == nil {
+		user.Links = make([]string, 0)
+	}
+	if user.Languages == nil {
+		user.Languages = make([]model.Language, 0)
+	}
+	if user.Status == 0 {
+		user.Status = model.UserStatusActive
+	}
 
 	languages := make([]string, len(user.Languages))
 	for i, l := range user.Languages {
@@ -117,14 +273,14 @@ func (r *Neo4jUserRepository) Create(ctx context.Context, user *model.User) erro
 	}
 
 	if err := Neo4jExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
-		return errors.Join(err, ErrUserCreate)
+		return nil, errors.Join(err, ErrUserCreate)
 	}
 
-	return nil
+	return user, nil
 }
 
 // Get returns a user by its ID.
-func (r *Neo4jUserRepository) Get(ctx context.Context, id model.ID) (*model.User, error) {
+func (r *Neo4jUserRepository) Get(ctx context.Context, id model.ID) (*User, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.UserRepository/Get")
 	defer span.End()
 
@@ -149,7 +305,7 @@ func (r *Neo4jUserRepository) Get(ctx context.Context, id model.ID) (*model.User
 }
 
 // GetByEmail returns a user by its email.
-func (r *Neo4jUserRepository) GetByEmail(ctx context.Context, email string) (*model.User, error) {
+func (r *Neo4jUserRepository) GetByEmail(ctx context.Context, email string) (*User, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.UserRepository/GetByEmail")
 	defer span.End()
 
@@ -174,7 +330,7 @@ func (r *Neo4jUserRepository) GetByEmail(ctx context.Context, email string) (*mo
 }
 
 // GetAll returns all users respecting the given offset and limit.
-func (r *Neo4jUserRepository) GetAll(ctx context.Context, offset, limit int) ([]*model.User, error) {
+func (r *Neo4jUserRepository) GetAll(ctx context.Context, offset, limit int) ([]*User, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.UserRepository/GetAllBelongsTo")
 	defer span.End()
 
@@ -202,8 +358,8 @@ func (r *Neo4jUserRepository) GetAll(ctx context.Context, offset, limit int) ([]
 	return users, nil
 }
 
-// Update updates a user by its ID with any given patch.
-func (r *Neo4jUserRepository) Update(ctx context.Context, id model.ID, patch map[string]any) (*model.User, error) {
+// Update updates a user by its ID with any given opts.
+func (r *Neo4jUserRepository) Update(ctx context.Context, id model.ID, opts UpdateUserOpts) (*User, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.UserRepository/Update")
 	defer span.End()
 
@@ -217,7 +373,7 @@ func (r *Neo4jUserRepository) Update(ctx context.Context, id model.ID, patch map
 	`
 	params := map[string]any{
 		"id":    id.String(),
-		"patch": patch,
+		"patch": opts.patch(),
 	}
 
 	updated, err := Neo4jExecuteWriteAndReadSingle(ctx, r.db, cypher, params, r.scan("u", "p", "d"))
@@ -295,26 +451,25 @@ func clearUserAllCrossCache(ctx context.Context, r *redisBaseRepository) error {
 	return nil
 }
 
-// CachedUserRepository implements caching on the
-// repository.UserRepository.
+// RedisCachedUserRepository implements caching on the UserRepository.
 type RedisCachedUserRepository struct {
 	cacheRepo *redisBaseRepository
 	userRepo  UserRepository
 }
 
-func (r *RedisCachedUserRepository) Create(ctx context.Context, user *model.User) error {
+func (r *RedisCachedUserRepository) Create(ctx context.Context, opts CreateUserOpts) (*User, error) {
 	if err := clearUserAll(ctx, r.cacheRepo); err != nil {
-		return err
+		return nil, err
 	}
 	if err := clearUserAllCrossCache(ctx, r.cacheRepo); err != nil {
-		return err
+		return nil, err
 	}
 
-	return r.userRepo.Create(ctx, user)
+	return r.userRepo.Create(ctx, opts)
 }
 
-func (r *RedisCachedUserRepository) Get(ctx context.Context, id model.ID) (*model.User, error) {
-	var user *model.User
+func (r *RedisCachedUserRepository) Get(ctx context.Context, id model.ID) (*User, error) {
+	var user *User
 	var err error
 
 	key := composeCacheKey(model.ResourceTypeUser.String(), id.String())
@@ -337,8 +492,8 @@ func (r *RedisCachedUserRepository) Get(ctx context.Context, id model.ID) (*mode
 	return user, nil
 }
 
-func (r *RedisCachedUserRepository) GetByEmail(ctx context.Context, email string) (*model.User, error) {
-	var user *model.User
+func (r *RedisCachedUserRepository) GetByEmail(ctx context.Context, email string) (*User, error) {
+	var user *User
 	var err error
 
 	key := composeCacheKey(model.ResourceTypeUser.String(), "GetByEmail", email)
@@ -361,8 +516,8 @@ func (r *RedisCachedUserRepository) GetByEmail(ctx context.Context, email string
 	return user, nil
 }
 
-func (r *RedisCachedUserRepository) GetAll(ctx context.Context, offset, limit int) ([]*model.User, error) {
-	var users []*model.User
+func (r *RedisCachedUserRepository) GetAll(ctx context.Context, offset, limit int) ([]*User, error) {
+	var users []*User
 	var err error
 
 	key := composeCacheKey(model.ResourceTypeUser.String(), "GetAll", offset, limit)
@@ -385,11 +540,8 @@ func (r *RedisCachedUserRepository) GetAll(ctx context.Context, offset, limit in
 	return users, nil
 }
 
-func (r *RedisCachedUserRepository) Update(ctx context.Context, id model.ID, patch map[string]any) (*model.User, error) {
-	var user *model.User
-	var err error
-
-	user, err = r.userRepo.Update(ctx, id, patch)
+func (r *RedisCachedUserRepository) Update(ctx context.Context, id model.ID, opts UpdateUserOpts) (*User, error) {
+	user, err := r.userRepo.Update(ctx, id, opts)
 	if err != nil {
 		return nil, err
 	}

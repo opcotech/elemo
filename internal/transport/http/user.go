@@ -6,10 +6,11 @@ import (
 
 	oapiTypes "github.com/oapi-codegen/runtime/types"
 
+	"github.com/opcotech/elemo/internal/email"
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg"
 	"github.com/opcotech/elemo/internal/pkg/auth"
-	"github.com/opcotech/elemo/internal/pkg/convert"
+	"github.com/opcotech/elemo/internal/pkg/optional"
 	"github.com/opcotech/elemo/internal/pkg/password"
 	"github.com/opcotech/elemo/internal/service"
 	"github.com/opcotech/elemo/internal/transport/http/api"
@@ -35,12 +36,13 @@ func (c *userController) V1UsersCreate(ctx context.Context, request api.V1UsersC
 	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1UsersCreate")
 	defer span.End()
 
-	user, err := createUserJSONRequestBodyToUser(request.Body)
+	opts, err := createUserJSONRequestBodyToCreateUserOpts(request.Body)
 	if err != nil {
 		return api.V1UsersCreate400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
-	if err := c.userService.Create(ctx, user); err != nil {
+	user, err := c.userService.Create(ctx, opts)
+	if err != nil {
 		if errors.Is(err, service.ErrNoPermission) {
 			return api.V1UsersCreate403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		}
@@ -121,15 +123,15 @@ func (c *userController) V1UserUpdate(ctx context.Context, request api.V1UserUpd
 		return api.V1UserUpdate404JSONResponse{N404JSONResponse: notFound}, nil
 	}
 
-	patch, err := api.ConvertRequestToMap(request.Body)
-	if err != nil {
-		return api.V1UserUpdate400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
-	}
-
 	if request.Body.Password != nil && request.Body.NewPassword == nil || request.Body.Password == nil && request.Body.NewPassword != nil {
 		return api.V1UserUpdate400JSONResponse{N400JSONResponse: api.N400JSONResponse{
 			Message: "The old password and the new password must be provided together",
 		}}, nil
+	}
+
+	opts, err := updateUserJSONRequestBodyToUpdateUserOpts(request.Body)
+	if err != nil {
+		return api.V1UserUpdate400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
 	if request.Body.Password != nil && request.Body.NewPassword != nil {
@@ -158,12 +160,10 @@ func (c *userController) V1UserUpdate(ctx context.Context, request api.V1UserUpd
 			}}, nil
 		}
 
-		// Update the patch to use the new password hash for the password field
-		patch["password"] = convert.ToPointer(password.HashPassword(*request.Body.NewPassword))
-		delete(patch, "new_password")
+		opts.Password = optional.Some(password.HashPassword(*request.Body.NewPassword))
 	}
 
-	user, err := c.userService.Update(ctx, userID, patch)
+	user, err := c.userService.Update(ctx, userID, opts)
 	if err != nil {
 		if errors.Is(err, service.ErrNoPermission) {
 			return api.V1UserUpdate403JSONResponse{N403JSONResponse: permissionDenied}, nil
@@ -230,7 +230,11 @@ func (c *userController) V1UserRequestPasswordReset(ctx context.Context, request
 		return api.V1UserRequestPasswordReset400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
-	if err := c.emailService.SendAuthPasswordResetEmail(ctx, user, token); err != nil {
+	if err := c.emailService.SendAuthPasswordResetEmail(ctx, email.Recipient{
+		Email:     user.Email,
+		FirstName: user.FirstName,
+		LastName:  user.LastName,
+	}, token); err != nil {
 		return api.V1UserRequestPasswordReset500JSONResponse{
 			N500JSONResponse: api.N500JSONResponse{
 				Message: err.Error(),
@@ -281,7 +285,11 @@ func (c *userController) V1UserResetPassword(ctx context.Context, request api.V1
 			return api.V1UserResetPassword400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 		}
 
-		if err := c.emailService.SendAuthPasswordResetEmail(ctx, user, token); err != nil {
+		if err := c.emailService.SendAuthPasswordResetEmail(ctx, email.Recipient{
+			Email:     user.Email,
+			FirstName: user.FirstName,
+			LastName:  user.LastName,
+		}, token); err != nil {
 			return api.V1UserResetPassword500JSONResponse{
 				N500JSONResponse: api.N500JSONResponse{
 					Message: err.Error(),
@@ -292,18 +300,12 @@ func (c *userController) V1UserResetPassword(ctx context.Context, request api.V1
 		return api.V1UserResetPassword204Response{}, nil
 	}
 
-	patch, err := api.ConvertRequestToMap(request.Body)
-	if err != nil {
-		return api.V1UserResetPassword400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
-	}
-
-	// Override the password in the patch to hash it
-	patch["password"] = auth.HashPassword(request.Body.Password)
-
 	// Set the user ID in context for the update operation
 	ctx = context.WithValue(ctx, pkg.CtxKeyUserID, user.ID)
 
-	if _, err = c.userService.Update(ctx, user.ID, patch); err != nil {
+	if _, err = c.userService.Update(ctx, user.ID, service.UpdateUserOpts{
+		Password: optional.Some(auth.HashPassword(request.Body.Password)),
+	}); err != nil {
 		return api.V1UserResetPassword500JSONResponse{
 			N500JSONResponse: api.N500JSONResponse{
 				Message: err.Error(),
@@ -344,44 +346,100 @@ func NewUserController(opts ...ControllerOption) (UserController, error) {
 	return controller, nil
 }
 
-func createUserJSONRequestBodyToUser(body *api.V1UsersCreateJSONRequestBody) (*model.User, error) {
-	user, err := model.NewUser(body.Username, body.FirstName, body.LastName, string(body.Email), password.HashPassword(body.Password))
-	if err != nil {
-		return nil, err
-	}
-
+func createUserJSONRequestBodyToCreateUserOpts(body *api.V1UsersCreateJSONRequestBody) (service.CreateUserOpts, error) {
 	if body.FirstName == "" {
-		return nil, errors.New("FirstName is required")
+		return service.CreateUserOpts{}, errors.New("FirstName is required")
 	}
 	if body.LastName == "" {
-		return nil, errors.New("LastName is required")
+		return service.CreateUserOpts{}, errors.New("LastName is required")
 	}
 
-	user.FirstName = body.FirstName
-	user.LastName = body.LastName
-
-	user.Title = pkg.GetDefaultPtr(body.Title, "")
-	user.Picture = pkg.GetDefaultPtr(body.Picture, "")
-	user.Bio = pkg.GetDefaultPtr(body.Bio, "")
-	user.Address = pkg.GetDefaultPtr(body.Address, "")
-	user.Phone = pkg.GetDefaultPtr(body.Phone, "")
-	user.Links = pkg.GetDefaultPtr(body.Links, make([]string, 0))
+	opts := service.CreateUserOpts{
+		Username:  body.Username,
+		FirstName: body.FirstName,
+		LastName:  body.LastName,
+		Email:     string(body.Email),
+		Password:  password.HashPassword(body.Password),
+		Status:    model.UserStatusActive,
+		Title:     pkg.GetDefaultPtr(body.Title, ""),
+		Picture:   pkg.GetDefaultPtr(body.Picture, ""),
+		Bio:       pkg.GetDefaultPtr(body.Bio, ""),
+		Address:   pkg.GetDefaultPtr(body.Address, ""),
+		Phone:     pkg.GetDefaultPtr(body.Phone, ""),
+		Links:     pkg.GetDefaultPtr(body.Links, make([]string, 0)),
+		Languages: make([]model.Language, 0),
+	}
 
 	if body.Languages != nil {
-		user.Languages = make([]model.Language, len(*body.Languages))
+		opts.Languages = make([]model.Language, len(*body.Languages))
 		for i, language := range *body.Languages {
 			var lang model.Language
 			if err := lang.UnmarshalText([]byte(language)); err != nil {
-				return nil, err
+				return service.CreateUserOpts{}, err
 			}
-			user.Languages[i] = lang
+			opts.Languages[i] = lang
 		}
 	}
 
-	return user, nil
+	return opts, nil
 }
 
-func userToDTO(user *model.User) api.User {
+func updateUserJSONRequestBodyToUpdateUserOpts(body *api.V1UserUpdateJSONRequestBody) (service.UpdateUserOpts, error) {
+	opts := service.UpdateUserOpts{}
+
+	if body.Username != nil {
+		opts.Username = optional.Some(*body.Username)
+	}
+	if body.Email != nil {
+		opts.Email = optional.Some(string(*body.Email))
+	}
+	if body.FirstName != nil {
+		opts.FirstName = optional.Some(*body.FirstName)
+	}
+	if body.LastName != nil {
+		opts.LastName = optional.Some(*body.LastName)
+	}
+	if body.Address.Defined {
+		opts.Address = body.Address
+	}
+	if body.Bio.Defined {
+		opts.Bio = body.Bio
+	}
+	if body.Phone.Defined {
+		opts.Phone = body.Phone
+	}
+	if body.Picture.Defined {
+		opts.Picture = body.Picture
+	}
+	if body.Title.Defined {
+		opts.Title = body.Title
+	}
+	if body.Links != nil {
+		opts.Links = optional.Some(*body.Links)
+	}
+	if body.Status != nil {
+		var status model.UserStatus
+		if err := status.UnmarshalText([]byte(string(*body.Status))); err != nil {
+			return service.UpdateUserOpts{}, err
+		}
+		opts.Status = optional.Some(status)
+	}
+	if body.Languages != nil {
+		languages := make([]model.Language, len(*body.Languages))
+		for i, language := range *body.Languages {
+			var lang model.Language
+			if err := lang.UnmarshalText([]byte(language)); err != nil {
+				return service.UpdateUserOpts{}, err
+			}
+			languages[i] = lang
+		}
+		opts.Languages = optional.Some(languages)
+	}
+
+	return opts, nil
+}
+
+func userToDTO(user *service.User) api.User {
 	u := api.User{
 		Id:        user.ID.String(),
 		Address:   &user.Address,

@@ -25,7 +25,7 @@ const (
 
 // EmailSender defines the interface to send emails.
 //
-//go:generate mockgen -source=email.go -destination=../testutil/mock/email_sender_gen.go -package=mock -mock_names EmailSender=EmailSender
+//go:generate mockgen -destination=../testutil/mock/email_sender_gen.go -package=mock -mock_names EmailSender=EmailSender github.com/opcotech/elemo/internal/service EmailSender
 type EmailSender interface {
 	// SendEmail sends an email to the given address using a template.
 	SendEmail(ctx context.Context, subject, to string, template *email.Template) error
@@ -33,21 +33,18 @@ type EmailSender interface {
 
 // EmailService defines the interface to send emails from templates.
 //
-//go:generate mockgen -source=email.go -destination=../testutil/mock/email_service_gen.go -package=mock -mock_names EmailService=EmailService
+//go:generate mockgen -destination=../testutil/mock/email_service_gen.go -package=mock -mock_names EmailService=EmailService github.com/opcotech/elemo/internal/service EmailService
 type EmailService interface {
-	// SendEmail sends an email from a template to the list of active users.
-	// SendEmail(ctx context.Context, subject string, template *email.Template, data any, users []*model.User) error
-
 	// SendAuthPasswordResetEmail sends an email to the user with a link to
 	// reset the password.
-	SendAuthPasswordResetEmail(ctx context.Context, user *model.User, token string) error
+	SendAuthPasswordResetEmail(ctx context.Context, recipient email.Recipient, token string) error
 	// SendOrganizationInvitationEmail sends an email to the invited user.
-	SendOrganizationInvitationEmail(ctx context.Context, organization *model.Organization, user *model.User, token string) error
+	SendOrganizationInvitationEmail(ctx context.Context, organizationID model.ID, organizationName string, recipient email.Recipient, token string) error
 	// SendSystemLicenseExpiryEmail sends an email to the license owner when the license is about to expire.
 	SendSystemLicenseExpiryEmail(ctx context.Context, licenseID, licenseEmail, licenseOrganization string, licenseExpiresAt time.Time) error
 	// SendUserWelcomeEmail sends an email to the user to welcome it to the
 	// system.
-	SendUserWelcomeEmail(ctx context.Context, user *model.User) error
+	SendUserWelcomeEmail(ctx context.Context, recipient email.Recipient) error
 }
 
 // emailService is the concrete implementation of the EmailService interface.
@@ -58,20 +55,20 @@ type emailService struct {
 	smtpConf     *config.SMTPConfig
 }
 
-func (s *emailService) sendEmail(ctx context.Context, subject string, template string, data email.TemplateData, user *model.User) error {
+func (s *emailService) sendEmail(ctx context.Context, subject string, template string, data email.TemplateData, to string) error {
 	tmpl, err := email.NewTemplate(path.Join(s.templatesDir, template), data)
 	if err != nil {
 		return errors.Join(ErrEmailSend, err)
 	}
 
-	if err := s.client.SendEmail(ctx, subject, user.Email, tmpl); err != nil {
+	if err := s.client.SendEmail(ctx, subject, to, tmpl); err != nil {
 		return errors.Join(ErrEmailSend, err)
 	}
 
 	return nil
 }
 
-func (s *emailService) SendAuthPasswordResetEmail(ctx context.Context, user *model.User, token string) error {
+func (s *emailService) SendAuthPasswordResetEmail(ctx context.Context, recipient email.Recipient, token string) error {
 	ctx, span := s.tracer.Start(ctx, "service.emailService/SendAuthPasswordResetEmail")
 	defer span.End()
 
@@ -79,29 +76,29 @@ func (s *emailService) SendAuthPasswordResetEmail(ctx context.Context, user *mod
 
 	data := &email.PasswordResetTemplateData{
 		Subject:          "[Action Required] Reset your password",
-		FirstName:        user.FirstName,
-		LastName:         user.LastName,
+		FirstName:        recipient.FirstName,
+		LastName:         recipient.LastName,
 		PasswordResetURL: passwordResetURL,
 		SupportEmail:     s.smtpConf.SupportAddress,
 	}
 
-	return s.sendEmail(ctx, data.Subject, authPasswordResetTemplate, data, user)
+	return s.sendEmail(ctx, data.Subject, authPasswordResetTemplate, data, recipient.Email)
 }
 
-func (s *emailService) SendOrganizationInvitationEmail(ctx context.Context, organization *model.Organization, user *model.User, token string) error {
+func (s *emailService) SendOrganizationInvitationEmail(ctx context.Context, organizationID model.ID, organizationName string, recipient email.Recipient, token string) error {
 	ctx, span := s.tracer.Start(ctx, "service.emailService/SendOrganizationInvitationEmail")
 	defer span.End()
 
-	invitationURL := fmt.Sprintf("%s/organizations/join?organization=%s&token=%s", s.smtpConf.ClientURL, organization.ID.String(), token)
+	invitationURL := fmt.Sprintf("%s/organizations/join?organization=%s&token=%s", s.smtpConf.ClientURL, organizationID.String(), token)
 
 	data := &email.OrganizationInviteTemplateData{
-		Subject:          fmt.Sprintf("[Action Required] You have been invited to join %s", organization.Name),
-		OrganizationName: organization.Name,
+		Subject:          fmt.Sprintf("[Action Required] You have been invited to join %s", organizationName),
+		OrganizationName: organizationName,
 		InvitationURL:    invitationURL,
 		SupportEmail:     s.smtpConf.SupportAddress,
 	}
 
-	return s.sendEmail(ctx, data.Subject, organizationInviteTemplate, data, user)
+	return s.sendEmail(ctx, data.Subject, organizationInviteTemplate, data, recipient.Email)
 }
 
 func (s *emailService) SendSystemLicenseExpiryEmail(ctx context.Context, licenseID, licenseEmail, licenseOrganization string, licenseExpiresAt time.Time) error {
@@ -119,10 +116,10 @@ func (s *emailService) SendSystemLicenseExpiryEmail(ctx context.Context, license
 		SupportEmail:        s.smtpConf.SupportAddress,
 	}
 
-	return s.sendEmail(ctx, data.Subject, systemLicenseExpiryTemplate, data, &model.User{Email: licenseEmail})
+	return s.sendEmail(ctx, data.Subject, systemLicenseExpiryTemplate, data, licenseEmail)
 }
 
-func (s *emailService) SendUserWelcomeEmail(ctx context.Context, user *model.User) error {
+func (s *emailService) SendUserWelcomeEmail(ctx context.Context, recipient email.Recipient) error {
 	ctx, span := s.tracer.Start(ctx, "service.emailService/SendUserWelcomeEmail")
 	defer span.End()
 
@@ -130,13 +127,13 @@ func (s *emailService) SendUserWelcomeEmail(ctx context.Context, user *model.Use
 
 	data := &email.UserWelcomeTemplateData{
 		Subject:      "Welcome to Elemo",
-		FirstName:    user.FirstName,
-		LastName:     user.LastName,
+		FirstName:    recipient.FirstName,
+		LastName:     recipient.LastName,
 		LoginURL:     fmt.Sprintf("%s/redirect?url=%s", s.smtpConf.ClientURL, url.QueryEscape(loginURL)),
 		SupportEmail: s.smtpConf.SupportAddress,
 	}
 
-	return s.sendEmail(ctx, data.Subject, userWelcomeTemplate, data, user)
+	return s.sendEmail(ctx, data.Subject, userWelcomeTemplate, data, recipient.Email)
 }
 
 // NewEmailService creates a new email service.

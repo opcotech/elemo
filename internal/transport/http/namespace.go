@@ -6,6 +6,7 @@ import (
 
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg"
+	"github.com/opcotech/elemo/internal/pkg/optional"
 	"github.com/opcotech/elemo/internal/service"
 	"github.com/opcotech/elemo/internal/transport/http/api"
 )
@@ -33,12 +34,10 @@ func (c *namespaceController) V1OrganizationsNamespacesCreate(ctx context.Contex
 		return api.V1OrganizationsNamespacesCreate400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
-	namespace, err := createNamespaceJSONRequestBodyToNamespace(request.Body)
-	if err != nil {
-		return api.V1OrganizationsNamespacesCreate400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
-	}
+	opts := createNamespaceJSONRequestBodyToCreateNamespaceOpts(request.Body)
 
-	if err := c.namespaceService.Create(ctx, organizationID, namespace); err != nil {
+	namespace, err := c.namespaceService.Create(ctx, organizationID, opts)
+	if err != nil {
 		if errors.Is(err, service.ErrNoPermission) {
 			return api.V1OrganizationsNamespacesCreate403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		}
@@ -122,12 +121,9 @@ func (c *namespaceController) V1NamespaceUpdate(ctx context.Context, request api
 		return api.V1NamespaceUpdate400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
-	patch, err := api.ConvertRequestToMap(request.Body)
-	if err != nil {
-		return api.V1NamespaceUpdate400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
-	}
+	opts := updateNamespaceJSONRequestBodyToUpdateNamespaceOpts(request.Body)
 
-	namespace, err := c.namespaceService.Update(ctx, namespaceID, patch)
+	namespace, err := c.namespaceService.Update(ctx, namespaceID, opts)
 	if err != nil {
 		if errors.Is(err, service.ErrNoPermission) {
 			return api.V1NamespaceUpdate403JSONResponse{N403JSONResponse: permissionDenied}, nil
@@ -185,20 +181,32 @@ func NewNamespaceController(opts ...ControllerOption) (NamespaceController, erro
 	return controller, nil
 }
 
-func createNamespaceJSONRequestBodyToNamespace(body *api.V1OrganizationsNamespacesCreateJSONRequestBody) (*model.Namespace, error) {
-	namespace, err := model.NewNamespace(body.Name)
-	if err != nil {
-		return nil, err
+func createNamespaceJSONRequestBodyToCreateNamespaceOpts(body *api.V1OrganizationsNamespacesCreateJSONRequestBody) service.CreateNamespaceOpts {
+	opts := service.CreateNamespaceOpts{
+		Name: body.Name,
 	}
 
 	if body.Description.Defined && body.Description.Value != nil {
-		namespace.Description = *body.Description.Value
+		opts.Description = *body.Description.Value
 	}
 
-	return namespace, nil
+	return opts
 }
 
-func namespaceProjectToDTO(project *model.NamespaceProject) api.NamespaceProject {
+func updateNamespaceJSONRequestBodyToUpdateNamespaceOpts(body *api.V1NamespaceUpdateJSONRequestBody) service.UpdateNamespaceOpts {
+	opts := service.UpdateNamespaceOpts{}
+
+	if body.Name != nil {
+		opts.Name = optional.Some(*body.Name)
+	}
+	if body.Description.Defined {
+		opts.Description = body.Description
+	}
+
+	return opts
+}
+
+func namespaceProjectToDTO(project *service.NamespaceProject) api.NamespaceProject {
 	np := api.NamespaceProject{
 		Id:     project.ID.String(),
 		Key:    project.Key,
@@ -217,7 +225,7 @@ func namespaceProjectToDTO(project *model.NamespaceProject) api.NamespaceProject
 	return np
 }
 
-func namespaceDocumentToDTO(document *model.NamespaceDocument) api.NamespaceDocument {
+func namespaceDocumentToDTO(document *service.NamespaceDocument) api.NamespaceDocument {
 	nd := api.NamespaceDocument{
 		Id:        document.ID.String(),
 		Name:      document.Name,
@@ -232,7 +240,7 @@ func namespaceDocumentToDTO(document *model.NamespaceDocument) api.NamespaceDocu
 	return nd
 }
 
-func namespaceToDTO(namespace *model.Namespace) api.Namespace {
+func namespaceToDTO(namespace *service.Namespace) api.Namespace {
 	n := api.Namespace{
 		Id:        namespace.ID.String(),
 		Name:      namespace.Name,

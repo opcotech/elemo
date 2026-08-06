@@ -6,8 +6,10 @@ import (
 	"time"
 
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
+
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/convert"
+	"github.com/opcotech/elemo/internal/pkg/optional"
 )
 
 var (
@@ -17,24 +19,72 @@ var (
 	ErrDocumentUpdate = errors.New("failed to update document") // the document could not be updated
 )
 
-//go:generate mockgen -source=document.go -destination=../testutil/mock/document_repo_gen.go -package=mock -mock_names "DocumentRepository=DocumentRepository"
+// Document represents a document persisted by the repository.
+type Document struct {
+	ID          model.ID   `json:"id"`
+	Name        string     `json:"name"`
+	Excerpt     string     `json:"excerpt"`
+	FileID      string     `json:"file_id"`
+	CreatedBy   model.ID   `json:"created_by"`
+	Labels      []model.ID `json:"labels"`
+	Comments    []model.ID `json:"comments"`
+	Attachments []model.ID `json:"attachments"`
+	CreatedAt   *time.Time `json:"created_at"`
+	UpdatedAt   *time.Time `json:"updated_at"`
+}
+
+// CreateDocumentOpts holds the data required to create a document.
+type CreateDocumentOpts struct {
+	BelongsTo model.ID
+	Name      string
+	Excerpt   string
+	FileID    string
+	CreatedBy model.ID
+}
+
+// UpdateDocumentOpts holds the fields that can be updated on a document.
+// Undefined fields (Defined == false) are left unchanged.
+type UpdateDocumentOpts struct {
+	Name    optional.Optional[string]
+	Excerpt optional.Optional[string]
+	FileID  optional.Optional[string]
+}
+
+// patch builds a Neo4j property map from defined optional fields.
+func (o UpdateDocumentOpts) patch() map[string]any {
+	p := make(map[string]any)
+
+	if o.Name.Defined {
+		p["name"] = *o.Name.Value
+	}
+	if o.Excerpt.Defined {
+		p["excerpt"] = *o.Excerpt.Value
+	}
+	if o.FileID.Defined {
+		p["file_id"] = *o.FileID.Value
+	}
+
+	return p
+}
+
+//go:generate mockgen -source=document.go -destination=document_mock_gen.go -package=repository -mock_names "DocumentRepository=MockDocumentRepository"
 type DocumentRepository interface {
-	Create(ctx context.Context, belongsTo model.ID, document *model.Document) error
-	Get(ctx context.Context, id model.ID) (*model.Document, error)
-	GetByCreator(ctx context.Context, createdBy model.ID, offset, limit int) ([]*model.Document, error)
-	GetAllBelongsTo(ctx context.Context, belongsTo model.ID, offset, limit int) ([]*model.Document, error)
-	Update(ctx context.Context, id model.ID, patch map[string]any) (*model.Document, error)
+	Create(ctx context.Context, opts CreateDocumentOpts) (*Document, error)
+	Get(ctx context.Context, id model.ID) (*Document, error)
+	GetByCreator(ctx context.Context, createdBy model.ID, offset, limit int) ([]*Document, error)
+	GetAllBelongsTo(ctx context.Context, belongsTo model.ID, offset, limit int) ([]*Document, error)
+	Update(ctx context.Context, id model.ID, opts UpdateDocumentOpts) (*Document, error)
 	Delete(ctx context.Context, id model.ID) error
 }
 
-// DocumentRepository is a repository for managing documents.
+// Neo4jDocumentRepository is a repository for managing documents.
 type Neo4jDocumentRepository struct {
 	*neo4jBaseRepository
 }
 
-func (r *Neo4jDocumentRepository) scan(dp, cp, lp, commp, ap string) func(rec *neo4j.Record) (*model.Document, error) {
-	return func(rec *neo4j.Record) (*model.Document, error) {
-		doc := new(model.Document)
+func (r *Neo4jDocumentRepository) scan(dp, cp, lp, commp, ap string) func(rec *neo4j.Record) (*Document, error) {
+	return func(rec *neo4j.Record) (*Document, error) {
+		doc := new(Document)
 
 		val, _, err := neo4j.GetRecordValue[neo4j.Node](rec, dp)
 		if err != nil {
@@ -65,34 +115,31 @@ func (r *Neo4jDocumentRepository) scan(dp, cp, lp, commp, ap string) func(rec *n
 			return nil, err
 		}
 
-		if err := doc.Validate(); err != nil {
-			return nil, err
-		}
-
 		return doc, nil
 	}
 }
 
-func (r *Neo4jDocumentRepository) Create(ctx context.Context, belongsTo model.ID, document *model.Document) error {
+func (r *Neo4jDocumentRepository) Create(ctx context.Context, opts CreateDocumentOpts) (*Document, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.DocumentRepository/Create")
 	defer span.End()
 
-	if err := belongsTo.Validate(); err != nil {
-		return errors.Join(ErrDocumentCreate, err)
+	createdAt := convert.ToPointer(time.Now().UTC())
+
+	document := &Document{
+		ID:          model.MustNewID(model.ResourceTypeDocument),
+		Name:        opts.Name,
+		Excerpt:     opts.Excerpt,
+		FileID:      opts.FileID,
+		CreatedBy:   opts.CreatedBy,
+		Labels:      make([]model.ID, 0),
+		Comments:    make([]model.ID, 0),
+		Attachments: make([]model.ID, 0),
+		CreatedAt:   createdAt,
+		UpdatedAt:   nil,
 	}
-
-	if err := document.Validate(); err != nil {
-		return errors.Join(ErrDocumentCreate, err)
-	}
-
-	createdAt := time.Now().UTC()
-
-	document.ID = model.MustNewID(model.ResourceTypeDocument)
-	document.CreatedAt = convert.ToPointer(createdAt)
-	document.UpdatedAt = nil
 
 	cypher := `
-	MATCH (b:` + belongsTo.Label() + ` {id: $belong_to_id})
+	MATCH (b:` + opts.BelongsTo.Label() + ` {id: $belong_to_id})
 	MATCH (o:` + document.CreatedBy.Label() + ` {id: $created_by_id})
 	CREATE
 		(d:` + document.ID.Label() + ` {
@@ -103,7 +150,7 @@ func (r *Neo4jDocumentRepository) Create(ctx context.Context, belongsTo model.ID
 		(o)-[:` + EdgeKindCreated.String() + ` {id: $created_rel_id, created_at: datetime($created_at)}]->(d)`
 
 	params := map[string]any{
-		"belong_to_id":      belongsTo.String(),
+		"belong_to_id":      opts.BelongsTo.String(),
 		"belongs_to_rel_id": model.NewRawID(),
 		"created_by_id":     document.CreatedBy.String(),
 		"created_rel_id":    model.NewRawID(),
@@ -115,13 +162,13 @@ func (r *Neo4jDocumentRepository) Create(ctx context.Context, belongsTo model.ID
 	}
 
 	if err := Neo4jExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
-		return errors.Join(ErrDocumentCreate, err)
+		return nil, errors.Join(ErrDocumentCreate, err)
 	}
 
-	return nil
+	return document, nil
 }
 
-func (r *Neo4jDocumentRepository) Get(ctx context.Context, id model.ID) (*model.Document, error) {
+func (r *Neo4jDocumentRepository) Get(ctx context.Context, id model.ID) (*Document, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.DocumentRepository/Get")
 	defer span.End()
 
@@ -144,7 +191,7 @@ func (r *Neo4jDocumentRepository) Get(ctx context.Context, id model.ID) (*model.
 	return doc, nil
 }
 
-func (r *Neo4jDocumentRepository) GetByCreator(ctx context.Context, createdBy model.ID, offset, limit int) ([]*model.Document, error) {
+func (r *Neo4jDocumentRepository) GetByCreator(ctx context.Context, createdBy model.ID, offset, limit int) ([]*Document, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.DocumentRepository/GetByCreator")
 	defer span.End()
 
@@ -171,7 +218,7 @@ func (r *Neo4jDocumentRepository) GetByCreator(ctx context.Context, createdBy mo
 	return docs, nil
 }
 
-func (r *Neo4jDocumentRepository) GetAllBelongsTo(ctx context.Context, belongsTo model.ID, offset, limit int) ([]*model.Document, error) {
+func (r *Neo4jDocumentRepository) GetAllBelongsTo(ctx context.Context, belongsTo model.ID, offset, limit int) ([]*Document, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.DocumentRepository/GetAllBelongsTo")
 	defer span.End()
 
@@ -200,7 +247,7 @@ func (r *Neo4jDocumentRepository) GetAllBelongsTo(ctx context.Context, belongsTo
 	return docs, nil
 }
 
-func (r *Neo4jDocumentRepository) Update(ctx context.Context, id model.ID, patch map[string]any) (*model.Document, error) {
+func (r *Neo4jDocumentRepository) Update(ctx context.Context, id model.ID, opts UpdateDocumentOpts) (*Document, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.DocumentRepository/Update")
 	defer span.End()
 
@@ -216,7 +263,7 @@ func (r *Neo4jDocumentRepository) Update(ctx context.Context, id model.ID, patch
 
 	params := map[string]any{
 		"id":    id.String(),
-		"patch": patch,
+		"patch": opts.patch(),
 	}
 
 	doc, err := Neo4jExecuteWriteAndReadSingle(ctx, r.db, cypher, params, r.scan("d", "c", "l", "comm", "att"))
@@ -295,31 +342,30 @@ func clearDocumentAllCrossCache(ctx context.Context, r *redisBaseRepository) err
 	return nil
 }
 
-// CachedDocumentRepository implements caching on the
-// repository.DocumentRepository.
+// RedisCachedDocumentRepository implements caching on the DocumentRepository.
 type RedisCachedDocumentRepository struct {
 	cacheRepo    *redisBaseRepository
 	documentRepo DocumentRepository
 }
 
-func (r *RedisCachedDocumentRepository) Create(ctx context.Context, belongsTo model.ID, document *model.Document) error {
-	if err := clearDocumentBelongsTo(ctx, r.cacheRepo, belongsTo); err != nil {
-		return err
+func (r *RedisCachedDocumentRepository) Create(ctx context.Context, opts CreateDocumentOpts) (*Document, error) {
+	if err := clearDocumentBelongsTo(ctx, r.cacheRepo, opts.BelongsTo); err != nil {
+		return nil, err
 	}
 
-	if err := clearDocumentByCreator(ctx, r.cacheRepo, document.CreatedBy); err != nil {
-		return err
+	if err := clearDocumentByCreator(ctx, r.cacheRepo, opts.CreatedBy); err != nil {
+		return nil, err
 	}
 
 	if err := clearDocumentAllCrossCache(ctx, r.cacheRepo); err != nil {
-		return err
+		return nil, err
 	}
 
-	return r.documentRepo.Create(ctx, belongsTo, document)
+	return r.documentRepo.Create(ctx, opts)
 }
 
-func (r *RedisCachedDocumentRepository) Get(ctx context.Context, id model.ID) (*model.Document, error) {
-	var document *model.Document
+func (r *RedisCachedDocumentRepository) Get(ctx context.Context, id model.ID) (*Document, error) {
+	var document *Document
 	var err error
 
 	key := composeCacheKey(model.ResourceTypeDocument.String(), id.String())
@@ -342,8 +388,8 @@ func (r *RedisCachedDocumentRepository) Get(ctx context.Context, id model.ID) (*
 	return document, nil
 }
 
-func (r *RedisCachedDocumentRepository) GetByCreator(ctx context.Context, createdBy model.ID, offset, limit int) ([]*model.Document, error) {
-	var documents []*model.Document
+func (r *RedisCachedDocumentRepository) GetByCreator(ctx context.Context, createdBy model.ID, offset, limit int) ([]*Document, error) {
+	var documents []*Document
 	var err error
 
 	key := composeCacheKey(model.ResourceTypeDocument.String(), "GetByCreator", createdBy.String(), offset, limit)
@@ -366,8 +412,8 @@ func (r *RedisCachedDocumentRepository) GetByCreator(ctx context.Context, create
 	return documents, nil
 }
 
-func (r *RedisCachedDocumentRepository) GetAllBelongsTo(ctx context.Context, belongsTo model.ID, offset, limit int) ([]*model.Document, error) {
-	var documents []*model.Document
+func (r *RedisCachedDocumentRepository) GetAllBelongsTo(ctx context.Context, belongsTo model.ID, offset, limit int) ([]*Document, error) {
+	var documents []*Document
 	var err error
 
 	key := composeCacheKey(model.ResourceTypeDocument.String(), "GetAllBelongsTo", belongsTo.String(), offset, limit)
@@ -390,11 +436,8 @@ func (r *RedisCachedDocumentRepository) GetAllBelongsTo(ctx context.Context, bel
 	return documents, nil
 }
 
-func (r *RedisCachedDocumentRepository) Update(ctx context.Context, id model.ID, patch map[string]any) (*model.Document, error) {
-	var document *model.Document
-	var err error
-
-	document, err = r.documentRepo.Update(ctx, id, patch)
+func (r *RedisCachedDocumentRepository) Update(ctx context.Context, id model.ID, opts UpdateDocumentOpts) (*Document, error) {
+	document, err := r.documentRepo.Update(ctx, id, opts)
 	if err != nil {
 		return nil, err
 	}

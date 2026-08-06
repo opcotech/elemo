@@ -1,19 +1,32 @@
 package model
 
 import (
+	"time"
+
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg"
+	"github.com/opcotech/elemo/internal/pkg/convert"
+	"github.com/opcotech/elemo/internal/repository"
 )
 
-// NewNamespace creates a new Namespace instance. It does not create a
-// namespace in the database.
-func NewNamespace() *model.Namespace {
-	namespace, err := model.NewNamespace(pkg.GenerateRandomString(10))
-	if err != nil {
-		panic(err)
+// NewCreateNamespaceOpts creates repository.CreateNamespaceOpts for tests.
+func NewCreateNamespaceOpts(creatorID, orgID model.ID) repository.CreateNamespaceOpts {
+	return repository.CreateNamespaceOpts{
+		Name:        pkg.GenerateRandomString(10),
+		Description: pkg.GenerateRandomString(10),
+		CreatorID:   creatorID,
+		OrgID:       orgID,
 	}
+}
 
-	namespace.Description = pkg.GenerateRandomString(10)
-
-	return namespace
+// NewRepositoryNamespace creates a repository.Namespace for mock returns.
+func NewRepositoryNamespace() *repository.Namespace {
+	return &repository.Namespace{
+		ID:          model.MustNewID(model.ResourceTypeNamespace),
+		Name:        pkg.GenerateRandomString(10),
+		Description: pkg.GenerateRandomString(10),
+		Projects:    make([]*repository.NamespaceProject, 0),
+		Documents:   make([]*repository.NamespaceDocument, 0),
+		CreatedAt:   convert.ToPointer(time.Now().UTC()),
+	}
 }

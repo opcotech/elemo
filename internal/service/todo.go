@@ -3,11 +3,64 @@ package service
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/opcotech/elemo/internal/license"
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg"
+	"github.com/opcotech/elemo/internal/pkg/optional"
+	"github.com/opcotech/elemo/internal/pkg/validate"
+	"github.com/opcotech/elemo/internal/repository"
 )
+
+// Todo represents a todo returned by the service.
+type Todo struct {
+	ID          model.ID
+	Title       string
+	Description string
+	Priority    model.TodoPriority
+	Completed   bool
+	OwnedBy     model.ID
+	CreatedBy   model.ID
+	DueDate     *time.Time
+	CreatedAt   *time.Time
+	UpdatedAt   *time.Time
+}
+
+// CreateTodoOpts holds the data required to create a todo.
+type CreateTodoOpts struct {
+	Title       string             `json:"title" validate:"required,min=3,max=120"`
+	Description string             `json:"description" validate:"omitempty,min=10,max=500"`
+	Priority    model.TodoPriority `json:"priority" validate:"required,min=1,max=4"`
+	Completed   bool               `json:"completed"`
+	OwnedBy     model.ID           `json:"owned_by" validate:"required"`
+	CreatedBy   model.ID           `json:"created_by" validate:"required"`
+	DueDate     *time.Time         `json:"due_date" validate:"omitempty"`
+}
+
+// Validate validates the create options.
+func (o *CreateTodoOpts) Validate() error {
+	if err := validate.Struct(o); err != nil {
+		return errors.Join(model.ErrInvalidTodoDetails, err)
+	}
+	if err := o.OwnedBy.Validate(); err != nil {
+		return errors.Join(model.ErrInvalidTodoDetails, err)
+	}
+	if err := o.CreatedBy.Validate(); err != nil {
+		return errors.Join(model.ErrInvalidTodoDetails, err)
+	}
+	return nil
+}
+
+// UpdateTodoOpts holds the fields that can be updated on a todo.
+// Undefined fields (Defined == false) are left unchanged.
+type UpdateTodoOpts struct {
+	Title       optional.Optional[string]
+	Description optional.Optional[string]
+	Priority    optional.Optional[model.TodoPriority]
+	Completed   optional.Optional[bool]
+	DueDate     optional.Optional[time.Time]
+}
 
 // TodoService serves the business logic of interacting with todos in the
 // system.
@@ -15,18 +68,18 @@ type TodoService interface {
 	// Create creates a new todo item. Users can create todos for each other
 	// if they are related in some way. If the creator and owner are not
 	// related, an error is returned.
-	Create(ctx context.Context, todo *model.Todo) error
+	Create(ctx context.Context, opts CreateTodoOpts) (*Todo, error)
 	// Get returns a todo by its ID. If the todo does not exist, an error is
 	// returned.
-	Get(ctx context.Context, id model.ID) (*model.Todo, error)
+	Get(ctx context.Context, id model.ID) (*Todo, error)
 	// GetAll returns all todos for the authenticated user. If the completed
 	// parameter is set to true, only completed todos are returned. If the
 	// completed parameter is set to false, only incomplete todos are
 	// returned. If the completed parameter is nil, all todos are returned.
-	GetAll(ctx context.Context, offset, limit int, completed *bool) ([]*model.Todo, error)
-	// Update updates a todo by its ID. The patch parameter is a map of
-	// fields to update. If the todo does not exist, an error is returned.
-	Update(ctx context.Context, id model.ID, patch map[string]any) (*model.Todo, error)
+	GetAll(ctx context.Context, offset, limit int, completed *bool) ([]*Todo, error)
+	// Update updates a todo by its ID. If the todo does not exist, an error
+	// is returned.
+	Update(ctx context.Context, id model.ID, opts UpdateTodoOpts) (*Todo, error)
 	// Delete deletes a todo by its ID. If the todo does not exist, an error
 	// is returned.
 	Delete(ctx context.Context, id model.ID) error
@@ -37,36 +90,71 @@ type todoService struct {
 	*baseService
 }
 
-func (s *todoService) Create(ctx context.Context, todo *model.Todo) error {
+func todoFromRepository(t *repository.Todo) *Todo {
+	if t == nil {
+		return nil
+	}
+	return &Todo{
+		ID:          t.ID,
+		Title:       t.Title,
+		Description: t.Description,
+		Priority:    t.Priority,
+		Completed:   t.Completed,
+		OwnedBy:     t.OwnedBy,
+		CreatedBy:   t.CreatedBy,
+		DueDate:     t.DueDate,
+		CreatedAt:   t.CreatedAt,
+		UpdatedAt:   t.UpdatedAt,
+	}
+}
+
+func todosFromRepository(todos []*repository.Todo) []*Todo {
+	out := make([]*Todo, len(todos))
+	for i, t := range todos {
+		out[i] = todoFromRepository(t)
+	}
+	return out
+}
+
+func (s *todoService) Create(ctx context.Context, opts CreateTodoOpts) (*Todo, error) {
 	ctx, span := s.tracer.Start(ctx, "service.todoService/Create")
 	defer span.End()
 
 	if expired, err := s.licenseService.Expired(ctx); expired || err != nil {
-		return errors.Join(ErrTodoCreate, license.ErrLicenseExpired)
+		return nil, errors.Join(ErrTodoCreate, license.ErrLicenseExpired)
 	}
 
-	if err := todo.Validate(); err != nil {
-		return errors.Join(ErrTodoCreate, err)
+	if err := opts.Validate(); err != nil {
+		return nil, errors.Join(ErrTodoCreate, err)
 	}
 
-	if todo.CreatedBy != todo.OwnedBy {
-		hasRelation, err := s.permissionService.HasAnyRelation(ctx, todo.CreatedBy, todo.OwnedBy)
+	if opts.CreatedBy != opts.OwnedBy {
+		hasRelation, err := s.permissionService.HasAnyRelation(ctx, opts.CreatedBy, opts.OwnedBy)
 		if err != nil {
-			return errors.Join(ErrTodoCreate, err)
+			return nil, errors.Join(ErrTodoCreate, err)
 		}
 		if !hasRelation {
-			return errors.Join(ErrTodoCreate, ErrNoPermission)
+			return nil, errors.Join(ErrTodoCreate, ErrNoPermission)
 		}
 	}
 
-	if err := s.todoRepo.Create(ctx, todo); err != nil {
-		return errors.Join(ErrTodoCreate, err)
+	todo, err := s.todoRepo.Create(ctx, repository.CreateTodoOpts{
+		Title:       opts.Title,
+		Description: opts.Description,
+		Priority:    opts.Priority,
+		Completed:   opts.Completed,
+		OwnedBy:     opts.OwnedBy,
+		CreatedBy:   opts.CreatedBy,
+		DueDate:     opts.DueDate,
+	})
+	if err != nil {
+		return nil, errors.Join(ErrTodoCreate, err)
 	}
 
-	return nil
+	return todoFromRepository(todo), nil
 }
 
-func (s *todoService) Get(ctx context.Context, id model.ID) (*model.Todo, error) {
+func (s *todoService) Get(ctx context.Context, id model.ID) (*Todo, error) {
 	ctx, span := s.tracer.Start(ctx, "service.todoService/Get")
 	defer span.End()
 
@@ -83,10 +171,10 @@ func (s *todoService) Get(ctx context.Context, id model.ID) (*model.Todo, error)
 		return nil, errors.Join(ErrTodoGet, err)
 	}
 
-	return todo, nil
+	return todoFromRepository(todo), nil
 }
 
-func (s *todoService) GetAll(ctx context.Context, offset, limit int, completed *bool) ([]*model.Todo, error) {
+func (s *todoService) GetAll(ctx context.Context, offset, limit int, completed *bool) ([]*Todo, error) {
 	ctx, span := s.tracer.Start(ctx, "service.todoService/GetAll")
 	defer span.End()
 
@@ -100,10 +188,10 @@ func (s *todoService) GetAll(ctx context.Context, offset, limit int, completed *
 		return nil, errors.Join(ErrTodoGetAll, err)
 	}
 
-	return todos, nil
+	return todosFromRepository(todos), nil
 }
 
-func (s *todoService) Update(ctx context.Context, id model.ID, patch map[string]any) (*model.Todo, error) {
+func (s *todoService) Update(ctx context.Context, id model.ID, opts UpdateTodoOpts) (*Todo, error) {
 	ctx, span := s.tracer.Start(ctx, "service.todoService/Update")
 	defer span.End()
 
@@ -119,12 +207,18 @@ func (s *todoService) Update(ctx context.Context, id model.ID, patch map[string]
 		return nil, errors.Join(ErrTodoUpdate, ErrNoPermission)
 	}
 
-	todo, err := s.todoRepo.Update(ctx, id, patch)
+	todo, err := s.todoRepo.Update(ctx, id, repository.UpdateTodoOpts{
+		Title:       opts.Title,
+		Description: opts.Description,
+		Priority:    opts.Priority,
+		Completed:   opts.Completed,
+		DueDate:     opts.DueDate,
+	})
 	if err != nil {
 		return nil, errors.Join(ErrTodoUpdate, err)
 	}
 
-	return todo, nil
+	return todoFromRepository(todo), nil
 }
 
 func (s *todoService) Delete(ctx context.Context, id model.ID) error {

@@ -160,9 +160,9 @@ func TestWithPermissionService(t *testing.T) {
 		{
 			name: "set the permission service for the baseService",
 			args: args{
-				permissionService: mock.NewPermissionService(nil),
+				permissionService: NewMockPermissionService(nil),
 			},
-			want: mock.NewPermissionService(nil),
+			want: NewMockPermissionService(nil),
 		},
 		{
 			name: "return an error if no permission service is provided",
@@ -250,10 +250,10 @@ func TestWithNamespaceRepository(t *testing.T) {
 		{
 			name: "set the namespace repository for the baseService",
 			argsFn: func(ctrl *gomock.Controller) args {
-				return args{namespaceRepo: mock.NewNamespaceRepository(ctrl)}
+				return args{namespaceRepo: repository.NewMockNamespaceRepository(ctrl)}
 			},
 			want: func(ctrl *gomock.Controller) repository.NamespaceRepository {
-				return mock.NewNamespaceRepository(ctrl)
+				return repository.NewMockNamespaceRepository(ctrl)
 			},
 		},
 		{

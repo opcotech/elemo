@@ -17,13 +17,13 @@ func TestIsTokenMatching(t *testing.T) {
 	}{
 		{
 			name:     "test token hash matches",
-			hash:     "$2a$10$2/R2NpjFJRbFFMKNBkBzoORxEfwiBwnWEQ5yDdU6H1rY/quJn2lUO",
+			hash:     "$2a$10$2/R2NpjFJRbFFMKNBkBzoORxEfwiBwnWEQ5yDdU6H1rY/quJn2lUO", // #nosec G101 -- test fixture hash
 			token:    "Y29uZmlybTtwMTdqSDAza2RPNWR3MHNLcTFiYjNDSWVjUlhzUXFuSWx6Wkw7eyJkYXRhIjoidGVzdCJ9",
 			expected: true,
 		},
 		{
 			name:     "test token hash not matches",
-			hash:     "$2a$10$6cO/7Nn9uxkgZbS.6cVVA.vdrcMyjycAE1o4ysT2/FZWt/WVxtVhq",
+			hash:     "$2a$10$6cO/7Nn9uxkgZbS.6cVVA.vdrcMyjycAE1o4ysT2/FZWt/WVxtVhq", // #nosec G101 -- test fixture hash
 			token:    "NOT-MATCHING",
 			expected: false,
 		},

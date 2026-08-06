@@ -3,36 +3,73 @@ package service
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg"
+	"github.com/opcotech/elemo/internal/pkg/validate"
 	"github.com/opcotech/elemo/internal/repository"
 )
 
+// Permission represents a permission returned by the service.
+type Permission struct {
+	ID        model.ID
+	Kind      model.PermissionKind
+	Subject   model.ID
+	Target    model.ID
+	CreatedAt *time.Time
+	UpdatedAt *time.Time
+}
+
+// CreatePermissionOpts holds the data required to create a permission.
+type CreatePermissionOpts struct {
+	Kind    model.PermissionKind `json:"kind" validate:"required,min=1,max=5"`
+	Subject model.ID             `json:"subject" validate:"required"`
+	Target  model.ID             `json:"target" validate:"required"`
+}
+
+// Validate validates the create options.
+func (o *CreatePermissionOpts) Validate() error {
+	if err := validate.Struct(o); err != nil {
+		return errors.Join(model.ErrInvalidPermissionDetails, err)
+	}
+	// Allow roles to have permissions on themselves, but reject for all other resource types.
+	if o.Subject.Inner == o.Target.Inner && (o.Subject.Type != model.ResourceTypeRole || o.Target.Type != model.ResourceTypeRole) {
+		return errors.Join(model.ErrInvalidPermissionDetails, model.ErrPermissionSubjectTargetEqual)
+	}
+	if err := o.Subject.Validate(); err != nil {
+		return errors.Join(model.ErrInvalidPermissionDetails, err)
+	}
+	if err := o.Target.Validate(); err != nil {
+		return errors.Join(model.ErrInvalidPermissionDetails, err)
+	}
+	return nil
+}
+
 // PermissionService serves the business logic of interacting with permissions.
 //
-//go:generate mockgen -destination ../testutil/mock/permission_service_gen.go -package mock -mock_names PermissionService=PermissionService github.com/opcotech/elemo/internal/service PermissionService
+//go:generate mockgen -destination=permission_mock_gen.go -package=service -mock_names PermissionService=MockPermissionService . PermissionService
 type PermissionService interface {
 	// Create creates a new permission. If the permission already exists, an
 	// additional permission is created.
-	Create(ctx context.Context, perm *model.Permission) error
+	Create(ctx context.Context, opts CreatePermissionOpts) (*Permission, error)
 	// CtxUserCreate creates a new permission if the user in the context has the
 	// permission to create a new permission. If the permission already exists,
 	// an additional permission is created. If the user in the context does not
 	// have the permission to create a new permission, an error is returned.
-	CtxUserCreate(ctx context.Context, perm *model.Permission) error
+	CtxUserCreate(ctx context.Context, opts CreatePermissionOpts) (*Permission, error)
 	// Get returns the permission with the given ID. If the permission does not
 	// exist, an error is returned.
-	Get(ctx context.Context, id model.ID) (*model.Permission, error)
+	Get(ctx context.Context, id model.ID) (*Permission, error)
 	// GetBySubject returns all permissions where the subject is the given ID.
 	// If no permissions exist, an error is returned.
-	GetBySubject(ctx context.Context, id model.ID) ([]*model.Permission, error)
+	GetBySubject(ctx context.Context, id model.ID) ([]*Permission, error)
 	// GetByTarget returns all permissions where the target is the given ID. If
 	// no permissions exist, an error is returned.
-	GetByTarget(ctx context.Context, id model.ID) ([]*model.Permission, error)
+	GetByTarget(ctx context.Context, id model.ID) ([]*Permission, error)
 	// GetBySubjectAndTarget returns all permissions where the subject and the
 	// target are both provided. If no permissions exist, an error is returned.
-	GetBySubjectAndTarget(ctx context.Context, source, target model.ID) ([]*model.Permission, error)
+	GetBySubjectAndTarget(ctx context.Context, source, target model.ID) ([]*Permission, error)
 	// HasAnyRelation checks if the subject has any relation to the target. If
 	// the subject does not have any relation to the target, an error is
 	// returned.
@@ -57,11 +94,11 @@ type PermissionService interface {
 	CtxUserHasPermission(ctx context.Context, target model.ID, permissions ...model.PermissionKind) bool
 	// Update updates the permission with the given ID. If the permission does
 	// not exist, an error is returned.
-	Update(ctx context.Context, id model.ID, kind model.PermissionKind) (*model.Permission, error)
+	Update(ctx context.Context, id model.ID, kind model.PermissionKind) (*Permission, error)
 	// CtxUserUpdate updates the permission with the given ID if the user in the
 	// context has the permission to update the permission. If the permission
 	// does not exist, an error is returned.
-	CtxUserUpdate(ctx context.Context, id model.ID, kind model.PermissionKind) (*model.Permission, error)
+	CtxUserUpdate(ctx context.Context, id model.ID, kind model.PermissionKind) (*Permission, error)
 	// Delete deletes the permission with the given ID. If the permission does
 	// not exist, an error is returned.
 	Delete(ctx context.Context, id model.ID) error
@@ -78,22 +115,49 @@ type permissionService struct {
 	permissionRepo repository.PermissionRepository
 }
 
-func (s *permissionService) Create(ctx context.Context, perm *model.Permission) error {
+func permissionFromRepository(p *repository.Permission) *Permission {
+	if p == nil {
+		return nil
+	}
+	return &Permission{
+		ID:        p.ID,
+		Kind:      p.Kind,
+		Subject:   p.Subject,
+		Target:    p.Target,
+		CreatedAt: p.CreatedAt,
+		UpdatedAt: p.UpdatedAt,
+	}
+}
+
+func permissionsFromRepository(permissions []*repository.Permission) []*Permission {
+	out := make([]*Permission, len(permissions))
+	for i, p := range permissions {
+		out[i] = permissionFromRepository(p)
+	}
+	return out
+}
+
+func (s *permissionService) Create(ctx context.Context, opts CreatePermissionOpts) (*Permission, error) {
 	ctx, span := s.tracer.Start(ctx, "service.permissionService/Create")
 	defer span.End()
 
-	if err := perm.Validate(); err != nil {
-		return err
+	if err := opts.Validate(); err != nil {
+		return nil, err
 	}
 
-	if err := s.permissionRepo.Create(ctx, perm); err != nil {
-		return errors.Join(ErrPermissionCreate, err)
+	perm, err := s.permissionRepo.Create(ctx, repository.CreatePermissionOpts{
+		Kind:    opts.Kind,
+		Subject: opts.Subject,
+		Target:  opts.Target,
+	})
+	if err != nil {
+		return nil, errors.Join(ErrPermissionCreate, err)
 	}
 
-	return nil
+	return permissionFromRepository(perm), nil
 }
 
-func (s *permissionService) CtxUserCreate(ctx context.Context, perm *model.Permission) error {
+func (s *permissionService) CtxUserCreate(ctx context.Context, opts CreatePermissionOpts) (*Permission, error) {
 	ctx, span := s.tracer.Start(ctx, "service.permissionService/CtxUserCreate")
 	defer span.End()
 
@@ -101,18 +165,18 @@ func (s *permissionService) CtxUserCreate(ctx context.Context, perm *model.Permi
 
 	// If the user has "write" permission on the target, they can give any
 	// permission to the subject they own too (plus "read").
-	if s.CtxUserHasPermission(ctx, perm.Target, model.PermissionKindWrite) {
-		hasPermission = s.CtxUserHasPermission(ctx, perm.Target, perm.Kind)
+	if s.CtxUserHasPermission(ctx, opts.Target, model.PermissionKindWrite) {
+		hasPermission = s.CtxUserHasPermission(ctx, opts.Target, opts.Kind)
 	}
 
 	if hasPermission {
-		return s.Create(ctx, perm)
+		return s.Create(ctx, opts)
 	}
 
-	return errors.Join(ErrPermissionCreate, ErrNoPermission)
+	return nil, errors.Join(ErrPermissionCreate, ErrNoPermission)
 }
 
-func (s *permissionService) Get(ctx context.Context, id model.ID) (*model.Permission, error) {
+func (s *permissionService) Get(ctx context.Context, id model.ID) (*Permission, error) {
 	ctx, span := s.tracer.Start(ctx, "service.permissionService/Get")
 	defer span.End()
 
@@ -121,10 +185,10 @@ func (s *permissionService) Get(ctx context.Context, id model.ID) (*model.Permis
 		return nil, errors.Join(ErrPermissionGet, err)
 	}
 
-	return perm, nil
+	return permissionFromRepository(perm), nil
 }
 
-func (s *permissionService) GetBySubject(ctx context.Context, id model.ID) ([]*model.Permission, error) {
+func (s *permissionService) GetBySubject(ctx context.Context, id model.ID) ([]*Permission, error) {
 	ctx, span := s.tracer.Start(ctx, "service.permissionService/GetBySubject")
 	defer span.End()
 
@@ -133,10 +197,10 @@ func (s *permissionService) GetBySubject(ctx context.Context, id model.ID) ([]*m
 		return nil, errors.Join(ErrPermissionGetBySubject, err)
 	}
 
-	return permissions, nil
+	return permissionsFromRepository(permissions), nil
 }
 
-func (s *permissionService) GetByTarget(ctx context.Context, id model.ID) ([]*model.Permission, error) {
+func (s *permissionService) GetByTarget(ctx context.Context, id model.ID) ([]*Permission, error) {
 	ctx, span := s.tracer.Start(ctx, "service.permissionService/GetByTarget")
 	defer span.End()
 
@@ -145,10 +209,10 @@ func (s *permissionService) GetByTarget(ctx context.Context, id model.ID) ([]*mo
 		return nil, errors.Join(ErrPermissionGetByTarget, err)
 	}
 
-	return permissions, nil
+	return permissionsFromRepository(permissions), nil
 }
 
-func (s *permissionService) GetBySubjectAndTarget(ctx context.Context, source, target model.ID) ([]*model.Permission, error) {
+func (s *permissionService) GetBySubjectAndTarget(ctx context.Context, source, target model.ID) ([]*Permission, error) {
 	ctx, span := s.tracer.Start(ctx, "service.permissionService/GetBySubjectAndTarget")
 	defer span.End()
 
@@ -157,7 +221,7 @@ func (s *permissionService) GetBySubjectAndTarget(ctx context.Context, source, t
 		return nil, errors.Join(ErrPermissionGetBySubjectAndTarget, err)
 	}
 
-	return permissions, nil
+	return permissionsFromRepository(permissions), nil
 }
 
 func (s *permissionService) HasAnyRelation(ctx context.Context, source, target model.ID) (bool, error) {
@@ -275,7 +339,7 @@ func (s *permissionService) CtxUserHasPermission(ctx context.Context, target mod
 	return hasPerm
 }
 
-func (s *permissionService) Update(ctx context.Context, id model.ID, kind model.PermissionKind) (*model.Permission, error) {
+func (s *permissionService) Update(ctx context.Context, id model.ID, kind model.PermissionKind) (*Permission, error) {
 	ctx, span := s.tracer.Start(ctx, "service.permissionService/Update")
 	defer span.End()
 
@@ -284,10 +348,10 @@ func (s *permissionService) Update(ctx context.Context, id model.ID, kind model.
 		return nil, errors.Join(ErrPermissionUpdate, err)
 	}
 
-	return permission, nil
+	return permissionFromRepository(permission), nil
 }
 
-func (s *permissionService) CtxUserUpdate(ctx context.Context, id model.ID, kind model.PermissionKind) (*model.Permission, error) {
+func (s *permissionService) CtxUserUpdate(ctx context.Context, id model.ID, kind model.PermissionKind) (*Permission, error) {
 	ctx, span := s.tracer.Start(ctx, "service.permissionService/CtxUserUpdate")
 	defer span.End()
 

@@ -98,7 +98,9 @@ func (c *notificationController) V1NotificationUpdate(ctx context.Context, reque
 		return api.V1NotificationUpdate400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
-	notification, err := c.notificationService.Update(ctx, notificationID, recipientID, request.Body.Read)
+	notification, err := c.notificationService.Update(ctx, notificationID, recipientID, service.UpdateNotificationOpts{
+		Read: request.Body.Read,
+	})
 	if err != nil {
 		if errors.Is(err, service.ErrNoPermission) {
 			return api.V1NotificationUpdate403JSONResponse{N403JSONResponse: permissionDenied}, nil
@@ -165,7 +167,7 @@ func NewNotificationController(opts ...ControllerOption) (NotificationController
 	return controller, nil
 }
 
-func notificationToDTO(notification *model.Notification) api.Notification {
+func notificationToDTO(notification *service.Notification) api.Notification {
 	return api.Notification{
 		Id:          notification.ID.String(),
 		Title:       notification.Title,

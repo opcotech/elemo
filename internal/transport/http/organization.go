@@ -10,6 +10,7 @@ import (
 
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg"
+	"github.com/opcotech/elemo/internal/pkg/optional"
 	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/service"
 	"github.com/opcotech/elemo/internal/transport/http/api"
@@ -70,12 +71,13 @@ func (c *organizationController) V1OrganizationsCreate(ctx context.Context, requ
 		return api.V1OrganizationsCreate400JSONResponse{N400JSONResponse: formatBadRequest(model.ErrInvalidID)}, nil
 	}
 
-	organization, err := createOrganizationJSONRequestBodyToOrganization(request.Body)
-	if err != nil {
-		return api.V1OrganizationsCreate400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
-	}
+	opts := createOrganizationJSONRequestBodyToCreateOrganizationOpts(request.Body)
 
-	if err := c.organizationService.Create(ctx, ownedBy, organization); err != nil {
+	organization, err := c.organizationService.Create(ctx, ownedBy, opts)
+	if err != nil {
+		if errors.Is(err, model.ErrInvalidOrganizationDetails) {
+			return api.V1OrganizationsCreate400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
+		}
 		if errors.Is(err, service.ErrNoPermission) {
 			return api.V1OrganizationsCreate403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		}
@@ -150,12 +152,12 @@ func (c *organizationController) V1OrganizationUpdate(ctx context.Context, reque
 		return api.V1OrganizationUpdate400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
-	patch, err := api.ConvertRequestToMap(request.Body)
+	opts, err := updateOrganizationJSONRequestBodyToUpdateOrganizationOpts(request.Body)
 	if err != nil {
 		return api.V1OrganizationUpdate400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
-	organization, err := c.organizationService.Update(ctx, organizationID, patch)
+	organization, err := c.organizationService.Update(ctx, organizationID, opts)
 	if err != nil {
 		if isNotFoundError(err) {
 			return api.V1OrganizationUpdate404JSONResponse{N404JSONResponse: notFound}, nil
@@ -281,6 +283,11 @@ func (c *organizationController) V1OrganizationMembersInvite(ctx context.Context
 		}
 	}
 
+	inviteOpts := service.InviteOrganizationMemberOpts{
+		Email:  email,
+		RoleID: roleID,
+	}
+
 	// Get user by email to return their ID (will be created if doesn't exist)
 	user, err := c.userService.GetByEmail(ctx, email)
 	if err != nil && !errors.Is(err, repository.ErrNotFound) {
@@ -293,12 +300,7 @@ func (c *organizationController) V1OrganizationMembersInvite(ctx context.Context
 	if errors.Is(err, repository.ErrNotFound) {
 		// User will be created by InviteMember, we'll get it after
 		// For now, we'll call InviteMember and then get the user
-		var inviteErr error
-		if roleID.IsNil() {
-			inviteErr = c.organizationService.InviteMember(ctx, organizationID, email)
-		} else {
-			inviteErr = c.organizationService.InviteMember(ctx, organizationID, email, roleID)
-		}
+		inviteErr := c.organizationService.InviteMember(ctx, organizationID, inviteOpts)
 		if inviteErr != nil {
 			if errors.Is(inviteErr, service.ErrNoPermission) {
 				return api.V1OrganizationMembersInvite403JSONResponse{N403JSONResponse: permissionDenied}, nil
@@ -328,12 +330,7 @@ func (c *organizationController) V1OrganizationMembersInvite(ctx context.Context
 	} else {
 		userID = user.ID
 		// Invite existing user
-		var inviteErr error
-		if roleID.IsNil() {
-			inviteErr = c.organizationService.InviteMember(ctx, organizationID, email)
-		} else {
-			inviteErr = c.organizationService.InviteMember(ctx, organizationID, email, roleID)
-		}
+		inviteErr := c.organizationService.InviteMember(ctx, organizationID, inviteOpts)
 		if inviteErr != nil {
 			if errors.Is(inviteErr, service.ErrNoPermission) {
 				return api.V1OrganizationMembersInvite403JSONResponse{N403JSONResponse: permissionDenied}, nil
@@ -435,7 +432,10 @@ func (c *organizationController) V1OrganizationMembersAccept(ctx context.Context
 		userPassword = string(*request.Body.Password)
 	}
 
-	if err := c.organizationService.AcceptInvitation(ctx, organizationID, token, userPassword); err != nil {
+	if err := c.organizationService.AcceptInvitation(ctx, organizationID, service.AcceptOrganizationInvitationOpts{
+		Token:    token,
+		Password: userPassword,
+	}); err != nil {
 		if errors.Is(err, service.ErrInvalidToken) || errors.Is(err, service.ErrExpiredToken) {
 			return api.V1OrganizationMembersAccept400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 		}
@@ -464,14 +464,13 @@ func (c *organizationController) V1OrganizationRolesCreate(ctx context.Context, 
 		return api.V1OrganizationRolesCreate400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
-	role, err := model.NewRole(request.Body.Name)
+	opts := createRoleJSONRequestBodyToCreateRoleOpts(request.Body)
+
+	role, err := c.roleService.Create(ctx, ownedBy, organizationID, opts)
 	if err != nil {
-		return api.V1OrganizationRolesCreate400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
-	}
-
-	role.Description = pkg.GetDefaultPtr(request.Body.Description, "")
-
-	if err := c.roleService.Create(ctx, ownedBy, organizationID, role); err != nil {
+		if errors.Is(err, model.ErrInvalidRoleDetails) {
+			return api.V1OrganizationRolesCreate400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
+		}
 		if errors.Is(err, service.ErrNoPermission) {
 			return api.V1OrganizationRolesCreate403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		}
@@ -566,12 +565,9 @@ func (c *organizationController) V1OrganizationRoleUpdate(ctx context.Context, r
 		return api.V1OrganizationRoleUpdate400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
-	patch, err := api.ConvertRequestToMap(request.Body)
-	if err != nil {
-		return api.V1OrganizationRoleUpdate400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
-	}
+	opts := updateRoleJSONRequestBodyToUpdateRoleOpts(request.Body)
 
-	role, err := c.roleService.Update(ctx, roleID, organizationID, patch)
+	role, err := c.roleService.Update(ctx, roleID, organizationID, opts)
 	if err != nil {
 		if errors.Is(err, service.ErrNoPermission) {
 			return api.V1OrganizationRoleUpdate403JSONResponse{N403JSONResponse: permissionDenied}, nil
@@ -892,24 +888,50 @@ func NewOrganizationController(opts ...ControllerOption) (OrganizationController
 	return controller, nil
 }
 
-func createOrganizationJSONRequestBodyToOrganization(body *api.V1OrganizationsCreateJSONRequestBody) (*model.Organization, error) {
-	organization, err := model.NewOrganization(body.Name, string(body.Email))
-	if err != nil {
-		return nil, err
+func createOrganizationJSONRequestBodyToCreateOrganizationOpts(body *api.V1OrganizationsCreateJSONRequestBody) service.CreateOrganizationOpts {
+	opts := service.CreateOrganizationOpts{
+		Name:  body.Name,
+		Email: string(body.Email),
 	}
 
 	if body.Website != nil {
-		organization.Website = *body.Website
+		opts.Website = *body.Website
 	}
 
 	if body.Logo != nil {
-		organization.Logo = *body.Logo
+		opts.Logo = *body.Logo
 	}
 
-	return organization, nil
+	return opts
 }
 
-func organizationToDTO(organization *model.Organization) api.Organization {
+func updateOrganizationJSONRequestBodyToUpdateOrganizationOpts(body *api.V1OrganizationUpdateJSONRequestBody) (service.UpdateOrganizationOpts, error) {
+	opts := service.UpdateOrganizationOpts{}
+
+	if body.Name != nil {
+		opts.Name = optional.Some(*body.Name)
+	}
+	if body.Email != nil {
+		opts.Email = optional.Some(string(*body.Email))
+	}
+	if body.Logo.Defined {
+		opts.Logo = body.Logo
+	}
+	if body.Website.Defined {
+		opts.Website = body.Website
+	}
+	if body.Status != nil {
+		var status model.OrganizationStatus
+		if err := status.UnmarshalText([]byte(string(*body.Status))); err != nil {
+			return service.UpdateOrganizationOpts{}, err
+		}
+		opts.Status = optional.Some(status)
+	}
+
+	return opts, nil
+}
+
+func organizationToDTO(organization *service.Organization) api.Organization {
 	o := api.Organization{
 		Id:         organization.ID.String(),
 		Email:      oapiTypes.Email(organization.Email),
@@ -939,7 +961,7 @@ func organizationToDTO(organization *model.Organization) api.Organization {
 	return o
 }
 
-func organizationMemberToDTO(member *model.OrganizationMember) api.OrganizationMember {
+func organizationMemberToDTO(member *service.OrganizationMember) api.OrganizationMember {
 	return api.OrganizationMember{
 		Id:        member.ID.String(),
 		FirstName: member.FirstName,

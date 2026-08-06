@@ -7,10 +7,10 @@ import (
 	"github.com/opcotech/elemo/internal/pkg/validate"
 )
 
-// Document represents a document in the system that can be associated with a
-// model.Organization, model.Namespace, model.Project, or User. A document is a
-// pointer to a file in the static file storage, editable by users with the
-// appropriate permissions on the front-end.
+// Document represents a document in the system that can be associated with an
+// organization, namespace, project, or user. A document is a pointer to a file
+// in the static file storage, editable by users with the appropriate
+// permissions on the front-end.
 type Document struct {
 	ID          ID         `json:"id" validate:"required"`
 	Name        string     `json:"name" validate:"required,min=3,max=120"`

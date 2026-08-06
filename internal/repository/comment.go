@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
+
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/convert"
 )
@@ -17,23 +18,44 @@ var (
 	ErrCommentUpdate = errors.New("failed to update comment") // the comment could not be updated
 )
 
-//go:generate mockgen -source=comment.go -destination=../testutil/mock/comment_repo_gen.go -package=mock -mock_names "CommentRepository=CommentRepository"
+// Comment represents a comment persisted by the repository.
+type Comment struct {
+	ID        model.ID   `json:"id"`
+	Content   string     `json:"content"`
+	CreatedBy model.ID   `json:"created_by"`
+	CreatedAt *time.Time `json:"created_at"`
+	UpdatedAt *time.Time `json:"updated_at"`
+}
+
+// CreateCommentOpts holds the data required to create a comment.
+type CreateCommentOpts struct {
+	BelongsTo model.ID
+	Content   string
+	CreatedBy model.ID
+}
+
+// UpdateCommentOpts holds the fields that can be updated on a comment.
+type UpdateCommentOpts struct {
+	Content string
+}
+
+//go:generate mockgen -source=comment.go -destination=comment_mock_gen.go -package=repository -mock_names "CommentRepository=MockCommentRepository"
 type CommentRepository interface {
-	Create(ctx context.Context, belongsTo model.ID, comment *model.Comment) error
-	Get(ctx context.Context, id model.ID) (*model.Comment, error)
-	GetAllBelongsTo(ctx context.Context, belongsTo model.ID, offset, limit int) ([]*model.Comment, error)
-	Update(ctx context.Context, id model.ID, content string) (*model.Comment, error)
+	Create(ctx context.Context, opts CreateCommentOpts) (*Comment, error)
+	Get(ctx context.Context, id model.ID) (*Comment, error)
+	GetAllBelongsTo(ctx context.Context, belongsTo model.ID, offset, limit int) ([]*Comment, error)
+	Update(ctx context.Context, id model.ID, opts UpdateCommentOpts) (*Comment, error)
 	Delete(ctx context.Context, id model.ID) error
 }
 
-// CommentRepository is a repository for managing comments.
+// Neo4jCommentRepository is a repository for managing comments.
 type Neo4jCommentRepository struct {
 	*neo4jBaseRepository
 }
 
-func (r *Neo4jCommentRepository) scan(cp, op string) func(rec *neo4j.Record) (*model.Comment, error) {
-	return func(rec *neo4j.Record) (*model.Comment, error) {
-		comment := new(model.Comment)
+func (r *Neo4jCommentRepository) scan(cp, op string) func(rec *neo4j.Record) (*Comment, error) {
+	return func(rec *neo4j.Record) (*Comment, error) {
+		comment := new(Comment)
 
 		val, _, err := neo4j.GetRecordValue[neo4j.Node](rec, cp)
 		if err != nil {
@@ -52,34 +74,26 @@ func (r *Neo4jCommentRepository) scan(cp, op string) func(rec *neo4j.Record) (*m
 		comment.ID, _ = model.NewIDFromString(val.GetProperties()["id"].(string), model.ResourceTypeComment.String())
 		comment.CreatedBy, _ = model.NewIDFromString(createdBy, model.ResourceTypeUser.String())
 
-		if err := comment.Validate(); err != nil {
-			return nil, err
-		}
-
 		return comment, nil
 	}
 }
 
-func (r *Neo4jCommentRepository) Create(ctx context.Context, belongsTo model.ID, comment *model.Comment) error {
+func (r *Neo4jCommentRepository) Create(ctx context.Context, opts CreateCommentOpts) (*Comment, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.CommentRepository/Create")
 	defer span.End()
 
-	if err := belongsTo.Validate(); err != nil {
-		return errors.Join(ErrCommentCreate, err)
+	createdAt := convert.ToPointer(time.Now().UTC())
+
+	comment := &Comment{
+		ID:        model.MustNewID(model.ResourceTypeComment),
+		Content:   opts.Content,
+		CreatedBy: opts.CreatedBy,
+		CreatedAt: createdAt,
+		UpdatedAt: nil,
 	}
-
-	if err := comment.Validate(); err != nil {
-		return errors.Join(ErrCommentCreate, err)
-	}
-
-	createdAt := time.Now().UTC()
-
-	comment.ID = model.MustNewID(model.ResourceTypeComment)
-	comment.CreatedAt = convert.ToPointer(createdAt)
-	comment.UpdatedAt = nil
 
 	cypher := `
-	MATCH (b:` + belongsTo.Label() + ` {id: $belong_to_id})
+	MATCH (b:` + opts.BelongsTo.Label() + ` {id: $belong_to_id})
 	MATCH (o:` + comment.CreatedBy.Label() + ` {id: $created_by_id})
 	CREATE
 		(c:` + comment.ID.Label() + ` {id: $id, content: $content, created_by: $created_by_id, created_at: datetime($created_at)}),
@@ -88,7 +102,7 @@ func (r *Neo4jCommentRepository) Create(ctx context.Context, belongsTo model.ID,
 		(o)-[:` + EdgeKindHasPermission.String() + ` {id: $comment_perm_rel_id, kind: $perm_kind, created_at: datetime($created_at)}]->(c)`
 
 	params := map[string]any{
-		"belong_to_id":        belongsTo.String(),
+		"belong_to_id":        opts.BelongsTo.String(),
 		"has_comment_rel_id":  model.NewRawID(),
 		"created_by_id":       comment.CreatedBy.String(),
 		"commented_rel_id":    model.NewRawID(),
@@ -100,13 +114,13 @@ func (r *Neo4jCommentRepository) Create(ctx context.Context, belongsTo model.ID,
 	}
 
 	if err := Neo4jExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
-		return errors.Join(ErrCommentCreate, err)
+		return nil, errors.Join(ErrCommentCreate, err)
 	}
 
-	return nil
+	return comment, nil
 }
 
-func (r *Neo4jCommentRepository) Get(ctx context.Context, id model.ID) (*model.Comment, error) {
+func (r *Neo4jCommentRepository) Get(ctx context.Context, id model.ID) (*Comment, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.CommentRepository/Get")
 	defer span.End()
 
@@ -126,7 +140,7 @@ func (r *Neo4jCommentRepository) Get(ctx context.Context, id model.ID) (*model.C
 	return doc, nil
 }
 
-func (r *Neo4jCommentRepository) GetAllBelongsTo(ctx context.Context, belongsTo model.ID, offset, limit int) ([]*model.Comment, error) {
+func (r *Neo4jCommentRepository) GetAllBelongsTo(ctx context.Context, belongsTo model.ID, offset, limit int) ([]*Comment, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.CommentRepository/GetAllBelongsTo")
 	defer span.End()
 
@@ -152,7 +166,7 @@ func (r *Neo4jCommentRepository) GetAllBelongsTo(ctx context.Context, belongsTo 
 	return docs, nil
 }
 
-func (r *Neo4jCommentRepository) Update(ctx context.Context, id model.ID, content string) (*model.Comment, error) {
+func (r *Neo4jCommentRepository) Update(ctx context.Context, id model.ID, opts UpdateCommentOpts) (*Comment, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.CommentRepository/Update")
 	defer span.End()
 
@@ -165,7 +179,7 @@ func (r *Neo4jCommentRepository) Update(ctx context.Context, id model.ID, conten
 
 	params := map[string]any{
 		"id":      id.String(),
-		"content": content,
+		"content": opts.Content,
 	}
 
 	doc, err := Neo4jExecuteWriteAndReadSingle(ctx, r.db, cypher, params, r.scan("c", "o"))
@@ -246,22 +260,21 @@ func clearCommentAllCrossCache(ctx context.Context, r *redisBaseRepository) erro
 	return nil
 }
 
-// CachedCommentRepository implements caching on the
-// repository.CommentRepository.
+// RedisCachedCommentRepository implements caching on the CommentRepository.
 type RedisCachedCommentRepository struct {
 	cacheRepo   *redisBaseRepository
 	commentRepo CommentRepository
 }
 
-func (r *RedisCachedCommentRepository) Create(ctx context.Context, belongsTo model.ID, comment *model.Comment) error {
-	if err := clearCommentBelongsTo(ctx, r.cacheRepo, belongsTo); err != nil {
-		return err
+func (r *RedisCachedCommentRepository) Create(ctx context.Context, opts CreateCommentOpts) (*Comment, error) {
+	if err := clearCommentBelongsTo(ctx, r.cacheRepo, opts.BelongsTo); err != nil {
+		return nil, err
 	}
-	return r.commentRepo.Create(ctx, belongsTo, comment)
+	return r.commentRepo.Create(ctx, opts)
 }
 
-func (r *RedisCachedCommentRepository) Get(ctx context.Context, id model.ID) (*model.Comment, error) {
-	var comment *model.Comment
+func (r *RedisCachedCommentRepository) Get(ctx context.Context, id model.ID) (*Comment, error) {
+	var comment *Comment
 	var err error
 
 	key := composeCacheKey(model.ResourceTypeComment.String(), id.String())
@@ -284,8 +297,8 @@ func (r *RedisCachedCommentRepository) Get(ctx context.Context, id model.ID) (*m
 	return comment, nil
 }
 
-func (r *RedisCachedCommentRepository) GetAllBelongsTo(ctx context.Context, belongsTo model.ID, offset, limit int) ([]*model.Comment, error) {
-	var comments []*model.Comment
+func (r *RedisCachedCommentRepository) GetAllBelongsTo(ctx context.Context, belongsTo model.ID, offset, limit int) ([]*Comment, error) {
+	var comments []*Comment
 	var err error
 
 	key := composeCacheKey(model.ResourceTypeComment.String(), "GetAllBelongsTo", belongsTo.String(), offset, limit)
@@ -308,11 +321,8 @@ func (r *RedisCachedCommentRepository) GetAllBelongsTo(ctx context.Context, belo
 	return comments, nil
 }
 
-func (r *RedisCachedCommentRepository) Update(ctx context.Context, id model.ID, content string) (*model.Comment, error) {
-	var comment *model.Comment
-	var err error
-
-	comment, err = r.commentRepo.Update(ctx, id, content)
+func (r *RedisCachedCommentRepository) Update(ctx context.Context, id model.ID, opts UpdateCommentOpts) (*Comment, error) {
+	comment, err := r.commentRepo.Update(ctx, id, opts)
 	if err != nil {
 		return nil, err
 	}
