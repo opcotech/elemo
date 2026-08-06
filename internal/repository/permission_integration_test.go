@@ -193,7 +193,7 @@ func (s *PermissionRepositoryIntegrationTestSuite) TestGetBySubjectAndTargetSyst
 		"kind":         directPerm.Kind.String(),
 		"created_at":   time.Now().UTC().Format(time.RFC3339Nano),
 	}
-	_, err := s.Neo4jDB.GetWriteSession(context.Background()).Run(context.Background(), cypher, params)
+	_, err := s.Neo4jDB.WriteSession(context.Background()).Run(context.Background(), cypher, params)
 	s.Require().NoError(err)
 
 	permissions, err := s.PermissionRepo.GetBySubjectAndTarget(context.Background(), s.testUser.ID, systemTarget)
@@ -311,7 +311,7 @@ func (s *CachedPermissionRepositoryIntegrationTestSuite) SetupTest() {
 	s.createOpts = testModel.NewCreatePermissionOpts(s.testUser.ID, s.testOrg.ID, model.PermissionKindRead)
 	s.permission = nil
 
-	s.Require().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
+	s.Require().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }
 
 func (s *CachedPermissionRepositoryIntegrationTestSuite) TearDownTest() {
@@ -331,7 +331,7 @@ func (s *CachedPermissionRepositoryIntegrationTestSuite) TestCreate() {
 	s.Assert().NotNil(permission.CreatedAt)
 	s.Assert().Nil(permission.UpdatedAt)
 
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }
 
 func (s *CachedPermissionRepositoryIntegrationTestSuite) TestGet() {
@@ -346,13 +346,13 @@ func (s *CachedPermissionRepositoryIntegrationTestSuite) TestGet() {
 	s.Require().NoError(err)
 
 	s.Assert().Equal(original, usingCache)
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 0)
 
 	cached, err := s.permissionRepo.Get(context.Background(), permission.ID)
 	s.Require().NoError(err)
 
 	s.Assert().Equal(usingCache, cached)
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }
 
 func (s *CachedPermissionRepositoryIntegrationTestSuite) TestGetBySubject() {
@@ -367,13 +367,13 @@ func (s *CachedPermissionRepositoryIntegrationTestSuite) TestGetBySubject() {
 	s.Require().NoError(err)
 
 	s.Assert().Equal(original, usingCache)
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 0)
 
 	cached, err := s.permissionRepo.GetBySubject(context.Background(), permission.Subject)
 	s.Require().NoError(err)
 
 	s.Assert().Equal(usingCache, cached)
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }
 
 func (s *CachedPermissionRepositoryIntegrationTestSuite) TestGetByTarget() {
@@ -388,13 +388,13 @@ func (s *CachedPermissionRepositoryIntegrationTestSuite) TestGetByTarget() {
 	s.Require().NoError(err)
 
 	s.Assert().Equal(original, usingCache)
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 0)
 
 	cached, err := s.permissionRepo.GetByTarget(context.Background(), permission.Target)
 	s.Require().NoError(err)
 
 	s.Assert().Equal(usingCache, cached)
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }
 
 func (s *CachedPermissionRepositoryIntegrationTestSuite) TestGetBySubjectAndTarget() {
@@ -409,13 +409,13 @@ func (s *CachedPermissionRepositoryIntegrationTestSuite) TestGetBySubjectAndTarg
 	s.Require().NoError(err)
 
 	s.Assert().Equal(original, usingCache)
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 0)
 
 	cached, err := s.permissionRepo.GetBySubjectAndTarget(context.Background(), permission.Subject, permission.Target)
 	s.Require().NoError(err)
 
 	s.Assert().Equal(usingCache, cached)
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }
 
 func (s *CachedPermissionRepositoryIntegrationTestSuite) TestUpdate() {
@@ -434,7 +434,7 @@ func (s *CachedPermissionRepositoryIntegrationTestSuite) TestUpdate() {
 	s.Assert().WithinDuration(*permission.CreatedAt, *updated.CreatedAt, 100*time.Millisecond)
 	s.Assert().NotNil(updated.UpdatedAt)
 
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }
 
 func (s *CachedPermissionRepositoryIntegrationTestSuite) TestDelete() {
@@ -445,14 +445,14 @@ func (s *CachedPermissionRepositoryIntegrationTestSuite) TestDelete() {
 	_, err = s.permissionRepo.Get(context.Background(), permission.ID)
 	s.Require().NoError(err)
 
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 0)
 
 	s.Require().NoError(s.permissionRepo.Delete(context.Background(), permission.ID))
 
 	_, err = s.permissionRepo.Get(context.Background(), permission.ID)
 	s.Assert().ErrorIs(err, repository.ErrNotFound)
 
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }
 
 func (s *CachedPermissionRepositoryIntegrationTestSuite) TestHasPermission() {
@@ -478,7 +478,7 @@ func (s *CachedPermissionRepositoryIntegrationTestSuite) TestHasPermission() {
 
 	s.Require().Equal(original, cached)
 
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }
 
 func (s *CachedPermissionRepositoryIntegrationTestSuite) TestHasAnyRelation() {
@@ -494,7 +494,7 @@ func (s *CachedPermissionRepositoryIntegrationTestSuite) TestHasAnyRelation() {
 
 	s.Require().Equal(original, cached)
 
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }
 
 func (s *CachedPermissionRepositoryIntegrationTestSuite) TestHasSystemRole() {
@@ -522,7 +522,7 @@ func (s *CachedPermissionRepositoryIntegrationTestSuite) TestHasSystemRole() {
 
 	s.Require().Equal(original, cached)
 
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }
 
 func TestCachedPermissionRepositoryIntegrationTestSuite(t *testing.T) {

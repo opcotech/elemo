@@ -92,8 +92,8 @@ func (c *todoController) V1TodosGet(ctx context.Context, request api.V1TodosGetR
 	defer span.End()
 
 	todos, err := c.todoService.GetAll(ctx,
-		pkg.GetDefaultPtr(request.Params.Offset, DefaultOffset),
-		pkg.GetDefaultPtr(request.Params.Limit, DefaultLimit),
+		pkg.DefaultPtr(request.Params.Offset, DefaultOffset),
+		pkg.DefaultPtr(request.Params.Limit, DefaultLimit),
 		request.Params.Completed,
 	)
 	if err != nil {
@@ -188,7 +188,7 @@ func NewTodoController(opts ...ControllerOption) (TodoController, error) {
 func createTodoJSONRequestBodyToCreateTodoOpts(body *api.V1TodosCreateJSONRequestBody, ownedBy, createdBy model.ID) (service.CreateTodoOpts, error) {
 	opts := service.CreateTodoOpts{
 		Title:       body.Title,
-		Description: pkg.GetDefaultPtr(body.Description.Value, ""),
+		Description: pkg.DefaultPtr(body.Description.Value, ""),
 		Priority:    model.TodoPriorityNormal,
 		OwnedBy:     ownedBy,
 		CreatedBy:   createdBy,

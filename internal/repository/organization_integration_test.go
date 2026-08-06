@@ -217,7 +217,7 @@ func (s *CachedOrganizationRepositoryIntegrationTestSuite) SetupTest() {
 	s.testUser, err = s.UserRepo.Create(context.Background(), testModel.NewCreateUserOpts())
 	s.Require().NoError(err)
 	s.createOpts = testModel.NewCreateOrganizationOpts(s.testUser.ID)
-	s.Require().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
+	s.Require().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }
 
 func (s *CachedOrganizationRepositoryIntegrationTestSuite) TearDownTest() {
@@ -232,7 +232,7 @@ func (s *CachedOrganizationRepositoryIntegrationTestSuite) TestCreate() {
 	org, err := s.organizationRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 	s.Assert().NotNil(org.CreatedAt)
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }
 
 func (s *CachedOrganizationRepositoryIntegrationTestSuite) TestGet() {
@@ -243,7 +243,7 @@ func (s *CachedOrganizationRepositoryIntegrationTestSuite) TestGet() {
 	usingCache, err := s.organizationRepo.Get(context.Background(), created.ID)
 	s.Require().NoError(err)
 	s.Assert().Equal(original, usingCache)
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
 }
 
 func (s *CachedOrganizationRepositoryIntegrationTestSuite) TestGetAll() {
@@ -254,7 +254,7 @@ func (s *CachedOrganizationRepositoryIntegrationTestSuite) TestGetAll() {
 	usingCache, err := s.organizationRepo.GetAll(context.Background(), s.testUser.ID, 0, 10)
 	s.Require().NoError(err)
 	s.Assert().Equal(original, usingCache)
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
 }
 
 func (s *CachedOrganizationRepositoryIntegrationTestSuite) TestUpdate() {
@@ -265,7 +265,7 @@ func (s *CachedOrganizationRepositoryIntegrationTestSuite) TestUpdate() {
 	})
 	s.Require().NoError(err)
 	s.Assert().Equal("new name", org.Name)
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
 }
 
 func (s *CachedOrganizationRepositoryIntegrationTestSuite) TestDelete() {
@@ -276,7 +276,7 @@ func (s *CachedOrganizationRepositoryIntegrationTestSuite) TestDelete() {
 	s.Require().NoError(s.organizationRepo.Delete(context.Background(), created.ID))
 	_, err = s.organizationRepo.Get(context.Background(), created.ID)
 	s.Assert().ErrorIs(err, repository.ErrNotFound)
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }
 
 func (s *CachedOrganizationRepositoryIntegrationTestSuite) TestAddInvitation() {

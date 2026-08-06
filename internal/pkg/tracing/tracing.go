@@ -150,15 +150,15 @@ func (w *spanWrapper) TracerProvider() trace.TracerProvider {
 	return w.span.TracerProvider()
 }
 
-// GetTraceID extracts the trace ID from the span context.
-func GetTraceID(span trace.Span) string {
+// TraceID extracts the trace ID from the span context.
+func TraceID(span trace.Span) string {
 	if span == nil {
 		return ""
 	}
 	return span.SpanContext().TraceID().String()
 }
 
-// GetTraceIDFromCtx extracts the trace ID from the context.
-func GetTraceIDFromCtx(ctx context.Context) string {
-	return GetTraceID(trace.SpanFromContext(ctx))
+// TraceIDFromCtx extracts the trace ID from the context.
+func TraceIDFromCtx(ctx context.Context) string {
+	return TraceID(trace.SpanFromContext(ctx))
 }

@@ -96,7 +96,7 @@ func (c *userController) V1UsersGet(ctx context.Context, request api.V1UsersGetR
 	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1UsersGet")
 	defer span.End()
 
-	users, err := c.userService.GetAll(ctx, pkg.GetDefaultPtr(request.Params.Offset, DefaultOffset), pkg.GetDefaultPtr(request.Params.Limit, DefaultLimit))
+	users, err := c.userService.GetAll(ctx, pkg.DefaultPtr(request.Params.Offset, DefaultOffset), pkg.DefaultPtr(request.Params.Limit, DefaultLimit))
 	if err != nil {
 		if errors.Is(err, service.ErrNoPermission) {
 			return api.V1UsersGet403JSONResponse{N403JSONResponse: permissionDenied}, nil
@@ -188,7 +188,7 @@ func (c *userController) V1UserDelete(ctx context.Context, request api.V1UserDel
 		return api.V1UserDelete404JSONResponse{N404JSONResponse: notFound}, nil
 	}
 
-	if err := c.userService.Delete(ctx, userID, pkg.GetDefaultPtr(request.Params.Force, false)); err != nil {
+	if err := c.userService.Delete(ctx, userID, pkg.DefaultPtr(request.Params.Force, false)); err != nil {
 		if errors.Is(err, service.ErrNoPermission) {
 			return api.V1UserDelete403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		}
@@ -361,12 +361,12 @@ func createUserJSONRequestBodyToCreateUserOpts(body *api.V1UsersCreateJSONReques
 		Email:     string(body.Email),
 		Password:  password.HashPassword(body.Password),
 		Status:    model.UserStatusActive,
-		Title:     pkg.GetDefaultPtr(body.Title, ""),
-		Picture:   pkg.GetDefaultPtr(body.Picture, ""),
-		Bio:       pkg.GetDefaultPtr(body.Bio, ""),
-		Address:   pkg.GetDefaultPtr(body.Address, ""),
-		Phone:     pkg.GetDefaultPtr(body.Phone, ""),
-		Links:     pkg.GetDefaultPtr(body.Links, make([]string, 0)),
+		Title:     pkg.DefaultPtr(body.Title, ""),
+		Picture:   pkg.DefaultPtr(body.Picture, ""),
+		Bio:       pkg.DefaultPtr(body.Bio, ""),
+		Address:   pkg.DefaultPtr(body.Address, ""),
+		Phone:     pkg.DefaultPtr(body.Phone, ""),
+		Links:     pkg.DefaultPtr(body.Links, make([]string, 0)),
 		Languages: make([]model.Language, 0),
 	}
 

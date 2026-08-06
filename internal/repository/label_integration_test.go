@@ -193,7 +193,7 @@ func (s *CachedLabelRepositoryIntegrationTestSuite) SetupTest() {
 	s.Require().NoError(err)
 
 	s.createOpts = testModel.NewCreateLabelOpts()
-	s.Require().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
+	s.Require().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }
 
 func (s *CachedLabelRepositoryIntegrationTestSuite) TearDownTest() {
@@ -209,7 +209,7 @@ func (s *CachedLabelRepositoryIntegrationTestSuite) TestCreate() {
 	s.Require().NoError(err)
 	s.Assert().NotEqual(model.MustNewNilID(model.ResourceTypeLabel), label.ID)
 	s.Assert().NotNil(label.CreatedAt)
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }
 
 func (s *CachedLabelRepositoryIntegrationTestSuite) TestGet() {
@@ -223,12 +223,12 @@ func (s *CachedLabelRepositoryIntegrationTestSuite) TestGet() {
 	s.Require().NoError(err)
 
 	s.Assert().Equal(original, usingCache)
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
 
 	cached, err := s.labelRepo.Get(context.Background(), created.ID)
 	s.Require().NoError(err)
 	s.Assert().Equal(usingCache.ID, cached.ID)
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
 }
 
 func (s *CachedLabelRepositoryIntegrationTestSuite) TestGetAll() {
@@ -244,7 +244,7 @@ func (s *CachedLabelRepositoryIntegrationTestSuite) TestGetAll() {
 	s.Require().NoError(err)
 
 	s.Assert().Equal(original, usingCache)
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
 }
 
 func (s *CachedLabelRepositoryIntegrationTestSuite) TestUpdate() {
@@ -261,7 +261,7 @@ func (s *CachedLabelRepositoryIntegrationTestSuite) TestUpdate() {
 	s.Assert().Equal("new name", label.Name)
 	s.Assert().Equal("new description", label.Description)
 	s.Assert().NotNil(label.UpdatedAt)
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
 }
 
 func (s *CachedLabelRepositoryIntegrationTestSuite) TestAttachTo() {
@@ -293,13 +293,13 @@ func (s *CachedLabelRepositoryIntegrationTestSuite) TestDelete() {
 
 	_, err = s.labelRepo.Get(context.Background(), created.ID)
 	s.Require().NoError(err)
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
 
 	s.Require().NoError(s.labelRepo.Delete(context.Background(), created.ID))
 
 	_, err = s.labelRepo.Get(context.Background(), created.ID)
 	s.Assert().ErrorIs(err, repository.ErrNotFound)
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }
 
 func TestCachedLabelRepositoryIntegrationTestSuite(t *testing.T) {

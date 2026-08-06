@@ -183,8 +183,8 @@ func (s *RedisContainerIntegrationTestSuite) CleanupRedis(ts *ContainerIntegrati
 	testRepo.CleanupRedisStore(context.Background(), ts.T(), s.RedisDB)
 }
 
-func (s *RedisContainerIntegrationTestSuite) GetKeys(ts *ContainerIntegrationTestSuite, pattern string) []string {
-	keys, err := s.RedisDB.GetClient().Keys(context.Background(), pattern).Result()
+func (s *RedisContainerIntegrationTestSuite) Keys(ts *ContainerIntegrationTestSuite, pattern string) []string {
+	keys, err := s.RedisDB.Client().Keys(context.Background(), pattern).Result()
 	ts.Require().NoError(err)
 	return keys
 }

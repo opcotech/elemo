@@ -64,8 +64,8 @@ func (c *namespaceController) V1OrganizationsNamespacesGet(ctx context.Context, 
 	}
 
 	namespaces, err := c.namespaceService.GetAll(ctx, organizationID,
-		pkg.GetDefaultPtr(request.Params.Offset, DefaultOffset),
-		pkg.GetDefaultPtr(request.Params.Limit, DefaultLimit),
+		pkg.DefaultPtr(request.Params.Offset, DefaultOffset),
+		pkg.DefaultPtr(request.Params.Limit, DefaultLimit),
 	)
 	if err != nil {
 		if errors.Is(err, service.ErrNoPermission) {

@@ -74,8 +74,8 @@ func (c *Client) Enqueue(ctx context.Context, task *asynq.Task, opts ...asynq.Op
 	return info, nil
 }
 
-// GetTaskInfo returns the task info for the given task ID in a queue.
-func (c *Client) GetTaskInfo(queue string, id string) (*asynq.TaskInfo, error) {
+// TaskInfo returns the task info for the given task ID in a queue.
+func (c *Client) TaskInfo(queue string, id string) (*asynq.TaskInfo, error) {
 	return c.inspector.GetTaskInfo(queue, id)
 }
 
@@ -100,7 +100,7 @@ func (c *Client) Ping(ctx context.Context) error {
 		case <-ctx.Done():
 			return errors.Join(ErrReceiveTask, ctx.Err())
 		default:
-			if info, err = c.GetTaskInfo(info.Queue, info.ID); err != nil {
+			if info, err = c.TaskInfo(info.Queue, info.ID); err != nil {
 				return errors.Join(ErrReceiveTask, err)
 			}
 		}

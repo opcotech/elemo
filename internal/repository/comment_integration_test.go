@@ -161,7 +161,7 @@ func (s *CachedCommentRepositoryIntegrationTestSuite) SetupTest() {
 	s.Require().NoError(err)
 
 	s.createOpts = testModel.NewCreateCommentOpts(s.testDoc.ID, s.testUser.ID)
-	s.Require().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
+	s.Require().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }
 
 func (s *CachedCommentRepositoryIntegrationTestSuite) TearDownTest() {
@@ -177,7 +177,7 @@ func (s *CachedCommentRepositoryIntegrationTestSuite) TestCreate() {
 	s.Require().NoError(err)
 	s.Assert().NotEqual(model.MustNewNilID(model.ResourceTypeComment), comment.ID)
 	s.Assert().NotNil(comment.CreatedAt)
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }
 
 func (s *CachedCommentRepositoryIntegrationTestSuite) TestGet() {
@@ -191,7 +191,7 @@ func (s *CachedCommentRepositoryIntegrationTestSuite) TestGet() {
 	s.Require().NoError(err)
 
 	s.Assert().Equal(original, usingCache)
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
 }
 
 func (s *CachedCommentRepositoryIntegrationTestSuite) TestGetAllBelongsTo() {
@@ -207,7 +207,7 @@ func (s *CachedCommentRepositoryIntegrationTestSuite) TestGetAllBelongsTo() {
 	s.Require().NoError(err)
 
 	s.Assert().Equal(original, usingCache)
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
 }
 
 func (s *CachedCommentRepositoryIntegrationTestSuite) TestUpdate() {
@@ -218,7 +218,7 @@ func (s *CachedCommentRepositoryIntegrationTestSuite) TestUpdate() {
 	s.Require().NoError(err)
 	s.Assert().Equal("new content", comment.Content)
 	s.Assert().NotNil(comment.UpdatedAt)
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
 }
 
 func (s *CachedCommentRepositoryIntegrationTestSuite) TestDelete() {
@@ -227,13 +227,13 @@ func (s *CachedCommentRepositoryIntegrationTestSuite) TestDelete() {
 
 	_, err = s.commentRepo.Get(context.Background(), created.ID)
 	s.Require().NoError(err)
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
 
 	s.Require().NoError(s.commentRepo.Delete(context.Background(), created.ID))
 
 	_, err = s.commentRepo.Get(context.Background(), created.ID)
 	s.Assert().ErrorIs(err, repository.ErrNotFound)
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }
 
 func TestCachedCommentRepositoryIntegrationTestSuite(t *testing.T) {

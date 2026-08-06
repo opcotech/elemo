@@ -164,7 +164,7 @@ func (s *CachedAssignmentRepositoryIntegrationTestSuite) SetupTest() {
 	s.Require().NoError(err)
 
 	s.createOpts = testModel.NewCreateAssignmentOpts(s.testUser.ID, s.testIssue.ID, model.AssignmentKindReviewer)
-	s.Require().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
+	s.Require().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }
 
 func (s *CachedAssignmentRepositoryIntegrationTestSuite) TearDownTest() {
@@ -180,7 +180,7 @@ func (s *CachedAssignmentRepositoryIntegrationTestSuite) TestCreate() {
 	s.Require().NoError(err)
 	s.Assert().NotEqual(model.MustNewNilID(model.ResourceTypeAssignment), assignment.ID)
 	s.Assert().NotNil(assignment.CreatedAt)
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }
 
 func (s *CachedAssignmentRepositoryIntegrationTestSuite) TestGet() {
@@ -194,7 +194,7 @@ func (s *CachedAssignmentRepositoryIntegrationTestSuite) TestGet() {
 	s.Require().NoError(err)
 
 	s.Assert().Equal(original, usingCache)
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
 }
 
 func (s *CachedAssignmentRepositoryIntegrationTestSuite) TestGetByUser() {
@@ -210,7 +210,7 @@ func (s *CachedAssignmentRepositoryIntegrationTestSuite) TestGetByUser() {
 	s.Require().NoError(err)
 
 	s.Assert().Equal(original, usingCache)
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
 }
 
 func (s *CachedAssignmentRepositoryIntegrationTestSuite) TestGetByResource() {
@@ -224,7 +224,7 @@ func (s *CachedAssignmentRepositoryIntegrationTestSuite) TestGetByResource() {
 	s.Require().NoError(err)
 
 	s.Assert().Equal(original, usingCache)
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
 }
 
 func (s *CachedAssignmentRepositoryIntegrationTestSuite) TestDelete() {
@@ -233,13 +233,13 @@ func (s *CachedAssignmentRepositoryIntegrationTestSuite) TestDelete() {
 
 	_, err = s.assignmentRepo.Get(context.Background(), created.ID)
 	s.Require().NoError(err)
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
 
 	s.Require().NoError(s.assignmentRepo.Delete(context.Background(), created.ID))
 
 	_, err = s.assignmentRepo.Get(context.Background(), created.ID)
 	s.Assert().ErrorIs(err, repository.ErrNotFound)
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }
 
 func TestCachedAssignmentRepositoryIntegrationTestSuite(t *testing.T) {
