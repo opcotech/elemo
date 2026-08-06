@@ -20,23 +20,23 @@ type projectController struct {
 	*baseController
 }
 
-func (c *projectController) V1NamespacesProjectsCreate(ctx context.Context, request api.V1NamespacesProjectsCreateRequestObject) (api.V1NamespacesProjectsCreateResponseObject, error) {
+func (c *projectController) V1NamespacesProjectsCreate(_ context.Context, _ api.V1NamespacesProjectsCreateRequestObject) (api.V1NamespacesProjectsCreateResponseObject, error) {
 	panic("not implemented")
 }
 
-func (c *projectController) V1NamespacesProjectsGet(ctx context.Context, request api.V1NamespacesProjectsGetRequestObject) (api.V1NamespacesProjectsGetResponseObject, error) {
+func (c *projectController) V1NamespacesProjectsGet(_ context.Context, _ api.V1NamespacesProjectsGetRequestObject) (api.V1NamespacesProjectsGetResponseObject, error) {
 	panic("not implemented")
 }
 
-func (c *projectController) V1ProjectGet(ctx context.Context, request api.V1ProjectGetRequestObject) (api.V1ProjectGetResponseObject, error) {
+func (c *projectController) V1ProjectGet(_ context.Context, _ api.V1ProjectGetRequestObject) (api.V1ProjectGetResponseObject, error) {
 	panic("not implemented")
 }
 
-func (c *projectController) V1ProjectUpdate(ctx context.Context, request api.V1ProjectUpdateRequestObject) (api.V1ProjectUpdateResponseObject, error) {
+func (c *projectController) V1ProjectUpdate(_ context.Context, _ api.V1ProjectUpdateRequestObject) (api.V1ProjectUpdateResponseObject, error) {
 	panic("not implemented")
 }
 
-func (c *projectController) V1ProjectDelete(ctx context.Context, request api.V1ProjectDeleteRequestObject) (api.V1ProjectDeleteResponseObject, error) {
+func (c *projectController) V1ProjectDelete(_ context.Context, _ api.V1ProjectDeleteRequestObject) (api.V1ProjectDeleteResponseObject, error) {
 	panic("not implemented")
 }
 
