@@ -9,6 +9,12 @@ import type {
   V1NamespaceGetData,
   V1NamespaceGetErrors,
   V1NamespaceGetResponses,
+  V1NamespacesProjectsCreateData,
+  V1NamespacesProjectsCreateErrors,
+  V1NamespacesProjectsCreateResponses,
+  V1NamespacesProjectsGetData,
+  V1NamespacesProjectsGetErrors,
+  V1NamespacesProjectsGetResponses,
   V1NamespaceUpdateData,
   V1NamespaceUpdateErrors,
   V1NamespaceUpdateResponses,
@@ -117,6 +123,15 @@ import type {
   V1PermissionUpdateData,
   V1PermissionUpdateErrors,
   V1PermissionUpdateResponses,
+  V1ProjectDeleteData,
+  V1ProjectDeleteErrors,
+  V1ProjectDeleteResponses,
+  V1ProjectGetData,
+  V1ProjectGetErrors,
+  V1ProjectGetResponses,
+  V1ProjectUpdateData,
+  V1ProjectUpdateErrors,
+  V1ProjectUpdateResponses,
   V1SystemHealthData,
   V1SystemHealthErrors,
   V1SystemHealthResponses,
@@ -1284,6 +1299,136 @@ export const v1NamespaceUpdate = <ThrowOnError extends boolean = false>(
       },
     ],
     url: "/v1/namespaces/{id}",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+};
+
+/**
+ * Get namespace projects
+ *
+ * Return the projects that belong to the namespace.
+ */
+export const v1NamespacesProjectsGet = <ThrowOnError extends boolean = false>(
+  options: Options<V1NamespacesProjectsGetData, ThrowOnError>
+) => {
+  return (options.client ?? client).get<
+    V1NamespacesProjectsGetResponses,
+    V1NamespacesProjectsGetErrors,
+    ThrowOnError
+  >({
+    security: [
+      {
+        scheme: "bearer",
+        type: "http",
+      },
+    ],
+    url: "/v1/namespaces/{id}/projects",
+    ...options,
+  });
+};
+
+/**
+ * Create project in namespace
+ *
+ * Create a new project in the namespace.
+ */
+export const v1NamespacesProjectsCreate = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<V1NamespacesProjectsCreateData, ThrowOnError>
+) => {
+  return (options.client ?? client).post<
+    V1NamespacesProjectsCreateResponses,
+    V1NamespacesProjectsCreateErrors,
+    ThrowOnError
+  >({
+    security: [
+      {
+        scheme: "bearer",
+        type: "http",
+      },
+    ],
+    url: "/v1/namespaces/{id}/projects",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+};
+
+/**
+ * Delete project
+ *
+ * Delete the project by its ID.
+ */
+export const v1ProjectDelete = <ThrowOnError extends boolean = false>(
+  options: Options<V1ProjectDeleteData, ThrowOnError>
+) => {
+  return (options.client ?? client).delete<
+    V1ProjectDeleteResponses,
+    V1ProjectDeleteErrors,
+    ThrowOnError
+  >({
+    security: [
+      {
+        scheme: "bearer",
+        type: "http",
+      },
+    ],
+    url: "/v1/projects/{id}",
+    ...options,
+  });
+};
+
+/**
+ * Get project
+ *
+ * Return the requested project by its ID.
+ */
+export const v1ProjectGet = <ThrowOnError extends boolean = false>(
+  options: Options<V1ProjectGetData, ThrowOnError>
+) => {
+  return (options.client ?? client).get<
+    V1ProjectGetResponses,
+    V1ProjectGetErrors,
+    ThrowOnError
+  >({
+    security: [
+      {
+        scheme: "bearer",
+        type: "http",
+      },
+    ],
+    url: "/v1/projects/{id}",
+    ...options,
+  });
+};
+
+/**
+ * Update project
+ *
+ * Update the project by its ID.
+ */
+export const v1ProjectUpdate = <ThrowOnError extends boolean = false>(
+  options: Options<V1ProjectUpdateData, ThrowOnError>
+) => {
+  return (options.client ?? client).patch<
+    V1ProjectUpdateResponses,
+    V1ProjectUpdateErrors,
+    ThrowOnError
+  >({
+    security: [
+      {
+        scheme: "bearer",
+        type: "http",
+      },
+    ],
+    url: "/v1/projects/{id}",
     ...options,
     headers: {
       "Content-Type": "application/json",

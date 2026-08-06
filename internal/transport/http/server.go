@@ -56,6 +56,7 @@ type server struct {
 	AuthController
 	OrganizationController
 	NamespaceController
+	ProjectController
 	UserController
 	TodoController
 	SystemController
@@ -105,6 +106,10 @@ func NewServer(opts ...ControllerOption) (StrictServer, error) {
 	}
 
 	if s.NamespaceController, err = NewNamespaceController(opts...); err != nil {
+		return nil, err
+	}
+
+	if s.ProjectController, err = NewProjectController(opts...); err != nil {
 		return nil, err
 	}
 

@@ -238,6 +238,55 @@ export type NamespaceProject = {
 };
 
 /**
+ * Project
+ *
+ * A project in a namespace.
+ */
+export type Project = {
+  /**
+   * Unique identifier of the project.
+   */
+  id: string;
+  /**
+   * Key of the project.
+   */
+  key: string;
+  /**
+   * Name of the project.
+   */
+  name: string;
+  /**
+   * Description of the project.
+   */
+  description?: string | null;
+  /**
+   * Logo of the project.
+   */
+  logo?: string | null;
+  status: ProjectStatus;
+  /**
+   * IDs of the teams in the project.
+   */
+  teams: Array<string>;
+  /**
+   * IDs of the documents in the project.
+   */
+  documents: Array<string>;
+  /**
+   * IDs of the issues in the project.
+   */
+  issues: Array<string>;
+  /**
+   * Date when the project was created.
+   */
+  created_at: string;
+  /**
+   * Date when the project was updated.
+   */
+  updated_at: string | null;
+};
+
+/**
  * NamespaceDocument
  *
  * A document in a namespace with limited information.
@@ -1034,6 +1083,46 @@ export type NamespacePatch = {
    * Description of the namespace.
    */
   description?: string | null;
+};
+
+export type ProjectCreate = {
+  /**
+   * Key of the project.
+   */
+  key: string;
+  /**
+   * Name of the project.
+   */
+  name: string;
+  /**
+   * Description of the project.
+   */
+  description?: string | null;
+  /**
+   * Logo of the project.
+   */
+  logo?: string | null;
+  status?: ProjectStatus;
+};
+
+export type ProjectPatch = {
+  /**
+   * Key of the project.
+   */
+  key?: string;
+  /**
+   * Name of the project.
+   */
+  name?: string;
+  /**
+   * Description of the project.
+   */
+  description?: string | null;
+  /**
+   * Logo of the project.
+   */
+  logo?: string | null;
+  status?: ProjectStatus;
 };
 
 export type PermissionCreate = {
@@ -3230,6 +3319,259 @@ export type V1NamespaceUpdateResponses = {
 
 export type V1NamespaceUpdateResponse =
   V1NamespaceUpdateResponses[keyof V1NamespaceUpdateResponses];
+
+export type V1NamespacesProjectsGetData = {
+  body?: never;
+  path: {
+    /**
+     * ID of the resource.
+     */
+    id: string;
+  };
+  query?: {
+    /**
+     * Number of resources to skip.
+     */
+    offset?: number;
+    /**
+     * Number of resources to return.
+     */
+    limit?: number;
+  };
+  url: "/v1/namespaces/{id}/projects";
+};
+
+export type V1NamespacesProjectsGetErrors = {
+  /**
+   * Bad request
+   */
+  400: HttpError;
+  /**
+   * Unauthorized request
+   */
+  401: HttpError;
+  /**
+   * Forbidden
+   */
+  403: HttpError;
+  /**
+   * The requested resource not found
+   */
+  404: HttpError;
+  /**
+   * Internal Server Error
+   */
+  500: HttpError;
+};
+
+export type V1NamespacesProjectsGetError =
+  V1NamespacesProjectsGetErrors[keyof V1NamespacesProjectsGetErrors];
+
+export type V1NamespacesProjectsGetResponses = {
+  /**
+   * OK
+   */
+  200: Array<Project>;
+};
+
+export type V1NamespacesProjectsGetResponse =
+  V1NamespacesProjectsGetResponses[keyof V1NamespacesProjectsGetResponses];
+
+export type V1NamespacesProjectsCreateData = {
+  body?: ProjectCreate;
+  path: {
+    /**
+     * ID of the resource.
+     */
+    id: string;
+  };
+  query?: never;
+  url: "/v1/namespaces/{id}/projects";
+};
+
+export type V1NamespacesProjectsCreateErrors = {
+  /**
+   * Bad request
+   */
+  400: HttpError;
+  /**
+   * Unauthorized request
+   */
+  401: HttpError;
+  /**
+   * Forbidden
+   */
+  403: HttpError;
+  /**
+   * The requested resource not found
+   */
+  404: HttpError;
+  /**
+   * Internal Server Error
+   */
+  500: HttpError;
+};
+
+export type V1NamespacesProjectsCreateError =
+  V1NamespacesProjectsCreateErrors[keyof V1NamespacesProjectsCreateErrors];
+
+export type V1NamespacesProjectsCreateResponses = {
+  /**
+   * Example response
+   */
+  201: {
+    /**
+     * ID of the newly created resource.
+     */
+    id: string;
+  };
+};
+
+export type V1NamespacesProjectsCreateResponse =
+  V1NamespacesProjectsCreateResponses[keyof V1NamespacesProjectsCreateResponses];
+
+export type V1ProjectDeleteData = {
+  body?: never;
+  path: {
+    /**
+     * ID of the resource.
+     */
+    id: string;
+  };
+  query?: never;
+  url: "/v1/projects/{id}";
+};
+
+export type V1ProjectDeleteErrors = {
+  /**
+   * Bad request
+   */
+  400: HttpError;
+  /**
+   * Unauthorized request
+   */
+  401: HttpError;
+  /**
+   * Forbidden
+   */
+  403: HttpError;
+  /**
+   * The requested resource not found
+   */
+  404: HttpError;
+  /**
+   * Internal Server Error
+   */
+  500: HttpError;
+};
+
+export type V1ProjectDeleteError =
+  V1ProjectDeleteErrors[keyof V1ProjectDeleteErrors];
+
+export type V1ProjectDeleteResponses = {
+  /**
+   * No Content
+   */
+  204: void;
+};
+
+export type V1ProjectDeleteResponse =
+  V1ProjectDeleteResponses[keyof V1ProjectDeleteResponses];
+
+export type V1ProjectGetData = {
+  body?: never;
+  path: {
+    /**
+     * ID of the resource.
+     */
+    id: string;
+  };
+  query?: never;
+  url: "/v1/projects/{id}";
+};
+
+export type V1ProjectGetErrors = {
+  /**
+   * Bad request
+   */
+  400: HttpError;
+  /**
+   * Unauthorized request
+   */
+  401: HttpError;
+  /**
+   * Forbidden
+   */
+  403: HttpError;
+  /**
+   * The requested resource not found
+   */
+  404: HttpError;
+  /**
+   * Internal Server Error
+   */
+  500: HttpError;
+};
+
+export type V1ProjectGetError = V1ProjectGetErrors[keyof V1ProjectGetErrors];
+
+export type V1ProjectGetResponses = {
+  /**
+   * OK
+   */
+  200: Project;
+};
+
+export type V1ProjectGetResponse =
+  V1ProjectGetResponses[keyof V1ProjectGetResponses];
+
+export type V1ProjectUpdateData = {
+  body?: ProjectPatch;
+  path: {
+    /**
+     * ID of the resource.
+     */
+    id: string;
+  };
+  query?: never;
+  url: "/v1/projects/{id}";
+};
+
+export type V1ProjectUpdateErrors = {
+  /**
+   * Bad request
+   */
+  400: HttpError;
+  /**
+   * Unauthorized request
+   */
+  401: HttpError;
+  /**
+   * Forbidden
+   */
+  403: HttpError;
+  /**
+   * The requested resource not found
+   */
+  404: HttpError;
+  /**
+   * Internal Server Error
+   */
+  500: HttpError;
+};
+
+export type V1ProjectUpdateError =
+  V1ProjectUpdateErrors[keyof V1ProjectUpdateErrors];
+
+export type V1ProjectUpdateResponses = {
+  /**
+   * OK
+   */
+  200: Project;
+};
+
+export type V1ProjectUpdateResponse =
+  V1ProjectUpdateResponses[keyof V1ProjectUpdateResponses];
 
 export type V1PermissionsCreateData = {
   body?: PermissionCreate;

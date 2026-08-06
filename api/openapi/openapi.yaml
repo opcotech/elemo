@@ -61,6 +61,8 @@ tags:
     description: Organizations in the system.
   - name: Namespace
     description: Namespaces in organizations.
+  - name: Project
+    description: Projects in namespaces.
   - name: User
     description: Users in the system.
   - name: Notification
@@ -489,6 +491,99 @@ components:
         - key
         - name
         - status
+    Project:
+      title: Project
+      type: object
+      description: A project in a namespace.
+      x-examples:
+        example:
+          id: 9bsv0s46s6s002p9ltq0
+          key: ENG
+          name: Engineering Project
+          description: Main engineering project
+          logo: "https://example.com/logo.png"
+          status: active
+          teams:
+            - 9bsv0s46s6s002p9ltq0
+          documents:
+            - 9bsv0s46s6s002p9ltq0
+          issues:
+            - 9bsv0s46s6s002p9ltq0
+          created_at: "2023-01-01T00:00:00Z"
+          updated_at: null
+      properties:
+        id:
+          type: string
+          description: Unique identifier of the project.
+          example: 9bsv0s46s6s002p9ltq0
+        key:
+          type: string
+          description: Key of the project.
+          minLength: 3
+          maxLength: 6
+          example: ENG
+        name:
+          type: string
+          description: Name of the project.
+          minLength: 3
+          maxLength: 120
+          example: Engineering Project
+        description:
+          type: string
+          description: Description of the project.
+          maxLength: 500
+          example: Main engineering project
+          minLength: 10
+          nullable: true
+        logo:
+          type: string
+          description: Logo of the project.
+          format: uri
+          example: "https://example.com/logo.png"
+          maxLength: 2000
+          nullable: true
+        status:
+          $ref: "#/components/schemas/ProjectStatus"
+        teams:
+          type: array
+          description: IDs of the teams in the project.
+          uniqueItems: true
+          items:
+            type: string
+            example: 9bsv0s46s6s002p9ltq0
+        documents:
+          type: array
+          description: IDs of the documents in the project.
+          uniqueItems: true
+          items:
+            type: string
+            example: 9bsv0s46s6s002p9ltq0
+        issues:
+          type: array
+          description: IDs of the issues in the project.
+          uniqueItems: true
+          items:
+            type: string
+            example: 9bsv0s46s6s002p9ltq0
+        created_at:
+          type: string
+          format: date-time
+          description: Date when the project was created.
+        updated_at:
+          type: string
+          format: date-time
+          description: Date when the project was updated.
+          nullable: true
+      required:
+        - id
+        - key
+        - name
+        - status
+        - teams
+        - documents
+        - issues
+        - created_at
+        - updated_at
     NamespaceDocument:
       title: NamespaceDocument
       type: object
@@ -1175,6 +1270,10 @@ components:
           scopes:
             organization: Read and write access to organizations.
             organization.read: Read access to organizations.
+            namespace: Read and write access to namespaces.
+            namespace.read: Read access to namespaces.
+            project: Read and write access to projects.
+            project.read: Read access to projects.
             user: Read and write access to users.
             user.read: Read access to users.
             todo: Read and write access to todo items.
@@ -1190,6 +1289,10 @@ components:
           scopes:
             organization: Read and write access to organizations.
             organization.read: Read access to organizations.
+            namespace: Read and write access to namespaces.
+            namespace.read: Read access to namespaces.
+            project: Read and write access to projects.
+            project.read: Read access to projects.
             user: Read and write access to users.
             user.read: Read access to users.
             todo: Read and write access to todo items.
@@ -1205,6 +1308,10 @@ components:
           scopes:
             organization: Read and write access to organizations.
             organization.read: Read access to organizations.
+            namespace: Read and write access to namespaces.
+            namespace.read: Read access to namespaces.
+            project: Read and write access to projects.
+            project.read: Read access to projects.
             user: Read and write access to users.
             user.read: Read access to users.
             todo: Read and write access to todo items.
@@ -1805,6 +1912,83 @@ components:
                 nullable: true
                 x-go-type: "Optional[string]"
                 x-go-type-skip-optional-pointer: true
+    ProjectCreate:
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+                description: Key of the project.
+                minLength: 3
+                maxLength: 6
+                example: ENG
+              name:
+                type: string
+                description: Name of the project.
+                minLength: 3
+                maxLength: 120
+                example: Engineering Project
+              description:
+                type: string
+                description: Description of the project.
+                maxLength: 500
+                example: Main engineering project
+                minLength: 10
+                nullable: true
+                x-go-type: "Optional[string]"
+                x-go-type-skip-optional-pointer: true
+              logo:
+                type: string
+                description: Logo of the project.
+                format: uri
+                example: "https://example.com/logo.png"
+                maxLength: 2000
+                nullable: true
+              status:
+                $ref: "#/components/schemas/ProjectStatus"
+            required:
+              - key
+              - name
+    ProjectPatch:
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+                description: Key of the project.
+                minLength: 3
+                maxLength: 6
+                example: ENG
+              name:
+                type: string
+                description: Name of the project.
+                minLength: 3
+                maxLength: 120
+                example: Engineering Project
+              description:
+                type: string
+                description: Description of the project.
+                maxLength: 500
+                example: Main engineering project
+                minLength: 10
+                nullable: true
+                x-go-type: "Optional[string]"
+                x-go-type-skip-optional-pointer: true
+              logo:
+                type: string
+                description: Logo of the project.
+                format: uri
+                example: "https://example.com/logo.png"
+                maxLength: 2000
+                nullable: true
+                x-go-type: "Optional[string]"
+                x-go-type-skip-optional-pointer: true
+              status:
+                $ref: "#/components/schemas/ProjectStatus"
     PermissionCreate:
       content:
         application/json:
@@ -3195,6 +3379,148 @@ paths:
             - namespace
       tags:
         - Namespace
+  "/v1/namespaces/{id}/projects":
+    parameters:
+      - $ref: "#/components/parameters/id"
+    get:
+      summary: Get namespace projects
+      tags:
+        - Namespace
+        - Project
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                uniqueItems: true
+                items:
+                  $ref: "#/components/schemas/Project"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+      operationId: v1NamespacesProjectsGet
+      security:
+        - oauth2:
+            - namespace.read
+            - project.read
+      description: Return the projects that belong to the namespace.
+      parameters:
+        - $ref: "#/components/parameters/offset"
+        - $ref: "#/components/parameters/limit"
+    post:
+      summary: Create project in namespace
+      operationId: v1NamespacesProjectsCreate
+      responses:
+        "201":
+          $ref: "#/components/responses/201"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+      description: Create a new project in the namespace.
+      security:
+        - oauth2:
+            - namespace
+            - project
+      tags:
+        - Namespace
+        - Project
+      requestBody:
+        $ref: "#/components/requestBodies/ProjectCreate"
+  "/v1/projects/{id}":
+    parameters:
+      - $ref: "#/components/parameters/id"
+    get:
+      summary: Get project
+      tags:
+        - Project
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+      operationId: v1ProjectGet
+      security:
+        - oauth2:
+            - project.read
+      description: Return the requested project by its ID.
+    patch:
+      summary: Update project
+      operationId: v1ProjectUpdate
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+      description: Update the project by its ID.
+      security:
+        - oauth2:
+            - project
+      tags:
+        - Project
+      requestBody:
+        $ref: "#/components/requestBodies/ProjectPatch"
+    delete:
+      summary: Delete project
+      operationId: v1ProjectDelete
+      responses:
+        "204":
+          description: No Content
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+      description: Delete the project by its ID.
+      security:
+        - oauth2:
+            - project
+      tags:
+        - Project
   /v1/permissions:
     post:
       summary: Create permission
