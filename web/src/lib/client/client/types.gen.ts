@@ -14,8 +14,7 @@ import type { Middleware } from "./utils.gen";
 export type ResponseStyle = "data" | "fields";
 
 export interface Config<T extends ClientOptions = ClientOptions>
-  extends Omit<RequestInit, "body" | "headers" | "method">,
-    CoreConfig {
+  extends Omit<RequestInit, "body" | "headers" | "method">, CoreConfig {
   /**
    * Base URL for all requests made by this client.
    */
@@ -43,13 +42,7 @@ export interface Config<T extends ClientOptions = ClientOptions>
    * @default 'auto'
    */
   parseAs?:
-    | "arrayBuffer"
-    | "auto"
-    | "blob"
-    | "formData"
-    | "json"
-    | "stream"
-    | "text";
+    "arrayBuffer" | "auto" | "blob" | "formData" | "json" | "stream" | "text";
   /**
    * Should we return only data or multiple fields (data, error, response, etc.)?
    *
@@ -69,12 +62,15 @@ export interface RequestOptions<
   TResponseStyle extends ResponseStyle = "fields",
   ThrowOnError extends boolean = boolean,
   Url extends string = string,
-> extends Config<{
+>
+  extends
+    Config<{
       responseStyle: TResponseStyle;
       throwOnError: ThrowOnError;
     }>,
     Pick<
       ServerSentEventsOptions<TData>,
+      | "onRequest"
       | "onSseError"
       | "onSseEvent"
       | "sseDefaultRetryDelay"
@@ -101,6 +97,7 @@ export interface ResolvedRequestOptions<
   ThrowOnError extends boolean = boolean,
   Url extends string = string,
 > extends RequestOptions<unknown, TResponseStyle, ThrowOnError, Url> {
+  headers: Headers;
   serializedBody?: string;
 }
 
@@ -125,11 +122,8 @@ export type RequestResult<
     >
   : Promise<
       TResponseStyle extends "data"
-        ?
-            | (TData extends Record<string, unknown>
-                ? TData[keyof TData]
-                : TData)
-            | undefined
+        ? | (TData extends Record<string, unknown> ? TData[keyof TData] : TData)
+          | undefined
         : (
             | {
                 data: TData extends Record<string, unknown>
@@ -144,8 +138,10 @@ export type RequestResult<
                   : TError;
               }
           ) & {
-            request: Request;
-            response: Response;
+            /** request may be undefined, because error may be from building the request object itself */
+            request?: Request;
+            /** response may be undefined, because error may be from building the request object itself or from a network error */
+            response?: Response;
           }
     >;
 
@@ -166,12 +162,13 @@ type MethodFn = <
 
 type SseFn = <
   TData = unknown,
-  TError = unknown,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _TError = unknown,
   ThrowOnError extends boolean = false,
   TResponseStyle extends ResponseStyle = "fields",
 >(
-  options: Omit<RequestOptions<TData, TResponseStyle, ThrowOnError>, "method">
-) => Promise<ServerSentEventsResult<TData, TError>>;
+  options: Omit<RequestOptions<never, TResponseStyle, ThrowOnError>, "method">
+) => Promise<ServerSentEventsResult<TData>>;
 
 type RequestFn = <
   TData = unknown,

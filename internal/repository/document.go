@@ -67,7 +67,7 @@ func (o UpdateDocumentOpts) patch() map[string]any {
 	return p
 }
 
-//go:generate mockgen -source=document.go -destination=document_mock_gen.go -package=repository -mock_names "DocumentRepository=MockDocumentRepository"
+//go:generate go tool mockgen -source=document.go -destination=document_mock_gen.go -package=repository -mock_names "DocumentRepository=MockDocumentRepository"
 type DocumentRepository interface {
 	Create(ctx context.Context, opts CreateDocumentOpts) (*Document, error)
 	Get(ctx context.Context, id model.ID) (*Document, error)

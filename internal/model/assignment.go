@@ -12,41 +12,10 @@ const (
 	AssignmentKindReviewer                           // a user is assigned as a reviewer
 )
 
-var (
-	assignmentKindKeys = map[string]AssignmentKind{
-		"assignee": AssignmentKindAssignee,
-		"reviewer": AssignmentKindReviewer,
-	}
-	assignmentKindValues = map[AssignmentKind]string{
-		AssignmentKindAssignee: "assignee",
-		AssignmentKindReviewer: "reviewer",
-	}
-)
-
 // AssignmentKind is the kind of assignment between a user and a resource.
+//
+//go:generate go tool enumer -type=AssignmentKind -trimprefix=AssignmentKind -text -transform=snake -output=assignment_kind_gen.go
 type AssignmentKind uint8
-
-// String returns the string representation of the relation kind.
-func (k AssignmentKind) String() string {
-	return assignmentKindValues[k]
-}
-
-// MarshalText implements the encoding.TextMarshaler interface.
-func (k AssignmentKind) MarshalText() (text []byte, err error) {
-	if k < 1 || k > 2 {
-		return nil, ErrInvalidAssignmentKind
-	}
-	return []byte(k.String()), nil
-}
-
-// UnmarshalText implements the encoding.TextUnmarshaler interface.
-func (k *AssignmentKind) UnmarshalText(text []byte) error {
-	if v, ok := assignmentKindKeys[string(text)]; ok {
-		*k = v
-		return nil
-	}
-	return ErrInvalidAssignmentKind
-}
 
 // Assignment is the model of an assignment between a user and a resource.
 type Assignment struct {

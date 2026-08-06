@@ -81,7 +81,7 @@ func (o UpdateTodoOpts) patch() map[string]any {
 	return p
 }
 
-//go:generate mockgen -source=todo.go -destination=todo_mock_gen.go -package=repository -mock_names "TodoRepository=MockTodoRepository"
+//go:generate go tool mockgen -source=todo.go -destination=todo_mock_gen.go -package=repository -mock_names "TodoRepository=MockTodoRepository"
 type TodoRepository interface {
 	Create(ctx context.Context, opts CreateTodoOpts) (*Todo, error)
 	Get(ctx context.Context, id model.ID) (*Todo, error)

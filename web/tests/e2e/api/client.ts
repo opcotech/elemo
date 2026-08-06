@@ -58,7 +58,14 @@ export async function createSystemOwnerClient(): Promise<Client> {
   // Return cached client if available and tokens are still valid
   if (cachedClient && cachedTokens) {
     try {
-      const authClient = new AuthClient(getTestConfig().apiBaseUrl);
+      const config = getTestConfig();
+      const oauthBaseUrl = config.apiBaseUrl.replace(/\/api\/?$/, "");
+      const authClient = new AuthClient(oauthBaseUrl, {
+        clientId: config.authClientId,
+        clientSecret: config.authClientSecret,
+        tokenUrl: "/oauth/token",
+        scopes: ["user", "organization", "todo", "notification"],
+      });
       const isValid = await authClient.validateToken(cachedTokens.access_token);
       if (isValid) {
         return cachedClient;

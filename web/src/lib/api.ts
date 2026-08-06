@@ -4,34 +4,71 @@ import { isEmpty } from "./utils";
 
 import { config } from "@/config";
 import { getAccessToken } from "@/lib/auth/session";
-import { tokenRefreshService } from "@/lib/auth/token-refresh-service";
 import { client } from "@/lib/client/client.gen";
 
-client.setConfig({
-  baseUrl: config.auth().apiBaseUrl,
-  cache: "no-store",
-  auth: async () => {
-    // Do not attempt to read localStorage or run refresh logic on the server.
-    if (typeof window === "undefined") {
-      return undefined;
-    }
+let isClientConfigured = false;
 
-    try {
-      let token = await getAccessToken();
+/**
+ * Configure the shared API client. Safe to call multiple times.
+ * Must run before API requests in the app; deferred from module load so
+ * Playwright type-imports of this module do not assert Vite env vars.
+ */
+export function ensureApiClientConfigured(): void {
+  if (isClientConfigured) {
+    return;
+  }
 
-      // If no token available, try to refresh
-      if (!token && !tokenRefreshService.isRefreshInProgress()) {
-        await tokenRefreshService.forceRefresh();
-        token = await getAccessToken();
+  client.setConfig({
+    baseUrl: config.auth().apiBaseUrl,
+    cache: "no-store",
+    auth: async () => {
+      // Do not attempt to read localStorage or run refresh logic on the server.
+      if (typeof window === "undefined") {
+        return undefined;
       }
 
-      return token || undefined;
-    } catch (error) {
-      console.error("Failed to get access token:", error);
-      return undefined;
+      try {
+        let token = await getAccessToken();
+
+        // If no token available, try to refresh
+        if (!token) {
+          const { tokenRefreshService } = await import(
+            "@/lib/auth/token-refresh-service"
+          );
+          if (!tokenRefreshService.isRefreshInProgress()) {
+            await tokenRefreshService.forceRefresh();
+            token = await getAccessToken();
+          }
+        }
+
+        return token || undefined;
+      } catch (error) {
+        console.error("Failed to get access token:", error);
+        return undefined;
+      }
+    },
+  });
+
+  isClientConfigured = true;
+}
+
+function hasApiBaseUrl(): boolean {
+  try {
+    if (typeof import.meta !== "undefined" && import.meta.env?.VITE_API_BASE_URL) {
+      return true;
     }
-  },
-});
+  } catch {
+    // import.meta unavailable during some Node/CJS analysis paths
+  }
+  return Boolean(
+    typeof process !== "undefined" && process.env?.VITE_API_BASE_URL
+  );
+}
+
+// Configure when Vite/env is present (app + SSR). Skip during Playwright analysis.
+if (hasApiBaseUrl()) {
+  ensureApiClientConfigured();
+}
 
 export * from "@/lib/client/@tanstack/react-query.gen";
 export * from "@/lib/client/client.gen";

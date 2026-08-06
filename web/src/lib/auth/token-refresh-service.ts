@@ -1,4 +1,4 @@
-import { authClient } from "./auth-client";
+import { authClient } from "./auth-client-instance";
 import {
   clearSession,
   getRefreshToken,

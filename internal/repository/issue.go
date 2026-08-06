@@ -135,7 +135,7 @@ func (o UpdateIssueOpts) patch() map[string]any {
 	return p
 }
 
-//go:generate mockgen -source=issue.go -destination=issue_mock_gen.go -package=repository -mock_names "IssueRepository=MockIssueRepository"
+//go:generate go tool mockgen -source=issue.go -destination=issue_mock_gen.go -package=repository -mock_names "IssueRepository=MockIssueRepository"
 type IssueRepository interface {
 	Create(ctx context.Context, opts CreateIssueOpts) (*Issue, error)
 	Get(ctx context.Context, id model.ID) (*Issue, error)

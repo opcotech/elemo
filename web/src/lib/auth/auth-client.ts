@@ -1,23 +1,11 @@
 import type { AuthConfig, AuthTokens, LoginCredentials } from "./types";
 
-import { config } from "@/config";
-
-// Auth configuration using centralized config
-const getAuthConfig = (): AuthConfig => ({
-  clientId: config.auth().clientId,
-  clientSecret: config.auth().clientSecret,
-  tokenUrl: "/oauth/token",
-  scopes: ["user", "organization", "todo", "notification"],
-});
-
+/** Pure OAuth client — no Vite/config dependency (safe for Playwright/Node). */
 export class AuthClient {
   private baseUrl: string;
   private config: AuthConfig;
 
-  constructor(
-    baseUrl: string = config.auth().apiBaseUrl,
-    authConfig: AuthConfig = getAuthConfig()
-  ) {
+  constructor(baseUrl: string, authConfig: AuthConfig) {
     this.baseUrl = baseUrl;
     this.config = authConfig;
   }
@@ -102,6 +90,3 @@ export class AuthClient {
     }
   }
 }
-
-// Export singleton instance
-export const authClient = new AuthClient();

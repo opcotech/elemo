@@ -50,29 +50,6 @@ const (
 )
 
 var (
-	relationKindValues = map[EdgeKind]string{
-		EdgeKindAssignedTo:    "ASSIGNED_TO",
-		EdgeKindBelongsTo:     "BELONGS_TO",
-		EdgeKindCommented:     "COMMENTED",
-		EdgeKindCreated:       "CREATED",
-		EdgeKindHasAttachment: "HAS_ATTACHMENT",
-		EdgeKindHasComment:    "HAS_COMMENT",
-		EdgeKindHasLabel:      "HAS_LABEL",
-		EdgeKindHasNamespace:  "HAS_NAMESPACE",
-		EdgeKindHasPermission: "HAS_PERMISSION",
-		EdgeKindHasProject:    "HAS_PROJECT",
-		EdgeKindHasTeam:       "HAS_TEAM",
-		EdgeKindInvited:       "INVITED",
-		EdgeKindInvitedTo:     "INVITED_TO",
-		EdgeKindKindOf:        "KIND_OF",
-		EdgeKindMemberOf:      "MEMBER_OF",
-		EdgeKindRelatedTo:     "RELATED_TO",
-		EdgeKindSpeaks:        "SPEAKS",
-		EdgeKindWatches:       "WATCHES",
-	}
-)
-
-var (
 	ErrCacheDelete = errors.New("failed to delete cache") // cache cannot be deleted
 	ErrCacheRead   = errors.New("failed to read cache")   // cache cannot be read
 	ErrCacheWrite  = errors.New("failed to write cache")  // cache cannot be written
@@ -86,12 +63,9 @@ var (
 )
 
 // EdgeKind is the kind of relation between two entities.
+//
+//go:generate go tool enumer -type=EdgeKind -trimprefix=EdgeKind -transform=snake-upper -output=repository_edge_kind_gen.go
 type EdgeKind uint8
-
-// String returns the string representation of the relation kind.
-func (k EdgeKind) String() string {
-	return relationKindValues[k]
-}
 
 // boltLogger implements Neo4j's logger interface.
 type boltLogger struct {
@@ -495,8 +469,8 @@ func Neo4jExecuteWriteAndReadAll[T any](ctx context.Context, db *Neo4jDatabase, 
 
 // PGPool defines the interface for a database connection pool.
 //
-//go:generate mockgen -destination=../testutil/mock/repository_pg_gen.go -package=mock -mock_names "PGPool=PGPool" github.com/opcotech/elemo/internal/repository PGPool
-//go:generate mockgen -destination=../testutil/mock/pgx_gen.go -package=mock -mock_names "Row=PGRow,Rows=PGRows" github.com/jackc/pgx/v5 Row,Rows
+//go:generate go tool mockgen -destination=../testutil/mock/repository_pg_gen.go -package=mock -mock_names "PGPool=PGPool" github.com/opcotech/elemo/internal/repository PGPool
+//go:generate go tool mockgen -destination=../testutil/mock/pgx_gen.go -package=mock -mock_names "Row=PGRow,Rows=PGRows" github.com/jackc/pgx/v5 Row,Rows
 type PGPool interface {
 	Close()
 	Acquire(ctx context.Context) (*pgxpool.Conn, error)
@@ -811,8 +785,8 @@ func NewRedisDatabase(opts ...RedisDatabaseOption) (*RedisDatabase, error) {
 
 // CacheBackend represents a cache backend.
 //
-//go:generate mockgen -destination=../testutil/mock/universalclient_gen.go -package=mock -mock_names UniversalClient=UniversalClient github.com/redis/go-redis/v9 UniversalClient
-//go:generate mockgen -source=repository.go -destination=../testutil/mock/cachebackend_gen.go -package=mock -mock_names CacheBackend=CacheBackend github.com/opcotech/elemo/internal/repository CacheBackend
+//go:generate go tool mockgen -destination=../testutil/mock/universalclient_gen.go -package=mock -mock_names UniversalClient=UniversalClient github.com/redis/go-redis/v9 UniversalClient
+//go:generate go tool mockgen -source=repository.go -destination=../testutil/mock/cachebackend_gen.go -package=mock -mock_names CacheBackend=CacheBackend github.com/opcotech/elemo/internal/repository CacheBackend
 type CacheBackend interface {
 	Set(item *cache.Item) error
 	Get(ctx context.Context, key string, dst any) error
@@ -966,7 +940,7 @@ func composeCacheKey(params ...any) string {
 	return strings.Join(key, sep)
 }
 
-//go:generate mockgen -destination=../testutil/mock/repository_s3_gen.go -package=mock -mock_names "S3Client=S3Client" github.com/opcotech/elemo/internal/repository S3Client
+//go:generate go tool mockgen -destination=../testutil/mock/repository_s3_gen.go -package=mock -mock_names "S3Client=S3Client" github.com/opcotech/elemo/internal/repository S3Client
 type S3Client interface {
 	CreateBucket(ctx context.Context, params *awsS3.CreateBucketInput, optFns ...func(*awsS3.Options)) (*awsS3.CreateBucketOutput, error)
 	HeadBucket(ctx context.Context, params *awsS3.HeadBucketInput, optFns ...func(*awsS3.Options)) (*awsS3.HeadBucketOutput, error)

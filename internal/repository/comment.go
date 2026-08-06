@@ -39,7 +39,7 @@ type UpdateCommentOpts struct {
 	Content string
 }
 
-//go:generate mockgen -source=comment.go -destination=comment_mock_gen.go -package=repository -mock_names "CommentRepository=MockCommentRepository"
+//go:generate go tool mockgen -source=comment.go -destination=comment_mock_gen.go -package=repository -mock_names "CommentRepository=MockCommentRepository"
 type CommentRepository interface {
 	Create(ctx context.Context, opts CreateCommentOpts) (*Comment, error)
 	Get(ctx context.Context, id model.ID) (*Comment, error)

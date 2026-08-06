@@ -43,7 +43,7 @@ var (
 
 // RateLimiter is an interface for rate limiter.
 //
-//go:generate mockgen -source=middleware.go -destination=../../testutil/mock/middleware_gen.go -package=mock -mock_names "RateLimiter=RateLimiter"
+//go:generate go tool mockgen -source=middleware.go -destination=../../testutil/mock/middleware_gen.go -package=mock -mock_names "RateLimiter=RateLimiter"
 type RateLimiter interface {
 	Limit() rate.Limit
 	Burst() int

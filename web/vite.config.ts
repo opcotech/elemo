@@ -14,9 +14,7 @@ export default defineConfig({
   },
   plugins: [
     tailwindcss(),
-    tanstackStart({
-      customViteReactPlugin: true,
-    }),
+    tanstackStart(),
     nitro(),
     viteReact(),
   ],

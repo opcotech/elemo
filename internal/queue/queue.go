@@ -9,22 +9,14 @@ const (
 	MessageQueueDefaultPriority = "default" // The default queue name.
 	MessageQueueLowPriority     = "low"     // The low priority queue name.
 	MessageQueueHighPriority    = "high"    // The high priority queue name.
+)
 
+const (
 	TaskTypeSystemHealthCheck   TaskType = iota + 1 // Health check task type.
 	TaskTypeSystemLicenseExpiry                     // License expiry task type.
 )
 
-var (
-	taskTypeValues = map[TaskType]string{
-		TaskTypeSystemHealthCheck:   "system:health_check",
-		TaskTypeSystemLicenseExpiry: "system:license_expiry",
-	}
-)
-
 // TaskType is the type for system tasks.
+//
+//go:generate go tool enumer -type=TaskType -trimprefix=TaskType -transform=snake -output=queue_task_type_gen.go
 type TaskType uint8
-
-// String returns the string representation of the system task type.
-func (t TaskType) String() string {
-	return taskTypeValues[t]
-}

@@ -42,7 +42,7 @@ export async function runSsrLoader<T>({
     });
 
   const refreshAccessToken = async () => {
-    const { authClient } = await import("@/lib/auth/auth-client");
+    const { authClient } = await import("@/lib/auth/auth-client-instance");
     return authClient.refreshToken(refreshToken!);
   };
 

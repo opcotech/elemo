@@ -12,41 +12,10 @@ const (
 	ProjectStatusPending                          // project is pending
 )
 
-var (
-	projectStatusKeys = map[string]ProjectStatus{
-		"active":  ProjectStatusActive,
-		"pending": ProjectStatusPending,
-	}
-	projectStatusValues = map[ProjectStatus]string{
-		ProjectStatusActive:  "active",
-		ProjectStatusPending: "pending",
-	}
-)
-
 // ProjectStatus represents the status of a project.
+//
+//go:generate go tool enumer -type=ProjectStatus -trimprefix=ProjectStatus -text -transform=snake -output=project_status_gen.go
 type ProjectStatus uint8
-
-// String returns the string representation of the ProjectStatus.
-func (s ProjectStatus) String() string {
-	return projectStatusValues[s]
-}
-
-// MarshalText implements the encoding.TextMarshaler interface.
-func (s ProjectStatus) MarshalText() (text []byte, err error) {
-	if s < 1 || s > 2 {
-		return nil, ErrInvalidProjectStatus
-	}
-	return []byte(s.String()), nil
-}
-
-// UnmarshalText implements the encoding.TextUnmarshaler interface.
-func (s *ProjectStatus) UnmarshalText(text []byte) error {
-	if v, ok := projectStatusKeys[string(text)]; ok {
-		*s = v
-		return nil
-	}
-	return ErrInvalidProjectStatus
-}
 
 // Project represents a project that is used to group tasks together.
 type Project struct {
