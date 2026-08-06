@@ -28,13 +28,13 @@ func (s *Neo4jRepositoryIntegrationTestSuite) TearDownSuite() {
 	defer s.CleanupContainers()
 }
 
-func (s *Neo4jRepositoryIntegrationTestSuite) TestGetReadSession() {
-	session := s.Neo4jDB.GetReadSession(context.Background())
+func (s *Neo4jRepositoryIntegrationTestSuite) TestReadSession() {
+	session := s.Neo4jDB.ReadSession(context.Background())
 	s.Require().NotNil(session)
 }
 
-func (s *Neo4jRepositoryIntegrationTestSuite) TestGetWriteSession() {
-	session := s.Neo4jDB.GetWriteSession(context.Background())
+func (s *Neo4jRepositoryIntegrationTestSuite) TestWriteSession() {
+	session := s.Neo4jDB.WriteSession(context.Background())
 	s.Require().NotNil(session)
 }
 

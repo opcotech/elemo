@@ -161,7 +161,7 @@ func (s *CachedTodoRepositoryIntegrationTestSuite) SetupTest() {
 	s.Require().NoError(err)
 
 	s.createOpts = testModel.NewCreateTodoOpts(s.testUser.ID, s.testUser.ID)
-	s.Require().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
+	s.Require().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }
 
 func (s *CachedTodoRepositoryIntegrationTestSuite) TearDownTest() {
@@ -179,7 +179,7 @@ func (s *CachedTodoRepositoryIntegrationTestSuite) TestCreate() {
 	s.Assert().NotNil(todo.CreatedAt)
 	s.Assert().Nil(todo.UpdatedAt)
 
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }
 
 func (s *CachedTodoRepositoryIntegrationTestSuite) TestGet() {
@@ -193,13 +193,13 @@ func (s *CachedTodoRepositoryIntegrationTestSuite) TestGet() {
 	s.Require().NoError(err)
 
 	s.Assert().Equal(original, usingCache)
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
 
 	cached, err := s.todoRepo.Get(context.Background(), createdTodo.ID)
 	s.Require().NoError(err)
 
 	s.Assert().Equal(usingCache.ID, cached.ID)
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
 }
 
 func (s *CachedTodoRepositoryIntegrationTestSuite) TestGetByOwner() {
@@ -218,7 +218,7 @@ func (s *CachedTodoRepositoryIntegrationTestSuite) TestGetByOwner() {
 	s.Require().NoError(err)
 
 	s.Assert().Equal(originalTodos, usingCacheTodos)
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
 
 	cachedTodos, err := s.todoRepo.GetByOwner(context.Background(), s.testUser.ID, 0, 10, nil)
 	s.Require().NoError(err)
@@ -250,7 +250,7 @@ func (s *CachedTodoRepositoryIntegrationTestSuite) TestUpdate() {
 	s.Assert().WithinDuration(*createdTodo.CreatedAt, *todo.CreatedAt, 100*time.Millisecond)
 	s.Assert().NotNil(todo.UpdatedAt)
 
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
 }
 
 func (s *CachedTodoRepositoryIntegrationTestSuite) TestDelete() {
@@ -260,14 +260,14 @@ func (s *CachedTodoRepositoryIntegrationTestSuite) TestDelete() {
 	_, err = s.todoRepo.Get(context.Background(), createdTodo.ID)
 	s.Require().NoError(err)
 
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
 
 	s.Require().NoError(s.todoRepo.Delete(context.Background(), createdTodo.ID))
 
 	_, err = s.todoRepo.Get(context.Background(), createdTodo.ID)
 	s.Assert().ErrorIs(err, repository.ErrNotFound)
 
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }
 
 func TestCachedTodoRepositoryIntegrationTestSuite(t *testing.T) {

@@ -12,8 +12,8 @@ import (
 	testConfig "github.com/opcotech/elemo/internal/testutil/config"
 )
 
-// GetKeyPair returns the public and private key pair for testing.
-func GetKeyPair(t *testing.T) (public string, private string) {
+// KeyPair returns the public and private key pair for testing.
+func KeyPair(t *testing.T) (public string, private string) {
 	privateKey, err := os.ReadFile(testConfig.RootDir + "/configs/test/generator.key")
 	require.NoError(t, err)
 

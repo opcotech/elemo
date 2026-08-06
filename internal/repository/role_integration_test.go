@@ -165,7 +165,7 @@ func (s *CachedRoleRepositoryIntegrationTestSuite) SetupTest() {
 	s.testOrg, err = s.OrganizationRepo.Create(context.Background(), testModel.NewCreateOrganizationOpts(s.testUser.ID))
 	s.Require().NoError(err)
 	s.createOpts = testModel.NewCreateRoleOpts(s.testUser.ID, s.testOrg.ID)
-	s.Require().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
+	s.Require().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }
 
 func (s *CachedRoleRepositoryIntegrationTestSuite) TearDownTest() {
@@ -180,7 +180,7 @@ func (s *CachedRoleRepositoryIntegrationTestSuite) TestCreate() {
 	role, err := s.roleRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 	s.Assert().NotNil(role.CreatedAt)
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }
 
 func (s *CachedRoleRepositoryIntegrationTestSuite) TestGet() {
@@ -191,7 +191,7 @@ func (s *CachedRoleRepositoryIntegrationTestSuite) TestGet() {
 	usingCache, err := s.roleRepo.Get(context.Background(), created.ID, s.testOrg.ID)
 	s.Require().NoError(err)
 	s.Assert().Equal(original, usingCache)
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
 }
 
 func (s *CachedRoleRepositoryIntegrationTestSuite) TestGetAllBelongsTo() {
@@ -202,7 +202,7 @@ func (s *CachedRoleRepositoryIntegrationTestSuite) TestGetAllBelongsTo() {
 	usingCache, err := s.roleRepo.GetAllBelongsTo(context.Background(), s.testOrg.ID, 0, 10)
 	s.Require().NoError(err)
 	s.Assert().Equal(original, usingCache)
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
 }
 
 func (s *CachedRoleRepositoryIntegrationTestSuite) TestAddMember() {
@@ -236,7 +236,7 @@ func (s *CachedRoleRepositoryIntegrationTestSuite) TestUpdate() {
 	})
 	s.Require().NoError(err)
 	s.Assert().Equal("new name", role.Name)
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
 }
 
 func (s *CachedRoleRepositoryIntegrationTestSuite) TestDelete() {
@@ -247,7 +247,7 @@ func (s *CachedRoleRepositoryIntegrationTestSuite) TestDelete() {
 	s.Require().NoError(s.roleRepo.Delete(context.Background(), created.ID, s.testOrg.ID))
 	_, err = s.roleRepo.Get(context.Background(), created.ID, s.testOrg.ID)
 	s.Assert().ErrorIs(err, repository.ErrNotFound)
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }
 
 func TestCachedRoleRepositoryIntegrationTestSuite(t *testing.T) {

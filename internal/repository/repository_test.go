@@ -315,7 +315,7 @@ func TestPGDatabase_Close(t *testing.T) {
 	require.NoError(t, db.Close())
 }
 
-func TestDatabase_GetPool(t *testing.T) {
+func TestDatabase_Pool(t *testing.T) {
 	t.Parallel()
 
 	pool := mock.NewPGPool(nil)
@@ -324,7 +324,7 @@ func TestDatabase_GetPool(t *testing.T) {
 		pool: pool,
 	}
 
-	require.Equal(t, pool, db.GetPool())
+	require.Equal(t, pool, db.Pool())
 }
 
 func TestPGDatabase_Ping(t *testing.T) {
@@ -638,7 +638,7 @@ func TestNewRedisDatabase(t *testing.T) {
 	}
 }
 
-func TestDatabase_GetClient(t *testing.T) {
+func TestDatabase_Client(t *testing.T) {
 	t.Parallel()
 
 	ctrl := gomock.NewController(t)
@@ -650,7 +650,7 @@ func TestDatabase_GetClient(t *testing.T) {
 		client: client,
 	}
 
-	require.Equal(t, client, db.GetClient())
+	require.Equal(t, client, db.Client())
 }
 
 func TestRedisDatabase_Close(t *testing.T) {
@@ -987,7 +987,7 @@ func TestNewStorage(t *testing.T) {
 	}
 }
 
-func TestStorage_GetClient(t *testing.T) {
+func TestStorage_Client(t *testing.T) {
 	t.Parallel()
 
 	client := mock.NewS3Client(nil)
@@ -996,7 +996,7 @@ func TestStorage_GetClient(t *testing.T) {
 		client: client,
 	}
 
-	require.Equal(t, client, storage.GetClient())
+	require.Equal(t, client, storage.Client())
 }
 
 func TestStorage_Ping(t *testing.T) {

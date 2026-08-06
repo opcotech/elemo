@@ -138,7 +138,7 @@ func (s *CachedAttachmentRepositoryIntegrationTestSuite) SetupTest() {
 	s.testDoc, err = s.DocumentRepo.Create(context.Background(), testModel.NewCreateDocumentOpts(s.testOrg.ID, s.testUser.ID))
 	s.Require().NoError(err)
 	s.createOpts = testModel.NewCreateAttachmentOpts(s.testDoc.ID, s.testUser.ID)
-	s.Require().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
+	s.Require().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }
 
 func (s *CachedAttachmentRepositoryIntegrationTestSuite) TearDownTest() {
@@ -153,7 +153,7 @@ func (s *CachedAttachmentRepositoryIntegrationTestSuite) TestCreate() {
 	attachment, err := s.attachmentRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 	s.Assert().NotNil(attachment.CreatedAt)
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }
 
 func (s *CachedAttachmentRepositoryIntegrationTestSuite) TestGet() {
@@ -164,7 +164,7 @@ func (s *CachedAttachmentRepositoryIntegrationTestSuite) TestGet() {
 	usingCache, err := s.attachmentRepo.Get(context.Background(), created.ID)
 	s.Require().NoError(err)
 	s.Assert().Equal(original, usingCache)
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
 }
 
 func (s *CachedAttachmentRepositoryIntegrationTestSuite) TestGetAllBelongsTo() {
@@ -175,7 +175,7 @@ func (s *CachedAttachmentRepositoryIntegrationTestSuite) TestGetAllBelongsTo() {
 	usingCache, err := s.attachmentRepo.GetAllBelongsTo(context.Background(), s.testDoc.ID, 0, 10)
 	s.Require().NoError(err)
 	s.Assert().Equal(original, usingCache)
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
 }
 
 func (s *CachedAttachmentRepositoryIntegrationTestSuite) TestUpdate() {
@@ -184,7 +184,7 @@ func (s *CachedAttachmentRepositoryIntegrationTestSuite) TestUpdate() {
 	attachment, err := s.attachmentRepo.Update(context.Background(), created.ID, repository.UpdateAttachmentOpts{Name: "new name"})
 	s.Require().NoError(err)
 	s.Assert().Equal("new name", attachment.Name)
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
 }
 
 func (s *CachedAttachmentRepositoryIntegrationTestSuite) TestDelete() {
@@ -192,11 +192,11 @@ func (s *CachedAttachmentRepositoryIntegrationTestSuite) TestDelete() {
 	s.Require().NoError(err)
 	_, err = s.attachmentRepo.Get(context.Background(), created.ID)
 	s.Require().NoError(err)
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
 	s.Require().NoError(s.attachmentRepo.Delete(context.Background(), created.ID))
 	_, err = s.attachmentRepo.Get(context.Background(), created.ID)
 	s.Assert().ErrorIs(err, repository.ErrNotFound)
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }
 
 func TestCachedAttachmentRepositoryIntegrationTestSuite(t *testing.T) {

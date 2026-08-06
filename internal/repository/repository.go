@@ -167,8 +167,8 @@ type Neo4jDatabase struct {
 	tracer tracing.Tracer          `validate:"required"`
 }
 
-// GetReadSession returns a "read" session.
-func (db *Neo4jDatabase) GetReadSession(ctx context.Context) neo4j.SessionWithContext {
+// ReadSession returns a "read" session.
+func (db *Neo4jDatabase) ReadSession(ctx context.Context) neo4j.SessionWithContext {
 	return db.driver.NewSession(ctx, neo4j.SessionConfig{
 		AccessMode:   neo4j.AccessModeRead,
 		DatabaseName: db.name,
@@ -176,8 +176,8 @@ func (db *Neo4jDatabase) GetReadSession(ctx context.Context) neo4j.SessionWithCo
 	})
 }
 
-// GetWriteSession returns a "write" session.
-func (db *Neo4jDatabase) GetWriteSession(ctx context.Context) neo4j.SessionWithContext {
+// WriteSession returns a "write" session.
+func (db *Neo4jDatabase) WriteSession(ctx context.Context) neo4j.SessionWithContext {
 	return db.driver.NewSession(ctx, neo4j.SessionConfig{
 		AccessMode:   neo4j.AccessModeWrite,
 		DatabaseName: db.name,
@@ -347,7 +347,7 @@ func Neo4jExecuteAndConsumeResult(ctx context.Context, tx neo4j.ManagedTransacti
 
 // Neo4jExecuteWriteAndConsume executes a query and consumes its result.
 func Neo4jExecuteWriteAndConsume(ctx context.Context, db *Neo4jDatabase, query string, params map[string]any) error {
-	session := db.GetWriteSession(ctx)
+	session := db.WriteSession(ctx)
 	defer func(ctx context.Context, sess neo4j.SessionWithContext) {
 		err := sess.Close(ctx)
 		if err != nil {
@@ -365,7 +365,7 @@ func Neo4jExecuteWriteAndConsume(ctx context.Context, db *Neo4jDatabase, query s
 
 // Neo4jExecuteReadAndReadSingle executes a query and reads a single result.
 func Neo4jExecuteReadAndReadSingle[T any](ctx context.Context, db *Neo4jDatabase, query string, params map[string]any, reader func(record *neo4j.Record) (*T, error)) (*T, error) {
-	session := db.GetReadSession(ctx)
+	session := db.ReadSession(ctx)
 	defer func(ctx context.Context, sess neo4j.SessionWithContext) {
 		err := sess.Close(ctx)
 		if err != nil {
@@ -393,7 +393,7 @@ func Neo4jExecuteReadAndReadSingle[T any](ctx context.Context, db *Neo4jDatabase
 
 // Neo4jExecuteWriteAndReadSingle executes a query and reads a single result.
 func Neo4jExecuteWriteAndReadSingle[T any](ctx context.Context, db *Neo4jDatabase, query string, params map[string]any, reader func(record *neo4j.Record) (*T, error)) (*T, error) {
-	session := db.GetWriteSession(ctx)
+	session := db.WriteSession(ctx)
 	defer func(ctx context.Context, sess neo4j.SessionWithContext) {
 		err := sess.Close(ctx)
 		if err != nil {
@@ -421,7 +421,7 @@ func Neo4jExecuteWriteAndReadSingle[T any](ctx context.Context, db *Neo4jDatabas
 
 // Neo4jExecuteReadAndReadAll executes a query and reads all results.
 func Neo4jExecuteReadAndReadAll[T any](ctx context.Context, db *Neo4jDatabase, query string, params map[string]any, reader func(record *neo4j.Record) (T, error)) ([]T, error) {
-	session := db.GetReadSession(ctx)
+	session := db.ReadSession(ctx)
 	defer func(ctx context.Context, sess neo4j.SessionWithContext) {
 		err := sess.Close(ctx)
 		if err != nil {
@@ -458,7 +458,7 @@ func Neo4jExecuteReadAndReadAll[T any](ctx context.Context, db *Neo4jDatabase, q
 
 // Neo4jExecuteWriteAndReadAll executes a query and reads all results.
 func Neo4jExecuteWriteAndReadAll[T any](ctx context.Context, db *Neo4jDatabase, query string, params map[string]any, reader func(record *neo4j.Record) (T, error)) ([]T, error) {
-	session := db.GetWriteSession(ctx)
+	session := db.WriteSession(ctx)
 	defer func(ctx context.Context, sess neo4j.SessionWithContext) {
 		err := sess.Close(ctx)
 		if err != nil {
@@ -593,8 +593,8 @@ func (db *PGDatabase) Ping(ctx context.Context) error {
 	return db.pool.Ping(ctx)
 }
 
-// GetPool returns the database pool.
-func (db *PGDatabase) GetPool() PGPool {
+// Pool returns the database pool.
+func (db *PGDatabase) Pool() PGPool {
 	return db.pool
 }
 
@@ -768,8 +768,8 @@ type RedisDatabase struct {
 	tracer tracing.Tracer        `validate:"required"`
 }
 
-// GetClient returns the database client.
-func (db *RedisDatabase) GetClient() redis.UniversalClient {
+// Client returns the database client.
+func (db *RedisDatabase) Client() redis.UniversalClient {
 	return db.client
 }
 
@@ -903,7 +903,7 @@ func (r *redisBaseRepository) DeletePattern(ctx context.Context, pattern string)
 	ctx, span := r.tracer.Start(ctx, "repository.redisBaseRepository/DeletePattern")
 	defer span.End()
 
-	keys, err := r.db.GetClient().Keys(ctx, pattern).Result()
+	keys, err := r.db.Client().Keys(ctx, pattern).Result()
 	if err != nil && !errors.Is(err, redis.Nil) {
 		return err
 	}
@@ -931,7 +931,7 @@ func newRedisBaseRepository(opts ...RedisRepositoryOption) (*redisBaseRepository
 	}
 
 	r.cache = cache.New(&cache.Options{
-		Redis:      r.db.GetClient(),
+		Redis:      r.db.Client(),
 		LocalCache: nil, // turn off the local cache as it is buggy
 	})
 
@@ -1062,8 +1062,8 @@ func (s *S3Storage) Ping(ctx context.Context) error {
 	return err
 }
 
-// GetClient returns the S3 client.
-func (s *S3Storage) GetClient() S3Client {
+// Client returns the S3 client.
+func (s *S3Storage) Client() S3Client {
 	return s.client
 }
 

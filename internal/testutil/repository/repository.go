@@ -44,7 +44,7 @@ func BootstrapNeo4jDatabase(ctx context.Context, t *testing.T, db *repository.Ne
 	for _, statement := range statements {
 		statement = strings.TrimSpace(statement)
 		if statement != "" {
-			_, err := db.GetWriteSession(ctx).Run(ctx, statement, nil)
+			_, err := db.WriteSession(ctx).Run(ctx, statement, nil)
 			if err != nil {
 				// Ignore errors for already existing indexes/constraints
 				errStr := err.Error()
@@ -62,7 +62,7 @@ func BootstrapNeo4jDatabase(ctx context.Context, t *testing.T, db *repository.Ne
 
 // CleanupNeo4jStore deletes all nodes and relationships from the database.
 func CleanupNeo4jStore(ctx context.Context, t *testing.T, db *repository.Neo4jDatabase) {
-	_, err := db.GetWriteSession(ctx).Run(ctx, "MATCH (n) WHERE n.system IS NULL OR n.system = false DETACH DELETE n", nil)
+	_, err := db.WriteSession(ctx).Run(ctx, "MATCH (n) WHERE n.system IS NULL OR n.system = false DETACH DELETE n", nil)
 	require.NoError(t, err)
 }
 
@@ -89,7 +89,7 @@ func BootstrapPgDatabase(ctx context.Context, t *testing.T, db *repository.PGDat
 	for _, statement := range statements {
 		statement = strings.TrimSpace(statement)
 		if statement != "" {
-			_, err := db.GetPool().Exec(ctx, statement)
+			_, err := db.Pool().Exec(ctx, statement)
 			if err != nil {
 				t.Log(statement)
 			}
@@ -99,7 +99,7 @@ func BootstrapPgDatabase(ctx context.Context, t *testing.T, db *repository.PGDat
 }
 
 func CleanupPgStore(ctx context.Context, t *testing.T, db *repository.PGDatabase) {
-	_, err := db.GetPool().Exec(ctx, `
+	_, err := db.Pool().Exec(ctx, `
 	DO $$ DECLARE table_name text;
 	BEGIN
 		FOR table_name IN (SELECT tablename FROM pg_tables WHERE schemaname='etl') LOOP
@@ -127,7 +127,7 @@ func NewRedisDatabase(t *testing.T, conf *config.CacheDatabaseConfig) (*reposito
 
 // CleanupRedisStore deletes all keys from the database.
 func CleanupRedisStore(ctx context.Context, t *testing.T, db *repository.RedisDatabase) {
-	err := db.GetClient().FlushDB(ctx).Err()
+	err := db.Client().FlushDB(ctx).Err()
 	require.NoError(t, err)
 }
 
@@ -147,12 +147,12 @@ func NewS3Storage(t *testing.T, conf *config.S3StorageConfig) *repository.S3Stor
 
 // BootstrapS3Storage creates the initial bucket.
 func BootstrapS3Storage(ctx context.Context, t *testing.T, storage *repository.S3Storage) {
-	_, err := storage.GetClient().CreateBucket(ctx, &awsS3.CreateBucketInput{Bucket: &s3TestBucketName})
+	_, err := storage.Client().CreateBucket(ctx, &awsS3.CreateBucketInput{Bucket: &s3TestBucketName})
 	require.NoError(t, err)
 }
 
 func CleanupS3Storage(ctx context.Context, t *testing.T, storage *repository.S3Storage) {
-	client := storage.GetClient()
+	client := storage.Client()
 
 	out, err := client.ListObjectsV2(ctx, &awsS3.ListObjectsV2Input{Bucket: &s3TestBucketName})
 	require.NoError(t, err)

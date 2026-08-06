@@ -147,7 +147,7 @@ func (s *CachedDocumentRepositoryIntegrationTestSuite) SetupTest() {
 	s.testOrg, err = s.OrganizationRepo.Create(context.Background(), testModel.NewCreateOrganizationOpts(s.testUser.ID))
 	s.Require().NoError(err)
 	s.createOpts = testModel.NewCreateDocumentOpts(s.testOrg.ID, s.testUser.ID)
-	s.Require().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
+	s.Require().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }
 
 func (s *CachedDocumentRepositoryIntegrationTestSuite) TearDownTest() {
@@ -162,7 +162,7 @@ func (s *CachedDocumentRepositoryIntegrationTestSuite) TestCreate() {
 	doc, err := s.documentRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 	s.Assert().NotNil(doc.CreatedAt)
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }
 
 func (s *CachedDocumentRepositoryIntegrationTestSuite) TestGet() {
@@ -173,7 +173,7 @@ func (s *CachedDocumentRepositoryIntegrationTestSuite) TestGet() {
 	usingCache, err := s.documentRepo.Get(context.Background(), created.ID)
 	s.Require().NoError(err)
 	s.Assert().Equal(original, usingCache)
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
 }
 
 func (s *CachedDocumentRepositoryIntegrationTestSuite) TestGetByCreator() {
@@ -184,7 +184,7 @@ func (s *CachedDocumentRepositoryIntegrationTestSuite) TestGetByCreator() {
 	usingCache, err := s.documentRepo.GetByCreator(context.Background(), s.testUser.ID, 0, 10)
 	s.Require().NoError(err)
 	s.Assert().Equal(original, usingCache)
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
 }
 
 func (s *CachedDocumentRepositoryIntegrationTestSuite) TestGetAllBelongsTo() {
@@ -195,7 +195,7 @@ func (s *CachedDocumentRepositoryIntegrationTestSuite) TestGetAllBelongsTo() {
 	usingCache, err := s.documentRepo.GetAllBelongsTo(context.Background(), s.testOrg.ID, 0, 10)
 	s.Require().NoError(err)
 	s.Assert().Equal(original, usingCache)
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
 }
 
 func (s *CachedDocumentRepositoryIntegrationTestSuite) TestUpdate() {
@@ -206,7 +206,7 @@ func (s *CachedDocumentRepositoryIntegrationTestSuite) TestUpdate() {
 	})
 	s.Require().NoError(err)
 	s.Assert().Equal("new name", doc.Name)
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
 }
 
 func (s *CachedDocumentRepositoryIntegrationTestSuite) TestDelete() {
@@ -217,7 +217,7 @@ func (s *CachedDocumentRepositoryIntegrationTestSuite) TestDelete() {
 	s.Require().NoError(s.documentRepo.Delete(context.Background(), created.ID))
 	_, err = s.documentRepo.Get(context.Background(), created.ID)
 	s.Assert().ErrorIs(err, repository.ErrNotFound)
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }
 
 func TestCachedDocumentRepositoryIntegrationTestSuite(t *testing.T) {

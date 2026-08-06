@@ -17,7 +17,7 @@ const (
 )
 
 func TestNewLicense(t *testing.T) {
-	publicKey, privateKey := testLicense.GetKeyPair(t)
+	publicKey, privateKey := testLicense.KeyPair(t)
 	licenseID := xid.New()
 	expiresAt := time.Now().UTC().AddDate(0, 0, 1)
 
@@ -236,7 +236,7 @@ func TestNewLicense(t *testing.T) {
 }
 
 func TestNewLicense_Errors(t *testing.T) {
-	publicKey, privateKey := testLicense.GetKeyPair(t)
+	publicKey, privateKey := testLicense.KeyPair(t)
 
 	type args struct {
 		license   string

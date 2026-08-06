@@ -6,8 +6,8 @@ var (
 	validate = validator.New() // the validator instance
 )
 
-// GetValidator returns the validator instance.
-func GetValidator() *validator.Validate {
+// Validator returns the validator instance.
+func Validator() *validator.Validate {
 	return validate
 }
 

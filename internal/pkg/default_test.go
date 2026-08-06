@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGetDefault(t *testing.T) {
+func TestDefault(t *testing.T) {
 	type args struct {
 		value    int
 		fallback int
@@ -38,12 +38,12 @@ func TestGetDefault(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			assert.Equal(t, tt.want, GetDefault(tt.args.value, tt.args.fallback))
+			assert.Equal(t, tt.want, Default(tt.args.value, tt.args.fallback))
 		})
 	}
 }
 
-func TestGetDefaultPtr(t *testing.T) {
+func TestDefaultPtr(t *testing.T) {
 	type args struct {
 		value    *int
 		fallback int
@@ -78,7 +78,7 @@ func TestGetDefaultPtr(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			assert.Equal(t, tt.want, GetDefaultPtr(tt.args.value, tt.args.fallback))
+			assert.Equal(t, tt.want, DefaultPtr(tt.args.value, tt.args.fallback))
 		})
 	}
 }

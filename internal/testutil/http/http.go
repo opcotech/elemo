@@ -1,7 +1,6 @@
 package http
 
 import (
-	"crypto/tls"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -32,15 +31,4 @@ func CheckResponseCode(t *testing.T, expected, actual int) {
 func CheckResponseBody(t *testing.T, body io.Reader, expected any, dst any) {
 	require.NoError(t, json.NewDecoder(body).Decode(dst))
 	require.Equal(t, expected, dst)
-}
-
-// GetHTTPClient returns a pre-configured HTTP client.
-func GetHTTPClient() *http.Client {
-	return &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true, // #nosec G402
-			},
-		},
-	}
 }
