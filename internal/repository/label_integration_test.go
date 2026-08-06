@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/opcotech/elemo/internal/model"
+	"github.com/opcotech/elemo/internal/pkg/optional"
 	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/testutil"
 	testModel "github.com/opcotech/elemo/internal/testutil/model"
@@ -17,11 +18,10 @@ type LabelRepositoryIntegrationTestSuite struct {
 	testutil.ContainerIntegrationTestSuite
 	testutil.Neo4jContainerIntegrationTestSuite
 
-	testUser *model.User
-	testOrg  *model.Organization
-	testDoc  *model.Document
-
-	label *model.Label
+	testUser   *repository.User
+	testOrg    *repository.Organization
+	testDoc    *repository.Document
+	createOpts repository.CreateLabelOpts
 }
 
 func (s *LabelRepositoryIntegrationTestSuite) SetupSuite() {
@@ -32,16 +32,17 @@ func (s *LabelRepositoryIntegrationTestSuite) SetupSuite() {
 }
 
 func (s *LabelRepositoryIntegrationTestSuite) SetupTest() {
-	s.testUser = testModel.NewUser()
-	s.Require().NoError(s.UserRepo.Create(context.Background(), s.testUser))
+	var err error
+	s.testUser, err = s.UserRepo.Create(context.Background(), testModel.NewCreateUserOpts())
+	s.Require().NoError(err)
 
-	s.testOrg = testModel.NewOrganization()
-	s.Require().NoError(s.OrganizationRepo.Create(context.Background(), s.testUser.ID, s.testOrg))
+	s.testOrg, err = s.OrganizationRepo.Create(context.Background(), testModel.NewCreateOrganizationOpts(s.testUser.ID))
+	s.Require().NoError(err)
 
-	s.testDoc = testModel.NewDocument(s.testUser.ID)
-	s.Require().NoError(s.DocumentRepo.Create(context.Background(), s.testUser.ID, s.testDoc))
+	s.testDoc, err = s.DocumentRepo.Create(context.Background(), testModel.NewCreateDocumentOpts(s.testOrg.ID, s.testUser.ID))
+	s.Require().NoError(err)
 
-	s.label = testModel.NewLabel()
+	s.createOpts = testModel.NewCreateLabelOpts()
 }
 
 func (s *LabelRepositoryIntegrationTestSuite) TearDownTest() {
@@ -53,28 +54,33 @@ func (s *LabelRepositoryIntegrationTestSuite) TearDownSuite() {
 }
 
 func (s *LabelRepositoryIntegrationTestSuite) TestCreate() {
-	s.Require().NoError(s.LabelRepo.Create(context.Background(), s.label))
-	s.Assert().NotEqual(model.MustNewNilID(model.ResourceTypeLabel), s.label.ID)
-	s.Assert().NotNil(s.label.CreatedAt)
+	label, err := s.LabelRepo.Create(context.Background(), s.createOpts)
+	s.Require().NoError(err)
+	s.Assert().NotEqual(model.MustNewNilID(model.ResourceTypeLabel), label.ID)
+	s.Assert().NotNil(label.CreatedAt)
 }
 
 func (s *LabelRepositoryIntegrationTestSuite) TestGet() {
-	s.Require().NoError(s.LabelRepo.Create(context.Background(), s.label))
-
-	label, err := s.LabelRepo.Get(context.Background(), s.label.ID)
+	created, err := s.LabelRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 
-	s.Assert().Equal(s.label.ID, label.ID)
-	s.Assert().Equal(s.label.Name, label.Name)
-	s.Assert().Equal(s.label.Description, label.Description)
-	s.Assert().WithinDuration(*s.label.CreatedAt, *label.CreatedAt, 100*time.Millisecond)
-	s.Assert().Nil(s.label.UpdatedAt, label.UpdatedAt)
+	label, err := s.LabelRepo.Get(context.Background(), created.ID)
+	s.Require().NoError(err)
+
+	s.Assert().Equal(created.ID, label.ID)
+	s.Assert().Equal(s.createOpts.Name, label.Name)
+	s.Assert().Equal(s.createOpts.Description, label.Description)
+	s.Assert().WithinDuration(*created.CreatedAt, *label.CreatedAt, 100*time.Millisecond)
+	s.Assert().Nil(label.UpdatedAt)
 }
 
 func (s *LabelRepositoryIntegrationTestSuite) TestGetAll() {
-	s.Require().NoError(s.LabelRepo.Create(context.Background(), s.label))
-	s.Require().NoError(s.LabelRepo.Create(context.Background(), testModel.NewLabel()))
-	s.Require().NoError(s.LabelRepo.Create(context.Background(), testModel.NewLabel()))
+	_, err := s.LabelRepo.Create(context.Background(), s.createOpts)
+	s.Require().NoError(err)
+	_, err = s.LabelRepo.Create(context.Background(), testModel.NewCreateLabelOpts())
+	s.Require().NoError(err)
+	_, err = s.LabelRepo.Create(context.Background(), testModel.NewCreateLabelOpts())
+	s.Require().NoError(err)
 
 	labels, err := s.LabelRepo.GetAll(context.Background(), 0, 10)
 	s.Require().NoError(err)
@@ -94,40 +100,43 @@ func (s *LabelRepositoryIntegrationTestSuite) TestGetAll() {
 }
 
 func (s *LabelRepositoryIntegrationTestSuite) TestUpdate() {
-	s.Require().NoError(s.LabelRepo.Create(context.Background(), s.label))
-
-	patch := map[string]any{
-		"name":        "new name",
-		"description": "new description",
-	}
-
-	label, err := s.LabelRepo.Update(context.Background(), s.label.ID, patch)
+	created, err := s.LabelRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 
-	s.Assert().Equal(s.label.ID, label.ID)
-	s.Assert().Equal(patch["name"], label.Name)
-	s.Assert().Equal(patch["description"], label.Description)
-	s.Assert().WithinDuration(*s.label.CreatedAt, *label.CreatedAt, 100*time.Millisecond)
+	updateOpts := repository.UpdateLabelOpts{
+		Name:        optional.Some("new name"),
+		Description: optional.Some("new description"),
+	}
+
+	label, err := s.LabelRepo.Update(context.Background(), created.ID, updateOpts)
+	s.Require().NoError(err)
+
+	s.Assert().Equal(created.ID, label.ID)
+	s.Assert().Equal("new name", label.Name)
+	s.Assert().Equal("new description", label.Description)
+	s.Assert().WithinDuration(*created.CreatedAt, *label.CreatedAt, 100*time.Millisecond)
 	s.Assert().NotNil(label.UpdatedAt)
 }
 
 func (s *LabelRepositoryIntegrationTestSuite) TestAttachTo() {
-	s.Require().NoError(s.LabelRepo.Create(context.Background(), s.label))
+	created, err := s.LabelRepo.Create(context.Background(), s.createOpts)
+	s.Require().NoError(err)
 
-	s.Require().NoError(s.LabelRepo.AttachTo(context.Background(), s.label.ID, s.testDoc.ID))
+	s.Require().NoError(s.LabelRepo.AttachTo(context.Background(), created.ID, s.testDoc.ID))
 
 	document, err := s.DocumentRepo.Get(context.Background(), s.testDoc.ID)
 	s.Require().NoError(err)
 
 	s.Assert().Len(document.Labels, 1)
-	s.Assert().Equal(document.Labels[0], s.label.ID)
+	s.Assert().Equal(document.Labels[0], created.ID)
 }
 
 func (s *LabelRepositoryIntegrationTestSuite) TestDetachFrom() {
-	s.Require().NoError(s.LabelRepo.Create(context.Background(), s.label))
+	created, err := s.LabelRepo.Create(context.Background(), s.createOpts)
+	s.Require().NoError(err)
 
-	s.Require().NoError(s.LabelRepo.AttachTo(context.Background(), s.label.ID, s.testDoc.ID))
-	s.Require().NoError(s.LabelRepo.DetachFrom(context.Background(), s.label.ID, s.testDoc.ID))
+	s.Require().NoError(s.LabelRepo.AttachTo(context.Background(), created.ID, s.testDoc.ID))
+	s.Require().NoError(s.LabelRepo.DetachFrom(context.Background(), created.ID, s.testDoc.ID))
 
 	document, err := s.DocumentRepo.Get(context.Background(), s.testDoc.ID)
 	s.Require().NoError(err)
@@ -136,11 +145,12 @@ func (s *LabelRepositoryIntegrationTestSuite) TestDetachFrom() {
 }
 
 func (s *LabelRepositoryIntegrationTestSuite) TestDelete() {
-	s.Require().NoError(s.LabelRepo.Create(context.Background(), s.label))
+	created, err := s.LabelRepo.Create(context.Background(), s.createOpts)
+	s.Require().NoError(err)
 
-	s.Require().NoError(s.LabelRepo.Delete(context.Background(), s.label.ID))
+	s.Require().NoError(s.LabelRepo.Delete(context.Background(), created.ID))
 
-	_, err := s.LabelRepo.Get(context.Background(), s.label.ID)
+	_, err = s.LabelRepo.Get(context.Background(), created.ID)
 	s.Assert().ErrorIs(err, repository.ErrNotFound)
 }
 
@@ -153,11 +163,11 @@ type CachedLabelRepositoryIntegrationTestSuite struct {
 	testutil.Neo4jContainerIntegrationTestSuite
 	testutil.RedisContainerIntegrationTestSuite
 
-	testUser  *model.User
-	testOrg   *model.Organization
-	testDoc   *model.Document
-	label     *model.Label
-	labelRepo *repository.RedisCachedLabelRepository
+	testUser   *repository.User
+	testOrg    *repository.Organization
+	testDoc    *repository.Document
+	createOpts repository.CreateLabelOpts
+	labelRepo  *repository.RedisCachedLabelRepository
 }
 
 func (s *CachedLabelRepositoryIntegrationTestSuite) SetupSuite() {
@@ -172,17 +182,17 @@ func (s *CachedLabelRepositoryIntegrationTestSuite) SetupSuite() {
 }
 
 func (s *CachedLabelRepositoryIntegrationTestSuite) SetupTest() {
-	s.testUser = testModel.NewUser()
-	s.Require().NoError(s.UserRepo.Create(context.Background(), s.testUser))
+	var err error
+	s.testUser, err = s.UserRepo.Create(context.Background(), testModel.NewCreateUserOpts())
+	s.Require().NoError(err)
 
-	s.testOrg = testModel.NewOrganization()
-	s.Require().NoError(s.OrganizationRepo.Create(context.Background(), s.testUser.ID, s.testOrg))
+	s.testOrg, err = s.OrganizationRepo.Create(context.Background(), testModel.NewCreateOrganizationOpts(s.testUser.ID))
+	s.Require().NoError(err)
 
-	s.testDoc = testModel.NewDocument(s.testUser.ID)
-	s.Require().NoError(s.DocumentRepo.Create(context.Background(), s.testUser.ID, s.testDoc))
+	s.testDoc, err = s.DocumentRepo.Create(context.Background(), testModel.NewCreateDocumentOpts(s.testOrg.ID, s.testUser.ID))
+	s.Require().NoError(err)
 
-	s.label = testModel.NewLabel()
-
+	s.createOpts = testModel.NewCreateLabelOpts()
 	s.Require().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }
 
@@ -195,119 +205,100 @@ func (s *CachedLabelRepositoryIntegrationTestSuite) TearDownSuite() {
 }
 
 func (s *CachedLabelRepositoryIntegrationTestSuite) TestCreate() {
-	s.Require().NoError(s.labelRepo.Create(context.Background(), s.label))
-	s.Assert().NotEqual(model.MustNewNilID(model.ResourceTypeLabel), s.label.ID)
-	s.Assert().NotNil(s.label.CreatedAt)
-	s.Assert().Nil(s.label.UpdatedAt)
-
+	label, err := s.labelRepo.Create(context.Background(), s.createOpts)
+	s.Require().NoError(err)
+	s.Assert().NotEqual(model.MustNewNilID(model.ResourceTypeLabel), label.ID)
+	s.Assert().NotNil(label.CreatedAt)
 	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }
 
 func (s *CachedLabelRepositoryIntegrationTestSuite) TestGet() {
-	s.Require().NoError(s.LabelRepo.Create(context.Background(), s.label))
-
-	original, err := s.LabelRepo.Get(context.Background(), s.label.ID)
+	created, err := s.labelRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 
-	usingCache, err := s.labelRepo.Get(context.Background(), s.label.ID)
+	original, err := s.LabelRepo.Get(context.Background(), created.ID)
+	s.Require().NoError(err)
+
+	usingCache, err := s.labelRepo.Get(context.Background(), created.ID)
 	s.Require().NoError(err)
 
 	s.Assert().Equal(original, usingCache)
 	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
 
-	cached, err := s.labelRepo.Get(context.Background(), s.label.ID)
+	cached, err := s.labelRepo.Get(context.Background(), created.ID)
 	s.Require().NoError(err)
-
 	s.Assert().Equal(usingCache.ID, cached.ID)
 	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
 }
 
 func (s *CachedLabelRepositoryIntegrationTestSuite) TestGetAll() {
-	s.Require().NoError(s.LabelRepo.Create(context.Background(), s.label))
-	s.Require().NoError(s.LabelRepo.Create(context.Background(), testModel.NewLabel()))
-
-	originalLabels, err := s.LabelRepo.GetAll(context.Background(), 0, 10)
+	_, err := s.labelRepo.Create(context.Background(), s.createOpts)
+	s.Require().NoError(err)
+	_, err = s.labelRepo.Create(context.Background(), testModel.NewCreateLabelOpts())
 	s.Require().NoError(err)
 
-	usingCacheLabels, err := s.labelRepo.GetAll(context.Background(), 0, 10)
+	original, err := s.LabelRepo.GetAll(context.Background(), 0, 10)
 	s.Require().NoError(err)
 
-	s.Assert().Equal(originalLabels, usingCacheLabels)
+	usingCache, err := s.labelRepo.GetAll(context.Background(), 0, 10)
+	s.Require().NoError(err)
+
+	s.Assert().Equal(original, usingCache)
 	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
+}
 
-	cachedLabels, err := s.labelRepo.GetAll(context.Background(), 0, 10)
+func (s *CachedLabelRepositoryIntegrationTestSuite) TestUpdate() {
+	created, err := s.labelRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
-	s.Assert().Equal(len(usingCacheLabels), len(cachedLabels))
 
+	updateOpts := repository.UpdateLabelOpts{
+		Name:        optional.Some("new name"),
+		Description: optional.Some("new description"),
+	}
+
+	label, err := s.labelRepo.Update(context.Background(), created.ID, updateOpts)
+	s.Require().NoError(err)
+	s.Assert().Equal("new name", label.Name)
+	s.Assert().Equal("new description", label.Description)
+	s.Assert().NotNil(label.UpdatedAt)
 	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
 }
 
 func (s *CachedLabelRepositoryIntegrationTestSuite) TestAttachTo() {
-	s.Require().NoError(s.LabelRepo.Create(context.Background(), s.label))
-
-	_, err := s.labelRepo.GetAll(context.Background(), 0, 10)
+	created, err := s.labelRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
 
-	s.Require().NoError(s.labelRepo.AttachTo(context.Background(), s.label.ID, s.testDoc.ID))
+	s.Require().NoError(s.labelRepo.AttachTo(context.Background(), created.ID, s.testDoc.ID))
 
 	document, err := s.DocumentRepo.Get(context.Background(), s.testDoc.ID)
 	s.Require().NoError(err)
 	s.Assert().Len(document.Labels, 1)
-
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }
 
 func (s *CachedLabelRepositoryIntegrationTestSuite) TestDetachFrom() {
-	s.Require().NoError(s.LabelRepo.Create(context.Background(), s.label))
-
-	_, err := s.labelRepo.GetAll(context.Background(), 0, 10)
+	created, err := s.labelRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
 
-	s.Require().NoError(s.labelRepo.AttachTo(context.Background(), s.label.ID, s.testDoc.ID))
-	s.Require().NoError(s.labelRepo.DetachFrom(context.Background(), s.label.ID, s.testDoc.ID))
+	s.Require().NoError(s.labelRepo.AttachTo(context.Background(), created.ID, s.testDoc.ID))
+	s.Require().NoError(s.labelRepo.DetachFrom(context.Background(), created.ID, s.testDoc.ID))
 
 	document, err := s.DocumentRepo.Get(context.Background(), s.testDoc.ID)
 	s.Require().NoError(err)
 	s.Assert().Len(document.Labels, 0)
-
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
-}
-
-func (s *CachedLabelRepositoryIntegrationTestSuite) TestUpdate() {
-	s.Require().NoError(s.LabelRepo.Create(context.Background(), s.label))
-
-	patch := map[string]any{
-		"name":        "new name",
-		"description": "new description",
-	}
-
-	label, err := s.labelRepo.Update(context.Background(), s.label.ID, patch)
-	s.Require().NoError(err)
-
-	s.Assert().Equal(s.label.ID, label.ID)
-	s.Assert().Equal(patch["name"], label.Name)
-	s.Assert().Equal(patch["description"], label.Description)
-	s.Assert().WithinDuration(*s.label.CreatedAt, *label.CreatedAt, 100*time.Millisecond)
-	s.Assert().NotNil(label.UpdatedAt)
-
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
 }
 
 func (s *CachedLabelRepositoryIntegrationTestSuite) TestDelete() {
-	s.Require().NoError(s.LabelRepo.Create(context.Background(), s.label))
-
-	_, err := s.labelRepo.Get(context.Background(), s.label.ID)
+	created, err := s.labelRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 
+	_, err = s.labelRepo.Get(context.Background(), created.ID)
+	s.Require().NoError(err)
 	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
 
-	s.Require().NoError(s.labelRepo.Delete(context.Background(), s.label.ID))
+	s.Require().NoError(s.labelRepo.Delete(context.Background(), created.ID))
 
-	_, err = s.labelRepo.Get(context.Background(), s.label.ID)
+	_, err = s.labelRepo.Get(context.Background(), created.ID)
 	s.Assert().ErrorIs(err, repository.ErrNotFound)
-
 	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }
 

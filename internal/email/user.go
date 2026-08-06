@@ -1,5 +1,12 @@
 package email
 
+// Recipient holds the lean fields required to address an email.
+type Recipient struct {
+	Email     string
+	FirstName string
+	LastName  string
+}
+
 // UserConfirmationTemplateData represents the data needed to render the
 // confirmation email template.
 type UserConfirmationTemplateData struct {

@@ -3,29 +3,68 @@ package service
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg"
+	"github.com/opcotech/elemo/internal/pkg/validate"
 	"github.com/opcotech/elemo/internal/repository"
 )
+
+// Notification represents a notification returned by the service.
+type Notification struct {
+	ID          model.ID
+	Title       string
+	Description string
+	Recipient   model.ID
+	Read        bool
+	CreatedAt   *time.Time
+	UpdatedAt   *time.Time
+}
+
+// CreateNotificationOpts holds the data required to create a notification.
+type CreateNotificationOpts struct {
+	Title       string   `json:"title" validate:"required,min=3,max=120"`
+	Description string   `json:"description" validate:"omitempty,min=5,max=500"`
+	Recipient   model.ID `json:"recipient" validate:"required"`
+}
+
+// Validate validates the create options.
+func (o *CreateNotificationOpts) Validate() error {
+	if err := validate.Struct(o); err != nil {
+		return errors.Join(model.ErrInvalidNotificationDetails, err)
+	}
+	if err := o.Recipient.Validate(); err != nil {
+		return model.ErrInvalidNotificationRecipient
+	}
+	if o.Recipient.Type != model.ResourceTypeUser {
+		return model.ErrInvalidNotificationRecipient
+	}
+	return nil
+}
+
+// UpdateNotificationOpts holds the fields that can be updated on a notification.
+type UpdateNotificationOpts struct {
+	Read bool
+}
 
 // NotificationService serves the business logic of interacting with
 // notifications.
 type NotificationService interface {
-	// Create creates a new notification
-	Create(ctx context.Context, notification *model.Notification) error
-	// Get returns an notification by its ID. If the notification does not
+	// Create creates a new notification.
+	Create(ctx context.Context, opts CreateNotificationOpts) (*Notification, error)
+	// Get returns a notification by its ID. If the notification does not
 	// exist, an error is returned.
-	Get(ctx context.Context, id, recipient model.ID) (*model.Notification, error)
+	Get(ctx context.Context, id, recipient model.ID) (*Notification, error)
 	// GetAllByRecipient returns all notifications for the given recipient. The
-	// offset and limit parameters are  used to paginate the results. If the
-	// offset is greater than the number of notification in the system, an empty
-	// slice is returned.
-	GetAllByRecipient(ctx context.Context, recipient model.ID, offset, limit int) ([]*model.Notification, error)
-	// Update the read status of the notification. If the notification cannot be
-	// updated, an error is returned.
-	Update(ctx context.Context, id, recipient model.ID, read bool) (*model.Notification, error)
-	// Delete deletes an notification. If the notification does not exist, an
+	// offset and limit parameters are used to paginate the results. If the
+	// offset is greater than the number of notifications in the system, an
+	// empty slice is returned.
+	GetAllByRecipient(ctx context.Context, recipient model.ID, offset, limit int) ([]*Notification, error)
+	// Update the read status of the notification. If the notification cannot
+	// be updated, an error is returned.
+	Update(ctx context.Context, id, recipient model.ID, opts UpdateNotificationOpts) (*Notification, error)
+	// Delete deletes a notification. If the notification does not exist, an
 	// error is returned.
 	Delete(ctx context.Context, id, recipient model.ID) error
 }
@@ -36,27 +75,55 @@ type notificationService struct {
 	notificationRepo repository.NotificationRepository
 }
 
+func notificationFromRepository(n *repository.Notification) *Notification {
+	if n == nil {
+		return nil
+	}
+	return &Notification{
+		ID:          n.ID,
+		Title:       n.Title,
+		Description: n.Description,
+		Recipient:   n.Recipient,
+		Read:        n.Read,
+		CreatedAt:   n.CreatedAt,
+		UpdatedAt:   n.UpdatedAt,
+	}
+}
+
+func notificationsFromRepository(notifications []*repository.Notification) []*Notification {
+	out := make([]*Notification, len(notifications))
+	for i, n := range notifications {
+		out[i] = notificationFromRepository(n)
+	}
+	return out
+}
+
 // Create creates a new notification in the system.
 //
 // NOTE: Users should never be able to trigger notifications directly. This
 // method is intended for internal (service-to-service) interactions. Exposing
 // it to users through an API could lead to spams.
-func (s *notificationService) Create(ctx context.Context, notification *model.Notification) error {
+func (s *notificationService) Create(ctx context.Context, opts CreateNotificationOpts) (*Notification, error) {
 	ctx, span := s.tracer.Start(ctx, "service.notificationService/Create")
 	defer span.End()
 
-	if err := notification.Validate(); err != nil {
-		return errors.Join(ErrNotificationCreate, err)
+	if err := opts.Validate(); err != nil {
+		return nil, errors.Join(ErrNotificationCreate, err)
 	}
 
-	if err := s.notificationRepo.Create(ctx, notification); err != nil {
-		return errors.Join(ErrNotificationCreate, err)
+	notification, err := s.notificationRepo.Create(ctx, repository.CreateNotificationOpts{
+		Title:       opts.Title,
+		Description: opts.Description,
+		Recipient:   opts.Recipient,
+	})
+	if err != nil {
+		return nil, errors.Join(ErrNotificationCreate, err)
 	}
 
-	return nil
+	return notificationFromRepository(notification), nil
 }
 
-func (s *notificationService) Get(ctx context.Context, id, recipient model.ID) (*model.Notification, error) {
+func (s *notificationService) Get(ctx context.Context, id, recipient model.ID) (*Notification, error) {
 	ctx, span := s.tracer.Start(ctx, "service.notificationService/Get")
 	defer span.End()
 
@@ -77,10 +144,10 @@ func (s *notificationService) Get(ctx context.Context, id, recipient model.ID) (
 		return nil, errors.Join(ErrNotificationGet, err)
 	}
 
-	return notification, nil
+	return notificationFromRepository(notification), nil
 }
 
-func (s *notificationService) GetAllByRecipient(ctx context.Context, recipient model.ID, offset, limit int) ([]*model.Notification, error) {
+func (s *notificationService) GetAllByRecipient(ctx context.Context, recipient model.ID, offset, limit int) ([]*Notification, error) {
 	ctx, span := s.tracer.Start(ctx, "service.notificationService/GetAllByRecipient")
 	defer span.End()
 
@@ -101,10 +168,10 @@ func (s *notificationService) GetAllByRecipient(ctx context.Context, recipient m
 		return nil, errors.Join(ErrNotificationGetAllByRecipient, err)
 	}
 
-	return notifications, nil
+	return notificationsFromRepository(notifications), nil
 }
 
-func (s *notificationService) Update(ctx context.Context, id, recipient model.ID, read bool) (*model.Notification, error) {
+func (s *notificationService) Update(ctx context.Context, id, recipient model.ID, opts UpdateNotificationOpts) (*Notification, error) {
 	ctx, span := s.tracer.Start(ctx, "service.notificationService/Update")
 	defer span.End()
 
@@ -120,12 +187,14 @@ func (s *notificationService) Update(ctx context.Context, id, recipient model.ID
 		return nil, errors.Join(ErrNotificationUpdate, err)
 	}
 
-	notification, err := s.notificationRepo.Update(ctx, id, recipient, read)
+	notification, err := s.notificationRepo.Update(ctx, id, recipient, repository.UpdateNotificationOpts{
+		Read: opts.Read,
+	})
 	if err != nil {
 		return nil, errors.Join(ErrNotificationUpdate, err)
 	}
 
-	return notification, nil
+	return notificationFromRepository(notification), nil
 }
 
 func (s *notificationService) Delete(ctx context.Context, id, recipient model.ID) error {

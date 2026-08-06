@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/opcotech/elemo/internal/model"
+	"github.com/opcotech/elemo/internal/pkg/optional"
 	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/testutil"
 	testModel "github.com/opcotech/elemo/internal/testutil/model"
@@ -17,7 +18,7 @@ type UserRepositoryIntegrationTestSuite struct {
 	testutil.ContainerIntegrationTestSuite
 	testutil.Neo4jContainerIntegrationTestSuite
 
-	user *model.User
+	createOpts repository.CreateUserOpts
 }
 
 func (s *UserRepositoryIntegrationTestSuite) SetupSuite() {
@@ -28,7 +29,7 @@ func (s *UserRepositoryIntegrationTestSuite) SetupSuite() {
 }
 
 func (s *UserRepositoryIntegrationTestSuite) SetupTest() {
-	s.user = testModel.NewUser()
+	s.createOpts = testModel.NewCreateUserOpts()
 }
 
 func (s *UserRepositoryIntegrationTestSuite) TearDownTest() {
@@ -40,66 +41,55 @@ func (s *UserRepositoryIntegrationTestSuite) TearDownSuite() {
 }
 
 func (s *UserRepositoryIntegrationTestSuite) TestCreate() {
-	s.Require().NoError(s.UserRepo.Create(context.Background(), s.user))
-	s.Assert().NotEqual(model.MustNewNilID(model.ResourceTypeUser), s.user.ID)
-	s.Assert().NotNil(s.user.CreatedAt)
-	s.Assert().Nil(s.user.UpdatedAt)
+	user, err := s.UserRepo.Create(context.Background(), s.createOpts)
+	s.Require().NoError(err)
+	s.Assert().NotEqual(model.MustNewNilID(model.ResourceTypeUser), user.ID)
+	s.Assert().NotNil(user.CreatedAt)
+	s.Assert().Nil(user.UpdatedAt)
 }
 
 func (s *UserRepositoryIntegrationTestSuite) TestGet() {
-	s.Require().NoError(s.UserRepo.Create(context.Background(), s.user))
-
-	user, err := s.UserRepo.Get(context.Background(), s.user.ID)
+	created, err := s.UserRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 
-	s.Assert().Equal(s.user.Username, user.Username)
-	s.Assert().Equal(s.user.Email, user.Email)
-	s.Assert().Equal(s.user.Password, user.Password)
-	s.Assert().Equal(s.user.Status, user.Status)
-	s.Assert().Equal(s.user.FirstName, user.FirstName)
-	s.Assert().Equal(s.user.LastName, user.LastName)
-	s.Assert().Equal(s.user.Picture, user.Picture)
-	s.Assert().Equal(s.user.Title, user.Title)
-	s.Assert().Equal(s.user.Bio, user.Bio)
-	s.Assert().Equal(s.user.Phone, user.Phone)
-	s.Assert().Equal(s.user.Address, user.Address)
-	s.Assert().Equal(s.user.Links, user.Links)
-	s.Assert().Equal(s.user.Languages, user.Languages)
-	s.Assert().Equal(s.user.Documents, user.Documents)
-	s.Assert().Equal(s.user.Permissions, user.Permissions)
-	s.Assert().WithinDuration(*s.user.CreatedAt, *user.CreatedAt, 100*time.Millisecond)
-	s.Assert().Nil(s.user.UpdatedAt)
+	user, err := s.UserRepo.Get(context.Background(), created.ID)
+	s.Require().NoError(err)
+
+	s.Assert().Equal(s.createOpts.Username, user.Username)
+	s.Assert().Equal(s.createOpts.Email, user.Email)
+	s.Assert().Equal(s.createOpts.Password, user.Password)
+	s.Assert().Equal(s.createOpts.Status, user.Status)
+	s.Assert().Equal(s.createOpts.FirstName, user.FirstName)
+	s.Assert().Equal(s.createOpts.LastName, user.LastName)
+	s.Assert().Equal(s.createOpts.Picture, user.Picture)
+	s.Assert().Equal(s.createOpts.Title, user.Title)
+	s.Assert().Equal(s.createOpts.Bio, user.Bio)
+	s.Assert().Equal(s.createOpts.Phone, user.Phone)
+	s.Assert().Equal(s.createOpts.Address, user.Address)
+	s.Assert().Equal(s.createOpts.Links, user.Links)
+	s.Assert().Equal(s.createOpts.Languages, user.Languages)
+	s.Assert().WithinDuration(*created.CreatedAt, *user.CreatedAt, 100*time.Millisecond)
+	s.Assert().Nil(user.UpdatedAt)
 }
 
 func (s *UserRepositoryIntegrationTestSuite) TestGetByEmail() {
-	s.Require().NoError(s.UserRepo.Create(context.Background(), s.user))
-
-	user, err := s.UserRepo.GetByEmail(context.Background(), s.user.Email)
+	created, err := s.UserRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 
-	s.Assert().Equal(s.user.Username, user.Username)
-	s.Assert().Equal(s.user.Email, user.Email)
-	s.Assert().Equal(s.user.Password, user.Password)
-	s.Assert().Equal(s.user.Status, user.Status)
-	s.Assert().Equal(s.user.FirstName, user.FirstName)
-	s.Assert().Equal(s.user.LastName, user.LastName)
-	s.Assert().Equal(s.user.Picture, user.Picture)
-	s.Assert().Equal(s.user.Title, user.Title)
-	s.Assert().Equal(s.user.Bio, user.Bio)
-	s.Assert().Equal(s.user.Phone, user.Phone)
-	s.Assert().Equal(s.user.Address, user.Address)
-	s.Assert().Equal(s.user.Links, user.Links)
-	s.Assert().Equal(s.user.Languages, user.Languages)
-	s.Assert().Equal(s.user.Documents, user.Documents)
-	s.Assert().Equal(s.user.Permissions, user.Permissions)
-	s.Assert().WithinDuration(*s.user.CreatedAt, *user.CreatedAt, 100*time.Millisecond)
-	s.Assert().Nil(s.user.UpdatedAt)
+	user, err := s.UserRepo.GetByEmail(context.Background(), s.createOpts.Email)
+	s.Require().NoError(err)
+
+	s.Assert().Equal(created.ID, user.ID)
+	s.Assert().Equal(s.createOpts.Email, user.Email)
 }
 
 func (s *UserRepositoryIntegrationTestSuite) TestGetAll() {
-	s.Require().NoError(s.UserRepo.Create(context.Background(), s.user))
-	s.Require().NoError(s.UserRepo.Create(context.Background(), testModel.NewUser()))
-	s.Require().NoError(s.UserRepo.Create(context.Background(), testModel.NewUser()))
+	_, err := s.UserRepo.Create(context.Background(), s.createOpts)
+	s.Require().NoError(err)
+	_, err = s.UserRepo.Create(context.Background(), testModel.NewCreateUserOpts())
+	s.Require().NoError(err)
+	_, err = s.UserRepo.Create(context.Background(), testModel.NewCreateUserOpts())
+	s.Require().NoError(err)
 
 	users, err := s.UserRepo.GetAll(context.Background(), 0, 10)
 	s.Require().NoError(err)
@@ -119,45 +109,38 @@ func (s *UserRepositoryIntegrationTestSuite) TestGetAll() {
 }
 
 func (s *UserRepositoryIntegrationTestSuite) TestUpdate() {
-	s.Require().NoError(s.UserRepo.Create(context.Background(), s.user))
-
-	patch := map[string]any{
-		"username": "new username",
-		"email":    testutil.GenerateEmail(10),
-		"languages": []string{
-			model.LanguageEN.String(),
-		},
-	}
-
-	user, err := s.UserRepo.Update(context.Background(), s.user.ID, patch)
+	created, err := s.UserRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 
-	s.Assert().Equal(patch["username"], user.Username)
-	s.Assert().Equal(patch["email"], user.Email)
-	s.Assert().Equal(s.user.Password, user.Password)
-	s.Assert().Equal(s.user.Status, user.Status)
-	s.Assert().Equal(s.user.FirstName, user.FirstName)
-	s.Assert().Equal(s.user.LastName, user.LastName)
-	s.Assert().Equal(s.user.Picture, user.Picture)
-	s.Assert().Equal(s.user.Title, user.Title)
-	s.Assert().Equal(s.user.Bio, user.Bio)
-	s.Assert().Equal(s.user.Phone, user.Phone)
-	s.Assert().Equal(s.user.Address, user.Address)
-	s.Assert().Equal(s.user.Links, user.Links)
+	newEmail := testutil.GenerateEmail(10)
+	updateOpts := repository.UpdateUserOpts{
+		Username:  optional.Some("newusername"),
+		Email:     optional.Some(newEmail),
+		Languages: optional.Some([]model.Language{model.LanguageEN}),
+	}
+
+	user, err := s.UserRepo.Update(context.Background(), created.ID, updateOpts)
+	s.Require().NoError(err)
+
+	s.Assert().Equal("newusername", user.Username)
+	s.Assert().Equal(newEmail, user.Email)
+	s.Assert().Equal(created.Password, user.Password)
+	s.Assert().Equal(created.Status, user.Status)
+	s.Assert().Equal(created.FirstName, user.FirstName)
+	s.Assert().Equal(created.LastName, user.LastName)
 	s.Assert().ElementsMatch([]model.Language{model.LanguageEN}, user.Languages)
-	s.Assert().Equal(s.user.Documents, user.Documents)
-	s.Assert().Equal(s.user.Permissions, user.Permissions)
-	s.Assert().WithinDuration(*s.user.CreatedAt, *user.CreatedAt, 100*time.Millisecond)
-	s.Assert().Nil(s.user.UpdatedAt)
+	s.Assert().WithinDuration(*created.CreatedAt, *user.CreatedAt, 100*time.Millisecond)
+	s.Assert().NotNil(user.UpdatedAt)
 }
 
 func (s *UserRepositoryIntegrationTestSuite) TestDelete() {
-	s.Require().NoError(s.UserRepo.Create(context.Background(), s.user))
-
-	err := s.UserRepo.Delete(context.Background(), s.user.ID)
+	created, err := s.UserRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 
-	_, err = s.UserRepo.Get(context.Background(), s.user.ID)
+	err = s.UserRepo.Delete(context.Background(), created.ID)
+	s.Require().NoError(err)
+
+	_, err = s.UserRepo.Get(context.Background(), created.ID)
 	s.Assert().ErrorIs(err, repository.ErrNotFound)
 }
 
@@ -170,8 +153,8 @@ type CachedUserRepositoryIntegrationTestSuite struct {
 	testutil.Neo4jContainerIntegrationTestSuite
 	testutil.RedisContainerIntegrationTestSuite
 
-	user     *model.User
-	userRepo *repository.RedisCachedUserRepository
+	createOpts repository.CreateUserOpts
+	userRepo   *repository.RedisCachedUserRepository
 }
 
 func (s *CachedUserRepositoryIntegrationTestSuite) SetupSuite() {
@@ -186,8 +169,7 @@ func (s *CachedUserRepositoryIntegrationTestSuite) SetupSuite() {
 }
 
 func (s *CachedUserRepositoryIntegrationTestSuite) SetupTest() {
-	s.user = testModel.NewUser()
-
+	s.createOpts = testModel.NewCreateUserOpts()
 	s.Require().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }
 
@@ -200,27 +182,29 @@ func (s *CachedUserRepositoryIntegrationTestSuite) TearDownSuite() {
 }
 
 func (s *CachedUserRepositoryIntegrationTestSuite) TestCreate() {
-	s.Require().NoError(s.userRepo.Create(context.Background(), s.user))
-	s.Assert().NotEqual(model.MustNewNilID(model.ResourceTypeUser), s.user.ID)
-	s.Assert().NotNil(s.user.CreatedAt)
-	s.Assert().Nil(s.user.UpdatedAt)
+	user, err := s.userRepo.Create(context.Background(), s.createOpts)
+	s.Require().NoError(err)
+	s.Assert().NotEqual(model.MustNewNilID(model.ResourceTypeUser), user.ID)
+	s.Assert().NotNil(user.CreatedAt)
+	s.Assert().Nil(user.UpdatedAt)
 
 	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }
 
 func (s *CachedUserRepositoryIntegrationTestSuite) TestGet() {
-	s.Require().NoError(s.userRepo.Create(context.Background(), s.user))
-
-	original, err := s.UserRepo.Get(context.Background(), s.user.ID)
+	created, err := s.userRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 
-	usingCache, err := s.userRepo.Get(context.Background(), s.user.ID)
+	original, err := s.UserRepo.Get(context.Background(), created.ID)
+	s.Require().NoError(err)
+
+	usingCache, err := s.userRepo.Get(context.Background(), created.ID)
 	s.Require().NoError(err)
 
 	s.Assert().Equal(original, usingCache)
 	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
 
-	cached, err := s.userRepo.Get(context.Background(), s.user.ID)
+	cached, err := s.userRepo.Get(context.Background(), created.ID)
 	s.Require().NoError(err)
 
 	s.Assert().Equal(usingCache.ID, cached.ID)
@@ -228,18 +212,19 @@ func (s *CachedUserRepositoryIntegrationTestSuite) TestGet() {
 }
 
 func (s *CachedUserRepositoryIntegrationTestSuite) TestGetByEmail() {
-	s.Require().NoError(s.userRepo.Create(context.Background(), s.user))
-
-	original, err := s.UserRepo.GetByEmail(context.Background(), s.user.Email)
+	created, err := s.userRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 
-	usingCache, err := s.userRepo.GetByEmail(context.Background(), s.user.Email)
+	original, err := s.UserRepo.GetByEmail(context.Background(), created.Email)
+	s.Require().NoError(err)
+
+	usingCache, err := s.userRepo.GetByEmail(context.Background(), created.Email)
 	s.Require().NoError(err)
 
 	s.Assert().Equal(original, usingCache)
 	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
 
-	cached, err := s.userRepo.GetByEmail(context.Background(), s.user.Email)
+	cached, err := s.userRepo.GetByEmail(context.Background(), created.Email)
 	s.Require().NoError(err)
 
 	s.Assert().Equal(usingCache.ID, cached.ID)
@@ -247,8 +232,10 @@ func (s *CachedUserRepositoryIntegrationTestSuite) TestGetByEmail() {
 }
 
 func (s *CachedUserRepositoryIntegrationTestSuite) TestGetAll() {
-	s.Require().NoError(s.userRepo.Create(context.Background(), s.user))
-	s.Require().NoError(s.userRepo.Create(context.Background(), testModel.NewUser()))
+	_, err := s.userRepo.Create(context.Background(), s.createOpts)
+	s.Require().NoError(err)
+	_, err = s.userRepo.Create(context.Background(), testModel.NewCreateUserOpts())
+	s.Require().NoError(err)
 
 	originalUsers, err := s.UserRepo.GetAll(context.Background(), 0, 10)
 	s.Require().NoError(err)
@@ -265,51 +252,39 @@ func (s *CachedUserRepositoryIntegrationTestSuite) TestGetAll() {
 }
 
 func (s *CachedUserRepositoryIntegrationTestSuite) TestUpdate() {
-	s.Require().NoError(s.userRepo.Create(context.Background(), s.user))
-
-	patch := map[string]any{
-		"username": "new username",
-		"email":    testutil.GenerateEmail(10),
-		"languages": []string{
-			model.LanguageEN.String(),
-		},
-	}
-
-	user, err := s.userRepo.Update(context.Background(), s.user.ID, patch)
+	created, err := s.userRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 
-	s.Assert().Equal(patch["username"], user.Username)
-	s.Assert().Equal(patch["email"], user.Email)
-	s.Assert().Equal(s.user.Password, user.Password)
-	s.Assert().Equal(s.user.Status, user.Status)
-	s.Assert().Equal(s.user.FirstName, user.FirstName)
-	s.Assert().Equal(s.user.LastName, user.LastName)
-	s.Assert().Equal(s.user.Picture, user.Picture)
-	s.Assert().Equal(s.user.Title, user.Title)
-	s.Assert().Equal(s.user.Bio, user.Bio)
-	s.Assert().Equal(s.user.Phone, user.Phone)
-	s.Assert().Equal(s.user.Address, user.Address)
-	s.Assert().Equal(s.user.Links, user.Links)
+	newEmail := testutil.GenerateEmail(10)
+	updateOpts := repository.UpdateUserOpts{
+		Username:  optional.Some("newusername"),
+		Email:     optional.Some(newEmail),
+		Languages: optional.Some([]model.Language{model.LanguageEN}),
+	}
+
+	user, err := s.userRepo.Update(context.Background(), created.ID, updateOpts)
+	s.Require().NoError(err)
+
+	s.Assert().Equal("newusername", user.Username)
+	s.Assert().Equal(newEmail, user.Email)
 	s.Assert().ElementsMatch([]model.Language{model.LanguageEN}, user.Languages)
-	s.Assert().Equal(s.user.Documents, user.Documents)
-	s.Assert().Equal(s.user.Permissions, user.Permissions)
-	s.Assert().WithinDuration(*s.user.CreatedAt, *user.CreatedAt, 100*time.Millisecond)
-	s.Assert().Nil(s.user.UpdatedAt)
+	s.Assert().NotNil(user.UpdatedAt)
 
 	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
 }
 
 func (s *CachedUserRepositoryIntegrationTestSuite) TestDelete() {
-	s.Require().NoError(s.userRepo.Create(context.Background(), s.user))
+	created, err := s.userRepo.Create(context.Background(), s.createOpts)
+	s.Require().NoError(err)
 
-	_, err := s.userRepo.Get(context.Background(), s.user.ID)
+	_, err = s.userRepo.Get(context.Background(), created.ID)
 	s.Require().NoError(err)
 
 	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
 
-	s.Require().NoError(s.userRepo.Delete(context.Background(), s.user.ID))
+	s.Require().NoError(s.userRepo.Delete(context.Background(), created.ID))
 
-	_, err = s.userRepo.Get(context.Background(), s.user.ID)
+	_, err = s.userRepo.Get(context.Background(), created.ID)
 	s.Assert().ErrorIs(err, repository.ErrNotFound)
 
 	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)

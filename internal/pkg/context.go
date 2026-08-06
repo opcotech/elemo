@@ -28,8 +28,8 @@ func CtxUserID(ctx context.Context) string {
 		return string(userID)
 	}
 
-	if user, ok := ctx.Value(CtxKeyUserID).(*model.User); ok {
-		return user.ID.String()
+	if userID, ok := ctx.Value(CtxKeyUserID).(model.ID); ok {
+		return userID.String()
 	}
 
 	return ""

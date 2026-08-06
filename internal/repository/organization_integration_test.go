@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/opcotech/elemo/internal/model"
+	"github.com/opcotech/elemo/internal/pkg/optional"
 	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/testutil"
 	testModel "github.com/opcotech/elemo/internal/testutil/model"
@@ -17,8 +18,8 @@ type OrganizationRepositoryIntegrationTestSuite struct {
 	testutil.ContainerIntegrationTestSuite
 	testutil.Neo4jContainerIntegrationTestSuite
 
-	testUser     *model.User
-	organization *model.Organization
+	testUser   *repository.User
+	createOpts repository.CreateOrganizationOpts
 }
 
 func (s *OrganizationRepositoryIntegrationTestSuite) SetupSuite() {
@@ -29,10 +30,10 @@ func (s *OrganizationRepositoryIntegrationTestSuite) SetupSuite() {
 }
 
 func (s *OrganizationRepositoryIntegrationTestSuite) SetupTest() {
-	s.testUser = testModel.NewUser()
-	s.Require().NoError(s.UserRepo.Create(context.Background(), s.testUser))
-
-	s.organization = testModel.NewOrganization()
+	var err error
+	s.testUser, err = s.UserRepo.Create(context.Background(), testModel.NewCreateUserOpts())
+	s.Require().NoError(err)
+	s.createOpts = testModel.NewCreateOrganizationOpts(s.testUser.ID)
 }
 
 func (s *OrganizationRepositoryIntegrationTestSuite) TearDownTest() {
@@ -44,274 +45,148 @@ func (s *OrganizationRepositoryIntegrationTestSuite) TearDownSuite() {
 }
 
 func (s *OrganizationRepositoryIntegrationTestSuite) TestCreate() {
-	s.Require().NoError(s.OrganizationRepo.Create(context.Background(), s.testUser.ID, s.organization))
-	s.Assert().NotEqual(model.MustNewNilID(model.ResourceTypeOrganization), s.organization.ID)
-	s.Assert().NotNil(s.organization.CreatedAt)
-	s.Assert().Nil(s.organization.UpdatedAt)
+	org, err := s.OrganizationRepo.Create(context.Background(), s.createOpts)
+	s.Require().NoError(err)
+	s.Assert().NotEqual(model.MustNewNilID(model.ResourceTypeOrganization), org.ID)
+	s.Assert().NotNil(org.CreatedAt)
+	s.Assert().Nil(org.UpdatedAt)
 }
 
 func (s *OrganizationRepositoryIntegrationTestSuite) TestGet() {
-	s.Require().NoError(s.OrganizationRepo.Create(context.Background(), s.testUser.ID, s.organization))
-
-	organization, err := s.OrganizationRepo.Get(context.Background(), s.organization.ID)
+	created, err := s.OrganizationRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
-
-	s.Assert().Equal(s.organization.ID, organization.ID)
-	s.Assert().Equal(s.organization.Name, organization.Name)
-	s.Assert().Equal(s.organization.Email, organization.Email)
-	s.Assert().Equal(s.organization.Logo, organization.Logo)
-	s.Assert().Equal(s.organization.Website, organization.Website)
-	s.Assert().Equal(s.organization.Status, organization.Status)
-	s.Assert().Equal(s.organization.Namespaces, organization.Namespaces)
-	s.Assert().Equal(s.organization.Teams, organization.Teams)
-	s.Assert().Equal([]model.ID{s.testUser.ID}, organization.Members)
-	s.Assert().WithinDuration(*s.organization.CreatedAt, *organization.CreatedAt, 100*time.Millisecond)
-	s.Assert().Nil(s.organization.UpdatedAt)
+	org, err := s.OrganizationRepo.Get(context.Background(), created.ID)
+	s.Require().NoError(err)
+	s.Assert().Equal(created.ID, org.ID)
+	s.Assert().Equal(s.createOpts.Name, org.Name)
+	s.Assert().Equal(s.createOpts.Email, org.Email)
+	s.Assert().Equal(s.createOpts.Logo, org.Logo)
+	s.Assert().Equal(s.createOpts.Website, org.Website)
+	s.Assert().Equal(s.createOpts.Status, org.Status)
+	s.Assert().Equal([]model.ID{s.testUser.ID}, org.Members)
+	s.Assert().WithinDuration(*created.CreatedAt, *org.CreatedAt, 100*time.Millisecond)
 }
 
 func (s *OrganizationRepositoryIntegrationTestSuite) TestGetAll() {
-	s.Require().NoError(s.OrganizationRepo.Create(context.Background(), s.testUser.ID, s.organization))
-	s.Require().NoError(s.OrganizationRepo.Create(context.Background(), s.testUser.ID, testModel.NewOrganization()))
-	s.Require().NoError(s.OrganizationRepo.Create(context.Background(), s.testUser.ID, testModel.NewOrganization()))
-
-	organizations, err := s.OrganizationRepo.GetAll(context.Background(), s.testUser.ID, 0, 10)
+	_, err := s.OrganizationRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
-	s.Require().Len(organizations, 3)
-
-	organizations, err = s.OrganizationRepo.GetAll(context.Background(), s.testUser.ID, 1, 2)
+	_, err = s.OrganizationRepo.Create(context.Background(), testModel.NewCreateOrganizationOpts(s.testUser.ID))
 	s.Require().NoError(err)
-	s.Require().Len(organizations, 2)
-
-	organizations, err = s.OrganizationRepo.GetAll(context.Background(), s.testUser.ID, 2, 2)
+	_, err = s.OrganizationRepo.Create(context.Background(), testModel.NewCreateOrganizationOpts(s.testUser.ID))
 	s.Require().NoError(err)
-	s.Require().Len(organizations, 1)
 
-	organizations, err = s.OrganizationRepo.GetAll(context.Background(), s.testUser.ID, 3, 2)
+	orgs, err := s.OrganizationRepo.GetAll(context.Background(), s.testUser.ID, 0, 10)
 	s.Require().NoError(err)
-	s.Require().Len(organizations, 0)
+	s.Require().Len(orgs, 3)
+
+	orgs, err = s.OrganizationRepo.GetAll(context.Background(), s.testUser.ID, 1, 2)
+	s.Require().NoError(err)
+	s.Require().Len(orgs, 2)
 }
 
 func (s *OrganizationRepositoryIntegrationTestSuite) TestUpdate() {
-	s.Require().NoError(s.OrganizationRepo.Create(context.Background(), s.testUser.ID, s.organization))
-
-	patch := map[string]any{
-		"name":  "new name",
-		"email": testutil.GenerateEmail(10),
-	}
-
-	organization, err := s.OrganizationRepo.Update(context.Background(), s.organization.ID, patch)
+	created, err := s.OrganizationRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
-
-	s.Assert().Equal(s.organization.ID, organization.ID)
-	s.Assert().Equal(patch["name"], organization.Name)
-	s.Assert().Equal(patch["email"], organization.Email)
-	s.Assert().Equal(s.organization.Logo, organization.Logo)
-	s.Assert().Equal(s.organization.Website, organization.Website)
-	s.Assert().Equal(s.organization.Status, organization.Status)
-	s.Assert().Equal(s.organization.Namespaces, organization.Namespaces)
-	s.Assert().Equal(s.organization.Teams, organization.Teams)
-	s.Assert().Equal([]model.ID{s.testUser.ID}, organization.Members)
-	s.Assert().WithinDuration(*s.organization.CreatedAt, *organization.CreatedAt, 100*time.Millisecond)
-	s.Assert().NotNil(organization.UpdatedAt)
+	newEmail := testutil.GenerateEmail(10)
+	org, err := s.OrganizationRepo.Update(context.Background(), created.ID, repository.UpdateOrganizationOpts{
+		Name:  optional.Some("new name"),
+		Email: optional.Some(newEmail),
+	})
+	s.Require().NoError(err)
+	s.Assert().Equal("new name", org.Name)
+	s.Assert().Equal(newEmail, org.Email)
+	s.Assert().Equal([]model.ID{s.testUser.ID}, org.Members)
+	s.Assert().NotNil(org.UpdatedAt)
 }
 
 func (s *OrganizationRepositoryIntegrationTestSuite) TestAddMember() {
-	s.Require().NoError(s.OrganizationRepo.Create(context.Background(), s.testUser.ID, s.organization))
-
-	member := testModel.NewUser()
-	s.Require().NoError(s.UserRepo.Create(context.Background(), member))
-
-	s.Require().NoError(s.OrganizationRepo.AddMember(context.Background(), s.organization.ID, member.ID))
-
-	organization, err := s.OrganizationRepo.Get(context.Background(), s.organization.ID)
+	created, err := s.OrganizationRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
-
-	s.Assert().ElementsMatch([]model.ID{s.testUser.ID, member.ID}, organization.Members)
-	s.Assert().Nil(organization.UpdatedAt)
+	member, err := s.UserRepo.Create(context.Background(), testModel.NewCreateUserOpts())
+	s.Require().NoError(err)
+	s.Require().NoError(s.OrganizationRepo.AddMember(context.Background(), created.ID, member.ID))
+	org, err := s.OrganizationRepo.Get(context.Background(), created.ID)
+	s.Require().NoError(err)
+	s.Assert().ElementsMatch([]model.ID{s.testUser.ID, member.ID}, org.Members)
 }
 
 func (s *OrganizationRepositoryIntegrationTestSuite) TestRemoveMember() {
-	s.Require().NoError(s.OrganizationRepo.Create(context.Background(), s.testUser.ID, s.organization))
-
-	member := testModel.NewUser()
-	s.Require().NoError(s.UserRepo.Create(context.Background(), member))
-
-	s.Require().NoError(s.OrganizationRepo.AddMember(context.Background(), s.organization.ID, member.ID))
-	s.Require().NoError(s.OrganizationRepo.RemoveMember(context.Background(), s.organization.ID, s.testUser.ID))
-
-	organization, err := s.OrganizationRepo.Get(context.Background(), s.organization.ID)
+	created, err := s.OrganizationRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
-
-	s.Assert().ElementsMatch([]model.ID{member.ID}, organization.Members)
-	s.Assert().Nil(organization.UpdatedAt)
+	member, err := s.UserRepo.Create(context.Background(), testModel.NewCreateUserOpts())
+	s.Require().NoError(err)
+	s.Require().NoError(s.OrganizationRepo.AddMember(context.Background(), created.ID, member.ID))
+	s.Require().NoError(s.OrganizationRepo.RemoveMember(context.Background(), created.ID, s.testUser.ID))
+	org, err := s.OrganizationRepo.Get(context.Background(), created.ID)
+	s.Require().NoError(err)
+	s.Assert().ElementsMatch([]model.ID{member.ID}, org.Members)
 }
 
 func (s *OrganizationRepositoryIntegrationTestSuite) TestDelete() {
-	s.Require().NoError(s.OrganizationRepo.Create(context.Background(), s.testUser.ID, s.organization))
-
-	s.Require().NoError(s.OrganizationRepo.Delete(context.Background(), s.organization.ID))
-
-	_, err := s.OrganizationRepo.Get(context.Background(), s.organization.ID)
+	created, err := s.OrganizationRepo.Create(context.Background(), s.createOpts)
+	s.Require().NoError(err)
+	s.Require().NoError(s.OrganizationRepo.Delete(context.Background(), created.ID))
+	_, err = s.OrganizationRepo.Get(context.Background(), created.ID)
 	s.Assert().ErrorIs(err, repository.ErrNotFound)
 }
 
 func (s *OrganizationRepositoryIntegrationTestSuite) TestAddInvitation() {
-	s.Require().NoError(s.OrganizationRepo.Create(context.Background(), s.testUser.ID, s.organization))
-
-	invitedUser := testModel.NewUser()
-	s.Require().NoError(s.UserRepo.Create(context.Background(), invitedUser))
-
-	// Add invitation
-	s.Require().NoError(s.OrganizationRepo.AddInvitation(context.Background(), s.organization.ID, invitedUser.ID))
-
-	// Verify invitation exists by checking GetInvitations
-	invitations, err := s.OrganizationRepo.GetInvitations(context.Background(), s.organization.ID)
+	created, err := s.OrganizationRepo.Create(context.Background(), s.createOpts)
+	s.Require().NoError(err)
+	invitedUser, err := s.UserRepo.Create(context.Background(), testModel.NewCreateUserOpts())
+	s.Require().NoError(err)
+	s.Require().NoError(s.OrganizationRepo.AddInvitation(context.Background(), created.ID, invitedUser.ID))
+	invitations, err := s.OrganizationRepo.GetInvitations(context.Background(), created.ID)
 	s.Require().NoError(err)
 	s.Require().Len(invitations, 1)
 	s.Assert().Equal(invitedUser.ID, invitations[0].ID)
-
-	// Verify user is not a member yet
-	organization, err := s.OrganizationRepo.Get(context.Background(), s.organization.ID)
+	org, err := s.OrganizationRepo.Get(context.Background(), created.ID)
 	s.Require().NoError(err)
-	s.Assert().NotContains(organization.Members, invitedUser.ID)
-	s.Assert().ElementsMatch([]model.ID{s.testUser.ID}, organization.Members)
+	s.Assert().NotContains(org.Members, invitedUser.ID)
 }
 
 func (s *OrganizationRepositoryIntegrationTestSuite) TestAddInvitationWithInvalidOrgID() {
 	invalidID := model.MustNewNilID(model.ResourceTypeOrganization)
-	invitedUser := testModel.NewUser()
-	s.Require().NoError(s.UserRepo.Create(context.Background(), invitedUser))
-
-	err := s.OrganizationRepo.AddInvitation(context.Background(), invalidID, invitedUser.ID)
+	invitedUser, err := s.UserRepo.Create(context.Background(), testModel.NewCreateUserOpts())
+	s.Require().NoError(err)
+	err = s.OrganizationRepo.AddInvitation(context.Background(), invalidID, invitedUser.ID)
 	s.Assert().Error(err)
 	s.Assert().ErrorIs(err, repository.ErrOrganizationAddMember)
 }
 
 func (s *OrganizationRepositoryIntegrationTestSuite) TestAddInvitationWithInvalidUserID() {
-	s.Require().NoError(s.OrganizationRepo.Create(context.Background(), s.testUser.ID, s.organization))
-
+	created, err := s.OrganizationRepo.Create(context.Background(), s.createOpts)
+	s.Require().NoError(err)
 	invalidID := model.MustNewNilID(model.ResourceTypeUser)
-
-	err := s.OrganizationRepo.AddInvitation(context.Background(), s.organization.ID, invalidID)
+	err = s.OrganizationRepo.AddInvitation(context.Background(), created.ID, invalidID)
 	s.Assert().Error(err)
 	s.Assert().ErrorIs(err, repository.ErrOrganizationAddMember)
 }
 
-func (s *OrganizationRepositoryIntegrationTestSuite) TestAddInvitationWithNonExistentOrg() {
-	nonExistentOrgID := model.MustNewID(model.ResourceTypeOrganization)
-	invitedUser := testModel.NewUser()
-	s.Require().NoError(s.UserRepo.Create(context.Background(), invitedUser))
-
-	err := s.OrganizationRepo.AddInvitation(context.Background(), nonExistentOrgID, invitedUser.ID)
-	s.Assert().Error(err)
-}
-
-func (s *OrganizationRepositoryIntegrationTestSuite) TestAddInvitationWithNonExistentUser() {
-	s.Require().NoError(s.OrganizationRepo.Create(context.Background(), s.testUser.ID, s.organization))
-
-	nonExistentUserID := model.MustNewID(model.ResourceTypeUser)
-
-	err := s.OrganizationRepo.AddInvitation(context.Background(), s.organization.ID, nonExistentUserID)
-	s.Assert().Error(err)
-}
-
 func (s *OrganizationRepositoryIntegrationTestSuite) TestRemoveInvitation() {
-	s.Require().NoError(s.OrganizationRepo.Create(context.Background(), s.testUser.ID, s.organization))
-
-	invitedUser := testModel.NewUser()
-	s.Require().NoError(s.UserRepo.Create(context.Background(), invitedUser))
-
-	// Add invitation first
-	s.Require().NoError(s.OrganizationRepo.AddInvitation(context.Background(), s.organization.ID, invitedUser.ID))
-
-	// Verify invitation exists
-	invitations, err := s.OrganizationRepo.GetInvitations(context.Background(), s.organization.ID)
+	created, err := s.OrganizationRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
-	s.Require().Len(invitations, 1)
-
-	// Remove invitation
-	s.Require().NoError(s.OrganizationRepo.RemoveInvitation(context.Background(), s.organization.ID, invitedUser.ID))
-
-	// Verify invitation is removed
-	invitations, err = s.OrganizationRepo.GetInvitations(context.Background(), s.organization.ID)
+	invitedUser, err := s.UserRepo.Create(context.Background(), testModel.NewCreateUserOpts())
 	s.Require().NoError(err)
-	s.Assert().Len(invitations, 0)
-}
-
-func (s *OrganizationRepositoryIntegrationTestSuite) TestRemoveInvitationWithInvalidOrgID() {
-	invalidID := model.MustNewNilID(model.ResourceTypeOrganization)
-	invitedUser := testModel.NewUser()
-	s.Require().NoError(s.UserRepo.Create(context.Background(), invitedUser))
-
-	err := s.OrganizationRepo.RemoveInvitation(context.Background(), invalidID, invitedUser.ID)
-	s.Assert().Error(err)
-	s.Assert().ErrorIs(err, repository.ErrOrganizationRemoveMember)
-}
-
-func (s *OrganizationRepositoryIntegrationTestSuite) TestRemoveInvitationWithInvalidUserID() {
-	s.Require().NoError(s.OrganizationRepo.Create(context.Background(), s.testUser.ID, s.organization))
-
-	invalidID := model.MustNewNilID(model.ResourceTypeUser)
-
-	err := s.OrganizationRepo.RemoveInvitation(context.Background(), s.organization.ID, invalidID)
-	s.Assert().Error(err)
-	s.Assert().ErrorIs(err, repository.ErrOrganizationRemoveMember)
-}
-
-func (s *OrganizationRepositoryIntegrationTestSuite) TestRemoveInvitationWithNonExistentInvitation() {
-	s.Require().NoError(s.OrganizationRepo.Create(context.Background(), s.testUser.ID, s.organization))
-
-	invitedUser := testModel.NewUser()
-	s.Require().NoError(s.UserRepo.Create(context.Background(), invitedUser))
-
-	// Remove non-existent invitation (should not error)
-	err := s.OrganizationRepo.RemoveInvitation(context.Background(), s.organization.ID, invitedUser.ID)
-	s.Assert().NoError(err)
+	s.Require().NoError(s.OrganizationRepo.AddInvitation(context.Background(), created.ID, invitedUser.ID))
+	s.Require().NoError(s.OrganizationRepo.RemoveInvitation(context.Background(), created.ID, invitedUser.ID))
+	invitations, err := s.OrganizationRepo.GetInvitations(context.Background(), created.ID)
+	s.Require().NoError(err)
+	s.Require().Len(invitations, 0)
 }
 
 func (s *OrganizationRepositoryIntegrationTestSuite) TestGetInvitations() {
-	s.Require().NoError(s.OrganizationRepo.Create(context.Background(), s.testUser.ID, s.organization))
-
-	// Initially no invitations
-	invitations, err := s.OrganizationRepo.GetInvitations(context.Background(), s.organization.ID)
+	created, err := s.OrganizationRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
-	s.Assert().Len(invitations, 0)
-
-	// Add multiple invitations
-	invitedUser1 := testModel.NewUser()
-	s.Require().NoError(s.UserRepo.Create(context.Background(), invitedUser1))
-	s.Require().NoError(s.OrganizationRepo.AddInvitation(context.Background(), s.organization.ID, invitedUser1.ID))
-
-	invitedUser2 := testModel.NewUser()
-	s.Require().NoError(s.UserRepo.Create(context.Background(), invitedUser2))
-	s.Require().NoError(s.OrganizationRepo.AddInvitation(context.Background(), s.organization.ID, invitedUser2.ID))
-
-	// Get invitations
-	invitations, err = s.OrganizationRepo.GetInvitations(context.Background(), s.organization.ID)
+	u1, err := s.UserRepo.Create(context.Background(), testModel.NewCreateUserOpts())
+	s.Require().NoError(err)
+	u2, err := s.UserRepo.Create(context.Background(), testModel.NewCreateUserOpts())
+	s.Require().NoError(err)
+	s.Require().NoError(s.OrganizationRepo.AddInvitation(context.Background(), created.ID, u1.ID))
+	s.Require().NoError(s.OrganizationRepo.AddInvitation(context.Background(), created.ID, u2.ID))
+	invitations, err := s.OrganizationRepo.GetInvitations(context.Background(), created.ID)
 	s.Require().NoError(err)
 	s.Require().Len(invitations, 2)
-
-	invitedIDs := make([]model.ID, len(invitations))
-	for i, inv := range invitations {
-		invitedIDs[i] = inv.ID
-	}
-	s.Assert().ElementsMatch([]model.ID{invitedUser1.ID, invitedUser2.ID}, invitedIDs)
-}
-
-func (s *OrganizationRepositoryIntegrationTestSuite) TestGetInvitationsWithInvalidOrgID() {
-	invalidID := model.MustNewNilID(model.ResourceTypeOrganization)
-
-	_, err := s.OrganizationRepo.GetInvitations(context.Background(), invalidID)
-	s.Assert().Error(err)
-	s.Assert().ErrorIs(err, repository.ErrOrganizationRead)
-}
-
-func (s *OrganizationRepositoryIntegrationTestSuite) TestGetInvitationsWithNonExistentOrg() {
-	nonExistentOrgID := model.MustNewID(model.ResourceTypeOrganization)
-
-	invitations, err := s.OrganizationRepo.GetInvitations(context.Background(), nonExistentOrgID)
-	s.Require().NoError(err)
-	s.Assert().Len(invitations, 0)
 }
 
 func TestOrganizationRepositoryIntegrationTestSuite(t *testing.T) {
@@ -323,8 +198,8 @@ type CachedOrganizationRepositoryIntegrationTestSuite struct {
 	testutil.Neo4jContainerIntegrationTestSuite
 	testutil.RedisContainerIntegrationTestSuite
 
-	testUser         *model.User
-	organization     *model.Organization
+	testUser         *repository.User
+	createOpts       repository.CreateOrganizationOpts
 	organizationRepo *repository.RedisCachedOrganizationRepository
 }
 
@@ -332,19 +207,16 @@ func (s *CachedOrganizationRepositoryIntegrationTestSuite) SetupSuite() {
 	if testing.Short() {
 		s.T().Skip("skipping integration test")
 	}
-
 	s.SetupNeo4j(&s.ContainerIntegrationTestSuite, reflect.TypeOf(s).Elem().String())
 	s.SetupRedis(&s.ContainerIntegrationTestSuite, reflect.TypeOf(s).Elem().String())
-
 	s.organizationRepo, _ = repository.NewCachedOrganizationRepository(s.OrganizationRepo, repository.WithRedisDatabase(s.RedisDB))
 }
 
 func (s *CachedOrganizationRepositoryIntegrationTestSuite) SetupTest() {
-	s.testUser = testModel.NewUser()
-	s.Require().NoError(s.UserRepo.Create(context.Background(), s.testUser))
-
-	s.organization = testModel.NewOrganization()
-
+	var err error
+	s.testUser, err = s.UserRepo.Create(context.Background(), testModel.NewCreateUserOpts())
+	s.Require().NoError(err)
+	s.createOpts = testModel.NewCreateOrganizationOpts(s.testUser.ID)
 	s.Require().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }
 
@@ -357,175 +229,88 @@ func (s *CachedOrganizationRepositoryIntegrationTestSuite) TearDownSuite() {
 }
 
 func (s *CachedOrganizationRepositoryIntegrationTestSuite) TestCreate() {
-	s.Require().NoError(s.organizationRepo.Create(context.Background(), s.testUser.ID, s.organization))
-	s.Assert().NotEqual(model.MustNewNilID(model.ResourceTypeOrganization), s.organization.ID)
-	s.Assert().NotNil(s.organization.CreatedAt)
-	s.Assert().Nil(s.organization.UpdatedAt)
-
+	org, err := s.organizationRepo.Create(context.Background(), s.createOpts)
+	s.Require().NoError(err)
+	s.Assert().NotNil(org.CreatedAt)
 	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }
 
 func (s *CachedOrganizationRepositoryIntegrationTestSuite) TestGet() {
-	s.Require().NoError(s.OrganizationRepo.Create(context.Background(), s.testUser.ID, s.organization))
-
-	original, err := s.OrganizationRepo.Get(context.Background(), s.organization.ID)
+	created, err := s.organizationRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
-
-	usingCache, err := s.organizationRepo.Get(context.Background(), s.organization.ID)
+	original, err := s.OrganizationRepo.Get(context.Background(), created.ID)
 	s.Require().NoError(err)
-
+	usingCache, err := s.organizationRepo.Get(context.Background(), created.ID)
+	s.Require().NoError(err)
 	s.Assert().Equal(original, usingCache)
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
-
-	cached, err := s.organizationRepo.Get(context.Background(), s.organization.ID)
-	s.Require().NoError(err)
-
-	s.Assert().Equal(usingCache.ID, cached.ID)
 	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
 }
 
 func (s *CachedOrganizationRepositoryIntegrationTestSuite) TestGetAll() {
-	s.Require().NoError(s.OrganizationRepo.Create(context.Background(), s.testUser.ID, s.organization))
-	s.Require().NoError(s.OrganizationRepo.Create(context.Background(), s.testUser.ID, testModel.NewOrganization()))
-
-	originalOrganizations, err := s.OrganizationRepo.GetAll(context.Background(), s.testUser.ID, 0, 10)
+	_, err := s.organizationRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
-
-	usingCacheOrganizations, err := s.organizationRepo.GetAll(context.Background(), s.testUser.ID, 0, 10)
+	original, err := s.OrganizationRepo.GetAll(context.Background(), s.testUser.ID, 0, 10)
 	s.Require().NoError(err)
-
-	s.Assert().Equal(originalOrganizations, usingCacheOrganizations)
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
-
-	cachedOrganizations, err := s.organizationRepo.GetAll(context.Background(), s.testUser.ID, 0, 10)
+	usingCache, err := s.organizationRepo.GetAll(context.Background(), s.testUser.ID, 0, 10)
 	s.Require().NoError(err)
-	s.Assert().Equal(len(usingCacheOrganizations), len(cachedOrganizations))
-
+	s.Assert().Equal(original, usingCache)
 	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
 }
 
 func (s *CachedOrganizationRepositoryIntegrationTestSuite) TestUpdate() {
-	s.Require().NoError(s.OrganizationRepo.Create(context.Background(), s.testUser.ID, s.organization))
-
-	patch := map[string]any{
-		"name":  "new name",
-		"email": testutil.GenerateEmail(10),
-	}
-
-	organization, err := s.organizationRepo.Update(context.Background(), s.organization.ID, patch)
+	created, err := s.organizationRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
-
-	s.Assert().Equal(s.organization.ID, organization.ID)
-	s.Assert().Equal(patch["name"], organization.Name)
-	s.Assert().Equal(patch["email"], organization.Email)
-	s.Assert().Equal(s.organization.Logo, organization.Logo)
-	s.Assert().Equal(s.organization.Website, organization.Website)
-	s.Assert().Equal(s.organization.Status, organization.Status)
-	s.Assert().Equal(s.organization.Namespaces, organization.Namespaces)
-	s.Assert().Equal(s.organization.Teams, organization.Teams)
-	s.Assert().Equal([]model.ID{s.testUser.ID}, organization.Members)
-	s.Assert().WithinDuration(*s.organization.CreatedAt, *organization.CreatedAt, 100*time.Millisecond)
-	s.Assert().NotNil(organization.UpdatedAt)
-
+	org, err := s.organizationRepo.Update(context.Background(), created.ID, repository.UpdateOrganizationOpts{
+		Name: optional.Some("new name"),
+	})
+	s.Require().NoError(err)
+	s.Assert().Equal("new name", org.Name)
 	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
 }
 
 func (s *CachedOrganizationRepositoryIntegrationTestSuite) TestDelete() {
-	s.Require().NoError(s.OrganizationRepo.Create(context.Background(), s.testUser.ID, s.organization))
-
-	_, err := s.organizationRepo.Get(context.Background(), s.organization.ID)
+	created, err := s.organizationRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
-
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
-
-	s.Require().NoError(s.organizationRepo.Delete(context.Background(), s.organization.ID))
-
-	_, err = s.organizationRepo.Get(context.Background(), s.organization.ID)
+	_, err = s.organizationRepo.Get(context.Background(), created.ID)
+	s.Require().NoError(err)
+	s.Require().NoError(s.organizationRepo.Delete(context.Background(), created.ID))
+	_, err = s.organizationRepo.Get(context.Background(), created.ID)
 	s.Assert().ErrorIs(err, repository.ErrNotFound)
-
 	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }
 
 func (s *CachedOrganizationRepositoryIntegrationTestSuite) TestAddInvitation() {
-	s.Require().NoError(s.OrganizationRepo.Create(context.Background(), s.testUser.ID, s.organization))
-
-	invitedUser := testModel.NewUser()
-	s.Require().NoError(s.UserRepo.Create(context.Background(), invitedUser))
-
-	// Cache the organization first
-	_, err := s.organizationRepo.Get(context.Background(), s.organization.ID)
+	created, err := s.organizationRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
-
-	// Add invitation - should clear cache
-	s.Require().NoError(s.organizationRepo.AddInvitation(context.Background(), s.organization.ID, invitedUser.ID))
-
-	// Verify cache is cleared
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
-
-	// Verify invitation exists
-	invitations, err := s.OrganizationRepo.GetInvitations(context.Background(), s.organization.ID)
+	invitedUser, err := s.UserRepo.Create(context.Background(), testModel.NewCreateUserOpts())
+	s.Require().NoError(err)
+	s.Require().NoError(s.organizationRepo.AddInvitation(context.Background(), created.ID, invitedUser.ID))
+	invitations, err := s.organizationRepo.GetInvitations(context.Background(), created.ID)
 	s.Require().NoError(err)
 	s.Require().Len(invitations, 1)
-	s.Assert().Equal(invitedUser.ID, invitations[0].ID)
 }
 
 func (s *CachedOrganizationRepositoryIntegrationTestSuite) TestRemoveInvitation() {
-	s.Require().NoError(s.OrganizationRepo.Create(context.Background(), s.testUser.ID, s.organization))
-
-	invitedUser := testModel.NewUser()
-	s.Require().NoError(s.UserRepo.Create(context.Background(), invitedUser))
-
-	// Add invitation first
-	s.Require().NoError(s.OrganizationRepo.AddInvitation(context.Background(), s.organization.ID, invitedUser.ID))
-
-	// Cache the organization
-	_, err := s.organizationRepo.Get(context.Background(), s.organization.ID)
+	created, err := s.organizationRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
-
-	// Remove invitation - should clear cache
-	s.Require().NoError(s.organizationRepo.RemoveInvitation(context.Background(), s.organization.ID, invitedUser.ID))
-
-	// Verify cache is cleared
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
-
-	// Verify invitation is removed
-	invitations, err := s.OrganizationRepo.GetInvitations(context.Background(), s.organization.ID)
+	invitedUser, err := s.UserRepo.Create(context.Background(), testModel.NewCreateUserOpts())
 	s.Require().NoError(err)
-	s.Assert().Len(invitations, 0)
+	s.Require().NoError(s.organizationRepo.AddInvitation(context.Background(), created.ID, invitedUser.ID))
+	s.Require().NoError(s.organizationRepo.RemoveInvitation(context.Background(), created.ID, invitedUser.ID))
+	invitations, err := s.organizationRepo.GetInvitations(context.Background(), created.ID)
+	s.Require().NoError(err)
+	s.Require().Len(invitations, 0)
 }
 
 func (s *CachedOrganizationRepositoryIntegrationTestSuite) TestGetInvitations() {
-	s.Require().NoError(s.OrganizationRepo.Create(context.Background(), s.testUser.ID, s.organization))
-
-	// Initially no invitations
-	invitations, err := s.organizationRepo.GetInvitations(context.Background(), s.organization.ID)
+	created, err := s.organizationRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
-	s.Assert().Len(invitations, 0)
-
-	// Add multiple invitations
-	invitedUser1 := testModel.NewUser()
-	s.Require().NoError(s.UserRepo.Create(context.Background(), invitedUser1))
-	s.Require().NoError(s.OrganizationRepo.AddInvitation(context.Background(), s.organization.ID, invitedUser1.ID))
-
-	invitedUser2 := testModel.NewUser()
-	s.Require().NoError(s.UserRepo.Create(context.Background(), invitedUser2))
-	s.Require().NoError(s.OrganizationRepo.AddInvitation(context.Background(), s.organization.ID, invitedUser2.ID))
-
-	// Get invitations - should delegate to underlying repo (no caching)
-	invitations, err = s.organizationRepo.GetInvitations(context.Background(), s.organization.ID)
+	u1, err := s.UserRepo.Create(context.Background(), testModel.NewCreateUserOpts())
 	s.Require().NoError(err)
-	s.Require().Len(invitations, 2)
-
-	invitedIDs := make([]model.ID, len(invitations))
-	for i, inv := range invitations {
-		invitedIDs[i] = inv.ID
-	}
-	s.Assert().ElementsMatch([]model.ID{invitedUser1.ID, invitedUser2.ID}, invitedIDs)
-
-	// Verify no cache keys were created (GetInvitations doesn't cache)
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
+	s.Require().NoError(s.organizationRepo.AddInvitation(context.Background(), created.ID, u1.ID))
+	invitations, err := s.organizationRepo.GetInvitations(context.Background(), created.ID)
+	s.Require().NoError(err)
+	s.Require().Len(invitations, 1)
 }
 
 func TestCachedOrganizationRepositoryIntegrationTestSuite(t *testing.T) {

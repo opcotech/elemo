@@ -10,12 +10,20 @@ import (
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg"
 	"github.com/opcotech/elemo/internal/pkg/log"
+	"github.com/opcotech/elemo/internal/pkg/optional"
 	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/testutil/mock"
 	testModel "github.com/opcotech/elemo/internal/testutil/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func newCreateNamespaceOpts() CreateNamespaceOpts {
+	return CreateNamespaceOpts{
+		Name:        "test namespace",
+		Description: "test description",
+	}
+}
 
 func TestNewNamespaceService(t *testing.T) {
 	type args struct {
@@ -34,8 +42,8 @@ func TestNewNamespaceService(t *testing.T) {
 					return []Option{
 						WithLogger(mock.NewMockLogger(ctrl)),
 						WithTracer(mock.NewMockTracer(ctrl)),
-						WithNamespaceRepository(mock.NewNamespaceRepository(nil)),
-						WithPermissionService(mock.NewPermissionService(nil)),
+						WithNamespaceRepository(repository.NewMockNamespaceRepository(nil)),
+						WithPermissionService(NewMockPermissionService(nil)),
 						WithLicenseService(mock.NewMockLicenseService(nil)),
 					}
 				},
@@ -45,8 +53,8 @@ func TestNewNamespaceService(t *testing.T) {
 					baseService: &baseService{
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            mock.NewMockTracer(ctrl),
-						namespaceRepo:     mock.NewNamespaceRepository(nil),
-						permissionService: mock.NewPermissionService(nil),
+						namespaceRepo:     repository.NewMockNamespaceRepository(nil),
+						permissionService: NewMockPermissionService(nil),
 						licenseService:    mock.NewMockLicenseService(nil),
 					},
 				}
@@ -58,7 +66,7 @@ func TestNewNamespaceService(t *testing.T) {
 				opts: func(_ *gomock.Controller) []Option {
 					return []Option{
 						WithLogger(nil),
-						WithNamespaceRepository(mock.NewNamespaceRepository(nil)),
+						WithNamespaceRepository(repository.NewMockNamespaceRepository(nil)),
 						WithLicenseService(mock.NewMockLicenseService(nil)),
 					}
 				},
@@ -72,7 +80,7 @@ func TestNewNamespaceService(t *testing.T) {
 					return []Option{
 						WithLogger(mock.NewMockLogger(ctrl)),
 						WithTracer(mock.NewMockTracer(ctrl)),
-						WithPermissionService(mock.NewPermissionService(nil)),
+						WithPermissionService(NewMockPermissionService(nil)),
 						WithLicenseService(mock.NewMockLicenseService(nil)),
 					}
 				},
@@ -86,7 +94,7 @@ func TestNewNamespaceService(t *testing.T) {
 					return []Option{
 						WithLogger(mock.NewMockLogger(ctrl)),
 						WithTracer(mock.NewMockTracer(ctrl)),
-						WithNamespaceRepository(mock.NewNamespaceRepository(nil)),
+						WithNamespaceRepository(repository.NewMockNamespaceRepository(nil)),
 						WithLicenseService(mock.NewMockLicenseService(nil)),
 					}
 				},
@@ -100,8 +108,8 @@ func TestNewNamespaceService(t *testing.T) {
 					return []Option{
 						WithLogger(mock.NewMockLogger(ctrl)),
 						WithTracer(mock.NewMockTracer(ctrl)),
-						WithNamespaceRepository(mock.NewNamespaceRepository(nil)),
-						WithPermissionService(mock.NewPermissionService(nil)),
+						WithNamespaceRepository(repository.NewMockNamespaceRepository(nil)),
+						WithPermissionService(NewMockPermissionService(nil)),
 					}
 				},
 			},
@@ -126,15 +134,15 @@ func TestNewNamespaceService(t *testing.T) {
 func TestNamespaceService_Create(t *testing.T) {
 	orgID := model.MustNewID(model.ResourceTypeOrganization)
 	userID := model.MustNewID(model.ResourceTypeUser)
-	namespace := testModel.NewNamespace()
+	opts := newCreateNamespaceOpts()
 
 	type fields struct {
-		baseService func(ctrl *gomock.Controller, ctx context.Context, userID, orgID model.ID, namespace *model.Namespace) *baseService
+		baseService func(ctrl *gomock.Controller, ctx context.Context, userID, orgID model.ID, opts CreateNamespaceOpts) *baseService
 	}
 	type args struct {
-		ctx       context.Context
-		orgID     model.ID
-		namespace *model.Namespace
+		ctx   context.Context
+		orgID model.ID
+		opts  CreateNamespaceOpts
 	}
 	tests := []struct {
 		name    string
@@ -145,17 +153,22 @@ func TestNamespaceService_Create(t *testing.T) {
 		{
 			name: "create namespace",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, userID, orgID model.ID, namespace *model.Namespace) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, userID, orgID model.ID, opts CreateNamespaceOpts) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mock.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.namespaceService/Create", gomock.Len(0)).Return(ctx, span)
 
-					namespaceRepo := mock.NewNamespaceRepository(ctrl)
-					namespaceRepo.EXPECT().Create(ctx, userID, orgID, namespace).Return(nil)
+					namespaceRepo := repository.NewMockNamespaceRepository(ctrl)
+					namespaceRepo.EXPECT().Create(ctx, repository.CreateNamespaceOpts{
+						Name:        opts.Name,
+						Description: opts.Description,
+						CreatorID:   userID,
+						OrgID:       orgID,
+					}).Return(testModel.NewRepositoryNamespace(), nil)
 
-					permSvc := mock.NewPermissionService(ctrl)
+					permSvc := NewMockPermissionService(ctrl)
 					permSvc.EXPECT().CtxUserHasPermission(ctx, orgID, []model.PermissionKind{model.PermissionKindWrite}).Return(true)
 
 					licenseSvc := mock.NewMockLicenseService(ctrl)
@@ -171,15 +184,15 @@ func TestNamespaceService_Create(t *testing.T) {
 				},
 			},
 			args: args{
-				ctx:       context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
-				orgID:     orgID,
-				namespace: namespace,
+				ctx:   context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
+				orgID: orgID,
+				opts:  opts,
 			},
 		},
 		{
 			name: "create namespace with license expired",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ model.ID, _ *model.Namespace) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ model.ID, _ CreateNamespaceOpts) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
@@ -197,23 +210,23 @@ func TestNamespaceService_Create(t *testing.T) {
 				},
 			},
 			args: args{
-				ctx:       context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
-				orgID:     orgID,
-				namespace: namespace,
+				ctx:   context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
+				orgID: orgID,
+				opts:  opts,
 			},
 			wantErr: license.ErrLicenseExpired,
 		},
 		{
 			name: "create namespace with no permission",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, orgID model.ID, _ *model.Namespace) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, orgID model.ID, _ CreateNamespaceOpts) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mock.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.namespaceService/Create", gomock.Len(0)).Return(ctx, span)
 
-					permSvc := mock.NewPermissionService(ctrl)
+					permSvc := NewMockPermissionService(ctrl)
 					permSvc.EXPECT().CtxUserHasPermission(ctx, orgID, []model.PermissionKind{model.PermissionKindWrite}).Return(false)
 
 					licenseSvc := mock.NewMockLicenseService(ctrl)
@@ -228,16 +241,16 @@ func TestNamespaceService_Create(t *testing.T) {
 				},
 			},
 			args: args{
-				ctx:       context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
-				orgID:     orgID,
-				namespace: namespace,
+				ctx:   context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
+				orgID: orgID,
+				opts:  opts,
 			},
 			wantErr: ErrNoPermission,
 		},
 		{
 			name: "create namespace with invalid orgID",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ model.ID, _ *model.Namespace) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ model.ID, _ CreateNamespaceOpts) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
@@ -255,26 +268,58 @@ func TestNamespaceService_Create(t *testing.T) {
 				},
 			},
 			args: args{
-				ctx:       context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
-				orgID:     model.ID{},
-				namespace: namespace,
+				ctx:   context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
+				orgID: model.ID{},
+				opts:  opts,
 			},
 			wantErr: model.ErrInvalidID,
 		},
 		{
-			name: "create namespace with repository error",
+			name: "create namespace with invalid details",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, userID, orgID model.ID, namespace *model.Namespace) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ model.ID, _ CreateNamespaceOpts) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mock.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.namespaceService/Create", gomock.Len(0)).Return(ctx, span)
 
-					namespaceRepo := mock.NewNamespaceRepository(ctrl)
-					namespaceRepo.EXPECT().Create(ctx, userID, orgID, namespace).Return(repository.ErrNamespaceCreate)
+					licenseSvc := mock.NewMockLicenseService(ctrl)
+					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
-					permSvc := mock.NewPermissionService(ctrl)
+					return &baseService{
+						logger:         mock.NewMockLogger(ctrl),
+						tracer:         tracer,
+						licenseService: licenseSvc,
+					}
+				},
+			},
+			args: args{
+				ctx:   context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
+				orgID: orgID,
+				opts:  CreateNamespaceOpts{Name: "ab"},
+			},
+			wantErr: model.ErrInvalidNamespaceDetails,
+		},
+		{
+			name: "create namespace with repository error",
+			fields: fields{
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, userID, orgID model.ID, opts CreateNamespaceOpts) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.namespaceService/Create", gomock.Len(0)).Return(ctx, span)
+
+					namespaceRepo := repository.NewMockNamespaceRepository(ctrl)
+					namespaceRepo.EXPECT().Create(ctx, repository.CreateNamespaceOpts{
+						Name:        opts.Name,
+						Description: opts.Description,
+						CreatorID:   userID,
+						OrgID:       orgID,
+					}).Return(nil, repository.ErrNamespaceCreate)
+
+					permSvc := NewMockPermissionService(ctrl)
 					permSvc.EXPECT().CtxUserHasPermission(ctx, orgID, []model.PermissionKind{model.PermissionKindWrite}).Return(true)
 
 					licenseSvc := mock.NewMockLicenseService(ctrl)
@@ -290,23 +335,23 @@ func TestNamespaceService_Create(t *testing.T) {
 				},
 			},
 			args: args{
-				ctx:       context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
-				orgID:     orgID,
-				namespace: namespace,
+				ctx:   context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
+				orgID: orgID,
+				opts:  opts,
 			},
 			wantErr: repository.ErrNamespaceCreate,
 		},
 		{
 			name: "create namespace with no user ID in context",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, orgID model.ID, _ *model.Namespace) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, orgID model.ID, _ CreateNamespaceOpts) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mock.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.namespaceService/Create", gomock.Len(0)).Return(ctx, span)
 
-					permSvc := mock.NewPermissionService(ctrl)
+					permSvc := NewMockPermissionService(ctrl)
 					permSvc.EXPECT().CtxUserHasPermission(ctx, orgID, []model.PermissionKind{model.PermissionKindWrite}).Return(true)
 
 					licenseSvc := mock.NewMockLicenseService(ctrl)
@@ -321,9 +366,9 @@ func TestNamespaceService_Create(t *testing.T) {
 				},
 			},
 			args: args{
-				ctx:       context.Background(),
-				orgID:     orgID,
-				namespace: namespace,
+				ctx:   context.Background(),
+				orgID: orgID,
+				opts:  opts,
 			},
 			wantErr: model.ErrInvalidID,
 		},
@@ -337,10 +382,10 @@ func TestNamespaceService_Create(t *testing.T) {
 
 			userID, _ := tt.args.ctx.Value(pkg.CtxKeyUserID).(model.ID)
 			s := &namespaceService{
-				baseService: tt.fields.baseService(ctrl, tt.args.ctx, userID, tt.args.orgID, tt.args.namespace),
+				baseService: tt.fields.baseService(ctrl, tt.args.ctx, userID, tt.args.orgID, tt.args.opts),
 			}
 
-			err := s.Create(tt.args.ctx, tt.args.orgID, tt.args.namespace)
+			_, err := s.Create(tt.args.ctx, tt.args.orgID, tt.args.opts)
 			if tt.wantErr != nil {
 				require.Error(t, err)
 				assert.ErrorIs(t, err, tt.wantErr)
@@ -353,8 +398,9 @@ func TestNamespaceService_Create(t *testing.T) {
 
 func TestNamespaceService_Get(t *testing.T) {
 	namespaceID := model.MustNewID(model.ResourceTypeNamespace)
-	namespace := testModel.NewNamespace()
-	namespace.ID = namespaceID
+	repoNamespace := testModel.NewRepositoryNamespace()
+	repoNamespace.ID = namespaceID
+	want := namespaceFromRepository(repoNamespace)
 
 	type fields struct {
 		baseService func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *baseService
@@ -367,7 +413,7 @@ func TestNamespaceService_Get(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    *model.Namespace
+		want    *Namespace
 		wantErr error
 	}{
 		{
@@ -380,10 +426,10 @@ func TestNamespaceService_Get(t *testing.T) {
 					tracer := mock.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.namespaceService/Get", gomock.Len(0)).Return(ctx, span)
 
-					namespaceRepo := mock.NewNamespaceRepository(ctrl)
-					namespaceRepo.EXPECT().Get(ctx, id).Return(namespace, nil)
+					namespaceRepo := repository.NewMockNamespaceRepository(ctrl)
+					namespaceRepo.EXPECT().Get(ctx, id).Return(repoNamespace, nil)
 
-					permSvc := mock.NewPermissionService(ctrl)
+					permSvc := NewMockPermissionService(ctrl)
 					permSvc.EXPECT().CtxUserHasPermission(ctx, id, []model.PermissionKind{model.PermissionKindRead}).Return(true)
 
 					return &baseService{
@@ -398,7 +444,7 @@ func TestNamespaceService_Get(t *testing.T) {
 				ctx: context.Background(),
 				id:  namespaceID,
 			},
-			want: namespace,
+			want: want,
 		},
 		{
 			name: "get namespace with no permission",
@@ -410,7 +456,7 @@ func TestNamespaceService_Get(t *testing.T) {
 					tracer := mock.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.namespaceService/Get", gomock.Len(0)).Return(ctx, span)
 
-					permSvc := mock.NewPermissionService(ctrl)
+					permSvc := NewMockPermissionService(ctrl)
 					permSvc.EXPECT().CtxUserHasPermission(ctx, id, []model.PermissionKind{model.PermissionKindRead}).Return(false)
 
 					return &baseService{
@@ -458,10 +504,10 @@ func TestNamespaceService_Get(t *testing.T) {
 					tracer := mock.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.namespaceService/Get", gomock.Len(0)).Return(ctx, span)
 
-					namespaceRepo := mock.NewNamespaceRepository(ctrl)
+					namespaceRepo := repository.NewMockNamespaceRepository(ctrl)
 					namespaceRepo.EXPECT().Get(ctx, id).Return(nil, repository.ErrNamespaceRead)
 
-					permSvc := mock.NewPermissionService(ctrl)
+					permSvc := NewMockPermissionService(ctrl)
 					permSvc.EXPECT().CtxUserHasPermission(ctx, id, []model.PermissionKind{model.PermissionKindRead}).Return(true)
 
 					return &baseService{
@@ -504,10 +550,11 @@ func TestNamespaceService_Get(t *testing.T) {
 
 func TestNamespaceService_GetAll(t *testing.T) {
 	orgID := model.MustNewID(model.ResourceTypeOrganization)
-	namespaces := []*model.Namespace{
-		testModel.NewNamespace(),
-		testModel.NewNamespace(),
+	repoNamespaces := []*repository.Namespace{
+		testModel.NewRepositoryNamespace(),
+		testModel.NewRepositoryNamespace(),
 	}
+	want := namespacesFromRepository(repoNamespaces)
 
 	type fields struct {
 		baseService func(ctrl *gomock.Controller, ctx context.Context, orgID model.ID) *baseService
@@ -522,7 +569,7 @@ func TestNamespaceService_GetAll(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    []*model.Namespace
+		want    []*Namespace
 		wantErr error
 	}{
 		{
@@ -535,10 +582,10 @@ func TestNamespaceService_GetAll(t *testing.T) {
 					tracer := mock.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.namespaceService/GetAll", gomock.Len(0)).Return(ctx, span)
 
-					namespaceRepo := mock.NewNamespaceRepository(ctrl)
-					namespaceRepo.EXPECT().GetAll(ctx, orgID, 0, 10).Return(namespaces, nil)
+					namespaceRepo := repository.NewMockNamespaceRepository(ctrl)
+					namespaceRepo.EXPECT().GetAll(ctx, orgID, 0, 10).Return(repoNamespaces, nil)
 
-					permSvc := mock.NewPermissionService(ctrl)
+					permSvc := NewMockPermissionService(ctrl)
 					permSvc.EXPECT().CtxUserHasPermission(ctx, orgID, []model.PermissionKind{model.PermissionKindRead}).Return(true)
 
 					return &baseService{
@@ -555,7 +602,7 @@ func TestNamespaceService_GetAll(t *testing.T) {
 				offset: 0,
 				limit:  10,
 			},
-			want: namespaces,
+			want: want,
 		},
 		{
 			name: "get all namespaces with no permission",
@@ -567,7 +614,7 @@ func TestNamespaceService_GetAll(t *testing.T) {
 					tracer := mock.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.namespaceService/GetAll", gomock.Len(0)).Return(ctx, span)
 
-					permSvc := mock.NewPermissionService(ctrl)
+					permSvc := NewMockPermissionService(ctrl)
 					permSvc.EXPECT().CtxUserHasPermission(ctx, orgID, []model.PermissionKind{model.PermissionKindRead}).Return(false)
 
 					return &baseService{
@@ -643,10 +690,10 @@ func TestNamespaceService_GetAll(t *testing.T) {
 					tracer := mock.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.namespaceService/GetAll", gomock.Len(0)).Return(ctx, span)
 
-					namespaceRepo := mock.NewNamespaceRepository(ctrl)
+					namespaceRepo := repository.NewMockNamespaceRepository(ctrl)
 					namespaceRepo.EXPECT().GetAll(ctx, orgID, 0, 10).Return(nil, repository.ErrNamespaceRead)
 
-					permSvc := mock.NewPermissionService(ctrl)
+					permSvc := NewMockPermissionService(ctrl)
 					permSvc.EXPECT().CtxUserHasPermission(ctx, orgID, []model.PermissionKind{model.PermissionKindRead}).Return(true)
 
 					return &baseService{
@@ -691,39 +738,43 @@ func TestNamespaceService_GetAll(t *testing.T) {
 
 func TestNamespaceService_Update(t *testing.T) {
 	namespaceID := model.MustNewID(model.ResourceTypeNamespace)
-	namespace := testModel.NewNamespace()
-	namespace.ID = namespaceID
-	patch := map[string]any{"name": "Updated Name"}
+	repoNamespace := testModel.NewRepositoryNamespace()
+	repoNamespace.ID = namespaceID
+	want := namespaceFromRepository(repoNamespace)
+	opts := UpdateNamespaceOpts{Name: optional.Some("Updated Name")}
 
 	type fields struct {
-		baseService func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any) *baseService
+		baseService func(ctrl *gomock.Controller, ctx context.Context, id model.ID, opts UpdateNamespaceOpts) *baseService
 	}
 	type args struct {
-		ctx   context.Context
-		id    model.ID
-		patch map[string]any
+		ctx  context.Context
+		id   model.ID
+		opts UpdateNamespaceOpts
 	}
 	tests := []struct {
 		name    string
 		fields  fields
 		args    args
-		want    *model.Namespace
+		want    *Namespace
 		wantErr error
 	}{
 		{
 			name: "update namespace",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, opts UpdateNamespaceOpts) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mock.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.namespaceService/Update", gomock.Len(0)).Return(ctx, span)
 
-					namespaceRepo := mock.NewNamespaceRepository(ctrl)
-					namespaceRepo.EXPECT().Update(ctx, id, patch).Return(namespace, nil)
+					namespaceRepo := repository.NewMockNamespaceRepository(ctrl)
+					namespaceRepo.EXPECT().Update(ctx, id, repository.UpdateNamespaceOpts{
+						Name:        opts.Name,
+						Description: opts.Description,
+					}).Return(repoNamespace, nil)
 
-					permSvc := mock.NewPermissionService(ctrl)
+					permSvc := NewMockPermissionService(ctrl)
 					permSvc.EXPECT().CtxUserHasPermission(ctx, id, []model.PermissionKind{model.PermissionKindWrite}).Return(true)
 
 					licenseSvc := mock.NewMockLicenseService(ctrl)
@@ -739,16 +790,16 @@ func TestNamespaceService_Update(t *testing.T) {
 				},
 			},
 			args: args{
-				ctx:   context.Background(),
-				id:    namespaceID,
-				patch: patch,
+				ctx:  context.Background(),
+				id:   namespaceID,
+				opts: opts,
 			},
-			want: namespace,
+			want: want,
 		},
 		{
 			name: "update namespace with license expired",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ map[string]any) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ UpdateNamespaceOpts) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
@@ -766,23 +817,23 @@ func TestNamespaceService_Update(t *testing.T) {
 				},
 			},
 			args: args{
-				ctx:   context.Background(),
-				id:    namespaceID,
-				patch: patch,
+				ctx:  context.Background(),
+				id:   namespaceID,
+				opts: opts,
 			},
 			wantErr: license.ErrLicenseExpired,
 		},
 		{
 			name: "update namespace with no permission",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ map[string]any) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ UpdateNamespaceOpts) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mock.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.namespaceService/Update", gomock.Len(0)).Return(ctx, span)
 
-					permSvc := mock.NewPermissionService(ctrl)
+					permSvc := NewMockPermissionService(ctrl)
 					permSvc.EXPECT().CtxUserHasPermission(ctx, id, []model.PermissionKind{model.PermissionKindWrite}).Return(false)
 
 					licenseSvc := mock.NewMockLicenseService(ctrl)
@@ -797,16 +848,16 @@ func TestNamespaceService_Update(t *testing.T) {
 				},
 			},
 			args: args{
-				ctx:   context.Background(),
-				id:    namespaceID,
-				patch: patch,
+				ctx:  context.Background(),
+				id:   namespaceID,
+				opts: opts,
 			},
 			wantErr: ErrNoPermission,
 		},
 		{
 			name: "update namespace with invalid ID",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ map[string]any) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ UpdateNamespaceOpts) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
@@ -824,26 +875,29 @@ func TestNamespaceService_Update(t *testing.T) {
 				},
 			},
 			args: args{
-				ctx:   context.Background(),
-				id:    model.ID{},
-				patch: patch,
+				ctx:  context.Background(),
+				id:   model.ID{},
+				opts: opts,
 			},
 			wantErr: model.ErrInvalidID,
 		},
 		{
 			name: "update namespace with repository error",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, opts UpdateNamespaceOpts) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mock.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.namespaceService/Update", gomock.Len(0)).Return(ctx, span)
 
-					namespaceRepo := mock.NewNamespaceRepository(ctrl)
-					namespaceRepo.EXPECT().Update(ctx, id, patch).Return(nil, repository.ErrNamespaceUpdate)
+					namespaceRepo := repository.NewMockNamespaceRepository(ctrl)
+					namespaceRepo.EXPECT().Update(ctx, id, repository.UpdateNamespaceOpts{
+						Name:        opts.Name,
+						Description: opts.Description,
+					}).Return(nil, repository.ErrNamespaceUpdate)
 
-					permSvc := mock.NewPermissionService(ctrl)
+					permSvc := NewMockPermissionService(ctrl)
 					permSvc.EXPECT().CtxUserHasPermission(ctx, id, []model.PermissionKind{model.PermissionKindWrite}).Return(true)
 
 					licenseSvc := mock.NewMockLicenseService(ctrl)
@@ -859,9 +913,9 @@ func TestNamespaceService_Update(t *testing.T) {
 				},
 			},
 			args: args{
-				ctx:   context.Background(),
-				id:    namespaceID,
-				patch: patch,
+				ctx:  context.Background(),
+				id:   namespaceID,
+				opts: opts,
 			},
 			wantErr: repository.ErrNamespaceUpdate,
 		},
@@ -874,10 +928,10 @@ func TestNamespaceService_Update(t *testing.T) {
 			defer ctrl.Finish()
 
 			s := &namespaceService{
-				baseService: tt.fields.baseService(ctrl, tt.args.ctx, tt.args.id, tt.args.patch),
+				baseService: tt.fields.baseService(ctrl, tt.args.ctx, tt.args.id, tt.args.opts),
 			}
 
-			got, err := s.Update(tt.args.ctx, tt.args.id, tt.args.patch)
+			got, err := s.Update(tt.args.ctx, tt.args.id, tt.args.opts)
 			if tt.wantErr != nil {
 				require.Error(t, err)
 				assert.ErrorIs(t, err, tt.wantErr)
@@ -915,10 +969,10 @@ func TestNamespaceService_Delete(t *testing.T) {
 					tracer := mock.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.namespaceService/Delete", gomock.Len(0)).Return(ctx, span)
 
-					namespaceRepo := mock.NewNamespaceRepository(ctrl)
+					namespaceRepo := repository.NewMockNamespaceRepository(ctrl)
 					namespaceRepo.EXPECT().Delete(ctx, id).Return(nil)
 
-					permSvc := mock.NewPermissionService(ctrl)
+					permSvc := NewMockPermissionService(ctrl)
 					permSvc.EXPECT().CtxUserHasPermission(ctx, id, []model.PermissionKind{model.PermissionKindDelete}).Return(true)
 
 					licenseSvc := mock.NewMockLicenseService(ctrl)
@@ -974,7 +1028,7 @@ func TestNamespaceService_Delete(t *testing.T) {
 					tracer := mock.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.namespaceService/Delete", gomock.Len(0)).Return(ctx, span)
 
-					permSvc := mock.NewPermissionService(ctrl)
+					permSvc := NewMockPermissionService(ctrl)
 					permSvc.EXPECT().CtxUserHasPermission(ctx, id, []model.PermissionKind{model.PermissionKindDelete}).Return(false)
 
 					licenseSvc := mock.NewMockLicenseService(ctrl)
@@ -1030,10 +1084,10 @@ func TestNamespaceService_Delete(t *testing.T) {
 					tracer := mock.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.namespaceService/Delete", gomock.Len(0)).Return(ctx, span)
 
-					namespaceRepo := mock.NewNamespaceRepository(ctrl)
+					namespaceRepo := repository.NewMockNamespaceRepository(ctrl)
 					namespaceRepo.EXPECT().Delete(ctx, id).Return(repository.ErrNamespaceDelete)
 
-					permSvc := mock.NewPermissionService(ctrl)
+					permSvc := NewMockPermissionService(ctrl)
 					permSvc.EXPECT().CtxUserHasPermission(ctx, id, []model.PermissionKind{model.PermissionKindDelete}).Return(true)
 
 					licenseSvc := mock.NewMockLicenseService(ctrl)

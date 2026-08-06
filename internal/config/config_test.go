@@ -30,7 +30,7 @@ func TestCacheDatabaseConfig_ConnectionURL(t *testing.T) {
 					Host:     "localhost",
 					Port:     6379,
 					Username: "user",
-					Password: "secret",
+					Password: "secret", // #nosec G101 -- test fixture
 					IsSecure: true,
 				},
 			},
@@ -44,7 +44,7 @@ func TestCacheDatabaseConfig_ConnectionURL(t *testing.T) {
 					Port:     6379,
 					Database: 0,
 					Username: "user",
-					Password: "secret",
+					Password: "secret", // #nosec G101 -- test fixture
 					IsSecure: false,
 				},
 			},
@@ -104,7 +104,7 @@ func TestRelationalDatabaseConfig_ConnectionURL(t *testing.T) {
 			name: "secure connection",
 			c: &RelationalDatabaseConfig{
 				Username: "user",
-				Password: "secret",
+				Password: "secret", // #nosec G101 -- test fixture
 				Host:     "localhost",
 				Port:     7687,
 				Database: "database",
@@ -116,7 +116,7 @@ func TestRelationalDatabaseConfig_ConnectionURL(t *testing.T) {
 			name: "unsecure connection",
 			c: &RelationalDatabaseConfig{
 				Username: "user",
-				Password: "secret",
+				Password: "secret", // #nosec G101 -- test fixture
 				Host:     "localhost",
 				Port:     7687,
 				Database: "database",

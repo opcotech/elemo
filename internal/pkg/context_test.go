@@ -2,43 +2,23 @@ package pkg
 
 import (
 	"context"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/opcotech/elemo/internal/model"
-	"github.com/opcotech/elemo/internal/pkg/password"
 )
 
 const (
 	testCtxKey CtxKey = "test-ctx-key"
 )
 
-// createTestUser creates a test user for testing purposes
-func createTestUser() *model.User {
-	user, err := model.NewUser(
-		strings.ToLower(GenerateRandomString(10)),
-		"Test",
-		"User",
-		GenerateRandomString(10)+"@example.com",
-		password.HashPassword(GenerateRandomString(10)),
-	)
-	if err != nil {
-		panic(err)
-	}
-	// Replace the nil ID with a unique ID for testing
-	user.ID = model.MustNewID(model.ResourceTypeUser)
-	return user
-}
-
 func TestCtxUserID(t *testing.T) {
 	tests := []struct {
 		name           string
 		ctx            context.Context
 		expectedResult string
-		shouldPanic    bool
 		expectNonEmpty bool
 	}{
 		{
@@ -52,11 +32,12 @@ func TestCtxUserID(t *testing.T) {
 			expectedResult: "machine",
 		},
 		{
-			name: "should return user ID string when context has user object",
-			ctx: func() context.Context {
-				user := createTestUser()
-				return context.WithValue(context.Background(), CtxKeyUserID, user)
-			}(),
+			name: "should return user ID string when context has user ID",
+			ctx: context.WithValue(
+				context.Background(),
+				CtxKeyUserID,
+				model.MustNewID(model.ResourceTypeUser),
+			),
 			expectNonEmpty: true,
 		},
 		{
@@ -65,13 +46,12 @@ func TestCtxUserID(t *testing.T) {
 			expectedResult: "",
 		},
 		{
-			name:        "should panic when context has nil user",
-			ctx:         context.WithValue(context.Background(), CtxKeyUserID, (*model.User)(nil)),
-			shouldPanic: true,
-		},
-		{
-			name:           "should return empty string when context has different key",
-			ctx:            context.WithValue(context.Background(), testCtxKey, createTestUser()),
+			name: "should return empty string when context has different key",
+			ctx: context.WithValue(
+				context.Background(),
+				testCtxKey,
+				model.MustNewID(model.ResourceTypeUser),
+			),
 			expectedResult: "",
 		},
 	}
@@ -80,13 +60,6 @@ func TestCtxUserID(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-
-			if tt.shouldPanic {
-				assert.Panics(t, func() {
-					CtxUserID(tt.ctx)
-				})
-				return
-			}
 
 			if tt.expectNonEmpty {
 				result := CtxUserID(tt.ctx)
@@ -118,26 +91,26 @@ func TestCtxUserIDWithMachineUser(t *testing.T) {
 	})
 }
 
-func TestCtxUserIDWithUserObject(t *testing.T) {
-	t.Run("should extract user ID from user object", func(t *testing.T) {
+func TestCtxUserIDWithUserID(t *testing.T) {
+	t.Run("should extract user ID string", func(t *testing.T) {
 		t.Parallel()
 
-		user := createTestUser()
-		ctx := context.WithValue(context.Background(), CtxKeyUserID, user)
+		userID := model.MustNewID(model.ResourceTypeUser)
+		ctx := context.WithValue(context.Background(), CtxKeyUserID, userID)
 		result := CtxUserID(ctx)
 
 		require.NotEmpty(t, result)
-		assert.Equal(t, user.ID.String(), result)
+		assert.Equal(t, userID.String(), result)
 	})
 
 	t.Run("should handle multiple users with different IDs", func(t *testing.T) {
 		t.Parallel()
 
-		user1 := createTestUser()
-		user2 := createTestUser()
+		userID1 := model.MustNewID(model.ResourceTypeUser)
+		userID2 := model.MustNewID(model.ResourceTypeUser)
 
-		ctx1 := context.WithValue(context.Background(), CtxKeyUserID, user1)
-		ctx2 := context.WithValue(context.Background(), CtxKeyUserID, user2)
+		ctx1 := context.WithValue(context.Background(), CtxKeyUserID, userID1)
+		ctx2 := context.WithValue(context.Background(), CtxKeyUserID, userID2)
 
 		result1 := CtxUserID(ctx1)
 		result2 := CtxUserID(ctx2)
@@ -167,7 +140,6 @@ func TestCtxUserIDEdgeCases(t *testing.T) {
 	t.Run("should handle context with wrong type assertion", func(t *testing.T) {
 		t.Parallel()
 
-		// Test with a type that can't be asserted to CtxMachineUserKind or *model.User
 		ctx := context.WithValue(context.Background(), CtxKeyUserID, 123)
 		result := CtxUserID(ctx)
 		assert.Equal(t, "", result)
@@ -232,28 +204,27 @@ func TestCtxUserIDIntegration(t *testing.T) {
 	t.Run("should work with nested contexts", func(t *testing.T) {
 		t.Parallel()
 
-		user := createTestUser()
-		ctx1 := context.WithValue(context.Background(), CtxKeyUserID, user)
+		userID := model.MustNewID(model.ResourceTypeUser)
+		ctx1 := context.WithValue(context.Background(), CtxKeyUserID, userID)
 		ctx2 := context.WithValue(ctx1, testCtxKey, "other-value")
 
 		result := CtxUserID(ctx2)
-		assert.Equal(t, user.ID.String(), result)
+		assert.Equal(t, userID.String(), result)
 	})
 
 	t.Run("should work with context cancellation", func(t *testing.T) {
 		t.Parallel()
 
-		user := createTestUser()
+		userID := model.MustNewID(model.ResourceTypeUser)
 		ctx, cancel := context.WithCancel(context.Background())
-		ctx = context.WithValue(ctx, CtxKeyUserID, user)
+		ctx = context.WithValue(ctx, CtxKeyUserID, userID)
 
 		result := CtxUserID(ctx)
-		assert.Equal(t, user.ID.String(), result)
+		assert.Equal(t, userID.String(), result)
 
 		cancel()
 
-		// Should still work after cancellation
 		resultAfterCancel := CtxUserID(ctx)
-		assert.Equal(t, user.ID.String(), resultAfterCancel)
+		assert.Equal(t, userID.String(), resultAfterCancel)
 	})
 }

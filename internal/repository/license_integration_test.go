@@ -24,23 +24,23 @@ func (s *LicenseRepositoryIntegrationTestSuite) SetupSuite() {
 }
 
 func (s *LicenseRepositoryIntegrationTestSuite) SetupTest() {
-	testUser := testModel.NewUser()
-	s.Require().NoError(s.UserRepo.Create(context.Background(), testUser))
+	testUser, err := s.UserRepo.Create(context.Background(), testModel.NewCreateUserOpts())
+	s.Require().NoError(err)
 
-	testOrg := testModel.NewOrganization()
-	s.Require().NoError(s.OrganizationRepo.Create(context.Background(), testUser.ID, testOrg))
+	testOrg, err := s.OrganizationRepo.Create(context.Background(), testModel.NewCreateOrganizationOpts(testUser.ID))
+	s.Require().NoError(err)
 
-	testDoc := testModel.NewDocument(testUser.ID)
-	s.Require().NoError(s.DocumentRepo.Create(context.Background(), testUser.ID, testDoc))
+	_, err = s.DocumentRepo.Create(context.Background(), testModel.NewCreateDocumentOpts(testOrg.ID, testUser.ID))
+	s.Require().NoError(err)
 
-	testNamespace := testModel.NewNamespace()
-	s.Require().NoError(s.NamespaceRepo.Create(context.Background(), testUser.ID, testOrg.ID, testNamespace))
+	testNamespace, err := s.NamespaceRepo.Create(context.Background(), testModel.NewCreateNamespaceOpts(testUser.ID, testOrg.ID))
+	s.Require().NoError(err)
 
-	testProject := testModel.NewProject()
-	s.Require().NoError(s.ProjectRepo.Create(context.Background(), testNamespace.ID, testProject))
+	testProject, err := s.ProjectRepo.Create(context.Background(), testModel.NewCreateProjectOpts(testNamespace.ID))
+	s.Require().NoError(err)
 
-	testRole := testModel.NewRole()
-	s.Require().NoError(s.RoleRepo.Create(context.Background(), testUser.ID, testProject.ID, testRole))
+	_, err = s.RoleRepo.Create(context.Background(), testModel.NewCreateRoleOpts(testUser.ID, testProject.ID))
+	s.Require().NoError(err)
 }
 
 func (s *LicenseRepositoryIntegrationTestSuite) TearDownTest() {
@@ -54,42 +54,36 @@ func (s *LicenseRepositoryIntegrationTestSuite) TearDownSuite() {
 func (s *LicenseRepositoryIntegrationTestSuite) TestActiveUserCount() {
 	count, err := s.LicenseRepo.ActiveUserCount(context.Background())
 	s.Require().NoError(err)
-
 	s.Assert().Equal(1, count)
 }
 
 func (s *LicenseRepositoryIntegrationTestSuite) TestActiveOrganizationCount() {
 	count, err := s.LicenseRepo.ActiveOrganizationCount(context.Background())
 	s.Require().NoError(err)
-
 	s.Assert().Equal(1, count)
 }
 
 func (s *LicenseRepositoryIntegrationTestSuite) TestDocumentCount() {
 	count, err := s.LicenseRepo.DocumentCount(context.Background())
 	s.Require().NoError(err)
-
 	s.Assert().Equal(1, count)
 }
 
 func (s *LicenseRepositoryIntegrationTestSuite) TestNamespaceCount() {
 	count, err := s.LicenseRepo.NamespaceCount(context.Background())
 	s.Require().NoError(err)
-
 	s.Assert().Equal(1, count)
 }
 
 func (s *LicenseRepositoryIntegrationTestSuite) TestProjectCount() {
 	count, err := s.LicenseRepo.ProjectCount(context.Background())
 	s.Require().NoError(err)
-
 	s.Assert().Equal(1, count)
 }
 
 func (s *LicenseRepositoryIntegrationTestSuite) TestRoleCount() {
 	count, err := s.LicenseRepo.RoleCount(context.Background())
 	s.Require().NoError(err)
-
 	s.Assert().Equal(1, count)
 }
 

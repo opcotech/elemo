@@ -19,8 +19,8 @@ type NotificationRepositoryIntegrationTestSuite struct {
 	testutil.Neo4jContainerIntegrationTestSuite
 	testutil.PgContainerIntegrationTestSuite
 
-	testUser     *model.User
-	notification *model.Notification
+	testUser   *repository.User
+	createOpts repository.CreateNotificationOpts
 }
 
 func (s *NotificationRepositoryIntegrationTestSuite) SetupSuite() {
@@ -33,10 +33,11 @@ func (s *NotificationRepositoryIntegrationTestSuite) SetupSuite() {
 }
 
 func (s *NotificationRepositoryIntegrationTestSuite) SetupTest() {
-	s.testUser = testModel.NewUser()
-	s.Require().NoError(s.UserRepo.Create(context.Background(), s.testUser))
+	var err error
+	s.testUser, err = s.UserRepo.Create(context.Background(), testModel.NewCreateUserOpts())
+	s.Require().NoError(err)
 
-	s.notification = testModel.NewNotification(s.testUser.ID)
+	s.createOpts = testModel.NewCreateNotificationOpts(s.testUser.ID)
 }
 
 func (s *NotificationRepositoryIntegrationTestSuite) TearDownTest() {
@@ -49,60 +50,66 @@ func (s *NotificationRepositoryIntegrationTestSuite) TearDownSuite() {
 }
 
 func (s *NotificationRepositoryIntegrationTestSuite) TestCreate() {
-	s.Require().NoError(s.NotificationRepo.Create(context.Background(), s.notification))
-	s.Assert().NotEqual(model.MustNewNilID(model.ResourceTypeNotification), s.notification.ID)
-	s.Assert().NotNil(s.notification.CreatedAt)
+	notification, err := s.NotificationRepo.Create(context.Background(), s.createOpts)
+	s.Require().NoError(err)
+	s.Assert().NotEqual(model.MustNewNilID(model.ResourceTypeNotification), notification.ID)
+	s.Assert().NotNil(notification.CreatedAt)
 }
 
 func (s *NotificationRepositoryIntegrationTestSuite) TestGet() {
-	s.Require().NoError(s.NotificationRepo.Create(context.Background(), s.notification))
-
-	notification, err := s.NotificationRepo.Get(context.Background(), s.notification.ID, s.notification.Recipient)
+	created, err := s.NotificationRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 
-	s.Assert().Equal(s.notification.ID, notification.ID)
-	s.Assert().WithinDuration(*s.notification.CreatedAt, *notification.CreatedAt, 100*time.Millisecond)
+	notification, err := s.NotificationRepo.Get(context.Background(), created.ID, created.Recipient)
+	s.Require().NoError(err)
+
+	s.Assert().Equal(created.ID, notification.ID)
+	s.Assert().WithinDuration(*created.CreatedAt, *notification.CreatedAt, 100*time.Millisecond)
 }
 
 func (s *NotificationRepositoryIntegrationTestSuite) TestGetAllByRecipient() {
-	s.Require().NoError(s.NotificationRepo.Create(context.Background(), s.notification))
-	s.Require().NoError(s.NotificationRepo.Create(context.Background(), s.notification))
+	_, err := s.NotificationRepo.Create(context.Background(), s.createOpts)
+	s.Require().NoError(err)
+	_, err = s.NotificationRepo.Create(context.Background(), s.createOpts)
+	s.Require().NoError(err)
 
-	notifications, err := s.NotificationRepo.GetAllByRecipient(context.Background(), s.notification.Recipient, 0, 10)
+	notifications, err := s.NotificationRepo.GetAllByRecipient(context.Background(), s.createOpts.Recipient, 0, 10)
 	s.Require().NoError(err)
 	s.Assert().Len(notifications, 2)
 
-	notifications, err = s.NotificationRepo.GetAllByRecipient(context.Background(), s.notification.Recipient, 0, 1)
+	notifications, err = s.NotificationRepo.GetAllByRecipient(context.Background(), s.createOpts.Recipient, 0, 1)
 	s.Require().NoError(err)
 	s.Assert().Len(notifications, 1)
 
-	notifications, err = s.NotificationRepo.GetAllByRecipient(context.Background(), s.notification.Recipient, 1, 1)
+	notifications, err = s.NotificationRepo.GetAllByRecipient(context.Background(), s.createOpts.Recipient, 1, 1)
 	s.Require().NoError(err)
 	s.Assert().Len(notifications, 1)
 
-	notifications, err = s.NotificationRepo.GetAllByRecipient(context.Background(), s.notification.Recipient, 2, 1)
+	notifications, err = s.NotificationRepo.GetAllByRecipient(context.Background(), s.createOpts.Recipient, 2, 1)
 	s.Require().NoError(err)
 	s.Assert().Len(notifications, 0)
 }
 
 func (s *NotificationRepositoryIntegrationTestSuite) TestUpdate() {
-	s.Require().NoError(s.NotificationRepo.Create(context.Background(), s.notification))
+	created, err := s.NotificationRepo.Create(context.Background(), s.createOpts)
+	s.Require().NoError(err)
 
-	notification, err := s.NotificationRepo.Update(context.Background(), s.notification.ID, s.notification.Recipient, true)
+	notification, err := s.NotificationRepo.Update(context.Background(), created.ID, created.Recipient, repository.UpdateNotificationOpts{Read: true})
 	s.Require().NoError(err)
 	s.Require().True(notification.Read)
 
-	notification, err = s.NotificationRepo.Update(context.Background(), s.notification.ID, s.notification.Recipient, false)
+	notification, err = s.NotificationRepo.Update(context.Background(), created.ID, created.Recipient, repository.UpdateNotificationOpts{Read: false})
 	s.Require().NoError(err)
 	s.Require().False(notification.Read)
 }
 
 func (s *NotificationRepositoryIntegrationTestSuite) TestDelete() {
-	s.Require().NoError(s.NotificationRepo.Create(context.Background(), s.notification))
+	created, err := s.NotificationRepo.Create(context.Background(), s.createOpts)
+	s.Require().NoError(err)
 
-	s.Require().NoError(s.NotificationRepo.Delete(context.Background(), s.notification.ID, s.notification.Recipient))
+	s.Require().NoError(s.NotificationRepo.Delete(context.Background(), created.ID, created.Recipient))
 
-	_, err := s.NotificationRepo.Get(context.Background(), s.notification.ID, s.notification.Recipient)
+	_, err = s.NotificationRepo.Get(context.Background(), created.ID, created.Recipient)
 	s.Assert().ErrorIs(err, repository.ErrNotFound)
 }
 

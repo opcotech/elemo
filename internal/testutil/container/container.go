@@ -63,7 +63,7 @@ var (
 	localStackContainerRequest = func(name string) testcontainers.GenericContainerRequest {
 		return testcontainers.GenericContainerRequest{
 			ContainerRequest: testcontainers.ContainerRequest{
-				Image: "localstack/localstack:latest",
+				Image: "localstack/localstack:4.14.0",
 				Name:  name + "-localstack",
 				ExposedPorts: []string{
 					"4566/tcp",

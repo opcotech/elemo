@@ -6,7 +6,10 @@ import (
 	"time"
 
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
+
 	"github.com/opcotech/elemo/internal/model"
+	"github.com/opcotech/elemo/internal/pkg/convert"
+	"github.com/opcotech/elemo/internal/pkg/optional"
 )
 
 var (
@@ -18,29 +21,106 @@ var (
 	ErrOrganizationUpdate       = errors.New("failed to update organization")             // organization cannot be updated
 )
 
-//go:generate mockgen -source=organization.go -destination=../testutil/mock/organization_repo_gen.go -package=mock -mock_names "OrganizationRepository=OrganizationRepository"
+// Organization represents an organization persisted by the repository.
+type Organization struct {
+	ID         model.ID                 `json:"id"`
+	Name       string                   `json:"name"`
+	Email      string                   `json:"email"`
+	Logo       string                   `json:"logo"`
+	Website    string                   `json:"website"`
+	Status     model.OrganizationStatus `json:"status"`
+	Namespaces []model.ID               `json:"namespaces"`
+	Teams      []model.ID               `json:"teams"`
+	Members    []model.ID               `json:"members"`
+	CreatedAt  *time.Time               `json:"created_at"`
+	UpdatedAt  *time.Time               `json:"updated_at"`
+}
+
+// OrganizationMember represents a member of an organization.
+type OrganizationMember struct {
+	ID        model.ID         `json:"id"`
+	FirstName string           `json:"first_name"`
+	LastName  string           `json:"last_name"`
+	Email     string           `json:"email"`
+	Picture   *string          `json:"picture"`
+	Status    model.UserStatus `json:"status"`
+	Roles     []string         `json:"roles"`
+}
+
+// CreateOrganizationOpts holds the data required to create an organization.
+type CreateOrganizationOpts struct {
+	Owner   model.ID
+	Name    string
+	Email   string
+	Logo    string
+	Website string
+	Status  model.OrganizationStatus
+}
+
+// UpdateOrganizationOpts holds the fields that can be updated on an organization.
+// Undefined fields (Defined == false) are left unchanged.
+type UpdateOrganizationOpts struct {
+	Name    optional.Optional[string]
+	Email   optional.Optional[string]
+	Logo    optional.Optional[string]
+	Website optional.Optional[string]
+	Status  optional.Optional[model.OrganizationStatus]
+}
+
+// patch builds a Neo4j property map from defined optional fields.
+func (o UpdateOrganizationOpts) patch() map[string]any {
+	p := make(map[string]any)
+
+	if o.Name.Defined {
+		p["name"] = *o.Name.Value
+	}
+	if o.Email.Defined {
+		p["email"] = *o.Email.Value
+	}
+	if o.Logo.Defined {
+		if o.Logo.Value == nil {
+			p["logo"] = nil
+		} else {
+			p["logo"] = *o.Logo.Value
+		}
+	}
+	if o.Website.Defined {
+		if o.Website.Value == nil {
+			p["website"] = nil
+		} else {
+			p["website"] = *o.Website.Value
+		}
+	}
+	if o.Status.Defined {
+		p["status"] = o.Status.Value.String()
+	}
+
+	return p
+}
+
+//go:generate mockgen -source=organization.go -destination=organization_mock_gen.go -package=repository -mock_names "OrganizationRepository=MockOrganizationRepository"
 type OrganizationRepository interface {
-	Create(ctx context.Context, owner model.ID, organization *model.Organization) error
-	Get(ctx context.Context, id model.ID) (*model.Organization, error)
-	GetAll(ctx context.Context, userID model.ID, offset, limit int) ([]*model.Organization, error)
-	Update(ctx context.Context, id model.ID, patch map[string]any) (*model.Organization, error)
-	GetMembers(ctx context.Context, orgID model.ID) ([]*model.OrganizationMember, error)
+	Create(ctx context.Context, opts CreateOrganizationOpts) (*Organization, error)
+	Get(ctx context.Context, id model.ID) (*Organization, error)
+	GetAll(ctx context.Context, userID model.ID, offset, limit int) ([]*Organization, error)
+	Update(ctx context.Context, id model.ID, opts UpdateOrganizationOpts) (*Organization, error)
+	GetMembers(ctx context.Context, orgID model.ID) ([]*OrganizationMember, error)
 	AddMember(ctx context.Context, orgID, memberID model.ID) error
 	RemoveMember(ctx context.Context, orgID, memberID model.ID) error
 	AddInvitation(ctx context.Context, orgID, userID model.ID) error
 	RemoveInvitation(ctx context.Context, orgID, userID model.ID) error
-	GetInvitations(ctx context.Context, orgID model.ID) ([]*model.OrganizationMember, error)
+	GetInvitations(ctx context.Context, orgID model.ID) ([]*OrganizationMember, error)
 	Delete(ctx context.Context, id model.ID) error
 }
 
-// OrganizationRepository is a repository for managing organizations.
+// Neo4jOrganizationRepository is a repository for managing organizations.
 type Neo4jOrganizationRepository struct {
 	*neo4jBaseRepository
 }
 
-func (r *Neo4jOrganizationRepository) scan(op, np, tp, mp string) func(rec *neo4j.Record) (*model.Organization, error) {
-	return func(rec *neo4j.Record) (*model.Organization, error) {
-		org := new(model.Organization)
+func (r *Neo4jOrganizationRepository) scan(op, np, tp, mp string) func(rec *neo4j.Record) (*Organization, error) {
+	return func(rec *neo4j.Record) (*Organization, error) {
+		org := new(Organization)
 
 		val, _, err := neo4j.GetRecordValue[neo4j.Node](rec, op)
 		if err != nil {
@@ -65,24 +145,20 @@ func (r *Neo4jOrganizationRepository) scan(op, np, tp, mp string) func(rec *neo4
 			return nil, err
 		}
 
-		if err := org.Validate(); err != nil {
-			return nil, err
-		}
-
 		return org, nil
 	}
 }
 
-func (r *Neo4jOrganizationRepository) scanOrganizationMember(up string) func(rec *neo4j.Record) (model.OrganizationMember, error) {
-	return func(rec *neo4j.Record) (model.OrganizationMember, error) {
+func (r *Neo4jOrganizationRepository) scanOrganizationMember(up string) func(rec *neo4j.Record) (OrganizationMember, error) {
+	return func(rec *neo4j.Record) (OrganizationMember, error) {
 		val, _, err := neo4j.GetRecordValue[neo4j.Node](rec, up)
 		if err != nil {
-			return model.OrganizationMember{}, err
+			return OrganizationMember{}, err
 		}
 
 		userID, err := model.NewIDFromString(val.GetProperties()["id"].(string), model.ResourceTypeUser.String())
 		if err != nil {
-			return model.OrganizationMember{}, err
+			return OrganizationMember{}, err
 		}
 
 		firstName := ""
@@ -114,7 +190,7 @@ func (r *Neo4jOrganizationRepository) scanOrganizationMember(up string) func(rec
 		}
 		var status model.UserStatus
 		if err := status.UnmarshalText([]byte(statusStr)); err != nil {
-			return model.OrganizationMember{}, err
+			return OrganizationMember{}, err
 		}
 
 		roleNamesVal, err := Neo4jParseValueFromRecord[[]any](rec, "roles")
@@ -129,35 +205,45 @@ func (r *Neo4jOrganizationRepository) scanOrganizationMember(up string) func(rec
 			}
 		}
 
-		member, err := model.NewOrganizationMember(userID, firstName, lastName, email, picture, status, roleNames)
-		if err != nil {
-			return model.OrganizationMember{}, err
-		}
-
-		return *member, nil
+		return OrganizationMember{
+			ID:        userID,
+			FirstName: firstName,
+			LastName:  lastName,
+			Email:     email,
+			Picture:   picture,
+			Status:    status,
+			Roles:     roleNames,
+		}, nil
 	}
 }
 
-func (r *Neo4jOrganizationRepository) Create(ctx context.Context, owner model.ID, organization *model.Organization) error {
+func (r *Neo4jOrganizationRepository) Create(ctx context.Context, opts CreateOrganizationOpts) (*Organization, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.OrganizationRepository/Create")
 	defer span.End()
 
-	if err := owner.Validate(); err != nil {
-		return errors.Join(ErrOrganizationCreate, err)
+	createdAt := convert.ToPointer(time.Now().UTC())
+
+	status := opts.Status
+	if status == 0 {
+		status = model.OrganizationStatusActive
 	}
 
-	if err := organization.Validate(); err != nil {
-		return errors.Join(ErrOrganizationCreate, err)
+	organization := &Organization{
+		ID:         model.MustNewID(model.ResourceTypeOrganization),
+		Name:       opts.Name,
+		Email:      opts.Email,
+		Logo:       opts.Logo,
+		Website:    opts.Website,
+		Status:     status,
+		Namespaces: make([]model.ID, 0),
+		Teams:      make([]model.ID, 0),
+		Members:    []model.ID{opts.Owner},
+		CreatedAt:  createdAt,
+		UpdatedAt:  nil,
 	}
-
-	createdAt := time.Now().UTC()
-
-	organization.ID = model.MustNewID(model.ResourceTypeOrganization)
-	organization.CreatedAt = &createdAt
-	organization.UpdatedAt = nil
 
 	cypher := `
-	MATCH (u:` + owner.Label() + ` {id: $owner_id})
+	MATCH (u:` + opts.Owner.Label() + ` {id: $owner_id})
 	CREATE (o:` + organization.ID.Label() + ` { id: $id, name: $name, email: $email, logo: $logo, website: $website,
 		status: $status, created_at: datetime($created_at)
 	}),
@@ -172,20 +258,20 @@ func (r *Neo4jOrganizationRepository) Create(ctx context.Context, owner model.ID
 		"website":         organization.Website,
 		"status":          organization.Status.String(),
 		"created_at":      createdAt.Format(time.RFC3339Nano),
-		"owner_id":        owner.String(),
+		"owner_id":        opts.Owner.String(),
 		"membership_id":   model.NewRawID(),
 		"permission_id":   model.NewRawID(),
 		"permission_kind": model.PermissionKindAll.String(),
 	}
 
 	if err := Neo4jExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
-		return errors.Join(ErrOrganizationCreate, err)
+		return nil, errors.Join(ErrOrganizationCreate, err)
 	}
 
-	return nil
+	return organization, nil
 }
 
-func (r *Neo4jOrganizationRepository) Get(ctx context.Context, id model.ID) (*model.Organization, error) {
+func (r *Neo4jOrganizationRepository) Get(ctx context.Context, id model.ID) (*Organization, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.OrganizationRepository/Get")
 	defer span.End()
 
@@ -209,13 +295,9 @@ func (r *Neo4jOrganizationRepository) Get(ctx context.Context, id model.ID) (*mo
 	return org, nil
 }
 
-func (r *Neo4jOrganizationRepository) GetAll(ctx context.Context, userID model.ID, offset, limit int) ([]*model.Organization, error) {
+func (r *Neo4jOrganizationRepository) GetAll(ctx context.Context, userID model.ID, offset, limit int) ([]*Organization, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.OrganizationRepository/GetAllBelongsTo")
 	defer span.End()
-
-	if err := userID.Validate(); err != nil {
-		return nil, errors.Join(ErrOrganizationRead, err)
-	}
 
 	cypher := `
 	MATCH (u:` + userID.Label() + ` {id: $user_id})-[m:` + EdgeKindMemberOf.String() + `]->(o:` + model.ResourceTypeOrganization.String() + `)
@@ -240,7 +322,7 @@ func (r *Neo4jOrganizationRepository) GetAll(ctx context.Context, userID model.I
 	return orgs, nil
 }
 
-func (r *Neo4jOrganizationRepository) Update(ctx context.Context, id model.ID, patch map[string]any) (*model.Organization, error) {
+func (r *Neo4jOrganizationRepository) Update(ctx context.Context, id model.ID, opts UpdateOrganizationOpts) (*Organization, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.OrganizationRepository/Update")
 	defer span.End()
 
@@ -254,7 +336,7 @@ func (r *Neo4jOrganizationRepository) Update(ctx context.Context, id model.ID, p
 
 	params := map[string]any{
 		"id":    id.String(),
-		"patch": patch,
+		"patch": opts.patch(),
 	}
 
 	org, err := Neo4jExecuteWriteAndReadSingle(ctx, r.db, cypher, params, r.scan("o", "n", "t", "m"))
@@ -265,13 +347,9 @@ func (r *Neo4jOrganizationRepository) Update(ctx context.Context, id model.ID, p
 	return org, nil
 }
 
-func (r *Neo4jOrganizationRepository) GetMembers(ctx context.Context, orgID model.ID) ([]*model.OrganizationMember, error) {
+func (r *Neo4jOrganizationRepository) GetMembers(ctx context.Context, orgID model.ID) ([]*OrganizationMember, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.OrganizationRepository/GetMembers")
 	defer span.End()
-
-	if err := orgID.Validate(); err != nil {
-		return nil, errors.Join(ErrOrganizationRead, err)
-	}
 
 	cypher := `
 	MATCH (o:` + orgID.Label() + ` {id: $org_id})
@@ -290,10 +368,10 @@ func (r *Neo4jOrganizationRepository) GetMembers(ctx context.Context, orgID mode
 		"org_id": orgID.String(),
 	}
 
-	members, err := Neo4jExecuteReadAndReadAll(ctx, r.db, cypher, params, func(rec *neo4j.Record) (model.OrganizationMember, error) {
+	members, err := Neo4jExecuteReadAndReadAll(ctx, r.db, cypher, params, func(rec *neo4j.Record) (OrganizationMember, error) {
 		member, err := r.scanOrganizationMember("u")(rec)
 		if err != nil {
-			return model.OrganizationMember{}, err
+			return OrganizationMember{}, err
 		}
 
 		isMemberVal, err := Neo4jParseValueFromRecord[bool](rec, "isMember")
@@ -312,7 +390,7 @@ func (r *Neo4jOrganizationRepository) GetMembers(ctx context.Context, orgID mode
 		return nil, errors.Join(ErrOrganizationRead, err)
 	}
 
-	membersPtr := make([]*model.OrganizationMember, len(members))
+	membersPtr := make([]*OrganizationMember, len(members))
 	for i := range members {
 		membersPtr[i] = &members[i]
 	}
@@ -323,14 +401,6 @@ func (r *Neo4jOrganizationRepository) GetMembers(ctx context.Context, orgID mode
 func (r *Neo4jOrganizationRepository) AddMember(ctx context.Context, orgID, memberID model.ID) error {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.OrganizationRepository/AddMember")
 	defer span.End()
-
-	if err := orgID.Validate(); err != nil {
-		return errors.Join(ErrOrganizationAddMember, err)
-	}
-
-	if err := memberID.Validate(); err != nil {
-		return errors.Join(ErrOrganizationAddMember, err)
-	}
 
 	cypher := `
 	MATCH (o:` + orgID.Label() + ` {id: $org_id})
@@ -357,14 +427,6 @@ func (r *Neo4jOrganizationRepository) RemoveMember(ctx context.Context, orgID, m
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.OrganizationRepository/RemoveMember")
 	defer span.End()
 
-	if err := orgID.Validate(); err != nil {
-		return errors.Join(ErrOrganizationRemoveMember, err)
-	}
-
-	if err := memberID.Validate(); err != nil {
-		return errors.Join(ErrOrganizationRemoveMember, err)
-	}
-
 	cypher := `
 	MATCH (:` + memberID.Label() + ` {id: $member_id})-[r:` + EdgeKindMemberOf.String() + `]->(:` + orgID.Label() + ` {id: $org_id})
 	DELETE r`
@@ -384,19 +446,6 @@ func (r *Neo4jOrganizationRepository) RemoveMember(ctx context.Context, orgID, m
 func (r *Neo4jOrganizationRepository) AddInvitation(ctx context.Context, orgID, userID model.ID) error {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.OrganizationRepository/AddInvitation")
 	defer span.End()
-
-	if err := orgID.Validate(); err != nil {
-		return errors.Join(ErrOrganizationAddMember, err)
-	}
-
-	if err := userID.Validate(); err != nil {
-		return errors.Join(ErrOrganizationAddMember, err)
-	}
-
-	// Check if IDs are nil (invalid)
-	if orgID.IsNil() || userID.IsNil() {
-		return errors.Join(ErrOrganizationAddMember, model.ErrInvalidID)
-	}
 
 	cypher := `
 	MATCH (o:` + orgID.Label() + ` {id: $org_id})
@@ -427,19 +476,6 @@ func (r *Neo4jOrganizationRepository) RemoveInvitation(ctx context.Context, orgI
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.OrganizationRepository/RemoveInvitation")
 	defer span.End()
 
-	if err := orgID.Validate(); err != nil {
-		return errors.Join(ErrOrganizationRemoveMember, err)
-	}
-
-	if err := userID.Validate(); err != nil {
-		return errors.Join(ErrOrganizationRemoveMember, err)
-	}
-
-	// Check if IDs are nil (invalid)
-	if orgID.IsNil() || userID.IsNil() {
-		return errors.Join(ErrOrganizationRemoveMember, model.ErrInvalidID)
-	}
-
 	cypher := `
 	MATCH (:` + userID.Label() + ` {id: $user_id})-[r:` + EdgeKindInvitedTo.String() + `]->(:` + orgID.Label() + ` {id: $org_id})
 	DELETE r`
@@ -456,18 +492,9 @@ func (r *Neo4jOrganizationRepository) RemoveInvitation(ctx context.Context, orgI
 	return nil
 }
 
-func (r *Neo4jOrganizationRepository) GetInvitations(ctx context.Context, orgID model.ID) ([]*model.OrganizationMember, error) {
+func (r *Neo4jOrganizationRepository) GetInvitations(ctx context.Context, orgID model.ID) ([]*OrganizationMember, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.OrganizationRepository/GetInvitations")
 	defer span.End()
-
-	if err := orgID.Validate(); err != nil {
-		return nil, errors.Join(ErrOrganizationRead, err)
-	}
-
-	// Check if ID is nil (invalid)
-	if orgID.IsNil() {
-		return nil, errors.Join(ErrOrganizationRead, model.ErrInvalidID)
-	}
 
 	cypher := `
 	MATCH (u:` + model.ResourceTypeUser.String() + `)-[:` + EdgeKindInvitedTo.String() + `]->(o:` + orgID.Label() + ` {id: $org_id})
@@ -483,7 +510,7 @@ func (r *Neo4jOrganizationRepository) GetInvitations(ctx context.Context, orgID 
 		return nil, errors.Join(ErrOrganizationRead, err)
 	}
 
-	membersPtr := make([]*model.OrganizationMember, len(members))
+	membersPtr := make([]*OrganizationMember, len(members))
 	for i := range members {
 		membersPtr[i] = &members[i]
 	}
@@ -531,23 +558,23 @@ func clearOrganizationAllGetAll(ctx context.Context, r *redisBaseRepository) err
 	return clearOrganizationsPattern(ctx, r, "GetAll", "*", "*")
 }
 
-// CachedOrganizationRepository implements caching on the
+// RedisCachedOrganizationRepository implements caching on the
 // repository.OrganizationRepository.
 type RedisCachedOrganizationRepository struct {
 	cacheRepo        *redisBaseRepository
 	organizationRepo OrganizationRepository
 }
 
-func (r *RedisCachedOrganizationRepository) Create(ctx context.Context, owner model.ID, organization *model.Organization) error {
+func (r *RedisCachedOrganizationRepository) Create(ctx context.Context, opts CreateOrganizationOpts) (*Organization, error) {
 	if err := clearOrganizationAllGetAll(ctx, r.cacheRepo); err != nil {
-		return err
+		return nil, err
 	}
 
-	return r.organizationRepo.Create(ctx, owner, organization)
+	return r.organizationRepo.Create(ctx, opts)
 }
 
-func (r *RedisCachedOrganizationRepository) Get(ctx context.Context, id model.ID) (*model.Organization, error) {
-	var organization *model.Organization
+func (r *RedisCachedOrganizationRepository) Get(ctx context.Context, id model.ID) (*Organization, error) {
+	var organization *Organization
 	var err error
 
 	key := composeCacheKey(model.ResourceTypeOrganization.String(), id.String())
@@ -570,8 +597,8 @@ func (r *RedisCachedOrganizationRepository) Get(ctx context.Context, id model.ID
 	return organization, nil
 }
 
-func (r *RedisCachedOrganizationRepository) GetAll(ctx context.Context, userID model.ID, offset, limit int) ([]*model.Organization, error) {
-	var organizations []*model.Organization
+func (r *RedisCachedOrganizationRepository) GetAll(ctx context.Context, userID model.ID, offset, limit int) ([]*Organization, error) {
+	var organizations []*Organization
 	var err error
 
 	key := composeCacheKey(model.ResourceTypeOrganization.String(), "GetAll", userID.String(), offset, limit)
@@ -594,11 +621,8 @@ func (r *RedisCachedOrganizationRepository) GetAll(ctx context.Context, userID m
 	return organizations, nil
 }
 
-func (r *RedisCachedOrganizationRepository) Update(ctx context.Context, id model.ID, patch map[string]any) (*model.Organization, error) {
-	var organization *model.Organization
-	var err error
-
-	organization, err = r.organizationRepo.Update(ctx, id, patch)
+func (r *RedisCachedOrganizationRepository) Update(ctx context.Context, id model.ID, opts UpdateOrganizationOpts) (*Organization, error) {
+	organization, err := r.organizationRepo.Update(ctx, id, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -651,7 +675,7 @@ func (r *RedisCachedOrganizationRepository) Delete(ctx context.Context, id model
 	return r.organizationRepo.Delete(ctx, id)
 }
 
-func (r *RedisCachedOrganizationRepository) GetMembers(ctx context.Context, orgID model.ID) ([]*model.OrganizationMember, error) {
+func (r *RedisCachedOrganizationRepository) GetMembers(ctx context.Context, orgID model.ID) ([]*OrganizationMember, error) {
 	return r.organizationRepo.GetMembers(ctx, orgID)
 }
 
@@ -679,7 +703,7 @@ func (r *RedisCachedOrganizationRepository) RemoveInvitation(ctx context.Context
 	return r.organizationRepo.RemoveInvitation(ctx, orgID, userID)
 }
 
-func (r *RedisCachedOrganizationRepository) GetInvitations(ctx context.Context, orgID model.ID) ([]*model.OrganizationMember, error) {
+func (r *RedisCachedOrganizationRepository) GetInvitations(ctx context.Context, orgID model.ID) ([]*OrganizationMember, error) {
 	return r.organizationRepo.GetInvitations(ctx, orgID)
 }
 

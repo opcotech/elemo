@@ -2,10 +2,6 @@ package model
 
 import (
 	"database/sql/driver"
-	"errors"
-	"time"
-
-	"github.com/opcotech/elemo/internal/pkg/validate"
 )
 
 const (
@@ -61,44 +57,4 @@ func (c *UserTokenContext) Scan(value any) error {
 func (c UserTokenContext) Value() (driver.Value, error) {
 	status, err := c.MarshalText()
 	return string(status), err
-}
-
-// UserToken represents a token that was created for the user.
-type UserToken struct {
-	ID        ID               `json:"id" validate:"required"`
-	UserID    ID               `json:"user_id" validate:"required"`
-	SentTo    string           `json:"sent_to" validate:"required,email"`
-	Token     string           `json:"token" validate:"required,min=60,max=72"`
-	Context   UserTokenContext `json:"context" validate:"required,min=1,max=3"`
-	CreatedAt *time.Time       `json:"created_at" validate:"omitempty"`
-}
-
-func (f *UserToken) Validate() error {
-	if err := validate.Struct(f); err != nil {
-		return errors.Join(ErrInvalidUserToken, err)
-	}
-	if err := f.ID.Validate(); err != nil {
-		return errors.Join(ErrInvalidUserToken, err)
-	}
-	if err := f.UserID.Validate(); err != nil {
-		return errors.Join(ErrInvalidUserToken, err)
-	}
-	return nil
-}
-
-// NewUserToken creates a new UserToken.
-func NewUserToken(userID ID, sentTo string, token string, context UserTokenContext) (*UserToken, error) {
-	userToken := &UserToken{
-		ID:      MustNewNilID(ResourceTypeUserToken),
-		UserID:  userID,
-		SentTo:  sentTo,
-		Token:   token,
-		Context: context,
-	}
-
-	if err := userToken.Validate(); err != nil {
-		return nil, err
-	}
-
-	return userToken, nil
 }

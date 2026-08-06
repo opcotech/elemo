@@ -1,19 +1,32 @@
 package model
 
 import (
+	"time"
+
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg"
+	"github.com/opcotech/elemo/internal/pkg/convert"
+	"github.com/opcotech/elemo/internal/repository"
 )
 
-// NewNotification creates a new Notification instance. It does not create a
-// notification in the database.
-func NewNotification(recipient model.ID) *model.Notification {
-	notification, err := model.NewNotification(pkg.GenerateRandomString(10), recipient)
-	if err != nil {
-		panic(err)
+// NewCreateNotificationOpts creates repository.CreateNotificationOpts for tests.
+func NewCreateNotificationOpts(recipient model.ID) repository.CreateNotificationOpts {
+	return repository.CreateNotificationOpts{
+		Title:       pkg.GenerateRandomString(10),
+		Description: pkg.GenerateRandomString(10),
+		Recipient:   recipient,
 	}
+}
 
-	notification.Description = pkg.GenerateRandomString(10)
-
-	return notification
+// NewRepositoryNotification creates a repository.Notification for mock returns.
+func NewRepositoryNotification(recipient model.ID) *repository.Notification {
+	opts := NewCreateNotificationOpts(recipient)
+	return &repository.Notification{
+		ID:          model.MustNewID(model.ResourceTypeNotification),
+		Title:       opts.Title,
+		Description: opts.Description,
+		Recipient:   opts.Recipient,
+		Read:        false,
+		CreatedAt:   convert.ToPointer(time.Now().UTC()),
+	}
 }

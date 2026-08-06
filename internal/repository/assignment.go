@@ -17,14 +17,28 @@ var (
 	ErrAssignmentRead   = errors.New("failed to read assignment")   // the assignment could not be retrieved
 )
 
-// AssignmentRepository is a repository for managing resource assignments.
-//
-//go:generate mockgen -source=assignment.go -destination=../testutil/mock/assignment_repo_gen.go -package=mock -mock_names "AssignmentRepository=AssignmentRepository"
+// Assignment represents an assignment persisted by the repository.
+type Assignment struct {
+	ID        model.ID             `json:"id"`
+	Kind      model.AssignmentKind `json:"kind"`
+	User      model.ID             `json:"user_id"`
+	Resource  model.ID             `json:"resource_id"`
+	CreatedAt *time.Time           `json:"created_at"`
+}
+
+// CreateAssignmentOpts holds the data required to create an assignment.
+type CreateAssignmentOpts struct {
+	Kind     model.AssignmentKind
+	User     model.ID
+	Resource model.ID
+}
+
+//go:generate mockgen -source=assignment.go -destination=assignment_mock_gen.go -package=repository -mock_names "AssignmentRepository=MockAssignmentRepository"
 type AssignmentRepository interface {
-	Create(ctx context.Context, assignment *model.Assignment) error
-	Get(ctx context.Context, id model.ID) (*model.Assignment, error)
-	GetByUser(ctx context.Context, userID model.ID, offset, limit int) ([]*model.Assignment, error)
-	GetByResource(ctx context.Context, resourceID model.ID, offset, limit int) ([]*model.Assignment, error)
+	Create(ctx context.Context, opts CreateAssignmentOpts) (*Assignment, error)
+	Get(ctx context.Context, id model.ID) (*Assignment, error)
+	GetByUser(ctx context.Context, userID model.ID, offset, limit int) ([]*Assignment, error)
+	GetByResource(ctx context.Context, resourceID model.ID, offset, limit int) ([]*Assignment, error)
 	Delete(ctx context.Context, id model.ID) error
 }
 
@@ -33,9 +47,9 @@ type Neo4jAssignmentRepository struct {
 	*neo4jBaseRepository
 }
 
-func (r *Neo4jAssignmentRepository) scan(up, ap, rp string) func(rec *neo4j.Record) (*model.Assignment, error) {
-	return func(rec *neo4j.Record) (*model.Assignment, error) {
-		a := new(model.Assignment)
+func (r *Neo4jAssignmentRepository) scan(up, ap, rp string) func(rec *neo4j.Record) (*Assignment, error) {
+	return func(rec *neo4j.Record) (*Assignment, error) {
+		a := new(Assignment)
 
 		val, _, err := neo4j.GetRecordValue[neo4j.Relationship](rec, ap)
 		if err != nil {
@@ -60,26 +74,23 @@ func (r *Neo4jAssignmentRepository) scan(up, ap, rp string) func(rec *neo4j.Reco
 		a.User, _ = model.NewIDFromString(user.GetProperties()["id"].(string), user.Labels[0])
 		a.Resource, _ = model.NewIDFromString(resource.GetProperties()["id"].(string), resource.Labels[0])
 
-		if err := a.Validate(); err != nil {
-			return nil, err
-		}
-
 		return a, nil
 	}
 }
 
-func (r *Neo4jAssignmentRepository) Create(ctx context.Context, assignment *model.Assignment) error {
+func (r *Neo4jAssignmentRepository) Create(ctx context.Context, opts CreateAssignmentOpts) (*Assignment, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.AssignmentRepository/Create")
 	defer span.End()
 
-	if err := assignment.Validate(); err != nil {
-		return errors.Join(ErrAssignmentCreate, err)
+	createdAt := convert.ToPointer(time.Now().UTC())
+
+	assignment := &Assignment{
+		ID:        model.MustNewID(model.ResourceTypeAssignment),
+		Kind:      opts.Kind,
+		User:      opts.User,
+		Resource:  opts.Resource,
+		CreatedAt: createdAt,
 	}
-
-	createdAt := time.Now().UTC()
-
-	assignment.ID = model.MustNewID(model.ResourceTypeAssignment)
-	assignment.CreatedAt = convert.ToPointer(createdAt)
 
 	cypher := `
 	MATCH (u:` + assignment.User.Label() + ` {id: $user_id})
@@ -96,13 +107,13 @@ func (r *Neo4jAssignmentRepository) Create(ctx context.Context, assignment *mode
 	}
 
 	if err := Neo4jExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
-		return errors.Join(ErrAssignmentCreate, err)
+		return nil, errors.Join(ErrAssignmentCreate, err)
 	}
 
-	return nil
+	return assignment, nil
 }
 
-func (r *Neo4jAssignmentRepository) Get(ctx context.Context, id model.ID) (*model.Assignment, error) {
+func (r *Neo4jAssignmentRepository) Get(ctx context.Context, id model.ID) (*Assignment, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.AssignmentRepository/Get")
 	defer span.End()
 
@@ -122,7 +133,7 @@ func (r *Neo4jAssignmentRepository) Get(ctx context.Context, id model.ID) (*mode
 	return assignment, nil
 }
 
-func (r *Neo4jAssignmentRepository) GetByUser(ctx context.Context, userID model.ID, offset, limit int) ([]*model.Assignment, error) {
+func (r *Neo4jAssignmentRepository) GetByUser(ctx context.Context, userID model.ID, offset, limit int) ([]*Assignment, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.AssignmentRepository/GetByUser")
 	defer span.End()
 
@@ -146,7 +157,7 @@ func (r *Neo4jAssignmentRepository) GetByUser(ctx context.Context, userID model.
 	return assignments, nil
 }
 
-func (r *Neo4jAssignmentRepository) GetByResource(ctx context.Context, resourceID model.ID, offset, limit int) ([]*model.Assignment, error) {
+func (r *Neo4jAssignmentRepository) GetByResource(ctx context.Context, resourceID model.ID, offset, limit int) ([]*Assignment, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.AssignmentRepository/GetByResource")
 	defer span.End()
 
@@ -222,7 +233,7 @@ func clearAssignmentAllByUser(ctx context.Context, r *redisBaseRepository) error
 	return clearAssignmentsPattern(ctx, r, "GetByUser", "*")
 }
 
-func clearAssignmentAllCrossCache(ctx context.Context, r *redisBaseRepository, assignment *model.Assignment) error {
+func clearAssignmentAllCrossCache(ctx context.Context, r *redisBaseRepository, assignment *Assignment) error {
 	var deleteFn func(ctx context.Context, r *redisBaseRepository, pattern ...string) error
 
 	if assignment == nil {
@@ -245,24 +256,25 @@ type RedisCachedAssignmentRepository struct {
 	assignmentRepo AssignmentRepository
 }
 
-func (r *RedisCachedAssignmentRepository) Create(ctx context.Context, assignment *model.Assignment) error {
-	if err := clearAssignmentByResource(ctx, r.cacheRepo, assignment.Resource); err != nil {
-		return err
+func (r *RedisCachedAssignmentRepository) Create(ctx context.Context, opts CreateAssignmentOpts) (*Assignment, error) {
+	if err := clearAssignmentByResource(ctx, r.cacheRepo, opts.Resource); err != nil {
+		return nil, err
 	}
 
-	if err := clearAssignmentByUser(ctx, r.cacheRepo, assignment.User); err != nil {
-		return err
+	if err := clearAssignmentByUser(ctx, r.cacheRepo, opts.User); err != nil {
+		return nil, err
 	}
 
+	assignment := &Assignment{User: opts.User, Resource: opts.Resource}
 	if err := clearAssignmentAllCrossCache(ctx, r.cacheRepo, assignment); err != nil {
-		return err
+		return nil, err
 	}
 
-	return r.assignmentRepo.Create(ctx, assignment)
+	return r.assignmentRepo.Create(ctx, opts)
 }
 
-func (r *RedisCachedAssignmentRepository) Get(ctx context.Context, id model.ID) (*model.Assignment, error) {
-	var assignment *model.Assignment
+func (r *RedisCachedAssignmentRepository) Get(ctx context.Context, id model.ID) (*Assignment, error) {
+	var assignment *Assignment
 	var err error
 
 	key := composeCacheKey(model.ResourceTypeAssignment.String(), id.String())
@@ -285,8 +297,8 @@ func (r *RedisCachedAssignmentRepository) Get(ctx context.Context, id model.ID) 
 	return assignment, nil
 }
 
-func (r *RedisCachedAssignmentRepository) GetByUser(ctx context.Context, userID model.ID, offset, limit int) ([]*model.Assignment, error) {
-	var assignments []*model.Assignment
+func (r *RedisCachedAssignmentRepository) GetByUser(ctx context.Context, userID model.ID, offset, limit int) ([]*Assignment, error) {
+	var assignments []*Assignment
 	var err error
 
 	key := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByUser", userID.String(), offset, limit)
@@ -309,8 +321,8 @@ func (r *RedisCachedAssignmentRepository) GetByUser(ctx context.Context, userID 
 	return assignments, nil
 }
 
-func (r *RedisCachedAssignmentRepository) GetByResource(ctx context.Context, resourceID model.ID, offset, limit int) ([]*model.Assignment, error) {
-	var assignments []*model.Assignment
+func (r *RedisCachedAssignmentRepository) GetByResource(ctx context.Context, resourceID model.ID, offset, limit int) ([]*Assignment, error) {
+	var assignments []*Assignment
 	var err error
 
 	key := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByResource", resourceID.String(), offset, limit)

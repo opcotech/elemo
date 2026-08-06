@@ -1,12 +1,5 @@
 package model
 
-import (
-	"errors"
-	"time"
-
-	"github.com/opcotech/elemo/internal/pkg/validate"
-)
-
 const (
 	UserStatusActive   UserStatus = iota + 1 // the user is active
 	UserStatusPending                        // the user is invited but not yet active
@@ -52,69 +45,4 @@ func (s *UserStatus) UnmarshalText(text []byte) error {
 		return nil
 	}
 	return ErrInvalidUserStatus
-}
-
-// User represents a user in the system.
-type User struct {
-	ID          ID         `json:"id" validate:"required"`
-	Username    string     `json:"username" validate:"required,lowercase,min=3,max=50,containsany=0123456789abcdefghijklmnopqrstuvwxyz-_"`
-	Email       string     `json:"email" validate:"required,email"`
-	Password    string     `json:"password" validate:"required,min=8,max=64"`
-	Status      UserStatus `json:"status" validate:"required,min=1,max=4"`
-	FirstName   string     `json:"first_name" validate:"required,min=1,max=50"`
-	LastName    string     `json:"last_name" validate:"required,min=1,max=50"`
-	Picture     string     `json:"picture" validate:"omitempty,url"`
-	Title       string     `json:"title" validate:"omitempty,min=3,max=50"`
-	Bio         string     `json:"bio" validate:"omitempty,min=10,max=500"`
-	Phone       string     `json:"phone" validate:"omitempty,min=7,max=16"`
-	Address     string     `json:"address" validate:"omitempty,min=3,max=500"`
-	Links       []string   `json:"links" validate:"omitempty,dive,url"`
-	Languages   []Language `json:"languages" validate:"omitempty,dive"`
-	Documents   []ID       `json:"documents" validate:"omitempty,dive"`
-	Permissions []ID       `json:"permissions" validate:"omitempty,dive"`
-	CreatedAt   *time.Time `json:"created_at" validate:"omitempty"`
-	UpdatedAt   *time.Time `json:"updated_at" validate:"omitempty"`
-}
-
-func (u *User) Validate() error {
-	if err := validate.Struct(u); err != nil {
-		return errors.Join(ErrInvalidUserDetails, err)
-	}
-	if err := u.ID.Validate(); err != nil {
-		return errors.Join(ErrInvalidUserDetails, err)
-	}
-	for _, documents := range u.Documents {
-		if err := documents.Validate(); err != nil {
-			return errors.Join(ErrInvalidUserDetails, err)
-		}
-	}
-	for _, permissions := range u.Permissions {
-		if err := permissions.Validate(); err != nil {
-			return errors.Join(ErrInvalidUserDetails, err)
-		}
-	}
-	return nil
-}
-
-// NewUser returns a new User.
-func NewUser(username, firstName, lastName, email, password string) (*User, error) {
-	user := &User{
-		ID:          MustNewNilID(ResourceTypeUser),
-		Username:    username,
-		FirstName:   firstName,
-		LastName:    lastName,
-		Email:       email,
-		Password:    password,
-		Status:      UserStatusActive,
-		Links:       make([]string, 0),
-		Languages:   make([]Language, 0),
-		Documents:   make([]ID, 0),
-		Permissions: make([]ID, 0),
-	}
-
-	if err := user.Validate(); err != nil {
-		return nil, err
-	}
-
-	return user, nil
 }

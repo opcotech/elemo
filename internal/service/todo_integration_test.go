@@ -11,6 +11,8 @@ import (
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg"
 	"github.com/opcotech/elemo/internal/pkg/convert"
+	"github.com/opcotech/elemo/internal/pkg/optional"
+	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/service"
 	"github.com/opcotech/elemo/internal/testutil"
 	testModel "github.com/opcotech/elemo/internal/testutil/model"
@@ -22,10 +24,8 @@ type TodoServiceIntegrationTestSuite struct {
 
 	todoService service.TodoService
 
-	testUser        *model.User
+	testUser        *repository.User
 	testUserContext context.Context
-
-	todo *model.Todo
 }
 
 func (s *TodoServiceIntegrationTestSuite) SetupSuite() {
@@ -54,11 +54,22 @@ func (s *TodoServiceIntegrationTestSuite) SetupSuite() {
 }
 
 func (s *TodoServiceIntegrationTestSuite) SetupTest() {
-	s.testUser = testModel.NewUser()
-	s.Require().NoError(s.UserRepo.Create(context.Background(), s.testUser))
+	var err error
+	s.testUser, err = s.UserRepo.Create(context.Background(), testModel.NewCreateUserOpts())
+	s.Require().NoError(err)
 	s.testUserContext = context.WithValue(context.Background(), pkg.CtxKeyUserID, s.testUser.ID)
+}
 
-	s.todo = testModel.NewTodo(s.testUser.ID, s.testUser.ID)
+func newTestCreateTodoOpts(ownedBy, createdBy model.ID) service.CreateTodoOpts {
+	return service.CreateTodoOpts{
+		Title:       "test todo title",
+		Description: "test todo description text",
+		Priority:    model.TodoPriorityNormal,
+		Completed:   false,
+		OwnedBy:     ownedBy,
+		CreatedBy:   createdBy,
+		DueDate:     convert.ToPointer(time.Now().UTC().Add(24 * time.Hour)),
+	}
 }
 
 func (s *TodoServiceIntegrationTestSuite) TearDownTest() {
@@ -70,54 +81,57 @@ func (s *TodoServiceIntegrationTestSuite) TearDownSuite() {
 }
 
 func (s *TodoServiceIntegrationTestSuite) TestCreate() {
-	s.Require().NoError(s.todoService.Create(s.testUserContext, s.todo))
-	s.Assert().NotEqual(model.MustNewNilID(model.ResourceTypeTodo), s.todo.ID)
-	s.Assert().NotNil(s.todo.CreatedAt)
-	s.Assert().Nil(s.todo.UpdatedAt)
+	opts := newTestCreateTodoOpts(s.testUser.ID, s.testUser.ID)
+	todo, err := s.todoService.Create(s.testUserContext, opts)
+	s.Require().NoError(err)
+	s.Assert().NotEqual(model.MustNewNilID(model.ResourceTypeTodo), todo.ID)
+	s.Assert().NotNil(todo.CreatedAt)
+	s.Assert().Nil(todo.UpdatedAt)
 }
 
 func (s *TodoServiceIntegrationTestSuite) TestCreateForOtherUser() {
-	otherUser := testModel.NewUser()
-	s.Require().NoError(s.UserRepo.Create(context.Background(), otherUser))
+	otherUser, err := s.UserRepo.Create(context.Background(), testModel.NewCreateUserOpts())
+	s.Require().NoError(err)
 
-	org := testModel.NewOrganization()
-	s.Require().NoError(s.OrganizationRepo.Create(context.Background(), s.testUser.ID, org))
+	org, err := s.OrganizationRepo.Create(context.Background(), testModel.NewCreateOrganizationOpts(s.testUser.ID))
+	s.Require().NoError(err)
 	s.Require().NoError(s.OrganizationRepo.AddMember(context.Background(), org.ID, otherUser.ID))
 
-	s.todo.CreatedBy = s.testUser.ID
-	s.todo.OwnedBy = otherUser.ID
-
-	s.Require().NoError(s.todoService.Create(s.testUserContext, s.todo))
-	s.Assert().NotEqual(model.MustNewNilID(model.ResourceTypeTodo), s.todo.ID)
-	s.Assert().NotNil(s.todo.CreatedAt)
-	s.Assert().Nil(s.todo.UpdatedAt)
+	opts := newTestCreateTodoOpts(otherUser.ID, s.testUser.ID)
+	todo, err := s.todoService.Create(s.testUserContext, opts)
+	s.Require().NoError(err)
+	s.Assert().NotEqual(model.MustNewNilID(model.ResourceTypeTodo), todo.ID)
 }
 
 func (s *TodoServiceIntegrationTestSuite) TestGet() {
-	s.Require().NoError(s.todoService.Create(s.testUserContext, s.todo))
-
-	todo, err := s.todoService.Get(s.testUserContext, s.todo.ID)
+	opts := newTestCreateTodoOpts(s.testUser.ID, s.testUser.ID)
+	createdTodo, err := s.todoService.Create(s.testUserContext, opts)
 	s.Require().NoError(err)
 
-	s.Assert().Equal(s.todo.ID, todo.ID)
-	s.Assert().Equal(s.todo.Title, todo.Title)
-	s.Assert().Equal(s.todo.Description, todo.Description)
-	s.Assert().Equal(s.todo.Priority, todo.Priority)
-	s.Assert().Equal(s.todo.Completed, todo.Completed)
-	s.Assert().Equal(s.todo.OwnedBy, todo.OwnedBy)
-	s.Assert().Equal(s.todo.CreatedBy, todo.CreatedBy)
-	s.Assert().WithinDuration(*s.todo.DueDate, *todo.DueDate, 100*time.Millisecond)
-	s.Assert().WithinDuration(*s.todo.CreatedAt, *todo.CreatedAt, 100*time.Millisecond)
+	todo, err := s.todoService.Get(s.testUserContext, createdTodo.ID)
+	s.Require().NoError(err)
+
+	s.Assert().Equal(createdTodo.ID, todo.ID)
+	s.Assert().Equal(opts.Title, todo.Title)
+	s.Assert().Equal(opts.Description, todo.Description)
+	s.Assert().Equal(opts.Priority, todo.Priority)
+	s.Assert().Equal(opts.Completed, todo.Completed)
+	s.Assert().Equal(opts.OwnedBy, todo.OwnedBy)
+	s.Assert().Equal(opts.CreatedBy, todo.CreatedBy)
+	s.Assert().WithinDuration(*opts.DueDate, *todo.DueDate, 100*time.Millisecond)
 	s.Assert().Nil(todo.UpdatedAt)
 }
 
 func (s *TodoServiceIntegrationTestSuite) TestGetAll() {
-	todo1 := testModel.NewTodo(s.testUser.ID, s.testUser.ID)
-	todo1.Completed = true
+	opts1 := newTestCreateTodoOpts(s.testUser.ID, s.testUser.ID)
+	opts1.Completed = true
+	_, err := s.todoService.Create(s.testUserContext, opts1)
+	s.Require().NoError(err)
 
-	s.Require().NoError(s.todoService.Create(s.testUserContext, todo1))
-	s.Require().NoError(s.todoService.Create(s.testUserContext, testModel.NewTodo(s.testUser.ID, s.testUser.ID)))
-	s.Require().NoError(s.todoService.Create(s.testUserContext, testModel.NewTodo(s.testUser.ID, s.testUser.ID)))
+	_, err = s.todoService.Create(s.testUserContext, newTestCreateTodoOpts(s.testUser.ID, s.testUser.ID))
+	s.Require().NoError(err)
+	_, err = s.todoService.Create(s.testUserContext, newTestCreateTodoOpts(s.testUser.ID, s.testUser.ID))
+	s.Require().NoError(err)
 
 	todos, err := s.todoService.GetAll(s.testUserContext, 0, 10, nil)
 	s.Require().NoError(err)
@@ -133,36 +147,34 @@ func (s *TodoServiceIntegrationTestSuite) TestGetAll() {
 }
 
 func (s *TodoServiceIntegrationTestSuite) TestUpdate() {
-	s.Require().NoError(s.todoService.Create(s.testUserContext, s.todo))
-
-	priority := model.TodoPriorityCritical
-	patch := map[string]any{
-		"title":       "new title",
-		"description": "new description",
-		"priority":    priority.String(),
-	}
-
-	todo, err := s.todoService.Update(s.testUserContext, s.todo.ID, patch)
+	opts := newTestCreateTodoOpts(s.testUser.ID, s.testUser.ID)
+	createdTodo, err := s.todoService.Create(s.testUserContext, opts)
 	s.Require().NoError(err)
 
-	s.Assert().Equal(s.todo.ID, todo.ID)
-	s.Assert().Equal(patch["title"], todo.Title)
-	s.Assert().Equal(patch["description"], todo.Description)
-	s.Assert().Equal(priority, todo.Priority)
-	s.Assert().Equal(s.todo.Completed, todo.Completed)
-	s.Assert().Equal(s.todo.OwnedBy, todo.OwnedBy)
-	s.Assert().Equal(s.todo.CreatedBy, todo.CreatedBy)
-	s.Assert().WithinDuration(*s.todo.DueDate, *todo.DueDate, 100*time.Millisecond)
-	s.Assert().WithinDuration(*s.todo.CreatedAt, *todo.CreatedAt, 100*time.Millisecond)
+	updateOpts := service.UpdateTodoOpts{
+		Title:       optional.Some("new title"),
+		Description: optional.Some("new description text"),
+		Priority:    optional.Some(model.TodoPriorityCritical),
+	}
+
+	todo, err := s.todoService.Update(s.testUserContext, createdTodo.ID, updateOpts)
+	s.Require().NoError(err)
+
+	s.Assert().Equal(createdTodo.ID, todo.ID)
+	s.Assert().Equal("new title", todo.Title)
+	s.Assert().Equal("new description text", todo.Description)
+	s.Assert().Equal(model.TodoPriorityCritical, todo.Priority)
 	s.Assert().NotNil(todo.UpdatedAt)
 }
 
 func (s *TodoServiceIntegrationTestSuite) TestDelete() {
-	s.Require().NoError(s.todoService.Create(s.testUserContext, s.todo))
+	opts := newTestCreateTodoOpts(s.testUser.ID, s.testUser.ID)
+	createdTodo, err := s.todoService.Create(s.testUserContext, opts)
+	s.Require().NoError(err)
 
-	s.Require().NoError(s.todoService.Delete(s.testUserContext, s.todo.ID))
+	s.Require().NoError(s.todoService.Delete(s.testUserContext, createdTodo.ID))
 
-	_, err := s.todoService.Get(s.testUserContext, s.todo.ID)
+	_, err = s.todoService.Get(s.testUserContext, createdTodo.ID)
 	s.Assert().ErrorIs(err, service.ErrNoPermission)
 }
 

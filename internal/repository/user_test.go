@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-redis/cache/v9"
 	"github.com/opcotech/elemo/internal/model"
+	"github.com/opcotech/elemo/internal/pkg/optional"
 	"github.com/opcotech/elemo/internal/pkg/password"
 	"github.com/opcotech/elemo/internal/testutil/mock"
 	"github.com/redis/go-redis/v9"
@@ -16,12 +17,12 @@ import (
 
 func TestCachedUserRepository_Create(t *testing.T) {
 	type fields struct {
-		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, user *model.User) *redisBaseRepository
-		userRepo  func(ctrl *gomock.Controller, ctx context.Context, user *model.User) UserRepository
+		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, opts CreateUserOpts) *redisBaseRepository
+		userRepo  func(ctrl *gomock.Controller, ctx context.Context, opts CreateUserOpts) UserRepository
 	}
 	type args struct {
 		ctx  context.Context
-		user *model.User
+		opts CreateUserOpts
 	}
 	tests := []struct {
 		name    string
@@ -32,7 +33,7 @@ func TestCachedUserRepository_Create(t *testing.T) {
 		{
 			name: "create new user",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, _ *model.User) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, _ CreateUserOpts) *redisBaseRepository {
 					getAllKey := composeCacheKey(model.ResourceTypeUser.String(), "GetAll", "*")
 					organizationsKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*")
 					rolesKey := composeCacheKey(model.ResourceTypeRole.String(), "*")
@@ -74,38 +75,34 @@ func TestCachedUserRepository_Create(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				userRepo: func(ctrl *gomock.Controller, ctx context.Context, user *model.User) UserRepository {
-					repo := mock.NewUserRepository(ctrl)
-					repo.EXPECT().Create(ctx, user).Return(nil)
+				userRepo: func(ctrl *gomock.Controller, ctx context.Context, opts CreateUserOpts) UserRepository {
+					repo := NewMockUserRepository(ctrl)
+					repo.EXPECT().Create(ctx, opts).Return(&User{}, nil)
 					return repo
 				},
 			},
 			args: args{
 				ctx: context.Background(),
-				user: &model.User{
-					ID:          model.MustNewID(model.ResourceTypeUser),
-					Username:    "test-user",
-					Email:       "user@example.com",
-					Password:    password.UnusablePassword,
-					Status:      model.UserStatusActive,
-					FirstName:   "Test",
-					LastName:    "User",
-					Picture:     "https://example.com/picture.jpg",
-					Title:       "Software Engineer",
-					Bio:         "I'm a software engineer",
-					Phone:       "+1234567890",
-					Address:     "Remote",
-					Links:       make([]string, 0),
-					Languages:   make([]model.Language, 0),
-					Documents:   make([]model.ID, 0),
-					Permissions: make([]model.ID, 0),
-				},
+				opts: CreateUserOpts{
+					Username:  "test-user",
+					Email:     "user@example.com",
+					Password:  password.UnusablePassword,
+					Status:    model.UserStatusActive,
+					FirstName: "Test",
+					LastName:  "User",
+					Picture:   "https://example.com/picture.jpg",
+					Title:     "Software Engineer",
+					Bio:       "I'm a software engineer",
+					Phone:     "+1234567890",
+					Address:   "Remote",
+					Links:     make([]string, 0),
+					Languages: make([]model.Language, 0)},
 			},
 		},
 		{
 			name: "add new user with error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, _ *model.User) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, _ CreateUserOpts) *redisBaseRepository {
 					getAllKey := composeCacheKey(model.ResourceTypeUser.String(), "GetAll", "*")
 					organizationsKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*")
 					rolesKey := composeCacheKey(model.ResourceTypeRole.String(), "*")
@@ -147,39 +144,35 @@ func TestCachedUserRepository_Create(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				userRepo: func(ctrl *gomock.Controller, ctx context.Context, user *model.User) UserRepository {
-					repo := mock.NewUserRepository(ctrl)
-					repo.EXPECT().Create(ctx, user).Return(ErrUserCreate)
+				userRepo: func(ctrl *gomock.Controller, ctx context.Context, opts CreateUserOpts) UserRepository {
+					repo := NewMockUserRepository(ctrl)
+					repo.EXPECT().Create(ctx, opts).Return(nil, ErrUserCreate)
 					return repo
 				},
 			},
 			args: args{
 				ctx: context.Background(),
-				user: &model.User{
-					ID:          model.MustNewID(model.ResourceTypeUser),
-					Username:    "test-user",
-					Email:       "user@example.com",
-					Password:    password.UnusablePassword,
-					Status:      model.UserStatusActive,
-					FirstName:   "Test",
-					LastName:    "User",
-					Picture:     "https://example.com/picture.jpg",
-					Title:       "Software Engineer",
-					Bio:         "I'm a software engineer",
-					Phone:       "+1234567890",
-					Address:     "Remote",
-					Links:       make([]string, 0),
-					Languages:   make([]model.Language, 0),
-					Documents:   make([]model.ID, 0),
-					Permissions: make([]model.ID, 0),
-				},
+				opts: CreateUserOpts{
+					Username:  "test-user",
+					Email:     "user@example.com",
+					Password:  password.UnusablePassword,
+					Status:    model.UserStatusActive,
+					FirstName: "Test",
+					LastName:  "User",
+					Picture:   "https://example.com/picture.jpg",
+					Title:     "Software Engineer",
+					Bio:       "I'm a software engineer",
+					Phone:     "+1234567890",
+					Address:   "Remote",
+					Links:     make([]string, 0),
+					Languages: make([]model.Language, 0)},
 			},
 			wantErr: ErrUserCreate,
 		},
 		{
 			name: "add new user get all cache delete error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, _ *model.User) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, _ CreateUserOpts) *redisBaseRepository {
 					getAllKey := composeCacheKey(model.ResourceTypeUser.String(), "GetAll", "*")
 
 					getAllKeyResult := new(redis.StringSliceCmd)
@@ -209,37 +202,33 @@ func TestCachedUserRepository_Create(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				userRepo: func(ctrl *gomock.Controller, _ context.Context, _ *model.User) UserRepository {
-					return mock.NewUserRepository(ctrl)
+				userRepo: func(ctrl *gomock.Controller, _ context.Context, _ CreateUserOpts) UserRepository {
+					return NewMockUserRepository(ctrl)
 				},
 			},
 			args: args{
 				ctx: context.Background(),
-				user: &model.User{
-					ID:          model.MustNewID(model.ResourceTypeUser),
-					Username:    "test-user",
-					Email:       "user@example.com",
-					Password:    password.UnusablePassword,
-					Status:      model.UserStatusActive,
-					FirstName:   "Test",
-					LastName:    "User",
-					Picture:     "https://example.com/picture.jpg",
-					Title:       "Software Engineer",
-					Bio:         "I'm a software engineer",
-					Phone:       "+1234567890",
-					Address:     "Remote",
-					Links:       make([]string, 0),
-					Languages:   make([]model.Language, 0),
-					Documents:   make([]model.ID, 0),
-					Permissions: make([]model.ID, 0),
-				},
+				opts: CreateUserOpts{
+					Username:  "test-user",
+					Email:     "user@example.com",
+					Password:  password.UnusablePassword,
+					Status:    model.UserStatusActive,
+					FirstName: "Test",
+					LastName:  "User",
+					Picture:   "https://example.com/picture.jpg",
+					Title:     "Software Engineer",
+					Bio:       "I'm a software engineer",
+					Phone:     "+1234567890",
+					Address:   "Remote",
+					Links:     make([]string, 0),
+					Languages: make([]model.Language, 0)},
 			},
 			wantErr: ErrCacheDelete,
 		},
 		{
 			name: "create new user organizations cache delete error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, _ *model.User) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, _ CreateUserOpts) *redisBaseRepository {
 					getAllKey := composeCacheKey(model.ResourceTypeUser.String(), "GetAll", "*")
 					organizationsKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*")
 
@@ -275,37 +264,33 @@ func TestCachedUserRepository_Create(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				userRepo: func(ctrl *gomock.Controller, _ context.Context, _ *model.User) UserRepository {
-					return mock.NewUserRepository(ctrl)
+				userRepo: func(ctrl *gomock.Controller, _ context.Context, _ CreateUserOpts) UserRepository {
+					return NewMockUserRepository(ctrl)
 				},
 			},
 			args: args{
 				ctx: context.Background(),
-				user: &model.User{
-					ID:          model.MustNewID(model.ResourceTypeUser),
-					Username:    "test-user",
-					Email:       "user@example.com",
-					Password:    password.UnusablePassword,
-					Status:      model.UserStatusActive,
-					FirstName:   "Test",
-					LastName:    "User",
-					Picture:     "https://example.com/picture.jpg",
-					Title:       "Software Engineer",
-					Bio:         "I'm a software engineer",
-					Phone:       "+1234567890",
-					Address:     "Remote",
-					Links:       make([]string, 0),
-					Languages:   make([]model.Language, 0),
-					Documents:   make([]model.ID, 0),
-					Permissions: make([]model.ID, 0),
-				},
+				opts: CreateUserOpts{
+					Username:  "test-user",
+					Email:     "user@example.com",
+					Password:  password.UnusablePassword,
+					Status:    model.UserStatusActive,
+					FirstName: "Test",
+					LastName:  "User",
+					Picture:   "https://example.com/picture.jpg",
+					Title:     "Software Engineer",
+					Bio:       "I'm a software engineer",
+					Phone:     "+1234567890",
+					Address:   "Remote",
+					Links:     make([]string, 0),
+					Languages: make([]model.Language, 0)},
 			},
 			wantErr: ErrCacheDelete,
 		},
 		{
 			name: "create new user roles cache delete error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, _ *model.User) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, _ CreateUserOpts) *redisBaseRepository {
 					getAllKey := composeCacheKey(model.ResourceTypeUser.String(), "GetAll", "*")
 					organizationsKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*")
 					rolesKey := composeCacheKey(model.ResourceTypeRole.String(), "*")
@@ -347,30 +332,26 @@ func TestCachedUserRepository_Create(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				userRepo: func(ctrl *gomock.Controller, _ context.Context, _ *model.User) UserRepository {
-					return mock.NewUserRepository(ctrl)
+				userRepo: func(ctrl *gomock.Controller, _ context.Context, _ CreateUserOpts) UserRepository {
+					return NewMockUserRepository(ctrl)
 				},
 			},
 			args: args{
 				ctx: context.Background(),
-				user: &model.User{
-					ID:          model.MustNewID(model.ResourceTypeUser),
-					Username:    "test-user",
-					Email:       "user@example.com",
-					Password:    password.UnusablePassword,
-					Status:      model.UserStatusActive,
-					FirstName:   "Test",
-					LastName:    "User",
-					Picture:     "https://example.com/picture.jpg",
-					Title:       "Software Engineer",
-					Bio:         "I'm a software engineer",
-					Phone:       "+1234567890",
-					Address:     "Remote",
-					Links:       make([]string, 0),
-					Languages:   make([]model.Language, 0),
-					Documents:   make([]model.ID, 0),
-					Permissions: make([]model.ID, 0),
-				},
+				opts: CreateUserOpts{
+					Username:  "test-user",
+					Email:     "user@example.com",
+					Password:  password.UnusablePassword,
+					Status:    model.UserStatusActive,
+					FirstName: "Test",
+					LastName:  "User",
+					Picture:   "https://example.com/picture.jpg",
+					Title:     "Software Engineer",
+					Bio:       "I'm a software engineer",
+					Phone:     "+1234567890",
+					Address:   "Remote",
+					Links:     make([]string, 0),
+					Languages: make([]model.Language, 0)},
 			},
 			wantErr: ErrCacheDelete,
 		},
@@ -382,10 +363,10 @@ func TestCachedUserRepository_Create(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			r := &RedisCachedUserRepository{
-				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.user),
-				userRepo:  tt.fields.userRepo(ctrl, tt.args.ctx, tt.args.user),
+				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.opts),
+				userRepo:  tt.fields.userRepo(ctrl, tt.args.ctx, tt.args.opts),
 			}
-			err := r.Create(tt.args.ctx, tt.args.user)
+			_, err := r.Create(tt.args.ctx, tt.args.opts)
 			require.ErrorIs(t, err, tt.wantErr)
 		})
 	}
@@ -393,8 +374,8 @@ func TestCachedUserRepository_Create(t *testing.T) {
 
 func TestCachedUserRepository_Get(t *testing.T) {
 	type fields struct {
-		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, user *model.User) *redisBaseRepository
-		userRepo  func(ctrl *gomock.Controller, ctx context.Context, id model.ID, user *model.User) UserRepository
+		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, user *User) *redisBaseRepository
+		userRepo  func(ctrl *gomock.Controller, ctx context.Context, id model.ID, user *User) UserRepository
 	}
 	type args struct {
 		ctx context.Context
@@ -404,13 +385,13 @@ func TestCachedUserRepository_Get(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    func(id model.ID) *model.User
+		want    func(id model.ID) *User
 		wantErr error
 	}{
 		{
 			name: "get uncached user",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, user *model.User) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, user *User) *redisBaseRepository {
 					key := composeCacheKey(model.ResourceTypeUser.String(), id.String())
 
 					db, err := NewRedisDatabase(
@@ -440,8 +421,8 @@ func TestCachedUserRepository_Get(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				userRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, user *model.User) UserRepository {
-					repo := mock.NewUserRepository(ctrl)
+				userRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, user *User) UserRepository {
+					repo := NewMockUserRepository(ctrl)
 					repo.EXPECT().Get(ctx, id).Return(user, nil)
 					return repo
 				},
@@ -450,8 +431,8 @@ func TestCachedUserRepository_Get(t *testing.T) {
 				ctx: context.Background(),
 				id:  model.MustNewID(model.ResourceTypeUser),
 			},
-			want: func(id model.ID) *model.User {
-				return &model.User{
+			want: func(id model.ID) *User {
+				return &User{
 					ID:          id,
 					Username:    "test-user",
 					Email:       "user@example.com",
@@ -474,7 +455,7 @@ func TestCachedUserRepository_Get(t *testing.T) {
 		{
 			name: "get cached user",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, user *model.User) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, user *User) *redisBaseRepository {
 					key := composeCacheKey(model.ResourceTypeUser.String(), id.String())
 
 					db, err := NewRedisDatabase(
@@ -490,7 +471,7 @@ func TestCachedUserRepository_Get(t *testing.T) {
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Do(func(_ context.Context, _ string, dst any) {
-						if ptr, ok := dst.(**model.User); ok {
+						if ptr, ok := dst.(**User); ok {
 							*ptr = user
 						}
 					}).Return(nil)
@@ -502,16 +483,16 @@ func TestCachedUserRepository_Get(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				userRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ *model.User) UserRepository {
-					return mock.NewUserRepository(ctrl)
+				userRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ *User) UserRepository {
+					return NewMockUserRepository(ctrl)
 				},
 			},
 			args: args{
 				ctx: context.Background(),
 				id:  model.MustNewID(model.ResourceTypeUser),
 			},
-			want: func(id model.ID) *model.User {
-				return &model.User{
+			want: func(id model.ID) *User {
+				return &User{
 					ID:          id,
 					Username:    "test-user",
 					Email:       "user@example.com",
@@ -534,7 +515,7 @@ func TestCachedUserRepository_Get(t *testing.T) {
 		{
 			name: "get uncached user error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *model.User) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *User) *redisBaseRepository {
 					key := composeCacheKey(model.ResourceTypeUser.String(), id.String())
 
 					db, err := NewRedisDatabase(
@@ -558,8 +539,8 @@ func TestCachedUserRepository_Get(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				userRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *model.User) UserRepository {
-					repo := mock.NewUserRepository(ctrl)
+				userRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *User) UserRepository {
+					repo := NewMockUserRepository(ctrl)
 					repo.EXPECT().Get(ctx, id).Return(nil, ErrNotFound)
 					return repo
 				},
@@ -573,7 +554,7 @@ func TestCachedUserRepository_Get(t *testing.T) {
 		{
 			name: "get cached user error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *model.User) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *User) *redisBaseRepository {
 					key := composeCacheKey(model.ResourceTypeUser.String(), id.String())
 
 					db, err := NewRedisDatabase(
@@ -597,8 +578,8 @@ func TestCachedUserRepository_Get(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				userRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ *model.User) UserRepository {
-					return mock.NewUserRepository(ctrl)
+				userRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ *User) UserRepository {
+					return NewMockUserRepository(ctrl)
 				},
 			},
 			args: args{
@@ -610,7 +591,7 @@ func TestCachedUserRepository_Get(t *testing.T) {
 		{
 			name: "get uncached user cache set error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, user *model.User) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, user *User) *redisBaseRepository {
 					key := composeCacheKey(model.ResourceTypeUser.String(), id.String())
 
 					db, err := NewRedisDatabase(
@@ -640,8 +621,8 @@ func TestCachedUserRepository_Get(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				userRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, user *model.User) UserRepository {
-					repo := mock.NewUserRepository(ctrl)
+				userRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, user *User) UserRepository {
+					repo := NewMockUserRepository(ctrl)
 					repo.EXPECT().Get(ctx, id).Return(user, nil)
 					return repo
 				},
@@ -659,7 +640,7 @@ func TestCachedUserRepository_Get(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			var want *model.User
+			var want *User
 			if tt.want != nil {
 				want = tt.want(tt.args.id)
 			}
@@ -677,8 +658,8 @@ func TestCachedUserRepository_Get(t *testing.T) {
 
 func TestCachedUserRepository_GetByEmail(t *testing.T) {
 	type fields struct {
-		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, email string, user *model.User) *redisBaseRepository
-		userRepo  func(ctrl *gomock.Controller, ctx context.Context, email string, user *model.User) UserRepository
+		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, email string, user *User) *redisBaseRepository
+		userRepo  func(ctrl *gomock.Controller, ctx context.Context, email string, user *User) UserRepository
 	}
 	type args struct {
 		ctx   context.Context
@@ -688,13 +669,13 @@ func TestCachedUserRepository_GetByEmail(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    func(email string) *model.User
+		want    func(email string) *User
 		wantErr error
 	}{
 		{
 			name: "get uncached user",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, email string, user *model.User) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, email string, user *User) *redisBaseRepository {
 					key := composeCacheKey(model.ResourceTypeUser.String(), "GetByEmail", email)
 
 					db, err := NewRedisDatabase(
@@ -724,8 +705,8 @@ func TestCachedUserRepository_GetByEmail(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				userRepo: func(ctrl *gomock.Controller, ctx context.Context, email string, user *model.User) UserRepository {
-					repo := mock.NewUserRepository(ctrl)
+				userRepo: func(ctrl *gomock.Controller, ctx context.Context, email string, user *User) UserRepository {
+					repo := NewMockUserRepository(ctrl)
 					repo.EXPECT().GetByEmail(ctx, email).Return(user, nil)
 					return repo
 				},
@@ -734,8 +715,8 @@ func TestCachedUserRepository_GetByEmail(t *testing.T) {
 				ctx:   context.Background(),
 				email: "test@example.com",
 			},
-			want: func(email string) *model.User {
-				return &model.User{
+			want: func(email string) *User {
+				return &User{
 					ID:          model.MustNewID(model.ResourceTypeUser),
 					Username:    "test-user",
 					Email:       email,
@@ -758,7 +739,7 @@ func TestCachedUserRepository_GetByEmail(t *testing.T) {
 		{
 			name: "get cached user",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, email string, user *model.User) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, email string, user *User) *redisBaseRepository {
 					key := composeCacheKey(model.ResourceTypeUser.String(), "GetByEmail", email)
 
 					db, err := NewRedisDatabase(
@@ -774,7 +755,7 @@ func TestCachedUserRepository_GetByEmail(t *testing.T) {
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Do(func(_ context.Context, _ string, dst any) {
-						if ptr, ok := dst.(**model.User); ok {
+						if ptr, ok := dst.(**User); ok {
 							*ptr = user
 						}
 					}).Return(nil)
@@ -786,16 +767,16 @@ func TestCachedUserRepository_GetByEmail(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				userRepo: func(ctrl *gomock.Controller, _ context.Context, _ string, _ *model.User) UserRepository {
-					return mock.NewUserRepository(ctrl)
+				userRepo: func(ctrl *gomock.Controller, _ context.Context, _ string, _ *User) UserRepository {
+					return NewMockUserRepository(ctrl)
 				},
 			},
 			args: args{
 				ctx:   context.Background(),
 				email: "test@example.com",
 			},
-			want: func(email string) *model.User {
-				return &model.User{
+			want: func(email string) *User {
+				return &User{
 					ID:          model.MustNewID(model.ResourceTypeUser),
 					Username:    "test-user",
 					Email:       email,
@@ -818,7 +799,7 @@ func TestCachedUserRepository_GetByEmail(t *testing.T) {
 		{
 			name: "get uncached user error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, email string, _ *model.User) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, email string, _ *User) *redisBaseRepository {
 					key := composeCacheKey(model.ResourceTypeUser.String(), "GetByEmail", email)
 
 					db, err := NewRedisDatabase(
@@ -842,8 +823,8 @@ func TestCachedUserRepository_GetByEmail(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				userRepo: func(ctrl *gomock.Controller, ctx context.Context, email string, _ *model.User) UserRepository {
-					repo := mock.NewUserRepository(ctrl)
+				userRepo: func(ctrl *gomock.Controller, ctx context.Context, email string, _ *User) UserRepository {
+					repo := NewMockUserRepository(ctrl)
 					repo.EXPECT().GetByEmail(ctx, email).Return(nil, ErrNotFound)
 					return repo
 				},
@@ -857,7 +838,7 @@ func TestCachedUserRepository_GetByEmail(t *testing.T) {
 		{
 			name: "get cached user error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, email string, _ *model.User) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, email string, _ *User) *redisBaseRepository {
 					key := composeCacheKey(model.ResourceTypeUser.String(), "GetByEmail", email)
 
 					db, err := NewRedisDatabase(
@@ -881,8 +862,8 @@ func TestCachedUserRepository_GetByEmail(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				userRepo: func(ctrl *gomock.Controller, _ context.Context, _ string, _ *model.User) UserRepository {
-					return mock.NewUserRepository(ctrl)
+				userRepo: func(ctrl *gomock.Controller, _ context.Context, _ string, _ *User) UserRepository {
+					return NewMockUserRepository(ctrl)
 				},
 			},
 			args: args{
@@ -894,7 +875,7 @@ func TestCachedUserRepository_GetByEmail(t *testing.T) {
 		{
 			name: "get uncached user cache set error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, email string, user *model.User) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, email string, user *User) *redisBaseRepository {
 					key := composeCacheKey(model.ResourceTypeUser.String(), "GetByEmail", email)
 
 					db, err := NewRedisDatabase(
@@ -924,8 +905,8 @@ func TestCachedUserRepository_GetByEmail(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				userRepo: func(ctrl *gomock.Controller, ctx context.Context, email string, user *model.User) UserRepository {
-					repo := mock.NewUserRepository(ctrl)
+				userRepo: func(ctrl *gomock.Controller, ctx context.Context, email string, user *User) UserRepository {
+					repo := NewMockUserRepository(ctrl)
 					repo.EXPECT().GetByEmail(ctx, email).Return(user, nil)
 					return repo
 				},
@@ -943,7 +924,7 @@ func TestCachedUserRepository_GetByEmail(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			var want *model.User
+			var want *User
 			if tt.want != nil {
 				want = tt.want(tt.args.email)
 			}
@@ -961,8 +942,8 @@ func TestCachedUserRepository_GetByEmail(t *testing.T) {
 
 func TestCachedUserRepository_GetAll(t *testing.T) {
 	type fields struct {
-		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, users []*model.User) *redisBaseRepository
-		userRepo  func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, users []*model.User) UserRepository
+		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, users []*User) *redisBaseRepository
+		userRepo  func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, users []*User) UserRepository
 	}
 	type args struct {
 		ctx    context.Context
@@ -973,13 +954,13 @@ func TestCachedUserRepository_GetAll(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    []*model.User
+		want    []*User
 		wantErr error
 	}{
 		{
 			name: "get uncached users",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, users []*model.User) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, users []*User) *redisBaseRepository {
 					key := composeCacheKey(model.ResourceTypeUser.String(), "GetAll", offset, limit)
 
 					db, err := NewRedisDatabase(
@@ -1009,8 +990,8 @@ func TestCachedUserRepository_GetAll(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				userRepo: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, users []*model.User) UserRepository {
-					repo := mock.NewUserRepository(ctrl)
+				userRepo: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, users []*User) UserRepository {
+					repo := NewMockUserRepository(ctrl)
 					repo.EXPECT().GetAll(ctx, offset, limit).Return(users, nil)
 					return repo
 				},
@@ -1020,7 +1001,7 @@ func TestCachedUserRepository_GetAll(t *testing.T) {
 				offset: 0,
 				limit:  10,
 			},
-			want: []*model.User{
+			want: []*User{
 				{
 					ID:          model.MustNewID(model.ResourceTypeUser),
 					Username:    "test-user",
@@ -1062,7 +1043,7 @@ func TestCachedUserRepository_GetAll(t *testing.T) {
 		{
 			name: "get cached users",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, users []*model.User) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, users []*User) *redisBaseRepository {
 					key := composeCacheKey(model.ResourceTypeUser.String(), "GetAll", offset, limit)
 
 					db, err := NewRedisDatabase(
@@ -1078,7 +1059,7 @@ func TestCachedUserRepository_GetAll(t *testing.T) {
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Do(func(_ context.Context, _ string, dst any) {
-						if listPtr, ok := dst.(*[]*model.User); ok {
+						if listPtr, ok := dst.(*[]*User); ok {
 							*listPtr = users
 						}
 					}).Return(nil)
@@ -1090,8 +1071,8 @@ func TestCachedUserRepository_GetAll(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				userRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ int, _ []*model.User) UserRepository {
-					return mock.NewUserRepository(ctrl)
+				userRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ int, _ []*User) UserRepository {
+					return NewMockUserRepository(ctrl)
 				},
 			},
 			args: args{
@@ -1099,7 +1080,7 @@ func TestCachedUserRepository_GetAll(t *testing.T) {
 				offset: 0,
 				limit:  10,
 			},
-			want: []*model.User{
+			want: []*User{
 				{
 					ID:          model.MustNewID(model.ResourceTypeUser),
 					Username:    "test-user",
@@ -1141,7 +1122,7 @@ func TestCachedUserRepository_GetAll(t *testing.T) {
 		{
 			name: "get uncached users error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, _ []*model.User) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, _ []*User) *redisBaseRepository {
 					key := composeCacheKey(model.ResourceTypeUser.String(), "GetAll", offset, limit)
 
 					db, err := NewRedisDatabase(
@@ -1165,8 +1146,8 @@ func TestCachedUserRepository_GetAll(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				userRepo: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, _ []*model.User) UserRepository {
-					repo := mock.NewUserRepository(ctrl)
+				userRepo: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, _ []*User) UserRepository {
+					repo := NewMockUserRepository(ctrl)
 					repo.EXPECT().GetAll(ctx, offset, limit).Return(nil, ErrNotFound)
 					return repo
 				},
@@ -1181,7 +1162,7 @@ func TestCachedUserRepository_GetAll(t *testing.T) {
 		{
 			name: "get get users cache error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, _ []*model.User) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, _ []*User) *redisBaseRepository {
 					key := composeCacheKey(model.ResourceTypeUser.String(), "GetAll", offset, limit)
 
 					db, err := NewRedisDatabase(
@@ -1205,8 +1186,8 @@ func TestCachedUserRepository_GetAll(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				userRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ int, _ []*model.User) UserRepository {
-					return mock.NewUserRepository(ctrl)
+				userRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ int, _ []*User) UserRepository {
+					return NewMockUserRepository(ctrl)
 				},
 			},
 			args: args{
@@ -1219,7 +1200,7 @@ func TestCachedUserRepository_GetAll(t *testing.T) {
 		{
 			name: "get uncached users cache set error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, users []*model.User) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, users []*User) *redisBaseRepository {
 					key := composeCacheKey(model.ResourceTypeUser.String(), "GetAll", offset, limit)
 
 					db, err := NewRedisDatabase(
@@ -1249,8 +1230,8 @@ func TestCachedUserRepository_GetAll(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				userRepo: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, users []*model.User) UserRepository {
-					repo := mock.NewUserRepository(ctrl)
+				userRepo: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, users []*User) UserRepository {
+					repo := NewMockUserRepository(ctrl)
 					repo.EXPECT().GetAll(ctx, offset, limit).Return(users, nil)
 					return repo
 				},
@@ -1282,25 +1263,25 @@ func TestCachedUserRepository_GetAll(t *testing.T) {
 
 func TestCachedUserRepository_Update(t *testing.T) {
 	type fields struct {
-		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, user *model.User) *redisBaseRepository
-		userRepo  func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, user *model.User) UserRepository
+		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, user *User) *redisBaseRepository
+		userRepo  func(ctrl *gomock.Controller, ctx context.Context, id model.ID, opts UpdateUserOpts, user *User) UserRepository
 	}
 	type args struct {
-		ctx   context.Context
-		id    model.ID
-		patch map[string]any
+		ctx  context.Context
+		id   model.ID
+		opts UpdateUserOpts
 	}
 	tests := []struct {
 		name    string
 		fields  fields
 		args    args
-		want    *model.User
+		want    *User
 		wantErr error
 	}{
 		{
 			name: "update user",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, user *model.User) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, user *User) *redisBaseRepository {
 					key := composeCacheKey(model.ResourceTypeUser.String(), id.String())
 					byEmailKey := composeCacheKey(model.ResourceTypeUser.String(), "GetByEmail", user.Email)
 					getAllKey := composeCacheKey(model.ResourceTypeUser.String(), "GetAll", "*")
@@ -1340,21 +1321,21 @@ func TestCachedUserRepository_Update(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				userRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, user *model.User) UserRepository {
-					repo := mock.NewUserRepository(ctrl)
-					repo.EXPECT().Update(ctx, id, patch).Return(user, nil)
+				userRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, opts UpdateUserOpts, user *User) UserRepository {
+					repo := NewMockUserRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, opts).Return(user, nil)
 					return repo
 				},
 			},
 			args: args{
 				ctx: context.Background(),
 				id:  model.MustNewID(model.ResourceTypeUser),
-				patch: map[string]any{
-					"username": "updated-user",
-					"email":    "updated@example.com",
+				opts: UpdateUserOpts{
+					Username: optional.Some("updated-user"),
+					Email:    optional.Some("updated@example.com"),
 				},
 			},
-			want: &model.User{
+			want: &User{
 				ID:          model.MustNewID(model.ResourceTypeUser),
 				Username:    "test-user",
 				Email:       "user@example.com",
@@ -1376,7 +1357,7 @@ func TestCachedUserRepository_Update(t *testing.T) {
 		{
 			name: "update user with error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ *model.User) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ *User) *redisBaseRepository {
 					db, err := NewRedisDatabase(
 						WithRedisClient(mock.NewUniversalClient(ctrl)),
 					)
@@ -1389,18 +1370,18 @@ func TestCachedUserRepository_Update(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				userRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, _ *model.User) UserRepository {
-					repo := mock.NewUserRepository(ctrl)
-					repo.EXPECT().Update(ctx, id, patch).Return(nil, ErrNotFound)
+				userRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, opts UpdateUserOpts, _ *User) UserRepository {
+					repo := NewMockUserRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, opts).Return(nil, ErrNotFound)
 					return repo
 				},
 			},
 			args: args{
 				ctx: context.Background(),
 				id:  model.MustNewID(model.ResourceTypeUser),
-				patch: map[string]any{
-					"username": "updated-user",
-					"email":    "updated@example.com",
+				opts: UpdateUserOpts{
+					Username: optional.Some("updated-user"),
+					Email:    optional.Some("updated@example.com"),
 				},
 			},
 			wantErr: ErrNotFound,
@@ -1408,7 +1389,7 @@ func TestCachedUserRepository_Update(t *testing.T) {
 		{
 			name: "update user set cache error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, user *model.User) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, user *User) *redisBaseRepository {
 					key := composeCacheKey(model.ResourceTypeUser.String(), id.String())
 
 					db, err := NewRedisDatabase(
@@ -1436,18 +1417,18 @@ func TestCachedUserRepository_Update(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				userRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, user *model.User) UserRepository {
-					repo := mock.NewUserRepository(ctrl)
-					repo.EXPECT().Update(ctx, id, patch).Return(user, nil)
+				userRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, opts UpdateUserOpts, user *User) UserRepository {
+					repo := NewMockUserRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, opts).Return(user, nil)
 					return repo
 				},
 			},
 			args: args{
 				ctx: context.Background(),
 				id:  model.MustNewID(model.ResourceTypeUser),
-				patch: map[string]any{
-					"username": "updated-user",
-					"email":    "updated@example.com",
+				opts: UpdateUserOpts{
+					Username: optional.Some("updated-user"),
+					Email:    optional.Some("updated@example.com"),
 				},
 			},
 			wantErr: ErrCacheWrite,
@@ -1455,7 +1436,7 @@ func TestCachedUserRepository_Update(t *testing.T) {
 		{
 			name: "update user delete by email cache error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, user *model.User) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, user *User) *redisBaseRepository {
 					key := composeCacheKey(model.ResourceTypeUser.String(), id.String())
 					byEmailKey := composeCacheKey(model.ResourceTypeUser.String(), "GetByEmail", user.Email)
 
@@ -1486,21 +1467,21 @@ func TestCachedUserRepository_Update(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				userRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, user *model.User) UserRepository {
-					repo := mock.NewUserRepository(ctrl)
-					repo.EXPECT().Update(ctx, id, patch).Return(user, nil)
+				userRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, opts UpdateUserOpts, user *User) UserRepository {
+					repo := NewMockUserRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, opts).Return(user, nil)
 					return repo
 				},
 			},
 			args: args{
 				ctx: context.Background(),
 				id:  model.MustNewID(model.ResourceTypeUser),
-				patch: map[string]any{
-					"username": "updated-user",
-					"email":    "updated@example.com",
+				opts: UpdateUserOpts{
+					Username: optional.Some("updated-user"),
+					Email:    optional.Some("updated@example.com"),
 				},
 			},
-			want: &model.User{
+			want: &User{
 				ID:          model.MustNewID(model.ResourceTypeUser),
 				Username:    "test-user",
 				Email:       "user@example.com",
@@ -1523,7 +1504,7 @@ func TestCachedUserRepository_Update(t *testing.T) {
 		{
 			name: "update user delete get all cache error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, user *model.User) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, user *User) *redisBaseRepository {
 					key := composeCacheKey(model.ResourceTypeUser.String(), id.String())
 					byEmailKey := composeCacheKey(model.ResourceTypeUser.String(), "GetByEmail", user.Email)
 					getAllKey := composeCacheKey(model.ResourceTypeUser.String(), "GetAll", "*")
@@ -1563,21 +1544,21 @@ func TestCachedUserRepository_Update(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				userRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, user *model.User) UserRepository {
-					repo := mock.NewUserRepository(ctrl)
-					repo.EXPECT().Update(ctx, id, patch).Return(user, nil)
+				userRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, opts UpdateUserOpts, user *User) UserRepository {
+					repo := NewMockUserRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, opts).Return(user, nil)
 					return repo
 				},
 			},
 			args: args{
 				ctx: context.Background(),
 				id:  model.MustNewID(model.ResourceTypeUser),
-				patch: map[string]any{
-					"username": "updated-user",
-					"email":    "updated@example.com",
+				opts: UpdateUserOpts{
+					Username: optional.Some("updated-user"),
+					Email:    optional.Some("updated@example.com"),
 				},
 			},
-			want: &model.User{
+			want: &User{
 				ID:          model.MustNewID(model.ResourceTypeUser),
 				Username:    "test-user",
 				Email:       "user@example.com",
@@ -1607,9 +1588,9 @@ func TestCachedUserRepository_Update(t *testing.T) {
 
 			r := &RedisCachedUserRepository{
 				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, tt.want),
-				userRepo:  tt.fields.userRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.patch, tt.want),
+				userRepo:  tt.fields.userRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.opts, tt.want),
 			}
-			got, err := r.Update(tt.args.ctx, tt.args.id, tt.args.patch)
+			got, err := r.Update(tt.args.ctx, tt.args.id, tt.args.opts)
 			require.ErrorIs(t, err, tt.wantErr)
 			if tt.wantErr == nil {
 				require.Equal(t, tt.want, got)
@@ -1688,7 +1669,7 @@ func TestCachedUserRepository_Delete(t *testing.T) {
 					}
 				},
 				userRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) UserRepository {
-					repo := mock.NewUserRepository(ctrl)
+					repo := NewMockUserRepository(ctrl)
 					repo.EXPECT().Delete(ctx, id).Return(nil)
 					return repo
 				},
@@ -1753,7 +1734,7 @@ func TestCachedUserRepository_Delete(t *testing.T) {
 					}
 				},
 				userRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) UserRepository {
-					repo := mock.NewUserRepository(ctrl)
+					repo := NewMockUserRepository(ctrl)
 					repo.EXPECT().Delete(ctx, id).Return(ErrUserDelete)
 					return repo
 				},
@@ -1794,7 +1775,7 @@ func TestCachedUserRepository_Delete(t *testing.T) {
 					}
 				},
 				userRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID) UserRepository {
-					repo := mock.NewUserRepository(ctrl)
+					repo := NewMockUserRepository(ctrl)
 					return repo
 				},
 			},
@@ -1841,7 +1822,7 @@ func TestCachedUserRepository_Delete(t *testing.T) {
 					}
 				},
 				userRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID) UserRepository {
-					return mock.NewUserRepository(ctrl)
+					return NewMockUserRepository(ctrl)
 				},
 			},
 			args: args{
@@ -1893,7 +1874,7 @@ func TestCachedUserRepository_Delete(t *testing.T) {
 					}
 				},
 				userRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID) UserRepository {
-					return mock.NewUserRepository(ctrl)
+					return NewMockUserRepository(ctrl)
 				},
 			},
 			args: args{
@@ -1951,7 +1932,7 @@ func TestCachedUserRepository_Delete(t *testing.T) {
 					}
 				},
 				userRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID) UserRepository {
-					return mock.NewUserRepository(ctrl)
+					return NewMockUserRepository(ctrl)
 				},
 			},
 			args: args{
@@ -2015,7 +1996,7 @@ func TestCachedUserRepository_Delete(t *testing.T) {
 					}
 				},
 				userRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID) UserRepository {
-					return mock.NewUserRepository(ctrl)
+					return NewMockUserRepository(ctrl)
 				},
 			},
 			args: args{

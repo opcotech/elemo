@@ -6,8 +6,10 @@ import (
 	"time"
 
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
+
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/convert"
+	"github.com/opcotech/elemo/internal/pkg/optional"
 )
 
 var (
@@ -17,24 +19,82 @@ var (
 	ErrProjectUpdate = errors.New("failed to update project") // project cannot be updated
 )
 
-//go:generate mockgen -source=project.go -destination=../testutil/mock/project_repo_gen.go -package=mock -mock_names "ProjectRepository=ProjectRepository"
+// Project represents a project persisted by the repository.
+type Project struct {
+	ID          model.ID            `json:"id"`
+	Key         string              `json:"key"`
+	Name        string              `json:"name"`
+	Description string              `json:"description"`
+	Logo        string              `json:"logo"`
+	Status      model.ProjectStatus `json:"status"`
+	Teams       []model.ID          `json:"teams"`
+	Documents   []model.ID          `json:"documents"`
+	Issues      []model.ID          `json:"issues"`
+	CreatedAt   *time.Time          `json:"created_at"`
+	UpdatedAt   *time.Time          `json:"updated_at"`
+}
+
+// CreateProjectOpts holds the data required to create a project.
+type CreateProjectOpts struct {
+	NamespaceID model.ID
+	Key         string
+	Name        string
+	Description string
+	Logo        string
+	Status      model.ProjectStatus
+}
+
+// UpdateProjectOpts holds the fields that can be updated on a project.
+// Undefined fields (Defined == false) are left unchanged.
+type UpdateProjectOpts struct {
+	Key         optional.Optional[string]
+	Name        optional.Optional[string]
+	Description optional.Optional[string]
+	Logo        optional.Optional[string]
+	Status      optional.Optional[model.ProjectStatus]
+}
+
+// patch builds a Neo4j property map from defined optional fields.
+func (o UpdateProjectOpts) patch() map[string]any {
+	p := make(map[string]any)
+
+	if o.Key.Defined {
+		p["key"] = *o.Key.Value
+	}
+	if o.Name.Defined {
+		p["name"] = *o.Name.Value
+	}
+	if o.Description.Defined {
+		p["description"] = *o.Description.Value
+	}
+	if o.Logo.Defined {
+		p["logo"] = *o.Logo.Value
+	}
+	if o.Status.Defined {
+		p["status"] = o.Status.Value.String()
+	}
+
+	return p
+}
+
+//go:generate mockgen -source=project.go -destination=project_mock_gen.go -package=repository -mock_names "ProjectRepository=MockProjectRepository"
 type ProjectRepository interface {
-	Create(ctx context.Context, namespaceID model.ID, project *model.Project) error
-	Get(ctx context.Context, id model.ID) (*model.Project, error)
-	GetByKey(ctx context.Context, key string) (*model.Project, error)
-	GetAll(ctx context.Context, namespaceID model.ID, offset, limit int) ([]*model.Project, error)
-	Update(ctx context.Context, id model.ID, patch map[string]any) (*model.Project, error)
+	Create(ctx context.Context, opts CreateProjectOpts) (*Project, error)
+	Get(ctx context.Context, id model.ID) (*Project, error)
+	GetByKey(ctx context.Context, key string) (*Project, error)
+	GetAll(ctx context.Context, namespaceID model.ID, offset, limit int) ([]*Project, error)
+	Update(ctx context.Context, id model.ID, opts UpdateProjectOpts) (*Project, error)
 	Delete(ctx context.Context, id model.ID) error
 }
 
-// ProjectRepository is a repository for managing projects.
+// Neo4jProjectRepository is a repository for managing projects.
 type Neo4jProjectRepository struct {
 	*neo4jBaseRepository
 }
 
-func (r *Neo4jProjectRepository) scan(pp, dp, tp, ip string) func(rec *neo4j.Record) (*model.Project, error) {
-	return func(rec *neo4j.Record) (*model.Project, error) {
-		p := new(model.Project)
+func (r *Neo4jProjectRepository) scan(pp, dp, tp, ip string) func(rec *neo4j.Record) (*Project, error) {
+	return func(rec *neo4j.Record) (*Project, error) {
+		p := new(Project)
 
 		val, _, err := neo4j.GetRecordValue[neo4j.Node](rec, pp)
 		if err != nil {
@@ -59,34 +119,32 @@ func (r *Neo4jProjectRepository) scan(pp, dp, tp, ip string) func(rec *neo4j.Rec
 			return nil, err
 		}
 
-		if err := p.Validate(); err != nil {
-			return nil, err
-		}
-
 		return p, nil
 	}
 }
 
-func (r *Neo4jProjectRepository) Create(ctx context.Context, namespaceID model.ID, project *model.Project) error {
+func (r *Neo4jProjectRepository) Create(ctx context.Context, opts CreateProjectOpts) (*Project, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.ProjectRepository/Create")
 	defer span.End()
 
-	if err := namespaceID.Validate(); err != nil {
-		return errors.Join(ErrProjectCreate, err)
+	createdAt := convert.ToPointer(time.Now().UTC())
+
+	project := &Project{
+		ID:          model.MustNewID(model.ResourceTypeProject),
+		Key:         opts.Key,
+		Name:        opts.Name,
+		Description: opts.Description,
+		Logo:        opts.Logo,
+		Status:      opts.Status,
+		Teams:       make([]model.ID, 0),
+		Documents:   make([]model.ID, 0),
+		Issues:      make([]model.ID, 0),
+		CreatedAt:   createdAt,
+		UpdatedAt:   nil,
 	}
-
-	if err := project.Validate(); err != nil {
-		return errors.Join(ErrProjectCreate, err)
-	}
-
-	createdAt := time.Now().UTC()
-
-	project.ID = model.MustNewID(model.ResourceTypeProject)
-	project.CreatedAt = convert.ToPointer(createdAt)
-	project.UpdatedAt = nil
 
 	cypher := `
-	MATCH (n:` + namespaceID.Label() + ` {id: $namespace_id})
+	MATCH (n:` + opts.NamespaceID.Label() + ` {id: $namespace_id})
 	CREATE
 		(p:` + project.ID.Label() + ` {
 			id: $id, key: $key, name: $name, description: $description, logo: $logo, status: $status,
@@ -102,17 +160,17 @@ func (r *Neo4jProjectRepository) Create(ctx context.Context, namespaceID model.I
 		"logo":         project.Logo,
 		"status":       project.Status.String(),
 		"created_at":   createdAt.Format(time.RFC3339Nano),
-		"namespace_id": namespaceID.String(),
+		"namespace_id": opts.NamespaceID.String(),
 	}
 
 	if err := Neo4jExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
-		return errors.Join(ErrProjectCreate, err)
+		return nil, errors.Join(ErrProjectCreate, err)
 	}
 
-	return nil
+	return project, nil
 }
 
-func (r *Neo4jProjectRepository) Get(ctx context.Context, id model.ID) (*model.Project, error) {
+func (r *Neo4jProjectRepository) Get(ctx context.Context, id model.ID) (*Project, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.ProjectRepository/Get")
 	defer span.End()
 
@@ -135,7 +193,7 @@ func (r *Neo4jProjectRepository) Get(ctx context.Context, id model.ID) (*model.P
 	return project, nil
 }
 
-func (r *Neo4jProjectRepository) GetByKey(ctx context.Context, key string) (*model.Project, error) {
+func (r *Neo4jProjectRepository) GetByKey(ctx context.Context, key string) (*Project, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.ProjectRepository/GetByKey")
 	defer span.End()
 
@@ -158,7 +216,7 @@ func (r *Neo4jProjectRepository) GetByKey(ctx context.Context, key string) (*mod
 	return project, nil
 }
 
-func (r *Neo4jProjectRepository) GetAll(ctx context.Context, namespaceID model.ID, offset, limit int) ([]*model.Project, error) {
+func (r *Neo4jProjectRepository) GetAll(ctx context.Context, namespaceID model.ID, offset, limit int) ([]*Project, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.ProjectRepository/GetAll")
 	defer span.End()
 
@@ -185,7 +243,7 @@ func (r *Neo4jProjectRepository) GetAll(ctx context.Context, namespaceID model.I
 	return projects, nil
 }
 
-func (r *Neo4jProjectRepository) Update(ctx context.Context, id model.ID, patch map[string]any) (*model.Project, error) {
+func (r *Neo4jProjectRepository) Update(ctx context.Context, id model.ID, opts UpdateProjectOpts) (*Project, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.ProjectRepository/Update")
 	defer span.End()
 
@@ -200,7 +258,7 @@ func (r *Neo4jProjectRepository) Update(ctx context.Context, id model.ID, patch 
 
 	params := map[string]any{
 		"id":    id.String(),
-		"patch": patch,
+		"patch": opts.patch(),
 	}
 
 	project, err := Neo4jExecuteWriteAndReadSingle(ctx, r.db, cypher, params, r.scan("p", "d", "t", "i"))
@@ -269,26 +327,25 @@ func clearProjectsAllCrossCache(ctx context.Context, r *redisBaseRepository) err
 	return nil
 }
 
-// CachedProjectRepository implements caching on the
-// repository.ProjectRepository.
+// RedisCachedProjectRepository implements caching on the ProjectRepository.
 type RedisCachedProjectRepository struct {
 	cacheRepo   *redisBaseRepository
 	projectRepo ProjectRepository
 }
 
-func (r *RedisCachedProjectRepository) Create(ctx context.Context, namespaceID model.ID, project *model.Project) error {
+func (r *RedisCachedProjectRepository) Create(ctx context.Context, opts CreateProjectOpts) (*Project, error) {
 	if err := clearProjectsAllGetAll(ctx, r.cacheRepo); err != nil {
-		return err
+		return nil, err
 	}
 	if err := clearProjectsAllCrossCache(ctx, r.cacheRepo); err != nil {
-		return err
+		return nil, err
 	}
 
-	return r.projectRepo.Create(ctx, namespaceID, project)
+	return r.projectRepo.Create(ctx, opts)
 }
 
-func (r *RedisCachedProjectRepository) Get(ctx context.Context, id model.ID) (*model.Project, error) {
-	var project *model.Project
+func (r *RedisCachedProjectRepository) Get(ctx context.Context, id model.ID) (*Project, error) {
+	var project *Project
 	var err error
 
 	key := composeCacheKey(model.ResourceTypeProject.String(), id.String())
@@ -311,8 +368,8 @@ func (r *RedisCachedProjectRepository) Get(ctx context.Context, id model.ID) (*m
 	return project, nil
 }
 
-func (r *RedisCachedProjectRepository) GetByKey(ctx context.Context, key string) (*model.Project, error) {
-	var project *model.Project
+func (r *RedisCachedProjectRepository) GetByKey(ctx context.Context, key string) (*Project, error) {
+	var project *Project
 	var err error
 
 	cacheKey := composeCacheKey(model.ResourceTypeProject.String(), "GetByKey", key)
@@ -335,8 +392,8 @@ func (r *RedisCachedProjectRepository) GetByKey(ctx context.Context, key string)
 	return project, nil
 }
 
-func (r *RedisCachedProjectRepository) GetAll(ctx context.Context, namespaceID model.ID, offset, limit int) ([]*model.Project, error) {
-	var projects []*model.Project
+func (r *RedisCachedProjectRepository) GetAll(ctx context.Context, namespaceID model.ID, offset, limit int) ([]*Project, error) {
+	var projects []*Project
 	var err error
 
 	key := composeCacheKey(model.ResourceTypeProject.String(), "GetAll", namespaceID.String(), offset, limit)
@@ -359,8 +416,8 @@ func (r *RedisCachedProjectRepository) GetAll(ctx context.Context, namespaceID m
 	return projects, nil
 }
 
-func (r *RedisCachedProjectRepository) Update(ctx context.Context, id model.ID, patch map[string]any) (*model.Project, error) {
-	project, err := r.projectRepo.Update(ctx, id, patch)
+func (r *RedisCachedProjectRepository) Update(ctx context.Context, id model.ID, opts UpdateProjectOpts) (*Project, error) {
+	project, err := r.projectRepo.Update(ctx, id, opts)
 	if err != nil {
 		return nil, err
 	}

@@ -17,14 +17,31 @@ var (
 	ErrPermissionUpdate = errors.New("failed to update permission") // permission cannot be updated
 )
 
-//go:generate mockgen -source=permission.go -destination=../testutil/mock/permission_repo_gen.go -package=mock -mock_names "PermissionRepository=PermissionRepository"
+// Permission represents a permission persisted by the repository.
+type Permission struct {
+	ID        model.ID             `json:"id"`
+	Kind      model.PermissionKind `json:"kind"`
+	Subject   model.ID             `json:"subject"`
+	Target    model.ID             `json:"target"`
+	CreatedAt *time.Time           `json:"created_at"`
+	UpdatedAt *time.Time           `json:"updated_at"`
+}
+
+// CreatePermissionOpts holds the data required to create a permission.
+type CreatePermissionOpts struct {
+	Kind    model.PermissionKind
+	Subject model.ID
+	Target  model.ID
+}
+
+//go:generate mockgen -source=permission.go -destination=permission_mock_gen.go -package=repository -mock_names "PermissionRepository=MockPermissionRepository"
 type PermissionRepository interface {
-	Create(ctx context.Context, perm *model.Permission) error
-	Get(ctx context.Context, id model.ID) (*model.Permission, error)
-	GetBySubject(ctx context.Context, id model.ID) ([]*model.Permission, error)
-	GetByTarget(ctx context.Context, id model.ID) ([]*model.Permission, error)
-	GetBySubjectAndTarget(ctx context.Context, source, target model.ID) ([]*model.Permission, error)
-	Update(ctx context.Context, id model.ID, kind model.PermissionKind) (*model.Permission, error)
+	Create(ctx context.Context, opts CreatePermissionOpts) (*Permission, error)
+	Get(ctx context.Context, id model.ID) (*Permission, error)
+	GetBySubject(ctx context.Context, id model.ID) ([]*Permission, error)
+	GetByTarget(ctx context.Context, id model.ID) ([]*Permission, error)
+	GetBySubjectAndTarget(ctx context.Context, source, target model.ID) ([]*Permission, error)
+	Update(ctx context.Context, id model.ID, kind model.PermissionKind) (*Permission, error)
 	Delete(ctx context.Context, id model.ID) error
 	HasPermission(ctx context.Context, subject, target model.ID, kinds ...model.PermissionKind) (bool, error)
 	HasAnyRelation(ctx context.Context, source, target model.ID) (bool, error)
@@ -37,9 +54,9 @@ type Neo4jPermissionRepository struct {
 }
 
 // scan is a helper function for scanning a permission from a neo4j.Record.
-func (r *Neo4jPermissionRepository) scan(permParam, subjectParam, targetParam string) func(rec *neo4j.Record) (*model.Permission, error) {
-	return func(rec *neo4j.Record) (*model.Permission, error) {
-		parsed := new(model.Permission)
+func (r *Neo4jPermissionRepository) scan(permParam, subjectParam, targetParam string) func(rec *neo4j.Record) (*Permission, error) {
+	return func(rec *neo4j.Record) (*Permission, error) {
+		parsed := new(Permission)
 
 		val, _, err := neo4j.GetRecordValue[neo4j.Relationship](rec, permParam)
 		if err != nil {
@@ -72,18 +89,14 @@ func (r *Neo4jPermissionRepository) scan(permParam, subjectParam, targetParam st
 			return nil, err
 		}
 
-		if err := parsed.Validate(); err != nil {
-			return nil, err
-		}
-
 		return parsed, nil
 	}
 }
 
 // scanSystemLevelPermission is a helper function for scanning a permission from a ResourceType node.
 // The target is preserved as a nil ID (system-level permission) rather than parsing from the node.
-func (r *Neo4jPermissionRepository) scanSystemLevelPermission(target model.ID) func(rec *neo4j.Record) (*model.Permission, error) {
-	return func(rec *neo4j.Record) (*model.Permission, error) {
+func (r *Neo4jPermissionRepository) scanSystemLevelPermission(target model.ID) func(rec *neo4j.Record) (*Permission, error) {
+	return func(rec *neo4j.Record) (*Permission, error) {
 		val, _, err := neo4j.GetRecordValue[neo4j.Relationship](rec, "p")
 		if err != nil {
 			return nil, err
@@ -94,7 +107,7 @@ func (r *Neo4jPermissionRepository) scanSystemLevelPermission(target model.ID) f
 			return nil, err
 		}
 
-		perm := &model.Permission{}
+		perm := &Permission{}
 		if err := Neo4jScanIntoStruct(&val, &perm, []string{"id"}); err != nil {
 			return nil, err
 		}
@@ -108,18 +121,14 @@ func (r *Neo4jPermissionRepository) scanSystemLevelPermission(target model.ID) f
 			return nil, err
 		}
 
-		if err := perm.Validate(); err != nil {
-			return nil, err
-		}
-
 		return perm, nil
 	}
 }
 
 // scanSystemRolePermission is a helper function for scanning permissions from system roles.
 // The target is preserved as a nil ID (system-level permission) rather than parsing from the node.
-func (r *Neo4jPermissionRepository) scanSystemRolePermission(target model.ID) func(rec *neo4j.Record) (*model.Permission, error) {
-	return func(rec *neo4j.Record) (*model.Permission, error) {
+func (r *Neo4jPermissionRepository) scanSystemRolePermission(target model.ID) func(rec *neo4j.Record) (*Permission, error) {
+	return func(rec *neo4j.Record) (*Permission, error) {
 		val, _, err := neo4j.GetRecordValue[neo4j.Relationship](rec, "p")
 		if err != nil {
 			return nil, err
@@ -130,7 +139,7 @@ func (r *Neo4jPermissionRepository) scanSystemRolePermission(target model.ID) fu
 			return nil, err
 		}
 
-		perm := &model.Permission{}
+		perm := &Permission{}
 		if err := Neo4jScanIntoStruct(&val, &perm, []string{"id"}); err != nil {
 			return nil, err
 		}
@@ -151,16 +160,12 @@ func (r *Neo4jPermissionRepository) scanSystemRolePermission(target model.ID) fu
 			perm.CreatedAt = &now
 		}
 
-		if err := perm.Validate(); err != nil {
-			return nil, err
-		}
-
 		return perm, nil
 	}
 }
 
 // getDirectResourceTypePermissions returns direct permissions on a ResourceType node.
-func (r *Neo4jPermissionRepository) getDirectResourceTypePermissions(ctx context.Context, source, target model.ID) ([]*model.Permission, error) {
+func (r *Neo4jPermissionRepository) getDirectResourceTypePermissions(ctx context.Context, source, target model.ID) ([]*Permission, error) {
 	cypher := `
 	MATCH (s:` + source.Label() + ` {id: $source})-[p:` + EdgeKindHasPermission.String() + `]->(rt:` + model.ResourceTypeResourceType.String() + ` {id: $target_label})
 	RETURN s, p, rt
@@ -180,7 +185,7 @@ func (r *Neo4jPermissionRepository) getDirectResourceTypePermissions(ctx context
 }
 
 // getSystemRolePermissions returns permissions derived from system roles (Owner, Admin, Support).
-func (r *Neo4jPermissionRepository) getSystemRolePermissions(ctx context.Context, source, target model.ID) ([]*model.Permission, error) {
+func (r *Neo4jPermissionRepository) getSystemRolePermissions(ctx context.Context, source, target model.ID) ([]*Permission, error) {
 	cypher := `
 	MATCH (s:` + source.Label() + ` {id: $source})-[m:` + EdgeKindMemberOf.String() + `]->(r:` + model.ResourceTypeRole.String() + ` {system: true})
 	MATCH (r)-[p:` + EdgeKindHasPermission.String() + `]->(rt:` + model.ResourceTypeResourceType.String() + ` {id: $target_label})
@@ -202,17 +207,18 @@ func (r *Neo4jPermissionRepository) getSystemRolePermissions(ctx context.Context
 
 // Create creates a new permission if it does not already exist between the
 // subject and target. If the permission already exists, no action is taken.
-func (r *Neo4jPermissionRepository) Create(ctx context.Context, perm *model.Permission) error {
+func (r *Neo4jPermissionRepository) Create(ctx context.Context, opts CreatePermissionOpts) (*Permission, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.PermissionRepository/Create")
 	defer span.End()
 
-	if err := perm.Validate(); err != nil {
-		return errors.Join(ErrPermissionCreate, err)
+	perm := &Permission{
+		ID:        model.MustNewID(model.ResourceTypePermission),
+		Kind:      opts.Kind,
+		Subject:   opts.Subject,
+		Target:    opts.Target,
+		CreatedAt: convert.ToPointer(time.Now().UTC()),
+		UpdatedAt: nil,
 	}
-
-	perm.ID = model.MustNewID(model.ResourceTypePermission)
-	perm.CreatedAt = convert.ToPointer(time.Now().UTC())
-	perm.UpdatedAt = nil
 
 	cypher := `
 	MATCH (subject:` + perm.Subject.Label() + ` {id: $subject})
@@ -229,15 +235,15 @@ func (r *Neo4jPermissionRepository) Create(ctx context.Context, perm *model.Perm
 	}
 
 	if err := Neo4jExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
-		return errors.Join(err, ErrPermissionCreate)
+		return nil, errors.Join(err, ErrPermissionCreate)
 	}
 
-	return nil
+	return perm, nil
 }
 
 // Get returns an existing permission, its subject and target. If the
 // permission does not exist, an error is returned.
-func (r *Neo4jPermissionRepository) Get(ctx context.Context, id model.ID) (*model.Permission, error) {
+func (r *Neo4jPermissionRepository) Get(ctx context.Context, id model.ID) (*Permission, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.PermissionRepository/Get")
 	defer span.End()
 
@@ -260,7 +266,7 @@ func (r *Neo4jPermissionRepository) Get(ctx context.Context, id model.ID) (*mode
 
 // GetBySubject returns all permissions for a given subject. If no permissions
 // exist, an empty slice is returned.
-func (r *Neo4jPermissionRepository) GetBySubject(ctx context.Context, id model.ID) ([]*model.Permission, error) {
+func (r *Neo4jPermissionRepository) GetBySubject(ctx context.Context, id model.ID) ([]*Permission, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.PermissionRepository/GetBySubject")
 	defer span.End()
 
@@ -283,7 +289,7 @@ func (r *Neo4jPermissionRepository) GetBySubject(ctx context.Context, id model.I
 
 // GetByTarget returns all permissions for a given target. If no permissions
 // exist, an empty slice is returned.
-func (r *Neo4jPermissionRepository) GetByTarget(ctx context.Context, id model.ID) ([]*model.Permission, error) {
+func (r *Neo4jPermissionRepository) GetByTarget(ctx context.Context, id model.ID) ([]*Permission, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.PermissionRepository/GetByTarget")
 	defer span.End()
 
@@ -308,7 +314,7 @@ func (r *Neo4jPermissionRepository) GetByTarget(ctx context.Context, id model.ID
 // source has. If no permissions exist, an empty slice is returned. For system
 // level permissions (nil IDs), it checks permissions on ResourceType nodes
 // and system roles.
-func (r *Neo4jPermissionRepository) GetBySubjectAndTarget(ctx context.Context, source, target model.ID) ([]*model.Permission, error) {
+func (r *Neo4jPermissionRepository) GetBySubjectAndTarget(ctx context.Context, source, target model.ID) ([]*Permission, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.PermissionRepository/GetBySubjectAndTarget")
 	defer span.End()
 
@@ -519,7 +525,7 @@ func (r *Neo4jPermissionRepository) HasSystemRole(ctx context.Context, source mo
 // exist, an error is returned. If the permission's kind is already the same
 // as the one provided, the kind is overwritten and the updated_at timestamp
 // is updated.
-func (r *Neo4jPermissionRepository) Update(ctx context.Context, id model.ID, kind model.PermissionKind) (*model.Permission, error) {
+func (r *Neo4jPermissionRepository) Update(ctx context.Context, id model.ID, kind model.PermissionKind) (*Permission, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.PermissionRepository/Update")
 	defer span.End()
 
@@ -576,8 +582,8 @@ func NewNeo4jPermissionRepository(opts ...Neo4jRepositoryOption) (*Neo4jPermissi
 // deduplicatePermissions merges permissions from different sources, giving precedence to
 // PermissionKindAll ("*") when present. If "*" permission exists, all other permissions are
 // removed as "*" grants all permissions.
-func deduplicatePermissions(directPerms, systemRolePerms []*model.Permission) []*model.Permission {
-	permissionMap := make(map[model.PermissionKind]*model.Permission)
+func deduplicatePermissions(directPerms, systemRolePerms []*Permission) []*Permission {
+	permissionMap := make(map[model.PermissionKind]*Permission)
 
 	// Add direct permissions first
 	for _, perm := range directPerms {
@@ -593,7 +599,7 @@ func deduplicatePermissions(directPerms, systemRolePerms []*model.Permission) []
 
 		// If we're adding "*" permission, it overrides all others
 		if perm.Kind == model.PermissionKindAll {
-			permissionMap = map[model.PermissionKind]*model.Permission{
+			permissionMap = map[model.PermissionKind]*Permission{
 				model.PermissionKindAll: perm,
 			}
 			break
@@ -606,7 +612,7 @@ func deduplicatePermissions(directPerms, systemRolePerms []*model.Permission) []
 	}
 
 	// Convert map to slice
-	result := make([]*model.Permission, 0, len(permissionMap))
+	result := make([]*Permission, 0, len(permissionMap))
 	for _, perm := range permissionMap {
 		result = append(result, perm)
 	}
@@ -642,30 +648,30 @@ type RedisCachedPermissionRepository struct {
 	permissionRepo PermissionRepository
 }
 
-func (c *RedisCachedPermissionRepository) Create(ctx context.Context, perm *model.Permission) error {
+func (c *RedisCachedPermissionRepository) Create(ctx context.Context, opts CreatePermissionOpts) (*Permission, error) {
 	if err := clearPermissionAllCrossCache(ctx, c.cacheRepo); err != nil {
-		return err
+		return nil, err
 	}
-	return c.permissionRepo.Create(ctx, perm)
+	return c.permissionRepo.Create(ctx, opts)
 }
 
-func (c *RedisCachedPermissionRepository) Get(ctx context.Context, id model.ID) (*model.Permission, error) {
+func (c *RedisCachedPermissionRepository) Get(ctx context.Context, id model.ID) (*Permission, error) {
 	return c.permissionRepo.Get(ctx, id)
 }
 
-func (c *RedisCachedPermissionRepository) GetBySubject(ctx context.Context, id model.ID) ([]*model.Permission, error) {
+func (c *RedisCachedPermissionRepository) GetBySubject(ctx context.Context, id model.ID) ([]*Permission, error) {
 	return c.permissionRepo.GetBySubject(ctx, id)
 }
 
-func (c *RedisCachedPermissionRepository) GetByTarget(ctx context.Context, id model.ID) ([]*model.Permission, error) {
+func (c *RedisCachedPermissionRepository) GetByTarget(ctx context.Context, id model.ID) ([]*Permission, error) {
 	return c.permissionRepo.GetByTarget(ctx, id)
 }
 
-func (c *RedisCachedPermissionRepository) GetBySubjectAndTarget(ctx context.Context, source, target model.ID) ([]*model.Permission, error) {
+func (c *RedisCachedPermissionRepository) GetBySubjectAndTarget(ctx context.Context, source, target model.ID) ([]*Permission, error) {
 	return c.permissionRepo.GetBySubjectAndTarget(ctx, source, target)
 }
 
-func (c *RedisCachedPermissionRepository) Update(ctx context.Context, id model.ID, kind model.PermissionKind) (*model.Permission, error) {
+func (c *RedisCachedPermissionRepository) Update(ctx context.Context, id model.ID, kind model.PermissionKind) (*Permission, error) {
 	if err := clearPermissionAllCrossCache(ctx, c.cacheRepo); err != nil {
 		return nil, err
 	}

@@ -10,13 +10,46 @@ import (
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg"
 	"github.com/opcotech/elemo/internal/pkg/log"
-	"github.com/opcotech/elemo/internal/pkg/password"
+	"github.com/opcotech/elemo/internal/pkg/optional"
 	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/testutil/mock"
 	testModel "github.com/opcotech/elemo/internal/testutil/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func createUserOptsFromRepo(o repository.CreateUserOpts) CreateUserOpts {
+	return CreateUserOpts{
+		Username:  o.Username,
+		Email:     o.Email,
+		Password:  o.Password,
+		Status:    o.Status,
+		FirstName: o.FirstName,
+		LastName:  o.LastName,
+		Picture:   o.Picture,
+		Title:     o.Title,
+		Bio:       o.Bio,
+		Phone:     o.Phone,
+		Address:   o.Address,
+		Links:     o.Links,
+		Languages: o.Languages,
+	}
+}
+
+func repoUserToService(u *repository.User) *User {
+	if u == nil {
+		return nil
+	}
+	return userFromRepository(u)
+}
+
+func repoUsersToService(users []*repository.User) []*User {
+	out := make([]*User, len(users))
+	for i, u := range users {
+		out[i] = repoUserToService(u)
+	}
+	return out
+}
 
 func TestNewUserService(t *testing.T) {
 	type args struct {
@@ -35,9 +68,9 @@ func TestNewUserService(t *testing.T) {
 					return []Option{
 						WithLogger(mock.NewMockLogger(ctrl)),
 						WithTracer(mock.NewMockTracer(ctrl)),
-						WithUserRepository(mock.NewUserRepository(nil)),
-						WithUserTokenRepository(mock.NewUserTokenRepository(nil)),
-						WithPermissionService(mock.NewPermissionService(nil)),
+						WithUserRepository(repository.NewMockUserRepository(nil)),
+						WithUserTokenRepository(repository.NewMockUserTokenRepository(nil)),
+						WithPermissionService(NewMockPermissionService(nil)),
 						WithLicenseService(mock.NewMockLicenseService(nil)),
 					}
 				},
@@ -47,9 +80,9 @@ func TestNewUserService(t *testing.T) {
 					baseService: &baseService{
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            mock.NewMockTracer(ctrl),
-						userRepo:          mock.NewUserRepository(nil),
-						userTokenRepo:     mock.NewUserTokenRepository(nil),
-						permissionService: mock.NewPermissionService(nil),
+						userRepo:          repository.NewMockUserRepository(nil),
+						userTokenRepo:     repository.NewMockUserTokenRepository(nil),
+						permissionService: NewMockPermissionService(nil),
 						licenseService:    mock.NewMockLicenseService(nil),
 					},
 				}
@@ -61,7 +94,7 @@ func TestNewUserService(t *testing.T) {
 				opts: func(_ *gomock.Controller) []Option {
 					return []Option{
 						WithLogger(nil),
-						WithUserRepository(mock.NewUserRepository(nil)),
+						WithUserRepository(repository.NewMockUserRepository(nil)),
 						WithLicenseService(mock.NewMockLicenseService(nil)),
 					}
 				},
@@ -88,8 +121,8 @@ func TestNewUserService(t *testing.T) {
 					return []Option{
 						WithLogger(mock.NewMockLogger(ctrl)),
 						WithTracer(mock.NewMockTracer(ctrl)),
-						WithUserRepository(mock.NewUserRepository(nil)),
-						WithUserTokenRepository(mock.NewUserTokenRepository(nil)),
+						WithUserRepository(repository.NewMockUserRepository(nil)),
+						WithUserTokenRepository(repository.NewMockUserTokenRepository(nil)),
 						WithLicenseService(mock.NewMockLicenseService(nil)),
 					}
 				},
@@ -103,9 +136,9 @@ func TestNewUserService(t *testing.T) {
 					return []Option{
 						WithLogger(mock.NewMockLogger(ctrl)),
 						WithTracer(mock.NewMockTracer(ctrl)),
-						WithUserRepository(mock.NewUserRepository(nil)),
-						WithUserTokenRepository(mock.NewUserTokenRepository(nil)),
-						WithPermissionService(mock.NewPermissionService(nil)),
+						WithUserRepository(repository.NewMockUserRepository(nil)),
+						WithUserTokenRepository(repository.NewMockUserTokenRepository(nil)),
+						WithPermissionService(NewMockPermissionService(nil)),
 					}
 				},
 			},
@@ -131,11 +164,11 @@ func TestUserService_Create(t *testing.T) {
 	userID := model.MustNewID(model.ResourceTypeUser)
 
 	type fields struct {
-		baseService func(ctrl *gomock.Controller, ctx context.Context, user *model.User) *baseService
+		baseService func(ctrl *gomock.Controller, ctx context.Context, opts CreateUserOpts) *baseService
 	}
 	type args struct {
 		ctx  context.Context
-		user *model.User
+		opts CreateUserOpts
 	}
 	tests := []struct {
 		name    string
@@ -146,17 +179,17 @@ func TestUserService_Create(t *testing.T) {
 		{
 			name: "create user",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, user *model.User) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ CreateUserOpts) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mock.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.userService/Create", gomock.Len(0)).Return(ctx, span)
 
-					userRepo := mock.NewUserRepository(ctrl)
-					userRepo.EXPECT().Create(ctx, user).Return(nil)
+					userRepo := repository.NewMockUserRepository(ctrl)
+					userRepo.EXPECT().Create(ctx, gomock.Any()).Return(&repository.User{}, nil)
 
-					permSvc := mock.NewPermissionService(ctrl)
+					permSvc := NewMockPermissionService(ctrl)
 					permSvc.EXPECT().CtxUserHasPermission(ctx, model.MustNewNilID(model.ResourceTypeUser), model.PermissionKindCreate).Return(true)
 
 					licenseSvc := mock.NewMockLicenseService(ctrl)
@@ -174,13 +207,13 @@ func TestUserService_Create(t *testing.T) {
 			},
 			args: args{
 				ctx:  context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
-				user: testModel.NewUser(),
+				opts: createUserOptsFromRepo(testModel.NewCreateUserOpts()),
 			},
 		},
 		{
 			name: "create user with invalid user",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ *model.User) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ CreateUserOpts) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
@@ -193,28 +226,28 @@ func TestUserService_Create(t *testing.T) {
 					return &baseService{
 						logger:         mock.NewMockLogger(ctrl),
 						tracer:         tracer,
-						userRepo:       mock.NewUserRepository(ctrl),
+						userRepo:       repository.NewMockUserRepository(ctrl),
 						licenseService: licenseSvc,
 					}
 				},
 			},
 			args: args{
 				ctx:  context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
-				user: &model.User{},
+				opts: CreateUserOpts{},
 			},
 			wantErr: ErrUserCreate,
 		},
 		{
 			name: "create user with no permission",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ *model.User) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ CreateUserOpts) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mock.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.userService/Create", gomock.Len(0)).Return(ctx, span)
 
-					permSvc := mock.NewPermissionService(ctrl)
+					permSvc := NewMockPermissionService(ctrl)
 					permSvc.EXPECT().CtxUserHasPermission(ctx, model.MustNewNilID(model.ResourceTypeUser), model.PermissionKindCreate).Return(false)
 
 					licenseSvc := mock.NewMockLicenseService(ctrl)
@@ -223,7 +256,7 @@ func TestUserService_Create(t *testing.T) {
 					return &baseService{
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
-						userRepo:          mock.NewUserRepository(ctrl),
+						userRepo:          repository.NewMockUserRepository(ctrl),
 						permissionService: permSvc,
 						licenseService:    licenseSvc,
 					}
@@ -231,24 +264,24 @@ func TestUserService_Create(t *testing.T) {
 			},
 			args: args{
 				ctx:  context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
-				user: testModel.NewUser(),
+				opts: createUserOptsFromRepo(testModel.NewCreateUserOpts()),
 			},
 			wantErr: ErrNoPermission,
 		},
 		{
 			name: "create user with error",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, user *model.User) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ CreateUserOpts) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mock.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.userService/Create", gomock.Len(0)).Return(ctx, span)
 
-					userRepo := mock.NewUserRepository(ctrl)
-					userRepo.EXPECT().Create(ctx, user).Return(assert.AnError)
+					userRepo := repository.NewMockUserRepository(ctrl)
+					userRepo.EXPECT().Create(ctx, gomock.Any()).Return(nil, assert.AnError)
 
-					permSvc := mock.NewPermissionService(ctrl)
+					permSvc := NewMockPermissionService(ctrl)
 					permSvc.EXPECT().CtxUserHasPermission(ctx, model.MustNewNilID(model.ResourceTypeUser), model.PermissionKindCreate).Return(true)
 
 					licenseSvc := mock.NewMockLicenseService(ctrl)
@@ -266,21 +299,21 @@ func TestUserService_Create(t *testing.T) {
 			},
 			args: args{
 				ctx:  context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
-				user: testModel.NewUser(),
+				opts: createUserOptsFromRepo(testModel.NewCreateUserOpts()),
 			},
 			wantErr: ErrUserCreate,
 		},
 		{
 			name: "create user out of quota",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ *model.User) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ CreateUserOpts) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mock.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.userService/Create", gomock.Len(0)).Return(ctx, span)
 
-					permSvc := mock.NewPermissionService(ctrl)
+					permSvc := NewMockPermissionService(ctrl)
 					permSvc.EXPECT().CtxUserHasPermission(ctx, model.MustNewNilID(model.ResourceTypeUser), model.PermissionKindCreate).Return(true)
 
 					licenseSvc := mock.NewMockLicenseService(ctrl)
@@ -290,7 +323,7 @@ func TestUserService_Create(t *testing.T) {
 					return &baseService{
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
-						userRepo:          mock.NewUserRepository(ctrl),
+						userRepo:          repository.NewMockUserRepository(ctrl),
 						permissionService: permSvc,
 						licenseService:    licenseSvc,
 					}
@@ -298,14 +331,14 @@ func TestUserService_Create(t *testing.T) {
 			},
 			args: args{
 				ctx:  context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
-				user: testModel.NewUser(),
+				opts: createUserOptsFromRepo(testModel.NewCreateUserOpts()),
 			},
 			wantErr: ErrQuotaExceeded,
 		},
 		{
 			name: "create user with expired license",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ *model.User) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ CreateUserOpts) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
@@ -318,22 +351,22 @@ func TestUserService_Create(t *testing.T) {
 					return &baseService{
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
-						userRepo:          mock.NewUserRepository(ctrl),
-						permissionService: mock.NewPermissionService(ctrl),
+						userRepo:          repository.NewMockUserRepository(ctrl),
+						permissionService: NewMockPermissionService(ctrl),
 						licenseService:    licenseSvc,
 					}
 				},
 			},
 			args: args{
 				ctx:  context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
-				user: testModel.NewUser(),
+				opts: createUserOptsFromRepo(testModel.NewCreateUserOpts()),
 			},
 			wantErr: license.ErrLicenseExpired,
 		},
 		{
 			name: "create user with license expired error",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ *model.User) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ CreateUserOpts) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
@@ -346,15 +379,15 @@ func TestUserService_Create(t *testing.T) {
 					return &baseService{
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
-						userRepo:          mock.NewUserRepository(ctrl),
-						permissionService: mock.NewPermissionService(ctrl),
+						userRepo:          repository.NewMockUserRepository(ctrl),
+						permissionService: NewMockPermissionService(ctrl),
 						licenseService:    licenseSvc,
 					}
 				},
 			},
 			args: args{
 				ctx:  context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
-				user: testModel.NewUser(),
+				opts: createUserOptsFromRepo(testModel.NewCreateUserOpts()),
 			},
 			wantErr: license.ErrLicenseExpired,
 		},
@@ -366,9 +399,9 @@ func TestUserService_Create(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			s := &userService{
-				baseService: tt.fields.baseService(ctrl, tt.args.ctx, tt.args.user),
+				baseService: tt.fields.baseService(ctrl, tt.args.ctx, tt.args.opts),
 			}
-			err := s.Create(tt.args.ctx, tt.args.user)
+			_, err := s.Create(tt.args.ctx, tt.args.opts)
 			require.ErrorIs(t, err, tt.wantErr)
 		})
 	}
@@ -376,7 +409,7 @@ func TestUserService_Create(t *testing.T) {
 
 func TestUserService_Get(t *testing.T) {
 	type fields struct {
-		baseService func(ctrl *gomock.Controller, ctx context.Context, id model.ID, user *model.User) *baseService
+		baseService func(ctrl *gomock.Controller, ctx context.Context, id model.ID, user *repository.User) *baseService
 	}
 	type args struct {
 		ctx context.Context
@@ -386,20 +419,20 @@ func TestUserService_Get(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    *model.User
+		want    *User
 		wantErr error
 	}{
 		{
 			name: "get user",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, user *model.User) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, user *repository.User) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mock.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.userService/Get", gomock.Len(0)).Return(ctx, span)
 
-					userRepo := mock.NewUserRepository(ctrl)
+					userRepo := repository.NewMockUserRepository(ctrl)
 					userRepo.EXPECT().Get(ctx, id).Return(user, nil)
 
 					return &baseService{
@@ -413,12 +446,12 @@ func TestUserService_Get(t *testing.T) {
 				ctx: context.Background(),
 				id:  model.MustNewID(model.ResourceTypeUser),
 			},
-			want: testModel.NewUser(),
+			want: repoUserToService(testModel.NewUser()),
 		},
 		{
 			name: "get user with invalid user",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ *model.User) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ *repository.User) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
@@ -428,7 +461,7 @@ func TestUserService_Get(t *testing.T) {
 					return &baseService{
 						logger:   mock.NewMockLogger(ctrl),
 						tracer:   tracer,
-						userRepo: mock.NewUserRepository(ctrl),
+						userRepo: repository.NewMockUserRepository(ctrl),
 					}
 				},
 			},
@@ -441,14 +474,14 @@ func TestUserService_Get(t *testing.T) {
 		{
 			name: "get user with error",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *model.User) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *repository.User) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mock.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.userService/Get", gomock.Len(0)).Return(ctx, span)
 
-					userRepo := mock.NewUserRepository(ctrl)
+					userRepo := repository.NewMockUserRepository(ctrl)
 					userRepo.EXPECT().Get(ctx, id).Return(nil, assert.AnError)
 
 					return &baseService{
@@ -472,7 +505,13 @@ func TestUserService_Get(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			s := &userService{
-				baseService: tt.fields.baseService(ctrl, tt.args.ctx, tt.args.id, tt.want),
+				baseService: func() *baseService {
+					u := testModel.NewUser()
+					if tt.want != nil {
+						tt.want = repoUserToService(u)
+					}
+					return tt.fields.baseService(ctrl, tt.args.ctx, tt.args.id, u)
+				}(),
 			}
 			got, err := s.Get(tt.args.ctx, tt.args.id)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -483,7 +522,7 @@ func TestUserService_Get(t *testing.T) {
 
 func TestUserService_GetByEmail(t *testing.T) {
 	type fields struct {
-		baseService func(ctrl *gomock.Controller, ctx context.Context, email string, user *model.User) *baseService
+		baseService func(ctrl *gomock.Controller, ctx context.Context, email string, user *repository.User) *baseService
 	}
 	type args struct {
 		ctx   context.Context
@@ -493,20 +532,20 @@ func TestUserService_GetByEmail(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    *model.User
+		want    *User
 		wantErr error
 	}{
 		{
 			name: "get user",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, email string, user *model.User) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, email string, user *repository.User) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mock.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.userService/GetByEmail", gomock.Len(0)).Return(ctx, span)
 
-					userRepo := mock.NewUserRepository(ctrl)
+					userRepo := repository.NewMockUserRepository(ctrl)
 					userRepo.EXPECT().GetByEmail(ctx, email).Return(user, nil)
 
 					return &baseService{
@@ -520,12 +559,12 @@ func TestUserService_GetByEmail(t *testing.T) {
 				ctx:   context.Background(),
 				email: "email@example.com",
 			},
-			want: testModel.NewUser(),
+			want: repoUserToService(testModel.NewUser()),
 		},
 		{
 			name: "get user with invalid user",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ string, _ *model.User) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ string, _ *repository.User) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
@@ -535,7 +574,7 @@ func TestUserService_GetByEmail(t *testing.T) {
 					return &baseService{
 						logger:   mock.NewMockLogger(ctrl),
 						tracer:   tracer,
-						userRepo: mock.NewUserRepository(ctrl),
+						userRepo: repository.NewMockUserRepository(ctrl),
 					}
 				},
 			},
@@ -548,14 +587,14 @@ func TestUserService_GetByEmail(t *testing.T) {
 		{
 			name: "get user with error",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, email string, _ *model.User) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, email string, _ *repository.User) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mock.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.userService/GetByEmail", gomock.Len(0)).Return(ctx, span)
 
-					userRepo := mock.NewUserRepository(ctrl)
+					userRepo := repository.NewMockUserRepository(ctrl)
 					userRepo.EXPECT().GetByEmail(ctx, email).Return(nil, assert.AnError)
 
 					return &baseService{
@@ -579,7 +618,13 @@ func TestUserService_GetByEmail(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			s := &userService{
-				baseService: tt.fields.baseService(ctrl, tt.args.ctx, tt.args.email, tt.want),
+				baseService: func() *baseService {
+					u := testModel.NewUser()
+					if tt.want != nil {
+						tt.want = repoUserToService(u)
+					}
+					return tt.fields.baseService(ctrl, tt.args.ctx, tt.args.email, u)
+				}(),
 			}
 			got, err := s.GetByEmail(tt.args.ctx, tt.args.email)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -590,7 +635,7 @@ func TestUserService_GetByEmail(t *testing.T) {
 
 func TestUserService_GetAll(t *testing.T) {
 	type fields struct {
-		baseService func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, users []*model.User) *baseService
+		baseService func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, users []*repository.User) *baseService
 	}
 	type args struct {
 		ctx    context.Context
@@ -601,20 +646,20 @@ func TestUserService_GetAll(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    []*model.User
+		want    []*User
 		wantErr error
 	}{
 		{
 			name: "get all users user",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, users []*model.User) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, users []*repository.User) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mock.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.userService/GetAll", gomock.Len(0)).Return(ctx, span)
 
-					userRepo := mock.NewUserRepository(ctrl)
+					userRepo := repository.NewMockUserRepository(ctrl)
 					userRepo.EXPECT().GetAll(ctx, offset, limit).Return(users, nil)
 
 					return &baseService{
@@ -629,15 +674,15 @@ func TestUserService_GetAll(t *testing.T) {
 				offset: 0,
 				limit:  10,
 			},
-			want: []*model.User{
-				testModel.NewUser(),
-				testModel.NewUser(),
+			want: []*User{ // converted
+				repoUserToService(testModel.NewUser()),
+				repoUserToService(testModel.NewUser()),
 			},
 		},
 		{
 			name: "get all users with invalid offset",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ int, _ []*model.User) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ int, _ []*repository.User) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
@@ -647,7 +692,7 @@ func TestUserService_GetAll(t *testing.T) {
 					return &baseService{
 						logger:   mock.NewMockLogger(ctrl),
 						tracer:   tracer,
-						userRepo: mock.NewUserRepository(ctrl),
+						userRepo: repository.NewMockUserRepository(ctrl),
 					}
 				},
 			},
@@ -661,7 +706,7 @@ func TestUserService_GetAll(t *testing.T) {
 		{
 			name: "get all users with invalid limit",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ int, _ []*model.User) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ int, _ []*repository.User) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
@@ -671,7 +716,7 @@ func TestUserService_GetAll(t *testing.T) {
 					return &baseService{
 						logger:   mock.NewMockLogger(ctrl),
 						tracer:   tracer,
-						userRepo: mock.NewUserRepository(ctrl),
+						userRepo: repository.NewMockUserRepository(ctrl),
 					}
 				},
 			},
@@ -685,14 +730,14 @@ func TestUserService_GetAll(t *testing.T) {
 		{
 			name: "get all users with error",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, _ []*model.User) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, _ []*repository.User) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mock.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.userService/GetAll", gomock.Len(0)).Return(ctx, span)
 
-					userRepo := mock.NewUserRepository(ctrl)
+					userRepo := repository.NewMockUserRepository(ctrl)
 					userRepo.EXPECT().GetAll(ctx, offset, limit).Return(nil, assert.AnError)
 
 					return &baseService{
@@ -717,7 +762,13 @@ func TestUserService_GetAll(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			s := &userService{
-				baseService: tt.fields.baseService(ctrl, tt.args.ctx, tt.args.offset, tt.args.limit, tt.want),
+				baseService: func() *baseService {
+					users := []*repository.User{testModel.NewUser(), testModel.NewUser()}
+					if tt.want != nil {
+						tt.want = repoUsersToService(users)
+					}
+					return tt.fields.baseService(ctrl, tt.args.ctx, tt.args.offset, tt.args.limit, users)
+				}(),
 			}
 			got, err := s.GetAll(tt.args.ctx, tt.args.offset, tt.args.limit)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -731,32 +782,32 @@ func TestUserService_Update(t *testing.T) {
 	otherUserID := model.MustNewID(model.ResourceTypeUser)
 
 	type fields struct {
-		baseService func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, user *model.User) *baseService
+		baseService func(ctrl *gomock.Controller, ctx context.Context, id model.ID, opts UpdateUserOpts, user *repository.User) *baseService
 	}
 	type args struct {
-		ctx   context.Context
-		id    model.ID
-		patch map[string]any
+		ctx  context.Context
+		id   model.ID
+		opts UpdateUserOpts
 	}
 	tests := []struct {
 		name    string
 		fields  fields
 		args    args
-		want    *model.User
+		want    *User
 		wantErr error
 	}{
 		{
 			name: "update user",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, user *model.User) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ UpdateUserOpts, user *repository.User) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mock.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.userService/Update", gomock.Len(0)).Return(ctx, span)
 
-					userRepo := mock.NewUserRepository(ctrl)
-					userRepo.EXPECT().Update(ctx, id, patch).Return(user, nil)
+					userRepo := repository.NewMockUserRepository(ctrl)
+					userRepo.EXPECT().Update(ctx, id, gomock.Any()).Return(user, nil)
 
 					licenseSvc := mock.NewMockLicenseService(ctrl)
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
@@ -773,26 +824,26 @@ func TestUserService_Update(t *testing.T) {
 			args: args{
 				ctx: context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
 				id:  userID,
-				patch: map[string]any{
-					"email":  "test2@example.com",
-					"status": model.UserStatusActive.String(),
+				opts: UpdateUserOpts{
+					Email:  optional.Some("test2@example.com"),
+					Status: optional.Some(model.UserStatusActive),
 				},
 			},
-			want: testModel.NewUser(),
+			want: repoUserToService(testModel.NewUser()),
 		},
 		{
 			name: "update user with no permission",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ map[string]any, _ *model.User) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ UpdateUserOpts, _ *repository.User) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mock.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.userService/Update", gomock.Len(0)).Return(ctx, span)
 
-					userRepo := mock.NewUserRepository(ctrl)
+					userRepo := repository.NewMockUserRepository(ctrl)
 
-					permSvc := mock.NewPermissionService(ctrl)
+					permSvc := NewMockPermissionService(ctrl)
 					permSvc.EXPECT().CtxUserHasPermission(ctx, id, model.PermissionKindWrite).Return(false)
 
 					licenseSvc := mock.NewMockLicenseService(ctrl)
@@ -810,8 +861,8 @@ func TestUserService_Update(t *testing.T) {
 			args: args{
 				ctx: context.WithValue(context.Background(), pkg.CtxKeyUserID, otherUserID),
 				id:  userID,
-				patch: map[string]any{
-					"email": "test2@example.com",
+				opts: UpdateUserOpts{
+					Email: optional.Some("test2@example.com"),
 				},
 			},
 			wantErr: ErrNoPermission,
@@ -819,7 +870,7 @@ func TestUserService_Update(t *testing.T) {
 		{
 			name: "update user with invalid id",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ map[string]any, _ *model.User) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ UpdateUserOpts, _ *repository.User) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
@@ -832,7 +883,7 @@ func TestUserService_Update(t *testing.T) {
 					return &baseService{
 						logger:         mock.NewMockLogger(ctrl),
 						tracer:         tracer,
-						userRepo:       mock.NewUserRepository(ctrl),
+						userRepo:       repository.NewMockUserRepository(ctrl),
 						licenseService: licenseSvc,
 					}
 				},
@@ -840,8 +891,8 @@ func TestUserService_Update(t *testing.T) {
 			args: args{
 				ctx: context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
 				id:  model.ID{},
-				patch: map[string]any{
-					"email": "test2@example.com",
+				opts: UpdateUserOpts{
+					Email: optional.Some("test2@example.com"),
 				},
 			},
 			wantErr: ErrUserUpdate,
@@ -849,15 +900,15 @@ func TestUserService_Update(t *testing.T) {
 		{
 			name: "update user with empty patch",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, _ *model.User) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ UpdateUserOpts, _ *repository.User) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mock.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.userService/Update", gomock.Len(0)).Return(ctx, span)
 
-					userRepo := mock.NewUserRepository(ctrl)
-					userRepo.EXPECT().Update(ctx, id, patch).Return(nil, repository.ErrNotFound)
+					userRepo := repository.NewMockUserRepository(ctrl)
+					userRepo.EXPECT().Update(ctx, id, gomock.Any()).Return(nil, repository.ErrNotFound)
 
 					licenseSvc := mock.NewMockLicenseService(ctrl)
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
@@ -866,47 +917,16 @@ func TestUserService_Update(t *testing.T) {
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						userRepo:          userRepo,
-						permissionService: mock.NewPermissionService(ctrl),
+						permissionService: NewMockPermissionService(ctrl),
 						licenseService:    licenseSvc,
-					}
-				},
-			},
-			args: args{
-				ctx:   context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
-				id:    userID,
-				patch: map[string]any{},
-			},
-			wantErr: ErrUserUpdate,
-		},
-		{
-			name: "update user with error",
-			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch map[string]any, _ *model.User) *baseService {
-					span := mock.NewMockSpan(ctrl)
-					span.EXPECT().End(gomock.Len(0))
-
-					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.userService/Update", gomock.Len(0)).Return(ctx, span)
-
-					userRepo := mock.NewUserRepository(ctrl)
-					userRepo.EXPECT().Update(ctx, id, patch).Return(nil, assert.AnError)
-
-					licenseSvc := mock.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
-
-					return &baseService{
-						logger:         mock.NewMockLogger(ctrl),
-						tracer:         tracer,
-						userRepo:       userRepo,
-						licenseService: licenseSvc,
 					}
 				},
 			},
 			args: args{
 				ctx: context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
 				id:  userID,
-				patch: map[string]any{
-					"email": "test2@example.com",
+				opts: UpdateUserOpts{
+					Email: optional.Some("test2@example.com"),
 				},
 			},
 			wantErr: ErrUserUpdate,
@@ -914,7 +934,7 @@ func TestUserService_Update(t *testing.T) {
 		{
 			name: "update user out of quota",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ map[string]any, _ *model.User) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ UpdateUserOpts, _ *repository.User) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
@@ -928,7 +948,7 @@ func TestUserService_Update(t *testing.T) {
 					return &baseService{
 						logger:         mock.NewMockLogger(ctrl),
 						tracer:         tracer,
-						userRepo:       mock.NewUserRepository(ctrl),
+						userRepo:       repository.NewMockUserRepository(ctrl),
 						licenseService: licenseSvc,
 					}
 				},
@@ -936,9 +956,9 @@ func TestUserService_Update(t *testing.T) {
 			args: args{
 				ctx: context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
 				id:  userID,
-				patch: map[string]any{
-					"email":  "test2@example.com",
-					"status": model.UserStatusActive.String(),
+				opts: UpdateUserOpts{
+					Email:  optional.Some("test2@example.com"),
+					Status: optional.Some(model.UserStatusActive),
 				},
 			},
 			wantErr: ErrQuotaExceeded,
@@ -946,7 +966,7 @@ func TestUserService_Update(t *testing.T) {
 		{
 			name: "update user with no context user id",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ map[string]any, _ *model.User) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ UpdateUserOpts, _ *repository.User) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
@@ -959,7 +979,7 @@ func TestUserService_Update(t *testing.T) {
 					return &baseService{
 						logger:         mock.NewMockLogger(ctrl),
 						tracer:         tracer,
-						userRepo:       mock.NewUserRepository(ctrl),
+						userRepo:       repository.NewMockUserRepository(ctrl),
 						licenseService: licenseSvc,
 					}
 				},
@@ -967,8 +987,8 @@ func TestUserService_Update(t *testing.T) {
 			args: args{
 				ctx: context.Background(),
 				id:  userID,
-				patch: map[string]any{
-					"email": "test@example.com",
+				opts: UpdateUserOpts{
+					Email: optional.Some("test@example.com"),
 				},
 			},
 			wantErr: ErrNoUser,
@@ -976,7 +996,7 @@ func TestUserService_Update(t *testing.T) {
 		{
 			name: "update user with expired license",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ map[string]any, _ *model.User) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ UpdateUserOpts, _ *repository.User) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
@@ -989,8 +1009,8 @@ func TestUserService_Update(t *testing.T) {
 					return &baseService{
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
-						userRepo:          mock.NewUserRepository(ctrl),
-						permissionService: mock.NewPermissionService(ctrl),
+						userRepo:          repository.NewMockUserRepository(ctrl),
+						permissionService: NewMockPermissionService(ctrl),
 						licenseService:    licenseSvc,
 					}
 				},
@@ -998,9 +1018,9 @@ func TestUserService_Update(t *testing.T) {
 			args: args{
 				ctx: context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
 				id:  userID,
-				patch: map[string]any{
-					"email":  "test2@example.com",
-					"status": model.UserStatusActive.String(),
+				opts: UpdateUserOpts{
+					Email:  optional.Some("test2@example.com"),
+					Status: optional.Some(model.UserStatusActive),
 				},
 			},
 			wantErr: license.ErrLicenseExpired,
@@ -1008,7 +1028,7 @@ func TestUserService_Update(t *testing.T) {
 		{
 			name: "update user with expired license error",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ map[string]any, _ *model.User) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ UpdateUserOpts, _ *repository.User) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
@@ -1021,8 +1041,8 @@ func TestUserService_Update(t *testing.T) {
 					return &baseService{
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
-						userRepo:          mock.NewUserRepository(ctrl),
-						permissionService: mock.NewPermissionService(ctrl),
+						userRepo:          repository.NewMockUserRepository(ctrl),
+						permissionService: NewMockPermissionService(ctrl),
 						licenseService:    licenseSvc,
 					}
 				},
@@ -1030,9 +1050,9 @@ func TestUserService_Update(t *testing.T) {
 			args: args{
 				ctx: context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
 				id:  userID,
-				patch: map[string]any{
-					"email":  "test2@example.com",
-					"status": model.UserStatusActive.String(),
+				opts: UpdateUserOpts{
+					Email:  optional.Some("test2@example.com"),
+					Status: optional.Some(model.UserStatusActive),
 				},
 			},
 			wantErr: license.ErrLicenseExpired,
@@ -1045,9 +1065,15 @@ func TestUserService_Update(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			s := &userService{
-				baseService: tt.fields.baseService(ctrl, tt.args.ctx, tt.args.id, tt.args.patch, tt.want),
+				baseService: func() *baseService {
+					u := testModel.NewUser()
+					if tt.want != nil {
+						tt.want = repoUserToService(u)
+					}
+					return tt.fields.baseService(ctrl, tt.args.ctx, tt.args.id, tt.args.opts, u)
+				}(),
 			}
-			got, err := s.Update(tt.args.ctx, tt.args.id, tt.args.patch)
+			got, err := s.Update(tt.args.ctx, tt.args.id, tt.args.opts)
 			require.ErrorIs(t, err, tt.wantErr)
 			require.Equal(t, tt.want, got)
 		})
@@ -1075,21 +1101,16 @@ func TestUserService_Delete(t *testing.T) {
 			name: "soft delete user",
 			fields: fields{
 				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *baseService {
-					patch := map[string]any{
-						"status":   model.UserStatusDeleted.String(),
-						"password": password.UnusablePassword,
-					}
-
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mock.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.userService/Delete", gomock.Len(0)).Return(ctx, span)
 
-					userRepo := mock.NewUserRepository(ctrl)
-					userRepo.EXPECT().Update(ctx, id, patch).Return(new(model.User), nil)
+					userRepo := repository.NewMockUserRepository(ctrl)
+					userRepo.EXPECT().Update(ctx, id, gomock.Any()).Return(new(repository.User), nil)
 
-					permSvc := mock.NewPermissionService(ctrl)
+					permSvc := NewMockPermissionService(ctrl)
 					permSvc.EXPECT().CtxUserHasPermission(ctx, id, model.PermissionKindDelete).Return(true)
 
 					licenseSvc := mock.NewMockLicenseService(ctrl)
@@ -1120,10 +1141,10 @@ func TestUserService_Delete(t *testing.T) {
 					tracer := mock.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.userService/Delete", gomock.Len(0)).Return(ctx, span)
 
-					userRepo := mock.NewUserRepository(ctrl)
+					userRepo := repository.NewMockUserRepository(ctrl)
 					userRepo.EXPECT().Delete(ctx, id).Return(nil)
 
-					permSvc := mock.NewPermissionService(ctrl)
+					permSvc := NewMockPermissionService(ctrl)
 					permSvc.EXPECT().CtxUserHasPermission(ctx, id, model.PermissionKindDelete).Return(true)
 
 					licenseSvc := mock.NewMockLicenseService(ctrl)
@@ -1160,8 +1181,8 @@ func TestUserService_Delete(t *testing.T) {
 					return &baseService{
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
-						userRepo:          mock.NewUserRepository(ctrl),
-						permissionService: mock.NewPermissionService(ctrl),
+						userRepo:          repository.NewMockUserRepository(ctrl),
+						permissionService: NewMockPermissionService(ctrl),
 						licenseService:    licenseSvc,
 					}
 				},
@@ -1189,8 +1210,8 @@ func TestUserService_Delete(t *testing.T) {
 					return &baseService{
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
-						userRepo:          mock.NewUserRepository(ctrl),
-						permissionService: mock.NewPermissionService(ctrl),
+						userRepo:          repository.NewMockUserRepository(ctrl),
+						permissionService: NewMockPermissionService(ctrl),
 						licenseService:    licenseSvc,
 					}
 				},
@@ -1212,9 +1233,9 @@ func TestUserService_Delete(t *testing.T) {
 					tracer := mock.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.userService/Delete", gomock.Len(0)).Return(ctx, span)
 
-					userRepo := mock.NewUserRepository(ctrl)
+					userRepo := repository.NewMockUserRepository(ctrl)
 
-					permSvc := mock.NewPermissionService(ctrl)
+					permSvc := NewMockPermissionService(ctrl)
 					permSvc.EXPECT().CtxUserHasPermission(ctx, id, model.PermissionKindDelete).Return(false)
 
 					licenseSvc := mock.NewMockLicenseService(ctrl)
@@ -1246,9 +1267,9 @@ func TestUserService_Delete(t *testing.T) {
 					tracer := mock.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.userService/Delete", gomock.Len(0)).Return(ctx, span)
 
-					userRepo := mock.NewUserRepository(ctrl)
+					userRepo := repository.NewMockUserRepository(ctrl)
 
-					permSvc := mock.NewPermissionService(ctrl)
+					permSvc := NewMockPermissionService(ctrl)
 					permSvc.EXPECT().CtxUserHasPermission(ctx, id, model.PermissionKindDelete).Return(false)
 
 					licenseSvc := mock.NewMockLicenseService(ctrl)
@@ -1286,8 +1307,8 @@ func TestUserService_Delete(t *testing.T) {
 					return &baseService{
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
-						userRepo:          mock.NewUserRepository(ctrl),
-						permissionService: mock.NewPermissionService(ctrl),
+						userRepo:          repository.NewMockUserRepository(ctrl),
+						permissionService: NewMockPermissionService(ctrl),
 						licenseService:    licenseSvc,
 					}
 				},
@@ -1303,21 +1324,16 @@ func TestUserService_Delete(t *testing.T) {
 			name: "soft delete user with error",
 			fields: fields{
 				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *baseService {
-					patch := map[string]any{
-						"status":   model.UserStatusDeleted.String(),
-						"password": password.UnusablePassword,
-					}
-
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mock.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.userService/Delete", gomock.Len(0)).Return(ctx, span)
 
-					userRepo := mock.NewUserRepository(ctrl)
-					userRepo.EXPECT().Update(ctx, id, patch).Return(nil, assert.AnError)
+					userRepo := repository.NewMockUserRepository(ctrl)
+					userRepo.EXPECT().Update(ctx, id, gomock.Any()).Return(nil, assert.AnError)
 
-					permSvc := mock.NewPermissionService(ctrl)
+					permSvc := NewMockPermissionService(ctrl)
 					permSvc.EXPECT().CtxUserHasPermission(ctx, id, model.PermissionKindDelete).Return(true)
 
 					licenseSvc := mock.NewMockLicenseService(ctrl)
@@ -1349,10 +1365,10 @@ func TestUserService_Delete(t *testing.T) {
 					tracer := mock.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.userService/Delete", gomock.Len(0)).Return(ctx, span)
 
-					userRepo := mock.NewUserRepository(ctrl)
+					userRepo := repository.NewMockUserRepository(ctrl)
 					userRepo.EXPECT().Delete(ctx, id).Return(assert.AnError)
 
-					permSvc := mock.NewPermissionService(ctrl)
+					permSvc := NewMockPermissionService(ctrl)
 					permSvc.EXPECT().CtxUserHasPermission(ctx, id, model.PermissionKindDelete).Return(true)
 
 					licenseSvc := mock.NewMockLicenseService(ctrl)
@@ -1390,8 +1406,8 @@ func TestUserService_Delete(t *testing.T) {
 					return &baseService{
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
-						userRepo:          mock.NewUserRepository(ctrl),
-						permissionService: mock.NewPermissionService(ctrl),
+						userRepo:          repository.NewMockUserRepository(ctrl),
+						permissionService: NewMockPermissionService(ctrl),
 						licenseService:    licenseSvc,
 					}
 				},
@@ -1419,8 +1435,8 @@ func TestUserService_Delete(t *testing.T) {
 					return &baseService{
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
-						userRepo:          mock.NewUserRepository(ctrl),
-						permissionService: mock.NewPermissionService(ctrl),
+						userRepo:          repository.NewMockUserRepository(ctrl),
+						permissionService: NewMockPermissionService(ctrl),
 						licenseService:    licenseSvc,
 					}
 				},

@@ -6,8 +6,10 @@ import (
 	"time"
 
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
+
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/convert"
+	"github.com/opcotech/elemo/internal/pkg/optional"
 )
 
 var (
@@ -19,25 +21,61 @@ var (
 	ErrLabelUpdate = errors.New("failed to update label") // the label could not be updated
 )
 
-//go:generate mockgen -source=label.go -destination=../testutil/mock/label_repo_gen.go -package=mock -mock_names "LabelRepository=LabelRepository"
+// Label represents a label persisted by the repository.
+type Label struct {
+	ID          model.ID   `json:"id"`
+	Name        string     `json:"name"`
+	Description string     `json:"description"`
+	CreatedAt   *time.Time `json:"created_at"`
+	UpdatedAt   *time.Time `json:"updated_at"`
+}
+
+// CreateLabelOpts holds the data required to create a label.
+type CreateLabelOpts struct {
+	Name        string
+	Description string
+}
+
+// UpdateLabelOpts holds the fields that can be updated on a label.
+// Undefined fields (Defined == false) are left unchanged.
+type UpdateLabelOpts struct {
+	Name        optional.Optional[string]
+	Description optional.Optional[string]
+}
+
+// patch builds a Neo4j property map from defined optional fields.
+func (o UpdateLabelOpts) patch() map[string]any {
+	p := make(map[string]any)
+
+	if o.Name.Defined {
+		p["name"] = *o.Name.Value
+	}
+	if o.Description.Defined {
+		p["description"] = *o.Description.Value
+	}
+
+	return p
+}
+
+//go:generate mockgen -source=label.go -destination=label_mock_gen.go -package=repository -mock_names "LabelRepository=MockLabelRepository"
 type LabelRepository interface {
-	Create(ctx context.Context, label *model.Label) error
-	Get(ctx context.Context, id model.ID) (*model.Label, error)
-	GetAll(ctx context.Context, offset, limit int) ([]*model.Label, error)
-	Update(ctx context.Context, id model.ID, patch map[string]any) (*model.Label, error)
+	Create(ctx context.Context, opts CreateLabelOpts) (*Label, error)
+	Get(ctx context.Context, id model.ID) (*Label, error)
+	GetAll(ctx context.Context, offset, limit int) ([]*Label, error)
+	Update(ctx context.Context, id model.ID, opts UpdateLabelOpts) (*Label, error)
 	AttachTo(ctx context.Context, labelID, attachTo model.ID) error
 	DetachFrom(ctx context.Context, labelID, detachFrom model.ID) error
 	Delete(ctx context.Context, id model.ID) error
 }
 
-// LabelRepository is a repository for managing labels.
+// Neo4jLabelRepository is a repository for managing labels.
 type Neo4jLabelRepository struct {
 	*neo4jBaseRepository
 }
 
-func (r *Neo4jLabelRepository) scan(lp string) func(rec *neo4j.Record) (*model.Label, error) {
-	return func(rec *neo4j.Record) (*model.Label, error) {
-		l := new(model.Label)
+func (r *Neo4jLabelRepository) scan(lp string) func(rec *neo4j.Record) (*Label, error) {
+	return func(rec *neo4j.Record) (*Label, error) {
+		l := new(Label)
 
 		val, _, err := neo4j.GetRecordValue[neo4j.Node](rec, lp)
 		if err != nil {
@@ -50,27 +88,23 @@ func (r *Neo4jLabelRepository) scan(lp string) func(rec *neo4j.Record) (*model.L
 
 		l.ID, _ = model.NewIDFromString(val.GetProperties()["id"].(string), model.ResourceTypeLabel.String())
 
-		if err := l.Validate(); err != nil {
-			return nil, err
-		}
-
 		return l, nil
 	}
 }
 
-func (r *Neo4jLabelRepository) Create(ctx context.Context, label *model.Label) error {
+func (r *Neo4jLabelRepository) Create(ctx context.Context, opts CreateLabelOpts) (*Label, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.LabelRepository/Create")
 	defer span.End()
 
-	if err := label.Validate(); err != nil {
-		return errors.Join(ErrLabelCreate, err)
+	createdAt := convert.ToPointer(time.Now().UTC())
+
+	label := &Label{
+		ID:          model.MustNewID(model.ResourceTypeLabel),
+		Name:        opts.Name,
+		Description: opts.Description,
+		CreatedAt:   createdAt,
+		UpdatedAt:   nil,
 	}
-
-	createdAt := time.Now().UTC()
-
-	label.ID = model.MustNewID(model.ResourceTypeLabel)
-	label.CreatedAt = convert.ToPointer(createdAt)
-	label.UpdatedAt = nil
 
 	cypher := `CREATE (l:` + label.ID.Label() + ` {id: $id, name: $name, description: $description, created_at: datetime($created_at)})`
 	params := map[string]any{
@@ -81,13 +115,13 @@ func (r *Neo4jLabelRepository) Create(ctx context.Context, label *model.Label) e
 	}
 
 	if err := Neo4jExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
-		return errors.Join(ErrLabelCreate, err)
+		return nil, errors.Join(ErrLabelCreate, err)
 	}
 
-	return nil
+	return label, nil
 }
 
-func (r *Neo4jLabelRepository) Get(ctx context.Context, id model.ID) (*model.Label, error) {
+func (r *Neo4jLabelRepository) Get(ctx context.Context, id model.ID) (*Label, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.LabelRepository/Get")
 	defer span.End()
 
@@ -104,7 +138,7 @@ func (r *Neo4jLabelRepository) Get(ctx context.Context, id model.ID) (*model.Lab
 	return label, nil
 }
 
-func (r *Neo4jLabelRepository) GetAll(ctx context.Context, offset, limit int) ([]*model.Label, error) {
+func (r *Neo4jLabelRepository) GetAll(ctx context.Context, offset, limit int) ([]*Label, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.LabelRepository/Get")
 	defer span.End()
 
@@ -127,7 +161,7 @@ func (r *Neo4jLabelRepository) GetAll(ctx context.Context, offset, limit int) ([
 	return labels, nil
 }
 
-func (r *Neo4jLabelRepository) Update(ctx context.Context, id model.ID, patch map[string]any) (*model.Label, error) {
+func (r *Neo4jLabelRepository) Update(ctx context.Context, id model.ID, opts UpdateLabelOpts) (*Label, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.LabelRepository/Update")
 	defer span.End()
 
@@ -138,7 +172,7 @@ func (r *Neo4jLabelRepository) Update(ctx context.Context, id model.ID, patch ma
 
 	params := map[string]any{
 		"id":    id.String(),
-		"patch": patch,
+		"patch": opts.patch(),
 	}
 
 	label, err := Neo4jExecuteWriteAndReadSingle(ctx, r.db, cypher, params, r.scan("l"))
@@ -152,14 +186,6 @@ func (r *Neo4jLabelRepository) Update(ctx context.Context, id model.ID, patch ma
 func (r *Neo4jLabelRepository) AttachTo(ctx context.Context, labelID, attachTo model.ID) error {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.LabelRepository/AttachTo")
 	defer span.End()
-
-	if err := attachTo.Validate(); err != nil {
-		return errors.Join(ErrLabelAttach, err)
-	}
-
-	if err := labelID.Validate(); err != nil {
-		return errors.Join(ErrLabelAttach, err)
-	}
 
 	cypher := `
 	MATCH (l:` + labelID.Label() + ` {id: $label_id})
@@ -181,14 +207,6 @@ func (r *Neo4jLabelRepository) AttachTo(ctx context.Context, labelID, attachTo m
 func (r *Neo4jLabelRepository) DetachFrom(ctx context.Context, labelID, detachFrom model.ID) error {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.LabelRepository/DetachFrom")
 	defer span.End()
-
-	if err := detachFrom.Validate(); err != nil {
-		return errors.Join(ErrLabelDetach, err)
-	}
-
-	if err := labelID.Validate(); err != nil {
-		return errors.Join(ErrLabelDetach, err)
-	}
 
 	cypher := `
 	MATCH (n:` + detachFrom.Label() + ` {id: $node_id})-[r:` + EdgeKindHasLabel.String() + `]->(l:` + labelID.Label() + ` {id: $label_id})
@@ -261,26 +279,25 @@ func clearLabelAllCrossCache(ctx context.Context, r *redisBaseRepository) error 
 	return nil
 }
 
-// CachedLabelRepository implements caching on the
-// repository.LabelRepository.
+// RedisCachedLabelRepository implements caching on the LabelRepository.
 type RedisCachedLabelRepository struct {
 	cacheRepo *redisBaseRepository
 	labelRepo LabelRepository
 }
 
-func (r *RedisCachedLabelRepository) Create(ctx context.Context, label *model.Label) error {
+func (r *RedisCachedLabelRepository) Create(ctx context.Context, opts CreateLabelOpts) (*Label, error) {
 	if err := clearLabelAllGetAll(ctx, r.cacheRepo); err != nil {
-		return err
+		return nil, err
 	}
 	if err := clearLabelAllCrossCache(ctx, r.cacheRepo); err != nil {
-		return err
+		return nil, err
 	}
 
-	return r.labelRepo.Create(ctx, label)
+	return r.labelRepo.Create(ctx, opts)
 }
 
-func (r *RedisCachedLabelRepository) Get(ctx context.Context, id model.ID) (*model.Label, error) {
-	var label *model.Label
+func (r *RedisCachedLabelRepository) Get(ctx context.Context, id model.ID) (*Label, error) {
+	var label *Label
 	var err error
 
 	key := composeCacheKey(model.ResourceTypeLabel.String(), id.String())
@@ -303,8 +320,8 @@ func (r *RedisCachedLabelRepository) Get(ctx context.Context, id model.ID) (*mod
 	return label, nil
 }
 
-func (r *RedisCachedLabelRepository) GetAll(ctx context.Context, offset, limit int) ([]*model.Label, error) {
-	var labels []*model.Label
+func (r *RedisCachedLabelRepository) GetAll(ctx context.Context, offset, limit int) ([]*Label, error) {
+	var labels []*Label
 	var err error
 
 	key := composeCacheKey(model.ResourceTypeLabel.String(), "GetAll", offset, limit)
@@ -327,8 +344,8 @@ func (r *RedisCachedLabelRepository) GetAll(ctx context.Context, offset, limit i
 	return labels, nil
 }
 
-func (r *RedisCachedLabelRepository) Update(ctx context.Context, id model.ID, patch map[string]any) (*model.Label, error) {
-	label, err := r.labelRepo.Update(ctx, id, patch)
+func (r *RedisCachedLabelRepository) Update(ctx context.Context, id model.ID, opts UpdateLabelOpts) (*Label, error) {
+	label, err := r.labelRepo.Update(ctx, id, opts)
 	if err != nil {
 		return nil, err
 	}

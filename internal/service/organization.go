@@ -8,16 +8,111 @@ import (
 	"slices"
 	"time"
 
+	"github.com/opcotech/elemo/internal/email"
 	"github.com/opcotech/elemo/internal/license"
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg"
 	"github.com/opcotech/elemo/internal/pkg/auth"
 	"github.com/opcotech/elemo/internal/pkg/convert"
 	"github.com/opcotech/elemo/internal/pkg/log"
+	"github.com/opcotech/elemo/internal/pkg/optional"
 	"github.com/opcotech/elemo/internal/pkg/password"
+	"github.com/opcotech/elemo/internal/pkg/validate"
 	"github.com/opcotech/elemo/internal/repository"
 	"github.com/rs/xid"
 )
+
+// Organization represents an organization returned by the service.
+type Organization struct {
+	ID         model.ID
+	Name       string
+	Email      string
+	Logo       string
+	Website    string
+	Status     model.OrganizationStatus
+	Namespaces []model.ID
+	Teams      []model.ID
+	Members    []model.ID
+	CreatedAt  *time.Time
+	UpdatedAt  *time.Time
+}
+
+// OrganizationMember represents a member of an organization.
+type OrganizationMember struct {
+	ID        model.ID
+	FirstName string
+	LastName  string
+	Email     string
+	Picture   *string
+	Status    model.UserStatus
+	Roles     []string
+}
+
+// CreateOrganizationOpts holds the data required to create an organization.
+type CreateOrganizationOpts struct {
+	Name    string                   `json:"name" validate:"required,min=1,max=120"`
+	Email   string                   `json:"email" validate:"required,email"`
+	Logo    string                   `json:"logo" validate:"omitempty,url"`
+	Website string                   `json:"website" validate:"omitempty,url"`
+	Status  model.OrganizationStatus `json:"status" validate:"omitempty,min=1,max=2"`
+}
+
+// Validate validates the create options.
+func (o *CreateOrganizationOpts) Validate() error {
+	if o.Status == 0 {
+		o.Status = model.OrganizationStatusActive
+	}
+	if err := validate.Struct(o); err != nil {
+		return errors.Join(model.ErrInvalidOrganizationDetails, err)
+	}
+	return nil
+}
+
+// UpdateOrganizationOpts holds the fields that can be updated on an organization.
+// Undefined fields (Defined == false) are left unchanged.
+type UpdateOrganizationOpts struct {
+	Name    optional.Optional[string]
+	Email   optional.Optional[string]
+	Logo    optional.Optional[string]
+	Website optional.Optional[string]
+	Status  optional.Optional[model.OrganizationStatus]
+}
+
+// InviteOrganizationMemberOpts holds the data required to invite a member.
+type InviteOrganizationMemberOpts struct {
+	Email  string   `json:"email" validate:"required,email"`
+	RoleID model.ID `json:"role_id"`
+}
+
+// Validate validates the invite options.
+func (o *InviteOrganizationMemberOpts) Validate() error {
+	if err := validate.Struct(o); err != nil {
+		return errors.Join(model.ErrInvalidOrganizationMemberDetails, err)
+	}
+	if !o.RoleID.IsNil() {
+		if err := o.RoleID.Validate(); err != nil {
+			return errors.Join(model.ErrInvalidOrganizationMemberDetails, err)
+		}
+		if o.RoleID.Type != model.ResourceTypeRole {
+			return errors.Join(model.ErrInvalidOrganizationMemberDetails, model.ErrInvalidID)
+		}
+	}
+	return nil
+}
+
+// AcceptOrganizationInvitationOpts holds the data required to accept an invitation.
+type AcceptOrganizationInvitationOpts struct {
+	Token    string `json:"token" validate:"required"`
+	Password string `json:"password" validate:"omitempty"`
+}
+
+// Validate validates the accept invitation options.
+func (o *AcceptOrganizationInvitationOpts) Validate() error {
+	if err := validate.Struct(o); err != nil {
+		return errors.Join(ErrInvalidToken, err)
+	}
+	return nil
+}
 
 // OrganizationService serves the business logic of interacting with
 // organizations.
@@ -25,37 +120,37 @@ type OrganizationService interface {
 	// Create creates a new organization. The owner of the organization is
 	// automatically added as a member of the organization. If the owner
 	// does not exist, an error is returned.
-	Create(ctx context.Context, owner model.ID, organization *model.Organization) error
+	Create(ctx context.Context, owner model.ID, opts CreateOrganizationOpts) (*Organization, error)
 	// Get returns an organization by its ID. If the organization does not
 	// exist, an error is returned.
-	Get(ctx context.Context, id model.ID) (*model.Organization, error)
+	Get(ctx context.Context, id model.ID) (*Organization, error)
 	// GetAll returns all organizations. The offset and limit parameters are
 	// used to paginate the results. If the offset is greater than the number
 	// of users in the system, an empty slice is returned.
-	GetAll(ctx context.Context, offset, limit int) ([]*model.Organization, error)
+	GetAll(ctx context.Context, offset, limit int) ([]*Organization, error)
 	// Update updates an organization. If the organization does not exist, an
 	// error is returned.
-	Update(ctx context.Context, id model.ID, patch map[string]any) (*model.Organization, error)
+	Update(ctx context.Context, id model.ID, opts UpdateOrganizationOpts) (*Organization, error)
 	// AddMember adds a member to an organization. If the organization or
 	// member does not exist, an error is returned.
 	AddMember(ctx context.Context, orgID, memberID model.ID) error
 	// GetMembers returns all members of an organization with their roles. If the organization
 	// does not exist, an error is returned.
-	GetMembers(ctx context.Context, orgID model.ID) ([]*model.OrganizationMember, error)
+	GetMembers(ctx context.Context, orgID model.ID) ([]*OrganizationMember, error)
 	// RemoveMember removes a member from an organization. If the organization
 	// or member does not exist, an error is returned.
 	RemoveMember(ctx context.Context, orgID, memberID model.ID) error
 	// InviteMember sends an invitation email to a user to join an organization.
 	// If the user doesn't exist, a pending user is created. If the organization
-	// does not exist, an error is returned. Optionally, a roleID can be provided
+	// does not exist, an error is returned. Optionally, a RoleID can be provided
 	// to assign the user to a specific role when they accept the invitation.
-	InviteMember(ctx context.Context, orgID model.ID, email string, roleID ...model.ID) error
+	InviteMember(ctx context.Context, orgID model.ID, opts InviteOrganizationMemberOpts) error
 	// RevokeInvitation revokes an invitation for a user to join an organization.
 	// If the organization or user does not exist, an error is returned.
 	RevokeInvitation(ctx context.Context, orgID, userID model.ID) error
 	// AcceptInvitation accepts an invitation to join an organization using an invitation token.
 	// If the user is pending, they will be activated. If a password is provided, it will be set.
-	AcceptInvitation(ctx context.Context, orgID model.ID, token string, password string) error
+	AcceptInvitation(ctx context.Context, orgID model.ID, opts AcceptOrganizationInvitationOpts) error
 	// Delete deletes an organization. If the organization does not exist, an
 	// error is returned.
 	Delete(ctx context.Context, id model.ID, force bool) error
@@ -66,39 +161,74 @@ type organizationService struct {
 	*baseService
 }
 
-func (s *organizationService) Create(ctx context.Context, owner model.ID, organization *model.Organization) error {
+func organizationFromRepository(o *repository.Organization) *Organization {
+	if o == nil {
+		return nil
+	}
+	return &Organization{
+		ID:         o.ID,
+		Name:       o.Name,
+		Email:      o.Email,
+		Logo:       o.Logo,
+		Website:    o.Website,
+		Status:     o.Status,
+		Namespaces: o.Namespaces,
+		Teams:      o.Teams,
+		Members:    o.Members,
+		CreatedAt:  o.CreatedAt,
+		UpdatedAt:  o.UpdatedAt,
+	}
+}
+
+func organizationsFromRepository(orgs []*repository.Organization) []*Organization {
+	out := make([]*Organization, len(orgs))
+	for i, o := range orgs {
+		out[i] = organizationFromRepository(o)
+	}
+	return out
+}
+
+func (s *organizationService) Create(ctx context.Context, owner model.ID, opts CreateOrganizationOpts) (*Organization, error) {
 	ctx, span := s.tracer.Start(ctx, "service.organizationService/Create")
 	defer span.End()
 
 	if expired, err := s.licenseService.Expired(ctx); expired || err != nil {
-		return errors.Join(ErrOrganizationCreate, license.ErrLicenseExpired)
+		return nil, errors.Join(ErrOrganizationCreate, license.ErrLicenseExpired)
 	}
 
-	if err := organization.Validate(); err != nil {
-		return errors.Join(ErrOrganizationCreate, err)
+	if err := opts.Validate(); err != nil {
+		return nil, errors.Join(ErrOrganizationCreate, err)
 	}
 
 	if !s.permissionService.CtxUserHasPermission(ctx, model.MustNewNilID(model.ResourceTypeOrganization), model.PermissionKindCreate) {
-		return errors.Join(ErrOrganizationCreate, ErrNoPermission)
+		return nil, errors.Join(ErrOrganizationCreate, ErrNoPermission)
 	}
 
 	// If the newly created organization is not active, e.g. a company is
 	// migrating ex-employees, do not check the license quota as that only
 	// counts against active organizations.
-	if organization.Status == model.OrganizationStatusActive {
+	if opts.Status == model.OrganizationStatusActive {
 		if ok, err := s.licenseService.WithinThreshold(ctx, license.QuotaOrganizations); !ok || err != nil {
-			return errors.Join(ErrOrganizationCreate, ErrQuotaExceeded)
+			return nil, errors.Join(ErrOrganizationCreate, ErrQuotaExceeded)
 		}
 	}
 
-	if err := s.organizationRepo.Create(ctx, owner, organization); err != nil {
-		return errors.Join(ErrOrganizationCreate, err)
+	organization, err := s.organizationRepo.Create(ctx, repository.CreateOrganizationOpts{
+		Owner:   owner,
+		Name:    opts.Name,
+		Email:   opts.Email,
+		Logo:    opts.Logo,
+		Website: opts.Website,
+		Status:  opts.Status,
+	})
+	if err != nil {
+		return nil, errors.Join(ErrOrganizationCreate, err)
 	}
 
-	return nil
+	return organizationFromRepository(organization), nil
 }
 
-func (s *organizationService) Get(ctx context.Context, id model.ID) (*model.Organization, error) {
+func (s *organizationService) Get(ctx context.Context, id model.ID) (*Organization, error) {
 	ctx, span := s.tracer.Start(ctx, "service.organizationService/Get")
 	defer span.End()
 
@@ -111,10 +241,10 @@ func (s *organizationService) Get(ctx context.Context, id model.ID) (*model.Orga
 		return nil, errors.Join(ErrOrganizationGet, err)
 	}
 
-	return organization, nil
+	return organizationFromRepository(organization), nil
 }
 
-func (s *organizationService) GetAll(ctx context.Context, offset, limit int) ([]*model.Organization, error) {
+func (s *organizationService) GetAll(ctx context.Context, offset, limit int) ([]*Organization, error) {
 	ctx, span := s.tracer.Start(ctx, "service.organizationService/GetAll")
 	defer span.End()
 
@@ -132,10 +262,10 @@ func (s *organizationService) GetAll(ctx context.Context, offset, limit int) ([]
 		return nil, errors.Join(ErrOrganizationGetAll, err)
 	}
 
-	return organizations, nil
+	return organizationsFromRepository(organizations), nil
 }
 
-func (s *organizationService) Update(ctx context.Context, id model.ID, patch map[string]any) (*model.Organization, error) {
+func (s *organizationService) Update(ctx context.Context, id model.ID, opts UpdateOrganizationOpts) (*Organization, error) {
 	ctx, span := s.tracer.Start(ctx, "service.organizationService/Update")
 	defer span.End()
 
@@ -154,18 +284,24 @@ func (s *organizationService) Update(ctx context.Context, id model.ID, patch map
 	// Check if the organization is being activated is within the license
 	// quota. It could be a possible loophole to activate a previously deleted
 	// organization to bypass the quota check.
-	if patchStatus, ok := patch["status"]; ok && patchStatus == model.OrganizationStatusActive.String() {
+	if opts.Status.Defined && opts.Status.Value != nil && *opts.Status.Value == model.OrganizationStatusActive {
 		if ok, err := s.licenseService.WithinThreshold(ctx, license.QuotaOrganizations); !ok || err != nil {
 			return nil, errors.Join(ErrOrganizationUpdate, ErrQuotaExceeded)
 		}
 	}
 
-	organization, err := s.organizationRepo.Update(ctx, id, patch)
+	organization, err := s.organizationRepo.Update(ctx, id, repository.UpdateOrganizationOpts{
+		Name:    opts.Name,
+		Email:   opts.Email,
+		Logo:    opts.Logo,
+		Website: opts.Website,
+		Status:  opts.Status,
+	})
 	if err != nil {
 		return nil, errors.Join(ErrOrganizationUpdate, err)
 	}
 
-	return organization, nil
+	return organizationFromRepository(organization), nil
 }
 
 func (s *organizationService) Delete(ctx context.Context, id model.ID, force bool) error {
@@ -189,11 +325,9 @@ func (s *organizationService) Delete(ctx context.Context, id model.ID, force boo
 			return errors.Join(ErrOrganizationDelete, err)
 		}
 	} else {
-		patch := map[string]any{
-			"status": model.OrganizationStatusDeleted.String(),
-		}
-
-		if _, err := s.organizationRepo.Update(ctx, id, patch); err != nil {
+		if _, err := s.organizationRepo.Update(ctx, id, repository.UpdateOrganizationOpts{
+			Status: optional.Some(model.OrganizationStatusDeleted),
+		}); err != nil {
 			return errors.Join(ErrOrganizationDelete, err)
 		}
 	}
@@ -225,12 +359,11 @@ func (s *organizationService) AddMember(ctx context.Context, orgID, memberID mod
 		return errors.Join(ErrOrganizationMemberAdd, err)
 	}
 
-	perm, err := model.NewPermission(memberID, orgID, model.PermissionKindRead)
-	if err != nil {
-		return errors.Join(ErrOrganizationMemberAdd, err)
-	}
-
-	if err := s.permissionService.Create(ctx, perm); err != nil {
+	if _, err := s.permissionService.Create(ctx, CreatePermissionOpts{
+		Subject: memberID,
+		Target:  orgID,
+		Kind:    model.PermissionKindRead,
+	}); err != nil {
 		// Log error but don't fail - member is already added
 		s.logger.Warn(ctx, "failed to assign read permission to new member",
 			log.WithError(err),
@@ -241,7 +374,7 @@ func (s *organizationService) AddMember(ctx context.Context, orgID, memberID mod
 	return nil
 }
 
-func (s *organizationService) GetMembers(ctx context.Context, orgID model.ID) ([]*model.OrganizationMember, error) {
+func (s *organizationService) GetMembers(ctx context.Context, orgID model.ID) ([]*OrganizationMember, error) {
 	ctx, span := s.tracer.Start(ctx, "service.organizationService/GetMembers")
 	defer span.End()
 
@@ -258,7 +391,7 @@ func (s *organizationService) GetMembers(ctx context.Context, orgID model.ID) ([
 		return nil, errors.Join(ErrOrganizationMembersGet, err)
 	}
 
-	result := make([]*model.OrganizationMember, 0, len(members))
+	result := make([]*OrganizationMember, 0, len(members))
 	for _, member := range members {
 		permissions, err := s.permissionService.GetBySubjectAndTarget(ctx, member.ID, orgID)
 		if err != nil {
@@ -271,21 +404,15 @@ func (s *organizationService) GetMembers(ctx context.Context, orgID model.ID) ([
 		// Combine virtual roles with actual roles (deduplicate)
 		allRoles := combineRoles(virtualRoles, member.Roles)
 
-		// Create new OrganizationMember with combined roles
-		updatedMember, err := model.NewOrganizationMember(
-			member.ID,
-			member.FirstName,
-			member.LastName,
-			member.Email,
-			member.Picture,
-			member.Status,
-			allRoles,
-		)
-		if err != nil {
-			return nil, errors.Join(ErrOrganizationMembersGet, err)
-		}
-
-		result = append(result, updatedMember)
+		result = append(result, &OrganizationMember{
+			ID:        member.ID,
+			FirstName: member.FirstName,
+			LastName:  member.LastName,
+			Email:     member.Email,
+			Picture:   member.Picture,
+			Status:    member.Status,
+			Roles:     allRoles,
+		})
 	}
 
 	return result, nil
@@ -345,18 +472,14 @@ func (s *organizationService) RemoveMember(ctx context.Context, orgID, memberID 
 			notificationTitle := fmt.Sprintf("You've been removed from %s", organization.Name)
 			notificationDescription := fmt.Sprintf("You have been removed from the organization %s.", organization.Name)
 
-			notification, err := model.NewNotification(notificationTitle, memberID)
-			if err != nil {
-				s.logger.Warn(ctx, "failed to create notification for member removal",
+			if _, err := s.notificationService.Create(ctx, CreateNotificationOpts{
+				Title:       notificationTitle,
+				Description: notificationDescription,
+				Recipient:   memberID,
+			}); err != nil {
+				s.logger.Warn(ctx, "failed to send notification for member removal",
 					log.WithError(err),
 					log.WithUserID(memberID.String()))
-			} else {
-				notification.Description = notificationDescription
-				if err := s.notificationService.Create(ctx, notification); err != nil {
-					s.logger.Warn(ctx, "failed to send notification for member removal",
-						log.WithError(err),
-						log.WithUserID(memberID.String()))
-				}
 			}
 		}
 	}
@@ -364,7 +487,7 @@ func (s *organizationService) RemoveMember(ctx context.Context, orgID, memberID 
 	return nil
 }
 
-func (s *organizationService) InviteMember(ctx context.Context, orgID model.ID, email string, roleID ...model.ID) error {
+func (s *organizationService) InviteMember(ctx context.Context, orgID model.ID, opts InviteOrganizationMemberOpts) error {
 	ctx, span := s.tracer.Start(ctx, "service.organizationService/InviteMember")
 	defer span.End()
 
@@ -376,26 +499,15 @@ func (s *organizationService) InviteMember(ctx context.Context, orgID model.ID, 
 		return errors.Join(ErrOrganizationMemberInvite, err)
 	}
 
-	if email == "" {
-		return errors.Join(ErrOrganizationMemberInvite, ErrInvalidEmail)
-	}
-
-	var targetRoleID model.ID
-	if len(roleID) > 0 && !roleID[0].IsNil() {
-		targetRoleID = roleID[0]
-		if err := targetRoleID.Validate(); err != nil {
-			return errors.Join(ErrOrganizationMemberInvite, err)
-		}
-		if targetRoleID.Type != model.ResourceTypeRole {
-			return errors.Join(ErrOrganizationMemberInvite, model.ErrInvalidID)
-		}
+	if err := opts.Validate(); err != nil {
+		return errors.Join(ErrOrganizationMemberInvite, err)
 	}
 
 	if !s.permissionService.CtxUserHasPermission(ctx, orgID, model.PermissionKindWrite) {
 		return errors.Join(ErrOrganizationMemberInvite, ErrNoPermission)
 	}
 
-	user, err := s.userRepo.GetByEmail(ctx, email)
+	user, err := s.userRepo.GetByEmail(ctx, opts.Email)
 	if err != nil && !errors.Is(err, repository.ErrNotFound) {
 		return errors.Join(ErrOrganizationMemberInvite, err)
 	}
@@ -404,16 +516,19 @@ func (s *organizationService) InviteMember(ctx context.Context, orgID model.ID, 
 	if errors.Is(err, repository.ErrNotFound) {
 		userExists = false
 
-		firstName, lastName := convert.EmailToNameParts(email)
+		firstName, lastName := convert.EmailToNameParts(opts.Email)
 
-		user, err = model.NewUser(xid.New().String(), firstName, lastName, email, password.UnusablePassword)
+		user, err = s.userRepo.Create(ctx, repository.CreateUserOpts{
+			Username:  xid.New().String(),
+			FirstName: firstName,
+			LastName:  lastName,
+			Email:     opts.Email,
+			Password:  password.UnusablePassword,
+			Status:    model.UserStatusPending,
+			Links:     make([]string, 0),
+			Languages: make([]model.Language, 0),
+		})
 		if err != nil {
-			return errors.Join(ErrOrganizationMemberInvite, err)
-		}
-
-		user.Status = model.UserStatusPending
-
-		if err := s.userRepo.Create(ctx, user); err != nil {
 			return errors.Join(ErrOrganizationMemberInvite, err)
 		}
 	}
@@ -456,8 +571,8 @@ func (s *organizationService) InviteMember(ctx context.Context, orgID model.ID, 
 		"organization_id": orgID.String(),
 	}, map[string]any{"user_id": user.ID.String()})
 
-	if !targetRoleID.IsNil() {
-		tokenData["role_id"] = targetRoleID.String()
+	if !opts.RoleID.IsNil() {
+		tokenData["role_id"] = opts.RoleID.String()
 	}
 
 	public, secret, err := auth.GenerateToken(model.UserTokenContextInvite.String(), tokenData)
@@ -465,18 +580,22 @@ func (s *organizationService) InviteMember(ctx context.Context, orgID model.ID, 
 		return errors.Join(ErrOrganizationMemberInvite, err)
 	}
 
-	newToken, err := model.NewUserToken(user.ID, email, secret, model.UserTokenContextInvite)
-	if err != nil {
-		return errors.Join(ErrOrganizationMemberInvite, err)
-	}
-
-	if err := s.userTokenRepo.Create(ctx, newToken); err != nil {
+	if _, err := s.userTokenRepo.Create(ctx, repository.CreateUserTokenOpts{
+		UserID:  user.ID,
+		SentTo:  opts.Email,
+		Token:   secret,
+		Context: model.UserTokenContextInvite,
+	}); err != nil {
 		return errors.Join(ErrOrganizationMemberInvite, err)
 	}
 
 	token := public
 
-	if err := s.emailService.SendOrganizationInvitationEmail(ctx, organization, user, token); err != nil {
+	if err := s.emailService.SendOrganizationInvitationEmail(ctx, organization.ID, organization.Name, email.Recipient{
+		Email:     user.Email,
+		FirstName: user.FirstName,
+		LastName:  user.LastName,
+	}, token); err != nil {
 		return errors.Join(ErrOrganizationMemberInvite, err)
 	}
 
@@ -485,18 +604,14 @@ func (s *organizationService) InviteMember(ctx context.Context, orgID model.ID, 
 		notificationTitle := fmt.Sprintf("You've been invited to join %s", organization.Name)
 		notificationDescription := fmt.Sprintf("You have been invited to join the organization %s. Click the link in your email to accept the invitation.", organization.Name)
 
-		notification, err := model.NewNotification(notificationTitle, user.ID)
-		if err != nil {
-			s.logger.Warn(ctx, "failed to create notification for invitation",
+		if _, err := s.notificationService.Create(ctx, CreateNotificationOpts{
+			Title:       notificationTitle,
+			Description: notificationDescription,
+			Recipient:   user.ID,
+		}); err != nil {
+			s.logger.Warn(ctx, "failed to send notification for invitation",
 				log.WithError(err),
 				log.WithUserID(user.ID.String()))
-		} else {
-			notification.Description = notificationDescription
-			if err := s.notificationService.Create(ctx, notification); err != nil {
-				s.logger.Warn(ctx, "failed to send notification for invitation",
-					log.WithError(err),
-					log.WithUserID(user.ID.String()))
-			}
 		}
 	}
 
@@ -573,7 +688,7 @@ func (s *organizationService) RevokeInvitation(ctx context.Context, orgID, userI
 	return nil
 }
 
-func (s *organizationService) AcceptInvitation(ctx context.Context, orgID model.ID, token string, userPassword string) error {
+func (s *organizationService) AcceptInvitation(ctx context.Context, orgID model.ID, opts AcceptOrganizationInvitationOpts) error {
 	ctx, span := s.tracer.Start(ctx, "service.organizationService/AcceptInvitation")
 	defer span.End()
 
@@ -581,11 +696,11 @@ func (s *organizationService) AcceptInvitation(ctx context.Context, orgID model.
 		return errors.Join(ErrOrganizationInviteAccept, err)
 	}
 
-	if token == "" {
-		return errors.Join(ErrOrganizationInviteAccept, ErrInvalidToken)
+	if err := opts.Validate(); err != nil {
+		return errors.Join(ErrOrganizationInviteAccept, err)
 	}
 
-	kind, _, tokenData := auth.SplitToken(token)
+	kind, _, tokenData := auth.SplitToken(opts.Token)
 
 	userIDStr, ok := tokenData["user_id"].(string)
 	if !ok {
@@ -611,7 +726,7 @@ func (s *organizationService) AcceptInvitation(ctx context.Context, orgID model.
 		return errors.Join(ErrOrganizationInviteAccept, ErrInvalidToken)
 	}
 
-	if !auth.IsTokenMatching(confirmation.Token, token) {
+	if !auth.IsTokenMatching(confirmation.Token, opts.Token) {
 		return errors.Join(ErrOrganizationInviteAccept, ErrInvalidToken)
 	}
 
@@ -643,18 +758,16 @@ func (s *organizationService) AcceptInvitation(ctx context.Context, orgID model.
 	}
 
 	if user.Status == model.UserStatusPending {
-		if userPassword == "" {
+		if opts.Password == "" {
 			return errors.Join(ErrOrganizationInviteAccept, errors.New("password is required for pending users"))
 		}
 
-		hashedPassword := password.HashPassword(userPassword)
+		hashedPassword := password.HashPassword(opts.Password)
 
-		patch := map[string]any{
-			"status":   model.UserStatusActive.String(),
-			"password": hashedPassword,
-		}
-
-		if _, err := s.userRepo.Update(ctx, userID, patch); err != nil {
+		if _, err := s.userRepo.Update(ctx, userID, repository.UpdateUserOpts{
+			Status:   optional.Some(model.UserStatusActive),
+			Password: optional.Some(hashedPassword),
+		}); err != nil {
 			return errors.Join(ErrOrganizationInviteAccept, err)
 		}
 	}
@@ -676,12 +789,11 @@ func (s *organizationService) AcceptInvitation(ctx context.Context, orgID model.
 			return errors.Join(ErrOrganizationInviteAccept, err)
 		}
 
-		perm, err := model.NewPermission(userID, orgID, model.PermissionKindRead)
-		if err != nil {
-			return errors.Join(ErrOrganizationInviteAccept, err)
-		}
-
-		if err := s.permissionService.Create(ctx, perm); err != nil {
+		if _, err := s.permissionService.Create(ctx, CreatePermissionOpts{
+			Subject: userID,
+			Target:  orgID,
+			Kind:    model.PermissionKindRead,
+		}); err != nil {
 			s.logger.Warn(ctx, "failed to assign read permission to new member during invitation acceptance",
 				log.WithError(err),
 				log.WithUserID(userID.String()),
@@ -753,7 +865,7 @@ func NewOrganizationService(opts ...Option) (OrganizationService, error) {
 // - owner: if user has `all` permissions OR has `read` AND `write` AND `delete`
 // - admin: if user has `write` permission
 // - member: if user has ONLY `read` permission
-func computeVirtualRoles(permissions []*model.Permission) []string {
+func computeVirtualRoles(permissions []*Permission) []string {
 	virtualRoles := make([]string, 0)
 	hasRead := false
 	hasWrite := false

@@ -3,9 +3,11 @@ package http
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg"
+	"github.com/opcotech/elemo/internal/pkg/optional"
 	"github.com/opcotech/elemo/internal/service"
 	"github.com/opcotech/elemo/internal/transport/http/api"
 )
@@ -38,12 +40,13 @@ func (c *todoController) V1TodosCreate(ctx context.Context, request api.V1TodosC
 		return api.V1TodosCreate400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
-	todo, err := createTodoJSONRequestBodyToTodo(request.Body, ownerID, createdBy)
+	opts, err := createTodoJSONRequestBodyToCreateTodoOpts(request.Body, ownerID, createdBy)
 	if err != nil {
 		return api.V1TodosCreate400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
-	if err := c.todoService.Create(ctx, todo); err != nil {
+	todo, err := c.todoService.Create(ctx, opts)
+	if err != nil {
 		if errors.Is(err, service.ErrNoPermission) {
 			return api.V1TodosCreate403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		}
@@ -119,12 +122,12 @@ func (c *todoController) V1TodoUpdate(ctx context.Context, request api.V1TodoUpd
 		return api.V1TodoUpdate400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
-	patch, err := api.ConvertRequestToMap(request.Body)
+	opts, err := updateTodoJSONRequestBodyToUpdateTodoOpts(request.Body)
 	if err != nil {
 		return api.V1TodoUpdate400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
-	todo, err := c.todoService.Update(ctx, todoID, patch)
+	todo, err := c.todoService.Update(ctx, todoID, opts)
 	if err != nil {
 		if errors.Is(err, service.ErrNoPermission) {
 			return api.V1TodoUpdate403JSONResponse{N403JSONResponse: permissionDenied}, nil
@@ -179,33 +182,66 @@ func NewTodoController(opts ...ControllerOption) (TodoController, error) {
 		return nil, ErrNoTodoService
 	}
 
-	if controller.userService == nil {
-		return nil, ErrNoTodoService
-	}
-
 	return controller, nil
 }
 
-func createTodoJSONRequestBodyToTodo(body *api.V1TodosCreateJSONRequestBody, ownedBy, createdBy model.ID) (*model.Todo, error) {
-	todo, err := model.NewTodo(body.Title, ownedBy, createdBy)
-	if err != nil {
-		return nil, err
+func createTodoJSONRequestBodyToCreateTodoOpts(body *api.V1TodosCreateJSONRequestBody, ownedBy, createdBy model.ID) (service.CreateTodoOpts, error) {
+	opts := service.CreateTodoOpts{
+		Title:       body.Title,
+		Description: pkg.GetDefaultPtr(body.Description.Value, ""),
+		Priority:    model.TodoPriorityNormal,
+		OwnedBy:     ownedBy,
+		CreatedBy:   createdBy,
 	}
-
-	todo.Description = pkg.GetDefaultPtr(body.Description.Value, "")
 
 	if body.DueDate.Value != nil {
-		todo.DueDate = *body.DueDate.Value
+		opts.DueDate = *body.DueDate.Value
 	}
 
-	if err := todo.Priority.UnmarshalText([]byte(body.Priority)); err != nil {
-		return nil, err
+	if err := opts.Priority.UnmarshalText([]byte(body.Priority)); err != nil {
+		return service.CreateTodoOpts{}, err
 	}
 
-	return todo, nil
+	return opts, nil
 }
 
-func todoToDTO(todo *model.Todo) api.Todo {
+func updateTodoJSONRequestBodyToUpdateTodoOpts(body *api.V1TodoUpdateJSONRequestBody) (service.UpdateTodoOpts, error) {
+	opts := service.UpdateTodoOpts{}
+
+	if body.Title != nil {
+		opts.Title = optional.Some(*body.Title)
+	}
+	if body.Completed != nil {
+		opts.Completed = optional.Some(*body.Completed)
+	}
+	if body.Description.Defined {
+		opts.Description = body.Description
+	}
+	if body.DueDate.Defined {
+		opts.DueDate = optionalDueDateFromAPI(body.DueDate)
+	}
+	if body.Priority != nil {
+		var priority model.TodoPriority
+		if err := priority.UnmarshalText([]byte(*body.Priority)); err != nil {
+			return service.UpdateTodoOpts{}, err
+		}
+		opts.Priority = optional.Some(priority)
+	}
+
+	return opts, nil
+}
+
+func optionalDueDateFromAPI(o optional.Optional[*time.Time]) optional.Optional[time.Time] {
+	if !o.Defined {
+		return optional.None[time.Time]()
+	}
+	if o.Value == nil || *o.Value == nil {
+		return optional.Null[time.Time]()
+	}
+	return optional.Some(**o.Value)
+}
+
+func todoToDTO(todo *service.Todo) api.Todo {
 	return api.Todo{
 		Id:          todo.ID.String(),
 		Title:       todo.Title,

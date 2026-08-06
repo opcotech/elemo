@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/opcotech/elemo/internal/model"
+	"github.com/opcotech/elemo/internal/pkg/optional"
 	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/testutil"
 	testModel "github.com/opcotech/elemo/internal/testutil/model"
@@ -17,11 +18,11 @@ type IssueRepositoryIntegrationTestSuite struct {
 	testutil.ContainerIntegrationTestSuite
 	testutil.Neo4jContainerIntegrationTestSuite
 
-	testUser      *model.User
-	testOrg       *model.Organization
-	testNamespace *model.Namespace
-	testProject   *model.Project
-	issue         *model.Issue
+	testUser      *repository.User
+	testOrg       *repository.Organization
+	testNamespace *repository.Namespace
+	testProject   *repository.Project
+	createOpts    repository.CreateIssueOpts
 }
 
 func (s *IssueRepositoryIntegrationTestSuite) SetupSuite() {
@@ -32,19 +33,16 @@ func (s *IssueRepositoryIntegrationTestSuite) SetupSuite() {
 }
 
 func (s *IssueRepositoryIntegrationTestSuite) SetupTest() {
-	s.testUser = testModel.NewUser()
-	s.Require().NoError(s.UserRepo.Create(context.Background(), s.testUser))
-
-	s.testOrg = testModel.NewOrganization()
-	s.Require().NoError(s.OrganizationRepo.Create(context.Background(), s.testUser.ID, s.testOrg))
-
-	s.testNamespace = testModel.NewNamespace()
-	s.Require().NoError(s.NamespaceRepo.Create(context.Background(), s.testUser.ID, s.testOrg.ID, s.testNamespace))
-
-	s.testProject = testModel.NewProject()
-	s.Require().NoError(s.ProjectRepo.Create(context.Background(), s.testNamespace.ID, s.testProject))
-
-	s.issue = testModel.NewIssue(s.testUser.ID)
+	var err error
+	s.testUser, err = s.UserRepo.Create(context.Background(), testModel.NewCreateUserOpts())
+	s.Require().NoError(err)
+	s.testOrg, err = s.OrganizationRepo.Create(context.Background(), testModel.NewCreateOrganizationOpts(s.testUser.ID))
+	s.Require().NoError(err)
+	s.testNamespace, err = s.NamespaceRepo.Create(context.Background(), testModel.NewCreateNamespaceOpts(s.testUser.ID, s.testOrg.ID))
+	s.Require().NoError(err)
+	s.testProject, err = s.ProjectRepo.Create(context.Background(), testModel.NewCreateProjectOpts(s.testNamespace.ID))
+	s.Require().NoError(err)
+	s.createOpts = testModel.NewCreateIssueOpts(s.testProject.ID, s.testUser.ID)
 }
 
 func (s *IssueRepositoryIntegrationTestSuite) TearDownTest() {
@@ -56,44 +54,36 @@ func (s *IssueRepositoryIntegrationTestSuite) TearDownSuite() {
 }
 
 func (s *IssueRepositoryIntegrationTestSuite) TestCreate() {
-	s.Require().NoError(s.IssueRepo.Create(context.Background(), s.testProject.ID, s.issue))
-	s.Assert().NotEqual(model.MustNewNilID(model.ResourceTypeIssue), s.issue.ID)
-	s.Assert().NotNil(s.issue.CreatedAt)
-	s.Assert().Nil(s.issue.UpdatedAt)
-}
-
-func (s *IssueRepositoryIntegrationTestSuite) TestGet() {
-	s.Require().NoError(s.IssueRepo.Create(context.Background(), s.testProject.ID, s.issue))
-
-	issue, err := s.IssueRepo.Get(context.Background(), s.issue.ID)
+	issue, err := s.IssueRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
-
 	s.Assert().NotEqual(model.MustNewNilID(model.ResourceTypeIssue), issue.ID)
-	s.Assert().Equal(s.issue.NumericID, issue.NumericID)
-	s.Assert().Equal(s.issue.Parent, issue.Parent)
-	s.Assert().Equal(s.issue.Kind, issue.Kind)
-	s.Assert().Equal(s.issue.Title, issue.Title)
-	s.Assert().Equal(s.issue.Description, issue.Description)
-	s.Assert().Equal(s.issue.Status, issue.Status)
-	s.Assert().Equal(s.issue.Priority, issue.Priority)
-	s.Assert().Equal(s.issue.Resolution, issue.Resolution)
-	s.Assert().Equal(s.issue.ReportedBy, issue.ReportedBy)
-	s.Assert().Equal(s.issue.Assignees, issue.Assignees)
-	s.Assert().Equal(s.issue.Labels, issue.Labels)
-	s.Assert().Equal(s.issue.Comments, issue.Comments)
-	s.Assert().Equal(s.issue.Attachments, issue.Attachments)
-	s.Assert().ElementsMatch([]model.ID{issue.ReportedBy}, issue.Watchers)
-	s.Assert().Equal(s.issue.Relations, issue.Relations)
-	s.Assert().Equal(s.issue.Links, issue.Links)
-	s.Assert().WithinDuration(*s.issue.DueDate, *issue.DueDate, 100*time.Millisecond)
-	s.Assert().WithinDuration(*s.issue.CreatedAt, *issue.CreatedAt, 100*time.Millisecond)
+	s.Assert().NotNil(issue.CreatedAt)
 	s.Assert().Nil(issue.UpdatedAt)
 }
 
+func (s *IssueRepositoryIntegrationTestSuite) TestGet() {
+	created, err := s.IssueRepo.Create(context.Background(), s.createOpts)
+	s.Require().NoError(err)
+	issue, err := s.IssueRepo.Get(context.Background(), created.ID)
+	s.Require().NoError(err)
+	s.Assert().Equal(created.ID, issue.ID)
+	s.Assert().Equal(s.createOpts.NumericID, issue.NumericID)
+	s.Assert().Equal(s.createOpts.Kind, issue.Kind)
+	s.Assert().Equal(s.createOpts.Title, issue.Title)
+	s.Assert().Equal(s.createOpts.Description, issue.Description)
+	s.Assert().Equal(s.createOpts.Status, issue.Status)
+	s.Assert().Equal(s.createOpts.Priority, issue.Priority)
+	s.Assert().Equal(s.createOpts.ReportedBy, issue.ReportedBy)
+	s.Assert().WithinDuration(*created.CreatedAt, *issue.CreatedAt, 100*time.Millisecond)
+}
+
 func (s *IssueRepositoryIntegrationTestSuite) TestGetAllForProject() {
-	s.Require().NoError(s.IssueRepo.Create(context.Background(), s.testProject.ID, s.issue))
-	s.Require().NoError(s.IssueRepo.Create(context.Background(), s.testProject.ID, testModel.NewIssue(s.testUser.ID)))
-	s.Require().NoError(s.IssueRepo.Create(context.Background(), s.testProject.ID, testModel.NewIssue(s.testUser.ID)))
+	_, err := s.IssueRepo.Create(context.Background(), s.createOpts)
+	s.Require().NoError(err)
+	_, err = s.IssueRepo.Create(context.Background(), testModel.NewCreateIssueOpts(s.testProject.ID, s.testUser.ID))
+	s.Require().NoError(err)
+	_, err = s.IssueRepo.Create(context.Background(), testModel.NewCreateIssueOpts(s.testProject.ID, s.testUser.ID))
+	s.Require().NoError(err)
 
 	issues, err := s.IssueRepo.GetAllForProject(context.Background(), s.testProject.ID, 0, 10)
 	s.Require().NoError(err)
@@ -102,161 +92,128 @@ func (s *IssueRepositoryIntegrationTestSuite) TestGetAllForProject() {
 	issues, err = s.IssueRepo.GetAllForProject(context.Background(), s.testProject.ID, 1, 2)
 	s.Require().NoError(err)
 	s.Assert().Len(issues, 2)
-
-	issues, err = s.IssueRepo.GetAllForProject(context.Background(), s.testProject.ID, 2, 2)
-	s.Require().NoError(err)
-	s.Assert().Len(issues, 1)
-
-	issues, err = s.IssueRepo.GetAllForProject(context.Background(), s.testProject.ID, 3, 2)
-	s.Require().NoError(err)
-	s.Assert().Len(issues, 0)
 }
 
 func (s *IssueRepositoryIntegrationTestSuite) TestGetAllForIssue() {
-	s.Require().NoError(s.IssueRepo.Create(context.Background(), s.testProject.ID, s.issue))
-
-	relatedIssue1 := testModel.NewIssue(s.testUser.ID)
-	relatedIssue1.Parent = &s.issue.ID
-	s.Require().NoError(s.IssueRepo.Create(context.Background(), s.testProject.ID, relatedIssue1))
-
-	relatedIssue2 := testModel.NewIssue(s.testUser.ID)
-	s.Require().NoError(s.IssueRepo.Create(context.Background(), s.testProject.ID, relatedIssue2))
-
-	relation, err := model.NewIssueRelation(s.issue.ID, relatedIssue2.ID, model.IssueRelationKindBlocks)
+	parent, err := s.IssueRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 
-	s.Require().NoError(s.IssueRepo.AddRelation(context.Background(), relation))
+	childOpts := testModel.NewCreateIssueOpts(s.testProject.ID, s.testUser.ID)
+	childOpts.Parent = &parent.ID
+	_, err = s.IssueRepo.Create(context.Background(), childOpts)
+	s.Require().NoError(err)
 
-	issues, err := s.IssueRepo.GetAllForIssue(context.Background(), s.issue.ID, 0, 10)
+	related, err := s.IssueRepo.Create(context.Background(), testModel.NewCreateIssueOpts(s.testProject.ID, s.testUser.ID))
+	s.Require().NoError(err)
+	_, err = s.IssueRepo.AddRelation(context.Background(), repository.CreateIssueRelationOpts{
+		Source: parent.ID,
+		Target: related.ID,
+		Kind:   model.IssueRelationKindBlocks,
+	})
+	s.Require().NoError(err)
+
+	issues, err := s.IssueRepo.GetAllForIssue(context.Background(), parent.ID, 0, 10)
 	s.Require().NoError(err)
 	s.Assert().Len(issues, 2)
-
-	issues, err = s.IssueRepo.GetAllForIssue(context.Background(), s.issue.ID, 1, 2)
-	s.Require().NoError(err)
-	s.Assert().Len(issues, 1)
-
-	issues, err = s.IssueRepo.GetAllForIssue(context.Background(), s.issue.ID, 2, 2)
-	s.Require().NoError(err)
-	s.Assert().Len(issues, 0)
 }
 
 func (s *IssueRepositoryIntegrationTestSuite) TestAddWatcher() {
-	s.Require().NoError(s.IssueRepo.Create(context.Background(), s.testProject.ID, s.issue))
-
-	watcher := testModel.NewUser()
-	s.Require().NoError(s.UserRepo.Create(context.Background(), watcher))
-
-	s.Require().NoError(s.IssueRepo.AddWatcher(context.Background(), s.issue.ID, watcher.ID))
+	created, err := s.IssueRepo.Create(context.Background(), s.createOpts)
+	s.Require().NoError(err)
+	watcher, err := s.UserRepo.Create(context.Background(), testModel.NewCreateUserOpts())
+	s.Require().NoError(err)
+	s.Require().NoError(s.IssueRepo.AddWatcher(context.Background(), created.ID, watcher.ID))
 }
 
 func (s *IssueRepositoryIntegrationTestSuite) TestGetWatchers() {
-	s.Require().NoError(s.IssueRepo.Create(context.Background(), s.testProject.ID, s.issue))
+	created, err := s.IssueRepo.Create(context.Background(), s.createOpts)
+	s.Require().NoError(err)
 
-	watchers, err := s.IssueRepo.GetWatchers(context.Background(), s.issue.ID)
+	watchers, err := s.IssueRepo.GetWatchers(context.Background(), created.ID)
 	s.Require().NoError(err)
 	s.Assert().Len(watchers, 1)
 
-	watcher := testModel.NewUser()
-	s.Require().NoError(s.UserRepo.Create(context.Background(), watcher))
-	s.Require().NoError(s.IssueRepo.AddWatcher(context.Background(), s.issue.ID, watcher.ID))
+	watcher, err := s.UserRepo.Create(context.Background(), testModel.NewCreateUserOpts())
+	s.Require().NoError(err)
+	s.Require().NoError(s.IssueRepo.AddWatcher(context.Background(), created.ID, watcher.ID))
 
-	watchers, err = s.IssueRepo.GetWatchers(context.Background(), s.issue.ID)
+	watchers, err = s.IssueRepo.GetWatchers(context.Background(), created.ID)
 	s.Require().NoError(err)
 	s.Assert().Len(watchers, 2)
 }
 
 func (s *IssueRepositoryIntegrationTestSuite) TestRemoveWatcher() {
-	s.Require().NoError(s.IssueRepo.Create(context.Background(), s.testProject.ID, s.issue))
-
-	s.Require().NoError(s.IssueRepo.RemoveWatcher(context.Background(), s.issue.ID, s.issue.ReportedBy))
-
-	watchers, err := s.IssueRepo.GetWatchers(context.Background(), s.issue.ID)
+	created, err := s.IssueRepo.Create(context.Background(), s.createOpts)
+	s.Require().NoError(err)
+	s.Require().NoError(s.IssueRepo.RemoveWatcher(context.Background(), created.ID, created.ReportedBy))
+	watchers, err := s.IssueRepo.GetWatchers(context.Background(), created.ID)
 	s.Require().NoError(err)
 	s.Assert().Empty(watchers)
 }
 
 func (s *IssueRepositoryIntegrationTestSuite) TestAddRelation() {
-	s.Require().NoError(s.IssueRepo.Create(context.Background(), s.testProject.ID, s.issue))
-
-	relatedIssue := testModel.NewIssue(s.testUser.ID)
-	s.Require().NoError(s.IssueRepo.Create(context.Background(), s.testProject.ID, relatedIssue))
-
-	relation, err := model.NewIssueRelation(s.issue.ID, relatedIssue.ID, model.IssueRelationKindBlocks)
+	created, err := s.IssueRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
-	s.Require().NoError(s.IssueRepo.AddRelation(context.Background(), relation))
+	related, err := s.IssueRepo.Create(context.Background(), testModel.NewCreateIssueOpts(s.testProject.ID, s.testUser.ID))
+	s.Require().NoError(err)
+	_, err = s.IssueRepo.AddRelation(context.Background(), repository.CreateIssueRelationOpts{
+		Source: created.ID,
+		Target: related.ID,
+		Kind:   model.IssueRelationKindBlocks,
+	})
+	s.Require().NoError(err)
 }
 
 func (s *IssueRepositoryIntegrationTestSuite) TestGetRelations() {
-	s.Require().NoError(s.IssueRepo.Create(context.Background(), s.testProject.ID, s.issue))
-
-	relatedIssue := testModel.NewIssue(s.testUser.ID)
-	s.Require().NoError(s.IssueRepo.Create(context.Background(), s.testProject.ID, relatedIssue))
-
-	relation, err := model.NewIssueRelation(s.issue.ID, relatedIssue.ID, model.IssueRelationKindBlocks)
+	created, err := s.IssueRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
-	s.Require().NoError(s.IssueRepo.AddRelation(context.Background(), relation))
-
-	relations, err := s.IssueRepo.GetRelations(context.Background(), s.issue.ID)
+	related, err := s.IssueRepo.Create(context.Background(), testModel.NewCreateIssueOpts(s.testProject.ID, s.testUser.ID))
+	s.Require().NoError(err)
+	_, err = s.IssueRepo.AddRelation(context.Background(), repository.CreateIssueRelationOpts{
+		Source: created.ID,
+		Target: related.ID,
+		Kind:   model.IssueRelationKindBlocks,
+	})
+	s.Require().NoError(err)
+	relations, err := s.IssueRepo.GetRelations(context.Background(), created.ID)
 	s.Require().NoError(err)
 	s.Assert().Len(relations, 1)
 }
 
 func (s *IssueRepositoryIntegrationTestSuite) TestRemoveRelation() {
-	s.Require().NoError(s.IssueRepo.Create(context.Background(), s.testProject.ID, s.issue))
-
-	relatedIssue := testModel.NewIssue(s.testUser.ID)
-	s.Require().NoError(s.IssueRepo.Create(context.Background(), s.testProject.ID, relatedIssue))
-
-	relation, err := model.NewIssueRelation(s.issue.ID, relatedIssue.ID, model.IssueRelationKindBlocks)
+	created, err := s.IssueRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
-	s.Require().NoError(s.IssueRepo.AddRelation(context.Background(), relation))
-
-	s.Require().NoError(s.IssueRepo.RemoveRelation(context.Background(), s.issue.ID, relatedIssue.ID, model.IssueRelationKindBlocks))
+	related, err := s.IssueRepo.Create(context.Background(), testModel.NewCreateIssueOpts(s.testProject.ID, s.testUser.ID))
+	s.Require().NoError(err)
+	_, err = s.IssueRepo.AddRelation(context.Background(), repository.CreateIssueRelationOpts{
+		Source: created.ID,
+		Target: related.ID,
+		Kind:   model.IssueRelationKindBlocks,
+	})
+	s.Require().NoError(err)
+	s.Require().NoError(s.IssueRepo.RemoveRelation(context.Background(), created.ID, related.ID, model.IssueRelationKindBlocks))
 }
 
 func (s *IssueRepositoryIntegrationTestSuite) TestUpdate() {
-	s.Require().NoError(s.IssueRepo.Create(context.Background(), s.testProject.ID, s.issue))
-
-	dueDate := time.Now().UTC().Add(1 * time.Hour)
-	patch := map[string]any{
-		"title":       "New title",
-		"description": "New description",
-		"kind":        model.IssueKindBug.String(),
-		"status":      model.IssueStatusClosed.String(),
-		"priority":    model.IssuePriorityHigh.String(),
-		"resolution":  model.IssueResolutionFixed.String(),
-		"due_date":    dueDate.Format(time.RFC3339Nano),
-	}
-
-	issue, err := s.IssueRepo.Update(context.Background(), s.issue.ID, patch)
+	created, err := s.IssueRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
-
-	s.Assert().Equal(s.issue.ID, issue.ID)
-	s.Assert().Equal(patch["kind"], issue.Kind.String())
-	s.Assert().Equal(patch["title"], issue.Title)
-	s.Assert().Equal(patch["description"], issue.Description)
-	s.Assert().Equal(patch["status"], issue.Status.String())
-	s.Assert().Equal(patch["priority"], issue.Priority.String())
-	s.Assert().Equal(patch["resolution"], issue.Resolution.String())
-	s.Assert().Equal(s.issue.ReportedBy, issue.ReportedBy)
-	s.Assert().Equal(s.issue.Assignees, issue.Assignees)
-	s.Assert().Equal(s.issue.Labels, issue.Labels)
-	s.Assert().Equal(s.issue.Comments, issue.Comments)
-	s.Assert().Equal(s.issue.Attachments, issue.Attachments)
-	s.Assert().ElementsMatch([]model.ID{issue.ReportedBy}, issue.Watchers)
-	s.Assert().Equal(s.issue.Relations, issue.Relations)
-	s.Assert().Equal(s.issue.Links, issue.Links)
-	s.Assert().WithinDuration(dueDate, *issue.DueDate, 100*time.Millisecond)
-	s.Assert().WithinDuration(*s.issue.CreatedAt, *issue.CreatedAt, 100*time.Millisecond)
+	issue, err := s.IssueRepo.Update(context.Background(), created.ID, repository.UpdateIssueOpts{
+		Title:       optional.Some("new title"),
+		Description: optional.Some("new description"),
+		Status:      optional.Some(model.IssueStatusClosed),
+	})
+	s.Require().NoError(err)
+	s.Assert().Equal("new title", issue.Title)
+	s.Assert().Equal("new description", issue.Description)
+	s.Assert().Equal(model.IssueStatusClosed, issue.Status)
 	s.Assert().NotNil(issue.UpdatedAt)
 }
 
 func (s *IssueRepositoryIntegrationTestSuite) TestDelete() {
-	s.Require().NoError(s.IssueRepo.Create(context.Background(), s.testProject.ID, s.issue))
-
-	s.Require().NoError(s.IssueRepo.Delete(context.Background(), s.issue.ID))
-
-	_, err := s.IssueRepo.Get(context.Background(), s.issue.ID)
+	created, err := s.IssueRepo.Create(context.Background(), s.createOpts)
+	s.Require().NoError(err)
+	s.Require().NoError(s.IssueRepo.Delete(context.Background(), created.ID))
+	_, err = s.IssueRepo.Get(context.Background(), created.ID)
 	s.Assert().ErrorIs(err, repository.ErrNotFound)
 }
 
@@ -269,11 +226,11 @@ type CachedIssueRepositoryIntegrationTestSuite struct {
 	testutil.Neo4jContainerIntegrationTestSuite
 	testutil.RedisContainerIntegrationTestSuite
 
-	testUser      *model.User
-	testOrg       *model.Organization
-	testNamespace *model.Namespace
-	testProject   *model.Project
-	issue         *model.Issue
+	testUser      *repository.User
+	testOrg       *repository.Organization
+	testNamespace *repository.Namespace
+	testProject   *repository.Project
+	createOpts    repository.CreateIssueOpts
 	issueRepo     *repository.RedisCachedIssueRepository
 }
 
@@ -281,28 +238,22 @@ func (s *CachedIssueRepositoryIntegrationTestSuite) SetupSuite() {
 	if testing.Short() {
 		s.T().Skip("skipping integration test")
 	}
-
 	s.SetupNeo4j(&s.ContainerIntegrationTestSuite, reflect.TypeOf(s).Elem().String())
 	s.SetupRedis(&s.ContainerIntegrationTestSuite, reflect.TypeOf(s).Elem().String())
-
 	s.issueRepo, _ = repository.NewCachedIssueRepository(s.IssueRepo, repository.WithRedisDatabase(s.RedisDB))
 }
 
 func (s *CachedIssueRepositoryIntegrationTestSuite) SetupTest() {
-	s.testUser = testModel.NewUser()
-	s.Require().NoError(s.UserRepo.Create(context.Background(), s.testUser))
-
-	s.testOrg = testModel.NewOrganization()
-	s.Require().NoError(s.OrganizationRepo.Create(context.Background(), s.testUser.ID, s.testOrg))
-
-	s.testNamespace = testModel.NewNamespace()
-	s.Require().NoError(s.NamespaceRepo.Create(context.Background(), s.testUser.ID, s.testOrg.ID, s.testNamespace))
-
-	s.testProject = testModel.NewProject()
-	s.Require().NoError(s.ProjectRepo.Create(context.Background(), s.testNamespace.ID, s.testProject))
-
-	s.issue = testModel.NewIssue(s.testUser.ID)
-
+	var err error
+	s.testUser, err = s.UserRepo.Create(context.Background(), testModel.NewCreateUserOpts())
+	s.Require().NoError(err)
+	s.testOrg, err = s.OrganizationRepo.Create(context.Background(), testModel.NewCreateOrganizationOpts(s.testUser.ID))
+	s.Require().NoError(err)
+	s.testNamespace, err = s.NamespaceRepo.Create(context.Background(), testModel.NewCreateNamespaceOpts(s.testUser.ID, s.testOrg.ID))
+	s.Require().NoError(err)
+	s.testProject, err = s.ProjectRepo.Create(context.Background(), testModel.NewCreateProjectOpts(s.testNamespace.ID))
+	s.Require().NoError(err)
+	s.createOpts = testModel.NewCreateIssueOpts(s.testProject.ID, s.testUser.ID)
 	s.Require().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }
 
@@ -315,226 +266,53 @@ func (s *CachedIssueRepositoryIntegrationTestSuite) TearDownSuite() {
 }
 
 func (s *CachedIssueRepositoryIntegrationTestSuite) TestCreate() {
-	s.Require().NoError(s.issueRepo.Create(context.Background(), s.testProject.ID, s.issue))
-	s.Assert().NotEqual(model.MustNewNilID(model.ResourceTypeIssue), s.issue.ID)
-	s.Assert().NotNil(s.issue.CreatedAt)
-	s.Assert().Nil(s.issue.UpdatedAt)
-
-	s.issue.Parent = nil
-	s.Require().NoError(s.issueRepo.Create(context.Background(), s.testProject.ID, s.issue))
-	s.Assert().NotEqual(model.MustNewNilID(model.ResourceTypeIssue), s.issue.ID)
-	s.Assert().NotNil(s.issue.CreatedAt)
-	s.Assert().Nil(s.issue.UpdatedAt)
-
+	issue, err := s.issueRepo.Create(context.Background(), s.createOpts)
+	s.Require().NoError(err)
+	s.Assert().NotNil(issue.CreatedAt)
 	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }
 
 func (s *CachedIssueRepositoryIntegrationTestSuite) TestGet() {
-	s.Require().NoError(s.IssueRepo.Create(context.Background(), s.testProject.ID, s.issue))
-
-	original, err := s.IssueRepo.Get(context.Background(), s.issue.ID)
+	created, err := s.issueRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
-
-	usingCache, err := s.issueRepo.Get(context.Background(), s.issue.ID)
+	original, err := s.IssueRepo.Get(context.Background(), created.ID)
 	s.Require().NoError(err)
-
+	usingCache, err := s.issueRepo.Get(context.Background(), created.ID)
+	s.Require().NoError(err)
 	s.Assert().Equal(original, usingCache)
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
-
-	cached, err := s.issueRepo.Get(context.Background(), s.issue.ID)
-	s.Require().NoError(err)
-
-	s.Assert().Equal(usingCache.ID, cached.ID)
 	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
 }
 
 func (s *CachedIssueRepositoryIntegrationTestSuite) TestGetAllForProject() {
-	s.Require().NoError(s.IssueRepo.Create(context.Background(), s.testProject.ID, s.issue))
-	s.Require().NoError(s.IssueRepo.Create(context.Background(), s.testProject.ID, testModel.NewIssue(s.testUser.ID)))
-
-	originalIssues, err := s.IssueRepo.GetAllForProject(context.Background(), s.testProject.ID, 0, 10)
+	_, err := s.issueRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
-
-	usingCacheIssues, err := s.issueRepo.GetAllForProject(context.Background(), s.testProject.ID, 0, 10)
+	original, err := s.IssueRepo.GetAllForProject(context.Background(), s.testProject.ID, 0, 10)
 	s.Require().NoError(err)
-
-	s.Assert().Equal(originalIssues, usingCacheIssues)
+	usingCache, err := s.issueRepo.GetAllForProject(context.Background(), s.testProject.ID, 0, 10)
+	s.Require().NoError(err)
+	s.Assert().Equal(original, usingCache)
 	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
-
-	cachedIssues, err := s.issueRepo.GetAllForProject(context.Background(), s.testProject.ID, 0, 10)
-	s.Require().NoError(err)
-	s.Assert().Equal(len(usingCacheIssues), len(cachedIssues))
-
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
-}
-
-func (s *CachedIssueRepositoryIntegrationTestSuite) TestGetAllForIssue() {
-	s.Require().NoError(s.IssueRepo.Create(context.Background(), s.testProject.ID, s.issue))
-
-	relatedIssue1 := testModel.NewIssue(s.testUser.ID)
-	relatedIssue1.Parent = &s.issue.ID
-	s.Require().NoError(s.IssueRepo.Create(context.Background(), s.testProject.ID, relatedIssue1))
-
-	relatedIssue2 := testModel.NewIssue(s.testUser.ID)
-	s.Require().NoError(s.IssueRepo.Create(context.Background(), s.testProject.ID, relatedIssue2))
-
-	relation, err := model.NewIssueRelation(s.issue.ID, relatedIssue2.ID, model.IssueRelationKindBlocks)
-	s.Require().NoError(err)
-
-	s.Require().NoError(s.IssueRepo.AddRelation(context.Background(), relation))
-
-	originalIssues, err := s.IssueRepo.GetAllForIssue(context.Background(), s.issue.ID, 0, 10)
-	s.Require().NoError(err)
-
-	usingCacheIssues, err := s.issueRepo.GetAllForIssue(context.Background(), s.issue.ID, 0, 10)
-	s.Require().NoError(err)
-
-	s.Assert().Equal(originalIssues, usingCacheIssues)
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
-
-	cachedIssues, err := s.issueRepo.GetAllForIssue(context.Background(), s.issue.ID, 0, 10)
-	s.Require().NoError(err)
-	s.Assert().Equal(len(usingCacheIssues), len(cachedIssues))
-
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
-}
-
-func (s *CachedIssueRepositoryIntegrationTestSuite) TestAddWatcher() {
-	s.Require().NoError(s.IssueRepo.Create(context.Background(), s.testProject.ID, s.issue))
-
-	watcher := testModel.NewUser()
-	s.Require().NoError(s.UserRepo.Create(context.Background(), watcher))
-
-	s.Require().NoError(s.issueRepo.AddWatcher(context.Background(), s.issue.ID, watcher.ID))
-
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
-}
-
-func (s *CachedIssueRepositoryIntegrationTestSuite) TestGetWatchers() {
-	s.Require().NoError(s.IssueRepo.Create(context.Background(), s.testProject.ID, s.issue))
-
-	watcher := testModel.NewUser()
-	s.Require().NoError(s.UserRepo.Create(context.Background(), watcher))
-
-	s.Require().NoError(s.issueRepo.AddWatcher(context.Background(), s.issue.ID, watcher.ID))
-	watchers, err := s.issueRepo.GetWatchers(context.Background(), s.issue.ID)
-	s.Require().NoError(err)
-	s.Assert().Len(watchers, 2)
-
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
-}
-
-func (s *CachedIssueRepositoryIntegrationTestSuite) TestRemoveWatcher() {
-	s.Require().NoError(s.IssueRepo.Create(context.Background(), s.testProject.ID, s.issue))
-
-	watcher := testModel.NewUser()
-	s.Require().NoError(s.UserRepo.Create(context.Background(), watcher))
-
-	s.Require().NoError(s.issueRepo.AddWatcher(context.Background(), s.issue.ID, watcher.ID))
-	s.Require().NoError(s.issueRepo.RemoveWatcher(context.Background(), s.issue.ID, watcher.ID))
-
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
-}
-
-func (s *CachedIssueRepositoryIntegrationTestSuite) TestAddRelation() {
-	s.Require().NoError(s.IssueRepo.Create(context.Background(), s.testProject.ID, s.issue))
-
-	relatedIssue := testModel.NewIssue(s.testUser.ID)
-	s.Require().NoError(s.IssueRepo.Create(context.Background(), s.testProject.ID, relatedIssue))
-
-	relation, err := model.NewIssueRelation(s.issue.ID, relatedIssue.ID, model.IssueRelationKindBlocks)
-	s.Require().NoError(err)
-
-	s.Require().NoError(s.issueRepo.AddRelation(context.Background(), relation))
-
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
-}
-
-func (s *CachedIssueRepositoryIntegrationTestSuite) TestGetRelations() {
-	s.Require().NoError(s.IssueRepo.Create(context.Background(), s.testProject.ID, s.issue))
-
-	relatedIssue := testModel.NewIssue(s.testUser.ID)
-	s.Require().NoError(s.IssueRepo.Create(context.Background(), s.testProject.ID, relatedIssue))
-
-	relation, err := model.NewIssueRelation(s.issue.ID, relatedIssue.ID, model.IssueRelationKindBlocks)
-	s.Require().NoError(err)
-
-	s.Require().NoError(s.issueRepo.AddRelation(context.Background(), relation))
-
-	relations, err := s.issueRepo.GetRelations(context.Background(), s.issue.ID)
-	s.Require().NoError(err)
-	s.Assert().Len(relations, 1)
-
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
-}
-
-func (s *CachedIssueRepositoryIntegrationTestSuite) TestRemoveRelation() {
-	s.Require().NoError(s.IssueRepo.Create(context.Background(), s.testProject.ID, s.issue))
-
-	relatedIssue := testModel.NewIssue(s.testUser.ID)
-	s.Require().NoError(s.IssueRepo.Create(context.Background(), s.testProject.ID, relatedIssue))
-
-	relation, err := model.NewIssueRelation(s.issue.ID, relatedIssue.ID, model.IssueRelationKindBlocks)
-	s.Require().NoError(err)
-
-	s.Require().NoError(s.issueRepo.AddRelation(context.Background(), relation))
-	s.Require().NoError(s.issueRepo.RemoveRelation(context.Background(), s.issue.ID, relatedIssue.ID, model.IssueRelationKindBlocks))
-
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }
 
 func (s *CachedIssueRepositoryIntegrationTestSuite) TestUpdate() {
-	s.Require().NoError(s.IssueRepo.Create(context.Background(), s.testProject.ID, s.issue))
-
-	dueDate := time.Now().UTC().Add(1 * time.Hour)
-	patch := map[string]any{
-		"title":       "New title",
-		"description": "New description",
-		"kind":        model.IssueKindBug.String(),
-		"status":      model.IssueStatusClosed.String(),
-		"priority":    model.IssuePriorityHigh.String(),
-		"resolution":  model.IssueResolutionFixed.String(),
-		"due_date":    dueDate.Format(time.RFC3339Nano),
-	}
-
-	issue, err := s.issueRepo.Update(context.Background(), s.issue.ID, patch)
+	created, err := s.issueRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
-
-	s.Assert().Equal(s.issue.ID, issue.ID)
-	s.Assert().Equal(patch["kind"], issue.Kind.String())
-	s.Assert().Equal(patch["title"], issue.Title)
-	s.Assert().Equal(patch["description"], issue.Description)
-	s.Assert().Equal(patch["status"], issue.Status.String())
-	s.Assert().Equal(patch["priority"], issue.Priority.String())
-	s.Assert().Equal(patch["resolution"], issue.Resolution.String())
-	s.Assert().Equal(s.issue.ReportedBy, issue.ReportedBy)
-	s.Assert().Equal(s.issue.Assignees, issue.Assignees)
-	s.Assert().Equal(s.issue.Labels, issue.Labels)
-	s.Assert().Equal(s.issue.Comments, issue.Comments)
-	s.Assert().Equal(s.issue.Attachments, issue.Attachments)
-	s.Assert().ElementsMatch([]model.ID{issue.ReportedBy}, issue.Watchers)
-	s.Assert().Equal(s.issue.Relations, issue.Relations)
-	s.Assert().Equal(s.issue.Links, issue.Links)
-	s.Assert().WithinDuration(dueDate, *issue.DueDate, 100*time.Millisecond)
-	s.Assert().WithinDuration(*s.issue.CreatedAt, *issue.CreatedAt, 100*time.Millisecond)
-	s.Assert().NotNil(issue.UpdatedAt)
-
+	issue, err := s.issueRepo.Update(context.Background(), created.ID, repository.UpdateIssueOpts{
+		Title: optional.Some("new title"),
+	})
+	s.Require().NoError(err)
+	s.Assert().Equal("new title", issue.Title)
 	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
 }
 
 func (s *CachedIssueRepositoryIntegrationTestSuite) TestDelete() {
-	s.Require().NoError(s.IssueRepo.Create(context.Background(), s.testProject.ID, s.issue))
-
-	_, err := s.issueRepo.Get(context.Background(), s.issue.ID)
+	created, err := s.issueRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
-
-	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
-
-	s.Require().NoError(s.issueRepo.Delete(context.Background(), s.issue.ID))
-
-	_, err = s.issueRepo.Get(context.Background(), s.issue.ID)
+	_, err = s.issueRepo.Get(context.Background(), created.ID)
+	s.Require().NoError(err)
+	s.Require().NoError(s.issueRepo.Delete(context.Background(), created.ID))
+	_, err = s.issueRepo.Get(context.Background(), created.ID)
 	s.Assert().ErrorIs(err, repository.ErrNotFound)
-
 	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }
 

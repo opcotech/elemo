@@ -7,14 +7,15 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
+
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/convert"
 	"github.com/opcotech/elemo/internal/pkg/log"
 	"github.com/opcotech/elemo/internal/pkg/tracing"
 	"github.com/opcotech/elemo/internal/testutil/mock"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.uber.org/mock/gomock"
 )
 
 func TestNewNotificationRepository(t *testing.T) {
@@ -71,11 +72,11 @@ func TestNewNotificationRepository(t *testing.T) {
 
 func TestNotificationRepository_Create(t *testing.T) {
 	type fields struct {
-		pgBaseRepository func(ctx context.Context, ctrl *gomock.Controller, notification *model.Notification) *pgBaseRepository
+		pgBaseRepository func(ctx context.Context, ctrl *gomock.Controller, opts CreateNotificationOpts) *pgBaseRepository
 	}
 	type args struct {
-		ctx          context.Context
-		notification *model.Notification
+		ctx  context.Context
+		opts CreateNotificationOpts
 	}
 	tests := []struct {
 		name    string
@@ -86,7 +87,7 @@ func TestNotificationRepository_Create(t *testing.T) {
 		{
 			name: "create new notification",
 			fields: fields{
-				pgBaseRepository: func(ctx context.Context, ctrl *gomock.Controller, notification *model.Notification) *pgBaseRepository {
+				pgBaseRepository: func(ctx context.Context, ctrl *gomock.Controller, opts CreateNotificationOpts) *pgBaseRepository {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End().Return()
 
@@ -99,8 +100,8 @@ func TestNotificationRepository_Create(t *testing.T) {
 
 					mockDBPool.EXPECT().Exec(ctx,
 						"INSERT INTO notifications (id, title, description, recipient, read, created_at) VALUES ($1, $2, $3, $4, $5, $6)",
-						gomock.Any(), notification.Title, notification.Description, notification.Recipient,
-						notification.Read, gomock.Any(),
+						gomock.Any(), opts.Title, opts.Description, opts.Recipient,
+						false, gomock.Any(),
 					).Return(pgconn.CommandTag{}, nil)
 
 					return &pgBaseRepository{
@@ -112,8 +113,7 @@ func TestNotificationRepository_Create(t *testing.T) {
 			},
 			args: args{
 				ctx: context.Background(),
-				notification: &model.Notification{
-					ID:          model.MustNewNilID(model.ResourceTypeNotification),
+				opts: CreateNotificationOpts{
 					Title:       "test notification",
 					Description: "test description",
 					Recipient:   model.MustNewNilID(model.ResourceTypeUser),
@@ -123,7 +123,7 @@ func TestNotificationRepository_Create(t *testing.T) {
 		{
 			name: "create new notification with error",
 			fields: fields{
-				pgBaseRepository: func(ctx context.Context, ctrl *gomock.Controller, notification *model.Notification) *pgBaseRepository {
+				pgBaseRepository: func(ctx context.Context, ctrl *gomock.Controller, opts CreateNotificationOpts) *pgBaseRepository {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End().Return()
 
@@ -136,8 +136,8 @@ func TestNotificationRepository_Create(t *testing.T) {
 
 					mockDBPool.EXPECT().Exec(ctx,
 						"INSERT INTO notifications (id, title, description, recipient, read, created_at) VALUES ($1, $2, $3, $4, $5, $6)",
-						gomock.Any(), notification.Title, notification.Description, notification.Recipient,
-						notification.Read, gomock.Any(),
+						gomock.Any(), opts.Title, opts.Description, opts.Recipient,
+						false, gomock.Any(),
 					).Return(pgconn.CommandTag{}, assert.AnError)
 
 					return &pgBaseRepository{
@@ -149,41 +149,8 @@ func TestNotificationRepository_Create(t *testing.T) {
 			},
 			args: args{
 				ctx: context.Background(),
-				notification: &model.Notification{
-					ID:          model.MustNewNilID(model.ResourceTypeNotification),
+				opts: CreateNotificationOpts{
 					Title:       "test notification",
-					Description: "test description",
-					Recipient:   model.MustNewNilID(model.ResourceTypeUser),
-				},
-			},
-			wantErr: ErrNotificationCreate,
-		},
-		{
-			name: "create new invalid notification",
-			fields: fields{
-				pgBaseRepository: func(ctx context.Context, ctrl *gomock.Controller, _ *model.Notification) *pgBaseRepository {
-					span := mock.NewMockSpan(ctrl)
-					span.EXPECT().End().Return()
-
-					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "repository.pg.NotificationRepository/Create").Return(ctx, span)
-
-					mockDBPool := mock.NewPGPool(ctrl)
-					mockDB, err := NewPGDatabase(WithDatabasePool(mockDBPool))
-					require.NoError(t, err)
-
-					return &pgBaseRepository{
-						db:     mockDB,
-						logger: mock.NewMockLogger(nil),
-						tracer: tracer,
-					}
-				},
-			},
-			args: args{
-				ctx: context.Background(),
-				notification: &model.Notification{
-					ID:          model.MustNewNilID(model.ResourceTypeNotification),
-					Title:       "",
 					Description: "test description",
 					Recipient:   model.MustNewNilID(model.ResourceTypeUser),
 				},
@@ -198,20 +165,28 @@ func TestNotificationRepository_Create(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			notificationRepo := &PGNotificationRepository{
-				pgBaseRepository: tt.fields.pgBaseRepository(tt.args.ctx, ctrl, tt.args.notification),
+				pgBaseRepository: tt.fields.pgBaseRepository(tt.args.ctx, ctrl, tt.args.opts),
 			}
-			err := notificationRepo.Create(tt.args.ctx, tt.args.notification)
+			got, err := notificationRepo.Create(tt.args.ctx, tt.args.opts)
 			require.ErrorIs(t, err, tt.wantErr)
+			if tt.wantErr == nil {
+				require.NotNil(t, got)
+				assert.Equal(t, tt.args.opts.Title, got.Title)
+				assert.Equal(t, tt.args.opts.Description, got.Description)
+				assert.Equal(t, tt.args.opts.Recipient, got.Recipient)
+				assert.False(t, got.Read)
+				assert.NotNil(t, got.CreatedAt)
+			}
 		})
 	}
 }
 
 func TestNotificationRepository_Get(t *testing.T) {
 	notificationID := model.MustNewID(model.ResourceTypeNotification)
-	recipientID := model.MustNewID(model.ResourceTypeNotification)
+	recipientID := model.MustNewID(model.ResourceTypeUser)
 
 	type fields struct {
-		pgBaseRepository func(ctx context.Context, ctrl *gomock.Controller, id, recipient model.ID, notification *model.Notification) *pgBaseRepository
+		pgBaseRepository func(ctx context.Context, ctrl *gomock.Controller, id, recipient model.ID, notification *Notification) *pgBaseRepository
 	}
 	type args struct {
 		ctx       context.Context
@@ -222,13 +197,13 @@ func TestNotificationRepository_Get(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    *model.Notification
+		want    *Notification
 		wantErr error
 	}{
 		{
 			name: "get notification",
 			fields: fields{
-				pgBaseRepository: func(ctx context.Context, ctrl *gomock.Controller, id, recipient model.ID, notification *model.Notification) *pgBaseRepository {
+				pgBaseRepository: func(ctx context.Context, ctrl *gomock.Controller, id, recipient model.ID, notification *Notification) *pgBaseRepository {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End().Return()
 
@@ -270,7 +245,7 @@ func TestNotificationRepository_Get(t *testing.T) {
 				id:        notificationID,
 				recipient: recipientID,
 			},
-			want: &model.Notification{
+			want: &Notification{
 				ID:          notificationID,
 				Title:       "test title",
 				Description: "test description",
@@ -281,7 +256,7 @@ func TestNotificationRepository_Get(t *testing.T) {
 		{
 			name: "get notification not found",
 			fields: fields{
-				pgBaseRepository: func(ctx context.Context, ctrl *gomock.Controller, id, recipient model.ID, _ *model.Notification) *pgBaseRepository {
+				pgBaseRepository: func(ctx context.Context, ctrl *gomock.Controller, id, recipient model.ID, _ *Notification) *pgBaseRepository {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End().Return()
 
@@ -319,7 +294,7 @@ func TestNotificationRepository_Get(t *testing.T) {
 		{
 			name: "get notification with error",
 			fields: fields{
-				pgBaseRepository: func(ctx context.Context, ctrl *gomock.Controller, id, recipient model.ID, _ *model.Notification) *pgBaseRepository {
+				pgBaseRepository: func(ctx context.Context, ctrl *gomock.Controller, id, recipient model.ID, _ *Notification) *pgBaseRepository {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End().Return()
 
@@ -354,62 +329,6 @@ func TestNotificationRepository_Get(t *testing.T) {
 			},
 			wantErr: ErrNotificationRead,
 		},
-		{
-			name: "get notification with invalid notification",
-			fields: fields{
-				pgBaseRepository: func(ctx context.Context, ctrl *gomock.Controller, _, _ model.ID, _ *model.Notification) *pgBaseRepository {
-					span := mock.NewMockSpan(ctrl)
-					span.EXPECT().End().Return()
-
-					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "repository.pg.NotificationRepository/Get").Return(ctx, span)
-
-					mockDBPool := mock.NewPGPool(ctrl)
-					mockDB, err := NewPGDatabase(WithDatabasePool(mockDBPool))
-					require.NoError(t, err)
-
-					return &pgBaseRepository{
-						db:     mockDB,
-						logger: mock.NewMockLogger(nil),
-						tracer: tracer,
-					}
-				},
-			},
-			args: args{
-				ctx:       context.Background(),
-				id:        model.ID{},
-				recipient: recipientID,
-			},
-			wantErr: ErrNotificationRead,
-		},
-		{
-			name: "get notification with invalid recipient",
-			fields: fields{
-				pgBaseRepository: func(ctx context.Context, ctrl *gomock.Controller, _, _ model.ID, _ *model.Notification) *pgBaseRepository {
-					span := mock.NewMockSpan(ctrl)
-					span.EXPECT().End().Return()
-
-					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "repository.pg.NotificationRepository/Get").Return(ctx, span)
-
-					mockDBPool := mock.NewPGPool(ctrl)
-					mockDB, err := NewPGDatabase(WithDatabasePool(mockDBPool))
-					require.NoError(t, err)
-
-					return &pgBaseRepository{
-						db:     mockDB,
-						logger: mock.NewMockLogger(nil),
-						tracer: tracer,
-					}
-				},
-			},
-			args: args{
-				ctx:       context.Background(),
-				id:        notificationID,
-				recipient: model.ID{},
-			},
-			wantErr: ErrNotificationRead,
-		},
 	}
 	for _, tt := range tests {
 		tt := tt
@@ -428,10 +347,10 @@ func TestNotificationRepository_Get(t *testing.T) {
 }
 
 func TestNotificationRepository_GetAllByRecipient(t *testing.T) {
-	recipientID := model.MustNewID(model.ResourceTypeNotification)
+	recipientID := model.MustNewID(model.ResourceTypeUser)
 
 	type fields struct {
-		pgBaseRepository func(ctx context.Context, ctrl *gomock.Controller, recipient model.ID, offset, limit int, notifications []*model.Notification) *pgBaseRepository
+		pgBaseRepository func(ctx context.Context, ctrl *gomock.Controller, recipient model.ID, offset, limit int, notifications []*Notification) *pgBaseRepository
 	}
 	type args struct {
 		ctx       context.Context
@@ -443,13 +362,13 @@ func TestNotificationRepository_GetAllByRecipient(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    []*model.Notification
+		want    []*Notification
 		wantErr error
 	}{
 		{
-			name: "get all notifications",
+			name: "get all notifications by recipient",
 			fields: fields{
-				pgBaseRepository: func(ctx context.Context, ctrl *gomock.Controller, recipient model.ID, offset, limit int, notifications []*model.Notification) *pgBaseRepository {
+				pgBaseRepository: func(ctx context.Context, ctrl *gomock.Controller, recipient model.ID, offset, limit int, notifications []*Notification) *pgBaseRepository {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End().Return()
 
@@ -499,7 +418,7 @@ func TestNotificationRepository_GetAllByRecipient(t *testing.T) {
 				limit:     2,
 				offset:    0,
 			},
-			want: []*model.Notification{
+			want: []*Notification{
 				{
 					ID:          model.MustNewID(model.ResourceTypeNotification),
 					Title:       "Test",
@@ -521,9 +440,9 @@ func TestNotificationRepository_GetAllByRecipient(t *testing.T) {
 			},
 		},
 		{
-			name: "get all notifications with error",
+			name: "get all notifications by recipient with error",
 			fields: fields{
-				pgBaseRepository: func(ctx context.Context, ctrl *gomock.Controller, recipient model.ID, offset, limit int, _ []*model.Notification) *pgBaseRepository {
+				pgBaseRepository: func(ctx context.Context, ctrl *gomock.Controller, recipient model.ID, offset, limit int, _ []*Notification) *pgBaseRepository {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End().Return()
 
@@ -555,37 +474,9 @@ func TestNotificationRepository_GetAllByRecipient(t *testing.T) {
 			wantErr: ErrNotificationRead,
 		},
 		{
-			name: "get all notifications with invalid ID",
-			fields: fields{
-				pgBaseRepository: func(ctx context.Context, ctrl *gomock.Controller, _ model.ID, _, _ int, _ []*model.Notification) *pgBaseRepository {
-					span := mock.NewMockSpan(ctrl)
-					span.EXPECT().End().Return()
-
-					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "repository.pg.NotificationRepository/GetAllByRecipient").Return(ctx, span)
-
-					mockDB, err := NewPGDatabase(WithDatabasePool(mock.NewPGPool(ctrl)))
-					require.NoError(t, err)
-
-					return &pgBaseRepository{
-						db:     mockDB,
-						logger: mock.NewMockLogger(nil),
-						tracer: tracer,
-					}
-				},
-			},
-			args: args{
-				ctx:       context.Background(),
-				recipient: model.ID{},
-				limit:     2,
-				offset:    0,
-			},
-			wantErr: ErrNotificationRead,
-		},
-		{
 			name: "get all notifications with scan error",
 			fields: fields{
-				pgBaseRepository: func(ctx context.Context, ctrl *gomock.Controller, recipient model.ID, offset, limit int, _ []*model.Notification) *pgBaseRepository {
+				pgBaseRepository: func(ctx context.Context, ctrl *gomock.Controller, recipient model.ID, offset, limit int, _ []*Notification) *pgBaseRepository {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End().Return()
 
@@ -635,35 +526,35 @@ func TestNotificationRepository_GetAllByRecipient(t *testing.T) {
 			}
 			got, err := notificationRepo.GetAllByRecipient(tt.args.ctx, tt.args.recipient, tt.args.offset, tt.args.limit)
 			require.ErrorIs(t, err, tt.wantErr)
-			require.ElementsMatch(t, tt.want, got)
+			require.Equal(t, tt.want, got)
 		})
 	}
 }
 
 func TestNotificationRepository_Update(t *testing.T) {
 	notificationID := model.MustNewID(model.ResourceTypeNotification)
-	recipientID := model.MustNewID(model.ResourceTypeNotification)
+	recipientID := model.MustNewID(model.ResourceTypeUser)
 
 	type fields struct {
-		pgBaseRepository func(ctx context.Context, ctrl *gomock.Controller, id, recipient model.ID, read bool, notification *model.Notification) *pgBaseRepository
+		pgBaseRepository func(ctx context.Context, ctrl *gomock.Controller, id, recipient model.ID, opts UpdateNotificationOpts, notification *Notification) *pgBaseRepository
 	}
 	type args struct {
 		ctx       context.Context
 		id        model.ID
 		recipient model.ID
-		read      bool
+		opts      UpdateNotificationOpts
 	}
 	tests := []struct {
 		name    string
 		fields  fields
 		args    args
-		want    *model.Notification
+		want    *Notification
 		wantErr error
 	}{
 		{
 			name: "update notification",
 			fields: fields{
-				pgBaseRepository: func(ctx context.Context, ctrl *gomock.Controller, id, recipient model.ID, read bool, notification *model.Notification) *pgBaseRepository {
+				pgBaseRepository: func(ctx context.Context, ctrl *gomock.Controller, id, recipient model.ID, opts UpdateNotificationOpts, notification *Notification) *pgBaseRepository {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End().Return()
 
@@ -690,7 +581,7 @@ func TestNotificationRepository_Update(t *testing.T) {
 
 					mockDBPool.EXPECT().QueryRow(ctx,
 						"UPDATE notifications SET read = $3, updated_at = timezone('utc', now()) WHERE id = $1 AND recipient = $2 RETURNING *",
-						id, recipient, read,
+						id, recipient, opts.Read,
 					).Return(mockRow)
 
 					return &pgBaseRepository{
@@ -704,19 +595,22 @@ func TestNotificationRepository_Update(t *testing.T) {
 				ctx:       context.Background(),
 				id:        notificationID,
 				recipient: recipientID,
+				opts:      UpdateNotificationOpts{Read: true},
 			},
-			want: &model.Notification{
+			want: &Notification{
 				ID:          notificationID,
 				Title:       "test title",
 				Description: "test description",
 				Recipient:   recipientID,
+				Read:        true,
 				CreatedAt:   convert.ToPointer(time.Now()),
+				UpdatedAt:   convert.ToPointer(time.Now()),
 			},
 		},
 		{
 			name: "update notification not found",
 			fields: fields{
-				pgBaseRepository: func(ctx context.Context, ctrl *gomock.Controller, id, recipient model.ID, read bool, _ *model.Notification) *pgBaseRepository {
+				pgBaseRepository: func(ctx context.Context, ctrl *gomock.Controller, id, recipient model.ID, opts UpdateNotificationOpts, _ *Notification) *pgBaseRepository {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End().Return()
 
@@ -734,7 +628,7 @@ func TestNotificationRepository_Update(t *testing.T) {
 
 					mockDBPool.EXPECT().QueryRow(ctx,
 						"UPDATE notifications SET read = $3, updated_at = timezone('utc', now()) WHERE id = $1 AND recipient = $2 RETURNING *",
-						id, recipient, read,
+						id, recipient, opts.Read,
 					).Return(mockRow)
 
 					return &pgBaseRepository{
@@ -748,13 +642,14 @@ func TestNotificationRepository_Update(t *testing.T) {
 				ctx:       context.Background(),
 				id:        notificationID,
 				recipient: recipientID,
+				opts:      UpdateNotificationOpts{Read: true},
 			},
 			wantErr: ErrNotFound,
 		},
 		{
 			name: "update notification with error",
 			fields: fields{
-				pgBaseRepository: func(ctx context.Context, ctrl *gomock.Controller, id, recipient model.ID, read bool, _ *model.Notification) *pgBaseRepository {
+				pgBaseRepository: func(ctx context.Context, ctrl *gomock.Controller, id, recipient model.ID, opts UpdateNotificationOpts, _ *Notification) *pgBaseRepository {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End().Return()
 
@@ -772,7 +667,7 @@ func TestNotificationRepository_Update(t *testing.T) {
 
 					mockDBPool.EXPECT().QueryRow(ctx,
 						"UPDATE notifications SET read = $3, updated_at = timezone('utc', now()) WHERE id = $1 AND recipient = $2 RETURNING *",
-						id, recipient, read,
+						id, recipient, opts.Read,
 					).Return(mockRow)
 
 					return &pgBaseRepository{
@@ -786,62 +681,7 @@ func TestNotificationRepository_Update(t *testing.T) {
 				ctx:       context.Background(),
 				id:        notificationID,
 				recipient: recipientID,
-			},
-			wantErr: ErrNotificationUpdate,
-		},
-		{
-			name: "update notification with invalid notification ID",
-			fields: fields{
-				pgBaseRepository: func(ctx context.Context, ctrl *gomock.Controller, _, _ model.ID, _ bool, _ *model.Notification) *pgBaseRepository {
-					span := mock.NewMockSpan(ctrl)
-					span.EXPECT().End().Return()
-
-					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "repository.pg.NotificationRepository/Update").Return(ctx, span)
-
-					mockDBPool := mock.NewPGPool(ctrl)
-					mockDB, err := NewPGDatabase(WithDatabasePool(mockDBPool))
-					require.NoError(t, err)
-
-					return &pgBaseRepository{
-						db:     mockDB,
-						logger: mock.NewMockLogger(nil),
-						tracer: tracer,
-					}
-				},
-			},
-			args: args{
-				ctx:       context.Background(),
-				id:        model.ID{},
-				recipient: recipientID,
-			},
-			wantErr: ErrNotificationUpdate,
-		},
-		{
-			name: "update notification with invalid recipient ID",
-			fields: fields{
-				pgBaseRepository: func(ctx context.Context, ctrl *gomock.Controller, _, _ model.ID, _ bool, _ *model.Notification) *pgBaseRepository {
-					span := mock.NewMockSpan(ctrl)
-					span.EXPECT().End().Return()
-
-					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "repository.pg.NotificationRepository/Update").Return(ctx, span)
-
-					mockDBPool := mock.NewPGPool(ctrl)
-					mockDB, err := NewPGDatabase(WithDatabasePool(mockDBPool))
-					require.NoError(t, err)
-
-					return &pgBaseRepository{
-						db:     mockDB,
-						logger: mock.NewMockLogger(nil),
-						tracer: tracer,
-					}
-				},
-			},
-			args: args{
-				ctx:       context.Background(),
-				id:        notificationID,
-				recipient: model.ID{},
+				opts:      UpdateNotificationOpts{Read: true},
 			},
 			wantErr: ErrNotificationUpdate,
 		},
@@ -853,9 +693,9 @@ func TestNotificationRepository_Update(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			notificationRepo := &PGNotificationRepository{
-				pgBaseRepository: tt.fields.pgBaseRepository(tt.args.ctx, ctrl, tt.args.id, tt.args.recipient, tt.args.read, tt.want),
+				pgBaseRepository: tt.fields.pgBaseRepository(tt.args.ctx, ctrl, tt.args.id, tt.args.recipient, tt.args.opts, tt.want),
 			}
-			got, err := notificationRepo.Update(tt.args.ctx, tt.args.id, tt.args.recipient, tt.args.read)
+			got, err := notificationRepo.Update(tt.args.ctx, tt.args.id, tt.args.recipient, tt.args.opts)
 			require.ErrorIs(t, err, tt.wantErr)
 			require.Equal(t, tt.want, got)
 		})
@@ -972,62 +812,6 @@ func TestNotificationRepository_Delete(t *testing.T) {
 				ctx:       context.Background(),
 				id:        model.MustNewNilID(model.ResourceTypeNotification),
 				recipient: model.MustNewNilID(model.ResourceTypeUser),
-			},
-			wantErr: ErrNotificationDelete,
-		},
-		{
-			name: "delete notification with invalid notification ID",
-			fields: fields{
-				pgBaseRepository: func(ctx context.Context, ctrl *gomock.Controller, _, _ model.ID) *pgBaseRepository {
-					span := mock.NewMockSpan(ctrl)
-					span.EXPECT().End().Return()
-
-					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "repository.pg.NotificationRepository/Delete").Return(ctx, span)
-
-					mockDBPool := mock.NewPGPool(ctrl)
-					mockDB, err := NewPGDatabase(WithDatabasePool(mockDBPool))
-					require.NoError(t, err)
-
-					return &pgBaseRepository{
-						db:     mockDB,
-						logger: mock.NewMockLogger(nil),
-						tracer: tracer,
-					}
-				},
-			},
-			args: args{
-				ctx:       context.Background(),
-				id:        model.ID{},
-				recipient: model.MustNewNilID(model.ResourceTypeUser),
-			},
-			wantErr: ErrNotificationDelete,
-		},
-		{
-			name: "delete notification with invalid recipient ID",
-			fields: fields{
-				pgBaseRepository: func(ctx context.Context, ctrl *gomock.Controller, _, _ model.ID) *pgBaseRepository {
-					span := mock.NewMockSpan(ctrl)
-					span.EXPECT().End().Return()
-
-					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "repository.pg.NotificationRepository/Delete").Return(ctx, span)
-
-					mockDBPool := mock.NewPGPool(ctrl)
-					mockDB, err := NewPGDatabase(WithDatabasePool(mockDBPool))
-					require.NoError(t, err)
-
-					return &pgBaseRepository{
-						db:     mockDB,
-						logger: mock.NewMockLogger(nil),
-						tracer: tracer,
-					}
-				},
-			},
-			args: args{
-				ctx:       context.Background(),
-				id:        model.MustNewNilID(model.ResourceTypeNotification),
-				recipient: model.ID{},
 			},
 			wantErr: ErrNotificationDelete,
 		},

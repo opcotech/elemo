@@ -5,32 +5,68 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"time"
 
 	"github.com/opcotech/elemo/internal/license"
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/log"
+	"github.com/opcotech/elemo/internal/pkg/optional"
+	"github.com/opcotech/elemo/internal/pkg/validate"
+	"github.com/opcotech/elemo/internal/repository"
 )
+
+// Role represents a role returned by the service.
+type Role struct {
+	ID          model.ID
+	Name        string
+	Description string
+	Members     []model.ID
+	Permissions []model.ID
+	CreatedAt   *time.Time
+	UpdatedAt   *time.Time
+}
+
+// CreateRoleOpts holds the data required to create a role.
+type CreateRoleOpts struct {
+	Name        string `json:"name" validate:"required,min=3,max=120"`
+	Description string `json:"description" validate:"omitempty,min=5,max=500"`
+}
+
+// Validate validates the create options.
+func (o *CreateRoleOpts) Validate() error {
+	if err := validate.Struct(o); err != nil {
+		return errors.Join(model.ErrInvalidRoleDetails, err)
+	}
+	return nil
+}
+
+// UpdateRoleOpts holds the fields that can be updated on a role.
+// Undefined fields (Defined == false) are left unchanged.
+type UpdateRoleOpts struct {
+	Name        optional.Optional[string]
+	Description optional.Optional[string]
+}
 
 // RoleService is the interface that provides methods for managing roles.
 type RoleService interface {
 	// Create creates a new role in the system and assigns it to a resource it
 	// belongs to. The user who created the role is also assigned as a member
 	// of the role. If the role already exists, an error is returned.
-	Create(ctx context.Context, owner, belongsTo model.ID, role *model.Role) error
+	Create(ctx context.Context, owner, belongsTo model.ID, opts CreateRoleOpts) (*Role, error)
 	// Get returns a role by its ID. If the role does not exist, an error is
 	// returned.
-	Get(ctx context.Context, id, belongsTo model.ID) (*model.Role, error)
+	Get(ctx context.Context, id, belongsTo model.ID) (*Role, error)
 	// GetAllBelongsTo returns all roles that belong to a resource. The offset
 	// and limit parameters are used to paginate the results. If the offset is
 	// greater than the number of roles in the system, an empty slice is
 	// returned.
-	GetAllBelongsTo(ctx context.Context, belongsTo model.ID, offset, limit int) ([]*model.Role, error)
+	GetAllBelongsTo(ctx context.Context, belongsTo model.ID, offset, limit int) ([]*Role, error)
 	// Update updates a role in the system. If the role does not exist, an
 	// error is returned.
-	Update(ctx context.Context, id, belongsTo model.ID, patch map[string]any) (*model.Role, error)
+	Update(ctx context.Context, id, belongsTo model.ID, opts UpdateRoleOpts) (*Role, error)
 	// GetMembers returns all members of a role that belongs to a resource. If
 	// the resource does not exist, an error is returned.
-	GetMembers(ctx context.Context, id, belongsTo model.ID) ([]*model.User, error)
+	GetMembers(ctx context.Context, id, belongsTo model.ID) ([]*User, error)
 	// AddMember adds a member to a role. If the member is already a member of
 	// the role, an error is returned.
 	AddMember(ctx context.Context, roleID, memberID, belongsToID model.ID) error
@@ -50,7 +86,7 @@ type RoleService interface {
 	// organization.
 	RemovePermission(ctx context.Context, roleID, belongsToID, permissionID model.ID) error
 	// GetPermissions returns all permissions assigned to a role.
-	GetPermissions(ctx context.Context, roleID, belongsToID model.ID) ([]*model.Permission, error)
+	GetPermissions(ctx context.Context, roleID, belongsToID model.ID) ([]*Permission, error)
 }
 
 // roleService implements RoleService interface.
@@ -58,34 +94,63 @@ type roleService struct {
 	*baseService
 }
 
-func (s *roleService) Create(ctx context.Context, owner, belongsTo model.ID, role *model.Role) error {
+func roleFromRepository(r *repository.Role) *Role {
+	if r == nil {
+		return nil
+	}
+	return &Role{
+		ID:          r.ID,
+		Name:        r.Name,
+		Description: r.Description,
+		Members:     r.Members,
+		Permissions: r.Permissions,
+		CreatedAt:   r.CreatedAt,
+		UpdatedAt:   r.UpdatedAt,
+	}
+}
+
+func rolesFromRepository(roles []*repository.Role) []*Role {
+	out := make([]*Role, len(roles))
+	for i, r := range roles {
+		out[i] = roleFromRepository(r)
+	}
+	return out
+}
+
+func (s *roleService) Create(ctx context.Context, owner, belongsTo model.ID, opts CreateRoleOpts) (*Role, error) {
 	ctx, span := s.tracer.Start(ctx, "service.roleService/Create")
 	defer span.End()
 
 	if expired, err := s.licenseService.Expired(ctx); expired || err != nil {
-		return errors.Join(ErrRoleCreate, license.ErrLicenseExpired)
+		return nil, errors.Join(ErrRoleCreate, license.ErrLicenseExpired)
 	}
 
-	if err := role.Validate(); err != nil {
-		return errors.Join(ErrRoleCreate, err)
+	if err := opts.Validate(); err != nil {
+		return nil, errors.Join(ErrRoleCreate, err)
 	}
 
 	if !s.permissionService.CtxUserHasPermission(ctx, belongsTo, model.PermissionKindWrite) {
-		return errors.Join(ErrRoleCreate, ErrNoPermission)
+		return nil, errors.Join(ErrRoleCreate, ErrNoPermission)
 	}
 
 	if ok, err := s.licenseService.WithinThreshold(ctx, license.QuotaRoles); !ok || err != nil {
-		return errors.Join(ErrRoleCreate, ErrQuotaExceeded)
+		return nil, errors.Join(ErrRoleCreate, ErrQuotaExceeded)
 	}
 
-	if err := s.roleRepo.Create(ctx, owner, belongsTo, role); err != nil {
-		return errors.Join(ErrRoleCreate, err)
+	role, err := s.roleRepo.Create(ctx, repository.CreateRoleOpts{
+		Name:        opts.Name,
+		Description: opts.Description,
+		CreatedBy:   owner,
+		BelongsTo:   belongsTo,
+	})
+	if err != nil {
+		return nil, errors.Join(ErrRoleCreate, err)
 	}
 
-	return nil
+	return roleFromRepository(role), nil
 }
 
-func (s *roleService) Get(ctx context.Context, id, belongsTo model.ID) (*model.Role, error) {
+func (s *roleService) Get(ctx context.Context, id, belongsTo model.ID) (*Role, error) {
 	ctx, span := s.tracer.Start(ctx, "service.roleService/Get")
 	defer span.End()
 
@@ -106,10 +171,10 @@ func (s *roleService) Get(ctx context.Context, id, belongsTo model.ID) (*model.R
 		return nil, errors.Join(ErrRoleGet, err)
 	}
 
-	return role, nil
+	return roleFromRepository(role), nil
 }
 
-func (s *roleService) GetAllBelongsTo(ctx context.Context, belongsTo model.ID, offset, limit int) ([]*model.Role, error) {
+func (s *roleService) GetAllBelongsTo(ctx context.Context, belongsTo model.ID, offset, limit int) ([]*Role, error) {
 	ctx, span := s.tracer.Start(ctx, "service.roleService/GetAllBelongsTo")
 	defer span.End()
 
@@ -130,10 +195,10 @@ func (s *roleService) GetAllBelongsTo(ctx context.Context, belongsTo model.ID, o
 		return nil, errors.Join(ErrRoleGetBelongsTo, err)
 	}
 
-	return roles, nil
+	return rolesFromRepository(roles), nil
 }
 
-func (s *roleService) Update(ctx context.Context, id, belongsTo model.ID, patch map[string]any) (*model.Role, error) {
+func (s *roleService) Update(ctx context.Context, id, belongsTo model.ID, opts UpdateRoleOpts) (*Role, error) {
 	ctx, span := s.tracer.Start(ctx, "service.roleService/Update")
 	defer span.End()
 
@@ -153,16 +218,19 @@ func (s *roleService) Update(ctx context.Context, id, belongsTo model.ID, patch 
 		return nil, errors.Join(ErrRoleUpdate, ErrNoPermission)
 	}
 
-	role, err := s.roleRepo.Update(ctx, id, belongsTo, patch)
+	role, err := s.roleRepo.Update(ctx, id, belongsTo, repository.UpdateRoleOpts{
+		Name:        opts.Name,
+		Description: opts.Description,
+	})
 	if err != nil {
 		return nil, errors.Join(ErrRoleUpdate, err)
 	}
 
-	return role, nil
+	return roleFromRepository(role), nil
 }
 
-func (s *roleService) GetMembers(ctx context.Context, id, belongsTo model.ID) ([]*model.User, error) {
-	ctx, span := s.tracer.Start(ctx, "service.roleService/AddMember")
+func (s *roleService) GetMembers(ctx context.Context, id, belongsTo model.ID) ([]*User, error) {
+	ctx, span := s.tracer.Start(ctx, "service.roleService/GetMembers")
 	defer span.End()
 
 	if err := belongsTo.Validate(); err != nil {
@@ -182,13 +250,13 @@ func (s *roleService) GetMembers(ctx context.Context, id, belongsTo model.ID) ([
 		return nil, errors.Join(ErrOrganizationMembersGet, err)
 	}
 
-	members := make([]*model.User, 0, len(role.Members))
+	members := make([]*User, 0, len(role.Members))
 	for _, member := range role.Members {
 		user, err := s.userRepo.Get(ctx, member)
 		if err != nil {
 			return nil, errors.Join(ErrOrganizationMembersGet, err)
 		}
-		members = append(members, user)
+		members = append(members, userFromRepository(user))
 	}
 
 	return members, nil
@@ -239,18 +307,14 @@ func (s *roleService) AddMember(ctx context.Context, roleID, memberID, belongsTo
 				notificationTitle := fmt.Sprintf("You've been added to the %s role", role.Name)
 				notificationDescription := fmt.Sprintf("You have been added to the %s role in the %s organization.", role.Name, organization.Name)
 
-				notification, err := model.NewNotification(notificationTitle, memberID)
-				if err != nil {
-					s.logger.Warn(ctx, "failed to create notification for role member addition",
+				if _, err := s.notificationService.Create(ctx, CreateNotificationOpts{
+					Title:       notificationTitle,
+					Description: notificationDescription,
+					Recipient:   memberID,
+				}); err != nil {
+					s.logger.Warn(ctx, "failed to send notification for role member addition",
 						log.WithError(err),
 						log.WithUserID(memberID.String()))
-				} else {
-					notification.Description = notificationDescription
-					if err := s.notificationService.Create(ctx, notification); err != nil {
-						s.logger.Warn(ctx, "failed to send notification for role member addition",
-							log.WithError(err),
-							log.WithUserID(memberID.String()))
-					}
 				}
 			}
 		}
@@ -304,18 +368,14 @@ func (s *roleService) RemoveMember(ctx context.Context, roleID, memberID, belong
 				notificationTitle := fmt.Sprintf("You've been removed from the %s role", role.Name)
 				notificationDescription := fmt.Sprintf("You have been removed from the %s role in the %s organization.", role.Name, organization.Name)
 
-				notification, err := model.NewNotification(notificationTitle, memberID)
-				if err != nil {
-					s.logger.Warn(ctx, "failed to create notification for role member removal",
+				if _, err := s.notificationService.Create(ctx, CreateNotificationOpts{
+					Title:       notificationTitle,
+					Description: notificationDescription,
+					Recipient:   memberID,
+				}); err != nil {
+					s.logger.Warn(ctx, "failed to send notification for role member removal",
 						log.WithError(err),
 						log.WithUserID(memberID.String()))
-				} else {
-					notification.Description = notificationDescription
-					if err := s.notificationService.Create(ctx, notification); err != nil {
-						s.logger.Warn(ctx, "failed to send notification for role member removal",
-							log.WithError(err),
-							log.WithUserID(memberID.String()))
-					}
 				}
 			}
 		}
@@ -380,12 +440,11 @@ func (s *roleService) AddPermission(ctx context.Context, roleID, belongsToID, ta
 		return errors.Join(ErrRoleAddPermission, ErrNoPermission)
 	}
 
-	perm, err := model.NewPermission(roleID, targetID, kind)
-	if err != nil {
-		return errors.Join(ErrRoleAddPermission, err)
-	}
-
-	if err := s.permissionService.Create(ctx, perm); err != nil {
+	if _, err := s.permissionService.Create(ctx, CreatePermissionOpts{
+		Subject: roleID,
+		Target:  targetID,
+		Kind:    kind,
+	}); err != nil {
 		return errors.Join(ErrRoleAddPermission, err)
 	}
 
@@ -436,7 +495,7 @@ func (s *roleService) RemovePermission(ctx context.Context, roleID, belongsToID,
 	return nil
 }
 
-func (s *roleService) GetPermissions(ctx context.Context, roleID, belongsToID model.ID) ([]*model.Permission, error) {
+func (s *roleService) GetPermissions(ctx context.Context, roleID, belongsToID model.ID) ([]*Permission, error) {
 	ctx, span := s.tracer.Start(ctx, "service.roleService/GetPermissions")
 	defer span.End()
 

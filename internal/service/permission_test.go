@@ -15,6 +15,28 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func toRepoPermission(p *Permission) *repository.Permission {
+	if p == nil {
+		return nil
+	}
+	return &repository.Permission{
+		ID:        p.ID,
+		Kind:      p.Kind,
+		Subject:   p.Subject,
+		Target:    p.Target,
+		CreatedAt: p.CreatedAt,
+		UpdatedAt: p.UpdatedAt,
+	}
+}
+
+func toRepoPermissions(perms []*Permission) []*repository.Permission {
+	out := make([]*repository.Permission, len(perms))
+	for i, p := range perms {
+		out[i] = toRepoPermission(p)
+	}
+	return out
+}
+
 func TestNewPermissionService(t *testing.T) {
 	type args struct {
 		permissionRepo repository.PermissionRepository
@@ -29,7 +51,7 @@ func TestNewPermissionService(t *testing.T) {
 		{
 			name: "new permission service",
 			args: args{
-				permissionRepo: mock.NewPermissionRepository(nil),
+				permissionRepo: repository.NewMockPermissionRepository(nil),
 				opts: []Option{
 					WithLogger(mock.NewMockLogger(nil)),
 					WithTracer(mock.NewMockTracer(nil)),
@@ -40,7 +62,7 @@ func TestNewPermissionService(t *testing.T) {
 					logger: mock.NewMockLogger(nil),
 					tracer: mock.NewMockTracer(nil),
 				},
-				permissionRepo: mock.NewPermissionRepository(nil),
+				permissionRepo: repository.NewMockPermissionRepository(nil),
 			},
 		},
 		{
@@ -57,7 +79,7 @@ func TestNewPermissionService(t *testing.T) {
 		{
 			name: "new permission service with nil logger",
 			args: args{
-				permissionRepo: mock.NewPermissionRepository(nil),
+				permissionRepo: repository.NewMockPermissionRepository(nil),
 				opts: []Option{
 					WithLogger(nil),
 					WithTracer(mock.NewMockTracer(nil)),
@@ -68,7 +90,7 @@ func TestNewPermissionService(t *testing.T) {
 		{
 			name: "new permission service with nil tracer",
 			args: args{
-				permissionRepo: mock.NewPermissionRepository(nil),
+				permissionRepo: repository.NewMockPermissionRepository(nil),
 				opts: []Option{
 					WithLogger(mock.NewMockLogger(nil)),
 					WithTracer(nil),
@@ -79,7 +101,7 @@ func TestNewPermissionService(t *testing.T) {
 		{
 			name: "new permission service with missing logger",
 			args: args{
-				permissionRepo: mock.NewPermissionRepository(nil),
+				permissionRepo: repository.NewMockPermissionRepository(nil),
 				opts: []Option{
 					WithTracer(mock.NewMockTracer(nil)),
 				},
@@ -89,13 +111,13 @@ func TestNewPermissionService(t *testing.T) {
 					logger: log.DefaultLogger(),
 					tracer: mock.NewMockTracer(nil),
 				},
-				permissionRepo: mock.NewPermissionRepository(nil),
+				permissionRepo: repository.NewMockPermissionRepository(nil),
 			},
 		},
 		{
 			name: "new permission service with missing tracer",
 			args: args{
-				permissionRepo: mock.NewPermissionRepository(nil),
+				permissionRepo: repository.NewMockPermissionRepository(nil),
 				opts: []Option{
 					WithLogger(mock.NewMockLogger(nil)),
 				},
@@ -105,7 +127,7 @@ func TestNewPermissionService(t *testing.T) {
 					logger: mock.NewMockLogger(nil),
 					tracer: tracing.NoopTracer(),
 				},
-				permissionRepo: mock.NewPermissionRepository(nil),
+				permissionRepo: repository.NewMockPermissionRepository(nil),
 			},
 		},
 	}
@@ -125,12 +147,12 @@ func TestNewPermissionService(t *testing.T) {
 
 func Test_permissionService_Create(t *testing.T) {
 	type fields struct {
-		baseService    func(ctrl *gomock.Controller, ctx context.Context, perm *model.Permission) *baseService
-		permissionRepo func(ctrl *gomock.Controller, ctx context.Context, perm *model.Permission) repository.PermissionRepository
+		baseService    func(ctrl *gomock.Controller, ctx context.Context, perm *Permission) *baseService
+		permissionRepo func(ctrl *gomock.Controller, ctx context.Context, perm *Permission) repository.PermissionRepository
 	}
 	type args struct {
 		ctx  context.Context
-		perm *model.Permission
+		perm *Permission
 	}
 	tests := []struct {
 		name    string
@@ -141,7 +163,7 @@ func Test_permissionService_Create(t *testing.T) {
 		{
 			name: "create permission",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ *model.Permission) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ *Permission) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
@@ -153,15 +175,15 @@ func Test_permissionService_Create(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, perm *model.Permission) repository.PermissionRepository {
-					repo := mock.NewPermissionRepository(ctrl)
-					repo.EXPECT().Create(ctx, perm).Return(nil)
+				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, perm *Permission) repository.PermissionRepository {
+					repo := repository.NewMockPermissionRepository(ctrl)
+					repo.EXPECT().Create(ctx, repository.CreatePermissionOpts{Kind: perm.Kind, Subject: perm.Subject, Target: perm.Target}).Return(&repository.Permission{ID: perm.ID, Kind: perm.Kind, Subject: perm.Subject, Target: perm.Target, CreatedAt: perm.CreatedAt}, nil)
 					return repo
 				},
 			},
 			args: args{
 				ctx: context.Background(),
-				perm: &model.Permission{
+				perm: &Permission{
 					ID:      model.MustNewID(model.ResourceTypePermission),
 					Kind:    model.PermissionKindCreate,
 					Subject: model.MustNewID(model.ResourceTypeUser),
@@ -172,7 +194,7 @@ func Test_permissionService_Create(t *testing.T) {
 		{
 			name: "create permission with error",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ *model.Permission) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ *Permission) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
@@ -184,15 +206,15 @@ func Test_permissionService_Create(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, perm *model.Permission) repository.PermissionRepository {
-					repo := mock.NewPermissionRepository(ctrl)
-					repo.EXPECT().Create(ctx, perm).Return(assert.AnError)
+				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, perm *Permission) repository.PermissionRepository {
+					repo := repository.NewMockPermissionRepository(ctrl)
+					repo.EXPECT().Create(ctx, repository.CreatePermissionOpts{Kind: perm.Kind, Subject: perm.Subject, Target: perm.Target}).Return(nil, assert.AnError)
 					return repo
 				},
 			},
 			args: args{
 				ctx: context.Background(),
-				perm: &model.Permission{
+				perm: &Permission{
 					ID:      model.MustNewID(model.ResourceTypePermission),
 					Kind:    model.PermissionKindCreate,
 					Subject: model.MustNewID(model.ResourceTypeUser),
@@ -204,7 +226,7 @@ func Test_permissionService_Create(t *testing.T) {
 		{
 			name: "create permission with nil permission",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ *model.Permission) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ *Permission) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
@@ -216,8 +238,8 @@ func Test_permissionService_Create(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				permissionRepo: func(ctrl *gomock.Controller, _ context.Context, _ *model.Permission) repository.PermissionRepository {
-					return mock.NewPermissionRepository(ctrl)
+				permissionRepo: func(ctrl *gomock.Controller, _ context.Context, _ *Permission) repository.PermissionRepository {
+					return repository.NewMockPermissionRepository(ctrl)
 				},
 			},
 			args: args{
@@ -237,7 +259,11 @@ func Test_permissionService_Create(t *testing.T) {
 				baseService:    tt.fields.baseService(ctrl, tt.args.ctx, tt.args.perm),
 				permissionRepo: tt.fields.permissionRepo(ctrl, tt.args.ctx, tt.args.perm),
 			}
-			err := s.Create(tt.args.ctx, tt.args.perm)
+			var opts CreatePermissionOpts
+			if tt.args.perm != nil {
+				opts = CreatePermissionOpts{Kind: tt.args.perm.Kind, Subject: tt.args.perm.Subject, Target: tt.args.perm.Target}
+			}
+			_, err := s.Create(tt.args.ctx, opts)
 			assert.ErrorIs(t, err, tt.wantErr)
 		})
 	}
@@ -247,12 +273,12 @@ func Test_permissionService_CtxUserCreate(t *testing.T) {
 	userID := model.MustNewID(model.ResourceTypeUser)
 
 	type fields struct {
-		baseService    func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, perm *model.Permission) *baseService
-		permissionRepo func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, perm *model.Permission) repository.PermissionRepository
+		baseService    func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, perm *Permission) *baseService
+		permissionRepo func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, perm *Permission) repository.PermissionRepository
 	}
 	type args struct {
 		ctx  context.Context
-		perm *model.Permission
+		perm *Permission
 	}
 	tests := []struct {
 		name    string
@@ -263,7 +289,7 @@ func Test_permissionService_CtxUserCreate(t *testing.T) {
 		{
 			name: "create permission having all permissions",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ *model.Permission) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ *Permission) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(6)
 
@@ -278,8 +304,8 @@ func Test_permissionService_CtxUserCreate(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, perm *model.Permission) repository.PermissionRepository {
-					repo := mock.NewPermissionRepository(ctrl)
+				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, perm *Permission) repository.PermissionRepository {
+					repo := repository.NewMockPermissionRepository(ctrl)
 					repo.EXPECT().HasSystemRole(ctx, userID, []model.SystemRole{
 						model.SystemRoleOwner,
 						model.SystemRoleAdmin,
@@ -292,14 +318,14 @@ func Test_permissionService_CtxUserCreate(t *testing.T) {
 						model.PermissionKindWrite,
 						model.PermissionKindAll,
 					}).Return(true, nil)
-					repo.EXPECT().Create(ctx, perm).Return(nil)
+					repo.EXPECT().Create(ctx, repository.CreatePermissionOpts{Kind: perm.Kind, Subject: perm.Subject, Target: perm.Target}).Return(&repository.Permission{ID: perm.ID, Kind: perm.Kind, Subject: perm.Subject, Target: perm.Target, CreatedAt: perm.CreatedAt}, nil)
 
 					return repo
 				},
 			},
 			args: args{
 				ctx: context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
-				perm: &model.Permission{
+				perm: &Permission{
 					ID:      model.MustNewID(model.ResourceTypePermission),
 					Kind:    model.PermissionKindCreate,
 					Subject: model.MustNewID(model.ResourceTypeUser),
@@ -310,7 +336,7 @@ func Test_permissionService_CtxUserCreate(t *testing.T) {
 		{
 			name: "create permission having a direct permission",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ *model.Permission) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ *Permission) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(6)
 
@@ -325,8 +351,8 @@ func Test_permissionService_CtxUserCreate(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, perm *model.Permission) repository.PermissionRepository {
-					repo := mock.NewPermissionRepository(ctrl)
+				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, perm *Permission) repository.PermissionRepository {
+					repo := repository.NewMockPermissionRepository(ctrl)
 					repo.EXPECT().HasSystemRole(ctx, userID, []model.SystemRole{
 						model.SystemRoleOwner,
 						model.SystemRoleAdmin,
@@ -339,14 +365,14 @@ func Test_permissionService_CtxUserCreate(t *testing.T) {
 						model.PermissionKindWrite,
 						model.PermissionKindAll,
 					}).Return(true, nil)
-					repo.EXPECT().Create(ctx, perm).Return(nil)
+					repo.EXPECT().Create(ctx, repository.CreatePermissionOpts{Kind: perm.Kind, Subject: perm.Subject, Target: perm.Target}).Return(&repository.Permission{ID: perm.ID, Kind: perm.Kind, Subject: perm.Subject, Target: perm.Target, CreatedAt: perm.CreatedAt}, nil)
 
 					return repo
 				},
 			},
 			args: args{
 				ctx: context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
-				perm: &model.Permission{
+				perm: &Permission{
 					ID:      model.MustNewID(model.ResourceTypePermission),
 					Kind:    model.PermissionKindCreate,
 					Subject: model.MustNewID(model.ResourceTypeUser),
@@ -357,7 +383,7 @@ func Test_permissionService_CtxUserCreate(t *testing.T) {
 		{
 			name: "create permission having a system role",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ *model.Permission) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ *Permission) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(6)
 
@@ -372,8 +398,8 @@ func Test_permissionService_CtxUserCreate(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, perm *model.Permission) repository.PermissionRepository {
-					repo := mock.NewPermissionRepository(ctrl)
+				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, perm *Permission) repository.PermissionRepository {
+					repo := repository.NewMockPermissionRepository(ctrl)
 					repo.EXPECT().HasSystemRole(ctx, userID, []model.SystemRole{
 						model.SystemRoleOwner,
 						model.SystemRoleAdmin,
@@ -386,14 +412,14 @@ func Test_permissionService_CtxUserCreate(t *testing.T) {
 						model.PermissionKindWrite,
 						model.PermissionKindAll,
 					}).Return(false, nil)
-					repo.EXPECT().Create(ctx, perm).Return(nil)
+					repo.EXPECT().Create(ctx, repository.CreatePermissionOpts{Kind: perm.Kind, Subject: perm.Subject, Target: perm.Target}).Return(&repository.Permission{ID: perm.ID, Kind: perm.Kind, Subject: perm.Subject, Target: perm.Target, CreatedAt: perm.CreatedAt}, nil)
 
 					return repo
 				},
 			},
 			args: args{
 				ctx: context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
-				perm: &model.Permission{
+				perm: &Permission{
 					ID:      model.MustNewID(model.ResourceTypePermission),
 					Kind:    model.PermissionKindCreate,
 					Subject: model.MustNewID(model.ResourceTypeUser),
@@ -404,7 +430,7 @@ func Test_permissionService_CtxUserCreate(t *testing.T) {
 		{
 			name: "create permission no permission",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ *model.Permission) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ *Permission) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(3)
 
@@ -418,8 +444,8 @@ func Test_permissionService_CtxUserCreate(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, perm *model.Permission) repository.PermissionRepository {
-					repo := mock.NewPermissionRepository(ctrl)
+				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, perm *Permission) repository.PermissionRepository {
+					repo := repository.NewMockPermissionRepository(ctrl)
 					repo.EXPECT().HasSystemRole(ctx, userID, []model.SystemRole{
 						model.SystemRoleOwner,
 						model.SystemRoleAdmin,
@@ -434,7 +460,7 @@ func Test_permissionService_CtxUserCreate(t *testing.T) {
 			},
 			args: args{
 				ctx: context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
-				perm: &model.Permission{
+				perm: &Permission{
 					ID:      model.MustNewID(model.ResourceTypePermission),
 					Kind:    model.PermissionKindCreate,
 					Subject: model.MustNewID(model.ResourceTypeUser),
@@ -454,7 +480,8 @@ func Test_permissionService_CtxUserCreate(t *testing.T) {
 				baseService:    tt.fields.baseService(ctrl, tt.args.ctx, userID, tt.args.perm),
 				permissionRepo: tt.fields.permissionRepo(ctrl, tt.args.ctx, userID, tt.args.perm),
 			}
-			err := s.CtxUserCreate(tt.args.ctx, tt.args.perm)
+			got, err := s.CtxUserCreate(tt.args.ctx, CreatePermissionOpts{Kind: tt.args.perm.Kind, Subject: tt.args.perm.Subject, Target: tt.args.perm.Target})
+			_ = got
 			assert.ErrorIs(t, err, tt.wantErr)
 		})
 	}
@@ -462,8 +489,8 @@ func Test_permissionService_CtxUserCreate(t *testing.T) {
 
 func Test_permissionService_Get(t *testing.T) {
 	type fields struct {
-		baseService    func(ctrl *gomock.Controller, ctx context.Context, id model.ID, perm *model.Permission) *baseService
-		permissionRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, perm *model.Permission) repository.PermissionRepository
+		baseService    func(ctrl *gomock.Controller, ctx context.Context, id model.ID, perm *Permission) *baseService
+		permissionRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, perm *Permission) repository.PermissionRepository
 	}
 	type args struct {
 		ctx context.Context
@@ -473,13 +500,13 @@ func Test_permissionService_Get(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    *model.Permission
+		want    *Permission
 		wantErr error
 	}{
 		{
 			name: "get permission",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ *model.Permission) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ *Permission) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
@@ -491,9 +518,9 @@ func Test_permissionService_Get(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, perm *model.Permission) repository.PermissionRepository {
-					repo := mock.NewPermissionRepository(ctrl)
-					repo.EXPECT().Get(ctx, id).Return(perm, nil)
+				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, perm *Permission) repository.PermissionRepository {
+					repo := repository.NewMockPermissionRepository(ctrl)
+					repo.EXPECT().Get(ctx, id).Return(toRepoPermission(perm), nil)
 					return repo
 				},
 			},
@@ -501,7 +528,7 @@ func Test_permissionService_Get(t *testing.T) {
 				ctx: context.Background(),
 				id:  model.MustNewID(model.ResourceTypePermission),
 			},
-			want: &model.Permission{
+			want: &Permission{
 				ID:      model.MustNewID(model.ResourceTypePermission),
 				Kind:    model.PermissionKindCreate,
 				Subject: model.MustNewID(model.ResourceTypeUser),
@@ -511,7 +538,7 @@ func Test_permissionService_Get(t *testing.T) {
 		{
 			name: "get permission with error",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ *model.Permission) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ *Permission) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
@@ -523,8 +550,8 @@ func Test_permissionService_Get(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *model.Permission) repository.PermissionRepository {
-					repo := mock.NewPermissionRepository(ctrl)
+				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *Permission) repository.PermissionRepository {
+					repo := repository.NewMockPermissionRepository(ctrl)
 					repo.EXPECT().Get(ctx, id).Return(nil, assert.AnError)
 					return repo
 				},
@@ -556,8 +583,8 @@ func Test_permissionService_Get(t *testing.T) {
 
 func Test_permissionService_GetBySubject(t *testing.T) {
 	type fields struct {
-		baseService    func(ctrl *gomock.Controller, ctx context.Context, id model.ID, perms []*model.Permission) *baseService
-		permissionRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, perms []*model.Permission) repository.PermissionRepository
+		baseService    func(ctrl *gomock.Controller, ctx context.Context, id model.ID, perms []*Permission) *baseService
+		permissionRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, perms []*Permission) repository.PermissionRepository
 	}
 	type args struct {
 		ctx context.Context
@@ -567,13 +594,13 @@ func Test_permissionService_GetBySubject(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    []*model.Permission
+		want    []*Permission
 		wantErr error
 	}{
 		{
 			name: "get permissions",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ []*model.Permission) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ []*Permission) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
@@ -585,9 +612,9 @@ func Test_permissionService_GetBySubject(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, perms []*model.Permission) repository.PermissionRepository {
-					repo := mock.NewPermissionRepository(ctrl)
-					repo.EXPECT().GetBySubject(ctx, id).Return(perms, nil)
+				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, perms []*Permission) repository.PermissionRepository {
+					repo := repository.NewMockPermissionRepository(ctrl)
+					repo.EXPECT().GetBySubject(ctx, id).Return(toRepoPermissions(perms), nil)
 					return repo
 				},
 			},
@@ -595,7 +622,7 @@ func Test_permissionService_GetBySubject(t *testing.T) {
 				ctx: context.Background(),
 				id:  model.MustNewID(model.ResourceTypeUser),
 			},
-			want: []*model.Permission{
+			want: []*Permission{
 				{
 					ID:      model.MustNewID(model.ResourceTypePermission),
 					Kind:    model.PermissionKindCreate,
@@ -607,7 +634,7 @@ func Test_permissionService_GetBySubject(t *testing.T) {
 		{
 			name: "get permission with error",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ []*model.Permission) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ []*Permission) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
@@ -619,8 +646,8 @@ func Test_permissionService_GetBySubject(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ []*model.Permission) repository.PermissionRepository {
-					repo := mock.NewPermissionRepository(ctrl)
+				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ []*Permission) repository.PermissionRepository {
+					repo := repository.NewMockPermissionRepository(ctrl)
 					repo.EXPECT().GetBySubject(ctx, id).Return(nil, assert.AnError)
 					return repo
 				},
@@ -652,8 +679,8 @@ func Test_permissionService_GetBySubject(t *testing.T) {
 
 func Test_permissionService_GetByTarget(t *testing.T) {
 	type fields struct {
-		baseService    func(ctrl *gomock.Controller, ctx context.Context, id model.ID, perms []*model.Permission) *baseService
-		permissionRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, perms []*model.Permission) repository.PermissionRepository
+		baseService    func(ctrl *gomock.Controller, ctx context.Context, id model.ID, perms []*Permission) *baseService
+		permissionRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, perms []*Permission) repository.PermissionRepository
 	}
 	type args struct {
 		ctx context.Context
@@ -663,13 +690,13 @@ func Test_permissionService_GetByTarget(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    []*model.Permission
+		want    []*Permission
 		wantErr error
 	}{
 		{
 			name: "get permissions",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ []*model.Permission) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ []*Permission) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
@@ -681,9 +708,9 @@ func Test_permissionService_GetByTarget(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, perms []*model.Permission) repository.PermissionRepository {
-					repo := mock.NewPermissionRepository(ctrl)
-					repo.EXPECT().GetByTarget(ctx, id).Return(perms, nil)
+				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, perms []*Permission) repository.PermissionRepository {
+					repo := repository.NewMockPermissionRepository(ctrl)
+					repo.EXPECT().GetByTarget(ctx, id).Return(toRepoPermissions(perms), nil)
 					return repo
 				},
 			},
@@ -691,7 +718,7 @@ func Test_permissionService_GetByTarget(t *testing.T) {
 				ctx: context.Background(),
 				id:  model.MustNewID(model.ResourceTypeOrganization),
 			},
-			want: []*model.Permission{
+			want: []*Permission{
 				{
 					ID:      model.MustNewID(model.ResourceTypePermission),
 					Kind:    model.PermissionKindCreate,
@@ -703,7 +730,7 @@ func Test_permissionService_GetByTarget(t *testing.T) {
 		{
 			name: "get permission with error",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ []*model.Permission) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ []*Permission) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
@@ -715,8 +742,8 @@ func Test_permissionService_GetByTarget(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ []*model.Permission) repository.PermissionRepository {
-					repo := mock.NewPermissionRepository(ctrl)
+				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ []*Permission) repository.PermissionRepository {
+					repo := repository.NewMockPermissionRepository(ctrl)
 					repo.EXPECT().GetByTarget(ctx, id).Return(nil, assert.AnError)
 					return repo
 				},
@@ -748,8 +775,8 @@ func Test_permissionService_GetByTarget(t *testing.T) {
 
 func Test_permissionService_GetBySubjectAndTarget(t *testing.T) {
 	type fields struct {
-		baseService    func(ctrl *gomock.Controller, ctx context.Context, subject, target model.ID, perms []*model.Permission) *baseService
-		permissionRepo func(ctrl *gomock.Controller, ctx context.Context, subject, target model.ID, perms []*model.Permission) repository.PermissionRepository
+		baseService    func(ctrl *gomock.Controller, ctx context.Context, subject, target model.ID, perms []*Permission) *baseService
+		permissionRepo func(ctrl *gomock.Controller, ctx context.Context, subject, target model.ID, perms []*Permission) repository.PermissionRepository
 	}
 	type args struct {
 		ctx     context.Context
@@ -760,13 +787,13 @@ func Test_permissionService_GetBySubjectAndTarget(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    []*model.Permission
+		want    []*Permission
 		wantErr error
 	}{
 		{
 			name: "get permissions",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ model.ID, _ []*model.Permission) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ model.ID, _ []*Permission) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
@@ -778,9 +805,9 @@ func Test_permissionService_GetBySubjectAndTarget(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, subject, target model.ID, perms []*model.Permission) repository.PermissionRepository {
-					repo := mock.NewPermissionRepository(ctrl)
-					repo.EXPECT().GetBySubjectAndTarget(ctx, subject, target).Return(perms, nil)
+				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, subject, target model.ID, perms []*Permission) repository.PermissionRepository {
+					repo := repository.NewMockPermissionRepository(ctrl)
+					repo.EXPECT().GetBySubjectAndTarget(ctx, subject, target).Return(toRepoPermissions(perms), nil)
 					return repo
 				},
 			},
@@ -789,7 +816,7 @@ func Test_permissionService_GetBySubjectAndTarget(t *testing.T) {
 				subject: model.MustNewID(model.ResourceTypeUser),
 				target:  model.MustNewID(model.ResourceTypeOrganization),
 			},
-			want: []*model.Permission{
+			want: []*Permission{
 				{
 					ID:      model.MustNewID(model.ResourceTypePermission),
 					Kind:    model.PermissionKindCreate,
@@ -801,7 +828,7 @@ func Test_permissionService_GetBySubjectAndTarget(t *testing.T) {
 		{
 			name: "get permission with error",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ model.ID, _ []*model.Permission) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ model.ID, _ []*Permission) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
@@ -813,8 +840,8 @@ func Test_permissionService_GetBySubjectAndTarget(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, subject, target model.ID, _ []*model.Permission) repository.PermissionRepository {
-					repo := mock.NewPermissionRepository(ctrl)
+				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, subject, target model.ID, _ []*Permission) repository.PermissionRepository {
+					repo := repository.NewMockPermissionRepository(ctrl)
 					repo.EXPECT().GetBySubjectAndTarget(ctx, subject, target).Return(nil, assert.AnError)
 					return repo
 				},
@@ -878,7 +905,7 @@ func Test_permissionService_HasAnyRelation(t *testing.T) {
 					}
 				},
 				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, subject, target model.ID, hasRelation bool) repository.PermissionRepository {
-					repo := mock.NewPermissionRepository(ctrl)
+					repo := repository.NewMockPermissionRepository(ctrl)
 					repo.EXPECT().HasAnyRelation(ctx, subject, target).Return(hasRelation, nil)
 					return repo
 				},
@@ -906,7 +933,7 @@ func Test_permissionService_HasAnyRelation(t *testing.T) {
 					}
 				},
 				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, subject, target model.ID, hasRelation bool) repository.PermissionRepository {
-					repo := mock.NewPermissionRepository(ctrl)
+					repo := repository.NewMockPermissionRepository(ctrl)
 					repo.EXPECT().HasAnyRelation(ctx, subject, target).Return(hasRelation, nil)
 					return repo
 				},
@@ -934,7 +961,7 @@ func Test_permissionService_HasAnyRelation(t *testing.T) {
 					}
 				},
 				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, subject, target model.ID, _ bool) repository.PermissionRepository {
-					repo := mock.NewPermissionRepository(ctrl)
+					repo := repository.NewMockPermissionRepository(ctrl)
 					repo.EXPECT().HasAnyRelation(ctx, subject, target).Return(false, assert.AnError)
 					return repo
 				},
@@ -1002,7 +1029,7 @@ func Test_permissionService_CtxUserHasAnyRelation(t *testing.T) {
 					}
 				},
 				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, userID, target model.ID, hasRelation bool) repository.PermissionRepository {
-					repo := mock.NewPermissionRepository(ctrl)
+					repo := repository.NewMockPermissionRepository(ctrl)
 					repo.EXPECT().HasAnyRelation(ctx, userID, target).Return(hasRelation, nil)
 					return repo
 				},
@@ -1033,7 +1060,7 @@ func Test_permissionService_CtxUserHasAnyRelation(t *testing.T) {
 					}
 				},
 				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, userID, target model.ID, hasRelation bool) repository.PermissionRepository {
-					repo := mock.NewPermissionRepository(ctrl)
+					repo := repository.NewMockPermissionRepository(ctrl)
 					repo.EXPECT().HasAnyRelation(ctx, userID, target).Return(hasRelation, nil)
 					return repo
 				},
@@ -1064,7 +1091,7 @@ func Test_permissionService_CtxUserHasAnyRelation(t *testing.T) {
 					}
 				},
 				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, userID, target model.ID, _ bool) repository.PermissionRepository {
-					repo := mock.NewPermissionRepository(ctrl)
+					repo := repository.NewMockPermissionRepository(ctrl)
 					repo.EXPECT().HasAnyRelation(ctx, userID, target).Return(false, assert.AnError)
 					return repo
 				},
@@ -1091,7 +1118,7 @@ func Test_permissionService_CtxUserHasAnyRelation(t *testing.T) {
 					}
 				},
 				permissionRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID, _ bool) repository.PermissionRepository {
-					return mock.NewPermissionRepository(ctrl)
+					return repository.NewMockPermissionRepository(ctrl)
 				},
 			},
 			args: args{
@@ -1151,7 +1178,7 @@ func Test_permissionService_HasSystemRole(t *testing.T) {
 					}
 				},
 				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, subject model.ID, roles []model.SystemRole, hasRole bool) repository.PermissionRepository {
-					repo := mock.NewPermissionRepository(ctrl)
+					repo := repository.NewMockPermissionRepository(ctrl)
 					repo.EXPECT().HasSystemRole(ctx, subject, roles).Return(hasRole, nil)
 					return repo
 				},
@@ -1179,7 +1206,7 @@ func Test_permissionService_HasSystemRole(t *testing.T) {
 					}
 				},
 				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, subject model.ID, roles []model.SystemRole, _ bool) repository.PermissionRepository {
-					repo := mock.NewPermissionRepository(ctrl)
+					repo := repository.NewMockPermissionRepository(ctrl)
 					repo.EXPECT().HasSystemRole(ctx, subject, roles).Return(false, assert.AnError)
 					return repo
 				},
@@ -1247,7 +1274,7 @@ func Test_permissionService_CtxUserHasSystemRole(t *testing.T) {
 					}
 				},
 				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, roles []model.SystemRole, hasRole bool) repository.PermissionRepository {
-					repo := mock.NewPermissionRepository(ctrl)
+					repo := repository.NewMockPermissionRepository(ctrl)
 					repo.EXPECT().HasSystemRole(ctx, userID, roles).Return(hasRole, nil)
 					return repo
 				},
@@ -1278,7 +1305,7 @@ func Test_permissionService_CtxUserHasSystemRole(t *testing.T) {
 					}
 				},
 				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, roles []model.SystemRole, _ bool) repository.PermissionRepository {
-					repo := mock.NewPermissionRepository(ctrl)
+					repo := repository.NewMockPermissionRepository(ctrl)
 					repo.EXPECT().HasSystemRole(ctx, userID, roles).Return(false, assert.AnError)
 					return repo
 				},
@@ -1304,7 +1331,7 @@ func Test_permissionService_CtxUserHasSystemRole(t *testing.T) {
 					}
 				},
 				permissionRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ []model.SystemRole, _ bool) repository.PermissionRepository {
-					return mock.NewPermissionRepository(ctrl)
+					return repository.NewMockPermissionRepository(ctrl)
 				},
 			},
 			args: args{
@@ -1365,7 +1392,7 @@ func Test_permissionService_HasPermission(t *testing.T) {
 					}
 				},
 				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, subject, target model.ID, kinds []model.PermissionKind) repository.PermissionRepository {
-					repo := mock.NewPermissionRepository(ctrl)
+					repo := repository.NewMockPermissionRepository(ctrl)
 					repo.EXPECT().HasPermission(ctx, subject, target, append(kinds, model.PermissionKindAll)).Return(true, nil)
 					repo.EXPECT().HasSystemRole(ctx, subject, []model.SystemRole{model.SystemRoleOwner}).Return(true, nil)
 					return repo
@@ -1395,7 +1422,7 @@ func Test_permissionService_HasPermission(t *testing.T) {
 					}
 				},
 				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, subject, target model.ID, kinds []model.PermissionKind) repository.PermissionRepository {
-					repo := mock.NewPermissionRepository(ctrl)
+					repo := repository.NewMockPermissionRepository(ctrl)
 					repo.EXPECT().HasPermission(ctx, subject, target, append(kinds, model.PermissionKindAll)).Return(false, nil)
 					repo.EXPECT().HasSystemRole(ctx, subject, []model.SystemRole{model.SystemRoleOwner}).Return(false, nil)
 					return repo
@@ -1425,7 +1452,7 @@ func Test_permissionService_HasPermission(t *testing.T) {
 					}
 				},
 				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, subject, _ model.ID, _ []model.PermissionKind) repository.PermissionRepository {
-					repo := mock.NewPermissionRepository(ctrl)
+					repo := repository.NewMockPermissionRepository(ctrl)
 					repo.EXPECT().HasSystemRole(ctx, subject, []model.SystemRole{model.SystemRoleOwner}).Return(false, assert.AnError)
 					return repo
 				},
@@ -1454,7 +1481,7 @@ func Test_permissionService_HasPermission(t *testing.T) {
 					}
 				},
 				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, subject, target model.ID, kinds []model.PermissionKind) repository.PermissionRepository {
-					repo := mock.NewPermissionRepository(ctrl)
+					repo := repository.NewMockPermissionRepository(ctrl)
 					repo.EXPECT().HasPermission(ctx, subject, target, append(kinds, model.PermissionKindAll)).Return(false, assert.AnError)
 					repo.EXPECT().HasSystemRole(ctx, subject, []model.SystemRole{model.SystemRoleOwner}).Return(false, nil)
 					return repo
@@ -1524,7 +1551,7 @@ func Test_permissionService_CtxUserHasPermission(t *testing.T) {
 					}
 				},
 				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, subject, target model.ID, kinds []model.PermissionKind) repository.PermissionRepository {
-					repo := mock.NewPermissionRepository(ctrl)
+					repo := repository.NewMockPermissionRepository(ctrl)
 					repo.EXPECT().HasPermission(ctx, subject, target, append(kinds, model.PermissionKindAll)).Return(true, nil)
 					repo.EXPECT().HasSystemRole(ctx, subject, []model.SystemRole{model.SystemRoleOwner}).Return(true, nil)
 					return repo
@@ -1556,7 +1583,7 @@ func Test_permissionService_CtxUserHasPermission(t *testing.T) {
 					}
 				},
 				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, subject, target model.ID, kinds []model.PermissionKind) repository.PermissionRepository {
-					repo := mock.NewPermissionRepository(ctrl)
+					repo := repository.NewMockPermissionRepository(ctrl)
 					repo.EXPECT().HasPermission(ctx, subject, target, append(kinds, model.PermissionKindAll)).Return(false, nil)
 					repo.EXPECT().HasSystemRole(ctx, subject, []model.SystemRole{model.SystemRoleOwner}).Return(false, nil)
 					return repo
@@ -1588,7 +1615,7 @@ func Test_permissionService_CtxUserHasPermission(t *testing.T) {
 					}
 				},
 				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, subject, target model.ID, kinds []model.PermissionKind) repository.PermissionRepository {
-					repo := mock.NewPermissionRepository(ctrl)
+					repo := repository.NewMockPermissionRepository(ctrl)
 					repo.EXPECT().HasPermission(ctx, subject, target, append(kinds, model.PermissionKindAll)).Return(false, assert.AnError)
 					repo.EXPECT().HasSystemRole(ctx, subject, []model.SystemRole{model.SystemRoleOwner}).Return(true, nil)
 					return repo
@@ -1617,7 +1644,7 @@ func Test_permissionService_CtxUserHasPermission(t *testing.T) {
 					}
 				},
 				permissionRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID, _ []model.PermissionKind) repository.PermissionRepository {
-					return mock.NewPermissionRepository(ctrl)
+					return repository.NewMockPermissionRepository(ctrl)
 				},
 			},
 			args: args{
@@ -1647,7 +1674,7 @@ func Test_permissionService_CtxUserHasPermission(t *testing.T) {
 func Test_permissionService_Update(t *testing.T) {
 	type fields struct {
 		baseService    func(ctrl *gomock.Controller, ctx context.Context, id model.ID, kind model.PermissionKind) *baseService
-		permissionRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, want *model.Permission, kind model.PermissionKind) repository.PermissionRepository
+		permissionRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, want *Permission, kind model.PermissionKind) repository.PermissionRepository
 	}
 	type args struct {
 		ctx  context.Context
@@ -1658,7 +1685,7 @@ func Test_permissionService_Update(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    *model.Permission
+		want    *Permission
 		wantErr error
 	}{
 		{
@@ -1676,9 +1703,9 @@ func Test_permissionService_Update(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, want *model.Permission, kind model.PermissionKind) repository.PermissionRepository {
-					repo := mock.NewPermissionRepository(ctrl)
-					repo.EXPECT().Update(ctx, id, kind).Return(want, nil)
+				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, want *Permission, kind model.PermissionKind) repository.PermissionRepository {
+					repo := repository.NewMockPermissionRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, kind).Return(toRepoPermission(want), nil)
 					return repo
 				},
 			},
@@ -1687,7 +1714,7 @@ func Test_permissionService_Update(t *testing.T) {
 				id:   model.MustNewID(model.ResourceTypeUser),
 				kind: model.PermissionKindCreate,
 			},
-			want: &model.Permission{
+			want: &Permission{
 				ID:      model.MustNewID(model.ResourceTypePermission),
 				Kind:    model.PermissionKindCreate,
 				Subject: model.MustNewNilID(model.ResourceTypeUser),
@@ -1709,8 +1736,8 @@ func Test_permissionService_Update(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *model.Permission, kind model.PermissionKind) repository.PermissionRepository {
-					repo := mock.NewPermissionRepository(ctrl)
+				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *Permission, kind model.PermissionKind) repository.PermissionRepository {
+					repo := repository.NewMockPermissionRepository(ctrl)
 					repo.EXPECT().Update(ctx, id, kind).Return(nil, assert.AnError)
 					return repo
 				},
@@ -1746,8 +1773,8 @@ func Test_permissionService_CtxUserUpdate(t *testing.T) {
 	userID := model.MustNewID(model.ResourceTypeUser)
 
 	type fields struct {
-		baseService    func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, want *model.Permission, kind model.PermissionKind) *baseService
-		permissionRepo func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, want *model.Permission, kind model.PermissionKind) repository.PermissionRepository
+		baseService    func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, want *Permission, kind model.PermissionKind) *baseService
+		permissionRepo func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, want *Permission, kind model.PermissionKind) repository.PermissionRepository
 	}
 	type args struct {
 		ctx  context.Context
@@ -1758,13 +1785,13 @@ func Test_permissionService_CtxUserUpdate(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    *model.Permission
+		want    *Permission
 		wantErr error
 	}{
 		{
 			name: "update permission with direct permission",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ *model.Permission, _ model.PermissionKind) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ *Permission, _ model.PermissionKind) *baseService {
 					span1 := mock.NewMockSpan(ctrl)
 					span1.EXPECT().End(gomock.Len(0))
 					span2 := mock.NewMockSpan(ctrl)
@@ -1788,8 +1815,8 @@ func Test_permissionService_CtxUserUpdate(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, want *model.Permission, kind model.PermissionKind) repository.PermissionRepository {
-					repo := mock.NewPermissionRepository(ctrl)
+				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, want *Permission, kind model.PermissionKind) repository.PermissionRepository {
+					repo := repository.NewMockPermissionRepository(ctrl)
 					repo.EXPECT().HasSystemRole(ctx, userID, []model.SystemRole{
 						model.SystemRoleOwner,
 						model.SystemRoleAdmin,
@@ -1798,8 +1825,8 @@ func Test_permissionService_CtxUserUpdate(t *testing.T) {
 						model.PermissionKindWrite,
 						model.PermissionKindAll,
 					}).Return(true, nil)
-					repo.EXPECT().Get(ctx, want.ID).Return(want, nil)
-					repo.EXPECT().Update(ctx, want.ID, kind).Return(want, nil)
+					repo.EXPECT().Get(ctx, want.ID).Return(toRepoPermission(want), nil)
+					repo.EXPECT().Update(ctx, want.ID, kind).Return(toRepoPermission(want), nil)
 					return repo
 				},
 			},
@@ -1808,7 +1835,7 @@ func Test_permissionService_CtxUserUpdate(t *testing.T) {
 				id:   permID,
 				kind: model.PermissionKindCreate,
 			},
-			want: &model.Permission{
+			want: &Permission{
 				ID:      permID,
 				Kind:    model.PermissionKindRead,
 				Subject: userID,
@@ -1818,7 +1845,7 @@ func Test_permissionService_CtxUserUpdate(t *testing.T) {
 		{
 			name: "update permission with system role",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ *model.Permission, _ model.PermissionKind) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ *Permission, _ model.PermissionKind) *baseService {
 					span1 := mock.NewMockSpan(ctrl)
 					span1.EXPECT().End(gomock.Len(0))
 					span2 := mock.NewMockSpan(ctrl)
@@ -1842,8 +1869,8 @@ func Test_permissionService_CtxUserUpdate(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, want *model.Permission, kind model.PermissionKind) repository.PermissionRepository {
-					repo := mock.NewPermissionRepository(ctrl)
+				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, want *Permission, kind model.PermissionKind) repository.PermissionRepository {
+					repo := repository.NewMockPermissionRepository(ctrl)
 					repo.EXPECT().HasSystemRole(ctx, userID, []model.SystemRole{
 						model.SystemRoleOwner,
 						model.SystemRoleAdmin,
@@ -1852,8 +1879,8 @@ func Test_permissionService_CtxUserUpdate(t *testing.T) {
 						model.PermissionKindWrite,
 						model.PermissionKindAll,
 					}).Return(false, nil)
-					repo.EXPECT().Get(ctx, want.ID).Return(want, nil)
-					repo.EXPECT().Update(ctx, want.ID, kind).Return(want, nil)
+					repo.EXPECT().Get(ctx, want.ID).Return(toRepoPermission(want), nil)
+					repo.EXPECT().Update(ctx, want.ID, kind).Return(toRepoPermission(want), nil)
 					return repo
 				},
 			},
@@ -1862,7 +1889,7 @@ func Test_permissionService_CtxUserUpdate(t *testing.T) {
 				id:   permID,
 				kind: model.PermissionKindCreate,
 			},
-			want: &model.Permission{
+			want: &Permission{
 				ID:      permID,
 				Kind:    model.PermissionKindRead,
 				Subject: userID,
@@ -1872,7 +1899,7 @@ func Test_permissionService_CtxUserUpdate(t *testing.T) {
 		{
 			name: "update permission with error",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ *model.Permission, _ model.PermissionKind) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ *Permission, _ model.PermissionKind) *baseService {
 					span1 := mock.NewMockSpan(ctrl)
 					span1.EXPECT().End(gomock.Len(0))
 					span2 := mock.NewMockSpan(ctrl)
@@ -1896,8 +1923,8 @@ func Test_permissionService_CtxUserUpdate(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, want *model.Permission, kind model.PermissionKind) repository.PermissionRepository {
-					repo := mock.NewPermissionRepository(ctrl)
+				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, want *Permission, kind model.PermissionKind) repository.PermissionRepository {
+					repo := repository.NewMockPermissionRepository(ctrl)
 					repo.EXPECT().HasSystemRole(ctx, userID, []model.SystemRole{
 						model.SystemRoleOwner,
 						model.SystemRoleAdmin,
@@ -1906,7 +1933,7 @@ func Test_permissionService_CtxUserUpdate(t *testing.T) {
 						model.PermissionKindWrite,
 						model.PermissionKindAll,
 					}).Return(true, nil)
-					repo.EXPECT().Get(ctx, want.ID).Return(want, nil)
+					repo.EXPECT().Get(ctx, want.ID).Return(toRepoPermission(want), nil)
 					repo.EXPECT().Update(ctx, want.ID, kind).Return(nil, assert.AnError)
 					return repo
 				},
@@ -1916,7 +1943,7 @@ func Test_permissionService_CtxUserUpdate(t *testing.T) {
 				id:   permID,
 				kind: model.PermissionKindCreate,
 			},
-			want: &model.Permission{
+			want: &Permission{
 				ID:      permID,
 				Kind:    model.PermissionKindRead,
 				Subject: userID,
@@ -1927,7 +1954,7 @@ func Test_permissionService_CtxUserUpdate(t *testing.T) {
 		{
 			name: "update permission with no permission",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ *model.Permission, _ model.PermissionKind) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ *Permission, _ model.PermissionKind) *baseService {
 					span1 := mock.NewMockSpan(ctrl)
 					span1.EXPECT().End(gomock.Len(0))
 					span2 := mock.NewMockSpan(ctrl)
@@ -1948,8 +1975,8 @@ func Test_permissionService_CtxUserUpdate(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, want *model.Permission, _ model.PermissionKind) repository.PermissionRepository {
-					repo := mock.NewPermissionRepository(ctrl)
+				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, want *Permission, _ model.PermissionKind) repository.PermissionRepository {
+					repo := repository.NewMockPermissionRepository(ctrl)
 					repo.EXPECT().HasSystemRole(ctx, userID, []model.SystemRole{
 						model.SystemRoleOwner,
 						model.SystemRoleAdmin,
@@ -1958,7 +1985,7 @@ func Test_permissionService_CtxUserUpdate(t *testing.T) {
 						model.PermissionKindWrite,
 						model.PermissionKindAll,
 					}).Return(false, nil)
-					repo.EXPECT().Get(ctx, want.ID).Return(want, nil)
+					repo.EXPECT().Get(ctx, want.ID).Return(toRepoPermission(want), nil)
 					return repo
 				},
 			},
@@ -1967,7 +1994,7 @@ func Test_permissionService_CtxUserUpdate(t *testing.T) {
 				id:   permID,
 				kind: model.PermissionKindCreate,
 			},
-			want: &model.Permission{
+			want: &Permission{
 				ID:      permID,
 				Kind:    model.PermissionKindRead,
 				Subject: userID,
@@ -1978,7 +2005,7 @@ func Test_permissionService_CtxUserUpdate(t *testing.T) {
 		{
 			name: "update permission no permission found",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ *model.Permission, _ model.PermissionKind) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ *Permission, _ model.PermissionKind) *baseService {
 					span1 := mock.NewMockSpan(ctrl)
 					span1.EXPECT().End(gomock.Len(0))
 					span2 := mock.NewMockSpan(ctrl)
@@ -1993,8 +2020,8 @@ func Test_permissionService_CtxUserUpdate(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, want *model.Permission, _ model.PermissionKind) repository.PermissionRepository {
-					repo := mock.NewPermissionRepository(ctrl)
+				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, want *Permission, _ model.PermissionKind) repository.PermissionRepository {
+					repo := repository.NewMockPermissionRepository(ctrl)
 					repo.EXPECT().Get(ctx, want.ID).Return(nil, assert.AnError)
 					return repo
 				},
@@ -2004,7 +2031,7 @@ func Test_permissionService_CtxUserUpdate(t *testing.T) {
 				id:   permID,
 				kind: model.PermissionKindCreate,
 			},
-			want: &model.Permission{
+			want: &Permission{
 				ID:      permID,
 				Kind:    model.PermissionKindRead,
 				Subject: userID,
@@ -2015,7 +2042,7 @@ func Test_permissionService_CtxUserUpdate(t *testing.T) {
 		{
 			name: "update permission with no ctx user",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ *model.Permission, _ model.PermissionKind) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ *Permission, _ model.PermissionKind) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
@@ -2027,8 +2054,8 @@ func Test_permissionService_CtxUserUpdate(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				permissionRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ *model.Permission, _ model.PermissionKind) repository.PermissionRepository {
-					return mock.NewPermissionRepository(ctrl)
+				permissionRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ *Permission, _ model.PermissionKind) repository.PermissionRepository {
+					return repository.NewMockPermissionRepository(ctrl)
 				},
 			},
 			args: args{
@@ -2036,7 +2063,7 @@ func Test_permissionService_CtxUserUpdate(t *testing.T) {
 				id:   permID,
 				kind: model.PermissionKindCreate,
 			},
-			want: &model.Permission{
+			want: &Permission{
 				ID:      permID,
 				Kind:    model.PermissionKindRead,
 				Subject: userID,
@@ -2096,7 +2123,7 @@ func Test_permissionService_Delete(t *testing.T) {
 					}
 				},
 				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) repository.PermissionRepository {
-					repo := mock.NewPermissionRepository(ctrl)
+					repo := repository.NewMockPermissionRepository(ctrl)
 					repo.EXPECT().Delete(ctx, id).Return(nil)
 					return repo
 				},
@@ -2122,7 +2149,7 @@ func Test_permissionService_Delete(t *testing.T) {
 					}
 				},
 				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) repository.PermissionRepository {
-					repo := mock.NewPermissionRepository(ctrl)
+					repo := repository.NewMockPermissionRepository(ctrl)
 					repo.EXPECT().Delete(ctx, id).Return(assert.AnError)
 					return repo
 				},
@@ -2153,9 +2180,9 @@ func Test_permissionService_CtxUserDelete(t *testing.T) {
 	userID := model.MustNewID(model.ResourceTypeUser)
 
 	type fields struct {
-		baseService    func(ctrl *gomock.Controller, ctx context.Context, userID, id model.ID, perm *model.Permission) *baseService
-		permissionRepo func(ctrl *gomock.Controller, ctx context.Context, userID, id model.ID, perm *model.Permission) repository.PermissionRepository
-		perm           *model.Permission
+		baseService    func(ctrl *gomock.Controller, ctx context.Context, userID, id model.ID, perm *Permission) *baseService
+		permissionRepo func(ctrl *gomock.Controller, ctx context.Context, userID, id model.ID, perm *Permission) repository.PermissionRepository
+		perm           *Permission
 	}
 	type args struct {
 		ctx context.Context
@@ -2170,7 +2197,7 @@ func Test_permissionService_CtxUserDelete(t *testing.T) {
 		{
 			name: "delete permission using permissions",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ model.ID, _ *model.Permission) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ model.ID, _ *Permission) *baseService {
 					span1 := mock.NewMockSpan(ctrl)
 					span1.EXPECT().End(gomock.Len(0))
 					span2 := mock.NewMockSpan(ctrl)
@@ -2194,8 +2221,8 @@ func Test_permissionService_CtxUserDelete(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, userID, _ model.ID, perm *model.Permission) repository.PermissionRepository {
-					repo := mock.NewPermissionRepository(ctrl)
+				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, userID, _ model.ID, perm *Permission) repository.PermissionRepository {
+					repo := repository.NewMockPermissionRepository(ctrl)
 					repo.EXPECT().HasSystemRole(ctx, userID, []model.SystemRole{
 						model.SystemRoleOwner,
 					}).Return(false, nil)
@@ -2203,11 +2230,11 @@ func Test_permissionService_CtxUserDelete(t *testing.T) {
 						model.PermissionKindDelete,
 						model.PermissionKindAll,
 					}).Return(true, nil)
-					repo.EXPECT().Get(ctx, perm.ID).Return(perm, nil)
+					repo.EXPECT().Get(ctx, perm.ID).Return(toRepoPermission(perm), nil)
 					repo.EXPECT().Delete(ctx, perm.ID).Return(nil)
 					return repo
 				},
-				perm: &model.Permission{
+				perm: &Permission{
 					ID:      permID,
 					Kind:    model.PermissionKindRead,
 					Subject: userID,
@@ -2222,7 +2249,7 @@ func Test_permissionService_CtxUserDelete(t *testing.T) {
 		{
 			name: "delete permission when no permissions but system role",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ model.ID, _ *model.Permission) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ model.ID, _ *Permission) *baseService {
 					span1 := mock.NewMockSpan(ctrl)
 					span1.EXPECT().End(gomock.Len(0))
 					span2 := mock.NewMockSpan(ctrl)
@@ -2246,8 +2273,8 @@ func Test_permissionService_CtxUserDelete(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, userID, _ model.ID, perm *model.Permission) repository.PermissionRepository {
-					repo := mock.NewPermissionRepository(ctrl)
+				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, userID, _ model.ID, perm *Permission) repository.PermissionRepository {
+					repo := repository.NewMockPermissionRepository(ctrl)
 					repo.EXPECT().HasSystemRole(ctx, userID, []model.SystemRole{
 						model.SystemRoleOwner,
 					}).Return(true, nil)
@@ -2255,11 +2282,11 @@ func Test_permissionService_CtxUserDelete(t *testing.T) {
 						model.PermissionKindDelete,
 						model.PermissionKindAll,
 					}).Return(false, nil)
-					repo.EXPECT().Get(ctx, perm.ID).Return(perm, nil)
+					repo.EXPECT().Get(ctx, perm.ID).Return(toRepoPermission(perm), nil)
 					repo.EXPECT().Delete(ctx, perm.ID).Return(nil)
 					return repo
 				},
-				perm: &model.Permission{
+				perm: &Permission{
 					ID:      permID,
 					Kind:    model.PermissionKindRead,
 					Subject: userID,
@@ -2274,7 +2301,7 @@ func Test_permissionService_CtxUserDelete(t *testing.T) {
 		{
 			name: "delete permission no target found",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ model.ID, _ *model.Permission) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ model.ID, _ *Permission) *baseService {
 					span1 := mock.NewMockSpan(ctrl)
 					span1.EXPECT().End(gomock.Len(0))
 					span2 := mock.NewMockSpan(ctrl)
@@ -2289,12 +2316,12 @@ func Test_permissionService_CtxUserDelete(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, _, _ model.ID, perm *model.Permission) repository.PermissionRepository {
-					repo := mock.NewPermissionRepository(ctrl)
+				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, _, _ model.ID, perm *Permission) repository.PermissionRepository {
+					repo := repository.NewMockPermissionRepository(ctrl)
 					repo.EXPECT().Get(ctx, perm.ID).Return(nil, assert.AnError)
 					return repo
 				},
-				perm: &model.Permission{
+				perm: &Permission{
 					ID:      permID,
 					Kind:    model.PermissionKindRead,
 					Subject: userID,
@@ -2310,7 +2337,7 @@ func Test_permissionService_CtxUserDelete(t *testing.T) {
 		{
 			name: "delete permission with no permissions",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ model.ID, _ *model.Permission) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ model.ID, _ *Permission) *baseService {
 					span1 := mock.NewMockSpan(ctrl)
 					span1.EXPECT().End(gomock.Len(0))
 					span2 := mock.NewMockSpan(ctrl)
@@ -2331,8 +2358,8 @@ func Test_permissionService_CtxUserDelete(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, userID, _ model.ID, perm *model.Permission) repository.PermissionRepository {
-					repo := mock.NewPermissionRepository(ctrl)
+				permissionRepo: func(ctrl *gomock.Controller, ctx context.Context, userID, _ model.ID, perm *Permission) repository.PermissionRepository {
+					repo := repository.NewMockPermissionRepository(ctrl)
 					repo.EXPECT().HasSystemRole(ctx, userID, []model.SystemRole{
 						model.SystemRoleOwner,
 					}).Return(false, nil)
@@ -2340,10 +2367,10 @@ func Test_permissionService_CtxUserDelete(t *testing.T) {
 						model.PermissionKindDelete,
 						model.PermissionKindAll,
 					}).Return(false, nil)
-					repo.EXPECT().Get(ctx, perm.ID).Return(perm, nil)
+					repo.EXPECT().Get(ctx, perm.ID).Return(toRepoPermission(perm), nil)
 					return repo
 				},
-				perm: &model.Permission{
+				perm: &Permission{
 					ID:      permID,
 					Kind:    model.PermissionKindRead,
 					Subject: userID,
@@ -2359,7 +2386,7 @@ func Test_permissionService_CtxUserDelete(t *testing.T) {
 		{
 			name: "delete permission with no ctx user",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ model.ID, _ *model.Permission) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ model.ID, _ *Permission) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
@@ -2371,10 +2398,10 @@ func Test_permissionService_CtxUserDelete(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				permissionRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID, _ *model.Permission) repository.PermissionRepository {
-					return mock.NewPermissionRepository(ctrl)
+				permissionRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID, _ *Permission) repository.PermissionRepository {
+					return repository.NewMockPermissionRepository(ctrl)
 				},
-				perm: &model.Permission{
+				perm: &Permission{
 					ID:      permID,
 					Kind:    model.PermissionKindRead,
 					Subject: userID,

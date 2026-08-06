@@ -200,14 +200,14 @@ func TestNewEmailService(t *testing.T) {
 func TestEmailService_SendAuthPasswordResetEmail(t *testing.T) {
 	type fields struct {
 		baseService  func(ctrl *gomock.Controller, ctx context.Context) *baseService
-		client       func(ctrl *gomock.Controller, ctx context.Context, templatesDir, token string, smtpConf *config.SMTPConfig, user *model.User) EmailSender
+		client       func(ctrl *gomock.Controller, ctx context.Context, templatesDir, token string, smtpConf *config.SMTPConfig, recipient email.Recipient) EmailSender
 		templatesDir string
 		smtpConf     *config.SMTPConfig
 	}
 	type args struct {
-		ctx   context.Context
-		user  *model.User
-		token string
+		ctx       context.Context
+		recipient email.Recipient
+		token     string
 	}
 	tests := []struct {
 		name    string
@@ -230,7 +230,7 @@ func TestEmailService_SendAuthPasswordResetEmail(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				client: func(ctrl *gomock.Controller, ctx context.Context, templatesDir, token string, smtpConf *config.SMTPConfig, user *model.User) EmailSender {
+				client: func(ctrl *gomock.Controller, ctx context.Context, templatesDir, token string, smtpConf *config.SMTPConfig, recipient email.Recipient) EmailSender {
 					subject := "[Action Required] Reset your password"
 
 					passwordResetURL := fmt.Sprintf("%s/reset-password?token=%s", smtpConf.ClientURL, token)
@@ -238,8 +238,8 @@ func TestEmailService_SendAuthPasswordResetEmail(t *testing.T) {
 						path.Join(templatesDir, authPasswordResetTemplate),
 						&email.PasswordResetTemplateData{
 							Subject:          subject,
-							FirstName:        user.FirstName,
-							LastName:         user.LastName,
+							FirstName:        recipient.FirstName,
+							LastName:         recipient.LastName,
 							PasswordResetURL: passwordResetURL,
 							SupportEmail:     smtpConf.SupportAddress,
 						},
@@ -247,7 +247,7 @@ func TestEmailService_SendAuthPasswordResetEmail(t *testing.T) {
 					require.NoError(t, err)
 
 					client := mock.NewEmailSender(ctrl)
-					client.EXPECT().SendEmail(ctx, subject, user.Email, matchTemplate(template)).Return(nil)
+					client.EXPECT().SendEmail(ctx, subject, recipient.Email, matchTemplate(template)).Return(nil)
 
 					return client
 				},
@@ -259,11 +259,10 @@ func TestEmailService_SendAuthPasswordResetEmail(t *testing.T) {
 			},
 			args: args{
 				ctx: context.Background(),
-				user: &model.User{
-					Username:  "test",
+				recipient: email.Recipient{
+					Email:     "test@example.com",
 					FirstName: "Test",
 					LastName:  "User",
-					Email:     "test@example.com",
 				},
 				token: "test-token",
 			},
@@ -283,7 +282,7 @@ func TestEmailService_SendAuthPasswordResetEmail(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				client: func(ctrl *gomock.Controller, ctx context.Context, templatesDir, token string, smtpConf *config.SMTPConfig, user *model.User) EmailSender {
+				client: func(ctrl *gomock.Controller, ctx context.Context, templatesDir, token string, smtpConf *config.SMTPConfig, recipient email.Recipient) EmailSender {
 					subject := "[Action Required] Reset your password"
 
 					passwordResetURL := fmt.Sprintf("%s/reset-password?token=%s", smtpConf.ClientURL, token)
@@ -291,8 +290,8 @@ func TestEmailService_SendAuthPasswordResetEmail(t *testing.T) {
 						path.Join(templatesDir, authPasswordResetTemplate),
 						&email.PasswordResetTemplateData{
 							Subject:          subject,
-							FirstName:        user.FirstName,
-							LastName:         user.LastName,
+							FirstName:        recipient.FirstName,
+							LastName:         recipient.LastName,
 							PasswordResetURL: passwordResetURL,
 							SupportEmail:     smtpConf.SupportAddress,
 						},
@@ -300,7 +299,7 @@ func TestEmailService_SendAuthPasswordResetEmail(t *testing.T) {
 					require.NoError(t, err)
 
 					client := mock.NewEmailSender(ctrl)
-					client.EXPECT().SendEmail(ctx, subject, user.Email, matchTemplate(template)).Return(assert.AnError)
+					client.EXPECT().SendEmail(ctx, subject, recipient.Email, matchTemplate(template)).Return(assert.AnError)
 
 					return client
 				},
@@ -312,11 +311,10 @@ func TestEmailService_SendAuthPasswordResetEmail(t *testing.T) {
 			},
 			args: args{
 				ctx: context.Background(),
-				user: &model.User{
-					Username:  "test",
+				recipient: email.Recipient{
+					Email:     "test@example.com",
 					FirstName: "Test",
 					LastName:  "User",
-					Email:     "test@example.com",
 				},
 				token: "test-token",
 			},
@@ -333,11 +331,11 @@ func TestEmailService_SendAuthPasswordResetEmail(t *testing.T) {
 
 			s := &emailService{
 				baseService:  tt.fields.baseService(ctrl, tt.args.ctx),
-				client:       tt.fields.client(ctrl, tt.args.ctx, tt.fields.templatesDir, tt.args.token, tt.fields.smtpConf, tt.args.user),
+				client:       tt.fields.client(ctrl, tt.args.ctx, tt.fields.templatesDir, tt.args.token, tt.fields.smtpConf, tt.args.recipient),
 				templatesDir: tt.fields.templatesDir,
 				smtpConf:     tt.fields.smtpConf,
 			}
-			assert.ErrorIs(t, s.SendAuthPasswordResetEmail(tt.args.ctx, tt.args.user, tt.args.token), tt.wantErr)
+			assert.ErrorIs(t, s.SendAuthPasswordResetEmail(tt.args.ctx, tt.args.recipient, tt.args.token), tt.wantErr)
 		})
 	}
 }
@@ -345,16 +343,17 @@ func TestEmailService_SendAuthPasswordResetEmail(t *testing.T) {
 func TestEmailService_SendOrganizationInvitationEmail(t *testing.T) {
 	type fields struct {
 		baseService  func(ctrl *gomock.Controller, ctx context.Context) *baseService
-		client       func(ctrl *gomock.Controller, ctx context.Context, templatesDir, token string, smtpConf *config.SMTPConfig, organization *model.Organization, user *model.User) EmailSender
+		client       func(ctrl *gomock.Controller, ctx context.Context, templatesDir, token string, smtpConf *config.SMTPConfig, organizationID model.ID, organizationName string, recipient email.Recipient) EmailSender
 		templatesDir string
 		smtpConf     *config.SMTPConfig
 	}
 	type args struct {
-		ctx            context.Context
-		invitationPath string
-		organization   *model.Organization
-		user           *model.User
-		token          string
+		ctx              context.Context
+		invitationPath   string
+		organizationID   model.ID
+		organizationName string
+		recipient        email.Recipient
+		token            string
 	}
 	tests := []struct {
 		name    string
@@ -377,15 +376,15 @@ func TestEmailService_SendOrganizationInvitationEmail(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				client: func(ctrl *gomock.Controller, ctx context.Context, templatesDir, token string, smtpConf *config.SMTPConfig, organization *model.Organization, user *model.User) EmailSender {
-					subject := fmt.Sprintf("[Action Required] You have been invited to join %s", organization.Name)
+				client: func(ctrl *gomock.Controller, ctx context.Context, templatesDir, token string, smtpConf *config.SMTPConfig, organizationID model.ID, organizationName string, recipient email.Recipient) EmailSender {
+					subject := fmt.Sprintf("[Action Required] You have been invited to join %s", organizationName)
 
-					invitationURL := fmt.Sprintf("%s/organizations/join?organization=%s&token=%s", smtpConf.ClientURL, organization.ID.String(), token)
+					invitationURL := fmt.Sprintf("%s/organizations/join?organization=%s&token=%s", smtpConf.ClientURL, organizationID.String(), token)
 					template, err := email.NewTemplate(
 						path.Join(templatesDir, organizationInviteTemplate),
 						&email.OrganizationInviteTemplateData{
 							Subject:          subject,
-							OrganizationName: organization.Name,
+							OrganizationName: organizationName,
 							InvitationURL:    invitationURL,
 							SupportEmail:     smtpConf.SupportAddress,
 						},
@@ -393,7 +392,7 @@ func TestEmailService_SendOrganizationInvitationEmail(t *testing.T) {
 					require.NoError(t, err)
 
 					client := mock.NewEmailSender(ctrl)
-					client.EXPECT().SendEmail(ctx, subject, user.Email, matchTemplate(template)).Return(nil)
+					client.EXPECT().SendEmail(ctx, subject, recipient.Email, matchTemplate(template)).Return(nil)
 
 					return client
 				},
@@ -404,16 +403,14 @@ func TestEmailService_SendOrganizationInvitationEmail(t *testing.T) {
 				},
 			},
 			args: args{
-				ctx:            context.Background(),
-				invitationPath: "/invitation",
-				organization: &model.Organization{
-					Name: "test",
-				},
-				user: &model.User{
-					Username:  "test",
+				ctx:              context.Background(),
+				invitationPath:   "/invitation",
+				organizationID:   model.MustNewID(model.ResourceTypeOrganization),
+				organizationName: "test",
+				recipient: email.Recipient{
+					Email:     "test@example.com",
 					FirstName: "Test",
 					LastName:  "User",
-					Email:     "test@example.com",
 				},
 			},
 		},
@@ -432,15 +429,15 @@ func TestEmailService_SendOrganizationInvitationEmail(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				client: func(ctrl *gomock.Controller, ctx context.Context, templatesDir, token string, smtpConf *config.SMTPConfig, organization *model.Organization, user *model.User) EmailSender {
-					subject := fmt.Sprintf("[Action Required] You have been invited to join %s", organization.Name)
+				client: func(ctrl *gomock.Controller, ctx context.Context, templatesDir, token string, smtpConf *config.SMTPConfig, organizationID model.ID, organizationName string, recipient email.Recipient) EmailSender {
+					subject := fmt.Sprintf("[Action Required] You have been invited to join %s", organizationName)
 
-					invitationURL := fmt.Sprintf("%s/organizations/join?organization=%s&token=%s", smtpConf.ClientURL, organization.ID.String(), token)
+					invitationURL := fmt.Sprintf("%s/organizations/join?organization=%s&token=%s", smtpConf.ClientURL, organizationID.String(), token)
 					template, err := email.NewTemplate(
 						path.Join(templatesDir, organizationInviteTemplate),
 						&email.OrganizationInviteTemplateData{
 							Subject:          subject,
-							OrganizationName: organization.Name,
+							OrganizationName: organizationName,
 							InvitationURL:    invitationURL,
 							SupportEmail:     smtpConf.SupportAddress,
 						},
@@ -448,7 +445,7 @@ func TestEmailService_SendOrganizationInvitationEmail(t *testing.T) {
 					require.NoError(t, err)
 
 					client := mock.NewEmailSender(ctrl)
-					client.EXPECT().SendEmail(ctx, subject, user.Email, matchTemplate(template)).Return(assert.AnError)
+					client.EXPECT().SendEmail(ctx, subject, recipient.Email, matchTemplate(template)).Return(assert.AnError)
 
 					return client
 				},
@@ -459,16 +456,14 @@ func TestEmailService_SendOrganizationInvitationEmail(t *testing.T) {
 				},
 			},
 			args: args{
-				ctx:            context.Background(),
-				invitationPath: "/invitation",
-				organization: &model.Organization{
-					Name: "test",
-				},
-				user: &model.User{
-					Username:  "test",
+				ctx:              context.Background(),
+				invitationPath:   "/invitation",
+				organizationID:   model.MustNewID(model.ResourceTypeOrganization),
+				organizationName: "test",
+				recipient: email.Recipient{
+					Email:     "test@example.com",
 					FirstName: "Test",
 					LastName:  "User",
-					Email:     "test@example.com",
 				},
 			},
 			wantErr: ErrEmailSend,
@@ -484,11 +479,11 @@ func TestEmailService_SendOrganizationInvitationEmail(t *testing.T) {
 
 			s := &emailService{
 				baseService:  tt.fields.baseService(ctrl, tt.args.ctx),
-				client:       tt.fields.client(ctrl, tt.args.ctx, tt.fields.templatesDir, tt.args.token, tt.fields.smtpConf, tt.args.organization, tt.args.user),
+				client:       tt.fields.client(ctrl, tt.args.ctx, tt.fields.templatesDir, tt.args.token, tt.fields.smtpConf, tt.args.organizationID, tt.args.organizationName, tt.args.recipient),
 				templatesDir: tt.fields.templatesDir,
 				smtpConf:     tt.fields.smtpConf,
 			}
-			assert.ErrorIs(t, s.SendOrganizationInvitationEmail(tt.args.ctx, tt.args.organization, tt.args.user, tt.args.token), tt.wantErr)
+			assert.ErrorIs(t, s.SendOrganizationInvitationEmail(tt.args.ctx, tt.args.organizationID, tt.args.organizationName, tt.args.recipient, tt.args.token), tt.wantErr)
 		})
 	}
 }
@@ -657,13 +652,13 @@ func TestEmailService_SendSystemLicenseExpiryEmail(t *testing.T) {
 func TestEmailService_SendUserWelcomeEmail(t *testing.T) {
 	type fields struct {
 		baseService  func(ctrl *gomock.Controller, ctx context.Context) *baseService
-		client       func(ctrl *gomock.Controller, ctx context.Context, templatesDir string, smtpConf *config.SMTPConfig, user *model.User) EmailSender
+		client       func(ctrl *gomock.Controller, ctx context.Context, templatesDir string, smtpConf *config.SMTPConfig, recipient email.Recipient) EmailSender
 		templatesDir string
 		smtpConf     *config.SMTPConfig
 	}
 	type args struct {
-		ctx  context.Context
-		user *model.User
+		ctx       context.Context
+		recipient email.Recipient
 	}
 	tests := []struct {
 		name    string
@@ -686,15 +681,15 @@ func TestEmailService_SendUserWelcomeEmail(t *testing.T) {
 						tracer: tracer,
 					}
 				},
-				client: func(ctrl *gomock.Controller, ctx context.Context, templatesDir string, smtpConf *config.SMTPConfig, user *model.User) EmailSender {
+				client: func(ctrl *gomock.Controller, ctx context.Context, templatesDir string, smtpConf *config.SMTPConfig, recipient email.Recipient) EmailSender {
 					subject := "Welcome to Elemo"
 
 					template, err := email.NewTemplate(
 						path.Join(templatesDir, userWelcomeTemplate),
 						&email.UserWelcomeTemplateData{
 							Subject:      subject,
-							FirstName:    user.FirstName,
-							LastName:     user.LastName,
+							FirstName:    recipient.FirstName,
+							LastName:     recipient.LastName,
 							LoginURL:     fmt.Sprintf("%s/redirect?url=%s", smtpConf.ClientURL, url.QueryEscape(fmt.Sprintf("%s/auth/login", smtpConf.ClientURL))),
 							SupportEmail: smtpConf.SupportAddress,
 						},
@@ -702,7 +697,7 @@ func TestEmailService_SendUserWelcomeEmail(t *testing.T) {
 					require.NoError(t, err)
 
 					client := mock.NewEmailSender(ctrl)
-					client.EXPECT().SendEmail(ctx, subject, user.Email, matchTemplate(template)).Return(assert.AnError)
+					client.EXPECT().SendEmail(ctx, subject, recipient.Email, matchTemplate(template)).Return(assert.AnError)
 
 					return client
 				},
@@ -714,11 +709,10 @@ func TestEmailService_SendUserWelcomeEmail(t *testing.T) {
 			},
 			args: args{
 				ctx: context.Background(),
-				user: &model.User{
-					Username:  "test",
+				recipient: email.Recipient{
+					Email:     "test@example.com",
 					FirstName: "Test",
 					LastName:  "User",
-					Email:     "test@example.com",
 				},
 			},
 			wantErr: ErrEmailSend,
@@ -734,11 +728,11 @@ func TestEmailService_SendUserWelcomeEmail(t *testing.T) {
 
 			s := &emailService{
 				baseService:  tt.fields.baseService(ctrl, tt.args.ctx),
-				client:       tt.fields.client(ctrl, tt.args.ctx, tt.fields.templatesDir, tt.fields.smtpConf, tt.args.user),
+				client:       tt.fields.client(ctrl, tt.args.ctx, tt.fields.templatesDir, tt.fields.smtpConf, tt.args.recipient),
 				templatesDir: tt.fields.templatesDir,
 				smtpConf:     tt.fields.smtpConf,
 			}
-			assert.ErrorIs(t, s.SendUserWelcomeEmail(tt.args.ctx, tt.args.user), tt.wantErr)
+			assert.ErrorIs(t, s.SendUserWelcomeEmail(tt.args.ctx, tt.args.recipient), tt.wantErr)
 		})
 	}
 }

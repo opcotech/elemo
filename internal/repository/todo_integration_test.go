@@ -8,6 +8,7 @@ import (
 
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/convert"
+	"github.com/opcotech/elemo/internal/pkg/optional"
 	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/testutil"
 	testModel "github.com/opcotech/elemo/internal/testutil/model"
@@ -18,8 +19,8 @@ type TodoRepositoryIntegrationTestSuite struct {
 	testutil.ContainerIntegrationTestSuite
 	testutil.Neo4jContainerIntegrationTestSuite
 
-	testUser *model.User
-	todo     *model.Todo
+	testUser   *repository.User
+	createOpts repository.CreateTodoOpts
 }
 
 func (s *TodoRepositoryIntegrationTestSuite) SetupSuite() {
@@ -30,10 +31,11 @@ func (s *TodoRepositoryIntegrationTestSuite) SetupSuite() {
 }
 
 func (s *TodoRepositoryIntegrationTestSuite) SetupTest() {
-	s.testUser = testModel.NewUser()
-	s.Require().NoError(s.UserRepo.Create(context.Background(), s.testUser))
+	var err error
+	s.testUser, err = s.UserRepo.Create(context.Background(), testModel.NewCreateUserOpts())
+	s.Require().NoError(err)
 
-	s.todo = testModel.NewTodo(s.testUser.ID, s.testUser.ID)
+	s.createOpts = testModel.NewCreateTodoOpts(s.testUser.ID, s.testUser.ID)
 }
 
 func (s *TodoRepositoryIntegrationTestSuite) TearDownTest() {
@@ -45,80 +47,86 @@ func (s *TodoRepositoryIntegrationTestSuite) TearDownSuite() {
 }
 
 func (s *TodoRepositoryIntegrationTestSuite) TestCreate() {
-	s.Require().NoError(s.TodoRepo.Create(context.Background(), s.todo))
-	s.Assert().NotEqual(model.MustNewNilID(model.ResourceTypeTodo), s.todo.ID)
-	s.Assert().NotNil(s.todo.CreatedAt)
-	s.Assert().Nil(s.todo.UpdatedAt)
+	todo, err := s.TodoRepo.Create(context.Background(), s.createOpts)
+	s.Require().NoError(err)
+	s.Assert().NotEqual(model.MustNewNilID(model.ResourceTypeTodo), todo.ID)
+	s.Assert().NotNil(todo.CreatedAt)
+	s.Assert().Nil(todo.UpdatedAt)
 }
 
 func (s *TodoRepositoryIntegrationTestSuite) TestGet() {
-	s.Require().NoError(s.TodoRepo.Create(context.Background(), s.todo))
-
-	todo, err := s.TodoRepo.Get(context.Background(), s.todo.ID)
+	createdTodo, err := s.TodoRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 
-	s.Assert().Equal(s.todo.ID, todo.ID)
-	s.Assert().Equal(s.todo.Title, todo.Title)
-	s.Assert().Equal(s.todo.Description, todo.Description)
-	s.Assert().Equal(s.todo.CreatedBy, todo.CreatedBy)
-	s.Assert().Equal(s.todo.OwnedBy, todo.OwnedBy)
-	s.Assert().Equal(s.todo.Completed, todo.Completed)
-	s.Assert().WithinDuration(*s.todo.DueDate, *todo.DueDate, 100*time.Millisecond)
-	s.Assert().WithinDuration(*s.todo.CreatedAt, *todo.CreatedAt, 100*time.Millisecond)
+	todo, err := s.TodoRepo.Get(context.Background(), createdTodo.ID)
+	s.Require().NoError(err)
+
+	s.Assert().Equal(createdTodo.ID, todo.ID)
+	s.Assert().Equal(s.createOpts.Title, todo.Title)
+	s.Assert().Equal(s.createOpts.Description, todo.Description)
+	s.Assert().Equal(s.createOpts.CreatedBy, todo.CreatedBy)
+	s.Assert().Equal(s.createOpts.OwnedBy, todo.OwnedBy)
+	s.Assert().Equal(s.createOpts.Completed, todo.Completed)
+	s.Assert().WithinDuration(*s.createOpts.DueDate, *todo.DueDate, 100*time.Millisecond)
+	s.Assert().WithinDuration(*createdTodo.CreatedAt, *todo.CreatedAt, 100*time.Millisecond)
 	s.Assert().Nil(todo.UpdatedAt)
 }
 
 func (s *TodoRepositoryIntegrationTestSuite) TestGetByOwner() {
-	completedTodo := testModel.NewTodo(s.testUser.ID, s.testUser.ID)
-	completedTodo.Completed = true
+	completedOpts := s.createOpts
+	completedOpts.Completed = true
 
-	s.Require().NoError(s.TodoRepo.Create(context.Background(), completedTodo))
-	s.Require().NoError(s.TodoRepo.Create(context.Background(), s.todo))
+	_, err := s.TodoRepo.Create(context.Background(), completedOpts)
+	s.Require().NoError(err)
+	_, err = s.TodoRepo.Create(context.Background(), s.createOpts)
+	s.Require().NoError(err)
 
-	todos, err := s.TodoRepo.GetByOwner(context.Background(), s.todo.OwnedBy, 0, 10, nil)
+	todos, err := s.TodoRepo.GetByOwner(context.Background(), s.testUser.ID, 0, 10, nil)
 	s.Require().NoError(err)
 	s.Assert().Len(todos, 2)
 
-	todos, err = s.TodoRepo.GetByOwner(context.Background(), s.todo.OwnedBy, 0, 10, convert.ToPointer(false))
+	todos, err = s.TodoRepo.GetByOwner(context.Background(), s.testUser.ID, 0, 10, convert.ToPointer(false))
 	s.Require().NoError(err)
 	s.Assert().Len(todos, 1)
 
-	todos, err = s.TodoRepo.GetByOwner(context.Background(), s.todo.OwnedBy, 0, 10, convert.ToPointer(true))
+	todos, err = s.TodoRepo.GetByOwner(context.Background(), s.testUser.ID, 0, 10, convert.ToPointer(true))
 	s.Require().NoError(err)
 	s.Assert().Len(todos, 1)
 }
 
 func (s *TodoRepositoryIntegrationTestSuite) TestUpdate() {
-	s.Require().NoError(s.TodoRepo.Create(context.Background(), s.todo))
-
-	dueDate := time.Now().UTC().Add(1 * time.Hour)
-	patch := map[string]any{
-		"title":       "New title",
-		"description": "New description",
-		"due_date":    dueDate.Format(time.RFC3339Nano),
-		"completed":   true,
-	}
-
-	todo, err := s.TodoRepo.Update(context.Background(), s.todo.ID, patch)
+	createdTodo, err := s.TodoRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 
-	s.Assert().Equal(s.todo.ID, todo.ID)
-	s.Assert().Equal(patch["title"], todo.Title)
-	s.Assert().Equal(patch["description"], todo.Description)
-	s.Assert().Equal(s.todo.CreatedBy, todo.CreatedBy)
-	s.Assert().Equal(s.todo.OwnedBy, todo.OwnedBy)
+	dueDate := time.Now().UTC().Add(1 * time.Hour)
+	updateOpts := repository.UpdateTodoOpts{
+		Title:       optional.Some("New title"),
+		Description: optional.Some("New description"),
+		Completed:   optional.Some(true),
+		DueDate:     optional.Some(dueDate),
+	}
+
+	todo, err := s.TodoRepo.Update(context.Background(), createdTodo.ID, updateOpts)
+	s.Require().NoError(err)
+
+	s.Assert().Equal(createdTodo.ID, todo.ID)
+	s.Assert().Equal("New title", todo.Title)
+	s.Assert().Equal("New description", todo.Description)
+	s.Assert().Equal(createdTodo.CreatedBy, todo.CreatedBy)
+	s.Assert().Equal(createdTodo.OwnedBy, todo.OwnedBy)
 	s.Assert().True(todo.Completed)
 	s.Assert().WithinDuration(dueDate, *todo.DueDate, 100*time.Millisecond)
-	s.Assert().WithinDuration(*s.todo.CreatedAt, *todo.CreatedAt, 100*time.Millisecond)
+	s.Assert().WithinDuration(*createdTodo.CreatedAt, *todo.CreatedAt, 100*time.Millisecond)
 	s.Assert().NotNil(todo.UpdatedAt)
 }
 
 func (s *TodoRepositoryIntegrationTestSuite) TestDelete() {
-	s.Require().NoError(s.TodoRepo.Create(context.Background(), s.todo))
+	createdTodo, err := s.TodoRepo.Create(context.Background(), s.createOpts)
+	s.Require().NoError(err)
 
-	s.Require().NoError(s.TodoRepo.Delete(context.Background(), s.todo.ID))
+	s.Require().NoError(s.TodoRepo.Delete(context.Background(), createdTodo.ID))
 
-	_, err := s.TodoRepo.Get(context.Background(), s.todo.ID)
+	_, err = s.TodoRepo.Get(context.Background(), createdTodo.ID)
 	s.Assert().ErrorIs(err, repository.ErrNotFound)
 }
 
@@ -131,9 +139,9 @@ type CachedTodoRepositoryIntegrationTestSuite struct {
 	testutil.Neo4jContainerIntegrationTestSuite
 	testutil.RedisContainerIntegrationTestSuite
 
-	testUser *model.User
-	todo     *model.Todo
-	todoRepo *repository.RedisCachedTodoRepository
+	testUser   *repository.User
+	createOpts repository.CreateTodoOpts
+	todoRepo   *repository.RedisCachedTodoRepository
 }
 
 func (s *CachedTodoRepositoryIntegrationTestSuite) SetupSuite() {
@@ -148,10 +156,11 @@ func (s *CachedTodoRepositoryIntegrationTestSuite) SetupSuite() {
 }
 
 func (s *CachedTodoRepositoryIntegrationTestSuite) SetupTest() {
-	s.testUser = testModel.NewUser()
-	s.Require().NoError(s.UserRepo.Create(context.Background(), s.testUser))
+	var err error
+	s.testUser, err = s.UserRepo.Create(context.Background(), testModel.NewCreateUserOpts())
+	s.Require().NoError(err)
 
-	s.todo = testModel.NewTodo(s.testUser.ID, s.testUser.ID)
+	s.createOpts = testModel.NewCreateTodoOpts(s.testUser.ID, s.testUser.ID)
 	s.Require().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }
 
@@ -164,27 +173,29 @@ func (s *CachedTodoRepositoryIntegrationTestSuite) TearDownSuite() {
 }
 
 func (s *CachedTodoRepositoryIntegrationTestSuite) TestCreate() {
-	s.Require().NoError(s.todoRepo.Create(context.Background(), s.todo))
-	s.Assert().NotEqual(model.MustNewNilID(model.ResourceTypeTodo), s.todo.ID)
-	s.Assert().NotNil(s.todo.CreatedAt)
-	s.Assert().Nil(s.todo.UpdatedAt)
+	todo, err := s.todoRepo.Create(context.Background(), s.createOpts)
+	s.Require().NoError(err)
+	s.Assert().NotEqual(model.MustNewNilID(model.ResourceTypeTodo), todo.ID)
+	s.Assert().NotNil(todo.CreatedAt)
+	s.Assert().Nil(todo.UpdatedAt)
 
 	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }
 
 func (s *CachedTodoRepositoryIntegrationTestSuite) TestGet() {
-	s.Require().NoError(s.todoRepo.Create(context.Background(), s.todo))
-
-	original, err := s.TodoRepo.Get(context.Background(), s.todo.ID)
+	createdTodo, err := s.todoRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 
-	usingCache, err := s.todoRepo.Get(context.Background(), s.todo.ID)
+	original, err := s.TodoRepo.Get(context.Background(), createdTodo.ID)
+	s.Require().NoError(err)
+
+	usingCache, err := s.todoRepo.Get(context.Background(), createdTodo.ID)
 	s.Require().NoError(err)
 
 	s.Assert().Equal(original, usingCache)
 	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
 
-	cached, err := s.todoRepo.Get(context.Background(), s.todo.ID)
+	cached, err := s.todoRepo.Get(context.Background(), createdTodo.ID)
 	s.Require().NoError(err)
 
 	s.Assert().Equal(usingCache.ID, cached.ID)
@@ -192,64 +203,68 @@ func (s *CachedTodoRepositoryIntegrationTestSuite) TestGet() {
 }
 
 func (s *CachedTodoRepositoryIntegrationTestSuite) TestGetByOwner() {
-	completedTodo := testModel.NewTodo(s.testUser.ID, s.testUser.ID)
-	completedTodo.Completed = true
+	completedOpts := s.createOpts
+	completedOpts.Completed = true
 
-	s.Require().NoError(s.todoRepo.Create(context.Background(), completedTodo))
-	s.Require().NoError(s.todoRepo.Create(context.Background(), s.todo))
-
-	originalTodos, err := s.TodoRepo.GetByOwner(context.Background(), s.todo.OwnedBy, 0, 10, nil)
+	_, err := s.todoRepo.Create(context.Background(), completedOpts)
+	s.Require().NoError(err)
+	_, err = s.todoRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 
-	usingCacheTodos, err := s.todoRepo.GetByOwner(context.Background(), s.todo.OwnedBy, 0, 10, nil)
+	originalTodos, err := s.TodoRepo.GetByOwner(context.Background(), s.testUser.ID, 0, 10, nil)
+	s.Require().NoError(err)
+
+	usingCacheTodos, err := s.todoRepo.GetByOwner(context.Background(), s.testUser.ID, 0, 10, nil)
 	s.Require().NoError(err)
 
 	s.Assert().Equal(originalTodos, usingCacheTodos)
 	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
 
-	cachedTodos, err := s.todoRepo.GetByOwner(context.Background(), s.todo.OwnedBy, 0, 10, nil)
+	cachedTodos, err := s.todoRepo.GetByOwner(context.Background(), s.testUser.ID, 0, 10, nil)
 	s.Require().NoError(err)
 	s.Assert().Equal(len(usingCacheTodos), len(cachedTodos))
 }
 
 func (s *CachedTodoRepositoryIntegrationTestSuite) TestUpdate() {
-	s.Require().NoError(s.todoRepo.Create(context.Background(), s.todo))
-
-	dueDate := time.Now().UTC().Add(1 * time.Hour)
-	patch := map[string]any{
-		"title":       "New title",
-		"description": "New description",
-		"due_date":    dueDate.Format(time.RFC3339Nano),
-		"completed":   true,
-	}
-
-	todo, err := s.todoRepo.Update(context.Background(), s.todo.ID, patch)
+	createdTodo, err := s.todoRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 
-	s.Assert().Equal(s.todo.ID, todo.ID)
-	s.Assert().Equal(patch["title"], todo.Title)
-	s.Assert().Equal(patch["description"], todo.Description)
-	s.Assert().Equal(s.todo.CreatedBy, todo.CreatedBy)
-	s.Assert().Equal(s.todo.OwnedBy, todo.OwnedBy)
+	dueDate := time.Now().UTC().Add(1 * time.Hour)
+	updateOpts := repository.UpdateTodoOpts{
+		Title:       optional.Some("New title"),
+		Description: optional.Some("New description"),
+		Completed:   optional.Some(true),
+		DueDate:     optional.Some(dueDate),
+	}
+
+	todo, err := s.todoRepo.Update(context.Background(), createdTodo.ID, updateOpts)
+	s.Require().NoError(err)
+
+	s.Assert().Equal(createdTodo.ID, todo.ID)
+	s.Assert().Equal("New title", todo.Title)
+	s.Assert().Equal("New description", todo.Description)
+	s.Assert().Equal(createdTodo.CreatedBy, todo.CreatedBy)
+	s.Assert().Equal(createdTodo.OwnedBy, todo.OwnedBy)
 	s.Assert().True(todo.Completed)
 	s.Assert().WithinDuration(dueDate, *todo.DueDate, 100*time.Millisecond)
-	s.Assert().WithinDuration(*s.todo.CreatedAt, *todo.CreatedAt, 100*time.Millisecond)
+	s.Assert().WithinDuration(*createdTodo.CreatedAt, *todo.CreatedAt, 100*time.Millisecond)
 	s.Assert().NotNil(todo.UpdatedAt)
 
 	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
 }
 
 func (s *CachedTodoRepositoryIntegrationTestSuite) TestDelete() {
-	s.Require().NoError(s.todoRepo.Create(context.Background(), s.todo))
+	createdTodo, err := s.todoRepo.Create(context.Background(), s.createOpts)
+	s.Require().NoError(err)
 
-	_, err := s.todoRepo.Get(context.Background(), s.todo.ID)
+	_, err = s.todoRepo.Get(context.Background(), createdTodo.ID)
 	s.Require().NoError(err)
 
 	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 1)
 
-	s.Require().NoError(s.todoRepo.Delete(context.Background(), s.todo.ID))
+	s.Require().NoError(s.todoRepo.Delete(context.Background(), createdTodo.ID))
 
-	_, err = s.todoRepo.Get(context.Background(), s.todo.ID)
+	_, err = s.todoRepo.Get(context.Background(), createdTodo.ID)
 	s.Assert().ErrorIs(err, repository.ErrNotFound)
 
 	s.Assert().Len(s.GetKeys(&s.ContainerIntegrationTestSuite, "*"), 0)

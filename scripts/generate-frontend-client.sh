@@ -13,7 +13,7 @@ source "${ROOT_DIR}/scripts/common.sh";
 
 function generateAPIClient() {
     cd "${WEB_DIR}"
-    pnpm dlx @hey-api/openapi-ts@0.86
+    pnpm exec openapi-ts
     pnpm exec prettier --write "${PACKAGE_DIR}"
 }
 

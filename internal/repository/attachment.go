@@ -18,14 +18,35 @@ var (
 	ErrAttachmentUpdate = errors.New("failed to update attachment") // the attachment could not be updated
 )
 
-// AttachmentRepository is a repository for managing attachments.
-//
-//go:generate mockgen -source=attachment.go -destination=../testutil/mock/attachment_repo_gen.go -package=mock -mock_names "AttachmentRepository=AttachmentRepository"
+// Attachment represents an attachment persisted by the repository.
+type Attachment struct {
+	ID        model.ID   `json:"id"`
+	Name      string     `json:"name"`
+	FileID    string     `json:"file_id"`
+	CreatedBy model.ID   `json:"created_by"`
+	CreatedAt *time.Time `json:"created_at"`
+	UpdatedAt *time.Time `json:"updated_at"`
+}
+
+// CreateAttachmentOpts holds the data required to create an attachment.
+type CreateAttachmentOpts struct {
+	BelongsTo model.ID
+	Name      string
+	FileID    string
+	CreatedBy model.ID
+}
+
+// UpdateAttachmentOpts holds the fields that can be updated on an attachment.
+type UpdateAttachmentOpts struct {
+	Name string
+}
+
+//go:generate mockgen -source=attachment.go -destination=attachment_mock_gen.go -package=repository -mock_names "AttachmentRepository=MockAttachmentRepository"
 type AttachmentRepository interface {
-	Create(ctx context.Context, belongsTo model.ID, attachment *model.Attachment) error
-	Get(ctx context.Context, id model.ID) (*model.Attachment, error)
-	GetAllBelongsTo(ctx context.Context, belongsTo model.ID, offset, limit int) ([]*model.Attachment, error)
-	Update(ctx context.Context, id model.ID, name string) (*model.Attachment, error)
+	Create(ctx context.Context, opts CreateAttachmentOpts) (*Attachment, error)
+	Get(ctx context.Context, id model.ID) (*Attachment, error)
+	GetAllBelongsTo(ctx context.Context, belongsTo model.ID, offset, limit int) ([]*Attachment, error)
+	Update(ctx context.Context, id model.ID, opts UpdateAttachmentOpts) (*Attachment, error)
 	Delete(ctx context.Context, id model.ID) error
 }
 
@@ -34,9 +55,9 @@ type Neo4jAttachmentRepository struct {
 	*neo4jBaseRepository
 }
 
-func (r *Neo4jAttachmentRepository) scan(cp, op string) func(rec *neo4j.Record) (*model.Attachment, error) {
-	return func(rec *neo4j.Record) (*model.Attachment, error) {
-		attachment := new(model.Attachment)
+func (r *Neo4jAttachmentRepository) scan(cp, op string) func(rec *neo4j.Record) (*Attachment, error) {
+	return func(rec *neo4j.Record) (*Attachment, error) {
+		attachment := new(Attachment)
 
 		val, _, err := neo4j.GetRecordValue[neo4j.Node](rec, cp)
 		if err != nil {
@@ -55,34 +76,27 @@ func (r *Neo4jAttachmentRepository) scan(cp, op string) func(rec *neo4j.Record) 
 		attachment.ID, _ = model.NewIDFromString(val.GetProperties()["id"].(string), model.ResourceTypeAttachment.String())
 		attachment.CreatedBy, _ = model.NewIDFromString(createdBy, model.ResourceTypeUser.String())
 
-		if err := attachment.Validate(); err != nil {
-			return nil, err
-		}
-
 		return attachment, nil
 	}
 }
 
-func (r *Neo4jAttachmentRepository) Create(ctx context.Context, belongsTo model.ID, attachment *model.Attachment) error {
+func (r *Neo4jAttachmentRepository) Create(ctx context.Context, opts CreateAttachmentOpts) (*Attachment, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.AttachmentRepository/Create")
 	defer span.End()
 
-	if err := belongsTo.Validate(); err != nil {
-		return errors.Join(ErrAttachmentCreate, err)
+	createdAt := convert.ToPointer(time.Now().UTC())
+
+	attachment := &Attachment{
+		ID:        model.MustNewID(model.ResourceTypeAttachment),
+		Name:      opts.Name,
+		FileID:    opts.FileID,
+		CreatedBy: opts.CreatedBy,
+		CreatedAt: createdAt,
+		UpdatedAt: nil,
 	}
-
-	if err := attachment.Validate(); err != nil {
-		return errors.Join(ErrAttachmentCreate, err)
-	}
-
-	createdAt := time.Now().UTC()
-
-	attachment.ID = model.MustNewID(model.ResourceTypeAttachment)
-	attachment.CreatedAt = convert.ToPointer(createdAt)
-	attachment.UpdatedAt = nil
 
 	cypher := `
-	MATCH (b:` + belongsTo.Label() + ` {id: $belong_to_id})
+	MATCH (b:` + opts.BelongsTo.Label() + ` {id: $belong_to_id})
 	MATCH (o:` + attachment.CreatedBy.Label() + ` {id: $created_by_id})
 	CREATE
 		(a:` + attachment.ID.Label() + ` {
@@ -92,7 +106,7 @@ func (r *Neo4jAttachmentRepository) Create(ctx context.Context, belongsTo model.
 		(o)-[:` + EdgeKindCreated.String() + ` {id: $attachment_rel_id, created_at: datetime($created_at)}]->(a)`
 
 	params := map[string]any{
-		"belong_to_id":          belongsTo.String(),
+		"belong_to_id":          opts.BelongsTo.String(),
 		"has_attachment_rel_id": model.NewRawID(),
 		"created_by_id":         attachment.CreatedBy.String(),
 		"attachment_rel_id":     model.NewRawID(),
@@ -103,13 +117,13 @@ func (r *Neo4jAttachmentRepository) Create(ctx context.Context, belongsTo model.
 	}
 
 	if err := Neo4jExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
-		return errors.Join(ErrAttachmentCreate, err)
+		return nil, errors.Join(ErrAttachmentCreate, err)
 	}
 
-	return nil
+	return attachment, nil
 }
 
-func (r *Neo4jAttachmentRepository) Get(ctx context.Context, id model.ID) (*model.Attachment, error) {
+func (r *Neo4jAttachmentRepository) Get(ctx context.Context, id model.ID) (*Attachment, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.AttachmentRepository/Get")
 	defer span.End()
 
@@ -129,7 +143,7 @@ func (r *Neo4jAttachmentRepository) Get(ctx context.Context, id model.ID) (*mode
 	return doc, nil
 }
 
-func (r *Neo4jAttachmentRepository) GetAllBelongsTo(ctx context.Context, belongsTo model.ID, offset, limit int) ([]*model.Attachment, error) {
+func (r *Neo4jAttachmentRepository) GetAllBelongsTo(ctx context.Context, belongsTo model.ID, offset, limit int) ([]*Attachment, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.AttachmentRepository/GetAllBelongsTo")
 	defer span.End()
 
@@ -155,7 +169,7 @@ func (r *Neo4jAttachmentRepository) GetAllBelongsTo(ctx context.Context, belongs
 	return docs, nil
 }
 
-func (r *Neo4jAttachmentRepository) Update(ctx context.Context, id model.ID, name string) (*model.Attachment, error) {
+func (r *Neo4jAttachmentRepository) Update(ctx context.Context, id model.ID, opts UpdateAttachmentOpts) (*Attachment, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.AttachmentRepository/Update")
 	defer span.End()
 
@@ -168,7 +182,7 @@ func (r *Neo4jAttachmentRepository) Update(ctx context.Context, id model.ID, nam
 
 	params := map[string]any{
 		"id":   id.String(),
-		"name": name,
+		"name": opts.Name,
 	}
 
 	doc, err := Neo4jExecuteWriteAndReadSingle(ctx, r.db, cypher, params, r.scan("a", "o"))
@@ -244,20 +258,20 @@ type RedisCachedAttachmentRepository struct {
 	attachmentRepo AttachmentRepository
 }
 
-func (r *RedisCachedAttachmentRepository) Create(ctx context.Context, belongsTo model.ID, attachment *model.Attachment) error {
-	if err := clearAttachmentBelongsTo(ctx, r.cacheRepo, belongsTo); err != nil {
-		return err
+func (r *RedisCachedAttachmentRepository) Create(ctx context.Context, opts CreateAttachmentOpts) (*Attachment, error) {
+	if err := clearAttachmentBelongsTo(ctx, r.cacheRepo, opts.BelongsTo); err != nil {
+		return nil, err
 	}
 
 	if err := clearAttachmentAllCrossCache(ctx, r.cacheRepo); err != nil {
-		return err
+		return nil, err
 	}
 
-	return r.attachmentRepo.Create(ctx, belongsTo, attachment)
+	return r.attachmentRepo.Create(ctx, opts)
 }
 
-func (r *RedisCachedAttachmentRepository) Get(ctx context.Context, id model.ID) (*model.Attachment, error) {
-	var attachment *model.Attachment
+func (r *RedisCachedAttachmentRepository) Get(ctx context.Context, id model.ID) (*Attachment, error) {
+	var attachment *Attachment
 	var err error
 
 	key := composeCacheKey(model.ResourceTypeAttachment.String(), id.String())
@@ -280,8 +294,8 @@ func (r *RedisCachedAttachmentRepository) Get(ctx context.Context, id model.ID) 
 	return attachment, nil
 }
 
-func (r *RedisCachedAttachmentRepository) GetAllBelongsTo(ctx context.Context, belongsTo model.ID, offset, limit int) ([]*model.Attachment, error) {
-	var attachments []*model.Attachment
+func (r *RedisCachedAttachmentRepository) GetAllBelongsTo(ctx context.Context, belongsTo model.ID, offset, limit int) ([]*Attachment, error) {
+	var attachments []*Attachment
 	var err error
 
 	key := composeCacheKey(model.ResourceTypeAttachment.String(), "GetAllBelongsTo", belongsTo.String(), offset, limit)
@@ -304,11 +318,8 @@ func (r *RedisCachedAttachmentRepository) GetAllBelongsTo(ctx context.Context, b
 	return attachments, nil
 }
 
-func (r *RedisCachedAttachmentRepository) Update(ctx context.Context, id model.ID, name string) (*model.Attachment, error) {
-	var attachment *model.Attachment
-	var err error
-
-	attachment, err = r.attachmentRepo.Update(ctx, id, name)
+func (r *RedisCachedAttachmentRepository) Update(ctx context.Context, id model.ID, opts UpdateAttachmentOpts) (*Attachment, error) {
+	attachment, err := r.attachmentRepo.Update(ctx, id, opts)
 	if err != nil {
 		return nil, err
 	}

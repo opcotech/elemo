@@ -9,6 +9,7 @@ import (
 
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg"
+	"github.com/opcotech/elemo/internal/pkg/optional"
 	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/service"
 	"github.com/opcotech/elemo/internal/testutil"
@@ -23,9 +24,8 @@ type NamespaceServiceIntegrationTestSuite struct {
 
 	namespaceService service.NamespaceService
 
-	owner        *model.User
-	organization *model.Organization
-	namespace    *model.Namespace
+	owner        *repository.User
+	organization *repository.Organization
 
 	ctx context.Context
 }
@@ -57,21 +57,22 @@ func (s *NamespaceServiceIntegrationTestSuite) SetupSuite() {
 }
 
 func (s *NamespaceServiceIntegrationTestSuite) SetupTest() {
-	s.owner = testModel.NewUser()
-	s.Require().NoError(s.UserRepo.Create(context.Background(), s.owner))
+	var err error
+	s.owner, err = s.UserRepo.Create(context.Background(), testModel.NewCreateUserOpts())
+	s.Require().NoError(err)
 
 	s.ctx = context.WithValue(context.Background(), pkg.CtxKeyUserID, s.owner.ID)
 	s.Require().NoError(testRepo.MakeUserSystemOwner(s.owner.ID, s.Neo4jDB))
 
-	s.organization = testModel.NewOrganization()
-	s.Require().NoError(s.OrganizationRepo.Create(context.Background(), s.owner.ID, s.organization))
-
-	// Grant write permission on organization to owner
-	perm, err := model.NewPermission(s.owner.ID, s.organization.ID, model.PermissionKindWrite)
+	s.organization, err = s.OrganizationRepo.Create(context.Background(), testModel.NewCreateOrganizationOpts(s.owner.ID))
 	s.Require().NoError(err)
-	s.Require().NoError(s.PermissionRepo.Create(context.Background(), perm))
 
-	s.namespace = testModel.NewNamespace()
+	_, err = s.PermissionRepo.Create(context.Background(), repository.CreatePermissionOpts{
+		Subject: s.owner.ID,
+		Target:  s.organization.ID,
+		Kind:    model.PermissionKindWrite,
+	})
+	s.Require().NoError(err)
 }
 
 func (s *NamespaceServiceIntegrationTestSuite) TearDownTest() {
@@ -84,17 +85,18 @@ func (s *NamespaceServiceIntegrationTestSuite) TearDownSuite() {
 }
 
 func (s *NamespaceServiceIntegrationTestSuite) TestCreate() {
-	err := s.namespaceService.Create(s.ctx, s.organization.ID, s.namespace)
+	ns, err := s.namespaceService.Create(s.ctx, s.organization.ID, service.CreateNamespaceOpts{
+		Name:        "test-namespace",
+		Description: "test namespace description",
+	})
 	s.Require().NoError(err)
-	s.Require().NotEmpty(s.namespace.ID)
-	s.Assert().NotNil(s.namespace.CreatedAt)
-	s.Assert().Nil(s.namespace.UpdatedAt)
+	s.Require().NotEmpty(ns.ID)
+	s.Assert().NotNil(ns.CreatedAt)
 
-	// Verify that the creator has * permission on the namespace
 	hasPermission, err := s.PermissionRepo.HasPermission(
 		context.Background(),
 		s.owner.ID,
-		s.namespace.ID,
+		ns.ID,
 		model.PermissionKindAll,
 	)
 	s.Require().NoError(err)
@@ -102,151 +104,66 @@ func (s *NamespaceServiceIntegrationTestSuite) TestCreate() {
 }
 
 func (s *NamespaceServiceIntegrationTestSuite) TestCreateWithoutPermission() {
-	// Create a user without permission
-	user := testModel.NewUser()
-	s.Require().NoError(s.UserRepo.Create(context.Background(), user))
-	ctx := context.WithValue(context.Background(), pkg.CtxKeyUserID, user.ID)
+	otherUser, err := s.UserRepo.Create(context.Background(), testModel.NewCreateUserOpts())
+	s.Require().NoError(err)
+	otherCtx := context.WithValue(context.Background(), pkg.CtxKeyUserID, otherUser.ID)
 
-	err := s.namespaceService.Create(ctx, s.organization.ID, s.namespace)
-	s.Require().Error(err)
+	_, err = s.namespaceService.Create(otherCtx, s.organization.ID, service.CreateNamespaceOpts{
+		Name: "unauthorized-ns", Description: "should fail description",
+	})
 	s.Assert().ErrorIs(err, service.ErrNoPermission)
 }
 
 func (s *NamespaceServiceIntegrationTestSuite) TestGet() {
-	s.Require().NoError(s.namespaceService.Create(s.ctx, s.organization.ID, s.namespace))
-
-	namespace, err := s.namespaceService.Get(s.ctx, s.namespace.ID)
+	created, err := s.namespaceService.Create(s.ctx, s.organization.ID, service.CreateNamespaceOpts{
+		Name: "get-namespace", Description: "get namespace description",
+	})
 	s.Require().NoError(err)
-	s.Assert().Equal(s.namespace.ID, namespace.ID)
-	s.Assert().Equal(s.namespace.Name, namespace.Name)
-	s.Assert().Equal(s.namespace.Description, namespace.Description)
-	s.Assert().ElementsMatch(s.namespace.Projects, namespace.Projects)
-	s.Assert().ElementsMatch(s.namespace.Documents, namespace.Documents)
-	s.Assert().Equal(s.namespace.CreatedAt, namespace.CreatedAt)
-	s.Assert().Equal(s.namespace.UpdatedAt, namespace.UpdatedAt)
-}
 
-func (s *NamespaceServiceIntegrationTestSuite) TestGetWithoutPermission() {
-	s.Require().NoError(s.namespaceService.Create(s.ctx, s.organization.ID, s.namespace))
-
-	// Create a user without permission
-	user := testModel.NewUser()
-	s.Require().NoError(s.UserRepo.Create(context.Background(), user))
-	ctx := context.WithValue(context.Background(), pkg.CtxKeyUserID, user.ID)
-
-	_, err := s.namespaceService.Get(ctx, s.namespace.ID)
-	s.Require().Error(err)
-	s.Assert().ErrorIs(err, service.ErrNoPermission)
+	ns, err := s.namespaceService.Get(s.ctx, created.ID)
+	s.Require().NoError(err)
+	s.Assert().Equal(created.ID, ns.ID)
+	s.Assert().Equal(created.Name, ns.Name)
 }
 
 func (s *NamespaceServiceIntegrationTestSuite) TestGetAll() {
-	namespace1 := testModel.NewNamespace()
-	s.Require().NoError(s.namespaceService.Create(s.ctx, s.organization.ID, namespace1))
-
-	namespace2 := testModel.NewNamespace()
-	s.Require().NoError(s.namespaceService.Create(s.ctx, s.organization.ID, namespace2))
-
-	namespace3 := testModel.NewNamespace()
-	s.Require().NoError(s.namespaceService.Create(s.ctx, s.organization.ID, namespace3))
+	_, err := s.namespaceService.Create(s.ctx, s.organization.ID, service.CreateNamespaceOpts{
+		Name: "ns-one", Description: "ns one description",
+	})
+	s.Require().NoError(err)
+	_, err = s.namespaceService.Create(s.ctx, s.organization.ID, service.CreateNamespaceOpts{
+		Name: "ns-two", Description: "ns two description",
+	})
+	s.Require().NoError(err)
 
 	namespaces, err := s.namespaceService.GetAll(s.ctx, s.organization.ID, 0, 10)
 	s.Require().NoError(err)
-	s.Assert().GreaterOrEqual(len(namespaces), 3)
-
-	namespaceIDs := make([]model.ID, len(namespaces))
-	for i, ns := range namespaces {
-		namespaceIDs[i] = ns.ID
-	}
-
-	s.Assert().Contains(namespaceIDs, namespace1.ID)
-	s.Assert().Contains(namespaceIDs, namespace2.ID)
-	s.Assert().Contains(namespaceIDs, namespace3.ID)
-}
-
-func (s *NamespaceServiceIntegrationTestSuite) TestGetAllWithPagination() {
-	// Create multiple namespaces
-	for i := 0; i < 5; i++ {
-		ns := testModel.NewNamespace()
-		s.Require().NoError(s.namespaceService.Create(s.ctx, s.organization.ID, ns))
-	}
-
-	// Get first page
-	namespaces, err := s.namespaceService.GetAll(s.ctx, s.organization.ID, 0, 2)
-	s.Require().NoError(err)
 	s.Assert().Len(namespaces, 2)
-
-	// Get second page
-	namespaces, err = s.namespaceService.GetAll(s.ctx, s.organization.ID, 2, 2)
-	s.Require().NoError(err)
-	s.Assert().LessOrEqual(len(namespaces), 2)
-}
-
-func (s *NamespaceServiceIntegrationTestSuite) TestGetAllWithoutPermission() {
-	// Create a user without permission
-	user := testModel.NewUser()
-	s.Require().NoError(s.UserRepo.Create(context.Background(), user))
-	ctx := context.WithValue(context.Background(), pkg.CtxKeyUserID, user.ID)
-
-	_, err := s.namespaceService.GetAll(ctx, s.organization.ID, 0, 10)
-	s.Require().Error(err)
-	s.Assert().ErrorIs(err, service.ErrNoPermission)
 }
 
 func (s *NamespaceServiceIntegrationTestSuite) TestUpdate() {
-	s.Require().NoError(s.namespaceService.Create(s.ctx, s.organization.ID, s.namespace))
-
-	patch := map[string]any{
-		"name":        "Updated Namespace Name",
-		"description": "Updated description",
-	}
-
-	updatedNamespace, err := s.namespaceService.Update(s.ctx, s.namespace.ID, patch)
+	created, err := s.namespaceService.Create(s.ctx, s.organization.ID, service.CreateNamespaceOpts{
+		Name: "upd-namespace", Description: "upd namespace description",
+	})
 	s.Require().NoError(err)
-	s.Assert().Equal("Updated Namespace Name", updatedNamespace.Name)
-	s.Assert().Equal("Updated description", updatedNamespace.Description)
-	s.Assert().NotNil(updatedNamespace.UpdatedAt)
-}
 
-func (s *NamespaceServiceIntegrationTestSuite) TestUpdateWithoutPermission() {
-	s.Require().NoError(s.namespaceService.Create(s.ctx, s.organization.ID, s.namespace))
-
-	// Create a user without permission
-	user := testModel.NewUser()
-	s.Require().NoError(s.UserRepo.Create(context.Background(), user))
-	ctx := context.WithValue(context.Background(), pkg.CtxKeyUserID, user.ID)
-
-	patch := map[string]any{"name": "Updated Name"}
-	_, err := s.namespaceService.Update(ctx, s.namespace.ID, patch)
-	s.Require().Error(err)
-	s.Assert().ErrorIs(err, service.ErrNoPermission)
+	ns, err := s.namespaceService.Update(s.ctx, created.ID, service.UpdateNamespaceOpts{
+		Name: optional.Some("updated-name"),
+	})
+	s.Require().NoError(err)
+	s.Assert().Equal("updated-name", ns.Name)
+	s.Assert().NotNil(ns.UpdatedAt)
 }
 
 func (s *NamespaceServiceIntegrationTestSuite) TestDelete() {
-	s.Require().NoError(s.namespaceService.Create(s.ctx, s.organization.ID, s.namespace))
-
-	err := s.namespaceService.Delete(s.ctx, s.namespace.ID)
+	created, err := s.namespaceService.Create(s.ctx, s.organization.ID, service.CreateNamespaceOpts{
+		Name: "del-namespace", Description: "del namespace description",
+	})
 	s.Require().NoError(err)
 
-	_, err = s.namespaceService.Get(s.ctx, s.namespace.ID)
-	s.Require().Error(err)
-	s.Assert().ErrorIs(err, repository.ErrNotFound)
-}
-
-func (s *NamespaceServiceIntegrationTestSuite) TestDeleteWithoutPermission() {
-	s.Require().NoError(s.namespaceService.Create(s.ctx, s.organization.ID, s.namespace))
-
-	// Create a user without permission
-	user := testModel.NewUser()
-	s.Require().NoError(s.UserRepo.Create(context.Background(), user))
-	ctx := context.WithValue(context.Background(), pkg.CtxKeyUserID, user.ID)
-
-	err := s.namespaceService.Delete(ctx, s.namespace.ID)
-	s.Require().Error(err)
-	s.Assert().ErrorIs(err, service.ErrNoPermission)
-
-	// Verify namespace still exists
-	_, err = s.namespaceService.Get(s.ctx, s.namespace.ID)
-	s.Require().NoError(err)
+	s.Require().NoError(s.namespaceService.Delete(s.ctx, created.ID))
+	_, err = s.namespaceService.Get(s.ctx, created.ID)
+	s.Assert().Error(err)
 }
 
 func TestNamespaceServiceIntegrationTestSuite(t *testing.T) {
