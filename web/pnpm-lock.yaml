@@ -273,6 +273,9 @@ importers:
       prettier-plugin-tailwindcss:
         specifier: ^0.8.1
         version: 0.8.1(prettier@3.9.6)
+      srvx:
+        specifier: ^0.12.5
+        version: 0.12.5
       storybook:
         specifier: ^10.5.6
         version: 10.5.6(@types/react@19.2.18)(prettier@3.9.6)(react@19.2.8)
@@ -5256,6 +5259,11 @@ packages:
 
   srvx@0.11.22:
     resolution: {integrity: sha512-LqZxxBDMKuMAZzFzJnDCkFOrs9MZQZr0LvHiO/SuSZVdQaXD7xQ5UWTUxheJrQPve1qk9MG2B/yttUvJxw8egQ==}
+    engines: {node: '>=20.16.0'}
+    hasBin: true
+
+  srvx@0.12.5:
+    resolution: {integrity: sha512-IuvtDNQg5EIwv3c6dleyau7u8hCyGQ7D6+V/QM799Aud07z0wCUcurKLTRfyG33C8oUY+UWcVBFkfHMcbtmRLA==}
     engines: {node: '>=20.16.0'}
     hasBin: true
 
@@ -11205,6 +11213,8 @@ snapshots:
       - supports-color
 
   srvx@0.11.22: {}
+
+  srvx@0.12.5: {}
 
   stable-hash-x@0.2.0: {}
 
