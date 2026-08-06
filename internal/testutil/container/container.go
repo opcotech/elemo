@@ -130,12 +130,15 @@ func NewPgContainer(ctx context.Context, t *testing.T, name string) (testcontain
 	}
 
 	conf := &config.RelationalDatabaseConfig{
-		Host:           host,
-		Port:           int(port.Num()),
-		Username:       "elemo",
-		Password:       "pgsecret",
-		Database:       "elemo",
-		MaxConnections: 100,
+		Host:                  host,
+		Port:                  int(port.Num()),
+		Username:              "elemo",
+		Password:              "pgsecret",
+		Database:              "elemo",
+		MaxConnections:        100,
+		MaxConnectionLifetime: 300,
+		MaxConnectionIdleTime: 10,
+		MinConnections:        5,
 	}
 
 	return container, conf
