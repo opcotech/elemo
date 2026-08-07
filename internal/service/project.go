@@ -65,6 +65,8 @@ type UpdateProjectOpts struct {
 }
 
 // ProjectService serves the business logic of interacting with projects.
+//
+//go:generate go tool mockgen -destination=project_mock.go -package=service . ProjectService
 type ProjectService interface {
 	// Create creates a new project in a namespace. If the namespace does not
 	// exist, an error is returned.

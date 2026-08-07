@@ -287,6 +287,56 @@ func TestWithNamespaceRepository(t *testing.T) {
 	}
 }
 
+func TestWithProjectRepository(t *testing.T) {
+	type args struct {
+		projectRepo repository.ProjectRepository
+	}
+	tests := []struct {
+		name    string
+		argsFn  func(ctrl *gomock.Controller) args
+		want    func(ctrl *gomock.Controller) repository.ProjectRepository
+		wantErr bool
+	}{
+		{
+			name: "set the project repository for the baseService",
+			argsFn: func(ctrl *gomock.Controller) args {
+				return args{projectRepo: repository.NewMockProjectRepository(ctrl)}
+			},
+			want: func(ctrl *gomock.Controller) repository.ProjectRepository {
+				return repository.NewMockProjectRepository(ctrl)
+			},
+		},
+		{
+			name: "return an error if no project repository is provided",
+			argsFn: func(_ *gomock.Controller) args {
+				return args{projectRepo: nil}
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			var s baseService
+			args := tt.argsFn(ctrl)
+			err := WithProjectRepository(args.projectRepo)(&s)
+			if (err != nil) != tt.wantErr {
+				require.NoError(t, err)
+			}
+			if !tt.wantErr {
+				assert.Equal(t, tt.want(ctrl), s.projectRepo)
+			} else {
+				assert.ErrorIs(t, err, ErrNoProjectRepository)
+			}
+		})
+	}
+}
+
 func Test_newService(t *testing.T) {
 	type args struct {
 		opts []Option

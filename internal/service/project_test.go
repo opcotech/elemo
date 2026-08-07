@@ -419,6 +419,14 @@ func TestProjectService_Get(t *testing.T) {
 	projectID := model.MustNewID(model.ResourceTypeProject)
 	repoProject := testModel.NewRepositoryProject()
 	repoProject.ID = projectID
+	repoProject.Documents = []*repository.PartialDocument{
+		{
+			ID:        model.MustNewID(model.ResourceTypeDocument),
+			Name:      "Plan",
+			Excerpt:   "Overview",
+			CreatedBy: model.MustNewID(model.ResourceTypeUser),
+		},
+	}
 	want := projectFromRepository(repoProject)
 
 	type fields struct {
@@ -723,6 +731,14 @@ func TestProjectService_GetAll(t *testing.T) {
 	repoProjects := []*repository.Project{
 		testModel.NewRepositoryProject(),
 		testModel.NewRepositoryProject(),
+	}
+	repoProjects[0].Documents = []*repository.PartialDocument{
+		{
+			ID:        model.MustNewID(model.ResourceTypeDocument),
+			Name:      "Spec",
+			Excerpt:   "Details",
+			CreatedBy: model.MustNewID(model.ResourceTypeUser),
+		},
 	}
 	want := projectsFromRepository(repoProjects)
 
@@ -1305,4 +1321,23 @@ func TestProjectService_Delete(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestProjectFromRepository(t *testing.T) {
+	t.Parallel()
+
+	t.Run("nil project", func(t *testing.T) {
+		t.Parallel()
+		assert.Nil(t, projectFromRepository(nil))
+	})
+
+	t.Run("nil partial project", func(t *testing.T) {
+		t.Parallel()
+		assert.Nil(t, partialProjectFromRepository(nil))
+	})
+
+	t.Run("nil partial document", func(t *testing.T) {
+		t.Parallel()
+		assert.Nil(t, partialDocumentFromRepository(nil))
+	})
 }

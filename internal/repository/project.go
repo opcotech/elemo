@@ -240,7 +240,7 @@ func (r *Neo4jProjectRepository) Get(ctx context.Context, id model.ID) (*Project
 	OPTIONAL MATCH (d:` + model.ResourceTypeDocument.String() + `)-[:` + EdgeKindBelongsTo.String() + `]->(p)
 	OPTIONAL MATCH (p)-[:` + EdgeKindHasTeam.String() + `]->(t:` + model.ResourceTypeRole.String() + `)
 	OPTIONAL MATCH (p)<-[:` + EdgeKindBelongsTo.String() + `]-(i:` + model.ResourceTypeIssue.String() + `)
-	RETURN p, d, t, i`
+	RETURN p, collect(DISTINCT d) AS d, collect(DISTINCT t.id) AS t, collect(DISTINCT i.id) AS i`
 
 	params := map[string]any{
 		"id": id.String(),
@@ -263,7 +263,7 @@ func (r *Neo4jProjectRepository) GetByKey(ctx context.Context, key string) (*Pro
 	OPTIONAL MATCH (d:` + model.ResourceTypeDocument.String() + `)-[:` + EdgeKindBelongsTo.String() + `]->(p)
 	OPTIONAL MATCH (p)-[:` + EdgeKindHasTeam.String() + `]->(t:` + model.ResourceTypeRole.String() + `)
 	OPTIONAL MATCH (p)<-[:` + EdgeKindBelongsTo.String() + `]-(i:` + model.ResourceTypeIssue.String() + `)
-	RETURN p, d, t, i`
+	RETURN p, collect(DISTINCT d) AS d, collect(DISTINCT t.id) AS t, collect(DISTINCT i.id) AS i`
 
 	params := map[string]any{
 		"key": key,
@@ -286,7 +286,7 @@ func (r *Neo4jProjectRepository) GetAll(ctx context.Context, namespaceID model.I
 	OPTIONAL MATCH (d:` + model.ResourceTypeDocument.String() + `)-[:` + EdgeKindBelongsTo.String() + `]->(p)
 	OPTIONAL MATCH (p)-[:` + EdgeKindHasTeam.String() + `]->(t:` + model.ResourceTypeRole.String() + `)
 	OPTIONAL MATCH (p)<-[:` + EdgeKindBelongsTo.String() + `]-(i:` + model.ResourceTypeIssue.String() + `)
-	RETURN p, d, t, i
+	RETURN p, collect(DISTINCT d) AS d, collect(DISTINCT t.id) AS t, collect(DISTINCT i.id) AS i
 	ORDER BY p.created_at DESC
 	SKIP $offset LIMIT $limit`
 
@@ -315,7 +315,7 @@ func (r *Neo4jProjectRepository) Update(ctx context.Context, id model.ID, opts U
 	OPTIONAL MATCH (d:` + model.ResourceTypeDocument.String() + `)-[:` + EdgeKindBelongsTo.String() + `]->(p)
 	OPTIONAL MATCH (p)-[:` + EdgeKindHasTeam.String() + `]->(t:` + model.ResourceTypeRole.String() + `)
 	OPTIONAL MATCH (p)<-[:` + EdgeKindBelongsTo.String() + `]-(i:` + model.ResourceTypeIssue.String() + `)
-	RETURN p, d, t, i`
+	RETURN p, collect(DISTINCT d) AS d, collect(DISTINCT t.id) AS t, collect(DISTINCT i.id) AS i`
 
 	params := map[string]any{
 		"id":    id.String(),

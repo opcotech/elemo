@@ -400,6 +400,22 @@ func TestNamespaceService_Get(t *testing.T) {
 	namespaceID := model.MustNewID(model.ResourceTypeNamespace)
 	repoNamespace := testModel.NewRepositoryNamespace()
 	repoNamespace.ID = namespaceID
+	repoNamespace.Projects = []*repository.PartialProject{
+		{
+			ID:     model.MustNewID(model.ResourceTypeProject),
+			Key:    "ENG",
+			Name:   "Engineering",
+			Status: model.ProjectStatusActive,
+		},
+	}
+	repoNamespace.Documents = []*repository.PartialDocument{
+		{
+			ID:        model.MustNewID(model.ResourceTypeDocument),
+			Name:      "Plan",
+			Excerpt:   "Overview",
+			CreatedBy: model.MustNewID(model.ResourceTypeUser),
+		},
+	}
 	want := namespaceFromRepository(repoNamespace)
 
 	type fields struct {
@@ -553,6 +569,22 @@ func TestNamespaceService_GetAll(t *testing.T) {
 	repoNamespaces := []*repository.Namespace{
 		testModel.NewRepositoryNamespace(),
 		testModel.NewRepositoryNamespace(),
+	}
+	repoNamespaces[0].Projects = []*repository.PartialProject{
+		{
+			ID:     model.MustNewID(model.ResourceTypeProject),
+			Key:    "ENG",
+			Name:   "Engineering",
+			Status: model.ProjectStatusActive,
+		},
+	}
+	repoNamespaces[0].Documents = []*repository.PartialDocument{
+		{
+			ID:        model.MustNewID(model.ResourceTypeDocument),
+			Name:      "Plan",
+			Excerpt:   "Overview",
+			CreatedBy: model.MustNewID(model.ResourceTypeUser),
+		},
 	}
 	want := namespacesFromRepository(repoNamespaces)
 
@@ -1129,4 +1161,23 @@ func TestNamespaceService_Delete(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestNamespaceFromRepository(t *testing.T) {
+	t.Parallel()
+
+	t.Run("nil namespace", func(t *testing.T) {
+		t.Parallel()
+		assert.Nil(t, namespaceFromRepository(nil))
+	})
+
+	t.Run("nil partial project", func(t *testing.T) {
+		t.Parallel()
+		assert.Nil(t, partialProjectFromRepository(nil))
+	})
+
+	t.Run("nil partial document", func(t *testing.T) {
+		t.Parallel()
+		assert.Nil(t, partialDocumentFromRepository(nil))
+	})
 }

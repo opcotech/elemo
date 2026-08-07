@@ -58,16 +58,33 @@ func (s *NamespaceRepositoryIntegrationTestSuite) TestCreate() {
 func (s *NamespaceRepositoryIntegrationTestSuite) TestGet() {
 	created, err := s.NamespaceRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
+	project, err := s.ProjectRepo.Create(context.Background(), testModel.NewCreateProjectOpts(created.ID))
+	s.Require().NoError(err)
+	doc, err := s.DocumentRepo.Create(context.Background(), testModel.NewCreateDocumentOpts(created.ID, s.testUser.ID))
+	s.Require().NoError(err)
+
 	ns, err := s.NamespaceRepo.Get(context.Background(), created.ID)
 	s.Require().NoError(err)
 	s.Assert().Equal(created.ID, ns.ID)
 	s.Assert().Equal(s.createOpts.Name, ns.Name)
 	s.Assert().Equal(s.createOpts.Description, ns.Description)
 	s.Assert().WithinDuration(*created.CreatedAt, *ns.CreatedAt, 100*time.Millisecond)
+	s.Require().Len(ns.Projects, 1)
+	s.Assert().Equal(project.ID, ns.Projects[0].ID)
+	s.Assert().Equal(project.Key, ns.Projects[0].Key)
+	s.Assert().Equal(project.Name, ns.Projects[0].Name)
+	s.Require().Len(ns.Documents, 1)
+	s.Assert().Equal(doc.ID, ns.Documents[0].ID)
+	s.Assert().Equal(doc.Name, ns.Documents[0].Name)
+	s.Assert().Equal(doc.Excerpt, ns.Documents[0].Excerpt)
 }
 
 func (s *NamespaceRepositoryIntegrationTestSuite) TestGetAll() {
-	_, err := s.NamespaceRepo.Create(context.Background(), s.createOpts)
+	created, err := s.NamespaceRepo.Create(context.Background(), s.createOpts)
+	s.Require().NoError(err)
+	project, err := s.ProjectRepo.Create(context.Background(), testModel.NewCreateProjectOpts(created.ID))
+	s.Require().NoError(err)
+	doc, err := s.DocumentRepo.Create(context.Background(), testModel.NewCreateDocumentOpts(created.ID, s.testUser.ID))
 	s.Require().NoError(err)
 	_, err = s.NamespaceRepo.Create(context.Background(), testModel.NewCreateNamespaceOpts(s.testUser.ID, s.testOrg.ID))
 	s.Require().NoError(err)
@@ -77,6 +94,19 @@ func (s *NamespaceRepositoryIntegrationTestSuite) TestGetAll() {
 	namespaces, err := s.NamespaceRepo.GetAll(context.Background(), s.testOrg.ID, 0, 10)
 	s.Require().NoError(err)
 	s.Assert().Len(namespaces, 3)
+
+	var withRelated *repository.Namespace
+	for _, ns := range namespaces {
+		if ns.ID == created.ID {
+			withRelated = ns
+			break
+		}
+	}
+	s.Require().NotNil(withRelated)
+	s.Require().Len(withRelated.Projects, 1)
+	s.Assert().Equal(project.ID, withRelated.Projects[0].ID)
+	s.Require().Len(withRelated.Documents, 1)
+	s.Assert().Equal(doc.ID, withRelated.Documents[0].ID)
 
 	namespaces, err = s.NamespaceRepo.GetAll(context.Background(), s.testOrg.ID, 1, 2)
 	s.Require().NoError(err)
