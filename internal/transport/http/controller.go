@@ -194,6 +194,19 @@ func WithNamespaceService(namespaceService service.NamespaceService) ControllerO
 	}
 }
 
+// WithProjectService sets the project service for the controller.
+func WithProjectService(projectService service.ProjectService) ControllerOption {
+	return func(c *baseController) error {
+		if projectService == nil {
+			return ErrNoProjectService
+		}
+
+		c.projectService = projectService
+
+		return nil
+	}
+}
+
 // baseController defines the dependencies that are required to be injected
 // into a controller.
 type baseController struct {
@@ -205,6 +218,7 @@ type baseController struct {
 
 	organizationService service.OrganizationService
 	namespaceService    service.NamespaceService
+	projectService      service.ProjectService
 	roleService         service.RoleService
 	userService         service.UserService
 	emailService        service.EmailService

@@ -58,11 +58,11 @@ export const zOrganization = z.object({
 export const zProjectStatus = z.enum(["active", "pending"]);
 
 /**
- * NamespaceProject
+ * PartialProject
  *
- * A project in a namespace with limited information.
+ * A simplified project that can be used in lists.
  */
-export const zNamespaceProject = z.object({
+export const zPartialProject = z.object({
   id: z.string(),
   key: z.string().min(3).max(6),
   name: z.string().min(3).max(120),
@@ -72,30 +72,11 @@ export const zNamespaceProject = z.object({
 });
 
 /**
- * Project
+ * PartialDocument
  *
- * A project in a namespace.
+ * A simplified document that can be used in listings.
  */
-export const zProject = z.object({
-  id: z.string(),
-  key: z.string().min(3).max(6),
-  name: z.string().min(3).max(120),
-  description: z.string().min(10).max(500).nullish(),
-  logo: z.url().max(2000).nullish(),
-  status: zProjectStatus,
-  teams: z.array(z.string()),
-  documents: z.array(z.string()),
-  issues: z.array(z.string()),
-  created_at: z.iso.datetime(),
-  updated_at: z.iso.datetime().nullable(),
-});
-
-/**
- * NamespaceDocument
- *
- * A document in a namespace with limited information.
- */
-export const zNamespaceDocument = z.object({
+export const zPartialDocument = z.object({
   id: z.string(),
   name: z.string().min(3).max(120),
   excerpt: z.string().min(10).max(500).nullish(),
@@ -112,8 +93,27 @@ export const zNamespace = z.object({
   id: z.string(),
   name: z.string().min(3).max(120),
   description: z.string().min(5).max(500).nullish(),
-  projects: z.array(zNamespaceProject),
-  documents: z.array(zNamespaceDocument),
+  projects: z.array(zPartialProject),
+  documents: z.array(zPartialDocument),
+  created_at: z.iso.datetime(),
+  updated_at: z.iso.datetime().nullable(),
+});
+
+/**
+ * Project
+ *
+ * A project in a namespace.
+ */
+export const zProject = z.object({
+  id: z.string(),
+  key: z.string().min(3).max(6),
+  name: z.string().min(3).max(120),
+  description: z.string().min(10).max(500).nullish(),
+  logo: z.url().max(2000).nullish(),
+  status: zProjectStatus,
+  teams: z.array(z.string()),
+  documents: z.array(zPartialDocument),
+  issues: z.array(z.string()),
   created_at: z.iso.datetime(),
   updated_at: z.iso.datetime().nullable(),
 });

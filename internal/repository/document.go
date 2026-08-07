@@ -19,6 +19,15 @@ var (
 	ErrDocumentUpdate = errors.New("failed to update document") // the document could not be updated
 )
 
+// PartialDocument represents a simplified document that can be used in list views.
+type PartialDocument struct {
+	ID        model.ID   `json:"id"`
+	Name      string     `json:"name"`
+	Excerpt   string     `json:"excerpt"`
+	CreatedBy model.ID   `json:"created_by"`
+	CreatedAt *time.Time `json:"created_at"`
+}
+
 // Document represents a document persisted by the repository.
 type Document struct {
 	ID          model.ID   `json:"id"`
@@ -65,6 +74,55 @@ func (o UpdateDocumentOpts) patch() map[string]any {
 	}
 
 	return p
+}
+
+// scanPartialDocuments scans the record into partial documents.
+func scanPartialDocuments(record *neo4j.Record, key string) ([]*PartialDocument, error) {
+	documentsVal, err := Neo4jParseValueFromRecord[[]any](record, key)
+	if err != nil {
+		documentsVal = []any{}
+	}
+
+	documents := make([]*PartialDocument, 0, len(documentsVal))
+	for _, dVal := range documentsVal {
+		if dVal == nil {
+			return nil, err
+		}
+		dNode, ok := dVal.(neo4j.Node)
+		if !ok {
+			return nil, err
+		}
+
+		documentID, err := model.NewIDFromString(dNode.GetProperties()["id"].(string), model.ResourceTypeDocument.String())
+		if err != nil {
+			return nil, err
+		}
+
+		var tempDocument struct {
+			Name      string     `json:"name"`
+			Excerpt   string     `json:"excerpt"`
+			CreatedBy string     `json:"created_by"`
+			CreatedAt *time.Time `json:"created_at"`
+		}
+		if err := Neo4jScanIntoStruct(&dNode, &tempDocument, []string{"id"}); err != nil {
+			return nil, err
+		}
+
+		createdBy, err := model.NewIDFromString(tempDocument.CreatedBy, model.ResourceTypeUser.String())
+		if err != nil {
+			return nil, err
+		}
+
+		documents = append(documents, &PartialDocument{
+			ID:        documentID,
+			Name:      tempDocument.Name,
+			Excerpt:   tempDocument.Excerpt,
+			CreatedBy: createdBy,
+			CreatedAt: tempDocument.CreatedAt,
+		})
+	}
+
+	return documents, nil
 }
 
 //go:generate go tool mockgen -source=document.go -destination=document_mock_gen.go -package=repository -mock_names "DocumentRepository=MockDocumentRepository"

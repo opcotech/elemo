@@ -25,8 +25,8 @@ func NewRepositoryNamespace() *repository.Namespace {
 		ID:          model.MustNewID(model.ResourceTypeNamespace),
 		Name:        pkg.GenerateRandomString(10),
 		Description: pkg.GenerateRandomString(10),
-		Projects:    make([]*repository.NamespaceProject, 0),
-		Documents:   make([]*repository.NamespaceDocument, 0),
+		Projects:    make([]*repository.PartialProject, 0),
+		Documents:   make([]*repository.PartialDocument, 0),
 		CreatedAt:   convert.ToPointer(time.Now().UTC()),
 	}
 }

@@ -155,6 +155,18 @@ func WithNamespaceRepository(namespaceRepo repository.NamespaceRepository) Optio
 	}
 }
 
+// WithProjectRepository sets the project repository for the baseService.
+func WithProjectRepository(projectRepo repository.ProjectRepository) Option {
+	return func(s *baseService) error {
+		if projectRepo == nil {
+			return ErrNoProjectRepository
+		}
+
+		s.projectRepo = projectRepo
+		return nil
+	}
+}
+
 // baseService defines the dependencies that are required to interact with the
 // core functionality.
 type baseService struct {
@@ -163,6 +175,7 @@ type baseService struct {
 
 	organizationRepo repository.OrganizationRepository
 	namespaceRepo    repository.NamespaceRepository
+	projectRepo      repository.ProjectRepository
 	roleRepo         repository.RoleRepository
 	todoRepo         repository.TodoRepository
 	userRepo         repository.UserRepository

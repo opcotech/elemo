@@ -418,13 +418,13 @@ components:
           description: Projects in the namespace.
           uniqueItems: true
           items:
-            $ref: "#/components/schemas/NamespaceProject"
+            $ref: "#/components/schemas/PartialProject"
         documents:
           type: array
           description: Documents in the namespace.
           uniqueItems: true
           items:
-            $ref: "#/components/schemas/NamespaceDocument"
+            $ref: "#/components/schemas/PartialDocument"
         created_at:
           type: string
           format: date-time
@@ -441,10 +441,10 @@ components:
         - documents
         - created_at
         - updated_at
-    NamespaceProject:
-      title: NamespaceProject
+    PartialProject:
+      title: PartialProject
       type: object
-      description: A project in a namespace with limited information.
+      description: A simplified project that can be used in lists.
       x-examples:
         example:
           id: 9bsv0s46s6s002p9ltq0
@@ -506,7 +506,11 @@ components:
           teams:
             - 9bsv0s46s6s002p9ltq0
           documents:
-            - 9bsv0s46s6s002p9ltq0
+            - id: 9bsv0s46s6s002p9ltq0
+              name: Project Plan
+              excerpt: Overview of the project plan
+              created_by: 9bsv0s46s6s002p9ltq0
+              created_at: "2023-01-01T00:00:00Z"
           issues:
             - 9bsv0s46s6s002p9ltq0
           created_at: "2023-01-01T00:00:00Z"
@@ -553,11 +557,10 @@ components:
             example: 9bsv0s46s6s002p9ltq0
         documents:
           type: array
-          description: IDs of the documents in the project.
+          description: Documents in the project.
           uniqueItems: true
           items:
-            type: string
-            example: 9bsv0s46s6s002p9ltq0
+            $ref: "#/components/schemas/PartialDocument"
         issues:
           type: array
           description: IDs of the issues in the project.
@@ -584,10 +587,10 @@ components:
         - issues
         - created_at
         - updated_at
-    NamespaceDocument:
-      title: NamespaceDocument
+    PartialDocument:
+      title: PartialDocument
       type: object
-      description: A document in a namespace with limited information.
+      description: A simplified document that can be used in listings.
       x-examples:
         example:
           id: 9bsv0s46s6s002p9ltq0

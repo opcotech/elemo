@@ -225,6 +225,28 @@ var startServerCmd = &cobra.Command{
 			}
 		}
 
+		var projectRepo repository.ProjectRepository
+		{
+			repo, err := repository.NewNeo4jProjectRepository(
+				repository.WithNeo4jDatabase(graphDB),
+				repository.WithNeo4jRepositoryLogger(logger.Named("project_repository")),
+				repository.WithNeo4jRepositoryTracer(tracer),
+			)
+			if err != nil {
+				logger.Fatal(context.Background(), "failed to initialize project repository", slog.Any("error", err))
+			}
+
+			projectRepo, err = repository.NewCachedProjectRepository(
+				repo,
+				repository.WithRedisDatabase(cacheDB),
+				repository.WithRedisRepositoryLogger(logger.Named("cached_project_repository")),
+				repository.WithRedisRepositoryTracer(tracer),
+			)
+			if err != nil {
+				logger.Fatal(context.Background(), "failed to initialize cached project repository", slog.Any("error", err))
+			}
+		}
+
 		var notificationRepo repository.NotificationRepository
 		{
 			repo, err := repository.NewNotificationRepository(
@@ -351,6 +373,17 @@ var startServerCmd = &cobra.Command{
 			logger.Fatal(context.Background(), "failed to initialize namespace service", slog.Any("error", err))
 		}
 
+		projectService, err := service.NewProjectService(
+			service.WithProjectRepository(projectRepo),
+			service.WithPermissionService(permissionService),
+			service.WithLicenseService(licenseService),
+			service.WithLogger(logger.Named("project_service")),
+			service.WithTracer(tracer),
+		)
+		if err != nil {
+			logger.Fatal(context.Background(), "failed to initialize project service", slog.Any("error", err))
+		}
+
 		organizationService, err := service.NewOrganizationService(
 			service.WithOrganizationRepository(organizationRepo),
 			service.WithUserRepository(userRepo),
@@ -377,6 +410,7 @@ var startServerCmd = &cobra.Command{
 			elemoHttp.WithAuthProvider(authProvider),
 			elemoHttp.WithOrganizationService(organizationService),
 			elemoHttp.WithNamespaceService(namespaceService),
+			elemoHttp.WithProjectService(projectService),
 			elemoHttp.WithRoleService(roleService),
 			elemoHttp.WithUserService(userService),
 			elemoHttp.WithTodoService(todoService),
