@@ -182,7 +182,7 @@ func (s *PermissionRepositoryIntegrationTestSuite) TestGetBySubjectAndTargetSyst
 	)
 	cypher := `
 	MATCH (s:` + s.testUser.ID.Label() + ` {id: $subject})
-	MATCH (rt:` + model.ResourceTypeResourceType.String() + ` {id: $target_label})
+	MATCH (rt:` + model.ResourceTypeKind.String() + ` {id: $target_label})
 	MERGE (s)-[p:` + repository.EdgeKindHasPermission.String() + ` {id: $id, kind: $kind}]->(rt)
 	ON CREATE SET p.created_at = datetime($created_at)
 	`

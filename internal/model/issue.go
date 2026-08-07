@@ -8,10 +8,10 @@ import (
 )
 
 const (
-	IssueKindEpic  IssueKind = iota + 1 // an epic
-	IssueKindStory                      // a story
-	IssueKindTask                       // a task
-	IssueKindBug                        // a bug
+	IssueKindEpic  IssueKind = iota + 1 // epic
+	IssueKindStory                      // story
+	IssueKindTask                       // task
+	IssueKindBug                        // bug
 )
 
 const (
@@ -52,27 +52,27 @@ const (
 
 // IssueKind represents a kind of issue.
 //
-//go:generate go tool enumer -type=IssueKind -trimprefix=IssueKind -text -transform=snake -output=issue_kind_gen.go
+//go:generate go tool enumer -type=IssueKind -text -transform=noop -linecomment -output=issue_kind_gen.go
 type IssueKind uint8
 
 // IssueStatus represents the status of an issue.
 //
-//go:generate go tool enumer -type=IssueStatus -trimprefix=IssueStatus -text -transform=snake -output=issue_status_gen.go
+//go:generate go tool enumer -type=IssueStatus -text -transform=noop -linecomment -output=issue_status_gen.go
 type IssueStatus uint8
 
 // IssueResolution represents the resolution of an issue.
 //
-//go:generate go tool enumer -type=IssueResolution -trimprefix=IssueResolution -text -transform=snake -output=issue_resolution_gen.go
+//go:generate go tool enumer -type=IssueResolution -text -transform=noop -linecomment -output=issue_resolution_gen.go
 type IssueResolution uint8
 
 // IssuePriority represents the priority of an issue.
 //
-//go:generate go tool enumer -type=IssuePriority -trimprefix=IssuePriority -text -transform=snake -output=issue_priority_gen.go
+//go:generate go tool enumer -type=IssuePriority -text -transform=noop -linecomment -output=issue_priority_gen.go
 type IssuePriority uint8
 
 // IssueRelationKind represents the kind of relation between two issues.
 //
-//go:generate go tool enumer -type=IssueRelationKind -trimprefix=IssueRelationKind -text -transform=snake -output=issue_relation_kind_gen.go
+//go:generate go tool enumer -type=IssueRelationKind -text -transform=noop -linecomment -output=issue_relation_kind_gen.go
 type IssueRelationKind uint8
 
 // IssueRelation represents a relation between two issues.

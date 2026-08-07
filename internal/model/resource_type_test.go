@@ -13,7 +13,7 @@ func TestResourceType_String(t *testing.T) {
 		rt   ResourceType
 		want string
 	}{
-		{"ResourceType", ResourceTypeResourceType, "ResourceType"},
+		{"ResourceType", ResourceTypeKind, "ResourceType"},
 		{"Assignment", ResourceTypeAssignment, "Assignment"},
 		{"Attachment", ResourceTypeAttachment, "Attachment"},
 		{"Comment", ResourceTypeComment, "Comment"},
@@ -45,7 +45,7 @@ func TestResourceType_MarshalText(t *testing.T) {
 		want    []byte
 		wantErr error
 	}{
-		{"ResourceType", ResourceTypeResourceType, []byte("ResourceType"), nil},
+		{"ResourceType", ResourceTypeKind, []byte("ResourceType"), nil},
 		{"Assignment", ResourceTypeAssignment, []byte("Assignment"), nil},
 		{"Attachment", ResourceTypeAttachment, []byte("Attachment"), nil},
 		{"Comment", ResourceTypeComment, []byte("Comment"), nil},
@@ -61,8 +61,8 @@ func TestResourceType_MarshalText(t *testing.T) {
 		{"Todo", ResourceTypeTodo, []byte("Todo"), nil},
 		{"User", ResourceTypeUser, []byte("User"), nil},
 		{"UserToken", ResourceTypeUserToken, []byte("UserToken"), nil},
-		{"type high", ResourceType(100), nil, ErrInvalidResourceType},
-		{"type low", ResourceType(0), nil, ErrInvalidResourceType},
+		{"type high", ResourceType(100), []byte("ResourceType(100)"), nil},
+		{"type low", ResourceType(0), []byte("ResourceType(0)"), nil},
 	}
 	for _, tt := range tests {
 		tt := tt
@@ -70,10 +70,7 @@ func TestResourceType_MarshalText(t *testing.T) {
 			t.Parallel()
 			got, err := tt.rt.MarshalText()
 			require.ErrorIs(t, err, tt.wantErr)
-
-			if tt.wantErr == nil {
-				assert.Equal(t, tt.want, got)
-			}
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
@@ -83,25 +80,25 @@ func TestResourceType_UnmarshalText(t *testing.T) {
 		name    string
 		text    []byte
 		want    ResourceType
-		wantErr error
+		wantErr bool
 	}{
-		{"ResourceType", []byte("ResourceType"), ResourceTypeResourceType, nil},
-		{"Assignment", []byte("Assignment"), ResourceTypeAssignment, nil},
-		{"Attachment", []byte("Attachment"), ResourceTypeAttachment, nil},
-		{"Comment", []byte("Comment"), ResourceTypeComment, nil},
-		{"Document", []byte("Document"), ResourceTypeDocument, nil},
-		{"Issue", []byte("Issue"), ResourceTypeIssue, nil},
-		{"IssueRelation", []byte("IssueRelation"), ResourceTypeIssueRelation, nil},
-		{"Label", []byte("Label"), ResourceTypeLabel, nil},
-		{"Namespace", []byte("Namespace"), ResourceTypeNamespace, nil},
-		{"Notification", []byte("Notification"), ResourceTypeNotification, nil},
-		{"Organization", []byte("Organization"), ResourceTypeOrganization, nil},
-		{"Project", []byte("Project"), ResourceTypeProject, nil},
-		{"Role", []byte("Role"), ResourceTypeRole, nil},
-		{"Todo", []byte("Todo"), ResourceTypeTodo, nil},
-		{"User", []byte("User"), ResourceTypeUser, nil},
-		{"UserToken", []byte("UserToken"), ResourceTypeUserToken, nil},
-		{"invalid", []byte("invalid"), 0, ErrInvalidResourceType},
+		{"ResourceType", []byte("ResourceType"), ResourceTypeKind, false},
+		{"Assignment", []byte("Assignment"), ResourceTypeAssignment, false},
+		{"Attachment", []byte("Attachment"), ResourceTypeAttachment, false},
+		{"Comment", []byte("Comment"), ResourceTypeComment, false},
+		{"Document", []byte("Document"), ResourceTypeDocument, false},
+		{"Issue", []byte("Issue"), ResourceTypeIssue, false},
+		{"IssueRelation", []byte("IssueRelation"), ResourceTypeIssueRelation, false},
+		{"Label", []byte("Label"), ResourceTypeLabel, false},
+		{"Namespace", []byte("Namespace"), ResourceTypeNamespace, false},
+		{"Notification", []byte("Notification"), ResourceTypeNotification, false},
+		{"Organization", []byte("Organization"), ResourceTypeOrganization, false},
+		{"Project", []byte("Project"), ResourceTypeProject, false},
+		{"Role", []byte("Role"), ResourceTypeRole, false},
+		{"Todo", []byte("Todo"), ResourceTypeTodo, false},
+		{"User", []byte("User"), ResourceTypeUser, false},
+		{"UserToken", []byte("UserToken"), ResourceTypeUserToken, false},
+		{"invalid", []byte("invalid"), 0, true},
 	}
 	for _, tt := range tests {
 		tt := tt
@@ -109,9 +106,10 @@ func TestResourceType_UnmarshalText(t *testing.T) {
 			t.Parallel()
 			var rt ResourceType
 			err := rt.UnmarshalText(tt.text)
-			require.ErrorIs(t, err, tt.wantErr)
-
-			if tt.wantErr == nil {
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				require.NoError(t, err)
 				assert.Equal(t, tt.want, rt)
 			}
 		})

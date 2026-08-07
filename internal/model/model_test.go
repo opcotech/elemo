@@ -64,7 +64,7 @@ func TestID_Label(t *testing.T) {
 				inner: xid.NilID(),
 				label: ResourceType(0),
 			},
-			want: "",
+			want: "ResourceType(0)",
 		},
 		{
 			name: "with Type",

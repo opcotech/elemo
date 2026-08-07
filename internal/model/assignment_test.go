@@ -34,8 +34,8 @@ func TestAssignmentKind_MarshalText(t *testing.T) {
 	}{
 		{"assignee", AssignmentKindAssignee, []byte("assignee"), nil},
 		{"reviewer", AssignmentKindReviewer, []byte("reviewer"), nil},
-		{"kind high", AssignmentKind(100), nil, ErrInvalidAssignmentKind},
-		{"kind low", AssignmentKind(0), nil, ErrInvalidAssignmentKind},
+		{"kind high", AssignmentKind(100), []byte("AssignmentKind(100)"), nil},
+		{"kind low", AssignmentKind(0), []byte("AssignmentKind(0)"), nil},
 	}
 	for _, tt := range tests {
 		tt := tt
@@ -43,10 +43,7 @@ func TestAssignmentKind_MarshalText(t *testing.T) {
 			t.Parallel()
 			gotText, err := tt.a.MarshalText()
 			assert.ErrorIs(t, err, tt.wantErr)
-
-			if tt.wantErr == nil {
-				assert.Equal(t, tt.wantText, gotText)
-			}
+			assert.Equal(t, tt.wantText, gotText)
 		})
 	}
 }
@@ -57,19 +54,24 @@ func TestAssignmentKind_UnmarshalText(t *testing.T) {
 		a       *AssignmentKind
 		text    []byte
 		want    AssignmentKind
-		wantErr error
+		wantErr bool
 	}{
-		{"assignee", new(AssignmentKind), []byte("assignee"), AssignmentKindAssignee, nil},
-		{"reviewer", new(AssignmentKind), []byte("reviewer"), AssignmentKindReviewer, nil},
-		{"kind high", new(AssignmentKind), []byte("100"), AssignmentKind(0), ErrInvalidAssignmentKind},
-		{"kind low", new(AssignmentKind), []byte("0"), AssignmentKind(0), ErrInvalidAssignmentKind},
+		{"assignee", new(AssignmentKind), []byte("assignee"), AssignmentKindAssignee, false},
+		{"reviewer", new(AssignmentKind), []byte("reviewer"), AssignmentKindReviewer, false},
+		{"kind high", new(AssignmentKind), []byte("100"), AssignmentKind(0), true},
+		{"kind low", new(AssignmentKind), []byte("0"), AssignmentKind(0), true},
 	}
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			err := tt.a.UnmarshalText(tt.text)
-			assert.ErrorIs(t, err, tt.wantErr)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.want, *tt.a)
+			}
 		})
 	}
 }

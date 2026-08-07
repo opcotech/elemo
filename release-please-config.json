@@ -32,7 +32,7 @@
         {
           "type": "yaml",
           "path": "api/openapi/openapi.yaml",
-          "yamlpath": "$.info.version"
+          "jsonpath": "$.info.version"
         }
       ]
     }

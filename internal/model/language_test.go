@@ -216,8 +216,8 @@ func TestLanguage_MarshalText(t *testing.T) {
 	}{
 		{"aa", LanguageAA, []byte("aa"), false},
 		{"ab", LanguageAB, []byte("ab"), false},
-		{"code high", Language(255), nil, true},
-		{"code low", Language(0), nil, true},
+		{"code high", Language(255), []byte("Language(255)"), false},
+		{"code low", Language(0), []byte("Language(0)"), false},
 	}
 	for _, tt := range tests {
 		tt := tt

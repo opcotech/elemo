@@ -40,8 +40,8 @@ func TestIssueKind_MarshalText(t *testing.T) {
 		{"Story", IssueKindStory, []byte("story"), nil},
 		{"Task", IssueKindTask, []byte("task"), nil},
 		{"Bug", IssueKindBug, []byte("bug"), nil},
-		{"kind high", IssueKind(100), nil, ErrInvalidIssueKind},
-		{"kind low", IssueKind(0), nil, ErrInvalidIssueKind},
+		{"kind high", IssueKind(100), []byte("IssueKind(100)"), nil},
+		{"kind low", IssueKind(0), []byte("IssueKind(0)"), nil},
 	}
 	for _, tt := range tests {
 		tt := tt
@@ -49,10 +49,7 @@ func TestIssueKind_MarshalText(t *testing.T) {
 			t.Parallel()
 			gotText, err := tt.k.MarshalText()
 			require.ErrorIs(t, err, tt.wantErr)
-
-			if tt.wantErr == nil {
-				assert.Equal(t, tt.wantText, gotText)
-			}
+			assert.Equal(t, tt.wantText, gotText)
 		})
 	}
 }
@@ -65,21 +62,25 @@ func TestIssueKind_UnmarshalText(t *testing.T) {
 		name    string
 		k       IssueKind
 		args    args
-		wantErr error
+		wantErr bool
 	}{
-		{"Epic", IssueKindEpic, args{[]byte("epic")}, nil},
-		{"Story", IssueKindStory, args{[]byte("story")}, nil},
-		{"Task", IssueKindTask, args{[]byte("task")}, nil},
-		{"Bug", IssueKindBug, args{[]byte("bug")}, nil},
-		{"kind high", IssueKind(100), args{[]byte("")}, ErrInvalidIssueKind},
-		{"kind low", IssueKind(0), args{[]byte("")}, ErrInvalidIssueKind},
+		{"Epic", IssueKindEpic, args{[]byte("epic")}, false},
+		{"Story", IssueKindStory, args{[]byte("story")}, false},
+		{"Task", IssueKindTask, args{[]byte("task")}, false},
+		{"Bug", IssueKindBug, args{[]byte("bug")}, false},
+		{"kind high", IssueKind(100), args{[]byte("")}, true},
+		{"kind low", IssueKind(0), args{[]byte("")}, true},
 	}
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			err := tt.k.UnmarshalText(tt.args.text)
-			assert.ErrorIs(t, err, tt.wantErr)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
 		})
 	}
 }
@@ -115,8 +116,8 @@ func TestIssuePriority_MarshalText(t *testing.T) {
 		{"High", IssuePriorityHigh, []byte("high"), nil},
 		{"Medium", IssuePriorityMedium, []byte("medium"), nil},
 		{"Low", IssuePriorityLow, []byte("low"), nil},
-		{"priority high", IssuePriority(100), nil, ErrInvalidIssuePriority},
-		{"priority low", IssuePriority(0), nil, ErrInvalidIssuePriority},
+		{"priority high", IssuePriority(100), []byte("IssuePriority(100)"), nil},
+		{"priority low", IssuePriority(0), []byte("IssuePriority(0)"), nil},
 	}
 	for _, tt := range tests {
 		tt := tt
@@ -124,10 +125,7 @@ func TestIssuePriority_MarshalText(t *testing.T) {
 			t.Parallel()
 			gotText, err := tt.p.MarshalText()
 			require.ErrorIs(t, err, tt.wantErr)
-
-			if tt.wantErr == nil {
-				assert.Equal(t, tt.wantText, gotText)
-			}
+			assert.Equal(t, tt.wantText, gotText)
 		})
 	}
 }
@@ -140,21 +138,25 @@ func TestIssuePriority_UnmarshalText(t *testing.T) {
 		name    string
 		p       IssuePriority
 		args    args
-		wantErr error
+		wantErr bool
 	}{
-		{"Critical", IssuePriorityCritical, args{[]byte("high")}, nil},
-		{"High", IssuePriorityHigh, args{[]byte("high")}, nil},
-		{"Medium", IssuePriorityMedium, args{[]byte("medium")}, nil},
-		{"Low", IssuePriorityLow, args{[]byte("low")}, nil},
-		{"priority high", IssuePriority(100), args{[]byte("")}, ErrInvalidIssuePriority},
-		{"priority low", IssuePriority(0), args{[]byte("")}, ErrInvalidIssuePriority},
+		{"Critical", IssuePriorityCritical, args{[]byte("high")}, false},
+		{"High", IssuePriorityHigh, args{[]byte("high")}, false},
+		{"Medium", IssuePriorityMedium, args{[]byte("medium")}, false},
+		{"Low", IssuePriorityLow, args{[]byte("low")}, false},
+		{"priority high", IssuePriority(100), args{[]byte("")}, true},
+		{"priority low", IssuePriority(0), args{[]byte("")}, true},
 	}
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			err := tt.p.UnmarshalText(tt.args.text)
-			assert.ErrorIs(t, err, tt.wantErr)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
 		})
 	}
 }
@@ -196,8 +198,8 @@ func TestIssueRelationKind_MarshalText(t *testing.T) {
 		{"duplicates", IssueRelationKindDuplicates, []byte("duplicates"), nil},
 		{"related to", IssueRelationKindRelatedTo, []byte("related to"), nil},
 		{"subtask of", IssueRelationKindSubtaskOf, []byte("subtask of"), nil},
-		{"kind high", IssueRelationKind(100), nil, ErrInvalidIssueRelationKind},
-		{"kind low", IssueRelationKind(0), nil, ErrInvalidIssueRelationKind},
+		{"kind high", IssueRelationKind(100), []byte("IssueRelationKind(100)"), nil},
+		{"kind low", IssueRelationKind(0), []byte("IssueRelationKind(0)"), nil},
 	}
 	for _, tt := range tests {
 		tt := tt
@@ -205,10 +207,7 @@ func TestIssueRelationKind_MarshalText(t *testing.T) {
 			t.Parallel()
 			gotText, err := tt.r.MarshalText()
 			require.ErrorIs(t, err, tt.wantErr)
-
-			if tt.wantErr == nil {
-				assert.Equal(t, tt.wantText, gotText)
-			}
+			assert.Equal(t, tt.wantText, gotText)
 		})
 	}
 }
@@ -221,24 +220,28 @@ func TestIssueRelationKind_UnmarshalText(t *testing.T) {
 		name    string
 		r       IssueRelationKind
 		args    args
-		wantErr error
+		wantErr bool
 	}{
-		{"blocked by", IssueRelationKindBlockedBy, args{[]byte("blocked by")}, nil},
-		{"blocks", IssueRelationKindBlocks, args{[]byte("blocks")}, nil},
-		{"depends on", IssueRelationKindDependsOn, args{[]byte("depends on")}, nil},
-		{"duplicated by", IssueRelationKindDuplicatedBy, args{[]byte("duplicated by")}, nil},
-		{"duplicates", IssueRelationKindDuplicates, args{[]byte("duplicates")}, nil},
-		{"related to", IssueRelationKindRelatedTo, args{[]byte("related to")}, nil},
-		{"subtask of", IssueRelationKindSubtaskOf, args{[]byte("subtask of")}, nil},
-		{"kind high", IssueRelationKind(100), args{[]byte("kind high")}, ErrInvalidIssueRelationKind},
-		{"kind low", IssueRelationKind(0), args{[]byte("kind low")}, ErrInvalidIssueRelationKind},
+		{"blocked by", IssueRelationKindBlockedBy, args{[]byte("blocked by")}, false},
+		{"blocks", IssueRelationKindBlocks, args{[]byte("blocks")}, false},
+		{"depends on", IssueRelationKindDependsOn, args{[]byte("depends on")}, false},
+		{"duplicated by", IssueRelationKindDuplicatedBy, args{[]byte("duplicated by")}, false},
+		{"duplicates", IssueRelationKindDuplicates, args{[]byte("duplicates")}, false},
+		{"related to", IssueRelationKindRelatedTo, args{[]byte("related to")}, false},
+		{"subtask of", IssueRelationKindSubtaskOf, args{[]byte("subtask of")}, false},
+		{"kind high", IssueRelationKind(100), args{[]byte("kind high")}, true},
+		{"kind low", IssueRelationKind(0), args{[]byte("kind low")}, true},
 	}
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			err := tt.r.UnmarshalText(tt.args.text)
-			assert.ErrorIs(t, err, tt.wantErr)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
 		})
 	}
 }
@@ -280,8 +283,8 @@ func TestIssueResolution_MarshalText(t *testing.T) {
 		{"invalid", IssueResolutionInvalid, []byte("invalid"), nil},
 		{"incomplete", IssueResolutionIncomplete, []byte("incomplete"), nil},
 		{"cannot reproduce", IssueResolutionCannotReproduce, []byte("cannot reproduce"), nil},
-		{"resolution high", IssueResolution(100), []byte(""), ErrInvalidIssueResolution},
-		{"resolution low", IssueResolution(0), []byte(""), ErrInvalidIssueResolution},
+		{"resolution high", IssueResolution(100), []byte("IssueResolution(100)"), nil},
+		{"resolution low", IssueResolution(0), []byte("IssueResolution(0)"), nil},
 	}
 	for _, tt := range tests {
 		tt := tt
@@ -289,10 +292,7 @@ func TestIssueResolution_MarshalText(t *testing.T) {
 			t.Parallel()
 			gotText, err := tt.r.MarshalText()
 			require.ErrorIs(t, err, tt.wantErr)
-
-			if tt.wantErr == nil {
-				assert.Equal(t, tt.wantText, gotText)
-			}
+			assert.Equal(t, tt.wantText, gotText)
 		})
 	}
 }
@@ -305,24 +305,28 @@ func TestIssueResolution_UnmarshalText(t *testing.T) {
 		name    string
 		r       IssueResolution
 		args    args
-		wantErr error
+		wantErr bool
 	}{
-		{"none", IssueResolutionNone, args{[]byte("none")}, nil},
-		{"fixed", IssueResolutionFixed, args{[]byte("fixed")}, nil},
-		{"duplicate", IssueResolutionDuplicate, args{[]byte("duplicate")}, nil},
-		{"won't fix", IssueResolutionWontFix, args{[]byte("won't fix")}, nil},
-		{"invalid", IssueResolutionInvalid, args{[]byte("invalid")}, nil},
-		{"incomplete", IssueResolutionIncomplete, args{[]byte("incomplete")}, nil},
-		{"cannot reproduce", IssueResolutionCannotReproduce, args{[]byte("cannot reproduce")}, nil},
-		{"resolution high", IssueResolution(100), args{[]byte("resolution high")}, ErrInvalidIssueResolution},
-		{"resolution low", IssueResolution(0), args{[]byte("resolution low")}, ErrInvalidIssueResolution},
+		{"none", IssueResolutionNone, args{[]byte("none")}, false},
+		{"fixed", IssueResolutionFixed, args{[]byte("fixed")}, false},
+		{"duplicate", IssueResolutionDuplicate, args{[]byte("duplicate")}, false},
+		{"won't fix", IssueResolutionWontFix, args{[]byte("won't fix")}, false},
+		{"invalid", IssueResolutionInvalid, args{[]byte("invalid")}, false},
+		{"incomplete", IssueResolutionIncomplete, args{[]byte("incomplete")}, false},
+		{"cannot reproduce", IssueResolutionCannotReproduce, args{[]byte("cannot reproduce")}, false},
+		{"resolution high", IssueResolution(100), args{[]byte("resolution high")}, true},
+		{"resolution low", IssueResolution(0), args{[]byte("resolution low")}, true},
 	}
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			err := tt.r.UnmarshalText(tt.args.text)
-			assert.ErrorIs(t, err, tt.wantErr)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
 		})
 	}
 }
@@ -362,8 +366,8 @@ func TestIssueStatus_MarshalText(t *testing.T) {
 		{"review", IssueStatusReview, []byte("review"), nil},
 		{"done", IssueStatusDone, []byte("done"), nil},
 		{"closed", IssueStatusClosed, []byte("closed"), nil},
-		{"status high", IssueStatus(100), []byte(""), ErrInvalidIssueStatus},
-		{"status low", IssueStatus(0), []byte(""), ErrInvalidIssueStatus},
+		{"status high", IssueStatus(100), []byte("IssueStatus(100)"), nil},
+		{"status low", IssueStatus(0), []byte("IssueStatus(0)"), nil},
 	}
 	for _, tt := range tests {
 		tt := tt
@@ -371,10 +375,7 @@ func TestIssueStatus_MarshalText(t *testing.T) {
 			t.Parallel()
 			gotText, err := tt.s.MarshalText()
 			require.ErrorIs(t, err, tt.wantErr)
-
-			if tt.wantErr == nil {
-				assert.Equal(t, tt.wantText, gotText)
-			}
+			assert.Equal(t, tt.wantText, gotText)
 		})
 	}
 }
@@ -387,23 +388,27 @@ func TestIssueStatus_UnmarshalText(t *testing.T) {
 		name    string
 		s       IssueStatus
 		args    args
-		wantErr error
+		wantErr bool
 	}{
-		{"open", IssueStatusOpen, args{[]byte("open")}, nil},
-		{"in progress", IssueStatusInProgress, args{[]byte("in progress")}, nil},
-		{"blocked", IssueStatusBlocked, args{[]byte("blocked")}, nil},
-		{"review", IssueStatusReview, args{[]byte("review")}, nil},
-		{"done", IssueStatusDone, args{[]byte("done")}, nil},
-		{"closed", IssueStatusClosed, args{[]byte("closed")}, nil},
-		{"status high", IssueStatus(100), args{[]byte("status high")}, ErrInvalidIssueStatus},
-		{"status low", IssueStatus(0), args{[]byte("status low")}, ErrInvalidIssueStatus},
+		{"open", IssueStatusOpen, args{[]byte("open")}, false},
+		{"in progress", IssueStatusInProgress, args{[]byte("in progress")}, false},
+		{"blocked", IssueStatusBlocked, args{[]byte("blocked")}, false},
+		{"review", IssueStatusReview, args{[]byte("review")}, false},
+		{"done", IssueStatusDone, args{[]byte("done")}, false},
+		{"closed", IssueStatusClosed, args{[]byte("closed")}, false},
+		{"status high", IssueStatus(100), args{[]byte("status high")}, true},
+		{"status low", IssueStatus(0), args{[]byte("status low")}, true},
 	}
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			err := tt.s.UnmarshalText(tt.args.text)
-			assert.ErrorIs(t, err, tt.wantErr)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
 		})
 	}
 }

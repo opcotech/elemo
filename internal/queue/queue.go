@@ -12,11 +12,11 @@ const (
 )
 
 const (
-	TaskTypeSystemHealthCheck   TaskType = iota + 1 // Health check task type.
-	TaskTypeSystemLicenseExpiry                     // License expiry task type.
+	TaskTypeSystemHealthCheck   TaskType = iota + 1 // system:health_check
+	TaskTypeSystemLicenseExpiry                     // system:license_expiry
 )
 
 // TaskType is the type for system tasks.
 //
-//go:generate go tool enumer -type=TaskType -trimprefix=TaskType -transform=snake -output=queue_task_type_gen.go
+//go:generate go tool enumer -type=TaskType -transform=noop -linecomment -output=queue_task_type_gen.go
 type TaskType uint8

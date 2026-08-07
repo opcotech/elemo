@@ -28,7 +28,8 @@ const spinnerVariants = cva("animate-spin motion-reduce:animate-none", {
 });
 
 export interface SpinnerProps
-  extends React.HTMLAttributes<Omit<HTMLDivElement, "children">>,
+  extends
+    React.HTMLAttributes<Omit<HTMLDivElement, "children">>,
     VariantProps<typeof spinnerVariants> {}
 
 function Spinner({ className, variant, size, ...props }: SpinnerProps) {

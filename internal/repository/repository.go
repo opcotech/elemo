@@ -29,24 +29,24 @@ import (
 )
 
 const (
-	EdgeKindAssignedTo    EdgeKind = iota + 1 // a user is assigned to a resource
-	EdgeKindBelongsTo                         // a resource belongs to another
-	EdgeKindCommented                         // a user commented a resource
-	EdgeKindCreated                           // a user created a resource
-	EdgeKindHasAttachment                     // a resource has an attachment
-	EdgeKindHasComment                        // a resource has a comment
-	EdgeKindHasLabel                          // a resource is labeled by a label
-	EdgeKindHasNamespace                      // an organization has a namespace
-	EdgeKindHasPermission                     // a subject has permission on a resource
-	EdgeKindHasProject                        // a namespace has a project
-	EdgeKindHasTeam                           // an organization or project has a team
-	EdgeKindInvited                           // a user invited another user
-	EdgeKindInvitedTo                         // a user is invited to an organization
-	EdgeKindKindOf                            // a resource is a kind of another
-	EdgeKindMemberOf                          // a user is a member of a team
-	EdgeKindRelatedTo                         // a resource is related to another
-	EdgeKindSpeaks                            // a user speaks a language
-	EdgeKindWatches                           // a user watches a resource
+	EdgeKindAssignedTo    EdgeKind = iota + 1 // ASSIGNED_TO
+	EdgeKindBelongsTo                         // BELONGS_TO
+	EdgeKindCommented                         // COMMENTED
+	EdgeKindCreated                           // CREATED
+	EdgeKindHasAttachment                     // HAS_ATTACHMENT
+	EdgeKindHasComment                        // HAS_COMMENT
+	EdgeKindHasLabel                          // HAS_LABEL
+	EdgeKindHasNamespace                      // HAS_NAMESPACE
+	EdgeKindHasPermission                     // HAS_PERMISSION
+	EdgeKindHasProject                        // HAS_PROJECT
+	EdgeKindHasTeam                           // HAS_TEAM
+	EdgeKindInvited                           // INVITED
+	EdgeKindInvitedTo                         // INVITED_TO
+	EdgeKindKindOf                            // KIND_OF
+	EdgeKindMemberOf                          // MEMBER_OF
+	EdgeKindRelatedTo                         // RELATED_TO
+	EdgeKindSpeaks                            // SPEAKS
+	EdgeKindWatches                           // WATCHES
 )
 
 var (
@@ -64,7 +64,7 @@ var (
 
 // EdgeKind is the kind of relation between two entities.
 //
-//go:generate go tool enumer -type=EdgeKind -trimprefix=EdgeKind -transform=snake-upper -output=repository_edge_kind_gen.go
+//go:generate go tool enumer -type=EdgeKind -transform=noop -linecomment -output=repository_edge_kind_gen.go
 type EdgeKind uint8
 
 // boltLogger implements Neo4j's logger interface.

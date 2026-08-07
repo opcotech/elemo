@@ -9,9 +9,9 @@ const (
 )
 
 const (
-	HealthStatusUnknown   HealthStatus = iota // component is in an unknown state
-	HealthStatusHealthy                       // component is healthy
-	HealthStatusUnhealthy                     // component is unhealthy
+	HealthStatusUnknown   HealthStatus = iota // unknown
+	HealthStatusHealthy                       // healthy
+	HealthStatusUnhealthy                     // unhealthy
 )
 
 // HealthCheckComponent represents a component of the application.
@@ -19,7 +19,7 @@ type HealthCheckComponent string
 
 // HealthStatus is the status of a component.
 //
-//go:generate go tool enumer -type=HealthStatus -trimprefix=HealthStatus -text -transform=snake -output=system_health_status_gen.go
+//go:generate go tool enumer -type=HealthStatus -text -transform=noop -linecomment -output=system_health_status_gen.go
 type HealthStatus uint8
 
 // VersionInfo represents the version information of the application.

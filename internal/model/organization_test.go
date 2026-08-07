@@ -42,8 +42,8 @@ func TestOrganizationStatus_MarshalText(t *testing.T) {
 	}{
 		{"active", OrganizationStatusActive, []byte("active"), false},
 		{"deleted", OrganizationStatusDeleted, []byte("deleted"), false},
-		{"status high", OrganizationStatus(255), nil, true},
-		{"status low", OrganizationStatus(0), nil, true},
+		{"status high", OrganizationStatus(255), []byte("OrganizationStatus(255)"), false},
+		{"status low", OrganizationStatus(0), []byte("OrganizationStatus(0)"), false},
 	}
 	for _, tt := range tests {
 		tt := tt
