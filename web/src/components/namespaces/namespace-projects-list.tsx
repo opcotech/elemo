@@ -13,7 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import type { NamespaceProject } from "@/lib/api";
+import type { PartialProject } from "@/lib/api";
 
 function NamespaceProjectsListSkeleton() {
   return (
@@ -49,7 +49,7 @@ function NamespaceProjectsListSkeleton() {
 }
 
 interface NamespaceProjectsListProps {
-  projects: NamespaceProject[];
+  projects: PartialProject[];
   isLoading: boolean;
   error: unknown;
 }

@@ -12,7 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import type { NamespaceDocument } from "@/lib/api";
+import type { PartialDocument } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
 
 function NamespaceDocumentsListSkeleton() {
@@ -45,7 +45,7 @@ function NamespaceDocumentsListSkeleton() {
 }
 
 interface NamespaceDocumentsListProps {
-  documents: NamespaceDocument[];
+  documents: PartialDocument[];
   isLoading: boolean;
   error: unknown;
 }

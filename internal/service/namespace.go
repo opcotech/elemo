@@ -13,32 +13,13 @@ import (
 	"github.com/opcotech/elemo/internal/repository"
 )
 
-// NamespaceProject represents a simplified project within a namespace.
-type NamespaceProject struct {
-	ID          model.ID
-	Key         string
-	Name        string
-	Description string
-	Logo        string
-	Status      model.ProjectStatus
-}
-
-// NamespaceDocument represents a simplified document within a namespace.
-type NamespaceDocument struct {
-	ID        model.ID
-	Name      string
-	Excerpt   string
-	CreatedBy model.ID
-	CreatedAt *time.Time
-}
-
 // Namespace represents a namespace returned by the service.
 type Namespace struct {
 	ID          model.ID
 	Name        string
 	Description string
-	Projects    []*NamespaceProject
-	Documents   []*NamespaceDocument
+	Projects    []*PartialProject
+	Documents   []*PartialDocument
 	CreatedAt   *time.Time
 	UpdatedAt   *time.Time
 }
@@ -65,6 +46,8 @@ type UpdateNamespaceOpts struct {
 }
 
 // NamespaceService serves the business logic of interacting with namespaces.
+//
+//go:generate go tool mockgen -destination=namespace_mock_gen.go -package=service -mock_names NamespaceService=MockNamespaceService . NamespaceService
 type NamespaceService interface {
 	// Create creates a new namespace in an organization. If the organization
 	// does not exist, an error is returned.
@@ -90,25 +73,11 @@ type namespaceService struct {
 	*baseService
 }
 
-func namespaceProjectFromRepository(p *repository.NamespaceProject) *NamespaceProject {
-	if p == nil {
-		return nil
-	}
-	return &NamespaceProject{
-		ID:          p.ID,
-		Key:         p.Key,
-		Name:        p.Name,
-		Description: p.Description,
-		Logo:        p.Logo,
-		Status:      p.Status,
-	}
-}
-
-func namespaceDocumentFromRepository(d *repository.NamespaceDocument) *NamespaceDocument {
+func partialDocumentFromRepository(d *repository.PartialDocument) *PartialDocument {
 	if d == nil {
 		return nil
 	}
-	return &NamespaceDocument{
+	return &PartialDocument{
 		ID:        d.ID,
 		Name:      d.Name,
 		Excerpt:   d.Excerpt,
@@ -122,14 +91,14 @@ func namespaceFromRepository(n *repository.Namespace) *Namespace {
 		return nil
 	}
 
-	projects := make([]*NamespaceProject, len(n.Projects))
+	projects := make([]*PartialProject, len(n.Projects))
 	for i, p := range n.Projects {
-		projects[i] = namespaceProjectFromRepository(p)
+		projects[i] = partialProjectFromRepository(p)
 	}
 
-	documents := make([]*NamespaceDocument, len(n.Documents))
+	documents := make([]*PartialDocument, len(n.Documents))
 	for i, d := range n.Documents {
-		documents[i] = namespaceDocumentFromRepository(d)
+		documents[i] = partialDocumentFromRepository(d)
 	}
 
 	return &Namespace{

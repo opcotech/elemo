@@ -193,11 +193,11 @@ export type Namespace = {
   /**
    * Projects in the namespace.
    */
-  projects: Array<NamespaceProject>;
+  projects: Array<PartialProject>;
   /**
    * Documents in the namespace.
    */
-  documents: Array<NamespaceDocument>;
+  documents: Array<PartialDocument>;
   /**
    * Date when the namespace was created.
    */
@@ -209,11 +209,11 @@ export type Namespace = {
 };
 
 /**
- * NamespaceProject
+ * PartialProject
  *
- * A project in a namespace with limited information.
+ * A simplified project that can be used in lists.
  */
-export type NamespaceProject = {
+export type PartialProject = {
   /**
    * Unique identifier of the project.
    */
@@ -269,9 +269,9 @@ export type Project = {
    */
   teams: Array<string>;
   /**
-   * IDs of the documents in the project.
+   * Documents in the project.
    */
-  documents: Array<string>;
+  documents: Array<PartialDocument>;
   /**
    * IDs of the issues in the project.
    */
@@ -287,11 +287,11 @@ export type Project = {
 };
 
 /**
- * NamespaceDocument
+ * PartialDocument
  *
- * A document in a namespace with limited information.
+ * A simplified document that can be used in listings.
  */
-export type NamespaceDocument = {
+export type PartialDocument = {
   /**
    * Unique identifier of the document.
    */

@@ -20,13 +20,13 @@ var (
 	ErrInvalidLabelDetails              = errors.New("invalid Type details")                    // the Type details are invalid
 	ErrInvalidLanguage                  = errors.New("invalid language code")                   // Language is not valid
 	ErrInvalidNamespaceDetails          = errors.New("invalid namespace details")               // the namespace details are invalid
-	ErrInvalidNamespaceDocumentDetails  = errors.New("invalid namespace document details")      // the namespace document details are invalid
-	ErrInvalidNamespaceProjectDetails   = errors.New("invalid namespace project details")       // the namespace project details are invalid
 	ErrInvalidNotificationDetails       = errors.New("invalid notification details")            // the notification details are invalid
 	ErrInvalidNotificationRecipient     = errors.New("invalid notification recipient")          // the notification recipient is invalid
 	ErrInvalidOrganizationDetails       = errors.New("invalid organization details")            // the organization details are invalid
 	ErrInvalidOrganizationMemberDetails = errors.New("invalid organization member details")     // the organization member details are invalid
 	ErrInvalidOrganizationStatus        = errors.New("invalid organization status")             // the organization status is invalid
+	ErrInvalidPartialDocumentDetails    = errors.New("invalid partial document details")        // the partial document details are invalid
+	ErrInvalidPartialProjectDetails     = errors.New("invalid partial project details")         // the partial project details are invalid
 	ErrInvalidPermissionDetails         = errors.New("invalid permission details")              // the permission details are invalid
 	ErrInvalidPermissionKind            = errors.New("invalid permission kind")                 // the permission kind is invalid
 	ErrInvalidProjectDetails            = errors.New("invalid project details")                 // the project details are invalid

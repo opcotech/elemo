@@ -19,34 +19,15 @@ var (
 	ErrNamespaceUpdate = errors.New("failed to update namespace") // the namespace could not be updated
 )
 
-// NamespaceProject represents a simplified project within a namespace.
-type NamespaceProject struct {
-	ID          model.ID            `json:"id"`
-	Key         string              `json:"key"`
-	Name        string              `json:"name"`
-	Description string              `json:"description"`
-	Logo        string              `json:"logo"`
-	Status      model.ProjectStatus `json:"status"`
-}
-
-// NamespaceDocument represents a simplified document within a namespace.
-type NamespaceDocument struct {
-	ID        model.ID   `json:"id"`
-	Name      string     `json:"name"`
-	Excerpt   string     `json:"excerpt"`
-	CreatedBy model.ID   `json:"created_by"`
-	CreatedAt *time.Time `json:"created_at"`
-}
-
 // Namespace represents a namespace persisted by the repository.
 type Namespace struct {
-	ID          model.ID             `json:"id"`
-	Name        string               `json:"name"`
-	Description string               `json:"description"`
-	Projects    []*NamespaceProject  `json:"projects"`
-	Documents   []*NamespaceDocument `json:"documents"`
-	CreatedAt   *time.Time           `json:"created_at"`
-	UpdatedAt   *time.Time           `json:"updated_at"`
+	ID          model.ID           `json:"id"`
+	Name        string             `json:"name"`
+	Description string             `json:"description"`
+	Projects    []*PartialProject  `json:"projects"`
+	Documents   []*PartialDocument `json:"documents"`
+	CreatedAt   *time.Time         `json:"created_at"`
+	UpdatedAt   *time.Time         `json:"updated_at"`
 }
 
 // CreateNamespaceOpts holds the data required to create a namespace.
@@ -111,97 +92,13 @@ func (r *Neo4jNamespaceRepository) scan(nsp, pp, dp string) func(rec *neo4j.Reco
 
 		ns.ID, _ = model.NewIDFromString(val.GetProperties()["id"].(string), model.ResourceTypeNamespace.String())
 
-		projectsVal, err := Neo4jParseValueFromRecord[[]any](rec, pp)
-		if err != nil {
-			projectsVal = []any{}
+		if ns.Projects, err = scanPartialProjects(rec, pp); err != nil {
+			return nil, err
 		}
 
-		projects := make([]*NamespaceProject, 0, len(projectsVal))
-		for _, pVal := range projectsVal {
-			if pVal == nil {
-				continue
-			}
-			pNode, ok := pVal.(neo4j.Node)
-			if !ok {
-				continue
-			}
-
-			projectID, err := model.NewIDFromString(pNode.GetProperties()["id"].(string), model.ResourceTypeProject.String())
-			if err != nil {
-				continue
-			}
-
-			var tempProject struct {
-				Key         string `json:"key"`
-				Name        string `json:"name"`
-				Description string `json:"description"`
-				Logo        string `json:"logo"`
-				Status      string `json:"status"`
-			}
-			if err := Neo4jScanIntoStruct(&pNode, &tempProject, []string{"id"}); err != nil {
-				continue
-			}
-
-			var status model.ProjectStatus
-			if err := status.UnmarshalText([]byte(tempProject.Status)); err != nil {
-				continue
-			}
-
-			projects = append(projects, &NamespaceProject{
-				ID:          projectID,
-				Key:         tempProject.Key,
-				Name:        tempProject.Name,
-				Description: tempProject.Description,
-				Logo:        tempProject.Logo,
-				Status:      status,
-			})
+		if ns.Documents, err = scanPartialDocuments(rec, dp); err != nil {
+			return nil, err
 		}
-		ns.Projects = projects
-
-		documentsVal, err := Neo4jParseValueFromRecord[[]any](rec, dp)
-		if err != nil {
-			documentsVal = []any{}
-		}
-
-		documents := make([]*NamespaceDocument, 0, len(documentsVal))
-		for _, dVal := range documentsVal {
-			if dVal == nil {
-				continue
-			}
-			dNode, ok := dVal.(neo4j.Node)
-			if !ok {
-				continue
-			}
-
-			documentID, err := model.NewIDFromString(dNode.GetProperties()["id"].(string), model.ResourceTypeDocument.String())
-			if err != nil {
-				continue
-			}
-
-			var tempDocument struct {
-				Name      string     `json:"name"`
-				Excerpt   string     `json:"excerpt"`
-				CreatedBy string     `json:"created_by"`
-				CreatedAt *time.Time `json:"created_at"`
-			}
-			if err := Neo4jScanIntoStruct(&dNode, &tempDocument, []string{"id"}); err != nil {
-				continue
-			}
-
-			createdBy, err := model.NewIDFromString(tempDocument.CreatedBy, model.ResourceTypeUser.String())
-			if err != nil {
-				continue
-			}
-
-			documents = append(documents, &NamespaceDocument{
-				ID:        documentID,
-				Name:      tempDocument.Name,
-				Excerpt:   tempDocument.Excerpt,
-				CreatedBy: createdBy,
-				CreatedAt: tempDocument.CreatedAt,
-			})
-		}
-		ns.Documents = documents
 
 		return ns, nil
 	}
@@ -217,8 +114,8 @@ func (r *Neo4jNamespaceRepository) Create(ctx context.Context, opts CreateNamesp
 		ID:          model.MustNewID(model.ResourceTypeNamespace),
 		Name:        opts.Name,
 		Description: opts.Description,
-		Projects:    make([]*NamespaceProject, 0),
-		Documents:   make([]*NamespaceDocument, 0),
+		Projects:    make([]*PartialProject, 0),
+		Documents:   make([]*PartialDocument, 0),
 		CreatedAt:   createdAt,
 		UpdatedAt:   nil,
 	}

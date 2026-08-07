@@ -31,7 +31,7 @@ func NewRepositoryProject() *repository.Project {
 		Logo:        imageURL,
 		Status:      model.ProjectStatusActive,
 		Teams:       make([]model.ID, 0),
-		Documents:   make([]model.ID, 0),
+		Documents:   make([]*repository.PartialDocument, 0),
 		Issues:      make([]model.ID, 0),
 		CreatedAt:   convert.ToPointer(time.Now().UTC()),
 	}

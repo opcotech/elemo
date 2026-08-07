@@ -19,6 +19,16 @@ var (
 	ErrProjectUpdate = errors.New("failed to update project") // project cannot be updated
 )
 
+// PartialProject represents a simplified project that can be used in lists.
+type PartialProject struct {
+	ID          model.ID            `json:"id"`
+	Key         string              `json:"key"`
+	Name        string              `json:"name"`
+	Description string              `json:"description"`
+	Logo        string              `json:"logo"`
+	Status      model.ProjectStatus `json:"status"`
+}
+
 // Project represents a project persisted by the repository.
 type Project struct {
 	ID          model.ID            `json:"id"`
@@ -28,7 +38,7 @@ type Project struct {
 	Logo        string              `json:"logo"`
 	Status      model.ProjectStatus `json:"status"`
 	Teams       []model.ID          `json:"teams"`
-	Documents   []model.ID          `json:"documents"`
+	Documents   []*PartialDocument  `json:"documents"`
 	Issues      []model.ID          `json:"issues"`
 	CreatedAt   *time.Time          `json:"created_at"`
 	UpdatedAt   *time.Time          `json:"updated_at"`
@@ -77,6 +87,57 @@ func (o UpdateProjectOpts) patch() map[string]any {
 	return p
 }
 
+// scanPartialProjects scans the record into partial projects.
+func scanPartialProjects(record *neo4j.Record, key string) ([]*PartialProject, error) {
+	projectsVal, err := Neo4jParseValueFromRecord[[]any](record, key)
+	if err != nil {
+		projectsVal = []any{}
+	}
+
+	projects := make([]*PartialProject, 0, len(projectsVal))
+	for _, pVal := range projectsVal {
+		if pVal == nil {
+			return nil, err
+		}
+		pNode, ok := pVal.(neo4j.Node)
+		if !ok {
+			return nil, err
+		}
+
+		projectID, err := model.NewIDFromString(pNode.GetProperties()["id"].(string), model.ResourceTypeProject.String())
+		if err != nil {
+			return nil, err
+		}
+
+		var tempProject struct {
+			Key         string `json:"key"`
+			Name        string `json:"name"`
+			Description string `json:"description"`
+			Logo        string `json:"logo"`
+			Status      string `json:"status"`
+		}
+		if err := Neo4jScanIntoStruct(&pNode, &tempProject, []string{"id"}); err != nil {
+			return nil, err
+		}
+
+		var status model.ProjectStatus
+		if err := status.UnmarshalText([]byte(tempProject.Status)); err != nil {
+			return nil, err
+		}
+
+		projects = append(projects, &PartialProject{
+			ID:          projectID,
+			Key:         tempProject.Key,
+			Name:        tempProject.Name,
+			Description: tempProject.Description,
+			Logo:        tempProject.Logo,
+			Status:      status,
+		})
+	}
+
+	return projects, nil
+}
+
 //go:generate go tool mockgen -source=project.go -destination=project_mock_gen.go -package=repository -mock_names "ProjectRepository=MockProjectRepository"
 type ProjectRepository interface {
 	Create(ctx context.Context, opts CreateProjectOpts) (*Project, error)
@@ -107,7 +168,7 @@ func (r *Neo4jProjectRepository) scan(pp, dp, tp, ip string) func(rec *neo4j.Rec
 
 		p.ID, _ = model.NewIDFromString(val.GetProperties()["id"].(string), model.ResourceTypeProject.String())
 
-		if p.Documents, err = Neo4jParseIDsFromRecord(rec, dp, model.ResourceTypeDocument.String()); err != nil {
+		if p.Documents, err = scanPartialDocuments(rec, dp); err != nil {
 			return nil, err
 		}
 
@@ -137,7 +198,7 @@ func (r *Neo4jProjectRepository) Create(ctx context.Context, opts CreateProjectO
 		Logo:        opts.Logo,
 		Status:      opts.Status,
 		Teams:       make([]model.ID, 0),
-		Documents:   make([]model.ID, 0),
+		Documents:   make([]*PartialDocument, 0),
 		Issues:      make([]model.ID, 0),
 		CreatedAt:   createdAt,
 		UpdatedAt:   nil,
@@ -179,7 +240,7 @@ func (r *Neo4jProjectRepository) Get(ctx context.Context, id model.ID) (*Project
 	OPTIONAL MATCH (d:` + model.ResourceTypeDocument.String() + `)-[:` + EdgeKindBelongsTo.String() + `]->(p)
 	OPTIONAL MATCH (p)-[:` + EdgeKindHasTeam.String() + `]->(t:` + model.ResourceTypeRole.String() + `)
 	OPTIONAL MATCH (p)<-[:` + EdgeKindBelongsTo.String() + `]-(i:` + model.ResourceTypeIssue.String() + `)
-	RETURN p, d, t, i`
+	RETURN p, collect(DISTINCT d) AS d, collect(DISTINCT t.id) AS t, collect(DISTINCT i.id) AS i`
 
 	params := map[string]any{
 		"id": id.String(),
@@ -202,7 +263,7 @@ func (r *Neo4jProjectRepository) GetByKey(ctx context.Context, key string) (*Pro
 	OPTIONAL MATCH (d:` + model.ResourceTypeDocument.String() + `)-[:` + EdgeKindBelongsTo.String() + `]->(p)
 	OPTIONAL MATCH (p)-[:` + EdgeKindHasTeam.String() + `]->(t:` + model.ResourceTypeRole.String() + `)
 	OPTIONAL MATCH (p)<-[:` + EdgeKindBelongsTo.String() + `]-(i:` + model.ResourceTypeIssue.String() + `)
-	RETURN p, d, t, i`
+	RETURN p, collect(DISTINCT d) AS d, collect(DISTINCT t.id) AS t, collect(DISTINCT i.id) AS i`
 
 	params := map[string]any{
 		"key": key,
@@ -225,7 +286,7 @@ func (r *Neo4jProjectRepository) GetAll(ctx context.Context, namespaceID model.I
 	OPTIONAL MATCH (d:` + model.ResourceTypeDocument.String() + `)-[:` + EdgeKindBelongsTo.String() + `]->(p)
 	OPTIONAL MATCH (p)-[:` + EdgeKindHasTeam.String() + `]->(t:` + model.ResourceTypeRole.String() + `)
 	OPTIONAL MATCH (p)<-[:` + EdgeKindBelongsTo.String() + `]-(i:` + model.ResourceTypeIssue.String() + `)
-	RETURN p, d, t, i
+	RETURN p, collect(DISTINCT d) AS d, collect(DISTINCT t.id) AS t, collect(DISTINCT i.id) AS i
 	ORDER BY p.created_at DESC
 	SKIP $offset LIMIT $limit`
 
@@ -254,7 +315,7 @@ func (r *Neo4jProjectRepository) Update(ctx context.Context, id model.ID, opts U
 	OPTIONAL MATCH (d:` + model.ResourceTypeDocument.String() + `)-[:` + EdgeKindBelongsTo.String() + `]->(p)
 	OPTIONAL MATCH (p)-[:` + EdgeKindHasTeam.String() + `]->(t:` + model.ResourceTypeRole.String() + `)
 	OPTIONAL MATCH (p)<-[:` + EdgeKindBelongsTo.String() + `]-(i:` + model.ResourceTypeIssue.String() + `)
-	RETURN p, d, t, i`
+	RETURN p, collect(DISTINCT d) AS d, collect(DISTINCT t.id) AS t, collect(DISTINCT i.id) AS i`
 
 	params := map[string]any{
 		"id":    id.String(),

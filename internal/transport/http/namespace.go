@@ -206,46 +206,12 @@ func updateNamespaceJSONRequestBodyToUpdateNamespaceOpts(body *api.V1NamespaceUp
 	return opts
 }
 
-func namespaceProjectToDTO(project *service.NamespaceProject) api.NamespaceProject {
-	np := api.NamespaceProject{
-		Id:     project.ID.String(),
-		Key:    project.Key,
-		Name:   project.Name,
-		Status: api.ProjectStatus(project.Status.String()),
-	}
-
-	if project.Description != "" {
-		np.Description = &project.Description
-	}
-
-	if project.Logo != "" {
-		np.Logo = &project.Logo
-	}
-
-	return np
-}
-
-func namespaceDocumentToDTO(document *service.NamespaceDocument) api.NamespaceDocument {
-	nd := api.NamespaceDocument{
-		Id:        document.ID.String(),
-		Name:      document.Name,
-		CreatedBy: document.CreatedBy.String(),
-		CreatedAt: document.CreatedAt,
-	}
-
-	if document.Excerpt != "" {
-		nd.Excerpt = &document.Excerpt
-	}
-
-	return nd
-}
-
 func namespaceToDTO(namespace *service.Namespace) api.Namespace {
 	n := api.Namespace{
 		Id:        namespace.ID.String(),
 		Name:      namespace.Name,
-		Projects:  make([]api.NamespaceProject, len(namespace.Projects)),
-		Documents: make([]api.NamespaceDocument, len(namespace.Documents)),
+		Projects:  make([]api.PartialProject, len(namespace.Projects)),
+		Documents: make([]api.PartialDocument, len(namespace.Documents)),
 		CreatedAt: *namespace.CreatedAt,
 		UpdatedAt: namespace.UpdatedAt,
 	}
@@ -255,11 +221,11 @@ func namespaceToDTO(namespace *service.Namespace) api.Namespace {
 	}
 
 	for i, project := range namespace.Projects {
-		n.Projects[i] = namespaceProjectToDTO(project)
+		n.Projects[i] = partialProjectToDTO(project)
 	}
 
 	for i, document := range namespace.Documents {
-		n.Documents[i] = namespaceDocumentToDTO(document)
+		n.Documents[i] = partialDocumentToDTO(document)
 	}
 
 	return n

@@ -60,6 +60,9 @@ func (s *ProjectRepositoryIntegrationTestSuite) TestCreate() {
 func (s *ProjectRepositoryIntegrationTestSuite) TestGet() {
 	created, err := s.ProjectRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
+	doc, err := s.DocumentRepo.Create(context.Background(), testModel.NewCreateDocumentOpts(created.ID, s.testUser.ID))
+	s.Require().NoError(err)
+
 	project, err := s.ProjectRepo.Get(context.Background(), created.ID)
 	s.Require().NoError(err)
 	s.Assert().Equal(created.ID, project.ID)
@@ -67,15 +70,24 @@ func (s *ProjectRepositoryIntegrationTestSuite) TestGet() {
 	s.Assert().Equal(s.createOpts.Name, project.Name)
 	s.Assert().Equal(s.createOpts.Description, project.Description)
 	s.Assert().WithinDuration(*created.CreatedAt, *project.CreatedAt, 100*time.Millisecond)
+	s.Require().Len(project.Documents, 1)
+	s.Assert().Equal(doc.ID, project.Documents[0].ID)
+	s.Assert().Equal(doc.Name, project.Documents[0].Name)
+	s.Assert().Equal(doc.Excerpt, project.Documents[0].Excerpt)
 }
 
 func (s *ProjectRepositoryIntegrationTestSuite) TestGetByKey() {
 	created, err := s.ProjectRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
+	doc, err := s.DocumentRepo.Create(context.Background(), testModel.NewCreateDocumentOpts(created.ID, s.testUser.ID))
+	s.Require().NoError(err)
+
 	project, err := s.ProjectRepo.GetByKey(context.Background(), created.Key)
 	s.Require().NoError(err)
 	s.Assert().Equal(created.ID, project.ID)
 	s.Assert().Equal(created.Key, project.Key)
+	s.Require().Len(project.Documents, 1)
+	s.Assert().Equal(doc.ID, project.Documents[0].ID)
 }
 
 func (s *ProjectRepositoryIntegrationTestSuite) TestGetAll() {
