@@ -8,13 +8,13 @@ import (
 )
 
 const (
-	AssignmentKindAssignee AssignmentKind = iota + 1 // a user is assigned as an assignee
-	AssignmentKindReviewer                           // a user is assigned as a reviewer
+	AssignmentKindAssignee AssignmentKind = iota + 1 // assignee
+	AssignmentKindReviewer                           // reviewer
 )
 
 // AssignmentKind is the kind of assignment between a user and a resource.
 //
-//go:generate go tool enumer -type=AssignmentKind -trimprefix=AssignmentKind -text -transform=snake -output=assignment_kind_gen.go
+//go:generate go tool enumer -type=AssignmentKind -text -transform=noop -linecomment -output=assignment_kind_gen.go
 type AssignmentKind uint8
 
 // Assignment is the model of an assignment between a user and a resource.

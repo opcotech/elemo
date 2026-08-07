@@ -32,9 +32,8 @@ export function ensureApiClientConfigured(): void {
 
         // If no token available, try to refresh
         if (!token) {
-          const { tokenRefreshService } = await import(
-            "@/lib/auth/token-refresh-service"
-          );
+          const { tokenRefreshService } =
+            await import("@/lib/auth/token-refresh-service");
           if (!tokenRefreshService.isRefreshInProgress()) {
             await tokenRefreshService.forceRefresh();
             token = await getAccessToken();
@@ -54,7 +53,10 @@ export function ensureApiClientConfigured(): void {
 
 function hasApiBaseUrl(): boolean {
   try {
-    if (typeof import.meta !== "undefined" && import.meta.env?.VITE_API_BASE_URL) {
+    if (
+      typeof import.meta !== "undefined" &&
+      import.meta.env?.VITE_API_BASE_URL
+    ) {
       return true;
     }
   } catch {

@@ -167,7 +167,7 @@ func (r *Neo4jPermissionRepository) scanSystemRolePermission(target model.ID) fu
 // getDirectResourceTypePermissions returns direct permissions on a ResourceType node.
 func (r *Neo4jPermissionRepository) getDirectResourceTypePermissions(ctx context.Context, source, target model.ID) ([]*Permission, error) {
 	cypher := `
-	MATCH (s:` + source.Label() + ` {id: $source})-[p:` + EdgeKindHasPermission.String() + `]->(rt:` + model.ResourceTypeResourceType.String() + ` {id: $target_label})
+	MATCH (s:` + source.Label() + ` {id: $source})-[p:` + EdgeKindHasPermission.String() + `]->(rt:` + model.ResourceTypeKind.String() + ` {id: $target_label})
 	RETURN s, p, rt
 	ORDER BY p.created_at DESC`
 
@@ -188,7 +188,7 @@ func (r *Neo4jPermissionRepository) getDirectResourceTypePermissions(ctx context
 func (r *Neo4jPermissionRepository) getSystemRolePermissions(ctx context.Context, source, target model.ID) ([]*Permission, error) {
 	cypher := `
 	MATCH (s:` + source.Label() + ` {id: $source})-[m:` + EdgeKindMemberOf.String() + `]->(r:` + model.ResourceTypeRole.String() + ` {system: true})
-	MATCH (r)-[p:` + EdgeKindHasPermission.String() + `]->(rt:` + model.ResourceTypeResourceType.String() + ` {id: $target_label})
+	MATCH (r)-[p:` + EdgeKindHasPermission.String() + `]->(rt:` + model.ResourceTypeKind.String() + ` {id: $target_label})
 	RETURN DISTINCT s, p, rt
 	ORDER BY p.created_at DESC`
 
@@ -373,7 +373,7 @@ func (r *Neo4jPermissionRepository) HasPermission(ctx context.Context, subject, 
 	if hasCreatePermission {
 		cypher = `
 		MATCH (s:` + subject.Label() + ` {id: $subject_id})
-		MATCH (rt:` + model.ResourceTypeResourceType.String() + ` {id: $target_label})
+		MATCH (rt:` + model.ResourceTypeKind.String() + ` {id: $target_label})
 		OPTIONAL MATCH (s)-[perm:` + EdgeKindHasPermission.String() + `]->(t) WHERE perm.kind IN $permissions
 		WITH s, rt, perm
 
@@ -388,7 +388,7 @@ func (r *Neo4jPermissionRepository) HasPermission(ctx context.Context, subject, 
 		cypher = `
 		MATCH (s:` + subject.Label() + ` {id: $subject_id})
 		MATCH (t:` + target.Label() + ` {id: $target_id})
-		MATCH (rt:` + model.ResourceTypeResourceType.String() + ` {id: $target_label})
+		MATCH (rt:` + model.ResourceTypeKind.String() + ` {id: $target_label})
 		OPTIONAL MATCH (s)-[perm:` + EdgeKindHasPermission.String() + `]->(t) WHERE perm.kind IN $permissions
 		WITH s, t, rt, perm
 

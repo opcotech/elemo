@@ -37,7 +37,7 @@ func TestTodoPriority_MarshalText(t *testing.T) {
 		{"important", TodoPriorityImportant, []byte("important"), false},
 		{"urgent", TodoPriorityUrgent, []byte("urgent"), false},
 		{"critical", TodoPriorityCritical, []byte("critical"), false},
-		{"status high", TodoPriority(100), []byte("100"), true},
+		{"status high", TodoPriority(100), []byte("TodoPriority(100)"), false},
 	}
 	for _, tt := range tests {
 		tt := tt
@@ -47,9 +47,7 @@ func TestTodoPriority_MarshalText(t *testing.T) {
 			if (err != nil) != tt.wantErr {
 				require.NoError(t, err)
 			}
-			if !tt.wantErr {
-				assert.Equal(t, tt.wantText, gotText)
-			}
+			assert.Equal(t, tt.wantText, gotText)
 		})
 	}
 }
@@ -59,13 +57,13 @@ func TestTodoPriority_UnmarshalText(t *testing.T) {
 		name    string
 		text    []byte
 		want    TodoPriority
-		wantErr error
+		wantErr bool
 	}{
-		{"normal", []byte("normal"), TodoPriorityNormal, nil},
-		{"important", []byte("important"), TodoPriorityImportant, nil},
-		{"urgent", []byte("urgent"), TodoPriorityUrgent, nil},
-		{"critical", []byte("critical"), TodoPriorityCritical, nil},
-		{"invalid", []byte("invalid"), TodoPriority(0), ErrInvalidTodoPriority},
+		{"normal", []byte("normal"), TodoPriorityNormal, false},
+		{"important", []byte("important"), TodoPriorityImportant, false},
+		{"urgent", []byte("urgent"), TodoPriorityUrgent, false},
+		{"critical", []byte("critical"), TodoPriorityCritical, false},
+		{"invalid", []byte("invalid"), TodoPriority(0), true},
 	}
 	for _, tt := range tests {
 		tt := tt
@@ -73,8 +71,10 @@ func TestTodoPriority_UnmarshalText(t *testing.T) {
 			t.Parallel()
 			var p TodoPriority
 			err := p.UnmarshalText(tt.text)
-			require.ErrorIs(t, err, tt.wantErr)
-			if tt.wantErr == nil {
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				require.NoError(t, err)
 				assert.Equal(t, tt.want, p)
 			}
 		})

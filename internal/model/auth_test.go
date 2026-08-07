@@ -28,7 +28,7 @@ func TestUserTokenContext_String(t *testing.T) {
 		{
 			name:     "invalid context",
 			context:  UserTokenContext(99),
-			expected: "",
+			expected: "UserTokenContext(99)",
 		},
 	}
 
@@ -70,8 +70,8 @@ func TestUserTokenContext_MarshalText(t *testing.T) {
 		{
 			name:    "marshal invalid context",
 			context: UserTokenContext(99),
-			want:    nil,
-			wantErr: ErrInvalidUserTokenContext,
+			want:    []byte("UserTokenContext(99)"),
+			wantErr: nil,
 		},
 	}
 
@@ -91,25 +91,25 @@ func TestUserTokenContext_UnmarshalText(t *testing.T) {
 		name    string
 		text    []byte
 		want    UserTokenContext
-		wantErr error
+		wantErr bool
 	}{
 		{
 			name:    "unmarshal confirm context",
 			text:    []byte("confirm"),
 			want:    UserTokenContextConfirm,
-			wantErr: nil,
+			wantErr: false,
 		},
 		{
 			name:    "unmarshal reset password context",
 			text:    []byte("reset_password"),
 			want:    UserTokenContextResetPassword,
-			wantErr: nil,
+			wantErr: false,
 		},
 		{
 			name:    "unmarshal invalid context",
 			text:    []byte("invalid"),
 			want:    UserTokenContext(0),
-			wantErr: ErrInvalidUserTokenContext,
+			wantErr: true,
 		},
 	}
 
@@ -119,8 +119,10 @@ func TestUserTokenContext_UnmarshalText(t *testing.T) {
 			t.Parallel()
 			var context UserTokenContext
 			err := context.UnmarshalText(tt.text)
-			require.ErrorIs(t, err, tt.wantErr)
-			if tt.wantErr == nil {
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				require.NoError(t, err)
 				assert.Equal(t, tt.want, context)
 			}
 		})
@@ -132,25 +134,25 @@ func TestUserTokenContext_Scan(t *testing.T) {
 		name    string
 		value   any
 		want    UserTokenContext
-		wantErr error
+		wantErr bool
 	}{
 		{
 			name:    "scan confirm context",
 			value:   "confirm",
 			want:    UserTokenContextConfirm,
-			wantErr: nil,
+			wantErr: false,
 		},
 		{
 			name:    "scan reset password context",
 			value:   "reset_password",
 			want:    UserTokenContextResetPassword,
-			wantErr: nil,
+			wantErr: false,
 		},
 		{
 			name:    "scan invalid context",
 			value:   "invalid",
 			want:    UserTokenContext(0),
-			wantErr: ErrInvalidUserTokenContext,
+			wantErr: true,
 		},
 	}
 
@@ -160,8 +162,10 @@ func TestUserTokenContext_Scan(t *testing.T) {
 			t.Parallel()
 			var context UserTokenContext
 			err := context.Scan(tt.value)
-			require.ErrorIs(t, err, tt.wantErr)
-			if tt.wantErr == nil {
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				require.NoError(t, err)
 				assert.Equal(t, tt.want, context)
 			}
 		})
@@ -190,8 +194,8 @@ func TestUserTokenContext_Value(t *testing.T) {
 		{
 			name:    "value invalid context",
 			context: UserTokenContext(99),
-			want:    "",
-			wantErr: ErrInvalidUserTokenContext,
+			want:    "UserTokenContext(99)",
+			wantErr: nil,
 		},
 	}
 

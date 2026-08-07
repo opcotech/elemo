@@ -59,11 +59,7 @@ export function usePendingPermissions({
               body: {
                 target: permission.target,
                 kind: permission.kind as
-                  | "read"
-                  | "write"
-                  | "create"
-                  | "delete"
-                  | "*",
+                  "read" | "write" | "create" | "delete" | "*",
               },
             });
             successCount++;

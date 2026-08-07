@@ -40,8 +40,8 @@ func TestPermissionKind_MarshalText(t *testing.T) {
 		{"read", PermissionKindRead, []byte("read"), false},
 		{"write", PermissionKindWrite, []byte("write"), false},
 		{"delete", PermissionKindDelete, []byte("delete"), false},
-		{"kind low", PermissionKind(0), nil, true},
-		{"kind high", PermissionKind(100), nil, true},
+		{"kind low", PermissionKind(0), []byte("PermissionKind(0)"), false},
+		{"kind high", PermissionKind(100), []byte("PermissionKind(100)"), false},
 	}
 	for _, tt := range tests {
 		tt := tt

@@ -22,8 +22,9 @@ func TestSystemRole_MarshalText(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, []byte("Owner"), text)
 
-	_, err = SystemRole(0).MarshalText()
-	require.ErrorIs(t, err, ErrInvalidSystemRole)
+	text, err = SystemRole(0).MarshalText()
+	require.NoError(t, err)
+	assert.Equal(t, []byte("SystemRole(0)"), text)
 }
 
 func TestSystemRole_UnmarshalText(t *testing.T) {
@@ -33,5 +34,5 @@ func TestSystemRole_UnmarshalText(t *testing.T) {
 	require.NoError(t, role.UnmarshalText([]byte("Admin")))
 	assert.Equal(t, SystemRoleAdmin, role)
 
-	require.ErrorIs(t, role.UnmarshalText([]byte("Unknown")), ErrInvalidSystemRole)
+	assert.Error(t, role.UnmarshalText([]byte("Unknown")))
 }

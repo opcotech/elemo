@@ -35,8 +35,8 @@ func TestProjectStatus_MarshalText(t *testing.T) {
 	}{
 		{"active", ProjectStatusActive, []byte("active"), false},
 		{"pending", ProjectStatusPending, []byte("pending"), false},
-		{"status high", ProjectStatus(255), nil, true},
-		{"status low", ProjectStatus(0), nil, true},
+		{"status high", ProjectStatus(255), []byte("ProjectStatus(255)"), false},
+		{"status low", ProjectStatus(0), []byte("ProjectStatus(0)"), false},
 	}
 	for _, tt := range tests {
 		tt := tt

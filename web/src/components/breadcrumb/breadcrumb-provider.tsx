@@ -13,8 +13,7 @@ interface BreadcrumbContextType {
   breadcrumbs: BreadcrumbItem[];
   setBreadcrumbs: (
     breadcrumbs:
-      | BreadcrumbItem[]
-      | ((prev: BreadcrumbItem[]) => BreadcrumbItem[])
+      BreadcrumbItem[] | ((prev: BreadcrumbItem[]) => BreadcrumbItem[])
   ) => void;
   clearBreadcrumbs: () => void;
 }

@@ -8,13 +8,13 @@ import (
 )
 
 const (
-	ProjectStatusActive  ProjectStatus = iota + 1 // project is active
-	ProjectStatusPending                          // project is pending
+	ProjectStatusActive  ProjectStatus = iota + 1 // active
+	ProjectStatusPending                          // pending
 )
 
 // ProjectStatus represents the status of a project.
 //
-//go:generate go tool enumer -type=ProjectStatus -trimprefix=ProjectStatus -text -transform=snake -output=project_status_gen.go
+//go:generate go tool enumer -type=ProjectStatus -text -transform=noop -linecomment -output=project_status_gen.go
 type ProjectStatus uint8
 
 // Project represents a project that is used to group tasks together.
