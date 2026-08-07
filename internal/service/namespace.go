@@ -46,6 +46,8 @@ type UpdateNamespaceOpts struct {
 }
 
 // NamespaceService serves the business logic of interacting with namespaces.
+//
+//go:generate go tool mockgen -destination=namespace_mock_gen.go -package=service -mock_names NamespaceService=MockNamespaceService . NamespaceService
 type NamespaceService interface {
 	// Create creates a new namespace in an organization. If the organization
 	// does not exist, an error is returned.
