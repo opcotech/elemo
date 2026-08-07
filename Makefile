@@ -135,7 +135,7 @@ test.backend.unit: ## Run backend unit tests
 test.backend.integration: ## Run backend integration tests
 	$(call log, execute backend integration tests)
 	@rm -f "$(BACKEND_COVER_OUT_INTEGRATION)"
-	@gotestsum --format testname -- -shuffle=on -cover -covermode=atomic -ldflags="-extldflags=-Wl,-ld_classic" -timeout 1200s -run=Integration -coverprofile="$(BACKEND_COVER_OUT_INTEGRATION)" ./...
+	@gotestsum --format testname -- -p=1 -shuffle=on -cover -covermode=atomic -ldflags="-extldflags=-Wl,-ld_classic" -timeout 1200s -run=Integration -coverprofile="$(BACKEND_COVER_OUT_INTEGRATION)" ./...
 
 .PHONY: test.backend.coverage
 test.backend.coverage: ## Combine unit and integration test coverage
