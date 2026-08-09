@@ -8,11 +8,15 @@ on:
   schedule:
     - cron: '00 00 * * 1'
 
+concurrency:
+  group: codeql-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   analyze:
     name: Analyze (${{ matrix.language }})
-    runs-on: ${{ (matrix.language == 'swift' && 'macos-latest') || 'ubuntu-latest' }}
-    timeout-minutes: ${{ (matrix.language == 'swift' && 120) || 360 }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
     permissions:
       security-events: write
       packages: read
@@ -38,19 +42,6 @@ jobs:
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build-mode }}
           queries: security-extended,security-and-quality
-
-      - if: matrix.language == 'javascript-typescript'
-        run: |
-          cd web
-          npm install -g pnpm
-          pnpm install
-          pnpm generate
-          pnpm run build
-
-      - if: matrix.build-mode == 'manual' && matrix.language == 'go'
-        run: |
-          go mod tidy
-          make build.backend
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@5595ccaf912efad79be6eef63a5619ff05969be3 # v4.37.6
