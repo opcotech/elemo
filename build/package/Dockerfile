@@ -20,15 +20,12 @@ COPY . .
 # Build image
 ##############################################################################
 
-FROM golang:1.26-trixie AS build
+FROM common AS build
 
 ENV GOOS=linux
 ENV CGO_ENABLED=0
 
-COPY --from=common /common /build
-COPY --from=common $GOPATH/pkg/mod $GOPATH/pkg/mod
-
-WORKDIR /build
+WORKDIR /common
 RUN go build -ldflags="-s -w -extldflags=-Wl,-ld_classic" -o /usr/bin/elemo cmd/elemo/main.go
 
 ##############################################################################
