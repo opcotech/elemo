@@ -15,10 +15,18 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  ControlledField,
+  Field,
+  FieldControl,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+  FieldProvider,
+} from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
-import { v1UserResetPasswordMutation } from "@/lib/api";
+import { v1UserResetPasswordMutation } from "@/lib/api/mutation-options";
 import { showErrorToast, showSuccessToast } from "@/lib/toast";
 
 const passwordResetSchema = z
@@ -44,6 +52,10 @@ export function PasswordResetForm() {
 
   const form = useForm<PasswordResetFormData>({
     resolver: zodResolver(passwordResetSchema),
+    defaultValues: {
+      password: "",
+      confirmPassword: "",
+    },
   });
 
   const resetPasswordMutation = useMutation({
@@ -124,117 +136,133 @@ export function PasswordResetForm() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            {resetPasswordMutation.isError && (
-              <Alert variant="destructive">
-                <AlertDescription>
-                  {resetPasswordMutation.error.message}
-                </AlertDescription>
-              </Alert>
-            )}
+          <FieldProvider {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              {resetPasswordMutation.isError && (
+                <Alert variant="destructive">
+                  <AlertDescription>
+                    {resetPasswordMutation.error.message}
+                  </AlertDescription>
+                </Alert>
+              )}
 
-            <div className="space-y-2">
-              <Label htmlFor="password">New Password</Label>
-              <div className="relative">
-                <Lock className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
-                <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Enter your new password"
-                  className="pr-10 pl-10"
-                  {...form.register("password")}
-                  disabled={resetPasswordMutation.isPending}
-                  autoComplete="new-password"
+              <FieldGroup>
+                <ControlledField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <Field>
+                      <FieldLabel>New Password</FieldLabel>
+                      <div className="relative">
+                        <Lock className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+                        <FieldControl>
+                          <Input
+                            type={showPassword ? "text" : "password"}
+                            placeholder="Enter your new password"
+                            className="pr-10 pl-10"
+                            {...field}
+                            disabled={resetPasswordMutation.isPending}
+                            autoComplete="new-password"
+                          />
+                        </FieldControl>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-transparent"
+                          onClick={() => setShowPassword(!showPassword)}
+                          disabled={resetPasswordMutation.isPending}
+                          aria-label={
+                            showPassword ? "Hide password" : "Show password"
+                          }
+                        >
+                          {showPassword ? (
+                            <EyeOff className="text-muted-foreground h-4 w-4" />
+                          ) : (
+                            <Eye className="text-muted-foreground h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+                      <FieldError />
+                    </Field>
+                  )}
                 />
+
+                <ControlledField
+                  control={form.control}
+                  name="confirmPassword"
+                  render={({ field }) => (
+                    <Field>
+                      <FieldLabel>Confirm New Password</FieldLabel>
+                      <div className="relative">
+                        <Lock className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+                        <FieldControl>
+                          <Input
+                            type={showConfirmPassword ? "text" : "password"}
+                            placeholder="Confirm your new password"
+                            className="pr-10 pl-10"
+                            {...field}
+                            disabled={resetPasswordMutation.isPending}
+                            autoComplete="new-password"
+                          />
+                        </FieldControl>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-transparent"
+                          onClick={() =>
+                            setShowConfirmPassword(!showConfirmPassword)
+                          }
+                          disabled={resetPasswordMutation.isPending}
+                          aria-label={
+                            showConfirmPassword
+                              ? "Hide password"
+                              : "Show password"
+                          }
+                        >
+                          {showConfirmPassword ? (
+                            <EyeOff className="text-muted-foreground h-4 w-4" />
+                          ) : (
+                            <Eye className="text-muted-foreground h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+                      <FieldError />
+                    </Field>
+                  )}
+                />
+              </FieldGroup>
+
+              <div className="pt-4">
                 <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-transparent"
-                  onClick={() => setShowPassword(!showPassword)}
+                  type="submit"
+                  className="flex w-full items-center"
                   disabled={resetPasswordMutation.isPending}
-                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-label="Reset password"
                 >
-                  {showPassword ? (
-                    <EyeOff className="text-muted-foreground h-4 w-4" />
+                  {resetPasswordMutation.isPending ? (
+                    <>
+                      <Spinner size="xs" className="mr-2" />
+                      <span>Resetting password...</span>
+                    </>
                   ) : (
-                    <Eye className="text-muted-foreground h-4 w-4" />
+                    "Reset password"
                   )}
                 </Button>
               </div>
-              {form.formState.errors.password && (
-                <p className="text-sm text-red-600">
-                  {form.formState.errors.password.message}
-                </p>
-              )}
-            </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm New Password</Label>
-              <div className="relative">
-                <Lock className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
-                <Input
-                  id="confirmPassword"
-                  type={showConfirmPassword ? "text" : "password"}
-                  placeholder="Confirm your new password"
-                  className="pr-10 pl-10"
-                  {...form.register("confirmPassword")}
-                  disabled={resetPasswordMutation.isPending}
-                  autoComplete="new-password"
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-transparent"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  disabled={resetPasswordMutation.isPending}
-                  aria-label={
-                    showConfirmPassword ? "Hide password" : "Show password"
-                  }
+              <div className="flex justify-center">
+                <Link
+                  to="/login"
+                  search={{ redirect: undefined }}
+                  className="text-muted-foreground hover:text-primary text-sm hover:underline"
                 >
-                  {showConfirmPassword ? (
-                    <EyeOff className="text-muted-foreground h-4 w-4" />
-                  ) : (
-                    <Eye className="text-muted-foreground h-4 w-4" />
-                  )}
-                </Button>
+                  Back to login
+                </Link>
               </div>
-              {form.formState.errors.confirmPassword && (
-                <p className="text-sm text-red-600">
-                  {form.formState.errors.confirmPassword.message}
-                </p>
-              )}
-            </div>
-
-            <div className="pt-4">
-              <Button
-                type="submit"
-                className="flex w-full items-center"
-                disabled={resetPasswordMutation.isPending}
-                aria-label="Reset password"
-              >
-                {resetPasswordMutation.isPending ? (
-                  <>
-                    <Spinner size="xs" className="mr-2" />
-                    <span>Resetting password...</span>
-                  </>
-                ) : (
-                  "Reset password"
-                )}
-              </Button>
-            </div>
-
-            <div className="flex justify-center">
-              <Link
-                to="/login"
-                search={{ redirect: undefined }}
-                className="text-muted-foreground hover:text-primary text-sm hover:underline"
-              >
-                Back to login
-              </Link>
-            </div>
-          </form>
+            </form>
+          </FieldProvider>
         </CardContent>
       </Card>
     </div>

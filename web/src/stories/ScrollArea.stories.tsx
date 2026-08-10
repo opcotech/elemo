@@ -31,11 +31,6 @@ const meta: Meta<typeof ScrollArea> = {
       control: "text",
       description: "Additional CSS classes to apply to the scroll area",
     },
-    type: {
-      control: "select",
-      options: ["auto", "always", "scroll", "hover"],
-      description: "When to show scrollbars",
-    },
   },
 };
 
@@ -417,9 +412,9 @@ export const NotificationsList: Story = {
 export const CodeEditor: Story = {
   render: () => {
     const code = `import React from 'react';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Label } from './ui/label';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 interface LoginFormProps {
   onSubmit: (data: { email: string; password: string }) => void;

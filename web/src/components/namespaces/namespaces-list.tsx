@@ -1,3 +1,4 @@
+import { useQueries } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Edit, Folder, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -18,12 +19,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  ResourceType,
-  usePermissions,
-  withResourceType,
-} from "@/hooks/use-permissions";
-import type { Namespace } from "@/lib/api";
+import { ResourceType, withResourceType } from "@/hooks/use-permissions";
+import { v1PermissionResourceGetOptions } from "@/lib/api/query-options";
+import type { Namespace, Permission } from "@/lib/api/types";
 import { can } from "@/lib/auth/permissions";
 import { pluralize } from "@/lib/utils";
 
@@ -69,27 +67,25 @@ function NamespacesListSkeleton() {
 
 interface NamespaceRowProps {
   namespace: Namespace;
+  permissions: Permission[] | undefined;
+  isPermissionsLoading: boolean;
   organizationId: string;
   onDeleteClick: (namespace: Namespace) => void;
 }
 
 function NamespaceRow({
   namespace,
+  permissions,
+  isPermissionsLoading,
   organizationId,
   onDeleteClick,
 }: NamespaceRowProps) {
   const projectCount = namespace.projects?.length || 0;
   const documentCount = namespace.documents?.length || 0;
 
-  const {
-    data: namespacePermissions,
-    isLoading: isNamespacePermissionsLoading,
-  } = usePermissions(withResourceType(ResourceType.Namespace, namespace.id));
-
-  const hasNamespaceReadPermission = can(namespacePermissions, "read");
-  const hasNamespaceWritePermission = can(namespacePermissions, "write");
-  const hasNamespaceDeletePermission = can(namespacePermissions, "delete");
-  const isPermissionsLoading = isNamespacePermissionsLoading;
+  const hasNamespaceReadPermission = can(permissions, "read");
+  const hasNamespaceWritePermission = can(permissions, "write");
+  const hasNamespaceDeletePermission = can(permissions, "delete");
 
   return (
     <TableRow>
@@ -126,17 +122,21 @@ function NamespaceRow({
         ) : (
           <div className="flex items-center justify-end gap-x-1">
             {hasNamespaceWritePermission && (
-              <Button variant="ghost" size="sm" asChild>
-                <Link
-                  to="/settings/organizations/$organizationId/namespaces/$namespaceId/edit"
-                  params={{
-                    organizationId,
-                    namespaceId: namespace.id,
-                  }}
-                >
-                  <Edit className="size-4" />
-                  <span className="sr-only">Edit namespace</span>
-                </Link>
+              <Button
+                variant="ghost"
+                size="sm"
+                render={
+                  <Link
+                    to="/settings/organizations/$organizationId/namespaces/$namespaceId/edit"
+                    params={{
+                      organizationId,
+                      namespaceId: namespace.id,
+                    }}
+                  />
+                }
+              >
+                <Edit className="size-4" />
+                <span className="sr-only">Edit namespace</span>
               </Button>
             )}
             {hasNamespaceDeletePermission && (
@@ -161,6 +161,7 @@ interface NamespacesListProps {
   isLoading: boolean;
   error: unknown;
   organizationId: string;
+  organizationPermissions: Permission[];
 }
 
 export function NamespacesList({
@@ -168,6 +169,7 @@ export function NamespacesList({
   isLoading,
   error,
   organizationId,
+  organizationPermissions,
 }: NamespacesListProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -175,17 +177,27 @@ export function NamespacesList({
     null
   );
 
-  const { data: orgPermissions, isLoading: isOrgPermissionsLoading } =
-    usePermissions(withResourceType(ResourceType.Organization, organizationId));
-
-  const hasOrgReadPermission = can(orgPermissions, "read");
-  const hasOrgWritePermission = can(orgPermissions, "write");
+  const hasOrgWritePermission = can(organizationPermissions, "write");
   const hasCreatePermission = hasOrgWritePermission;
-  const isPermissionsLoading = isOrgPermissionsLoading;
-
-  if (!isPermissionsLoading && !hasOrgReadPermission) {
-    return null;
-  }
+  const namespacePermissionQueries = useQueries({
+    queries: namespaces.map((namespace) =>
+      v1PermissionResourceGetOptions({
+        path: {
+          resourceId: withResourceType(ResourceType.Namespace, namespace.id),
+        },
+      })
+    ),
+  });
+  const namespacePermissionsById = useMemo(
+    () =>
+      new Map(
+        namespaces.map((namespace, index) => [
+          namespace.id,
+          namespacePermissionQueries[index],
+        ])
+      ),
+    [namespaces, namespacePermissionQueries]
+  );
 
   const handleDeleteClick = (namespace: Namespace) => {
     setSelectedNamespace(namespace);
@@ -222,14 +234,18 @@ export function NamespacesList({
           description:
             "Namespaces help organize projects and documents. Create a namespace to get started.",
           action: hasCreatePermission ? (
-            <Button variant="outline" size="sm" asChild>
-              <Link
-                to="/settings/organizations/$organizationId/namespaces/new"
-                params={{ organizationId }}
-              >
-                <Plus className="size-4" />
-                Create Namespace
-              </Link>
+            <Button
+              variant="outline"
+              size="sm"
+              render={
+                <Link
+                  to="/settings/organizations/$organizationId/namespaces/new"
+                  params={{ organizationId }}
+                />
+              }
+            >
+              <Plus className="size-4" />
+              Create Namespace
             </Button>
           ) : undefined,
         }
@@ -244,18 +260,21 @@ export function NamespacesList({
 
   const shouldShowSearch = namespaces.length > 0 || searchTerm.trim() !== "";
 
-  const createButton =
-    !isPermissionsLoading && hasCreatePermission ? (
-      <Button variant="outline" size="sm" asChild>
+  const createButton = hasCreatePermission ? (
+    <Button
+      variant="outline"
+      size="sm"
+      render={
         <Link
           to="/settings/organizations/$organizationId/namespaces/new"
           params={{ organizationId }}
-        >
-          <Plus className="size-4" />
-          Create Namespace
-        </Link>
-      </Button>
-    ) : undefined;
+        />
+      }
+    >
+      <Plus className="size-4" />
+      Create Namespace
+    </Button>
+  ) : undefined;
 
   return (
     <>
@@ -296,14 +315,21 @@ export function NamespacesList({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredNamespaces.map((namespace) => (
-                <NamespaceRow
-                  key={namespace.id}
-                  namespace={namespace}
-                  organizationId={organizationId}
-                  onDeleteClick={handleDeleteClick}
-                />
-              ))}
+              {filteredNamespaces.map((namespace) => {
+                const permissionQuery = namespacePermissionsById.get(
+                  namespace.id
+                );
+                return (
+                  <NamespaceRow
+                    key={namespace.id}
+                    namespace={namespace}
+                    permissions={permissionQuery?.data}
+                    isPermissionsLoading={permissionQuery?.isLoading ?? true}
+                    organizationId={organizationId}
+                    onDeleteClick={handleDeleteClick}
+                  />
+                );
+              })}
             </TableBody>
           </Table>
         )}

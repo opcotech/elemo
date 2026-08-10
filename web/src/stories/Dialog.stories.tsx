@@ -60,8 +60,8 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {
   render: () => (
     <Dialog>
-      <DialogTrigger asChild>
-        <Button variant="outline">Edit Profile</Button>
+      <DialogTrigger render={<Button variant="outline" />}>
+        Edit Profile
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
@@ -104,11 +104,9 @@ export const Default: Story = {
 export const Confirmation: Story = {
   render: () => (
     <Dialog>
-      <DialogTrigger asChild>
-        <Button variant="destructive">
-          <Trash2 className="h-4 w-4" />
-          Delete Item
-        </Button>
+      <DialogTrigger render={<Button variant="destructive" />}>
+        <Trash2 className="h-4 w-4" />
+        Delete Item
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
@@ -131,11 +129,9 @@ export const Confirmation: Story = {
 export const CreateNew: Story = {
   render: () => (
     <Dialog>
-      <DialogTrigger asChild>
-        <Button>
-          <Plus className="h-4 w-4" />
-          Create New Project
-        </Button>
+      <DialogTrigger render={<Button />}>
+        <Plus className="h-4 w-4" />
+        Create New Project
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
@@ -171,11 +167,9 @@ export const CreateNew: Story = {
 export const Share: Story = {
   render: () => (
     <Dialog>
-      <DialogTrigger asChild>
-        <Button variant="outline">
-          <ShareIcon className="h-4 w-4" />
-          Share
-        </Button>
+      <DialogTrigger render={<Button variant="outline" />}>
+        <ShareIcon className="h-4 w-4" />
+        Share
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
@@ -214,11 +208,9 @@ export const Share: Story = {
 export const Settings: Story = {
   render: () => (
     <Dialog>
-      <DialogTrigger asChild>
-        <Button variant="outline">
-          <SettingsIcon className="h-4 w-4" />
-          Settings
-        </Button>
+      <DialogTrigger render={<Button variant="outline" />}>
+        <SettingsIcon className="h-4 w-4" />
+        Settings
       </DialogTrigger>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
@@ -301,11 +293,9 @@ export const Settings: Story = {
 export const UserProfile: Story = {
   render: () => (
     <Dialog>
-      <DialogTrigger asChild>
-        <Button variant="ghost" size="sm">
-          <User className="h-4 w-4" />
-          View Profile
-        </Button>
+      <DialogTrigger render={<Button variant="ghost" size="sm" />}>
+        <User className="h-4 w-4" />
+        View Profile
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
@@ -401,9 +391,7 @@ export const MultipleDialogs: Story = {
   render: () => (
     <div className="flex gap-3">
       <Dialog>
-        <DialogTrigger asChild>
-          <Button>Dialog 1</Button>
-        </DialogTrigger>
+        <DialogTrigger render={<Button />}>Dialog 1</DialogTrigger>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>First Dialog</DialogTitle>
@@ -416,8 +404,8 @@ export const MultipleDialogs: Story = {
       </Dialog>
 
       <Dialog>
-        <DialogTrigger asChild>
-          <Button variant="outline">Dialog 2</Button>
+        <DialogTrigger render={<Button variant="outline" />}>
+          Dialog 2
         </DialogTrigger>
         <DialogContent>
           <DialogHeader>
@@ -433,8 +421,8 @@ export const MultipleDialogs: Story = {
       </Dialog>
 
       <Dialog>
-        <DialogTrigger asChild>
-          <Button variant="secondary">Dialog 3</Button>
+        <DialogTrigger render={<Button variant="secondary" />}>
+          Dialog 3
         </DialogTrigger>
         <DialogContent>
           <DialogHeader>

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { AlertTriangle, Check, Clock, Star, User, X } from "lucide-react";
+import { AlertTriangle, Check, Clock, Info, Star, User, X } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 
@@ -11,7 +11,7 @@ const meta: Meta<typeof Badge> = {
     docs: {
       description: {
         component:
-          "A small status indicator or label that can be used to display categories, statuses, or other metadata.",
+          "A small status indicator or label for categories, statuses, and metadata.",
       },
     },
   },
@@ -21,17 +21,17 @@ const meta: Meta<typeof Badge> = {
       control: "select",
       options: [
         "default",
+        "primary",
         "secondary",
         "destructive",
         "outline",
+        "ghost",
+        "link",
         "success",
         "warning",
+        "info",
       ],
       description: "The visual style variant of the badge",
-    },
-    asChild: {
-      control: "boolean",
-      description: "When true, the badge will render as a Slot component",
     },
   },
 };
@@ -39,7 +39,6 @@ const meta: Meta<typeof Badge> = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-// Basic variants
 export const Default: Story = {
   args: {
     children: "Badge",
@@ -67,6 +66,20 @@ export const Outline: Story = {
   },
 };
 
+export const Ghost: Story = {
+  args: {
+    variant: "ghost",
+    children: "Ghost",
+  },
+};
+
+export const Link: Story = {
+  args: {
+    variant: "link",
+    children: "Link",
+  },
+};
+
 export const Success: Story = {
   args: {
     variant: "success",
@@ -81,7 +94,13 @@ export const Warning: Story = {
   },
 };
 
-// With icons
+export const InfoVariant: Story = {
+  args: {
+    variant: "info",
+    children: "Info",
+  },
+};
+
 export const WithIconLeft: Story = {
   args: {
     children: (
@@ -113,7 +132,6 @@ export const IconOnly: Story = {
   },
 };
 
-// Status badges
 export const StatusBadges: Story = {
   render: () => (
     <div className="flex flex-wrap gap-2">
@@ -129,22 +147,18 @@ export const StatusBadges: Story = {
         <X className="h-3 w-3" />
         Inactive
       </Badge>
+      <Badge variant="info">
+        <Info className="h-3 w-3" />
+        New
+      </Badge>
       <Badge variant="outline">
         <AlertTriangle className="h-3 w-3" />
         Draft
       </Badge>
     </div>
   ),
-  parameters: {
-    docs: {
-      description: {
-        story: "Common status badges with appropriate icons and colors.",
-      },
-    },
-  },
 };
 
-// Category badges
 export const CategoryBadges: Story = {
   render: () => (
     <div className="flex flex-wrap gap-2">
@@ -153,16 +167,8 @@ export const CategoryBadges: Story = {
       <Badge variant="outline">Marketing</Badge>
     </div>
   ),
-  parameters: {
-    docs: {
-      description: {
-        story: "Category or tag badges for content classification.",
-      },
-    },
-  },
 };
 
-// User badges
 export const UserBadges: Story = {
   render: () => (
     <div className="flex flex-wrap gap-2">
@@ -177,37 +183,25 @@ export const UserBadges: Story = {
       <Badge variant="outline">Member</Badge>
     </div>
   ),
-  parameters: {
-    docs: {
-      description: {
-        story: "User role or membership badges.",
-      },
-    },
-  },
 };
 
-// All variants showcase
 export const AllVariants: Story = {
   render: () => (
     <div className="flex flex-wrap gap-2">
       <Badge variant="default">Default</Badge>
+      <Badge variant="primary">Primary</Badge>
       <Badge variant="secondary">Secondary</Badge>
       <Badge variant="destructive">Destructive</Badge>
       <Badge variant="outline">Outline</Badge>
+      <Badge variant="ghost">Ghost</Badge>
+      <Badge variant="link">Link</Badge>
       <Badge variant="success">Success</Badge>
       <Badge variant="warning">Warning</Badge>
+      <Badge variant="info">Info</Badge>
     </div>
   ),
-  parameters: {
-    docs: {
-      description: {
-        story: "All available badge variants displayed together.",
-      },
-    },
-  },
 };
 
-// Different content types
 export const ContentTypes: Story = {
   render: () => (
     <div className="space-y-4">
@@ -223,38 +217,27 @@ export const ContentTypes: Story = {
       </div>
     </div>
   ),
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "Various content types including numbers, text, icons, and status indicators.",
-      },
-    },
-  },
 };
 
-// As link
 export const AsLink: Story = {
-  args: {
-    asChild: true,
-    variant: "outline",
-    children: (
-      <a href="#" className="hover:no-underline">
-        Clickable Badge
-      </a>
-    ),
-  },
+  render: () => (
+    <Badge
+      variant="outline"
+      render={<a href="#" className="hover:no-underline" />}
+    >
+      Clickable Badge
+    </Badge>
+  ),
   parameters: {
     docs: {
       description: {
         story:
-          "Using the `asChild` prop to render the badge as a clickable link.",
+          "Using the `render` prop to render the badge as a clickable link.",
       },
     },
   },
 };
 
-// Notification badges
 export const NotificationBadges: Story = {
   render: () => (
     <div className="flex items-center gap-4">
@@ -277,11 +260,4 @@ export const NotificationBadges: Story = {
       </div>
     </div>
   ),
-  parameters: {
-    docs: {
-      description: {
-        story: "Notification badges positioned on other elements.",
-      },
-    },
-  },
 };

@@ -26,7 +26,7 @@ const meta: Meta<typeof Alert> = {
   argTypes: {
     variant: {
       control: "select",
-      options: ["default", "destructive"],
+      options: ["default", "info", "destructive", "success", "warning", "info"],
       description: "The visual style variant of the alert",
     },
   },
@@ -187,6 +187,14 @@ export const AllVariants: Story = {
         <AlertTitle>Warning Alert</AlertTitle>
         <AlertDescription>
           This is a warning alert indicating caution is needed.
+        </AlertDescription>
+      </Alert>
+
+      <Alert variant="info">
+        <Info className="h-4 w-4" />
+        <AlertTitle>Info Alert</AlertTitle>
+        <AlertDescription>
+          This is an info alert for neutral informational messages.
         </AlertDescription>
       </Alert>
     </div>

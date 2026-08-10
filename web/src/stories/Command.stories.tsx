@@ -74,7 +74,7 @@ type Story = StoryObj<typeof meta>;
 // Basic command menu
 export const Default: Story = {
   render: () => (
-    <Command className="max-w-md rounded-lg border shadow-md">
+    <Command className="border-border max-w-md rounded-md border">
       <CommandInput placeholder="Type a command or search..." />
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
@@ -169,7 +169,7 @@ export const Dialog: Story = {
 // File manager command
 export const FileManager: Story = {
   render: () => (
-    <Command className="max-w-md rounded-lg border shadow-md">
+    <Command className="border-border max-w-md rounded-md border">
       <CommandInput placeholder="Search files and folders..." />
       <CommandList>
         <CommandEmpty>No files found.</CommandEmpty>
@@ -227,7 +227,7 @@ export const FileManager: Story = {
 // Text editor commands
 export const TextEditor: Story = {
   render: () => (
-    <Command className="max-w-md rounded-lg border shadow-md">
+    <Command className="border-border max-w-md rounded-md border">
       <CommandInput placeholder="Search commands..." />
       <CommandList>
         <CommandEmpty>No commands found.</CommandEmpty>
@@ -292,7 +292,7 @@ export const TextEditor: Story = {
 // Simple search
 export const SimpleSearch: Story = {
   render: () => (
-    <Command className="max-w-md rounded-lg border shadow-md">
+    <Command className="border-border max-w-md rounded-md border">
       <CommandInput placeholder="Search..." />
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
@@ -315,7 +315,7 @@ export const WithoutFiltering: Story = {
   render: () => (
     <Command
       shouldFilter={false}
-      className="max-w-md rounded-lg border shadow-md"
+      className="border-border max-w-md rounded-md border"
     >
       <CommandInput placeholder="Type to see all items..." />
       <CommandList>
@@ -333,7 +333,7 @@ export const WithoutFiltering: Story = {
 // Loading state
 export const LoadingState: Story = {
   render: () => (
-    <Command className="max-w-md rounded-lg border shadow-md">
+    <Command className="border-border max-w-md rounded-md border">
       <CommandInput placeholder="Search..." />
       <CommandList>
         <CommandEmpty>
@@ -350,7 +350,7 @@ export const LoadingState: Story = {
 // Large list example
 export const LargeList: Story = {
   render: () => (
-    <Command className="h-96 max-w-md rounded-lg border shadow-md">
+    <Command className="border-border h-96 max-w-md rounded-md border">
       <CommandInput placeholder="Search from many items..." />
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>

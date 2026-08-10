@@ -8,23 +8,28 @@ import { RoleMemberAssignment } from "./role-member-assignment";
 import { RolePermissionAssignment } from "./role-permission-assignment";
 
 import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+  ControlledField,
+  Field,
+  FieldControl,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+  FieldProvider,
+} from "@/components/ui/field";
 import { FormCard } from "@/components/ui/form-card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useFormMutation } from "@/hooks/use-form-mutation";
-import type { Options, Role, V1OrganizationRoleUpdateData } from "@/lib/api";
 import {
   v1OrganizationRoleGetOptions,
   v1OrganizationRolesGetOptions,
-} from "@/lib/client/@tanstack/react-query.gen";
-import { v1OrganizationRoleUpdate } from "@/lib/client/sdk.gen";
+} from "@/lib/api/query-options";
+import { v1OrganizationRoleUpdate } from "@/lib/api/sdk";
+import type {
+  Options,
+  Role,
+  V1OrganizationRoleUpdateData,
+} from "@/lib/api/types";
 import { zRoleCreate, zRolePatch } from "@/lib/client/zod.gen";
 import { createFormSchema, normalizePatchData } from "@/lib/forms";
 import { getDefaultValue } from "@/lib/utils";
@@ -93,10 +98,11 @@ export function RoleEditForm({
         },
       }).queryKey,
     ],
-    navigateOnSuccess: {
-      to: "/settings/organizations/$organizationId",
-      params: { organizationId },
-    },
+    navigateOnSuccess: (navigateTo) =>
+      navigateTo({
+        to: "/settings/organizations/$organizationId",
+        params: { organizationId },
+      }),
     transformValues: (values) => {
       const normalizedBody = normalizePatchData(roleEditFormSchema, values, {
         name: role.name,
@@ -127,40 +133,42 @@ export function RoleEditForm({
       submitButtonText="Save Changes"
       description="Update the role details below."
     >
-      <Form {...form}>
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Name</FormLabel>
-              <FormControl>
-                <Input placeholder="Enter role name" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+      <FieldProvider {...form}>
+        <FieldGroup>
+          <ControlledField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+              <Field>
+                <FieldLabel>Name</FieldLabel>
+                <FieldControl>
+                  <Input placeholder="Enter role name" {...field} />
+                </FieldControl>
+                <FieldError />
+              </Field>
+            )}
+          />
 
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Description</FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder="Enter role description (optional)"
-                  {...field}
-                  value={getDefaultValue(field.value)}
-                  rows={4}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      </Form>
+          <ControlledField
+            control={form.control}
+            name="description"
+            render={({ field }) => (
+              <Field>
+                <FieldLabel>Description</FieldLabel>
+                <FieldControl>
+                  <Textarea
+                    placeholder="Enter role description (optional)"
+                    {...field}
+                    value={getDefaultValue(field.value)}
+                    rows={4}
+                  />
+                </FieldControl>
+                <FieldError />
+              </Field>
+            )}
+          />
+        </FieldGroup>
+      </FieldProvider>
     </FormCard>
   );
 }

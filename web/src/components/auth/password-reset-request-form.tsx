@@ -3,8 +3,6 @@ import { Link } from "@tanstack/react-router";
 import { Mail } from "lucide-react";
 import { useState } from "react";
 
-import { Spinner } from "../ui/spinner";
-
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,7 +14,8 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { v1UserRequestPasswordResetOptions } from "@/lib/api";
+import { Spinner } from "@/components/ui/spinner";
+import { v1UserRequestPasswordResetOptions } from "@/lib/api/query-options";
 
 export function PasswordResetRequestForm() {
   const [email, setEmail] = useState("");

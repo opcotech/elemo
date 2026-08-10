@@ -21,7 +21,7 @@ export class ProjectEditFormSection extends SectionContainerMixin(Form) {
   async selectStatus(status: "Active" | "Pending"): Promise<void> {
     const container = this.getSectionContainer();
     const trigger = container
-      .locator("[data-slot='form-item']")
+      .locator("[data-slot='field']")
       .filter({ has: this.page.getByText("Status", { exact: true }) })
       .getByRole("combobox");
     await trigger.click();

@@ -10,30 +10,15 @@ import {
   SettingsOrganizationDetailsPage,
   SettingsOrganizationsPage,
 } from "./pages";
-import { USER_DEFAULT_PASSWORD, loginUser } from "./utils/auth";
-import { createUser, grantSystemOwnerMembershipToUser } from "./utils/db";
+import { loginUser } from "./utils/auth";
 import { getRandomString } from "./utils/random";
 
-import type { User } from "@/lib/api";
-
 test.describe("@settings.organization-create Organization Creation E2E Tests", () => {
-  let testUser: User;
-  let readOnlyUser: User;
-
-  test.beforeAll(async ({ testConfig }) => {
-    testUser = await createUser(testConfig);
-    readOnlyUser = await createUser(testConfig);
-
-    // Grant system owner membership so user can create organizations
-    // Using DB helper since API doesn't allow creating system-level permissions
-    await grantSystemOwnerMembershipToUser(testConfig, testUser.email);
-  });
-
-  test("should create organization and display in list", async ({ page }) => {
-    await loginUser(page, {
-      email: testUser.email,
-      password: USER_DEFAULT_PASSWORD,
-    });
+  test("should create organization and display in list", async ({
+    page,
+    ownerPersona,
+  }) => {
+    await loginUser(page, ownerPersona.credentials);
 
     const orgsPage = new SettingsOrganizationsPage(page);
     await orgsPage.goto();
@@ -52,7 +37,7 @@ test.describe("@settings.organization-create Organization Creation E2E Tests", (
       Name: orgName,
       Email: orgEmail,
     });
-    await orgCreatePage.organizationCreateForm.submit("Create");
+    await orgCreatePage.organizationCreateForm.submit("Create Organization");
 
     // Then check for success toast
     await waitForSuccessToast(page, "created");
@@ -69,20 +54,18 @@ test.describe("@settings.organization-create Organization Creation E2E Tests", (
 
   test("should show validation errors for invalid form inputs", async ({
     page,
+    ownerPersona,
   }) => {
     const fieldMessage = (label: string) => getFormFieldMessage(page, label);
 
-    await loginUser(page, {
-      email: testUser.email,
-      password: USER_DEFAULT_PASSWORD,
-    });
+    await loginUser(page, ownerPersona.credentials);
 
     const orgCreatePage = new SettingsOrganizationCreatePage(page);
     await orgCreatePage.goto();
     await orgCreatePage.organizationCreateForm.waitForLoad();
 
     // Try submitting empty form
-    await orgCreatePage.organizationCreateForm.submit("Create");
+    await orgCreatePage.organizationCreateForm.submit("Create Organization");
     await expect(fieldMessage("Name")).toHaveText(/invalid input/i);
     await expect(fieldMessage("Email")).toHaveText(/invalid input/i);
 
@@ -92,7 +75,7 @@ test.describe("@settings.organization-create Organization Creation E2E Tests", (
       "Email",
       "invalid-email"
     );
-    await orgCreatePage.organizationCreateForm.submit("Create");
+    await orgCreatePage.organizationCreateForm.submit("Create Organization");
     await expect(fieldMessage("Name")).toHaveCount(0);
     await expect(fieldMessage("Email")).toHaveText(/invalid input/i);
 
@@ -102,13 +85,14 @@ test.describe("@settings.organization-create Organization Creation E2E Tests", (
       "Email",
       "test@example.com"
     );
-    await orgCreatePage.organizationCreateForm.submit("Create");
+    await orgCreatePage.organizationCreateForm.submit("Create Organization");
     await expect(fieldMessage("Name")).toHaveText(/invalid input/i);
     await expect(fieldMessage("Email")).toHaveCount(0);
   });
 
   test("should show error when creating duplicate organization", async ({
     page,
+    ownerPersona,
     createApiClient,
   }) => {
     const orgData = {
@@ -118,15 +102,12 @@ test.describe("@settings.organization-create Organization Creation E2E Tests", (
 
     // Create organization via API first
     const apiClient = await createApiClient(
-      testUser.email,
-      USER_DEFAULT_PASSWORD
+      ownerPersona.credentials.email,
+      ownerPersona.credentials.password
     );
     await createOrganization(apiClient, orgData);
 
-    await loginUser(page, {
-      email: testUser.email,
-      password: USER_DEFAULT_PASSWORD,
-    });
+    await loginUser(page, ownerPersona.credentials);
 
     // Wait for create page to load
     const orgCreatePage = new SettingsOrganizationCreatePage(page);
@@ -138,7 +119,7 @@ test.describe("@settings.organization-create Organization Creation E2E Tests", (
       Name: orgData.name,
       Email: `${getRandomString()}@example.com`,
     });
-    await orgCreatePage.organizationCreateForm.submit("Create");
+    await orgCreatePage.organizationCreateForm.submit("Create Organization");
     await waitForErrorToast(page);
 
     // Fill form with existing organization email
@@ -146,17 +127,15 @@ test.describe("@settings.organization-create Organization Creation E2E Tests", (
       Name: `${getRandomString()}`,
       Email: orgData.email,
     });
-    await orgCreatePage.organizationCreateForm.submit("Create");
+    await orgCreatePage.organizationCreateForm.submit("Create Organization");
     await waitForErrorToast(page);
   });
 
   test("should not see the create organization button without create permission", async ({
     page,
+    userPersona,
   }) => {
-    await loginUser(page, {
-      email: readOnlyUser.email,
-      password: USER_DEFAULT_PASSWORD,
-    });
+    await loginUser(page, userPersona.credentials);
 
     // Wait for organizations page to load
     const orgsPage = new SettingsOrganizationsPage(page);

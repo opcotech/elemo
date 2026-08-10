@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Edit } from "lucide-react";
 
-import { DetailField } from "@/components/detail-field";
+import { DetailField } from "@/components/shared/detail-field";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,9 +16,10 @@ import {
   usePermissions,
   withResourceType,
 } from "@/hooks/use-permissions";
-import type { Project } from "@/lib/api";
+import type { Project } from "@/lib/api/types";
 import { can } from "@/lib/auth/permissions";
-import { formatDate, pluralize } from "@/lib/utils";
+import { formatDate } from "@/lib/format-date";
+import { pluralize } from "@/lib/utils";
 
 interface ProjectDetailInfoProps {
   project: Project;
@@ -52,21 +53,42 @@ export function ProjectDetailInfo({
               Details about the project and its resources.
             </CardDescription>
           </div>
-          {hasWritePermission && (
-            <Button variant="outline" size="sm" asChild>
-              <Link
-                to="/settings/organizations/$organizationId/namespaces/$namespaceId/projects/$projectId/edit"
-                params={{
-                  organizationId,
-                  namespaceId,
-                  projectId: project.id,
-                }}
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              render={
+                <Link
+                  to="/namespaces/$namespaceId/projects/$projectId"
+                  params={{
+                    namespaceId,
+                    projectId: project.id,
+                  }}
+                />
+              }
+            >
+              Open project
+            </Button>
+            {hasWritePermission && (
+              <Button
+                variant="outline"
+                size="sm"
+                render={
+                  <Link
+                    to="/settings/organizations/$organizationId/namespaces/$namespaceId/projects/$projectId/edit"
+                    params={{
+                      organizationId,
+                      namespaceId,
+                      projectId: project.id,
+                    }}
+                  />
+                }
               >
                 <Edit className="size-4" />
                 Edit
-              </Link>
-            </Button>
-          )}
+              </Button>
+            )}
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">

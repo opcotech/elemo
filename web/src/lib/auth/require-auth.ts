@@ -1,43 +1,43 @@
+import type { QueryClient } from "@tanstack/react-query";
 import { redirect } from "@tanstack/react-router";
 
-import { hasValidSession } from "./session";
+import { can } from "./permissions";
+import type { ResourceType } from "./permissions";
 
-export function requireAuthBeforeLoad(ctx: { location: { href: string } }) {
-  // Only run client-side to avoid SSR issues
-  if (typeof window === "undefined") {
-    return;
-  }
+import type { PermissionKind } from "@/lib/api/types";
+import { loadResourcePermissions } from "@/lib/entity-context";
 
-  // Use a try-catch to handle any cookie/storage access issues
-  try {
-    if (!hasValidSession()) {
-      throw redirect({
-        to: "/login",
-        search: {
-          redirect: ctx.location.href,
-        },
-      });
-    }
-  } catch (error) {
-    console.warn("Session check failed in route guard:", error);
+export async function redirectIfAuthenticated() {
+  const { currentSessionFn } = await import("./functions");
+  if (await currentSessionFn()) {
+    throw redirect({
+      to: "/",
+    });
   }
 }
 
-export function redirectIfAuthenticated() {
-  if (hasValidSession()) {
-    // If there's a redirect parameter, use it, otherwise go to dashboard
-    const urlParams = new URLSearchParams(window.location.search);
-    const redirectTo = urlParams.get("redirect");
+export async function requirePermissionBeforeLoad({
+  queryClient,
+  resourceType,
+  permissionKind,
+  resourceId,
+}: {
+  queryClient: QueryClient;
+  resourceType: ResourceType;
+  permissionKind: PermissionKind;
+  resourceId?: string;
+}) {
+  const permissions = await loadResourcePermissions(
+    queryClient,
+    resourceType,
+    resourceId
+  );
 
-    // Only redirect if the redirect target is not the login page itself
-    if (redirectTo && !redirectTo.includes("/login")) {
-      throw redirect({
-        to: redirectTo,
-      });
-    } else {
-      throw redirect({
-        to: "/dashboard",
-      });
-    }
+  if (!can(permissions, permissionKind)) {
+    throw redirect({
+      to: "/permission-denied",
+    });
   }
+
+  return permissions;
 }

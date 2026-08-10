@@ -29,8 +29,11 @@ export function DialogMixin<T extends abstract new (...args: any[]) => any>(
     /**
      * Wait for a dialog to appear with optional title.
      */
-    protected async waitForDialog(title?: string): Promise<void> {
-      await this.dialog.waitFor(title);
+    protected async waitForDialog(
+      title?: string,
+      options?: { timeout?: number }
+    ): Promise<void> {
+      await this.dialog.waitFor(title, options);
     }
 
     /**

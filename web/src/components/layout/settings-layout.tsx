@@ -1,6 +1,6 @@
-import { Link, useRouter } from "@tanstack/react-router";
-import { Building2, Folder, Shield, User } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import { Link, useRouterState } from "@tanstack/react-router";
+import { ArrowLeft, Building2, Folder, Shield, User } from "lucide-react";
+import React from "react";
 import type { ReactNode } from "react";
 
 import {
@@ -15,6 +15,7 @@ import {
   SidebarMenuItem,
   SidebarProvider,
 } from "@/components/ui/sidebar";
+import { cn } from "@/lib/utils";
 
 interface SettingsLayoutProps {
   children: ReactNode;
@@ -22,7 +23,11 @@ interface SettingsLayoutProps {
 
 interface SettingsNavigationItem {
   label: string;
-  href: string;
+  href:
+    | "/settings"
+    | "/settings/organizations"
+    | "/settings/namespaces"
+    | "/settings/security";
   icon: React.ElementType;
   description?: string;
 }
@@ -70,17 +75,9 @@ export const settingsNavigation: SettingsNavigationGroup[] = [
 ];
 
 export function SettingsSidebar() {
-  const router = useRouter();
-  const [currentPath, setCurrentPath] = useState(
-    router.state.location.pathname
-  );
-
-  useEffect(() => {
-    const unsub = router.subscribe("onResolved", () => {
-      setCurrentPath(router.state.location.pathname);
-    });
-    return unsub;
-  }, [router]);
+  const currentPath = useRouterState({
+    select: (state) => state.location.pathname,
+  });
 
   return (
     <>
@@ -94,21 +91,24 @@ export function SettingsSidebar() {
                 return (
                   <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton
-                      asChild
+                      render={
+                        <Link
+                          to={item.href}
+                          className="flex items-start gap-2"
+                        />
+                      }
                       isActive={isActive}
                       className="h-auto bg-transparent"
                     >
-                      <Link to={item.href} className="flex items-start gap-2">
-                        <item.icon className="mt-0.5 size-4" />
-                        <div className="flex flex-col items-start">
-                          <span className="font-medium">{item.label}</span>
-                          {item.description && (
-                            <span className="text-xs text-gray-500">
-                              {item.description}
-                            </span>
-                          )}
-                        </div>
-                      </Link>
+                      <item.icon className="mt-0.5 size-4" />
+                      <div className="flex flex-col items-start">
+                        <span className="font-medium">{item.label}</span>
+                        {item.description && (
+                          <span className="text-muted-foreground text-xs">
+                            {item.description}
+                          </span>
+                        )}
+                      </div>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 );
@@ -122,18 +122,67 @@ export function SettingsSidebar() {
 }
 
 export function SettingsLayout({ children }: SettingsLayoutProps) {
+  const currentPath = useRouterState({
+    select: (state) => state.location.pathname,
+  });
+
   return (
     <SidebarProvider>
-      <div className="flex h-full w-full">
-        <Sidebar variant="inset" collapsible="none" className="bg-transparent">
-          <SidebarContent className="pt-6">
-            <SettingsSidebar />
-          </SidebarContent>
-        </Sidebar>
+      <div className="flex h-full w-full flex-col">
+        <header className="flex h-14 shrink-0 items-center border-b px-4 sm:px-6">
+          <Link
+            to="/"
+            className="text-muted-foreground hover:text-foreground inline-flex items-center gap-2 text-sm font-medium"
+          >
+            <ArrowLeft className="size-4" />
+            Back to Home
+          </Link>
+          <span className="ml-auto text-sm font-semibold">Settings</span>
+        </header>
+        <nav
+          aria-label="Settings"
+          className="flex gap-1 overflow-x-auto border-b p-2 md:hidden"
+        >
+          {settingsNavigation.flatMap((group) =>
+            group.items.map((item) => {
+              const isActive = currentPath === item.href;
+              return (
+                <Link
+                  key={item.href}
+                  to={item.href}
+                  aria-current={isActive ? "page" : undefined}
+                  className={cn(
+                    "shrink-0 rounded-lg px-3 py-2 text-sm",
+                    isActive
+                      ? "bg-muted text-foreground font-medium"
+                      : "text-muted-foreground hover:bg-muted"
+                  )}
+                >
+                  {item.label}
+                </Link>
+              );
+            })
+          )}
+        </nav>
+        <div className="flex min-h-0 flex-1 justify-center overflow-hidden">
+          <div className="flex min-h-0 w-full max-w-6xl">
+            <Sidebar
+              variant="sidebar"
+              collapsible="none"
+              className="w-72! shrink-0 border-0 bg-transparent max-md:hidden"
+            >
+              <SidebarContent className="pt-6">
+                <SettingsSidebar />
+              </SidebarContent>
+            </Sidebar>
 
-        <SidebarInset className="overflow-auto">
-          <div className="px-12 py-8">{children}</div>
-        </SidebarInset>
+            <SidebarInset className="overflow-auto">
+              <div className="w-full px-4 py-6 sm:px-6 md:px-8 md:py-8">
+                {children}
+              </div>
+            </SidebarInset>
+          </div>
+        </div>
       </div>
     </SidebarProvider>
   );

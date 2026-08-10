@@ -2483,7 +2483,7 @@ export type V1OrganizationRolesGetData = {
      */
     limit?: number;
   };
-  url: "/v1/organizations/${id}/roles";
+  url: "/v1/organizations/{id}/roles";
 };
 
 export type V1OrganizationRolesGetErrors = {
@@ -2531,7 +2531,7 @@ export type V1OrganizationRolesCreateData = {
     id: string;
   };
   query?: never;
-  url: "/v1/organizations/${id}/roles";
+  url: "/v1/organizations/{id}/roles";
 };
 
 export type V1OrganizationRolesCreateErrors = {
@@ -2588,7 +2588,7 @@ export type V1OrganizationRoleDeleteData = {
     role_id: string;
   };
   query?: never;
-  url: "/v1/organizations/${id}/roles/{role_id}";
+  url: "/v1/organizations/{id}/roles/{role_id}";
 };
 
 export type V1OrganizationRoleDeleteErrors = {
@@ -2640,7 +2640,7 @@ export type V1OrganizationRoleGetData = {
     role_id: string;
   };
   query?: never;
-  url: "/v1/organizations/${id}/roles/{role_id}";
+  url: "/v1/organizations/{id}/roles/{role_id}";
 };
 
 export type V1OrganizationRoleGetErrors = {
@@ -2692,7 +2692,7 @@ export type V1OrganizationRoleUpdateData = {
     role_id: string;
   };
   query?: never;
-  url: "/v1/organizations/${id}/roles/{role_id}";
+  url: "/v1/organizations/{id}/roles/{role_id}";
 };
 
 export type V1OrganizationRoleUpdateErrors = {

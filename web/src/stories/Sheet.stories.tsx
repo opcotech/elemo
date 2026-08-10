@@ -74,8 +74,8 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {
   render: () => (
     <Sheet>
-      <SheetTrigger asChild>
-        <Button variant="outline">Open Sheet</Button>
+      <SheetTrigger render={<Button variant="outline" />}>
+        Open Sheet
       </SheetTrigger>
       <SheetContent>
         <SheetHeader>
@@ -107,8 +107,8 @@ export const Default: Story = {
           </div>
         </div>
         <SheetFooter>
-          <SheetClose asChild>
-            <Button type="submit">Save changes</Button>
+          <SheetClose render={<Button type="submit" />}>
+            Save changes
           </SheetClose>
         </SheetFooter>
       </SheetContent>
@@ -121,9 +121,7 @@ export const DifferentSides: Story = {
   render: () => (
     <div className="flex gap-4">
       <Sheet>
-        <SheetTrigger asChild>
-          <Button variant="outline">Left</Button>
-        </SheetTrigger>
+        <SheetTrigger render={<Button variant="outline" />}>Left</SheetTrigger>
         <SheetContent side="left">
           <SheetHeader>
             <SheetTitle>Left Sheet</SheetTitle>
@@ -135,9 +133,7 @@ export const DifferentSides: Story = {
       </Sheet>
 
       <Sheet>
-        <SheetTrigger asChild>
-          <Button variant="outline">Right</Button>
-        </SheetTrigger>
+        <SheetTrigger render={<Button variant="outline" />}>Right</SheetTrigger>
         <SheetContent side="right">
           <SheetHeader>
             <SheetTitle>Right Sheet</SheetTitle>
@@ -149,9 +145,7 @@ export const DifferentSides: Story = {
       </Sheet>
 
       <Sheet>
-        <SheetTrigger asChild>
-          <Button variant="outline">Top</Button>
-        </SheetTrigger>
+        <SheetTrigger render={<Button variant="outline" />}>Top</SheetTrigger>
         <SheetContent side="top">
           <SheetHeader>
             <SheetTitle>Top Sheet</SheetTitle>
@@ -161,8 +155,8 @@ export const DifferentSides: Story = {
       </Sheet>
 
       <Sheet>
-        <SheetTrigger asChild>
-          <Button variant="outline">Bottom</Button>
+        <SheetTrigger render={<Button variant="outline" />}>
+          Bottom
         </SheetTrigger>
         <SheetContent side="bottom">
           <SheetHeader>
@@ -188,10 +182,8 @@ export const DifferentSides: Story = {
 export const NavigationMenu: Story = {
   render: () => (
     <Sheet>
-      <SheetTrigger asChild>
-        <Button variant="outline" size="icon">
-          <Menu className="h-4 w-4" />
-        </Button>
+      <SheetTrigger render={<Button variant="outline" size="icon" />}>
+        <Menu className="h-4 w-4" />
       </SheetTrigger>
       <SheetContent side="left" className="w-80">
         <SheetHeader>
@@ -260,11 +252,9 @@ export const NavigationMenu: Story = {
 export const AddItemForm: Story = {
   render: () => (
     <Sheet>
-      <SheetTrigger asChild>
-        <Button>
-          <Plus className="size-4" />
-          Add Item
-        </Button>
+      <SheetTrigger render={<Button />}>
+        <Plus className="size-4" />
+        Add Item
       </SheetTrigger>
       <SheetContent>
         <SheetHeader>
@@ -309,12 +299,8 @@ export const AddItemForm: Story = {
           </div>
         </div>
         <SheetFooter>
-          <SheetClose asChild>
-            <Button variant="outline">Cancel</Button>
-          </SheetClose>
-          <SheetClose asChild>
-            <Button type="submit">Save Item</Button>
-          </SheetClose>
+          <SheetClose render={<Button variant="outline" />}>Cancel</SheetClose>
+          <SheetClose render={<Button type="submit" />}>Save Item</SheetClose>
         </SheetFooter>
       </SheetContent>
     </Sheet>
@@ -325,14 +311,12 @@ export const AddItemForm: Story = {
 export const UserProfile: Story = {
   render: () => (
     <Sheet>
-      <SheetTrigger asChild>
-        <Button variant="ghost" size="sm">
-          <Avatar className="mr-2 h-6 w-6">
-            <AvatarImage src="https://github.com/shadcn.png" alt="User" />
-            <AvatarFallback>JD</AvatarFallback>
-          </Avatar>
-          Profile
-        </Button>
+      <SheetTrigger render={<Button variant="ghost" size="sm" />}>
+        <Avatar className="mr-2 h-6 w-6">
+          <AvatarImage src="https://github.com/shadcn.png" alt="User" />
+          <AvatarFallback>JD</AvatarFallback>
+        </Avatar>
+        Profile
       </SheetTrigger>
       <SheetContent>
         <SheetHeader>
@@ -432,11 +416,9 @@ export const UserProfile: Story = {
 export const FilterPanel: Story = {
   render: () => (
     <Sheet>
-      <SheetTrigger asChild>
-        <Button variant="outline">
-          <Filter className="size-4" />
-          Filters
-        </Button>
+      <SheetTrigger render={<Button variant="outline" />}>
+        <Filter className="size-4" />
+        Filters
       </SheetTrigger>
       <SheetContent side="left">
         <SheetHeader>
@@ -537,12 +519,10 @@ export const FilterPanel: Story = {
           </div>
         </div>
         <SheetFooter>
-          <SheetClose asChild>
-            <Button variant="outline">Clear All</Button>
+          <SheetClose render={<Button variant="outline" />}>
+            Clear All
           </SheetClose>
-          <SheetClose asChild>
-            <Button>Apply Filters</Button>
-          </SheetClose>
+          <SheetClose render={<Button />}>Apply Filters</SheetClose>
         </SheetFooter>
       </SheetContent>
     </Sheet>
@@ -560,9 +540,7 @@ export const Controlled: Story = {
           Sheet is {open ? "open" : "closed"}
         </div>
         <Sheet open={open} onOpenChange={setOpen}>
-          <SheetTrigger asChild>
-            <Button>Open Controlled Sheet</Button>
-          </SheetTrigger>
+          <SheetTrigger render={<Button />}>Open Controlled Sheet</SheetTrigger>
           <SheetContent>
             <SheetHeader>
               <SheetTitle>Controlled Sheet</SheetTitle>
@@ -590,11 +568,9 @@ export const Controlled: Story = {
 export const FileUploadSheet: Story = {
   render: () => (
     <Sheet>
-      <SheetTrigger asChild>
-        <Button>
-          <Upload className="size-4" />
-          Upload Files
-        </Button>
+      <SheetTrigger render={<Button />}>
+        <Upload className="size-4" />
+        Upload Files
       </SheetTrigger>
       <SheetContent>
         <SheetHeader>
@@ -646,12 +622,8 @@ export const FileUploadSheet: Story = {
           </div>
         </div>
         <SheetFooter>
-          <SheetClose asChild>
-            <Button variant="outline">Cancel</Button>
-          </SheetClose>
-          <SheetClose asChild>
-            <Button>Upload Selected</Button>
-          </SheetClose>
+          <SheetClose render={<Button variant="outline" />}>Cancel</SheetClose>
+          <SheetClose render={<Button />}>Upload Selected</SheetClose>
         </SheetFooter>
       </SheetContent>
     </Sheet>

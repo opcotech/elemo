@@ -5,18 +5,19 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 
 const alertVariants = cva(
-  "relative w-full rounded-lg border px-4 py-3 text-sm grid has-[>svg]:grid-cols-[calc(var(--spacing)*4)_1fr] grid-cols-[0_1fr] has-[>svg]:gap-x-3 gap-y-0.5 items-start [&>svg]:size-4 [&>svg]:translate-y-0.5 [&>svg]:text-current",
+  "group/alert relative grid w-full gap-1 rounded-lg border border-border/70 bg-card px-3.5 py-3 text-left text-sm has-data-[slot=alert-action]:relative has-data-[slot=alert-action]:pr-18 has-[>svg]:grid-cols-[auto_1fr] has-[>svg]:gap-x-2.5 *:[svg]:row-span-2 *:[svg]:translate-y-0.5 *:[svg]:text-current *:[svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
-        default: "bg-card text-card-foreground border-border",
+        default:
+          "bg-card text-card-foreground *:data-[slot=alert-description]:text-muted-foreground",
         destructive:
-          "bg-red-50 text-red-800 border-red-300 dark:bg-red-950/30 dark:text-red-200 dark:border-red-800 shadow-elegant [&>svg]:text-red-600 dark:[&>svg]:text-red-400",
-        warning:
-          "bg-amber-50 text-amber-900 border-amber-300 dark:bg-amber-900/30 dark:text-amber-200 dark:border-amber-700 shadow-elegant [&>svg]:text-amber-900 dark:[&>svg]:text-amber-200",
+          "border-destructive/25 bg-destructive/10 text-destructive *:data-[slot=alert-description]:text-destructive/90 *:[svg]:text-current",
         success:
-          "bg-green-50 text-green-900 border-green-300 dark:bg-green-900/30 dark:text-green-200 dark:border-green-700 shadow-elegant [&>svg]:text-green-900 dark:[&>svg]:text-green-200",
-        info: "bg-blue-50 text-blue-900 border-blue-300 dark:bg-blue-900/30 dark:text-blue-200 dark:border-blue-700 shadow-elegant [&>svg]:text-blue-900 dark:[&>svg]:text-blue-200",
+          "border-success/25 bg-success/10 text-success *:data-[slot=alert-description]:text-success/90 *:[svg]:text-current",
+        warning:
+          "border-warning/30 bg-warning-subtle text-warning-on-subtle *:data-[slot=alert-description]:text-warning-on-subtle/90 *:[svg]:text-current",
+        info: "border-info/25 bg-info/10 text-info *:data-[slot=alert-description]:text-info *:[svg]:text-current",
       },
     },
     defaultVariants: {
@@ -45,7 +46,7 @@ function AlertTitle({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="alert-title"
       className={cn(
-        "col-start-2 line-clamp-1 min-h-4 font-medium tracking-tight",
+        "[&_a]:hover:text-foreground font-medium group-has-[>svg]/alert:col-start-2 [&_a]:underline [&_a]:underline-offset-3",
         className
       )}
       {...props}
@@ -61,7 +62,7 @@ function AlertDescription({
     <div
       data-slot="alert-description"
       className={cn(
-        "col-start-2 grid justify-items-start gap-1 text-sm [&_p]:leading-relaxed",
+        "[&_a]:hover:text-foreground text-sm text-balance md:text-pretty [&_a]:underline [&_a]:underline-offset-3 [&_p:not(:last-child)]:mb-4",
         className
       )}
       {...props}
@@ -69,4 +70,14 @@ function AlertDescription({
   );
 }
 
-export { Alert, AlertTitle, AlertDescription };
+function AlertAction({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="alert-action"
+      className={cn("absolute top-2 right-2", className)}
+      {...props}
+    />
+  );
+}
+
+export { Alert, AlertTitle, AlertDescription, AlertAction };

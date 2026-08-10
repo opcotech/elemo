@@ -14,6 +14,8 @@ const IS_CI_ENV = process.env.CI === 'true';
  */
 export default defineConfig({
   testDir: './tests/e2e',
+  /* Specs only — keep *.test.ts for Vitest unit coverage of e2e helpers */
+  testMatch: /.*\.spec\.ts/,
   /* Global setup runs once before all tests */
   globalSetup: './tests/e2e/global-setup.ts',
   /* Run tests in files in parallel */
@@ -22,8 +24,9 @@ export default defineConfig({
   forbidOnly: IS_CI_ENV,
   /* Retry more times on CI */
   retries: IS_CI_ENV ? 3 : 1,
-  /* Set workers in CI to 1 for better test reliability */
-  workers: IS_CI_ENV ? 1 : '75%',
+  /* Cap local workers to reduce backend/socket pressure under parallel suites,
+   * especially Firefox which is heavier than Chromium/WebKit. */
+  workers: IS_CI_ENV ? 1 : 2,
   /* Fail fast in CI to save resources */
   ...(IS_CI_ENV && { maxFailures: 10 }),
   /* Global timeout for each test */
@@ -88,7 +91,10 @@ export default defineConfig({
   /* Run your local dev server before starting the tests */
   webServer: {
     command: process.env.NO_COMMAND === 'true' ? '' : 'pnpm start',
-    url: 'http://localhost:3000',
+    // Hit /login so readiness reflects the SPA entry used by most specs.
+    url: 'http://localhost:3000/login',
+    // Reuse only when explicitly opted in, or when CI is unset and the port
+    // already serves Elemo (Makefile frees foreign listeners first).
     reuseExistingServer: !IS_CI_ENV,
     timeout: 120 * 1000,
     stdout: 'pipe',

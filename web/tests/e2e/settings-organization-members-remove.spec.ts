@@ -10,7 +10,7 @@ import {
 } from "./utils/db";
 import { getRandomString } from "./utils/random";
 
-import type { User } from "@/lib/api";
+import type { User } from "@/lib/api/types";
 
 test.describe("@settings.organization-members-remove Organization Members Remove E2E Tests", () => {
   let ownerUser: User;

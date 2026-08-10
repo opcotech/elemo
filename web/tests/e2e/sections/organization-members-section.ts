@@ -1,3 +1,4 @@
+import { expect } from "@playwright/test";
 import type { Locator, Page } from "@playwright/test";
 
 import { BaseComponent } from "../components/base";
@@ -60,12 +61,15 @@ export class OrganizationMembersSection extends DialogMixin(
   }
 
   async hasInviteMemberButton(): Promise<boolean> {
-    const button = this.getInviteMemberButton();
-    return await button.isVisible().catch(() => false);
+    return (await this.getInviteMemberButton().count()) > 0;
   }
 
   async clickInviteMemberButton(): Promise<void> {
-    await this.getInviteMemberButton().click();
+    const button = this.getInviteMemberButton();
+    await expect(button).toBeVisible();
+    await expect(button).toBeEnabled();
+    await button.click();
+    await this.waitForDialog("Invite Member");
   }
 
   private getRemoveMemberButton(fullName: string): Locator {
@@ -80,8 +84,21 @@ export class OrganizationMembersSection extends DialogMixin(
   }
 
   async openRemoveMemberDialog(fullName: string): Promise<void> {
-    await this.getRemoveMemberButton(fullName).click();
-    await this.waitForDialog("Remove Member from Organization?");
+    const removeButton = this.getRemoveMemberButton(fullName);
+    await expect(removeButton).toBeVisible();
+    for (let attempt = 0; attempt < 2; attempt++) {
+      await removeButton.click();
+      try {
+        await this.waitForDialog("Remove Member from Organization?", {
+          timeout: 5_000,
+        });
+        return;
+      } catch (error) {
+        if (attempt === 1) {
+          throw error;
+        }
+      }
+    }
   }
 
   async confirmRemoveMember(): Promise<void> {

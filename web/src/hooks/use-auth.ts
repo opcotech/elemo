@@ -2,6 +2,7 @@ import { useRouter } from "@tanstack/react-router";
 import { useContext, useState } from "react";
 
 import { AuthContext } from "@/lib/auth/auth-context";
+import { sanitizeRedirectTarget } from "@/lib/auth/redirect";
 import type { LoginCredentials } from "@/lib/auth/types";
 
 export const useAuth = () => {
@@ -24,26 +25,14 @@ export const useLogin = () => {
       setError(null);
 
       await authLogin(credentials);
+      await router.invalidate();
 
-      // Redirect to intended destination or dashboard
-      let targetPath = "/dashboard";
+      const targetPath = sanitizeRedirectTarget(
+        redirectTo,
+        window.location.origin
+      );
 
-      if (redirectTo) {
-        try {
-          // If redirectTo is a full URL, extract the pathname
-          const url = new URL(redirectTo);
-          targetPath = url.pathname;
-        } catch {
-          // If it's not a valid URL, treat it as a path
-          targetPath = redirectTo.startsWith("/")
-            ? redirectTo
-            : `/${redirectTo}`;
-        }
-      }
-
-      await router.navigate({
-        to: targetPath,
-      });
+      await router.navigate({ href: targetPath });
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Login failed";
       setError(errorMessage);
@@ -72,8 +61,8 @@ export const useLogout = () => {
       setIsLoading(true);
 
       await authLogout();
+      await router.invalidate();
 
-      // Redirect to login page
       await router.navigate({
         to: "/login",
         search: {
@@ -81,7 +70,7 @@ export const useLogout = () => {
         },
       });
     } catch {
-      // Even if logout fails, clear local state and redirect
+      await router.invalidate();
       await router.navigate({
         to: "/login",
         search: {

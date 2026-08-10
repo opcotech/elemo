@@ -1,7 +1,12 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Trash2 } from "lucide-react";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
+
+import {
+  organizationScopedResourceType,
+  permissionFormSchema,
+} from "./permission-form-schema";
+import type { PermissionFormValues } from "./permission-form-schema";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -12,13 +17,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+  ControlledField,
+  Field,
+  FieldControl,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+  FieldProvider,
+} from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -35,38 +41,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ResourceType, withResourceType } from "@/hooks/use-permissions";
+import type { ResourceType } from "@/hooks/use-permissions";
+import { withResourceType } from "@/hooks/use-permissions";
+import { zPermissionKind } from "@/lib/client/zod.gen";
 import { formatResourceId } from "@/lib/utils";
-
-const permissionFormSchema = z.object({
-  resourceType: z.enum([
-    ResourceType.Organization,
-    ResourceType.Namespace,
-    ResourceType.Document,
-    ResourceType.Project,
-    ResourceType.Role,
-  ]),
-  resourceId: z.string().min(1, "Resource ID is required"),
-  kind: z.enum(["read", "write", "create", "delete", "*"]),
-});
-
-type PermissionFormValues = z.infer<typeof permissionFormSchema>;
-
-const ORGANIZATION_SCOPED_RESOURCE_TYPES = [
-  ResourceType.Organization,
-  ResourceType.Namespace,
-  ResourceType.Document,
-  ResourceType.Project,
-  ResourceType.Role,
-] as const;
-
-const PERMISSION_KINDS: ("read" | "write" | "create" | "delete" | "*")[] = [
-  "read",
-  "write",
-  "create",
-  "delete",
-  "*",
-];
 
 export interface PendingPermission {
   resourceType: string;
@@ -89,15 +67,17 @@ export function RolePermissionDraft({
   const form = useForm<PermissionFormValues>({
     resolver: zodResolver(permissionFormSchema),
     defaultValues: {
-      resourceType:
-        ResourceType.Organization as PermissionFormValues["resourceType"],
+      resourceType: organizationScopedResourceType.enum.Organization,
       resourceId: "",
-      kind: "read",
+      kind: zPermissionKind.enum.read,
     },
   });
 
   const onSubmit = (values: PermissionFormValues) => {
-    const target = withResourceType(values.resourceType, values.resourceId);
+    const target = withResourceType(
+      values.resourceType as ResourceType,
+      values.resourceId
+    );
 
     const permission: PendingPermission = {
       resourceType: values.resourceType,
@@ -108,10 +88,9 @@ export function RolePermissionDraft({
 
     onAddPermission(permission);
     form.reset({
-      resourceType:
-        ResourceType.Organization as PermissionFormValues["resourceType"],
+      resourceType: organizationScopedResourceType.enum.Organization,
       resourceId: "",
-      kind: "read",
+      kind: zPermissionKind.enum.read,
     });
   };
 
@@ -125,76 +104,91 @@ export function RolePermissionDraft({
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
-        <Form {...form}>
+        <FieldProvider {...form}>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
             className="flex flex-col gap-4 rounded-md border p-4"
           >
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-              <FormField
+            <FieldGroup className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <ControlledField
                 control={form.control}
                 name="resourceType"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Resource Type</FormLabel>
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <FormControl>
+                  <Field>
+                    <FieldLabel>Resource Type</FieldLabel>
+                    <Select
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      items={Object.fromEntries(
+                        organizationScopedResourceType.options.map((type) => [
+                          type,
+                          type,
+                        ])
+                      )}
+                    >
+                      <FieldControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select resource type" />
                         </SelectTrigger>
-                      </FormControl>
+                      </FieldControl>
                       <SelectContent>
-                        {ORGANIZATION_SCOPED_RESOURCE_TYPES.map((type) => (
+                        {organizationScopedResourceType.options.map((type) => (
                           <SelectItem key={type} value={type}>
                             {type}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
-                    <FormMessage />
-                  </FormItem>
+                    <FieldError />
+                  </Field>
                 )}
               />
 
-              <FormField
+              <ControlledField
                 control={form.control}
                 name="resourceId"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Resource ID</FormLabel>
-                    <FormControl>
+                  <Field>
+                    <FieldLabel>Resource ID</FieldLabel>
+                    <FieldControl>
                       <Input placeholder="Enter resource ID" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
+                    </FieldControl>
+                    <FieldError />
+                  </Field>
                 )}
               />
 
-              <FormField
+              <ControlledField
                 control={form.control}
                 name="kind"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Permission Kind</FormLabel>
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <FormControl>
+                  <Field>
+                    <FieldLabel>Permission Kind</FieldLabel>
+                    <Select
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      items={Object.fromEntries(
+                        zPermissionKind.options.map((kind) => [kind, kind])
+                      )}
+                    >
+                      <FieldControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select permission kind" />
                         </SelectTrigger>
-                      </FormControl>
+                      </FieldControl>
                       <SelectContent>
-                        {PERMISSION_KINDS.map((kind) => (
+                        {zPermissionKind.options.map((kind) => (
                           <SelectItem key={kind} value={kind}>
                             {kind}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
-                    <FormMessage />
-                  </FormItem>
+                    <FieldError />
+                  </Field>
                 )}
               />
-            </div>
+            </FieldGroup>
 
             <div className="flex justify-end">
               <Button type="submit" size="sm">
@@ -202,7 +196,7 @@ export function RolePermissionDraft({
               </Button>
             </div>
           </form>
-        </Form>
+        </FieldProvider>
 
         {permissions.length > 0 && (
           <Table>

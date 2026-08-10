@@ -1,7 +1,7 @@
 import type { Locator, Page } from "@playwright/test";
 
 import { BaseComponent } from "../components/base";
-import { getElementByText, waitForPermissionsLoad } from "../helpers";
+import { getElementByText } from "../helpers";
 import {
   EmptyStateMixin,
   SearchMixin,
@@ -42,7 +42,6 @@ export class OrganizationsSection extends SectionContainerMixin(
   async waitForLoad(options?: { timeout?: number }): Promise<void> {
     await this.waitForContainerLoad(options);
     await this.waitForTableOrEmptyState(options);
-    await waitForPermissionsLoad(this.page);
   }
 
   /**

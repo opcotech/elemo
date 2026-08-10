@@ -26,11 +26,6 @@ const meta: Meta<typeof Separator> = {
       options: ["horizontal", "vertical"],
       description: "The orientation of the separator",
     },
-    decorative: {
-      control: "boolean",
-      description:
-        "Whether the separator is decorative (true) or semantic (false)",
-    },
     className: {
       control: "text",
       description: "Additional CSS classes to apply to the separator",
@@ -335,7 +330,7 @@ export const CustomStyling: Story = {
         <h3 className="text-lg font-medium">Colored Separator</h3>
         <p className="text-muted-foreground text-sm">With custom color</p>
       </div>
-      <Separator className="h-0.5 bg-gradient-to-r from-blue-500 to-purple-500" />
+      <Separator className="h-0.5 bg-linear-to-r from-blue-500 to-purple-500" />
 
       <div>
         <h3 className="text-lg font-medium">Dotted Separator</h3>

@@ -1,3 +1,4 @@
+export * from "./permission-form-schema";
 export * from "./role-create-form";
 export * from "./role-delete-dialog";
 export * from "./role-edit-form";

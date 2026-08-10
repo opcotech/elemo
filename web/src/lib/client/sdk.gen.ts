@@ -826,7 +826,7 @@ export const v1OrganizationRolesGet = <ThrowOnError extends boolean = false>(
     ThrowOnError
   >({
     security: [{ scheme: "bearer", type: "http" }],
-    url: "/v1/organizations/${id}/roles",
+    url: "/v1/organizations/{id}/roles",
     ...options,
   });
 
@@ -848,7 +848,7 @@ export const v1OrganizationRolesCreate = <ThrowOnError extends boolean = false>(
     ThrowOnError
   >({
     security: [{ scheme: "bearer", type: "http" }],
-    url: "/v1/organizations/${id}/roles",
+    url: "/v1/organizations/{id}/roles",
     ...options,
     headers: {
       "Content-Type": "application/json",
@@ -874,7 +874,7 @@ export const v1OrganizationRoleDelete = <ThrowOnError extends boolean = false>(
     ThrowOnError
   >({
     security: [{ scheme: "bearer", type: "http" }],
-    url: "/v1/organizations/${id}/roles/{role_id}",
+    url: "/v1/organizations/{id}/roles/{role_id}",
     ...options,
   });
 
@@ -896,7 +896,7 @@ export const v1OrganizationRoleGet = <ThrowOnError extends boolean = false>(
     ThrowOnError
   >({
     security: [{ scheme: "bearer", type: "http" }],
-    url: "/v1/organizations/${id}/roles/{role_id}",
+    url: "/v1/organizations/{id}/roles/{role_id}",
     ...options,
   });
 
@@ -918,7 +918,7 @@ export const v1OrganizationRoleUpdate = <ThrowOnError extends boolean = false>(
     ThrowOnError
   >({
     security: [{ scheme: "bearer", type: "http" }],
-    url: "/v1/organizations/${id}/roles/{role_id}",
+    url: "/v1/organizations/{id}/roles/{role_id}",
     ...options,
     headers: {
       "Content-Type": "application/json",

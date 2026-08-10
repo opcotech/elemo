@@ -60,24 +60,29 @@ export async function waitForElementVisible(
 }
 
 /**
+ * Wait for CSS/Web Animations on a locator (and its descendants) to finish.
+ * Useful after opening sheets/dialogs that animate in before nested UI is interactive.
+ */
+export async function waitForAnimations(locator: Locator): Promise<void> {
+  await locator.evaluate(async (element) => {
+    const animations = element.getAnimations({ subtree: true });
+    await Promise.all(
+      animations.map((animation) => animation.finished.catch(() => undefined))
+    );
+  });
+}
+
+/**
  * Wait for a dropdown/combobox to open and be ready for interaction.
  * @param combobox - The combobox locator
  */
 export async function waitForDropdownOpen(combobox: Locator): Promise<void> {
-  await expect(combobox)
-    .toHaveAttribute("aria-expanded", "true")
-    .catch(() => {});
-  await combobox
-    .page()
-    .waitForFunction(() => {
-      const dropdowns = document.querySelectorAll(
-        '[role="listbox"], [role="menu"]'
-      );
-      return Array.from(dropdowns).some(
-        (d) => window.getComputedStyle(d).display !== "none"
-      );
+  await expect(combobox).toHaveAttribute("aria-expanded", "true");
+  await expect(
+    combobox.page().locator('[role="listbox"], [role="menu"]').filter({
+      visible: true,
     })
-    .catch(() => {});
+  ).not.toHaveCount(0);
 }
 
 /**
@@ -91,25 +96,16 @@ export async function waitForSkeletonToDisappear(
 ): Promise<void> {
   const selector = options?.selector ?? '[data-slot="skeleton"]';
   const skeleton = container.locator(selector);
-  let hasSkeleton = false;
-
-  try {
-    hasSkeleton = (await skeleton.count()) > 0;
-  } catch {
-    hasSkeleton = false;
-  }
+  const hasSkeleton = (await skeleton.count()) > 0;
 
   if (!hasSkeleton) {
     return;
   }
 
-  await skeleton
-    .first()
-    .waitFor({
-      state: "hidden",
-      timeout: options?.timeout ?? 5000,
-    })
-    .catch(() => {});
+  await skeleton.first().waitFor({
+    state: "hidden",
+    timeout: options?.timeout ?? 5000,
+  });
 }
 
 /**
@@ -121,14 +117,10 @@ export async function waitForLocatorAttached(
   locator: Locator,
   options?: { timeout?: number }
 ): Promise<void> {
-  try {
-    await locator.first().waitFor({
-      state: "attached",
-      timeout: options?.timeout ?? 5000,
-    });
-  } catch {
-    // swallow attachment wait failures
-  }
+  await locator.first().waitFor({
+    state: "attached",
+    timeout: options?.timeout ?? 5000,
+  });
 }
 
 /**

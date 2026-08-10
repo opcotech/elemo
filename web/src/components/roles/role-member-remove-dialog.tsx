@@ -4,11 +4,9 @@ import { UserMinus } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
 import { useDeleteMutation } from "@/hooks/use-delete-mutation";
-import type { User } from "@/lib/api";
-import {
-  v1OrganizationRoleMemberRemoveMutation,
-  v1OrganizationRoleMembersGetOptions,
-} from "@/lib/client/@tanstack/react-query.gen";
+import { v1OrganizationRoleMemberRemoveMutation } from "@/lib/api/mutation-options";
+import { v1OrganizationRoleMembersGetOptions } from "@/lib/api/query-options";
+import type { User } from "@/lib/api/types";
 import { getInitials } from "@/lib/utils";
 
 interface RoleMemberRemoveDialogProps {

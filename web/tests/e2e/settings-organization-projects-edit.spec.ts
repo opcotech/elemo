@@ -15,7 +15,7 @@ import {
 } from "./utils/db";
 import { getRandomString } from "./utils/random";
 
-import type { User } from "@/lib/api";
+import type { User } from "@/lib/api/types";
 import type { Client } from "@/lib/client/client";
 import { v1OrganizationsNamespacesCreate } from "@/lib/client/sdk.gen";
 

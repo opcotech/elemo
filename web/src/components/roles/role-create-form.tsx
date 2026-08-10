@@ -20,13 +20,13 @@ import { Separator } from "@/components/ui/separator";
 import { Spinner } from "@/components/ui/spinner";
 import { useFormMutation } from "@/hooks/use-form-mutation";
 import { usePendingPermissions } from "@/hooks/use-pending-permissions";
+import { v1OrganizationRolesGetOptions } from "@/lib/api/query-options";
+import { v1OrganizationRolesCreate } from "@/lib/api/sdk";
 import type {
   Options,
   RoleCreate,
   V1OrganizationRolesCreateData,
-} from "@/lib/api";
-import { v1OrganizationRolesGetOptions } from "@/lib/client/@tanstack/react-query.gen";
-import { v1OrganizationRolesCreate } from "@/lib/client/sdk.gen";
+} from "@/lib/api/types";
 import { normalizeFormData } from "@/lib/forms";
 import { showErrorToast, showSuccessToast } from "@/lib/toast";
 

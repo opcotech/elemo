@@ -65,11 +65,19 @@ jobs:
           run_install: false
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: "20.x"
+          node-version: "22.x"
           cache: pnpm
           cache-dependency-path: web/pnpm-lock.yaml
+      - name: Install dependencies
+        run: make dep.frontend
+      - name: Check formatting
+        run: make format.frontend.check
+      - name: Check generated client drift
+        run: pnpm --dir web generate:check
       - name: Lint
-        run: make dep.frontend lint.frontend
+        run: make lint.frontend
+      - name: Typecheck
+        run: make typecheck.frontend
 
   backend-unit-test:
     name: Backend Unit Tests
@@ -130,11 +138,61 @@ jobs:
           include-hidden-files: true
           retention-days: 7
 
+  frontend-unit-test:
+    name: Frontend Unit Tests
+    runs-on: "ubuntu-latest"
+    needs:
+      - frontend-lint
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa # v4
+        with:
+          version: 10.13.1
+          run_install: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22.x"
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+      - name: Install dependencies
+        run: make dep.frontend
+      - name: Execute unit tests
+        run: make test.frontend.unit
+
+  frontend-build:
+    name: Frontend Build
+    runs-on: "ubuntu-latest"
+    needs:
+      - frontend-lint
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa # v4
+        with:
+          version: 10.13.1
+          run_install: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22.x"
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+      - name: Install dependencies
+        run: make dep.frontend
+      - name: Production build
+        run: pnpm --dir web build
+      - name: Storybook build
+        run: pnpm --dir web storybook:build
+      - name: Install Playwright Chromium for Storybook a11y
+        run: pnpm --dir web exec playwright install --with-deps chromium
+      - name: Storybook a11y verification
+        run: pnpm --dir web test-storybook:ci
+
   frontend-e2e-test:
     name: Frontend E2E Tests - ${{ matrix.project }} (shard ${{ matrix.shard }}/${{ matrix.total-shards }})
     runs-on: "ubuntu-latest"
     needs:
       - frontend-lint
+      - frontend-unit-test
+      - frontend-build
       - build-e2e-image
       - backend-integration-test
     strategy:
@@ -156,7 +214,7 @@ jobs:
           run_install: false
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: "20.x"
+          node-version: "22.x"
           cache: pnpm
           cache-dependency-path: web/pnpm-lock.yaml
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0

@@ -5,8 +5,6 @@ import { useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
-import { namespaceFormSchema } from "./namespace-form-fields";
-
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -16,34 +14,38 @@ import {
 } from "@/components/ui/card";
 import { EntitySelect } from "@/components/ui/entity-select";
 import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+  ControlledField,
+  Field,
+  FieldControl,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+  FieldProvider,
+} from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { useFormMutation } from "@/hooks/use-form-mutation";
 import { ResourceType, withResourceType } from "@/hooks/use-permissions";
-import type {
-  NamespaceCreate,
-  Options,
-  V1OrganizationsNamespacesCreateData,
-} from "@/lib/api";
-import { can } from "@/lib/auth/permissions";
+import { accessibleNamespacesQueryKey } from "@/lib/api/accessible-namespaces";
 import {
   v1OrganizationsGetOptions,
   v1OrganizationsNamespacesGetOptions,
   v1PermissionResourceGetOptions,
-} from "@/lib/client/@tanstack/react-query.gen";
-import { v1OrganizationsNamespacesCreate } from "@/lib/client/sdk.gen";
-import { normalizeFormData } from "@/lib/forms";
+} from "@/lib/api/query-options";
+import { v1OrganizationsNamespacesCreate } from "@/lib/api/sdk";
+import type {
+  NamespaceCreate,
+  Options,
+  V1OrganizationsNamespacesCreateData,
+} from "@/lib/api/types";
+import { can } from "@/lib/auth/permissions";
+import { zNamespaceCreate } from "@/lib/client/zod.gen";
+import { createFormSchema, normalizeFormData } from "@/lib/forms";
 import { getDefaultValue } from "@/lib/utils";
 
+const namespaceFormSchema = createFormSchema(zNamespaceCreate);
 const namespaceCreateWithOrgSchema = namespaceFormSchema.extend({
   organizationId: z.string().min(1, "Organization is required"),
 });
@@ -90,31 +92,22 @@ export function NamespaceCreateForm({
     });
   }, [showOrganizationSelector, organizations, permissionQueries]);
 
-  const formSchema = showOrganizationSelector
-    ? namespaceCreateWithOrgSchema
-    : namespaceFormSchema;
-
-  type FormValues = z.infer<typeof formSchema>;
-
-  const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
+  const form = useForm<NamespaceCreateWithOrgFormValues>({
+    resolver: zodResolver(namespaceCreateWithOrgSchema),
     defaultValues: {
       name: "",
       description: "",
-      ...(showOrganizationSelector ? { organizationId: "" } : {}),
-    } as FormValues,
+      organizationId: organizationId ?? "",
+    },
   });
 
-  const selectedOrganizationId = organizationId
-    ? organizationId
-    : showOrganizationSelector
-      ? (form.watch("organizationId" as keyof FormValues) as string | undefined)
-      : undefined;
+  const selectedOrganizationId =
+    organizationId ?? form.watch("organizationId") ?? undefined;
 
   const mutation = useFormMutation<
     { id: string },
     Options<V1OrganizationsNamespacesCreateData>,
-    FormValues
+    NamespaceCreateWithOrgFormValues
   >({
     mutationFn: async (variables) => {
       const { data } = await v1OrganizationsNamespacesCreate({
@@ -132,27 +125,27 @@ export function NamespaceCreateForm({
             path: { id: selectedOrganizationId },
           }).queryKey,
           v1OrganizationsGetOptions().queryKey,
+          accessibleNamespacesQueryKey,
         ]
-      : [v1OrganizationsGetOptions().queryKey],
-    navigateOnSuccess: organizationId
-      ? {
-          to: "/settings/organizations/$organizationId",
-          params: { organizationId },
-        }
-      : {
-          to: "/settings/namespaces",
-        },
+      : [v1OrganizationsGetOptions().queryKey, accessibleNamespacesQueryKey],
+    navigateOnSuccess: (navigateTo) =>
+      organizationId
+        ? navigateTo({
+            to: "/settings/organizations/$organizationId",
+            params: { organizationId },
+          })
+        : navigateTo({
+            to: "/settings/namespaces",
+          }),
     transformValues: (values) => {
+      const { organizationId: formOrganizationId, ...namespaceValues } = values;
       const normalizedBody = normalizeFormData(
         namespaceFormSchema,
-        values
+        namespaceValues
       ) as NamespaceCreate;
-      const orgId =
-        organizationId ||
-        (values as NamespaceCreateWithOrgFormValues).organizationId;
       return {
         path: {
-          id: orgId,
+          id: organizationId ?? formOrganizationId,
         },
         body: normalizedBody,
       };
@@ -186,7 +179,7 @@ export function NamespaceCreateForm({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <Form {...form}>
+        <FieldProvider {...form}>
           <form
             onSubmit={mutation.handleSubmit}
             className="flex flex-col gap-y-6"
@@ -197,83 +190,84 @@ export function NamespaceCreateForm({
               </div>
             )}
 
-            {showOrganizationSelector && (
-              <FormField
+            <FieldGroup>
+              {showOrganizationSelector && (
+                <ControlledField
+                  control={form.control}
+                  name="organizationId"
+                  render={({ field }) => (
+                    <Field>
+                      <FieldLabel>Organization</FieldLabel>
+                      <FieldControl>
+                        {isLoading ? (
+                          <Skeleton className="h-10 w-full" />
+                        ) : writableOrganizations &&
+                          writableOrganizations.length > 0 ? (
+                          <EntitySelect
+                            options={writableOrganizations.map((org) => ({
+                              value: org.id,
+                              title: org.name,
+                              description:
+                                org.email || org.website || undefined,
+                              avatarSrc:
+                                (org as { logo?: string | null }).logo || null,
+                              avatarFallback: org.name,
+                            }))}
+                            value={field.value}
+                            onValueChange={field.onChange}
+                            placeholder="Select an organization"
+                            disabled={mutation.isPending}
+                          />
+                        ) : (
+                          <div className="text-muted-foreground text-sm">
+                            No organizations available
+                          </div>
+                        )}
+                      </FieldControl>
+                      <FieldError />
+                    </Field>
+                  )}
+                />
+              )}
+
+              <ControlledField
                 control={form.control}
-                // @ts-expect-error - organizationId field is a hack to use namespace
-                //  create form from organization and namespace pages
-                name="organizationId"
+                name="name"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Organization</FormLabel>
-                    <FormControl>
-                      {isLoading ? (
-                        <Skeleton className="h-10 w-full" />
-                      ) : writableOrganizations &&
-                        writableOrganizations.length > 0 ? (
-                        <EntitySelect
-                          options={writableOrganizations.map((org) => ({
-                            value: org.id,
-                            title: org.name,
-                            description: org.email || org.website || undefined,
-                            avatarSrc:
-                              (org as { logo?: string | null }).logo || null,
-                            avatarFallback: org.name,
-                          }))}
-                          value={field.value as string}
-                          onValueChange={field.onChange}
-                          placeholder="Select an organization"
-                          disabled={mutation.isPending}
-                        />
-                      ) : (
-                        <div className="text-muted-foreground text-sm">
-                          No organizations available
-                        </div>
-                      )}
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
+                  <Field>
+                    <FieldLabel>Name</FieldLabel>
+                    <FieldControl>
+                      <Input
+                        placeholder="Enter namespace name"
+                        {...field}
+                        disabled={mutation.isPending}
+                      />
+                    </FieldControl>
+                    <FieldError />
+                  </Field>
                 )}
               />
-            )}
 
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Name</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="Enter namespace name"
-                      {...field}
-                      disabled={mutation.isPending}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Enter namespace description (optional)"
-                      {...field}
-                      value={getDefaultValue(field.value)}
-                      rows={4}
-                      disabled={mutation.isPending}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+              <ControlledField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <Field>
+                    <FieldLabel>Description</FieldLabel>
+                    <FieldControl>
+                      <Textarea
+                        placeholder="Enter namespace description (optional)"
+                        {...field}
+                        value={getDefaultValue(field.value)}
+                        rows={4}
+                        disabled={mutation.isPending}
+                      />
+                    </FieldControl>
+                    <FieldError />
+                  </Field>
+                )}
+              />
+            </FieldGroup>
 
             <div className="flex justify-end gap-2">
               <Button
@@ -296,7 +290,7 @@ export function NamespaceCreateForm({
               </Button>
             </div>
           </form>
-        </Form>
+        </FieldProvider>
       </CardContent>
     </Card>
   );

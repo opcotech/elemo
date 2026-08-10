@@ -1,45 +1,28 @@
 import { createOrganization, createRole } from "./api";
 import { expect, test } from "./fixtures";
 import { SettingsOrganizationDetailsPage } from "./pages";
-import { USER_DEFAULT_PASSWORD, loginUser } from "./utils/auth";
-import { createUser, grantSystemOwnerMembershipToUser } from "./utils/db";
+import { loginUser } from "./utils/auth";
 import { getRandomString } from "./utils/random";
 
-import type { User } from "@/lib/api";
-
 test.describe("@settings.organization-roles Organization Roles List E2E Tests", () => {
-  let testUser: User;
-  let organizationId: string;
-
-  test.beforeAll(async ({ testConfig, createApiClient }) => {
-    testUser = await createUser(testConfig);
-
-    // Grant system owner membership so user can create organizations
-    await grantSystemOwnerMembershipToUser(testConfig, testUser.email);
-
-    // Create organization via API
-    const uniqueId = getRandomString(8);
+  test("should show empty state when no roles exist", async ({
+    page,
+    ownerPersona,
+    createApiClient,
+  }) => {
     const apiClient = await createApiClient(
-      testUser.email,
-      USER_DEFAULT_PASSWORD
+      ownerPersona.credentials.email,
+      ownerPersona.credentials.password
     );
     const organization = await createOrganization(apiClient, {
-      name: `Test Org Roles ${uniqueId}`,
-      email: `test-roles-${uniqueId}@example.com`,
+      name: `Test Org Roles Empty ${getRandomString(8)}`,
+      email: `test-roles-empty-${getRandomString(8)}@example.com`,
     });
-    organizationId = organization.id;
-  });
 
-  test.beforeEach(async ({ page }) => {
-    await loginUser(page, {
-      email: testUser.email,
-      password: USER_DEFAULT_PASSWORD,
-    });
-  });
+    await loginUser(page, ownerPersona.credentials);
 
-  test("should show empty state when no roles exist", async ({ page }) => {
     const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
-    await orgDetailsPage.goto(organizationId);
+    await orgDetailsPage.goto(organization.id);
     await orgDetailsPage.roles.waitForLoad();
 
     // Verify empty state is visible
@@ -57,12 +40,17 @@ test.describe("@settings.organization-roles Organization Roles List E2E Tests", 
 
   test("should create roles and display in list", async ({
     page,
+    ownerPersona,
     createApiClient,
   }) => {
     const apiClient = await createApiClient(
-      testUser.email,
-      USER_DEFAULT_PASSWORD
+      ownerPersona.credentials.email,
+      ownerPersona.credentials.password
     );
+    const organization = await createOrganization(apiClient, {
+      name: `Test Org Roles List ${getRandomString(8)}`,
+      email: `test-roles-list-${getRandomString(8)}@example.com`,
+    });
 
     // Create multiple roles via API
     const roles = [
@@ -81,13 +69,15 @@ test.describe("@settings.organization-roles Organization Roles List E2E Tests", 
 
     const createdRoles = [];
     for (const roleData of roles) {
-      const role = await createRole(apiClient, organizationId, roleData);
+      const role = await createRole(apiClient, organization.id, roleData);
       createdRoles.push(role);
     }
 
+    await loginUser(page, ownerPersona.credentials);
+
     // Navigate to organization details page
     const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
-    await orgDetailsPage.goto(organizationId);
+    await orgDetailsPage.goto(organization.id);
     await orgDetailsPage.roles.waitForLoad();
 
     // Verify all roles appear in the table
@@ -122,11 +112,19 @@ test.describe("@settings.organization-roles Organization Roles List E2E Tests", 
     }
   });
 
-  test("should search roles", async ({ page, createApiClient }) => {
+  test("should search roles", async ({
+    page,
+    ownerPersona,
+    createApiClient,
+  }) => {
     const apiClient = await createApiClient(
-      testUser.email,
-      USER_DEFAULT_PASSWORD
+      ownerPersona.credentials.email,
+      ownerPersona.credentials.password
     );
+    const organization = await createOrganization(apiClient, {
+      name: `Test Org Roles Search ${getRandomString(8)}`,
+      email: `test-roles-search-${getRandomString(8)}@example.com`,
+    });
 
     // Create multiple roles with different names
     const roles = [
@@ -145,13 +143,15 @@ test.describe("@settings.organization-roles Organization Roles List E2E Tests", 
 
     const createdRoles = [];
     for (const roleData of roles) {
-      const role = await createRole(apiClient, organizationId, roleData);
+      const role = await createRole(apiClient, organization.id, roleData);
       createdRoles.push(role);
     }
 
+    await loginUser(page, ownerPersona.credentials);
+
     // Navigate to organization details page
     const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
-    await orgDetailsPage.goto(organizationId);
+    await orgDetailsPage.goto(organization.id);
     await orgDetailsPage.roles.waitForLoad();
 
     // Search for a specific role name

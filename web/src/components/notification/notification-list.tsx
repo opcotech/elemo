@@ -12,19 +12,15 @@ import {
 } from "@/components/ui/empty";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
-import { v1NotificationsGetOptions } from "@/lib/api";
+import { v1NotificationsGetOptions } from "@/lib/api/query-options";
 
 export function NotificationList() {
-  const {
-    data: notifications,
-    isLoading,
-    refetch,
-  } = useQuery({
+  const { data: notifications, isLoading } = useQuery({
     ...v1NotificationsGetOptions(),
   });
 
   const sortedNotifications = useMemo(() => {
-    return notifications?.sort(
+    return notifications?.toSorted(
       (a, b) =>
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
@@ -62,9 +58,6 @@ export function NotificationList() {
             <NotificationItem
               key={notification.id}
               notification={notification}
-              onSuccess={() => {
-                refetch();
-              }}
             />
           ))}
         </div>

@@ -1,6 +1,7 @@
 import { Search } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
 interface SearchInputProps {
   value: string;
@@ -8,6 +9,7 @@ interface SearchInputProps {
   placeholder?: string;
   disabled?: boolean;
   className?: string;
+  "aria-label"?: string;
 }
 
 export function SearchInput({
@@ -16,16 +18,23 @@ export function SearchInput({
   placeholder = "Search...",
   disabled = false,
   className,
+  "aria-label": ariaLabel,
 }: SearchInputProps) {
   return (
-    <div className={`relative max-w-md flex-1 ${className || ""}`}>
-      <Search className="text-muted-foreground absolute top-3 left-2 h-4 w-4" />
+    <div className={cn("relative max-w-md flex-1", className)}>
+      <Search
+        aria-hidden
+        className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
+      />
       <Input
+        type="search"
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onInput={(e) => onChange((e.target as HTMLInputElement).value)}
         disabled={disabled}
-        className="pl-8"
+        aria-label={ariaLabel ?? placeholder}
+        className="pl-9"
       />
     </div>
   );

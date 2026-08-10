@@ -1,6 +1,7 @@
+import { expect } from "@playwright/test";
 import type { Page } from "@playwright/test";
 
-import { navigateAndWait, waitForPageLoad } from "../helpers";
+import { fillFormField, navigateAndWait, waitForPageLoad } from "../helpers";
 
 import type { LoginCredentials } from "@/lib/auth/types";
 
@@ -27,42 +28,57 @@ export async function loginUser(
   }
 ): Promise<boolean> {
   const { destination, throwOnFailure = true } = options || {};
+  // Clear prior session so tests can switch users without hitting
+  // redirectIfAuthenticated on /login. Wait for any in-flight redirect
+  // (e.g. post password-reset) to settle before navigating again.
+  await page.context().clearCookies();
+  await page.waitForLoadState("domcontentloaded").catch(() => undefined);
   await navigateAndWait(page, "/login");
-  await page.getByLabel("Email").fill(credentials.email);
-  await page
-    .getByRole("textbox", { name: "Password" })
-    .fill(credentials.password);
-  await page.getByRole("button", { name: "Sign in" }).click();
-  await page.waitForURL((url) => !url.pathname.includes("/login"));
-  await waitForPageLoad(page);
-  await page
-    .waitForFunction(() => {
-      const buttons = document.querySelectorAll("button");
-      for (const button of buttons) {
-        if (
-          button.textContent &&
-          button.textContent.includes("Signing in...")
-        ) {
-          return false;
-        }
-      }
-      return true;
-    })
-    .catch(() => {});
-  const isOnDashboard = await page
-    .getByText("Welcome back!")
-    .isVisible()
-    .catch(() => false);
+  const signIn = page.getByRole("button", { name: "Sign in" });
+  await expect(signIn).toBeVisible();
+  await expect(signIn).toBeEnabled();
+  await fillFormField(page, "Email", credentials.email);
+  await fillFormField(page, "Password", credentials.password);
+  await signIn.click();
 
-  if (!isOnDashboard) {
+  await page.waitForURL((url) => !url.pathname.includes("/login"), {
+    timeout: 15_000,
+  });
+  await waitForPageLoad(page);
+
+  // Wait for the authenticated shell instead of a single visibility snapshot —
+  // WebKit and slow home loaders often leave /login before the sidebar paints.
+  const shell = page.getByRole("link", { name: "Elemo", exact: true });
+  try {
+    await shell.waitFor({ state: "visible", timeout: 15_000 });
+  } catch {
     if (throwOnFailure) {
-      throw new Error("Login failed - dashboard not found");
+      throw new Error("Login failed - authenticated shell not found");
     }
     return false;
   }
+
   if (destination) {
     await navigateAndWait(page, destination);
   }
 
   return true;
+}
+
+/**
+ * Open the sidebar user menu and log out.
+ * Matches NavUser by email (always shown) or optional display name.
+ */
+export async function logoutUser(
+  page: Page,
+  user: { email: string; first_name?: string; last_name?: string }
+): Promise<void> {
+  const userMenuTrigger = page
+    .locator("button")
+    .filter({ hasText: user.email })
+    .first();
+
+  await userMenuTrigger.click();
+  await page.getByRole("menuitem", { name: "Log out" }).click();
+  await page.waitForURL((url) => url.pathname.includes("/login"));
 }

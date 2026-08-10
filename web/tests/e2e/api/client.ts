@@ -1,6 +1,6 @@
+import { TestAuthClient } from "./auth-client";
 import { getTestConfig } from "../utils/test-config";
 
-import { AuthClient } from "@/lib/auth/auth-client";
 import type { LoginCredentials } from "@/lib/auth/types";
 import type { Client } from "@/lib/client/client";
 import { createClient } from "@/lib/client/client";
@@ -24,7 +24,7 @@ export async function createAuthenticatedClient(
   const oauthBaseUrl = config.apiBaseUrl.replace(/\/api\/?$/, "");
 
   // Authenticate using OAuth password grant
-  const authClient = new AuthClient(oauthBaseUrl, {
+  const authClient = new TestAuthClient(oauthBaseUrl, {
     clientId: config.authClientId,
     clientSecret: config.authClientSecret,
     tokenUrl: "/oauth/token",
@@ -60,7 +60,7 @@ export async function createSystemOwnerClient(): Promise<Client> {
     try {
       const config = getTestConfig();
       const oauthBaseUrl = config.apiBaseUrl.replace(/\/api\/?$/, "");
-      const authClient = new AuthClient(oauthBaseUrl, {
+      const authClient = new TestAuthClient(oauthBaseUrl, {
         clientId: config.authClientId,
         clientSecret: config.authClientSecret,
         tokenUrl: "/oauth/token",

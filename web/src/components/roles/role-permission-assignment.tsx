@@ -21,9 +21,9 @@ import {
   usePermissions,
   withResourceType,
 } from "@/hooks/use-permissions";
-import type { Permission } from "@/lib/api";
+import { v1OrganizationRolePermissionsGetOptions } from "@/lib/api/query-options";
+import type { Permission } from "@/lib/api/types";
 import { can } from "@/lib/auth/permissions";
-import { v1OrganizationRolePermissionsGetOptions } from "@/lib/client/@tanstack/react-query.gen";
 import {
   extractResourceId,
   formatResourceId,
@@ -84,7 +84,11 @@ export function RolePermissionAssignment({
       <Button
         type="button"
         variant="outline"
-        onClick={() => setAddDialogOpen(true)}
+        onClick={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          setAddDialogOpen(true);
+        }}
         size="sm"
       >
         <Plus className="size-4" />
@@ -103,7 +107,11 @@ export function RolePermissionAssignment({
             <Button
               type="button"
               variant="outline"
-              onClick={() => setAddDialogOpen(true)}
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                setAddDialogOpen(true);
+              }}
               size="sm"
             >
               <Plus className="size-4" />

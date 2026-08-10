@@ -9,8 +9,8 @@ const spinnerVariants = cva("animate-spin motion-reduce:animate-none", {
   variants: {
     variant: {
       default: "",
-      primary: "text-primary dark:text-accent",
-      secondary: "text-neutral-200",
+      primary: "text-primary",
+      secondary: "text-muted-foreground",
     },
     size: {
       default: "size-6",
@@ -29,17 +29,18 @@ const spinnerVariants = cva("animate-spin motion-reduce:animate-none", {
 
 export interface SpinnerProps
   extends
-    React.HTMLAttributes<Omit<HTMLDivElement, "children">>,
+    Omit<React.ComponentProps<"div">, "children">,
     VariantProps<typeof spinnerVariants> {}
 
 function Spinner({ className, variant, size, ...props }: SpinnerProps) {
   return (
     <div
       role="status"
+      data-slot="spinner"
       className={cn(spinnerVariants({ variant, size }), className)}
       {...props}
     >
-      <Loader2Icon className="h-full w-full" />
+      <Loader2Icon className="h-full w-full" aria-hidden />
       <span className="sr-only">Loading...</span>
     </div>
   );

@@ -1,7 +1,7 @@
 import type { Locator, Page } from "@playwright/test";
 
 import { BaseComponent } from "../components/base";
-import { waitForPermissionsLoad, waitForSuccessToast } from "../helpers";
+import { waitForSuccessToast } from "../helpers";
 import {
   DialogMixin,
   EmptyStateMixin,
@@ -33,7 +33,12 @@ export class NamespacesSection extends DialogMixin(
   async waitForLoad(options?: { timeout?: number }): Promise<void> {
     await this.waitForContainerLoad(options);
     await this.waitForTableOrEmptyState(options);
-    await waitForPermissionsLoad(this.page);
+    // Permission-gated action buttons replace skeletons asynchronously.
+    await this.getSectionContainer()
+      .locator('[data-slot="skeleton"]')
+      .first()
+      .waitFor({ state: "hidden", timeout: options?.timeout ?? 15_000 })
+      .catch(() => undefined);
   }
 
   getRowByNamespaceName(name: string): Locator {
@@ -66,9 +71,7 @@ export class NamespacesSection extends DialogMixin(
   }
 
   async hasDeleteNamespaceButton(name: string): Promise<boolean> {
-    return await this.getDeleteNamespaceButton(name)
-      .isVisible()
-      .catch(() => false);
+    return (await this.getDeleteNamespaceButton(name).count()) > 0;
   }
 
   async deleteNamespace(name: string): Promise<void> {

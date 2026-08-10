@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Edit } from "lucide-react";
 
-import { DetailField } from "@/components/detail-field";
+import { DetailField } from "@/components/shared/detail-field";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,30 +11,24 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  ResourceType,
-  usePermissions,
-  withResourceType,
-} from "@/hooks/use-permissions";
-import type { Namespace } from "@/lib/api";
+import type { Namespace, Permission } from "@/lib/api/types";
 import { can } from "@/lib/auth/permissions";
-import { formatDate, pluralize } from "@/lib/utils";
+import { formatDate } from "@/lib/format-date";
+import { pluralize } from "@/lib/utils";
 
 interface NamespaceDetailInfoProps {
   namespace: Namespace;
+  permissions: Permission[];
   organizationId: string;
   organizationName: string;
 }
 
 export function NamespaceDetailInfo({
   namespace,
+  permissions,
   organizationId,
   organizationName,
 }: NamespaceDetailInfoProps) {
-  const { data: permissions } = usePermissions(
-    withResourceType(ResourceType.Namespace, namespace.id)
-  );
-
   const hasWritePermission = can(permissions, "write");
 
   const projectCount = namespace.projects?.length || 0;
@@ -50,20 +44,38 @@ export function NamespaceDetailInfo({
               Details about the namespace and its resources.
             </CardDescription>
           </div>
-          {hasWritePermission && (
-            <Button variant="outline" size="sm" asChild>
-              <Link
-                to="/settings/organizations/$organizationId/namespaces/$namespaceId/edit"
-                params={{
-                  organizationId,
-                  namespaceId: namespace.id,
-                }}
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              render={
+                <Link
+                  to="/namespaces/$namespaceId"
+                  params={{ namespaceId: namespace.id }}
+                />
+              }
+            >
+              Open namespace
+            </Button>
+            {hasWritePermission && (
+              <Button
+                variant="outline"
+                size="sm"
+                render={
+                  <Link
+                    to="/settings/organizations/$organizationId/namespaces/$namespaceId/edit"
+                    params={{
+                      organizationId,
+                      namespaceId: namespace.id,
+                    }}
+                  />
+                }
               >
                 <Edit className="size-4" />
                 Edit
-              </Link>
-            </Button>
-          )}
+              </Button>
+            )}
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">

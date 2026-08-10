@@ -1,22 +1,16 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { CircleCheckBig, Plus } from "lucide-react";
 import { useMemo } from "react";
 
+import { AppEmptyState } from "@/components/shared/app-feedback";
+import { AppList } from "@/components/shared/entity-link";
 import { TodoItem } from "@/components/todo";
 import { AddTodoForm } from "@/components/todo/add-todo-form";
 import { EditTodoForm } from "@/components/todo/edit-todo-form";
-import { Badge } from "@/components/ui/badge";
+import { groupTodosByDueDate } from "@/components/todo/grouping";
 import { Button } from "@/components/ui/button";
-import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Sheet,
@@ -25,162 +19,91 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useAddTodoForm } from "@/contexts/add-todo-form-context";
-import { useEditTodoForm } from "@/contexts/edit-todo-form-context";
-import { useTodoSheet } from "@/contexts/todo-sheet-context";
-import { v1TodosGetOptions } from "@/lib/api";
-import type { TodoPriority } from "@/lib/api";
-
-export function TodoSheetTrigger() {
-  const { open } = useTodoSheet();
-  const { data: todos } = useQuery({
-    ...v1TodosGetOptions(),
-  });
-  const uncompletedCount = todos?.filter((t) => !t.completed).length || 0;
-
-  return (
-    <Button
-      variant="link"
-      size="icon"
-      className="text-foreground hover:text-primary relative"
-      onClick={open}
-      aria-label="Show todo list"
-    >
-      <CircleCheckBig className="h-5 w-5" />
-      {uncompletedCount > 0 && (
-        <Badge
-          className="absolute top-1 right-1 size-2 rounded-full border-red-600 bg-red-500 p-0 dark:bg-red-500"
-          variant="destructive"
-        />
-      )}
-    </Button>
-  );
-}
+import { v1TodosGetOptions } from "@/lib/api/query-options";
+import { uiActions, useUiSelector } from "@/lib/ui-store";
 
 export function TodoSheet() {
-  const {
-    data: todos,
-    isLoading,
-    refetch,
-  } = useQuery({
+  const { data: todos = [], isLoading } = useQuery({
     ...v1TodosGetOptions(),
   });
-  const { isOpen, close } = useTodoSheet();
-  const {
-    isOpen: isAddFormOpen,
-    open: openAddForm,
-    close: closeAddForm,
-  } = useAddTodoForm();
-  const {
-    isOpen: isEditFormOpen,
-    todo: editTodo,
-    close: closeEditForm,
-  } = useEditTodoForm();
-
-  const sortedTodos = useMemo(() => {
-    if (!todos) return [];
-
-    return [...todos].sort((a, b) => {
-      // First sort by completed status (completed todos go to the end)
-      if (a.completed && !b.completed) return 1;
-      if (!a.completed && b.completed) return -1;
-
-      // Then sort by due date (null dates go to the end)
-      const aDueDate = a.due_date ? new Date(a.due_date) : null;
-      const bDueDate = b.due_date ? new Date(b.due_date) : null;
-
-      if (aDueDate && !bDueDate) return -1;
-      if (!aDueDate && bDueDate) return 1;
-      if (aDueDate && bDueDate) {
-        const dueDateDiff = aDueDate.getTime() - bDueDate.getTime();
-        if (dueDateDiff !== 0) return dueDateDiff;
-      }
-
-      // Then sort by priority (critical > urgent > important > normal)
-      const priorityOrder = { critical: 4, urgent: 3, important: 2, normal: 1 };
-      const aPriority =
-        priorityOrder[a.priority as keyof typeof priorityOrder] || 1;
-      const bPriority =
-        priorityOrder[b.priority as keyof typeof priorityOrder] || 1;
-
-      if (aPriority !== bPriority) return bPriority - aPriority;
-
-      // Finally sort by creation date (newest first)
-      return (
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      );
+  const queryClient = useQueryClient();
+  const isOpen = useUiSelector((state) => state.todoSheetOpen);
+  const isAddFormOpen = useUiSelector((state) => state.addTodoOpen);
+  const editTodo = useUiSelector((state) => state.editingTodo);
+  const invalidateTodos = () =>
+    queryClient.invalidateQueries({
+      queryKey: v1TodosGetOptions().queryKey,
     });
-  }, [todos]);
 
-  const getPriorityColor = (priority: TodoPriority) => {
-    switch (priority) {
-      case "critical":
-        return "destructive";
-      case "urgent":
-        return "warning";
-      case "important":
-        return "default";
-      default:
-        return "secondary";
-    }
-  };
+  const groups = useMemo(() => groupTodosByDueDate(todos), [todos]);
+  const openTodoCount = todos.filter((todo) => !todo.completed).length;
+  const completedTodoCount = todos.length - openTodoCount;
 
   return (
     <Sheet
       open={isOpen}
       onOpenChange={(open) => {
-        if (!open) close();
+        if (!open) uiActions.closeTodoSheet();
       }}
     >
-      <SheetContent className="sm:w-md sm:max-w-full">
-        <SheetHeader className="pb-4">
+      <SheetContent className="gap-4 px-4 pb-4 data-[side=right]:w-full data-[side=right]:sm:max-w-lg">
+        <SheetHeader className="px-0 pt-4 pb-0">
           <SheetTitle>Todo Items</SheetTitle>
+          {!isLoading && todos.length > 0 && (
+            <p className="text-muted-foreground text-xs">
+              {openTodoCount} open · {completedTodoCount} completed
+            </p>
+          )}
         </SheetHeader>
         <Button
           variant="outline"
           size="sm"
-          onClick={openAddForm}
-          className="h-8 px-3"
+          onClick={uiActions.openAddTodo}
+          className="shrink-0"
         >
-          <Plus className="h-4 w-4" />
+          <Plus />
           Add Todo
         </Button>
         <ScrollArea className="h-full">
           {isLoading ? (
-            <div className="space-y-3">
-              <Skeleton className="h-24 w-full" />
-              <Skeleton className="h-24 w-full" />
-              <Skeleton className="h-24 w-full" />
+            <div className="pr-3">
+              <AppList aria-label="Loading todos" aria-busy="true">
+                {Array.from({ length: 3 }).map((_, index) => (
+                  <div key={index} role="listitem" className="px-3 py-2.5">
+                    <Skeleton className="h-10 w-full" />
+                  </div>
+                ))}
+              </AppList>
             </div>
-          ) : sortedTodos.length === 0 ? (
-            <Empty>
-              <EmptyHeader>
-                <EmptyMedia variant="icon">
-                  <CircleCheckBig />
-                </EmptyMedia>
-                <EmptyTitle>No todos found</EmptyTitle>
-                <EmptyDescription>
-                  Create your first todo to get started
-                </EmptyDescription>
-              </EmptyHeader>
-              <EmptyContent>
-                <Button onClick={openAddForm} variant="outline" size="sm">
+          ) : todos.length === 0 ? (
+            <AppEmptyState
+              icon={<CircleCheckBig />}
+              title="No todos found"
+              description="Create your first todo to get started"
+              action={
+                <Button
+                  onClick={uiActions.openAddTodo}
+                  variant="outline"
+                  size="sm"
+                >
                   <Plus className="size-4" />
                   Add Todo
                 </Button>
-              </EmptyContent>
-            </Empty>
+              }
+            />
           ) : (
-            <div className="space-y-4">
-              {sortedTodos.map((todo) => (
-                <TodoItem
-                  key={todo.id}
-                  todo={todo}
-                  getPriorityColor={getPriorityColor}
-                  onSuccess={() => {
-                    refetch();
-                  }}
-                />
+            <div className="flex flex-col gap-5 pr-3">
+              {groups.map((group) => (
+                <section key={group.id} className="min-w-0">
+                  <h3 className="text-muted-foreground mb-2 text-xs font-semibold tracking-wide uppercase">
+                    {group.label}
+                  </h3>
+                  <AppList aria-label={`${group.label} todos`}>
+                    {group.todos.map((todo) => (
+                      <TodoItem key={todo.id} todo={todo} />
+                    ))}
+                  </AppList>
+                </section>
               ))}
             </div>
           )}
@@ -189,18 +112,18 @@ export function TodoSheet() {
 
       <AddTodoForm
         open={isAddFormOpen}
-        onOpenChange={closeAddForm}
-        onSuccess={() => {
-          refetch();
+        onOpenChange={(open) => {
+          if (!open) uiActions.closeAddTodo();
         }}
+        onSuccess={invalidateTodos}
       />
 
       <EditTodoForm
-        open={isEditFormOpen}
-        onOpenChange={closeEditForm}
-        onSuccess={() => {
-          refetch();
+        open={editTodo !== null}
+        onOpenChange={(open) => {
+          if (!open) uiActions.closeEditTodo();
         }}
+        onSuccess={invalidateTodos}
         todo={editTodo}
       />
     </Sheet>

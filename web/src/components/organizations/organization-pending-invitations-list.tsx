@@ -22,7 +22,7 @@ import {
   usePermissions,
   withResourceType,
 } from "@/hooks/use-permissions";
-import type { OrganizationMember } from "@/lib/api";
+import type { OrganizationMember } from "@/lib/api/types";
 import { can } from "@/lib/auth/permissions";
 
 function OrganizationPendingInvitationsListSkeleton() {

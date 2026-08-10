@@ -19,13 +19,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { UserAvatarCompact } from "@/components/ui/user-avatar";
-import {
-  ResourceType,
-  usePermissions,
-  withResourceType,
-} from "@/hooks/use-permissions";
-import type { OrganizationMember } from "@/lib/api";
+import type { OrganizationMember, Permission } from "@/lib/api/types";
 import { can } from "@/lib/auth/permissions";
+import { zUserStatus } from "@/lib/client/zod.gen";
+import { sortOrganizationMembers } from "@/lib/organization-members";
 
 function OrganizationMembersListSkeleton() {
   return (
@@ -71,12 +68,14 @@ export function OrganizationMembersList({
   error,
   currentUserId,
   organizationId,
+  organizationPermissions,
 }: {
   members: OrganizationMember[];
   isLoading: boolean;
   error: unknown;
   currentUserId?: string | null;
   organizationId: string;
+  organizationPermissions: Permission[];
 }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [removeMemberDialogOpen, setRemoveMemberDialogOpen] = useState(false);
@@ -85,16 +84,7 @@ export function OrganizationMembersList({
   const [selectedMember, setSelectedMember] =
     useState<OrganizationMember | null>(null);
 
-  const { data: orgPermissions, isLoading: isOrgPermissionsLoading } =
-    usePermissions(withResourceType(ResourceType.Organization, organizationId));
-
-  const hasOrgReadPermission = can(orgPermissions, "read");
-  const hasOrgWritePermission = can(orgPermissions, "write");
-  const isPermissionsLoading = isOrgPermissionsLoading;
-
-  if (!isPermissionsLoading && !hasOrgReadPermission) {
-    return null;
-  }
+  const hasOrgWritePermission = can(organizationPermissions, "write");
 
   const handleRemoveClick = (member: OrganizationMember) => {
     setSelectedMember(member);
@@ -122,20 +112,7 @@ export function OrganizationMembersList({
 
   const sortedMembers = useMemo(() => {
     if (!members) return [];
-    return [...members].sort((a, b) => {
-      // Pending members come first
-      if (a.status === "pending" && b.status !== "pending") return -1;
-      if (a.status !== "pending" && b.status === "pending") return 1;
-
-      // Deleted members come last
-      if (a.status === "deleted" && b.status !== "deleted") return 1;
-      if (a.status !== "deleted" && b.status === "deleted") return -1;
-
-      // Within same status, sort alphabetically
-      const aName = `${a.first_name} ${a.last_name}`.toLowerCase();
-      const bName = `${b.first_name} ${b.last_name}`.toLowerCase();
-      return aName.localeCompare(bName);
-    });
+    return sortOrganizationMembers(members);
   }, [members]);
 
   const filteredMembers = useMemo(() => {
@@ -255,9 +232,9 @@ export function OrganizationMembersList({
                       </div>
                     </TableCell>
                     <TableCell>
-                      {member.status === "active" ? (
+                      {member.status === zUserStatus.enum.active ? (
                         <Badge variant="success">Active</Badge>
-                      ) : member.status === "deleted" ? (
+                      ) : member.status === zUserStatus.enum.deleted ? (
                         <Badge variant="destructive">Deleted</Badge>
                       ) : (
                         <Badge variant="outline">{member.status}</Badge>
@@ -265,36 +242,30 @@ export function OrganizationMembersList({
                     </TableCell>
                     {hasOrgWritePermission && (
                       <TableCell className="text-right">
-                        {isPermissionsLoading ? (
-                          <Skeleton className="h-8 w-8" />
-                        ) : (
-                          <div className="flex items-center justify-end gap-2">
-                            {member.status === "pending" && (
-                              <Button
-                                variant="destructive-ghost"
-                                size="sm"
-                                onClick={() => handleRevokeInviteClick(member)}
-                                title="Revoke invitation"
-                              >
-                                <X className="size-4" />
-                                <span className="sr-only">
-                                  Revoke invitation
-                                </span>
-                              </Button>
-                            )}
-                            {member.status !== "pending" && (
-                              <Button
-                                variant="destructive-ghost"
-                                size="sm"
-                                onClick={() => handleRemoveClick(member)}
-                                title="Remove member"
-                              >
-                                <UserMinus className="size-4" />
-                                <span className="sr-only">Remove member</span>
-                              </Button>
-                            )}
-                          </div>
-                        )}
+                        <div className="flex items-center justify-end gap-2">
+                          {member.status === zUserStatus.enum.pending && (
+                            <Button
+                              variant="destructive-ghost"
+                              size="sm"
+                              onClick={() => handleRevokeInviteClick(member)}
+                              title="Revoke invitation"
+                            >
+                              <X className="size-4" />
+                              <span className="sr-only">Revoke invitation</span>
+                            </Button>
+                          )}
+                          {member.status !== zUserStatus.enum.pending && (
+                            <Button
+                              variant="destructive-ghost"
+                              size="sm"
+                              onClick={() => handleRemoveClick(member)}
+                              title="Remove member"
+                            >
+                              <UserMinus className="size-4" />
+                              <span className="sr-only">Remove member</span>
+                            </Button>
+                          )}
+                        </div>
                       </TableCell>
                     )}
                   </TableRow>

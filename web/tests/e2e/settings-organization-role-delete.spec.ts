@@ -11,7 +11,7 @@ import {
 } from "./utils/db";
 import { getRandomString } from "./utils/random";
 
-import type { User } from "@/lib/api";
+import type { User } from "@/lib/api/types";
 
 test.describe("@settings.organization-role-delete Organization Role Delete E2E Tests", () => {
   let testUser: User;

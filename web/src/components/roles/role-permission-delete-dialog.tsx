@@ -2,11 +2,9 @@ import type { QueryKey } from "@tanstack/react-query";
 
 import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
 import { useDeleteMutation } from "@/hooks/use-delete-mutation";
-import type { Permission } from "@/lib/api";
-import {
-  v1OrganizationRolePermissionRemoveMutation,
-  v1OrganizationRolePermissionsGetOptions,
-} from "@/lib/client/@tanstack/react-query.gen";
+import { v1OrganizationRolePermissionRemoveMutation } from "@/lib/api/mutation-options";
+import { v1OrganizationRolePermissionsGetOptions } from "@/lib/api/query-options";
+import type { Permission } from "@/lib/api/types";
 import { extractResourceId, formatResourceId } from "@/lib/utils";
 
 interface RolePermissionDeleteDialogProps {

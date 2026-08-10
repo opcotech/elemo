@@ -13,23 +13,29 @@ import {
   CardHeader,
 } from "@/components/ui/card";
 import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+  ControlledField,
+  Field,
+  FieldControl,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+  FieldProvider,
+} from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { useFormMutation } from "@/hooks/use-form-mutation";
-import type { Namespace, Options, V1NamespaceUpdateData } from "@/lib/api";
+import { accessibleNamespacesQueryKey } from "@/lib/api/accessible-namespaces";
 import {
   v1NamespaceGetOptions,
   v1OrganizationsNamespacesGetOptions,
-} from "@/lib/client/@tanstack/react-query.gen";
-import { v1NamespaceUpdate } from "@/lib/client/sdk.gen";
+} from "@/lib/api/query-options";
+import { v1NamespaceUpdate } from "@/lib/api/sdk";
+import type {
+  Namespace,
+  Options,
+  V1NamespaceUpdateData,
+} from "@/lib/api/types";
 import { zNamespacePatch } from "@/lib/client/zod.gen";
 import { createFormSchema, normalizePatchData } from "@/lib/forms";
 import { getDefaultValue } from "@/lib/utils";
@@ -87,11 +93,13 @@ export function NamespaceEditForm({
       v1NamespaceGetOptions({
         path: { id: namespace.id },
       }).queryKey,
+      accessibleNamespacesQueryKey,
     ],
-    navigateOnSuccess: {
-      to: "/settings/organizations/$organizationId",
-      params: { organizationId },
-    },
+    navigateOnSuccess: (navigateTo) =>
+      navigateTo({
+        to: "/settings/organizations/$organizationId",
+        params: { organizationId },
+      }),
     transformValues: (values) => {
       const normalizedBody = normalizePatchData(
         namespaceEditFormSchema,
@@ -116,7 +124,7 @@ export function NamespaceEditForm({
         <CardDescription>Update the namespace details below.</CardDescription>
       </CardHeader>
       <CardContent>
-        <Form {...form}>
+        <FieldProvider {...form}>
           <form
             onSubmit={mutation.handleSubmit}
             className="flex flex-col gap-y-6"
@@ -128,43 +136,45 @@ export function NamespaceEditForm({
               </Alert>
             )}
 
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Name</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="Enter namespace name"
-                      {...field}
-                      disabled={mutation.isPending}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <FieldGroup>
+              <ControlledField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <Field>
+                    <FieldLabel>Name</FieldLabel>
+                    <FieldControl>
+                      <Input
+                        placeholder="Enter namespace name"
+                        {...field}
+                        disabled={mutation.isPending}
+                      />
+                    </FieldControl>
+                    <FieldError />
+                  </Field>
+                )}
+              />
 
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Enter namespace description (optional)"
-                      {...field}
-                      value={getDefaultValue(field.value)}
-                      rows={4}
-                      disabled={mutation.isPending}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+              <ControlledField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <Field>
+                    <FieldLabel>Description</FieldLabel>
+                    <FieldControl>
+                      <Textarea
+                        placeholder="Enter namespace description (optional)"
+                        {...field}
+                        value={getDefaultValue(field.value)}
+                        rows={4}
+                        disabled={mutation.isPending}
+                      />
+                    </FieldControl>
+                    <FieldError />
+                  </Field>
+                )}
+              />
+            </FieldGroup>
 
             <div className="flex justify-end gap-2">
               <Button
@@ -192,7 +202,7 @@ export function NamespaceEditForm({
               </Button>
             </div>
           </form>
-        </Form>
+        </FieldProvider>
       </CardContent>
     </Card>
   );

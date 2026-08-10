@@ -1,11 +1,8 @@
+import { expect } from "@playwright/test";
 import type { Locator, Page } from "@playwright/test";
 
 import { BaseComponent } from "../components/base";
-import {
-  getElementByText,
-  waitForPermissionsLoad,
-  waitForSuccessToast,
-} from "../helpers";
+import { waitForSuccessToast } from "../helpers";
 import {
   DialogMixin,
   EmptyStateMixin,
@@ -45,7 +42,6 @@ export class RolesSection extends DialogMixin(
   async waitForLoad(options?: { timeout?: number }): Promise<void> {
     await this.waitForContainerLoad(options);
     await this.waitForTableOrEmptyState(options);
-    await waitForPermissionsLoad(this.page);
   }
 
   /**
@@ -73,22 +69,27 @@ export class RolesSection extends DialogMixin(
    * Get the create role button locator.
    */
   getCreateRoleButton(): Locator {
-    return getElementByText(this.getSectionContainer(), "Create Role");
+    const container = this.getSectionContainer();
+    return container
+      .getByRole("link", { name: /create role/i })
+      .or(container.getByRole("button", { name: /create role/i }));
   }
 
   /**
    * Check if the create role button is visible.
    */
   async hasCreateRoleButton(): Promise<boolean> {
-    const button = this.getCreateRoleButton();
-    return await button.isVisible().catch(() => false);
+    return (await this.getCreateRoleButton().count()) > 0;
   }
 
   /**
    * Click on the create role button.
    */
   async clickCreateRoleButton(): Promise<void> {
-    await this.getCreateRoleButton().click();
+    const createButton = this.getCreateRoleButton().first();
+    await expect(createButton).toBeVisible();
+    await createButton.click();
+    await this.page.waitForURL(/\/roles\/new/);
   }
 
   /**

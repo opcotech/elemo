@@ -229,10 +229,10 @@ export const UserManagement: Story = {
           <TableCell>2 hours ago</TableCell>
           <TableCell className="text-right">
             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm">
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
+              <DropdownMenuTrigger
+                render={<Button variant="ghost" size="sm" />}
+              >
+                <MoreHorizontal className="h-4 w-4" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem>
@@ -280,10 +280,10 @@ export const UserManagement: Story = {
           <TableCell>1 day ago</TableCell>
           <TableCell className="text-right">
             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm">
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
+              <DropdownMenuTrigger
+                render={<Button variant="ghost" size="sm" />}
+              >
+                <MoreHorizontal className="h-4 w-4" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem>
@@ -331,10 +331,10 @@ export const UserManagement: Story = {
           <TableCell>1 week ago</TableCell>
           <TableCell className="text-right">
             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm">
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
+              <DropdownMenuTrigger
+                render={<Button variant="ghost" size="sm" />}
+              >
+                <MoreHorizontal className="h-4 w-4" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem>

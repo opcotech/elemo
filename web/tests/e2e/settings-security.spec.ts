@@ -2,20 +2,10 @@ import { expect, test } from "./fixtures";
 import { waitForErrorToast, waitForSuccessToast } from "./helpers";
 import { SettingsSecurityPage } from "./pages";
 import { USER_DEFAULT_PASSWORD, loginUser } from "./utils/auth";
-import { createUser } from "./utils/db";
 
 test.describe("@settings.security Password Change E2E Tests", () => {
-  let testUser: any;
-
-  test.beforeAll(async ({ testConfig }) => {
-    testUser = await createUser(testConfig);
-  });
-
-  test.beforeEach(async ({ page }) => {
-    await loginUser(page, {
-      email: testUser.email,
-      password: USER_DEFAULT_PASSWORD,
-    });
+  test.beforeEach(async ({ page, userPersona }) => {
+    await loginUser(page, userPersona.credentials);
   });
 
   test("should show validation errors for invalid form inputs", async ({
@@ -75,7 +65,7 @@ test.describe("@settings.security Password Change E2E Tests", () => {
       confirmPassword: "NewSecurePassword123!",
     });
     await securityPage.security.submitPasswordChange();
-    await waitForErrorToast(page, undefined);
+    await waitForErrorToast(page);
   });
 
   test("should successfully update password", async ({ page }) => {

@@ -8,27 +8,29 @@ import {
 } from "@/components/projects/project-form-schema";
 import type { ProjectCreateFormValues } from "@/components/projects/project-form-schema";
 import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+  ControlledField,
+  Field,
+  FieldControl,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+  FieldProvider,
+} from "@/components/ui/field";
 import { FormCard } from "@/components/ui/form-card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useFormMutation } from "@/hooks/use-form-mutation";
+import { accessibleNamespacesQueryKey } from "@/lib/api/accessible-namespaces";
+import {
+  v1NamespaceGetOptions,
+  v1NamespacesProjectsGetOptions,
+} from "@/lib/api/query-options";
+import { v1NamespacesProjectsCreate } from "@/lib/api/sdk";
 import type {
   Options,
   ProjectCreate,
   V1NamespacesProjectsCreateData,
-} from "@/lib/api";
-import {
-  v1NamespaceGetOptions,
-  v1NamespacesProjectsGetOptions,
-} from "@/lib/client/@tanstack/react-query.gen";
-import { v1NamespacesProjectsCreate } from "@/lib/client/sdk.gen";
+} from "@/lib/api/types";
 import { normalizeFormData } from "@/lib/forms";
 import { getDefaultValue } from "@/lib/utils";
 
@@ -80,6 +82,7 @@ export function ProjectCreateForm({
       v1NamespacesProjectsGetOptions({
         path: { id: namespaceId },
       }).queryKey,
+      accessibleNamespacesQueryKey,
     ],
     transformValues: (values) => {
       const normalized = normalizeFormData(projectCreateFormSchema, {
@@ -93,16 +96,15 @@ export function ProjectCreateForm({
         body: normalized,
       };
     },
-    onSuccess: (data) => {
-      navigate({
+    navigateOnSuccess: (navigateTo, data) =>
+      navigateTo({
         to: "/settings/organizations/$organizationId/namespaces/$namespaceId/projects/$projectId",
         params: {
           organizationId,
           namespaceId,
           projectId: data.id,
         },
-      });
-    },
+      }),
   });
 
   return (
@@ -115,66 +117,68 @@ export function ProjectCreateForm({
       error={mutation.error || null}
       submitButtonText="Create Project"
     >
-      <Form {...form}>
-        <FormField
-          control={form.control}
-          name="key"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Key</FormLabel>
-              <FormControl>
-                <Input
-                  placeholder="Enter project key"
-                  {...field}
-                  onChange={(event) =>
-                    field.onChange(normalizeProjectKey(event.target.value))
-                  }
-                  disabled={mutation.isPending}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+      <FieldProvider {...form}>
+        <FieldGroup>
+          <ControlledField
+            control={form.control}
+            name="key"
+            render={({ field }) => (
+              <Field>
+                <FieldLabel>Key</FieldLabel>
+                <FieldControl>
+                  <Input
+                    placeholder="Enter project key"
+                    {...field}
+                    onChange={(event) =>
+                      field.onChange(normalizeProjectKey(event.target.value))
+                    }
+                    disabled={mutation.isPending}
+                  />
+                </FieldControl>
+                <FieldError />
+              </Field>
+            )}
+          />
 
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Name</FormLabel>
-              <FormControl>
-                <Input
-                  placeholder="Enter project name"
-                  {...field}
-                  disabled={mutation.isPending}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+          <ControlledField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+              <Field>
+                <FieldLabel>Name</FieldLabel>
+                <FieldControl>
+                  <Input
+                    placeholder="Enter project name"
+                    {...field}
+                    disabled={mutation.isPending}
+                  />
+                </FieldControl>
+                <FieldError />
+              </Field>
+            )}
+          />
 
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Description</FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder="Enter project description (optional)"
-                  {...field}
-                  value={getDefaultValue(field.value)}
-                  rows={4}
-                  disabled={mutation.isPending}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      </Form>
+          <ControlledField
+            control={form.control}
+            name="description"
+            render={({ field }) => (
+              <Field>
+                <FieldLabel>Description</FieldLabel>
+                <FieldControl>
+                  <Textarea
+                    placeholder="Enter project description (optional)"
+                    {...field}
+                    value={getDefaultValue(field.value)}
+                    rows={4}
+                    disabled={mutation.isPending}
+                  />
+                </FieldControl>
+                <FieldError />
+              </Field>
+            )}
+          />
+        </FieldGroup>
+      </FieldProvider>
     </FormCard>
   );
 }

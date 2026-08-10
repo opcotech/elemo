@@ -14,7 +14,7 @@ import {
 } from "./utils/db";
 import { getRandomString } from "./utils/random";
 
-import type { User } from "@/lib/api";
+import type { User } from "@/lib/api/types";
 import type { Client } from "@/lib/client/client";
 
 test.describe("@settings.organization-namespaces-create Organization Namespaces Create E2E Tests", () => {

@@ -2,9 +2,10 @@ import { expect } from "@playwright/test";
 import type { Locator, Page } from "@playwright/test";
 
 import { BaseComponent } from "../components/base";
+import { fillLocator } from "../helpers";
 import { SectionContainerMixin } from "../mixins";
 
-import type { PermissionKind } from "@/lib/api";
+import type { PermissionKind } from "@/lib/api/types";
 
 interface DraftPermissionOptions {
   resourceType: string;
@@ -69,7 +70,7 @@ export class RolePermissionDraftSection extends SectionContainerMixin(
       .getByRole("option", { name: new RegExp(resourceType, "i") })
       .click();
 
-    await form.getByPlaceholder("Enter resource ID").fill(resourceId);
+    await fillLocator(form.getByPlaceholder("Enter resource ID"), resourceId);
 
     await comboboxes.nth(1).click();
     await this.page

@@ -1,3 +1,4 @@
+import { useQueries } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Edit, Folder, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -17,12 +18,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  ResourceType,
-  usePermissions,
-  withResourceType,
-} from "@/hooks/use-permissions";
-import type { PartialProject, Permission } from "@/lib/api";
+import { ResourceType, withResourceType } from "@/hooks/use-permissions";
+import { v1PermissionResourceGetOptions } from "@/lib/api/query-options";
+import type { PartialProject, Permission } from "@/lib/api/types";
 import { can } from "@/lib/auth/permissions";
 
 function NamespaceProjectsListSkeleton() {
@@ -67,6 +65,8 @@ function NamespaceProjectsListSkeleton() {
 
 interface ProjectRowProps {
   project: PartialProject;
+  permissions: Permission[] | undefined;
+  isPermissionsLoading: boolean;
   organizationId: string;
   namespaceId: string;
   onDeleteClick: (project: PartialProject) => void;
@@ -74,15 +74,15 @@ interface ProjectRowProps {
 
 function ProjectRow({
   project,
+  permissions,
+  isPermissionsLoading,
   organizationId,
   namespaceId,
   onDeleteClick,
 }: ProjectRowProps) {
-  const { data: projectPermissions, isLoading: isProjectPermissionsLoading } =
-    usePermissions(withResourceType(ResourceType.Project, project.id));
-  const hasProjectReadPermission = can(projectPermissions, "read");
-  const hasProjectWritePermission = can(projectPermissions, "write");
-  const hasProjectDeletePermission = can(projectPermissions, "delete");
+  const hasProjectReadPermission = can(permissions, "read");
+  const hasProjectWritePermission = can(permissions, "write");
+  const hasProjectDeletePermission = can(permissions, "delete");
 
   return (
     <TableRow>
@@ -123,7 +123,7 @@ function ProjectRow({
         </Badge>
       </TableCell>
       <TableCell className="text-right">
-        {isProjectPermissionsLoading ? (
+        {isPermissionsLoading ? (
           <div className="flex justify-end gap-1">
             <Skeleton className="h-8 w-8" />
             <Skeleton className="h-8 w-8" />
@@ -131,18 +131,22 @@ function ProjectRow({
         ) : (
           <div className="flex items-center justify-end gap-x-1">
             {hasProjectWritePermission && (
-              <Button variant="ghost" size="sm" asChild>
-                <Link
-                  to="/settings/organizations/$organizationId/namespaces/$namespaceId/projects/$projectId/edit"
-                  params={{
-                    organizationId,
-                    namespaceId,
-                    projectId: project.id,
-                  }}
-                >
-                  <Edit className="size-4" />
-                  <span className="sr-only">Edit project</span>
-                </Link>
+              <Button
+                variant="ghost"
+                size="sm"
+                render={
+                  <Link
+                    to="/settings/organizations/$organizationId/namespaces/$namespaceId/projects/$projectId/edit"
+                    params={{
+                      organizationId,
+                      namespaceId,
+                      projectId: project.id,
+                    }}
+                  />
+                }
+              >
+                <Edit className="size-4" />
+                <span className="sr-only">Edit project</span>
               </Button>
             )}
             {hasProjectDeletePermission && (
@@ -185,6 +189,25 @@ export function NamespaceProjectsList({
     null
   );
   const hasCreatePermission = can(namespacePermissions, "write");
+  const projectPermissionQueries = useQueries({
+    queries: projects.map((project) =>
+      v1PermissionResourceGetOptions({
+        path: {
+          resourceId: withResourceType(ResourceType.Project, project.id),
+        },
+      })
+    ),
+  });
+  const projectPermissionsById = useMemo(
+    () =>
+      new Map(
+        projects.map((project, index) => [
+          project.id,
+          projectPermissionQueries[index],
+        ])
+      ),
+    [projects, projectPermissionQueries]
+  );
 
   const filteredProjects = useMemo(() => {
     if (!searchTerm.trim()) return projects;
@@ -214,14 +237,18 @@ export function NamespaceProjectsList({
           title: "No projects found",
           description: "Create a project to organize work in this namespace.",
           action: hasCreatePermission ? (
-            <Button variant="outline" size="sm" asChild>
-              <Link
-                to="/settings/organizations/$organizationId/namespaces/$namespaceId/projects/new"
-                params={{ organizationId, namespaceId }}
-              >
-                <Plus className="size-4" />
-                Create Project
-              </Link>
+            <Button
+              variant="outline"
+              size="sm"
+              render={
+                <Link
+                  to="/settings/organizations/$organizationId/namespaces/$namespaceId/projects/new"
+                  params={{ organizationId, namespaceId }}
+                />
+              }
+            >
+              <Plus className="size-4" />
+              Create Project
             </Button>
           ) : undefined,
         }
@@ -236,14 +263,18 @@ export function NamespaceProjectsList({
 
   const shouldShowSearch = projects.length > 0 || searchTerm.trim() !== "";
   const createButton = hasCreatePermission ? (
-    <Button variant="outline" size="sm" asChild>
-      <Link
-        to="/settings/organizations/$organizationId/namespaces/$namespaceId/projects/new"
-        params={{ organizationId, namespaceId }}
-      >
-        <Plus className="size-4" />
-        Create Project
-      </Link>
+    <Button
+      variant="outline"
+      size="sm"
+      render={
+        <Link
+          to="/settings/organizations/$organizationId/namespaces/$namespaceId/projects/new"
+          params={{ organizationId, namespaceId }}
+        />
+      }
+    >
+      <Plus className="size-4" />
+      Create Project
     </Button>
   ) : undefined;
 
@@ -284,15 +315,20 @@ export function NamespaceProjectsList({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredProjects.map((project) => (
-                <ProjectRow
-                  key={project.id}
-                  project={project}
-                  organizationId={organizationId}
-                  namespaceId={namespaceId}
-                  onDeleteClick={handleDeleteClick}
-                />
-              ))}
+              {filteredProjects.map((project) => {
+                const permissionQuery = projectPermissionsById.get(project.id);
+                return (
+                  <ProjectRow
+                    key={project.id}
+                    project={project}
+                    permissions={permissionQuery?.data}
+                    isPermissionsLoading={permissionQuery?.isLoading ?? true}
+                    organizationId={organizationId}
+                    namespaceId={namespaceId}
+                    onDeleteClick={handleDeleteClick}
+                  />
+                );
+              })}
             </TableBody>
           </Table>
         )}

@@ -1,10 +1,6 @@
 import { createOrganization, createRole } from "./api";
 import { expect, test } from "./fixtures";
-import {
-  getFormFieldMessage,
-  waitForPermissionsLoad,
-  waitForSuccessToast,
-} from "./helpers";
+import { getFormFieldMessage, waitForSuccessToast } from "./helpers";
 import {
   SettingsOrganizationDetailsPage,
   SettingsOrganizationRoleCreatePage,
@@ -19,7 +15,7 @@ import {
 } from "./utils/db";
 import { getRandomString } from "./utils/random";
 
-import type { User } from "@/lib/api";
+import type { User } from "@/lib/api/types";
 
 test.describe("@settings.organization-role-create Organization Role Creation E2E Tests", () => {
   let testUser: User;
@@ -138,7 +134,6 @@ test.describe("@settings.organization-role-create Organization Role Creation E2E
     let orgDetailsPage = new SettingsOrganizationDetailsPage(page);
     await orgDetailsPage.goto(organizationId);
     await orgDetailsPage.organizationInfo.waitForLoad();
-    await waitForPermissionsLoad(page, organizationId);
     expect(
       await orgDetailsPage.organizationInfo.hasEditOrganizationButton()
     ).toBeFalsy();
@@ -202,7 +197,6 @@ test.describe("@settings.organization-role-create Organization Role Creation E2E
     orgDetailsPage = new SettingsOrganizationDetailsPage(page);
     await orgDetailsPage.goto(organizationId);
     await orgDetailsPage.organizationInfo.waitForLoad();
-    await waitForPermissionsLoad(page, organizationId);
     expect(
       await orgDetailsPage.organizationInfo.hasEditOrganizationButton()
     ).toBeTruthy();

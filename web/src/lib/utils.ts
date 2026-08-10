@@ -1,6 +1,5 @@
 import { clsx } from "clsx";
 import type { ClassValue } from "clsx";
-import { format } from "date-fns";
 import { twMerge } from "tailwind-merge";
 
 export const SYSTEM_NIL_ID = "00000000000000000000";
@@ -15,21 +14,6 @@ export function assertValue<T>(v: T | undefined, errorMessage: string): T {
   }
 
   return v;
-}
-
-/**
- * Formats a date string to a human-readable format.
- *
- * @param dateString - The date string to format (ISO 8601 format or null)
- * @returns Formatted date string (e.g., "Jan 1, 2024") or "N/A" if invalid
- */
-export function formatDate(dateString: string | null): string {
-  if (!dateString) return "N/A";
-  try {
-    return format(new Date(dateString), "MMM d, yyyy");
-  } catch {
-    return "N/A";
-  }
 }
 
 /**
@@ -96,22 +80,4 @@ export function getDefaultValue<T extends string | undefined | null>(
  */
 export function extractResourceId(target: string): string {
   return target.split(":")[1] || target;
-}
-
-/**
- * Checks if a value is empty.
- *
- * @param value - The value to check
- * @returns True if the value is empty, false otherwise
- */
-export function isEmpty<
-  T extends string | undefined | null | any[] | Record<string, any>,
->(value: T): boolean {
-  return (
-    value === null ||
-    value === undefined ||
-    (typeof value === "string" && value.trim() === "") ||
-    (Array.isArray(value) && value.length === 0) ||
-    (typeof value === "object" && Object.keys(value).length === 0)
-  );
 }

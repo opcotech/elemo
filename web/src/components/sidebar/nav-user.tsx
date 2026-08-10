@@ -7,7 +7,7 @@ import {
   UserIcon,
 } from "lucide-react";
 
-import { useTheme } from "@/components/theme-provider";
+import { useTheme } from "@/components/shared/theme-provider";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -40,29 +40,31 @@ export function NavUser({ user }: { user: User }) {
   return (
     <SidebarMenuItem>
       <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <SidebarMenuButton
-            size="lg"
-            className="data-[state=open]:bg-primary/5 data-[state=open]:text-primary data-[state=open]:border-primary/20"
-          >
-            <Avatar className="h-8 w-8 rounded-lg">
-              <AvatarImage
-                src={user.picture || undefined}
-                alt={`${user.first_name} ${user.last_name}`}
-              />
-              <AvatarFallback className="rounded-lg">
-                {userInitials}
-              </AvatarFallback>
-            </Avatar>
-            <div className="grid flex-1 text-left text-sm leading-tight">
-              <span className="truncate font-medium">{`${user.first_name} ${user.last_name}`}</span>
-              <span className="truncate text-xs">{user.email}</span>
-            </div>
-            <ChevronsUpDown className="ml-auto size-4" />
-          </SidebarMenuButton>
+        <DropdownMenuTrigger
+          render={
+            <SidebarMenuButton
+              size="lg"
+              className="data-[state=open]:bg-primary/5 data-[state=open]:text-primary data-[state=open]:border-primary/20"
+            />
+          }
+        >
+          <Avatar className="h-8 w-8 rounded-lg">
+            <AvatarImage
+              src={user.picture || undefined}
+              alt={`${user.first_name} ${user.last_name}`}
+            />
+            <AvatarFallback className="rounded-lg">
+              {userInitials}
+            </AvatarFallback>
+          </Avatar>
+          <div className="grid flex-1 text-left text-sm leading-tight">
+            <span className="truncate font-medium">{`${user.first_name} ${user.last_name}`}</span>
+            <span className="truncate text-xs">{user.email}</span>
+          </div>
+          <ChevronsUpDown className="ml-auto size-4" />
         </DropdownMenuTrigger>
         <DropdownMenuContent
-          className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
+          className="w-(--anchor-width) min-w-56 rounded-lg"
           side={isMobile ? "bottom" : "right"}
           align="end"
           sideOffset={4}
@@ -72,11 +74,9 @@ export function NavUser({ user }: { user: User }) {
               <UserIcon />
               Account
             </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link to="/settings">
-                <SettingsIcon />
-                Settings
-              </Link>
+            <DropdownMenuItem render={<Link to="/settings" />}>
+              <SettingsIcon />
+              Settings
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem

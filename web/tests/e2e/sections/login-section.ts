@@ -1,3 +1,4 @@
+import { expect } from "@playwright/test";
 import type { Page } from "@playwright/test";
 
 import { Form } from "../components";
@@ -21,10 +22,10 @@ export class LoginSection extends BaseComponent {
    * Wait for section to load and be visible.
    */
   async waitForLoad(options?: { timeout?: number }): Promise<void> {
-    await waitForElementVisible(
-      this.page.getByRole("button", { name: "Sign in" }),
-      options
-    );
+    const signIn = this.page.getByRole("button", { name: "Sign in" });
+    await waitForElementVisible(signIn, options);
+    // Client mount enables the button; avoid native GET submit pre-hydration.
+    await expect(signIn).toBeEnabled({ timeout: options?.timeout ?? 15_000 });
   }
 
   /**

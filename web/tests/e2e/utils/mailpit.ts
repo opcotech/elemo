@@ -50,6 +50,9 @@ export async function getLatestEmailForRecipient(
       .sort(
         (a, b) => new Date(b.Created).getTime() - new Date(a.Created).getTime()
       )[0];
+    if (!message) {
+      return null;
+    }
     const detailResponse = await fetch(
       `${MAILPIT_API_URL}/message/${message.ID}`
     );
@@ -101,6 +104,46 @@ export async function getInvitationTokenFromEmail(
       return decodeURIComponent(urlMatch[1]);
     } catch {
       return urlMatch[1];
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Extracts password reset token from a password reset email.
+ * The token is in the reset URL: /reset-password?token={token}
+ */
+export async function getPasswordResetTokenFromEmail(
+  recipientEmail: string
+): Promise<string | null> {
+  const email = await getLatestEmailForRecipient(recipientEmail);
+  if (!email) {
+    return null;
+  }
+  const htmlContent = email.HTML || email.Text || "";
+  const decodedContent = htmlContent
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'");
+  const urlMatch = decodedContent.match(
+    /\/reset-password[^"'\s]*[?&]token=([A-Za-z0-9+/=_-]+)/i
+  );
+  if (urlMatch && urlMatch[1]) {
+    try {
+      return decodeURIComponent(urlMatch[1]);
+    } catch {
+      return urlMatch[1];
+    }
+  }
+  const tokenMatch = decodedContent.match(/token=([A-Za-z0-9+/=_-]+)/i);
+  if (tokenMatch && tokenMatch[1]) {
+    try {
+      return decodeURIComponent(tokenMatch[1]);
+    } catch {
+      return tokenMatch[1];
     }
   }
 

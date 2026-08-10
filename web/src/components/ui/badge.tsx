@@ -1,27 +1,33 @@
-import { Slot } from "@radix-ui/react-slot";
+import { mergeProps } from "@base-ui/react/merge-props";
+import { useRender } from "@base-ui/react/use-render";
 import { cva } from "class-variance-authority";
 import type { VariantProps } from "class-variance-authority";
-import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
 const badgeVariants = cva(
-  "inline-flex items-center justify-center rounded-md border px-2.5 py-1 text-xs font-semibold w-fit whitespace-nowrap shrink-0 [&>svg]:size-3 gap-1 [&>svg]:pointer-events-none focus-visible:ring focus-visible:ring-ring focus-visible:ring-offset-2 transition-all duration-200 overflow-hidden cursor-default",
+  "group/badge inline-flex h-5 w-fit shrink-0 items-center justify-center gap-1 overflow-hidden rounded-md border border-transparent px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-[color,background-color,border-color] duration-150 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3!",
   {
     variants: {
       variant: {
         default:
-          "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/50 dark:text-blue-300 dark:border-blue-800 [a&]:hover:bg-blue-100 [a&]:dark:hover:bg-blue-900/50",
+          "border-border bg-secondary text-secondary-foreground [a]:hover:bg-muted",
+        primary:
+          "bg-primary text-primary-foreground [a]:hover:bg-primary-hover",
         secondary:
-          "bg-gray-50 text-gray-700 border-gray-200 dark:bg-gray-900/50 dark:text-gray-300 dark:border-gray-700 [a&]:hover:bg-gray-100 [a&]:dark:hover:bg-gray-800/50",
+          "border-transparent bg-secondary text-secondary-foreground [a]:hover:bg-secondary/80",
         destructive:
-          "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/50 dark:text-red-300 dark:border-red-800 [a&]:hover:bg-red-100 [a&]:dark:hover:bg-red-900/50",
+          "border-destructive/20 bg-destructive/10 text-destructive focus-visible:ring-destructive/20 dark:bg-destructive/20 [a]:hover:bg-destructive/20",
         outline:
-          "bg-background text-foreground border-border [a&]:hover:bg-primary/5 [a&]:hover:text-primary [a&]:hover:border-primary/20",
+          "border-border text-foreground [a]:hover:bg-muted [a]:hover:text-foreground-soft",
+        ghost:
+          "hover:bg-muted hover:text-muted-foreground dark:hover:bg-muted/50",
+        link: "text-primary underline-offset-4 hover:underline",
         success:
-          "bg-green-50 text-green-700 border-green-200 dark:bg-green-950/50 dark:text-green-300 dark:border-green-800 [a&]:hover:bg-green-100 [a&]:dark:hover:bg-green-900/50",
+          "border-success/20 bg-success/10 text-success [a]:hover:bg-success/15",
         warning:
-          "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-800 [a&]:hover:bg-amber-100 [a&]:dark:hover:bg-amber-900/50",
+          "border-warning/25 bg-warning/15 text-warning [a]:hover:bg-warning/20",
+        info: "border-info/20 bg-info/10 text-info [a]:hover:bg-info/15",
       },
     },
     defaultVariants: {
@@ -32,20 +38,24 @@ const badgeVariants = cva(
 
 function Badge({
   className,
-  variant,
-  asChild = false,
+  variant = "default",
+  render,
   ...props
-}: React.ComponentProps<"span"> &
-  VariantProps<typeof badgeVariants> & { asChild?: boolean }) {
-  const Comp = asChild ? Slot : "span";
-
-  return (
-    <Comp
-      data-slot="badge"
-      className={cn(badgeVariants({ variant }), className)}
-      {...props}
-    />
-  );
+}: useRender.ComponentProps<"span"> & VariantProps<typeof badgeVariants>) {
+  return useRender({
+    defaultTagName: "span",
+    props: mergeProps<"span">(
+      {
+        className: cn(badgeVariants({ variant }), className),
+      },
+      props
+    ),
+    render,
+    state: {
+      slot: "badge",
+      variant,
+    },
+  });
 }
 
 export { Badge, badgeVariants };

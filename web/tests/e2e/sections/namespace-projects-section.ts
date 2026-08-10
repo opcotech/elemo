@@ -1,7 +1,7 @@
 import type { Locator, Page } from "@playwright/test";
 
 import { BaseComponent } from "../components/base";
-import { waitForPermissionsLoad, waitForSuccessToast } from "../helpers";
+import { waitForSuccessToast } from "../helpers";
 import {
   DialogMixin,
   EmptyStateMixin,
@@ -33,13 +33,14 @@ export class NamespaceProjectsSection extends DialogMixin(
   async waitForLoad(options?: { timeout?: number }): Promise<void> {
     await this.waitForContainerLoad(options);
     await this.waitForTableOrEmptyState(options);
-    await waitForPermissionsLoad(this.page);
     // Per-row project permission checks render skeletons while loading.
-    await this.getSectionContainer()
-      .locator(".animate-pulse")
+    const pulse = this.getSectionContainer().locator(".animate-pulse");
+    if ((await pulse.count()) === 0) {
+      return;
+    }
+    await pulse
       .first()
-      .waitFor({ state: "hidden", timeout: options?.timeout ?? 10000 })
-      .catch(() => undefined);
+      .waitFor({ state: "hidden", timeout: options?.timeout ?? 10000 });
   }
 
   getRowByProjectName(name: string): Locator {

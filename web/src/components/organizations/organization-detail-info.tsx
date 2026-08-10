@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Edit } from "lucide-react";
 
-import { DetailField } from "@/components/detail-field";
+import { DetailField } from "@/components/shared/detail-field";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,24 +12,18 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { ExternalLink } from "@/components/ui/external-link";
-import {
-  ResourceType,
-  usePermissions,
-  withResourceType,
-} from "@/hooks/use-permissions";
-import type { Organization } from "@/lib/api";
+import type { Organization, Permission } from "@/lib/api/types";
 import { can } from "@/lib/auth/permissions";
-import { formatDate } from "@/lib/utils";
+import { zOrganizationStatus } from "@/lib/client/zod.gen";
+import { formatDate } from "@/lib/format-date";
 
 export function OrganizationDetailInfo({
   organization,
+  permissions,
 }: {
   organization: Organization;
+  permissions: Permission[];
 }) {
-  const { data: permissions } = usePermissions(
-    withResourceType(ResourceType.Organization, organization.id)
-  );
-
   const hasWritePermission = can(permissions, "write");
 
   return (
@@ -43,14 +37,18 @@ export function OrganizationDetailInfo({
             </CardDescription>
           </div>
           {hasWritePermission && (
-            <Button variant="outline" size="sm" asChild>
-              <Link
-                to="/settings/organizations/$organizationId/edit"
-                params={{ organizationId: organization.id }}
-              >
-                <Edit className="size-4" />
-                Edit
-              </Link>
+            <Button
+              variant="outline"
+              size="sm"
+              render={
+                <Link
+                  to="/settings/organizations/$organizationId/edit"
+                  params={{ organizationId: organization.id }}
+                />
+              }
+            >
+              <Edit className="size-4" />
+              Edit
             </Button>
           )}
         </div>
@@ -70,7 +68,7 @@ export function OrganizationDetailInfo({
           </DetailField>
 
           <DetailField label="Status">
-            {organization.status === "active" ? (
+            {organization.status === zOrganizationStatus.enum.active ? (
               <Badge variant="success">Active</Badge>
             ) : (
               <Badge variant="destructive">Deleted</Badge>
