@@ -136,6 +136,7 @@ jobs:
     needs:
       - frontend-lint
       - build-e2e-image
+      - backend-integration-test
     strategy:
       matrix:
         shard: [1, 2, 3]
