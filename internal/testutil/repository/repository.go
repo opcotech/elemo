@@ -44,7 +44,7 @@ func BootstrapNeo4jDatabase(ctx context.Context, t *testing.T, db *repository.Ne
 	for _, statement := range statements {
 		statement = strings.TrimSpace(statement)
 		if statement != "" {
-			_, err := db.WriteSession(ctx).Run(ctx, statement, nil)
+			err := repository.Neo4jExecuteWriteAndConsume(ctx, db, statement, nil)
 			if err != nil {
 				// Ignore errors for already existing indexes/constraints
 				errStr := err.Error()
@@ -62,7 +62,7 @@ func BootstrapNeo4jDatabase(ctx context.Context, t *testing.T, db *repository.Ne
 
 // CleanupNeo4jStore deletes all nodes and relationships from the database.
 func CleanupNeo4jStore(ctx context.Context, t *testing.T, db *repository.Neo4jDatabase) {
-	_, err := db.WriteSession(ctx).Run(ctx, "MATCH (n) WHERE n.system IS NULL OR n.system = false DETACH DELETE n", nil)
+	err := repository.Neo4jExecuteWriteAndConsume(ctx, db, "MATCH (n) WHERE n.system IS NULL OR n.system = false DETACH DELETE n", nil)
 	require.NoError(t, err)
 }
 

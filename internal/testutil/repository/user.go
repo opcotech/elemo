@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"time"
 
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/repository"
@@ -23,13 +22,5 @@ func MakeUserSystemOwner(userID model.ID, db *repository.Neo4jDatabase) error {
 		"perm_kind":  model.PermissionKindAll.String(),
 	}
 
-	_, err := db.WriteSession(ctx).Run(ctx, cypher, params)
-	if err != nil {
-		return err
-	}
-
-	// This is an ugly hack to make sure the transaction is committed before
-	// the next test starts. Without this, the next test will may be flaky.
-	time.Sleep(1 * time.Second)
-	return nil
+	return repository.Neo4jExecuteWriteAndConsume(ctx, db, cypher, params)
 }
