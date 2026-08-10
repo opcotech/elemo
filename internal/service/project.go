@@ -3,10 +3,12 @@ package service
 import (
 	"context"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/opcotech/elemo/internal/license"
 	"github.com/opcotech/elemo/internal/model"
+	"github.com/opcotech/elemo/internal/pkg"
 	"github.com/opcotech/elemo/internal/pkg/optional"
 	"github.com/opcotech/elemo/internal/pkg/validate"
 	"github.com/opcotech/elemo/internal/repository"
@@ -154,12 +156,19 @@ func (s *projectService) Create(ctx context.Context, namespaceID model.ID, opts 
 		return nil, errors.Join(ErrProjectCreate, err)
 	}
 
+	opts.Key = strings.ToUpper(opts.Key)
+
 	if err := opts.Validate(); err != nil {
 		return nil, errors.Join(ErrProjectCreate, err)
 	}
 
 	if !s.permissionService.CtxUserHasPermission(ctx, namespaceID, model.PermissionKindWrite) {
 		return nil, errors.Join(ErrProjectCreate, ErrNoPermission)
+	}
+
+	userID, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID)
+	if !ok {
+		return nil, errors.Join(ErrProjectCreate, model.ErrInvalidID)
 	}
 
 	status := opts.Status
@@ -169,6 +178,7 @@ func (s *projectService) Create(ctx context.Context, namespaceID model.ID, opts 
 
 	project, err := s.projectRepo.Create(ctx, repository.CreateProjectOpts{
 		NamespaceID: namespaceID,
+		CreatorID:   userID,
 		Key:         opts.Key,
 		Name:        opts.Name,
 		Description: opts.Description,
@@ -260,6 +270,10 @@ func (s *projectService) Update(ctx context.Context, id model.ID, opts UpdatePro
 
 	if !s.permissionService.CtxUserHasPermission(ctx, id, model.PermissionKindWrite) {
 		return nil, errors.Join(ErrProjectUpdate, ErrNoPermission)
+	}
+
+	if opts.Key.Defined && opts.Key.Value != nil {
+		opts.Key = optional.Some(strings.ToUpper(*opts.Key.Value))
 	}
 
 	project, err := s.projectRepo.Update(ctx, id, repository.UpdateProjectOpts{

@@ -3,6 +3,7 @@ package service_test
 import (
 	"context"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/suite"
@@ -90,7 +91,7 @@ func (s *ProjectServiceIntegrationTestSuite) TearDownSuite() {
 
 func (s *ProjectServiceIntegrationTestSuite) newCreateOpts() service.CreateProjectOpts {
 	return service.CreateProjectOpts{
-		Key:         pkg.GenerateRandomStringAlpha(3),
+		Key:         strings.ToUpper(pkg.GenerateRandomStringAlpha(3)),
 		Name:        pkg.GenerateRandomString(10),
 		Description: pkg.GenerateRandomString(20),
 		Logo:        "https://www.gravatar.com/avatar",
@@ -108,6 +109,24 @@ func (s *ProjectServiceIntegrationTestSuite) TestCreate() {
 	s.Assert().Equal(opts.Description, project.Description)
 	s.Assert().Equal(opts.Status, project.Status)
 	s.Assert().NotNil(project.CreatedAt)
+
+	hasPermission, err := s.PermissionRepo.HasPermission(
+		context.Background(),
+		s.owner.ID,
+		project.ID,
+		model.PermissionKindAll,
+	)
+	s.Require().NoError(err)
+	s.Assert().True(hasPermission)
+}
+
+func (s *ProjectServiceIntegrationTestSuite) TestCreateNormalizesKeyToUppercase() {
+	opts := s.newCreateOpts()
+	opts.Key = strings.ToLower(opts.Key)
+
+	project, err := s.projectService.Create(s.ctx, s.namespace.ID, opts)
+	s.Require().NoError(err)
+	s.Assert().Equal(strings.ToUpper(opts.Key), project.Key)
 }
 
 func (s *ProjectServiceIntegrationTestSuite) TestCreateWithoutPermission() {
@@ -162,6 +181,18 @@ func (s *ProjectServiceIntegrationTestSuite) TestUpdate() {
 	s.Require().NoError(err)
 	s.Assert().Equal("updated-project", project.Name)
 	s.Assert().NotNil(project.UpdatedAt)
+}
+
+func (s *ProjectServiceIntegrationTestSuite) TestUpdateNormalizesKeyToUppercase() {
+	created, err := s.projectService.Create(s.ctx, s.namespace.ID, s.newCreateOpts())
+	s.Require().NoError(err)
+
+	newKey := strings.ToLower(pkg.GenerateRandomStringAlpha(4))
+	project, err := s.projectService.Update(s.ctx, created.ID, service.UpdateProjectOpts{
+		Key: optional.Some(newKey),
+	})
+	s.Require().NoError(err)
+	s.Assert().Equal(strings.ToUpper(newKey), project.Key)
 }
 
 func (s *ProjectServiceIntegrationTestSuite) TestDelete() {

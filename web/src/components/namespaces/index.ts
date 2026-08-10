@@ -1,5 +1,6 @@
 export * from "./all-namespaces-list";
 export * from "./namespace-create-form";
+export * from "./namespace-danger-zone";
 export * from "./namespace-delete-dialog";
 export * from "./namespace-detail-info";
 export * from "./namespace-documents-list";

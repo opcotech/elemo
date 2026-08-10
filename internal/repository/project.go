@@ -47,6 +47,7 @@ type Project struct {
 // CreateProjectOpts holds the data required to create a project.
 type CreateProjectOpts struct {
 	NamespaceID model.ID
+	CreatorID   model.ID
 	Key         string
 	Name        string
 	Description string
@@ -205,13 +206,15 @@ func (r *Neo4jProjectRepository) Create(ctx context.Context, opts CreateProjectO
 	}
 
 	cypher := `
+	MATCH (u:` + opts.CreatorID.Label() + ` {id: $creator_id})
 	MATCH (n:` + opts.NamespaceID.Label() + ` {id: $namespace_id})
 	CREATE
 		(p:` + project.ID.Label() + ` {
 			id: $id, key: $key, name: $name, description: $description, logo: $logo, status: $status,
 			created_at: datetime($created_at)
 		}),
-		(n)-[:` + EdgeKindHasProject.String() + `]->(p)`
+		(n)-[:` + EdgeKindHasProject.String() + `]->(p),
+		(u)-[:` + EdgeKindHasPermission.String() + ` {id: $perm_id, kind: $perm_kind, created_at: datetime($created_at)}]->(p)`
 
 	params := map[string]any{
 		"id":           project.ID.String(),
@@ -221,7 +224,10 @@ func (r *Neo4jProjectRepository) Create(ctx context.Context, opts CreateProjectO
 		"logo":         project.Logo,
 		"status":       project.Status.String(),
 		"created_at":   createdAt.Format(time.RFC3339Nano),
+		"creator_id":   opts.CreatorID.String(),
 		"namespace_id": opts.NamespaceID.String(),
+		"perm_id":      model.NewRawID(),
+		"perm_kind":    model.PermissionKindAll.String(),
 	}
 
 	if err := Neo4jExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
@@ -493,6 +499,11 @@ func (r *RedisCachedProjectRepository) Update(ctx context.Context, id model.ID, 
 	}
 
 	if err := clearProjectsAllGetAll(ctx, r.cacheRepo); err != nil {
+		return nil, err
+	}
+
+	// Namespace Get embeds PartialProject rows; clear so list status/name stay fresh.
+	if err := clearProjectsAllCrossCache(ctx, r.cacheRepo); err != nil {
 		return nil, err
 	}
 

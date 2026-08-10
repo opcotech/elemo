@@ -8,6 +8,7 @@ import (
 
 	"github.com/opcotech/elemo/internal/license"
 	"github.com/opcotech/elemo/internal/model"
+	"github.com/opcotech/elemo/internal/pkg"
 	"github.com/opcotech/elemo/internal/pkg/log"
 	"github.com/opcotech/elemo/internal/pkg/optional"
 	"github.com/opcotech/elemo/internal/repository"
@@ -135,6 +136,7 @@ func TestNewProjectService(t *testing.T) {
 
 func TestProjectService_Create(t *testing.T) {
 	namespaceID := model.MustNewID(model.ResourceTypeNamespace)
+	userID := model.MustNewID(model.ResourceTypeUser)
 	opts := newCreateProjectOpts()
 
 	type fields struct {
@@ -161,9 +163,11 @@ func TestProjectService_Create(t *testing.T) {
 					tracer := mock.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.projectService/Create", gomock.Len(0)).Return(ctx, span)
 
+					creatorID := ctx.Value(pkg.CtxKeyUserID).(model.ID)
 					projectRepo := repository.NewMockProjectRepository(ctrl)
 					projectRepo.EXPECT().Create(ctx, repository.CreateProjectOpts{
 						NamespaceID: namespaceID,
+						CreatorID:   creatorID,
 						Key:         opts.Key,
 						Name:        opts.Name,
 						Description: opts.Description,
@@ -187,9 +191,58 @@ func TestProjectService_Create(t *testing.T) {
 				},
 			},
 			args: args{
-				ctx:         context.Background(),
+				ctx:         context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
 				namespaceID: namespaceID,
 				opts:        opts,
+			},
+		},
+		{
+			name: "create project normalizes key to uppercase",
+			fields: fields{
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, namespaceID model.ID, opts CreateProjectOpts) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.projectService/Create", gomock.Len(0)).Return(ctx, span)
+
+					creatorID := ctx.Value(pkg.CtxKeyUserID).(model.ID)
+					projectRepo := repository.NewMockProjectRepository(ctrl)
+					projectRepo.EXPECT().Create(ctx, repository.CreateProjectOpts{
+						NamespaceID: namespaceID,
+						CreatorID:   creatorID,
+						Key:         "ENG",
+						Name:        opts.Name,
+						Description: opts.Description,
+						Logo:        opts.Logo,
+						Status:      opts.Status,
+					}).Return(testModel.NewRepositoryProject(), nil)
+
+					permSvc := NewMockPermissionService(ctrl)
+					permSvc.EXPECT().CtxUserHasPermission(ctx, namespaceID, []model.PermissionKind{model.PermissionKindWrite}).Return(true)
+
+					licenseSvc := mock.NewMockLicenseService(ctrl)
+					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+
+					return &baseService{
+						logger:            mock.NewMockLogger(ctrl),
+						tracer:            tracer,
+						projectRepo:       projectRepo,
+						permissionService: permSvc,
+						licenseService:    licenseSvc,
+					}
+				},
+			},
+			args: args{
+				ctx:         context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
+				namespaceID: namespaceID,
+				opts: CreateProjectOpts{
+					Key:         "eng",
+					Name:        "test project",
+					Description: "test description for project",
+					Logo:        "https://example.com/logo.png",
+					Status:      model.ProjectStatusActive,
+				},
 			},
 		},
 		{
@@ -202,9 +255,11 @@ func TestProjectService_Create(t *testing.T) {
 					tracer := mock.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.projectService/Create", gomock.Len(0)).Return(ctx, span)
 
+					creatorID := ctx.Value(pkg.CtxKeyUserID).(model.ID)
 					projectRepo := repository.NewMockProjectRepository(ctrl)
 					projectRepo.EXPECT().Create(ctx, repository.CreateProjectOpts{
 						NamespaceID: namespaceID,
+						CreatorID:   creatorID,
 						Key:         opts.Key,
 						Name:        opts.Name,
 						Description: opts.Description,
@@ -228,7 +283,7 @@ func TestProjectService_Create(t *testing.T) {
 				},
 			},
 			args: args{
-				ctx:         context.Background(),
+				ctx:         context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
 				namespaceID: namespaceID,
 				opts: CreateProjectOpts{
 					Key:         "ENG",
@@ -360,9 +415,11 @@ func TestProjectService_Create(t *testing.T) {
 					tracer := mock.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.projectService/Create", gomock.Len(0)).Return(ctx, span)
 
+					creatorID := ctx.Value(pkg.CtxKeyUserID).(model.ID)
 					projectRepo := repository.NewMockProjectRepository(ctrl)
 					projectRepo.EXPECT().Create(ctx, repository.CreateProjectOpts{
 						NamespaceID: namespaceID,
+						CreatorID:   creatorID,
 						Key:         opts.Key,
 						Name:        opts.Name,
 						Description: opts.Description,
@@ -386,11 +443,42 @@ func TestProjectService_Create(t *testing.T) {
 				},
 			},
 			args: args{
-				ctx:         context.Background(),
+				ctx:         context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
 				namespaceID: namespaceID,
 				opts:        opts,
 			},
 			wantErr: repository.ErrProjectCreate,
+		},
+		{
+			name: "create project with no user ID in context",
+			fields: fields{
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, namespaceID model.ID, _ CreateProjectOpts) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.projectService/Create", gomock.Len(0)).Return(ctx, span)
+
+					permSvc := NewMockPermissionService(ctrl)
+					permSvc.EXPECT().CtxUserHasPermission(ctx, namespaceID, []model.PermissionKind{model.PermissionKindWrite}).Return(true)
+
+					licenseSvc := mock.NewMockLicenseService(ctrl)
+					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+
+					return &baseService{
+						logger:            mock.NewMockLogger(ctrl),
+						tracer:            tracer,
+						permissionService: permSvc,
+						licenseService:    licenseSvc,
+					}
+				},
+			},
+			args: args{
+				ctx:         context.Background(),
+				namespaceID: namespaceID,
+				opts:        opts,
+			},
+			wantErr: model.ErrInvalidID,
 		},
 	}
 	for _, tt := range tests {
@@ -982,6 +1070,43 @@ func TestProjectService_Update(t *testing.T) {
 				ctx:  context.Background(),
 				id:   projectID,
 				opts: opts,
+			},
+			want: want,
+		},
+		{
+			name: "update project normalizes key to uppercase",
+			fields: fields{
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ UpdateProjectOpts) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.projectService/Update", gomock.Len(0)).Return(ctx, span)
+
+					projectRepo := repository.NewMockProjectRepository(ctrl)
+					projectRepo.EXPECT().Update(ctx, id, repository.UpdateProjectOpts{
+						Key: optional.Some("ENG"),
+					}).Return(repoProject, nil)
+
+					permSvc := NewMockPermissionService(ctrl)
+					permSvc.EXPECT().CtxUserHasPermission(ctx, id, []model.PermissionKind{model.PermissionKindWrite}).Return(true)
+
+					licenseSvc := mock.NewMockLicenseService(ctrl)
+					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+
+					return &baseService{
+						logger:            mock.NewMockLogger(ctrl),
+						tracer:            tracer,
+						projectRepo:       projectRepo,
+						permissionService: permSvc,
+						licenseService:    licenseSvc,
+					}
+				},
+			},
+			args: args{
+				ctx:  context.Background(),
+				id:   projectID,
+				opts: UpdateProjectOpts{Key: optional.Some("eng")},
 			},
 			want: want,
 		},

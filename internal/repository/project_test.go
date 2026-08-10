@@ -1123,6 +1123,7 @@ func TestCachedProjectRepository_Update(t *testing.T) {
 					key := composeCacheKey(model.ResourceTypeProject.String(), id.String())
 					getAllKey := composeCacheKey(model.ResourceTypeProject.String(), "GetAll", "*")
 					byProjectKey := composeCacheKey(model.ResourceTypeProject.String(), "GetByKey", id.String(), "*")
+					namespacesKey := composeCacheKey(model.ResourceTypeNamespace.String(), "*")
 
 					getAllKeyCmd := new(redis.StringSliceCmd)
 					getAllKeyCmd.SetVal([]string{getAllKey})
@@ -1130,9 +1131,13 @@ func TestCachedProjectRepository_Update(t *testing.T) {
 					byProjectKeyCmd := new(redis.StringSliceCmd)
 					byProjectKeyCmd.SetVal([]string{byProjectKey})
 
+					namespacesKeyCmd := new(redis.StringSliceCmd)
+					namespacesKeyCmd.SetVal([]string{namespacesKey})
+
 					dbClient := mock.NewUniversalClient(ctrl)
 					dbClient.EXPECT().Keys(ctx, getAllKey).Return(getAllKeyCmd)
 					dbClient.EXPECT().Keys(ctx, byProjectKey).Return(byProjectKeyCmd)
+					dbClient.EXPECT().Keys(ctx, namespacesKey).Return(namespacesKeyCmd)
 
 					db, err := NewRedisDatabase(
 						WithRedisClient(dbClient),
@@ -1140,15 +1145,16 @@ func TestCachedProjectRepository_Update(t *testing.T) {
 					require.NoError(t, err)
 
 					span := mock.NewMockSpan(ctrl)
-					span.EXPECT().End(gomock.Len(0)).Times(3)
+					span.EXPECT().End(gomock.Len(0)).Times(4)
 
 					tracer := mock.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Set", gomock.Len(0)).Return(ctx, span)
-					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(2)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(3)
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(nil)
 					cacheRepo.EXPECT().Delete(ctx, byProjectKey).Return(nil)
+					cacheRepo.EXPECT().Delete(ctx, namespacesKey).Return(nil)
 					cacheRepo.EXPECT().Set(&cache.Item{
 						Ctx:   ctx,
 						Key:   key,

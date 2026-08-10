@@ -79,8 +79,7 @@ func NewResourceOwner(t *testing.T, neo4jDBConf *config.GraphDatabaseConfig) *re
 		"perm_kind":  model.PermissionKindAll.String(),
 	}
 
-	_, err = neo4jDB.WriteSession(context.Background()).Run(context.Background(), cypher, params)
-	require.NoError(t, err)
+	require.NoError(t, repository.Neo4jExecuteWriteAndConsume(context.Background(), neo4jDB, cypher, params))
 
 	return owner
 }

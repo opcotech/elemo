@@ -1,0 +1,180 @@
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useNavigate } from "@tanstack/react-router";
+import { useForm } from "react-hook-form";
+
+import {
+  normalizeProjectKey,
+  projectCreateFormSchema,
+} from "@/components/projects/project-form-schema";
+import type { ProjectCreateFormValues } from "@/components/projects/project-form-schema";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { FormCard } from "@/components/ui/form-card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { useFormMutation } from "@/hooks/use-form-mutation";
+import type {
+  Options,
+  ProjectCreate,
+  V1NamespacesProjectsCreateData,
+} from "@/lib/api";
+import {
+  v1NamespaceGetOptions,
+  v1NamespacesProjectsGetOptions,
+} from "@/lib/client/@tanstack/react-query.gen";
+import { v1NamespacesProjectsCreate } from "@/lib/client/sdk.gen";
+import { normalizeFormData } from "@/lib/forms";
+import { getDefaultValue } from "@/lib/utils";
+
+const defaultValues: ProjectCreateFormValues = {
+  key: "",
+  name: "",
+  description: "",
+};
+
+interface ProjectCreateFormProps {
+  organizationId: string;
+  namespaceId: string;
+}
+
+export function ProjectCreateForm({
+  organizationId,
+  namespaceId,
+}: ProjectCreateFormProps) {
+  const navigate = useNavigate();
+  const namespaceRoute = {
+    to: "/settings/organizations/$organizationId/namespaces/$namespaceId",
+    params: { organizationId, namespaceId },
+  } as const;
+
+  const form = useForm<ProjectCreateFormValues>({
+    resolver: zodResolver(projectCreateFormSchema),
+    defaultValues,
+  });
+
+  const mutation = useFormMutation<
+    { id: string },
+    Options<V1NamespacesProjectsCreateData>,
+    ProjectCreateFormValues
+  >({
+    mutationFn: async (variables) => {
+      const { data } = await v1NamespacesProjectsCreate({
+        ...variables,
+        throwOnError: true,
+      });
+      return data;
+    },
+    form,
+    successMessage: "Project created",
+    errorMessagePrefix: "Failed to create project",
+    queryKeysToInvalidate: [
+      v1NamespaceGetOptions({
+        path: { id: namespaceId },
+      }).queryKey,
+      v1NamespacesProjectsGetOptions({
+        path: { id: namespaceId },
+      }).queryKey,
+    ],
+    transformValues: (values) => {
+      const normalized = normalizeFormData(projectCreateFormSchema, {
+        ...values,
+        key: normalizeProjectKey(values.key),
+      }) as ProjectCreate;
+      return {
+        path: {
+          id: namespaceId,
+        },
+        body: normalized,
+      };
+    },
+    onSuccess: (data) => {
+      navigate({
+        to: "/settings/organizations/$organizationId/namespaces/$namespaceId/projects/$projectId",
+        params: {
+          organizationId,
+          namespaceId,
+          projectId: data.id,
+        },
+      });
+    },
+  });
+
+  return (
+    <FormCard
+      data-section="project-create-form"
+      description="Enter the details below to create a new project."
+      onSubmit={mutation.handleSubmit}
+      onCancel={() => navigate(namespaceRoute)}
+      isPending={mutation.isPending}
+      error={mutation.error || null}
+      submitButtonText="Create Project"
+    >
+      <Form {...form}>
+        <FormField
+          control={form.control}
+          name="key"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Key</FormLabel>
+              <FormControl>
+                <Input
+                  placeholder="Enter project key"
+                  {...field}
+                  onChange={(event) =>
+                    field.onChange(normalizeProjectKey(event.target.value))
+                  }
+                  disabled={mutation.isPending}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Name</FormLabel>
+              <FormControl>
+                <Input
+                  placeholder="Enter project name"
+                  {...field}
+                  disabled={mutation.isPending}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="description"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Description</FormLabel>
+              <FormControl>
+                <Textarea
+                  placeholder="Enter project description (optional)"
+                  {...field}
+                  value={getDefaultValue(field.value)}
+                  rows={4}
+                  disabled={mutation.isPending}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </Form>
+    </FormCard>
+  );
+}

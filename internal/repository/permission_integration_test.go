@@ -193,12 +193,11 @@ func (s *PermissionRepositoryIntegrationTestSuite) TestGetBySubjectAndTargetSyst
 		"kind":         directPerm.Kind.String(),
 		"created_at":   time.Now().UTC().Format(time.RFC3339Nano),
 	}
-	_, err := s.Neo4jDB.WriteSession(context.Background()).Run(context.Background(), cypher, params)
-	s.Require().NoError(err)
+	s.Require().NoError(repository.Neo4jExecuteWriteAndConsume(context.Background(), s.Neo4jDB, cypher, params))
 
 	permissions, err := s.PermissionRepo.GetBySubjectAndTarget(context.Background(), s.testUser.ID, systemTarget)
 	s.Require().NoError(err)
-	s.Assert().Len(permissions, 1)
+	s.Require().Len(permissions, 1)
 	s.Assert().Equal(model.PermissionKindWrite, permissions[0].Kind)
 	s.Assert().True(permissions[0].Target.IsNil())
 	s.Assert().Equal(model.ResourceTypeOrganization, permissions[0].Target.Type)

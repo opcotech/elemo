@@ -10,6 +10,7 @@
 
 export * from "./organizations";
 export * from "./permissions";
+export * from "./projects";
 export * from "./roles";
 export * from "./client";
 export * from "./error-handler";
