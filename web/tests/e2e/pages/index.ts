@@ -10,3 +10,6 @@ export { OrganizationsJoinPage } from "./organizations-join-page";
 export { SettingsOrganizationNamespaceCreatePage } from "./settings-organization-namespace-create-page";
 export { SettingsOrganizationNamespaceEditPage } from "./settings-organization-namespace-edit-page";
 export { SettingsOrganizationNamespaceDetailsPage } from "./settings-organization-namespace-details-page";
+export { SettingsOrganizationProjectCreatePage } from "./settings-organization-project-create-page";
+export { SettingsOrganizationProjectDetailsPage } from "./settings-organization-project-details-page";
+export { SettingsOrganizationProjectEditPage } from "./settings-organization-project-edit-page";

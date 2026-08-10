@@ -1,9 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Home, Inbox } from "lucide-react";
-import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 
-import { CommandPalette } from "@/components/command-palette/command-palette";
 import { ContextualNavigationSection } from "@/components/sidebar/contextual-navigation-section";
 import { GlobalContextSection } from "@/components/sidebar/global-context-section";
 import { NavHeader } from "@/components/sidebar/nav-header";
@@ -45,25 +43,11 @@ export function AuthenticatedLayout({
 }: AuthenticatedLayoutProps) {
   const { user } = useAuth();
   const navigationContext = useNavigationContext();
-  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
 
   const navigation: SidebarNavigationItem[] = [
     { label: "Dashboard", href: "/dashboard", icon: Home },
     { label: "Inbox", href: "/inbox", icon: Inbox },
   ];
-
-  // Add Command-K keyboard shortcut
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if ((event.metaKey || event.ctrlKey) && event.key === "k") {
-        event.preventDefault();
-        setCommandPaletteOpen((open) => !open);
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
 
   return (
     <AddTodoFormProvider>
@@ -124,12 +108,6 @@ export function AuthenticatedLayout({
           </SidebarProvider>
 
           <TodoSheet />
-
-          {/* Global Command Palette */}
-          <CommandPalette
-            open={commandPaletteOpen}
-            onOpenChange={setCommandPaletteOpen}
-          />
         </TodoSheetProvider>
       </EditTodoFormProvider>
     </AddTodoFormProvider>

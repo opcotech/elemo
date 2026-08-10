@@ -39,7 +39,7 @@ func (s *ProjectRepositoryIntegrationTestSuite) SetupTest() {
 	s.Require().NoError(err)
 	s.testNamespace, err = s.NamespaceRepo.Create(context.Background(), testModel.NewCreateNamespaceOpts(s.testUser.ID, s.testOrg.ID))
 	s.Require().NoError(err)
-	s.createOpts = testModel.NewCreateProjectOpts(s.testNamespace.ID)
+	s.createOpts = testModel.NewCreateProjectOpts(s.testNamespace.ID, s.testUser.ID)
 }
 
 func (s *ProjectRepositoryIntegrationTestSuite) TearDownTest() {
@@ -93,9 +93,9 @@ func (s *ProjectRepositoryIntegrationTestSuite) TestGetByKey() {
 func (s *ProjectRepositoryIntegrationTestSuite) TestGetAll() {
 	_, err := s.ProjectRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
-	_, err = s.ProjectRepo.Create(context.Background(), testModel.NewCreateProjectOpts(s.testNamespace.ID))
+	_, err = s.ProjectRepo.Create(context.Background(), testModel.NewCreateProjectOpts(s.testNamespace.ID, s.testUser.ID))
 	s.Require().NoError(err)
-	_, err = s.ProjectRepo.Create(context.Background(), testModel.NewCreateProjectOpts(s.testNamespace.ID))
+	_, err = s.ProjectRepo.Create(context.Background(), testModel.NewCreateProjectOpts(s.testNamespace.ID, s.testUser.ID))
 	s.Require().NoError(err)
 
 	projects, err := s.ProjectRepo.GetAll(context.Background(), s.testNamespace.ID, 0, 10)
@@ -161,7 +161,7 @@ func (s *CachedProjectRepositoryIntegrationTestSuite) SetupTest() {
 	s.Require().NoError(err)
 	s.testNamespace, err = s.NamespaceRepo.Create(context.Background(), testModel.NewCreateNamespaceOpts(s.testUser.ID, s.testOrg.ID))
 	s.Require().NoError(err)
-	s.createOpts = testModel.NewCreateProjectOpts(s.testNamespace.ID)
+	s.createOpts = testModel.NewCreateProjectOpts(s.testNamespace.ID, s.testUser.ID)
 	s.Require().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }
 

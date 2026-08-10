@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect } from "react";
 
 import {
+  NamespaceDangerZone,
   NamespaceDetailInfo,
   NamespaceDocumentsList,
   NamespaceProjectsList,
@@ -142,12 +143,20 @@ function NamespaceDetailPage() {
             projects={namespace.projects || []}
             isLoading={false}
             error={null}
+            organizationId={organizationId}
+            namespaceId={namespaceId}
+            namespacePermissions={namespacePermissions}
           />
 
           <NamespaceDocumentsList
             documents={namespace.documents || []}
             isLoading={false}
             error={null}
+          />
+
+          <NamespaceDangerZone
+            namespace={namespace}
+            organizationId={organizationId}
           />
         </>
       )}

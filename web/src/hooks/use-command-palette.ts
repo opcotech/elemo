@@ -1,8 +1,16 @@
+import { useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 
 import { useTheme } from "@/components/theme-provider";
 import { useAddTodoForm } from "@/contexts/add-todo-form-context";
 import { useTodoSheet } from "@/contexts/todo-sheet-context";
+import { useNavigationContext } from "@/hooks/use-navigation-context";
+import {
+  ResourceType,
+  usePermissions,
+  withResourceType,
+} from "@/hooks/use-permissions";
+import { can } from "@/lib/auth/permissions";
 
 interface CommandPaletteState {
   open: boolean;
@@ -16,14 +24,54 @@ interface CommandPaletteActions {
   handleSetLightTheme: () => void;
   handleSetDarkTheme: () => void;
   handleSetSystemTheme: () => void;
+  handleCreateOrganization: () => void;
+  handleShowOrganizations: () => void;
+  handleGoToOrganization: () => void;
+  handleCreateNamespace: () => void;
+  handleShowNamespaces: () => void;
+  handleGoToNamespace: () => void;
+  handleCreateProject: () => void;
+  handleShowProjects: () => void;
+  handleGoToProject: () => void;
+  canCreateOrganization: boolean;
+  canCreateNamespace: boolean;
+  canCreateProject: boolean;
+  hasOrganization: boolean;
+  hasNamespace: boolean;
+  hasProject: boolean;
 }
 
 export function useCommandPalette(): CommandPaletteState &
   CommandPaletteActions {
   const [open, setOpen] = useState(false);
+  const navigate = useNavigate();
+  const navigationContext = useNavigationContext();
   const { open: openTodoSheet } = useTodoSheet();
   const { open: openAddTodoForm } = useAddTodoForm();
   const { theme, setTheme } = useTheme();
+
+  const { organizationId, namespaceId, projectId } = navigationContext;
+  const hasOrganization = !!organizationId;
+  const hasNamespace = !!organizationId && !!namespaceId;
+  const hasProject = hasNamespace && !!projectId;
+
+  const { data: systemOrganizationPermissions } = usePermissions(
+    withResourceType(ResourceType.Organization)
+  );
+  const { data: organizationPermissions } = usePermissions(
+    withResourceType(ResourceType.Organization, organizationId),
+    !organizationId
+  );
+  const { data: namespacePermissions } = usePermissions(
+    withResourceType(ResourceType.Namespace, namespaceId),
+    !namespaceId
+  );
+
+  const canCreateOrganization = can(systemOrganizationPermissions, "create");
+  const canCreateNamespace = organizationId
+    ? can(organizationPermissions, "write")
+    : true;
+  const canCreateProject = hasNamespace && can(namespacePermissions, "write");
 
   const handleAddTodo = useCallback(() => {
     openAddTodoForm();
@@ -51,10 +99,90 @@ export function useCommandPalette(): CommandPaletteState &
     setTheme("system");
   }, [setTheme]);
 
+  const handleCreateOrganization = useCallback(() => {
+    setOpen(false);
+    navigate({ to: "/settings/organizations/new" });
+  }, [navigate]);
+
+  const handleShowOrganizations = useCallback(() => {
+    setOpen(false);
+    navigate({ to: "/settings/organizations" });
+  }, [navigate]);
+
+  const handleGoToOrganization = useCallback(() => {
+    if (!organizationId) return;
+    setOpen(false);
+    navigate({
+      to: "/settings/organizations/$organizationId",
+      params: { organizationId },
+    });
+  }, [navigate, organizationId]);
+
+  const handleCreateNamespace = useCallback(() => {
+    setOpen(false);
+    if (organizationId) {
+      navigate({
+        to: "/settings/organizations/$organizationId/namespaces/new",
+        params: { organizationId },
+      });
+      return;
+    }
+    navigate({ to: "/settings/namespaces/new" });
+  }, [navigate, organizationId]);
+
+  const handleShowNamespaces = useCallback(() => {
+    setOpen(false);
+    navigate({ to: "/settings/namespaces" });
+  }, [navigate]);
+
+  const handleGoToNamespace = useCallback(() => {
+    if (!organizationId || !namespaceId) return;
+    setOpen(false);
+    navigate({
+      to: "/settings/organizations/$organizationId/namespaces/$namespaceId",
+      params: { organizationId, namespaceId },
+    });
+  }, [navigate, organizationId, namespaceId]);
+
+  const handleCreateProject = useCallback(() => {
+    if (!organizationId || !namespaceId) return;
+    setOpen(false);
+    navigate({
+      to: "/settings/organizations/$organizationId/namespaces/$namespaceId/projects/new",
+      params: { organizationId, namespaceId },
+    });
+  }, [navigate, organizationId, namespaceId]);
+
+  const handleShowProjects = useCallback(() => {
+    if (!organizationId || !namespaceId) return;
+    setOpen(false);
+    navigate({
+      to: "/settings/organizations/$organizationId/namespaces/$namespaceId",
+      params: { organizationId, namespaceId },
+    });
+  }, [navigate, organizationId, namespaceId]);
+
+  const handleGoToProject = useCallback(() => {
+    if (!organizationId || !namespaceId || !projectId) return;
+    setOpen(false);
+    navigate({
+      to: "/settings/organizations/$organizationId/namespaces/$namespaceId/projects/$projectId",
+      params: { organizationId, namespaceId, projectId },
+    });
+  }, [navigate, organizationId, namespaceId, projectId]);
+
   // Consolidated keyboard event handling
   useEffect(() => {
     let keySequence: string[] = [];
-    let sequenceTimeout: NodeJS.Timeout | null = null;
+    let sequenceTimeout: ReturnType<typeof setTimeout> | null = null;
+
+    function clearSequence() {
+      keySequence = [];
+      if (sequenceTimeout) {
+        clearTimeout(sequenceTimeout);
+        sequenceTimeout = null;
+      }
+    }
 
     function handleKeyDown(e: KeyboardEvent) {
       // Handle Cmd+K / Ctrl+K to open command palette
@@ -92,55 +220,86 @@ export function useCommandPalette(): CommandPaletteState &
               keySequence = [];
             }, 1000);
 
-            // Check for matching shortcuts
-            if (keySequence[0] === "t" && keySequence[1] === "n") {
+            const [first, second] = keySequence;
+            if (!second) return;
+
+            // Todo shortcuts
+            if (first === "t" && second === "n") {
               handleAddTodo();
-              keySequence = [];
-              if (sequenceTimeout) {
-                clearTimeout(sequenceTimeout);
-                sequenceTimeout = null;
-              }
+              clearSequence();
               return;
             }
-
-            if (keySequence[0] === "t" && keySequence[1] === "s") {
+            if (first === "t" && second === "s") {
               handleShowTodos();
-              keySequence = [];
-              if (sequenceTimeout) {
-                clearTimeout(sequenceTimeout);
-                sequenceTimeout = null;
-              }
+              clearSequence();
               return;
             }
 
             // Theme shortcuts
-            if (keySequence[0] === "t" && keySequence[1] === "t") {
+            if (first === "t" && second === "t") {
               handleToggleTheme();
-              keySequence = [];
-              if (sequenceTimeout) {
-                clearTimeout(sequenceTimeout);
-                sequenceTimeout = null;
-              }
+              clearSequence();
               return;
             }
-
-            if (keySequence[0] === "t" && keySequence[1] === "l") {
+            if (first === "t" && second === "l") {
               handleSetLightTheme();
-              keySequence = [];
-              if (sequenceTimeout) {
-                clearTimeout(sequenceTimeout);
-                sequenceTimeout = null;
-              }
+              clearSequence();
+              return;
+            }
+            if (first === "t" && second === "d") {
+              handleSetDarkTheme();
+              clearSequence();
               return;
             }
 
-            if (keySequence[0] === "t" && keySequence[1] === "d") {
-              handleSetDarkTheme();
-              keySequence = [];
-              if (sequenceTimeout) {
-                clearTimeout(sequenceTimeout);
-                sequenceTimeout = null;
-              }
+            // Organization shortcuts
+            if (first === "o" && second === "n" && canCreateOrganization) {
+              handleCreateOrganization();
+              clearSequence();
+              return;
+            }
+            if (first === "o" && second === "s") {
+              handleShowOrganizations();
+              clearSequence();
+              return;
+            }
+            if (first === "o" && second === "g" && hasOrganization) {
+              handleGoToOrganization();
+              clearSequence();
+              return;
+            }
+
+            // Namespace shortcuts
+            if (first === "n" && second === "n" && canCreateNamespace) {
+              handleCreateNamespace();
+              clearSequence();
+              return;
+            }
+            if (first === "n" && second === "s") {
+              handleShowNamespaces();
+              clearSequence();
+              return;
+            }
+            if (first === "n" && second === "g" && hasNamespace) {
+              handleGoToNamespace();
+              clearSequence();
+              return;
+            }
+
+            // Project shortcuts
+            if (first === "p" && second === "n" && canCreateProject) {
+              handleCreateProject();
+              clearSequence();
+              return;
+            }
+            if (first === "p" && second === "s" && hasNamespace) {
+              handleShowProjects();
+              clearSequence();
+              return;
+            }
+            if (first === "p" && second === "g" && hasProject) {
+              handleGoToProject();
+              clearSequence();
               return;
             }
           }
@@ -156,7 +315,29 @@ export function useCommandPalette(): CommandPaletteState &
         clearTimeout(sequenceTimeout);
       }
     };
-  }, [open, handleAddTodo, handleShowTodos]);
+  }, [
+    open,
+    handleAddTodo,
+    handleShowTodos,
+    handleToggleTheme,
+    handleSetLightTheme,
+    handleSetDarkTheme,
+    handleCreateOrganization,
+    handleShowOrganizations,
+    handleGoToOrganization,
+    handleCreateNamespace,
+    handleShowNamespaces,
+    handleGoToNamespace,
+    handleCreateProject,
+    handleShowProjects,
+    handleGoToProject,
+    canCreateOrganization,
+    canCreateNamespace,
+    canCreateProject,
+    hasOrganization,
+    hasNamespace,
+    hasProject,
+  ]);
 
   return {
     open,
@@ -167,5 +348,20 @@ export function useCommandPalette(): CommandPaletteState &
     handleSetLightTheme,
     handleSetDarkTheme,
     handleSetSystemTheme,
+    handleCreateOrganization,
+    handleShowOrganizations,
+    handleGoToOrganization,
+    handleCreateNamespace,
+    handleShowNamespaces,
+    handleGoToNamespace,
+    handleCreateProject,
+    handleShowProjects,
+    handleGoToProject,
+    canCreateOrganization,
+    canCreateNamespace,
+    canCreateProject,
+    hasOrganization,
+    hasNamespace,
+    hasProject,
   };
 }

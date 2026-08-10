@@ -1,6 +1,7 @@
 package model
 
 import (
+	"strings"
 	"time"
 
 	"github.com/opcotech/elemo/internal/model"
@@ -10,10 +11,11 @@ import (
 )
 
 // NewCreateProjectOpts creates repository.CreateProjectOpts for tests.
-func NewCreateProjectOpts(namespaceID model.ID) repository.CreateProjectOpts {
+func NewCreateProjectOpts(namespaceID, creatorID model.ID) repository.CreateProjectOpts {
 	return repository.CreateProjectOpts{
 		NamespaceID: namespaceID,
-		Key:         pkg.GenerateRandomStringAlpha(3),
+		CreatorID:   creatorID,
+		Key:         strings.ToUpper(pkg.GenerateRandomStringAlpha(3)),
 		Name:        pkg.GenerateRandomString(10),
 		Description: pkg.GenerateRandomString(10),
 		Logo:        imageURL,
@@ -25,7 +27,7 @@ func NewCreateProjectOpts(namespaceID model.ID) repository.CreateProjectOpts {
 func NewRepositoryProject() *repository.Project {
 	return &repository.Project{
 		ID:          model.MustNewID(model.ResourceTypeProject),
-		Key:         pkg.GenerateRandomStringAlpha(3),
+		Key:         strings.ToUpper(pkg.GenerateRandomStringAlpha(3)),
 		Name:        pkg.GenerateRandomString(10),
 		Description: pkg.GenerateRandomString(10),
 		Logo:        imageURL,
@@ -42,7 +44,7 @@ func NewRepositoryProject() *repository.Project {
 //
 // Deprecated: prefer NewCreateProjectOpts / NewRepositoryProject.
 func NewProject() *model.Project {
-	project, err := model.NewProject(pkg.GenerateRandomStringAlpha(3), pkg.GenerateRandomString(10))
+	project, err := model.NewProject(strings.ToUpper(pkg.GenerateRandomStringAlpha(3)), pkg.GenerateRandomString(10))
 	if err != nil {
 		panic(err)
 	}

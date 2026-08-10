@@ -15,6 +15,7 @@ interface NamespaceDeleteDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
+  navigateOnSuccess?: boolean;
 }
 
 export function NamespaceDeleteDialog({
@@ -23,6 +24,7 @@ export function NamespaceDeleteDialog({
   open,
   onOpenChange,
   onSuccess,
+  navigateOnSuccess = false,
 }: NamespaceDeleteDialogProps) {
   const queryKeysToInvalidate: QueryKey[] = [
     v1OrganizationsNamespacesGetOptions({
@@ -43,6 +45,12 @@ export function NamespaceDeleteDialog({
       onSuccess?.();
       onOpenChange(false);
     },
+    navigateOnSuccess: navigateOnSuccess
+      ? {
+          to: "/settings/organizations/$organizationId",
+          params: { organizationId },
+        }
+      : undefined,
   });
 
   const handleConfirm = () => {

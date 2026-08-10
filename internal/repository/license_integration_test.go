@@ -36,7 +36,7 @@ func (s *LicenseRepositoryIntegrationTestSuite) SetupTest() {
 	testNamespace, err := s.NamespaceRepo.Create(context.Background(), testModel.NewCreateNamespaceOpts(testUser.ID, testOrg.ID))
 	s.Require().NoError(err)
 
-	testProject, err := s.ProjectRepo.Create(context.Background(), testModel.NewCreateProjectOpts(testNamespace.ID))
+	testProject, err := s.ProjectRepo.Create(context.Background(), testModel.NewCreateProjectOpts(testNamespace.ID, testUser.ID))
 	s.Require().NoError(err)
 
 	_, err = s.RoleRepo.Create(context.Background(), testModel.NewCreateRoleOpts(testUser.ID, testProject.ID))

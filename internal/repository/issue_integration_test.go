@@ -40,7 +40,7 @@ func (s *IssueRepositoryIntegrationTestSuite) SetupTest() {
 	s.Require().NoError(err)
 	s.testNamespace, err = s.NamespaceRepo.Create(context.Background(), testModel.NewCreateNamespaceOpts(s.testUser.ID, s.testOrg.ID))
 	s.Require().NoError(err)
-	s.testProject, err = s.ProjectRepo.Create(context.Background(), testModel.NewCreateProjectOpts(s.testNamespace.ID))
+	s.testProject, err = s.ProjectRepo.Create(context.Background(), testModel.NewCreateProjectOpts(s.testNamespace.ID, s.testUser.ID))
 	s.Require().NoError(err)
 	s.createOpts = testModel.NewCreateIssueOpts(s.testProject.ID, s.testUser.ID)
 }
@@ -251,7 +251,7 @@ func (s *CachedIssueRepositoryIntegrationTestSuite) SetupTest() {
 	s.Require().NoError(err)
 	s.testNamespace, err = s.NamespaceRepo.Create(context.Background(), testModel.NewCreateNamespaceOpts(s.testUser.ID, s.testOrg.ID))
 	s.Require().NoError(err)
-	s.testProject, err = s.ProjectRepo.Create(context.Background(), testModel.NewCreateProjectOpts(s.testNamespace.ID))
+	s.testProject, err = s.ProjectRepo.Create(context.Background(), testModel.NewCreateProjectOpts(s.testNamespace.ID, s.testUser.ID))
 	s.Require().NoError(err)
 	s.createOpts = testModel.NewCreateIssueOpts(s.testProject.ID, s.testUser.ID)
 	s.Require().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 0)

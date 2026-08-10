@@ -58,7 +58,7 @@ func (s *NamespaceRepositoryIntegrationTestSuite) TestCreate() {
 func (s *NamespaceRepositoryIntegrationTestSuite) TestGet() {
 	created, err := s.NamespaceRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
-	project, err := s.ProjectRepo.Create(context.Background(), testModel.NewCreateProjectOpts(created.ID))
+	project, err := s.ProjectRepo.Create(context.Background(), testModel.NewCreateProjectOpts(created.ID, s.testUser.ID))
 	s.Require().NoError(err)
 	doc, err := s.DocumentRepo.Create(context.Background(), testModel.NewCreateDocumentOpts(created.ID, s.testUser.ID))
 	s.Require().NoError(err)
@@ -82,7 +82,7 @@ func (s *NamespaceRepositoryIntegrationTestSuite) TestGet() {
 func (s *NamespaceRepositoryIntegrationTestSuite) TestGetAll() {
 	created, err := s.NamespaceRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
-	project, err := s.ProjectRepo.Create(context.Background(), testModel.NewCreateProjectOpts(created.ID))
+	project, err := s.ProjectRepo.Create(context.Background(), testModel.NewCreateProjectOpts(created.ID, s.testUser.ID))
 	s.Require().NoError(err)
 	doc, err := s.DocumentRepo.Create(context.Background(), testModel.NewCreateDocumentOpts(created.ID, s.testUser.ID))
 	s.Require().NoError(err)
