@@ -1,3 +1,4 @@
+import { expect } from "@playwright/test";
 import type { Locator, Page } from "@playwright/test";
 
 import { BaseComponent } from "../components/base";
@@ -93,7 +94,10 @@ export class RoleMembersSection extends DialogMixin(
    * Open the add member dialog and wait for it to be visible.
    */
   async openAddMemberDialog(): Promise<void> {
-    await this.clickAddMemberButton();
+    const addButton = this.getAddMemberButton();
+    await expect(addButton).toBeVisible();
+    await expect(addButton).toBeEnabled();
+    await addButton.click();
     await this.waitForDialog("Add Member to Role");
   }
 

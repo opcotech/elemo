@@ -1,8 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Eye, EyeOff, Lock, Mail } from "lucide-react";
-import { useState } from "react";
-
-import { Spinner } from "../ui/spinner";
+import { useEffect, useState } from "react";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -15,6 +13,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Spinner } from "@/components/ui/spinner";
 import { useLogin } from "@/hooks/use-auth";
 
 interface LoginFormProps {
@@ -22,30 +21,29 @@ interface LoginFormProps {
 }
 
 export function LoginForm({ redirectTo }: LoginFormProps) {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [mounted, setMounted] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const { login, isLoading, error, clearError } = useLogin();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     clearError();
 
-    if (!email || !password) {
+    // Uncontrolled inputs + FormData: avoids hydration wiping keystrokes that
+    // landed before React attached (common under E2E load).
+    const formData = new FormData(e.currentTarget);
+    const nextEmail = String(formData.get("email") ?? "").trim();
+    const nextPassword = String(formData.get("password") ?? "");
+
+    if (!nextEmail || !nextPassword) {
       return;
     }
 
-    await login({ email, password }, redirectTo);
-  };
-
-  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setEmail(e.target.value);
-    if (error) clearError();
-  };
-
-  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPassword(e.target.value);
-    if (error) clearError();
+    await login({ email: nextEmail, password: nextPassword }, redirectTo);
   };
 
   return (
@@ -60,7 +58,7 @@ export function LoginForm({ redirectTo }: LoginFormProps) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form method="post" onSubmit={handleSubmit} className="space-y-4">
             {error && (
               <Alert variant="destructive">
                 <AlertDescription>{error}</AlertDescription>
@@ -73,10 +71,12 @@ export function LoginForm({ redirectTo }: LoginFormProps) {
                 <Mail className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
                 <Input
                   id="email"
+                  name="email"
                   type="email"
                   placeholder="Enter your email"
-                  value={email}
-                  onChange={handleEmailChange}
+                  onChange={() => {
+                    if (error) clearError();
+                  }}
                   className="pl-10"
                   required
                   disabled={isLoading}
@@ -91,10 +91,12 @@ export function LoginForm({ redirectTo }: LoginFormProps) {
                 <Lock className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
                 <Input
                   id="password"
+                  name="password"
                   type={showPassword ? "text" : "password"}
                   placeholder="Enter your password"
-                  value={password}
-                  onChange={handlePasswordChange}
+                  onChange={() => {
+                    if (error) clearError();
+                  }}
                   className="pr-10 pl-10"
                   required
                   disabled={isLoading}
@@ -131,7 +133,7 @@ export function LoginForm({ redirectTo }: LoginFormProps) {
               <Button
                 type="submit"
                 className="flex w-full items-center"
-                disabled={isLoading}
+                disabled={!mounted || isLoading}
                 aria-label="Sign in"
               >
                 {isLoading ? (

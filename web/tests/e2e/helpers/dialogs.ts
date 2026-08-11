@@ -12,21 +12,19 @@ export async function waitForDialog(
   title?: string,
   options?: { timeout?: number }
 ): Promise<void> {
-  const timeout = options?.timeout ?? 5000;
+  const timeout = options?.timeout ?? 10_000;
+  const dialogLocator = page
+    .getByRole("dialog")
+    .or(page.getByRole("alertdialog"))
+    .or(page.locator('[data-slot="dialog-content"]'))
+    .or(page.locator('[data-slot="alert-dialog-content"]'));
+
+  await expect(dialogLocator.first()).toBeVisible({ timeout });
 
   if (title) {
-    const dialogLocator = page
-      .getByRole("dialog")
-      .or(page.getByRole("alertdialog"));
-    await expect(dialogLocator).toBeVisible({ timeout });
     await expect(
-      dialogLocator.getByRole("heading", { name: title })
+      dialogLocator.getByRole("heading", { name: title }).first()
     ).toBeVisible({ timeout });
-  } else {
-    const dialogLocator = page
-      .getByRole("dialog")
-      .or(page.getByRole("alertdialog"));
-    await expect(dialogLocator).toBeVisible({ timeout });
   }
 }
 

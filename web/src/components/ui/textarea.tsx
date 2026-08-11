@@ -2,58 +2,17 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
-const Textarea = React.forwardRef<
-  HTMLTextAreaElement,
-  React.ComponentProps<"textarea">
->(({ className, ...props }, ref) => {
+function Textarea({ className, ...props }: React.ComponentProps<"textarea">) {
   return (
     <textarea
       data-slot="textarea"
       className={cn(
-        "border-border bg-background placeholder:text-muted-foreground focus-visible:ring-muted focus-visible:border-primary hover:border-primary/50 flex min-h-[80px] w-full resize-none rounded-md border px-3 py-2 text-sm transition-colors focus-visible:ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50",
+        "border-border placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 disabled:bg-input/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:bg-input dark:disabled:bg-input/80 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 bg-card flex field-sizing-content min-h-16 w-full rounded-md border px-3 py-2.5 text-base transition-colors outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:ring-2 md:text-sm",
         className
       )}
-      ref={ref}
       {...props}
     />
   );
-});
-Textarea.displayName = "Textarea";
+}
 
-// Auto-resizing textarea
-const AutoResizeTextarea = React.forwardRef<
-  HTMLTextAreaElement,
-  React.ComponentProps<"textarea">
->(({ className, ...props }, ref) => {
-  const textareaRef = React.useRef<HTMLTextAreaElement>(null);
-
-  React.useImperativeHandle(ref, () => textareaRef.current!);
-
-  const adjustHeight = React.useCallback(() => {
-    const textarea = textareaRef.current;
-    if (textarea) {
-      textarea.style.height = "auto";
-      textarea.style.height = `${textarea.scrollHeight}px`;
-    }
-  }, []);
-
-  React.useEffect(() => {
-    adjustHeight();
-  }, [adjustHeight, props.value]);
-
-  return (
-    <textarea
-      data-slot="textarea"
-      className={cn(
-        "border-border bg-background placeholder:text-muted-foreground focus-visible:ring-muted focus-visible:border-primary hover:border-primary/50 flex w-full resize-none overflow-hidden rounded-md border-2 px-3 py-2 text-sm transition-colors focus-visible:ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50",
-        className
-      )}
-      ref={textareaRef}
-      onInput={adjustHeight}
-      {...props}
-    />
-  );
-});
-AutoResizeTextarea.displayName = "AutoResizeTextarea";
-
-export { Textarea, AutoResizeTextarea };
+export { Textarea };

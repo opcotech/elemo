@@ -35,17 +35,20 @@ export class SettingsOrganizationProjectDetailsPage extends BaseComponent {
   }
 
   async waitForLoad(): Promise<void> {
-    const heading = this.page
-      .getByRole("main")
-      .getByRole("heading", { level: 1 })
-      .first();
-    await waitForElementVisible(heading);
+    // Prefer settled project content over the first transient h1 (e.g. still
+    // on "Create Project" while .../projects/new matches a loose URL assert).
+    const settled = this.page
+      .getByText("Project Information")
+      .or(this.page.getByRole("heading", { name: "Access Denied" }));
+    await waitForElementVisible(settled);
   }
 
   async getTitleText(): Promise<string> {
+    await this.waitForLoad();
     const heading = this.page
       .getByRole("main")
       .getByRole("heading", { level: 1 })
+      .filter({ hasNotText: "Create Project" })
       .first();
     await waitForElementVisible(heading);
     return (await heading.textContent()) ?? "";

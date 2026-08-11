@@ -65,8 +65,16 @@ type Story = StoryObj<typeof meta>;
 // Basic select
 export const Default: Story = {
   render: () => (
-    <Select>
-      <SelectTrigger className="w-[180px]">
+    <Select
+      items={{
+        apple: "Apple",
+        banana: "Banana",
+        blueberry: "Blueberry",
+        grapes: "Grapes",
+        pineapple: "Pineapple",
+      }}
+    >
+      <SelectTrigger className="w-45">
         <SelectValue placeholder="Select a fruit" />
       </SelectTrigger>
       <SelectContent>
@@ -84,7 +92,7 @@ export const Default: Story = {
 export const WithIcons: Story = {
   render: () => (
     <Select>
-      <SelectTrigger className="w-[200px]">
+      <SelectTrigger className="w-50">
         <SelectValue placeholder="Select a fruit" />
       </SelectTrigger>
       <SelectContent>
@@ -135,7 +143,7 @@ export const WithLabel: Story = {
 export const Disabled: Story = {
   render: () => (
     <Select disabled>
-      <SelectTrigger className="w-[180px]">
+      <SelectTrigger className="w-45">
         <SelectValue placeholder="Select a fruit" />
       </SelectTrigger>
       <SelectContent>
@@ -151,7 +159,7 @@ export const Disabled: Story = {
 export const DisabledOption: Story = {
   render: () => (
     <Select>
-      <SelectTrigger className="w-[180px]">
+      <SelectTrigger className="w-45">
         <SelectValue placeholder="Select a fruit" />
       </SelectTrigger>
       <SelectContent>
@@ -174,8 +182,17 @@ export const Controlled: Story = {
     return (
       <div className="space-y-2">
         <Label>Selected: {value || "None"}</Label>
-        <Select value={value} onValueChange={setValue}>
-          <SelectTrigger className="w-[180px]">
+        <Select
+          value={value}
+          onValueChange={(nextValue) => setValue(nextValue ?? "")}
+          items={{
+            apple: "Apple",
+            banana: "Banana",
+            orange: "Orange",
+            grape: "Grape",
+          }}
+        >
+          <SelectTrigger className="w-45">
             <SelectValue placeholder="Select a fruit" />
           </SelectTrigger>
           <SelectContent>
@@ -195,7 +212,14 @@ export const ThemeSelector: Story = {
   render: () => (
     <div className="grid w-full max-w-sm items-center gap-1.5">
       <Label>Theme</Label>
-      <Select defaultValue="system">
+      <Select
+        defaultValue="system"
+        items={{
+          light: "Light",
+          dark: "Dark",
+          system: "System",
+        }}
+      >
         <SelectTrigger>
           <SelectValue />
         </SelectTrigger>
@@ -375,7 +399,7 @@ export const Sizes: Story = {
       <div className="grid gap-1.5">
         <Label>Small</Label>
         <Select>
-          <SelectTrigger className="h-8 w-[150px] text-xs">
+          <SelectTrigger className="h-8 w-37.5 text-xs">
             <SelectValue placeholder="Small select" />
           </SelectTrigger>
           <SelectContent>
@@ -389,7 +413,7 @@ export const Sizes: Story = {
       <div className="grid gap-1.5">
         <Label>Default</Label>
         <Select>
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="w-45">
             <SelectValue placeholder="Default select" />
           </SelectTrigger>
           <SelectContent>
@@ -403,7 +427,7 @@ export const Sizes: Story = {
       <div className="grid gap-1.5">
         <Label>Large</Label>
         <Select>
-          <SelectTrigger className="h-12 w-[220px] text-base">
+          <SelectTrigger className="h-12 w-55 text-base">
             <SelectValue placeholder="Large select" />
           </SelectTrigger>
           <SelectContent>
@@ -428,7 +452,7 @@ export const Sizes: Story = {
 export const WithDescriptions: Story = {
   render: () => (
     <Select>
-      <SelectTrigger className="w-[280px]">
+      <SelectTrigger className="w-70">
         <SelectValue placeholder="Choose a plan" />
       </SelectTrigger>
       <SelectContent>
@@ -483,26 +507,34 @@ export const FormIntegration: Story = {
 
       <div className="grid gap-1.5">
         <Label htmlFor="priority">Priority</Label>
-        <Select name="priority" defaultValue="medium">
+        <Select
+          name="priority"
+          defaultValue="medium"
+          items={{
+            low: "Low",
+            medium: "Medium",
+            high: "High",
+          }}
+        >
           <SelectTrigger id="priority">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="low">
               <div className="flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-green-500"></div>
+                <div className="bg-success h-2 w-2 rounded-full"></div>
                 Low
               </div>
             </SelectItem>
             <SelectItem value="medium">
               <div className="flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-yellow-500"></div>
+                <div className="bg-warning h-2 w-2 rounded-full"></div>
                 Medium
               </div>
             </SelectItem>
             <SelectItem value="high">
               <div className="flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-red-500"></div>
+                <div className="bg-destructive h-2 w-2 rounded-full"></div>
                 High
               </div>
             </SelectItem>
@@ -512,7 +544,16 @@ export const FormIntegration: Story = {
 
       <div className="grid gap-1.5">
         <Label htmlFor="status">Status</Label>
-        <Select name="status" defaultValue="draft">
+        <Select
+          name="status"
+          defaultValue="draft"
+          items={{
+            draft: "Draft",
+            review: "In Review",
+            approved: "Approved",
+            published: "Published",
+          }}
+        >
           <SelectTrigger id="status">
             <SelectValue />
           </SelectTrigger>

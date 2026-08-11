@@ -1,6 +1,7 @@
 import type { FullConfig } from "@playwright/test";
 
 import { verifyBackendAPI } from "./utils/api";
+import { ensureSystemOwner } from "./utils/db";
 import { getTestConfig } from "./utils/test-config";
 
 /**
@@ -13,6 +14,7 @@ async function globalSetup(_: FullConfig) {
   const testConfig = getTestConfig();
 
   await verifyBackendAPI(testConfig);
+  await ensureSystemOwner(testConfig);
 }
 
 export default globalSetup;

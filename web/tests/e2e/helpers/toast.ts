@@ -40,12 +40,12 @@ export async function waitForSuccessToast(
   if (text) {
     await waitForToast(page, text, options);
   } else {
-    await Promise.race([
-      waitForToast(page, "successfully", options).catch(() => null),
-      waitForToast(page, "created", options).catch(() => null),
-      waitForToast(page, "updated", options).catch(() => null),
-      waitForToast(page, "deleted", options).catch(() => null),
-    ]);
+    const successToast = page.locator("[data-sonner-toast]").filter({
+      hasText: /successfully|created|updated|deleted/i,
+    });
+    await expect(successToast.first()).toBeVisible({
+      timeout: options?.timeout ?? 5000,
+    });
   }
 }
 
@@ -63,7 +63,10 @@ export async function waitForErrorToast(
   if (text) {
     await waitForToast(page, text, options);
   } else {
-    await expect(page.locator('[role="alert"]')).toBeVisible({
+    const errorToast = page.locator(
+      '[data-sonner-toast][data-type="error"], [role="alert"]'
+    );
+    await expect(errorToast.first()).toBeVisible({
       timeout: options?.timeout ?? 5000,
     });
   }
@@ -80,7 +83,9 @@ export async function isToastVisible(
   text: string
 ): Promise<boolean> {
   return await page
-    .getByText(text)
+    .locator("[data-sonner-toast]")
+    .filter({ hasText: buildTextMatcher(text, false) })
+    .first()
     .isVisible()
     .catch(() => false);
 }

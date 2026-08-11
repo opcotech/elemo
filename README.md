@@ -31,29 +31,6 @@ project overview, and community members to be involved in the lifecycle of proje
 Elemo is not trying to reinvent the wheel, though it is introducing new abstractions in project management to allow any
 size of company an easy use.
 
-## Features
-
-_The features listed below are part of the roadmap, but not necessarily implemented yet. The __fully__ implemented features are
-marked with a checkmark._
-
-- [x] **Organizations:** Collaborate on projects across multiple organizations, whether it is your client, vendor, your
-      subsidiary, or else.
-- [x] **Roles:** Create roles for organizations, namespaces, or projects. Be flexible. You decide on what permissions
-      the role has.
-- [x] **Namespaces:** Organize your projects into namespaces, create namespace-specific roles and forget about
-      team-named projects as a workaround.
-- [ ] **Projects:** Group issues and documents into projects and keep everything related at one place. No more
-      unnecessary back-and-forth between tabs.
-- [ ] **Issues:** Create issues, attach related files, link documents, and more. Everything you need for the
-      implementation at one place.
-- [ ] **Documents:** Create rich documents, link them to issues, projects, or even namespaces.
-- [x] **Todo lists:** Track your Todo list within Elemo and create new items in the blink of an eye. No more "where did
-      I put that note?!".
-- [ ] **Boards:** Gain insights into the project's progress. No matter what project management methodology your team
-      uses.
-- [ ] **Releases:** Keep your releases where they belong to. Link releases to documents, issues, and so on.
-- [ ] **Roadmaps:** Make sure you see the big picture and don't get lost in details.
-
 ## Try Elemo
 
 Setting up the development environment is an easy and straightforward process, however, you will need to run the code

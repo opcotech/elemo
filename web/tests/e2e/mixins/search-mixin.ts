@@ -1,3 +1,4 @@
+import { expect } from "@playwright/test";
 import type { Locator } from "@playwright/test";
 
 /**
@@ -58,7 +59,29 @@ export function SearchMixin<T extends abstract new (...args: any[]) => any>(
      */
     async search(term: string): Promise<void> {
       const searchInput = this.getSearchInput();
-      await searchInput.fill(term);
+      await expect(searchInput).toBeVisible();
+      await expect(searchInput).toBeEditable();
+
+      // Controlled Base UI inputs on Firefox often ignore fill()/clear();
+      // trusted key events keep React filter state in sync.
+      for (let attempt = 0; attempt < 2; attempt++) {
+        await searchInput.click();
+        await searchInput.press("ControlOrMeta+A");
+        await searchInput.press("Backspace");
+        if (term.length > 0) {
+          await searchInput.pressSequentially(term, { delay: 10 });
+        }
+        try {
+          await expect(searchInput).toHaveValue(term, { timeout: 1_000 });
+          return;
+        } catch {
+          if (attempt === 1) {
+            throw new Error(
+              `Failed to set search input to a stable value after retry`
+            );
+          }
+        }
+      }
     }
   }
 

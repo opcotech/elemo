@@ -18,9 +18,11 @@ export default [...tanstackConfig, {
     "pnpm-lock.yaml",
     "pnpm-workspace.yaml",
     "postcss.config.ts",
+    "playwright-report/**",
     "public/**",
     "src/lib/client/**",
     "storybook-static/**",
+    "test-results/**",
     "vite.config.ts",
   ],
 }, {

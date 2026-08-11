@@ -1,3 +1,4 @@
+import { useQueries } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Edit, Plus, Shield, Trash2, UserPlus } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -18,12 +19,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  ResourceType,
-  usePermissions,
-  withResourceType,
-} from "@/hooks/use-permissions";
-import type { Role } from "@/lib/api";
+import { ResourceType, withResourceType } from "@/hooks/use-permissions";
+import { v1PermissionResourceGetOptions } from "@/lib/api/query-options";
+import type { Permission, Role } from "@/lib/api/types";
 import { can } from "@/lib/auth/permissions";
 import { pluralize } from "@/lib/utils";
 
@@ -65,6 +63,8 @@ function RolesListSkeleton() {
 
 interface RoleRowProps {
   role: Role;
+  permissions: Permission[] | undefined;
+  isPermissionsLoading: boolean;
   organizationId: string;
   onAddMemberClick: (role: Role) => void;
   onDeleteClick: (role: Role) => void;
@@ -72,16 +72,14 @@ interface RoleRowProps {
 
 function RoleRow({
   role,
+  permissions,
+  isPermissionsLoading,
   organizationId,
   onAddMemberClick,
   onDeleteClick,
 }: RoleRowProps) {
-  const { data: rolePermissions, isLoading: isRolePermissionsLoading } =
-    usePermissions(withResourceType(ResourceType.Role, role.id));
-
-  const hasRoleWritePermission = can(rolePermissions, "write");
-  const hasRoleDeletePermission = can(rolePermissions, "delete");
-  const isPermissionsLoading = isRolePermissionsLoading;
+  const hasRoleWritePermission = can(permissions, "write");
+  const hasRoleDeletePermission = can(permissions, "delete");
 
   return (
     <TableRow>
@@ -116,17 +114,21 @@ function RoleRow({
                   <UserPlus className="size-4" />
                   <span className="sr-only">Add member</span>
                 </Button>
-                <Button variant="ghost" size="sm" asChild>
-                  <Link
-                    to="/settings/organizations/$organizationId/roles/$roleId/edit"
-                    params={{
-                      organizationId,
-                      roleId: role.id,
-                    }}
-                  >
-                    <Edit className="size-4" />
-                    <span className="sr-only">Edit role</span>
-                  </Link>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  render={
+                    <Link
+                      to="/settings/organizations/$organizationId/roles/$roleId/edit"
+                      params={{
+                        organizationId,
+                        roleId: role.id,
+                      }}
+                    />
+                  }
+                >
+                  <Edit className="size-4" />
+                  <span className="sr-only">Edit role</span>
                 </Button>
               </>
             )}
@@ -152,6 +154,7 @@ interface RolesListProps {
   isLoading: boolean;
   error: unknown;
   organizationId: string;
+  organizationPermissions: Permission[];
 }
 
 export function RolesList({
@@ -159,19 +162,31 @@ export function RolesList({
   isLoading,
   error,
   organizationId,
+  organizationPermissions,
 }: RolesListProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [addMemberDialogOpen, setAddMemberDialogOpen] = useState(false);
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
 
-  const { data: orgPermissions, isLoading: isOrgPermissionsLoading } =
-    usePermissions(withResourceType(ResourceType.Organization, organizationId));
-
-  const hasOrgReadPermission = can(orgPermissions, "read");
-  const hasOrgWritePermission = can(orgPermissions, "write");
+  const hasOrgWritePermission = can(organizationPermissions, "write");
   const hasCreatePermission = hasOrgWritePermission;
-  const isPermissionsLoading = isOrgPermissionsLoading;
+  const rolePermissionQueries = useQueries({
+    queries: roles.map((role) =>
+      v1PermissionResourceGetOptions({
+        path: {
+          resourceId: withResourceType(ResourceType.Role, role.id),
+        },
+      })
+    ),
+  });
+  const rolePermissionsById = useMemo(
+    () =>
+      new Map(
+        roles.map((role, index) => [role.id, rolePermissionQueries[index]])
+      ),
+    [roles, rolePermissionQueries]
+  );
 
   const filteredRoles = useMemo(() => {
     if (!searchTerm.trim()) return roles;
@@ -182,10 +197,6 @@ export function RolesList({
         (role.description && role.description.toLowerCase().includes(term))
     );
   }, [roles, searchTerm]);
-
-  if (!isPermissionsLoading && !hasOrgReadPermission) {
-    return null;
-  }
 
   const handleDeleteClick = (role: Role) => {
     setSelectedRole(role);
@@ -202,18 +213,21 @@ export function RolesList({
     setAddMemberDialogOpen(true);
   };
 
-  const createButton =
-    !isPermissionsLoading && hasCreatePermission ? (
-      <Button variant="outline" size="sm" asChild>
+  const createButton = hasCreatePermission ? (
+    <Button
+      variant="outline"
+      size="sm"
+      render={
         <Link
           to="/settings/organizations/$organizationId/roles/new"
           params={{ organizationId }}
-        >
-          <Plus className="size-4" />
-          Create Role
-        </Link>
-      </Button>
-    ) : undefined;
+        />
+      }
+    >
+      <Plus className="size-4" />
+      Create Role
+    </Button>
+  ) : undefined;
 
   const emptyState =
     roles.length === 0
@@ -223,14 +237,18 @@ export function RolesList({
           description:
             "Roles help organize permissions and member access. Create a role to get started.",
           action: hasCreatePermission ? (
-            <Button variant="outline" size="sm" asChild>
-              <Link
-                to="/settings/organizations/$organizationId/roles/new"
-                params={{ organizationId }}
-              >
-                <Plus className="size-4" />
-                Create Role
-              </Link>
+            <Button
+              variant="outline"
+              size="sm"
+              render={
+                <Link
+                  to="/settings/organizations/$organizationId/roles/new"
+                  params={{ organizationId }}
+                />
+              }
+            >
+              <Plus className="size-4" />
+              Create Role
             </Button>
           ) : undefined,
         }
@@ -281,15 +299,20 @@ export function RolesList({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredRoles.map((role) => (
-                <RoleRow
-                  key={role.id}
-                  role={role}
-                  organizationId={organizationId}
-                  onAddMemberClick={handleAddMemberClick}
-                  onDeleteClick={handleDeleteClick}
-                />
-              ))}
+              {filteredRoles.map((role) => {
+                const permissionQuery = rolePermissionsById.get(role.id);
+                return (
+                  <RoleRow
+                    key={role.id}
+                    role={role}
+                    permissions={permissionQuery?.data}
+                    isPermissionsLoading={permissionQuery?.isLoading ?? true}
+                    organizationId={organizationId}
+                    onAddMemberClick={handleAddMemberClick}
+                    onDeleteClick={handleDeleteClick}
+                  />
+                );
+              })}
             </TableBody>
           </Table>
         )}

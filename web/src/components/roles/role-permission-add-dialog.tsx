@@ -1,17 +1,23 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
+
+import {
+  organizationScopedResourceType,
+  permissionFormSchema,
+} from "./permission-form-schema";
+import type { PermissionFormValues } from "./permission-form-schema";
 
 import { DialogForm } from "@/components/ui/dialog-form";
 import {
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+  ControlledField,
+  Field,
+  FieldControl,
+  FieldError,
+  FieldLabel,
+} from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -20,49 +26,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ResourceType, withResourceType } from "@/hooks/use-permissions";
-import {
-  v1OrganizationRolePermissionAddMutation,
-  v1OrganizationRolePermissionsGetOptions,
-} from "@/lib/client/@tanstack/react-query.gen";
+import type { ResourceType } from "@/hooks/use-permissions";
+import { withResourceType } from "@/hooks/use-permissions";
+import { v1OrganizationRolePermissionAddMutation } from "@/lib/api/mutation-options";
+import { v1OrganizationRolePermissionsGetOptions } from "@/lib/api/query-options";
+import { zPermissionKind } from "@/lib/client/zod.gen";
+import { runMutationSuccessWorkflow } from "@/lib/mutation-workflow";
 import { showErrorToast, showSuccessToast } from "@/lib/toast";
-
-const permissionFormSchema = z.object({
-  resourceType: z.enum([
-    ResourceType.Organization,
-    ResourceType.Namespace,
-    ResourceType.Document,
-    ResourceType.Project,
-    ResourceType.Role,
-  ]),
-  resourceId: z.string().min(1, "Resource ID is required"),
-  kind: z.enum(["read", "write", "create", "delete", "*"]),
-});
-
-type PermissionFormValues = z.infer<typeof permissionFormSchema>;
-
-const ORGANIZATION_SCOPED_RESOURCE_TYPES = [
-  ResourceType.Organization,
-  ResourceType.Namespace,
-  ResourceType.Document,
-  ResourceType.Project,
-  ResourceType.Role,
-] as const;
-
-const PERMISSION_KINDS: ("read" | "write" | "create" | "delete" | "*")[] = [
-  "read",
-  "write",
-  "create",
-  "delete",
-  "*",
-];
 
 interface RolePermissionAddDialogProps {
   organizationId: string;
   roleId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSuccess?: () => void;
+  onSuccess?: () => void | Promise<void>;
 }
 
 export function RolePermissionAddDialog({
@@ -73,19 +50,53 @@ export function RolePermissionAddDialog({
   onSuccess,
 }: RolePermissionAddDialogProps) {
   const queryClient = useQueryClient();
+  const router = useRouter();
   const [error, setError] = useState<Error | null>(null);
 
   const form = useForm<PermissionFormValues>({
     resolver: zodResolver(permissionFormSchema),
     defaultValues: {
-      resourceType:
-        ResourceType.Organization as PermissionFormValues["resourceType"],
+      resourceType: organizationScopedResourceType.enum.Organization,
       resourceId: "",
-      kind: "read",
+      kind: zPermissionKind.enum.read,
     },
   });
 
-  const mutation = useMutation(v1OrganizationRolePermissionAddMutation());
+  const rolePermissionsQueryKey = v1OrganizationRolePermissionsGetOptions({
+    path: {
+      id: organizationId,
+      role_id: roleId,
+    },
+  }).queryKey;
+  const mutation = useMutation({
+    ...v1OrganizationRolePermissionAddMutation(),
+    onSuccess: () =>
+      runMutationSuccessWorkflow({
+        invalidateQueries: [
+          () =>
+            queryClient.invalidateQueries({
+              queryKey: rolePermissionsQueryKey,
+            }),
+        ],
+        invalidateRouter: () => router.invalidate(),
+        callbacks: [
+          async () => {
+            setError(null);
+            showSuccessToast(
+              "Permission added",
+              "Permission added successfully"
+            );
+            form.reset();
+            onOpenChange(false);
+            await onSuccess?.();
+          },
+        ],
+      }),
+    onError: (err) => {
+      setError(new Error(err.message));
+      showErrorToast("Failed to add permission", err.message);
+    },
+  });
 
   useEffect(() => {
     if (open) {
@@ -95,7 +106,7 @@ export function RolePermissionAddDialog({
   }, [open]);
 
   const onSubmit = (values: PermissionFormValues) => {
-    if (!ORGANIZATION_SCOPED_RESOURCE_TYPES.includes(values.resourceType)) {
+    if (!organizationScopedResourceType.options.includes(values.resourceType)) {
       showErrorToast(
         "Invalid resource type",
         "Only organization-scoped resources can be assigned to roles"
@@ -106,44 +117,21 @@ export function RolePermissionAddDialog({
     // Clear previous error when submitting again
     setError(null);
 
-    const target = withResourceType(values.resourceType, values.resourceId);
-
-    mutation.mutate(
-      {
-        path: {
-          id: organizationId,
-          role_id: roleId,
-        },
-        body: {
-          target,
-          kind: values.kind,
-        },
-      },
-      {
-        onSuccess: () => {
-          setError(null);
-          showSuccessToast("Permission added", "Permission added successfully");
-          form.reset();
-          onOpenChange(false);
-
-          // Invalidate queries to refresh the permissions list
-          queryClient.invalidateQueries({
-            queryKey: v1OrganizationRolePermissionsGetOptions({
-              path: {
-                id: organizationId,
-                role_id: roleId,
-              },
-            }).queryKey,
-          });
-
-          onSuccess?.();
-        },
-        onError: (err) => {
-          setError(err as Error);
-          showErrorToast("Failed to add permission", err.message);
-        },
-      }
+    const target = withResourceType(
+      values.resourceType as ResourceType,
+      values.resourceId
     );
+
+    mutation.mutate({
+      path: {
+        id: organizationId,
+        role_id: roleId,
+      },
+      body: {
+        target,
+        kind: values.kind,
+      },
+    });
   };
 
   return (
@@ -160,67 +148,82 @@ export function RolePermissionAddDialog({
       className="sm:max-w-[600px]"
     >
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <FormField
+        <ControlledField
           control={form.control}
           name="resourceType"
           render={({ field }) => (
-            <FormItem>
-              <FormLabel>Resource Type</FormLabel>
-              <Select value={field.value} onValueChange={field.onChange}>
-                <FormControl>
+            <Field>
+              <FieldLabel>Resource Type</FieldLabel>
+              <Select
+                value={field.value}
+                onValueChange={field.onChange}
+                items={Object.fromEntries(
+                  organizationScopedResourceType.options.map((type) => [
+                    type,
+                    type,
+                  ])
+                )}
+              >
+                <FieldControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Select resource type" />
                   </SelectTrigger>
-                </FormControl>
+                </FieldControl>
                 <SelectContent>
-                  {ORGANIZATION_SCOPED_RESOURCE_TYPES.map((type) => (
+                  {organizationScopedResourceType.options.map((type) => (
                     <SelectItem key={type} value={type}>
                       {type}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              <FormMessage />
-            </FormItem>
+              <FieldError />
+            </Field>
           )}
         />
 
-        <FormField
+        <ControlledField
           control={form.control}
           name="resourceId"
           render={({ field }) => (
-            <FormItem>
-              <FormLabel>Resource ID</FormLabel>
-              <FormControl>
+            <Field>
+              <FieldLabel>Resource ID</FieldLabel>
+              <FieldControl>
                 <Input placeholder="Enter resource ID" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
+              </FieldControl>
+              <FieldError />
+            </Field>
           )}
         />
 
-        <FormField
+        <ControlledField
           control={form.control}
           name="kind"
           render={({ field }) => (
-            <FormItem>
-              <FormLabel>Permission Kind</FormLabel>
-              <Select value={field.value} onValueChange={field.onChange}>
-                <FormControl>
+            <Field>
+              <FieldLabel>Permission Kind</FieldLabel>
+              <Select
+                value={field.value}
+                onValueChange={field.onChange}
+                items={Object.fromEntries(
+                  zPermissionKind.options.map((kind) => [kind, kind])
+                )}
+              >
+                <FieldControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Select permission kind" />
                   </SelectTrigger>
-                </FormControl>
+                </FieldControl>
                 <SelectContent>
-                  {PERMISSION_KINDS.map((kind) => (
+                  {zPermissionKind.options.map((kind) => (
                     <SelectItem key={kind} value={kind}>
                       {kind}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              <FormMessage />
-            </FormItem>
+              <FieldError />
+            </Field>
           )}
         />
       </div>

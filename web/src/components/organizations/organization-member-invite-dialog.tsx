@@ -6,12 +6,12 @@ import { z } from "zod";
 
 import { DialogForm } from "@/components/ui/dialog-form";
 import {
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+  ControlledField,
+  Field,
+  FieldControl,
+  FieldError,
+  FieldLabel,
+} from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -22,12 +22,12 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useFormMutation } from "@/hooks/use-form-mutation";
-import type { Options, V1OrganizationMembersInviteData } from "@/lib/api";
 import {
   v1OrganizationMembersGetOptions,
   v1OrganizationRolesGetOptions,
-} from "@/lib/client/@tanstack/react-query.gen";
-import { v1OrganizationMembersInvite } from "@/lib/client/sdk.gen";
+} from "@/lib/api/query-options";
+import { v1OrganizationMembersInvite } from "@/lib/api/sdk";
+import type { Options, V1OrganizationMembersInviteData } from "@/lib/api/types";
 
 const inviteFormSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -127,38 +127,41 @@ export function OrganizationMemberInviteDialog({
       onReset={() => form.reset()}
       className="sm:max-w-[500px]"
     >
-      <FormField
+      <ControlledField
         control={form.control}
         name="email"
         render={({ field }) => (
-          <FormItem>
-            <FormLabel>Email Address</FormLabel>
-            <FormControl>
+          <Field>
+            <FieldLabel>Email Address</FieldLabel>
+            <FieldControl>
               <Input type="email" placeholder="user@example.com" {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
+            </FieldControl>
+            <FieldError />
+          </Field>
         )}
       />
 
-      <FormField
+      <ControlledField
         control={form.control}
         name="role_id"
         render={({ field }) => (
-          <FormItem>
-            <FormLabel>Role (Optional)</FormLabel>
+          <Field>
+            <FieldLabel>Role (Optional)</FieldLabel>
             <Select
               value={field.value || ""}
               onValueChange={(value) => {
                 // Empty string means no role selected
                 field.onChange(value === "" ? undefined : value);
               }}
+              items={Object.fromEntries(
+                (roles ?? []).map((role) => [role.id, role.name])
+              )}
             >
-              <FormControl>
+              <FieldControl>
                 <SelectTrigger>
                   <SelectValue placeholder="Select a role (optional)" />
                 </SelectTrigger>
-              </FormControl>
+              </FieldControl>
               <SelectContent>
                 {isLoadingRoles ? (
                   <div className="px-2 py-1.5">
@@ -173,8 +176,8 @@ export function OrganizationMemberInviteDialog({
                 )}
               </SelectContent>
             </Select>
-            <FormMessage />
-          </FormItem>
+            <FieldError />
+          </Field>
         )}
       />
     </DialogForm>

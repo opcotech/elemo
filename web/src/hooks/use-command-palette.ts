@@ -1,9 +1,7 @@
 import { useNavigate } from "@tanstack/react-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect } from "react";
 
-import { useTheme } from "@/components/theme-provider";
-import { useAddTodoForm } from "@/contexts/add-todo-form-context";
-import { useTodoSheet } from "@/contexts/todo-sheet-context";
+import { useTheme } from "@/components/shared/theme-provider";
 import { useNavigationContext } from "@/hooks/use-navigation-context";
 import {
   ResourceType,
@@ -11,6 +9,7 @@ import {
   withResourceType,
 } from "@/hooks/use-permissions";
 import { can } from "@/lib/auth/permissions";
+import { uiActions, useUiSelector } from "@/lib/ui-store";
 
 interface CommandPaletteState {
   open: boolean;
@@ -43,28 +42,28 @@ interface CommandPaletteActions {
 
 export function useCommandPalette(): CommandPaletteState &
   CommandPaletteActions {
-  const [open, setOpen] = useState(false);
+  const open = useUiSelector((state) => state.commandPaletteOpen);
+  const setOpen = uiActions.setCommandPaletteOpen;
   const navigate = useNavigate();
   const navigationContext = useNavigationContext();
-  const { open: openTodoSheet } = useTodoSheet();
-  const { open: openAddTodoForm } = useAddTodoForm();
   const { theme, setTheme } = useTheme();
 
   const { organizationId, namespaceId, projectId } = navigationContext;
   const hasOrganization = !!organizationId;
-  const hasNamespace = !!organizationId && !!namespaceId;
+  const hasNamespace = !!namespaceId;
   const hasProject = hasNamespace && !!projectId;
 
   const { data: systemOrganizationPermissions } = usePermissions(
-    withResourceType(ResourceType.Organization)
+    withResourceType(ResourceType.Organization),
+    !open
   );
   const { data: organizationPermissions } = usePermissions(
     withResourceType(ResourceType.Organization, organizationId),
-    !organizationId
+    !open || !organizationId
   );
   const { data: namespacePermissions } = usePermissions(
     withResourceType(ResourceType.Namespace, namespaceId),
-    !namespaceId
+    !open || !namespaceId
   );
 
   const canCreateOrganization = can(systemOrganizationPermissions, "create");
@@ -74,14 +73,14 @@ export function useCommandPalette(): CommandPaletteState &
   const canCreateProject = hasNamespace && can(namespacePermissions, "write");
 
   const handleAddTodo = useCallback(() => {
-    openAddTodoForm();
+    uiActions.openAddTodo();
     setOpen(false);
-  }, [openAddTodoForm]);
+  }, [setOpen]);
 
   const handleShowTodos = useCallback(() => {
     setOpen(false);
-    openTodoSheet();
-  }, [openTodoSheet]);
+    uiActions.openTodoSheet();
+  }, [setOpen]);
 
   const handleToggleTheme = useCallback(() => {
     setTheme(theme === "light" ? "dark" : "light");
@@ -106,14 +105,14 @@ export function useCommandPalette(): CommandPaletteState &
 
   const handleShowOrganizations = useCallback(() => {
     setOpen(false);
-    navigate({ to: "/settings/organizations" });
+    navigate({ to: "/organizations" });
   }, [navigate]);
 
   const handleGoToOrganization = useCallback(() => {
     if (!organizationId) return;
     setOpen(false);
     navigate({
-      to: "/settings/organizations/$organizationId",
+      to: "/organizations/$organizationId",
       params: { organizationId },
     });
   }, [navigate, organizationId]);
@@ -132,17 +131,17 @@ export function useCommandPalette(): CommandPaletteState &
 
   const handleShowNamespaces = useCallback(() => {
     setOpen(false);
-    navigate({ to: "/settings/namespaces" });
+    navigate({ to: "/namespaces" });
   }, [navigate]);
 
   const handleGoToNamespace = useCallback(() => {
-    if (!organizationId || !namespaceId) return;
+    if (!namespaceId) return;
     setOpen(false);
     navigate({
-      to: "/settings/organizations/$organizationId/namespaces/$namespaceId",
-      params: { organizationId, namespaceId },
+      to: "/namespaces/$namespaceId",
+      params: { namespaceId },
     });
-  }, [navigate, organizationId, namespaceId]);
+  }, [navigate, namespaceId]);
 
   const handleCreateProject = useCallback(() => {
     if (!organizationId || !namespaceId) return;
@@ -154,22 +153,22 @@ export function useCommandPalette(): CommandPaletteState &
   }, [navigate, organizationId, namespaceId]);
 
   const handleShowProjects = useCallback(() => {
-    if (!organizationId || !namespaceId) return;
+    if (!namespaceId) return;
     setOpen(false);
     navigate({
-      to: "/settings/organizations/$organizationId/namespaces/$namespaceId",
-      params: { organizationId, namespaceId },
+      to: "/namespaces/$namespaceId/projects",
+      params: { namespaceId },
     });
-  }, [navigate, organizationId, namespaceId]);
+  }, [navigate, namespaceId]);
 
   const handleGoToProject = useCallback(() => {
-    if (!organizationId || !namespaceId || !projectId) return;
+    if (!namespaceId || !projectId) return;
     setOpen(false);
     navigate({
-      to: "/settings/organizations/$organizationId/namespaces/$namespaceId/projects/$projectId",
-      params: { organizationId, namespaceId, projectId },
+      to: "/namespaces/$namespaceId/projects/$projectId",
+      params: { namespaceId, projectId },
     });
-  }, [navigate, organizationId, namespaceId, projectId]);
+  }, [navigate, namespaceId, projectId]);
 
   // Consolidated keyboard event handling
   useEffect(() => {

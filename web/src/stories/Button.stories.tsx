@@ -23,7 +23,7 @@ const meta: Meta<typeof Button> = {
     docs: {
       description: {
         component:
-          "A versatile button component with multiple variants, sizes, and a modern, minimal look. Built on top of Radix UI Slot for composition.",
+          "A versatile button component with multiple variants and sizes. Built on Base UI with Nova styling and motion-friendly press feedback.",
       },
     },
   },
@@ -33,22 +33,30 @@ const meta: Meta<typeof Button> = {
       control: "select",
       options: [
         "default",
-        "destructive",
         "outline",
         "secondary",
         "ghost",
+        "destructive",
+        "destructive-ghost",
         "link",
+        "success",
+        "warning",
       ],
       description: "The visual style variant of the button",
     },
     size: {
       control: "select",
-      options: ["default", "sm", "lg", "icon"],
+      options: [
+        "xs",
+        "sm",
+        "default",
+        "lg",
+        "icon",
+        "icon-xs",
+        "icon-sm",
+        "icon-lg",
+      ],
       description: "The size of the button",
-    },
-    asChild: {
-      control: "boolean",
-      description: "When true, the button will render as a Slot component",
     },
     disabled: {
       control: "boolean",
@@ -61,7 +69,6 @@ const meta: Meta<typeof Button> = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-// Basic variants
 export const Default: Story = {
   args: {
     children: "Default Button",
@@ -72,6 +79,13 @@ export const Destructive: Story = {
   args: {
     variant: "destructive",
     children: "Delete Account",
+  },
+};
+
+export const DestructiveGhost: Story = {
+  args: {
+    variant: "destructive-ghost",
+    children: "Remove",
   },
 };
 
@@ -89,6 +103,13 @@ export const Secondary: Story = {
   },
 };
 
+export const Ghost: Story = {
+  args: {
+    variant: "ghost",
+    children: "Ghost Button",
+  },
+};
+
 export const Link: Story = {
   args: {
     variant: "link",
@@ -96,7 +117,27 @@ export const Link: Story = {
   },
 };
 
-// Sizes
+export const Success: Story = {
+  args: {
+    variant: "success",
+    children: "Confirm",
+  },
+};
+
+export const Warning: Story = {
+  args: {
+    variant: "warning",
+    children: "Proceed with caution",
+  },
+};
+
+export const ExtraSmall: Story = {
+  args: {
+    size: "xs",
+    children: "Extra Small",
+  },
+};
+
 export const Small: Story = {
   args: {
     size: "sm",
@@ -118,7 +159,6 @@ export const Icon: Story = {
   },
 };
 
-// With Icons
 export const WithIconLeft: Story = {
   args: {
     children: (
@@ -150,7 +190,6 @@ export const IconOnly: Story = {
   },
 };
 
-// States
 export const Disabled: Story = {
   args: {
     disabled: true,
@@ -170,16 +209,18 @@ export const Loading: Story = {
   },
 };
 
-// Interactive examples
 export const AllVariants: Story = {
   render: () => (
     <div className="flex flex-wrap gap-3">
       <Button variant="default">Default</Button>
-      <Button variant="destructive">Destructive</Button>
-      <Button variant="outline">Outline</Button>
       <Button variant="secondary">Secondary</Button>
+      <Button variant="outline">Outline</Button>
       <Button variant="ghost">Ghost</Button>
+      <Button variant="destructive">Destructive</Button>
+      <Button variant="destructive-ghost">Destructive Ghost</Button>
       <Button variant="link">Link</Button>
+      <Button variant="success">Success</Button>
+      <Button variant="warning">Warning</Button>
     </div>
   ),
   parameters: {
@@ -193,11 +234,21 @@ export const AllVariants: Story = {
 
 export const AllSizes: Story = {
   render: () => (
-    <div className="flex items-center gap-3">
+    <div className="flex flex-wrap items-center gap-3">
+      <Button size="xs">Extra Small</Button>
       <Button size="sm">Small</Button>
       <Button size="default">Default</Button>
       <Button size="lg">Large</Button>
+      <Button size="icon-xs">
+        <Star className="h-3 w-3" />
+      </Button>
+      <Button size="icon-sm">
+        <Star className="h-3.5 w-3.5" />
+      </Button>
       <Button size="icon">
+        <Star className="h-4 w-4" />
+      </Button>
+      <Button size="icon-lg">
         <Star className="h-4 w-4" />
       </Button>
     </div>
@@ -244,20 +295,15 @@ export const ActionButtons: Story = {
   },
 };
 
-export const AsChild: Story = {
-  args: {
-    asChild: true,
-    children: (
-      <a href="#" role="button">
-        Link styled as button
-      </a>
-    ),
-  },
+export const AsLink: Story = {
+  render: () => (
+    <Button render={<a href="#" role="button" />}>Link styled as button</Button>
+  ),
   parameters: {
     docs: {
       description: {
         story:
-          "Using the `asChild` prop to render the button styling on a different element.",
+          "Using the `render` prop to apply button styling to a different element.",
       },
     },
   },

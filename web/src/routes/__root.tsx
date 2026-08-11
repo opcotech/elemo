@@ -1,26 +1,33 @@
 /// <reference types="vite/client" />
-import { QueryClientProvider } from "@tanstack/react-query";
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import {
   HeadContent,
   Outlet,
   Scripts,
-  createRootRoute,
+  createRootRouteWithContext,
 } from "@tanstack/react-router";
+import { lazy } from "react";
 import type { ReactNode } from "react";
 
-import { AuthDebug } from "@/components/auth/auth-debug";
-import { AuthProvider } from "@/components/auth/auth-provider";
-import { BreadcrumbProvider } from "@/components/breadcrumb";
-import { NotFound } from "@/components/not-found";
-import { ThemeProvider } from "@/components/theme-provider";
+import { NotFound } from "@/components/shared/not-found";
+import { ThemeProvider } from "@/components/shared/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { TopProgressBar } from "@/components/ui/top-progress-bar";
-import { config } from "@/config";
-import { queryClient } from "@/lib/query-client";
+import type { Theme } from "@/lib/theme";
+import type { RouterContext } from "@/router";
 import appCss from "@/styles/app.css?url";
 
-export const Route = createRootRoute({
+const ReactQueryDevtools = lazy(async () => {
+  const module = await import("@tanstack/react-query-devtools");
+  return { default: module.ReactQueryDevtools };
+});
+
+export const Route = createRootRouteWithContext<RouterContext>()({
+  beforeLoad: async () => {
+    const { getThemeFn } = await import("@/lib/theme");
+    return {
+      theme: await getThemeFn(),
+    };
+  },
   head: () => ({
     meta: [
       {
@@ -46,30 +53,48 @@ export const Route = createRootRoute({
 });
 
 function RootComponent() {
+  const { theme } = Route.useRouteContext();
+
   return (
-    <RootDocument>
-      <QueryClientProvider client={queryClient}>
-        <ThemeProvider>
-          <BreadcrumbProvider>
-            <AuthProvider>
-              {config.auth().debugBanner && <AuthDebug />}
-              <TopProgressBar />
-              <Outlet />
-              <Toaster position="top-center" duration={3000} richColors />
-            </AuthProvider>
-          </BreadcrumbProvider>
-        </ThemeProvider>
-        <ReactQueryDevtools initialIsOpen={false} />
-      </QueryClientProvider>
+    <RootDocument theme={theme}>
+      <ThemeProvider initialTheme={theme}>
+        <TopProgressBar />
+        <Outlet />
+        <Toaster position="top-center" duration={3000} richColors />
+      </ThemeProvider>
+      {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
     </RootDocument>
   );
 }
 
-function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
+function RootDocument({
+  children,
+  theme,
+}: Readonly<{ children: ReactNode; theme: Theme }>) {
+  // Keep the bootstrap script static and read preference from the DOM so
+  // theme is not interpolated into executable JavaScript.
+  const themeBootstrapScript = `(() => {
+  const preference = document.documentElement.dataset.themePreference;
+  const resolved =
+    preference === "system" &&
+    window.matchMedia("(prefers-color-scheme: dark)").matches
+      ? "dark"
+      : preference === "dark"
+        ? "dark"
+        : "light";
+  document.documentElement.classList.remove("light", "dark");
+  document.documentElement.classList.add(resolved);
+})();`;
+
   return (
-    <html>
+    <html
+      className={theme === "system" ? undefined : theme}
+      data-theme-preference={theme}
+      suppressHydrationWarning
+    >
       <head>
         <HeadContent />
+        <script dangerouslySetInnerHTML={{ __html: themeBootstrapScript }} />
       </head>
       <body>
         {children}

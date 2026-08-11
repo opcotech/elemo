@@ -1,5 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -8,18 +9,19 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { DialogForm } from "@/components/ui/dialog-form";
 import { EntitySelect } from "@/components/ui/entity-select";
 import {
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+  ControlledField,
+  Field,
+  FieldControl,
+  FieldError,
+  FieldLabel,
+} from "@/components/ui/field";
 import { Skeleton } from "@/components/ui/skeleton";
+import { v1OrganizationRoleMembersAddMutation } from "@/lib/api/mutation-options";
 import {
   v1OrganizationMembersGetOptions,
-  v1OrganizationRoleMembersAddMutation,
   v1OrganizationRoleMembersGetOptions,
-} from "@/lib/client/@tanstack/react-query.gen";
+} from "@/lib/api/query-options";
+import { runMutationSuccessWorkflow } from "@/lib/mutation-workflow";
 import { showErrorToast, showSuccessToast } from "@/lib/toast";
 import { getInitials } from "@/lib/utils";
 
@@ -34,7 +36,7 @@ interface RoleMemberAddDialogProps {
   roleId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSuccess?: () => void;
+  onSuccess?: () => void | Promise<void>;
 }
 
 export function RoleMemberAddDialog({
@@ -45,6 +47,7 @@ export function RoleMemberAddDialog({
   onSuccess,
 }: RoleMemberAddDialogProps) {
   const queryClient = useQueryClient();
+  const router = useRouter();
   const [error, setError] = useState<Error | null>(null);
 
   const form = useForm<MemberFormValues>({
@@ -69,7 +72,41 @@ export function RoleMemberAddDialog({
     })
   );
 
-  const mutation = useMutation(v1OrganizationRoleMembersAddMutation());
+  const roleMembersQueryKey = v1OrganizationRoleMembersGetOptions({
+    path: {
+      id: organizationId,
+      role_id: roleId,
+    },
+  }).queryKey;
+  const mutation = useMutation({
+    ...v1OrganizationRoleMembersAddMutation(),
+    onSuccess: () =>
+      runMutationSuccessWorkflow({
+        invalidateQueries: [
+          () =>
+            queryClient.invalidateQueries({
+              queryKey: roleMembersQueryKey,
+            }),
+        ],
+        invalidateRouter: () => router.invalidate(),
+        callbacks: [
+          async () => {
+            setError(null);
+            showSuccessToast(
+              "Member added",
+              "Member added to role successfully"
+            );
+            form.reset();
+            onOpenChange(false);
+            await onSuccess?.();
+          },
+        ],
+      }),
+    onError: (err) => {
+      setError(new Error(err.message));
+      showErrorToast("Failed to add member", err.message);
+    },
+  });
 
   useEffect(() => {
     if (open) {
@@ -82,41 +119,15 @@ export function RoleMemberAddDialog({
     // Clear previous error when submitting again
     setError(null);
 
-    mutation.mutate(
-      {
-        path: {
-          id: organizationId,
-          role_id: roleId,
-        },
-        body: {
-          user_id: values.userId,
-        },
+    mutation.mutate({
+      path: {
+        id: organizationId,
+        role_id: roleId,
       },
-      {
-        onSuccess: () => {
-          setError(null);
-          showSuccessToast("Member added", "Member added to role successfully");
-          form.reset();
-          onOpenChange(false);
-
-          // Invalidate queries to refresh the members list
-          queryClient.invalidateQueries({
-            queryKey: v1OrganizationRoleMembersGetOptions({
-              path: {
-                id: organizationId,
-                role_id: roleId,
-              },
-            }).queryKey,
-          });
-
-          onSuccess?.();
-        },
-        onError: (err) => {
-          setError(err as Error);
-          showErrorToast("Failed to add member", err.message);
-        },
-      }
-    );
+      body: {
+        user_id: values.userId,
+      },
+    });
   };
 
   // Filter out members who are already in the role
@@ -167,14 +178,14 @@ export function RoleMemberAddDialog({
           </AlertDescription>
         </Alert>
       ) : (
-        <FormField
+        <ControlledField
           control={form.control}
           name="userId"
           render={({ field }) => {
             return (
-              <FormItem>
-                <FormLabel>Select Member</FormLabel>
-                <FormControl>
+              <Field>
+                <FieldLabel>Select Member</FieldLabel>
+                <FieldControl>
                   <EntitySelect
                     options={memberOptions}
                     value={field.value}
@@ -182,9 +193,9 @@ export function RoleMemberAddDialog({
                     placeholder="Choose a member to add"
                     disabled={mutation.isPending}
                   />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
+                </FieldControl>
+                <FieldError />
+              </Field>
             );
           }}
         />

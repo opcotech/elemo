@@ -26,12 +26,36 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+const paletteSwatches = [
+  { name: "Primary", className: "bg-primary" },
+  { name: "Primary hover", className: "bg-primary-hover" },
+  { name: "Primary subtle", className: "bg-primary-subtle" },
+  { name: "Primary selected", className: "bg-primary-selected" },
+  { name: "Secondary", className: "bg-secondary" },
+  { name: "Muted", className: "bg-muted" },
+  { name: "Accent", className: "bg-accent" },
+  { name: "Destructive", className: "bg-destructive" },
+  { name: "Success", className: "bg-success" },
+  { name: "Warning", className: "bg-warning" },
+  { name: "Info", className: "bg-info" },
+  { name: "Border strong", className: "bg-border-strong" },
+] as const;
 
 const meta: Meta = {
   title: "Overview",
@@ -40,7 +64,7 @@ const meta: Meta = {
     docs: {
       description: {
         component:
-          "A comprehensive overview of all available UI components in the Elemo design system.",
+          "Elemo design system overview — modern, energetic, medium-density productivity UI on Base UI + Tailwind v4. Blue reserved for primary actions, selection, and focus; hierarchy via spacing and surface contrast rather than heavy borders.",
       },
     },
   },
@@ -53,26 +77,44 @@ type Story = StoryObj<typeof meta>;
 export const AllComponents: Story = {
   render: () => (
     <div className="bg-background min-h-screen space-y-12 p-8">
-      {/* Header */}
       <div className="space-y-4 text-center">
         <h1 className="text-4xl font-bold">Elemo Design System</h1>
-        <p className="text-muted-foreground text-xl">
-          Modern, minimal UI components built with Tailwind CSS v4 and Radix UI
+        <p className="text-muted-foreground mx-auto max-w-3xl text-xl">
+          Modern, energetic, and medium-density. More alive than Linear, calmer
+          than Jira — blue leads actions and focus; surfaces use contrast and
+          spacing over borders.
         </p>
       </div>
 
-      {/* Buttons Section */}
+      <section className="space-y-6">
+        <h2 className="text-2xl font-semibold">Color Palette</h2>
+        <div className="grid max-w-4xl grid-cols-2 gap-4 sm:grid-cols-4">
+          {paletteSwatches.map((swatch) => (
+            <div key={swatch.name} className="space-y-2">
+              <div
+                className={`${swatch.className} ring-border/60 h-16 rounded-lg ring-1`}
+              />
+              <p className="text-sm font-medium">{swatch.name}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
       <section className="space-y-6">
         <h2 className="text-2xl font-semibold">Buttons</h2>
         <div className="space-y-4">
           <div className="flex flex-wrap gap-3">
             <Button>Default</Button>
-            <Button variant="destructive">Destructive</Button>
-            <Button variant="outline">Outline</Button>
             <Button variant="secondary">Secondary</Button>
+            <Button variant="outline">Outline</Button>
             <Button variant="ghost">Ghost</Button>
+            <Button variant="destructive">Destructive</Button>
+            <Button variant="destructive-ghost">Destructive Ghost</Button>
+            <Button variant="success">Success</Button>
+            <Button variant="warning">Warning</Button>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <Button size="xs">Extra Small</Button>
             <Button size="sm">Small</Button>
             <Button>Default</Button>
             <Button size="lg">Large</Button>
@@ -80,7 +122,7 @@ export const AllComponents: Story = {
               <Settings className="h-4 w-4" />
             </Button>
           </div>
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
             <Button>
               <Plus className="h-4 w-4" />
               Add New
@@ -97,7 +139,33 @@ export const AllComponents: Story = {
         </div>
       </section>
 
-      {/* Badges Section */}
+      <section className="space-y-6">
+        <h2 className="text-2xl font-semibold">Motion Demo</h2>
+        <p className="text-muted-foreground max-w-2xl text-sm">
+          Buttons include a subtle press scale. Open the dialog below to preview
+          overlay and content transitions.
+        </p>
+        <div className="flex flex-wrap items-center gap-3">
+          <Button>Press me</Button>
+          <Dialog>
+            <DialogTrigger render={<Button variant="outline" />}>
+              Open Dialog
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Motion-friendly dialog</DialogTitle>
+                <DialogDescription>
+                  Dialogs use Base UI with fade and zoom entrance animations.
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button>Got it</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </section>
+
       <section className="space-y-6">
         <h2 className="text-2xl font-semibold">Badges</h2>
         <div className="flex flex-wrap gap-2">
@@ -105,6 +173,8 @@ export const AllComponents: Story = {
           <Badge variant="secondary">Secondary</Badge>
           <Badge variant="destructive">Destructive</Badge>
           <Badge variant="outline">Outline</Badge>
+          <Badge variant="ghost">Ghost</Badge>
+          <Badge variant="link">Link</Badge>
           <Badge variant="success">
             <CheckCircle className="h-3 w-3" />
             Success
@@ -113,49 +183,57 @@ export const AllComponents: Story = {
             <AlertTriangle className="h-3 w-3" />
             Warning
           </Badge>
+          <Badge variant="info">
+            <Info className="h-3 w-3" />
+            Info
+          </Badge>
         </div>
       </section>
 
-      {/* Alerts Section */}
       <section className="space-y-6">
         <h2 className="text-2xl font-semibold">Alerts</h2>
         <div className="max-w-2xl space-y-4">
+          <Alert>
+            <Info className="h-4 w-4" />
+            <AlertTitle>Default</AlertTitle>
+            <AlertDescription>
+              Neutral card-style alert for general messages.
+            </AlertDescription>
+          </Alert>
           <Alert variant="info">
             <Info className="h-4 w-4" />
             <AlertTitle>Information</AlertTitle>
             <AlertDescription>
-              This is an informational alert with info styling.
+              Informational alert with info styling.
             </AlertDescription>
           </Alert>
           <Alert variant="destructive">
             <AlertTriangle className="h-4 w-4" />
             <AlertTitle>Error</AlertTitle>
             <AlertDescription>
-              This is a destructive alert indicating an error.
+              Destructive alert indicating an error.
             </AlertDescription>
           </Alert>
           <Alert variant="success">
             <CheckCircle className="h-4 w-4" />
             <AlertTitle>Success</AlertTitle>
             <AlertDescription>
-              This is a success alert indicating a positive outcome.
+              Success alert indicating a positive outcome.
             </AlertDescription>
           </Alert>
           <Alert variant="warning">
             <AlertTriangle className="h-4 w-4" />
             <AlertTitle>Warning</AlertTitle>
             <AlertDescription>
-              This is a warning alert indicating caution is needed.
+              Warning alert indicating caution is needed.
             </AlertDescription>
           </Alert>
         </div>
       </section>
 
-      {/* Form Elements Section */}
       <section className="space-y-6">
         <h2 className="text-2xl font-semibold">Form Elements</h2>
         <div className="grid max-w-6xl grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {/* Input Examples */}
           <div className="space-y-4">
             <h3 className="text-lg font-medium">Inputs</h3>
             <div className="space-y-3">
@@ -190,7 +268,6 @@ export const AllComponents: Story = {
             </div>
           </div>
 
-          {/* Checkbox Examples */}
           <div className="space-y-4">
             <h3 className="text-lg font-medium">Checkboxes & Switches</h3>
             <div className="space-y-3">
@@ -213,7 +290,6 @@ export const AllComponents: Story = {
             </div>
           </div>
 
-          {/* Progress */}
           <div className="space-y-4">
             <h3 className="text-lg font-medium">Progress</h3>
             <div className="space-y-3">
@@ -236,11 +312,9 @@ export const AllComponents: Story = {
         </div>
       </section>
 
-      {/* Cards Section */}
       <section className="space-y-6">
         <h2 className="text-2xl font-semibold">Cards</h2>
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {/* Simple Card */}
           <Card>
             <CardHeader>
               <CardTitle>Simple Card</CardTitle>
@@ -249,14 +323,10 @@ export const AllComponents: Story = {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <p>
-                This is the card content area where you can place any
-                information.
-              </p>
+              <p>Card content area for any information.</p>
             </CardContent>
           </Card>
 
-          {/* User Profile Card */}
           <Card>
             <CardHeader>
               <div className="flex items-center space-x-4">
@@ -285,7 +355,6 @@ export const AllComponents: Story = {
             </CardContent>
           </Card>
 
-          {/* Action Card */}
           <Card>
             <CardHeader>
               <CardTitle>Project Tasks</CardTitle>
@@ -312,7 +381,6 @@ export const AllComponents: Story = {
         </div>
       </section>
 
-      {/* Tabs Section */}
       <section className="space-y-6">
         <h2 className="text-2xl font-semibold">Tabs</h2>
         <div className="max-w-2xl">
@@ -327,28 +395,26 @@ export const AllComponents: Story = {
                 <CardHeader>
                   <CardTitle>Overview</CardTitle>
                   <CardDescription>
-                    Get a quick overview of your project metrics.
+                    Quick overview of your project metrics.
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-3 gap-4 text-center">
-                    <div>
-                      <div className="text-2xl font-bold">24</div>
-                      <div className="text-muted-foreground text-sm">
-                        Active Tasks
-                      </div>
+                <CardContent className="grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <div className="text-2xl font-bold">24</div>
+                    <div className="text-muted-foreground text-sm">
+                      Active Tasks
                     </div>
-                    <div>
-                      <div className="text-2xl font-bold">8</div>
-                      <div className="text-muted-foreground text-sm">
-                        Team Members
-                      </div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold">8</div>
+                    <div className="text-muted-foreground text-sm">
+                      Team Members
                     </div>
-                    <div>
-                      <div className="text-2xl font-bold">95%</div>
-                      <div className="text-muted-foreground text-sm">
-                        Completion
-                      </div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold">95%</div>
+                    <div className="text-muted-foreground text-sm">
+                      Completion
                     </div>
                   </div>
                 </CardContent>
@@ -358,9 +424,7 @@ export const AllComponents: Story = {
               <Card>
                 <CardHeader>
                   <CardTitle>Analytics</CardTitle>
-                  <CardDescription>
-                    Detailed analytics and performance metrics.
-                  </CardDescription>
+                  <CardDescription>Performance metrics.</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <p>Analytics content would go here...</p>
@@ -371,9 +435,7 @@ export const AllComponents: Story = {
               <Card>
                 <CardHeader>
                   <CardTitle>Settings</CardTitle>
-                  <CardDescription>
-                    Configure your project settings.
-                  </CardDescription>
+                  <CardDescription>Configure your project.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex items-center justify-between">
@@ -402,7 +464,6 @@ export const AllComponents: Story = {
         </div>
       </section>
 
-      {/* Interactive Example */}
       <section className="space-y-6">
         <h2 className="text-2xl font-semibold">Interactive Example</h2>
         <Card className="max-w-md">
@@ -457,20 +518,11 @@ export const AllComponents: Story = {
       </section>
     </div>
   ),
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "A comprehensive showcase of all UI components in the Elemo design system, demonstrating how they work together to create beautiful, modern interfaces.",
-      },
-    },
-  },
 };
 
 export const ComponentGrid: Story = {
   render: () => (
     <div className="grid grid-cols-1 gap-6 p-8 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-      {/* Button Examples */}
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">Buttons</CardTitle>
@@ -486,7 +538,6 @@ export const ComponentGrid: Story = {
         </CardContent>
       </Card>
 
-      {/* Badge Examples */}
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">Badges</CardTitle>
@@ -495,6 +546,7 @@ export const ComponentGrid: Story = {
           <div className="flex flex-wrap gap-2">
             <Badge>Default</Badge>
             <Badge variant="secondary">Secondary</Badge>
+            <Badge variant="info">Info</Badge>
           </div>
           <div className="flex flex-wrap gap-2">
             <Badge variant="success">Success</Badge>
@@ -503,7 +555,6 @@ export const ComponentGrid: Story = {
         </CardContent>
       </Card>
 
-      {/* Form Examples */}
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">Form Elements</CardTitle>
@@ -521,7 +572,6 @@ export const ComponentGrid: Story = {
         </CardContent>
       </Card>
 
-      {/* Progress Example */}
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">Progress</CardTitle>
@@ -545,12 +595,4 @@ export const ComponentGrid: Story = {
       </Card>
     </div>
   ),
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "A grid layout showcasing different component categories in an organized manner.",
-      },
-    },
-  },
 };

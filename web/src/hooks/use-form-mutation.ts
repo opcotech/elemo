@@ -1,9 +1,17 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { QueryKey } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate, useRouter } from "@tanstack/react-router";
 import type { FieldValues, UseFormReturn } from "react-hook-form";
 
+import { runMutationSuccessWorkflow } from "@/lib/mutation-workflow";
 import { showErrorToast, showSuccessToast } from "@/lib/toast";
+
+type MutationCallback<TValue> = (value: TValue) => void | Promise<void>;
+
+type NavigateOnSuccess<TData> = (
+  navigate: ReturnType<typeof useNavigate>,
+  data: TData
+) => void | Promise<void>;
 
 interface UseFormMutationOptions<
   TData,
@@ -13,13 +21,13 @@ interface UseFormMutationOptions<
 > {
   mutationFn: (variables: TVariables) => Promise<TData>;
   form: UseFormReturn<TFormValues>;
-  onSuccess?: (data: TData) => void;
-  onError?: (error: TError) => void;
+  onSuccess?: MutationCallback<TData>;
+  onError?: MutationCallback<TError>;
   successMessage?: string;
   successDescription?: string;
   errorMessagePrefix?: string;
   queryKeysToInvalidate?: QueryKey[];
-  navigateOnSuccess?: string | { to: string; params?: Record<string, string> };
+  navigateOnSuccess?: NavigateOnSuccess<TData>;
   resetFormOnSuccess?: boolean;
   transformValues?: (values: TFormValues) => TVariables;
 }
@@ -53,47 +61,40 @@ export function useFormMutation<
 }: UseFormMutationOptions<TData, TVariables, TFormValues, TError>) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const router = useRouter();
 
   const mutation = useMutation<TData, TError, TVariables>({
     mutationFn,
-    onSuccess: (data) => {
-      // Invalidate queries
-      queryKeysToInvalidate.forEach((queryKey) => {
-        queryClient.invalidateQueries({ queryKey });
-      });
+    onSuccess: (data) =>
+      runMutationSuccessWorkflow({
+        invalidateQueries: queryKeysToInvalidate.map(
+          (queryKey) => () => queryClient.invalidateQueries({ queryKey })
+        ),
+        invalidateRouter: () => router.invalidate(),
+        callbacks: [
+          async () => {
+            if (successMessage) {
+              showSuccessToast(
+                successMessage,
+                successDescription || `${successMessage} successfully`
+              );
+            }
 
-      if (successMessage) {
-        // Show success toast
-        showSuccessToast(
-          successMessage,
-          successDescription || `${successMessage} successfully`
-        );
-      }
+            if (resetFormOnSuccess) {
+              form.reset();
+            }
 
-      // Reset form if requested
-      if (resetFormOnSuccess) {
-        form.reset();
-      }
-
-      // Call custom success handler
-      onSuccess?.(data);
-
-      // Navigate if specified
-      if (navigateOnSuccess) {
-        if (typeof navigateOnSuccess === "string") {
-          navigate({ to: navigateOnSuccess });
-        } else {
-          navigate({
-            to: navigateOnSuccess.to as any,
-            params: navigateOnSuccess.params as any,
-          });
-        }
-      }
-    },
-    onError: (error: TError) => {
+            await onSuccess?.(data);
+          },
+        ],
+        navigate: navigateOnSuccess
+          ? () => navigateOnSuccess(navigate, data)
+          : undefined,
+      }),
+    onError: async (error: TError) => {
       const errorMessage = error.message || "Unknown error occurred";
       showErrorToast(errorMessagePrefix, errorMessage);
-      onError?.(error);
+      await onError?.(error);
     },
   });
 

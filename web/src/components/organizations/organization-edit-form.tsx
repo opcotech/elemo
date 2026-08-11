@@ -5,22 +5,28 @@ import { useForm } from "react-hook-form";
 import type { z } from "zod";
 
 import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+  ControlledField,
+  Field,
+  FieldControl,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+  FieldProvider,
+} from "@/components/ui/field";
 import { FormCard } from "@/components/ui/form-card";
 import { Input } from "@/components/ui/input";
 import { useFormMutation } from "@/hooks/use-form-mutation";
+import { accessibleNamespacesQueryKey } from "@/lib/api/accessible-namespaces";
+import {
+  v1OrganizationGetOptions,
+  v1OrganizationsGetOptions,
+} from "@/lib/api/query-options";
+import { v1OrganizationUpdate } from "@/lib/api/sdk";
 import type {
   Options,
   Organization,
   V1OrganizationUpdateData,
-} from "@/lib/api";
-import { v1OrganizationUpdate } from "@/lib/client/sdk.gen";
+} from "@/lib/api/types";
 import { zOrganizationCreate, zOrganizationPatch } from "@/lib/client/zod.gen";
 import { createFormSchema, normalizePatchData } from "@/lib/forms";
 import { getDefaultValue } from "@/lib/utils";
@@ -86,10 +92,18 @@ export function OrganizationEditForm({
     form,
     successMessage: "Organization updated",
     errorMessagePrefix: "Failed to update organization",
-    navigateOnSuccess: {
-      to: "/settings/organizations/$organizationId",
-      params: { organizationId },
-    },
+    queryKeysToInvalidate: [
+      v1OrganizationGetOptions({
+        path: { id: organizationId },
+      }).queryKey,
+      v1OrganizationsGetOptions().queryKey,
+      accessibleNamespacesQueryKey,
+    ],
+    navigateOnSuccess: (navigateTo) =>
+      navigateTo({
+        to: "/settings/organizations/$organizationId",
+        params: { organizationId },
+      }),
     transformValues: (values) => {
       const normalizedBody = normalizePatchData(
         organizationEditFormSchema,
@@ -125,58 +139,60 @@ export function OrganizationEditForm({
       error={mutation.error || null}
       submitButtonText="Save Changes"
     >
-      <Form {...form}>
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Name</FormLabel>
-              <FormControl>
-                <Input placeholder="Enter organization name" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+      <FieldProvider {...form}>
+        <FieldGroup>
+          <ControlledField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+              <Field>
+                <FieldLabel>Name</FieldLabel>
+                <FieldControl>
+                  <Input placeholder="Enter organization name" {...field} />
+                </FieldControl>
+                <FieldError />
+              </Field>
+            )}
+          />
 
-        <FormField
-          control={form.control}
-          name="email"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Email</FormLabel>
-              <FormControl>
-                <Input
-                  type="email"
-                  placeholder="Enter organization email"
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+          <ControlledField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <Field>
+                <FieldLabel>Email</FieldLabel>
+                <FieldControl>
+                  <Input
+                    type="email"
+                    placeholder="Enter organization email"
+                    {...field}
+                  />
+                </FieldControl>
+                <FieldError />
+              </Field>
+            )}
+          />
 
-        <FormField
-          control={form.control}
-          name="website"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Website</FormLabel>
-              <FormControl>
-                <Input
-                  type="url"
-                  placeholder="https://example.com (optional)"
-                  {...field}
-                  value={getDefaultValue(field.value)}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      </Form>
+          <ControlledField
+            control={form.control}
+            name="website"
+            render={({ field }) => (
+              <Field>
+                <FieldLabel>Website</FieldLabel>
+                <FieldControl>
+                  <Input
+                    type="url"
+                    placeholder="https://example.com (optional)"
+                    {...field}
+                    value={getDefaultValue(field.value)}
+                  />
+                </FieldControl>
+                <FieldError />
+              </Field>
+            )}
+          />
+        </FieldGroup>
+      </FieldProvider>
     </FormCard>
   );
 }

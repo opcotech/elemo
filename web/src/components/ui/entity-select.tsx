@@ -19,7 +19,10 @@ export interface EntitySelectOption {
   avatarFallback?: string;
 }
 
-export interface EntitySelectProps {
+export interface EntitySelectProps extends Pick<
+  ComponentProps<typeof SelectTrigger>,
+  "id" | "aria-describedby" | "aria-invalid" | "aria-label"
+> {
   options: EntitySelectOption[];
   value?: string;
   placeholder?: string;
@@ -71,27 +74,44 @@ export function EntitySelect({
   triggerClassName,
   contentProps,
   onValueChange,
+  id,
+  "aria-describedby": ariaDescribedBy,
+  "aria-invalid": ariaInvalid,
+  "aria-label": ariaLabel,
 }: EntitySelectProps) {
   const selectedOption = value
     ? options.find((option) => option.value === value)
     : undefined;
 
   return (
-    <Select value={value} onValueChange={onValueChange} disabled={disabled}>
-      <SelectTrigger className={cn("w-full", triggerClassName)}>
-        {selectedOption ? (
-          <SelectValue asChild>
+    <Select
+      value={value}
+      onValueChange={(next) => {
+        if (next != null) {
+          onValueChange?.(next);
+        }
+      }}
+      disabled={disabled}
+      items={options.map((option) => ({
+        value: option.value,
+        label: option.title,
+      }))}
+    >
+      <SelectTrigger
+        id={id}
+        aria-describedby={ariaDescribedBy}
+        aria-invalid={ariaInvalid}
+        aria-label={ariaLabel}
+        className={cn("w-full", triggerClassName)}
+      >
+        <SelectValue placeholder={placeholder ?? "Select an option"}>
+          {selectedOption ? (
             <OptionContent
               option={selectedOption}
               className="w-full justify-start"
             />
-          </SelectValue>
-        ) : (
-          <SelectValue
-            placeholder={placeholder ?? "Select an option"}
-            className="text-muted-foreground"
-          />
-        )}
+          ) : null}
+        </SelectValue>
       </SelectTrigger>
       <SelectContent {...contentProps}>
         {options.map((option) => (

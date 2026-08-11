@@ -4,18 +4,21 @@ import { useForm } from "react-hook-form";
 import type { z } from "zod";
 
 import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+  ControlledField,
+  Field,
+  FieldControl,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+  FieldProvider,
+} from "@/components/ui/field";
 import { FormCard } from "@/components/ui/form-card";
 import { Input } from "@/components/ui/input";
 import { useFormMutation } from "@/hooks/use-form-mutation";
-import type { Options, V1OrganizationsCreateData } from "@/lib/api";
-import { v1OrganizationsCreate } from "@/lib/client/sdk.gen";
+import { accessibleNamespacesQueryKey } from "@/lib/api/accessible-namespaces";
+import { v1OrganizationsGetOptions } from "@/lib/api/query-options";
+import { v1OrganizationsCreate } from "@/lib/api/sdk";
+import type { Options, V1OrganizationsCreateData } from "@/lib/api/types";
 import { zOrganizationCreate } from "@/lib/client/zod.gen";
 import { createFormSchema, normalizeFormData } from "@/lib/forms";
 import { getDefaultValue } from "@/lib/utils";
@@ -57,6 +60,10 @@ export function OrganizationCreateForm() {
     form,
     successMessage: "Organization created",
     errorMessagePrefix: "Failed to create organization",
+    queryKeysToInvalidate: [
+      v1OrganizationsGetOptions().queryKey,
+      accessibleNamespacesQueryKey,
+    ],
     transformValues: (values) => {
       const normalizedBody = normalizeFormData(
         organizationFormSchema,
@@ -88,58 +95,60 @@ export function OrganizationCreateForm() {
       error={mutation.error || null}
       submitButtonText="Create Organization"
     >
-      <Form {...form}>
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Name</FormLabel>
-              <FormControl>
-                <Input placeholder="Enter organization name" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+      <FieldProvider {...form}>
+        <FieldGroup>
+          <ControlledField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+              <Field>
+                <FieldLabel>Name</FieldLabel>
+                <FieldControl>
+                  <Input placeholder="Enter organization name" {...field} />
+                </FieldControl>
+                <FieldError />
+              </Field>
+            )}
+          />
 
-        <FormField
-          control={form.control}
-          name="email"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Email</FormLabel>
-              <FormControl>
-                <Input
-                  type="email"
-                  placeholder="Enter organization email"
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+          <ControlledField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <Field>
+                <FieldLabel>Email</FieldLabel>
+                <FieldControl>
+                  <Input
+                    type="email"
+                    placeholder="Enter organization email"
+                    {...field}
+                  />
+                </FieldControl>
+                <FieldError />
+              </Field>
+            )}
+          />
 
-        <FormField
-          control={form.control}
-          name="website"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Website</FormLabel>
-              <FormControl>
-                <Input
-                  type="url"
-                  placeholder="https://example.com (optional)"
-                  {...field}
-                  value={getDefaultValue(field.value)}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      </Form>
+          <ControlledField
+            control={form.control}
+            name="website"
+            render={({ field }) => (
+              <Field>
+                <FieldLabel>Website</FieldLabel>
+                <FieldControl>
+                  <Input
+                    type="url"
+                    placeholder="https://example.com (optional)"
+                    {...field}
+                    value={getDefaultValue(field.value)}
+                  />
+                </FieldControl>
+                <FieldError />
+              </Field>
+            )}
+          />
+        </FieldGroup>
+      </FieldProvider>
     </FormCard>
   );
 }

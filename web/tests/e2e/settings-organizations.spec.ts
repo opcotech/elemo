@@ -4,26 +4,17 @@ import {
   SettingsOrganizationDetailsPage,
   SettingsOrganizationsPage,
 } from "./pages";
-import { USER_DEFAULT_PASSWORD, loginUser } from "./utils/auth";
-import { createUser, grantSystemOwnerMembershipToUser } from "./utils/db";
+import { loginUser } from "./utils/auth";
 import { getRandomString } from "./utils/random";
 
-import type { User } from "@/lib/api";
-
 test.describe("@settings.organizations Organization Listing E2E Tests", () => {
-  let testUser: User;
-  let organizations: { name: string; email: string }[];
-
-  test.beforeAll(async ({ testConfig, createApiClient }) => {
-    testUser = await createUser(testConfig);
-
-    // Grant system owner membership so user can create organizations
-    // Using DB helper since API doesn't allow creating system-level permissions
-    await grantSystemOwnerMembershipToUser(testConfig, testUser.email);
-
-    // Create unique organizations to avoid conflicts
+  test("should display organizations table", async ({
+    page,
+    ownerPersona,
+    createApiClient,
+  }) => {
     const uniqueId = getRandomString(8);
-    organizations = [
+    const organizations = [
       {
         name: `Test Org 1 ${uniqueId}`,
         email: `test1-${uniqueId}@example.com`,
@@ -39,8 +30,8 @@ test.describe("@settings.organizations Organization Listing E2E Tests", () => {
     ];
 
     const apiClient = await createApiClient(
-      testUser.email,
-      USER_DEFAULT_PASSWORD
+      ownerPersona.credentials.email,
+      ownerPersona.credentials.password
     );
     for (const organization of organizations) {
       await createOrganization(apiClient, {
@@ -48,16 +39,9 @@ test.describe("@settings.organizations Organization Listing E2E Tests", () => {
         email: organization.email,
       });
     }
-  });
 
-  test.beforeEach(async ({ page }) => {
-    await loginUser(page, {
-      email: testUser.email,
-      password: USER_DEFAULT_PASSWORD,
-    });
-  });
+    await loginUser(page, ownerPersona.credentials);
 
-  test("should display organizations table", async ({ page }) => {
     const orgsPage = new SettingsOrganizationsPage(page);
     await orgsPage.goto();
     await orgsPage.organizations.waitForLoad();
@@ -78,7 +62,40 @@ test.describe("@settings.organizations Organization Listing E2E Tests", () => {
     expect(count).toBeGreaterThanOrEqual(organizations.length);
   });
 
-  test("should search organizations", async ({ page }) => {
+  test("should search organizations", async ({
+    page,
+    ownerPersona,
+    createApiClient,
+  }) => {
+    const uniqueId = getRandomString(8);
+    const organizations = [
+      {
+        name: `Search Org 1 ${uniqueId}`,
+        email: `search1-${uniqueId}@example.com`,
+      },
+      {
+        name: `Search Org 2 ${uniqueId}`,
+        email: `search2-${uniqueId}@example.com`,
+      },
+      {
+        name: `Search Org 3 ${uniqueId}`,
+        email: `search3-${uniqueId}@example.com`,
+      },
+    ];
+
+    const apiClient = await createApiClient(
+      ownerPersona.credentials.email,
+      ownerPersona.credentials.password
+    );
+    for (const organization of organizations) {
+      await createOrganization(apiClient, {
+        name: organization.name,
+        email: organization.email,
+      });
+    }
+
+    await loginUser(page, ownerPersona.credentials);
+
     const orgsPage = new SettingsOrganizationsPage(page);
     await orgsPage.goto();
     await orgsPage.organizations.waitForLoad();
@@ -106,13 +123,31 @@ test.describe("@settings.organizations Organization Listing E2E Tests", () => {
     }
   });
 
-  test("should navigate to organization details", async ({ page }) => {
+  test("should navigate to organization details", async ({
+    page,
+    ownerPersona,
+    createApiClient,
+  }) => {
+    const uniqueId = getRandomString(8);
+    const organizationName = `Navigate Org ${uniqueId}`;
+
+    const apiClient = await createApiClient(
+      ownerPersona.credentials.email,
+      ownerPersona.credentials.password
+    );
+    await createOrganization(apiClient, {
+      name: organizationName,
+      email: `navigate-${uniqueId}@example.com`,
+    });
+
+    await loginUser(page, ownerPersona.credentials);
+
     const orgsPage = new SettingsOrganizationsPage(page);
     await orgsPage.goto();
     await orgsPage.organizations.waitForLoad();
 
-    // Click on first organization
-    await orgsPage.organizations.clickOrganization(organizations[0].name);
+    // Click on organization
+    await orgsPage.organizations.clickOrganization(organizationName);
 
     // Verify navigation to organization details page
     const orgDetailsPage = new SettingsOrganizationDetailsPage(page);

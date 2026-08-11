@@ -3,11 +3,9 @@ import type { QueryKey } from "@tanstack/react-query";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
 import { useDeleteMutation } from "@/hooks/use-delete-mutation";
-import type { OrganizationMember } from "@/lib/api";
-import {
-  v1OrganizationMemberInviteRevokeMutation,
-  v1OrganizationMembersGetOptions,
-} from "@/lib/client/@tanstack/react-query.gen";
+import { v1OrganizationMemberInviteRevokeMutation } from "@/lib/api/mutation-options";
+import { v1OrganizationMembersGetOptions } from "@/lib/api/query-options";
+import type { OrganizationMember } from "@/lib/api/types";
 import { getInitials } from "@/lib/utils";
 
 interface OrganizationMemberInviteRevokeDialogProps {

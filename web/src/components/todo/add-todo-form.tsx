@@ -7,12 +7,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { DatePicker } from "@/components/ui/date-picker";
 import { DialogForm } from "@/components/ui/dialog-form";
 import {
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+  ControlledField,
+  Field,
+  FieldControl,
+  FieldError,
+  FieldLabel,
+} from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -25,8 +25,8 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/use-auth";
 import { useFormMutation } from "@/hooks/use-form-mutation";
-import type { Options, TodoCreate, V1TodosCreateData } from "@/lib/api";
-import { v1TodosCreate } from "@/lib/client/sdk.gen";
+import { v1TodosCreate } from "@/lib/api/sdk";
+import type { Options, TodoCreate, V1TodosCreateData } from "@/lib/api/types";
 import { zTodoCreate } from "@/lib/client/zod.gen";
 import { createFormSchema, normalizeFormData } from "@/lib/forms";
 import { getDefaultValue } from "@/lib/utils";
@@ -115,28 +115,29 @@ export function AddTodoForm({
       error={mutation.error || null}
       submitButtonText="Add todo"
       onReset={handleReset}
+      className="sm:max-w-xl"
     >
-      <FormField
+      <ControlledField
         control={form.control}
         name="title"
         render={({ field }) => (
-          <FormItem>
-            <FormLabel>Title</FormLabel>
-            <FormControl>
+          <Field>
+            <FieldLabel>Title</FieldLabel>
+            <FieldControl>
               <Input placeholder="Enter todo title" {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
+            </FieldControl>
+            <FieldError />
+          </Field>
         )}
       />
 
-      <FormField
+      <ControlledField
         control={form.control}
         name="description"
         render={({ field }) => (
-          <FormItem>
-            <FormLabel>Description</FormLabel>
-            <FormControl>
+          <Field>
+            <FieldLabel>Description</FieldLabel>
+            <FieldControl>
               <Textarea
                 placeholder="Enter todo description (optional)"
                 className="min-h-40 resize-y"
@@ -144,25 +145,34 @@ export function AddTodoForm({
                 {...field}
                 value={getDefaultValue(field.value)}
               />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
+            </FieldControl>
+            <FieldError />
+          </Field>
         )}
       />
 
       <div className="flex gap-4">
-        <FormField
+        <ControlledField
           control={form.control}
           name="priority"
           render={({ field }) => (
-            <FormItem className="w-1/3">
-              <FormLabel>Priority</FormLabel>
-              <Select value={field.value} onValueChange={field.onChange}>
-                <FormControl>
+            <Field className="w-1/3">
+              <FieldLabel>Priority</FieldLabel>
+              <Select
+                value={field.value}
+                onValueChange={field.onChange}
+                items={{
+                  normal: "Normal",
+                  important: "Important",
+                  urgent: "Urgent",
+                  critical: "Critical",
+                }}
+              >
+                <FieldControl>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select a priority" />
                   </SelectTrigger>
-                </FormControl>
+                </FieldControl>
                 <SelectContent>
                   <SelectItem value="normal">Normal</SelectItem>
                   <SelectItem value="important">Important</SelectItem>
@@ -170,18 +180,18 @@ export function AddTodoForm({
                   <SelectItem value="critical">Critical</SelectItem>
                 </SelectContent>
               </Select>
-              <FormMessage />
-            </FormItem>
+              <FieldError />
+            </Field>
           )}
         />
 
-        <FormField
+        <ControlledField
           control={form.control}
           name="due_date"
           render={({ field }) => (
-            <FormItem className="w-2/3">
-              <FormLabel>Due Date</FormLabel>
-              <FormControl>
+            <Field className="w-2/3">
+              <FieldLabel>Due Date</FieldLabel>
+              <FieldControl>
                 <DatePicker
                   date={field.value ? new Date(field.value) : null}
                   onDateChange={(date) => {
@@ -192,9 +202,9 @@ export function AddTodoForm({
                     { before: new Date(new Date().setHours(0, 0, 0, 0)) },
                   ]}
                 />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
+              </FieldControl>
+              <FieldError />
+            </Field>
           )}
         />
       </div>

@@ -64,8 +64,8 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {
   render: () => (
     <Popover>
-      <PopoverTrigger asChild>
-        <Button variant="outline">Open popover</Button>
+      <PopoverTrigger render={<Button variant="outline" />}>
+        Open popover
       </PopoverTrigger>
       <PopoverContent className="w-80">
         <div className="grid gap-4">
@@ -119,10 +119,8 @@ export const Default: Story = {
 export const Simple: Story = {
   render: () => (
     <Popover>
-      <PopoverTrigger asChild>
-        <Button variant="outline">
-          <Info className="h-4 w-4" />
-        </Button>
+      <PopoverTrigger render={<Button variant="outline" />}>
+        <Info className="h-4 w-4" />
       </PopoverTrigger>
       <PopoverContent>
         <p className="text-sm">
@@ -137,10 +135,10 @@ export const Simple: Story = {
 export const UserProfile: Story = {
   render: () => (
     <Popover>
-      <PopoverTrigger asChild>
-        <Button variant="ghost" className="h-8 w-8 rounded-full">
-          <User className="h-4 w-4" />
-        </Button>
+      <PopoverTrigger
+        render={<Button variant="ghost" className="h-8 w-8 rounded-full" />}
+      >
+        <User className="h-4 w-4" />
       </PopoverTrigger>
       <PopoverContent className="w-80">
         <div className="flex gap-4">
@@ -182,11 +180,9 @@ export const UserProfile: Story = {
 export const FormPopover: Story = {
   render: () => (
     <Popover>
-      <PopoverTrigger asChild>
-        <Button>
-          <Plus className="h-4 w-4" />
-          Add Note
-        </Button>
+      <PopoverTrigger render={<Button />}>
+        <Plus className="h-4 w-4" />
+        Add Note
       </PopoverTrigger>
       <PopoverContent className="w-80">
         <div className="grid gap-4">
@@ -226,10 +222,8 @@ export const FormPopover: Story = {
 export const ActionsMenu: Story = {
   render: () => (
     <Popover>
-      <PopoverTrigger asChild>
-        <Button variant="ghost" size="sm">
-          <MoreHorizontal className="h-4 w-4" />
-        </Button>
+      <PopoverTrigger render={<Button variant="ghost" size="sm" />}>
+        <MoreHorizontal className="h-4 w-4" />
       </PopoverTrigger>
       <PopoverContent className="w-56">
         <div className="grid gap-1">
@@ -262,10 +256,10 @@ export const Help: Story = {
     <div className="flex items-center gap-2">
       <Label>Email Address</Label>
       <Popover>
-        <PopoverTrigger asChild>
-          <Button variant="ghost" size="sm" className="h-4 w-4 p-0">
-            <HelpCircle className="h-3 w-3" />
-          </Button>
+        <PopoverTrigger
+          render={<Button variant="ghost" size="sm" className="h-4 w-4 p-0" />}
+        >
+          <HelpCircle className="h-3 w-3" />
         </PopoverTrigger>
         <PopoverContent className="w-72">
           <div className="space-y-2">
@@ -290,11 +284,9 @@ export const Help: Story = {
 export const CalendarPopover: Story = {
   render: () => (
     <Popover>
-      <PopoverTrigger asChild>
-        <Button variant="outline">
-          <Calendar className="h-4 w-4" />
-          Pick a date
-        </Button>
+      <PopoverTrigger render={<Button variant="outline" />}>
+        <Calendar className="h-4 w-4" />
+        Pick a date
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0">
         <div className="p-3">
@@ -332,10 +324,8 @@ export const CalendarPopover: Story = {
 export const SettingsPopover: Story = {
   render: () => (
     <Popover>
-      <PopoverTrigger asChild>
-        <Button variant="outline" size="sm">
-          <Settings className="h-4 w-4" />
-        </Button>
+      <PopoverTrigger render={<Button variant="outline" size="sm" />}>
+        <Settings className="h-4 w-4" />
       </PopoverTrigger>
       <PopoverContent className="w-64">
         <div className="grid gap-4">
@@ -386,8 +376,8 @@ export const Controlled: Story = {
           Popover is {open ? "open" : "closed"}
         </div>
         <Popover open={open} onOpenChange={setOpen}>
-          <PopoverTrigger asChild>
-            <Button variant="outline">Controlled Popover</Button>
+          <PopoverTrigger render={<Button variant="outline" />}>
+            Controlled Popover
           </PopoverTrigger>
           <PopoverContent>
             <div className="space-y-2">
@@ -410,17 +400,15 @@ export const MultiplePopovers: Story = {
   render: () => (
     <div className="flex gap-4">
       <Popover>
-        <PopoverTrigger asChild>
-          <Button>Popover 1</Button>
-        </PopoverTrigger>
+        <PopoverTrigger render={<Button />}>Popover 1</PopoverTrigger>
         <PopoverContent>
           <p className="text-sm">This is the first popover.</p>
         </PopoverContent>
       </Popover>
 
       <Popover>
-        <PopoverTrigger asChild>
-          <Button variant="outline">Popover 2</Button>
+        <PopoverTrigger render={<Button variant="outline" />}>
+          Popover 2
         </PopoverTrigger>
         <PopoverContent>
           <p className="text-sm">This is the second popover.</p>
@@ -428,8 +416,8 @@ export const MultiplePopovers: Story = {
       </Popover>
 
       <Popover>
-        <PopoverTrigger asChild>
-          <Button variant="secondary">Popover 3</Button>
+        <PopoverTrigger render={<Button variant="secondary" />}>
+          Popover 3
         </PopoverTrigger>
         <PopoverContent>
           <p className="text-sm">This is the third popover.</p>
@@ -451,8 +439,8 @@ export const Positioning: Story = {
   render: () => (
     <div className="grid grid-cols-3 gap-4 p-8">
       <Popover>
-        <PopoverTrigger asChild>
-          <Button variant="outline">Top</Button>
+        <PopoverTrigger render={<Button variant="outline" />}>
+          Top
         </PopoverTrigger>
         <PopoverContent side="top">
           <p className="text-sm">Popover positioned on top</p>
@@ -460,8 +448,8 @@ export const Positioning: Story = {
       </Popover>
 
       <Popover>
-        <PopoverTrigger asChild>
-          <Button variant="outline">Right</Button>
+        <PopoverTrigger render={<Button variant="outline" />}>
+          Right
         </PopoverTrigger>
         <PopoverContent side="right">
           <p className="text-sm">Popover positioned on right</p>
@@ -469,8 +457,8 @@ export const Positioning: Story = {
       </Popover>
 
       <Popover>
-        <PopoverTrigger asChild>
-          <Button variant="outline">Bottom</Button>
+        <PopoverTrigger render={<Button variant="outline" />}>
+          Bottom
         </PopoverTrigger>
         <PopoverContent side="bottom">
           <p className="text-sm">Popover positioned on bottom</p>
@@ -480,8 +468,8 @@ export const Positioning: Story = {
       <div></div>
 
       <Popover>
-        <PopoverTrigger asChild>
-          <Button variant="outline">Left</Button>
+        <PopoverTrigger render={<Button variant="outline" />}>
+          Left
         </PopoverTrigger>
         <PopoverContent side="left">
           <p className="text-sm">Popover positioned on left</p>

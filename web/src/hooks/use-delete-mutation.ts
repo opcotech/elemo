@@ -1,8 +1,15 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { QueryKey, UseMutationOptions } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate, useRouter } from "@tanstack/react-router";
 
+import { runMutationSuccessWorkflow } from "@/lib/mutation-workflow";
 import { showErrorToast, showSuccessToast } from "@/lib/toast";
+
+type MutationCallback<TValue> = (value: TValue) => void | Promise<void>;
+
+type NavigateOnSuccess = (
+  navigate: ReturnType<typeof useNavigate>
+) => void | Promise<void>;
 
 /**
  * Generic hook for delete mutations with standardized handling:
@@ -31,53 +38,51 @@ export function useDeleteMutation<
   successDescription?: string;
   errorMessagePrefix?: string;
   queryKeysToInvalidate?: QueryKey[];
-  onSuccess?: (data: TData) => void;
-  onError?: (error: TError) => void;
-  navigateOnSuccess?: string | { to: string; params?: Record<string, string> };
+  onSuccess?: MutationCallback<TData>;
+  onError?: MutationCallback<TError>;
+  navigateOnSuccess?: NavigateOnSuccess;
 }) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const router = useRouter();
 
   return useMutation<TData, TError, TVariables, TContext>({
     ...mutationOptions,
-    onSuccess: (data, variables, context, mutation) => {
-      // Call original onSuccess if provided
-      mutationOptions.onSuccess?.(data, variables, context, mutation);
-
-      // Invalidate queries
-      queryKeysToInvalidate.forEach((queryKey) => {
-        queryClient.invalidateQueries({ queryKey });
-      });
-
-      // Show success toast
-      showSuccessToast(
-        successMessage,
-        successDescription || `${successMessage} successfully`
-      );
-
-      // Call custom success handler
-      onSuccess?.(data);
-
-      // Navigate if specified
-      if (navigateOnSuccess) {
-        if (typeof navigateOnSuccess === "string") {
-          navigate({ to: navigateOnSuccess });
-        } else {
-          navigate({
-            to: navigateOnSuccess.to as any,
-            params: navigateOnSuccess.params as any,
-          });
-        }
-      }
-    },
-    onError: (error, variables, context, mutation) => {
-      // Call original onError if provided
-      mutationOptions.onError?.(error, variables, context, mutation);
-
+    onSuccess: (data, variables, context, mutation) =>
+      runMutationSuccessWorkflow({
+        invalidateQueries: queryKeysToInvalidate.map(
+          (queryKey) => () => queryClient.invalidateQueries({ queryKey })
+        ),
+        invalidateRouter: () => router.invalidate(),
+        callbacks: [
+          async () => {
+            await mutationOptions.onSuccess?.(
+              data,
+              variables,
+              context,
+              mutation
+            );
+          },
+          () => {
+            showSuccessToast(
+              successMessage,
+              successDescription || `${successMessage} successfully`
+            );
+          },
+          async () => {
+            await onSuccess?.(data);
+          },
+        ],
+        navigate: navigateOnSuccess
+          ? () => navigateOnSuccess(navigate)
+          : undefined,
+      }),
+    onError: async (error, variables, context, mutation) => {
+      await mutationOptions.onError?.(error, variables, context, mutation);
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error occurred";
       showErrorToast(errorMessagePrefix, errorMessage);
-      onError?.(error);
+      await onError?.(error);
     },
   });
 }

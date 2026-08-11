@@ -1,4 +1,4 @@
-import { useQueries, useQuery } from "@tanstack/react-query";
+import { useQueries } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Edit, Folder, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -8,6 +8,7 @@ import { NamespaceDeleteDialog } from "./namespace-delete-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConditionalLink } from "@/components/ui/conditional-link";
+import { InternalLink } from "@/components/ui/internal-link";
 import { ListContainer } from "@/components/ui/list-container";
 import { SearchInput } from "@/components/ui/search-input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -19,17 +20,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  ResourceType,
-  usePermissions,
-  withResourceType,
-} from "@/hooks/use-permissions";
-import type { Namespace } from "@/lib/api";
+import { ResourceType, withResourceType } from "@/hooks/use-permissions";
+import { v1PermissionResourceGetOptions } from "@/lib/api/query-options";
+import type { Namespace, Organization, Permission } from "@/lib/api/types";
 import { can } from "@/lib/auth/permissions";
-import {
-  v1OrganizationsGetOptions,
-  v1PermissionResourceGetOptions,
-} from "@/lib/client/@tanstack/react-query.gen";
 import { pluralize } from "@/lib/utils";
 
 interface NamespaceWithOrganization extends Namespace {
@@ -83,22 +77,23 @@ function AllNamespacesListSkeleton() {
 
 interface AllNamespaceRowProps {
   namespace: NamespaceWithOrganization;
+  permissions: Permission[] | undefined;
+  isPermissionsLoading: boolean;
   onDeleteClick: (namespace: NamespaceWithOrganization) => void;
 }
 
-function AllNamespaceRow({ namespace, onDeleteClick }: AllNamespaceRowProps) {
+function AllNamespaceRow({
+  namespace,
+  permissions,
+  isPermissionsLoading,
+  onDeleteClick,
+}: AllNamespaceRowProps) {
   const projectCount = namespace.projects?.length || 0;
   const documentCount = namespace.documents?.length || 0;
 
-  const {
-    data: namespacePermissions,
-    isLoading: isNamespacePermissionsLoading,
-  } = usePermissions(withResourceType(ResourceType.Namespace, namespace.id));
-
-  const hasNamespaceReadPermission = can(namespacePermissions, "read");
-  const hasNamespaceWritePermission = can(namespacePermissions, "write");
-  const hasNamespaceDeletePermission = can(namespacePermissions, "delete");
-  const isPermissionsLoading = isNamespacePermissionsLoading;
+  const hasNamespaceReadPermission = can(permissions, "read");
+  const hasNamespaceWritePermission = can(permissions, "write");
+  const hasNamespaceDeletePermission = can(permissions, "delete");
 
   return (
     <TableRow>
@@ -147,17 +142,21 @@ function AllNamespaceRow({ namespace, onDeleteClick }: AllNamespaceRowProps) {
         ) : (
           <div className="flex items-center justify-end gap-x-1">
             {hasNamespaceWritePermission && (
-              <Button variant="ghost" size="sm" asChild>
-                <Link
-                  to="/settings/organizations/$organizationId/namespaces/$namespaceId/edit"
-                  params={{
-                    organizationId: namespace.organizationId,
-                    namespaceId: namespace.id,
-                  }}
-                >
-                  <Edit className="size-4" />
-                  <span className="sr-only">Edit namespace</span>
-                </Link>
+              <Button
+                variant="ghost"
+                size="sm"
+                render={
+                  <Link
+                    to="/settings/organizations/$organizationId/namespaces/$namespaceId/edit"
+                    params={{
+                      organizationId: namespace.organizationId,
+                      namespaceId: namespace.id,
+                    }}
+                  />
+                }
+              >
+                <Edit className="size-4" />
+                <span className="sr-only">Edit namespace</span>
               </Button>
             )}
             {hasNamespaceDeletePermission && (
@@ -178,12 +177,14 @@ function AllNamespaceRow({ namespace, onDeleteClick }: AllNamespaceRowProps) {
 }
 
 interface AllNamespacesListProps {
+  organizations: Organization[];
   namespaces: NamespaceWithOrganization[];
   isLoading: boolean;
   error: unknown;
 }
 
 export function AllNamespacesList({
+  organizations,
   namespaces,
   isLoading,
   error,
@@ -193,11 +194,9 @@ export function AllNamespacesList({
   const [selectedNamespace, setSelectedNamespace] =
     useState<NamespaceWithOrganization | null>(null);
 
-  // Check if user can create namespaces (has write permission on any organization)
-  const { data: organizations } = useQuery(v1OrganizationsGetOptions());
   const permissionQueries = useQueries({
     queries:
-      organizations && organizations.length > 0
+      organizations.length > 0
         ? organizations.map((org) =>
             v1PermissionResourceGetOptions({
               path: {
@@ -207,9 +206,27 @@ export function AllNamespacesList({
           )
         : [],
   });
+  const namespacePermissionQueries = useQueries({
+    queries: namespaces.map((namespace) =>
+      v1PermissionResourceGetOptions({
+        path: {
+          resourceId: withResourceType(ResourceType.Namespace, namespace.id),
+        },
+      })
+    ),
+  });
+  const namespacePermissionsById = useMemo(
+    () =>
+      new Map(
+        namespaces.map((namespace, index) => [
+          namespace.id,
+          namespacePermissionQueries[index],
+        ])
+      ),
+    [namespaces, namespacePermissionQueries]
+  );
 
   const canCreateNamespace = useMemo(() => {
-    if (!organizations) return false;
     return organizations.some((org, index) => {
       const permissions = permissionQueries[index]?.data;
       return can(permissions, "write");
@@ -264,11 +281,9 @@ export function AllNamespacesList({
   const shouldShowSearch = namespaces.length > 0 || searchTerm.trim() !== "";
 
   const createButton = canCreateNamespace ? (
-    <Button asChild>
-      <Link to={"/settings/namespaces/new" as any}>
-        <Plus className="size-4" />
-        Create Namespace
-      </Link>
+    <Button render={<InternalLink to="/settings/namespaces/new" />}>
+      <Plus className="size-4" />
+      Create Namespace
     </Button>
   ) : undefined;
 
@@ -308,13 +323,20 @@ export function AllNamespacesList({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredNamespaces.map((namespace) => (
-                <AllNamespaceRow
-                  key={namespace.id}
-                  namespace={namespace}
-                  onDeleteClick={handleDeleteClick}
-                />
-              ))}
+              {filteredNamespaces.map((namespace) => {
+                const permissionQuery = namespacePermissionsById.get(
+                  namespace.id
+                );
+                return (
+                  <AllNamespaceRow
+                    key={namespace.id}
+                    namespace={namespace}
+                    permissions={permissionQuery?.data}
+                    isPermissionsLoading={permissionQuery?.isLoading ?? true}
+                    onDeleteClick={handleDeleteClick}
+                  />
+                );
+              })}
             </TableBody>
           </Table>
         )}

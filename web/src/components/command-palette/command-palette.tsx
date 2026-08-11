@@ -11,8 +11,7 @@ import {
   CommandShortcut,
 } from "@/components/ui/command";
 import { useNavigationContext } from "@/hooks/use-navigation-context";
-import { commandRegistry } from "@/lib/commands/registry";
-import type { CommandContext } from "@/lib/commands/registry";
+import type { Command, CommandContext } from "@/lib/commands/registry";
 
 interface CommandPaletteProps {
   open: boolean;
@@ -21,6 +20,7 @@ interface CommandPaletteProps {
   placeholder?: string;
   emptyText?: string;
   context?: CommandContext;
+  commands: Command[];
 }
 
 export function CommandPalette({
@@ -30,6 +30,7 @@ export function CommandPalette({
   placeholder = "Type a command or select an action...",
   emptyText = "No commands found.",
   context: contextProp,
+  commands: availableCommands,
 }: CommandPaletteProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const navigationContext = useNavigationContext();
@@ -46,14 +47,27 @@ export function CommandPalette({
           : undefined);
 
   const handleSelect = (commandId: string) => {
-    commandRegistry.execute(commandId);
+    availableCommands.find((command) => command.id === commandId)?.action();
     onOpenChange(false);
   };
 
-  // Get commands based on search query and context
-  const commands = searchQuery.trim()
-    ? commandRegistry.searchCommands(searchQuery, context)
-    : commandRegistry.getCommands(context);
+  const commands = availableCommands.filter((command) => {
+    const isInContext =
+      !context ||
+      !command.context ||
+      (Array.isArray(command.context)
+        ? command.context.includes(context)
+        : command.context === context);
+    if (!isInContext) return false;
+
+    const query = searchQuery.toLowerCase().trim();
+    if (!query) return true;
+    return (
+      command.title.toLowerCase().includes(query) ||
+      command.description?.toLowerCase().includes(query) ||
+      command.keywords?.some((keyword) => keyword.toLowerCase().includes(query))
+    );
+  });
 
   // Group commands by category
   const groupedCommands = commands.reduce(

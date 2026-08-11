@@ -258,7 +258,7 @@ export const ProgressCard: Story = {
 // Interactive card
 export const InteractiveCard: Story = {
   render: () => (
-    <Card className="hover:shadow-elegant-lg w-[350px] cursor-pointer transition-all duration-300 hover:scale-[1.02]">
+    <Card className="hover:border-border-strong hover:bg-muted/40 w-[350px] cursor-pointer transition-[border-color,background-color] duration-150">
       <CardHeader>
         <CardTitle>Premium Plan</CardTitle>
         <CardDescription>

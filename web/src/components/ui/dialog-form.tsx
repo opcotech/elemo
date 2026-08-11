@@ -11,7 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Form } from "@/components/ui/form";
+import { FieldGroup, FieldProvider } from "@/components/ui/field";
 import { Spinner } from "@/components/ui/spinner";
 
 interface DialogFormProps<TFormValues extends FieldValues> {
@@ -58,7 +58,7 @@ export function DialogForm<TFormValues extends FieldValues>({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className={className}>
-        <Form {...form}>
+        <FieldProvider {...form}>
           <form onSubmit={onSubmit} className="flex flex-col gap-y-6">
             <DialogHeader>
               <DialogTitle>{title}</DialogTitle>
@@ -71,7 +71,7 @@ export function DialogForm<TFormValues extends FieldValues>({
               </Alert>
             )}
 
-            {children}
+            <FieldGroup>{children}</FieldGroup>
 
             <DialogFooter>
               <Button
@@ -94,7 +94,7 @@ export function DialogForm<TFormValues extends FieldValues>({
               </Button>
             </DialogFooter>
           </form>
-        </Form>
+        </FieldProvider>
       </DialogContent>
     </Dialog>
   );

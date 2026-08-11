@@ -1,14 +1,15 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
-import { Trash2 } from "lucide-react";
+import { Check, Trash2 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   v1NotificationDeleteMutation,
-  v1NotificationsGetOptions,
-} from "@/lib/api";
-import type { Notification } from "@/lib/api";
+  v1NotificationUpdateMutation,
+} from "@/lib/api/mutation-options";
+import { v1NotificationsGetOptions } from "@/lib/api/query-options";
+import type { Notification } from "@/lib/api/types";
 import { showErrorToast, showSuccessToast } from "@/lib/toast";
 
 interface NotificationItemProps {
@@ -21,21 +22,56 @@ export function NotificationItem({
   onSuccess,
 }: NotificationItemProps) {
   const queryClient = useQueryClient();
+  const notificationsQueryKey = v1NotificationsGetOptions().queryKey;
 
   const deleteMutation = useMutation({
     ...v1NotificationDeleteMutation(),
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: notificationsQueryKey });
+      const previous = queryClient.getQueryData<Notification[]>(
+        notificationsQueryKey
+      );
+      queryClient.setQueryData<Notification[]>(
+        notificationsQueryKey,
+        (current = []) => current.filter((item) => item.id !== notification.id)
+      );
+      return { previous };
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: v1NotificationsGetOptions().queryKey,
-      });
       showSuccessToast(
         "Notification deleted",
         "The notification has been removed"
       );
     },
-    onError: (error) => {
+    onError: (error, _variables, context) => {
+      queryClient.setQueryData(notificationsQueryKey, context?.previous);
       showErrorToast("Failed to delete notification", error.message);
     },
+    onSettled: () =>
+      queryClient.invalidateQueries({ queryKey: notificationsQueryKey }),
+  });
+  const readMutation = useMutation({
+    ...v1NotificationUpdateMutation(),
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: notificationsQueryKey });
+      const previous = queryClient.getQueryData<Notification[]>(
+        notificationsQueryKey
+      );
+      queryClient.setQueryData<Notification[]>(
+        notificationsQueryKey,
+        (current = []) =>
+          current.map((item) =>
+            item.id === notification.id ? { ...item, read: true } : item
+          )
+      );
+      return { previous };
+    },
+    onError: (error, _variables, context) => {
+      queryClient.setQueryData(notificationsQueryKey, context?.previous);
+      showErrorToast("Failed to mark notification read", error.message);
+    },
+    onSettled: () =>
+      queryClient.invalidateQueries({ queryKey: notificationsQueryKey }),
   });
 
   const handleDelete = () => {
@@ -101,6 +137,23 @@ export function NotificationItem({
         </div>
 
         <div className="flex items-center gap-1 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100">
+          {!notification.read && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() =>
+                readMutation.mutate({
+                  path: { id: notification.id },
+                  body: { read: true },
+                })
+              }
+              disabled={readMutation.isPending}
+              className="size-7 p-0"
+              title="Mark as read"
+            >
+              <Check className="size-4" />
+            </Button>
+          )}
           <Button
             size="sm"
             variant="ghost"

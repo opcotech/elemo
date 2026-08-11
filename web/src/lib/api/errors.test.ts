@@ -1,0 +1,46 @@
+import { describe, expect, it } from "vitest";
+
+import {
+  ApiError,
+  isNotFound,
+  isPermissionDenied,
+  toApiError,
+} from "@/lib/api/errors";
+
+describe("api error helpers", () => {
+  it("detects ApiError instances by status", () => {
+    expect(isNotFound(new ApiError(404, "missing"))).toBe(true);
+    expect(isPermissionDenied(new ApiError(403, "denied"))).toBe(true);
+    expect(isNotFound(new ApiError(500, "boom"))).toBe(false);
+  });
+
+  it("detects plain objects that carry a numeric status", () => {
+    expect(isNotFound({ status: 404, message: "missing" })).toBe(true);
+    expect(isPermissionDenied({ status: 403 })).toBe(true);
+  });
+
+  it("walks nested cause chains for status", () => {
+    expect(
+      isNotFound({
+        message: "loader failed",
+        cause: new ApiError(404, "missing"),
+      })
+    ).toBe(true);
+    expect(
+      isPermissionDenied({
+        message: "loader failed",
+        cause: { status: 403 },
+      })
+    ).toBe(true);
+  });
+
+  it("builds ApiError values from responses", () => {
+    const error = toApiError({ message: "gone" }, {
+      status: 404,
+      statusText: "Not Found",
+    } as Response);
+    expect(error).toBeInstanceOf(ApiError);
+    expect(error.status).toBe(404);
+    expect(error.message).toBe("gone");
+  });
+});

@@ -22,9 +22,9 @@ import {
   usePermissions,
   withResourceType,
 } from "@/hooks/use-permissions";
-import type { User } from "@/lib/api";
+import { v1OrganizationRoleMembersGetOptions } from "@/lib/api/query-options";
+import type { User } from "@/lib/api/types";
 import { can } from "@/lib/auth/permissions";
-import { v1OrganizationRoleMembersGetOptions } from "@/lib/client/@tanstack/react-query.gen";
 import { getInitials } from "@/lib/utils";
 
 interface RoleMemberAssignmentProps {

@@ -1,6 +1,6 @@
 import { createOrganization } from "./api";
 import { expect, test } from "./fixtures";
-import { waitForSuccessToast } from "./helpers";
+import { fillLocator, waitForSuccessToast } from "./helpers";
 import {
   OrganizationsJoinPage,
   SettingsOrganizationDetailsPage,
@@ -15,7 +15,7 @@ import {
 import { getInvitationTokenFromEmail, waitForEmail } from "./utils/mailpit";
 import { getRandomString } from "./utils/random";
 
-import type { User } from "@/lib/api";
+import type { User } from "@/lib/api/types";
 
 test.describe("@settings.organization-members-invite Organization Members Invite E2E Tests", () => {
   let ownerUser: User;
@@ -95,9 +95,10 @@ test.describe("@settings.organization-members-invite Organization Members Invite
 
     await orgDetailsPage.members.clickInviteMemberButton();
     const inviteDialog = page.getByRole("dialog", { name: "Invite Member" });
-    await inviteDialog
-      .getByLabel("Email Address")
-      .fill(inviteeUser.email.toLowerCase());
+    await fillLocator(
+      inviteDialog.getByLabel("Email Address"),
+      inviteeUser.email.toLowerCase()
+    );
     await inviteDialog
       .getByRole("button", { name: /send invitation/i })
       .click();
@@ -125,9 +126,10 @@ test.describe("@settings.organization-members-invite Organization Members Invite
     await orgDetailsPage.members.clickInviteMemberButton();
 
     const inviteDialog = page.getByRole("dialog", { name: "Invite Member" });
-    await inviteDialog
-      .getByLabel("Email Address")
-      .fill(invitedUser.email.toLowerCase());
+    await fillLocator(
+      inviteDialog.getByLabel("Email Address"),
+      invitedUser.email.toLowerCase()
+    );
     await inviteDialog
       .getByRole("button", { name: /send invitation/i })
       .click();
@@ -169,9 +171,10 @@ test.describe("@settings.organization-members-invite Organization Members Invite
 
     await orgDetailsPage.members.clickInviteMemberButton();
     const inviteDialog = page.getByRole("dialog", { name: "Invite Member" });
-    await inviteDialog
-      .getByLabel("Email Address")
-      .fill(inviteeUser.email.toLowerCase());
+    await fillLocator(
+      inviteDialog.getByLabel("Email Address"),
+      inviteeUser.email.toLowerCase()
+    );
     await inviteDialog
       .getByRole("button", { name: /send invitation/i })
       .click();
@@ -201,9 +204,10 @@ test.describe("@settings.organization-members-invite Organization Members Invite
 
     await orgDetailsPage.members.clickInviteMemberButton();
     const inviteDialog = page.getByRole("dialog", { name: "Invite Member" });
-    await inviteDialog
-      .getByLabel("Email Address")
-      .fill(inviteeUser.email.toLowerCase());
+    await fillLocator(
+      inviteDialog.getByLabel("Email Address"),
+      inviteeUser.email.toLowerCase()
+    );
     // Role selection is optional, so we can submit without it
     await inviteDialog
       .getByRole("button", { name: /send invitation/i })

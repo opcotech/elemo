@@ -149,7 +149,12 @@ test.backend.coverage: ## Combine unit and integration test coverage
 	@$(GO_EXEC) tool cover -func '$(BACKEND_COVER_OUT)'
 
 .PHONY: test.frontend
-test.frontend: test.frontend.e2e ## Run all front-end tests
+test.frontend: test.frontend.unit test.frontend.e2e ## Run all front-end tests
+
+.PHONY: test.frontend.unit
+test.frontend.unit: ## Run front-end unit tests
+	$(call log, execute front-end unit tests)
+	@$(PNPM_RUN) test:unit
 
 .PHONY: test.frontend.e2e
 test.frontend.e2e: ## Run front-end end-to-end tests
@@ -157,6 +162,12 @@ test.frontend.e2e: ## Run front-end end-to-end tests
 	@$(MAKE) start.backend
 	@$(PNPM_RUN) test:e2e
 	@trap "$(MAKE) stop.backend" EXIT
+
+.PHONY: test.frontend.storybook
+test.frontend.storybook: ## Build Storybook and run a11y verification stories
+	$(call log, execute Storybook a11y verification)
+	@$(PNPM_RUN) storybook:build
+	@$(PNPM_RUN) test-storybook:ci
 
 .PHONY: test.k6
 test.k6: ## Run k6 tests
@@ -178,6 +189,11 @@ lint.frontend: ## Run linters for the front-end
 	$(call log, run front-end linters)
 	@$(PNPM_RUN) lint
 
+.PHONY: typecheck.frontend
+typecheck.frontend: ## Typecheck the front-end
+	$(call log, typecheck front-end)
+	@$(PNPM_RUN) typecheck
+
 .PHONY: format
 format: format.backend format.frontend ## Run formatters for the backend and front-end
 
@@ -191,6 +207,11 @@ format.backend: ## Run formatters for the backend
 format.frontend: ## Run formatters for the front-end
 	$(call log, run front-end formatters)
 	@$(PNPM_RUN) format
+
+.PHONY: format.frontend.check
+format.frontend.check: ## Check front-end formatting
+	$(call log, check front-end formatting)
+	@$(PNPM_RUN) format:check
 
 .PHONY: destroy.backend
 destroy.backend: stop.backend ## Destroy all backend resources

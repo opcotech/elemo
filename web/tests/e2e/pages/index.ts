@@ -6,6 +6,8 @@ export { SettingsOrganizationEditPage } from "./settings-organization-edit-page"
 export { SettingsOrganizationRoleCreatePage } from "./settings-organization-role-create-page";
 export { SettingsOrganizationRoleEditPage } from "./settings-organization-role-edit-page";
 export { LoginPage } from "./login-page";
+export { ForgotPasswordPage } from "./forgot-password-page";
+export { ResetPasswordPage } from "./reset-password-page";
 export { OrganizationsJoinPage } from "./organizations-join-page";
 export { SettingsOrganizationNamespaceCreatePage } from "./settings-organization-namespace-create-page";
 export { SettingsOrganizationNamespaceEditPage } from "./settings-organization-namespace-edit-page";

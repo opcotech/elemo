@@ -1,9 +1,4 @@
-import {
-  clearFormField,
-  fillFormField,
-  submitForm,
-  waitForFormSubmission,
-} from "../helpers";
+import { clearFormField, fillFormField, submitForm } from "../helpers";
 import { BaseComponent } from "./base";
 
 /**
@@ -39,7 +34,6 @@ export class Form extends BaseComponent {
    */
   async submit(buttonText: string): Promise<void> {
     await submitForm(this.page, buttonText);
-    await waitForFormSubmission(this.page);
   }
 
   /**

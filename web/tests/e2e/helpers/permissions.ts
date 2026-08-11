@@ -3,12 +3,16 @@ import type { Page } from "@playwright/test";
 import { waitForAPIResponse } from "./api";
 
 /**
- * Wait for permission API calls to complete.
- * This waits for the permissions endpoint that's commonly used across the app.
+ * Wait for a permission API response.
+ *
+ * Prefer UI readiness markers after navigation. Use this only when the waiter
+ * is registered before the request can complete (for example with Promise.all
+ * around a click/navigation that triggers the permission fetch).
  */
 export async function waitForPermissionsLoad(
   page: Page,
-  resourceId?: string
+  resourceId?: string,
+  options?: { timeout?: number; requireOk?: boolean }
 ): Promise<void> {
   const pattern = resourceId
     ? new RegExp(
@@ -16,7 +20,5 @@ export async function waitForPermissionsLoad(
       )
     : /\/v1\/permissions\/resources\//;
 
-  try {
-    await waitForAPIResponse(page, pattern);
-  } catch {}
+  await waitForAPIResponse(page, pattern, options);
 }

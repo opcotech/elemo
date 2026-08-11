@@ -46,8 +46,8 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {
   render: () => (
     <AlertDialog>
-      <AlertDialogTrigger asChild>
-        <Button variant="destructive">Delete Account</Button>
+      <AlertDialogTrigger render={<Button variant="destructive" />}>
+        Delete Account
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
@@ -70,11 +70,9 @@ export const Default: Story = {
 export const WithIcon: Story = {
   render: () => (
     <AlertDialog>
-      <AlertDialogTrigger asChild>
-        <Button variant="outline">
-          <AlertTriangle className="h-4 w-4" />
-          Show Warning
-        </Button>
+      <AlertDialogTrigger render={<Button variant="outline" />}>
+        <AlertTriangle className="h-4 w-4" />
+        Show Warning
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
@@ -100,11 +98,9 @@ export const WithIcon: Story = {
 export const DeleteConfirmation: Story = {
   render: () => (
     <AlertDialog>
-      <AlertDialogTrigger asChild>
-        <Button variant="outline" size="sm">
-          <Trash2 className="h-4 w-4" />
-          Delete File
-        </Button>
+      <AlertDialogTrigger render={<Button variant="outline" size="sm" />}>
+        <Trash2 className="h-4 w-4" />
+        Delete File
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
@@ -130,11 +126,9 @@ export const DeleteConfirmation: Story = {
 export const SignOut: Story = {
   render: () => (
     <AlertDialog>
-      <AlertDialogTrigger asChild>
-        <Button variant="ghost">
-          <LogOut className="h-4 w-4" />
-          Sign Out
-        </Button>
+      <AlertDialogTrigger render={<Button variant="ghost" />}>
+        <LogOut className="h-4 w-4" />
+        Sign Out
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
@@ -156,11 +150,9 @@ export const SignOut: Story = {
 export const SaveConfirmation: Story = {
   render: () => (
     <AlertDialog>
-      <AlertDialogTrigger asChild>
-        <Button>
-          <Save className="h-4 w-4" />
-          Save Changes
-        </Button>
+      <AlertDialogTrigger render={<Button />}>
+        <Save className="h-4 w-4" />
+        Save Changes
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
@@ -186,8 +178,8 @@ export const SaveConfirmation: Story = {
 export const LongContent: Story = {
   render: () => (
     <AlertDialog>
-      <AlertDialogTrigger asChild>
-        <Button variant="outline">View Terms</Button>
+      <AlertDialogTrigger render={<Button variant="outline" />}>
+        View Terms
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
@@ -224,8 +216,8 @@ export const MultipleActions: Story = {
   render: () => (
     <div className="flex gap-3">
       <AlertDialog>
-        <AlertDialogTrigger asChild>
-          <Button variant="destructive">Delete</Button>
+        <AlertDialogTrigger render={<Button variant="destructive" />}>
+          Delete
         </AlertDialogTrigger>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -242,8 +234,8 @@ export const MultipleActions: Story = {
       </AlertDialog>
 
       <AlertDialog>
-        <AlertDialogTrigger asChild>
-          <Button variant="outline">Archive</Button>
+        <AlertDialogTrigger render={<Button variant="outline" />}>
+          Archive
         </AlertDialogTrigger>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -261,9 +253,7 @@ export const MultipleActions: Story = {
       </AlertDialog>
 
       <AlertDialog>
-        <AlertDialogTrigger asChild>
-          <Button>Publish</Button>
-        </AlertDialogTrigger>
+        <AlertDialogTrigger render={<Button />}>Publish</AlertDialogTrigger>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Publish Project</AlertDialogTitle>

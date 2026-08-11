@@ -1,4 +1,3 @@
-export * from "./organization-card";
 export * from "./organization-create-form";
 export * from "./organization-danger-zone";
 export * from "./organization-delete-dialog";
@@ -13,5 +12,6 @@ export * from "./organization-member-invite-revoke-dialog";
 export * from "./organization-member-remove-dialog";
 export * from "./organization-members-list";
 export * from "./organization-not-found";
+export * from "./organization-pages";
 export * from "./organization-pending-invitations-list";
 export * from "./organization-row";

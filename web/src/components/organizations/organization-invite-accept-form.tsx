@@ -15,15 +15,21 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  ControlledField,
+  Field,
+  FieldControl,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+  FieldProvider,
+} from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
 import { useFormMutation } from "@/hooks/use-form-mutation";
-import {
-  v1OrganizationMembersAccept,
-  v1OrganizationMembersAcceptMutation,
-} from "@/lib/api";
-import type { Options, V1OrganizationMembersAcceptData } from "@/lib/api";
+import { v1OrganizationMembersAcceptMutation } from "@/lib/api/mutation-options";
+import { v1OrganizationMembersAccept } from "@/lib/api/sdk";
+import type { Options, V1OrganizationMembersAcceptData } from "@/lib/api/types";
 import { showErrorToast, showSuccessToast } from "@/lib/toast";
 
 const passwordSchema = z
@@ -72,10 +78,8 @@ export function OrganizationInviteAcceptForm() {
     successDescription:
       "You have successfully joined the organization. You can now log in.",
     errorMessagePrefix: "Failed to accept invitation",
-    navigateOnSuccess: {
-      to: "/login",
-      params: {},
-    },
+    navigateOnSuccess: (navigateTo) =>
+      navigateTo({ to: "/login", search: { redirect: undefined } }),
     transformValues: (values) => {
       if (!organization || !token) {
         throw new Error(
@@ -208,116 +212,130 @@ export function OrganizationInviteAcceptForm() {
         </CardHeader>
         <CardContent>
           {showPasswordForm ? (
-            <form
-              onSubmit={acceptWithPasswordMutation.handleSubmit}
-              className="space-y-4"
-            >
-              {acceptWithPasswordMutation.isError &&
-                acceptWithPasswordMutation.error?.message &&
-                !acceptWithPasswordMutation.error.message
-                  .toLowerCase()
-                  .includes("password") && (
-                  <Alert variant="destructive">
-                    <AlertDescription>
-                      {acceptWithPasswordMutation.error.message}
-                    </AlertDescription>
-                  </Alert>
-                )}
-
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <div className="relative">
-                  <Lock className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Enter your password"
-                    className="pr-10 pl-10"
-                    {...form.register("password")}
-                    disabled={acceptWithPasswordMutation.isPending}
-                    autoComplete="new-password"
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-transparent"
-                    onClick={() => setShowPassword(!showPassword)}
-                    disabled={acceptWithPasswordMutation.isPending}
-                    aria-label={
-                      showPassword ? "Hide password" : "Show password"
-                    }
-                  >
-                    {showPassword ? (
-                      <EyeOff className="text-muted-foreground h-4 w-4" />
-                    ) : (
-                      <Eye className="text-muted-foreground h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
-                {form.formState.errors.password && (
-                  <p className="text-sm text-red-600">
-                    {form.formState.errors.password.message}
-                  </p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm Password</Label>
-                <div className="relative">
-                  <Lock className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
-                  <Input
-                    id="confirmPassword"
-                    type={showConfirmPassword ? "text" : "password"}
-                    placeholder="Confirm your password"
-                    className="pr-10 pl-10"
-                    {...form.register("confirmPassword")}
-                    disabled={acceptWithPasswordMutation.isPending}
-                    autoComplete="new-password"
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-transparent"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    disabled={acceptWithPasswordMutation.isPending}
-                    aria-label={
-                      showConfirmPassword ? "Hide password" : "Show password"
-                    }
-                  >
-                    {showConfirmPassword ? (
-                      <EyeOff className="text-muted-foreground h-4 w-4" />
-                    ) : (
-                      <Eye className="text-muted-foreground h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
-                {form.formState.errors.confirmPassword && (
-                  <p className="text-sm text-red-600">
-                    {form.formState.errors.confirmPassword.message}
-                  </p>
-                )}
-              </div>
-
-              <div className="pt-4">
-                <Button
-                  type="submit"
-                  className="flex w-full items-center"
-                  disabled={acceptWithPasswordMutation.isPending}
-                  aria-label="Accept invitation"
-                >
-                  {acceptWithPasswordMutation.isPending ? (
-                    <>
-                      <Spinner size="xs" className="mr-2" />
-                      <span>Accepting invitation...</span>
-                    </>
-                  ) : (
-                    "Accept Invitation"
+            <FieldProvider {...form}>
+              <form
+                onSubmit={acceptWithPasswordMutation.handleSubmit}
+                className="space-y-4"
+              >
+                {acceptWithPasswordMutation.isError &&
+                  acceptWithPasswordMutation.error?.message &&
+                  !acceptWithPasswordMutation.error.message
+                    .toLowerCase()
+                    .includes("password") && (
+                    <Alert variant="destructive">
+                      <AlertDescription>
+                        {acceptWithPasswordMutation.error.message}
+                      </AlertDescription>
+                    </Alert>
                   )}
-                </Button>
-              </div>
-            </form>
+
+                <FieldGroup>
+                  <ControlledField
+                    control={form.control}
+                    name="password"
+                    render={({ field }) => (
+                      <Field>
+                        <FieldLabel>Password</FieldLabel>
+                        <div className="relative">
+                          <Lock className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+                          <FieldControl>
+                            <Input
+                              type={showPassword ? "text" : "password"}
+                              placeholder="Enter your password"
+                              className="pr-10 pl-10"
+                              {...field}
+                              disabled={acceptWithPasswordMutation.isPending}
+                              autoComplete="new-password"
+                            />
+                          </FieldControl>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-transparent"
+                            onClick={() => setShowPassword(!showPassword)}
+                            disabled={acceptWithPasswordMutation.isPending}
+                            aria-label={
+                              showPassword ? "Hide password" : "Show password"
+                            }
+                          >
+                            {showPassword ? (
+                              <EyeOff className="text-muted-foreground h-4 w-4" />
+                            ) : (
+                              <Eye className="text-muted-foreground h-4 w-4" />
+                            )}
+                          </Button>
+                        </div>
+                        <FieldError />
+                      </Field>
+                    )}
+                  />
+
+                  <ControlledField
+                    control={form.control}
+                    name="confirmPassword"
+                    render={({ field }) => (
+                      <Field>
+                        <FieldLabel>Confirm Password</FieldLabel>
+                        <div className="relative">
+                          <Lock className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+                          <FieldControl>
+                            <Input
+                              type={showConfirmPassword ? "text" : "password"}
+                              placeholder="Confirm your password"
+                              className="pr-10 pl-10"
+                              {...field}
+                              disabled={acceptWithPasswordMutation.isPending}
+                              autoComplete="new-password"
+                            />
+                          </FieldControl>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-transparent"
+                            onClick={() =>
+                              setShowConfirmPassword(!showConfirmPassword)
+                            }
+                            disabled={acceptWithPasswordMutation.isPending}
+                            aria-label={
+                              showConfirmPassword
+                                ? "Hide password"
+                                : "Show password"
+                            }
+                          >
+                            {showConfirmPassword ? (
+                              <EyeOff className="text-muted-foreground h-4 w-4" />
+                            ) : (
+                              <Eye className="text-muted-foreground h-4 w-4" />
+                            )}
+                          </Button>
+                        </div>
+                        <FieldError />
+                      </Field>
+                    )}
+                  />
+                </FieldGroup>
+
+                <div className="pt-4">
+                  <Button
+                    type="submit"
+                    className="flex w-full items-center"
+                    disabled={acceptWithPasswordMutation.isPending}
+                    aria-label="Accept invitation"
+                  >
+                    {acceptWithPasswordMutation.isPending ? (
+                      <>
+                        <Spinner size="xs" className="mr-2" />
+                        <span>Accepting invitation...</span>
+                      </>
+                    ) : (
+                      "Accept Invitation"
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </FieldProvider>
           ) : (
             <div className="space-y-4">
               {acceptWithoutPasswordMutation.isError && !needsPassword && (

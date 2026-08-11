@@ -1,7 +1,7 @@
 import { createOrganization } from "./api";
 import { Dialog } from "./components";
 import { expect, test } from "./fixtures";
-import { waitForPermissionsLoad, waitForSuccessToast } from "./helpers";
+import { waitForSuccessToast } from "./helpers";
 import {
   SettingsOrganizationDetailsPage,
   SettingsOrganizationsPage,
@@ -15,7 +15,7 @@ import {
 } from "./utils/db";
 import { getRandomString } from "./utils/random";
 
-import type { User } from "@/lib/api";
+import type { User } from "@/lib/api/types";
 
 test.describe("@settings.organization-delete Organization Delete E2E Tests", () => {
   let ownerUser: User;
@@ -177,7 +177,7 @@ test.describe("@settings.organization-delete Organization Delete E2E Tests", () 
 
     const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
     await orgDetailsPage.goto(organization.id);
-    await waitForPermissionsLoad(page, organization.id);
+    await orgDetailsPage.organizationInfo.waitForLoad();
 
     // Verify danger zone is not visible
     expect(await orgDetailsPage.dangerZone.isVisible()).toBeFalsy();

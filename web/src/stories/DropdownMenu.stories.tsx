@@ -87,8 +87,8 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {
   render: () => (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="outline">Open Menu</Button>
+      <DropdownMenuTrigger render={<Button variant="outline" />}>
+        Open Menu
       </DropdownMenuTrigger>
       <DropdownMenuContent>
         <DropdownMenuItem>
@@ -113,10 +113,8 @@ export const Default: Story = {
 export const ActionMenu: Story = {
   render: () => (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon">
-          <MoreHorizontal className="h-4 w-4" />
-        </Button>
+      <DropdownMenuTrigger render={<Button variant="ghost" size="icon" />}>
+        <MoreHorizontal className="h-4 w-4" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuItem>
@@ -162,15 +160,17 @@ export const ActionMenu: Story = {
 export const UserProfileMenu: Story = {
   render: () => (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-          <Avatar className="h-8 w-8">
-            <AvatarImage src="https://github.com/shadcn.png" alt="@shadcn" />
-            <AvatarFallback>SC</AvatarFallback>
-          </Avatar>
-        </Button>
+      <DropdownMenuTrigger
+        render={
+          <Button variant="ghost" className="relative h-8 w-8 rounded-full" />
+        }
+      >
+        <Avatar className="h-8 w-8">
+          <AvatarImage src="https://github.com/shadcn.png" alt="@shadcn" />
+          <AvatarFallback>SC</AvatarFallback>
+        </Avatar>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-56" align="end" forceMount>
+      <DropdownMenuContent className="w-56" align="end">
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
             <p className="text-sm leading-none font-medium">shadcn</p>
@@ -272,11 +272,9 @@ export const WithCheckboxItems: Story = {
 
     return (
       <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="outline">
-            View Options
-            <ChevronDown className="ml-2 h-4 w-4" />
-          </Button>
+        <DropdownMenuTrigger render={<Button variant="outline" />}>
+          View Options
+          <ChevronDown className="ml-2 h-4 w-4" />
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-56">
           <DropdownMenuLabel>Appearance</DropdownMenuLabel>
@@ -320,11 +318,9 @@ export const WithRadioItems: Story = {
 
     return (
       <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="outline">
-            Panel Position
-            <ChevronDown className="ml-2 h-4 w-4" />
-          </Button>
+        <DropdownMenuTrigger render={<Button variant="outline" />}>
+          Panel Position
+          <ChevronDown className="ml-2 h-4 w-4" />
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-56">
           <DropdownMenuLabel>Panel Position</DropdownMenuLabel>
@@ -352,12 +348,10 @@ export const WithRadioItems: Story = {
 export const NavigationMenu: Story = {
   render: () => (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost">
-          <Home className="size-4" />
-          Dashboard
-          <ChevronDown className="ml-2 h-4 w-4" />
-        </Button>
+      <DropdownMenuTrigger render={<Button variant="ghost" />}>
+        <Home className="size-4" />
+        Dashboard
+        <ChevronDown className="ml-2 h-4 w-4" />
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56">
         <DropdownMenuLabel>Navigation</DropdownMenuLabel>
@@ -413,8 +407,8 @@ export const ContextMenu: Story = {
   render: () => (
     <div className="flex items-center justify-center rounded-lg border-2 border-dashed p-8">
       <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="outline">Right-click me</Button>
+        <DropdownMenuTrigger render={<Button variant="outline" />}>
+          Right-click me
         </DropdownMenuTrigger>
         <DropdownMenuContent>
           <DropdownMenuItem>
@@ -471,8 +465,8 @@ export const ContextMenu: Story = {
 export const FileMenu: Story = {
   render: () => (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost">File</Button>
+      <DropdownMenuTrigger render={<Button variant="ghost" />}>
+        File
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56">
         <DropdownMenuItem>
@@ -539,10 +533,8 @@ export const SettingsMenu: Story = {
 
     return (
       <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="icon">
-            <Settings className="h-4 w-4" />
-          </Button>
+        <DropdownMenuTrigger render={<Button variant="outline" size="icon" />}>
+          <Settings className="h-4 w-4" />
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-56">
           <DropdownMenuLabel>Settings</DropdownMenuLabel>
@@ -634,11 +626,9 @@ export const SettingsMenu: Story = {
 export const FavoritesMenu: Story = {
   render: () => (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="outline">
-          <Star className="size-4" />
-          Favorites
-        </Button>
+      <DropdownMenuTrigger render={<Button variant="outline" />}>
+        <Star className="size-4" />
+        Favorites
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-64">
         <DropdownMenuLabel>Your Favorites</DropdownMenuLabel>
@@ -708,8 +698,8 @@ export const Positioning: Story = {
   render: () => (
     <div className="flex gap-4">
       <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="outline">Left Align</Button>
+        <DropdownMenuTrigger render={<Button variant="outline" />}>
+          Left Align
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start">
           <DropdownMenuItem>Left aligned item</DropdownMenuItem>
@@ -719,8 +709,8 @@ export const Positioning: Story = {
       </DropdownMenu>
 
       <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="outline">Center Align</Button>
+        <DropdownMenuTrigger render={<Button variant="outline" />}>
+          Center Align
         </DropdownMenuTrigger>
         <DropdownMenuContent align="center">
           <DropdownMenuItem>Center aligned item</DropdownMenuItem>
@@ -730,8 +720,8 @@ export const Positioning: Story = {
       </DropdownMenu>
 
       <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="outline">Right Align</Button>
+        <DropdownMenuTrigger render={<Button variant="outline" />}>
+          Right Align
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem>Right aligned item</DropdownMenuItem>
@@ -756,10 +746,8 @@ export const IconTriggers: Story = {
   render: () => (
     <div className="flex gap-4">
       <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="icon">
-            <MoreVertical className="h-4 w-4" />
-          </Button>
+        <DropdownMenuTrigger render={<Button variant="outline" size="icon" />}>
+          <MoreVertical className="h-4 w-4" />
         </DropdownMenuTrigger>
         <DropdownMenuContent>
           <DropdownMenuItem>Action 1</DropdownMenuItem>
@@ -769,10 +757,8 @@ export const IconTriggers: Story = {
       </DropdownMenu>
 
       <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon">
-            <Settings className="h-4 w-4" />
-          </Button>
+        <DropdownMenuTrigger render={<Button variant="ghost" size="icon" />}>
+          <Settings className="h-4 w-4" />
         </DropdownMenuTrigger>
         <DropdownMenuContent>
           <DropdownMenuItem>Settings</DropdownMenuItem>
@@ -782,10 +768,10 @@ export const IconTriggers: Story = {
       </DropdownMenu>
 
       <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="secondary" size="icon">
-            <User className="h-4 w-4" />
-          </Button>
+        <DropdownMenuTrigger
+          render={<Button variant="secondary" size="icon" />}
+        >
+          <User className="h-4 w-4" />
         </DropdownMenuTrigger>
         <DropdownMenuContent>
           <DropdownMenuItem>Profile</DropdownMenuItem>

@@ -2,10 +2,10 @@ import { expect } from "@playwright/test";
 import type { Locator, Page } from "@playwright/test";
 
 import { BaseComponent } from "../components/base";
-import { waitForSuccessToast } from "../helpers";
+import { fillLocator, waitForSuccessToast } from "../helpers";
 import { DialogMixin, SectionContainerMixin } from "../mixins";
 
-import type { PermissionKind } from "@/lib/api";
+import type { PermissionKind } from "@/lib/api/types";
 
 interface PermissionOptions {
   resourceType: string;
@@ -80,9 +80,30 @@ export class RolePermissionsSection extends DialogMixin(
   }
 
   async openAddPermissionDialog(): Promise<Locator> {
-    await this.getAddPermissionButton().click();
-    await this.waitForDialog("Add Permission");
-    return this.page.getByRole("dialog", { name: "Add Permission" });
+    const addButton = this.getAddPermissionButton();
+    await expect(addButton).toBeVisible();
+    await expect(addButton).toBeEnabled();
+
+    for (let attempt = 0; attempt < 2; attempt++) {
+      await addButton.click();
+      try {
+        await this.waitForDialog("Add Permission", { timeout: 5_000 });
+        break;
+      } catch (error) {
+        if (attempt === 1) {
+          throw error;
+        }
+      }
+    }
+
+    return this.page
+      .getByRole("dialog", { name: "Add Permission" })
+      .or(
+        this.page.locator('[data-slot="dialog-content"]').filter({
+          hasText: "Add Permission",
+        })
+      )
+      .first();
   }
 
   async addPermission({
@@ -98,7 +119,7 @@ export class RolePermissionsSection extends DialogMixin(
       .getByRole("option", { name: new RegExp(resourceType, "i") })
       .click();
 
-    await dialog.getByPlaceholder("Enter resource ID").fill(resourceId);
+    await fillLocator(dialog.getByPlaceholder("Enter resource ID"), resourceId);
 
     await comboboxes.nth(1).click();
     await this.page

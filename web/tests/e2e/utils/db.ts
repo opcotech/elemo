@@ -1,12 +1,14 @@
 import neo4j from "neo4j-driver";
 import type { Driver } from "neo4j-driver";
 
-import { USER_DEFAULT_PASSWORD, USER_DEFAULT_PASSWORD_HASH } from "./auth";
+import { USER_DEFAULT_PASSWORD_HASH } from "./auth";
 import { getRandomString } from "./random";
 import type { getTestConfig } from "./test-config";
 import { generateXid } from "./xid";
 
-import type { PermissionKind, ResourceType, User } from "@/lib/api";
+import type { PermissionKind, ResourceType, User } from "@/lib/api/types";
+
+const SYSTEM_OWNER_USER_ID = "d49pd9v92rs4hfc796k0";
 
 let _cachedDriver: Driver | null = null;
 
@@ -38,7 +40,7 @@ export async function createUser(
   let user: (User & { password?: string }) | null;
 
   const values = {
-    id: await generateXid(),
+    id: generateXid(),
     email: `${getRandomString()}-test@example.com`.toLowerCase(),
     username: getRandomString(8).toLowerCase(),
     password: USER_DEFAULT_PASSWORD_HASH,
@@ -112,7 +114,7 @@ export async function grantPermissionToUser(
   const driver = getDriver(config);
   const session = driver.session();
 
-  const permissionId = await generateXid();
+  const permissionId = generateXid();
   const createdAt = new Date().toISOString();
 
   const query = `
@@ -120,20 +122,25 @@ export async function grantPermissionToUser(
     MATCH (t:${resourceType} {id: $resourceId})
     MERGE (u)-[p:HAS_PERMISSION {kind: $permissionKind}]->(t)
       ON CREATE SET p.id = $permissionId, p.created_at = datetime($createdAt)
+    RETURN p
   `;
 
   try {
-    await session.executeWrite(async (tx) => {
-      await tx.run(query, {
+    const granted = await session.executeWrite(async (tx) => {
+      const result = await tx.run(query, {
         email,
         resourceId,
         permissionKind,
         permissionId,
         createdAt,
       });
+      return result.records.length > 0;
     });
-  } catch (error) {
-    console.error("Error granting permission to user", error);
+    if (!granted) {
+      throw new Error(
+        `Failed to grant ${permissionKind} on ${resourceType}:${resourceId} to ${email}`
+      );
+    }
   } finally {
     await session.close();
   }
@@ -160,7 +167,7 @@ export async function grantSystemPermissionToUser(
   const driver = getDriver(config);
   const session = driver.session();
 
-  const permissionId = await generateXid();
+  const permissionId = generateXid();
   const createdAt = new Date().toISOString();
 
   const query = `
@@ -208,7 +215,7 @@ export async function grantSystemOwnerMembershipToUser(
 
   try {
     await session.executeWrite(async (tx) => {
-      await tx.run(query, { email, membershipId: await generateXid() });
+      await tx.run(query, { email, membershipId: generateXid() });
     });
   } finally {
     await session.close();
@@ -248,7 +255,7 @@ export async function grantMembershipToUser(
         email,
         resourceType,
         resourceId,
-        membershipId: await generateXid(),
+        membershipId: generateXid(),
       });
     });
   } finally {
@@ -264,38 +271,34 @@ export async function ensureSystemOwner(
   config: ReturnType<typeof getTestConfig>
 ) {
   const driver = getDriver(config);
+  const session = driver.session();
 
   try {
-    const session = driver.session();
-
-    try {
-      // Check if user already exists
-      const checkResult = await session.executeRead(async (tx) => {
-        return await tx.run("MATCH (u:User {id: $userId}) RETURN u", {
-          userId: "d49pd9v92rs4hfc796k0",
-        });
+    // Check if user already exists
+    const checkResult = await session.executeRead(async (tx) => {
+      return await tx.run("MATCH (u:User {id: $userId}) RETURN u", {
+        userId: SYSTEM_OWNER_USER_ID,
       });
+    });
 
-      if (checkResult.records.length > 0) {
-        console.log("System owner user already exists, skipping creation");
-        return;
-      }
-
-      await createUser(config, {
-        username: "e2e-test-owner",
-        first_name: "E2E Test",
-        last_name: "Owner",
-        email: config.systemOwnerEmail,
-        password: USER_DEFAULT_PASSWORD,
-      });
-
-      await grantSystemOwnerMembershipToUser(config, config.systemOwnerEmail);
-
-      console.debug("System owner user created successfully");
-    } finally {
-      await session.close();
+    if (checkResult.records.length > 0) {
+      console.log("System owner user already exists, skipping creation");
+      return;
     }
+
+    await createUser(config, {
+      id: SYSTEM_OWNER_USER_ID,
+      username: "e2e-test-owner",
+      first_name: "E2E Test",
+      last_name: "Owner",
+      email: config.systemOwnerEmail,
+      password: USER_DEFAULT_PASSWORD_HASH,
+    });
+
+    await grantSystemOwnerMembershipToUser(config, config.systemOwnerEmail);
+
+    console.debug("System owner user created successfully");
   } finally {
-    await driver.close();
+    await session.close();
   }
 }

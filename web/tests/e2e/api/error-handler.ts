@@ -1,5 +1,3 @@
-import type { Response } from "@hey-api/client-fetch";
-
 export interface APIErrorContext {
   endpoint: string;
   method: string;

@@ -41,13 +41,13 @@ function setupOAuthClient() {
   local add_client_out
   add_client_out="$(docker compose \
     -f "${DOCKER_DEPLOY_DIR}/docker-compose.yml" exec -T elemo-server bin/elemo auth add-client \
-        --callback-url "${webapp_host}/api/auth/callback/elemo" --public 2>&1 | grep "client-id")"
+        --callback-url "${webapp_host}/api/auth/callback/elemo" 2>&1 | grep "client-id")"
 
   backupCopyFile "${WEB_DIR}/.env" "${WEB_DIR}/.env.example"
   backupCopyFile "${WEB_DIR}/.env.test.local" "${WEB_DIR}/.env.test.example"
 
   local secrets
-  secrets="$(echo "${add_client_out}" | jq -r --arg api_host "$api_host" "\"VITE_API_BASE_URL=\" + \$api_host + \"\n\" + \"VITE_AUTH_CLIENT_ID=\" + .\"client-id\" + \"\n\" + \"VITE_AUTH_CLIENT_SECRET=\" + .\"client-secret\"")"
+  secrets="$(echo "${add_client_out}" | jq -r --arg api_host "$api_host" "\"API_BASE_URL=\" + \$api_host + \"\n\" + \"AUTH_CLIENT_ID=\" + .\"client-id\" + \"\n\" + \"AUTH_CLIENT_SECRET=\" + .\"client-secret\"")"
   echo "$secrets" >> "${WEB_DIR}/.env"
   echo "$secrets" >> "${WEB_DIR}/.env.test.local"
 }

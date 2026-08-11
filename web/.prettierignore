@@ -10,6 +10,7 @@ build/
 # Generated files
 *.d.ts
 *.map
+src/routeTree.gen.ts
 
 # Package manager files
 pnpm-lock.yaml

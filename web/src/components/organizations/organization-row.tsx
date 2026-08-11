@@ -10,25 +10,21 @@ import { ConditionalLink } from "@/components/ui/conditional-link";
 import { ExternalLink } from "@/components/ui/external-link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TableCell, TableRow } from "@/components/ui/table";
-import {
-  ResourceType,
-  usePermissions,
-  withResourceType,
-} from "@/hooks/use-permissions";
-import type { Organization } from "@/lib/api";
+import type { Organization, Permission } from "@/lib/api/types";
 import { can } from "@/lib/auth/permissions";
+import { zOrganizationStatus } from "@/lib/client/zod.gen";
 import { pluralize } from "@/lib/utils";
 
 export function OrganizationRow({
   organization,
+  permissions,
+  isPermissionsLoading,
 }: {
   organization: Organization;
+  permissions?: Permission[];
+  isPermissionsLoading: boolean;
 }) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-
-  const { data: permissions, isLoading: isPermissionsLoading } = usePermissions(
-    withResourceType(ResourceType.Organization, organization.id)
-  );
 
   const hasReadPermission = can(permissions, "read");
   const hasWritePermission = can(permissions, "write");
@@ -60,7 +56,7 @@ export function OrganizationRow({
         </Badge>
       </TableCell>
       <TableCell>
-        {organization.status === "active" ? (
+        {organization.status === zOrganizationStatus.enum.active ? (
           <Badge variant="success">Active</Badge>
         ) : (
           <Badge variant="destructive">Deleted</Badge>
@@ -77,33 +73,38 @@ export function OrganizationRow({
           ) : (
             <>
               {hasWritePermission && (
-                <Button variant="ghost" size="sm" asChild>
-                  <Link
-                    to="/settings/organizations/$organizationId/edit"
-                    params={{ organizationId: organization.id }}
-                  >
-                    <Edit className="size-4" />
-                    <span className="sr-only">Edit organization</span>
-                  </Link>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  render={
+                    <Link
+                      to="/settings/organizations/$organizationId/edit"
+                      params={{ organizationId: organization.id }}
+                    />
+                  }
+                >
+                  <Edit className="size-4" />
+                  <span className="sr-only">Edit organization</span>
                 </Button>
               )}
-              {hasDeletePermission && organization.status === "active" && (
-                <>
-                  <Button
-                    variant="destructive-ghost"
-                    size="sm"
-                    onClick={() => setDeleteDialogOpen(true)}
-                  >
-                    <Trash2 className="size-4" />
-                    <span className="sr-only">Delete organization</span>
-                  </Button>
-                  <OrganizationDeleteDialog
-                    organization={organization}
-                    open={deleteDialogOpen}
-                    onOpenChange={setDeleteDialogOpen}
-                  />
-                </>
-              )}
+              {hasDeletePermission &&
+                organization.status === zOrganizationStatus.enum.active && (
+                  <>
+                    <Button
+                      variant="destructive-ghost"
+                      size="sm"
+                      onClick={() => setDeleteDialogOpen(true)}
+                    >
+                      <Trash2 className="size-4" />
+                      <span className="sr-only">Delete organization</span>
+                    </Button>
+                    <OrganizationDeleteDialog
+                      organization={organization}
+                      open={deleteDialogOpen}
+                      onOpenChange={setDeleteDialogOpen}
+                    />
+                  </>
+                )}
             </>
           )}
         </div>

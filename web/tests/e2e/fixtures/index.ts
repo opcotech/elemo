@@ -12,6 +12,7 @@ import { mergeExpects, mergeTests } from "@playwright/test";
 
 import { expect as apiExpect, test as apiTest } from "./api";
 import { expect as configExpect, test as configTest } from "./config";
+import { expect as personaExpect, test as personaTest } from "./personas";
 
-export const test = mergeTests(apiTest, configTest);
-export const expect = mergeExpects(apiExpect, configExpect);
+export const test = mergeTests(apiTest, configTest, personaTest);
+export const expect = mergeExpects(apiExpect, configExpect, personaExpect);

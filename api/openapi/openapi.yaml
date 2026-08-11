@@ -2849,7 +2849,7 @@ paths:
         - User
       requestBody:
         $ref: "#/components/requestBodies/OrganizationInvitationAccept"
-  "/v1/organizations/${id}/roles":
+  "/v1/organizations/{id}/roles":
     parameters:
       - $ref: "#/components/parameters/id"
     get:
@@ -2912,7 +2912,7 @@ paths:
         - Role
       requestBody:
         $ref: "#/components/requestBodies/RoleCreate"
-  "/v1/organizations/${id}/roles/{role_id}":
+  "/v1/organizations/{id}/roles/{role_id}":
     parameters:
       - $ref: "#/components/parameters/id"
       - schema:

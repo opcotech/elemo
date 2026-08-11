@@ -20,8 +20,8 @@ export class Dialog extends LocatorComponent {
   /**
    * Wait for dialog to appear.
    */
-  async waitFor(title?: string): Promise<void> {
-    await waitForDialog(this.page, title);
+  async waitFor(title?: string, options?: { timeout?: number }): Promise<void> {
+    await waitForDialog(this.page, title, options);
     // Update locator after dialog appears
     this.locator = this.page
       .getByRole("dialog")

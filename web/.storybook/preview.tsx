@@ -15,14 +15,14 @@ const preview: Preview = {
       toc: true,
     },
     a11y: {
-      // Enable accessibility testing globally for all stories
+      // Failures are enforced on the maintained UI/Elemo catalog via
+      // parameters.a11y.test = "error" in those story metas. Legacy stories
+      // stay on "todo" so violations remain visible without masking.
+      test: "todo",
       disable: false,
-      // Run a11y tests automatically (not manual)
       manual: false,
-      // Configuration for @storybook/addon-a11y
       config: {
         rules: [
-          // Essential accessibility rules
           { id: "autocomplete-valid", enabled: true },
           { id: "button-name", enabled: true },
           { id: "color-contrast", enabled: true },
@@ -48,7 +48,6 @@ const preview: Preview = {
       options: {
         checks: {
           "color-contrast": { options: { noScroll: true } },
-          "duplicate-id": { options: { allowFailure: true } },
         },
         restoreScroll: true,
         runOnly: {
@@ -56,7 +55,6 @@ const preview: Preview = {
           values: ["wcag2a", "wcag2aa", "wcag21aa", "best-practice"],
         },
       },
-      // Context to test (replaces deprecated element parameter)
       context: "#storybook-root",
     },
     backgrounds: {
@@ -73,11 +71,7 @@ const preview: Preview = {
       defaultTheme: "light",
     }),
     (Story) => (
-      <div
-        className="min-h-[200px] bg-white p-4"
-        role="main"
-        aria-label="Story content"
-      >
+      <div className="bg-background text-foreground min-h-50 p-4">
         <Story />
       </div>
     ),

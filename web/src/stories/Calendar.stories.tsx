@@ -89,8 +89,8 @@ export const WithDropdownNavigation: Story = {
         selected={date}
         onSelect={setDate}
         captionLayout="dropdown"
-        fromYear={2020}
-        toYear={2030}
+        startMonth={new Date(2020, 0)}
+        endMonth={new Date(2030, 11)}
         className="rounded-md border"
       />
     );
@@ -245,8 +245,8 @@ export const FullFeatured: Story = {
           selected={dateRange}
           onSelect={setDateRange}
           captionLayout="dropdown"
-          fromYear={2020}
-          toYear={2030}
+          startMonth={new Date(2020, 0)}
+          endMonth={new Date(2030, 11)}
           showWeekNumber
           disabled={disabledDays}
           numberOfMonths={2}

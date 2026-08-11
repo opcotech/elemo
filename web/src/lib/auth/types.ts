@@ -25,7 +25,6 @@ export interface AuthTokens {
 
 export interface AuthState {
   user: User | null;
-  tokens: AuthTokens | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
@@ -34,13 +33,6 @@ export interface AuthState {
 export interface LoginCredentials {
   email: string;
   password: string;
-}
-
-export interface AuthConfig {
-  clientId: string;
-  clientSecret: string;
-  tokenUrl: string;
-  scopes: string[];
 }
 
 export interface AuthContextType extends AuthState {

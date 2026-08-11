@@ -9,17 +9,24 @@ import type { Page } from "@playwright/test";
 export async function waitForAPIResponse(
   page: Page,
   urlPattern: string | RegExp,
-  options?: { timeout?: number }
+  options?: { timeout?: number; requireOk?: boolean }
 ): Promise<void> {
   const timeout = options?.timeout ?? 5000;
-  await page.waitForResponse(
-    (response) => {
-      const url = response.url();
+  const response = await page.waitForResponse(
+    (candidate) => {
+      const url = candidate.url();
       if (typeof urlPattern === "string") {
         return url.includes(urlPattern);
       }
+      urlPattern.lastIndex = 0;
       return urlPattern.test(url);
     },
     { timeout }
   );
+
+  if ((options?.requireOk ?? true) && !response.ok()) {
+    throw new Error(
+      `API readiness request failed: ${response.status()} ${response.url()}`
+    );
+  }
 }

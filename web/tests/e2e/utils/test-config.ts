@@ -23,7 +23,7 @@ export interface TestConfig {
 export function getTestConfig(): TestConfig {
   const apiBaseUrl =
     process.env.E2E_API_BASE_URL ||
-    process.env.VITE_API_BASE_URL ||
+    process.env.API_BASE_URL ||
     "http://localhost:8080/api";
 
   const systemOwnerEmail =
@@ -33,12 +33,10 @@ export function getTestConfig(): TestConfig {
     process.env.E2E_SYSTEM_OWNER_PASSWORD || USER_DEFAULT_PASSWORD;
 
   const authClientId =
-    process.env.E2E_AUTH_CLIENT_ID || process.env.VITE_AUTH_CLIENT_ID || "";
+    process.env.E2E_AUTH_CLIENT_ID || process.env.AUTH_CLIENT_ID || "";
 
   const authClientSecret =
-    process.env.E2E_AUTH_CLIENT_SECRET ||
-    process.env.VITE_AUTH_CLIENT_SECRET ||
-    "";
+    process.env.E2E_AUTH_CLIENT_SECRET || process.env.AUTH_CLIENT_SECRET || "";
 
   const neo4jUrl = process.env.NEO4J_URL || "neo4j://localhost:7687";
   const neo4jUser = process.env.NEO4J_USER || "neo4j";
@@ -47,13 +45,13 @@ export function getTestConfig(): TestConfig {
   // Validate required values
   if (!authClientId) {
     throw new Error(
-      "E2E_AUTH_CLIENT_ID or VITE_AUTH_CLIENT_ID environment variable is required"
+      "E2E_AUTH_CLIENT_ID or AUTH_CLIENT_ID environment variable is required"
     );
   }
 
   if (!authClientSecret) {
     throw new Error(
-      "E2E_AUTH_CLIENT_SECRET or VITE_AUTH_CLIENT_SECRET environment variable is required"
+      "E2E_AUTH_CLIENT_SECRET or AUTH_CLIENT_SECRET environment variable is required"
     );
   }
 

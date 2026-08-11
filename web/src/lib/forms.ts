@@ -1,6 +1,12 @@
 import { z } from "zod";
 
-import { isEmpty } from "./utils";
+function isEmptyFormValue(value: unknown): boolean {
+  if (value == null) return true;
+  if (typeof value === "string") return value.trim().length === 0;
+  if (Array.isArray(value)) return value.length === 0;
+  if (typeof value === "object") return Object.keys(value).length === 0;
+  return false;
+}
 
 /**
  * Creates a form schema that allows empty strings for optional fields.
@@ -11,54 +17,47 @@ import { isEmpty } from "./utils";
  * @param schema - The base Zod schema
  * @returns A new schema with empty string handling for optional fields
  */
-export function createFormSchema<T extends z.ZodObject<any>>(schema: T): T {
+export function createFormSchema<T extends z.ZodObject<z.ZodRawShape>>(
+  schema: T
+): T {
   const shape: Record<string, z.ZodTypeAny> = {};
 
   for (const [key, fieldSchema] of Object.entries(schema.shape)) {
     const zodField = fieldSchema as z.ZodTypeAny;
 
     // If the field is optional, allow empty strings and transform them to undefined
-    if (zodField.isOptional()) {
-      // Get the inner type (unwrap the optional wrapper)
-      // Access Zod's internal structure to unwrap optional types
-      const def = zodField.def as any;
-      const innerType = def.innerType || def.schema;
+    if (zodField instanceof z.ZodOptional) {
+      const innerType = zodField.unwrap();
 
-      if (innerType) {
-        // Handle union types (e.g., z.union([z.string().url(), z.null()]))
-        const innerDef = innerType.def as any;
-        if (innerDef.typeName === "ZodUnion") {
-          const options = innerDef.options as z.ZodTypeAny[];
-          // Find the non-null option
-          const nonNullOption = options.find(
-            (opt: z.ZodTypeAny) => (opt.def as any).typeName !== "ZodNull"
-          );
+      if (innerType instanceof z.ZodUnion) {
+        const options = innerType.options;
+        // Find the non-null option
+        const nonNullOption = options.find(
+          (option) => !(option instanceof z.ZodNull)
+        );
 
-          if (nonNullOption) {
-            // Create a union that includes empty string literal, then transform to undefined
-            shape[key] = z
-              .union([nonNullOption, z.literal(""), z.null()])
-              .optional()
-              .transform((val) => {
-                if (val === "" || val === null) return undefined;
-                return val;
-              });
-          } else {
-            shape[key] = zodField;
-          }
-        } else {
-          // Handle simple optional types (e.g., z.optional(z.string().url()))
-          // Create a union that allows empty string, then transform to undefined
+        if (nonNullOption) {
+          // Create a union that includes empty string literal, then transform to undefined
           shape[key] = z
-            .union([innerType, z.literal("")])
+            .union([nonNullOption, z.literal(""), z.null()])
             .optional()
             .transform((val) => {
-              if (val === "") return undefined;
+              if (val === "" || val === null) return undefined;
               return val;
             });
+        } else {
+          shape[key] = zodField;
         }
       } else {
-        shape[key] = zodField;
+        // Handle simple optional types (e.g., z.optional(z.string().url()))
+        // Create a union that allows empty string, then transform to undefined
+        shape[key] = z
+          .union([innerType, z.literal("")])
+          .optional()
+          .transform((val) => {
+            if (val === "") return undefined;
+            return val;
+          });
       }
     } else {
       // For required fields, keep as-is
@@ -66,7 +65,7 @@ export function createFormSchema<T extends z.ZodObject<any>>(schema: T): T {
     }
   }
 
-  return z.object(shape) as T;
+  return z.object(shape) as unknown as T;
 }
 
 /**
@@ -79,11 +78,11 @@ export function createFormSchema<T extends z.ZodObject<any>>(schema: T): T {
  * @param data - The data to normalize
  * @returns The normalized data ready for API submission
  */
-export function normalizeFormData<T extends Record<string, any>>(
-  schema: z.ZodObject<any>,
+export function normalizeFormData<T extends Record<string, unknown>>(
+  schema: z.ZodObject<z.ZodRawShape>,
   data: T
 ): Partial<T> {
-  const normalizedData: Partial<T> = {};
+  const normalizedData: Record<string, unknown> = {};
 
   for (const [key, value] of Object.entries(data)) {
     // Skip undefined values (field not set)
@@ -92,17 +91,17 @@ export function normalizeFormData<T extends Record<string, any>>(
     }
 
     // For optional fields, convert empty strings to undefined
-    const fieldSchema = schema.shape[key as keyof T];
-    if (fieldSchema?.isOptional() && isEmpty(value)) {
+    const fieldSchema = schema.shape[key] as z.ZodType | undefined;
+    if (fieldSchema?.safeParse(undefined).success && isEmptyFormValue(value)) {
       // Skip empty optional fields entirely
       continue;
     }
 
     // Include the field if it has a value
-    normalizedData[key as keyof T] = value;
+    normalizedData[key] = value;
   }
 
-  return normalizedData;
+  return normalizedData as Partial<T>;
 }
 
 /**
@@ -115,12 +114,12 @@ export function normalizeFormData<T extends Record<string, any>>(
  * @param originalData - The original data before edits (for comparison)
  * @returns The normalized data ready for API submission
  */
-export function normalizePatchData<T extends Record<string, any>>(
-  schema: z.ZodObject<any>,
+export function normalizePatchData<T extends Record<string, unknown>>(
+  schema: z.ZodObject<z.ZodRawShape>,
   data: T,
   originalData: Partial<T>
 ): Partial<T> {
-  const normalizedData: Partial<T> = {};
+  const normalizedData: Record<string, unknown> = {};
 
   // Check all fields that exist in either form data or original data
   const allKeys = new Set([...Object.keys(data), ...Object.keys(originalData)]);
@@ -128,26 +127,26 @@ export function normalizePatchData<T extends Record<string, any>>(
   for (const key of allKeys) {
     const value = data[key as keyof T];
     const originalValue = originalData[key as keyof T];
-    const fieldSchema = schema.shape[key];
+    const fieldSchema = schema.shape[key] as z.ZodType | undefined;
 
     if (!fieldSchema) {
       continue;
     }
 
-    if (fieldSchema.isOptional()) {
-      if (isEmpty(value) && !isEmpty(originalValue)) {
-        normalizedData[key as keyof T] = null as any;
-      } else if (value !== undefined && !isEmpty(value)) {
-        normalizedData[key as keyof T] = value;
+    if (fieldSchema.safeParse(undefined).success) {
+      if (isEmptyFormValue(value) && !isEmptyFormValue(originalValue)) {
+        normalizedData[key] = null;
+      } else if (value !== undefined && !isEmptyFormValue(value)) {
+        normalizedData[key] = value;
       }
     } else {
-      if (value !== undefined && !isEmpty(value)) {
-        normalizedData[key as keyof T] = value;
+      if (value !== undefined && !isEmptyFormValue(value)) {
+        normalizedData[key] = value;
       }
     }
   }
 
-  return normalizedData;
+  return normalizedData as Partial<T>;
 }
 
 /**

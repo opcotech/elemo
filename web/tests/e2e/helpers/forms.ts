@@ -1,7 +1,36 @@
 import { expect } from "@playwright/test";
-import type { Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 
-import { waitForPageLoad } from "./navigation";
+/**
+ * Fill a locator using trusted key events so Base UI + React controlled
+ * inputs stay in sync (Playwright fill() often times out on Firefox/WebKit).
+ */
+export async function fillLocator(
+  field: Locator,
+  value: string
+): Promise<void> {
+  await expect(field).toBeVisible();
+  await expect(field).toBeEditable();
+
+  for (let attempt = 0; attempt < 2; attempt++) {
+    await field.click();
+    await field.press("ControlOrMeta+A");
+    await field.press("Backspace");
+    if (value.length > 0) {
+      await field.pressSequentially(value, { delay: 10 });
+    }
+    try {
+      await expect(field).toHaveValue(value, { timeout: 1_000 });
+      return;
+    } catch {
+      if (attempt === 1) {
+        throw new Error(
+          "Failed to fill locator with a stable value after retry"
+        );
+      }
+    }
+  }
+}
 
 /**
  * Clear a form field by its label.
@@ -10,10 +39,7 @@ import { waitForPageLoad } from "./navigation";
  */
 export async function clearFormField(page: Page, label: string): Promise<void> {
   const field = page.getByLabel(label, { exact: true });
-  await expect(field)
-    .toBeVisible()
-    .catch(() => {});
-  await field.clear();
+  await fillLocator(field, "");
 }
 
 /**
@@ -27,11 +53,7 @@ export async function fillFormField(
   label: string,
   value: string
 ): Promise<void> {
-  const field = page.getByLabel(label, { exact: true });
-  await expect(field)
-    .toBeVisible()
-    .catch(() => {});
-  await field.fill(value);
+  await fillLocator(page.getByLabel(label, { exact: true }), value);
 }
 
 /**
@@ -48,24 +70,14 @@ export async function submitForm(
 }
 
 /**
- * Wait for form submission to complete.
- * This waits for navigation or network activity to settle after form submission.
- * @param page - Playwright page object
- */
-export async function waitForFormSubmission(page: Page): Promise<void> {
-  await page.waitForLoadState("networkidle").catch(() => {});
-  await waitForPageLoad(page);
-}
-
-/**
- * Returns the form message locator associated with a specific field label.
+ * Returns the field error locator associated with a specific field label.
  * Useful for asserting validation errors scoped to a particular input.
  * @param page - Playwright page object
  * @param label - Label text of the form field
  */
 export function getFormFieldMessage(page: Page, label: string) {
   return page
-    .locator("[data-slot='form-item']")
+    .locator("[data-slot='field']")
     .filter({ has: page.getByLabel(label, { exact: true }) })
-    .locator("[data-slot='form-message']");
+    .locator("[data-slot='field-error']");
 }

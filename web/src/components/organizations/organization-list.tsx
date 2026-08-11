@@ -1,9 +1,8 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Building2, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 
-import { OrganizationCardSkeleton } from "./organization-card";
 import { OrganizationRow } from "./organization-row";
 
 import { Button } from "@/components/ui/button";
@@ -23,8 +22,12 @@ import {
   usePermissions,
   withResourceType,
 } from "@/hooks/use-permissions";
-import { v1OrganizationsGetOptions } from "@/lib/api";
+import {
+  v1OrganizationsGetOptions,
+  v1PermissionResourceGetOptions,
+} from "@/lib/api/query-options";
 import { can } from "@/lib/auth/permissions";
+import { zOrganizationStatus } from "@/lib/client/zod.gen";
 
 function OrganizationTableSkeletonRow() {
   return (
@@ -68,16 +71,6 @@ function OrganizationTableSkeletonRows({ count = 5 }: { count?: number }) {
   );
 }
 
-export function OrganizationListSkeleton({ count = 6 }: { count?: number }) {
-  return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-      {Array.from({ length: count }).map((_, i) => (
-        <OrganizationCardSkeleton key={i} />
-      ))}
-    </div>
-  );
-}
-
 export function OrganizationList() {
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -90,13 +83,25 @@ export function OrganizationList() {
   const { data: systemPermissions } = usePermissions(
     withResourceType(ResourceType.Organization)
   );
+  const organizationPermissionQueries = useQueries({
+    queries: (organizations || []).map((organization) =>
+      v1PermissionResourceGetOptions({
+        path: {
+          resourceId: withResourceType(
+            ResourceType.Organization,
+            organization.id
+          ),
+        },
+      })
+    ),
+  });
   const canCreate = can(systemPermissions, "create");
 
   const sortedOrganizations = useMemo(() => {
     if (!organizations) return [];
     return [...organizations].sort((a, b) => {
       if (a.status !== b.status) {
-        return a.status === "active" ? -1 : 1;
+        return a.status === zOrganizationStatus.enum.active ? -1 : 1;
       }
       return a.name.localeCompare(b.name);
     });
@@ -111,11 +116,9 @@ export function OrganizationList() {
   }, [sortedOrganizations, searchTerm]);
 
   const createButton = canCreate ? (
-    <Button asChild>
-      <Link to="/settings/organizations/new">
-        <Plus className="size-4" />
-        Create Organization
-      </Link>
+    <Button render={<Link to="/settings/organizations/new" />}>
+      <Plus className="size-4" />
+      Create Organization
     </Button>
   ) : undefined;
 
@@ -126,11 +129,13 @@ export function OrganizationList() {
           title: "No organizations available",
           description: "Get started by creating your first organization.",
           action: canCreate ? (
-            <Button variant="outline" size="sm" asChild>
-              <Link to="/settings/organizations/new">
-                <Plus className="size-4" />
-                Create Organization
-              </Link>
+            <Button
+              variant="outline"
+              size="sm"
+              render={<Link to="/settings/organizations/new" />}
+            >
+              <Plus className="size-4" />
+              Create Organization
             </Button>
           ) : undefined,
         }
@@ -184,12 +189,22 @@ export function OrganizationList() {
             <OrganizationTableSkeletonRows />
           ) : (
             <>
-              {filteredOrganizations.map((organization) => (
-                <OrganizationRow
-                  key={organization.id}
-                  organization={organization}
-                />
-              ))}
+              {filteredOrganizations.map((organization) => {
+                const sourceIndex =
+                  organizations?.findIndex(
+                    (candidate) => candidate.id === organization.id
+                  ) ?? -1;
+                const permissionQuery =
+                  organizationPermissionQueries[sourceIndex];
+                return (
+                  <OrganizationRow
+                    key={organization.id}
+                    organization={organization}
+                    permissions={permissionQuery?.data}
+                    isPermissionsLoading={permissionQuery?.isLoading ?? true}
+                  />
+                );
+              })}
             </>
           )}
         </TableBody>
