@@ -116,9 +116,13 @@ function Dashboard() {
               <CardDescription>Common tasks</CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
-              <Button variant="outline" className="w-full justify-start">
-                View Profile
-              </Button>
+              {user && (
+                <Button variant="outline" className="w-full justify-start" asChild>
+                  <Link to="/users/$userId" params={{ userId: user.id }}>
+                    View Profile
+                  </Link>
+                </Button>
+              )}
               <Button
                 variant="outline"
                 className="w-full justify-start"
