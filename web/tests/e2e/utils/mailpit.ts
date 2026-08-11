@@ -68,6 +68,43 @@ export async function getLatestEmailForRecipient(
   }
 }
 
+function decodeTokenValue(raw: string): string {
+  try {
+    return decodeURIComponent(raw);
+  } catch {
+    return raw;
+  }
+}
+
+/**
+ * Pull a query `token` from email HTML/text without HTML-entity decoding the
+ * whole body (avoids double-unescape hazards on `&amp;` sequences).
+ */
+function extractTokenFromEmailContent(
+  content: string,
+  pathHint?: string
+): string | null {
+  const patterns: RegExp[] = [];
+  if (pathHint) {
+    patterns.push(
+      new RegExp(
+        `${pathHint}[^"'\\s]*(?:[?&]|&amp;)token=([A-Za-z0-9+/=_-]+)`,
+        "i"
+      )
+    );
+  }
+  patterns.push(/(?:[?&]|&amp;)token=([A-Za-z0-9+/=_-]+)/i);
+  patterns.push(/\btoken=([A-Za-z0-9+/=_-]+)/i);
+
+  for (const pattern of patterns) {
+    const match = content.match(pattern);
+    if (match?.[1]) {
+      return decodeTokenValue(match[1]);
+    }
+  }
+  return null;
+}
+
 /**
  * Extracts invitation token from an organization invitation email.
  * The token is typically in the invitation URL in the format:
@@ -81,33 +118,8 @@ export async function getInvitationTokenFromEmail(
   if (!email) {
     return null;
   }
-  const htmlContent = email.HTML || email.Text || "";
-  const decodedContent = htmlContent
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'");
-  const tokenMatch = decodedContent.match(/token=([A-Za-z0-9+/=_-]+)/i);
-  if (tokenMatch && tokenMatch[1]) {
-    try {
-      return decodeURIComponent(tokenMatch[1]);
-    } catch {
-      return tokenMatch[1];
-    }
-  }
-  const urlMatch = decodedContent.match(
-    /\/organizations\/join[^"'\s]*token=([A-Za-z0-9+/=_-]+)/i
-  );
-  if (urlMatch && urlMatch[1]) {
-    try {
-      return decodeURIComponent(urlMatch[1]);
-    } catch {
-      return urlMatch[1];
-    }
-  }
-
-  return null;
+  const content = email.HTML || email.Text || "";
+  return extractTokenFromEmailContent(content, "/organizations/join");
 }
 
 /**
@@ -121,33 +133,8 @@ export async function getPasswordResetTokenFromEmail(
   if (!email) {
     return null;
   }
-  const htmlContent = email.HTML || email.Text || "";
-  const decodedContent = htmlContent
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'");
-  const urlMatch = decodedContent.match(
-    /\/reset-password[^"'\s]*[?&]token=([A-Za-z0-9+/=_-]+)/i
-  );
-  if (urlMatch && urlMatch[1]) {
-    try {
-      return decodeURIComponent(urlMatch[1]);
-    } catch {
-      return urlMatch[1];
-    }
-  }
-  const tokenMatch = decodedContent.match(/token=([A-Za-z0-9+/=_-]+)/i);
-  if (tokenMatch && tokenMatch[1]) {
-    try {
-      return decodeURIComponent(tokenMatch[1]);
-    } catch {
-      return tokenMatch[1];
-    }
-  }
-
-  return null;
+  const content = email.HTML || email.Text || "";
+  return extractTokenFromEmailContent(content, "/reset-password");
 }
 
 /**

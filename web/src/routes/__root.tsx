@@ -71,18 +71,30 @@ function RootDocument({
   children,
   theme,
 }: Readonly<{ children: ReactNode; theme: Theme }>) {
-  const themeScript = `(() => { const preference = ${JSON.stringify(
-    theme
-  )}; const resolved = preference === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : preference === "system" ? "light" : preference; document.documentElement.classList.remove("light", "dark"); document.documentElement.classList.add(resolved); })();`;
+  // Keep the bootstrap script static and read preference from the DOM so
+  // theme is not interpolated into executable JavaScript.
+  const themeBootstrapScript = `(() => {
+  const preference = document.documentElement.dataset.themePreference;
+  const resolved =
+    preference === "system" &&
+    window.matchMedia("(prefers-color-scheme: dark)").matches
+      ? "dark"
+      : preference === "dark"
+        ? "dark"
+        : "light";
+  document.documentElement.classList.remove("light", "dark");
+  document.documentElement.classList.add(resolved);
+})();`;
 
   return (
     <html
       className={theme === "system" ? undefined : theme}
+      data-theme-preference={theme}
       suppressHydrationWarning
     >
       <head>
         <HeadContent />
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <script dangerouslySetInnerHTML={{ __html: themeBootstrapScript }} />
       </head>
       <body>
         {children}

@@ -12,6 +12,8 @@ coverage.html
 bin/
 **/*.gen/
 **/*.gen.*
+# TanStack Router runtime route tree — required for typecheck/CI
+!web/src/routeTree.gen.ts
 
 # Misc
 tmp/
