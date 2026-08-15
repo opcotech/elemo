@@ -50,9 +50,6 @@ test.describe("@issues.detail Issue Detail E2E Tests", () => {
   });
 
   test("should copy the issue link", async ({ page }) => {
-    await page
-      .context()
-      .grantPermissions(["clipboard-read", "clipboard-write"]);
     const { workItem } = await openIssue(page);
 
     await workItem.copyLink();

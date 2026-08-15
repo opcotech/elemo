@@ -108,9 +108,8 @@ test.describe("@issues.edit Issue Edit E2E Tests", () => {
     const issue = await seedIssue();
     const workItem = await openIssue(page, issue);
 
-    await workItem.details.getStartDatePicker().click();
+    await workItem.details.openStartDatePicker();
     const calendar = page.locator("[data-slot='calendar']");
-    await expect(calendar).toBeVisible();
     await calendar
       .locator(`[data-day="${new Date().toLocaleDateString()}"]`)
       .click();
@@ -126,9 +125,8 @@ test.describe("@issues.edit Issue Edit E2E Tests", () => {
     const issue = await seedIssue();
     const workItem = await openIssue(page, issue);
 
-    await workItem.details.getDueDatePicker().click();
+    await workItem.details.openDueDatePicker();
     const calendar = page.locator("[data-slot='calendar']");
-    await expect(calendar).toBeVisible();
     await calendar
       .locator(`[data-day="${new Date().toLocaleDateString()}"]`)
       .click();

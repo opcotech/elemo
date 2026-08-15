@@ -17,6 +17,31 @@ import { PageHeader } from "@/components/ui/page-header";
 import { internalPath } from "@/lib/internal-url";
 import { showErrorToast, showSuccessToast } from "@/lib/toast";
 
+async function writeClipboardText(value: string): Promise<void> {
+  if (navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(value);
+      return;
+    } catch {
+      // Firefox/WebKit often reject the Clipboard API without a Chromium-style
+      // permission grant. Fall back to a user-gesture execCommand copy.
+    }
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.value = value;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.left = "-9999px";
+  document.body.appendChild(textarea);
+  textarea.select();
+  const copied = document.execCommand("copy");
+  textarea.remove();
+  if (!copied) {
+    throw new Error("Clipboard unavailable");
+  }
+}
+
 export { PageHeader };
 
 export function EntityHeader({
@@ -76,7 +101,7 @@ export function EntityHeader({
                 aria-label={copyLabel}
                 title={copyLabel}
                 onClick={() => {
-                  void navigator.clipboard.writeText(copyValue).then(
+                  void writeClipboardText(copyValue).then(
                     () => {
                       showSuccessToast("Copied", copyValue);
                     },

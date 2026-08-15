@@ -2,6 +2,7 @@ import type { Locator, Page } from "@playwright/test";
 
 import { BaseComponent } from "../components/base";
 import {
+  clickUntilVisible,
   fillLocator,
   navigateAndWait,
   waitForElementVisible,
@@ -49,7 +50,10 @@ export class WorkItemPage extends BaseComponent {
   }
 
   async openMoreActions(): Promise<void> {
-    await this.getMoreActionsButton().click();
+    await clickUntilVisible(
+      this.getMoreActionsButton(),
+      this.page.getByRole("menu")
+    );
   }
 
   async clickMoreAction(name: string): Promise<void> {

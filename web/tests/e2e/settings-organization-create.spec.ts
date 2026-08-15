@@ -49,7 +49,9 @@ test.describe("@settings.organization-create Organization Creation E2E Tests", (
     // Navigate back to list and verify organization appears
     await orgsPage.goto();
     await orgsPage.organizations.waitForLoad();
-    expect(await orgsPage.organizations.hasOrganization(orgName)).toBeTruthy();
+    await expect(
+      orgsPage.organizations.getRowByOrganizationName(orgName)
+    ).toBeVisible();
   });
 
   test("should show validation errors for invalid form inputs", async ({

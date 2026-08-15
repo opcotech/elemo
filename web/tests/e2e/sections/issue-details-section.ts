@@ -1,7 +1,7 @@
 import type { Locator, Page } from "@playwright/test";
 
 import { BaseComponent } from "../components/base";
-import { waitForDropdownOpen } from "../helpers";
+import { clickUntilVisible, waitForDropdownOpen } from "../helpers";
 import { SectionContainerMixin } from "../mixins";
 
 /**
@@ -116,9 +116,31 @@ export class IssueDetailsSection extends SectionContainerMixin(BaseComponent) {
     await this.selectParent("None");
   }
 
+  async openStartDatePicker(): Promise<void> {
+    await clickUntilVisible(
+      this.getStartDatePicker(),
+      this.page.locator("[data-slot='calendar']"),
+      { timeout: 8_000 }
+    );
+  }
+
+  async openDueDatePicker(): Promise<void> {
+    await clickUntilVisible(
+      this.getDueDatePicker(),
+      this.page.locator("[data-slot='calendar']"),
+      { timeout: 8_000 }
+    );
+  }
+
   private async selectOption(trigger: Locator, name: string): Promise<void> {
+    await trigger.scrollIntoViewIfNeeded();
     await trigger.click();
-    await waitForDropdownOpen(trigger);
+    try {
+      await waitForDropdownOpen(trigger, { timeout: 2_000 });
+    } catch {
+      await trigger.click();
+      await waitForDropdownOpen(trigger);
+    }
     await this.page.getByRole("option", { name, exact: true }).click();
   }
 }

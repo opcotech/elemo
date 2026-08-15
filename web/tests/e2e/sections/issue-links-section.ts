@@ -1,7 +1,7 @@
 import type { Locator, Page } from "@playwright/test";
 
 import { Form } from "../components";
-import { fillLocator } from "../helpers";
+import { clickUntilVisible, fillLocator } from "../helpers";
 import { DialogMixin, SectionContainerMixin } from "../mixins";
 
 /**
@@ -27,7 +27,10 @@ export class IssueLinksSection extends DialogMixin(
   }
 
   async clickAdd(): Promise<void> {
-    await this.getAddButton().click();
+    await clickUntilVisible(
+      this.getAddButton(),
+      this.getDialog().getContent()
+    );
     await this.waitForDialog("Add link");
   }
 

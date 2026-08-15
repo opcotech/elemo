@@ -62,7 +62,10 @@ export class WorkSurfaceSection extends SectionContainerMixin(BaseComponent) {
   }
 
   getFilterButton(): Locator {
-    return this.getSectionContainer().getByRole("button", { name: "Filter" });
+    return this.getSectionContainer().getByRole("button", {
+      name: "Filter",
+      exact: true,
+    });
   }
 
   getFilterInput(): Locator {
