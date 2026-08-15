@@ -55,7 +55,7 @@ export function RoleMemberAssignment({
     isOrgPermissionsLoading || isRolePermissionsLoading;
 
   const {
-    data: members,
+    data: membersPage,
     isLoading,
     error,
   } = useQuery(
@@ -66,6 +66,7 @@ export function RoleMemberAssignment({
       },
     })
   );
+  const members = membersPage?.items;
 
   const handleRemoveClick = (member: User) => {
     setSelectedMember(member);

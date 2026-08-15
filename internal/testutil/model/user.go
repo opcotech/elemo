@@ -52,7 +52,6 @@ func NewRepositoryUser() *repository.User {
 		Address:     "1234 Main St, Anytown, USA",
 		Links:       []string{"https://example.com/"},
 		Languages:   []model.Language{model.LanguageHU, model.LanguageEN, model.LanguageES},
-		Documents:   make([]model.ID, 0),
 		Permissions: make([]model.ID, 0),
 		CreatedAt:   convert.ToPointer(time.Now().UTC()),
 	}

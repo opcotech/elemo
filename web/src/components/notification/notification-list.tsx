@@ -15,9 +15,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { v1NotificationsGetOptions } from "@/lib/api/query-options";
 
 export function NotificationList() {
-  const { data: notifications, isLoading } = useQuery({
+  const { data: notificationsPage, isLoading } = useQuery({
     ...v1NotificationsGetOptions(),
   });
+  const notifications = notificationsPage?.items;
 
   const sortedNotifications = useMemo(() => {
     return notifications?.toSorted(

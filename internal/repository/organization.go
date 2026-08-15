@@ -5,7 +5,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
+	"github.com/neo4j/neo4j-go-driver/v6/neo4j"
 
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/convert"
@@ -23,17 +23,17 @@ var (
 
 // Organization represents an organization persisted by the repository.
 type Organization struct {
-	ID         model.ID                 `json:"id"`
-	Name       string                   `json:"name"`
-	Email      string                   `json:"email"`
-	Logo       string                   `json:"logo"`
-	Website    string                   `json:"website"`
-	Status     model.OrganizationStatus `json:"status"`
-	Namespaces []model.ID               `json:"namespaces"`
-	Teams      []model.ID               `json:"teams"`
-	Members    []model.ID               `json:"members"`
-	CreatedAt  *time.Time               `json:"created_at"`
-	UpdatedAt  *time.Time               `json:"updated_at"`
+	ID             model.ID                 `json:"id"`
+	Name           string                   `json:"name"`
+	Email          string                   `json:"email"`
+	Logo           string                   `json:"logo"`
+	Website        string                   `json:"website"`
+	Status         model.OrganizationStatus `json:"status"`
+	NamespaceCount *int64                   `json:"namespace_count"`
+	TeamCount      *int64                   `json:"team_count"`
+	MemberCount    *int64                   `json:"member_count"`
+	CreatedAt      *time.Time               `json:"created_at"`
+	UpdatedAt      *time.Time               `json:"updated_at"`
 }
 
 // OrganizationMember represents a member of an organization.
@@ -45,6 +45,7 @@ type OrganizationMember struct {
 	Picture   *string          `json:"picture"`
 	Status    model.UserStatus `json:"status"`
 	Roles     []string         `json:"roles"`
+	CreatedAt *time.Time       `json:"created_at"`
 }
 
 // CreateOrganizationOpts holds the data required to create an organization.
@@ -101,10 +102,10 @@ func (o UpdateOrganizationOpts) patch() map[string]any {
 //go:generate go tool mockgen -source=organization.go -destination=organization_mock_gen.go -package=repository -mock_names "OrganizationRepository=MockOrganizationRepository"
 type OrganizationRepository interface {
 	Create(ctx context.Context, opts CreateOrganizationOpts) (*Organization, error)
-	Get(ctx context.Context, id model.ID) (*Organization, error)
-	GetAll(ctx context.Context, userID model.ID, offset, limit int) ([]*Organization, error)
+	Get(ctx context.Context, id model.ID, proj OrganizationProjection) (*Organization, error)
+	List(ctx context.Context, userID model.ID, page CursorPage, proj OrganizationProjection) (Page[*Organization], error)
 	Update(ctx context.Context, id model.ID, opts UpdateOrganizationOpts) (*Organization, error)
-	GetMembers(ctx context.Context, orgID model.ID) ([]*OrganizationMember, error)
+	ListMembers(ctx context.Context, orgID model.ID, page CursorPage) (Page[*OrganizationMember], error)
 	AddMember(ctx context.Context, orgID, memberID model.ID) error
 	RemoveMember(ctx context.Context, orgID, memberID model.ID) error
 	AddInvitation(ctx context.Context, orgID, userID model.ID) error
@@ -118,31 +119,42 @@ type Neo4jOrganizationRepository struct {
 	*neo4jBaseRepository
 }
 
-func (r *Neo4jOrganizationRepository) scan(op, np, tp, mp string) func(rec *neo4j.Record) (*Organization, error) {
+func (r *Neo4jOrganizationRepository) scan(proj OrganizationProjection) func(rec *neo4j.Record) (*Organization, error) {
 	return func(rec *neo4j.Record) (*Organization, error) {
-		org := new(Organization)
-
-		val, _, err := neo4j.GetRecordValue[neo4j.Node](rec, op)
+		node, err := Neo4jRecordNode(rec, "o")
 		if err != nil {
 			return nil, err
 		}
 
-		if err := Neo4jScanIntoStruct(&val, &org, []string{"id"}); err != nil {
+		org := new(Organization)
+		if err := Neo4jScanIntoStruct(&node, &org, []string{"id", "namespace_count", "team_count", "member_count"}); err != nil {
 			return nil, err
 		}
 
-		org.ID, _ = model.NewIDFromString(val.GetProperties()["id"].(string), model.ResourceTypeOrganization.String())
-
-		if org.Namespaces, err = Neo4jParseIDsFromRecord(rec, np, model.ResourceTypeNamespace.String()); err != nil {
+		org.ID, err = Neo4jDecodeID(node, model.ResourceTypeOrganization)
+		if err != nil {
 			return nil, err
 		}
-
-		if org.Teams, err = Neo4jParseIDsFromRecord(rec, tp, model.ResourceTypeRole.String()); err != nil {
-			return nil, err
+		if proj.NamespaceCount {
+			namespaceCount, err := Neo4jParseValueFromRecord[int64](rec, "namespace_count")
+			if err != nil {
+				return nil, err
+			}
+			org.NamespaceCount = convert.ToPointer(namespaceCount)
 		}
-
-		if org.Members, err = Neo4jParseIDsFromRecord(rec, mp, model.ResourceTypeUser.String()); err != nil {
-			return nil, err
+		if proj.TeamCount {
+			teamCount, err := Neo4jParseValueFromRecord[int64](rec, "team_count")
+			if err != nil {
+				return nil, err
+			}
+			org.TeamCount = convert.ToPointer(teamCount)
+		}
+		if proj.MemberCount {
+			memberCount, err := Neo4jParseValueFromRecord[int64](rec, "member_count")
+			if err != nil {
+				return nil, err
+			}
+			org.MemberCount = convert.ToPointer(memberCount)
 		}
 
 		return org, nil
@@ -205,6 +217,11 @@ func (r *Neo4jOrganizationRepository) scanOrganizationMember(up string) func(rec
 			}
 		}
 
+		createdAt, err := Neo4jNodeTime(val, "created_at")
+		if err != nil {
+			return OrganizationMember{}, err
+		}
+
 		return OrganizationMember{
 			ID:        userID,
 			FirstName: firstName,
@@ -213,6 +230,7 @@ func (r *Neo4jOrganizationRepository) scanOrganizationMember(up string) func(rec
 			Picture:   picture,
 			Status:    status,
 			Roles:     roleNames,
+			CreatedAt: createdAt,
 		}, nil
 	}
 }
@@ -221,42 +239,29 @@ func (r *Neo4jOrganizationRepository) Create(ctx context.Context, opts CreateOrg
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.OrganizationRepository/Create")
 	defer span.End()
 
-	createdAt := convert.ToPointer(time.Now().UTC())
+	createdAt := time.Now().UTC()
+	id := model.MustNewID(model.ResourceTypeOrganization)
 
 	status := opts.Status
 	if status == 0 {
 		status = model.OrganizationStatusActive
 	}
 
-	organization := &Organization{
-		ID:         model.MustNewID(model.ResourceTypeOrganization),
-		Name:       opts.Name,
-		Email:      opts.Email,
-		Logo:       opts.Logo,
-		Website:    opts.Website,
-		Status:     status,
-		Namespaces: make([]model.ID, 0),
-		Teams:      make([]model.ID, 0),
-		Members:    []model.ID{opts.Owner},
-		CreatedAt:  createdAt,
-		UpdatedAt:  nil,
-	}
-
 	cypher := `
 	MATCH (u:` + opts.Owner.Label() + ` {id: $owner_id})
-	CREATE (o:` + organization.ID.Label() + ` { id: $id, name: $name, email: $email, logo: $logo, website: $website,
+	CREATE (o:` + id.Label() + ` { id: $id, name: $name, email: $email, logo: $logo, website: $website,
 		status: $status, created_at: datetime($created_at)
 	}),
 	(u)-[:` + EdgeKindMemberOf.String() + ` {id: $membership_id, created_at: datetime($created_at)}]->(o),
 	(u)-[:` + EdgeKindHasPermission.String() + `{id: $permission_id, created_at: datetime($created_at), kind: $permission_kind}]->(o)`
 
 	params := map[string]any{
-		"id":              organization.ID.String(),
-		"name":            organization.Name,
-		"email":           organization.Email,
-		"logo":            organization.Logo,
-		"website":         organization.Website,
-		"status":          organization.Status.String(),
+		"id":              id.String(),
+		"name":            opts.Name,
+		"email":           opts.Email,
+		"logo":            opts.Logo,
+		"website":         opts.Website,
+		"status":          status.String(),
 		"created_at":      createdAt.Format(time.RFC3339Nano),
 		"owner_id":        opts.Owner.String(),
 		"membership_id":   model.NewRawID(),
@@ -268,58 +273,68 @@ func (r *Neo4jOrganizationRepository) Create(ctx context.Context, opts CreateOrg
 		return nil, errors.Join(ErrOrganizationCreate, err)
 	}
 
-	return organization, nil
+	return r.Get(ctx, id, OrganizationDetailProjection())
 }
 
-func (r *Neo4jOrganizationRepository) Get(ctx context.Context, id model.ID) (*Organization, error) {
+func (r *Neo4jOrganizationRepository) Get(ctx context.Context, id model.ID, proj OrganizationProjection) (*Organization, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.OrganizationRepository/Get")
 	defer span.End()
 
-	cypher := `
-	MATCH (o:` + id.Label() + ` {id: $id})
-	OPTIONAL MATCH (u:` + model.ResourceTypeUser.String() + `)-[:` + EdgeKindMemberOf.String() + `]->(o)
-	OPTIONAL MATCH (o)-[:` + EdgeKindHasNamespace.String() + `]->(n:` + model.ResourceTypeNamespace.String() + `)
-	OPTIONAL MATCH (o)-[:` + EdgeKindHasTeam.String() + `]->(t:` + model.ResourceTypeRole.String() + `)
-	RETURN o, collect(DISTINCT u.id) AS m, collect(DISTINCT n.id) AS n, collect(DISTINCT t.id) AS t
-	`
-
-	params := map[string]any{
-		"id": id.String(),
-	}
-
-	org, err := Neo4jExecuteReadAndReadSingle(ctx, r.db, cypher, params, r.scan("o", "n", "t", "m"))
+	plan, err := CompileQuery(OrganizationGetQuery{ID: id, Projection: proj})
 	if err != nil {
 		return nil, errors.Join(ErrOrganizationRead, err)
 	}
 
-	return org, nil
+	var organization *Organization
+	err = Neo4jExecuteReadPlan(ctx, r.db, plan, func(tx neo4j.ManagedTransaction) error {
+		var readErr error
+		organization, _, readErr = Neo4jRunQuerySingle(ctx, tx, plan.Root, r.scan(proj))
+		if readErr != nil {
+			return readErr
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, errors.Join(ErrOrganizationRead, err)
+	}
+
+	return organization, nil
 }
 
-func (r *Neo4jOrganizationRepository) GetAll(ctx context.Context, userID model.ID, offset, limit int) ([]*Organization, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.OrganizationRepository/GetAllBelongsTo")
+func (r *Neo4jOrganizationRepository) List(ctx context.Context, userID model.ID, page CursorPage, proj OrganizationProjection) (Page[*Organization], error) {
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.OrganizationRepository/List")
 	defer span.End()
 
-	cypher := `
-	MATCH (u:` + userID.Label() + ` {id: $user_id})-[m:` + EdgeKindMemberOf.String() + `]->(o:` + model.ResourceTypeOrganization.String() + `)
-	OPTIONAL MATCH (u2:` + model.ResourceTypeUser.String() + `)-[:` + EdgeKindMemberOf.String() + `]->(o)
-	OPTIONAL MATCH (o)-[:` + EdgeKindHasNamespace.String() + `]->(n:` + model.ResourceTypeNamespace.String() + `)
-	OPTIONAL MATCH (o)-[:` + EdgeKindHasTeam.String() + `]->(t:` + model.ResourceTypeRole.String() + `)
-	RETURN o, collect(DISTINCT u2.id) AS m, collect(DISTINCT n.id) AS n, collect(DISTINCT t.id) AS t
-	ORDER BY o.created_at DESC
-	SKIP $offset LIMIT $limit`
-
-	params := map[string]any{
-		"user_id": userID.String(),
-		"offset":  offset,
-		"limit":   limit,
-	}
-
-	orgs, err := Neo4jExecuteReadAndReadAll(ctx, r.db, cypher, params, r.scan("o", "n", "t", "m"))
+	normalized, err := page.Normalize()
 	if err != nil {
-		return nil, errors.Join(ErrOrganizationRead, err)
+		return Page[*Organization]{}, errors.Join(ErrOrganizationRead, err)
+	}
+	plan, err := CompileQuery(OrganizationListQuery{
+		UserID:     userID,
+		Page:       normalized,
+		Order:      SortDirectionDesc,
+		Projection: proj,
+	})
+	if err != nil {
+		return Page[*Organization]{}, errors.Join(ErrOrganizationRead, err)
 	}
 
-	return orgs, nil
+	organizations := make([]*Organization, 0)
+	err = Neo4jExecuteReadPlan(ctx, r.db, plan, func(tx neo4j.ManagedTransaction) error {
+		var readErr error
+		organizations, _, readErr = Neo4jRunQuery(ctx, tx, plan.Root, r.scan(proj))
+		if readErr != nil {
+			return readErr
+		}
+		return nil
+	})
+	if err != nil {
+		return Page[*Organization]{}, errors.Join(ErrOrganizationRead, err)
+	}
+
+	return PaginateSlice(organizations, normalized.Size, func(organization *Organization) model.ID {
+		return organization.ID
+	})
 }
 
 func (r *Neo4jOrganizationRepository) Update(ctx context.Context, id model.ID, opts UpdateOrganizationOpts) (*Organization, error) {
@@ -327,75 +342,146 @@ func (r *Neo4jOrganizationRepository) Update(ctx context.Context, id model.ID, o
 	defer span.End()
 
 	cypher := `
-	MATCH (o:` + id.Label() + ` {id: $id}) SET o += $patch, o.updated_at = datetime()
-	WITH o
-	OPTIONAL MATCH (u:` + model.ResourceTypeUser.String() + `)-[:` + EdgeKindMemberOf.String() + `]->(o)
-	OPTIONAL MATCH (o)-[:` + EdgeKindHasNamespace.String() + `]->(n:` + model.ResourceTypeNamespace.String() + `)
-	OPTIONAL MATCH (o)-[:` + EdgeKindHasTeam.String() + `]->(t:` + model.ResourceTypeRole.String() + `)
-	RETURN o, collect(DISTINCT u.id) AS m, collect(DISTINCT n.id) AS n, collect(DISTINCT t.id) AS t`
+	MATCH (o:` + id.Label() + ` {id: $id})
+	SET o += $patch, o.updated_at = datetime()
+	RETURN o.id AS id`
 
 	params := map[string]any{
 		"id":    id.String(),
 		"patch": opts.patch(),
 	}
 
-	org, err := Neo4jExecuteWriteAndReadSingle(ctx, r.db, cypher, params, r.scan("o", "n", "t", "m"))
+	_, err := Neo4jExecuteWriteAndReadSingle(ctx, r.db, cypher, params, func(_ *neo4j.Record) (*struct{}, error) {
+		return &struct{}{}, nil
+	})
 	if err != nil {
 		return nil, errors.Join(ErrOrganizationUpdate, err)
 	}
 
-	return org, nil
+	return r.Get(ctx, id, OrganizationDetailProjection())
 }
 
-func (r *Neo4jOrganizationRepository) GetMembers(ctx context.Context, orgID model.ID) ([]*OrganizationMember, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.OrganizationRepository/GetMembers")
+func (r *Neo4jOrganizationRepository) ListMembers(ctx context.Context, orgID model.ID, page CursorPage) (Page[*OrganizationMember], error) {
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.OrganizationRepository/ListMembers")
 	defer span.End()
 
-	cypher := `
-	MATCH (o:` + orgID.Label() + ` {id: $org_id})
-	MATCH (u:` + model.ResourceTypeUser.String() + `)-[rel:` + EdgeKindMemberOf.String() + `|` + EdgeKindInvitedTo.String() + `]->(o)
-	WITH DISTINCT u, o, collect(DISTINCT type(rel)) AS relTypes
-	WITH u, o, relTypes, CASE WHEN '` + EdgeKindMemberOf.String() + `' IN relTypes THEN true ELSE false END AS isMember
-	WHERE isMember = true OR NOT EXISTS((u)-[:` + EdgeKindMemberOf.String() + `]->(o))
-	OPTIONAL MATCH (u)-[:` + EdgeKindMemberOf.String() + `]->(r:` + model.ResourceTypeRole.String() + `)<-[:` + EdgeKindHasTeam.String() + `]-(o)
-	WITH u, isMember, collect(DISTINCT r) AS roleNodes
-	WITH u, isMember,
-	CASE WHEN isMember THEN [role IN roleNodes WHERE role IS NOT NULL | role.name] ELSE [] END AS roles
-	RETURN u AS u, roles AS roles, isMember AS isMember
-	ORDER BY isMember DESC, u.created_at ASC`
-
-	params := map[string]any{
-		"org_id": orgID.String(),
+	normalized, err := page.Normalize()
+	if err != nil {
+		return Page[*OrganizationMember]{}, errors.Join(ErrOrganizationRead, err)
 	}
-
-	members, err := Neo4jExecuteReadAndReadAll(ctx, r.db, cypher, params, func(rec *neo4j.Record) (OrganizationMember, error) {
-		member, err := r.scanOrganizationMember("u")(rec)
-		if err != nil {
-			return OrganizationMember{}, err
-		}
-
-		isMemberVal, err := Neo4jParseValueFromRecord[bool](rec, "isMember")
-		if err != nil {
-			isMemberVal = false
-		}
-
-		// If user is not a member (has INVITED_TO but not MEMBER_OF), set status to pending
-		if !isMemberVal {
-			member.Status = model.UserStatusPending
-		}
-
-		return member, nil
+	plan, err := CompileQuery(OrganizationMemberListQuery{
+		OrgID: orgID,
+		Page:  normalized,
+		Order: SortDirectionDesc,
 	})
 	if err != nil {
-		return nil, errors.Join(ErrOrganizationRead, err)
+		return Page[*OrganizationMember]{}, errors.Join(ErrOrganizationRead, err)
 	}
 
-	membersPtr := make([]*OrganizationMember, len(members))
-	for i := range members {
-		membersPtr[i] = &members[i]
+	members := make([]*OrganizationMember, 0)
+	err = Neo4jExecuteReadPlan(ctx, r.db, plan, func(tx neo4j.ManagedTransaction) error {
+		rootMembers, _, readErr := Neo4jRunQuery(ctx, tx, plan.Root, func(rec *neo4j.Record) (*OrganizationMember, error) {
+			member, err := r.scanOrganizationMember("u")(rec)
+			if err != nil {
+				return nil, err
+			}
+			isMemberVal, err := Neo4jParseValueFromRecord[bool](rec, "isMember")
+			if err != nil {
+				isMemberVal = false
+			}
+			if !isMemberVal {
+				member.Status = model.UserStatusPending
+			}
+			return &member, nil
+		})
+		if readErr != nil {
+			return readErr
+		}
+		members = rootMembers
+		return r.applyMemberRoleLoader(ctx, tx, plan, members)
+	})
+	if err != nil {
+		return Page[*OrganizationMember]{}, errors.Join(ErrOrganizationRead, err)
 	}
 
-	return membersPtr, nil
+	return PaginateSlice(members, normalized.Size, func(member *OrganizationMember) model.ID {
+		return member.ID
+	})
+}
+
+func (r *Neo4jOrganizationRepository) applyMemberRoleLoader(
+	ctx context.Context,
+	tx neo4j.ManagedTransaction,
+	plan QueryPlan,
+	members []*OrganizationMember,
+) error {
+	if len(plan.Loaders) == 0 || len(members) == 0 {
+		return nil
+	}
+
+	ids := make([]string, 0, len(members))
+	membersByID := make(map[string]*OrganizationMember, len(members))
+	for _, member := range members {
+		if member == nil {
+			continue
+		}
+		id := member.ID.String()
+		ids = append(ids, id)
+		membersByID[id] = member
+		if member.Roles == nil {
+			member.Roles = make([]string, 0)
+		}
+	}
+
+	for _, loader := range plan.Loaders {
+		query := loader
+		query.Params = cloneParams(loader.Params)
+		query.Params["ids"] = ids
+
+		rows, _, err := Neo4jRunQuery(ctx, tx, query, func(rec *neo4j.Record) (struct {
+			UserID string
+			Roles  []string
+		}, error) {
+			userID, err := Neo4jParseValueFromRecord[string](rec, "user_id")
+			if err != nil {
+				return struct {
+					UserID string
+					Roles  []string
+				}{}, err
+			}
+			roleNamesVal, err := Neo4jParseValueFromRecord[[]any](rec, "roles")
+			if err != nil {
+				roleNamesVal = []any{}
+			}
+			roles := make([]string, 0, len(roleNamesVal))
+			for _, roleName := range roleNamesVal {
+				if roleName == nil {
+					continue
+				}
+				name, ok := roleName.(string)
+				if !ok || name == "" {
+					continue
+				}
+				roles = append(roles, name)
+			}
+			return struct {
+				UserID string
+				Roles  []string
+			}{UserID: userID, Roles: roles}, nil
+		})
+		if err != nil {
+			return err
+		}
+		for _, row := range rows {
+			member, ok := membersByID[row.UserID]
+			if !ok {
+				continue
+			}
+			member.Roles = row.Roles
+		}
+	}
+
+	return nil
 }
 
 func (r *Neo4jOrganizationRepository) AddMember(ctx context.Context, orgID, memberID model.ID) error {
@@ -551,11 +637,11 @@ func clearOrganizationsPattern(ctx context.Context, r *redisBaseRepository, patt
 }
 
 func clearOrganizationsKey(ctx context.Context, r *redisBaseRepository, id model.ID) error {
-	return r.Delete(ctx, composeCacheKey(model.ResourceTypeOrganization.String(), id.String()))
+	return clearOrganizationsPattern(ctx, r, "Get", id.String(), "*")
 }
 
-func clearOrganizationAllGetAll(ctx context.Context, r *redisBaseRepository) error {
-	return clearOrganizationsPattern(ctx, r, "GetAll", "*", "*")
+func clearOrganizationAllLists(ctx context.Context, r *redisBaseRepository) error {
+	return clearOrganizationsPattern(ctx, r, "List", "*", "*", "*", "*")
 }
 
 // RedisCachedOrganizationRepository implements caching on the
@@ -566,18 +652,18 @@ type RedisCachedOrganizationRepository struct {
 }
 
 func (r *RedisCachedOrganizationRepository) Create(ctx context.Context, opts CreateOrganizationOpts) (*Organization, error) {
-	if err := clearOrganizationAllGetAll(ctx, r.cacheRepo); err != nil {
+	if err := clearOrganizationAllLists(ctx, r.cacheRepo); err != nil {
 		return nil, err
 	}
 
 	return r.organizationRepo.Create(ctx, opts)
 }
 
-func (r *RedisCachedOrganizationRepository) Get(ctx context.Context, id model.ID) (*Organization, error) {
+func (r *RedisCachedOrganizationRepository) Get(ctx context.Context, id model.ID, proj OrganizationProjection) (*Organization, error) {
 	var organization *Organization
 	var err error
 
-	key := composeCacheKey(model.ResourceTypeOrganization.String(), id.String())
+	key := composeCacheKey(model.ResourceTypeOrganization.String(), "Get", id.String(), projectionCacheValue(proj))
 	if err = r.cacheRepo.Get(ctx, key, &organization); err != nil {
 		return nil, err
 	}
@@ -586,7 +672,7 @@ func (r *RedisCachedOrganizationRepository) Get(ctx context.Context, id model.ID
 		return organization, nil
 	}
 
-	if organization, err = r.organizationRepo.Get(ctx, id); err != nil {
+	if organization, err = r.organizationRepo.Get(ctx, id, proj); err != nil {
 		return nil, err
 	}
 
@@ -597,25 +683,30 @@ func (r *RedisCachedOrganizationRepository) Get(ctx context.Context, id model.ID
 	return organization, nil
 }
 
-func (r *RedisCachedOrganizationRepository) GetAll(ctx context.Context, userID model.ID, offset, limit int) ([]*Organization, error) {
-	var organizations []*Organization
+func (r *RedisCachedOrganizationRepository) List(ctx context.Context, userID model.ID, page CursorPage, proj OrganizationProjection) (Page[*Organization], error) {
+	var organizations Page[*Organization]
 	var err error
 
-	key := composeCacheKey(model.ResourceTypeOrganization.String(), "GetAll", userID.String(), offset, limit)
-	if err = r.cacheRepo.Get(ctx, key, &organizations); err != nil {
-		return nil, err
+	normalized, err := normalizedPage(page)
+	if err != nil {
+		return Page[*Organization]{}, err
 	}
 
-	if organizations != nil {
+	key := composeCacheKey(model.ResourceTypeOrganization.String(), "List", userID.String(), projectionCacheValue(proj), pageTokenValue(normalized.Token), normalized.Size)
+	if err = r.cacheRepo.Get(ctx, key, &organizations); err != nil {
+		return Page[*Organization]{}, err
+	}
+
+	if organizations.Items != nil {
 		return organizations, nil
 	}
 
-	if organizations, err = r.organizationRepo.GetAll(ctx, userID, offset, limit); err != nil {
-		return nil, err
+	if organizations, err = r.organizationRepo.List(ctx, userID, normalized, proj); err != nil {
+		return Page[*Organization]{}, err
 	}
 
 	if err = r.cacheRepo.Set(ctx, key, organizations); err != nil {
-		return nil, err
+		return Page[*Organization]{}, err
 	}
 
 	return organizations, nil
@@ -627,12 +718,12 @@ func (r *RedisCachedOrganizationRepository) Update(ctx context.Context, id model
 		return nil, err
 	}
 
-	key := composeCacheKey(model.ResourceTypeOrganization.String(), id.String())
+	key := composeCacheKey(model.ResourceTypeOrganization.String(), "Get", id.String(), projectionCacheValue(OrganizationDetailProjection()))
 	if err = r.cacheRepo.Set(ctx, key, organization); err != nil {
 		return nil, err
 	}
 
-	if err := clearOrganizationAllGetAll(ctx, r.cacheRepo); err != nil {
+	if err := clearOrganizationAllLists(ctx, r.cacheRepo); err != nil {
 		return nil, err
 	}
 
@@ -644,7 +735,7 @@ func (r *RedisCachedOrganizationRepository) AddMember(ctx context.Context, orgID
 		return err
 	}
 
-	if err := clearOrganizationAllGetAll(ctx, r.cacheRepo); err != nil {
+	if err := clearOrganizationAllLists(ctx, r.cacheRepo); err != nil {
 		return err
 	}
 
@@ -656,7 +747,7 @@ func (r *RedisCachedOrganizationRepository) RemoveMember(ctx context.Context, or
 		return err
 	}
 
-	if err := clearOrganizationAllGetAll(ctx, r.cacheRepo); err != nil {
+	if err := clearOrganizationAllLists(ctx, r.cacheRepo); err != nil {
 		return err
 	}
 
@@ -668,15 +759,15 @@ func (r *RedisCachedOrganizationRepository) Delete(ctx context.Context, id model
 		return err
 	}
 
-	if err := clearOrganizationAllGetAll(ctx, r.cacheRepo); err != nil {
+	if err := clearOrganizationAllLists(ctx, r.cacheRepo); err != nil {
 		return err
 	}
 
 	return r.organizationRepo.Delete(ctx, id)
 }
 
-func (r *RedisCachedOrganizationRepository) GetMembers(ctx context.Context, orgID model.ID) ([]*OrganizationMember, error) {
-	return r.organizationRepo.GetMembers(ctx, orgID)
+func (r *RedisCachedOrganizationRepository) ListMembers(ctx context.Context, orgID model.ID, page CursorPage) (Page[*OrganizationMember], error) {
+	return r.organizationRepo.ListMembers(ctx, orgID, page)
 }
 
 func (r *RedisCachedOrganizationRepository) AddInvitation(ctx context.Context, orgID, userID model.ID) error {
@@ -684,7 +775,7 @@ func (r *RedisCachedOrganizationRepository) AddInvitation(ctx context.Context, o
 		return err
 	}
 
-	if err := clearOrganizationAllGetAll(ctx, r.cacheRepo); err != nil {
+	if err := clearOrganizationAllLists(ctx, r.cacheRepo); err != nil {
 		return err
 	}
 
@@ -696,7 +787,7 @@ func (r *RedisCachedOrganizationRepository) RemoveInvitation(ctx context.Context
 		return err
 	}
 
-	if err := clearOrganizationAllGetAll(ctx, r.cacheRepo); err != nil {
+	if err := clearOrganizationAllLists(ctx, r.cacheRepo); err != nil {
 		return err
 	}
 

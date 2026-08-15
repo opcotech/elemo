@@ -5,10 +5,9 @@ import (
 	"errors"
 	"time"
 
-	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
+	"github.com/neo4j/neo4j-go-driver/v6/neo4j"
 
 	"github.com/opcotech/elemo/internal/model"
-	"github.com/opcotech/elemo/internal/pkg/convert"
 )
 
 var (
@@ -44,8 +43,8 @@ type UpdateAttachmentOpts struct {
 //go:generate go tool mockgen -source=attachment.go -destination=attachment_mock_gen.go -package=repository -mock_names "AttachmentRepository=MockAttachmentRepository"
 type AttachmentRepository interface {
 	Create(ctx context.Context, opts CreateAttachmentOpts) (*Attachment, error)
-	Get(ctx context.Context, id model.ID) (*Attachment, error)
-	GetAllBelongsTo(ctx context.Context, belongsTo model.ID, offset, limit int) ([]*Attachment, error)
+	Get(ctx context.Context, id model.ID, proj AttachmentProjection) (*Attachment, error)
+	ListBelongsTo(ctx context.Context, belongsTo model.ID, page CursorPage, proj AttachmentProjection) (Page[*Attachment], error)
 	Update(ctx context.Context, id model.ID, opts UpdateAttachmentOpts) (*Attachment, error)
 	Delete(ctx context.Context, id model.ID) error
 }
@@ -84,22 +83,14 @@ func (r *Neo4jAttachmentRepository) Create(ctx context.Context, opts CreateAttac
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.AttachmentRepository/Create")
 	defer span.End()
 
-	createdAt := convert.ToPointer(time.Now().UTC())
-
-	attachment := &Attachment{
-		ID:        model.MustNewID(model.ResourceTypeAttachment),
-		Name:      opts.Name,
-		FileID:    opts.FileID,
-		CreatedBy: opts.CreatedBy,
-		CreatedAt: createdAt,
-		UpdatedAt: nil,
-	}
+	createdAt := time.Now().UTC()
+	id := model.MustNewID(model.ResourceTypeAttachment)
 
 	cypher := `
 	MATCH (b:` + opts.BelongsTo.Label() + ` {id: $belong_to_id})
-	MATCH (o:` + attachment.CreatedBy.Label() + ` {id: $created_by_id})
+	MATCH (o:` + opts.CreatedBy.Label() + ` {id: $created_by_id})
 	CREATE
-		(a:` + attachment.ID.Label() + ` {
+		(a:` + id.Label() + ` {
 			id: $id, name: $name, file_id: $file_id, created_by: $created_by_id, created_at: datetime($created_at)
 		}),
 		(b)-[:` + EdgeKindHasAttachment.String() + ` {id: $has_attachment_rel_id, created_at: datetime($created_at)}]->(a),
@@ -108,11 +99,11 @@ func (r *Neo4jAttachmentRepository) Create(ctx context.Context, opts CreateAttac
 	params := map[string]any{
 		"belong_to_id":          opts.BelongsTo.String(),
 		"has_attachment_rel_id": model.NewRawID(),
-		"created_by_id":         attachment.CreatedBy.String(),
+		"created_by_id":         opts.CreatedBy.String(),
 		"attachment_rel_id":     model.NewRawID(),
-		"id":                    attachment.ID.String(),
-		"name":                  attachment.Name,
-		"file_id":               attachment.FileID,
+		"id":                    id.String(),
+		"name":                  opts.Name,
+		"file_id":               opts.FileID,
 		"created_at":            createdAt.Format(time.RFC3339Nano),
 	}
 
@@ -120,53 +111,65 @@ func (r *Neo4jAttachmentRepository) Create(ctx context.Context, opts CreateAttac
 		return nil, errors.Join(ErrAttachmentCreate, err)
 	}
 
-	return attachment, nil
+	return r.Get(ctx, id, AttachmentDetailProjection())
 }
 
-func (r *Neo4jAttachmentRepository) Get(ctx context.Context, id model.ID) (*Attachment, error) {
+func (r *Neo4jAttachmentRepository) Get(ctx context.Context, id model.ID, proj AttachmentProjection) (*Attachment, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.AttachmentRepository/Get")
 	defer span.End()
 
-	cypher := `
-	MATCH (a:` + id.Label() + ` {id: $id})<-[:` + EdgeKindCreated.String() + `]-(o:` + model.ResourceTypeUser.String() + `)
-	RETURN a, o.id AS o`
-
-	params := map[string]any{
-		"id": id.String(),
-	}
-
-	doc, err := Neo4jExecuteReadAndReadSingle(ctx, r.db, cypher, params, r.scan("a", "o"))
+	plan, err := CompileQuery(AttachmentGetQuery{
+		ID:         id,
+		Projection: proj,
+	})
 	if err != nil {
 		return nil, errors.Join(ErrAttachmentRead, err)
 	}
 
-	return doc, nil
+	var attachment *Attachment
+	err = Neo4jExecuteReadPlan(ctx, r.db, plan, func(tx neo4j.ManagedTransaction) error {
+		var runErr error
+		attachment, _, runErr = Neo4jRunQuerySingle(ctx, tx, plan.Root, r.scan("a", "o"))
+		return runErr
+	})
+	if err != nil {
+		return nil, errors.Join(ErrAttachmentRead, err)
+	}
+
+	return attachment, nil
 }
 
-func (r *Neo4jAttachmentRepository) GetAllBelongsTo(ctx context.Context, belongsTo model.ID, offset, limit int) ([]*Attachment, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.AttachmentRepository/GetAllBelongsTo")
+func (r *Neo4jAttachmentRepository) ListBelongsTo(ctx context.Context, belongsTo model.ID, page CursorPage, proj AttachmentProjection) (Page[*Attachment], error) {
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.AttachmentRepository/ListBelongsTo")
 	defer span.End()
 
-	cypher := `
-	MATCH
-		(:` + belongsTo.Label() + ` {id: $id})-[:` + EdgeKindHasAttachment.String() + `]->(a:` + model.ResourceTypeAttachment.String() + `),
-		(o:` + model.ResourceTypeUser.String() + `)-[:` + EdgeKindCreated.String() + `]->(a)
-	RETURN a, o.id AS o
-	ORDER BY a.created_at DESC
-	SKIP $offset LIMIT $limit`
-
-	params := map[string]any{
-		"id":     belongsTo.String(),
-		"offset": offset,
-		"limit":  limit,
-	}
-
-	docs, err := Neo4jExecuteReadAndReadAll(ctx, r.db, cypher, params, r.scan("a", "o"))
+	normalized, err := page.Normalize()
 	if err != nil {
-		return nil, errors.Join(ErrAttachmentRead, err)
+		return Page[*Attachment]{}, errors.Join(ErrAttachmentRead, err)
+	}
+	plan, err := CompileQuery(AttachmentListBelongsToQuery{
+		BelongsTo:  belongsTo,
+		Page:       normalized,
+		Order:      SortDirectionDesc,
+		Projection: proj,
+	})
+	if err != nil {
+		return Page[*Attachment]{}, errors.Join(ErrAttachmentRead, err)
 	}
 
-	return docs, nil
+	attachments := make([]*Attachment, 0)
+	err = Neo4jExecuteReadPlan(ctx, r.db, plan, func(tx neo4j.ManagedTransaction) error {
+		var runErr error
+		attachments, _, runErr = Neo4jRunQuery(ctx, tx, plan.Root, r.scan("a", "o"))
+		return runErr
+	})
+	if err != nil {
+		return Page[*Attachment]{}, errors.Join(ErrAttachmentRead, err)
+	}
+
+	return PaginateSlice(attachments, normalized.Size, func(attachment *Attachment) model.ID {
+		return attachment.ID
+	})
 }
 
 func (r *Neo4jAttachmentRepository) Update(ctx context.Context, id model.ID, opts UpdateAttachmentOpts) (*Attachment, error) {
@@ -176,21 +179,20 @@ func (r *Neo4jAttachmentRepository) Update(ctx context.Context, id model.ID, opt
 	cypher := `
 	MATCH (a:` + id.Label() + ` {id: $id})
 	SET a.name = $name, a.updated_at = datetime()
-	WITH a
-	MATCH (o:` + model.ResourceTypeUser.String() + `)-[:` + EdgeKindCreated.String() + `]->(a)
-	RETURN a, o.id AS o`
+	RETURN a.id AS id`
 
 	params := map[string]any{
 		"id":   id.String(),
 		"name": opts.Name,
 	}
 
-	doc, err := Neo4jExecuteWriteAndReadSingle(ctx, r.db, cypher, params, r.scan("a", "o"))
-	if err != nil {
+	if _, err := Neo4jExecuteWriteAndReadSingle(ctx, r.db, cypher, params, func(_ *neo4j.Record) (*struct{}, error) {
+		return &struct{}{}, nil
+	}); err != nil {
 		return nil, errors.Join(ErrAttachmentUpdate, err)
 	}
 
-	return doc, nil
+	return r.Get(ctx, id, AttachmentDetailProjection())
 }
 
 func (r *Neo4jAttachmentRepository) Delete(ctx context.Context, id model.ID) error {
@@ -222,7 +224,7 @@ func NewNeo4jAttachmentRepository(opts ...Neo4jRepositoryOption) (*Neo4jAttachme
 }
 
 func clearAttachmentsKey(ctx context.Context, r *redisBaseRepository, id model.ID) error {
-	return r.Delete(ctx, composeCacheKey(model.ResourceTypeAttachment.String(), id.String()))
+	return clearAttachmentsPattern(ctx, r, "Get", id.String(), "*")
 }
 
 func clearAttachmentsPattern(ctx context.Context, r *redisBaseRepository, pattern ...string) error {
@@ -230,11 +232,11 @@ func clearAttachmentsPattern(ctx context.Context, r *redisBaseRepository, patter
 }
 
 func clearAttachmentBelongsTo(ctx context.Context, r *redisBaseRepository, resourceID model.ID) error {
-	return clearAttachmentsPattern(ctx, r, "GetAllBelongsTo", resourceID.String(), "*")
+	return clearAttachmentsPattern(ctx, r, "ListBelongsTo", resourceID.String(), "*", "*")
 }
 
 func clearAttachmentAllBelongsTo(ctx context.Context, r *redisBaseRepository) error {
-	return clearAttachmentsPattern(ctx, r, "GetAllBelongsTo", "*")
+	return clearAttachmentsPattern(ctx, r, "ListBelongsTo", "*", "*", "*")
 }
 
 func clearAttachmentAllCrossCache(ctx context.Context, r *redisBaseRepository) error {
@@ -270,11 +272,11 @@ func (r *RedisCachedAttachmentRepository) Create(ctx context.Context, opts Creat
 	return r.attachmentRepo.Create(ctx, opts)
 }
 
-func (r *RedisCachedAttachmentRepository) Get(ctx context.Context, id model.ID) (*Attachment, error) {
+func (r *RedisCachedAttachmentRepository) Get(ctx context.Context, id model.ID, proj AttachmentProjection) (*Attachment, error) {
 	var attachment *Attachment
 	var err error
 
-	key := composeCacheKey(model.ResourceTypeAttachment.String(), id.String())
+	key := composeCacheKey(model.ResourceTypeAttachment.String(), "Get", id.String(), projectionCacheValue(proj))
 	if err = r.cacheRepo.Get(ctx, key, &attachment); err != nil {
 		return nil, err
 	}
@@ -283,7 +285,7 @@ func (r *RedisCachedAttachmentRepository) Get(ctx context.Context, id model.ID) 
 		return attachment, nil
 	}
 
-	if attachment, err = r.attachmentRepo.Get(ctx, id); err != nil {
+	if attachment, err = r.attachmentRepo.Get(ctx, id, proj); err != nil {
 		return nil, err
 	}
 
@@ -294,25 +296,37 @@ func (r *RedisCachedAttachmentRepository) Get(ctx context.Context, id model.ID) 
 	return attachment, nil
 }
 
-func (r *RedisCachedAttachmentRepository) GetAllBelongsTo(ctx context.Context, belongsTo model.ID, offset, limit int) ([]*Attachment, error) {
-	var attachments []*Attachment
+func (r *RedisCachedAttachmentRepository) ListBelongsTo(ctx context.Context, belongsTo model.ID, page CursorPage, proj AttachmentProjection) (Page[*Attachment], error) {
+	var attachments Page[*Attachment]
 	var err error
 
-	key := composeCacheKey(model.ResourceTypeAttachment.String(), "GetAllBelongsTo", belongsTo.String(), offset, limit)
-	if err = r.cacheRepo.Get(ctx, key, &attachments); err != nil {
-		return nil, err
+	normalized, err := normalizedPage(page)
+	if err != nil {
+		return Page[*Attachment]{}, err
 	}
 
-	if attachments != nil {
+	key := composeCacheKey(
+		model.ResourceTypeAttachment.String(),
+		"ListBelongsTo",
+		belongsTo.String(),
+		projectionCacheValue(proj),
+		pageTokenValue(normalized.Token),
+		normalized.Size,
+	)
+	if err = r.cacheRepo.Get(ctx, key, &attachments); err != nil {
+		return Page[*Attachment]{}, err
+	}
+
+	if attachments.Items != nil {
 		return attachments, nil
 	}
 
-	if attachments, err = r.attachmentRepo.GetAllBelongsTo(ctx, belongsTo, offset, limit); err != nil {
-		return nil, err
+	if attachments, err = r.attachmentRepo.ListBelongsTo(ctx, belongsTo, normalized, proj); err != nil {
+		return Page[*Attachment]{}, err
 	}
 
 	if err = r.cacheRepo.Set(ctx, key, attachments); err != nil {
-		return nil, err
+		return Page[*Attachment]{}, err
 	}
 
 	return attachments, nil
@@ -324,7 +338,7 @@ func (r *RedisCachedAttachmentRepository) Update(ctx context.Context, id model.I
 		return nil, err
 	}
 
-	key := composeCacheKey(model.ResourceTypeAttachment.String(), id.String())
+	key := composeCacheKey(model.ResourceTypeAttachment.String(), "Get", id.String(), projectionCacheValue(AttachmentDetailProjection()))
 	if err = r.cacheRepo.Set(ctx, key, attachment); err != nil {
 		return nil, err
 	}

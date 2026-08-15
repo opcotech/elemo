@@ -39,9 +39,9 @@ const layouts: readonly {
   label: string;
   icon: typeof Columns3Icon;
 }[] = [
-  { value: "board", label: "Board", icon: Columns3Icon },
   { value: "list", label: "List", icon: LayoutListIcon },
   { value: "table", label: "Table", icon: Table2Icon },
+  { value: "board", label: "Board", icon: Columns3Icon },
   { value: "timeline", label: "Timeline", icon: CalendarDaysIcon },
 ];
 
@@ -76,15 +76,19 @@ function ViewMenuButton({
   label,
   children,
   align = "start",
+  "aria-label": ariaLabel,
 }: {
   icon: typeof Columns3Icon;
   label: ReactNode;
   children: ReactNode;
   align?: "start" | "end";
+  "aria-label"?: string;
 }) {
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger render={<Button variant="outline" size="sm" />}>
+      <DropdownMenuTrigger
+        render={<Button variant="outline" size="sm" aria-label={ariaLabel} />}
+      >
         <Icon aria-hidden />
         {label}
         <ChevronDownIcon />
@@ -134,12 +138,14 @@ export function ViewBar({
   savedViews,
   onSearchChange,
   itemCount,
+  showScopePicker = true,
 }: {
   search: WorkRouteSearch;
   scope: Scope;
   savedViews: readonly SavedView[];
   onSearchChange: (patch: SearchPatch) => void;
   itemCount: number;
+  showScopePicker?: boolean;
 }) {
   const activeView = savedViews.find((view) => view.id === search.view);
   const sortValue = parseSort(search.sort);
@@ -186,11 +192,13 @@ export function ViewBar({
           </DropdownMenuRadioGroup>
         </ViewMenuButton>
 
-        <ScopePicker
-          baseScope={scope}
-          value={search.scope}
-          onValueChange={(value) => onSearchChange({ scope: value })}
-        />
+        {showScopePicker ? (
+          <ScopePicker
+            baseScope={scope}
+            value={search.scope}
+            onValueChange={(value) => onSearchChange({ scope: value })}
+          />
+        ) : null}
 
         <div className="order-last flex w-full items-center rounded-lg border p-0.5 sm:order-0 sm:w-auto">
           {layouts.map((layout) => (
@@ -246,6 +254,7 @@ export function ViewBar({
             icon={GroupIcon}
             label={groupLabels[search.group]}
             align="end"
+            aria-label="Group by"
           >
             <DropdownMenuRadioGroup
               value={search.group}
@@ -274,6 +283,7 @@ export function ViewBar({
             icon={ArrowDownAZIcon}
             label={sortLabels[sortValue] ?? "Sort"}
             align="end"
+            aria-label="Sort"
           >
             <DropdownMenuRadioGroup
               value={sortValue}
@@ -298,6 +308,7 @@ export function ViewBar({
             icon={SlidersHorizontalIcon}
             label={displayLabels[search.display]}
             align="end"
+            aria-label="Display density"
           >
             <DropdownMenuRadioGroup
               value={search.display}

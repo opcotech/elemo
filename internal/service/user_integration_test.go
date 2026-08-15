@@ -129,21 +129,18 @@ func (s *UserServiceIntegrationTestSuite) TestGetByEmail() {
 }
 
 func (s *UserServiceIntegrationTestSuite) TestGetAll() {
-	users, err := s.userService.GetAll(s.normalUserContext, 0, 10)
+	users, err := s.userService.List(s.normalUserContext, service.CursorPage{Size: 10})
 	s.Assert().NoError(err)
-	s.Assert().Len(users, 2)
+	s.Assert().Len(users.Items, 2)
 
-	users, err = s.userService.GetAll(s.normalUserContext, 0, 1)
+	users, err = s.userService.List(s.normalUserContext, service.CursorPage{Size: 1})
 	s.Assert().NoError(err)
-	s.Assert().Len(users, 1)
+	s.Assert().Len(users.Items, 1)
+	s.Assert().True(users.PageInfo.HasMore)
 
-	users, err = s.userService.GetAll(s.normalUserContext, 1, 1)
+	users, err = s.userService.List(s.normalUserContext, service.CursorPage{Size: 1, Token: users.PageInfo.NextPageToken})
 	s.Assert().NoError(err)
-	s.Assert().Len(users, 1)
-
-	users, err = s.userService.GetAll(s.normalUserContext, 2, 1)
-	s.Assert().NoError(err)
-	s.Assert().Len(users, 0)
+	s.Assert().Len(users.Items, 1)
 }
 
 func (s *UserServiceIntegrationTestSuite) TestUpdate() {

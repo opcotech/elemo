@@ -1,11 +1,11 @@
 import { Link2Icon } from "lucide-react";
 
-import { AppEmptyState } from "@/components/shared/app-feedback";
 import {
   AppList,
   EntityLink,
   entityHref,
 } from "@/components/shared/entity-link";
+import { EmptyState } from "@/components/ui/empty-state";
 import type { EntityRef, Relation } from "@/lib/mock-data/types";
 
 export function RelationList({
@@ -20,7 +20,7 @@ export function RelationList({
   const visible = limit ? relations.slice(0, limit) : relations;
   if (visible.length === 0) {
     return (
-      <AppEmptyState
+      <EmptyState
         compact
         icon={<Link2Icon />}
         title="No relationships"

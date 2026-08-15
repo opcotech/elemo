@@ -5,10 +5,9 @@ import (
 	"errors"
 	"time"
 
-	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
+	"github.com/neo4j/neo4j-go-driver/v6/neo4j"
 
 	"github.com/opcotech/elemo/internal/model"
-	"github.com/opcotech/elemo/internal/pkg/convert"
 )
 
 var (
@@ -36,9 +35,9 @@ type CreateAssignmentOpts struct {
 //go:generate go tool mockgen -source=assignment.go -destination=assignment_mock_gen.go -package=repository -mock_names "AssignmentRepository=MockAssignmentRepository"
 type AssignmentRepository interface {
 	Create(ctx context.Context, opts CreateAssignmentOpts) (*Assignment, error)
-	Get(ctx context.Context, id model.ID) (*Assignment, error)
-	GetByUser(ctx context.Context, userID model.ID, offset, limit int) ([]*Assignment, error)
-	GetByResource(ctx context.Context, resourceID model.ID, offset, limit int) ([]*Assignment, error)
+	Get(ctx context.Context, id model.ID, proj AssignmentProjection) (*Assignment, error)
+	ListByUser(ctx context.Context, userID model.ID, page CursorPage, proj AssignmentProjection) (Page[*Assignment], error)
+	ListByResource(ctx context.Context, resourceID model.ID, page CursorPage, proj AssignmentProjection) (Page[*Assignment], error)
 	Delete(ctx context.Context, id model.ID) error
 }
 
@@ -82,50 +81,57 @@ func (r *Neo4jAssignmentRepository) Create(ctx context.Context, opts CreateAssig
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.AssignmentRepository/Create")
 	defer span.End()
 
-	createdAt := convert.ToPointer(time.Now().UTC())
-
-	assignment := &Assignment{
-		ID:        model.MustNewID(model.ResourceTypeAssignment),
-		Kind:      opts.Kind,
-		User:      opts.User,
-		Resource:  opts.Resource,
-		CreatedAt: createdAt,
-	}
+	createdAt := time.Now().UTC()
+	id := model.MustNewID(model.ResourceTypeAssignment)
 
 	cypher := `
-	MATCH (u:` + assignment.User.Label() + ` {id: $user_id})
-	MATCH (r:` + assignment.Resource.Label() + ` {id: $resource_id})
+	MATCH (u:` + opts.User.Label() + ` {id: $user_id})
+	MATCH (r:` + opts.Resource.Label() + ` {id: $resource_id})
 	MERGE (u)-[a:` + EdgeKindAssignedTo.String() + ` {kind: $kind}]->(r)
-	ON CREATE SET a.id = $id, a.created_at = datetime($created_at)`
+	ON CREATE SET a.id = $id, a.created_at = datetime($created_at)
+	RETURN a.id AS id`
 
 	params := map[string]any{
-		"id":          assignment.ID.String(),
-		"user_id":     assignment.User.String(),
-		"resource_id": assignment.Resource.String(),
-		"kind":        assignment.Kind.String(),
-		"created_at":  assignment.CreatedAt.Format(time.RFC3339Nano),
+		"id":          id.String(),
+		"user_id":     opts.User.String(),
+		"resource_id": opts.Resource.String(),
+		"kind":        opts.Kind.String(),
+		"created_at":  createdAt.Format(time.RFC3339Nano),
 	}
 
-	if err := Neo4jExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
+	storedID, err := Neo4jExecuteWriteAndReadSingle(ctx, r.db, cypher, params, func(rec *neo4j.Record) (*model.ID, error) {
+		raw, parseErr := Neo4jParseValueFromRecord[string](rec, "id")
+		if parseErr != nil {
+			return nil, parseErr
+		}
+		parsed, parseErr := model.NewIDFromString(raw, model.ResourceTypeAssignment.String())
+		if parseErr != nil {
+			return nil, parseErr
+		}
+		return &parsed, nil
+	})
+	if err != nil {
 		return nil, errors.Join(ErrAssignmentCreate, err)
 	}
 
-	return assignment, nil
+	return r.Get(ctx, *storedID, AssignmentDetailProjection())
 }
 
-func (r *Neo4jAssignmentRepository) Get(ctx context.Context, id model.ID) (*Assignment, error) {
+func (r *Neo4jAssignmentRepository) Get(ctx context.Context, id model.ID, proj AssignmentProjection) (*Assignment, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.AssignmentRepository/Get")
 	defer span.End()
 
-	cypher := `
-	MATCH (u)-[a:` + EdgeKindAssignedTo.String() + ` {id: $id}]->(r)
-	RETURN u, a, r`
-
-	params := map[string]any{
-		"id": id.String(),
+	plan, err := CompileQuery(AssignmentGetQuery{ID: id, Projection: proj})
+	if err != nil {
+		return nil, errors.Join(ErrAssignmentRead, err)
 	}
 
-	assignment, err := Neo4jExecuteReadAndReadSingle(ctx, r.db, cypher, params, r.scan("u", "a", "r"))
+	var assignment *Assignment
+	err = Neo4jExecuteReadPlan(ctx, r.db, plan, func(tx neo4j.ManagedTransaction) error {
+		var runErr error
+		assignment, _, runErr = Neo4jRunQuerySingle(ctx, tx, plan.Root, r.scan("u", "a", "r"))
+		return runErr
+	})
 	if err != nil {
 		return nil, errors.Join(ErrAssignmentRead, err)
 	}
@@ -133,52 +139,70 @@ func (r *Neo4jAssignmentRepository) Get(ctx context.Context, id model.ID) (*Assi
 	return assignment, nil
 }
 
-func (r *Neo4jAssignmentRepository) GetByUser(ctx context.Context, userID model.ID, offset, limit int) ([]*Assignment, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.AssignmentRepository/GetByUser")
+func (r *Neo4jAssignmentRepository) ListByUser(ctx context.Context, userID model.ID, page CursorPage, proj AssignmentProjection) (Page[*Assignment], error) {
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.AssignmentRepository/ListByUser")
 	defer span.End()
 
-	cypher := `
-	MATCH (u:` + userID.Label() + ` {id: $user_id})-[a:` + EdgeKindAssignedTo.String() + `]->(r)
-	RETURN u, a, r
-	ORDER BY a.created_at DESC
-	SKIP $offset LIMIT $limit`
-
-	params := map[string]any{
-		"user_id": userID.String(),
-		"offset":  offset,
-		"limit":   limit,
-	}
-
-	assignments, err := Neo4jExecuteReadAndReadAll(ctx, r.db, cypher, params, r.scan("u", "a", "r"))
+	normalized, err := page.Normalize()
 	if err != nil {
-		return nil, errors.Join(ErrAssignmentRead, err)
+		return Page[*Assignment]{}, errors.Join(ErrAssignmentRead, err)
+	}
+	plan, err := CompileQuery(AssignmentListByUserQuery{
+		UserID:     userID,
+		Page:       normalized,
+		Order:      SortDirectionDesc,
+		Projection: proj,
+	})
+	if err != nil {
+		return Page[*Assignment]{}, errors.Join(ErrAssignmentRead, err)
 	}
 
-	return assignments, nil
+	assignments := make([]*Assignment, 0)
+	err = Neo4jExecuteReadPlan(ctx, r.db, plan, func(tx neo4j.ManagedTransaction) error {
+		var runErr error
+		assignments, _, runErr = Neo4jRunQuery(ctx, tx, plan.Root, r.scan("u", "a", "r"))
+		return runErr
+	})
+	if err != nil {
+		return Page[*Assignment]{}, errors.Join(ErrAssignmentRead, err)
+	}
+
+	return PaginateSlice(assignments, normalized.Size, func(assignment *Assignment) model.ID {
+		return assignment.ID
+	})
 }
 
-func (r *Neo4jAssignmentRepository) GetByResource(ctx context.Context, resourceID model.ID, offset, limit int) ([]*Assignment, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.AssignmentRepository/GetByResource")
+func (r *Neo4jAssignmentRepository) ListByResource(ctx context.Context, resourceID model.ID, page CursorPage, proj AssignmentProjection) (Page[*Assignment], error) {
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.AssignmentRepository/ListByResource")
 	defer span.End()
 
-	cypher := `
-	MATCH (u)-[a:` + EdgeKindAssignedTo.String() + `]->(r:` + resourceID.Label() + ` {id: $resource_id})
-	RETURN u, a, r
-	ORDER BY a.created_at DESC
-	SKIP $offset LIMIT $limit`
-
-	params := map[string]any{
-		"resource_id": resourceID.String(),
-		"offset":      offset,
-		"limit":       limit,
-	}
-
-	assignments, err := Neo4jExecuteReadAndReadAll(ctx, r.db, cypher, params, r.scan("u", "a", "r"))
+	normalized, err := page.Normalize()
 	if err != nil {
-		return nil, errors.Join(ErrAssignmentRead, err)
+		return Page[*Assignment]{}, errors.Join(ErrAssignmentRead, err)
+	}
+	plan, err := CompileQuery(AssignmentListByResourceQuery{
+		ResourceID: resourceID,
+		Page:       normalized,
+		Order:      SortDirectionDesc,
+		Projection: proj,
+	})
+	if err != nil {
+		return Page[*Assignment]{}, errors.Join(ErrAssignmentRead, err)
 	}
 
-	return assignments, nil
+	assignments := make([]*Assignment, 0)
+	err = Neo4jExecuteReadPlan(ctx, r.db, plan, func(tx neo4j.ManagedTransaction) error {
+		var runErr error
+		assignments, _, runErr = Neo4jRunQuery(ctx, tx, plan.Root, r.scan("u", "a", "r"))
+		return runErr
+	})
+	if err != nil {
+		return Page[*Assignment]{}, errors.Join(ErrAssignmentRead, err)
+	}
+
+	return PaginateSlice(assignments, normalized.Size, func(assignment *Assignment) model.ID {
+		return assignment.ID
+	})
 }
 
 func (r *Neo4jAssignmentRepository) Delete(ctx context.Context, id model.ID) error {
@@ -210,7 +234,7 @@ func NewNeo4jAssignmentRepository(opts ...Neo4jRepositoryOption) (*Neo4jAssignme
 }
 
 func clearAssignmentsKey(ctx context.Context, r *redisBaseRepository, id model.ID) error {
-	return r.Delete(ctx, composeCacheKey(model.ResourceTypeAssignment.String(), id.String()))
+	return clearAssignmentsPattern(ctx, r, "Get", id.String(), "*")
 }
 
 func clearAssignmentsPattern(ctx context.Context, r *redisBaseRepository, pattern ...string) error {
@@ -218,19 +242,19 @@ func clearAssignmentsPattern(ctx context.Context, r *redisBaseRepository, patter
 }
 
 func clearAssignmentByResource(ctx context.Context, r *redisBaseRepository, resourceID model.ID) error {
-	return clearAssignmentsPattern(ctx, r, "GetByResource", resourceID.String(), "*")
+	return clearAssignmentsPattern(ctx, r, "ListByResource", resourceID.String(), "*", "*")
 }
 
 func clearAssignmentAllByResource(ctx context.Context, r *redisBaseRepository) error {
-	return clearAssignmentsPattern(ctx, r, "GetByResource", "*")
+	return clearAssignmentsPattern(ctx, r, "ListByResource", "*", "*", "*")
 }
 
 func clearAssignmentByUser(ctx context.Context, r *redisBaseRepository, userID model.ID) error {
-	return clearAssignmentsPattern(ctx, r, "GetByUser", userID.String(), "*")
+	return clearAssignmentsPattern(ctx, r, "ListByUser", userID.String(), "*", "*")
 }
 
 func clearAssignmentAllByUser(ctx context.Context, r *redisBaseRepository) error {
-	return clearAssignmentsPattern(ctx, r, "GetByUser", "*")
+	return clearAssignmentsPattern(ctx, r, "ListByUser", "*", "*", "*")
 }
 
 func clearAssignmentAllCrossCache(ctx context.Context, r *redisBaseRepository, assignment *Assignment) error {
@@ -273,11 +297,11 @@ func (r *RedisCachedAssignmentRepository) Create(ctx context.Context, opts Creat
 	return r.assignmentRepo.Create(ctx, opts)
 }
 
-func (r *RedisCachedAssignmentRepository) Get(ctx context.Context, id model.ID) (*Assignment, error) {
+func (r *RedisCachedAssignmentRepository) Get(ctx context.Context, id model.ID, proj AssignmentProjection) (*Assignment, error) {
 	var assignment *Assignment
 	var err error
 
-	key := composeCacheKey(model.ResourceTypeAssignment.String(), id.String())
+	key := composeCacheKey(model.ResourceTypeAssignment.String(), "Get", id.String(), projectionCacheValue(proj))
 	if err = r.cacheRepo.Get(ctx, key, &assignment); err != nil {
 		return nil, err
 	}
@@ -286,7 +310,7 @@ func (r *RedisCachedAssignmentRepository) Get(ctx context.Context, id model.ID) 
 		return assignment, nil
 	}
 
-	if assignment, err = r.assignmentRepo.Get(ctx, id); err != nil {
+	if assignment, err = r.assignmentRepo.Get(ctx, id, proj); err != nil {
 		return nil, err
 	}
 
@@ -297,49 +321,73 @@ func (r *RedisCachedAssignmentRepository) Get(ctx context.Context, id model.ID) 
 	return assignment, nil
 }
 
-func (r *RedisCachedAssignmentRepository) GetByUser(ctx context.Context, userID model.ID, offset, limit int) ([]*Assignment, error) {
-	var assignments []*Assignment
+func (r *RedisCachedAssignmentRepository) ListByUser(ctx context.Context, userID model.ID, page CursorPage, proj AssignmentProjection) (Page[*Assignment], error) {
+	var assignments Page[*Assignment]
 	var err error
 
-	key := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByUser", userID.String(), offset, limit)
-	if err = r.cacheRepo.Get(ctx, key, &assignments); err != nil {
-		return nil, err
+	normalized, err := normalizedPage(page)
+	if err != nil {
+		return Page[*Assignment]{}, err
 	}
 
-	if assignments != nil {
+	key := composeCacheKey(
+		model.ResourceTypeAssignment.String(),
+		"ListByUser",
+		userID.String(),
+		projectionCacheValue(proj),
+		pageTokenValue(normalized.Token),
+		normalized.Size,
+	)
+	if err = r.cacheRepo.Get(ctx, key, &assignments); err != nil {
+		return Page[*Assignment]{}, err
+	}
+
+	if assignments.Items != nil {
 		return assignments, nil
 	}
 
-	if assignments, err = r.assignmentRepo.GetByUser(ctx, userID, offset, limit); err != nil {
-		return nil, err
+	if assignments, err = r.assignmentRepo.ListByUser(ctx, userID, normalized, proj); err != nil {
+		return Page[*Assignment]{}, err
 	}
 
 	if err = r.cacheRepo.Set(ctx, key, assignments); err != nil {
-		return nil, err
+		return Page[*Assignment]{}, err
 	}
 
 	return assignments, nil
 }
 
-func (r *RedisCachedAssignmentRepository) GetByResource(ctx context.Context, resourceID model.ID, offset, limit int) ([]*Assignment, error) {
-	var assignments []*Assignment
+func (r *RedisCachedAssignmentRepository) ListByResource(ctx context.Context, resourceID model.ID, page CursorPage, proj AssignmentProjection) (Page[*Assignment], error) {
+	var assignments Page[*Assignment]
 	var err error
 
-	key := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByResource", resourceID.String(), offset, limit)
-	if err = r.cacheRepo.Get(ctx, key, &assignments); err != nil {
-		return nil, err
+	normalized, err := normalizedPage(page)
+	if err != nil {
+		return Page[*Assignment]{}, err
 	}
 
-	if assignments != nil {
+	key := composeCacheKey(
+		model.ResourceTypeAssignment.String(),
+		"ListByResource",
+		resourceID.String(),
+		projectionCacheValue(proj),
+		pageTokenValue(normalized.Token),
+		normalized.Size,
+	)
+	if err = r.cacheRepo.Get(ctx, key, &assignments); err != nil {
+		return Page[*Assignment]{}, err
+	}
+
+	if assignments.Items != nil {
 		return assignments, nil
 	}
 
-	if assignments, err = r.assignmentRepo.GetByResource(ctx, resourceID, offset, limit); err != nil {
-		return nil, err
+	if assignments, err = r.assignmentRepo.ListByResource(ctx, resourceID, normalized, proj); err != nil {
+		return Page[*Assignment]{}, err
 	}
 
 	if err = r.cacheRepo.Set(ctx, key, assignments); err != nil {
-		return nil, err
+		return Page[*Assignment]{}, err
 	}
 
 	return assignments, nil

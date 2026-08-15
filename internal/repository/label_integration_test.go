@@ -64,7 +64,7 @@ func (s *LabelRepositoryIntegrationTestSuite) TestGet() {
 	created, err := s.LabelRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 
-	label, err := s.LabelRepo.Get(context.Background(), created.ID)
+	label, err := s.LabelRepo.Get(context.Background(), created.ID, repository.LabelDetailProjection())
 	s.Require().NoError(err)
 
 	s.Assert().Equal(created.ID, label.ID)
@@ -82,21 +82,19 @@ func (s *LabelRepositoryIntegrationTestSuite) TestGetAll() {
 	_, err = s.LabelRepo.Create(context.Background(), testModel.NewCreateLabelOpts())
 	s.Require().NoError(err)
 
-	labels, err := s.LabelRepo.GetAll(context.Background(), 0, 10)
+	labels, err := s.LabelRepo.List(context.Background(), repository.CursorPage{Size: 10}, repository.LabelListProjection())
 	s.Require().NoError(err)
-	s.Assert().Len(labels, 3)
+	s.Assert().Len(labels.Items, 3)
 
-	labels, err = s.LabelRepo.GetAll(context.Background(), 1, 2)
+	labels, err = s.LabelRepo.List(context.Background(), repository.CursorPage{Size: 2}, repository.LabelListProjection())
 	s.Require().NoError(err)
-	s.Assert().Len(labels, 2)
+	s.Assert().Len(labels.Items, 2)
+	s.Assert().True(labels.PageInfo.HasMore)
 
-	labels, err = s.LabelRepo.GetAll(context.Background(), 2, 2)
+	labels, err = s.LabelRepo.List(context.Background(), repository.CursorPage{Size: 2, Token: labels.PageInfo.NextPageToken}, repository.LabelListProjection())
 	s.Require().NoError(err)
-	s.Assert().Len(labels, 1)
-
-	labels, err = s.LabelRepo.GetAll(context.Background(), 3, 2)
-	s.Require().NoError(err)
-	s.Assert().Len(labels, 0)
+	s.Assert().Len(labels.Items, 1)
+	s.Assert().False(labels.PageInfo.HasMore)
 }
 
 func (s *LabelRepositoryIntegrationTestSuite) TestUpdate() {
@@ -124,11 +122,12 @@ func (s *LabelRepositoryIntegrationTestSuite) TestAttachTo() {
 
 	s.Require().NoError(s.LabelRepo.AttachTo(context.Background(), created.ID, s.testDoc.ID))
 
-	document, err := s.DocumentRepo.Get(context.Background(), s.testDoc.ID)
+	document, err := s.DocumentRepo.Get(context.Background(), s.testDoc.ID, repository.DocumentDetailProjection())
 	s.Require().NoError(err)
 
 	s.Assert().Len(document.Labels, 1)
-	s.Assert().Equal(document.Labels[0], created.ID)
+	s.Assert().Equal(created.ID, document.Labels[0].ID)
+	s.Assert().Equal(created.Name, document.Labels[0].Name)
 }
 
 func (s *LabelRepositoryIntegrationTestSuite) TestDetachFrom() {
@@ -138,7 +137,7 @@ func (s *LabelRepositoryIntegrationTestSuite) TestDetachFrom() {
 	s.Require().NoError(s.LabelRepo.AttachTo(context.Background(), created.ID, s.testDoc.ID))
 	s.Require().NoError(s.LabelRepo.DetachFrom(context.Background(), created.ID, s.testDoc.ID))
 
-	document, err := s.DocumentRepo.Get(context.Background(), s.testDoc.ID)
+	document, err := s.DocumentRepo.Get(context.Background(), s.testDoc.ID, repository.DocumentDetailProjection())
 	s.Require().NoError(err)
 
 	s.Assert().Len(document.Labels, 0)
@@ -150,7 +149,7 @@ func (s *LabelRepositoryIntegrationTestSuite) TestDelete() {
 
 	s.Require().NoError(s.LabelRepo.Delete(context.Background(), created.ID))
 
-	_, err = s.LabelRepo.Get(context.Background(), created.ID)
+	_, err = s.LabelRepo.Get(context.Background(), created.ID, repository.LabelDetailProjection())
 	s.Assert().ErrorIs(err, repository.ErrNotFound)
 }
 
@@ -217,16 +216,16 @@ func (s *CachedLabelRepositoryIntegrationTestSuite) TestGet() {
 	created, err := s.labelRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 
-	original, err := s.LabelRepo.Get(context.Background(), created.ID)
+	original, err := s.LabelRepo.Get(context.Background(), created.ID, repository.LabelDetailProjection())
 	s.Require().NoError(err)
 
-	usingCache, err := s.labelRepo.Get(context.Background(), created.ID)
+	usingCache, err := s.labelRepo.Get(context.Background(), created.ID, repository.LabelDetailProjection())
 	s.Require().NoError(err)
 
 	s.Assert().Equal(original, usingCache)
 	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
 
-	cached, err := s.labelRepo.Get(context.Background(), created.ID)
+	cached, err := s.labelRepo.Get(context.Background(), created.ID, repository.LabelDetailProjection())
 	s.Require().NoError(err)
 	s.Assert().Equal(usingCache.ID, cached.ID)
 	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
@@ -238,10 +237,10 @@ func (s *CachedLabelRepositoryIntegrationTestSuite) TestGetAll() {
 	_, err = s.labelRepo.Create(context.Background(), testModel.NewCreateLabelOpts())
 	s.Require().NoError(err)
 
-	original, err := s.LabelRepo.GetAll(context.Background(), 0, 10)
+	original, err := s.LabelRepo.List(context.Background(), repository.CursorPage{Size: 10}, repository.LabelListProjection())
 	s.Require().NoError(err)
 
-	usingCache, err := s.labelRepo.GetAll(context.Background(), 0, 10)
+	usingCache, err := s.labelRepo.List(context.Background(), repository.CursorPage{Size: 10}, repository.LabelListProjection())
 	s.Require().NoError(err)
 
 	s.Assert().Equal(original, usingCache)
@@ -271,7 +270,7 @@ func (s *CachedLabelRepositoryIntegrationTestSuite) TestAttachTo() {
 
 	s.Require().NoError(s.labelRepo.AttachTo(context.Background(), created.ID, s.testDoc.ID))
 
-	document, err := s.DocumentRepo.Get(context.Background(), s.testDoc.ID)
+	document, err := s.DocumentRepo.Get(context.Background(), s.testDoc.ID, repository.DocumentDetailProjection())
 	s.Require().NoError(err)
 	s.Assert().Len(document.Labels, 1)
 }
@@ -283,7 +282,7 @@ func (s *CachedLabelRepositoryIntegrationTestSuite) TestDetachFrom() {
 	s.Require().NoError(s.labelRepo.AttachTo(context.Background(), created.ID, s.testDoc.ID))
 	s.Require().NoError(s.labelRepo.DetachFrom(context.Background(), created.ID, s.testDoc.ID))
 
-	document, err := s.DocumentRepo.Get(context.Background(), s.testDoc.ID)
+	document, err := s.DocumentRepo.Get(context.Background(), s.testDoc.ID, repository.DocumentDetailProjection())
 	s.Require().NoError(err)
 	s.Assert().Len(document.Labels, 0)
 }
@@ -292,13 +291,13 @@ func (s *CachedLabelRepositoryIntegrationTestSuite) TestDelete() {
 	created, err := s.labelRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 
-	_, err = s.labelRepo.Get(context.Background(), created.ID)
+	_, err = s.labelRepo.Get(context.Background(), created.ID, repository.LabelDetailProjection())
 	s.Require().NoError(err)
 	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
 
 	s.Require().NoError(s.labelRepo.Delete(context.Background(), created.ID))
 
-	_, err = s.labelRepo.Get(context.Background(), created.ID)
+	_, err = s.labelRepo.Get(context.Background(), created.ID, repository.LabelDetailProjection())
 	s.Assert().ErrorIs(err, repository.ErrNotFound)
 	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }

@@ -1,18 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { NamespacesList } from "@/components/namespaces";
-import {
-  OrganizationDangerZone,
-  OrganizationDetailInfo,
-  OrganizationMembersList,
-  OrganizationNotFound,
-} from "@/components/organizations";
-import { RolesList } from "@/components/roles";
+import { NamespacesList } from "@/components/namespaces/namespaces-list";
+import { OrganizationDangerZone } from "@/components/organizations/organization-danger-zone";
+import { OrganizationDetailInfo } from "@/components/organizations/organization-detail-info";
+import { OrganizationMembersList } from "@/components/organizations/organization-members-list";
+import { OrganizationNotFound } from "@/components/organizations/organization-not-found";
+import { RolesList } from "@/components/roles/roles-list";
 import {
   SettingsEntityDetailError,
   SettingsEntityDetailSkeleton,
 } from "@/components/settings/settings-entity-detail-state";
-import { PageHeader } from "@/components/shared/page-header";
+import { PageHeader } from "@/components/ui/page-header";
 import { useAuth } from "@/hooks/use-auth";
 import { entityBreadcrumb } from "@/lib/breadcrumb";
 import { zOrganizationStatus } from "@/lib/client/zod.gen";

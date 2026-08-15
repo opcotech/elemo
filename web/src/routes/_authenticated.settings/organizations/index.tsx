@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { OrganizationList } from "@/components/organizations";
+import { OrganizationList } from "@/components/organizations/organization-list";
 import { loadOrganizationsWithPermissions } from "@/lib/route-data";
 
 export const Route = createFileRoute("/_authenticated/settings/organizations/")(

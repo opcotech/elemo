@@ -1,31 +1,22 @@
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
-import { ScopedDocumentsList } from "@/components/documents/scoped-documents-list";
+import { NamespaceDangerZone } from "@/components/namespaces/namespace-danger-zone";
+import { NamespaceDetailInfo } from "@/components/namespaces/namespace-detail-info";
+import { NamespaceProjectsList } from "@/components/namespaces/namespace-projects-list";
 import {
-  NamespaceDangerZone,
-  NamespaceDetailInfo,
-  NamespaceProjectsList,
-} from "@/components/namespaces";
-import { OrganizationNotFound } from "@/components/organizations";
-import {
+  SettingsAccessDenied,
   SettingsEntityDetailError,
   SettingsEntityDetailSkeleton,
 } from "@/components/settings/settings-entity-detail-state";
-import { PageHeader } from "@/components/shared/page-header";
+import { SettingsNotFound } from "@/components/settings/settings-not-found";
+import { PageHeader } from "@/components/ui/page-header";
+import { collectedListQuery, cursorPageQuery } from "@/lib/api/cursor-pages";
+import { v1NamespacesProjectsGetOptions } from "@/lib/api/query-options";
+import { v1NamespacesProjectsGet } from "@/lib/api/sdk";
 import { entityBreadcrumb } from "@/lib/breadcrumb";
 import { loadNamespaceDetail } from "@/lib/route-data";
 import { isAccessDeniedRouteData, withRouteErrors } from "@/lib/route-errors";
-
-function NamespaceAccessDenied() {
-  return (
-    <div className="space-y-6">
-      <PageHeader title="Access Denied" />
-      <div className="text-muted-foreground">
-        You do not have permission to view this namespace.
-      </div>
-    </div>
-  );
-}
 
 export const Route = createFileRoute(
   "/_authenticated/settings/organizations/$organizationId/namespaces/$namespaceId/"
@@ -45,7 +36,7 @@ export const Route = createFileRoute(
   },
   pendingComponent: SettingsEntityDetailSkeleton,
   errorComponent: SettingsEntityDetailError,
-  notFoundComponent: OrganizationNotFound,
+  notFoundComponent: SettingsNotFound,
   component: NamespaceDetailPage,
 });
 
@@ -54,10 +45,28 @@ function NamespaceDetailPage() {
   const data = Route.useLoaderData();
 
   if (isAccessDeniedRouteData(data)) {
-    return <NamespaceAccessDenied />;
+    return <SettingsAccessDenied resource="namespace" />;
   }
 
   const { namespace, organization, permissions } = data;
+  const listOptions = v1NamespacesProjectsGetOptions({
+    path: { id: namespaceId },
+  });
+  const {
+    data: projectsPage,
+    isLoading,
+    error,
+  } = useQuery(
+    collectedListQuery(listOptions, async (pageToken, signal) => {
+      const { data: projectsData } = await v1NamespacesProjectsGet({
+        path: { id: namespaceId },
+        query: cursorPageQuery(pageToken),
+        signal,
+        throwOnError: true,
+      });
+      return projectsData;
+    })
+  );
 
   return (
     <div className="space-y-6">
@@ -71,19 +80,12 @@ function NamespaceDetailPage() {
       />
 
       <NamespaceProjectsList
-        projects={namespace.projects || []}
-        isLoading={false}
-        error={null}
+        projects={projectsPage?.items ?? []}
+        isLoading={isLoading}
+        error={error}
         organizationId={organizationId}
         namespaceId={namespaceId}
         namespacePermissions={permissions}
-      />
-
-      <ScopedDocumentsList
-        scope="namespace"
-        documents={namespace.documents || []}
-        isLoading={false}
-        error={null}
       />
 
       <NamespaceDangerZone

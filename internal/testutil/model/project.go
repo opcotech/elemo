@@ -26,16 +26,16 @@ func NewCreateProjectOpts(namespaceID, creatorID model.ID) repository.CreateProj
 // NewRepositoryProject creates a repository.Project for mock returns.
 func NewRepositoryProject() *repository.Project {
 	return &repository.Project{
-		ID:          model.MustNewID(model.ResourceTypeProject),
-		Key:         strings.ToUpper(pkg.GenerateRandomStringAlpha(3)),
-		Name:        pkg.GenerateRandomString(10),
-		Description: pkg.GenerateRandomString(10),
-		Logo:        imageURL,
-		Status:      model.ProjectStatusActive,
-		Teams:       make([]model.ID, 0),
-		Documents:   make([]*repository.PartialDocument, 0),
-		Issues:      make([]model.ID, 0),
-		CreatedAt:   convert.ToPointer(time.Now().UTC()),
+		ID:            model.MustNewID(model.ResourceTypeProject),
+		Key:           strings.ToUpper(pkg.GenerateRandomStringAlpha(3)),
+		Name:          pkg.GenerateRandomString(10),
+		Description:   pkg.GenerateRandomString(10),
+		Logo:          imageURL,
+		Status:        model.ProjectStatusActive,
+		Teams:         make([]model.ID, 0),
+		DocumentCount: convert.ToPointer(int64(0)),
+		IssueCount:    convert.ToPointer(int64(0)),
+		CreatedAt:     convert.ToPointer(time.Now().UTC()),
 	}
 }
 

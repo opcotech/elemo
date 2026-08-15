@@ -2,7 +2,11 @@ import type { QueryClient } from "@tanstack/react-query";
 import { notFound } from "@tanstack/react-router";
 
 import { accessibleNamespacesOptions } from "@/lib/api/accessible-namespaces";
-import { v1ProjectGetOptions } from "@/lib/api/query-options";
+import { collectListedPage, cursorPageQuery } from "@/lib/api/cursor-pages";
+import {
+  v1NamespacesProjectsGetOptions,
+  v1ProjectGetOptions,
+} from "@/lib/api/query-options";
 import { ResourceType } from "@/lib/auth/permissions";
 import { requireResourcePermission } from "@/lib/entity-context";
 import { withRouteErrors } from "@/lib/route-errors";
@@ -47,7 +51,16 @@ export async function loadProjectOperationalContext(
       namespaceId
     );
 
-    if (!namespace.projects.some((project) => project.id === projectId)) {
+    const projectsPage = await collectListedPage(async (pageToken) =>
+      queryClient.fetchQuery(
+        v1NamespacesProjectsGetOptions({
+          path: { id: namespaceId },
+          query: cursorPageQuery(pageToken),
+        })
+      )
+    );
+
+    if (!projectsPage.items.some((item) => item.id === projectId)) {
       throw notFound();
     }
 

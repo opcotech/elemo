@@ -25,7 +25,7 @@ func NewRepositoryRole() *repository.Role {
 		ID:          model.MustNewID(model.ResourceTypeRole),
 		Name:        pkg.GenerateRandomString(10),
 		Description: pkg.GenerateRandomString(10),
-		Members:     make([]model.ID, 0),
+		MemberCount: convert.ToPointer(int64(0)),
 		Permissions: make([]model.ID, 0),
 		CreatedAt:   convert.ToPointer(time.Now().UTC()),
 	}

@@ -6,8 +6,11 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/opcotech/elemo/internal/license"
+	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/log"
 	"github.com/opcotech/elemo/internal/repository"
+	"github.com/opcotech/elemo/internal/service"
 )
 
 const (
@@ -69,4 +72,38 @@ func httpErrorStruct(ctx context.Context, w http.ResponseWriter, err error, errS
 // workspace.
 func isNotFoundError(err error) bool {
 	return errors.Is(err, repository.ErrNotFound)
+}
+
+func isInvalidPageError(err error) bool {
+	return errors.Is(err, repository.ErrInvalidPageSize) || errors.Is(err, repository.ErrInvalidCursor)
+}
+
+func isIssueRelationBadRequest(err error) bool {
+	return errors.Is(err, service.ErrIssueSelfRelation) ||
+		errors.Is(err, service.ErrIssueReservedRelationKind) ||
+		errors.Is(err, model.ErrInvalidIssueRelationKind) ||
+		errors.Is(err, model.ErrInvalidID)
+}
+
+func isIssueForbidden(err error) bool {
+	return errors.Is(err, service.ErrNoPermission) ||
+		errors.Is(err, license.ErrLicenseExpired) ||
+		errors.Is(err, service.ErrQuotaExceeded)
+}
+
+// classifyServiceError maps service/repository errors to HTTP status codes.
+// Issue handlers wrap the result in generated OpenAPI response types.
+func classifyServiceError(err error) int {
+	switch {
+	case isInvalidPageError(err),
+		isIssueRelationBadRequest(err),
+		errors.Is(err, model.ErrInvalidIssueDetails):
+		return http.StatusBadRequest
+	case isIssueForbidden(err):
+		return http.StatusForbidden
+	case isNotFoundError(err):
+		return http.StatusNotFound
+	default:
+		return http.StatusInternalServerError
+	}
 }

@@ -57,24 +57,95 @@ func (s *IssueRepositoryIntegrationTestSuite) TestCreate() {
 	issue, err := s.IssueRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 	s.Assert().NotEqual(model.MustNewNilID(model.ResourceTypeIssue), issue.ID)
+	s.Assert().Equal(uint(1), issue.NumericID)
+	s.Assert().Equal(model.FormatIssueKey(s.testProject.Key, 1), issue.Key)
 	s.Assert().NotNil(issue.CreatedAt)
 	s.Assert().Nil(issue.UpdatedAt)
+	s.Require().NotNil(issue.Project)
+	s.Assert().Equal(s.testProject.ID, issue.Project.ID)
+	s.Require().NotNil(issue.ReportedBy)
+	s.Assert().Equal(s.createOpts.ReportedBy, issue.ReportedBy.ID)
+	s.Require().NotNil(issue.WatcherCount)
+	s.Assert().Equal(int64(1), *issue.WatcherCount)
+}
+
+func (s *IssueRepositoryIntegrationTestSuite) TestCreateSequentialNumericIDs() {
+	first, err := s.IssueRepo.Create(context.Background(), s.createOpts)
+	s.Require().NoError(err)
+	s.Assert().Equal(uint(1), first.NumericID)
+	s.Assert().Equal(model.FormatIssueKey(s.testProject.Key, 1), first.Key)
+
+	second, err := s.IssueRepo.Create(context.Background(), testModel.NewCreateIssueOpts(s.testProject.ID, s.testUser.ID))
+	s.Require().NoError(err)
+	s.Assert().Equal(uint(2), second.NumericID)
+	s.Assert().Equal(model.FormatIssueKey(s.testProject.Key, 2), second.Key)
+
+	third, err := s.IssueRepo.Create(context.Background(), testModel.NewCreateIssueOpts(s.testProject.ID, s.testUser.ID))
+	s.Require().NoError(err)
+	s.Assert().Equal(uint(3), third.NumericID)
+
+	otherProject, err := s.ProjectRepo.Create(context.Background(), testModel.NewCreateProjectOpts(s.testNamespace.ID, s.testUser.ID))
+	s.Require().NoError(err)
+
+	other, err := s.IssueRepo.Create(context.Background(), testModel.NewCreateIssueOpts(otherProject.ID, s.testUser.ID))
+	s.Require().NoError(err)
+	s.Assert().Equal(uint(1), other.NumericID)
+	s.Assert().Equal(model.FormatIssueKey(otherProject.Key, 1), other.Key)
 }
 
 func (s *IssueRepositoryIntegrationTestSuite) TestGet() {
 	created, err := s.IssueRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
-	issue, err := s.IssueRepo.Get(context.Background(), created.ID)
+	issue, err := s.IssueRepo.Get(context.Background(), created.ID, repository.IssueDetailProjection())
 	s.Require().NoError(err)
 	s.Assert().Equal(created.ID, issue.ID)
-	s.Assert().Equal(s.createOpts.NumericID, issue.NumericID)
+	s.Assert().Equal(uint(1), issue.NumericID)
+	s.Assert().Equal(model.FormatIssueKey(s.testProject.Key, 1), issue.Key)
 	s.Assert().Equal(s.createOpts.Kind, issue.Kind)
 	s.Assert().Equal(s.createOpts.Title, issue.Title)
 	s.Assert().Equal(s.createOpts.Description, issue.Description)
 	s.Assert().Equal(s.createOpts.Status, issue.Status)
 	s.Assert().Equal(s.createOpts.Priority, issue.Priority)
-	s.Assert().Equal(s.createOpts.ReportedBy, issue.ReportedBy)
+	s.Require().NotNil(issue.ReportedBy)
+	s.Assert().Equal(s.createOpts.ReportedBy, issue.ReportedBy.ID)
 	s.Assert().WithinDuration(*created.CreatedAt, *issue.CreatedAt, 100*time.Millisecond)
+}
+
+func (s *IssueRepositoryIntegrationTestSuite) TestGetByKey() {
+	created, err := s.IssueRepo.Create(context.Background(), s.createOpts)
+	s.Require().NoError(err)
+
+	issue, err := s.IssueRepo.GetByKey(context.Background(), s.testNamespace.ID, created.Key, repository.IssueDetailProjection())
+	s.Require().NoError(err)
+	s.Assert().Equal(created.ID, issue.ID)
+	s.Assert().Equal(created.Key, issue.Key)
+	s.Assert().Equal(created.NumericID, issue.NumericID)
+}
+
+func (s *IssueRepositoryIntegrationTestSuite) TestGetByKeyScopedToNamespace() {
+	created, err := s.IssueRepo.Create(context.Background(), s.createOpts)
+	s.Require().NoError(err)
+
+	otherNamespace, err := s.NamespaceRepo.Create(context.Background(), testModel.NewCreateNamespaceOpts(s.testUser.ID, s.testOrg.ID))
+	s.Require().NoError(err)
+	otherProjectOpts := testModel.NewCreateProjectOpts(otherNamespace.ID, s.testUser.ID)
+	otherProjectOpts.Key = s.testProject.Key
+	otherProject, err := s.ProjectRepo.Create(context.Background(), otherProjectOpts)
+	s.Require().NoError(err)
+	otherIssue, err := s.IssueRepo.Create(context.Background(), testModel.NewCreateIssueOpts(otherProject.ID, s.testUser.ID))
+	s.Require().NoError(err)
+	s.Require().Equal(created.Key, otherIssue.Key)
+
+	got, err := s.IssueRepo.GetByKey(context.Background(), s.testNamespace.ID, created.Key, repository.IssueDetailProjection())
+	s.Require().NoError(err)
+	s.Assert().Equal(created.ID, got.ID)
+
+	gotOther, err := s.IssueRepo.GetByKey(context.Background(), otherNamespace.ID, otherIssue.Key, repository.IssueDetailProjection())
+	s.Require().NoError(err)
+	s.Assert().Equal(otherIssue.ID, gotOther.ID)
+
+	_, err = s.IssueRepo.GetByKey(context.Background(), otherNamespace.ID, "ZZZZZZ-999", repository.IssueDetailProjection())
+	s.Assert().ErrorIs(err, repository.ErrNotFound)
 }
 
 func (s *IssueRepositoryIntegrationTestSuite) TestGetAllForProject() {
@@ -85,13 +156,67 @@ func (s *IssueRepositoryIntegrationTestSuite) TestGetAllForProject() {
 	_, err = s.IssueRepo.Create(context.Background(), testModel.NewCreateIssueOpts(s.testProject.ID, s.testUser.ID))
 	s.Require().NoError(err)
 
-	issues, err := s.IssueRepo.GetAllForProject(context.Background(), s.testProject.ID, 0, 10)
+	issues, err := s.IssueRepo.ListForProject(context.Background(), repository.IssueListQuery{ProjectID: s.testProject.ID, Page: repository.CursorPage{Size: 10}, Projection: repository.IssueListForProjectProjection()})
 	s.Require().NoError(err)
-	s.Assert().Len(issues, 3)
+	s.Assert().Len(issues.Items, 3)
+	for _, issue := range issues.Items {
+		s.Require().NotNil(issue.ReportedBy)
+		s.Assert().Equal(s.testUser.ID, issue.ReportedBy.ID)
+	}
 
-	issues, err = s.IssueRepo.GetAllForProject(context.Background(), s.testProject.ID, 1, 2)
+	issues, err = s.IssueRepo.ListForProject(context.Background(), repository.IssueListQuery{ProjectID: s.testProject.ID, Page: repository.CursorPage{Size: 2}, Projection: repository.IssueListForProjectProjection()})
 	s.Require().NoError(err)
-	s.Assert().Len(issues, 2)
+	s.Assert().Len(issues.Items, 2)
+}
+
+func (s *IssueRepositoryIntegrationTestSuite) TestGetAllForNamespace() {
+	_, err := s.IssueRepo.Create(context.Background(), s.createOpts)
+	s.Require().NoError(err)
+
+	otherProject, err := s.ProjectRepo.Create(context.Background(), testModel.NewCreateProjectOpts(s.testNamespace.ID, s.testUser.ID))
+	s.Require().NoError(err)
+	_, err = s.IssueRepo.Create(context.Background(), testModel.NewCreateIssueOpts(otherProject.ID, s.testUser.ID))
+	s.Require().NoError(err)
+
+	issues, err := s.IssueRepo.ListForNamespace(context.Background(), repository.IssueListForNamespaceQuery{
+		NamespaceID: s.testNamespace.ID,
+		Page:        repository.CursorPage{Size: 10},
+		Projection:  repository.IssueListForNamespaceProjection(),
+	})
+	s.Require().NoError(err)
+	s.Assert().Len(issues.Items, 2)
+
+	keys := make([]string, 0, len(issues.Items))
+	for _, issue := range issues.Items {
+		s.Require().NotNil(issue.Project)
+		keys = append(keys, issue.Key)
+	}
+	s.Assert().Contains(keys, model.FormatIssueKey(s.testProject.Key, 1))
+	s.Assert().Contains(keys, model.FormatIssueKey(otherProject.Key, 1))
+}
+
+func (s *IssueRepositoryIntegrationTestSuite) TestGetAllForUser() {
+	assigned, err := s.IssueRepo.Create(context.Background(), s.createOpts)
+	s.Require().NoError(err)
+	_, err = s.AssignmentRepo.Create(context.Background(), testModel.NewCreateAssignmentOpts(
+		s.testUser.ID,
+		assigned.ID,
+		model.AssignmentKindAssignee,
+	))
+	s.Require().NoError(err)
+
+	_, err = s.IssueRepo.Create(context.Background(), testModel.NewCreateIssueOpts(s.testProject.ID, s.testUser.ID))
+	s.Require().NoError(err)
+
+	issues, err := s.IssueRepo.ListForUser(context.Background(), repository.IssueListForUserQuery{
+		UserID:     s.testUser.ID,
+		Page:       repository.CursorPage{Size: 10},
+		Projection: repository.IssueListForUserProjection(),
+	})
+	s.Require().NoError(err)
+	s.Require().Len(issues.Items, 1)
+	s.Assert().Equal(assigned.ID, issues.Items[0].ID)
+	s.Require().NotNil(issues.Items[0].Project)
 }
 
 func (s *IssueRepositoryIntegrationTestSuite) TestGetAllForIssue() {
@@ -112,9 +237,9 @@ func (s *IssueRepositoryIntegrationTestSuite) TestGetAllForIssue() {
 	})
 	s.Require().NoError(err)
 
-	issues, err := s.IssueRepo.GetAllForIssue(context.Background(), parent.ID, 0, 10)
+	issues, err := s.IssueRepo.ListForIssue(context.Background(), repository.IssueListForIssueQuery{IssueID: parent.ID, Page: repository.CursorPage{Size: 10}, Projection: repository.IssueDetailProjection()})
 	s.Require().NoError(err)
-	s.Assert().Len(issues, 2)
+	s.Assert().Len(issues.Items, 2)
 }
 
 func (s *IssueRepositoryIntegrationTestSuite) TestAddWatcher() {
@@ -145,7 +270,8 @@ func (s *IssueRepositoryIntegrationTestSuite) TestGetWatchers() {
 func (s *IssueRepositoryIntegrationTestSuite) TestRemoveWatcher() {
 	created, err := s.IssueRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
-	s.Require().NoError(s.IssueRepo.RemoveWatcher(context.Background(), created.ID, created.ReportedBy))
+	s.Require().NotNil(created.ReportedBy)
+	s.Require().NoError(s.IssueRepo.RemoveWatcher(context.Background(), created.ID, created.ReportedBy.ID))
 	watchers, err := s.IssueRepo.GetWatchers(context.Background(), created.ID)
 	s.Require().NoError(err)
 	s.Assert().Empty(watchers)
@@ -201,7 +327,7 @@ func (s *IssueRepositoryIntegrationTestSuite) TestUpdate() {
 		Title:       optional.Some("new title"),
 		Description: optional.Some("new description"),
 		Status:      optional.Some(model.IssueStatusClosed),
-	})
+	}, repository.IssueDetailProjection())
 	s.Require().NoError(err)
 	s.Assert().Equal("new title", issue.Title)
 	s.Assert().Equal("new description", issue.Description)
@@ -213,7 +339,7 @@ func (s *IssueRepositoryIntegrationTestSuite) TestDelete() {
 	created, err := s.IssueRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 	s.Require().NoError(s.IssueRepo.Delete(context.Background(), created.ID))
-	_, err = s.IssueRepo.Get(context.Background(), created.ID)
+	_, err = s.IssueRepo.Get(context.Background(), created.ID, repository.IssueDetailProjection())
 	s.Assert().ErrorIs(err, repository.ErrNotFound)
 }
 
@@ -276,9 +402,20 @@ func (s *CachedIssueRepositoryIntegrationTestSuite) TestCreate() {
 func (s *CachedIssueRepositoryIntegrationTestSuite) TestGet() {
 	created, err := s.issueRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
-	original, err := s.IssueRepo.Get(context.Background(), created.ID)
+	original, err := s.IssueRepo.Get(context.Background(), created.ID, repository.IssueDetailProjection())
 	s.Require().NoError(err)
-	usingCache, err := s.issueRepo.Get(context.Background(), created.ID)
+	usingCache, err := s.issueRepo.Get(context.Background(), created.ID, repository.IssueDetailProjection())
+	s.Require().NoError(err)
+	s.Assert().Equal(original, usingCache)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
+}
+
+func (s *CachedIssueRepositoryIntegrationTestSuite) TestGetByKey() {
+	created, err := s.issueRepo.Create(context.Background(), s.createOpts)
+	s.Require().NoError(err)
+	original, err := s.IssueRepo.GetByKey(context.Background(), s.testNamespace.ID, created.Key, repository.IssueDetailProjection())
+	s.Require().NoError(err)
+	usingCache, err := s.issueRepo.GetByKey(context.Background(), s.testNamespace.ID, created.Key, repository.IssueDetailProjection())
 	s.Require().NoError(err)
 	s.Assert().Equal(original, usingCache)
 	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
@@ -287,9 +424,9 @@ func (s *CachedIssueRepositoryIntegrationTestSuite) TestGet() {
 func (s *CachedIssueRepositoryIntegrationTestSuite) TestGetAllForProject() {
 	_, err := s.issueRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
-	original, err := s.IssueRepo.GetAllForProject(context.Background(), s.testProject.ID, 0, 10)
+	original, err := s.IssueRepo.ListForProject(context.Background(), repository.IssueListQuery{ProjectID: s.testProject.ID, Page: repository.CursorPage{Size: 10}, Projection: repository.IssueListForProjectProjection()})
 	s.Require().NoError(err)
-	usingCache, err := s.issueRepo.GetAllForProject(context.Background(), s.testProject.ID, 0, 10)
+	usingCache, err := s.issueRepo.ListForProject(context.Background(), repository.IssueListQuery{ProjectID: s.testProject.ID, Page: repository.CursorPage{Size: 10}, Projection: repository.IssueListForProjectProjection()})
 	s.Require().NoError(err)
 	s.Assert().Equal(original, usingCache)
 	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
@@ -300,19 +437,84 @@ func (s *CachedIssueRepositoryIntegrationTestSuite) TestUpdate() {
 	s.Require().NoError(err)
 	issue, err := s.issueRepo.Update(context.Background(), created.ID, repository.UpdateIssueOpts{
 		Title: optional.Some("new title"),
-	})
+	}, repository.IssueDetailProjection())
 	s.Require().NoError(err)
 	s.Assert().Equal("new title", issue.Title)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
+}
+
+func (s *CachedIssueRepositoryIntegrationTestSuite) TestUpdateInvalidatesProjectList() {
+	created, err := s.issueRepo.Create(context.Background(), s.createOpts)
+	s.Require().NoError(err)
+
+	query := repository.IssueListQuery{
+		ProjectID:  s.testProject.ID,
+		Page:       repository.CursorPage{Size: 10},
+		Projection: repository.IssueListForProjectProjection(),
+	}
+	_, err = s.issueRepo.ListForProject(context.Background(), query)
+	s.Require().NoError(err)
+
+	_, err = s.issueRepo.Update(context.Background(), created.ID, repository.UpdateIssueOpts{
+		Status: optional.Some(model.IssueStatusDone),
+	}, repository.IssueDetailProjection())
+	s.Require().NoError(err)
+
+	page, err := s.issueRepo.ListForProject(context.Background(), query)
+	s.Require().NoError(err)
+	s.Require().Len(page.Items, 1)
+	s.Assert().Equal(model.IssueStatusDone, page.Items[0].Status)
+}
+
+func (s *CachedIssueRepositoryIntegrationTestSuite) TestGetAllForNamespace() {
+	_, err := s.issueRepo.Create(context.Background(), s.createOpts)
+	s.Require().NoError(err)
+	original, err := s.IssueRepo.ListForNamespace(context.Background(), repository.IssueListForNamespaceQuery{
+		NamespaceID: s.testNamespace.ID,
+		Page:        repository.CursorPage{Size: 10},
+		Projection:  repository.IssueListForNamespaceProjection(),
+	})
+	s.Require().NoError(err)
+	usingCache, err := s.issueRepo.ListForNamespace(context.Background(), repository.IssueListForNamespaceQuery{
+		NamespaceID: s.testNamespace.ID,
+		Page:        repository.CursorPage{Size: 10},
+		Projection:  repository.IssueListForNamespaceProjection(),
+	})
+	s.Require().NoError(err)
+	s.Assert().Equal(original, usingCache)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
+}
+
+func (s *CachedIssueRepositoryIntegrationTestSuite) TestGetAllForUser() {
+	created, err := s.issueRepo.Create(context.Background(), s.createOpts)
+	s.Require().NoError(err)
+	_, err = s.AssignmentRepo.Create(context.Background(), testModel.NewCreateAssignmentOpts(
+		s.testUser.ID,
+		created.ID,
+		model.AssignmentKindAssignee,
+	))
+	s.Require().NoError(err)
+
+	query := repository.IssueListForUserQuery{
+		UserID:     s.testUser.ID,
+		Page:       repository.CursorPage{Size: 10},
+		Projection: repository.IssueListForUserProjection(),
+	}
+	original, err := s.IssueRepo.ListForUser(context.Background(), query)
+	s.Require().NoError(err)
+	usingCache, err := s.issueRepo.ListForUser(context.Background(), query)
+	s.Require().NoError(err)
+	s.Assert().Equal(original, usingCache)
 	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
 }
 
 func (s *CachedIssueRepositoryIntegrationTestSuite) TestDelete() {
 	created, err := s.issueRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
-	_, err = s.issueRepo.Get(context.Background(), created.ID)
+	_, err = s.issueRepo.Get(context.Background(), created.ID, repository.IssueDetailProjection())
 	s.Require().NoError(err)
 	s.Require().NoError(s.issueRepo.Delete(context.Background(), created.ID))
-	_, err = s.issueRepo.Get(context.Background(), created.ID)
+	_, err = s.issueRepo.Get(context.Background(), created.ID, repository.IssueDetailProjection())
 	s.Assert().ErrorIs(err, repository.ErrNotFound)
 	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }

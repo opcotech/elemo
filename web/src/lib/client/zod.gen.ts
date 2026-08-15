@@ -43,9 +43,33 @@ export const zOrganization = z.object({
   logo: z.url().max(2000).nullable(),
   website: z.url().max(2000).nullable(),
   status: zOrganizationStatus,
-  members: z.array(z.string()),
-  teams: z.array(z.string()),
-  namespaces: z.array(z.string()),
+  member_count: z.coerce
+    .bigint()
+    .min(BigInt("-9223372036854775808"), {
+      error: "Invalid value: Expected int64 to be >= -9223372036854775808",
+    })
+    .max(BigInt("9223372036854775807"), {
+      error: "Invalid value: Expected int64 to be <= 9223372036854775807",
+    })
+    .nullish(),
+  team_count: z.coerce
+    .bigint()
+    .min(BigInt("-9223372036854775808"), {
+      error: "Invalid value: Expected int64 to be >= -9223372036854775808",
+    })
+    .max(BigInt("9223372036854775807"), {
+      error: "Invalid value: Expected int64 to be <= 9223372036854775807",
+    })
+    .nullish(),
+  namespace_count: z.coerce
+    .bigint()
+    .min(BigInt("-9223372036854775808"), {
+      error: "Invalid value: Expected int64 to be >= -9223372036854775808",
+    })
+    .max(BigInt("9223372036854775807"), {
+      error: "Invalid value: Expected int64 to be <= 9223372036854775807",
+    })
+    .nullish(),
   created_at: z.iso.datetime(),
   updated_at: z.iso.datetime().nullable(),
 });
@@ -58,17 +82,227 @@ export const zOrganization = z.object({
 export const zProjectStatus = z.enum(["active", "pending"]);
 
 /**
+ * Namespace
+ *
+ * A namespace in an organization.
+ */
+export const zNamespace = z.object({
+  id: z.string(),
+  name: z.string().min(3).max(120),
+  description: z.string().min(5).max(500).nullish(),
+  project_count: z.coerce
+    .bigint()
+    .min(BigInt("-9223372036854775808"), {
+      error: "Invalid value: Expected int64 to be >= -9223372036854775808",
+    })
+    .max(BigInt("9223372036854775807"), {
+      error: "Invalid value: Expected int64 to be <= 9223372036854775807",
+    })
+    .nullish(),
+  document_count: z.coerce
+    .bigint()
+    .min(BigInt("-9223372036854775808"), {
+      error: "Invalid value: Expected int64 to be >= -9223372036854775808",
+    })
+    .max(BigInt("9223372036854775807"), {
+      error: "Invalid value: Expected int64 to be <= 9223372036854775807",
+    })
+    .nullish(),
+  created_at: z.iso.datetime(),
+  updated_at: z.iso.datetime().nullable(),
+});
+
+/**
+ * PageInfo
+ *
+ * Cursor pagination metadata for a page of results.
+ */
+export const zPageInfo = z.object({
+  next_page_token: z.string().nullish(),
+  has_more: z.boolean(),
+  total_count: z.coerce
+    .bigint()
+    .min(BigInt("-9223372036854775808"), {
+      error: "Invalid value: Expected int64 to be >= -9223372036854775808",
+    })
+    .max(BigInt("9223372036854775807"), {
+      error: "Invalid value: Expected int64 to be <= 9223372036854775807",
+    })
+    .nullish(),
+});
+
+/**
+ * OrganizationPage
+ */
+export const zOrganizationPage = z.object({
+  items: z.array(zOrganization),
+  page_info: zPageInfo,
+});
+
+/**
+ * NamespacePage
+ */
+export const zNamespacePage = z.object({
+  items: z.array(zNamespace),
+  page_info: zPageInfo,
+});
+
+/**
+ * OrganizationMemberPage
+ */
+export const zOrganizationMemberPage = z.object({
+  items: z.array(zOrganizationMember),
+  page_info: zPageInfo,
+});
+
+/**
  * PartialProject
  *
  * A simplified project that can be used in lists.
  */
 export const zPartialProject = z.object({
   id: z.string(),
-  key: z.string().min(3).max(6),
+  key: z.string().min(2).max(6),
   name: z.string().min(3).max(120),
   description: z.string().min(10).max(500).nullish(),
   logo: z.url().max(2000).nullish(),
   status: zProjectStatus,
+});
+
+/**
+ * Project
+ *
+ * A project in a namespace.
+ */
+export const zProject = z.object({
+  id: z.string(),
+  key: z.string().min(2).max(6),
+  name: z.string().min(3).max(120),
+  description: z.string().min(10).max(500).nullish(),
+  logo: z.url().max(2000).nullish(),
+  status: zProjectStatus,
+  teams: z.array(z.string()),
+  document_count: z.coerce
+    .bigint()
+    .min(BigInt("-9223372036854775808"), {
+      error: "Invalid value: Expected int64 to be >= -9223372036854775808",
+    })
+    .max(BigInt("9223372036854775807"), {
+      error: "Invalid value: Expected int64 to be <= 9223372036854775807",
+    })
+    .nullish(),
+  issue_count: z.coerce
+    .bigint()
+    .min(BigInt("-9223372036854775808"), {
+      error: "Invalid value: Expected int64 to be >= -9223372036854775808",
+    })
+    .max(BigInt("9223372036854775807"), {
+      error: "Invalid value: Expected int64 to be <= 9223372036854775807",
+    })
+    .nullish(),
+  created_at: z.iso.datetime(),
+  updated_at: z.iso.datetime().nullable(),
+});
+
+/**
+ * ProjectPage
+ */
+export const zProjectPage = z.object({
+  items: z.array(zProject),
+  page_info: zPageInfo,
+});
+
+/**
+ * IssueKind
+ *
+ * Kind of the issue.
+ */
+export const zIssueKind = z.enum(["epic", "story", "task", "bug"]);
+
+/**
+ * IssueStatus
+ *
+ * Status of the issue.
+ */
+export const zIssueStatus = z.enum([
+  "open",
+  "in progress",
+  "blocked",
+  "review",
+  "done",
+  "closed",
+]);
+
+/**
+ * IssuePriority
+ *
+ * Priority of the issue.
+ */
+export const zIssuePriority = z.enum([
+  "lowest",
+  "low",
+  "normal",
+  "high",
+  "highest",
+]);
+
+/**
+ * IssueResolution
+ *
+ * Resolution of the issue.
+ */
+export const zIssueResolution = z.enum([
+  "none",
+  "fixed",
+  "duplicate",
+  "won't fix",
+  "invalid",
+  "incomplete",
+  "cannot reproduce",
+]);
+
+/**
+ * IssueRelationKind
+ *
+ * Kind of relation between two issues.
+ */
+export const zIssueRelationKind = z.enum([
+  "blocked by",
+  "blocks",
+  "depends on",
+  "duplicated by",
+  "duplicates",
+  "related to",
+  "subtask of",
+]);
+
+/**
+ * IssueRelationDirection
+ *
+ * Whether the relation edge leaves (outgoing) or enters (incoming) the issue in the URL.
+ */
+export const zIssueRelationDirection = z.enum(["outgoing", "incoming"]);
+
+/**
+ * IssueLink
+ *
+ * An external URL attached to an issue, with a visible label.
+ */
+export const zIssueLink = z.object({
+  url: z.url().max(2000),
+  label: z.string().min(1).max(120),
+});
+
+/**
+ * PartialUser
+ *
+ * A simplified user used on issue list and detail responses.
+ */
+export const zPartialUser = z.object({
+  id: z.string(),
+  first_name: z.string().min(1).max(50),
+  last_name: z.string().min(1).max(50),
+  picture: z.url().max(2000).nullish(),
 });
 
 /**
@@ -80,42 +314,176 @@ export const zPartialDocument = z.object({
   id: z.string(),
   name: z.string().min(3).max(120),
   excerpt: z.string().min(10).max(500).nullish(),
-  created_by: z.string(),
+  created_by: zPartialUser,
   created_at: z.iso.datetime().nullish(),
 });
 
 /**
- * Namespace
- *
- * A namespace in an organization.
+ * PartialDocumentPage
  */
-export const zNamespace = z.object({
+export const zPartialDocumentPage = z.object({
+  items: z.array(zPartialDocument),
+  page_info: zPageInfo,
+});
+
+/**
+ * PartialNamespace
+ *
+ * A simplified namespace used on issue list and detail responses.
+ */
+export const zPartialNamespace = z.object({
   id: z.string(),
   name: z.string().min(3).max(120),
-  description: z.string().min(5).max(500).nullish(),
-  projects: z.array(zPartialProject),
-  documents: z.array(zPartialDocument),
+});
+
+/**
+ * PartialLabel
+ *
+ * A simplified label used on issue list and detail responses.
+ */
+export const zPartialLabel = z.object({
+  id: z.string(),
+  name: z.string().min(3).max(120),
+});
+
+/**
+ * PartialIssue
+ *
+ * A simplified issue that can be used in lists.
+ */
+export const zPartialIssue = z.object({
+  id: z.string(),
+  key: z.string().regex(/^[A-Z]{2,6}-[1-9][0-9]*$/),
+  numeric_id: z.int().gte(1),
+  parent: z.lazy((): any => zPartialIssue).nullish(),
+  kind: zIssueKind,
+  title: z.string().min(3).max(120),
+  description: z.string().min(3).nullish(),
+  status: zIssueStatus,
+  priority: zIssuePriority,
+  reported_by: zPartialUser.nullish(),
+  assignees: z.array(zPartialUser),
+  reviewers: z.array(zPartialUser),
+  labels: z.array(zPartialLabel),
+  project: zPartialProject.nullish(),
+  namespace: zPartialNamespace.nullish(),
+  due_date: z.iso.datetime().nullish(),
+  start_date: z.iso.datetime().nullish(),
+});
+
+/**
+ * PartialIssuePage
+ */
+export const zPartialIssuePage = z.object({
+  items: z.array(zPartialIssue),
+  page_info: zPageInfo,
+});
+
+/**
+ * Issue
+ *
+ * An issue in a project.
+ */
+export const zIssue = z.object({
+  id: z.string(),
+  key: z.string().regex(/^[A-Z]{2,6}-[1-9][0-9]*$/),
+  numeric_id: z.int().gte(1),
+  parent: zPartialIssue.nullish(),
+  kind: zIssueKind,
+  title: z.string().min(3).max(120),
+  description: z.string().min(3).nullish(),
+  status: zIssueStatus,
+  priority: zIssuePriority,
+  resolution: zIssueResolution,
+  reported_by: zPartialUser,
+  assignees: z.array(zPartialUser),
+  reviewers: z.array(zPartialUser),
+  labels: z.array(zPartialLabel),
+  project: zPartialProject.nullish(),
+  namespace: zPartialNamespace.nullish(),
+  comment_count: z.coerce
+    .bigint()
+    .min(BigInt("-9223372036854775808"), {
+      error: "Invalid value: Expected int64 to be >= -9223372036854775808",
+    })
+    .max(BigInt("9223372036854775807"), {
+      error: "Invalid value: Expected int64 to be <= 9223372036854775807",
+    })
+    .nullish(),
+  attachment_count: z.coerce
+    .bigint()
+    .min(BigInt("-9223372036854775808"), {
+      error: "Invalid value: Expected int64 to be >= -9223372036854775808",
+    })
+    .max(BigInt("9223372036854775807"), {
+      error: "Invalid value: Expected int64 to be <= 9223372036854775807",
+    })
+    .nullish(),
+  watcher_count: z.coerce
+    .bigint()
+    .min(BigInt("-9223372036854775808"), {
+      error: "Invalid value: Expected int64 to be >= -9223372036854775808",
+    })
+    .max(BigInt("9223372036854775807"), {
+      error: "Invalid value: Expected int64 to be <= 9223372036854775807",
+    })
+    .nullish(),
+  relation_count: z.coerce
+    .bigint()
+    .min(BigInt("-9223372036854775808"), {
+      error: "Invalid value: Expected int64 to be >= -9223372036854775808",
+    })
+    .max(BigInt("9223372036854775807"), {
+      error: "Invalid value: Expected int64 to be <= 9223372036854775807",
+    })
+    .nullish(),
+  links: z.array(zIssueLink),
+  due_date: z.iso.datetime().nullish(),
+  start_date: z.iso.datetime().nullish(),
   created_at: z.iso.datetime(),
   updated_at: z.iso.datetime().nullable(),
 });
 
 /**
- * Project
+ * IssueRelation
  *
- * A project in a namespace.
+ * A directed relation between the issue in the URL and another issue.
  */
-export const zProject = z.object({
+export const zIssueRelation = z.object({
   id: z.string(),
-  key: z.string().min(3).max(6),
+  kind: zIssueRelationKind,
+  direction: zIssueRelationDirection,
+  related: zPartialIssue,
+  created_at: z.iso.datetime(),
+});
+
+/**
+ * IssueRelationPage
+ */
+export const zIssueRelationPage = z.object({
+  items: z.array(zIssueRelation),
+  page_info: zPageInfo,
+});
+
+/**
+ * Label
+ *
+ * A label that can be attached to resources.
+ */
+export const zLabel = z.object({
+  id: z.string(),
   name: z.string().min(3).max(120),
-  description: z.string().min(10).max(500).nullish(),
-  logo: z.url().max(2000).nullish(),
-  status: zProjectStatus,
-  teams: z.array(z.string()),
-  documents: z.array(zPartialDocument),
-  issues: z.array(z.string()),
+  description: z.string().min(5).max(500).nullish(),
   created_at: z.iso.datetime(),
   updated_at: z.iso.datetime().nullable(),
+});
+
+/**
+ * LabelPage
+ */
+export const zLabelPage = z.object({
+  items: z.array(zLabel),
+  page_info: zPageInfo,
 });
 
 /**
@@ -147,6 +515,14 @@ export const zTodo = z.object({
 });
 
 /**
+ * TodoPage
+ */
+export const zTodoPage = z.object({
+  items: z.array(zTodo),
+  page_info: zPageInfo,
+});
+
+/**
  * Notification
  *
  * An in-app notification sent to the user.
@@ -159,6 +535,14 @@ export const zNotification = z.object({
   read: z.boolean().default(false),
   created_at: z.iso.datetime(),
   updated_at: z.iso.datetime().nullable(),
+});
+
+/**
+ * NotificationPage
+ */
+export const zNotificationPage = z.object({
+  items: z.array(zNotification),
+  page_info: zPageInfo,
 });
 
 /**
@@ -439,8 +823,25 @@ export const zUser = z.object({
   links: z.array(z.url().max(2000)).nullable(),
   languages: z.array(zLanguage),
   status: zUserStatus,
+  document_count: z.coerce
+    .bigint()
+    .min(BigInt("-9223372036854775808"), {
+      error: "Invalid value: Expected int64 to be >= -9223372036854775808",
+    })
+    .max(BigInt("9223372036854775807"), {
+      error: "Invalid value: Expected int64 to be <= 9223372036854775807",
+    })
+    .nullish(),
   created_at: z.iso.datetime(),
   updated_at: z.iso.datetime().nullable(),
+});
+
+/**
+ * UserPage
+ */
+export const zUserPage = z.object({
+  items: z.array(zUser),
+  page_info: zPageInfo,
 });
 
 /**
@@ -480,10 +881,26 @@ export const zRole = z.object({
   id: z.string(),
   name: z.string().min(3).max(120),
   description: z.string().min(5).max(500).nullish(),
-  members: z.array(z.string()),
+  member_count: z.coerce
+    .bigint()
+    .min(BigInt("-9223372036854775808"), {
+      error: "Invalid value: Expected int64 to be >= -9223372036854775808",
+    })
+    .max(BigInt("9223372036854775807"), {
+      error: "Invalid value: Expected int64 to be <= 9223372036854775807",
+    })
+    .nullish(),
   permissions: z.array(z.string()),
   created_at: z.iso.datetime(),
   updated_at: z.iso.datetime().nullable(),
+});
+
+/**
+ * RolePage
+ */
+export const zRolePage = z.object({
+  items: z.array(zRole),
+  page_info: zPageInfo,
 });
 
 /**
@@ -508,19 +925,43 @@ export const zResourceType = z.enum([
 ]);
 
 /**
- * Number of resources to skip.
+ * Deprecated. Use page_token/page_size instead.
+ *
+ * @deprecated
  */
 export const zOffset = z.int().gte(0).default(0);
 
 /**
- * Number of resources to return.
+ * Deprecated. Use page_size instead.
+ *
+ * @deprecated
  */
 export const zLimit = z.int().gte(1).lte(1000).default(100);
+
+/**
+ * Maximum number of items to return.
+ */
+export const zPageSize = z.int().gte(1).lte(1000).default(100);
+
+/**
+ * Opaque continuation token from a previous page_info.next_page_token.
+ */
+export const zPageToken = z.string();
 
 /**
  * ID of the resource.
  */
 export const zId = z.string();
+
+/**
+ * ID of the issue relation.
+ */
+export const zRelationId = z.string();
+
+/**
+ * Composite issue key built from the owner project key and numeric ID.
+ */
+export const zIssueKey = z.string().regex(/^[A-Z]{2,6}-[1-9][0-9]*$/);
 
 /**
  * ID of the resource combined with its resource type.
@@ -646,7 +1087,7 @@ export const zNamespacePatch = z.object({
 });
 
 export const zProjectCreate = z.object({
-  key: z.string().min(3).max(6),
+  key: z.string().min(2).max(6),
   name: z.string().min(3).max(120),
   description: z.string().min(10).max(500).nullish(),
   logo: z.url().max(2000).nullish(),
@@ -654,11 +1095,49 @@ export const zProjectCreate = z.object({
 });
 
 export const zProjectPatch = z.object({
-  key: z.string().min(3).max(6).optional(),
+  key: z.string().min(2).max(6).optional(),
   name: z.string().min(3).max(120).optional(),
   description: z.string().min(10).max(500).nullish(),
   logo: z.url().max(2000).nullish(),
   status: zProjectStatus.optional(),
+});
+
+export const zIssueCreate = z.object({
+  parent: z.string().nullish(),
+  kind: zIssueKind,
+  title: z.string().min(3).max(120),
+  description: z.string().min(3).nullish(),
+  status: zIssueStatus.optional(),
+  priority: zIssuePriority.optional(),
+  resolution: zIssueResolution.optional(),
+  links: z.array(zIssueLink).optional(),
+  due_date: z.iso.datetime().nullish(),
+  start_date: z.iso.datetime().nullish(),
+});
+
+export const zIssuePatch = z.object({
+  kind: zIssueKind.optional(),
+  title: z.string().min(3).max(120).optional(),
+  description: z.string().min(3).nullish(),
+  status: zIssueStatus.optional(),
+  priority: zIssuePriority.optional(),
+  resolution: zIssueResolution.optional(),
+  links: z.array(zIssueLink).optional(),
+  due_date: z.iso.datetime().nullish(),
+  assignees: z.array(z.string()).optional(),
+  reviewers: z.array(z.string()).optional(),
+  labels: z.array(z.string()).optional(),
+  start_date: z.iso.datetime().nullish(),
+  parent: z.string().nullish(),
+});
+
+export const zIssueRelationCreate = z.object({
+  related_id: z.string(),
+  kind: zIssueRelationKind,
+});
+
+export const zIssueRelationPatch = z.object({
+  kind: zIssueRelationKind,
 });
 
 export const zPermissionCreate = z.object({
@@ -693,14 +1172,14 @@ export const zRolePermissionCreate = z.object({
 });
 
 export const zV1UsersGetQuery = z.object({
-  offset: z.int().gte(0).optional().default(0),
-  limit: z.int().gte(1).lte(1000).optional().default(100),
+  page_size: z.int().gte(1).lte(1000).optional().default(100),
+  page_token: z.string().optional(),
 });
 
 /**
  * OK
  */
-export const zV1UsersGetResponse = z.array(zUser);
+export const zV1UsersGetResponse = zUserPage;
 
 export const zV1UsersCreateBody = zUserCreate;
 
@@ -755,16 +1234,40 @@ export const zV1UserUpdatePath = z.object({
  */
 export const zV1UserUpdateResponse = zUser;
 
+export const zV1UsersIssuesGetPath = z.object({
+  id: z.string(),
+});
+
+export const zV1UsersIssuesGetQuery = z.object({
+  page_size: z.int().gte(1).lte(1000).optional().default(100),
+  page_token: z.string().optional(),
+});
+
+/**
+ * OK
+ */
+export const zV1UsersIssuesGetResponse = zPartialIssuePage;
+
+export const zV1LabelsGetQuery = z.object({
+  page_size: z.int().gte(1).lte(1000).optional().default(100),
+  page_token: z.string().optional(),
+});
+
+/**
+ * OK
+ */
+export const zV1LabelsGetResponse = zLabelPage;
+
 export const zV1TodosGetQuery = z.object({
-  offset: z.int().gte(0).optional().default(0),
-  limit: z.int().gte(1).lte(1000).optional().default(100),
+  page_size: z.int().gte(1).lte(1000).optional().default(100),
+  page_token: z.string().optional(),
   completed: z.boolean().optional(),
 });
 
 /**
  * OK
  */
-export const zV1TodosGetResponse = z.array(zTodo);
+export const zV1TodosGetResponse = zTodoPage;
 
 export const zV1TodosCreateBody = zTodoCreate;
 
@@ -805,14 +1308,14 @@ export const zV1TodoUpdatePath = z.object({
 export const zV1TodoUpdateResponse = zTodo;
 
 export const zV1NotificationsGetQuery = z.object({
-  offset: z.int().gte(0).optional().default(0),
-  limit: z.int().gte(1).lte(1000).optional().default(100),
+  page_size: z.int().gte(1).lte(1000).optional().default(100),
+  page_token: z.string().optional(),
 });
 
 /**
  * OK
  */
-export const zV1NotificationsGetResponse = z.array(zNotification);
+export const zV1NotificationsGetResponse = zNotificationPage;
 
 export const zV1NotificationDeletePath = z.object({
   id: z.string(),
@@ -844,14 +1347,14 @@ export const zV1NotificationUpdatePath = z.object({
 export const zV1NotificationUpdateResponse = zNotification;
 
 export const zV1OrganizationsGetQuery = z.object({
-  offset: z.int().gte(0).optional().default(0),
-  limit: z.int().gte(1).lte(1000).optional().default(100),
+  page_size: z.int().gte(1).lte(1000).optional().default(100),
+  page_token: z.string().optional(),
 });
 
 /**
  * OK
  */
-export const zV1OrganizationsGetResponse = z.array(zOrganization);
+export const zV1OrganizationsGetResponse = zOrganizationPage;
 
 export const zV1OrganizationsCreateBody = zOrganizationCreate;
 
@@ -899,10 +1402,15 @@ export const zV1OrganizationMembersGetPath = z.object({
   id: z.string(),
 });
 
+export const zV1OrganizationMembersGetQuery = z.object({
+  page_size: z.int().gte(1).lte(1000).optional().default(100),
+  page_token: z.string().optional(),
+});
+
 /**
  * OK
  */
-export const zV1OrganizationMembersGetResponse = z.array(zOrganizationMember);
+export const zV1OrganizationMembersGetResponse = zOrganizationMemberPage;
 
 export const zV1OrganizationMembersAddBody = z.object({
   user_id: z.string(),
@@ -974,14 +1482,14 @@ export const zV1OrganizationRolesGetPath = z.object({
 });
 
 export const zV1OrganizationRolesGetQuery = z.object({
-  offset: z.int().gte(0).optional().default(0),
-  limit: z.int().gte(1).lte(1000).optional().default(100),
+  page_size: z.int().gte(1).lte(1000).optional().default(100),
+  page_token: z.string().optional(),
 });
 
 /**
  * OK
  */
-export const zV1OrganizationRolesGetResponse = z.array(zRole);
+export const zV1OrganizationRolesGetResponse = zRolePage;
 
 export const zV1OrganizationRolesCreateBody = zRoleCreate;
 
@@ -1033,10 +1541,15 @@ export const zV1OrganizationRoleMembersGetPath = z.object({
   role_id: z.string(),
 });
 
+export const zV1OrganizationRoleMembersGetQuery = z.object({
+  page_size: z.int().gte(1).lte(1000).optional().default(100),
+  page_token: z.string().optional(),
+});
+
 /**
  * OK
  */
-export const zV1OrganizationRoleMembersGetResponse = z.array(zUser);
+export const zV1OrganizationRoleMembersGetResponse = zUserPage;
 
 export const zV1OrganizationRoleMembersAddBody = z.object({
   user_id: z.string(),
@@ -1105,14 +1618,14 @@ export const zV1OrganizationsNamespacesGetPath = z.object({
 });
 
 export const zV1OrganizationsNamespacesGetQuery = z.object({
-  offset: z.int().gte(0).optional().default(0),
-  limit: z.int().gte(1).lte(1000).optional().default(100),
+  page_size: z.int().gte(1).lte(1000).optional().default(100),
+  page_token: z.string().optional(),
 });
 
 /**
  * OK
  */
-export const zV1OrganizationsNamespacesGetResponse = z.array(zNamespace);
+export const zV1OrganizationsNamespacesGetResponse = zNamespacePage;
 
 export const zV1OrganizationsNamespacesCreateBody = zNamespaceCreate;
 
@@ -1161,14 +1674,14 @@ export const zV1NamespacesProjectsGetPath = z.object({
 });
 
 export const zV1NamespacesProjectsGetQuery = z.object({
-  offset: z.int().gte(0).optional().default(0),
-  limit: z.int().gte(1).lte(1000).optional().default(100),
+  page_size: z.int().gte(1).lte(1000).optional().default(100),
+  page_token: z.string().optional(),
 });
 
 /**
  * OK
  */
-export const zV1NamespacesProjectsGetResponse = z.array(zProject);
+export const zV1NamespacesProjectsGetResponse = zProjectPage;
 
 export const zV1NamespacesProjectsCreateBody = zProjectCreate;
 
@@ -1182,6 +1695,44 @@ export const zV1NamespacesProjectsCreatePath = z.object({
 export const zV1NamespacesProjectsCreateResponse = z.object({
   id: z.string(),
 });
+
+export const zV1NamespacesDocumentsGetPath = z.object({
+  id: z.string(),
+});
+
+export const zV1NamespacesDocumentsGetQuery = z.object({
+  page_size: z.int().gte(1).lte(1000).optional().default(100),
+  page_token: z.string().optional(),
+});
+
+/**
+ * OK
+ */
+export const zV1NamespacesDocumentsGetResponse = zPartialDocumentPage;
+
+export const zV1NamespacesIssuesGetPath = z.object({
+  id: z.string(),
+});
+
+export const zV1NamespacesIssuesGetQuery = z.object({
+  page_size: z.int().gte(1).lte(1000).optional().default(100),
+  page_token: z.string().optional(),
+});
+
+/**
+ * OK
+ */
+export const zV1NamespacesIssuesGetResponse = zPartialIssuePage;
+
+export const zV1NamespacesIssuesKeyGetPath = z.object({
+  id: z.string(),
+  key: z.string().regex(/^[A-Z]{2,6}-[1-9][0-9]*$/),
+});
+
+/**
+ * OK
+ */
+export const zV1NamespacesIssuesKeyGetResponse = zIssue;
 
 export const zV1ProjectDeletePath = z.object({
   id: z.string(),
@@ -1211,6 +1762,121 @@ export const zV1ProjectUpdatePath = z.object({
  * OK
  */
 export const zV1ProjectUpdateResponse = zProject;
+
+export const zV1ProjectsIssuesGetPath = z.object({
+  id: z.string(),
+});
+
+export const zV1ProjectsIssuesGetQuery = z.object({
+  page_size: z.int().gte(1).lte(1000).optional().default(100),
+  page_token: z.string().optional(),
+});
+
+/**
+ * OK
+ */
+export const zV1ProjectsIssuesGetResponse = zPartialIssuePage;
+
+export const zV1ProjectsIssuesCreateBody = zIssueCreate;
+
+export const zV1ProjectsIssuesCreatePath = z.object({
+  id: z.string(),
+});
+
+/**
+ * Created
+ */
+export const zV1ProjectsIssuesCreateResponse = zIssue;
+
+export const zV1ProjectsDocumentsGetPath = z.object({
+  id: z.string(),
+});
+
+export const zV1ProjectsDocumentsGetQuery = z.object({
+  page_size: z.int().gte(1).lte(1000).optional().default(100),
+  page_token: z.string().optional(),
+});
+
+/**
+ * OK
+ */
+export const zV1ProjectsDocumentsGetResponse = zPartialDocumentPage;
+
+export const zV1IssueDeletePath = z.object({
+  id: z.string(),
+});
+
+/**
+ * No Content
+ */
+export const zV1IssueDeleteResponse = z.void();
+
+export const zV1IssueGetPath = z.object({
+  id: z.string(),
+});
+
+/**
+ * OK
+ */
+export const zV1IssueGetResponse = zIssue;
+
+export const zV1IssueUpdateBody = zIssuePatch;
+
+export const zV1IssueUpdatePath = z.object({
+  id: z.string(),
+});
+
+/**
+ * OK
+ */
+export const zV1IssueUpdateResponse = zIssue;
+
+export const zV1IssueRelationsGetPath = z.object({
+  id: z.string(),
+});
+
+export const zV1IssueRelationsGetQuery = z.object({
+  page_size: z.int().gte(1).lte(1000).optional().default(100),
+  page_token: z.string().optional(),
+});
+
+/**
+ * OK
+ */
+export const zV1IssueRelationsGetResponse = zIssueRelationPage;
+
+export const zV1IssueRelationsCreateBody = zIssueRelationCreate;
+
+export const zV1IssueRelationsCreatePath = z.object({
+  id: z.string(),
+});
+
+/**
+ * Created
+ */
+export const zV1IssueRelationsCreateResponse = zIssueRelation;
+
+export const zV1IssueRelationDeletePath = z.object({
+  id: z.string(),
+  relation_id: z.string(),
+});
+
+/**
+ * No Content
+ */
+export const zV1IssueRelationDeleteResponse = z.void();
+
+export const zV1IssueRelationUpdateBody = zIssueRelationPatch;
+
+export const zV1IssueRelationUpdatePath = z.object({
+  id: z.string(),
+  relation_id: z.string(),
+});
+
+/**
+ * OK
+ */
+export const zV1IssueRelationUpdateResponse = zIssueRelation;
 
 export const zV1PermissionsCreateBody = zPermissionCreate;
 

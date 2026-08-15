@@ -2,24 +2,15 @@ import type { Page } from "@playwright/test";
 
 import { BaseComponent } from "../components/base";
 import { navigateAndWait, waitForElementVisible } from "../helpers";
-import {
-  ProjectDangerZoneSection,
-  ProjectDocumentsSection,
-  ProjectInfoSection,
-  ProjectIssuesSection,
-} from "../sections";
+import { ProjectDangerZoneSection, ProjectInfoSection } from "../sections";
 
 export class SettingsOrganizationProjectDetailsPage extends BaseComponent {
   public readonly projectInfo: ProjectInfoSection;
-  public readonly documents: ProjectDocumentsSection;
-  public readonly issues: ProjectIssuesSection;
   public readonly dangerZone: ProjectDangerZoneSection;
 
   constructor(page: Page) {
     super(page);
     this.projectInfo = new ProjectInfoSection(page);
-    this.documents = new ProjectDocumentsSection(page);
-    this.issues = new ProjectIssuesSection(page);
     this.dangerZone = new ProjectDangerZoneSection(page);
   }
 

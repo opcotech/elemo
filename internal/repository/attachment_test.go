@@ -32,7 +32,7 @@ func TestCachedAttachmentRepository_Create(t *testing.T) {
 			name: "add new attachment",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, opts CreateAttachmentOpts) *redisBaseRepository {
-					belongsToKey := composeCacheKey(model.ResourceTypeAttachment.String(), "GetAllBelongsTo", opts.BelongsTo.String(), "*")
+					belongsToKey := composeCacheKey(model.ResourceTypeAttachment.String(), "ListBelongsTo", opts.BelongsTo.String(), "*", "*")
 					issuesKey := composeCacheKey(model.ResourceTypeIssue.String(), "*")
 					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
 
@@ -93,7 +93,7 @@ func TestCachedAttachmentRepository_Create(t *testing.T) {
 			name: "add new attachment with error",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, opts CreateAttachmentOpts) *redisBaseRepository {
-					belongsToKey := composeCacheKey(model.ResourceTypeAttachment.String(), "GetAllBelongsTo", opts.BelongsTo.String(), "*")
+					belongsToKey := composeCacheKey(model.ResourceTypeAttachment.String(), "ListBelongsTo", opts.BelongsTo.String(), "*", "*")
 					issuesKey := composeCacheKey(model.ResourceTypeIssue.String(), "*")
 					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
 
@@ -155,7 +155,7 @@ func TestCachedAttachmentRepository_Create(t *testing.T) {
 			name: "add new attachment belongs to cache delete error",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, opts CreateAttachmentOpts) *redisBaseRepository {
-					belongsToKey := composeCacheKey(model.ResourceTypeAttachment.String(), "GetAllBelongsTo", opts.BelongsTo.String(), "*")
+					belongsToKey := composeCacheKey(model.ResourceTypeAttachment.String(), "ListBelongsTo", opts.BelongsTo.String(), "*", "*")
 
 					belongsToKeyResult := new(redis.StringSliceCmd)
 					belongsToKeyResult.SetVal([]string{belongsToKey})
@@ -203,7 +203,7 @@ func TestCachedAttachmentRepository_Create(t *testing.T) {
 			name: "add new attachment cross cache delete error",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, opts CreateAttachmentOpts) *redisBaseRepository {
-					belongsToKey := composeCacheKey(model.ResourceTypeAttachment.String(), "GetAllBelongsTo", opts.BelongsTo.String(), "*")
+					belongsToKey := composeCacheKey(model.ResourceTypeAttachment.String(), "ListBelongsTo", opts.BelongsTo.String(), "*", "*")
 					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
 
 					belongsToKeyResult := new(redis.StringSliceCmd)
@@ -289,7 +289,7 @@ func TestCachedAttachmentRepository_Get(t *testing.T) {
 			name: "get uncached attachment",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, attachment *Attachment) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeAttachment.String(), id.String())
+					key := composeCacheKey(model.ResourceTypeAttachment.String(), "Get", id.String(), projectionCacheValue(AttachmentDetailProjection()))
 
 					db, err := NewRedisDatabase(
 						WithRedisClient(mock.NewUniversalClient(ctrl)),
@@ -320,7 +320,7 @@ func TestCachedAttachmentRepository_Get(t *testing.T) {
 				},
 				attachmentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, attachment *Attachment) AttachmentRepository {
 					repo := NewMockAttachmentRepository(ctrl)
-					repo.EXPECT().Get(ctx, id).Return(attachment, nil)
+					repo.EXPECT().Get(ctx, id, AttachmentDetailProjection()).Return(attachment, nil)
 					return repo
 				},
 			},
@@ -341,7 +341,7 @@ func TestCachedAttachmentRepository_Get(t *testing.T) {
 			name: "get cached attachment",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, attachment *Attachment) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeAttachment.String(), id.String())
+					key := composeCacheKey(model.ResourceTypeAttachment.String(), "Get", id.String(), projectionCacheValue(AttachmentDetailProjection()))
 
 					db, err := NewRedisDatabase(
 						WithRedisClient(mock.NewUniversalClient(ctrl)),
@@ -389,7 +389,7 @@ func TestCachedAttachmentRepository_Get(t *testing.T) {
 			name: "get uncached attachment error",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *Attachment) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeAttachment.String(), id.String())
+					key := composeCacheKey(model.ResourceTypeAttachment.String(), "Get", id.String(), projectionCacheValue(AttachmentDetailProjection()))
 
 					db, err := NewRedisDatabase(
 						WithRedisClient(mock.NewUniversalClient(ctrl)),
@@ -414,7 +414,7 @@ func TestCachedAttachmentRepository_Get(t *testing.T) {
 				},
 				attachmentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *Attachment) AttachmentRepository {
 					repo := NewMockAttachmentRepository(ctrl)
-					repo.EXPECT().Get(ctx, id).Return(nil, ErrNotFound)
+					repo.EXPECT().Get(ctx, id, AttachmentDetailProjection()).Return(nil, ErrNotFound)
 					return repo
 				},
 			},
@@ -428,7 +428,7 @@ func TestCachedAttachmentRepository_Get(t *testing.T) {
 			name: "get cached attachment error",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *Attachment) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeAttachment.String(), id.String())
+					key := composeCacheKey(model.ResourceTypeAttachment.String(), "Get", id.String(), projectionCacheValue(AttachmentDetailProjection()))
 
 					db, err := NewRedisDatabase(
 						WithRedisClient(mock.NewUniversalClient(ctrl)),
@@ -465,7 +465,7 @@ func TestCachedAttachmentRepository_Get(t *testing.T) {
 			name: "get uncached attachment cache set error",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, attachment *Attachment) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeAttachment.String(), id.String())
+					key := composeCacheKey(model.ResourceTypeAttachment.String(), "Get", id.String(), projectionCacheValue(AttachmentDetailProjection()))
 
 					db, err := NewRedisDatabase(
 						WithRedisClient(mock.NewUniversalClient(ctrl)),
@@ -496,7 +496,7 @@ func TestCachedAttachmentRepository_Get(t *testing.T) {
 				},
 				attachmentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, attachment *Attachment) AttachmentRepository {
 					repo := NewMockAttachmentRepository(ctrl)
-					repo.EXPECT().Get(ctx, id).Return(attachment, nil)
+					repo.EXPECT().Get(ctx, id, AttachmentDetailProjection()).Return(attachment, nil)
 					return repo
 				},
 			},
@@ -521,17 +521,17 @@ func TestCachedAttachmentRepository_Get(t *testing.T) {
 				cacheRepo:      tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, want),
 				attachmentRepo: tt.fields.attachmentRepo(ctrl, tt.args.ctx, tt.args.id, want),
 			}
-			got, err := r.Get(tt.args.ctx, tt.args.id)
+			got, err := r.Get(tt.args.ctx, tt.args.id, AttachmentDetailProjection())
 			assert.ErrorIs(t, err, tt.wantErr)
 			assert.Equal(t, want, got)
 		})
 	}
 }
 
-func TestCachedAttachmentRepository_GetAllBelongsTo(t *testing.T) {
+func TestCachedAttachmentRepository_ListBelongsTo(t *testing.T) {
 	type fields struct {
-		cacheRepo      func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, attachments []*Attachment) *redisBaseRepository
-		attachmentRepo func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, attachments []*Attachment) AttachmentRepository
+		cacheRepo      func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, _, limit int, attachments []*Attachment) *redisBaseRepository
+		attachmentRepo func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, _, limit int, attachments []*Attachment) AttachmentRepository
 	}
 	type args struct {
 		ctx       context.Context
@@ -549,8 +549,8 @@ func TestCachedAttachmentRepository_GetAllBelongsTo(t *testing.T) {
 		{
 			name: "get uncached attachments",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, attachments []*Attachment) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeAttachment.String(), "GetAllBelongsTo", belongsTo.String(), offset, limit)
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, _, limit int, attachments []*Attachment) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeAttachment.String(), "ListBelongsTo", belongsTo.String(), projectionCacheValue(AttachmentListProjection()), "", limit)
 
 					db, err := NewRedisDatabase(
 						WithRedisClient(mock.NewUniversalClient(ctrl)),
@@ -569,7 +569,7 @@ func TestCachedAttachmentRepository_GetAllBelongsTo(t *testing.T) {
 					cacheRepo.EXPECT().Set(&cache.Item{
 						Ctx:   ctx,
 						Key:   key,
-						Value: attachments,
+						Value: Page[*Attachment]{Items: attachments},
 					}).Return(nil)
 
 					return &redisBaseRepository{
@@ -579,9 +579,9 @@ func TestCachedAttachmentRepository_GetAllBelongsTo(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				attachmentRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, attachments []*Attachment) AttachmentRepository {
+				attachmentRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, _, limit int, attachments []*Attachment) AttachmentRepository {
 					repo := NewMockAttachmentRepository(ctrl)
-					repo.EXPECT().GetAllBelongsTo(ctx, belongsTo, offset, limit).Return(attachments, nil)
+					repo.EXPECT().ListBelongsTo(ctx, belongsTo, CursorPage{Size: limit}, AttachmentListProjection()).Return(Page[*Attachment]{Items: attachments}, nil)
 					return repo
 				},
 			},
@@ -607,8 +607,8 @@ func TestCachedAttachmentRepository_GetAllBelongsTo(t *testing.T) {
 		{
 			name: "get cached attachments",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, attachments []*Attachment) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeAttachment.String(), "GetAllBelongsTo", belongsTo.String(), offset, limit)
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, _, limit int, attachments []*Attachment) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeAttachment.String(), "ListBelongsTo", belongsTo.String(), projectionCacheValue(AttachmentListProjection()), "", limit)
 
 					db, err := NewRedisDatabase(
 						WithRedisClient(mock.NewUniversalClient(ctrl)),
@@ -623,8 +623,8 @@ func TestCachedAttachmentRepository_GetAllBelongsTo(t *testing.T) {
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Do(func(_ context.Context, _ string, dst any) {
-						if listPtr, ok := dst.(*[]*Attachment); ok {
-							*listPtr = attachments
+						if ptr, ok := dst.(*Page[*Attachment]); ok {
+							*ptr = Page[*Attachment]{Items: attachments}
 						}
 					}).Return(nil)
 
@@ -661,8 +661,8 @@ func TestCachedAttachmentRepository_GetAllBelongsTo(t *testing.T) {
 		{
 			name: "get uncached attachments error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, _ []*Attachment) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeAttachment.String(), "GetAllBelongsTo", belongsTo.String(), offset, limit)
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, _, limit int, _ []*Attachment) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeAttachment.String(), "ListBelongsTo", belongsTo.String(), projectionCacheValue(AttachmentListProjection()), "", limit)
 
 					db, err := NewRedisDatabase(
 						WithRedisClient(mock.NewUniversalClient(ctrl)),
@@ -685,9 +685,9 @@ func TestCachedAttachmentRepository_GetAllBelongsTo(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				attachmentRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, _ []*Attachment) AttachmentRepository {
+				attachmentRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, _, limit int, _ []*Attachment) AttachmentRepository {
 					repo := NewMockAttachmentRepository(ctrl)
-					repo.EXPECT().GetAllBelongsTo(ctx, belongsTo, offset, limit).Return(nil, ErrNotFound)
+					repo.EXPECT().ListBelongsTo(ctx, belongsTo, CursorPage{Size: limit}, AttachmentListProjection()).Return(Page[*Attachment]{}, ErrNotFound)
 					return repo
 				},
 			},
@@ -700,8 +700,8 @@ func TestCachedAttachmentRepository_GetAllBelongsTo(t *testing.T) {
 		{
 			name: "get get attachments cache error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, _ []*Attachment) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeAttachment.String(), "GetAllBelongsTo", belongsTo.String(), offset, limit)
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, _, limit int, _ []*Attachment) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeAttachment.String(), "ListBelongsTo", belongsTo.String(), projectionCacheValue(AttachmentListProjection()), "", limit)
 
 					db, err := NewRedisDatabase(
 						WithRedisClient(mock.NewUniversalClient(ctrl)),
@@ -737,8 +737,8 @@ func TestCachedAttachmentRepository_GetAllBelongsTo(t *testing.T) {
 		{
 			name: "get uncached attachments cache set error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, attachments []*Attachment) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeAttachment.String(), "GetAllBelongsTo", belongsTo.String(), offset, limit)
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, _, limit int, attachments []*Attachment) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeAttachment.String(), "ListBelongsTo", belongsTo.String(), projectionCacheValue(AttachmentListProjection()), "", limit)
 
 					db, err := NewRedisDatabase(
 						WithRedisClient(mock.NewUniversalClient(ctrl)),
@@ -757,7 +757,7 @@ func TestCachedAttachmentRepository_GetAllBelongsTo(t *testing.T) {
 					cacheRepo.EXPECT().Set(&cache.Item{
 						Ctx:   ctx,
 						Key:   key,
-						Value: attachments,
+						Value: Page[*Attachment]{Items: attachments},
 					}).Return(assert.AnError)
 
 					return &redisBaseRepository{
@@ -767,9 +767,9 @@ func TestCachedAttachmentRepository_GetAllBelongsTo(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				attachmentRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, attachments []*Attachment) AttachmentRepository {
+				attachmentRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, _, limit int, attachments []*Attachment) AttachmentRepository {
 					repo := NewMockAttachmentRepository(ctrl)
-					repo.EXPECT().GetAllBelongsTo(ctx, belongsTo, offset, limit).Return(attachments, nil)
+					repo.EXPECT().ListBelongsTo(ctx, belongsTo, CursorPage{Size: limit}, AttachmentListProjection()).Return(Page[*Attachment]{Items: attachments}, nil)
 					return repo
 				},
 			},
@@ -787,12 +787,12 @@ func TestCachedAttachmentRepository_GetAllBelongsTo(t *testing.T) {
 			defer ctrl.Finish()
 
 			r := &RedisCachedAttachmentRepository{
-				cacheRepo:      tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.belongsTo, tt.args.offset, tt.args.limit, tt.want),
-				attachmentRepo: tt.fields.attachmentRepo(ctrl, tt.args.ctx, tt.args.belongsTo, tt.args.offset, tt.args.limit, tt.want),
+				cacheRepo:      tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.belongsTo, tt.args.offset, testPageSize(tt.args.limit), tt.want),
+				attachmentRepo: tt.fields.attachmentRepo(ctrl, tt.args.ctx, tt.args.belongsTo, tt.args.offset, testPageSize(tt.args.limit), tt.want),
 			}
-			got, err := r.GetAllBelongsTo(tt.args.ctx, tt.args.belongsTo, tt.args.offset, tt.args.limit)
+			got, err := r.ListBelongsTo(tt.args.ctx, tt.args.belongsTo, CursorPage{Size: testPageSize(tt.args.limit)}, AttachmentListProjection())
 			assert.ErrorIs(t, err, tt.wantErr)
-			assert.ElementsMatch(t, tt.want, got)
+			assert.ElementsMatch(t, tt.want, got.Items)
 		})
 	}
 }
@@ -818,8 +818,8 @@ func TestCachedAttachmentRepository_Update(t *testing.T) {
 			name: "update attachment",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, attachment *Attachment) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeAttachment.String(), id.String())
-					belongsToKey := composeCacheKey(model.ResourceTypeAttachment.String(), "GetAllBelongsTo", "*")
+					key := composeCacheKey(model.ResourceTypeAttachment.String(), "Get", id.String(), projectionCacheValue(AttachmentDetailProjection()))
+					belongsToKey := composeCacheKey(model.ResourceTypeAttachment.String(), "ListBelongsTo", "*", "*", "*")
 
 					belongsToKeyCmd := new(redis.StringSliceCmd)
 					belongsToKeyCmd.SetVal([]string{belongsToKey})
@@ -903,7 +903,7 @@ func TestCachedAttachmentRepository_Update(t *testing.T) {
 			name: "update attachment set cache error",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, attachment *Attachment) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeAttachment.String(), id.String())
+					key := composeCacheKey(model.ResourceTypeAttachment.String(), "Get", id.String(), projectionCacheValue(AttachmentDetailProjection()))
 
 					dbClient := mock.NewUniversalClient(ctrl)
 
@@ -949,8 +949,8 @@ func TestCachedAttachmentRepository_Update(t *testing.T) {
 			name: "update attachment delete cache error",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, attachment *Attachment) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeAttachment.String(), id.String())
-					belongsToKey := composeCacheKey(model.ResourceTypeAttachment.String(), "GetAllBelongsTo", "*")
+					key := composeCacheKey(model.ResourceTypeAttachment.String(), "Get", id.String(), projectionCacheValue(AttachmentDetailProjection()))
+					belongsToKey := composeCacheKey(model.ResourceTypeAttachment.String(), "ListBelongsTo", "*", "*", "*")
 
 					belongsToKeyCmd := new(redis.StringSliceCmd)
 					belongsToKeyCmd.SetVal([]string{belongsToKey})
@@ -1035,8 +1035,8 @@ func TestCachedAttachmentRepository_Delete(t *testing.T) {
 			name: "delete attachment success",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeAttachment.String(), id.String())
-					byBelongsTo := composeCacheKey(model.ResourceTypeAttachment.String(), "GetAllBelongsTo", "*")
+					key := composeCacheKey(model.ResourceTypeAttachment.String(), "Get", id.String(), "*")
+					byBelongsTo := composeCacheKey(model.ResourceTypeAttachment.String(), "ListBelongsTo", "*", "*", "*")
 					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
 					issuesKey := composeCacheKey(model.ResourceTypeIssue.String(), "*")
 
@@ -1049,7 +1049,11 @@ func TestCachedAttachmentRepository_Delete(t *testing.T) {
 					issuesKeyCmd := new(redis.StringSliceCmd)
 					issuesKeyCmd.SetVal([]string{issuesKey})
 
+					keyCmd := new(redis.StringSliceCmd)
+					keyCmd.SetVal([]string{key})
+
 					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, key).Return(keyCmd)
 					dbClient.EXPECT().Keys(ctx, byBelongsTo).Return(byBelongsToCmd)
 					dbClient.EXPECT().Keys(ctx, documentsKey).Return(documentsKeyCmd)
 					dbClient.EXPECT().Keys(ctx, issuesKey).Return(issuesKeyCmd)
@@ -1063,8 +1067,7 @@ func TestCachedAttachmentRepository_Delete(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0)).Times(4)
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Delete", gomock.Len(0)).Return(ctx, span)
-					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(3)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(4)
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
@@ -1094,8 +1097,8 @@ func TestCachedAttachmentRepository_Delete(t *testing.T) {
 			name: "delete attachment with attachment deletion error",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeAttachment.String(), id.String())
-					byBelongsTo := composeCacheKey(model.ResourceTypeAttachment.String(), "GetAllBelongsTo", "*")
+					key := composeCacheKey(model.ResourceTypeAttachment.String(), "Get", id.String(), "*")
+					byBelongsTo := composeCacheKey(model.ResourceTypeAttachment.String(), "ListBelongsTo", "*", "*", "*")
 					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
 					issuesKey := composeCacheKey(model.ResourceTypeIssue.String(), "*")
 
@@ -1108,7 +1111,11 @@ func TestCachedAttachmentRepository_Delete(t *testing.T) {
 					issuesKeyCmd := new(redis.StringSliceCmd)
 					issuesKeyCmd.SetVal([]string{issuesKey})
 
+					keyCmd := new(redis.StringSliceCmd)
+					keyCmd.SetVal([]string{key})
+
 					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, key).Return(keyCmd)
 					dbClient.EXPECT().Keys(ctx, byBelongsTo).Return(byBelongsToCmd)
 					dbClient.EXPECT().Keys(ctx, documentsKey).Return(documentsKeyCmd)
 					dbClient.EXPECT().Keys(ctx, issuesKey).Return(issuesKeyCmd)
@@ -1122,8 +1129,7 @@ func TestCachedAttachmentRepository_Delete(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0)).Times(4)
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Delete", gomock.Len(0)).Return(ctx, span)
-					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(3)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(4)
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
@@ -1154,9 +1160,13 @@ func TestCachedAttachmentRepository_Delete(t *testing.T) {
 			name: "delete attachment with cache deletion error",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeAttachment.String(), id.String())
+					key := composeCacheKey(model.ResourceTypeAttachment.String(), "Get", id.String(), "*")
+
+					keyCmd := new(redis.StringSliceCmd)
+					keyCmd.SetVal([]string{key})
 
 					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, key).Return(keyCmd)
 
 					db, err := NewRedisDatabase(
 						WithRedisClient(dbClient),
@@ -1167,7 +1177,7 @@ func TestCachedAttachmentRepository_Delete(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0)).Times(1)
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span)
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(ErrCacheDelete)
@@ -1193,13 +1203,17 @@ func TestCachedAttachmentRepository_Delete(t *testing.T) {
 			name: "delete attachment cache by related key error",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeAttachment.String(), id.String())
-					byBelongsTo := composeCacheKey(model.ResourceTypeAttachment.String(), "GetAllBelongsTo", "*")
+					key := composeCacheKey(model.ResourceTypeAttachment.String(), "Get", id.String(), "*")
+					byBelongsTo := composeCacheKey(model.ResourceTypeAttachment.String(), "ListBelongsTo", "*", "*", "*")
 
 					byBelongsToCmd := new(redis.StringSliceCmd)
 					byBelongsToCmd.SetVal([]string{byBelongsTo})
 
+					keyCmd := new(redis.StringSliceCmd)
+					keyCmd.SetVal([]string{key})
+
 					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, key).Return(keyCmd)
 					dbClient.EXPECT().Keys(ctx, byBelongsTo).Return(byBelongsToCmd)
 
 					db, err := NewRedisDatabase(
@@ -1211,8 +1225,7 @@ func TestCachedAttachmentRepository_Delete(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0)).Times(2)
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Delete", gomock.Len(0)).Return(ctx, span)
-					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(2)
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
@@ -1239,8 +1252,8 @@ func TestCachedAttachmentRepository_Delete(t *testing.T) {
 			name: "delete attachment cache by document key error",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeAttachment.String(), id.String())
-					byBelongsTo := composeCacheKey(model.ResourceTypeAttachment.String(), "GetAllBelongsTo", "*")
+					key := composeCacheKey(model.ResourceTypeAttachment.String(), "Get", id.String(), "*")
+					byBelongsTo := composeCacheKey(model.ResourceTypeAttachment.String(), "ListBelongsTo", "*", "*", "*")
 					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
 
 					byBelongsToCmd := new(redis.StringSliceCmd)
@@ -1249,7 +1262,11 @@ func TestCachedAttachmentRepository_Delete(t *testing.T) {
 					documentsKeyCmd := new(redis.StringSliceCmd)
 					documentsKeyCmd.SetVal([]string{documentsKey})
 
+					keyCmd := new(redis.StringSliceCmd)
+					keyCmd.SetVal([]string{key})
+
 					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, key).Return(keyCmd)
 					dbClient.EXPECT().Keys(ctx, byBelongsTo).Return(byBelongsToCmd)
 					dbClient.EXPECT().Keys(ctx, documentsKey).Return(documentsKeyCmd)
 
@@ -1262,8 +1279,7 @@ func TestCachedAttachmentRepository_Delete(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0)).Times(3)
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Delete", gomock.Len(0)).Return(ctx, span)
-					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(2)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(3)
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
@@ -1291,8 +1307,8 @@ func TestCachedAttachmentRepository_Delete(t *testing.T) {
 			name: "delete attachment cache by issues key error",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeAttachment.String(), id.String())
-					byBelongsTo := composeCacheKey(model.ResourceTypeAttachment.String(), "GetAllBelongsTo", "*")
+					key := composeCacheKey(model.ResourceTypeAttachment.String(), "Get", id.String(), "*")
+					byBelongsTo := composeCacheKey(model.ResourceTypeAttachment.String(), "ListBelongsTo", "*", "*", "*")
 					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
 					issuesKey := composeCacheKey(model.ResourceTypeIssue.String(), "*")
 
@@ -1305,7 +1321,11 @@ func TestCachedAttachmentRepository_Delete(t *testing.T) {
 					issuesKeyCmd := new(redis.StringSliceCmd)
 					issuesKeyCmd.SetVal([]string{issuesKey})
 
+					keyCmd := new(redis.StringSliceCmd)
+					keyCmd.SetVal([]string{key})
+
 					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, key).Return(keyCmd)
 					dbClient.EXPECT().Keys(ctx, byBelongsTo).Return(byBelongsToCmd)
 					dbClient.EXPECT().Keys(ctx, documentsKey).Return(documentsKeyCmd)
 					dbClient.EXPECT().Keys(ctx, issuesKey).Return(issuesKeyCmd)
@@ -1319,8 +1339,7 @@ func TestCachedAttachmentRepository_Delete(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0)).Times(4)
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Delete", gomock.Len(0)).Return(ctx, span)
-					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(3)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(4)
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)

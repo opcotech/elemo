@@ -11,8 +11,6 @@ export { NamespaceDangerZoneSection } from "./namespace-danger-zone-section";
 export { ProjectInfoSection } from "./project-info-section";
 export { ProjectCreateFormSection } from "./project-create-form-section";
 export { ProjectEditFormSection } from "./project-edit-form-section";
-export { ProjectDocumentsSection } from "./project-documents-section";
-export { ProjectIssuesSection } from "./project-issues-section";
 export { ProjectDangerZoneSection } from "./project-danger-zone-section";
 export { RolesSection } from "./roles-section";
 export { RoleCreateFormSection } from "./role-create-form-section";
@@ -21,3 +19,19 @@ export { RoleMembersSection } from "./role-members-section";
 export { RolePermissionDraftSection } from "./role-permission-draft-section";
 export { RolePermissionsSection } from "./role-permissions-section";
 export { LoginSection } from "./login-section";
+export { WorkSurfaceSection } from "./work-surface-section";
+export { WorkInspectorSection } from "./work-inspector-section";
+export { IssueDetailsSection } from "./issue-details-section";
+export { IssueLinksSection } from "./issue-links-section";
+export { IssueRelationsSection } from "./issue-relations-section";
+export { TodoSheetSection } from "./todo-sheet-section";
+export { TodoFormSection } from "./todo-form-section";
+export { QuickCreateSection } from "./quick-create-section";
+export type {
+  WorkLayoutName,
+  WorkGroupName,
+  WorkSortName,
+  WorkDisplayName,
+} from "./work-surface-section";
+export type { TodoPriorityName, TodoFormFields } from "./todo-form-section";
+export type { QuickCreateEntityType } from "./quick-create-section";

@@ -1,3 +1,4 @@
+import { useQuery } from "@tanstack/react-query";
 import {
   ArrowRightIcon,
   FileTextIcon,
@@ -8,22 +9,37 @@ import { useMemo, useState } from "react";
 
 import { ContentWidth } from "@/components/layout/content-width";
 import { openQuickCreate } from "@/components/quick-create/open";
-import { AppEmptyState, MockDataAlert } from "@/components/shared/app-feedback";
-import { CreateButton } from "@/components/shared/create-button";
+import { MockDataAlert } from "@/components/shared/app-feedback";
 import { EntityHeader, PageActions } from "@/components/shared/entity-header";
 import { AppList, EntityLink } from "@/components/shared/entity-link";
-import { Section } from "@/components/shared/section";
-import { StatusIndicator } from "@/components/shared/status-indicator";
 import { Button } from "@/components/ui/button";
+import { CreateButton } from "@/components/ui/create-button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { InternalLink } from "@/components/ui/internal-link";
+import { Section } from "@/components/ui/section";
+import { StatusIndicator } from "@/components/ui/status-indicator";
 import { CompactWorkList } from "@/components/work/work-list";
 import {
   ResourceType,
   usePermissions,
   withResourceType,
 } from "@/hooks/use-permissions";
-import type { Namespace, Organization } from "@/lib/api/types";
+import { collectedListQuery, cursorPageQuery } from "@/lib/api/cursor-pages";
+import {
+  v1NamespacesDocumentsGetOptions,
+  v1NamespacesProjectsGetOptions,
+} from "@/lib/api/query-options";
+import {
+  v1NamespacesDocumentsGet,
+  v1NamespacesProjectsGet,
+} from "@/lib/api/sdk";
+import type {
+  Namespace,
+  Organization,
+  PartialDocument,
+  Project,
+} from "@/lib/api/types";
 import { can } from "@/lib/auth/permissions";
 import { internalPath } from "@/lib/internal-url";
 import {
@@ -42,6 +58,20 @@ export function NamespaceOverviewPage({
   const { data: permissions } = usePermissions(
     withResourceType(ResourceType.Namespace, namespace.id)
   );
+  const { data: projectsPage } = useQuery(
+    v1NamespacesProjectsGetOptions({
+      path: { id: namespace.id },
+      query: { page_size: 6 },
+    })
+  );
+  const { data: documentsPage } = useQuery(
+    v1NamespacesDocumentsGetOptions({
+      path: { id: namespace.id },
+      query: { page_size: 5 },
+    })
+  );
+  const projects: Project[] = projectsPage?.items ?? [];
+  const documents: PartialDocument[] = documentsPage?.items ?? [];
   const mayWrite = can(permissions, "write");
   const scopedWork = selectWorkItems({
     scope: { type: "namespace", namespaceId: namespace.id },
@@ -113,9 +143,9 @@ export function NamespaceOverviewPage({
               </Button>
             }
           >
-            {namespace.projects.length > 0 ? (
+            {projects.length > 0 ? (
               <AppList>
-                {namespace.projects.slice(0, 6).map((project) => (
+                {projects.map((project) => (
                   <EntityLink
                     key={project.id}
                     type="project"
@@ -134,7 +164,7 @@ export function NamespaceOverviewPage({
                 ))}
               </AppList>
             ) : (
-              <AppEmptyState
+              <EmptyState
                 compact
                 icon={<FolderKanbanIcon />}
                 title="No projects yet"
@@ -195,9 +225,9 @@ export function NamespaceOverviewPage({
           </Section>
 
           <Section title="Recent documents">
-            {namespace.documents.length > 0 ? (
+            {documents.length > 0 ? (
               <AppList>
-                {namespace.documents.slice(0, 5).map((document) => (
+                {documents.map((document) => (
                   <EntityLink
                     key={document.id}
                     type="document"
@@ -226,7 +256,7 @@ export function NamespaceOverviewPage({
                 ))}
               </>
             ) : (
-              <AppEmptyState
+              <EmptyState
                 compact
                 icon={<FileTextIcon />}
                 title="No documents"
@@ -251,18 +281,33 @@ export function NamespaceProjectsPage({
   const { data: permissions } = usePermissions(
     withResourceType(ResourceType.Namespace, namespace.id)
   );
+  const listOptions = v1NamespacesProjectsGetOptions({
+    path: { id: namespace.id },
+  });
+  const { data: projectsPage } = useQuery(
+    collectedListQuery<Project>(listOptions, async (pageToken, signal) => {
+      const { data } = await v1NamespacesProjectsGet({
+        path: { id: namespace.id },
+        query: cursorPageQuery(pageToken),
+        signal,
+        throwOnError: true,
+      });
+      return data;
+    })
+  );
   const mayWrite = can(permissions, "write");
   const projects = useMemo(() => {
+    const items: Project[] = projectsPage?.items ?? [];
     const normalized = query.trim().toLowerCase();
-    if (!normalized) return namespace.projects;
-    return namespace.projects.filter((project) =>
+    if (!normalized) return items;
+    return items.filter((project) =>
       [project.name, project.key, project.description]
         .filter(Boolean)
         .join(" ")
         .toLowerCase()
         .includes(normalized)
     );
-  }, [namespace.projects, query]);
+  }, [projectsPage?.items, query]);
 
   return (
     <ContentWidth width="overview" className="space-y-6">
@@ -345,13 +390,13 @@ export function NamespaceProjectsPage({
                 <span className="text-muted-foreground block text-xs">
                   Position
                 </span>
-                {index + 1} of {namespace.projects.length}
+                {index + 1} of {projectsPage?.items.length ?? projects.length}
               </div>
             </InternalLink>
           ))}
         </AppList>
       ) : (
-        <AppEmptyState
+        <EmptyState
           icon={<FolderKanbanIcon />}
           title={query ? "No project matches" : "No projects yet"}
           description={
@@ -378,13 +423,35 @@ export function NamespaceDocumentsPage({
   namespace: Namespace;
 }) {
   const [query, setQuery] = useState("");
-  const documents = namespace.documents.filter((document) =>
-    [document.name, document.excerpt]
-      .filter(Boolean)
-      .join(" ")
-      .toLowerCase()
-      .includes(query.trim().toLowerCase())
+  const listOptions = v1NamespacesDocumentsGetOptions({
+    path: { id: namespace.id },
+  });
+  const { data: documentsPage } = useQuery(
+    collectedListQuery<PartialDocument>(
+      listOptions,
+      async (pageToken, signal) => {
+        const { data } = await v1NamespacesDocumentsGet({
+          path: { id: namespace.id },
+          query: cursorPageQuery(pageToken),
+          signal,
+          throwOnError: true,
+        });
+        return data;
+      }
+    )
   );
+  const documents = useMemo(() => {
+    const items: PartialDocument[] = documentsPage?.items ?? [];
+    const normalized = query.trim().toLowerCase();
+    if (!normalized) return items;
+    return items.filter((document) =>
+      [document.name, document.excerpt]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase()
+        .includes(normalized)
+    );
+  }, [documentsPage?.items, query]);
 
   return (
     <ContentWidth width="overview" className="space-y-6">
@@ -431,7 +498,7 @@ export function NamespaceDocumentsPage({
           ))}
         </AppList>
       ) : (
-        <AppEmptyState
+        <EmptyState
           icon={<FileTextIcon />}
           title={query ? "No document matches" : "No documents yet"}
           description={

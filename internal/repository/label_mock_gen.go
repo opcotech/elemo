@@ -99,33 +99,33 @@ func (mr *MockLabelRepositoryMockRecorder) DetachFrom(ctx, labelID, detachFrom a
 }
 
 // Get mocks base method.
-func (m *MockLabelRepository) Get(ctx context.Context, id model.ID) (*Label, error) {
+func (m *MockLabelRepository) Get(ctx context.Context, id model.ID, proj LabelProjection) (*Label, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Get", ctx, id)
+	ret := m.ctrl.Call(m, "Get", ctx, id, proj)
 	ret0, _ := ret[0].(*Label)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Get indicates an expected call of Get.
-func (mr *MockLabelRepositoryMockRecorder) Get(ctx, id any) *gomock.Call {
+func (mr *MockLabelRepositoryMockRecorder) Get(ctx, id, proj any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockLabelRepository)(nil).Get), ctx, id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockLabelRepository)(nil).Get), ctx, id, proj)
 }
 
-// GetAll mocks base method.
-func (m *MockLabelRepository) GetAll(ctx context.Context, offset, limit int) ([]*Label, error) {
+// List mocks base method.
+func (m *MockLabelRepository) List(ctx context.Context, page CursorPage, proj LabelProjection) (Page[*Label], error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAll", ctx, offset, limit)
-	ret0, _ := ret[0].([]*Label)
+	ret := m.ctrl.Call(m, "List", ctx, page, proj)
+	ret0, _ := ret[0].(Page[*Label])
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetAll indicates an expected call of GetAll.
-func (mr *MockLabelRepositoryMockRecorder) GetAll(ctx, offset, limit any) *gomock.Call {
+// List indicates an expected call of List.
+func (mr *MockLabelRepositoryMockRecorder) List(ctx, page, proj any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAll", reflect.TypeOf((*MockLabelRepository)(nil).GetAll), ctx, offset, limit)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockLabelRepository)(nil).List), ctx, page, proj)
 }
 
 // Update mocks base method.

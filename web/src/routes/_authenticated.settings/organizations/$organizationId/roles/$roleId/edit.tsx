@@ -1,13 +1,13 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
-import { OrganizationNotFound } from "@/components/organizations";
-import { RoleEditFormWithPermissions } from "@/components/roles";
+import { RoleEditFormWithPermissions } from "@/components/roles/role-edit-form";
 import {
   SettingsEntityDetailError,
   SettingsEntityDetailSkeleton,
 } from "@/components/settings/settings-entity-detail-state";
-import { PageHeader } from "@/components/shared/page-header";
+import { SettingsNotFound } from "@/components/settings/settings-not-found";
+import { PageHeader } from "@/components/ui/page-header";
 import {
   v1OrganizationGetOptions,
   v1OrganizationRoleGetOptions,
@@ -46,7 +46,7 @@ export const Route = createFileRoute(
   staticData: { breadcrumb: "Edit role" },
   pendingComponent: SettingsEntityDetailSkeleton,
   errorComponent: SettingsEntityDetailError,
-  notFoundComponent: OrganizationNotFound,
+  notFoundComponent: SettingsNotFound,
   component: OrganizationRoleEditPage,
 });
 

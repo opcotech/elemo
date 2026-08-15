@@ -7,13 +7,13 @@ import { OrganizationDeleteDialog } from "./organization-delete-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConditionalLink } from "@/components/ui/conditional-link";
+import { CountBadge } from "@/components/ui/count-badge";
 import { ExternalLink } from "@/components/ui/external-link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TableCell, TableRow } from "@/components/ui/table";
 import type { Organization, Permission } from "@/lib/api/types";
 import { can } from "@/lib/auth/permissions";
 import { zOrganizationStatus } from "@/lib/client/zod.gen";
-import { pluralize } from "@/lib/utils";
 
 export function OrganizationRow({
   organization,
@@ -50,10 +50,11 @@ export function OrganizationRow({
         )}
       </TableCell>
       <TableCell>
-        <Badge variant="secondary">
-          {organization.members.length}{" "}
-          {pluralize(organization.members.length, "member", "members")}
-        </Badge>
+        <CountBadge
+          count={organization.member_count ?? 0}
+          singular="member"
+          plural="members"
+        />
       </TableCell>
       <TableCell>
         {organization.status === zOrganizationStatus.enum.active ? (

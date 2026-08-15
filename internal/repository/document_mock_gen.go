@@ -71,48 +71,48 @@ func (mr *MockDocumentRepositoryMockRecorder) Delete(ctx, id any) *gomock.Call {
 }
 
 // Get mocks base method.
-func (m *MockDocumentRepository) Get(ctx context.Context, id model.ID) (*Document, error) {
+func (m *MockDocumentRepository) Get(ctx context.Context, id model.ID, proj DocumentProjection) (*Document, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Get", ctx, id)
+	ret := m.ctrl.Call(m, "Get", ctx, id, proj)
 	ret0, _ := ret[0].(*Document)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Get indicates an expected call of Get.
-func (mr *MockDocumentRepositoryMockRecorder) Get(ctx, id any) *gomock.Call {
+func (mr *MockDocumentRepositoryMockRecorder) Get(ctx, id, proj any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockDocumentRepository)(nil).Get), ctx, id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockDocumentRepository)(nil).Get), ctx, id, proj)
 }
 
-// GetAllBelongsTo mocks base method.
-func (m *MockDocumentRepository) GetAllBelongsTo(ctx context.Context, belongsTo model.ID, offset, limit int) ([]*Document, error) {
+// ListBelongsTo mocks base method.
+func (m *MockDocumentRepository) ListBelongsTo(ctx context.Context, belongsTo model.ID, page CursorPage, proj DocumentProjection) (Page[*Document], error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAllBelongsTo", ctx, belongsTo, offset, limit)
-	ret0, _ := ret[0].([]*Document)
+	ret := m.ctrl.Call(m, "ListBelongsTo", ctx, belongsTo, page, proj)
+	ret0, _ := ret[0].(Page[*Document])
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetAllBelongsTo indicates an expected call of GetAllBelongsTo.
-func (mr *MockDocumentRepositoryMockRecorder) GetAllBelongsTo(ctx, belongsTo, offset, limit any) *gomock.Call {
+// ListBelongsTo indicates an expected call of ListBelongsTo.
+func (mr *MockDocumentRepositoryMockRecorder) ListBelongsTo(ctx, belongsTo, page, proj any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllBelongsTo", reflect.TypeOf((*MockDocumentRepository)(nil).GetAllBelongsTo), ctx, belongsTo, offset, limit)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListBelongsTo", reflect.TypeOf((*MockDocumentRepository)(nil).ListBelongsTo), ctx, belongsTo, page, proj)
 }
 
-// GetByCreator mocks base method.
-func (m *MockDocumentRepository) GetByCreator(ctx context.Context, createdBy model.ID, offset, limit int) ([]*Document, error) {
+// ListByCreator mocks base method.
+func (m *MockDocumentRepository) ListByCreator(ctx context.Context, createdBy model.ID, page CursorPage, proj DocumentProjection) (Page[*Document], error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetByCreator", ctx, createdBy, offset, limit)
-	ret0, _ := ret[0].([]*Document)
+	ret := m.ctrl.Call(m, "ListByCreator", ctx, createdBy, page, proj)
+	ret0, _ := ret[0].(Page[*Document])
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetByCreator indicates an expected call of GetByCreator.
-func (mr *MockDocumentRepositoryMockRecorder) GetByCreator(ctx, createdBy, offset, limit any) *gomock.Call {
+// ListByCreator indicates an expected call of ListByCreator.
+func (mr *MockDocumentRepositoryMockRecorder) ListByCreator(ctx, createdBy, page, proj any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByCreator", reflect.TypeOf((*MockDocumentRepository)(nil).GetByCreator), ctx, createdBy, offset, limit)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListByCreator", reflect.TypeOf((*MockDocumentRepository)(nil).ListByCreator), ctx, createdBy, page, proj)
 }
 
 // Update mocks base method.

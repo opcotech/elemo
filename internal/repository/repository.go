@@ -16,13 +16,11 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
-	neo4jConfig "github.com/neo4j/neo4j-go-driver/v5/neo4j/config"
+	"github.com/neo4j/neo4j-go-driver/v6/neo4j"
+	neo4jConfig "github.com/neo4j/neo4j-go-driver/v6/neo4j/config"
 	"github.com/redis/go-redis/v9"
 
 	"github.com/opcotech/elemo/internal/config"
-	"github.com/opcotech/elemo/internal/model"
-	"github.com/opcotech/elemo/internal/pkg/convert"
 	"github.com/opcotech/elemo/internal/pkg/log"
 	"github.com/opcotech/elemo/internal/pkg/tracing"
 	"github.com/opcotech/elemo/internal/pkg/validate"
@@ -60,6 +58,13 @@ var (
 	ErrNoMoreRecords = &neo4j.UsageError{
 		Message: "Result contains no more records",
 	}
+
+	ErrInvalidCursor     = errors.New("invalid cursor")          // the page cursor is invalid
+	ErrInvalidPageSize   = errors.New("invalid page size")       // the page size is out of bounds
+	ErrUnsupportedOrder  = errors.New("unsupported order")       // the order field/direction is not allowed
+	ErrUnsupportedFilter = errors.New("unsupported filter")      // the filter is not allowed
+	ErrInvalidProjection = errors.New("invalid projection")      // the projection selection is invalid
+	ErrQueryCompile      = errors.New("failed to compile query") // the query plan could not be compiled
 )
 
 // EdgeKind is the kind of relation between two entities.
@@ -81,12 +86,12 @@ func (l *boltLogger) LogServerMessage(ctx string, msg string, args ...any) {
 }
 
 // NewNeo4jDriver creates a new Neo4j driver.
-func NewNeo4jDriver(conf *config.GraphDatabaseConfig) (neo4j.DriverWithContext, error) {
+func NewNeo4jDriver(conf *config.GraphDatabaseConfig) (neo4j.Driver, error) {
 	if conf == nil {
 		return nil, config.ErrNoConfig
 	}
 
-	driver, err := neo4j.NewDriverWithContext(conf.ConnectionURL(), neo4j.BasicAuth(conf.Username, conf.Password, ""), func(c *neo4jConfig.Config) {
+	driver, err := neo4j.NewDriver(conf.ConnectionURL(), neo4j.BasicAuth(conf.Username, conf.Password, ""), func(c *neo4jConfig.Config) {
 		c.MaxTransactionRetryTime = conf.MaxTransactionRetryTime * time.Second
 		c.MaxConnectionPoolSize = conf.MaxConnectionPoolSize
 		c.MaxConnectionLifetime = conf.MaxConnectionLifetime * time.Second
@@ -106,7 +111,7 @@ func NewNeo4jDriver(conf *config.GraphDatabaseConfig) (neo4j.DriverWithContext, 
 type Neo4jDatabaseOption func(*Neo4jDatabase)
 
 // WithNeo4jDriver sets the driver for a Neo4j database.
-func WithNeo4jDriver(driver neo4j.DriverWithContext) Neo4jDatabaseOption {
+func WithNeo4jDriver(driver neo4j.Driver) Neo4jDatabaseOption {
 	return func(db *Neo4jDatabase) {
 		db.driver = driver
 	}
@@ -135,14 +140,14 @@ func WithNeo4jDatabaseTracer(tracer tracing.Tracer) Neo4jDatabaseOption {
 
 // Neo4jDatabase represents a Neo4j database, wrapping a Neo4j driver.
 type Neo4jDatabase struct {
-	driver neo4j.DriverWithContext `validate:"required"`
-	name   string                  `validate:"required"`
-	logger log.Logger              `validate:"required"`
-	tracer tracing.Tracer          `validate:"required"`
+	driver neo4j.Driver   `validate:"required"`
+	name   string         `validate:"required"`
+	logger log.Logger     `validate:"required"`
+	tracer tracing.Tracer `validate:"required"`
 }
 
 // ReadSession returns a "read" session.
-func (db *Neo4jDatabase) ReadSession(ctx context.Context) neo4j.SessionWithContext {
+func (db *Neo4jDatabase) ReadSession(ctx context.Context) neo4j.Session {
 	return db.driver.NewSession(ctx, neo4j.SessionConfig{
 		AccessMode:   neo4j.AccessModeRead,
 		DatabaseName: db.name,
@@ -151,7 +156,7 @@ func (db *Neo4jDatabase) ReadSession(ctx context.Context) neo4j.SessionWithConte
 }
 
 // WriteSession returns a "write" session.
-func (db *Neo4jDatabase) WriteSession(ctx context.Context) neo4j.SessionWithContext {
+func (db *Neo4jDatabase) WriteSession(ctx context.Context) neo4j.Session {
 	return db.driver.NewSession(ctx, neo4j.SessionConfig{
 		AccessMode:   neo4j.AccessModeWrite,
 		DatabaseName: db.name,
@@ -262,53 +267,6 @@ type Neo4jPropertyGetter interface {
 	GetProperties() map[string]any
 }
 
-// Neo4jScanIntoStruct parses a struct from a neo4j node or relationship.
-func Neo4jScanIntoStruct(n Neo4jPropertyGetter, dst any, exclude []string) error {
-	props := make(map[string]any)
-
-	for k, v := range n.GetProperties() {
-		props[k] = v
-	}
-
-	for _, e := range exclude {
-		delete(props, e)
-	}
-
-	return convert.AnyToAny(props, dst)
-}
-
-// Neo4jParseValueFromRecord parses a value from a neo4j record.
-func Neo4jParseValueFromRecord[T neo4j.RecordValue](record *neo4j.Record, key string) (T, error) {
-	var zero T
-
-	value, _, err := neo4j.GetRecordValue[T](record, key)
-	if err != nil {
-		return zero, errors.Join(ErrMalformedResult, err)
-	}
-
-	return value, nil
-}
-
-// Neo4jParseIDsFromRecord parses a list of IDs from a neo4j record.
-func Neo4jParseIDsFromRecord(record *neo4j.Record, key, label string) ([]model.ID, error) {
-	val, err := Neo4jParseValueFromRecord[[]any](record, key)
-	if err != nil {
-		return nil, err
-	}
-
-	ids := make([]model.ID, len(val))
-	for i, p := range val {
-		id, err := model.NewIDFromString(p.(string), label)
-		if err != nil {
-			return nil, err
-		}
-
-		ids[i] = id
-	}
-
-	return ids, nil
-}
-
 // Neo4jExecuteAndConsumeResult executes a query and consumes its result.
 func Neo4jExecuteAndConsumeResult(ctx context.Context, tx neo4j.ManagedTransaction, query string, params map[string]any) error {
 	result, err := tx.Run(ctx, query, params)
@@ -322,7 +280,7 @@ func Neo4jExecuteAndConsumeResult(ctx context.Context, tx neo4j.ManagedTransacti
 // Neo4jExecuteWriteAndConsume executes a query and consumes its result.
 func Neo4jExecuteWriteAndConsume(ctx context.Context, db *Neo4jDatabase, query string, params map[string]any) error {
 	session := db.WriteSession(ctx)
-	defer func(ctx context.Context, sess neo4j.SessionWithContext) {
+	defer func(ctx context.Context, sess neo4j.Session) {
 		err := sess.Close(ctx)
 		if err != nil {
 			log.Error(ctx, err)
@@ -340,7 +298,7 @@ func Neo4jExecuteWriteAndConsume(ctx context.Context, db *Neo4jDatabase, query s
 // Neo4jExecuteReadAndReadSingle executes a query and reads a single result.
 func Neo4jExecuteReadAndReadSingle[T any](ctx context.Context, db *Neo4jDatabase, query string, params map[string]any, reader func(record *neo4j.Record) (*T, error)) (*T, error) {
 	session := db.ReadSession(ctx)
-	defer func(ctx context.Context, sess neo4j.SessionWithContext) {
+	defer func(ctx context.Context, sess neo4j.Session) {
 		err := sess.Close(ctx)
 		if err != nil {
 			log.Error(ctx, err)
@@ -353,7 +311,7 @@ func Neo4jExecuteReadAndReadSingle[T any](ctx context.Context, db *Neo4jDatabase
 			return nil, err
 		}
 
-		res, err := neo4j.SingleTWithContext(ctx, result, reader)
+		res, err := neo4j.SingleT(ctx, result, reader)
 		if err != nil {
 			if errors.As(err, &ErrNoMoreRecords) {
 				err = ErrNotFound
@@ -368,7 +326,7 @@ func Neo4jExecuteReadAndReadSingle[T any](ctx context.Context, db *Neo4jDatabase
 // Neo4jExecuteWriteAndReadSingle executes a query and reads a single result.
 func Neo4jExecuteWriteAndReadSingle[T any](ctx context.Context, db *Neo4jDatabase, query string, params map[string]any, reader func(record *neo4j.Record) (*T, error)) (*T, error) {
 	session := db.WriteSession(ctx)
-	defer func(ctx context.Context, sess neo4j.SessionWithContext) {
+	defer func(ctx context.Context, sess neo4j.Session) {
 		err := sess.Close(ctx)
 		if err != nil {
 			log.Error(ctx, err)
@@ -381,7 +339,7 @@ func Neo4jExecuteWriteAndReadSingle[T any](ctx context.Context, db *Neo4jDatabas
 			return nil, err
 		}
 
-		res, err := neo4j.SingleTWithContext(ctx, result, reader)
+		res, err := neo4j.SingleT(ctx, result, reader)
 		if err != nil {
 			if errors.As(err, &ErrNoMoreRecords) {
 				err = ErrNotFound
@@ -396,7 +354,7 @@ func Neo4jExecuteWriteAndReadSingle[T any](ctx context.Context, db *Neo4jDatabas
 // Neo4jExecuteReadAndReadAll executes a query and reads all results.
 func Neo4jExecuteReadAndReadAll[T any](ctx context.Context, db *Neo4jDatabase, query string, params map[string]any, reader func(record *neo4j.Record) (T, error)) ([]T, error) {
 	session := db.ReadSession(ctx)
-	defer func(ctx context.Context, sess neo4j.SessionWithContext) {
+	defer func(ctx context.Context, sess neo4j.Session) {
 		err := sess.Close(ctx)
 		if err != nil {
 			log.Error(ctx, err)
@@ -433,7 +391,7 @@ func Neo4jExecuteReadAndReadAll[T any](ctx context.Context, db *Neo4jDatabase, q
 // Neo4jExecuteWriteAndReadAll executes a query and reads all results.
 func Neo4jExecuteWriteAndReadAll[T any](ctx context.Context, db *Neo4jDatabase, query string, params map[string]any, reader func(record *neo4j.Record) (T, error)) ([]T, error) {
 	session := db.WriteSession(ctx)
-	defer func(ctx context.Context, sess neo4j.SessionWithContext) {
+	defer func(ctx context.Context, sess neo4j.Session) {
 		err := sess.Close(ctx)
 		if err != nil {
 			log.Error(ctx, err)

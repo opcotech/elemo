@@ -6,10 +6,15 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
+	"github.com/opcotech/elemo/internal/license"
+	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/log"
+	"github.com/opcotech/elemo/internal/repository"
+	"github.com/opcotech/elemo/internal/service"
 	testHttp "github.com/opcotech/elemo/internal/testutil/http"
 	"github.com/opcotech/elemo/internal/testutil/mock"
 	"github.com/opcotech/elemo/internal/transport/http/api"
@@ -125,6 +130,33 @@ func TestHTTPErrorStruct(t *testing.T) {
 
 			testHttp.CheckResponseCode(t, tt.args.status, rr.Code)
 			testHttp.CheckResponseBody(t, rr.Body, &tt.want, &api.HTTPError{})
+		})
+	}
+}
+
+func TestClassifyServiceError(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name   string
+		err    error
+		status int
+	}{
+		{name: "invalid page size", err: repository.ErrInvalidPageSize, status: http.StatusBadRequest},
+		{name: "invalid cursor", err: repository.ErrInvalidCursor, status: http.StatusBadRequest},
+		{name: "self relation", err: service.ErrIssueSelfRelation, status: http.StatusBadRequest},
+		{name: "invalid issue details", err: model.ErrInvalidIssueDetails, status: http.StatusBadRequest},
+		{name: "no permission", err: service.ErrNoPermission, status: http.StatusForbidden},
+		{name: "license expired", err: license.ErrLicenseExpired, status: http.StatusForbidden},
+		{name: "quota exceeded", err: service.ErrQuotaExceeded, status: http.StatusForbidden},
+		{name: "not found", err: repository.ErrNotFound, status: http.StatusNotFound},
+		{name: "unknown", err: errors.New("boom"), status: http.StatusInternalServerError},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			assert.Equal(t, tt.status, classifyServiceError(tt.err))
 		})
 	}
 }

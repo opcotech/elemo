@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 
-import { StatusIndicator } from "@/components/shared/status-indicator";
+import { StatusIndicator } from "@/components/ui/status-indicator";
 
 const meta: Meta<typeof StatusIndicator> = {
   title: "Elemo/Status Indicator",
@@ -24,14 +24,15 @@ type Story = StoryObj<typeof meta>;
 export const Gallery: Story = {
   render: () => (
     <div className="flex flex-wrap items-center gap-2">
+      <StatusIndicator status="open" />
       <StatusIndicator status="backlog" />
-      <StatusIndicator status="planned" />
-      <StatusIndicator status="in-progress" />
+      <StatusIndicator status="in review" />
+      <StatusIndicator status="in progress" />
       <StatusIndicator status="review" />
       <StatusIndicator status="done" />
       <StatusIndicator status="blocked" />
       <StatusIndicator status="active" />
-      <StatusIndicator status="canceled" />
+      <StatusIndicator status="closed" />
       <StatusIndicator status="high" />
       <StatusIndicator status="medium" />
       <StatusIndicator status="low" />

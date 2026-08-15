@@ -62,12 +62,16 @@ func (c *notificationController) V1NotificationsGet(ctx context.Context, request
 		return api.V1NotificationsGet400JSONResponse{N400JSONResponse: formatBadRequest(model.ErrInvalidID)}, nil
 	}
 
-	notifications, err := c.notificationService.GetAllByRecipient(ctx,
-		recipientID,
-		pkg.DefaultPtr(request.Params.Offset, DefaultOffset),
-		pkg.DefaultPtr(request.Params.Limit, DefaultLimit),
-	)
+	pageParams, err := cursorPageFromParams(request.Params.PageSize, request.Params.PageToken)
 	if err != nil {
+		return api.V1NotificationsGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
+	}
+
+	page, err := c.notificationService.ListByRecipient(ctx, recipientID, pageParams)
+	if err != nil {
+		if isInvalidPageError(err) {
+			return api.V1NotificationsGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
+		}
 		if errors.Is(err, service.ErrNoPermission) {
 			return api.V1NotificationsGet403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		}
@@ -76,12 +80,15 @@ func (c *notificationController) V1NotificationsGet(ctx context.Context, request
 		}}, nil
 	}
 
-	notificationsDTO := make([]api.Notification, len(notifications))
-	for i, notification := range notifications {
+	notificationsDTO := make([]api.Notification, len(page.Items))
+	for i, notification := range page.Items {
 		notificationsDTO[i] = notificationToDTO(notification)
 	}
 
-	return api.V1NotificationsGet200JSONResponse(notificationsDTO), nil
+	return api.V1NotificationsGet200JSONResponse{
+		Items:    notificationsDTO,
+		PageInfo: pageInfoToDTO(page.PageInfo),
+	}, nil
 }
 
 func (c *notificationController) V1NotificationUpdate(ctx context.Context, request api.V1NotificationUpdateRequestObject) (api.V1NotificationUpdateResponseObject, error) {

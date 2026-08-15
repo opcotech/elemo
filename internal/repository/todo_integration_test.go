@@ -81,17 +81,17 @@ func (s *TodoRepositoryIntegrationTestSuite) TestGetByOwner() {
 	_, err = s.TodoRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 
-	todos, err := s.TodoRepo.GetByOwner(context.Background(), s.testUser.ID, 0, 10, nil)
+	todos, err := s.TodoRepo.ListByOwner(context.Background(), s.testUser.ID, repository.CursorPage{Size: 10}, nil)
 	s.Require().NoError(err)
-	s.Assert().Len(todos, 2)
+	s.Assert().Len(todos.Items, 2)
 
-	todos, err = s.TodoRepo.GetByOwner(context.Background(), s.testUser.ID, 0, 10, convert.ToPointer(false))
+	todos, err = s.TodoRepo.ListByOwner(context.Background(), s.testUser.ID, repository.CursorPage{Size: 10}, convert.ToPointer(false))
 	s.Require().NoError(err)
-	s.Assert().Len(todos, 1)
+	s.Assert().Len(todos.Items, 1)
 
-	todos, err = s.TodoRepo.GetByOwner(context.Background(), s.testUser.ID, 0, 10, convert.ToPointer(true))
+	todos, err = s.TodoRepo.ListByOwner(context.Background(), s.testUser.ID, repository.CursorPage{Size: 10}, convert.ToPointer(true))
 	s.Require().NoError(err)
-	s.Assert().Len(todos, 1)
+	s.Assert().Len(todos.Items, 1)
 }
 
 func (s *TodoRepositoryIntegrationTestSuite) TestUpdate() {
@@ -212,18 +212,18 @@ func (s *CachedTodoRepositoryIntegrationTestSuite) TestGetByOwner() {
 	_, err = s.todoRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 
-	originalTodos, err := s.TodoRepo.GetByOwner(context.Background(), s.testUser.ID, 0, 10, nil)
+	originalTodos, err := s.TodoRepo.ListByOwner(context.Background(), s.testUser.ID, repository.CursorPage{Size: 10}, nil)
 	s.Require().NoError(err)
 
-	usingCacheTodos, err := s.todoRepo.GetByOwner(context.Background(), s.testUser.ID, 0, 10, nil)
+	usingCacheTodos, err := s.todoRepo.ListByOwner(context.Background(), s.testUser.ID, repository.CursorPage{Size: 10}, nil)
 	s.Require().NoError(err)
 
 	s.Assert().Equal(originalTodos, usingCacheTodos)
 	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
 
-	cachedTodos, err := s.todoRepo.GetByOwner(context.Background(), s.testUser.ID, 0, 10, nil)
+	cachedTodos, err := s.todoRepo.ListByOwner(context.Background(), s.testUser.ID, repository.CursorPage{Size: 10}, nil)
 	s.Require().NoError(err)
-	s.Assert().Equal(len(usingCacheTodos), len(cachedTodos))
+	s.Assert().Equal(len(usingCacheTodos.Items), len(cachedTodos.Items))
 }
 
 func (s *CachedTodoRepositoryIntegrationTestSuite) TestUpdate() {

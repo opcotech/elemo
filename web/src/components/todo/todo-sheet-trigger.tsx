@@ -9,10 +9,11 @@ import { v1TodosGetOptions } from "@/lib/api/query-options";
 import { uiActions } from "@/lib/ui-store";
 
 export function TodoSheetTrigger() {
-  const { data: todos } = useQuery({
+  const { data: todosPage } = useQuery({
     ...v1TodosGetOptions(),
   });
-  const uncompletedCount = todos?.filter((t) => !t.completed).length || 0;
+  const uncompletedCount =
+    todosPage?.items?.filter((t) => !t.completed).length || 0;
 
   return (
     <Button

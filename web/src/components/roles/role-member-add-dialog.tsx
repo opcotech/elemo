@@ -16,11 +16,17 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Skeleton } from "@/components/ui/skeleton";
+import { collectedListQuery, cursorPageQuery } from "@/lib/api/cursor-pages";
 import { v1OrganizationRoleMembersAddMutation } from "@/lib/api/mutation-options";
 import {
   v1OrganizationMembersGetOptions,
   v1OrganizationRoleMembersGetOptions,
 } from "@/lib/api/query-options";
+import {
+  v1OrganizationMembersGet,
+  v1OrganizationRoleMembersGet,
+} from "@/lib/api/sdk";
+import type { OrganizationMember, User } from "@/lib/api/types";
 import { runMutationSuccessWorkflow } from "@/lib/mutation-workflow";
 import { showErrorToast, showSuccessToast } from "@/lib/toast";
 import { getInitials } from "@/lib/utils";
@@ -57,20 +63,50 @@ export function RoleMemberAddDialog({
     },
   });
 
-  const { data: organizationMembers, isLoading: isLoadingMembers } = useQuery(
-    v1OrganizationMembersGetOptions({
-      path: { id: organizationId },
-    })
-  );
+  const membersOptions = v1OrganizationMembersGetOptions({
+    path: { id: organizationId },
+  });
+  const { data: organizationMembersPage, isLoading: isLoadingMembers } =
+    useQuery({
+      ...collectedListQuery<OrganizationMember>(
+        membersOptions,
+        async (pageToken, signal) => {
+          const { data } = await v1OrganizationMembersGet({
+            path: { id: organizationId },
+            query: cursorPageQuery(pageToken),
+            signal,
+            throwOnError: true,
+          });
+          return data;
+        }
+      ),
+      enabled: open,
+    });
 
-  const { data: roleMembers, isLoading: isLoadingRoleMembers } = useQuery(
-    v1OrganizationRoleMembersGetOptions({
-      path: {
-        id: organizationId,
-        role_id: roleId,
-      },
-    })
-  );
+  const roleMembersOptions = v1OrganizationRoleMembersGetOptions({
+    path: {
+      id: organizationId,
+      role_id: roleId,
+    },
+  });
+  const { data: roleMembersPage, isLoading: isLoadingRoleMembers } = useQuery({
+    ...collectedListQuery<User>(
+      roleMembersOptions,
+      async (pageToken, signal) => {
+        const { data } = await v1OrganizationRoleMembersGet({
+          path: {
+            id: organizationId,
+            role_id: roleId,
+          },
+          query: cursorPageQuery(pageToken),
+          signal,
+          throwOnError: true,
+        });
+        return data;
+      }
+    ),
+    enabled: open,
+  });
 
   const roleMembersQueryKey = v1OrganizationRoleMembersGetOptions({
     path: {
@@ -130,14 +166,13 @@ export function RoleMemberAddDialog({
     });
   };
 
-  // Filter out members who are already in the role
-  const availableMembers =
-    organizationMembers && roleMembers
-      ? organizationMembers.filter(
-          (member) =>
-            !roleMembers.some((roleMember) => roleMember.id === member.id)
-        )
-      : [];
+  const organizationMembers: OrganizationMember[] =
+    organizationMembersPage?.items ?? [];
+  const roleMembers: User[] = roleMembersPage?.items ?? [];
+
+  const availableMembers = organizationMembers.filter(
+    (member) => !roleMembers.some((roleMember) => roleMember.id === member.id)
+  );
 
   const memberOptions = availableMembers.map((member) => ({
     value: member.id,
@@ -160,7 +195,7 @@ export function RoleMemberAddDialog({
       error={error}
       submitButtonText="Add Member"
       onReset={() => form.reset()}
-      className="sm:max-w-[500px]"
+      className="sm:max-w-125"
     >
       {isLoading ? (
         <div className="space-y-4">

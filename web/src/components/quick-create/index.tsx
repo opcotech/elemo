@@ -84,7 +84,7 @@ export function QuickCreate({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg" data-section="quick-create">
         <DialogHeader>
           <DialogTitle>Quick create</DialogTitle>
           <DialogDescription>

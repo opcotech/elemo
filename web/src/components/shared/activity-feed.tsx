@@ -1,6 +1,6 @@
 import { ActivityIcon, UserIcon } from "lucide-react";
 
-import { AppEmptyState } from "@/components/shared/app-feedback";
+import { EmptyState } from "@/components/ui/empty-state";
 import { getPerson } from "@/lib/mock-data";
 import type { ActivityEntry, Person } from "@/lib/mock-data/types";
 
@@ -13,7 +13,7 @@ export function ActivityFeed({
 }) {
   if (entries.length === 0) {
     return (
-      <AppEmptyState
+      <EmptyState
         compact
         icon={<ActivityIcon />}
         title="No recent activity"

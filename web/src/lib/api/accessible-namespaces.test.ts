@@ -27,23 +27,28 @@ vi.mock("@/lib/api/query-options", () => ({
   }),
 }));
 
+function listedPage<T>(items: T[]) {
+  return { items, page_info: { has_more: false } };
+}
+
 const organization = {
   id: "organization-1",
   name: "Acme",
-  namespaces: ["namespace-1"],
 };
 
 const namespace = {
   id: "namespace-1",
   name: "Product",
-  projects: [],
-  documents: [],
 };
 
 describe("accessible namespace cache", () => {
   beforeEach(() => {
-    sourceQueries.organizations.mockReset().mockResolvedValue([organization]);
-    sourceQueries.namespaces.mockReset().mockResolvedValue([namespace]);
+    sourceQueries.organizations
+      .mockReset()
+      .mockResolvedValue(listedPage([organization]));
+    sourceQueries.namespaces
+      .mockReset()
+      .mockResolvedValue(listedPage([namespace]));
   });
 
   it("uses the reference cache profile and reuses a fresh workspace", async () => {
@@ -81,21 +86,17 @@ describe("accessible namespace cache", () => {
     const secondOrganization = {
       id: "organization-2",
       name: "Globex",
-      namespaces: ["namespace-2"],
     };
     const secondNamespace = {
       id: "namespace-2",
       name: "Platform",
-      projects: [],
-      documents: [],
     };
-    sourceQueries.organizations.mockResolvedValue([
-      organization,
-      secondOrganization,
-    ]);
+    sourceQueries.organizations.mockResolvedValue(
+      listedPage([organization, secondOrganization])
+    );
     sourceQueries.namespaces
-      .mockResolvedValueOnce([namespace])
-      .mockResolvedValueOnce([secondNamespace]);
+      .mockResolvedValueOnce(listedPage([namespace]))
+      .mockResolvedValueOnce(listedPage([secondNamespace]));
 
     const queryClient = new QueryClient();
     const result = await queryClient.fetchQuery(
@@ -120,7 +121,7 @@ describe("accessible namespace cache", () => {
   });
 
   it("skips namespace fan-out when no organizations are accessible", async () => {
-    sourceQueries.organizations.mockResolvedValue([]);
+    sourceQueries.organizations.mockResolvedValue(listedPage([]));
     const queryClient = new QueryClient();
 
     await expect(
@@ -132,7 +133,7 @@ describe("accessible namespace cache", () => {
   it("does not cache a partially failed aggregation", async () => {
     sourceQueries.namespaces
       .mockRejectedValueOnce(new Error("namespace request failed"))
-      .mockResolvedValueOnce([namespace]);
+      .mockResolvedValueOnce(listedPage([namespace]));
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     });

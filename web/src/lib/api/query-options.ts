@@ -1,15 +1,23 @@
 import "@/lib/api/client";
 
 import {
+  v1IssueGetOptions as generatedIssueGetOptions,
+  v1IssueRelationsGetOptions as generatedIssueRelationsGetOptions,
+  v1LabelsGetOptions as generatedLabelsGetOptions,
+  v1NamespacesIssuesGetOptions as generatedNamespacesIssuesGetOptions,
+  v1NamespacesIssuesKeyGetOptions as generatedNamespacesIssuesKeyGetOptions,
   v1NotificationsGetOptions as generatedNotificationsGetOptions,
   v1OrganizationsGetOptions as generatedOrganizationsGetOptions,
   v1PermissionResourceGetOptions as generatedPermissionResourceGetOptions,
+  v1ProjectsIssuesGetOptions as generatedProjectsIssuesGetOptions,
   v1TodosGetOptions as generatedTodosGetOptions,
+  v1UsersIssuesGetOptions as generatedUsersIssuesGetOptions,
 } from "@/lib/client/@tanstack/react-query.gen";
 import { cacheProfiles } from "@/lib/query-client";
 
 export {
   v1NamespaceGetOptions,
+  v1NamespacesDocumentsGetOptions,
   v1NamespacesProjectsGetOptions,
   v1OrganizationGetOptions,
   v1OrganizationMembersGetOptions,
@@ -19,6 +27,7 @@ export {
   v1OrganizationRolesGetOptions,
   v1OrganizationsNamespacesGetOptions,
   v1ProjectGetOptions,
+  v1ProjectsDocumentsGetOptions,
   v1UserRequestPasswordResetOptions,
 } from "@/lib/client/@tanstack/react-query.gen";
 
@@ -55,5 +64,68 @@ export function v1TodosGetOptions(
   return {
     ...generatedTodosGetOptions(...args),
     ...cacheProfiles.volatile,
+  };
+}
+
+export function v1ProjectsIssuesGetOptions(
+  ...args: Parameters<typeof generatedProjectsIssuesGetOptions>
+) {
+  return {
+    ...generatedProjectsIssuesGetOptions(...args),
+    ...cacheProfiles.volatile,
+  };
+}
+
+export function v1NamespacesIssuesGetOptions(
+  ...args: Parameters<typeof generatedNamespacesIssuesGetOptions>
+) {
+  return {
+    ...generatedNamespacesIssuesGetOptions(...args),
+    ...cacheProfiles.volatile,
+  };
+}
+
+export function v1UsersIssuesGetOptions(
+  ...args: Parameters<typeof generatedUsersIssuesGetOptions>
+) {
+  return {
+    ...generatedUsersIssuesGetOptions(...args),
+    ...cacheProfiles.volatile,
+  };
+}
+
+export function v1IssueGetOptions(
+  ...args: Parameters<typeof generatedIssueGetOptions>
+) {
+  return {
+    ...generatedIssueGetOptions(...args),
+    ...cacheProfiles.volatile,
+  };
+}
+
+export function v1IssueRelationsGetOptions(
+  ...args: Parameters<typeof generatedIssueRelationsGetOptions>
+) {
+  return {
+    ...generatedIssueRelationsGetOptions(...args),
+    ...cacheProfiles.volatile,
+  };
+}
+
+export function v1NamespacesIssuesKeyGetOptions(
+  ...args: Parameters<typeof generatedNamespacesIssuesKeyGetOptions>
+) {
+  return {
+    ...generatedNamespacesIssuesKeyGetOptions(...args),
+    ...cacheProfiles.volatile,
+  };
+}
+
+export function v1LabelsGetOptions(
+  ...args: Parameters<typeof generatedLabelsGetOptions>
+) {
+  return {
+    ...generatedLabelsGetOptions(...args),
+    ...cacheProfiles.reference,
   };
 }

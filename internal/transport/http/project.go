@@ -5,7 +5,6 @@ import (
 	"errors"
 
 	"github.com/opcotech/elemo/internal/model"
-	"github.com/opcotech/elemo/internal/pkg"
 	"github.com/opcotech/elemo/internal/pkg/optional"
 	"github.com/opcotech/elemo/internal/service"
 	"github.com/opcotech/elemo/internal/transport/http/api"
@@ -66,11 +65,16 @@ func (c *projectController) V1NamespacesProjectsGet(ctx context.Context, request
 		return api.V1NamespacesProjectsGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
-	projects, err := c.projectService.GetAll(ctx, namespaceID,
-		pkg.DefaultPtr(request.Params.Offset, DefaultOffset),
-		pkg.DefaultPtr(request.Params.Limit, DefaultLimit),
-	)
+	pageParams, err := cursorPageFromParams(request.Params.PageSize, request.Params.PageToken)
 	if err != nil {
+		return api.V1NamespacesProjectsGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
+	}
+
+	page, err := c.projectService.List(ctx, namespaceID, pageParams)
+	if err != nil {
+		if isInvalidPageError(err) {
+			return api.V1NamespacesProjectsGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
+		}
 		if errors.Is(err, service.ErrNoPermission) {
 			return api.V1NamespacesProjectsGet403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		}
@@ -82,12 +86,15 @@ func (c *projectController) V1NamespacesProjectsGet(ctx context.Context, request
 		}}, nil
 	}
 
-	projectsDTO := make([]api.Project, len(projects))
-	for i, project := range projects {
+	projectsDTO := make([]api.Project, len(page.Items))
+	for i, project := range page.Items {
 		projectsDTO[i] = projectToDTO(project)
 	}
 
-	return api.V1NamespacesProjectsGet200JSONResponse(projectsDTO), nil
+	return api.V1NamespacesProjectsGet200JSONResponse{
+		Items:    projectsDTO,
+		PageInfo: pageInfoToDTO(page.PageInfo),
+	}, nil
 }
 
 func (c *projectController) V1ProjectGet(ctx context.Context, request api.V1ProjectGetRequestObject) (api.V1ProjectGetResponseObject, error) {
@@ -238,36 +245,140 @@ func updateProjectJSONRequestBodyToUpdateProjectOpts(body *api.V1ProjectUpdateJS
 	return opts, nil
 }
 
-func partialProjectToDTO(project *service.PartialProject) api.PartialProject {
-	np := api.PartialProject{
+func assignmentUsersByKind(assignments []service.PartialAssignee, kind model.AssignmentKind) []api.PartialUser {
+	users := make([]api.PartialUser, 0, len(assignments))
+	for _, assignment := range assignments {
+		if assignment.Kind != kind {
+			continue
+		}
+		user := api.PartialUser{
+			Id:        assignment.ID.String(),
+			FirstName: assignment.FirstName,
+			LastName:  assignment.LastName,
+		}
+		if assignment.Picture != "" {
+			picture := assignment.Picture
+			user.Picture = &picture
+		}
+		users = append(users, user)
+	}
+	return users
+}
+
+func partialUserToDTO(user *service.PartialUser) api.PartialUser {
+	if user == nil {
+		return api.PartialUser{}
+	}
+	dto := api.PartialUser{
+		Id:        user.ID.String(),
+		FirstName: user.FirstName,
+		LastName:  user.LastName,
+	}
+	if user.Picture != "" {
+		picture := user.Picture
+		dto.Picture = &picture
+	}
+	return dto
+}
+
+func partialUserPtrToDTO(user *service.PartialUser) *api.PartialUser {
+	if user == nil {
+		return nil
+	}
+	dto := partialUserToDTO(user)
+	return &dto
+}
+
+func partialLabelsToDTO(labels []service.PartialLabel) []api.PartialLabel {
+	out := make([]api.PartialLabel, len(labels))
+	for i, label := range labels {
+		out[i] = api.PartialLabel{
+			Id:   label.ID.String(),
+			Name: label.Name,
+		}
+	}
+	return out
+}
+
+func partialProjectToDTO(project *service.PartialProject) *api.PartialProject {
+	if project == nil {
+		return nil
+	}
+	dto := api.PartialProject{
 		Id:     project.ID.String(),
 		Key:    project.Key,
 		Name:   project.Name,
 		Status: api.ProjectStatus(project.Status.String()),
 	}
-
 	if project.Description != "" {
-		np.Description = &project.Description
+		dto.Description = &project.Description
 	}
-
 	if project.Logo != "" {
-		np.Logo = &project.Logo
+		dto.Logo = &project.Logo
+	}
+	return &dto
+}
+
+func partialNamespaceToDTO(namespace *service.PartialNamespace) *api.PartialNamespace {
+	if namespace == nil {
+		return nil
+	}
+	return &api.PartialNamespace{
+		Id:   namespace.ID.String(),
+		Name: namespace.Name,
+	}
+}
+
+func partialIssueToDTO(issue *service.PartialIssue) api.PartialIssue {
+	ni := api.PartialIssue{
+		Id:        issue.ID.String(),
+		Key:       issue.Key,
+		NumericId: int(issue.NumericID),
+		Kind:      api.IssueKind(issue.Kind.String()),
+		Title:     issue.Title,
+		Status:    api.IssueStatus(issue.Status.String()),
+		Priority:  api.IssuePriority(issue.Priority.String()),
+		Assignees: assignmentUsersByKind(issue.Assignments, model.AssignmentKindAssignee),
+		Reviewers: assignmentUsersByKind(issue.Assignments, model.AssignmentKindReviewer),
+		Labels:    partialLabelsToDTO(issue.Labels),
+		Project:   partialProjectToDTO(issue.Project),
+		Namespace: partialNamespaceToDTO(issue.Namespace),
+		DueDate:   issue.DueDate,
+		StartDate: issue.StartDate,
 	}
 
-	return np
+	if issue.ReportedBy != nil {
+		ni.ReportedBy = partialUserPtrToDTO(issue.ReportedBy)
+	}
+
+	if issue.Description != "" {
+		ni.Description = &issue.Description
+	}
+
+	if issue.Parent != nil {
+		parent := partialIssueToDTO(issue.Parent)
+		ni.Parent = &parent
+	}
+
+	return ni
 }
 
 func projectToDTO(project *service.Project) api.Project {
+	teams := project.Teams
+	if teams == nil {
+		teams = []model.ID{}
+	}
+
 	p := api.Project{
-		Id:        project.ID.String(),
-		Key:       project.Key,
-		Name:      project.Name,
-		Status:    api.ProjectStatus(project.Status.String()),
-		Teams:     make([]string, len(project.Teams)),
-		Documents: make([]api.PartialDocument, len(project.Documents)),
-		Issues:    make([]string, len(project.Issues)),
-		CreatedAt: *project.CreatedAt,
-		UpdatedAt: project.UpdatedAt,
+		Id:            project.ID.String(),
+		Key:           project.Key,
+		Name:          project.Name,
+		Status:        api.ProjectStatus(project.Status.String()),
+		Teams:         make([]string, len(teams)),
+		DocumentCount: project.DocumentCount,
+		IssueCount:    project.IssueCount,
+		CreatedAt:     *project.CreatedAt,
+		UpdatedAt:     project.UpdatedAt,
 	}
 
 	if project.Description != "" {
@@ -278,16 +389,8 @@ func projectToDTO(project *service.Project) api.Project {
 		p.Logo = &project.Logo
 	}
 
-	for i, team := range project.Teams {
+	for i, team := range teams {
 		p.Teams[i] = team.String()
-	}
-
-	for i, document := range project.Documents {
-		p.Documents[i] = partialDocumentToDTO(document)
-	}
-
-	for i, issue := range project.Issues {
-		p.Issues[i] = issue.String()
 	}
 
 	return p

@@ -1,6 +1,6 @@
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 
-import { NamespaceProjectsPage } from "@/components/namespaces";
+import { NamespaceProjectsPage } from "@/components/namespaces/namespace-pages";
 
 const namespaceRoute = getRouteApi("/_authenticated/namespaces/$namespaceId");
 

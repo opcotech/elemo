@@ -115,3 +115,55 @@ func TestResourceType_UnmarshalText(t *testing.T) {
 		})
 	}
 }
+
+func TestResourceType_MarshalBinary(t *testing.T) {
+	tests := []struct {
+		name string
+		rt   ResourceType
+		want []byte
+	}{
+		{"zero", ResourceType(0), []byte{0}},
+		{"issue", ResourceTypeIssue, []byte{byte(ResourceTypeIssue)}},
+		{"user", ResourceTypeUser, []byte{byte(ResourceTypeUser)}},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			got, err := tt.rt.MarshalBinary()
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestResourceType_UnmarshalBinary(t *testing.T) {
+	tests := []struct {
+		name    string
+		data    []byte
+		want    ResourceType
+		wantErr bool
+	}{
+		{"empty", []byte{}, ResourceType(0), false},
+		{"single byte zero", []byte{0}, ResourceType(0), false},
+		{"single byte issue", []byte{byte(ResourceTypeIssue)}, ResourceTypeIssue, false},
+		{"text name", []byte("User"), ResourceTypeUser, false},
+		{"enumer fallback zero", []byte("ResourceType(0)"), ResourceType(0), false},
+		{"enumer fallback high", []byte("ResourceType(100)"), ResourceType(100), false},
+		{"invalid text", []byte("not-a-type"), 0, true},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			var rt ResourceType
+			err := rt.UnmarshalBinary(tt.data)
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, rt)
+		})
+	}
+}

@@ -5,6 +5,17 @@ import type { LoginCredentials } from "@/lib/auth/types";
 import type { Client } from "@/lib/client/client";
 import { createClient } from "@/lib/client/client";
 
+const OAUTH_SCOPES = [
+  "user",
+  "organization",
+  "namespace",
+  "project",
+  "issue",
+  "label",
+  "todo",
+  "notification",
+];
+
 let cachedClient: Client | null = null;
 let cachedTokens: { access_token: string; refresh_token?: string } | null =
   null;
@@ -28,7 +39,7 @@ export async function createAuthenticatedClient(
     clientId: config.authClientId,
     clientSecret: config.authClientSecret,
     tokenUrl: "/oauth/token",
-    scopes: ["user", "organization", "todo", "notification"],
+    scopes: OAUTH_SCOPES,
   });
 
   const credentials: LoginCredentials = { email, password };
@@ -64,7 +75,7 @@ export async function createSystemOwnerClient(): Promise<Client> {
         clientId: config.authClientId,
         clientSecret: config.authClientSecret,
         tokenUrl: "/oauth/token",
-        scopes: ["user", "organization", "todo", "notification"],
+        scopes: OAUTH_SCOPES,
       });
       const isValid = await authClient.validateToken(cachedTokens.access_token);
       if (isValid) {

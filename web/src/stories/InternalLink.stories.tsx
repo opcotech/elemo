@@ -27,10 +27,7 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   render: () => (
-    <InternalLink
-      to={internalPath("/namespaces/demo/work")}
-      className="text-primary underline-offset-4 hover:underline"
-    >
+    <InternalLink to={internalPath("/namespaces/demo/work")}>
       Open namespace work
     </InternalLink>
   ),
@@ -40,10 +37,7 @@ export const InlineInCopy: Story = {
   render: () => (
     <p className="text-sm">
       Continue in{" "}
-      <InternalLink
-        to={internalPath("/settings")}
-        className="text-primary font-medium underline-offset-4 hover:underline"
-      >
+      <InternalLink to={internalPath("/settings")} className="font-medium">
         Settings
       </InternalLink>{" "}
       to manage your account.

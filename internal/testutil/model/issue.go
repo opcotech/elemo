@@ -11,25 +11,20 @@ import (
 )
 
 // NewCreateIssueOpts creates repository.CreateIssueOpts for tests.
+// NumericID is allocated by the repository from the project's counter.
 func NewCreateIssueOpts(projectID, reportedBy model.ID) repository.CreateIssueOpts {
-	numericID, err := strconv.Atoi(pkg.GenerateRandomStringNumeric(4))
-	if err != nil {
-		panic(err)
-	}
-
 	return repository.CreateIssueOpts{
 		ProjectID:   projectID,
-		NumericID:   uint(numericID), // nolint:gosec
 		Kind:        model.IssueKindStory,
 		Title:       pkg.GenerateRandomString(10),
 		Description: pkg.GenerateRandomString(10),
 		Status:      model.IssueStatusOpen,
-		Priority:    model.IssuePriorityMedium,
+		Priority:    model.IssuePriorityNormal,
 		Resolution:  model.IssueResolutionNone,
 		ReportedBy:  reportedBy,
-		Links: []string{
-			"https://example.com/" + pkg.GenerateRandomString(10),
-			"https://example.com/" + pkg.GenerateRandomString(10),
+		Links: []model.IssueLink{
+			{URL: "https://example.com/" + pkg.GenerateRandomString(10), Label: "Example 1"},
+			{URL: "https://example.com/" + pkg.GenerateRandomString(10), Label: "Example 2"},
 		},
 		DueDate: convert.ToPointer(time.Now().UTC().Add(24 * time.Hour)),
 	}
@@ -43,24 +38,25 @@ func NewRepositoryIssue(reportedBy model.ID) *repository.Issue {
 	}
 
 	return &repository.Issue{
-		ID:          model.MustNewID(model.ResourceTypeIssue),
-		NumericID:   uint(numericID), // nolint:gosec
-		Kind:        model.IssueKindStory,
-		Title:       pkg.GenerateRandomString(10),
-		Description: pkg.GenerateRandomString(10),
-		Status:      model.IssueStatusOpen,
-		Priority:    model.IssuePriorityMedium,
-		Resolution:  model.IssueResolutionNone,
-		ReportedBy:  reportedBy,
-		Assignees:   make([]model.ID, 0),
-		Labels:      make([]model.ID, 0),
-		Comments:    make([]model.ID, 0),
-		Attachments: make([]model.ID, 0),
-		Watchers:    make([]model.ID, 0),
-		Relations:   make([]model.ID, 0),
-		Links: []string{
-			"https://example.com/" + pkg.GenerateRandomString(10),
-			"https://example.com/" + pkg.GenerateRandomString(10),
+		ID:              model.MustNewID(model.ResourceTypeIssue),
+		Key:             model.FormatIssueKey("TEST", uint(numericID)), // nolint:gosec
+		NumericID:       uint(numericID),                               // nolint:gosec
+		Kind:            model.IssueKindStory,
+		Title:           pkg.GenerateRandomString(10),
+		Description:     pkg.GenerateRandomString(10),
+		Status:          model.IssueStatusOpen,
+		Priority:        model.IssuePriorityNormal,
+		Resolution:      model.IssueResolutionNone,
+		ReportedBy:      &repository.PartialUser{ID: reportedBy},
+		Assignments:     make([]repository.PartialAssignee, 0),
+		Labels:          make([]repository.PartialLabel, 0),
+		CommentCount:    convert.ToPointer(int64(0)),
+		AttachmentCount: convert.ToPointer(int64(0)),
+		WatcherCount:    convert.ToPointer(int64(0)),
+		RelationCount:   convert.ToPointer(int64(0)),
+		Links: []model.IssueLink{
+			{URL: "https://example.com/" + pkg.GenerateRandomString(10), Label: "Example 1"},
+			{URL: "https://example.com/" + pkg.GenerateRandomString(10), Label: "Example 2"},
 		},
 		DueDate:   convert.ToPointer(time.Now().UTC().Add(24 * time.Hour)),
 		CreatedAt: convert.ToPointer(time.Now().UTC()),
@@ -87,9 +83,9 @@ func NewIssue(reportedBy model.ID) *model.Issue {
 	}
 
 	issue.Description = pkg.GenerateRandomString(10)
-	issue.Links = []string{
-		"https://example.com/" + pkg.GenerateRandomString(10),
-		"https://example.com/" + pkg.GenerateRandomString(10),
+	issue.Links = []model.IssueLink{
+		{URL: "https://example.com/" + pkg.GenerateRandomString(10), Label: "Example 1"},
+		{URL: "https://example.com/" + pkg.GenerateRandomString(10), Label: "Example 2"},
 	}
 	issue.DueDate = convert.ToPointer(time.Now().UTC().Add(24 * time.Hour))
 

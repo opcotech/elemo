@@ -305,7 +305,7 @@ func TestNotificationService_Get(t *testing.T) {
 				},
 				notificationRepo: func(ctrl *gomock.Controller, ctx context.Context, id, recipient model.ID, notification *repository.Notification) repository.NotificationRepository {
 					repo := repository.NewMockNotificationRepository(ctrl)
-					repo.EXPECT().Get(ctx, id, recipient).Return(notification, nil)
+					repo.EXPECT().Get(ctx, id, recipient, repository.NotificationDetailProjection()).Return(notification, nil)
 					return repo
 				},
 			},
@@ -344,7 +344,7 @@ func TestNotificationService_Get(t *testing.T) {
 				},
 				notificationRepo: func(ctrl *gomock.Controller, ctx context.Context, id, recipient model.ID, _ *repository.Notification) repository.NotificationRepository {
 					repo := repository.NewMockNotificationRepository(ctrl)
-					repo.EXPECT().Get(ctx, id, recipient).Return(nil, assert.AnError)
+					repo.EXPECT().Get(ctx, id, recipient, repository.NotificationDetailProjection()).Return(nil, assert.AnError)
 					return repo
 				},
 			},
@@ -451,53 +451,51 @@ func TestNotificationService_Get(t *testing.T) {
 	}
 }
 
-func TestNotificationService_GetAllByRecipient(t *testing.T) {
+func TestNotificationService_ListByRecipient(t *testing.T) {
 	recipientID := model.MustNewID(model.ResourceTypeUser)
 
 	type fields struct {
-		baseService      func(ctrl *gomock.Controller, ctx context.Context, recipient model.ID, offset, limit int, notifications []*repository.Notification) *baseService
-		notificationRepo func(ctrl *gomock.Controller, ctx context.Context, recipient model.ID, offset, limit int, notifications []*repository.Notification) repository.NotificationRepository
+		baseService      func(ctrl *gomock.Controller, ctx context.Context, recipient model.ID, page CursorPage, notifications []*repository.Notification) *baseService
+		notificationRepo func(ctrl *gomock.Controller, ctx context.Context, recipient model.ID, page CursorPage, notifications []*repository.Notification) repository.NotificationRepository
 	}
 	type args struct {
 		ctx       context.Context
 		recipient model.ID
-		offset    int
-		limit     int
+		page      CursorPage
 	}
 	tests := []struct {
 		name    string
 		fields  fields
 		args    args
 		repoN   []*repository.Notification
-		want    []*Notification
+		want    Page[*Notification]
 		wantErr error
 	}{
 		{
-			name: "get all notifications by recipient",
+			name: "list notifications by recipient",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _, _ int, _ []*repository.Notification) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ CursorPage, _ []*repository.Notification) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.notificationService/GetAllByRecipient", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "service.notificationService/ListByRecipient", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
 						logger: mock.NewMockLogger(ctrl),
 						tracer: tracer,
 					}
 				},
-				notificationRepo: func(ctrl *gomock.Controller, ctx context.Context, recipient model.ID, offset, limit int, notifications []*repository.Notification) repository.NotificationRepository {
+				notificationRepo: func(ctrl *gomock.Controller, ctx context.Context, recipient model.ID, page CursorPage, notifications []*repository.Notification) repository.NotificationRepository {
 					repo := repository.NewMockNotificationRepository(ctrl)
-					repo.EXPECT().GetAllByRecipient(ctx, recipient, offset, limit).Return(notifications, nil)
+					repo.EXPECT().ListByRecipient(ctx, recipient, page, repository.NotificationListProjection()).Return(repository.Page[*repository.Notification]{Items: notifications}, nil)
 					return repo
 				},
 			},
 			args: args{
 				ctx:       context.WithValue(context.Background(), pkg.CtxKeyUserID, recipientID),
 				recipient: recipientID,
-				offset:    0,
-				limit:     10,
+				page:      CursorPage{Size: 10},
 			},
 			repoN: []*repository.Notification{
 				{
@@ -513,7 +511,7 @@ func TestNotificationService_GetAllByRecipient(t *testing.T) {
 					Recipient:   recipientID,
 				},
 			},
-			want: []*Notification{
+			want: Page[*Notification]{Items: []*Notification{
 				{
 					ID:          model.MustNewID(model.ResourceTypeNotification),
 					Title:       "test",
@@ -526,115 +524,111 @@ func TestNotificationService_GetAllByRecipient(t *testing.T) {
 					Description: "test notification",
 					Recipient:   recipientID,
 				},
-			},
+			}},
 		},
 		{
-			name: "get all notifications by recipient with error",
+			name: "list notifications by recipient with error",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _, _ int, _ []*repository.Notification) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ CursorPage, _ []*repository.Notification) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.notificationService/GetAllByRecipient", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "service.notificationService/ListByRecipient", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
 						logger: mock.NewMockLogger(ctrl),
 						tracer: tracer,
 					}
 				},
-				notificationRepo: func(ctrl *gomock.Controller, ctx context.Context, recipient model.ID, offset, limit int, _ []*repository.Notification) repository.NotificationRepository {
+				notificationRepo: func(ctrl *gomock.Controller, ctx context.Context, recipient model.ID, page CursorPage, _ []*repository.Notification) repository.NotificationRepository {
 					repo := repository.NewMockNotificationRepository(ctrl)
-					repo.EXPECT().GetAllByRecipient(ctx, recipient, offset, limit).Return(nil, assert.AnError)
+					repo.EXPECT().ListByRecipient(ctx, recipient, page, repository.NotificationListProjection()).Return(repository.Page[*repository.Notification]{}, assert.AnError)
 					return repo
 				},
 			},
 			args: args{
 				ctx:       context.WithValue(context.Background(), pkg.CtxKeyUserID, recipientID),
 				recipient: recipientID,
-				offset:    0,
-				limit:     10,
+				page:      CursorPage{Size: 10},
 			},
 			wantErr: ErrNotificationGetAllByRecipient,
 		},
 		{
-			name: "get all notifications by recipient with invalid recipient ID",
+			name: "list notifications by recipient with invalid recipient ID",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _, _ int, _ []*repository.Notification) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ CursorPage, _ []*repository.Notification) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.notificationService/GetAllByRecipient", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "service.notificationService/ListByRecipient", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
 						logger: mock.NewMockLogger(ctrl),
 						tracer: tracer,
 					}
 				},
-				notificationRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _, _ int, _ []*repository.Notification) repository.NotificationRepository {
+				notificationRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ CursorPage, _ []*repository.Notification) repository.NotificationRepository {
 					return repository.NewMockNotificationRepository(ctrl)
 				},
 			},
 			args: args{
 				ctx:       context.WithValue(context.Background(), pkg.CtxKeyUserID, model.ID{}),
 				recipient: model.ID{},
-				offset:    0,
-				limit:     10,
+				page:      CursorPage{Size: 10},
 			},
 			wantErr: ErrNotificationGetAllByRecipient,
 		},
 		{
-			name: "get all notifications by recipient with invalid pagination",
+			name: "list notifications by recipient with invalid page size",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _, _ int, _ []*repository.Notification) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ CursorPage, _ []*repository.Notification) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.notificationService/GetAllByRecipient", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "service.notificationService/ListByRecipient", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
 						logger: mock.NewMockLogger(ctrl),
 						tracer: tracer,
 					}
 				},
-				notificationRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _, _ int, _ []*repository.Notification) repository.NotificationRepository {
+				notificationRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ CursorPage, _ []*repository.Notification) repository.NotificationRepository {
 					return repository.NewMockNotificationRepository(ctrl)
 				},
 			},
 			args: args{
 				ctx:       context.WithValue(context.Background(), pkg.CtxKeyUserID, recipientID),
 				recipient: recipientID,
-				offset:    -1,
-				limit:     0,
+				page:      CursorPage{Size: -1},
 			},
-			wantErr: ErrInvalidPaginationParams,
+			wantErr: ErrNotificationGetAllByRecipient,
 		},
 		{
-			name: "get all notifications by recipient with permission denied",
+			name: "list notifications by recipient with permission denied",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _, _ int, _ []*repository.Notification) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ CursorPage, _ []*repository.Notification) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.notificationService/GetAllByRecipient", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "service.notificationService/ListByRecipient", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
 						logger: mock.NewMockLogger(ctrl),
 						tracer: tracer,
 					}
 				},
-				notificationRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _, _ int, _ []*repository.Notification) repository.NotificationRepository {
+				notificationRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ CursorPage, _ []*repository.Notification) repository.NotificationRepository {
 					return repository.NewMockNotificationRepository(ctrl)
 				},
 			},
 			args: args{
 				ctx:       context.WithValue(context.Background(), pkg.CtxKeyUserID, model.MustNewID(model.ResourceTypeUser)),
 				recipient: recipientID,
-				offset:    0,
-				limit:     10,
+				page:      CursorPage{Size: 10},
 			},
 			wantErr: ErrNoPermission,
 		},
@@ -647,17 +641,17 @@ func TestNotificationService_GetAllByRecipient(t *testing.T) {
 			defer ctrl.Finish()
 
 			// Align want IDs with repo fixtures when both are set with matching length.
-			if len(tt.repoN) > 0 && len(tt.want) == len(tt.repoN) {
-				for i := range tt.want {
-					tt.want[i].ID = tt.repoN[i].ID
+			if len(tt.repoN) > 0 && len(tt.want.Items) == len(tt.repoN) {
+				for i := range tt.want.Items {
+					tt.want.Items[i].ID = tt.repoN[i].ID
 				}
 			}
 
 			s := &notificationService{
-				baseService:      tt.fields.baseService(ctrl, tt.args.ctx, tt.args.recipient, tt.args.offset, tt.args.limit, tt.repoN),
-				notificationRepo: tt.fields.notificationRepo(ctrl, tt.args.ctx, tt.args.recipient, tt.args.offset, tt.args.limit, tt.repoN),
+				baseService:      tt.fields.baseService(ctrl, tt.args.ctx, tt.args.recipient, tt.args.page, tt.repoN),
+				notificationRepo: tt.fields.notificationRepo(ctrl, tt.args.ctx, tt.args.recipient, tt.args.page, tt.repoN),
 			}
-			got, err := s.GetAllByRecipient(tt.args.ctx, tt.args.recipient, tt.args.offset, tt.args.limit)
+			got, err := s.ListByRecipient(tt.args.ctx, tt.args.recipient, tt.args.page)
 			require.ErrorIs(t, err, tt.wantErr)
 			assert.Equal(t, tt.want, got)
 		})

@@ -5,7 +5,6 @@ import (
 	"errors"
 
 	"github.com/opcotech/elemo/internal/model"
-	"github.com/opcotech/elemo/internal/pkg"
 	"github.com/opcotech/elemo/internal/pkg/optional"
 	"github.com/opcotech/elemo/internal/service"
 	"github.com/opcotech/elemo/internal/transport/http/api"
@@ -63,11 +62,16 @@ func (c *namespaceController) V1OrganizationsNamespacesGet(ctx context.Context, 
 		return api.V1OrganizationsNamespacesGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
-	namespaces, err := c.namespaceService.GetAll(ctx, organizationID,
-		pkg.DefaultPtr(request.Params.Offset, DefaultOffset),
-		pkg.DefaultPtr(request.Params.Limit, DefaultLimit),
-	)
+	pageParams, err := cursorPageFromParams(request.Params.PageSize, request.Params.PageToken)
 	if err != nil {
+		return api.V1OrganizationsNamespacesGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
+	}
+
+	page, err := c.namespaceService.List(ctx, organizationID, pageParams)
+	if err != nil {
+		if isInvalidPageError(err) {
+			return api.V1OrganizationsNamespacesGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
+		}
 		if errors.Is(err, service.ErrNoPermission) {
 			return api.V1OrganizationsNamespacesGet403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		}
@@ -79,12 +83,15 @@ func (c *namespaceController) V1OrganizationsNamespacesGet(ctx context.Context, 
 		}}, nil
 	}
 
-	namespacesDTO := make([]api.Namespace, len(namespaces))
-	for i, namespace := range namespaces {
+	namespacesDTO := make([]api.Namespace, len(page.Items))
+	for i, namespace := range page.Items {
 		namespacesDTO[i] = namespaceToDTO(namespace)
 	}
 
-	return api.V1OrganizationsNamespacesGet200JSONResponse(namespacesDTO), nil
+	return api.V1OrganizationsNamespacesGet200JSONResponse{
+		Items:    namespacesDTO,
+		PageInfo: pageInfoToDTO(page.PageInfo),
+	}, nil
 }
 
 func (c *namespaceController) V1NamespaceGet(ctx context.Context, request api.V1NamespaceGetRequestObject) (api.V1NamespaceGetResponseObject, error) {
@@ -208,24 +215,16 @@ func updateNamespaceJSONRequestBodyToUpdateNamespaceOpts(body *api.V1NamespaceUp
 
 func namespaceToDTO(namespace *service.Namespace) api.Namespace {
 	n := api.Namespace{
-		Id:        namespace.ID.String(),
-		Name:      namespace.Name,
-		Projects:  make([]api.PartialProject, len(namespace.Projects)),
-		Documents: make([]api.PartialDocument, len(namespace.Documents)),
-		CreatedAt: *namespace.CreatedAt,
-		UpdatedAt: namespace.UpdatedAt,
+		Id:            namespace.ID.String(),
+		Name:          namespace.Name,
+		ProjectCount:  namespace.ProjectCount,
+		DocumentCount: namespace.DocumentCount,
+		CreatedAt:     *namespace.CreatedAt,
+		UpdatedAt:     namespace.UpdatedAt,
 	}
 
 	if namespace.Description != "" {
 		n.Description = &namespace.Description
-	}
-
-	for i, project := range namespace.Projects {
-		n.Projects[i] = partialProjectToDTO(project)
-	}
-
-	for i, document := range namespace.Documents {
-		n.Documents[i] = partialDocumentToDTO(document)
 	}
 
 	return n

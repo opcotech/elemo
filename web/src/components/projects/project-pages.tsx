@@ -1,3 +1,4 @@
+import { useQuery } from "@tanstack/react-query";
 import {
   ActivityIcon,
   ArrowRightIcon,
@@ -9,24 +10,28 @@ import { useMemo, useState } from "react";
 import { ContentWidth } from "@/components/layout/content-width";
 import { openQuickCreate } from "@/components/quick-create/open";
 import { ActivityFeed } from "@/components/shared/activity-feed";
-import { AppEmptyState, MockDataAlert } from "@/components/shared/app-feedback";
-import { CreateButton } from "@/components/shared/create-button";
+import { MockDataAlert } from "@/components/shared/app-feedback";
 import { EntityHeader, PageActions } from "@/components/shared/entity-header";
 import { AppList, EntityLink } from "@/components/shared/entity-link";
-import { PropertyList } from "@/components/shared/property-list";
 import { RelationList } from "@/components/shared/relation-list";
-import { Section } from "@/components/shared/section";
-import { StatusIndicator } from "@/components/shared/status-indicator";
 import { Button } from "@/components/ui/button";
+import { CreateButton } from "@/components/ui/create-button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { InternalLink } from "@/components/ui/internal-link";
 import { Progress } from "@/components/ui/progress";
+import { PropertyList } from "@/components/ui/property-list";
+import { Section } from "@/components/ui/section";
+import { StatusIndicator } from "@/components/ui/status-indicator";
 import { CompactWorkList } from "@/components/work/work-list";
 import {
   ResourceType,
   usePermissions,
   withResourceType,
 } from "@/hooks/use-permissions";
+import { collectedListQuery, cursorPageQuery } from "@/lib/api/cursor-pages";
+import { v1ProjectsDocumentsGetOptions } from "@/lib/api/query-options";
+import { v1ProjectsDocumentsGet } from "@/lib/api/sdk";
 import type { Namespace, Project } from "@/lib/api/types";
 import { can } from "@/lib/auth/permissions";
 import { internalPath } from "@/lib/internal-url";
@@ -58,9 +63,16 @@ export function ProjectOverviewPage({
   const projectRelations = selectRelations({
     entity: { id: work[0]?.id ?? "", type: "work-item" },
   });
-  const progress = project.issues.length
-    ? Math.min(92, 28 + project.issues.length * 9)
-    : 0;
+  const issueCount = project.issue_count ?? 0;
+  const { data: documentsPage } = useQuery(
+    v1ProjectsDocumentsGetOptions({
+      path: { id: project.id },
+      query: { page_size: 5 },
+    })
+  );
+  const documents = documentsPage?.items ?? [];
+  const documentCount = project.document_count ?? 0;
+  const progress = issueCount ? Math.min(92, 28 + issueCount * 9) : 0;
 
   return (
     <ContentWidth width="overview" className="space-y-7">
@@ -106,17 +118,17 @@ export function ProjectOverviewPage({
               <div className="flex items-center gap-3">
                 <Progress value={progress} className="flex-1" />
                 <span className="text-muted-foreground text-sm tabular-nums">
-                  {project.issues.length
+                  {issueCount
                     ? `${progress}% illustrative`
                     : "No issue progress"}
                 </span>
               </div>
               <p className="text-muted-foreground mt-3 text-sm">
-                {project.issues.length
-                  ? `${project.issues.length} linked issues are associated with this project.`
+                {issueCount
+                  ? `${issueCount} linked issues are associated with this project.`
                   : "No linked issues are associated with this project yet."}
               </p>
-              {project.issues.length > 0 && (
+              {issueCount > 0 && (
                 <MockDataAlert title="Illustrative progress" className="mt-3">
                   Progress is estimated from linked issues and does not reflect
                   verified completion.
@@ -169,9 +181,9 @@ export function ProjectOverviewPage({
               </Button>
             }
           >
-            {project.documents.length > 0 ? (
+            {documents.length > 0 ? (
               <AppList>
-                {project.documents.slice(0, 5).map((document) => (
+                {documents.map((document) => (
                   <EntityLink
                     key={document.id}
                     type="document"
@@ -182,7 +194,7 @@ export function ProjectOverviewPage({
                 ))}
               </AppList>
             ) : (
-              <AppEmptyState
+              <EmptyState
                 compact
                 icon={<FileTextIcon />}
                 title="No project documents"
@@ -214,11 +226,11 @@ export function ProjectOverviewPage({
                 },
                 {
                   label: "Issues",
-                  value: `${project.issues.length} embedded IDs`,
+                  value: `${issueCount} linked issues`,
                 },
                 {
                   label: "Documents",
-                  value: project.documents.length,
+                  value: documentCount,
                 },
               ]}
             />
@@ -250,17 +262,32 @@ export function ProjectDocumentsPage({
   project: Project;
 }) {
   const [query, setQuery] = useState("");
+  const listOptions = v1ProjectsDocumentsGetOptions({
+    path: { id: project.id },
+  });
+  const { data: documentsPage } = useQuery(
+    collectedListQuery(listOptions, async (pageToken, signal) => {
+      const { data } = await v1ProjectsDocumentsGet({
+        path: { id: project.id },
+        query: cursorPageQuery(pageToken),
+        signal,
+        throwOnError: true,
+      });
+      return data;
+    })
+  );
   const documents = useMemo(() => {
+    const items = documentsPage?.items ?? [];
     const normalized = query.trim().toLowerCase();
-    if (!normalized) return project.documents;
-    return project.documents.filter((document) =>
+    if (!normalized) return items;
+    return items.filter((document) =>
       [document.name, document.excerpt]
         .filter(Boolean)
         .join(" ")
         .toLowerCase()
         .includes(normalized)
     );
-  }, [project.documents, query]);
+  }, [documentsPage?.items, query]);
 
   return (
     <ContentWidth width="overview" className="space-y-6">
@@ -307,7 +334,7 @@ export function ProjectDocumentsPage({
           ))}
         </AppList>
       ) : (
-        <AppEmptyState
+        <EmptyState
           icon={<FileTextIcon />}
           title={query ? "No document matches" : "No project documents"}
           description={
@@ -352,7 +379,7 @@ export function ProjectActivityPage({
       {activity.length > 0 ? (
         <ActivityFeed entries={activity} />
       ) : (
-        <AppEmptyState
+        <EmptyState
           icon={<ActivityIcon />}
           title="No activity"
           description="Meaningful changes will appear here as activity becomes available."

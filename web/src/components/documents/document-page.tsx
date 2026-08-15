@@ -2,10 +2,11 @@ import { CheckIcon, FileQuestionIcon } from "lucide-react";
 import { useEffect } from "react";
 
 import { ContentWidth } from "@/components/layout/content-width";
-import { AppEmptyState, MockDataAlert } from "@/components/shared/app-feedback";
+import { MockDataAlert } from "@/components/shared/app-feedback";
 import { EntityHeader, PageActions } from "@/components/shared/entity-header";
 import { RelationList } from "@/components/shared/relation-list";
-import { Section } from "@/components/shared/section";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Section } from "@/components/ui/section";
 import { Separator } from "@/components/ui/separator";
 import { internalPath } from "@/lib/internal-url";
 import { getDocumentBody, selectRelations } from "@/lib/mock-data";
@@ -109,7 +110,7 @@ export function DocumentPage({ documentId }: { documentId: string }) {
           A short summary exists for this document, but the full body is not
           available to display yet.
         </MockDataAlert>
-        <AppEmptyState
+        <EmptyState
           icon={<FileQuestionIcon />}
           title="No readable body"
           description="Return to the source namespace or project document list."

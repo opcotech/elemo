@@ -5,12 +5,12 @@ import { useMemo } from "react";
 import { z } from "zod";
 
 import { ContentWidth } from "@/components/layout/content-width";
-import { AppEmptyState } from "@/components/shared/app-feedback";
 import { AppList, EntityLink } from "@/components/shared/entity-link";
-import { PageHeader } from "@/components/shared/page-header";
-import { StatusIndicator } from "@/components/shared/status-indicator";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { InternalLink } from "@/components/ui/internal-link";
+import { ListSkeleton } from "@/components/ui/list-skeleton";
+import { PageHeader } from "@/components/ui/page-header";
 import { SearchInput } from "@/components/ui/search-input";
 import {
   Select,
@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { StatusIndicator } from "@/components/ui/status-indicator";
 import {
   ResourceType,
   usePermissions,
@@ -47,9 +48,10 @@ export const Route = createFileRoute("/_authenticated/organizations/")({
 function OrganizationsListPage() {
   const search = Route.useSearch();
   const navigate = Route.useNavigate();
-  const { data: organizations, isLoading } = useQuery(
+  const { data: organizationsPage, isLoading } = useQuery(
     v1OrganizationsGetOptions()
   );
+  const organizations = organizationsPage?.items;
   const { data: systemPermissions } = usePermissions(
     withResourceType(ResourceType.Organization)
   );
@@ -156,7 +158,7 @@ function OrganizationsListPage() {
       </div>
 
       {isLoading ? (
-        <p className="text-muted-foreground text-sm">Loading organizations…</p>
+        <ListSkeleton />
       ) : filteredOrganizations.length > 0 ? (
         <AppList>
           {filteredOrganizations.map((organization) => (
@@ -171,8 +173,8 @@ function OrganizationsListPage() {
                   <StatusIndicator status={organization.status} />
                   <span className="truncate">
                     {organization.email ||
-                      `${organization.members.length} ${pluralize(
-                        organization.members.length,
+                      `${organization.member_count ?? 0} ${pluralize(
+                        organization.member_count ?? 0,
                         "member",
                         "members"
                       )}`}
@@ -183,7 +185,7 @@ function OrganizationsListPage() {
           ))}
         </AppList>
       ) : (
-        <AppEmptyState
+        <EmptyState
           icon={<Building2Icon />}
           title={
             hasActiveFilters ? "No matching organizations" : "No organizations"

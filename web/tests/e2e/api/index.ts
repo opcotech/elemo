@@ -12,5 +12,7 @@ export * from "./organizations";
 export * from "./permissions";
 export * from "./projects";
 export * from "./roles";
+export * from "./issues";
+export * from "./todos";
 export * from "./client";
 export * from "./error-handler";

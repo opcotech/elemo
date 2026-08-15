@@ -69,7 +69,7 @@ export function DocumentQuickCreate({ onCancel }: QuickCreateKindProps) {
                   <FieldLabel>Description</FieldLabel>
                   <FieldControl>
                     <Textarea
-                      placeholder="Add context (optional)"
+                      placeholder="Add context"
                       rows={3}
                       {...field}
                       value={getDefaultValue(field.value)}

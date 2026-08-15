@@ -3,9 +3,10 @@ package repository
 import (
 	"context"
 	"errors"
+	"strings"
 	"time"
 
-	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
+	"github.com/neo4j/neo4j-go-driver/v6/neo4j"
 
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/convert"
@@ -31,17 +32,17 @@ type PartialProject struct {
 
 // Project represents a project persisted by the repository.
 type Project struct {
-	ID          model.ID            `json:"id"`
-	Key         string              `json:"key"`
-	Name        string              `json:"name"`
-	Description string              `json:"description"`
-	Logo        string              `json:"logo"`
-	Status      model.ProjectStatus `json:"status"`
-	Teams       []model.ID          `json:"teams"`
-	Documents   []*PartialDocument  `json:"documents"`
-	Issues      []model.ID          `json:"issues"`
-	CreatedAt   *time.Time          `json:"created_at"`
-	UpdatedAt   *time.Time          `json:"updated_at"`
+	ID            model.ID            `json:"id"`
+	Key           string              `json:"key"`
+	Name          string              `json:"name"`
+	Description   string              `json:"description"`
+	Logo          string              `json:"logo"`
+	Status        model.ProjectStatus `json:"status"`
+	Teams         []model.ID          `json:"teams"`
+	DocumentCount *int64              `json:"document_count"`
+	IssueCount    *int64              `json:"issue_count"`
+	CreatedAt     *time.Time          `json:"created_at"`
+	UpdatedAt     *time.Time          `json:"updated_at"`
 }
 
 // CreateProjectOpts holds the data required to create a project.
@@ -88,64 +89,13 @@ func (o UpdateProjectOpts) patch() map[string]any {
 	return p
 }
 
-// scanPartialProjects scans the record into partial projects.
-func scanPartialProjects(record *neo4j.Record, key string) ([]*PartialProject, error) {
-	projectsVal, err := Neo4jParseValueFromRecord[[]any](record, key)
-	if err != nil {
-		projectsVal = []any{}
-	}
-
-	projects := make([]*PartialProject, 0, len(projectsVal))
-	for _, pVal := range projectsVal {
-		if pVal == nil {
-			return nil, err
-		}
-		pNode, ok := pVal.(neo4j.Node)
-		if !ok {
-			return nil, err
-		}
-
-		projectID, err := model.NewIDFromString(pNode.GetProperties()["id"].(string), model.ResourceTypeProject.String())
-		if err != nil {
-			return nil, err
-		}
-
-		var tempProject struct {
-			Key         string `json:"key"`
-			Name        string `json:"name"`
-			Description string `json:"description"`
-			Logo        string `json:"logo"`
-			Status      string `json:"status"`
-		}
-		if err := Neo4jScanIntoStruct(&pNode, &tempProject, []string{"id"}); err != nil {
-			return nil, err
-		}
-
-		var status model.ProjectStatus
-		if err := status.UnmarshalText([]byte(tempProject.Status)); err != nil {
-			return nil, err
-		}
-
-		projects = append(projects, &PartialProject{
-			ID:          projectID,
-			Key:         tempProject.Key,
-			Name:        tempProject.Name,
-			Description: tempProject.Description,
-			Logo:        tempProject.Logo,
-			Status:      status,
-		})
-	}
-
-	return projects, nil
-}
-
 //go:generate go tool mockgen -source=project.go -destination=project_mock_gen.go -package=repository -mock_names "ProjectRepository=MockProjectRepository"
 type ProjectRepository interface {
 	Create(ctx context.Context, opts CreateProjectOpts) (*Project, error)
-	Get(ctx context.Context, id model.ID) (*Project, error)
-	GetByKey(ctx context.Context, key string) (*Project, error)
-	GetAll(ctx context.Context, namespaceID model.ID, offset, limit int) ([]*Project, error)
-	Update(ctx context.Context, id model.ID, opts UpdateProjectOpts) (*Project, error)
+	Get(ctx context.Context, id model.ID, proj ProjectProjection) (*Project, error)
+	GetByKey(ctx context.Context, key string, proj ProjectProjection) (*Project, error)
+	List(ctx context.Context, namespaceID model.ID, page CursorPage, proj ProjectProjection) (Page[*Project], error)
+	Update(ctx context.Context, id model.ID, opts UpdateProjectOpts, proj ProjectProjection) (*Project, error)
 	Delete(ctx context.Context, id model.ID) error
 }
 
@@ -154,181 +104,288 @@ type Neo4jProjectRepository struct {
 	*neo4jBaseRepository
 }
 
-func (r *Neo4jProjectRepository) scan(pp, dp, tp, ip string) func(rec *neo4j.Record) (*Project, error) {
-	return func(rec *neo4j.Record) (*Project, error) {
-		p := new(Project)
+func decodeProjectRecord(record *neo4j.Record, proj ProjectProjection) (*Project, error) {
+	node, err := Neo4jRecordNode(record, "p")
+	if err != nil {
+		return nil, err
+	}
 
-		val, _, err := neo4j.GetRecordValue[neo4j.Node](rec, pp)
+	project := new(Project)
+	if err := Neo4jScanNodeScalars(node, project, []string{"id", "issue_count", "document_count"}); err != nil {
+		return nil, err
+	}
+
+	project.ID, err = Neo4jDecodeID(node, model.ResourceTypeProject)
+	if err != nil {
+		return nil, err
+	}
+	if proj.Teams {
+		project.Teams = make([]model.ID, 0)
+	}
+	if proj.IssueCount {
+		issueCount, err := Neo4jParseValueFromRecord[int64](record, "issue_count")
 		if err != nil {
 			return nil, err
 		}
-
-		if err := Neo4jScanIntoStruct(&val, &p, []string{"id"}); err != nil {
-			return nil, err
-		}
-
-		p.ID, _ = model.NewIDFromString(val.GetProperties()["id"].(string), model.ResourceTypeProject.String())
-
-		if p.Documents, err = scanPartialDocuments(rec, dp); err != nil {
-			return nil, err
-		}
-
-		if p.Teams, err = Neo4jParseIDsFromRecord(rec, tp, model.ResourceTypeRole.String()); err != nil {
-			return nil, err
-		}
-
-		if p.Issues, err = Neo4jParseIDsFromRecord(rec, ip, model.ResourceTypeIssue.String()); err != nil {
-			return nil, err
-		}
-
-		return p, nil
+		project.IssueCount = convert.ToPointer(issueCount)
 	}
+	if proj.DocumentCount {
+		documentCount, err := Neo4jParseValueFromRecord[int64](record, "document_count")
+		if err != nil {
+			return nil, err
+		}
+		project.DocumentCount = convert.ToPointer(documentCount)
+	}
+
+	return project, nil
+}
+
+func (r *Neo4jProjectRepository) applyProjectLoaders(
+	ctx context.Context,
+	tx neo4j.ManagedTransaction,
+	plan QueryPlan,
+	projects []*Project,
+) error {
+	if len(projects) == 0 || len(plan.Loaders) == 0 {
+		return nil
+	}
+
+	ids := make([]string, 0, len(projects))
+	projectsByID := make(map[string]*Project, len(projects))
+	for _, project := range projects {
+		if project == nil {
+			continue
+		}
+		id := project.ID.String()
+		ids = append(ids, id)
+		projectsByID[id] = project
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+
+	for _, loader := range plan.Loaders {
+		query := loader
+		query.Params = cloneParams(loader.Params)
+		query.Params["ids"] = ids
+
+		switch {
+		case strings.HasSuffix(loader.Name, ".teams"):
+			rows, _, err := Neo4jRunQuery(ctx, tx, query, func(record *neo4j.Record) (struct {
+				projectID string
+				teamIDs   []model.ID
+			}, error) {
+				projectID, err := Neo4jParseValueFromRecord[string](record, "project_id")
+				if err != nil {
+					return struct {
+						projectID string
+						teamIDs   []model.ID
+					}{}, err
+				}
+				teamIDs, err := Neo4jRecordIDs(record, "team_ids", model.ResourceTypeRole)
+				if err != nil {
+					return struct {
+						projectID string
+						teamIDs   []model.ID
+					}{}, err
+				}
+				return struct {
+					projectID string
+					teamIDs   []model.ID
+				}{
+					projectID: projectID,
+					teamIDs:   teamIDs,
+				}, nil
+			})
+			if err != nil {
+				return err
+			}
+			for _, row := range rows {
+				project, ok := projectsByID[row.projectID]
+				if !ok {
+					continue
+				}
+				project.Teams = row.teamIDs
+			}
+		default:
+			return ErrQueryCompile
+		}
+	}
+
+	return nil
+}
+
+func (r *Neo4jProjectRepository) readProjectPlan(
+	ctx context.Context,
+	plan QueryPlan,
+	proj ProjectProjection,
+) ([]*Project, error) {
+	projects := make([]*Project, 0)
+
+	if err := Neo4jExecuteReadPlan(ctx, r.db, plan, func(tx neo4j.ManagedTransaction) error {
+		rootProjects, _, err := Neo4jRunQuery(ctx, tx, plan.Root, func(record *neo4j.Record) (*Project, error) {
+			return decodeProjectRecord(record, proj)
+		})
+		if err != nil {
+			return err
+		}
+
+		projects = rootProjects
+		return r.applyProjectLoaders(ctx, tx, plan, projects)
+	}); err != nil {
+		return nil, err
+	}
+
+	return projects, nil
 }
 
 func (r *Neo4jProjectRepository) Create(ctx context.Context, opts CreateProjectOpts) (*Project, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.ProjectRepository/Create")
 	defer span.End()
 
-	createdAt := convert.ToPointer(time.Now().UTC())
-
-	project := &Project{
-		ID:          model.MustNewID(model.ResourceTypeProject),
-		Key:         opts.Key,
-		Name:        opts.Name,
-		Description: opts.Description,
-		Logo:        opts.Logo,
-		Status:      opts.Status,
-		Teams:       make([]model.ID, 0),
-		Documents:   make([]*PartialDocument, 0),
-		Issues:      make([]model.ID, 0),
-		CreatedAt:   createdAt,
-		UpdatedAt:   nil,
-	}
+	createdAt := time.Now().UTC()
+	id := model.MustNewID(model.ResourceTypeProject)
 
 	cypher := `
 	MATCH (u:` + opts.CreatorID.Label() + ` {id: $creator_id})
 	MATCH (n:` + opts.NamespaceID.Label() + ` {id: $namespace_id})
 	CREATE
-		(p:` + project.ID.Label() + ` {
+		(p:` + id.Label() + ` {
 			id: $id, key: $key, name: $name, description: $description, logo: $logo, status: $status,
-			created_at: datetime($created_at)
+			next_issue_id: $next_issue_id, created_at: datetime($created_at)
 		}),
 		(n)-[:` + EdgeKindHasProject.String() + `]->(p),
 		(u)-[:` + EdgeKindHasPermission.String() + ` {id: $perm_id, kind: $perm_kind, created_at: datetime($created_at)}]->(p)`
 
 	params := map[string]any{
-		"id":           project.ID.String(),
-		"key":          project.Key,
-		"name":         project.Name,
-		"description":  project.Description,
-		"logo":         project.Logo,
-		"status":       project.Status.String(),
-		"created_at":   createdAt.Format(time.RFC3339Nano),
-		"creator_id":   opts.CreatorID.String(),
-		"namespace_id": opts.NamespaceID.String(),
-		"perm_id":      model.NewRawID(),
-		"perm_kind":    model.PermissionKindAll.String(),
+		"id":            id.String(),
+		"key":           opts.Key,
+		"name":          opts.Name,
+		"description":   opts.Description,
+		"logo":          opts.Logo,
+		"status":        opts.Status.String(),
+		"next_issue_id": 0,
+		"created_at":    createdAt.Format(time.RFC3339Nano),
+		"creator_id":    opts.CreatorID.String(),
+		"namespace_id":  opts.NamespaceID.String(),
+		"perm_id":       model.NewRawID(),
+		"perm_kind":     model.PermissionKindAll.String(),
 	}
 
 	if err := Neo4jExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
 		return nil, errors.Join(ErrProjectCreate, err)
 	}
 
+	project, err := r.Get(ctx, id, ProjectDetailProjection())
+	if err != nil {
+		return nil, errors.Join(ErrProjectCreate, err)
+	}
+
 	return project, nil
 }
 
-func (r *Neo4jProjectRepository) Get(ctx context.Context, id model.ID) (*Project, error) {
+func (r *Neo4jProjectRepository) Get(ctx context.Context, id model.ID, proj ProjectProjection) (*Project, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.ProjectRepository/Get")
 	defer span.End()
 
-	cypher := `
-	MATCH (p:` + id.Label() + ` {id: $id})
-	OPTIONAL MATCH (d:` + model.ResourceTypeDocument.String() + `)-[:` + EdgeKindBelongsTo.String() + `]->(p)
-	OPTIONAL MATCH (p)-[:` + EdgeKindHasTeam.String() + `]->(t:` + model.ResourceTypeRole.String() + `)
-	OPTIONAL MATCH (p)<-[:` + EdgeKindBelongsTo.String() + `]-(i:` + model.ResourceTypeIssue.String() + `)
-	RETURN p, collect(DISTINCT d) AS d, collect(DISTINCT t.id) AS t, collect(DISTINCT i.id) AS i`
-
-	params := map[string]any{
-		"id": id.String(),
-	}
-
-	project, err := Neo4jExecuteReadAndReadSingle(ctx, r.db, cypher, params, r.scan("p", "d", "t", "i"))
+	plan, err := CompileQuery(ProjectGetQuery{
+		ID:         id,
+		Projection: proj,
+	})
 	if err != nil {
 		return nil, errors.Join(ErrProjectRead, err)
 	}
 
-	return project, nil
+	projects, err := r.readProjectPlan(ctx, plan, proj)
+	if err != nil {
+		return nil, errors.Join(ErrProjectRead, err)
+	}
+	if len(projects) == 0 {
+		return nil, errors.Join(ErrProjectRead, ErrNotFound)
+	}
+	if len(projects) > 1 {
+		return nil, errors.Join(ErrProjectRead, ErrMalformedResult)
+	}
+
+	return projects[0], nil
 }
 
-func (r *Neo4jProjectRepository) GetByKey(ctx context.Context, key string) (*Project, error) {
+func (r *Neo4jProjectRepository) GetByKey(ctx context.Context, key string, proj ProjectProjection) (*Project, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.ProjectRepository/GetByKey")
 	defer span.End()
 
-	cypher := `
-	MATCH (p:` + model.ResourceTypeProject.String() + ` {key: $key})
-	OPTIONAL MATCH (d:` + model.ResourceTypeDocument.String() + `)-[:` + EdgeKindBelongsTo.String() + `]->(p)
-	OPTIONAL MATCH (p)-[:` + EdgeKindHasTeam.String() + `]->(t:` + model.ResourceTypeRole.String() + `)
-	OPTIONAL MATCH (p)<-[:` + EdgeKindBelongsTo.String() + `]-(i:` + model.ResourceTypeIssue.String() + `)
-	RETURN p, collect(DISTINCT d) AS d, collect(DISTINCT t.id) AS t, collect(DISTINCT i.id) AS i`
-
-	params := map[string]any{
-		"key": key,
-	}
-
-	project, err := Neo4jExecuteReadAndReadSingle(ctx, r.db, cypher, params, r.scan("p", "d", "t", "i"))
+	plan, err := CompileQuery(ProjectGetByKeyQuery{
+		Key:        key,
+		Projection: proj,
+	})
 	if err != nil {
 		return nil, errors.Join(ErrProjectRead, err)
 	}
 
-	return project, nil
+	projects, err := r.readProjectPlan(ctx, plan, proj)
+	if err != nil {
+		return nil, errors.Join(ErrProjectRead, err)
+	}
+	if len(projects) == 0 {
+		return nil, errors.Join(ErrProjectRead, ErrNotFound)
+	}
+	if len(projects) > 1 {
+		return nil, errors.Join(ErrProjectRead, ErrMalformedResult)
+	}
+
+	return projects[0], nil
 }
 
-func (r *Neo4jProjectRepository) GetAll(ctx context.Context, namespaceID model.ID, offset, limit int) ([]*Project, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.ProjectRepository/GetAll")
+func (r *Neo4jProjectRepository) List(ctx context.Context, namespaceID model.ID, page CursorPage, proj ProjectProjection) (Page[*Project], error) {
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.ProjectRepository/List")
 	defer span.End()
 
-	cypher := `
-	MATCH (:` + namespaceID.Label() + ` {id: $namespace_id})-[:` + EdgeKindHasProject.String() + `]->(p)
-	OPTIONAL MATCH (d:` + model.ResourceTypeDocument.String() + `)-[:` + EdgeKindBelongsTo.String() + `]->(p)
-	OPTIONAL MATCH (p)-[:` + EdgeKindHasTeam.String() + `]->(t:` + model.ResourceTypeRole.String() + `)
-	OPTIONAL MATCH (p)<-[:` + EdgeKindBelongsTo.String() + `]-(i:` + model.ResourceTypeIssue.String() + `)
-	RETURN p, collect(DISTINCT d) AS d, collect(DISTINCT t.id) AS t, collect(DISTINCT i.id) AS i
-	ORDER BY p.created_at DESC
-	SKIP $offset LIMIT $limit`
-
-	params := map[string]any{
-		"namespace_id": namespaceID.String(),
-		"offset":       offset,
-		"limit":        limit,
-	}
-
-	projects, err := Neo4jExecuteReadAndReadAll(ctx, r.db, cypher, params, r.scan("p", "d", "t", "i"))
+	normalizedPage, err := page.Normalize()
 	if err != nil {
-		return nil, errors.Join(ErrProjectRead, err)
+		return Page[*Project]{}, errors.Join(ErrProjectRead, err)
 	}
 
-	return projects, nil
+	plan, err := CompileQuery(ProjectListQuery{
+		NamespaceID: namespaceID,
+		Page:        normalizedPage,
+		Order:       SortDirectionDesc,
+		Projection:  proj,
+	})
+	if err != nil {
+		return Page[*Project]{}, errors.Join(ErrProjectRead, err)
+	}
+
+	projects, err := r.readProjectPlan(ctx, plan, proj)
+	if err != nil {
+		return Page[*Project]{}, errors.Join(ErrProjectRead, err)
+	}
+
+	return PaginateSlice(projects, normalizedPage.Size, func(project *Project) model.ID {
+		return project.ID
+	})
 }
 
-func (r *Neo4jProjectRepository) Update(ctx context.Context, id model.ID, opts UpdateProjectOpts) (*Project, error) {
+func (r *Neo4jProjectRepository) Update(ctx context.Context, id model.ID, opts UpdateProjectOpts, _ ProjectProjection) (*Project, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.ProjectRepository/Update")
 	defer span.End()
 
 	cypher := `
 	MATCH (p:` + id.Label() + ` {id: $id})
 	SET p += $patch, p.updated_at = datetime()
-	WITH p
-	OPTIONAL MATCH (d:` + model.ResourceTypeDocument.String() + `)-[:` + EdgeKindBelongsTo.String() + `]->(p)
-	OPTIONAL MATCH (p)-[:` + EdgeKindHasTeam.String() + `]->(t:` + model.ResourceTypeRole.String() + `)
-	OPTIONAL MATCH (p)<-[:` + EdgeKindBelongsTo.String() + `]-(i:` + model.ResourceTypeIssue.String() + `)
-	RETURN p, collect(DISTINCT d) AS d, collect(DISTINCT t.id) AS t, collect(DISTINCT i.id) AS i`
+	RETURN p.id AS id`
 
 	params := map[string]any{
 		"id":    id.String(),
 		"patch": opts.patch(),
 	}
 
-	project, err := Neo4jExecuteWriteAndReadSingle(ctx, r.db, cypher, params, r.scan("p", "d", "t", "i"))
+	if _, err := Neo4jExecuteWriteAndReadSingle(ctx, r.db, cypher, params, func(_ *neo4j.Record) (*struct{}, error) {
+		return &struct{}{}, nil
+	}); err != nil {
+		return nil, errors.Join(ErrProjectUpdate, err)
+	}
+
+	project, err := r.Get(ctx, id, ProjectDetailProjection())
 	if err != nil {
 		return nil, errors.Join(ErrProjectUpdate, err)
 	}
@@ -368,16 +425,16 @@ func clearProjectsPattern(ctx context.Context, r *redisBaseRepository, pattern .
 	return r.DeletePattern(ctx, composeCacheKey(model.ResourceTypeProject.String(), pattern))
 }
 
-func clearProjectsKey(ctx context.Context, r *redisBaseRepository, id model.ID) error {
-	return r.Delete(ctx, composeCacheKey(model.ResourceTypeProject.String(), id.String()))
+func clearProjectsGet(ctx context.Context, r *redisBaseRepository, id model.ID) error {
+	return clearProjectsPattern(ctx, r, "*", "Get", id.String(), "*")
 }
 
-func clearProjectsByKey(ctx context.Context, r *redisBaseRepository, id model.ID) error {
-	return clearProjectsPattern(ctx, r, "GetByKey", id.String(), "*")
+func clearProjectsAllByKey(ctx context.Context, r *redisBaseRepository) error {
+	return clearProjectsPattern(ctx, r, "*", "GetByKey", "*")
 }
 
-func clearProjectsAllGetAll(ctx context.Context, r *redisBaseRepository) error {
-	return clearProjectsPattern(ctx, r, "GetAll", "*")
+func clearProjectsAllList(ctx context.Context, r *redisBaseRepository) error {
+	return clearProjectsPattern(ctx, r, "*", "List", "*")
 }
 
 func clearProjectsAllCrossCache(ctx context.Context, r *redisBaseRepository) error {
@@ -400,8 +457,37 @@ type RedisCachedProjectRepository struct {
 	projectRepo ProjectRepository
 }
 
+func projectGetCacheKey(id model.ID, proj ProjectProjection) (string, error) {
+	plan, err := CompileQuery(ProjectGetQuery{ID: id, Projection: proj})
+	if err != nil {
+		return "", err
+	}
+	return plan.CacheKey(model.ResourceTypeProject.String(), "Get", id.String()), nil
+}
+
+func projectGetByKeyCacheKey(key string, proj ProjectProjection) (string, error) {
+	plan, err := CompileQuery(ProjectGetByKeyQuery{Key: key, Projection: proj})
+	if err != nil {
+		return "", err
+	}
+	return plan.CacheKey(model.ResourceTypeProject.String(), "GetByKey", key), nil
+}
+
+func projectListCacheKey(namespaceID model.ID, page CursorPage, proj ProjectProjection) (string, error) {
+	plan, err := CompileQuery(ProjectListQuery{
+		NamespaceID: namespaceID,
+		Page:        page,
+		Order:       SortDirectionDesc,
+		Projection:  proj,
+	})
+	if err != nil {
+		return "", err
+	}
+	return plan.CacheKey(model.ResourceTypeProject.String(), "List", namespaceID.String()), nil
+}
+
 func (r *RedisCachedProjectRepository) Create(ctx context.Context, opts CreateProjectOpts) (*Project, error) {
-	if err := clearProjectsAllGetAll(ctx, r.cacheRepo); err != nil {
+	if err := clearProjectsAllList(ctx, r.cacheRepo); err != nil {
 		return nil, err
 	}
 	if err := clearProjectsAllCrossCache(ctx, r.cacheRepo); err != nil {
@@ -411,11 +497,14 @@ func (r *RedisCachedProjectRepository) Create(ctx context.Context, opts CreatePr
 	return r.projectRepo.Create(ctx, opts)
 }
 
-func (r *RedisCachedProjectRepository) Get(ctx context.Context, id model.ID) (*Project, error) {
+func (r *RedisCachedProjectRepository) Get(ctx context.Context, id model.ID, proj ProjectProjection) (*Project, error) {
 	var project *Project
 	var err error
 
-	key := composeCacheKey(model.ResourceTypeProject.String(), id.String())
+	key, err := projectGetCacheKey(id, proj)
+	if err != nil {
+		return nil, err
+	}
 	if err = r.cacheRepo.Get(ctx, key, &project); err != nil {
 		return nil, err
 	}
@@ -424,7 +513,7 @@ func (r *RedisCachedProjectRepository) Get(ctx context.Context, id model.ID) (*P
 		return project, nil
 	}
 
-	if project, err = r.projectRepo.Get(ctx, id); err != nil {
+	if project, err = r.projectRepo.Get(ctx, id, proj); err != nil {
 		return nil, err
 	}
 
@@ -435,11 +524,14 @@ func (r *RedisCachedProjectRepository) Get(ctx context.Context, id model.ID) (*P
 	return project, nil
 }
 
-func (r *RedisCachedProjectRepository) GetByKey(ctx context.Context, key string) (*Project, error) {
+func (r *RedisCachedProjectRepository) GetByKey(ctx context.Context, key string, proj ProjectProjection) (*Project, error) {
 	var project *Project
 	var err error
 
-	cacheKey := composeCacheKey(model.ResourceTypeProject.String(), "GetByKey", key)
+	cacheKey, err := projectGetByKeyCacheKey(key, proj)
+	if err != nil {
+		return nil, err
+	}
 	if err = r.cacheRepo.Get(ctx, cacheKey, &project); err != nil {
 		return nil, err
 	}
@@ -448,7 +540,7 @@ func (r *RedisCachedProjectRepository) GetByKey(ctx context.Context, key string)
 		return project, nil
 	}
 
-	if project, err = r.projectRepo.GetByKey(ctx, key); err != nil {
+	if project, err = r.projectRepo.GetByKey(ctx, key, proj); err != nil {
 		return nil, err
 	}
 
@@ -459,46 +551,52 @@ func (r *RedisCachedProjectRepository) GetByKey(ctx context.Context, key string)
 	return project, nil
 }
 
-func (r *RedisCachedProjectRepository) GetAll(ctx context.Context, namespaceID model.ID, offset, limit int) ([]*Project, error) {
-	var projects []*Project
+func (r *RedisCachedProjectRepository) List(ctx context.Context, namespaceID model.ID, page CursorPage, proj ProjectProjection) (Page[*Project], error) {
+	var projects Page[*Project]
 	var err error
 
-	key := composeCacheKey(model.ResourceTypeProject.String(), "GetAll", namespaceID.String(), offset, limit)
+	key, err := projectListCacheKey(namespaceID, page, proj)
+	if err != nil {
+		return Page[*Project]{}, err
+	}
 	if err = r.cacheRepo.Get(ctx, key, &projects); err != nil {
-		return nil, err
+		return Page[*Project]{}, err
 	}
 
-	if projects != nil {
+	if projects.Items != nil {
 		return projects, nil
 	}
 
-	if projects, err = r.projectRepo.GetAll(ctx, namespaceID, offset, limit); err != nil {
-		return nil, err
+	if projects, err = r.projectRepo.List(ctx, namespaceID, page, proj); err != nil {
+		return Page[*Project]{}, err
 	}
 
 	if err = r.cacheRepo.Set(ctx, key, projects); err != nil {
-		return nil, err
+		return Page[*Project]{}, err
 	}
 
 	return projects, nil
 }
 
-func (r *RedisCachedProjectRepository) Update(ctx context.Context, id model.ID, opts UpdateProjectOpts) (*Project, error) {
-	project, err := r.projectRepo.Update(ctx, id, opts)
+func (r *RedisCachedProjectRepository) Update(ctx context.Context, id model.ID, opts UpdateProjectOpts, proj ProjectProjection) (*Project, error) {
+	project, err := r.projectRepo.Update(ctx, id, opts, proj)
 	if err != nil {
 		return nil, err
 	}
 
-	key := composeCacheKey(model.ResourceTypeProject.String(), id.String())
+	key, err := projectGetCacheKey(id, ProjectDetailProjection())
+	if err != nil {
+		return nil, err
+	}
 	if err := r.cacheRepo.Set(ctx, key, project); err != nil {
 		return nil, err
 	}
 
-	if err := clearProjectsByKey(ctx, r.cacheRepo, id); err != nil {
+	if err := clearProjectsAllByKey(ctx, r.cacheRepo); err != nil {
 		return nil, err
 	}
 
-	if err := clearProjectsAllGetAll(ctx, r.cacheRepo); err != nil {
+	if err := clearProjectsAllList(ctx, r.cacheRepo); err != nil {
 		return nil, err
 	}
 
@@ -506,24 +604,30 @@ func (r *RedisCachedProjectRepository) Update(ctx context.Context, id model.ID, 
 	if err := clearProjectsAllCrossCache(ctx, r.cacheRepo); err != nil {
 		return nil, err
 	}
+	if err := clearIssueAllForProject(ctx, r.cacheRepo); err != nil {
+		return nil, err
+	}
 
 	return project, nil
 }
 
 func (r *RedisCachedProjectRepository) Delete(ctx context.Context, id model.ID) error {
-	if err := clearProjectsKey(ctx, r.cacheRepo, id); err != nil {
+	if err := clearProjectsGet(ctx, r.cacheRepo, id); err != nil {
 		return err
 	}
 
-	if err := clearProjectsByKey(ctx, r.cacheRepo, id); err != nil {
+	if err := clearProjectsAllByKey(ctx, r.cacheRepo); err != nil {
 		return err
 	}
 
-	if err := clearProjectsAllGetAll(ctx, r.cacheRepo); err != nil {
+	if err := clearProjectsAllList(ctx, r.cacheRepo); err != nil {
 		return err
 	}
 
 	if err := clearProjectsAllCrossCache(ctx, r.cacheRepo); err != nil {
+		return err
+	}
+	if err := clearIssueAllForProject(ctx, r.cacheRepo); err != nil {
 		return err
 	}
 

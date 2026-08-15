@@ -133,17 +133,17 @@ func (s *TodoServiceIntegrationTestSuite) TestGetAll() {
 	_, err = s.todoService.Create(s.testUserContext, newTestCreateTodoOpts(s.testUser.ID, s.testUser.ID))
 	s.Require().NoError(err)
 
-	todos, err := s.todoService.GetAll(s.testUserContext, 0, 10, nil)
+	todos, err := s.todoService.List(s.testUserContext, service.CursorPage{Size: 10}, nil)
 	s.Require().NoError(err)
-	s.Assert().Len(todos, 3)
+	s.Assert().Len(todos.Items, 3)
 
-	todos, err = s.todoService.GetAll(s.testUserContext, 0, 10, convert.ToPointer(true))
+	todos, err = s.todoService.List(s.testUserContext, service.CursorPage{Size: 10}, convert.ToPointer(true))
 	s.Require().NoError(err)
-	s.Assert().Len(todos, 1)
+	s.Assert().Len(todos.Items, 1)
 
-	todos, err = s.todoService.GetAll(s.testUserContext, 0, 10, convert.ToPointer(false))
+	todos, err = s.todoService.List(s.testUserContext, service.CursorPage{Size: 10}, convert.ToPointer(false))
 	s.Require().NoError(err)
-	s.Assert().Len(todos, 2)
+	s.Assert().Len(todos.Items, 2)
 }
 
 func (s *TodoServiceIntegrationTestSuite) TestUpdate() {

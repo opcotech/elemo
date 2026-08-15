@@ -57,6 +57,9 @@ type server struct {
 	OrganizationController
 	NamespaceController
 	ProjectController
+	IssueController
+	DocumentController
+	LabelController
 	UserController
 	TodoController
 	SystemController
@@ -110,6 +113,18 @@ func NewServer(opts ...ControllerOption) (StrictServer, error) {
 	}
 
 	if s.ProjectController, err = NewProjectController(opts...); err != nil {
+		return nil, err
+	}
+
+	if s.IssueController, err = NewIssueController(opts...); err != nil {
+		return nil, err
+	}
+
+	if s.DocumentController, err = NewDocumentController(opts...); err != nil {
+		return nil, err
+	}
+
+	if s.LabelController, err = NewLabelController(opts...); err != nil {
 		return nil, err
 	}
 

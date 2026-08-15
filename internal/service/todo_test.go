@@ -636,42 +636,41 @@ func TestTodoService_Get(t *testing.T) {
 	}
 }
 
-func TestTodoService_GetAll(t *testing.T) {
+func TestTodoService_List(t *testing.T) {
 	userID := model.MustNewID(model.ResourceTypeUser)
 
 	type args struct {
-		ctx           context.Context
-		offset, limit int
-		completed     *bool
+		ctx       context.Context
+		page      CursorPage
+		completed *bool
 	}
 	type fields struct {
-		baseService func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, completed *bool, todos []*repository.Todo) *baseService
+		baseService func(ctrl *gomock.Controller, ctx context.Context, page CursorPage, completed *bool, todos []*repository.Todo) *baseService
 	}
 	tests := []struct {
 		name    string
 		args    args
 		fields  fields
-		want    []*Todo
+		want    Page[*Todo]
 		wantErr error
 	}{
 		{
 			name: "get all todos",
 			args: args{
 				ctx:       context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
-				offset:    0,
-				limit:     10,
+				page:      CursorPage{Size: 10},
 				completed: nil,
 			},
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, completed *bool, todos []*repository.Todo) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, page CursorPage, completed *bool, todos []*repository.Todo) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.todoService/GetAll", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "service.todoService/List", gomock.Len(0)).Return(ctx, span)
 
 					todoRepo := repository.NewMockTodoRepository(ctrl)
-					todoRepo.EXPECT().GetByOwner(ctx, userID, offset, limit, completed).Return(todos, nil)
+					todoRepo.EXPECT().ListByOwner(ctx, userID, page, completed).Return(repository.Page[*repository.Todo]{Items: todos}, nil)
 
 					return &baseService{
 						logger:            mock.NewMockLogger(ctrl),
@@ -682,29 +681,28 @@ func TestTodoService_GetAll(t *testing.T) {
 					}
 				},
 			},
-			want: []*Todo{
+			want: Page[*Todo]{Items: []*Todo{
 				newServiceTodo(userID, userID),
 				newServiceTodo(userID, userID),
-			},
+			}},
 		},
 		{
 			name: "get all completed todos",
 			args: args{
 				ctx:       context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
-				offset:    0,
-				limit:     10,
+				page:      CursorPage{Size: 10},
 				completed: convert.ToPointer(true),
 			},
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, completed *bool, todos []*repository.Todo) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, page CursorPage, completed *bool, todos []*repository.Todo) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.todoService/GetAll", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "service.todoService/List", gomock.Len(0)).Return(ctx, span)
 
 					todoRepo := repository.NewMockTodoRepository(ctrl)
-					todoRepo.EXPECT().GetByOwner(ctx, userID, offset, limit, completed).Return(todos, nil)
+					todoRepo.EXPECT().ListByOwner(ctx, userID, page, completed).Return(repository.Page[*repository.Todo]{Items: todos}, nil)
 
 					return &baseService{
 						logger:            mock.NewMockLogger(ctrl),
@@ -715,29 +713,28 @@ func TestTodoService_GetAll(t *testing.T) {
 					}
 				},
 			},
-			want: []*Todo{
+			want: Page[*Todo]{Items: []*Todo{
 				newServiceTodo(userID, userID),
 				newServiceTodo(userID, userID),
-			},
+			}},
 		},
 		{
 			name: "get all active todos",
 			args: args{
 				ctx:       context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
-				offset:    0,
-				limit:     10,
+				page:      CursorPage{Size: 10},
 				completed: convert.ToPointer(false),
 			},
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, completed *bool, todos []*repository.Todo) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, page CursorPage, completed *bool, todos []*repository.Todo) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.todoService/GetAll", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "service.todoService/List", gomock.Len(0)).Return(ctx, span)
 
 					todoRepo := repository.NewMockTodoRepository(ctrl)
-					todoRepo.EXPECT().GetByOwner(ctx, userID, offset, limit, completed).Return(todos, nil)
+					todoRepo.EXPECT().ListByOwner(ctx, userID, page, completed).Return(repository.Page[*repository.Todo]{Items: todos}, nil)
 
 					return &baseService{
 						logger:            mock.NewMockLogger(ctrl),
@@ -748,26 +745,25 @@ func TestTodoService_GetAll(t *testing.T) {
 					}
 				},
 			},
-			want: []*Todo{
+			want: Page[*Todo]{Items: []*Todo{
 				newServiceTodo(userID, userID),
 				newServiceTodo(userID, userID),
-			},
+			}},
 		},
 		{
 			name: "get todos with no context user id",
 			args: args{
 				ctx:       context.Background(),
-				offset:    0,
-				limit:     10,
+				page:      CursorPage{Size: 10},
 				completed: nil,
 			},
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ int, _ *bool, _ []*repository.Todo) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ CursorPage, _ *bool, _ []*repository.Todo) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.todoService/GetAll", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "service.todoService/List", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
 						logger:            mock.NewMockLogger(ctrl),
@@ -784,20 +780,19 @@ func TestTodoService_GetAll(t *testing.T) {
 			name: "get todos with error",
 			args: args{
 				ctx:       context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
-				offset:    0,
-				limit:     10,
+				page:      CursorPage{Size: 10},
 				completed: nil,
 			},
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, completed *bool, _ []*repository.Todo) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, page CursorPage, completed *bool, _ []*repository.Todo) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.todoService/GetAll", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "service.todoService/List", gomock.Len(0)).Return(ctx, span)
 
 					todoRepo := repository.NewMockTodoRepository(ctrl)
-					todoRepo.EXPECT().GetByOwner(ctx, userID, offset, limit, completed).Return(nil, assert.AnError)
+					todoRepo.EXPECT().ListByOwner(ctx, userID, page, completed).Return(repository.Page[*repository.Todo]{}, assert.AnError)
 
 					return &baseService{
 						logger:            mock.NewMockLogger(ctrl),
@@ -817,8 +812,8 @@ func TestTodoService_GetAll(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			repoTodos := make([]*repository.Todo, len(tt.want))
-			for i, w := range tt.want {
+			repoTodos := make([]*repository.Todo, len(tt.want.Items))
+			for i, w := range tt.want.Items {
 				repoTodos[i] = &repository.Todo{
 					ID: w.ID, Title: w.Title, Description: w.Description,
 					Priority: w.Priority, Completed: w.Completed,
@@ -827,9 +822,9 @@ func TestTodoService_GetAll(t *testing.T) {
 				}
 			}
 			s := &todoService{
-				baseService: tt.fields.baseService(ctrl, tt.args.ctx, tt.args.offset, tt.args.limit, tt.args.completed, repoTodos),
+				baseService: tt.fields.baseService(ctrl, tt.args.ctx, tt.args.page, tt.args.completed, repoTodos),
 			}
-			todo, err := s.GetAll(tt.args.ctx, tt.args.offset, tt.args.limit, tt.args.completed)
+			todo, err := s.List(tt.args.ctx, tt.args.page, tt.args.completed)
 			require.ErrorIs(t, err, tt.wantErr)
 			assert.Equal(t, tt.want, todo)
 		})

@@ -71,7 +71,7 @@ export function EntityLink({
     >
       <InternalLink
         to={internalPath(href)}
-        className="flex w-full min-w-0 items-center gap-2.5 px-3 py-2.5"
+        className="text-foreground flex w-full min-w-0 items-center gap-2.5 px-3 py-2.5 hover:no-underline"
       >
         {imageUrl ? (
           <ItemMedia variant="image">
@@ -86,14 +86,14 @@ export function EntityLink({
           </ItemMedia>
         )}
         <ItemContent className="min-w-0">
-          <ItemTitle className="group-hover/entity:text-primary block max-w-full truncate">
-            {title}
-          </ItemTitle>
           {subtitle && (
             <span className="text-muted-foreground block truncate text-xs">
               {subtitle}
             </span>
           )}
+          <ItemTitle className="group-hover/entity:text-primary block max-w-full truncate">
+            {title}
+          </ItemTitle>
         </ItemContent>
       </InternalLink>
     </Item>

@@ -26,22 +26,22 @@ type PartialProject struct {
 
 // Project represents a project returned by the service.
 type Project struct {
-	ID          model.ID
-	Key         string
-	Name        string
-	Description string
-	Logo        string
-	Status      model.ProjectStatus
-	Teams       []model.ID
-	Documents   []*PartialDocument
-	Issues      []model.ID
-	CreatedAt   *time.Time
-	UpdatedAt   *time.Time
+	ID            model.ID
+	Key           string
+	Name          string
+	Description   string
+	Logo          string
+	Status        model.ProjectStatus
+	Teams         []model.ID
+	DocumentCount *int64
+	IssueCount    *int64
+	CreatedAt     *time.Time
+	UpdatedAt     *time.Time
 }
 
 // CreateProjectOpts holds the data required to create a project.
 type CreateProjectOpts struct {
-	Key         string              `json:"key" validate:"required,alpha,min=3,max=6"`
+	Key         string              `json:"key" validate:"required,alpha,min=2,max=6"`
 	Name        string              `json:"name" validate:"required,min=3,max=120"`
 	Description string              `json:"description" validate:"omitempty,min=10,max=500"`
 	Logo        string              `json:"logo" validate:"omitempty,url"`
@@ -79,10 +79,8 @@ type ProjectService interface {
 	// GetByKey returns a project by its key. If the project does not exist, an
 	// error is returned.
 	GetByKey(ctx context.Context, key string) (*Project, error)
-	// GetAll returns all projects for a namespace. The offset and limit
-	// parameters are used to paginate the results. If the offset is greater
-	// than the number of projects in the namespace, an empty slice is returned.
-	GetAll(ctx context.Context, namespaceID model.ID, offset, limit int) ([]*Project, error)
+	// List returns a cursor-paginated page of projects for a namespace.
+	List(ctx context.Context, namespaceID model.ID, page CursorPage) (Page[*Project], error)
 	// Update updates a project. If the project does not exist, an error is
 	// returned.
 	Update(ctx context.Context, id model.ID, opts UpdateProjectOpts) (*Project, error)
@@ -116,23 +114,18 @@ func projectFromRepository(p *repository.Project) *Project {
 		return nil
 	}
 
-	documents := make([]*PartialDocument, len(p.Documents))
-	for i, d := range p.Documents {
-		documents[i] = partialDocumentFromRepository(d)
-	}
-
 	return &Project{
-		ID:          p.ID,
-		Key:         p.Key,
-		Name:        p.Name,
-		Description: p.Description,
-		Logo:        p.Logo,
-		Status:      p.Status,
-		Teams:       p.Teams,
-		Documents:   documents,
-		Issues:      p.Issues,
-		CreatedAt:   p.CreatedAt,
-		UpdatedAt:   p.UpdatedAt,
+		ID:            p.ID,
+		Key:           p.Key,
+		Name:          p.Name,
+		Description:   p.Description,
+		Logo:          p.Logo,
+		Status:        p.Status,
+		Teams:         p.Teams,
+		DocumentCount: p.DocumentCount,
+		IssueCount:    p.IssueCount,
+		CreatedAt:     p.CreatedAt,
+		UpdatedAt:     p.UpdatedAt,
 	}
 }
 
@@ -204,7 +197,7 @@ func (s *projectService) Get(ctx context.Context, id model.ID) (*Project, error)
 		return nil, errors.Join(ErrProjectGet, ErrNoPermission)
 	}
 
-	project, err := s.projectRepo.Get(ctx, id)
+	project, err := s.projectRepo.Get(ctx, id, repository.ProjectDetailProjection())
 	if err != nil {
 		return nil, errors.Join(ErrProjectGet, err)
 	}
@@ -220,7 +213,7 @@ func (s *projectService) GetByKey(ctx context.Context, key string) (*Project, er
 		return nil, errors.Join(ErrProjectGet, model.ErrInvalidProjectDetails)
 	}
 
-	project, err := s.projectRepo.GetByKey(ctx, key)
+	project, err := s.projectRepo.GetByKey(ctx, key, repository.ProjectDetailProjection())
 	if err != nil {
 		return nil, errors.Join(ErrProjectGet, err)
 	}
@@ -232,28 +225,34 @@ func (s *projectService) GetByKey(ctx context.Context, key string) (*Project, er
 	return projectFromRepository(project), nil
 }
 
-func (s *projectService) GetAll(ctx context.Context, namespaceID model.ID, offset, limit int) ([]*Project, error) {
-	ctx, span := s.tracer.Start(ctx, "service.projectService/GetAll")
+func (s *projectService) List(ctx context.Context, namespaceID model.ID, page CursorPage) (Page[*Project], error) {
+	ctx, span := s.tracer.Start(ctx, "service.projectService/List")
 	defer span.End()
 
 	if err := namespaceID.Validate(); err != nil {
-		return nil, errors.Join(ErrProjectGetAll, err)
+		return Page[*Project]{}, errors.Join(ErrProjectGetAll, err)
 	}
 
-	if offset < 0 || limit <= 0 {
-		return nil, errors.Join(ErrProjectGetAll, ErrInvalidPaginationParams)
+	normalized, err := page.Normalize()
+	if err != nil {
+		return Page[*Project]{}, errors.Join(ErrProjectGetAll, err)
 	}
 
 	if !s.permissionService.CtxUserHasPermission(ctx, namespaceID, model.PermissionKindRead) {
-		return nil, errors.Join(ErrProjectGetAll, ErrNoPermission)
+		return Page[*Project]{}, errors.Join(ErrProjectGetAll, ErrNoPermission)
 	}
 
-	projects, err := s.projectRepo.GetAll(ctx, namespaceID, offset, limit)
+	projects, err := s.projectRepo.List(
+		ctx,
+		namespaceID,
+		normalized,
+		repository.ProjectListProjection(),
+	)
 	if err != nil {
-		return nil, errors.Join(ErrProjectGetAll, err)
+		return Page[*Project]{}, errors.Join(ErrProjectGetAll, err)
 	}
 
-	return projectsFromRepository(projects), nil
+	return mapPage(projects, projectFromRepository), nil
 }
 
 func (s *projectService) Update(ctx context.Context, id model.ID, opts UpdateProjectOpts) (*Project, error) {
@@ -282,7 +281,7 @@ func (s *projectService) Update(ctx context.Context, id model.ID, opts UpdatePro
 		Description: opts.Description,
 		Logo:        opts.Logo,
 		Status:      opts.Status,
-	})
+	}, repository.ProjectDetailProjection())
 	if err != nil {
 		return nil, errors.Join(ErrProjectUpdate, err)
 	}

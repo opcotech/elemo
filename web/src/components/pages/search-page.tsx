@@ -1,16 +1,18 @@
+import { useQueries } from "@tanstack/react-query";
 import { CommandIcon, SearchIcon, SlidersHorizontalIcon } from "lucide-react";
 import { useMemo } from "react";
 
 import { ContentWidth } from "@/components/layout/content-width";
 import { ResponsiveInspectorShell } from "@/components/layout/responsive-inspector-shell";
 import { openQuickCreate } from "@/components/quick-create/open";
-import { AppEmptyState, MockDataAlert } from "@/components/shared/app-feedback";
+import { MockDataAlert } from "@/components/shared/app-feedback";
 import { AppList, EntityLink } from "@/components/shared/entity-link";
-import { PageHeader } from "@/components/shared/page-header";
-import { Section } from "@/components/shared/section";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { InternalLink } from "@/components/ui/internal-link";
+import { PageHeader } from "@/components/ui/page-header";
+import { Section } from "@/components/ui/section";
 import {
   Select,
   SelectContent,
@@ -20,6 +22,9 @@ import {
 } from "@/components/ui/select";
 import { WorkInspector } from "@/components/work/work-inspector";
 import { useAccessibleNamespaces } from "@/lib/api/accessible-namespaces";
+import { collectedListQuery, cursorPageQuery } from "@/lib/api/cursor-pages";
+import { v1NamespacesProjectsGetOptions } from "@/lib/api/query-options";
+import { v1NamespacesProjectsGet } from "@/lib/api/sdk";
 import { getWorkItem, searchGlobalFixtures } from "@/lib/mock-data";
 import type { Scope, SearchResultKind } from "@/lib/mock-data";
 import { recentEntityLinkType } from "@/lib/recent-entity";
@@ -51,6 +56,25 @@ export function SearchPage({
     limit: 100,
   });
   const normalizedQuery = search.q.trim().toLowerCase();
+  const projectQueries = useQueries({
+    queries: namespaces.map((namespace) => {
+      const listOptions = v1NamespacesProjectsGetOptions({
+        path: { id: namespace.id },
+      });
+      return {
+        ...collectedListQuery(listOptions, async (pageToken, signal) => {
+          const { data } = await v1NamespacesProjectsGet({
+            path: { id: namespace.id },
+            query: cursorPageQuery(pageToken),
+            signal,
+            throwOnError: true,
+          });
+          return data;
+        }),
+        enabled: search.type === "all" && Boolean(normalizedQuery),
+      };
+    }),
+  });
   const realNamespaceResults =
     search.type === "all" && normalizedQuery
       ? namespaces.filter((namespace) =>
@@ -63,8 +87,8 @@ export function SearchPage({
       : [];
   const realProjectResults =
     search.type === "all" && normalizedQuery
-      ? namespaces.flatMap((namespace) =>
-          namespace.projects
+      ? namespaces.flatMap((namespace, index) =>
+          (projectQueries[index]?.data?.items ?? [])
             .filter((project) =>
               [project.name, project.key, project.description]
                 .filter(Boolean)
@@ -215,7 +239,7 @@ export function SearchPage({
                     ))}
                   </AppList>
                 ) : (
-                  <AppEmptyState
+                  <EmptyState
                     compact
                     icon={<SearchIcon />}
                     title="No recent entities"
@@ -254,7 +278,7 @@ export function SearchPage({
               </Section>
             </div>
           ) : total === 0 ? (
-            <AppEmptyState
+            <EmptyState
               icon={<SearchIcon />}
               title="No results"
               description="Try different terms, a broader scope, or another entity type."

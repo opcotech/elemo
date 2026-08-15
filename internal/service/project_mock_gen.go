@@ -85,21 +85,6 @@ func (mr *MockProjectServiceMockRecorder) Get(ctx, id any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockProjectService)(nil).Get), ctx, id)
 }
 
-// GetAll mocks base method.
-func (m *MockProjectService) GetAll(ctx context.Context, namespaceID model.ID, offset, limit int) ([]*Project, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAll", ctx, namespaceID, offset, limit)
-	ret0, _ := ret[0].([]*Project)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetAll indicates an expected call of GetAll.
-func (mr *MockProjectServiceMockRecorder) GetAll(ctx, namespaceID, offset, limit any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAll", reflect.TypeOf((*MockProjectService)(nil).GetAll), ctx, namespaceID, offset, limit)
-}
-
 // GetByKey mocks base method.
 func (m *MockProjectService) GetByKey(ctx context.Context, key string) (*Project, error) {
 	m.ctrl.T.Helper()
@@ -113,6 +98,21 @@ func (m *MockProjectService) GetByKey(ctx context.Context, key string) (*Project
 func (mr *MockProjectServiceMockRecorder) GetByKey(ctx, key any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByKey", reflect.TypeOf((*MockProjectService)(nil).GetByKey), ctx, key)
+}
+
+// List mocks base method.
+func (m *MockProjectService) List(ctx context.Context, namespaceID model.ID, page CursorPage) (Page[*Project], error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "List", ctx, namespaceID, page)
+	ret0, _ := ret[0].(Page[*Project])
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// List indicates an expected call of List.
+func (mr *MockProjectServiceMockRecorder) List(ctx, namespaceID, page any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockProjectService)(nil).List), ctx, namespaceID, page)
 }
 
 // Update mocks base method.

@@ -122,11 +122,16 @@ func (c *organizationController) V1OrganizationsGet(ctx context.Context, request
 	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1OrganizationsGet")
 	defer span.End()
 
-	organizations, err := c.organizationService.GetAll(ctx,
-		pkg.DefaultPtr(request.Params.Offset, DefaultOffset),
-		pkg.DefaultPtr(request.Params.Limit, DefaultLimit),
-	)
+	pageParams, err := cursorPageFromParams(request.Params.PageSize, request.Params.PageToken)
 	if err != nil {
+		return api.V1OrganizationsGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
+	}
+
+	page, err := c.organizationService.List(ctx, pageParams)
+	if err != nil {
+		if isInvalidPageError(err) {
+			return api.V1OrganizationsGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
+		}
 		if errors.Is(err, service.ErrNoPermission) {
 			return api.V1OrganizationsGet403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		}
@@ -135,12 +140,15 @@ func (c *organizationController) V1OrganizationsGet(ctx context.Context, request
 		}}, nil
 	}
 
-	organizationsDTO := make([]api.Organization, len(organizations))
-	for i, organization := range organizations {
+	organizationsDTO := make([]api.Organization, len(page.Items))
+	for i, organization := range page.Items {
 		organizationsDTO[i] = organizationToDTO(organization)
 	}
 
-	return api.V1OrganizationsGet200JSONResponse(organizationsDTO), nil
+	return api.V1OrganizationsGet200JSONResponse{
+		Items:    organizationsDTO,
+		PageInfo: pageInfoToDTO(page.PageInfo),
+	}, nil
 }
 
 func (c *organizationController) V1OrganizationUpdate(ctx context.Context, request api.V1OrganizationUpdateRequestObject) (api.V1OrganizationUpdateResponseObject, error) {
@@ -206,8 +214,16 @@ func (c *organizationController) V1OrganizationMembersGet(ctx context.Context, r
 		return api.V1OrganizationMembersGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
-	users, err := c.organizationService.GetMembers(ctx, organizationID)
+	pageParams, err := cursorPageFromParams(request.Params.PageSize, request.Params.PageToken)
 	if err != nil {
+		return api.V1OrganizationMembersGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
+	}
+
+	users, err := c.organizationService.ListMembers(ctx, organizationID, pageParams)
+	if err != nil {
+		if isInvalidPageError(err) {
+			return api.V1OrganizationMembersGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
+		}
 		if errors.Is(err, service.ErrNoPermission) {
 			return api.V1OrganizationMembersGet403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		}
@@ -219,12 +235,15 @@ func (c *organizationController) V1OrganizationMembersGet(ctx context.Context, r
 		}}, nil
 	}
 
-	membersDTO := make([]api.OrganizationMember, len(users))
-	for i, member := range users {
+	membersDTO := make([]api.OrganizationMember, len(users.Items))
+	for i, member := range users.Items {
 		membersDTO[i] = organizationMemberToDTO(member)
 	}
 
-	return api.V1OrganizationMembersGet200JSONResponse(membersDTO), nil
+	return api.V1OrganizationMembersGet200JSONResponse{
+		Items:    membersDTO,
+		PageInfo: pageInfoToDTO(users.PageInfo),
+	}, nil
 }
 
 func (c *organizationController) V1OrganizationMembersAdd(ctx context.Context, request api.V1OrganizationMembersAddRequestObject) (api.V1OrganizationMembersAddResponseObject, error) {
@@ -496,12 +515,16 @@ func (c *organizationController) V1OrganizationRolesGet(ctx context.Context, req
 		return api.V1OrganizationRolesGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
-	roles, err := c.roleService.GetAllBelongsTo(ctx,
-		organizationID,
-		pkg.DefaultPtr(request.Params.Offset, DefaultOffset),
-		pkg.DefaultPtr(request.Params.Limit, DefaultLimit),
-	)
+	pageParams, err := cursorPageFromParams(request.Params.PageSize, request.Params.PageToken)
 	if err != nil {
+		return api.V1OrganizationRolesGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
+	}
+
+	roles, err := c.roleService.ListBelongsTo(ctx, organizationID, pageParams)
+	if err != nil {
+		if isInvalidPageError(err) {
+			return api.V1OrganizationRolesGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
+		}
 		if errors.Is(err, service.ErrNoPermission) {
 			return api.V1OrganizationRolesGet403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		}
@@ -513,12 +536,15 @@ func (c *organizationController) V1OrganizationRolesGet(ctx context.Context, req
 		}}, nil
 	}
 
-	rolesDTO := make([]api.Role, len(roles))
-	for i, role := range roles {
+	rolesDTO := make([]api.Role, len(roles.Items))
+	for i, role := range roles.Items {
 		rolesDTO[i] = roleToDTO(role)
 	}
 
-	return api.V1OrganizationRolesGet200JSONResponse(rolesDTO), nil
+	return api.V1OrganizationRolesGet200JSONResponse{
+		Items:    rolesDTO,
+		PageInfo: pageInfoToDTO(roles.PageInfo),
+	}, nil
 }
 
 func (c *organizationController) V1OrganizationRoleGet(ctx context.Context, request api.V1OrganizationRoleGetRequestObject) (api.V1OrganizationRoleGetResponseObject, error) {
@@ -626,8 +652,16 @@ func (c *organizationController) V1OrganizationRoleMembersGet(ctx context.Contex
 		return api.V1OrganizationRoleMembersGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
-	users, err := c.roleService.GetMembers(ctx, roleID, organizationID)
+	pageParams, err := cursorPageFromParams(request.Params.PageSize, request.Params.PageToken)
 	if err != nil {
+		return api.V1OrganizationRoleMembersGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
+	}
+
+	users, err := c.roleService.ListMembers(ctx, roleID, organizationID, pageParams)
+	if err != nil {
+		if isInvalidPageError(err) {
+			return api.V1OrganizationRoleMembersGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
+		}
 		if errors.Is(err, service.ErrNoPermission) {
 			return api.V1OrganizationRoleMembersGet403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		}
@@ -639,12 +673,15 @@ func (c *organizationController) V1OrganizationRoleMembersGet(ctx context.Contex
 		}}, nil
 	}
 
-	usersDTO := make([]api.User, len(users))
-	for i, user := range users {
+	usersDTO := make([]api.User, len(users.Items))
+	for i, user := range users.Items {
 		usersDTO[i] = userToDTO(user)
 	}
 
-	return api.V1OrganizationRoleMembersGet200JSONResponse(usersDTO), nil
+	return api.V1OrganizationRoleMembersGet200JSONResponse{
+		Items:    usersDTO,
+		PageInfo: pageInfoToDTO(users.PageInfo),
+	}, nil
 }
 
 func (c *organizationController) V1OrganizationRoleMembersAdd(ctx context.Context, request api.V1OrganizationRoleMembersAddRequestObject) (api.V1OrganizationRoleMembersAddResponseObject, error) {
@@ -933,29 +970,17 @@ func updateOrganizationJSONRequestBodyToUpdateOrganizationOpts(body *api.V1Organ
 
 func organizationToDTO(organization *service.Organization) api.Organization {
 	o := api.Organization{
-		Id:         organization.ID.String(),
-		Email:      oapiTypes.Email(organization.Email),
-		Name:       organization.Name,
-		Logo:       &organization.Logo,
-		Website:    &organization.Website,
-		Status:     api.OrganizationStatus(organization.Status.String()),
-		Members:    make([]api.Id, len(organization.Members)),
-		Namespaces: make([]api.Id, len(organization.Namespaces)),
-		Teams:      make([]api.Id, len(organization.Teams)),
-		CreatedAt:  *organization.CreatedAt,
-		UpdatedAt:  organization.UpdatedAt,
-	}
-
-	for i, member := range organization.Members {
-		o.Members[i] = api.Id(member.String())
-	}
-
-	for i, namespace := range organization.Namespaces {
-		o.Namespaces[i] = api.Id(namespace.String())
-	}
-
-	for i, team := range organization.Teams {
-		o.Teams[i] = api.Id(team.String())
+		Id:             organization.ID.String(),
+		Email:          oapiTypes.Email(organization.Email),
+		Name:           organization.Name,
+		Logo:           &organization.Logo,
+		Website:        &organization.Website,
+		Status:         api.OrganizationStatus(organization.Status.String()),
+		MemberCount:    organization.MemberCount,
+		TeamCount:      organization.TeamCount,
+		NamespaceCount: organization.NamespaceCount,
+		CreatedAt:      *organization.CreatedAt,
+		UpdatedAt:      organization.UpdatedAt,
 	}
 
 	return o

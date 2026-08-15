@@ -91,10 +91,11 @@ func TestIssuePriority_String(t *testing.T) {
 		p    IssuePriority
 		want string
 	}{
-		{"Critical", IssuePriorityCritical, "critical"},
+		{"Highest", IssuePriorityHighest, "highest"},
 		{"High", IssuePriorityHigh, "high"},
-		{"Medium", IssuePriorityMedium, "medium"},
+		{"Normal", IssuePriorityNormal, "normal"},
 		{"Low", IssuePriorityLow, "low"},
+		{"Lowest", IssuePriorityLowest, "lowest"},
 	}
 	for _, tt := range tests {
 		tt := tt
@@ -112,10 +113,11 @@ func TestIssuePriority_MarshalText(t *testing.T) {
 		wantText []byte
 		wantErr  error
 	}{
-		{"Critical", IssuePriorityCritical, []byte("critical"), nil},
+		{"Highest", IssuePriorityHighest, []byte("highest"), nil},
 		{"High", IssuePriorityHigh, []byte("high"), nil},
-		{"Medium", IssuePriorityMedium, []byte("medium"), nil},
+		{"Normal", IssuePriorityNormal, []byte("normal"), nil},
 		{"Low", IssuePriorityLow, []byte("low"), nil},
+		{"Lowest", IssuePriorityLowest, []byte("lowest"), nil},
 		{"priority high", IssuePriority(100), []byte("IssuePriority(100)"), nil},
 		{"priority low", IssuePriority(0), []byte("IssuePriority(0)"), nil},
 	}
@@ -140,10 +142,11 @@ func TestIssuePriority_UnmarshalText(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		{"Critical", IssuePriorityCritical, args{[]byte("high")}, false},
+		{"Highest", IssuePriorityHighest, args{[]byte("highest")}, false},
 		{"High", IssuePriorityHigh, args{[]byte("high")}, false},
-		{"Medium", IssuePriorityMedium, args{[]byte("medium")}, false},
+		{"Normal", IssuePriorityNormal, args{[]byte("normal")}, false},
 		{"Low", IssuePriorityLow, args{[]byte("low")}, false},
+		{"Lowest", IssuePriorityLowest, args{[]byte("lowest")}, false},
 		{"priority high", IssuePriority(100), args{[]byte("")}, true},
 		{"priority low", IssuePriority(0), args{[]byte("")}, true},
 	}
@@ -569,21 +572,17 @@ func TestNewIssue(t *testing.T) {
 				reportedBy: ID{Inner: xid.NilID(), Type: ResourceTypeUser},
 			},
 			want: &Issue{
-				ID:          ID{Inner: xid.NilID(), Type: ResourceTypeIssue},
-				NumericID:   1,
-				Kind:        IssueKindEpic,
-				Title:       "title",
-				Status:      IssueStatusOpen,
-				Priority:    IssuePriorityMedium,
-				Resolution:  IssueResolutionNone,
-				ReportedBy:  ID{Inner: xid.NilID(), Type: ResourceTypeUser},
-				Assignees:   make([]ID, 0),
-				Labels:      make([]ID, 0),
-				Comments:    make([]ID, 0),
-				Attachments: make([]ID, 0),
-				Watchers:    make([]ID, 0),
-				Relations:   make([]ID, 0),
-				Links:       make([]string, 0),
+				ID:         ID{Inner: xid.NilID(), Type: ResourceTypeIssue},
+				NumericID:  1,
+				Kind:       IssueKindEpic,
+				Title:      "title",
+				Status:     IssueStatusOpen,
+				Priority:   IssuePriorityNormal,
+				Resolution: IssueResolutionNone,
+				ReportedBy: ID{Inner: xid.NilID(), Type: ResourceTypeUser},
+				Assignees:  make([]ID, 0),
+				Labels:     make([]ID, 0),
+				Links:      make([]IssueLink, 0),
 			},
 		},
 		{
@@ -655,11 +654,7 @@ func TestIssue_Validate(t *testing.T) {
 		ReportedBy  ID
 		Assignees   []ID
 		Labels      []ID
-		Comments    []ID
-		Attachments []ID
-		Watchers    []ID
-		Relations   []ID
-		Links       []string
+		Links       []IssueLink
 		DueDate     *time.Time
 		CreatedAt   *time.Time
 		UpdatedAt   *time.Time
@@ -678,16 +673,12 @@ func TestIssue_Validate(t *testing.T) {
 				Title:       "title",
 				Description: "description",
 				Status:      IssueStatusOpen,
-				Priority:    IssuePriorityMedium,
+				Priority:    IssuePriorityNormal,
 				Resolution:  IssueResolutionNone,
 				ReportedBy:  ID{Inner: xid.NilID(), Type: ResourceTypeUser},
 				Assignees:   make([]ID, 0),
 				Labels:      make([]ID, 0),
-				Comments:    make([]ID, 0),
-				Attachments: make([]ID, 0),
-				Watchers:    make([]ID, 0),
-				Relations:   make([]ID, 0),
-				Links:       make([]string, 0),
+				Links:       make([]IssueLink, 0),
 			},
 		},
 		{
@@ -699,16 +690,12 @@ func TestIssue_Validate(t *testing.T) {
 				Title:       "title",
 				Description: "description",
 				Status:      IssueStatusOpen,
-				Priority:    IssuePriorityMedium,
+				Priority:    IssuePriorityNormal,
 				Resolution:  IssueResolutionNone,
 				ReportedBy:  ID{Inner: xid.NilID(), Type: ResourceTypeUser},
 				Assignees:   make([]ID, 0),
 				Labels:      make([]ID, 0),
-				Comments:    make([]ID, 0),
-				Attachments: make([]ID, 0),
-				Watchers:    make([]ID, 0),
-				Relations:   make([]ID, 0),
-				Links:       make([]string, 0),
+				Links:       make([]IssueLink, 0),
 			},
 			wantErr: ErrInvalidIssueDetails,
 		},
@@ -721,16 +708,12 @@ func TestIssue_Validate(t *testing.T) {
 				Title:       "title",
 				Description: "description",
 				Status:      IssueStatusOpen,
-				Priority:    IssuePriorityMedium,
+				Priority:    IssuePriorityNormal,
 				Resolution:  IssueResolutionNone,
 				ReportedBy:  ID{Inner: xid.NilID(), Type: ResourceTypeUser},
 				Assignees:   make([]ID, 0),
 				Labels:      make([]ID, 0),
-				Comments:    make([]ID, 0),
-				Attachments: make([]ID, 0),
-				Watchers:    make([]ID, 0),
-				Relations:   make([]ID, 0),
-				Links:       make([]string, 0),
+				Links:       make([]IssueLink, 0),
 			},
 			wantErr: ErrInvalidIssueDetails,
 		},
@@ -743,16 +726,12 @@ func TestIssue_Validate(t *testing.T) {
 				Title:       "title",
 				Description: "description",
 				Status:      IssueStatusOpen,
-				Priority:    IssuePriorityMedium,
+				Priority:    IssuePriorityNormal,
 				Resolution:  IssueResolutionNone,
 				ReportedBy:  ID{Inner: xid.NilID(), Type: ResourceTypeUser},
 				Assignees:   make([]ID, 0),
 				Labels:      make([]ID, 0),
-				Comments:    make([]ID, 0),
-				Attachments: make([]ID, 0),
-				Watchers:    make([]ID, 0),
-				Relations:   make([]ID, 0),
-				Links:       make([]string, 0),
+				Links:       make([]IssueLink, 0),
 			},
 			wantErr: ErrInvalidIssueDetails,
 		},
@@ -765,16 +744,12 @@ func TestIssue_Validate(t *testing.T) {
 				Title:       "",
 				Description: "description",
 				Status:      IssueStatusOpen,
-				Priority:    IssuePriorityMedium,
+				Priority:    IssuePriorityNormal,
 				Resolution:  IssueResolutionNone,
 				ReportedBy:  ID{Inner: xid.NilID(), Type: ResourceTypeUser},
 				Assignees:   make([]ID, 0),
 				Labels:      make([]ID, 0),
-				Comments:    make([]ID, 0),
-				Attachments: make([]ID, 0),
-				Watchers:    make([]ID, 0),
-				Relations:   make([]ID, 0),
-				Links:       make([]string, 0),
+				Links:       make([]IssueLink, 0),
 			},
 			wantErr: ErrInvalidIssueDetails,
 		},
@@ -785,18 +760,14 @@ func TestIssue_Validate(t *testing.T) {
 				NumericID:   1,
 				Kind:        IssueKindEpic,
 				Title:       "title",
-				Description: "desc",
+				Description: "de",
 				Status:      IssueStatusOpen,
-				Priority:    IssuePriorityMedium,
+				Priority:    IssuePriorityNormal,
 				Resolution:  IssueResolutionNone,
 				ReportedBy:  ID{Inner: xid.NilID(), Type: ResourceTypeUser},
 				Assignees:   make([]ID, 0),
 				Labels:      make([]ID, 0),
-				Comments:    make([]ID, 0),
-				Attachments: make([]ID, 0),
-				Watchers:    make([]ID, 0),
-				Relations:   make([]ID, 0),
-				Links:       make([]string, 0),
+				Links:       make([]IssueLink, 0),
 			},
 			wantErr: ErrInvalidIssueDetails,
 		},
@@ -809,16 +780,12 @@ func TestIssue_Validate(t *testing.T) {
 				Title:       "title",
 				Description: "description",
 				Status:      IssueStatus(100),
-				Priority:    IssuePriorityMedium,
+				Priority:    IssuePriorityNormal,
 				Resolution:  IssueResolutionNone,
 				ReportedBy:  ID{Inner: xid.NilID(), Type: ResourceTypeUser},
 				Assignees:   make([]ID, 0),
 				Labels:      make([]ID, 0),
-				Comments:    make([]ID, 0),
-				Attachments: make([]ID, 0),
-				Watchers:    make([]ID, 0),
-				Relations:   make([]ID, 0),
-				Links:       make([]string, 0),
+				Links:       make([]IssueLink, 0),
 			},
 			wantErr: ErrInvalidIssueDetails,
 		},
@@ -836,11 +803,7 @@ func TestIssue_Validate(t *testing.T) {
 				ReportedBy:  ID{Inner: xid.NilID(), Type: ResourceTypeUser},
 				Assignees:   make([]ID, 0),
 				Labels:      make([]ID, 0),
-				Comments:    make([]ID, 0),
-				Attachments: make([]ID, 0),
-				Watchers:    make([]ID, 0),
-				Relations:   make([]ID, 0),
-				Links:       make([]string, 0),
+				Links:       make([]IssueLink, 0),
 			},
 			wantErr: ErrInvalidIssueDetails,
 		},
@@ -853,16 +816,12 @@ func TestIssue_Validate(t *testing.T) {
 				Title:       "title",
 				Description: "description",
 				Status:      IssueStatusOpen,
-				Priority:    IssuePriorityMedium,
+				Priority:    IssuePriorityNormal,
 				Resolution:  IssueResolution(100),
 				ReportedBy:  ID{Inner: xid.NilID(), Type: ResourceTypeUser},
 				Assignees:   make([]ID, 0),
 				Labels:      make([]ID, 0),
-				Comments:    make([]ID, 0),
-				Attachments: make([]ID, 0),
-				Watchers:    make([]ID, 0),
-				Relations:   make([]ID, 0),
-				Links:       make([]string, 0),
+				Links:       make([]IssueLink, 0),
 			},
 			wantErr: ErrInvalidIssueDetails,
 		},
@@ -875,16 +834,12 @@ func TestIssue_Validate(t *testing.T) {
 				Title:       "title",
 				Description: "description",
 				Status:      IssueStatusOpen,
-				Priority:    IssuePriorityMedium,
+				Priority:    IssuePriorityNormal,
 				Resolution:  IssueResolutionNone,
 				ReportedBy:  ID{Inner: xid.NilID(), Type: ResourceType(0)},
 				Assignees:   make([]ID, 0),
 				Labels:      make([]ID, 0),
-				Comments:    make([]ID, 0),
-				Attachments: make([]ID, 0),
-				Watchers:    make([]ID, 0),
-				Relations:   make([]ID, 0),
-				Links:       make([]string, 0),
+				Links:       make([]IssueLink, 0),
 			},
 			wantErr: ErrInvalidIssueDetails,
 		},
@@ -897,18 +852,14 @@ func TestIssue_Validate(t *testing.T) {
 				Title:       "title",
 				Description: "description",
 				Status:      IssueStatusOpen,
-				Priority:    IssuePriorityMedium,
+				Priority:    IssuePriorityNormal,
 				Resolution:  IssueResolutionNone,
 				ReportedBy:  ID{Inner: xid.NilID(), Type: ResourceTypeUser},
 				Assignees: []ID{
 					{},
 				},
-				Labels:      make([]ID, 0),
-				Comments:    make([]ID, 0),
-				Attachments: make([]ID, 0),
-				Watchers:    make([]ID, 0),
-				Relations:   make([]ID, 0),
-				Links:       make([]string, 0),
+				Labels: make([]ID, 0),
+				Links:  make([]IssueLink, 0),
 			},
 			wantErr: ErrInvalidIssueDetails,
 		},
@@ -921,114 +872,14 @@ func TestIssue_Validate(t *testing.T) {
 				Title:       "title",
 				Description: "description",
 				Status:      IssueStatusOpen,
-				Priority:    IssuePriorityMedium,
+				Priority:    IssuePriorityNormal,
 				Resolution:  IssueResolutionNone,
 				ReportedBy:  ID{Inner: xid.NilID(), Type: ResourceTypeUser},
 				Assignees:   make([]ID, 0),
 				Labels: []ID{
 					{},
 				},
-				Comments:    make([]ID, 0),
-				Attachments: make([]ID, 0),
-				Watchers:    make([]ID, 0),
-				Relations:   make([]ID, 0),
-				Links:       make([]string, 0),
-			},
-			wantErr: ErrInvalidIssueDetails,
-		},
-		{
-			name: "invalid issue comments",
-			fields: fields{
-				ID:          ID{Inner: xid.NilID(), Type: ResourceTypeIssue},
-				NumericID:   1,
-				Kind:        IssueKindEpic,
-				Title:       "title",
-				Description: "description",
-				Status:      IssueStatusOpen,
-				Priority:    IssuePriorityMedium,
-				Resolution:  IssueResolutionNone,
-				ReportedBy:  ID{Inner: xid.NilID(), Type: ResourceTypeUser},
-				Assignees:   make([]ID, 0),
-				Labels:      make([]ID, 0),
-				Comments: []ID{
-					{},
-				},
-				Attachments: make([]ID, 0),
-				Watchers:    make([]ID, 0),
-				Relations:   make([]ID, 0),
-				Links:       make([]string, 0),
-			},
-			wantErr: ErrInvalidIssueDetails,
-		},
-		{
-			name: "invalid issue attachments",
-			fields: fields{
-				ID:          ID{Inner: xid.NilID(), Type: ResourceTypeIssue},
-				NumericID:   1,
-				Kind:        IssueKindEpic,
-				Title:       "title",
-				Description: "description",
-				Status:      IssueStatusOpen,
-				Priority:    IssuePriorityMedium,
-				Resolution:  IssueResolutionNone,
-				ReportedBy:  ID{Inner: xid.NilID(), Type: ResourceTypeUser},
-				Assignees:   make([]ID, 0),
-				Labels:      make([]ID, 0),
-				Comments:    make([]ID, 0),
-				Attachments: []ID{
-					{},
-				},
-				Watchers:  make([]ID, 0),
-				Relations: make([]ID, 0),
-				Links:     make([]string, 0),
-			},
-			wantErr: ErrInvalidIssueDetails,
-		},
-		{
-			name: "invalid issue watchers",
-			fields: fields{
-				ID:          ID{Inner: xid.NilID(), Type: ResourceTypeIssue},
-				NumericID:   1,
-				Kind:        IssueKindEpic,
-				Title:       "title",
-				Description: "description",
-				Status:      IssueStatusOpen,
-				Priority:    IssuePriorityMedium,
-				Resolution:  IssueResolutionNone,
-				ReportedBy:  ID{Inner: xid.NilID(), Type: ResourceTypeUser},
-				Assignees:   make([]ID, 0),
-				Labels:      make([]ID, 0),
-				Comments:    make([]ID, 0),
-				Attachments: make([]ID, 0),
-				Watchers: []ID{
-					{},
-				},
-				Relations: make([]ID, 0),
-				Links:     make([]string, 0),
-			},
-			wantErr: ErrInvalidIssueDetails,
-		},
-		{
-			name: "invalid issue relations",
-			fields: fields{
-				ID:          ID{Inner: xid.NilID(), Type: ResourceTypeIssue},
-				NumericID:   1,
-				Kind:        IssueKindEpic,
-				Title:       "title",
-				Description: "description",
-				Status:      IssueStatusOpen,
-				Priority:    IssuePriorityMedium,
-				Resolution:  IssueResolutionNone,
-				ReportedBy:  ID{Inner: xid.NilID(), Type: ResourceTypeUser},
-				Assignees:   make([]ID, 0),
-				Labels:      make([]ID, 0),
-				Comments:    make([]ID, 0),
-				Attachments: make([]ID, 0),
-				Watchers:    make([]ID, 0),
-				Relations: []ID{
-					{},
-				},
-				Links: make([]string, 0),
+				Links: make([]IssueLink, 0),
 			},
 			wantErr: ErrInvalidIssueDetails,
 		},
@@ -1041,17 +892,33 @@ func TestIssue_Validate(t *testing.T) {
 				Title:       "title",
 				Description: "description",
 				Status:      IssueStatusOpen,
-				Priority:    IssuePriorityMedium,
+				Priority:    IssuePriorityNormal,
 				Resolution:  IssueResolutionNone,
 				ReportedBy:  ID{Inner: xid.NilID(), Type: ResourceTypeUser},
 				Assignees:   make([]ID, 0),
 				Labels:      make([]ID, 0),
-				Comments:    make([]ID, 0),
-				Attachments: make([]ID, 0),
-				Watchers:    make([]ID, 0),
-				Relations:   make([]ID, 0),
-				Links: []string{
-					"",
+				Links: []IssueLink{
+					{URL: "", Label: "example"},
+				},
+			},
+			wantErr: ErrInvalidIssueDetails,
+		},
+		{
+			name: "invalid issue link label",
+			fields: fields{
+				ID:          ID{Inner: xid.NilID(), Type: ResourceTypeIssue},
+				NumericID:   1,
+				Kind:        IssueKindEpic,
+				Title:       "title",
+				Description: "description",
+				Status:      IssueStatusOpen,
+				Priority:    IssuePriorityNormal,
+				Resolution:  IssueResolutionNone,
+				ReportedBy:  ID{Inner: xid.NilID(), Type: ResourceTypeUser},
+				Assignees:   make([]ID, 0),
+				Labels:      make([]ID, 0),
+				Links: []IssueLink{
+					{URL: "https://example.com", Label: ""},
 				},
 			},
 			wantErr: ErrInvalidIssueDetails,
@@ -1074,10 +941,6 @@ func TestIssue_Validate(t *testing.T) {
 				ReportedBy:  tt.fields.ReportedBy,
 				Assignees:   tt.fields.Assignees,
 				Labels:      tt.fields.Labels,
-				Comments:    tt.fields.Comments,
-				Attachments: tt.fields.Attachments,
-				Watchers:    tt.fields.Watchers,
-				Relations:   tt.fields.Relations,
 				Links:       tt.fields.Links,
 				DueDate:     tt.fields.DueDate,
 				CreatedAt:   tt.fields.CreatedAt,
@@ -1085,6 +948,47 @@ func TestIssue_Validate(t *testing.T) {
 			}
 			err := i.Validate()
 			assert.ErrorIs(t, err, tt.wantErr)
+		})
+	}
+}
+
+func TestFormatIssueKey(t *testing.T) {
+	t.Parallel()
+	assert.Equal(t, "MOB-1", FormatIssueKey("MOB", 1))
+	assert.Equal(t, "LMO-1993", FormatIssueKey("lmo", 1993))
+}
+
+func TestParseIssueKey(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		key     string
+		wantKey string
+		wantNum uint
+		wantErr error
+	}{
+		{name: "valid", key: "MOB-1", wantKey: "MOB", wantNum: 1},
+		{name: "two letter project", key: "MO-1", wantKey: "MO", wantNum: 1},
+		{name: "lowercase project", key: "lmo-1993", wantKey: "LMO", wantNum: 1993},
+		{name: "empty", key: "", wantErr: ErrInvalidIssueDetails},
+		{name: "missing separator", key: "MOB1", wantErr: ErrInvalidIssueDetails},
+		{name: "short project key", key: "M-1", wantErr: ErrInvalidIssueDetails},
+		{name: "long project key", key: "TOOLONG-1", wantErr: ErrInvalidIssueDetails},
+		{name: "zero numeric", key: "MOB-0", wantErr: ErrInvalidIssueDetails},
+		{name: "non numeric", key: "MOB-x", wantErr: ErrInvalidIssueDetails},
+		{name: "digits in project", key: "MO1-1", wantErr: ErrInvalidIssueDetails},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			gotKey, gotNum, err := ParseIssueKey(tt.key)
+			assert.ErrorIs(t, err, tt.wantErr)
+			if tt.wantErr == nil {
+				assert.Equal(t, tt.wantKey, gotKey)
+				assert.Equal(t, tt.wantNum, gotNum)
+			}
 		})
 	}
 }

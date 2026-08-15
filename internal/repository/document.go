@@ -5,7 +5,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
+	"github.com/neo4j/neo4j-go-driver/v6/neo4j"
 
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/convert"
@@ -21,25 +21,25 @@ var (
 
 // PartialDocument represents a simplified document that can be used in list views.
 type PartialDocument struct {
-	ID        model.ID   `json:"id"`
-	Name      string     `json:"name"`
-	Excerpt   string     `json:"excerpt"`
-	CreatedBy model.ID   `json:"created_by"`
-	CreatedAt *time.Time `json:"created_at"`
+	ID        model.ID    `json:"id"`
+	Name      string      `json:"name"`
+	Excerpt   string      `json:"excerpt"`
+	CreatedBy PartialUser `json:"created_by"`
+	CreatedAt *time.Time  `json:"created_at"`
 }
 
 // Document represents a document persisted by the repository.
 type Document struct {
-	ID          model.ID   `json:"id"`
-	Name        string     `json:"name"`
-	Excerpt     string     `json:"excerpt"`
-	FileID      string     `json:"file_id"`
-	CreatedBy   model.ID   `json:"created_by"`
-	Labels      []model.ID `json:"labels"`
-	Comments    []model.ID `json:"comments"`
-	Attachments []model.ID `json:"attachments"`
-	CreatedAt   *time.Time `json:"created_at"`
-	UpdatedAt   *time.Time `json:"updated_at"`
+	ID              model.ID       `json:"id"`
+	Name            string         `json:"name"`
+	Excerpt         string         `json:"excerpt"`
+	FileID          string         `json:"file_id"`
+	CreatedBy       PartialUser    `json:"created_by"`
+	Labels          []PartialLabel `json:"labels"`
+	CommentCount    *int64         `json:"comment_count"`
+	AttachmentCount *int64         `json:"attachment_count"`
+	CreatedAt       *time.Time     `json:"created_at"`
+	UpdatedAt       *time.Time     `json:"updated_at"`
 }
 
 // CreateDocumentOpts holds the data required to create a document.
@@ -76,61 +76,12 @@ func (o UpdateDocumentOpts) patch() map[string]any {
 	return p
 }
 
-// scanPartialDocuments scans the record into partial documents.
-func scanPartialDocuments(record *neo4j.Record, key string) ([]*PartialDocument, error) {
-	documentsVal, err := Neo4jParseValueFromRecord[[]any](record, key)
-	if err != nil {
-		documentsVal = []any{}
-	}
-
-	documents := make([]*PartialDocument, 0, len(documentsVal))
-	for _, dVal := range documentsVal {
-		if dVal == nil {
-			return nil, err
-		}
-		dNode, ok := dVal.(neo4j.Node)
-		if !ok {
-			return nil, err
-		}
-
-		documentID, err := model.NewIDFromString(dNode.GetProperties()["id"].(string), model.ResourceTypeDocument.String())
-		if err != nil {
-			return nil, err
-		}
-
-		var tempDocument struct {
-			Name      string     `json:"name"`
-			Excerpt   string     `json:"excerpt"`
-			CreatedBy string     `json:"created_by"`
-			CreatedAt *time.Time `json:"created_at"`
-		}
-		if err := Neo4jScanIntoStruct(&dNode, &tempDocument, []string{"id"}); err != nil {
-			return nil, err
-		}
-
-		createdBy, err := model.NewIDFromString(tempDocument.CreatedBy, model.ResourceTypeUser.String())
-		if err != nil {
-			return nil, err
-		}
-
-		documents = append(documents, &PartialDocument{
-			ID:        documentID,
-			Name:      tempDocument.Name,
-			Excerpt:   tempDocument.Excerpt,
-			CreatedBy: createdBy,
-			CreatedAt: tempDocument.CreatedAt,
-		})
-	}
-
-	return documents, nil
-}
-
 //go:generate go tool mockgen -source=document.go -destination=document_mock_gen.go -package=repository -mock_names "DocumentRepository=MockDocumentRepository"
 type DocumentRepository interface {
 	Create(ctx context.Context, opts CreateDocumentOpts) (*Document, error)
-	Get(ctx context.Context, id model.ID) (*Document, error)
-	GetByCreator(ctx context.Context, createdBy model.ID, offset, limit int) ([]*Document, error)
-	GetAllBelongsTo(ctx context.Context, belongsTo model.ID, offset, limit int) ([]*Document, error)
+	Get(ctx context.Context, id model.ID, proj DocumentProjection) (*Document, error)
+	ListByCreator(ctx context.Context, createdBy model.ID, page CursorPage, proj DocumentProjection) (Page[*Document], error)
+	ListBelongsTo(ctx context.Context, belongsTo model.ID, page CursorPage, proj DocumentProjection) (Page[*Document], error)
 	Update(ctx context.Context, id model.ID, opts UpdateDocumentOpts) (*Document, error)
 	Delete(ctx context.Context, id model.ID) error
 }
@@ -140,67 +91,172 @@ type Neo4jDocumentRepository struct {
 	*neo4jBaseRepository
 }
 
-func (r *Neo4jDocumentRepository) scan(dp, cp, lp, commp, ap string) func(rec *neo4j.Record) (*Document, error) {
+func (r *Neo4jDocumentRepository) scan(proj DocumentProjection) func(rec *neo4j.Record) (*Document, error) {
 	return func(rec *neo4j.Record) (*Document, error) {
+		node, err := Neo4jRecordNode(rec, "d")
+		if err != nil {
+			return nil, err
+		}
+
+		createdBy, err := Neo4jRecordPartialUser(rec, "c")
+		if err != nil {
+			return nil, err
+		}
+		if createdBy == nil {
+			return nil, ErrMalformedResult
+		}
+
 		doc := new(Document)
+		if err := Neo4jScanIntoStruct(&node, &doc, []string{"id", "created_by"}); err != nil {
+			return nil, err
+		}
 
-		val, _, err := neo4j.GetRecordValue[neo4j.Node](rec, dp)
+		doc.ID, err = Neo4jDecodeID(node, model.ResourceTypeDocument)
 		if err != nil {
 			return nil, err
 		}
-
-		createdBy, err := Neo4jParseValueFromRecord[string](rec, cp)
-		if err != nil {
-			return nil, err
+		doc.CreatedBy = *createdBy
+		if proj.Labels {
+			doc.Labels = make([]PartialLabel, 0)
 		}
-
-		if err := Neo4jScanIntoStruct(&val, &doc, []string{"id", "created_by"}); err != nil {
-			return nil, err
+		if proj.CommentCount {
+			doc.CommentCount = convert.ToPointer(int64(0))
 		}
-
-		doc.ID, _ = model.NewIDFromString(val.GetProperties()["id"].(string), model.ResourceTypeDocument.String())
-		doc.CreatedBy, _ = model.NewIDFromString(createdBy, model.ResourceTypeUser.String())
-
-		if doc.Labels, err = Neo4jParseIDsFromRecord(rec, lp, model.ResourceTypeLabel.String()); err != nil {
-			return nil, err
-		}
-
-		if doc.Comments, err = Neo4jParseIDsFromRecord(rec, commp, model.ResourceTypeComment.String()); err != nil {
-			return nil, err
-		}
-
-		if doc.Attachments, err = Neo4jParseIDsFromRecord(rec, ap, model.ResourceTypeAttachment.String()); err != nil {
-			return nil, err
+		if proj.AttachmentCount {
+			doc.AttachmentCount = convert.ToPointer(int64(0))
 		}
 
 		return doc, nil
 	}
 }
 
+func (r *Neo4jDocumentRepository) applyDocumentLoaders(ctx context.Context, tx neo4j.ManagedTransaction, plan QueryPlan, documents []*Document) error {
+	if len(plan.Loaders) == 0 || len(documents) == 0 {
+		return nil
+	}
+
+	documentByID := make(map[string]*Document, len(documents))
+	ids := make([]string, 0, len(documents))
+	for _, document := range documents {
+		if document == nil {
+			continue
+		}
+		id := document.ID.String()
+		documentByID[id] = document
+		ids = append(ids, id)
+	}
+
+	for _, loader := range plan.Loaders {
+		query := loader
+		query.Params = cloneParams(loader.Params)
+		query.Params["ids"] = ids
+		switch loader.Name {
+		case "document.load_labels":
+			rows, _, err := Neo4jRunQuery(ctx, tx, query, func(rec *neo4j.Record) (struct {
+				DocumentID string
+				Labels     []PartialLabel
+			}, error) {
+				documentID, err := Neo4jParseValueFromRecord[string](rec, "document_id")
+				if err != nil {
+					return struct {
+						DocumentID string
+						Labels     []PartialLabel
+					}{}, err
+				}
+				labels, err := Neo4jRecordPartialLabels(rec, "labels")
+				if err != nil {
+					return struct {
+						DocumentID string
+						Labels     []PartialLabel
+					}{}, err
+				}
+				return struct {
+					DocumentID string
+					Labels     []PartialLabel
+				}{DocumentID: documentID, Labels: labels}, nil
+			})
+			if err != nil {
+				return err
+			}
+			for _, row := range rows {
+				if document := documentByID[row.DocumentID]; document != nil {
+					document.Labels = row.Labels
+				}
+			}
+		case "document.load_comment_count":
+			if err := applyDocumentCountLoader(ctx, tx, query, documentByID, "comment_count", func(document *Document, count int64) {
+				document.CommentCount = convert.ToPointer(count)
+			}); err != nil {
+				return err
+			}
+		case "document.load_attachment_count":
+			if err := applyDocumentCountLoader(ctx, tx, query, documentByID, "attachment_count", func(document *Document, count int64) {
+				document.AttachmentCount = convert.ToPointer(count)
+			}); err != nil {
+				return err
+			}
+		default:
+			return ErrQueryCompile
+		}
+	}
+
+	return nil
+}
+
+func applyDocumentCountLoader(
+	ctx context.Context,
+	tx neo4j.ManagedTransaction,
+	query CompiledQuery,
+	documentByID map[string]*Document,
+	field string,
+	assign func(document *Document, count int64),
+) error {
+	rows, _, err := Neo4jRunQuery(ctx, tx, query, func(rec *neo4j.Record) (struct {
+		DocumentID string
+		Count      int64
+	}, error) {
+		documentID, err := Neo4jParseValueFromRecord[string](rec, "document_id")
+		if err != nil {
+			return struct {
+				DocumentID string
+				Count      int64
+			}{}, err
+		}
+		count, err := Neo4jParseValueFromRecord[int64](rec, field)
+		if err != nil {
+			return struct {
+				DocumentID string
+				Count      int64
+			}{}, err
+		}
+		return struct {
+			DocumentID string
+			Count      int64
+		}{DocumentID: documentID, Count: count}, nil
+	})
+	if err != nil {
+		return err
+	}
+	for _, row := range rows {
+		if document := documentByID[row.DocumentID]; document != nil {
+			assign(document, row.Count)
+		}
+	}
+	return nil
+}
+
 func (r *Neo4jDocumentRepository) Create(ctx context.Context, opts CreateDocumentOpts) (*Document, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.DocumentRepository/Create")
 	defer span.End()
 
-	createdAt := convert.ToPointer(time.Now().UTC())
-
-	document := &Document{
-		ID:          model.MustNewID(model.ResourceTypeDocument),
-		Name:        opts.Name,
-		Excerpt:     opts.Excerpt,
-		FileID:      opts.FileID,
-		CreatedBy:   opts.CreatedBy,
-		Labels:      make([]model.ID, 0),
-		Comments:    make([]model.ID, 0),
-		Attachments: make([]model.ID, 0),
-		CreatedAt:   createdAt,
-		UpdatedAt:   nil,
-	}
+	createdAt := time.Now().UTC()
+	id := model.MustNewID(model.ResourceTypeDocument)
 
 	cypher := `
 	MATCH (b:` + opts.BelongsTo.Label() + ` {id: $belong_to_id})
-	MATCH (o:` + document.CreatedBy.Label() + ` {id: $created_by_id})
+	MATCH (o:` + opts.CreatedBy.Label() + ` {id: $created_by_id})
 	CREATE
-		(d:` + document.ID.Label() + ` {
+		(d:` + id.Label() + ` {
 			id: $id, name: $name, excerpt: $excerpt, file_id: $file_id, created_by: $created_by_id,
 			created_at: datetime($created_at)
 		}),
@@ -210,12 +266,12 @@ func (r *Neo4jDocumentRepository) Create(ctx context.Context, opts CreateDocumen
 	params := map[string]any{
 		"belong_to_id":      opts.BelongsTo.String(),
 		"belongs_to_rel_id": model.NewRawID(),
-		"created_by_id":     document.CreatedBy.String(),
+		"created_by_id":     opts.CreatedBy.String(),
 		"created_rel_id":    model.NewRawID(),
-		"id":                document.ID.String(),
-		"name":              document.Name,
-		"excerpt":           document.Excerpt,
-		"file_id":           document.FileID,
+		"id":                id.String(),
+		"name":              opts.Name,
+		"excerpt":           opts.Excerpt,
+		"file_id":           opts.FileID,
 		"created_at":        createdAt.Format(time.RFC3339Nano),
 	}
 
@@ -223,86 +279,104 @@ func (r *Neo4jDocumentRepository) Create(ctx context.Context, opts CreateDocumen
 		return nil, errors.Join(ErrDocumentCreate, err)
 	}
 
-	return document, nil
+	return r.Get(ctx, id, DocumentDetailProjection())
 }
 
-func (r *Neo4jDocumentRepository) Get(ctx context.Context, id model.ID) (*Document, error) {
+func (r *Neo4jDocumentRepository) Get(ctx context.Context, id model.ID, proj DocumentProjection) (*Document, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.DocumentRepository/Get")
 	defer span.End()
 
-	cypher := `
-	MATCH (d:` + id.Label() + ` {id: $id}), (d)<-[:` + EdgeKindCreated.String() + `]-(c:` + model.ResourceTypeUser.String() + `)
-	OPTIONAL MATCH (d)-[:` + EdgeKindHasLabel.String() + `]->(l:` + model.ResourceTypeLabel.String() + `)
-	OPTIONAL MATCH (d)-[:` + EdgeKindHasComment.String() + `]->(comm:` + model.ResourceTypeComment.String() + `)
-	OPTIONAL MATCH (d)-[:` + EdgeKindHasAttachment.String() + `]->(att:` + model.ResourceTypeAttachment.String() + `)
-	RETURN d, c.id AS c, collect(DISTINCT l.id) AS l, collect(DISTINCT comm.id) AS comm, collect(DISTINCT att.id) AS att`
-
-	params := map[string]any{
-		"id": id.String(),
-	}
-
-	doc, err := Neo4jExecuteReadAndReadSingle(ctx, r.db, cypher, params, r.scan("d", "c", "l", "comm", "att"))
+	plan, err := CompileQuery(DocumentGetQuery{ID: id, Projection: proj})
 	if err != nil {
 		return nil, errors.Join(ErrDocumentRead, err)
 	}
 
-	return doc, nil
+	var document *Document
+	err = Neo4jExecuteReadPlan(ctx, r.db, plan, func(tx neo4j.ManagedTransaction) error {
+		var readErr error
+		document, _, readErr = Neo4jRunQuerySingle(ctx, tx, plan.Root, r.scan(proj))
+		if readErr != nil {
+			return readErr
+		}
+		return r.applyDocumentLoaders(ctx, tx, plan, []*Document{document})
+	})
+	if err != nil {
+		return nil, errors.Join(ErrDocumentRead, err)
+	}
+
+	return document, nil
 }
 
-func (r *Neo4jDocumentRepository) GetByCreator(ctx context.Context, createdBy model.ID, offset, limit int) ([]*Document, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.DocumentRepository/GetByCreator")
+func (r *Neo4jDocumentRepository) ListByCreator(ctx context.Context, createdBy model.ID, page CursorPage, proj DocumentProjection) (Page[*Document], error) {
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.DocumentRepository/ListByCreator")
 	defer span.End()
 
-	cypher := `
-	MATCH (d:` + model.ResourceTypeDocument.String() + `)<-[:` + EdgeKindCreated.String() + `]-(c:` + createdBy.Label() + ` {id: $id})
-	OPTIONAL MATCH (d)-[:` + EdgeKindHasLabel.String() + `]->(l:` + model.ResourceTypeLabel.String() + `)
-	OPTIONAL MATCH (d)-[:` + EdgeKindHasComment.String() + `]->(comm:` + model.ResourceTypeComment.String() + `)
-	OPTIONAL MATCH (d)-[:` + EdgeKindHasAttachment.String() + `]->(att:` + model.ResourceTypeAttachment.String() + `)
-	RETURN d, c.id AS c, collect(DISTINCT l.id) AS l, collect(DISTINCT comm.id) AS comm, collect(DISTINCT att.id) AS att
-	ORDER BY d.created_at DESC
-	SKIP $offset LIMIT $limit`
-
-	params := map[string]any{
-		"id":     createdBy.String(),
-		"offset": offset,
-		"limit":  limit,
-	}
-
-	docs, err := Neo4jExecuteReadAndReadAll(ctx, r.db, cypher, params, r.scan("d", "c", "l", "comm", "att"))
+	normalized, err := page.Normalize()
 	if err != nil {
-		return nil, errors.Join(ErrDocumentRead, err)
+		return Page[*Document]{}, errors.Join(ErrDocumentRead, err)
+	}
+	plan, err := CompileQuery(DocumentListByCreatorQuery{
+		CreatedBy:  createdBy,
+		Page:       normalized,
+		Order:      SortDirectionDesc,
+		Projection: proj,
+	})
+	if err != nil {
+		return Page[*Document]{}, errors.Join(ErrDocumentRead, err)
 	}
 
-	return docs, nil
+	documents := make([]*Document, 0)
+	err = Neo4jExecuteReadPlan(ctx, r.db, plan, func(tx neo4j.ManagedTransaction) error {
+		var readErr error
+		documents, _, readErr = Neo4jRunQuery(ctx, tx, plan.Root, r.scan(proj))
+		if readErr != nil {
+			return readErr
+		}
+		return r.applyDocumentLoaders(ctx, tx, plan, documents)
+	})
+	if err != nil {
+		return Page[*Document]{}, errors.Join(ErrDocumentRead, err)
+	}
+
+	return PaginateSlice(documents, normalized.Size, func(document *Document) model.ID {
+		return document.ID
+	})
 }
 
-func (r *Neo4jDocumentRepository) GetAllBelongsTo(ctx context.Context, belongsTo model.ID, offset, limit int) ([]*Document, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.DocumentRepository/GetAllBelongsTo")
+func (r *Neo4jDocumentRepository) ListBelongsTo(ctx context.Context, belongsTo model.ID, page CursorPage, proj DocumentProjection) (Page[*Document], error) {
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.DocumentRepository/ListBelongsTo")
 	defer span.End()
 
-	cypher := `
-	MATCH
-		(d:` + model.ResourceTypeDocument.String() + `)-[:` + EdgeKindBelongsTo.String() + `]->(b:` + belongsTo.Label() + ` {id: $id}),
-		(c:` + model.ResourceTypeUser.String() + `)-[` + EdgeKindCreated.String() + `]->(d)
-	OPTIONAL MATCH (d)-[:` + EdgeKindHasLabel.String() + `]->(l:` + model.ResourceTypeLabel.String() + `)
-	OPTIONAL MATCH (d)-[:` + EdgeKindHasComment.String() + `]->(comm:` + model.ResourceTypeComment.String() + `)
-	OPTIONAL MATCH (d)-[:` + EdgeKindHasAttachment.String() + `]->(att:` + model.ResourceTypeAttachment.String() + `)
-	RETURN d, c.id AS c, collect(DISTINCT l.id) AS l, collect(DISTINCT comm.id) AS comm, collect(DISTINCT att.id) AS att
-	ORDER BY d.created_at DESC
-	SKIP $offset LIMIT $limit`
-
-	params := map[string]any{
-		"id":     belongsTo.String(),
-		"offset": offset,
-		"limit":  limit,
-	}
-
-	docs, err := Neo4jExecuteReadAndReadAll(ctx, r.db, cypher, params, r.scan("d", "c", "l", "comm", "att"))
+	normalized, err := page.Normalize()
 	if err != nil {
-		return nil, errors.Join(ErrDocumentRead, err)
+		return Page[*Document]{}, errors.Join(ErrDocumentRead, err)
+	}
+	plan, err := CompileQuery(DocumentListBelongsToQuery{
+		BelongsTo:  belongsTo,
+		Page:       normalized,
+		Order:      SortDirectionDesc,
+		Projection: proj,
+	})
+	if err != nil {
+		return Page[*Document]{}, errors.Join(ErrDocumentRead, err)
 	}
 
-	return docs, nil
+	documents := make([]*Document, 0)
+	err = Neo4jExecuteReadPlan(ctx, r.db, plan, func(tx neo4j.ManagedTransaction) error {
+		var readErr error
+		documents, _, readErr = Neo4jRunQuery(ctx, tx, plan.Root, r.scan(proj))
+		if readErr != nil {
+			return readErr
+		}
+		return r.applyDocumentLoaders(ctx, tx, plan, documents)
+	})
+	if err != nil {
+		return Page[*Document]{}, errors.Join(ErrDocumentRead, err)
+	}
+
+	return PaginateSlice(documents, normalized.Size, func(document *Document) model.ID {
+		return document.ID
+	})
 }
 
 func (r *Neo4jDocumentRepository) Update(ctx context.Context, id model.ID, opts UpdateDocumentOpts) (*Document, error) {
@@ -312,24 +386,21 @@ func (r *Neo4jDocumentRepository) Update(ctx context.Context, id model.ID, opts 
 	cypher := `
 	MATCH (d:` + id.Label() + ` {id: $id})
 	SET d += $patch, d.updated_at = datetime()
-	WITH d
-	MATCH (c:` + model.ResourceTypeUser.String() + `)-[` + EdgeKindCreated.String() + `]->(d)
-	OPTIONAL MATCH (d)-[:` + EdgeKindHasLabel.String() + `]->(l:` + model.ResourceTypeLabel.String() + `)
-	OPTIONAL MATCH (d)-[:` + EdgeKindHasComment.String() + `]->(comm:` + model.ResourceTypeComment.String() + `)
-	OPTIONAL MATCH (d)-[:` + EdgeKindHasAttachment.String() + `]->(att:` + model.ResourceTypeAttachment.String() + `)
-	RETURN d, c.id AS c, collect(DISTINCT l.id) AS l, collect(DISTINCT comm.id) AS comm, collect(DISTINCT att.id) AS att`
+	RETURN d.id AS id`
 
 	params := map[string]any{
 		"id":    id.String(),
 		"patch": opts.patch(),
 	}
 
-	doc, err := Neo4jExecuteWriteAndReadSingle(ctx, r.db, cypher, params, r.scan("d", "c", "l", "comm", "att"))
+	_, err := Neo4jExecuteWriteAndReadSingle(ctx, r.db, cypher, params, func(_ *neo4j.Record) (*struct{}, error) {
+		return &struct{}{}, nil
+	})
 	if err != nil {
 		return nil, errors.Join(ErrDocumentUpdate, err)
 	}
 
-	return doc, nil
+	return r.Get(ctx, id, DocumentDetailProjection())
 }
 
 func (r *Neo4jDocumentRepository) Delete(ctx context.Context, id model.ID) error {
@@ -365,23 +436,23 @@ func clearDocumentsPattern(ctx context.Context, r *redisBaseRepository, pattern 
 }
 
 func clearDocumentsKey(ctx context.Context, r *redisBaseRepository, id model.ID) error {
-	return r.Delete(ctx, composeCacheKey(model.ResourceTypeDocument.String(), id.String()))
+	return clearDocumentsPattern(ctx, r, "Get", id.String(), "*")
 }
 
 func clearDocumentBelongsTo(ctx context.Context, r *redisBaseRepository, belongsToID model.ID) error {
-	return clearDocumentsPattern(ctx, r, "GetAllBelongsTo", belongsToID.String(), "*")
+	return clearDocumentsPattern(ctx, r, "ListBelongsTo", belongsToID.String(), "*", "*", "*")
 }
 
 func clearDocumentAllBelongsTo(ctx context.Context, r *redisBaseRepository) error {
-	return clearDocumentsPattern(ctx, r, "GetAllBelongsTo", "*")
+	return clearDocumentsPattern(ctx, r, "ListBelongsTo", "*")
 }
 
 func clearDocumentByCreator(ctx context.Context, r *redisBaseRepository, createdByID model.ID) error {
-	return clearDocumentsPattern(ctx, r, "GetByCreator", createdByID.String(), "*")
+	return clearDocumentsPattern(ctx, r, "ListByCreator", createdByID.String(), "*", "*", "*")
 }
 
 func clearDocumentAllByCreator(ctx context.Context, r *redisBaseRepository) error {
-	return clearDocumentsPattern(ctx, r, "GetByCreator", "*")
+	return clearDocumentsPattern(ctx, r, "ListByCreator", "*")
 }
 
 func clearDocumentAllCrossCache(ctx context.Context, r *redisBaseRepository) error {
@@ -422,11 +493,11 @@ func (r *RedisCachedDocumentRepository) Create(ctx context.Context, opts CreateD
 	return r.documentRepo.Create(ctx, opts)
 }
 
-func (r *RedisCachedDocumentRepository) Get(ctx context.Context, id model.ID) (*Document, error) {
+func (r *RedisCachedDocumentRepository) Get(ctx context.Context, id model.ID, proj DocumentProjection) (*Document, error) {
 	var document *Document
 	var err error
 
-	key := composeCacheKey(model.ResourceTypeDocument.String(), id.String())
+	key := composeCacheKey(model.ResourceTypeDocument.String(), "Get", id.String(), projectionCacheValue(proj))
 	if err = r.cacheRepo.Get(ctx, key, &document); err != nil {
 		return nil, err
 	}
@@ -435,7 +506,7 @@ func (r *RedisCachedDocumentRepository) Get(ctx context.Context, id model.ID) (*
 		return document, nil
 	}
 
-	if document, err = r.documentRepo.Get(ctx, id); err != nil {
+	if document, err = r.documentRepo.Get(ctx, id, proj); err != nil {
 		return nil, err
 	}
 
@@ -446,49 +517,59 @@ func (r *RedisCachedDocumentRepository) Get(ctx context.Context, id model.ID) (*
 	return document, nil
 }
 
-func (r *RedisCachedDocumentRepository) GetByCreator(ctx context.Context, createdBy model.ID, offset, limit int) ([]*Document, error) {
-	var documents []*Document
+func (r *RedisCachedDocumentRepository) ListByCreator(ctx context.Context, createdBy model.ID, page CursorPage, proj DocumentProjection) (Page[*Document], error) {
+	var documents Page[*Document]
 	var err error
 
-	key := composeCacheKey(model.ResourceTypeDocument.String(), "GetByCreator", createdBy.String(), offset, limit)
-	if err = r.cacheRepo.Get(ctx, key, &documents); err != nil {
-		return nil, err
+	normalized, err := normalizedPage(page)
+	if err != nil {
+		return Page[*Document]{}, err
 	}
 
-	if documents != nil {
+	key := composeCacheKey(model.ResourceTypeDocument.String(), "ListByCreator", createdBy.String(), projectionCacheValue(proj), pageTokenValue(normalized.Token), normalized.Size)
+	if err = r.cacheRepo.Get(ctx, key, &documents); err != nil {
+		return Page[*Document]{}, err
+	}
+
+	if documents.Items != nil {
 		return documents, nil
 	}
 
-	if documents, err = r.documentRepo.GetByCreator(ctx, createdBy, offset, limit); err != nil {
-		return nil, err
+	if documents, err = r.documentRepo.ListByCreator(ctx, createdBy, normalized, proj); err != nil {
+		return Page[*Document]{}, err
 	}
 
 	if err = r.cacheRepo.Set(ctx, key, documents); err != nil {
-		return nil, err
+		return Page[*Document]{}, err
 	}
 
 	return documents, nil
 }
 
-func (r *RedisCachedDocumentRepository) GetAllBelongsTo(ctx context.Context, belongsTo model.ID, offset, limit int) ([]*Document, error) {
-	var documents []*Document
+func (r *RedisCachedDocumentRepository) ListBelongsTo(ctx context.Context, belongsTo model.ID, page CursorPage, proj DocumentProjection) (Page[*Document], error) {
+	var documents Page[*Document]
 	var err error
 
-	key := composeCacheKey(model.ResourceTypeDocument.String(), "GetAllBelongsTo", belongsTo.String(), offset, limit)
-	if err = r.cacheRepo.Get(ctx, key, &documents); err != nil {
-		return nil, err
+	normalized, err := normalizedPage(page)
+	if err != nil {
+		return Page[*Document]{}, err
 	}
 
-	if documents != nil {
+	key := composeCacheKey(model.ResourceTypeDocument.String(), "ListBelongsTo", belongsTo.String(), projectionCacheValue(proj), pageTokenValue(normalized.Token), normalized.Size)
+	if err = r.cacheRepo.Get(ctx, key, &documents); err != nil {
+		return Page[*Document]{}, err
+	}
+
+	if documents.Items != nil {
 		return documents, nil
 	}
 
-	if documents, err = r.documentRepo.GetAllBelongsTo(ctx, belongsTo, offset, limit); err != nil {
-		return nil, err
+	if documents, err = r.documentRepo.ListBelongsTo(ctx, belongsTo, normalized, proj); err != nil {
+		return Page[*Document]{}, err
 	}
 
 	if err = r.cacheRepo.Set(ctx, key, documents); err != nil {
-		return nil, err
+		return Page[*Document]{}, err
 	}
 
 	return documents, nil
@@ -500,7 +581,7 @@ func (r *RedisCachedDocumentRepository) Update(ctx context.Context, id model.ID,
 		return nil, err
 	}
 
-	key := composeCacheKey(model.ResourceTypeDocument.String(), id.String())
+	key := composeCacheKey(model.ResourceTypeDocument.String(), "Get", id.String(), projectionCacheValue(DocumentDetailProjection()))
 	if err = r.cacheRepo.Set(ctx, key, document); err != nil {
 		return nil, err
 	}
@@ -509,7 +590,7 @@ func (r *RedisCachedDocumentRepository) Update(ctx context.Context, id model.ID,
 		return nil, err
 	}
 
-	if err = clearDocumentByCreator(ctx, r.cacheRepo, document.CreatedBy); err != nil {
+	if err = clearDocumentByCreator(ctx, r.cacheRepo, document.CreatedBy.ID); err != nil {
 		return nil, err
 	}
 

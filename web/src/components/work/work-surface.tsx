@@ -1,23 +1,62 @@
+import { useQuery } from "@tanstack/react-query";
 import { PlusIcon, SearchIcon } from "lucide-react";
-import { Suspense, lazy, useMemo } from "react";
+import {
+  Suspense,
+  lazy,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
 import type { SearchPatch } from "./utils";
 import { selectedWorkId } from "./utils";
+import type { WorkFieldOverride } from "./work-field-overrides";
 
 import { ResponsiveInspectorShell } from "@/components/layout/responsive-inspector-shell";
 import { openQuickCreate } from "@/components/quick-create/open";
-import { AppEmptyState, MockDataAlert } from "@/components/shared/app-feedback";
+import { MockDataAlert } from "@/components/shared/app-feedback";
 import { ContextLine } from "@/components/shared/context-line";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { useBoardIssueMove } from "@/components/work/use-board-issue-move";
+import type { BoardItemMove } from "@/components/work/use-board-issue-move";
+import { useTimelineIssueDates } from "@/components/work/use-timeline-issue-dates";
+import type { TimelineDateChange } from "@/components/work/use-timeline-issue-dates";
 import { ViewBar } from "@/components/work/view-bar";
 import { CompactWorkList } from "@/components/work/work-list";
 import {
+  WorkInspectorSkeleton,
+  WorkSurfaceLayoutSkeleton,
+} from "@/components/work/work-surface-skeletons";
+import { collectedListQuery, cursorPageQuery } from "@/lib/api/cursor-pages";
+import {
+  v1NamespacesIssuesGetOptions,
+  v1ProjectsIssuesGetOptions,
+  v1UsersIssuesGetOptions,
+} from "@/lib/api/query-options";
+import {
+  v1NamespacesIssuesGet,
+  v1ProjectsIssuesGet,
+  v1UsersIssuesGet,
+} from "@/lib/api/sdk";
+import type { PartialIssue } from "@/lib/client";
+import {
   getWorkItem,
   isInScope,
+  queryWorkItems,
   selectSavedViews,
   selectWorkItems,
 } from "@/lib/mock-data";
-import type { Scope, WorkItem, WorkSortField } from "@/lib/mock-data";
+import type {
+  Scope,
+  WorkFilters,
+  WorkItem,
+  WorkPriority,
+  WorkSortField,
+  WorkStatus,
+} from "@/lib/mock-data";
+import { issuesToWorkItems } from "@/lib/work/issue-adapter";
 import { resolveWorkScope } from "@/lib/work-route-search";
 import type { WorkRouteSearch } from "@/lib/work-route-search";
 
@@ -75,57 +114,209 @@ function workItemMatchesScope(item: WorkItem, scope: Scope) {
   );
 }
 
-export function WorkSurface({
+function useMockScopedWorkItems({
+  effectiveScope,
+  search,
+  activeViewFilters,
+}: {
+  effectiveScope: Scope;
+  search: WorkRouteSearch;
+  activeViewFilters?: WorkFilters;
+}) {
+  return useMemo(
+    () =>
+      selectWorkItems({
+        scope: effectiveScope,
+        filters: {
+          ...activeViewFilters,
+          ...(search.filter ? { text: search.filter } : {}),
+        },
+        sort: [parseWorkSort(search.sort)],
+      }),
+    [activeViewFilters, effectiveScope, search.filter, search.sort]
+  );
+}
+
+function useListedWorkItems({
+  listOptions,
+  fetchPage,
+  toWorkItems,
+  search,
+  activeViewFilters,
+}: {
+  listOptions: {
+    queryKey: readonly unknown[];
+    staleTime?: unknown;
+    gcTime?: unknown;
+  };
+  fetchPage: (
+    pageToken: string | undefined,
+    signal: AbortSignal
+  ) => Promise<{ items?: readonly PartialIssue[] | null } | null | undefined>;
+  toWorkItems: (issues: readonly PartialIssue[]) => WorkItem[];
+  search: WorkRouteSearch;
+  activeViewFilters?: WorkFilters;
+}) {
+  const {
+    data: issuesPage,
+    error,
+    isPending,
+  } = useQuery(collectedListQuery(listOptions, fetchPage));
+
+  const items = useMemo(() => {
+    return queryWorkItems(toWorkItems(issuesPage?.items ?? []), {
+      filters: {
+        ...activeViewFilters,
+        ...(search.filter ? { text: search.filter } : {}),
+      },
+      sort: [parseWorkSort(search.sort)],
+    });
+  }, [activeViewFilters, issuesPage, search.filter, search.sort, toWorkItems]);
+
+  return { items, error, isPending };
+}
+
+function WorkSurfaceBody({
   title,
   description,
   context,
   scope,
+  effectiveScope,
+  scopedItems,
+  usesApiIssues,
+  issuesError,
+  issuesPending,
   search,
   onSearchChange,
+  savedViews,
 }: {
   title: string;
   description?: string;
   context?: { namespace?: string; project?: string };
   scope: Scope;
+  effectiveScope: Scope;
+  scopedItems: readonly WorkItem[];
+  usesApiIssues: boolean;
+  issuesError?: unknown;
+  issuesPending?: boolean;
   search: WorkRouteSearch;
   onSearchChange: (patch: SearchPatch) => void;
+  savedViews: ReturnType<typeof selectSavedViews>;
 }) {
-  const effectiveScope = resolveWorkScope(search.scope, scope);
-  const savedViews = useMemo(
-    () => selectSavedViews({ scope, includeGlobal: true }),
-    [scope]
-  );
-  const activeView = savedViews.find((view) => view.id === search.view);
-  const scopedItems = useMemo(
+  const projectId =
+    effectiveScope.type === "project" ? effectiveScope.projectId : undefined;
+  const { moveIssue } = useBoardIssueMove(projectId);
+  const { updateDates } = useTimelineIssueDates(projectId);
+  const [fieldOverrides, setFieldOverrides] = useState<
+    ReadonlyMap<string, WorkFieldOverride>
+  >(() => new Map());
+
+  useEffect(() => {
+    setFieldOverrides((previous) => {
+      if (previous.size === 0) {
+        return previous;
+      }
+
+      let changed = false;
+      const next = new Map(previous);
+      for (const [id, override] of previous) {
+        const item = scopedItems.find((candidate) => candidate.id === id);
+        if (!item) {
+          next.delete(id);
+          changed = true;
+          continue;
+        }
+
+        const statusMatches =
+          override.status === undefined || item.status === override.status;
+        const priorityMatches =
+          override.priority === undefined ||
+          item.priority === override.priority;
+        const startMatches =
+          override.startDate === undefined ||
+          item.startDate === override.startDate;
+        const dueMatches =
+          override.dueDate === undefined || item.dueDate === override.dueDate;
+        if (statusMatches && priorityMatches && startMatches && dueMatches) {
+          next.delete(id);
+          changed = true;
+        }
+      }
+
+      return changed ? next : previous;
+    });
+  }, [scopedItems]);
+
+  const displayItems = useMemo(
     () =>
-      selectWorkItems({
-        scope: effectiveScope,
-        filters: {
-          ...activeView?.filters,
-          ...(search.filter ? { text: search.filter } : {}),
-        },
-        sort: [parseWorkSort(search.sort)],
+      scopedItems.map((item) => {
+        const override = fieldOverrides.get(item.id);
+        return override ? { ...item, ...override } : item;
       }),
-    [activeView, effectiveScope, search.filter, search.sort]
+    [fieldOverrides, scopedItems]
   );
+
   const selectedId = selectedWorkId(search.selected);
-  const selectedCandidate = selectedId ? getWorkItem(selectedId) : undefined;
+  const selectedCandidate = selectedId
+    ? (displayItems.find(
+        (item) => item.id === selectedId || item.key === selectedId
+      ) ?? getWorkItem(selectedId))
+    : undefined;
   const selectedItem =
     selectedCandidate && workItemMatchesScope(selectedCandidate, effectiveScope)
       ? selectedCandidate
       : undefined;
   const compact = search.display === "compact";
   const selectItem = (item: WorkItem) =>
-    onSearchChange({ selected: `work:${item.id}` });
+    onSearchChange({ selected: `work:${item.key}` });
   const closeInspector = () => onSearchChange({ selected: undefined });
 
+  const handleItemMove = (move: BoardItemMove) => {
+    if (usesApiIssues) {
+      void moveIssue(move);
+      return;
+    }
+
+    const patch: WorkFieldOverride =
+      move.group === "status"
+        ? { status: move.to as WorkStatus }
+        : { priority: move.to as WorkPriority };
+
+    setFieldOverrides((previous) => {
+      const next = new Map(previous);
+      next.set(move.item.id, { ...previous.get(move.item.id), ...patch });
+      return next;
+    });
+  };
+
+  const handleDatesChange = (change: TimelineDateChange) => {
+    if (usesApiIssues) {
+      void updateDates(change);
+      return;
+    }
+
+    const patch: WorkFieldOverride = {
+      startDate: change.startDate,
+      dueDate: change.dueDate,
+    };
+
+    setFieldOverrides((previous) => {
+      const next = new Map(previous);
+      next.set(change.item.id, { ...previous.get(change.item.id), ...patch });
+      return next;
+    });
+  };
+
   return (
-    <div className="flex h-[calc(100svh-var(--app-header-height))] min-h-0 min-w-0 flex-col overflow-hidden">
+    <div
+      className="flex h-[calc(100svh-var(--app-header-height))] min-h-0 min-w-0 flex-col overflow-hidden"
+      data-section="work-surface"
+    >
       <ResponsiveInspectorShell
         className="min-h-0 min-w-0 flex-1"
         inspector={
           selectedItem ? (
-            <Suspense fallback={<WorkSurfaceFallback label="inspector" />}>
+            <Suspense fallback={<WorkInspectorSkeleton />}>
               <WorkInspector item={selectedItem} />
             </Suspense>
           ) : undefined
@@ -161,21 +352,44 @@ export function WorkSurface({
             scope={scope}
             savedViews={savedViews}
             onSearchChange={onSearchChange}
-            itemCount={scopedItems.length}
+            itemCount={displayItems.length}
+            showScopePicker={!usesApiIssues}
           />
           <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3 overflow-hidden p-3 sm:p-4">
-            <MockDataAlert
-              title="Illustrative work projection"
-              className="shrink-0"
-            >
-              Board, List, Table, Timeline, and saved views use clearly labeled
-              fixture data. Scope, filters, layout, density, and selection
-              remain URL-owned.
-            </MockDataAlert>
+            {usesApiIssues ? (
+              <MockDataAlert
+                title="Live issues with illustrative extras"
+                className="shrink-0"
+              >
+                Issue cards and the timeline come from the live issues API.
+                Saved views and relationships remain fixture-backed where those
+                APIs are not available yet.
+              </MockDataAlert>
+            ) : (
+              <MockDataAlert
+                title="Illustrative work projection"
+                className="shrink-0"
+              >
+                Board, List, Table, Timeline, and saved views use clearly
+                labeled fixture data. Scope, filters, layout, density, and
+                selection remain URL-owned. Open a project Work surface for live
+                issues.
+              </MockDataAlert>
+            )}
             <div className="min-h-0 min-w-0 flex-1 overflow-hidden">
-              {scopedItems.length === 0 ? (
+              {issuesPending ? (
+                <WorkSurfaceLayoutSkeleton layout={search.layout} />
+              ) : issuesError ? (
                 <div className="h-full overflow-auto">
-                  <AppEmptyState
+                  <EmptyState
+                    icon={<SearchIcon />}
+                    title="Couldn't load work"
+                    description="The issue list could not be loaded. Try again later."
+                  />
+                </div>
+              ) : displayItems.length === 0 ? (
+                <div className="h-full overflow-auto">
+                  <EmptyState
                     icon={<SearchIcon />}
                     title={search.filter ? "No query matches" : "No work yet"}
                     description={
@@ -200,35 +414,42 @@ export function WorkSurface({
                   />
                 </div>
               ) : search.layout === "board" ? (
-                <Suspense fallback={<WorkSurfaceFallback label="board" />}>
+                <Suspense
+                  fallback={<WorkSurfaceLayoutSkeleton layout="board" />}
+                >
                   <WorkBoard
-                    items={scopedItems}
+                    items={displayItems}
                     group={search.group}
                     compact={compact}
                     onSelect={selectItem}
+                    onItemMove={handleItemMove}
                   />
                 </Suspense>
               ) : search.layout === "table" ? (
-                <Suspense fallback={<WorkSurfaceFallback label="table" />}>
+                <Suspense
+                  fallback={<WorkSurfaceLayoutSkeleton layout="table" />}
+                >
                   <WorkTable
-                    items={scopedItems}
+                    items={displayItems}
                     compact={compact}
                     onSelect={selectItem}
                   />
                 </Suspense>
               ) : search.layout === "timeline" ? (
-                <Suspense fallback={<WorkSurfaceFallback label="timeline" />}>
+                <Suspense
+                  fallback={<WorkSurfaceLayoutSkeleton layout="timeline" />}
+                >
                   <WorkTimeline
-                    items={scopedItems}
-                    scope={effectiveScope}
+                    items={displayItems}
                     compact={compact}
                     onSelect={selectItem}
+                    onDatesChange={handleDatesChange}
                   />
                 </Suspense>
               ) : (
                 <div className="h-full min-w-0 overflow-auto">
                   <CompactWorkList
-                    items={scopedItems}
+                    items={displayItems}
                     compact={compact}
                     onSelect={selectItem}
                   />
@@ -242,13 +463,319 @@ export function WorkSurface({
   );
 }
 
-function WorkSurfaceFallback({ label }: { label: string }) {
+function ProjectWorkSurface({
+  title,
+  description,
+  context,
+  scope,
+  search,
+  onSearchChange,
+}: {
+  title: string;
+  description?: string;
+  context?: { namespace?: string; project?: string };
+  scope: Extract<Scope, { type: "project" }>;
+  search: WorkRouteSearch;
+  onSearchChange: (patch: SearchPatch) => void;
+}) {
+  const effectiveScope = resolveWorkScope(search.scope, scope);
+  const projectScope =
+    effectiveScope.type === "project" ? effectiveScope : scope;
+  const savedViews = useMemo(
+    () => selectSavedViews({ scope, includeGlobal: true }),
+    [scope]
+  );
+  const activeView = savedViews.find((view) => view.id === search.view);
+  const toWorkItems = useCallback(
+    (issues: readonly PartialIssue[]) =>
+      issuesToWorkItems(issues, {
+        namespaceId: projectScope.namespaceId,
+        projectId: projectScope.projectId,
+      }),
+    [projectScope.namespaceId, projectScope.projectId]
+  );
+  const {
+    items: scopedItems,
+    error: issuesError,
+    isPending: issuesPending,
+  } = useListedWorkItems({
+    listOptions: v1ProjectsIssuesGetOptions({
+      path: { id: projectScope.projectId },
+      query: cursorPageQuery(),
+    }),
+    fetchPage: async (pageToken, signal) => {
+      const { data } = await v1ProjectsIssuesGet({
+        path: { id: projectScope.projectId },
+        query: cursorPageQuery(pageToken),
+        signal,
+        throwOnError: true,
+      });
+      return data;
+    },
+    toWorkItems,
+    search,
+    activeViewFilters: activeView?.filters,
+  });
+
   return (
-    <div
-      role="status"
-      className="text-muted-foreground flex h-full min-h-32 items-center justify-center text-sm"
-    >
-      Loading {label}…
-    </div>
+    <WorkSurfaceBody
+      title={title}
+      description={description}
+      context={context}
+      scope={scope}
+      effectiveScope={projectScope}
+      scopedItems={scopedItems}
+      usesApiIssues
+      issuesError={issuesError}
+      issuesPending={issuesPending}
+      search={search}
+      onSearchChange={onSearchChange}
+      savedViews={savedViews}
+    />
+  );
+}
+
+function NamespaceWorkSurface({
+  title,
+  description,
+  context,
+  scope,
+  search,
+  onSearchChange,
+}: {
+  title: string;
+  description?: string;
+  context?: { namespace?: string; project?: string };
+  scope: Extract<Scope, { type: "namespace" }>;
+  search: WorkRouteSearch;
+  onSearchChange: (patch: SearchPatch) => void;
+}) {
+  const effectiveScope = resolveWorkScope(search.scope, scope);
+  const namespaceScope =
+    effectiveScope.type === "namespace" ? effectiveScope : scope;
+  const savedViews = useMemo(
+    () => selectSavedViews({ scope, includeGlobal: true }),
+    [scope]
+  );
+  const activeView = savedViews.find((view) => view.id === search.view);
+  const toWorkItems = useCallback(
+    (issues: readonly PartialIssue[]) =>
+      issuesToWorkItems(issues, { namespaceId: namespaceScope.namespaceId }),
+    [namespaceScope.namespaceId]
+  );
+  const {
+    items: scopedItems,
+    error: issuesError,
+    isPending: issuesPending,
+  } = useListedWorkItems({
+    listOptions: v1NamespacesIssuesGetOptions({
+      path: { id: namespaceScope.namespaceId },
+      query: cursorPageQuery(),
+    }),
+    fetchPage: async (pageToken, signal) => {
+      const { data } = await v1NamespacesIssuesGet({
+        path: { id: namespaceScope.namespaceId },
+        query: cursorPageQuery(pageToken),
+        signal,
+        throwOnError: true,
+      });
+      return data;
+    },
+    toWorkItems,
+    search,
+    activeViewFilters: activeView?.filters,
+  });
+
+  return (
+    <WorkSurfaceBody
+      title={title}
+      description={description}
+      context={context}
+      scope={scope}
+      effectiveScope={namespaceScope}
+      scopedItems={scopedItems}
+      usesApiIssues
+      issuesError={issuesError}
+      issuesPending={issuesPending}
+      search={search}
+      onSearchChange={onSearchChange}
+      savedViews={savedViews}
+    />
+  );
+}
+
+function PersonWorkSurface({
+  title,
+  description,
+  context,
+  scope,
+  search,
+  onSearchChange,
+}: {
+  title: string;
+  description?: string;
+  context?: { namespace?: string; project?: string };
+  scope: Extract<Scope, { type: "person" }>;
+  search: WorkRouteSearch;
+  onSearchChange: (patch: SearchPatch) => void;
+}) {
+  const effectiveScope = resolveWorkScope(search.scope, scope);
+  const personScope = effectiveScope.type === "person" ? effectiveScope : scope;
+  const savedViews = useMemo(
+    () => selectSavedViews({ scope, includeGlobal: true }),
+    [scope]
+  );
+  const activeView = savedViews.find((view) => view.id === search.view);
+  const toWorkItems = useCallback(
+    (issues: readonly PartialIssue[]) => issuesToWorkItems(issues),
+    []
+  );
+  const {
+    items: scopedItems,
+    error: issuesError,
+    isPending: issuesPending,
+  } = useListedWorkItems({
+    listOptions: v1UsersIssuesGetOptions({
+      path: { id: personScope.personId },
+      query: cursorPageQuery(),
+    }),
+    fetchPage: async (pageToken, signal) => {
+      const { data } = await v1UsersIssuesGet({
+        path: { id: personScope.personId },
+        query: cursorPageQuery(pageToken),
+        signal,
+        throwOnError: true,
+      });
+      return data;
+    },
+    toWorkItems,
+    search,
+    activeViewFilters: activeView?.filters,
+  });
+
+  return (
+    <WorkSurfaceBody
+      title={title}
+      description={description}
+      context={context}
+      scope={scope}
+      effectiveScope={personScope}
+      scopedItems={scopedItems}
+      usesApiIssues
+      issuesError={issuesError}
+      issuesPending={issuesPending}
+      search={search}
+      onSearchChange={onSearchChange}
+      savedViews={savedViews}
+    />
+  );
+}
+
+function FixtureWorkSurface({
+  title,
+  description,
+  context,
+  scope,
+  search,
+  onSearchChange,
+}: {
+  title: string;
+  description?: string;
+  context?: { namespace?: string; project?: string };
+  scope: Scope;
+  search: WorkRouteSearch;
+  onSearchChange: (patch: SearchPatch) => void;
+}) {
+  const effectiveScope = resolveWorkScope(search.scope, scope);
+  const savedViews = useMemo(
+    () => selectSavedViews({ scope, includeGlobal: true }),
+    [scope]
+  );
+  const activeView = savedViews.find((view) => view.id === search.view);
+  const scopedItems = useMockScopedWorkItems({
+    effectiveScope,
+    search,
+    activeViewFilters: activeView?.filters,
+  });
+
+  return (
+    <WorkSurfaceBody
+      title={title}
+      description={description}
+      context={context}
+      scope={scope}
+      effectiveScope={effectiveScope}
+      scopedItems={scopedItems}
+      usesApiIssues={false}
+      search={search}
+      onSearchChange={onSearchChange}
+      savedViews={savedViews}
+    />
+  );
+}
+
+export function WorkSurface({
+  title,
+  description,
+  context,
+  scope,
+  search,
+  onSearchChange,
+}: {
+  title: string;
+  description?: string;
+  context?: { namespace?: string; project?: string };
+  scope: Scope;
+  search: WorkRouteSearch;
+  onSearchChange: (patch: SearchPatch) => void;
+}) {
+  if (scope.type === "project") {
+    return (
+      <ProjectWorkSurface
+        title={title}
+        description={description}
+        context={context}
+        scope={scope}
+        search={search}
+        onSearchChange={onSearchChange}
+      />
+    );
+  }
+
+  if (scope.type === "namespace") {
+    return (
+      <NamespaceWorkSurface
+        title={title}
+        description={description}
+        context={context}
+        scope={scope}
+        search={search}
+        onSearchChange={onSearchChange}
+      />
+    );
+  }
+
+  if (scope.type === "person") {
+    return (
+      <PersonWorkSurface
+        title={title}
+        description={description}
+        context={context}
+        scope={scope}
+        search={search}
+        onSearchChange={onSearchChange}
+      />
+    );
+  }
+
+  return (
+    <FixtureWorkSurface
+      title={title}
+      description={description}
+      context={context}
+      scope={scope}
+      search={search}
+      onSearchChange={onSearchChange}
+    />
   );
 }

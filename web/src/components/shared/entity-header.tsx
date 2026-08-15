@@ -1,17 +1,19 @@
 import { CopyIcon, MoreHorizontalIcon } from "lucide-react";
+import { Fragment } from "react";
 import type { ReactNode } from "react";
 
 import { EntityIcon } from "@/components/shared/entity-link";
 import type { AppEntityType } from "@/components/shared/entity-link";
-import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { InternalLink } from "@/components/ui/internal-link";
+import { PageHeader } from "@/components/ui/page-header";
 import { internalPath } from "@/lib/internal-url";
 import { showErrorToast, showSuccessToast } from "@/lib/toast";
 
@@ -106,7 +108,12 @@ export function PageActions({
   secondary = [],
 }: {
   primary?: ReactNode;
-  secondary?: { label: string; href?: string; onSelect?: () => void }[];
+  secondary?: {
+    label: string;
+    href?: string;
+    onSelect?: () => void;
+    variant?: "default" | "destructive";
+  }[];
 }) {
   return (
     <>
@@ -125,18 +132,23 @@ export function PageActions({
             <MoreHorizontalIcon />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            {secondary.map((item) => (
-              <DropdownMenuItem
-                key={item.label}
-                render={
-                  item.href ? (
-                    <InternalLink to={internalPath(item.href)} />
-                  ) : undefined
-                }
-                onClick={item.onSelect}
-              >
-                {item.label}
-              </DropdownMenuItem>
+            {secondary.map((item, index) => (
+              <Fragment key={item.label}>
+                {item.variant === "destructive" && index > 0 && (
+                  <DropdownMenuSeparator />
+                )}
+                <DropdownMenuItem
+                  variant={item.variant}
+                  render={
+                    item.href ? (
+                      <InternalLink to={internalPath(item.href)} />
+                    ) : undefined
+                  }
+                  onClick={item.onSelect}
+                >
+                  {item.label}
+                </DropdownMenuItem>
+              </Fragment>
             ))}
           </DropdownMenuContent>
         </DropdownMenu>

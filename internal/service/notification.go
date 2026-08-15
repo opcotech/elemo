@@ -56,11 +56,9 @@ type NotificationService interface {
 	// Get returns a notification by its ID. If the notification does not
 	// exist, an error is returned.
 	Get(ctx context.Context, id, recipient model.ID) (*Notification, error)
-	// GetAllByRecipient returns all notifications for the given recipient. The
-	// offset and limit parameters are used to paginate the results. If the
-	// offset is greater than the number of notifications in the system, an
-	// empty slice is returned.
-	GetAllByRecipient(ctx context.Context, recipient model.ID, offset, limit int) ([]*Notification, error)
+	// ListByRecipient returns a cursor-paginated page of notifications for the
+	// given recipient.
+	ListByRecipient(ctx context.Context, recipient model.ID, page CursorPage) (Page[*Notification], error)
 	// Update the read status of the notification. If the notification cannot
 	// be updated, an error is returned.
 	Update(ctx context.Context, id, recipient model.ID, opts UpdateNotificationOpts) (*Notification, error)
@@ -88,14 +86,6 @@ func notificationFromRepository(n *repository.Notification) *Notification {
 		CreatedAt:   n.CreatedAt,
 		UpdatedAt:   n.UpdatedAt,
 	}
-}
-
-func notificationsFromRepository(notifications []*repository.Notification) []*Notification {
-	out := make([]*Notification, len(notifications))
-	for i, n := range notifications {
-		out[i] = notificationFromRepository(n)
-	}
-	return out
 }
 
 // Create creates a new notification in the system.
@@ -139,7 +129,12 @@ func (s *notificationService) Get(ctx context.Context, id, recipient model.ID) (
 		return nil, errors.Join(ErrNotificationGet, err)
 	}
 
-	notification, err := s.notificationRepo.Get(ctx, id, recipient)
+	notification, err := s.notificationRepo.Get(
+		ctx,
+		id,
+		recipient,
+		repository.NotificationDetailProjection(),
+	)
 	if err != nil {
 		return nil, errors.Join(ErrNotificationGet, err)
 	}
@@ -147,28 +142,34 @@ func (s *notificationService) Get(ctx context.Context, id, recipient model.ID) (
 	return notificationFromRepository(notification), nil
 }
 
-func (s *notificationService) GetAllByRecipient(ctx context.Context, recipient model.ID, offset, limit int) ([]*Notification, error) {
-	ctx, span := s.tracer.Start(ctx, "service.notificationService/GetAllByRecipient")
+func (s *notificationService) ListByRecipient(ctx context.Context, recipient model.ID, page CursorPage) (Page[*Notification], error) {
+	ctx, span := s.tracer.Start(ctx, "service.notificationService/ListByRecipient")
 	defer span.End()
 
 	if userID, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID); !ok || userID != recipient {
-		return nil, errors.Join(ErrNotificationGetAllByRecipient, ErrNoPermission)
+		return Page[*Notification]{}, errors.Join(ErrNotificationGetAllByRecipient, ErrNoPermission)
 	}
 
 	if err := recipient.Validate(); err != nil {
-		return nil, errors.Join(ErrNotificationGetAllByRecipient, err)
+		return Page[*Notification]{}, errors.Join(ErrNotificationGetAllByRecipient, err)
 	}
 
-	if offset < 0 || limit <= 0 {
-		return nil, errors.Join(ErrNotificationGetAllByRecipient, ErrInvalidPaginationParams)
-	}
-
-	notifications, err := s.notificationRepo.GetAllByRecipient(ctx, recipient, offset, limit)
+	normalized, err := page.Normalize()
 	if err != nil {
-		return nil, errors.Join(ErrNotificationGetAllByRecipient, err)
+		return Page[*Notification]{}, errors.Join(ErrNotificationGetAllByRecipient, err)
 	}
 
-	return notificationsFromRepository(notifications), nil
+	notifications, err := s.notificationRepo.ListByRecipient(
+		ctx,
+		recipient,
+		normalized,
+		repository.NotificationListProjection(),
+	)
+	if err != nil {
+		return Page[*Notification]{}, errors.Join(ErrNotificationGetAllByRecipient, err)
+	}
+
+	return mapPage(notifications, notificationFromRepository), nil
 }
 
 func (s *notificationService) Update(ctx context.Context, id, recipient model.ID, opts UpdateNotificationOpts) (*Notification, error) {

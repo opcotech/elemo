@@ -9,12 +9,45 @@ import type {
 } from "./client";
 import { client } from "./client.gen";
 import type {
+  V1IssueDeleteData,
+  V1IssueDeleteErrors,
+  V1IssueDeleteResponses,
+  V1IssueGetData,
+  V1IssueGetErrors,
+  V1IssueGetResponses,
+  V1IssueRelationDeleteData,
+  V1IssueRelationDeleteErrors,
+  V1IssueRelationDeleteResponses,
+  V1IssueRelationsCreateData,
+  V1IssueRelationsCreateErrors,
+  V1IssueRelationsCreateResponses,
+  V1IssueRelationsGetData,
+  V1IssueRelationsGetErrors,
+  V1IssueRelationsGetResponses,
+  V1IssueRelationUpdateData,
+  V1IssueRelationUpdateErrors,
+  V1IssueRelationUpdateResponses,
+  V1IssueUpdateData,
+  V1IssueUpdateErrors,
+  V1IssueUpdateResponses,
+  V1LabelsGetData,
+  V1LabelsGetErrors,
+  V1LabelsGetResponses,
   V1NamespaceDeleteData,
   V1NamespaceDeleteErrors,
   V1NamespaceDeleteResponses,
   V1NamespaceGetData,
   V1NamespaceGetErrors,
   V1NamespaceGetResponses,
+  V1NamespacesDocumentsGetData,
+  V1NamespacesDocumentsGetErrors,
+  V1NamespacesDocumentsGetResponses,
+  V1NamespacesIssuesGetData,
+  V1NamespacesIssuesGetErrors,
+  V1NamespacesIssuesGetResponses,
+  V1NamespacesIssuesKeyGetData,
+  V1NamespacesIssuesKeyGetErrors,
+  V1NamespacesIssuesKeyGetResponses,
   V1NamespacesProjectsCreateData,
   V1NamespacesProjectsCreateErrors,
   V1NamespacesProjectsCreateResponses,
@@ -135,6 +168,15 @@ import type {
   V1ProjectGetData,
   V1ProjectGetErrors,
   V1ProjectGetResponses,
+  V1ProjectsDocumentsGetData,
+  V1ProjectsDocumentsGetErrors,
+  V1ProjectsDocumentsGetResponses,
+  V1ProjectsIssuesCreateData,
+  V1ProjectsIssuesCreateErrors,
+  V1ProjectsIssuesCreateResponses,
+  V1ProjectsIssuesGetData,
+  V1ProjectsIssuesGetErrors,
+  V1ProjectsIssuesGetResponses,
   V1ProjectUpdateData,
   V1ProjectUpdateErrors,
   V1ProjectUpdateResponses,
@@ -183,6 +225,9 @@ import type {
   V1UsersGetData,
   V1UsersGetErrors,
   V1UsersGetResponses,
+  V1UsersIssuesGetData,
+  V1UsersIssuesGetErrors,
+  V1UsersIssuesGetResponses,
   V1UserUpdateData,
   V1UserUpdateErrors,
   V1UserUpdateResponses,
@@ -347,6 +392,46 @@ export const v1UserUpdate = <ThrowOnError extends boolean = false>(
       "Content-Type": "application/json",
       ...options.headers,
     },
+  });
+
+/**
+ * Get user issues
+ *
+ * Return a cursor-paginated page of issues assigned to the user.
+ */
+export const v1UsersIssuesGet = <ThrowOnError extends boolean = false>(
+  options: Options<V1UsersIssuesGetData, ThrowOnError>
+): RequestResult<
+  V1UsersIssuesGetResponses,
+  V1UsersIssuesGetErrors,
+  ThrowOnError
+> =>
+  (options.client ?? client).get<
+    V1UsersIssuesGetResponses,
+    V1UsersIssuesGetErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: "bearer", type: "http" }],
+    url: "/v1/users/{id}/issues",
+    ...options,
+  });
+
+/**
+ * List labels
+ *
+ * Returns a cursor-paginated page of labels.
+ */
+export const v1LabelsGet = <ThrowOnError extends boolean = false>(
+  options?: Options<V1LabelsGetData, ThrowOnError>
+): RequestResult<V1LabelsGetResponses, V1LabelsGetErrors, ThrowOnError> =>
+  (options?.client ?? client).get<
+    V1LabelsGetResponses,
+    V1LabelsGetErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: "bearer", type: "http" }],
+    url: "/v1/labels",
+    ...options,
   });
 
 /**
@@ -660,7 +745,7 @@ export const v1OrganizationUpdate = <ThrowOnError extends boolean = false>(
 /**
  * Get organization members
  *
- * Return the users that are members of the organization.
+ * Return a cursor-paginated page of users that are members of the organization.
  */
 export const v1OrganizationMembersGet = <ThrowOnError extends boolean = false>(
   options: Options<V1OrganizationMembersGetData, ThrowOnError>
@@ -929,7 +1014,7 @@ export const v1OrganizationRoleUpdate = <ThrowOnError extends boolean = false>(
 /**
  * Get organization role members
  *
- * Return the users that are members of the organization's role.
+ * Return a cursor-paginated page of users that are members of the organization's role.
  */
 export const v1OrganizationRoleMembersGet = <
   ThrowOnError extends boolean = false,
@@ -1199,7 +1284,7 @@ export const v1NamespaceUpdate = <ThrowOnError extends boolean = false>(
 /**
  * Get namespace projects
  *
- * Return the projects that belong to the namespace.
+ * Return a cursor-paginated page of projects that belong to the namespace.
  */
 export const v1NamespacesProjectsGet = <ThrowOnError extends boolean = false>(
   options: Options<V1NamespacesProjectsGetData, ThrowOnError>
@@ -1244,6 +1329,72 @@ export const v1NamespacesProjectsCreate = <
       "Content-Type": "application/json",
       ...options.headers,
     },
+  });
+
+/**
+ * Get namespace documents
+ *
+ * Return a cursor-paginated page of documents that belong to the namespace.
+ */
+export const v1NamespacesDocumentsGet = <ThrowOnError extends boolean = false>(
+  options: Options<V1NamespacesDocumentsGetData, ThrowOnError>
+): RequestResult<
+  V1NamespacesDocumentsGetResponses,
+  V1NamespacesDocumentsGetErrors,
+  ThrowOnError
+> =>
+  (options.client ?? client).get<
+    V1NamespacesDocumentsGetResponses,
+    V1NamespacesDocumentsGetErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: "bearer", type: "http" }],
+    url: "/v1/namespaces/{id}/documents",
+    ...options,
+  });
+
+/**
+ * Get namespace issues
+ *
+ * Return a cursor-paginated page of issues that belong to projects in the namespace.
+ */
+export const v1NamespacesIssuesGet = <ThrowOnError extends boolean = false>(
+  options: Options<V1NamespacesIssuesGetData, ThrowOnError>
+): RequestResult<
+  V1NamespacesIssuesGetResponses,
+  V1NamespacesIssuesGetErrors,
+  ThrowOnError
+> =>
+  (options.client ?? client).get<
+    V1NamespacesIssuesGetResponses,
+    V1NamespacesIssuesGetErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: "bearer", type: "http" }],
+    url: "/v1/namespaces/{id}/issues",
+    ...options,
+  });
+
+/**
+ * Get issue by key
+ *
+ * Return the issue identified by composite key within the given namespace.
+ */
+export const v1NamespacesIssuesKeyGet = <ThrowOnError extends boolean = false>(
+  options: Options<V1NamespacesIssuesKeyGetData, ThrowOnError>
+): RequestResult<
+  V1NamespacesIssuesKeyGetResponses,
+  V1NamespacesIssuesKeyGetErrors,
+  ThrowOnError
+> =>
+  (options.client ?? client).get<
+    V1NamespacesIssuesKeyGetResponses,
+    V1NamespacesIssuesKeyGetErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: "bearer", type: "http" }],
+    url: "/v1/namespaces/{id}/issues/{key}",
+    ...options,
   });
 
 /**
@@ -1305,6 +1456,230 @@ export const v1ProjectUpdate = <ThrowOnError extends boolean = false>(
   >({
     security: [{ scheme: "bearer", type: "http" }],
     url: "/v1/projects/{id}",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+/**
+ * Get project issues
+ *
+ * Return a cursor-paginated page of issues that belong to the project.
+ */
+export const v1ProjectsIssuesGet = <ThrowOnError extends boolean = false>(
+  options: Options<V1ProjectsIssuesGetData, ThrowOnError>
+): RequestResult<
+  V1ProjectsIssuesGetResponses,
+  V1ProjectsIssuesGetErrors,
+  ThrowOnError
+> =>
+  (options.client ?? client).get<
+    V1ProjectsIssuesGetResponses,
+    V1ProjectsIssuesGetErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: "bearer", type: "http" }],
+    url: "/v1/projects/{id}/issues",
+    ...options,
+  });
+
+/**
+ * Create issue in project
+ *
+ * Create a new issue in the project.
+ */
+export const v1ProjectsIssuesCreate = <ThrowOnError extends boolean = false>(
+  options: Options<V1ProjectsIssuesCreateData, ThrowOnError>
+): RequestResult<
+  V1ProjectsIssuesCreateResponses,
+  V1ProjectsIssuesCreateErrors,
+  ThrowOnError
+> =>
+  (options.client ?? client).post<
+    V1ProjectsIssuesCreateResponses,
+    V1ProjectsIssuesCreateErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: "bearer", type: "http" }],
+    url: "/v1/projects/{id}/issues",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+/**
+ * Get project documents
+ *
+ * Return a cursor-paginated page of documents that belong to the project.
+ */
+export const v1ProjectsDocumentsGet = <ThrowOnError extends boolean = false>(
+  options: Options<V1ProjectsDocumentsGetData, ThrowOnError>
+): RequestResult<
+  V1ProjectsDocumentsGetResponses,
+  V1ProjectsDocumentsGetErrors,
+  ThrowOnError
+> =>
+  (options.client ?? client).get<
+    V1ProjectsDocumentsGetResponses,
+    V1ProjectsDocumentsGetErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: "bearer", type: "http" }],
+    url: "/v1/projects/{id}/documents",
+    ...options,
+  });
+
+/**
+ * Delete issue
+ *
+ * Delete the issue by its ID.
+ */
+export const v1IssueDelete = <ThrowOnError extends boolean = false>(
+  options: Options<V1IssueDeleteData, ThrowOnError>
+): RequestResult<V1IssueDeleteResponses, V1IssueDeleteErrors, ThrowOnError> =>
+  (options.client ?? client).delete<
+    V1IssueDeleteResponses,
+    V1IssueDeleteErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: "bearer", type: "http" }],
+    url: "/v1/issues/{id}",
+    ...options,
+  });
+
+/**
+ * Get issue
+ *
+ * Return the requested issue by its ID.
+ */
+export const v1IssueGet = <ThrowOnError extends boolean = false>(
+  options: Options<V1IssueGetData, ThrowOnError>
+): RequestResult<V1IssueGetResponses, V1IssueGetErrors, ThrowOnError> =>
+  (options.client ?? client).get<
+    V1IssueGetResponses,
+    V1IssueGetErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: "bearer", type: "http" }],
+    url: "/v1/issues/{id}",
+    ...options,
+  });
+
+/**
+ * Update issue
+ *
+ * Update the issue by its ID.
+ */
+export const v1IssueUpdate = <ThrowOnError extends boolean = false>(
+  options: Options<V1IssueUpdateData, ThrowOnError>
+): RequestResult<V1IssueUpdateResponses, V1IssueUpdateErrors, ThrowOnError> =>
+  (options.client ?? client).patch<
+    V1IssueUpdateResponses,
+    V1IssueUpdateErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: "bearer", type: "http" }],
+    url: "/v1/issues/{id}",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+/**
+ * Get issue relations
+ *
+ * Return a cursor-paginated page of relations for the issue, including incoming and outgoing edges.
+ */
+export const v1IssueRelationsGet = <ThrowOnError extends boolean = false>(
+  options: Options<V1IssueRelationsGetData, ThrowOnError>
+): RequestResult<
+  V1IssueRelationsGetResponses,
+  V1IssueRelationsGetErrors,
+  ThrowOnError
+> =>
+  (options.client ?? client).get<
+    V1IssueRelationsGetResponses,
+    V1IssueRelationsGetErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: "bearer", type: "http" }],
+    url: "/v1/issues/{id}/relations",
+    ...options,
+  });
+
+/**
+ * Add issue relation
+ *
+ * Create an outgoing relation from the issue in the URL to another issue. Self-relations and the reserved "subtask of" kind are rejected.
+ */
+export const v1IssueRelationsCreate = <ThrowOnError extends boolean = false>(
+  options: Options<V1IssueRelationsCreateData, ThrowOnError>
+): RequestResult<
+  V1IssueRelationsCreateResponses,
+  V1IssueRelationsCreateErrors,
+  ThrowOnError
+> =>
+  (options.client ?? client).post<
+    V1IssueRelationsCreateResponses,
+    V1IssueRelationsCreateErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: "bearer", type: "http" }],
+    url: "/v1/issues/{id}/relations",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+/**
+ * Delete issue relation
+ *
+ * Delete a relation of the issue by its relation ID.
+ */
+export const v1IssueRelationDelete = <ThrowOnError extends boolean = false>(
+  options: Options<V1IssueRelationDeleteData, ThrowOnError>
+): RequestResult<
+  V1IssueRelationDeleteResponses,
+  V1IssueRelationDeleteErrors,
+  ThrowOnError
+> =>
+  (options.client ?? client).delete<
+    V1IssueRelationDeleteResponses,
+    V1IssueRelationDeleteErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: "bearer", type: "http" }],
+    url: "/v1/issues/{id}/relations/{relation_id}",
+    ...options,
+  });
+
+/**
+ * Update issue relation
+ *
+ * Change the relation kind from this issue's point of view by replacing the edge with a new outgoing relation. Self-relations and the reserved "subtask of" kind are rejected.
+ */
+export const v1IssueRelationUpdate = <ThrowOnError extends boolean = false>(
+  options: Options<V1IssueRelationUpdateData, ThrowOnError>
+): RequestResult<
+  V1IssueRelationUpdateResponses,
+  V1IssueRelationUpdateErrors,
+  ThrowOnError
+> =>
+  (options.client ?? client).patch<
+    V1IssueRelationUpdateResponses,
+    V1IssueRelationUpdateErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: "bearer", type: "http" }],
+    url: "/v1/issues/{id}/relations/{relation_id}",
     ...options,
     headers: {
       "Content-Type": "application/json",

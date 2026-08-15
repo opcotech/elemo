@@ -29,7 +29,7 @@ func organizationsToRepository(orgs []*Organization) []*repository.Organization 
 		}
 		out[i] = &repository.Organization{
 			ID: o.ID, Name: o.Name, Email: o.Email, Logo: o.Logo, Website: o.Website,
-			Status: o.Status, Namespaces: o.Namespaces, Teams: o.Teams, Members: o.Members,
+			Status: o.Status, NamespaceCount: o.NamespaceCount, TeamCount: o.TeamCount, MemberCount: o.MemberCount,
 			CreatedAt: o.CreatedAt, UpdatedAt: o.UpdatedAt,
 		}
 	}
@@ -42,7 +42,7 @@ func organizationToRepository(o *Organization) *repository.Organization {
 	}
 	return &repository.Organization{
 		ID: o.ID, Name: o.Name, Email: o.Email, Logo: o.Logo, Website: o.Website,
-		Status: o.Status, Namespaces: o.Namespaces, Teams: o.Teams, Members: o.Members,
+		Status: o.Status, NamespaceCount: o.NamespaceCount, TeamCount: o.TeamCount, MemberCount: o.MemberCount,
 		CreatedAt: o.CreatedAt, UpdatedAt: o.UpdatedAt,
 	}
 }
@@ -525,7 +525,7 @@ func TestOrganizationService_Get(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.organizationService/Get", gomock.Len(0)).Return(ctx, span)
 
 					organizationRepo := repository.NewMockOrganizationRepository(ctrl)
-					organizationRepo.EXPECT().Get(ctx, id).Return(testModel.NewRepositoryOrganization(), nil)
+					organizationRepo.EXPECT().Get(ctx, id, repository.OrganizationDetailProjection()).Return(testModel.NewRepositoryOrganization(), nil)
 
 					return &baseService{
 						logger:           mock.NewMockLogger(ctrl),
@@ -574,7 +574,7 @@ func TestOrganizationService_Get(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.organizationService/Get", gomock.Len(0)).Return(ctx, span)
 
 					organizationRepo := repository.NewMockOrganizationRepository(ctrl)
-					organizationRepo.EXPECT().Get(ctx, id).Return(nil, assert.AnError)
+					organizationRepo.EXPECT().Get(ctx, id, repository.OrganizationDetailProjection()).Return(nil, assert.AnError)
 
 					return &baseService{
 						logger:           mock.NewMockLogger(ctrl),
@@ -612,7 +612,7 @@ func TestOrganizationService_Get(t *testing.T) {
 
 func TestOrganizationService_GetAll(t *testing.T) {
 	type fields struct {
-		baseService func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, organizations []*Organization) *baseService
+		baseService func(ctrl *gomock.Controller, ctx context.Context, _, _ int, organizations []*Organization) *baseService
 	}
 	type args struct {
 		ctx    context.Context
@@ -629,16 +629,16 @@ func TestOrganizationService_GetAll(t *testing.T) {
 		{
 			name: "get all organizations organization",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, organizations []*Organization) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ int, organizations []*Organization) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.organizationService/GetAll", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "service.organizationService/List", gomock.Len(0)).Return(ctx, span)
 
 					userID := ctx.Value(pkg.CtxKeyUserID).(model.ID)
 					organizationRepo := repository.NewMockOrganizationRepository(ctrl)
-					organizationRepo.EXPECT().GetAll(ctx, userID, offset, limit).Return(organizationsToRepository(organizations), nil)
+					organizationRepo.EXPECT().List(ctx, userID, gomock.Any(), repository.OrganizationListProjection()).Return(repository.Page[*repository.Organization]{Items: organizationsToRepository(organizations)}, nil)
 
 					return &baseService{
 						logger:           mock.NewMockLogger(ctrl),
@@ -665,7 +665,7 @@ func TestOrganizationService_GetAll(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.organizationService/GetAll", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "service.organizationService/List", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
 						logger:           mock.NewMockLogger(ctrl),
@@ -689,7 +689,7 @@ func TestOrganizationService_GetAll(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.organizationService/GetAll", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "service.organizationService/List", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
 						logger:           mock.NewMockLogger(ctrl),
@@ -708,16 +708,16 @@ func TestOrganizationService_GetAll(t *testing.T) {
 		{
 			name: "get all organizations with error",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, _ []*Organization) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ int, _ []*Organization) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.organizationService/GetAll", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "service.organizationService/List", gomock.Len(0)).Return(ctx, span)
 
 					userID := ctx.Value(pkg.CtxKeyUserID).(model.ID)
 					organizationRepo := repository.NewMockOrganizationRepository(ctrl)
-					organizationRepo.EXPECT().GetAll(ctx, userID, offset, limit).Return(nil, assert.AnError)
+					organizationRepo.EXPECT().List(ctx, userID, gomock.Any(), repository.OrganizationListProjection()).Return(repository.Page[*repository.Organization]{}, assert.AnError)
 
 					return &baseService{
 						logger:           mock.NewMockLogger(ctrl),
@@ -741,7 +741,7 @@ func TestOrganizationService_GetAll(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.organizationService/GetAll", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "service.organizationService/List", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
 						logger:           mock.NewMockLogger(ctrl),
@@ -767,9 +767,11 @@ func TestOrganizationService_GetAll(t *testing.T) {
 			s := &organizationService{
 				baseService: tt.fields.baseService(ctrl, tt.args.ctx, tt.args.offset, tt.args.limit, tt.want),
 			}
-			got, err := s.GetAll(tt.args.ctx, tt.args.offset, tt.args.limit)
+			got, err := s.List(tt.args.ctx, CursorPage{Size: 10})
 			require.ErrorIs(t, err, tt.wantErr)
-			require.Equal(t, tt.want, got)
+			if err == nil {
+				require.Equal(t, tt.want, got.Items)
+			}
 		})
 	}
 }
@@ -1684,7 +1686,7 @@ func TestOrganizationService_AddMember(t *testing.T) {
 	}
 }
 
-func TestOrganizationService_GetMembers(t *testing.T) {
+func TestOrganizationService_ListMembers(t *testing.T) {
 	type fields struct {
 		baseService func(ctrl *gomock.Controller, ctx context.Context, organizationID model.ID, members []*repository.OrganizationMember, expected []*OrganizationMember) *baseService
 	}
@@ -1707,10 +1709,10 @@ func TestOrganizationService_GetMembers(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.organizationService/GetMembers", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "service.organizationService/ListMembers", gomock.Len(0)).Return(ctx, span)
 
 					organizationRepo := repository.NewMockOrganizationRepository(ctrl)
-					organizationRepo.EXPECT().GetMembers(ctx, organizationID).Return(members, nil)
+					organizationRepo.EXPECT().ListMembers(ctx, organizationID, gomock.Any()).Return(repository.Page[*repository.OrganizationMember]{Items: members}, nil)
 
 					permissionService := NewMockPermissionService(ctrl)
 					// Mock permission check for the context user
@@ -1848,7 +1850,7 @@ func TestOrganizationService_GetMembers(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.organizationService/GetMembers", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "service.organizationService/ListMembers", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
 						logger:           mock.NewMockLogger(ctrl),
@@ -1871,10 +1873,10 @@ func TestOrganizationService_GetMembers(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.organizationService/GetMembers", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "service.organizationService/ListMembers", gomock.Len(0)).Return(ctx, span)
 
 					organizationRepo := repository.NewMockOrganizationRepository(ctrl)
-					organizationRepo.EXPECT().GetMembers(ctx, organizationID).Return(nil, assert.AnError)
+					organizationRepo.EXPECT().ListMembers(ctx, organizationID, gomock.Any()).Return(repository.Page[*repository.OrganizationMember]{}, assert.AnError)
 
 					permissionService := NewMockPermissionService(ctrl)
 					permissionService.EXPECT().CtxUserHasPermission(ctx, organizationID, model.PermissionKindRead).Return(true)
@@ -1944,7 +1946,8 @@ func TestOrganizationService_GetMembers(t *testing.T) {
 			s := &organizationService{
 				baseService: tt.fields.baseService(ctrl, tt.args.ctx, tt.args.organizationID, membersFromRepo, tt.want),
 			}
-			members, err := s.GetMembers(tt.args.ctx, tt.args.organizationID)
+			page, err := s.ListMembers(tt.args.ctx, tt.args.organizationID, CursorPage{Size: 100})
+			members := page.Items
 			require.ErrorIs(t, err, tt.wantErr)
 
 			if err == nil {
@@ -2272,10 +2275,10 @@ func TestOrganizationService_InviteMember(t *testing.T) {
 					organization.ID = orgID
 
 					userRepo := repository.NewMockUserRepository(ctrl)
-					userRepo.EXPECT().GetByEmail(ctx, email).Return(user, nil)
+					userRepo.EXPECT().GetByEmail(ctx, email, repository.UserDetailProjection()).Return(user, nil)
 
 					orgRepo := repository.NewMockOrganizationRepository(ctrl)
-					orgRepo.EXPECT().Get(ctx, orgID).Return(organization, nil)
+					orgRepo.EXPECT().Get(ctx, orgID, repository.OrganizationDetailProjection()).Return(organization, nil)
 					orgRepo.EXPECT().AddInvitation(ctx, orgID, user.ID).Return(nil)
 
 					permSvc := NewMockPermissionService(ctrl)
@@ -2335,7 +2338,7 @@ func TestOrganizationService_InviteMember(t *testing.T) {
 					organization.ID = orgID
 
 					userRepo := repository.NewMockUserRepository(ctrl)
-					userRepo.EXPECT().GetByEmail(ctx, testEmail).Return(nil, repository.ErrNotFound)
+					userRepo.EXPECT().GetByEmail(ctx, testEmail, repository.UserDetailProjection()).Return(nil, repository.ErrNotFound)
 					userRepo.EXPECT().Create(ctx, gomock.Any()).DoAndReturn(func(_ context.Context, opts repository.CreateUserOpts) (*repository.User, error) {
 						user.ID = model.MustNewID(model.ResourceTypeUser)
 						user.Status = model.UserStatusPending
@@ -2346,7 +2349,7 @@ func TestOrganizationService_InviteMember(t *testing.T) {
 					})
 
 					orgRepo := repository.NewMockOrganizationRepository(ctrl)
-					orgRepo.EXPECT().Get(ctx, orgID).Return(organization, nil)
+					orgRepo.EXPECT().Get(ctx, orgID, repository.OrganizationDetailProjection()).Return(organization, nil)
 					orgRepo.EXPECT().AddInvitation(ctx, orgID, gomock.Any()).Return(nil)
 
 					permSvc := NewMockPermissionService(ctrl)
@@ -2403,10 +2406,10 @@ func TestOrganizationService_InviteMember(t *testing.T) {
 					organization.ID = orgID
 
 					userRepo := repository.NewMockUserRepository(ctrl)
-					userRepo.EXPECT().GetByEmail(ctx, email).Return(user, nil)
+					userRepo.EXPECT().GetByEmail(ctx, email, repository.UserDetailProjection()).Return(user, nil)
 
 					orgRepo := repository.NewMockOrganizationRepository(ctrl)
-					orgRepo.EXPECT().Get(ctx, orgID).Return(organization, nil)
+					orgRepo.EXPECT().Get(ctx, orgID, repository.OrganizationDetailProjection()).Return(organization, nil)
 					orgRepo.EXPECT().AddInvitation(ctx, orgID, user.ID).Return(nil)
 
 					permSvc := NewMockPermissionService(ctrl)
@@ -2592,7 +2595,7 @@ func TestOrganizationService_InviteMember(t *testing.T) {
 					permSvc.EXPECT().HasPermission(ctx, user.ID, orgID, model.PermissionKindRead).Return(true, nil)
 
 					userRepo := repository.NewMockUserRepository(ctrl)
-					userRepo.EXPECT().GetByEmail(ctx, email).Return(user, nil)
+					userRepo.EXPECT().GetByEmail(ctx, email, repository.UserDetailProjection()).Return(user, nil)
 
 					licenseSvc := mock.NewMockLicenseService(ctrl)
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
@@ -2630,7 +2633,7 @@ func TestOrganizationService_InviteMember(t *testing.T) {
 					user.Status = model.UserStatusDeleted
 
 					userRepo := repository.NewMockUserRepository(ctrl)
-					userRepo.EXPECT().GetByEmail(ctx, email).Return(user, nil)
+					userRepo.EXPECT().GetByEmail(ctx, email, repository.UserDetailProjection()).Return(user, nil)
 
 					permSvc := NewMockPermissionService(ctrl)
 					permSvc.EXPECT().CtxUserHasPermission(ctx, orgID, model.PermissionKindWrite).Return(true)
@@ -2675,10 +2678,10 @@ func TestOrganizationService_InviteMember(t *testing.T) {
 					organization.ID = orgID
 
 					userRepo := repository.NewMockUserRepository(ctrl)
-					userRepo.EXPECT().GetByEmail(ctx, email).Return(user, nil)
+					userRepo.EXPECT().GetByEmail(ctx, email, repository.UserDetailProjection()).Return(user, nil)
 
 					orgRepo := repository.NewMockOrganizationRepository(ctrl)
-					orgRepo.EXPECT().Get(ctx, orgID).Return(organization, nil)
+					orgRepo.EXPECT().Get(ctx, orgID, repository.OrganizationDetailProjection()).Return(organization, nil)
 					orgRepo.EXPECT().AddInvitation(ctx, orgID, user.ID).Return(nil)
 
 					permSvc := NewMockPermissionService(ctrl)
@@ -2780,7 +2783,7 @@ func TestOrganizationService_RevokeInvitation(t *testing.T) {
 					user.Status = model.UserStatusActive
 
 					userRepo := repository.NewMockUserRepository(ctrl)
-					userRepo.EXPECT().Get(ctx, userID).Return(user, nil)
+					userRepo.EXPECT().Get(ctx, userID, repository.UserDetailProjection()).Return(user, nil)
 
 					orgRepo := repository.NewMockOrganizationRepository(ctrl)
 					orgRepo.EXPECT().RemoveInvitation(ctx, orgID, userID).Return(nil)
@@ -2956,7 +2959,7 @@ func TestOrganizationService_RevokeInvitation(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.organizationService/RevokeInvitation", gomock.Len(0)).Return(ctx, span)
 
 					userRepo := repository.NewMockUserRepository(ctrl)
-					userRepo.EXPECT().Get(ctx, userID).Return(nil, repository.ErrNotFound)
+					userRepo.EXPECT().Get(ctx, userID, repository.UserDetailProjection()).Return(nil, repository.ErrNotFound)
 
 					permSvc := NewMockPermissionService(ctrl)
 					permSvc.EXPECT().CtxUserHasPermission(ctx, orgID, model.PermissionKindWrite).Return(true)
@@ -2996,13 +2999,13 @@ func TestOrganizationService_RevokeInvitation(t *testing.T) {
 					user.Status = model.UserStatusPending
 
 					userRepo := repository.NewMockUserRepository(ctrl)
-					userRepo.EXPECT().Get(ctx, userID).Return(user, nil)
+					userRepo.EXPECT().Get(ctx, userID, repository.UserDetailProjection()).Return(user, nil)
 					userRepo.EXPECT().Delete(ctx, userID).Return(nil)
 
 					orgRepo := repository.NewMockOrganizationRepository(ctrl)
 					orgRepo.EXPECT().RemoveInvitation(ctx, orgID, userID).Return(nil)
 					orgRepo.EXPECT().RemoveMember(ctx, orgID, userID).Return(nil)
-					orgRepo.EXPECT().GetAll(ctx, userID, 0, 1).Return([]*repository.Organization{}, nil)
+					orgRepo.EXPECT().List(ctx, userID, repository.CursorPage{Size: 1}, repository.OrganizationListProjection()).Return(repository.Page[*repository.Organization]{}, nil)
 
 					userTokenRepo := repository.NewMockUserTokenRepository(ctrl)
 					userTokenRepo.EXPECT().Delete(ctx, userID, model.UserTokenContextInvite).Return(nil)
@@ -3049,12 +3052,12 @@ func TestOrganizationService_RevokeInvitation(t *testing.T) {
 					user.Status = model.UserStatusPending
 
 					userRepo := repository.NewMockUserRepository(ctrl)
-					userRepo.EXPECT().Get(ctx, userID).Return(user, nil)
+					userRepo.EXPECT().Get(ctx, userID, repository.UserDetailProjection()).Return(user, nil)
 
 					orgRepo := repository.NewMockOrganizationRepository(ctrl)
 					orgRepo.EXPECT().RemoveInvitation(ctx, orgID, userID).Return(nil)
 					orgRepo.EXPECT().RemoveMember(ctx, orgID, userID).Return(nil)
-					orgRepo.EXPECT().GetAll(ctx, userID, 0, 1).Return([]*repository.Organization{testModel.NewRepositoryOrganization()}, nil)
+					orgRepo.EXPECT().List(ctx, userID, repository.CursorPage{Size: 1}, repository.OrganizationListProjection()).Return(repository.Page[*repository.Organization]{Items: []*repository.Organization{testModel.NewRepositoryOrganization()}}, nil)
 
 					userTokenRepo := repository.NewMockUserTokenRepository(ctrl)
 					userTokenRepo.EXPECT().Delete(ctx, userID, model.UserTokenContextInvite).Return(nil)
@@ -3155,12 +3158,12 @@ func TestOrganizationService_AcceptInvitation(t *testing.T) {
 					userToken.CreatedAt = &now
 
 					userRepo := repository.NewMockUserRepository(ctrl)
-					userRepo.EXPECT().Get(ctx, userID).Return(user, nil)
+					userRepo.EXPECT().Get(ctx, userID, repository.UserDetailProjection()).Return(user, nil)
 					userRepo.EXPECT().Update(ctx, userID, gomock.Any()).Return(user, nil)
 
 					orgRepo := repository.NewMockOrganizationRepository(ctrl)
 					orgRepo.EXPECT().RemoveInvitation(ctx, orgID, userID).Return(nil)
-					orgRepo.EXPECT().Get(ctx, orgID).Return(organization, nil)
+					orgRepo.EXPECT().Get(ctx, orgID, repository.OrganizationDetailProjection()).Return(organization, nil)
 					orgRepo.EXPECT().AddMember(ctx, orgID, userID).Return(nil)
 
 					userTokenRepo := repository.NewMockUserTokenRepository(ctrl)
@@ -3224,11 +3227,11 @@ func TestOrganizationService_AcceptInvitation(t *testing.T) {
 					userToken.CreatedAt = &now
 
 					userRepo := repository.NewMockUserRepository(ctrl)
-					userRepo.EXPECT().Get(ctx, userID).Return(user, nil)
+					userRepo.EXPECT().Get(ctx, userID, repository.UserDetailProjection()).Return(user, nil)
 
 					orgRepo := repository.NewMockOrganizationRepository(ctrl)
 					orgRepo.EXPECT().RemoveInvitation(ctx, orgID, userID).Return(nil)
-					orgRepo.EXPECT().Get(ctx, orgID).Return(organization, nil)
+					orgRepo.EXPECT().Get(ctx, orgID, repository.OrganizationDetailProjection()).Return(organization, nil)
 					orgRepo.EXPECT().AddMember(ctx, orgID, userID).Return(nil)
 
 					userTokenRepo := repository.NewMockUserTokenRepository(ctrl)
@@ -3293,15 +3296,15 @@ func TestOrganizationService_AcceptInvitation(t *testing.T) {
 					userToken.CreatedAt = &now
 
 					userRepo := repository.NewMockUserRepository(ctrl)
-					userRepo.EXPECT().Get(ctx, userID).Return(user, nil)
+					userRepo.EXPECT().Get(ctx, userID, repository.UserDetailProjection()).Return(user, nil)
 
 					orgRepo := repository.NewMockOrganizationRepository(ctrl)
 					orgRepo.EXPECT().RemoveInvitation(ctx, orgID, userID).Return(nil)
-					orgRepo.EXPECT().Get(ctx, orgID).Return(organization, nil)
+					orgRepo.EXPECT().Get(ctx, orgID, repository.OrganizationDetailProjection()).Return(organization, nil)
 					orgRepo.EXPECT().AddMember(ctx, orgID, userID).Return(nil)
 
 					roleRepo := repository.NewMockRoleRepository(ctrl)
-					roleRepo.EXPECT().Get(ctx, roleID, orgID).Return(role, nil)
+					roleRepo.EXPECT().Get(ctx, roleID, orgID, repository.RoleDetailProjection()).Return(role, nil)
 					roleRepo.EXPECT().AddMember(ctx, roleID, userID, orgID).Return(nil)
 
 					userTokenRepo := repository.NewMockUserTokenRepository(ctrl)
@@ -3535,7 +3538,7 @@ func TestOrganizationService_AcceptInvitation(t *testing.T) {
 					userTokenRepo.EXPECT().Get(ctx, userID, model.UserTokenContextInvite).Return(userToken, nil)
 
 					userRepo := repository.NewMockUserRepository(ctrl)
-					userRepo.EXPECT().Get(ctx, userID).Return(nil, repository.ErrNotFound)
+					userRepo.EXPECT().Get(ctx, userID, repository.UserDetailProjection()).Return(nil, repository.ErrNotFound)
 
 					return &baseService{
 						logger:        mock.NewMockLogger(ctrl),
@@ -3592,7 +3595,7 @@ func TestOrganizationService_AcceptInvitation(t *testing.T) {
 					userTokenRepo.EXPECT().Get(ctx, userID, model.UserTokenContextInvite).Return(userToken, nil)
 
 					userRepo := repository.NewMockUserRepository(ctrl)
-					userRepo.EXPECT().Get(ctx, userID).Return(user, nil)
+					userRepo.EXPECT().Get(ctx, userID, repository.UserDetailProjection()).Return(user, nil)
 
 					return &baseService{
 						logger:        mock.NewMockLogger(ctrl),
@@ -3649,7 +3652,7 @@ func TestOrganizationService_AcceptInvitation(t *testing.T) {
 					userTokenRepo.EXPECT().Get(ctx, userID, model.UserTokenContextInvite).Return(userToken, nil)
 
 					userRepo := repository.NewMockUserRepository(ctrl)
-					userRepo.EXPECT().Get(ctx, userID).Return(user, nil)
+					userRepo.EXPECT().Get(ctx, userID, repository.UserDetailProjection()).Return(user, nil)
 
 					return &baseService{
 						logger:        mock.NewMockLogger(ctrl),
@@ -3725,7 +3728,6 @@ func TestOrganizationService_AcceptInvitation(t *testing.T) {
 
 					organization := testModel.NewRepositoryOrganization()
 					organization.ID = orgID
-					organization.Members = []model.ID{userID}
 
 					// Extract secret from the public token passed in
 					_, secret, _ := auth.SplitToken(token)
@@ -3742,11 +3744,15 @@ func TestOrganizationService_AcceptInvitation(t *testing.T) {
 					userToken.CreatedAt = &now
 
 					userRepo := repository.NewMockUserRepository(ctrl)
-					userRepo.EXPECT().Get(ctx, userID).Return(user, nil)
+					userRepo.EXPECT().Get(ctx, userID, repository.UserDetailProjection()).Return(user, nil)
 
 					orgRepo := repository.NewMockOrganizationRepository(ctrl)
 					orgRepo.EXPECT().RemoveInvitation(ctx, orgID, userID).Return(nil)
-					orgRepo.EXPECT().Get(ctx, orgID).Return(organization, nil)
+					orgRepo.EXPECT().Get(ctx, orgID, repository.OrganizationDetailProjection()).Return(organization, nil)
+					orgRepo.EXPECT().AddMember(ctx, orgID, userID).Return(nil)
+
+					permSvc := NewMockPermissionService(ctrl)
+					permSvc.EXPECT().Create(ctx, gomock.Any()).Return(nil, nil)
 
 					userTokenRepo := repository.NewMockUserTokenRepository(ctrl)
 					userTokenRepo.EXPECT().Get(ctx, userID, model.UserTokenContextInvite).Return(userToken, nil)
@@ -3761,7 +3767,7 @@ func TestOrganizationService_AcceptInvitation(t *testing.T) {
 						userRepo:          userRepo,
 						organizationRepo:  orgRepo,
 						userTokenRepo:     userTokenRepo,
-						permissionService: NewMockPermissionService(ctrl),
+						permissionService: permSvc,
 					}
 				},
 			},

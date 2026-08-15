@@ -71,33 +71,33 @@ func (mr *MockAttachmentRepositoryMockRecorder) Delete(ctx, id any) *gomock.Call
 }
 
 // Get mocks base method.
-func (m *MockAttachmentRepository) Get(ctx context.Context, id model.ID) (*Attachment, error) {
+func (m *MockAttachmentRepository) Get(ctx context.Context, id model.ID, proj AttachmentProjection) (*Attachment, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Get", ctx, id)
+	ret := m.ctrl.Call(m, "Get", ctx, id, proj)
 	ret0, _ := ret[0].(*Attachment)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Get indicates an expected call of Get.
-func (mr *MockAttachmentRepositoryMockRecorder) Get(ctx, id any) *gomock.Call {
+func (mr *MockAttachmentRepositoryMockRecorder) Get(ctx, id, proj any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockAttachmentRepository)(nil).Get), ctx, id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockAttachmentRepository)(nil).Get), ctx, id, proj)
 }
 
-// GetAllBelongsTo mocks base method.
-func (m *MockAttachmentRepository) GetAllBelongsTo(ctx context.Context, belongsTo model.ID, offset, limit int) ([]*Attachment, error) {
+// ListBelongsTo mocks base method.
+func (m *MockAttachmentRepository) ListBelongsTo(ctx context.Context, belongsTo model.ID, page CursorPage, proj AttachmentProjection) (Page[*Attachment], error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAllBelongsTo", ctx, belongsTo, offset, limit)
-	ret0, _ := ret[0].([]*Attachment)
+	ret := m.ctrl.Call(m, "ListBelongsTo", ctx, belongsTo, page, proj)
+	ret0, _ := ret[0].(Page[*Attachment])
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetAllBelongsTo indicates an expected call of GetAllBelongsTo.
-func (mr *MockAttachmentRepositoryMockRecorder) GetAllBelongsTo(ctx, belongsTo, offset, limit any) *gomock.Call {
+// ListBelongsTo indicates an expected call of ListBelongsTo.
+func (mr *MockAttachmentRepositoryMockRecorder) ListBelongsTo(ctx, belongsTo, page, proj any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllBelongsTo", reflect.TypeOf((*MockAttachmentRepository)(nil).GetAllBelongsTo), ctx, belongsTo, offset, limit)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListBelongsTo", reflect.TypeOf((*MockAttachmentRepository)(nil).ListBelongsTo), ctx, belongsTo, page, proj)
 }
 
 // Update mocks base method.

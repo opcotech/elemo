@@ -22,11 +22,11 @@ func NewCreateNamespaceOpts(creatorID, orgID model.ID) repository.CreateNamespac
 // NewRepositoryNamespace creates a repository.Namespace for mock returns.
 func NewRepositoryNamespace() *repository.Namespace {
 	return &repository.Namespace{
-		ID:          model.MustNewID(model.ResourceTypeNamespace),
-		Name:        pkg.GenerateRandomString(10),
-		Description: pkg.GenerateRandomString(10),
-		Projects:    make([]*repository.PartialProject, 0),
-		Documents:   make([]*repository.PartialDocument, 0),
-		CreatedAt:   convert.ToPointer(time.Now().UTC()),
+		ID:            model.MustNewID(model.ResourceTypeNamespace),
+		Name:          pkg.GenerateRandomString(10),
+		Description:   pkg.GenerateRandomString(10),
+		ProjectCount:  convert.ToPointer(int64(0)),
+		DocumentCount: convert.ToPointer(int64(0)),
+		CreatedAt:     convert.ToPointer(time.Now().UTC()),
 	}
 }

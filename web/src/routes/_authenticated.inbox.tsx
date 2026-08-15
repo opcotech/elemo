@@ -3,8 +3,9 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Bell, CheckCircle2Icon } from "lucide-react";
 
 import { NotificationList } from "@/components/notification";
-import { AppEmptyState, MockDataAlert } from "@/components/shared/app-feedback";
+import { MockDataAlert } from "@/components/shared/app-feedback";
 import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CompactWorkList } from "@/components/work/work-list";
 import { v1NotificationsGetOptions } from "@/lib/api/query-options";
@@ -24,7 +25,10 @@ export const Route = createFileRoute("/_authenticated/inbox")({
 });
 
 function InboxPage() {
-  const { data: notifications } = useSuspenseQuery(v1NotificationsGetOptions());
+  const { data: notificationsPage } = useSuspenseQuery(
+    v1NotificationsGetOptions()
+  );
+  const notifications = notificationsPage?.items;
 
   const unreadCount = notifications?.filter((n) => !n.read).length || 0;
 
@@ -74,7 +78,7 @@ function InboxContent() {
     .map((signal) => getWorkItem(signal.workItemId))
     .filter((item) => item !== undefined);
   const watched = selectWorkItems({
-    filters: { statuses: ["blocked", "in-progress"] },
+    filters: { statuses: ["blocked", "in progress"] },
   });
 
   return (
@@ -111,7 +115,7 @@ function InboxContent() {
         </TabsContent>
 
         <TabsContent value="handled" className="mt-6">
-          <AppEmptyState
+          <EmptyState
             compact
             icon={<CheckCircle2Icon />}
             title="No handled items"

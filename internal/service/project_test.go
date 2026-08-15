@@ -507,14 +507,6 @@ func TestProjectService_Get(t *testing.T) {
 	projectID := model.MustNewID(model.ResourceTypeProject)
 	repoProject := testModel.NewRepositoryProject()
 	repoProject.ID = projectID
-	repoProject.Documents = []*repository.PartialDocument{
-		{
-			ID:        model.MustNewID(model.ResourceTypeDocument),
-			Name:      "Plan",
-			Excerpt:   "Overview",
-			CreatedBy: model.MustNewID(model.ResourceTypeUser),
-		},
-	}
 	want := projectFromRepository(repoProject)
 
 	type fields struct {
@@ -542,7 +534,7 @@ func TestProjectService_Get(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.projectService/Get", gomock.Len(0)).Return(ctx, span)
 
 					projectRepo := repository.NewMockProjectRepository(ctrl)
-					projectRepo.EXPECT().Get(ctx, id).Return(repoProject, nil)
+					projectRepo.EXPECT().Get(ctx, id, repository.ProjectDetailProjection()).Return(repoProject, nil)
 
 					permSvc := NewMockPermissionService(ctrl)
 					permSvc.EXPECT().CtxUserHasPermission(ctx, id, []model.PermissionKind{model.PermissionKindRead}).Return(true)
@@ -620,7 +612,7 @@ func TestProjectService_Get(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.projectService/Get", gomock.Len(0)).Return(ctx, span)
 
 					projectRepo := repository.NewMockProjectRepository(ctrl)
-					projectRepo.EXPECT().Get(ctx, id).Return(nil, repository.ErrProjectRead)
+					projectRepo.EXPECT().Get(ctx, id, repository.ProjectDetailProjection()).Return(nil, repository.ErrProjectRead)
 
 					permSvc := NewMockPermissionService(ctrl)
 					permSvc.EXPECT().CtxUserHasPermission(ctx, id, []model.PermissionKind{model.PermissionKindRead}).Return(true)
@@ -693,7 +685,7 @@ func TestProjectService_GetByKey(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.projectService/GetByKey", gomock.Len(0)).Return(ctx, span)
 
 					projectRepo := repository.NewMockProjectRepository(ctrl)
-					projectRepo.EXPECT().GetByKey(ctx, key).Return(repoProject, nil)
+					projectRepo.EXPECT().GetByKey(ctx, key, repository.ProjectDetailProjection()).Return(repoProject, nil)
 
 					permSvc := NewMockPermissionService(ctrl)
 					permSvc.EXPECT().CtxUserHasPermission(ctx, repoProject.ID, []model.PermissionKind{model.PermissionKindRead}).Return(true)
@@ -723,7 +715,7 @@ func TestProjectService_GetByKey(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.projectService/GetByKey", gomock.Len(0)).Return(ctx, span)
 
 					projectRepo := repository.NewMockProjectRepository(ctrl)
-					projectRepo.EXPECT().GetByKey(ctx, key).Return(repoProject, nil)
+					projectRepo.EXPECT().GetByKey(ctx, key, repository.ProjectDetailProjection()).Return(repoProject, nil)
 
 					permSvc := NewMockPermissionService(ctrl)
 					permSvc.EXPECT().CtxUserHasPermission(ctx, repoProject.ID, []model.PermissionKind{model.PermissionKindRead}).Return(false)
@@ -775,7 +767,7 @@ func TestProjectService_GetByKey(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.projectService/GetByKey", gomock.Len(0)).Return(ctx, span)
 
 					projectRepo := repository.NewMockProjectRepository(ctrl)
-					projectRepo.EXPECT().GetByKey(ctx, key).Return(nil, repository.ErrProjectRead)
+					projectRepo.EXPECT().GetByKey(ctx, key, repository.ProjectDetailProjection()).Return(nil, repository.ErrProjectRead)
 
 					return &baseService{
 						logger:      mock.NewMockLogger(ctrl),
@@ -814,19 +806,11 @@ func TestProjectService_GetByKey(t *testing.T) {
 	}
 }
 
-func TestProjectService_GetAll(t *testing.T) {
+func TestProjectService_List(t *testing.T) {
 	namespaceID := model.MustNewID(model.ResourceTypeNamespace)
 	repoProjects := []*repository.Project{
 		testModel.NewRepositoryProject(),
 		testModel.NewRepositoryProject(),
-	}
-	repoProjects[0].Documents = []*repository.PartialDocument{
-		{
-			ID:        model.MustNewID(model.ResourceTypeDocument),
-			Name:      "Spec",
-			Excerpt:   "Details",
-			CreatedBy: model.MustNewID(model.ResourceTypeUser),
-		},
 	}
 	want := projectsFromRepository(repoProjects)
 
@@ -836,14 +820,13 @@ func TestProjectService_GetAll(t *testing.T) {
 	type args struct {
 		ctx         context.Context
 		namespaceID model.ID
-		offset      int
-		limit       int
+		page        CursorPage
 	}
 	tests := []struct {
 		name    string
 		fields  fields
 		args    args
-		want    []*Project
+		want    Page[*Project]
 		wantErr error
 	}{
 		{
@@ -854,10 +837,15 @@ func TestProjectService_GetAll(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.projectService/GetAll", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "service.projectService/List", gomock.Len(0)).Return(ctx, span)
 
 					projectRepo := repository.NewMockProjectRepository(ctrl)
-					projectRepo.EXPECT().GetAll(ctx, namespaceID, 0, 10).Return(repoProjects, nil)
+					projectRepo.EXPECT().List(
+						ctx,
+						namespaceID,
+						repository.CursorPage{Size: 10},
+						repository.ProjectListProjection(),
+					).Return(repository.Page[*repository.Project]{Items: repoProjects}, nil)
 
 					permSvc := NewMockPermissionService(ctrl)
 					permSvc.EXPECT().CtxUserHasPermission(ctx, namespaceID, []model.PermissionKind{model.PermissionKindRead}).Return(true)
@@ -873,10 +861,9 @@ func TestProjectService_GetAll(t *testing.T) {
 			args: args{
 				ctx:         context.Background(),
 				namespaceID: namespaceID,
-				offset:      0,
-				limit:       10,
+				page:        CursorPage{Size: 10},
 			},
-			want: want,
+			want: Page[*Project]{Items: want},
 		},
 		{
 			name: "get all projects with no permission",
@@ -886,7 +873,7 @@ func TestProjectService_GetAll(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.projectService/GetAll", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "service.projectService/List", gomock.Len(0)).Return(ctx, span)
 
 					permSvc := NewMockPermissionService(ctrl)
 					permSvc.EXPECT().CtxUserHasPermission(ctx, namespaceID, []model.PermissionKind{model.PermissionKindRead}).Return(false)
@@ -901,8 +888,7 @@ func TestProjectService_GetAll(t *testing.T) {
 			args: args{
 				ctx:         context.Background(),
 				namespaceID: namespaceID,
-				offset:      0,
-				limit:       10,
+				page:        CursorPage{Size: 10},
 			},
 			wantErr: ErrNoPermission,
 		},
@@ -914,7 +900,7 @@ func TestProjectService_GetAll(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.projectService/GetAll", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "service.projectService/List", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
 						logger: mock.NewMockLogger(ctrl),
@@ -925,20 +911,19 @@ func TestProjectService_GetAll(t *testing.T) {
 			args: args{
 				ctx:         context.Background(),
 				namespaceID: model.ID{},
-				offset:      0,
-				limit:       10,
+				page:        CursorPage{Size: 10},
 			},
 			wantErr: model.ErrInvalidID,
 		},
 		{
-			name: "get all projects with invalid pagination",
+			name: "list projects with invalid page size",
 			fields: fields{
 				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.projectService/GetAll", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "service.projectService/List", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
 						logger: mock.NewMockLogger(ctrl),
@@ -949,10 +934,9 @@ func TestProjectService_GetAll(t *testing.T) {
 			args: args{
 				ctx:         context.Background(),
 				namespaceID: namespaceID,
-				offset:      -1,
-				limit:       10,
+				page:        CursorPage{Size: -1},
 			},
-			wantErr: ErrInvalidPaginationParams,
+			wantErr: repository.ErrInvalidPageSize,
 		},
 		{
 			name: "get all projects with repository error",
@@ -962,10 +946,15 @@ func TestProjectService_GetAll(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.projectService/GetAll", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "service.projectService/List", gomock.Len(0)).Return(ctx, span)
 
 					projectRepo := repository.NewMockProjectRepository(ctrl)
-					projectRepo.EXPECT().GetAll(ctx, namespaceID, 0, 10).Return(nil, repository.ErrProjectRead)
+					projectRepo.EXPECT().List(
+						ctx,
+						namespaceID,
+						repository.CursorPage{Size: 10},
+						repository.ProjectListProjection(),
+					).Return(repository.Page[*repository.Project]{}, repository.ErrProjectRead)
 
 					permSvc := NewMockPermissionService(ctrl)
 					permSvc.EXPECT().CtxUserHasPermission(ctx, namespaceID, []model.PermissionKind{model.PermissionKindRead}).Return(true)
@@ -981,8 +970,7 @@ func TestProjectService_GetAll(t *testing.T) {
 			args: args{
 				ctx:         context.Background(),
 				namespaceID: namespaceID,
-				offset:      0,
-				limit:       10,
+				page:        CursorPage{Size: 10},
 			},
 			wantErr: repository.ErrProjectRead,
 		},
@@ -998,7 +986,7 @@ func TestProjectService_GetAll(t *testing.T) {
 				baseService: tt.fields.baseService(ctrl, tt.args.ctx, tt.args.namespaceID),
 			}
 
-			got, err := s.GetAll(tt.args.ctx, tt.args.namespaceID, tt.args.offset, tt.args.limit)
+			got, err := s.List(tt.args.ctx, tt.args.namespaceID, tt.args.page)
 			if tt.wantErr != nil {
 				require.Error(t, err)
 				assert.ErrorIs(t, err, tt.wantErr)
@@ -1049,7 +1037,7 @@ func TestProjectService_Update(t *testing.T) {
 						Description: opts.Description,
 						Logo:        opts.Logo,
 						Status:      opts.Status,
-					}).Return(repoProject, nil)
+					}, repository.ProjectDetailProjection()).Return(repoProject, nil)
 
 					permSvc := NewMockPermissionService(ctrl)
 					permSvc.EXPECT().CtxUserHasPermission(ctx, id, []model.PermissionKind{model.PermissionKindWrite}).Return(true)
@@ -1086,7 +1074,7 @@ func TestProjectService_Update(t *testing.T) {
 					projectRepo := repository.NewMockProjectRepository(ctrl)
 					projectRepo.EXPECT().Update(ctx, id, repository.UpdateProjectOpts{
 						Key: optional.Some("ENG"),
-					}).Return(repoProject, nil)
+					}, repository.ProjectDetailProjection()).Return(repoProject, nil)
 
 					permSvc := NewMockPermissionService(ctrl)
 					permSvc.EXPECT().CtxUserHasPermission(ctx, id, []model.PermissionKind{model.PermissionKindWrite}).Return(true)
@@ -1212,7 +1200,7 @@ func TestProjectService_Update(t *testing.T) {
 						Description: opts.Description,
 						Logo:        opts.Logo,
 						Status:      opts.Status,
-					}).Return(nil, repository.ErrProjectUpdate)
+					}, repository.ProjectDetailProjection()).Return(nil, repository.ErrProjectUpdate)
 
 					permSvc := NewMockPermissionService(ctrl)
 					permSvc.EXPECT().CtxUserHasPermission(ctx, id, []model.PermissionKind{model.PermissionKindWrite}).Return(true)
@@ -1461,8 +1449,8 @@ func TestProjectFromRepository(t *testing.T) {
 		assert.Nil(t, partialProjectFromRepository(nil))
 	})
 
-	t.Run("nil partial document", func(t *testing.T) {
+	t.Run("nil partial issue", func(t *testing.T) {
 		t.Parallel()
-		assert.Nil(t, partialDocumentFromRepository(nil))
+		assert.Nil(t, partialIssueFromRepository(nil))
 	})
 }

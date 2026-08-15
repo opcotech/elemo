@@ -25,7 +25,7 @@ func TestPartialDocumentToDTO(t *testing.T) {
 			ID:        docID,
 			Name:      "Plan",
 			Excerpt:   "Overview",
-			CreatedBy: userID,
+			CreatedBy: service.PartialUser{ID: userID},
 			CreatedAt: createdAt,
 		}
 
@@ -34,7 +34,7 @@ func TestPartialDocumentToDTO(t *testing.T) {
 		assert.Equal(t, "Plan", dto.Name)
 		require.NotNil(t, dto.Excerpt)
 		assert.Equal(t, "Overview", *dto.Excerpt)
-		assert.Equal(t, userID.String(), dto.CreatedBy)
+		assert.Equal(t, userID.String(), dto.CreatedBy.Id)
 		assert.Equal(t, createdAt, dto.CreatedAt)
 	})
 
@@ -43,7 +43,7 @@ func TestPartialDocumentToDTO(t *testing.T) {
 		doc := &service.PartialDocument{
 			ID:        docID,
 			Name:      "Plan",
-			CreatedBy: userID,
+			CreatedBy: service.PartialUser{ID: userID},
 			CreatedAt: nil,
 		}
 

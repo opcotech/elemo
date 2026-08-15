@@ -1,14 +1,18 @@
 import { Rows3Icon } from "lucide-react";
 
-import { dateLabel } from "./utils";
+import { PriorityRibbon } from "./priority-ribbon";
+import { dateLabel, workItemPath } from "./utils";
+import { WorkLabelBadges } from "./work-label-badges";
 
-import { AppEmptyState } from "@/components/shared/app-feedback";
 import { AppList } from "@/components/shared/entity-link";
-import { StatusIndicator } from "@/components/shared/status-indicator";
+import { EmptyState } from "@/components/ui/empty-state";
 import { InternalLink } from "@/components/ui/internal-link";
+import { PersonAvatarStack } from "@/components/ui/person-avatar-stack";
+import { StatusIndicator } from "@/components/ui/status-indicator";
 import { internalPath } from "@/lib/internal-url";
 import type { WorkItem } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
+import { workItemAssignmentPeople } from "@/lib/work/resolve-work-people";
 
 export function CompactWorkList({
   items,
@@ -17,6 +21,8 @@ export function CompactWorkList({
   emptyTitle = "No work here",
   emptyDescription = "Work matching this context will appear here.",
   limit,
+  showAssignees = true,
+  showLabels = true,
 }: {
   items: readonly WorkItem[];
   onSelect?: (item: WorkItem) => void;
@@ -24,12 +30,14 @@ export function CompactWorkList({
   emptyTitle?: string;
   emptyDescription?: string;
   limit?: number;
+  showAssignees?: boolean;
+  showLabels?: boolean;
 }) {
   const visible = limit ? items.slice(0, limit) : items;
 
   if (visible.length === 0) {
     return (
-      <AppEmptyState
+      <EmptyState
         compact
         icon={<Rows3Icon />}
         title={emptyTitle}
@@ -61,7 +69,7 @@ export function CompactWorkList({
             )}
           />
           <InternalLink
-            to={internalPath(`/work/${item.id}`)}
+            to={internalPath(workItemPath(item))}
             onClick={(event) => event.stopPropagation()}
             className="text-muted-foreground hover:text-primary w-20 shrink-0 font-mono text-xs"
           >
@@ -81,12 +89,36 @@ export function CompactWorkList({
               {item.title}
             </span>
           )}
-          <span className="hidden sm:block">
-            <StatusIndicator status={item.status} />
-          </span>
-          <span className="text-muted-foreground hidden w-20 text-right text-xs md:block">
-            {dateLabel(item.dueDate)}
-          </span>
+          <div className="ml-auto flex shrink-0 items-center gap-6 sm:gap-8">
+            <span className="hidden items-center sm:inline-flex">
+              <StatusIndicator status={item.status} />
+            </span>
+            <span className="hidden shrink-0 items-center md:inline-flex">
+              <PriorityRibbon priority={item.priority} />
+            </span>
+            {showAssignees ? (
+              <span className="hidden shrink-0 items-center lg:inline-flex">
+                <PersonAvatarStack
+                  people={workItemAssignmentPeople(item)}
+                  size="sm"
+                />
+              </span>
+            ) : null}
+            {showLabels ? (
+              <WorkLabelBadges
+                labelIds={item.labelIds}
+                labels={item.labels}
+                limit={2}
+                className="max-w-32 shrink-0 flex-nowrap sm:max-w-40"
+              />
+            ) : null}
+            <span className="text-muted-foreground hidden justify-end text-xs xl:inline-flex xl:items-center">
+              {dateLabel(item.startDate)}
+            </span>
+            <span className="text-muted-foreground hidden justify-end text-xs xl:inline-flex xl:items-center">
+              {dateLabel(item.dueDate)}
+            </span>
+          </div>
         </div>
       ))}
     </AppList>

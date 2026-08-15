@@ -41,20 +41,20 @@ interface ScopedRecord {
 }
 
 const priorityOrder: Record<WorkPriority, number> = {
-  none: 0,
+  lowest: 0,
   low: 1,
-  medium: 2,
+  normal: 2,
   high: 3,
-  urgent: 4,
+  highest: 4,
 };
 
 const statusOrder: Record<WorkStatus, number> = {
   backlog: 0,
-  planned: 1,
-  "in-progress": 2,
+  "in progress": 1,
+  "in review": 2,
   blocked: 3,
   done: 4,
-  canceled: 5,
+  closed: 5,
 };
 
 const severityOrder: Record<AttentionSignal["severity"], number> = {
@@ -225,23 +225,40 @@ function compareWorkItems(
   return left.id.localeCompare(right.id);
 }
 
-export function selectWorkItems(
+export function queryWorkItems(
+  items: readonly WorkItem[],
   query: WorkItemQuery = {}
 ): readonly WorkItem[] {
-  const scope = query.scope ?? { type: "global" };
+  const scope = query.scope;
   const sorts = query.sort?.length
     ? query.sort
     : ([{ field: "rank", direction: "asc" }] as const);
 
-  return mockWorkItems
+  return items
     .filter(
-      (item) => workItemInScope(item, scope) && matchesWorkFilters(item, query)
+      (item) =>
+        (!scope || workItemInScope(item, scope)) &&
+        matchesWorkFilters(item, query)
     )
     .toSorted((left, right) => compareWorkItems(left, right, sorts));
 }
 
-export function getWorkItem(workItemId: string): WorkItem | undefined {
-  return mockWorkItems.find((item) => item.id === workItemId);
+export function selectWorkItems(
+  query: WorkItemQuery = {}
+): readonly WorkItem[] {
+  return queryWorkItems(mockWorkItems, query);
+}
+
+export function getWorkItem(
+  workItemId: string,
+  namespaceId?: string
+): WorkItem | undefined {
+  return mockWorkItems.find((item) => {
+    if (namespaceId && item.namespaceId !== namespaceId) {
+      return false;
+    }
+    return item.id === workItemId || item.key === workItemId;
+  });
 }
 
 function isViewAvailableInScope(

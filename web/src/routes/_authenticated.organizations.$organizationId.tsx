@@ -1,11 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import {
-  OrganizationDetailError,
-  OrganizationDetailSkeleton,
-  OrganizationNotFound,
-  OrganizationOverviewPage,
-} from "@/components/organizations";
+import { OrganizationDetailError } from "@/components/organizations/organization-detail-error";
+import { OrganizationNotFound } from "@/components/organizations/organization-not-found";
+import { OrganizationOverviewPage } from "@/components/organizations/organization-pages";
+import { DetailPageSkeleton } from "@/components/ui/detail-card";
 import { entityBreadcrumb } from "@/lib/breadcrumb";
 import { loadOrganizationWorkspace } from "@/lib/organization-workspace";
 import { withRouteErrors } from "@/lib/route-errors";
@@ -21,7 +19,7 @@ export const Route = createFileRoute(
     breadcrumb: (data) =>
       entityBreadcrumb(data, "organization", "Organization"),
   },
-  pendingComponent: OrganizationDetailSkeleton,
+  pendingComponent: DetailPageSkeleton,
   errorComponent: OrganizationDetailError,
   notFoundComponent: OrganizationNotFound,
   component: OrganizationDetailRoute,

@@ -5,8 +5,19 @@ import { queryOptions, type UseMutationOptions } from "@tanstack/react-query";
 import { client } from "../client.gen";
 import {
   type Options,
+  v1IssueDelete,
+  v1IssueGet,
+  v1IssueRelationDelete,
+  v1IssueRelationsCreate,
+  v1IssueRelationsGet,
+  v1IssueRelationUpdate,
+  v1IssueUpdate,
+  v1LabelsGet,
   v1NamespaceDelete,
   v1NamespaceGet,
+  v1NamespacesDocumentsGet,
+  v1NamespacesIssuesGet,
+  v1NamespacesIssuesKeyGet,
   v1NamespacesProjectsCreate,
   v1NamespacesProjectsGet,
   v1NamespaceUpdate,
@@ -47,6 +58,9 @@ import {
   v1PermissionUpdate,
   v1ProjectDelete,
   v1ProjectGet,
+  v1ProjectsDocumentsGet,
+  v1ProjectsIssuesCreate,
+  v1ProjectsIssuesGet,
   v1ProjectUpdate,
   v1SystemHealth,
   v1SystemHeartbeat,
@@ -63,15 +77,49 @@ import {
   v1UserResetPassword,
   v1UsersCreate,
   v1UsersGet,
+  v1UsersIssuesGet,
   v1UserUpdate,
 } from "../sdk.gen";
 import type {
+  V1IssueDeleteData,
+  V1IssueDeleteError,
+  V1IssueDeleteResponse,
+  V1IssueGetData,
+  V1IssueGetError,
+  V1IssueGetResponse,
+  V1IssueRelationDeleteData,
+  V1IssueRelationDeleteError,
+  V1IssueRelationDeleteResponse,
+  V1IssueRelationsCreateData,
+  V1IssueRelationsCreateError,
+  V1IssueRelationsCreateResponse,
+  V1IssueRelationsGetData,
+  V1IssueRelationsGetError,
+  V1IssueRelationsGetResponse,
+  V1IssueRelationUpdateData,
+  V1IssueRelationUpdateError,
+  V1IssueRelationUpdateResponse,
+  V1IssueUpdateData,
+  V1IssueUpdateError,
+  V1IssueUpdateResponse,
+  V1LabelsGetData,
+  V1LabelsGetError,
+  V1LabelsGetResponse,
   V1NamespaceDeleteData,
   V1NamespaceDeleteError,
   V1NamespaceDeleteResponse,
   V1NamespaceGetData,
   V1NamespaceGetError,
   V1NamespaceGetResponse,
+  V1NamespacesDocumentsGetData,
+  V1NamespacesDocumentsGetError,
+  V1NamespacesDocumentsGetResponse,
+  V1NamespacesIssuesGetData,
+  V1NamespacesIssuesGetError,
+  V1NamespacesIssuesGetResponse,
+  V1NamespacesIssuesKeyGetData,
+  V1NamespacesIssuesKeyGetError,
+  V1NamespacesIssuesKeyGetResponse,
   V1NamespacesProjectsCreateData,
   V1NamespacesProjectsCreateError,
   V1NamespacesProjectsCreateResponse,
@@ -192,6 +240,15 @@ import type {
   V1ProjectGetData,
   V1ProjectGetError,
   V1ProjectGetResponse,
+  V1ProjectsDocumentsGetData,
+  V1ProjectsDocumentsGetError,
+  V1ProjectsDocumentsGetResponse,
+  V1ProjectsIssuesCreateData,
+  V1ProjectsIssuesCreateError,
+  V1ProjectsIssuesCreateResponse,
+  V1ProjectsIssuesGetData,
+  V1ProjectsIssuesGetError,
+  V1ProjectsIssuesGetResponse,
   V1ProjectUpdateData,
   V1ProjectUpdateError,
   V1ProjectUpdateResponse,
@@ -239,6 +296,9 @@ import type {
   V1UsersGetData,
   V1UsersGetError,
   V1UsersGetResponse,
+  V1UsersIssuesGetData,
+  V1UsersIssuesGetError,
+  V1UsersIssuesGetResponse,
   V1UserUpdateData,
   V1UserUpdateError,
   V1UserUpdateResponse,
@@ -483,6 +543,63 @@ export const v1UserUpdateMutation = (
   };
   return mutationOptions;
 };
+
+export const v1UsersIssuesGetQueryKey = (
+  options: Options<V1UsersIssuesGetData>
+) => createQueryKey("v1UsersIssuesGet", options);
+
+/**
+ * Get user issues
+ *
+ * Return a cursor-paginated page of issues assigned to the user.
+ */
+export const v1UsersIssuesGetOptions = (
+  options: Options<V1UsersIssuesGetData>
+) =>
+  queryOptions<
+    V1UsersIssuesGetResponse,
+    V1UsersIssuesGetError,
+    V1UsersIssuesGetResponse,
+    ReturnType<typeof v1UsersIssuesGetQueryKey>
+  >({
+    queryFn: async ({ queryKey, signal }) => {
+      const { data } = await v1UsersIssuesGet({
+        ...options,
+        ...queryKey[0],
+        signal,
+        throwOnError: true,
+      });
+      return data;
+    },
+    queryKey: v1UsersIssuesGetQueryKey(options),
+  });
+
+export const v1LabelsGetQueryKey = (options?: Options<V1LabelsGetData>) =>
+  createQueryKey("v1LabelsGet", options);
+
+/**
+ * List labels
+ *
+ * Returns a cursor-paginated page of labels.
+ */
+export const v1LabelsGetOptions = (options?: Options<V1LabelsGetData>) =>
+  queryOptions<
+    V1LabelsGetResponse,
+    V1LabelsGetError,
+    V1LabelsGetResponse,
+    ReturnType<typeof v1LabelsGetQueryKey>
+  >({
+    queryFn: async ({ queryKey, signal }) => {
+      const { data } = await v1LabelsGet({
+        ...options,
+        ...queryKey[0],
+        signal,
+        throwOnError: true,
+      });
+      return data;
+    },
+    queryKey: v1LabelsGetQueryKey(options),
+  });
 
 export const v1TodosGetQueryKey = (options?: Options<V1TodosGetData>) =>
   createQueryKey("v1TodosGet", options);
@@ -897,7 +1014,7 @@ export const v1OrganizationMembersGetQueryKey = (
 /**
  * Get organization members
  *
- * Return the users that are members of the organization.
+ * Return a cursor-paginated page of users that are members of the organization.
  */
 export const v1OrganizationMembersGetOptions = (
   options: Options<V1OrganizationMembersGetData>
@@ -1219,7 +1336,7 @@ export const v1OrganizationRoleMembersGetQueryKey = (
 /**
  * Get organization role members
  *
- * Return the users that are members of the organization's role.
+ * Return a cursor-paginated page of users that are members of the organization's role.
  */
 export const v1OrganizationRoleMembersGetOptions = (
   options: Options<V1OrganizationRoleMembersGetData>
@@ -1539,7 +1656,7 @@ export const v1NamespacesProjectsGetQueryKey = (
 /**
  * Get namespace projects
  *
- * Return the projects that belong to the namespace.
+ * Return a cursor-paginated page of projects that belong to the namespace.
  */
 export const v1NamespacesProjectsGetOptions = (
   options: Options<V1NamespacesProjectsGetData>
@@ -1590,6 +1707,96 @@ export const v1NamespacesProjectsCreateMutation = (
   };
   return mutationOptions;
 };
+
+export const v1NamespacesDocumentsGetQueryKey = (
+  options: Options<V1NamespacesDocumentsGetData>
+) => createQueryKey("v1NamespacesDocumentsGet", options);
+
+/**
+ * Get namespace documents
+ *
+ * Return a cursor-paginated page of documents that belong to the namespace.
+ */
+export const v1NamespacesDocumentsGetOptions = (
+  options: Options<V1NamespacesDocumentsGetData>
+) =>
+  queryOptions<
+    V1NamespacesDocumentsGetResponse,
+    V1NamespacesDocumentsGetError,
+    V1NamespacesDocumentsGetResponse,
+    ReturnType<typeof v1NamespacesDocumentsGetQueryKey>
+  >({
+    queryFn: async ({ queryKey, signal }) => {
+      const { data } = await v1NamespacesDocumentsGet({
+        ...options,
+        ...queryKey[0],
+        signal,
+        throwOnError: true,
+      });
+      return data;
+    },
+    queryKey: v1NamespacesDocumentsGetQueryKey(options),
+  });
+
+export const v1NamespacesIssuesGetQueryKey = (
+  options: Options<V1NamespacesIssuesGetData>
+) => createQueryKey("v1NamespacesIssuesGet", options);
+
+/**
+ * Get namespace issues
+ *
+ * Return a cursor-paginated page of issues that belong to projects in the namespace.
+ */
+export const v1NamespacesIssuesGetOptions = (
+  options: Options<V1NamespacesIssuesGetData>
+) =>
+  queryOptions<
+    V1NamespacesIssuesGetResponse,
+    V1NamespacesIssuesGetError,
+    V1NamespacesIssuesGetResponse,
+    ReturnType<typeof v1NamespacesIssuesGetQueryKey>
+  >({
+    queryFn: async ({ queryKey, signal }) => {
+      const { data } = await v1NamespacesIssuesGet({
+        ...options,
+        ...queryKey[0],
+        signal,
+        throwOnError: true,
+      });
+      return data;
+    },
+    queryKey: v1NamespacesIssuesGetQueryKey(options),
+  });
+
+export const v1NamespacesIssuesKeyGetQueryKey = (
+  options: Options<V1NamespacesIssuesKeyGetData>
+) => createQueryKey("v1NamespacesIssuesKeyGet", options);
+
+/**
+ * Get issue by key
+ *
+ * Return the issue identified by composite key within the given namespace.
+ */
+export const v1NamespacesIssuesKeyGetOptions = (
+  options: Options<V1NamespacesIssuesKeyGetData>
+) =>
+  queryOptions<
+    V1NamespacesIssuesKeyGetResponse,
+    V1NamespacesIssuesKeyGetError,
+    V1NamespacesIssuesKeyGetResponse,
+    ReturnType<typeof v1NamespacesIssuesKeyGetQueryKey>
+  >({
+    queryFn: async ({ queryKey, signal }) => {
+      const { data } = await v1NamespacesIssuesKeyGet({
+        ...options,
+        ...queryKey[0],
+        signal,
+        throwOnError: true,
+      });
+      return data;
+    },
+    queryKey: v1NamespacesIssuesKeyGetQueryKey(options),
+  });
 
 /**
  * Delete project
@@ -1666,6 +1873,297 @@ export const v1ProjectUpdateMutation = (
   > = {
     mutationFn: async (fnOptions) => {
       const { data } = await v1ProjectUpdate({
+        ...options,
+        ...fnOptions,
+        throwOnError: true,
+      });
+      return data;
+    },
+  };
+  return mutationOptions;
+};
+
+export const v1ProjectsIssuesGetQueryKey = (
+  options: Options<V1ProjectsIssuesGetData>
+) => createQueryKey("v1ProjectsIssuesGet", options);
+
+/**
+ * Get project issues
+ *
+ * Return a cursor-paginated page of issues that belong to the project.
+ */
+export const v1ProjectsIssuesGetOptions = (
+  options: Options<V1ProjectsIssuesGetData>
+) =>
+  queryOptions<
+    V1ProjectsIssuesGetResponse,
+    V1ProjectsIssuesGetError,
+    V1ProjectsIssuesGetResponse,
+    ReturnType<typeof v1ProjectsIssuesGetQueryKey>
+  >({
+    queryFn: async ({ queryKey, signal }) => {
+      const { data } = await v1ProjectsIssuesGet({
+        ...options,
+        ...queryKey[0],
+        signal,
+        throwOnError: true,
+      });
+      return data;
+    },
+    queryKey: v1ProjectsIssuesGetQueryKey(options),
+  });
+
+/**
+ * Create issue in project
+ *
+ * Create a new issue in the project.
+ */
+export const v1ProjectsIssuesCreateMutation = (
+  options?: Partial<Options<V1ProjectsIssuesCreateData>>
+): UseMutationOptions<
+  V1ProjectsIssuesCreateResponse,
+  V1ProjectsIssuesCreateError,
+  Options<V1ProjectsIssuesCreateData>
+> => {
+  const mutationOptions: UseMutationOptions<
+    V1ProjectsIssuesCreateResponse,
+    V1ProjectsIssuesCreateError,
+    Options<V1ProjectsIssuesCreateData>
+  > = {
+    mutationFn: async (fnOptions) => {
+      const { data } = await v1ProjectsIssuesCreate({
+        ...options,
+        ...fnOptions,
+        throwOnError: true,
+      });
+      return data;
+    },
+  };
+  return mutationOptions;
+};
+
+export const v1ProjectsDocumentsGetQueryKey = (
+  options: Options<V1ProjectsDocumentsGetData>
+) => createQueryKey("v1ProjectsDocumentsGet", options);
+
+/**
+ * Get project documents
+ *
+ * Return a cursor-paginated page of documents that belong to the project.
+ */
+export const v1ProjectsDocumentsGetOptions = (
+  options: Options<V1ProjectsDocumentsGetData>
+) =>
+  queryOptions<
+    V1ProjectsDocumentsGetResponse,
+    V1ProjectsDocumentsGetError,
+    V1ProjectsDocumentsGetResponse,
+    ReturnType<typeof v1ProjectsDocumentsGetQueryKey>
+  >({
+    queryFn: async ({ queryKey, signal }) => {
+      const { data } = await v1ProjectsDocumentsGet({
+        ...options,
+        ...queryKey[0],
+        signal,
+        throwOnError: true,
+      });
+      return data;
+    },
+    queryKey: v1ProjectsDocumentsGetQueryKey(options),
+  });
+
+/**
+ * Delete issue
+ *
+ * Delete the issue by its ID.
+ */
+export const v1IssueDeleteMutation = (
+  options?: Partial<Options<V1IssueDeleteData>>
+): UseMutationOptions<
+  V1IssueDeleteResponse,
+  V1IssueDeleteError,
+  Options<V1IssueDeleteData>
+> => {
+  const mutationOptions: UseMutationOptions<
+    V1IssueDeleteResponse,
+    V1IssueDeleteError,
+    Options<V1IssueDeleteData>
+  > = {
+    mutationFn: async (fnOptions) => {
+      const { data } = await v1IssueDelete({
+        ...options,
+        ...fnOptions,
+        throwOnError: true,
+      });
+      return data;
+    },
+  };
+  return mutationOptions;
+};
+
+export const v1IssueGetQueryKey = (options: Options<V1IssueGetData>) =>
+  createQueryKey("v1IssueGet", options);
+
+/**
+ * Get issue
+ *
+ * Return the requested issue by its ID.
+ */
+export const v1IssueGetOptions = (options: Options<V1IssueGetData>) =>
+  queryOptions<
+    V1IssueGetResponse,
+    V1IssueGetError,
+    V1IssueGetResponse,
+    ReturnType<typeof v1IssueGetQueryKey>
+  >({
+    queryFn: async ({ queryKey, signal }) => {
+      const { data } = await v1IssueGet({
+        ...options,
+        ...queryKey[0],
+        signal,
+        throwOnError: true,
+      });
+      return data;
+    },
+    queryKey: v1IssueGetQueryKey(options),
+  });
+
+/**
+ * Update issue
+ *
+ * Update the issue by its ID.
+ */
+export const v1IssueUpdateMutation = (
+  options?: Partial<Options<V1IssueUpdateData>>
+): UseMutationOptions<
+  V1IssueUpdateResponse,
+  V1IssueUpdateError,
+  Options<V1IssueUpdateData>
+> => {
+  const mutationOptions: UseMutationOptions<
+    V1IssueUpdateResponse,
+    V1IssueUpdateError,
+    Options<V1IssueUpdateData>
+  > = {
+    mutationFn: async (fnOptions) => {
+      const { data } = await v1IssueUpdate({
+        ...options,
+        ...fnOptions,
+        throwOnError: true,
+      });
+      return data;
+    },
+  };
+  return mutationOptions;
+};
+
+export const v1IssueRelationsGetQueryKey = (
+  options: Options<V1IssueRelationsGetData>
+) => createQueryKey("v1IssueRelationsGet", options);
+
+/**
+ * Get issue relations
+ *
+ * Return a cursor-paginated page of relations for the issue, including incoming and outgoing edges.
+ */
+export const v1IssueRelationsGetOptions = (
+  options: Options<V1IssueRelationsGetData>
+) =>
+  queryOptions<
+    V1IssueRelationsGetResponse,
+    V1IssueRelationsGetError,
+    V1IssueRelationsGetResponse,
+    ReturnType<typeof v1IssueRelationsGetQueryKey>
+  >({
+    queryFn: async ({ queryKey, signal }) => {
+      const { data } = await v1IssueRelationsGet({
+        ...options,
+        ...queryKey[0],
+        signal,
+        throwOnError: true,
+      });
+      return data;
+    },
+    queryKey: v1IssueRelationsGetQueryKey(options),
+  });
+
+/**
+ * Add issue relation
+ *
+ * Create an outgoing relation from the issue in the URL to another issue. Self-relations and the reserved "subtask of" kind are rejected.
+ */
+export const v1IssueRelationsCreateMutation = (
+  options?: Partial<Options<V1IssueRelationsCreateData>>
+): UseMutationOptions<
+  V1IssueRelationsCreateResponse,
+  V1IssueRelationsCreateError,
+  Options<V1IssueRelationsCreateData>
+> => {
+  const mutationOptions: UseMutationOptions<
+    V1IssueRelationsCreateResponse,
+    V1IssueRelationsCreateError,
+    Options<V1IssueRelationsCreateData>
+  > = {
+    mutationFn: async (fnOptions) => {
+      const { data } = await v1IssueRelationsCreate({
+        ...options,
+        ...fnOptions,
+        throwOnError: true,
+      });
+      return data;
+    },
+  };
+  return mutationOptions;
+};
+
+/**
+ * Delete issue relation
+ *
+ * Delete a relation of the issue by its relation ID.
+ */
+export const v1IssueRelationDeleteMutation = (
+  options?: Partial<Options<V1IssueRelationDeleteData>>
+): UseMutationOptions<
+  V1IssueRelationDeleteResponse,
+  V1IssueRelationDeleteError,
+  Options<V1IssueRelationDeleteData>
+> => {
+  const mutationOptions: UseMutationOptions<
+    V1IssueRelationDeleteResponse,
+    V1IssueRelationDeleteError,
+    Options<V1IssueRelationDeleteData>
+  > = {
+    mutationFn: async (fnOptions) => {
+      const { data } = await v1IssueRelationDelete({
+        ...options,
+        ...fnOptions,
+        throwOnError: true,
+      });
+      return data;
+    },
+  };
+  return mutationOptions;
+};
+
+/**
+ * Update issue relation
+ *
+ * Change the relation kind from this issue's point of view by replacing the edge with a new outgoing relation. Self-relations and the reserved "subtask of" kind are rejected.
+ */
+export const v1IssueRelationUpdateMutation = (
+  options?: Partial<Options<V1IssueRelationUpdateData>>
+): UseMutationOptions<
+  V1IssueRelationUpdateResponse,
+  V1IssueRelationUpdateError,
+  Options<V1IssueRelationUpdateData>
+> => {
+  const mutationOptions: UseMutationOptions<
+    V1IssueRelationUpdateResponse,
+    V1IssueRelationUpdateError,
+    Options<V1IssueRelationUpdateData>
+  > = {
+    mutationFn: async (fnOptions) => {
+      const { data } = await v1IssueRelationUpdate({
         ...options,
         ...fnOptions,
         throwOnError: true,

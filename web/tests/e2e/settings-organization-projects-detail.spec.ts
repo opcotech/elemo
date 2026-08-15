@@ -140,8 +140,6 @@ test.describe("@settings.organization-projects-detail Organization Projects Deta
     await projectDetailsPage.goto(organizationId, namespaceId, project.id);
     await projectDetailsPage.waitForLoad();
     await projectDetailsPage.projectInfo.waitForLoad();
-    await projectDetailsPage.documents.waitForLoad();
-    await projectDetailsPage.issues.waitForLoad();
 
     expect(await projectDetailsPage.getTitleText()).toContain(project.name);
     await expect(
@@ -153,8 +151,6 @@ test.describe("@settings.organization-projects-detail Organization Projects Deta
     await expect(
       projectDetailsPage.projectInfo.getFieldValue("Status")
     ).toContainText(/active|pending/i);
-    await expect(projectDetailsPage.documents.getEmptyState()).toBeVisible();
-    await expect(projectDetailsPage.issues.getEmptyState()).toBeVisible();
   });
 
   test("should show edit button only for members with project write permission", async ({

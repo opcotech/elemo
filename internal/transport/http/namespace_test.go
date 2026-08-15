@@ -40,27 +40,12 @@ func TestNamespaceController_V1NamespaceGet(t *testing.T) {
 
 	namespaceID := model.MustNewID(model.ResourceTypeNamespace)
 	ns := &service.Namespace{
-		ID:          namespaceID,
-		Name:        "Engineering",
-		Description: "Engineering team namespace",
-		Projects: []*service.PartialProject{
-			{
-				ID:     model.MustNewID(model.ResourceTypeProject),
-				Key:    "ENG",
-				Name:   "Engineering Project",
-				Status: model.ProjectStatusActive,
-			},
-		},
-		Documents: []*service.PartialDocument{
-			{
-				ID:        model.MustNewID(model.ResourceTypeDocument),
-				Name:      "Plan",
-				Excerpt:   "Overview",
-				CreatedBy: model.MustNewID(model.ResourceTypeUser),
-				CreatedAt: convert.ToPointer(time.Now().UTC()),
-			},
-		},
-		CreatedAt: convert.ToPointer(time.Now().UTC()),
+		ID:            namespaceID,
+		Name:          "Engineering",
+		Description:   "Engineering team namespace",
+		ProjectCount:  convert.ToPointer(int64(1)),
+		DocumentCount: convert.ToPointer(int64(1)),
+		CreatedAt:     convert.ToPointer(time.Now().UTC()),
 	}
 
 	t.Run("success with related resources", func(t *testing.T) {
@@ -81,9 +66,9 @@ func TestNamespaceController_V1NamespaceGet(t *testing.T) {
 		assert.Equal(t, namespaceID.String(), got.Id)
 		require.NotNil(t, got.Description)
 		assert.Equal(t, ns.Description, *got.Description)
-		require.Len(t, got.Projects, 1)
-		assert.Equal(t, "ENG", got.Projects[0].Key)
-		require.Len(t, got.Documents, 1)
-		assert.Equal(t, "Plan", got.Documents[0].Name)
+		require.NotNil(t, got.ProjectCount)
+		assert.Equal(t, int64(1), *got.ProjectCount)
+		require.NotNil(t, got.DocumentCount)
+		assert.Equal(t, int64(1), *got.DocumentCount)
 	})
 }

@@ -1,15 +1,13 @@
-import { useQueries } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Edit, Folder, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { NamespaceDeleteDialog } from "./namespace-delete-dialog";
 
-import { Badge } from "@/components/ui/badge";
+import { SettingsResourceTable } from "@/components/settings/settings-resource-table";
 import { Button } from "@/components/ui/button";
 import { ConditionalLink } from "@/components/ui/conditional-link";
-import { ListContainer } from "@/components/ui/list-container";
-import { SearchInput } from "@/components/ui/search-input";
+import { CountBadge } from "@/components/ui/count-badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -19,51 +17,27 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ResourceType, withResourceType } from "@/hooks/use-permissions";
-import { v1PermissionResourceGetOptions } from "@/lib/api/query-options";
+import { TableSkeleton } from "@/components/ui/table-skeleton";
+import {
+  ResourceType,
+  usePermissionsByResourceId,
+} from "@/hooks/use-permissions";
 import type { Namespace, Permission } from "@/lib/api/types";
 import { can } from "@/lib/auth/permissions";
-import { pluralize } from "@/lib/utils";
 
-function NamespacesListSkeleton() {
-  return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Name</TableHead>
-          <TableHead>Description</TableHead>
-          <TableHead>Projects</TableHead>
-          <TableHead>Documents</TableHead>
-          <TableHead className="text-right">Actions</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {Array.from({ length: 5 }).map((_, i) => (
-          <TableRow key={i}>
-            <TableCell>
-              <Skeleton className="h-5 w-32" />
-            </TableCell>
-            <TableCell>
-              <Skeleton className="h-4 w-48" />
-            </TableCell>
-            <TableCell>
-              <Skeleton className="h-6 w-16" />
-            </TableCell>
-            <TableCell>
-              <Skeleton className="h-6 w-16" />
-            </TableCell>
-            <TableCell className="text-right">
-              <div className="flex justify-end gap-1">
-                <Skeleton className="h-8 w-8" />
-                <Skeleton className="h-8 w-8" />
-              </div>
-            </TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
-  );
-}
+const namespacesListSkeletonColumns = [
+  { header: "Name", skeletonClassName: "h-5 w-32" },
+  { header: "Description", skeletonClassName: "h-4 w-48" },
+  { header: "Projects", skeletonClassName: "h-6 w-16" },
+  { header: "Documents", skeletonClassName: "h-6 w-16" },
+  {
+    header: "Actions",
+    skeletonClassName: "h-8 w-8",
+    headerClassName: "text-right",
+    cellClassName: "text-right",
+    count: 2,
+  },
+] as const;
 
 interface NamespaceRowProps {
   namespace: Namespace;
@@ -80,8 +54,8 @@ function NamespaceRow({
   organizationId,
   onDeleteClick,
 }: NamespaceRowProps) {
-  const projectCount = namespace.projects?.length || 0;
-  const documentCount = namespace.documents?.length || 0;
+  const projectCount = namespace.project_count ?? 0;
+  const documentCount = namespace.document_count ?? 0;
 
   const hasNamespaceReadPermission = can(permissions, "read");
   const hasNamespaceWritePermission = can(permissions, "write");
@@ -104,14 +78,14 @@ function NamespaceRow({
         </span>
       </TableCell>
       <TableCell>
-        <Badge variant="secondary">
-          {projectCount} {pluralize(projectCount, "project", "projects")}
-        </Badge>
+        <CountBadge count={projectCount} singular="project" plural="projects" />
       </TableCell>
       <TableCell>
-        <Badge variant="secondary">
-          {documentCount} {pluralize(documentCount, "document", "documents")}
-        </Badge>
+        <CountBadge
+          count={documentCount}
+          singular="document"
+          plural="documents"
+        />
       </TableCell>
       <TableCell className="text-right">
         {isPermissionsLoading ? (
@@ -179,24 +153,9 @@ export function NamespacesList({
 
   const hasOrgWritePermission = can(organizationPermissions, "write");
   const hasCreatePermission = hasOrgWritePermission;
-  const namespacePermissionQueries = useQueries({
-    queries: namespaces.map((namespace) =>
-      v1PermissionResourceGetOptions({
-        path: {
-          resourceId: withResourceType(ResourceType.Namespace, namespace.id),
-        },
-      })
-    ),
-  });
-  const namespacePermissionsById = useMemo(
-    () =>
-      new Map(
-        namespaces.map((namespace, index) => [
-          namespace.id,
-          namespacePermissionQueries[index],
-        ])
-      ),
-    [namespaces, namespacePermissionQueries]
+  const namespacePermissionsById = usePermissionsByResourceId(
+    ResourceType.Namespace,
+    namespaces.map((namespace) => namespace.id)
   );
 
   const handleDeleteClick = (namespace: Namespace) => {
@@ -226,40 +185,6 @@ export function NamespacesList({
     );
   }, [namespaces, searchTerm]);
 
-  const emptyState =
-    namespaces.length === 0
-      ? {
-          icon: <Folder />,
-          title: "No namespaces found",
-          description:
-            "Namespaces help organize projects and documents. Create a namespace to get started.",
-          action: hasCreatePermission ? (
-            <Button
-              variant="outline"
-              size="sm"
-              render={
-                <Link
-                  to="/settings/organizations/$organizationId/namespaces/new"
-                  params={{ organizationId }}
-                />
-              }
-            >
-              <Plus className="size-4" />
-              Create Namespace
-            </Button>
-          ) : undefined,
-        }
-      : filteredNamespaces.length === 0 && searchTerm.trim()
-        ? {
-            icon: <Folder />,
-            title: "No namespaces found",
-            description:
-              "No namespaces match your search criteria. Try adjusting your search.",
-          }
-        : undefined;
-
-  const shouldShowSearch = namespaces.length > 0 || searchTerm.trim() !== "";
-
   const createButton = hasCreatePermission ? (
     <Button
       variant="outline"
@@ -278,62 +203,80 @@ export function NamespacesList({
 
   return (
     <>
-      <ListContainer
-        data-section="organization-namespaces"
+      <SettingsResourceTable
+        dataSection="organization-namespaces"
         title="Namespaces"
         description="Organization namespaces and their resources."
         isLoading={isLoading}
         error={error}
-        emptyState={emptyState}
         actionButton={createButton}
-        searchInput={
-          shouldShowSearch ? (
-            <SearchInput
-              value={searchTerm}
-              onChange={setSearchTerm}
-              placeholder="Search namespaces..."
-              disabled={isLoading}
-            />
-          ) : undefined
-        }
+        search={{
+          value: searchTerm,
+          onChange: setSearchTerm,
+          placeholder: "Search namespaces...",
+          itemCount: namespaces.length,
+        }}
+        empty={{
+          icon: <Folder />,
+          title: "No namespaces found",
+          description:
+            "Namespaces help organize projects and documents. Create a namespace to get started.",
+          action: createButton ? (
+            <Button
+              variant="outline"
+              size="sm"
+              render={
+                <Link
+                  to="/settings/organizations/$organizationId/namespaces/new"
+                  params={{ organizationId }}
+                />
+              }
+            >
+              <Plus className="size-4" />
+              Create Namespace
+            </Button>
+          ) : undefined,
+          searchTitle: "No namespaces found",
+          searchDescription:
+            "No namespaces match your search criteria. Try adjusting your search.",
+          hasItems: namespaces.length > 0,
+          hasFilteredItems: filteredNamespaces.length > 0,
+        }}
+        skeleton={<TableSkeleton columns={namespacesListSkeletonColumns} />}
       >
-        {isLoading ? (
-          <NamespacesListSkeleton />
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>Projects</TableHead>
-                <TableHead>Documents</TableHead>
-                {hasOrgWritePermission && (
-                  <TableHead>
-                    <span className="sr-only">Actions</span>
-                  </TableHead>
-                )}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredNamespaces.map((namespace) => {
-                const permissionQuery = namespacePermissionsById.get(
-                  namespace.id
-                );
-                return (
-                  <NamespaceRow
-                    key={namespace.id}
-                    namespace={namespace}
-                    permissions={permissionQuery?.data}
-                    isPermissionsLoading={permissionQuery?.isLoading ?? true}
-                    organizationId={organizationId}
-                    onDeleteClick={handleDeleteClick}
-                  />
-                );
-              })}
-            </TableBody>
-          </Table>
-        )}
-      </ListContainer>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Description</TableHead>
+              <TableHead>Projects</TableHead>
+              <TableHead>Documents</TableHead>
+              {hasOrgWritePermission && (
+                <TableHead>
+                  <span className="sr-only">Actions</span>
+                </TableHead>
+              )}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredNamespaces.map((namespace) => {
+              const permissionQuery = namespacePermissionsById.get(
+                namespace.id
+              );
+              return (
+                <NamespaceRow
+                  key={namespace.id}
+                  namespace={namespace}
+                  permissions={permissionQuery?.data}
+                  isPermissionsLoading={permissionQuery?.isLoading ?? true}
+                  organizationId={organizationId}
+                  onDeleteClick={handleDeleteClick}
+                />
+              );
+            })}
+          </TableBody>
+        </Table>
+      </SettingsResourceTable>
 
       {selectedNamespace && (
         <NamespaceDeleteDialog

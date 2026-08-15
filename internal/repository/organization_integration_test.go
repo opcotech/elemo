@@ -55,7 +55,7 @@ func (s *OrganizationRepositoryIntegrationTestSuite) TestCreate() {
 func (s *OrganizationRepositoryIntegrationTestSuite) TestGet() {
 	created, err := s.OrganizationRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
-	org, err := s.OrganizationRepo.Get(context.Background(), created.ID)
+	org, err := s.OrganizationRepo.Get(context.Background(), created.ID, repository.OrganizationDetailProjection())
 	s.Require().NoError(err)
 	s.Assert().Equal(created.ID, org.ID)
 	s.Assert().Equal(s.createOpts.Name, org.Name)
@@ -63,7 +63,8 @@ func (s *OrganizationRepositoryIntegrationTestSuite) TestGet() {
 	s.Assert().Equal(s.createOpts.Logo, org.Logo)
 	s.Assert().Equal(s.createOpts.Website, org.Website)
 	s.Assert().Equal(s.createOpts.Status, org.Status)
-	s.Assert().Equal([]model.ID{s.testUser.ID}, org.Members)
+	s.Require().NotNil(org.MemberCount)
+	s.Assert().Equal(int64(1), *org.MemberCount)
 	s.Assert().WithinDuration(*created.CreatedAt, *org.CreatedAt, 100*time.Millisecond)
 }
 
@@ -75,13 +76,13 @@ func (s *OrganizationRepositoryIntegrationTestSuite) TestGetAll() {
 	_, err = s.OrganizationRepo.Create(context.Background(), testModel.NewCreateOrganizationOpts(s.testUser.ID))
 	s.Require().NoError(err)
 
-	orgs, err := s.OrganizationRepo.GetAll(context.Background(), s.testUser.ID, 0, 10)
+	orgs, err := s.OrganizationRepo.List(context.Background(), s.testUser.ID, repository.CursorPage{Size: 10}, repository.OrganizationListProjection())
 	s.Require().NoError(err)
-	s.Require().Len(orgs, 3)
+	s.Require().Len(orgs.Items, 3)
 
-	orgs, err = s.OrganizationRepo.GetAll(context.Background(), s.testUser.ID, 1, 2)
+	orgs, err = s.OrganizationRepo.List(context.Background(), s.testUser.ID, repository.CursorPage{Size: 2}, repository.OrganizationListProjection())
 	s.Require().NoError(err)
-	s.Require().Len(orgs, 2)
+	s.Require().Len(orgs.Items, 2)
 }
 
 func (s *OrganizationRepositoryIntegrationTestSuite) TestUpdate() {
@@ -95,7 +96,8 @@ func (s *OrganizationRepositoryIntegrationTestSuite) TestUpdate() {
 	s.Require().NoError(err)
 	s.Assert().Equal("new name", org.Name)
 	s.Assert().Equal(newEmail, org.Email)
-	s.Assert().Equal([]model.ID{s.testUser.ID}, org.Members)
+	s.Require().NotNil(org.MemberCount)
+	s.Assert().Equal(int64(1), *org.MemberCount)
 	s.Assert().NotNil(org.UpdatedAt)
 }
 
@@ -105,9 +107,10 @@ func (s *OrganizationRepositoryIntegrationTestSuite) TestAddMember() {
 	member, err := s.UserRepo.Create(context.Background(), testModel.NewCreateUserOpts())
 	s.Require().NoError(err)
 	s.Require().NoError(s.OrganizationRepo.AddMember(context.Background(), created.ID, member.ID))
-	org, err := s.OrganizationRepo.Get(context.Background(), created.ID)
+	org, err := s.OrganizationRepo.Get(context.Background(), created.ID, repository.OrganizationDetailProjection())
 	s.Require().NoError(err)
-	s.Assert().ElementsMatch([]model.ID{s.testUser.ID, member.ID}, org.Members)
+	s.Require().NotNil(org.MemberCount)
+	s.Assert().Equal(int64(2), *org.MemberCount)
 }
 
 func (s *OrganizationRepositoryIntegrationTestSuite) TestRemoveMember() {
@@ -117,16 +120,17 @@ func (s *OrganizationRepositoryIntegrationTestSuite) TestRemoveMember() {
 	s.Require().NoError(err)
 	s.Require().NoError(s.OrganizationRepo.AddMember(context.Background(), created.ID, member.ID))
 	s.Require().NoError(s.OrganizationRepo.RemoveMember(context.Background(), created.ID, s.testUser.ID))
-	org, err := s.OrganizationRepo.Get(context.Background(), created.ID)
+	org, err := s.OrganizationRepo.Get(context.Background(), created.ID, repository.OrganizationDetailProjection())
 	s.Require().NoError(err)
-	s.Assert().ElementsMatch([]model.ID{member.ID}, org.Members)
+	s.Require().NotNil(org.MemberCount)
+	s.Assert().Equal(int64(1), *org.MemberCount)
 }
 
 func (s *OrganizationRepositoryIntegrationTestSuite) TestDelete() {
 	created, err := s.OrganizationRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 	s.Require().NoError(s.OrganizationRepo.Delete(context.Background(), created.ID))
-	_, err = s.OrganizationRepo.Get(context.Background(), created.ID)
+	_, err = s.OrganizationRepo.Get(context.Background(), created.ID, repository.OrganizationDetailProjection())
 	s.Assert().ErrorIs(err, repository.ErrNotFound)
 }
 
@@ -140,9 +144,10 @@ func (s *OrganizationRepositoryIntegrationTestSuite) TestAddInvitation() {
 	s.Require().NoError(err)
 	s.Require().Len(invitations, 1)
 	s.Assert().Equal(invitedUser.ID, invitations[0].ID)
-	org, err := s.OrganizationRepo.Get(context.Background(), created.ID)
+	org, err := s.OrganizationRepo.Get(context.Background(), created.ID, repository.OrganizationDetailProjection())
 	s.Require().NoError(err)
-	s.Assert().NotContains(org.Members, invitedUser.ID)
+	s.Require().NotNil(org.MemberCount)
+	s.Assert().Equal(int64(1), *org.MemberCount)
 }
 
 func (s *OrganizationRepositoryIntegrationTestSuite) TestAddInvitationWithInvalidOrgID() {
@@ -239,9 +244,9 @@ func (s *CachedOrganizationRepositoryIntegrationTestSuite) TestCreate() {
 func (s *CachedOrganizationRepositoryIntegrationTestSuite) TestGet() {
 	created, err := s.organizationRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
-	original, err := s.OrganizationRepo.Get(context.Background(), created.ID)
+	original, err := s.OrganizationRepo.Get(context.Background(), created.ID, repository.OrganizationDetailProjection())
 	s.Require().NoError(err)
-	usingCache, err := s.organizationRepo.Get(context.Background(), created.ID)
+	usingCache, err := s.organizationRepo.Get(context.Background(), created.ID, repository.OrganizationDetailProjection())
 	s.Require().NoError(err)
 	s.Assert().Equal(original, usingCache)
 	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
@@ -250,9 +255,9 @@ func (s *CachedOrganizationRepositoryIntegrationTestSuite) TestGet() {
 func (s *CachedOrganizationRepositoryIntegrationTestSuite) TestGetAll() {
 	_, err := s.organizationRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
-	original, err := s.OrganizationRepo.GetAll(context.Background(), s.testUser.ID, 0, 10)
+	original, err := s.OrganizationRepo.List(context.Background(), s.testUser.ID, repository.CursorPage{Size: 10}, repository.OrganizationListProjection())
 	s.Require().NoError(err)
-	usingCache, err := s.organizationRepo.GetAll(context.Background(), s.testUser.ID, 0, 10)
+	usingCache, err := s.organizationRepo.List(context.Background(), s.testUser.ID, repository.CursorPage{Size: 10}, repository.OrganizationListProjection())
 	s.Require().NoError(err)
 	s.Assert().Equal(original, usingCache)
 	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
@@ -272,10 +277,10 @@ func (s *CachedOrganizationRepositoryIntegrationTestSuite) TestUpdate() {
 func (s *CachedOrganizationRepositoryIntegrationTestSuite) TestDelete() {
 	created, err := s.organizationRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
-	_, err = s.organizationRepo.Get(context.Background(), created.ID)
+	_, err = s.organizationRepo.Get(context.Background(), created.ID, repository.OrganizationDetailProjection())
 	s.Require().NoError(err)
 	s.Require().NoError(s.organizationRepo.Delete(context.Background(), created.ID))
-	_, err = s.organizationRepo.Get(context.Background(), created.ID)
+	_, err = s.organizationRepo.Get(context.Background(), created.ID, repository.OrganizationDetailProjection())
 	s.Assert().ErrorIs(err, repository.ErrNotFound)
 	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }

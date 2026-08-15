@@ -32,12 +32,12 @@ func TestCachedAssignmentRepository_Create(t *testing.T) {
 			name: "create new issue assignment",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, opts CreateAssignmentOpts) *redisBaseRepository {
-					key1 := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByResource", opts.Resource.String())
-					key2 := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByUser", opts.User.String())
+					key1 := composeCacheKey(model.ResourceTypeAssignment.String(), "ListByResource", opts.Resource.String())
+					key2 := composeCacheKey(model.ResourceTypeAssignment.String(), "ListByUser", opts.User.String())
 					key3 := composeCacheKey(model.ResourceTypeIssue.String(), opts.Resource.String())
 
-					byResourceKey := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByResource", opts.Resource.String(), "*")
-					byUserKey := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByUser", opts.User.String(), "*")
+					byResourceKey := composeCacheKey(model.ResourceTypeAssignment.String(), "ListByResource", opts.Resource.String(), "*", "*")
+					byUserKey := composeCacheKey(model.ResourceTypeAssignment.String(), "ListByUser", opts.User.String(), "*", "*")
 					resourceKey := composeCacheKey(model.ResourceTypeIssue.String(), "*")
 
 					byResourceKeyResult := new(redis.StringSliceCmd)
@@ -96,8 +96,8 @@ func TestCachedAssignmentRepository_Create(t *testing.T) {
 			name: "create new unknown resource assignment",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, opts CreateAssignmentOpts) *redisBaseRepository {
-					byResourceKey := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByResource", opts.Resource.String(), "*")
-					byUserKey := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByUser", opts.User.String(), "*")
+					byResourceKey := composeCacheKey(model.ResourceTypeAssignment.String(), "ListByResource", opts.Resource.String(), "*", "*")
+					byUserKey := composeCacheKey(model.ResourceTypeAssignment.String(), "ListByUser", opts.User.String(), "*", "*")
 
 					dbClient := mock.NewUniversalClient(ctrl)
 					dbClient.EXPECT().Keys(ctx, byResourceKey).Return(new(redis.StringSliceCmd))
@@ -139,10 +139,10 @@ func TestCachedAssignmentRepository_Create(t *testing.T) {
 			name: "create new assignment with by resource cache error",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, opts CreateAssignmentOpts) *redisBaseRepository {
-					key1 := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByResource", opts.Resource.String(), "1")
-					key2 := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByResource", opts.Resource.String(), "2")
+					key1 := composeCacheKey(model.ResourceTypeAssignment.String(), "ListByResource", opts.Resource.String(), "1")
+					key2 := composeCacheKey(model.ResourceTypeAssignment.String(), "ListByResource", opts.Resource.String(), "2")
 
-					byResourceKey := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByResource", opts.Resource.String(), "*")
+					byResourceKey := composeCacheKey(model.ResourceTypeAssignment.String(), "ListByResource", opts.Resource.String(), "*", "*")
 
 					keysCmd := new(redis.StringSliceCmd)
 					keysCmd.SetVal([]string{key1, key2})
@@ -189,11 +189,11 @@ func TestCachedAssignmentRepository_Create(t *testing.T) {
 			name: "create new assignment with by user cache error",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, opts CreateAssignmentOpts) *redisBaseRepository {
-					key1 := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByUser", opts.Resource.String(), "1")
-					key2 := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByUser", opts.Resource.String(), "2")
+					key1 := composeCacheKey(model.ResourceTypeAssignment.String(), "ListByUser", opts.Resource.String(), "1")
+					key2 := composeCacheKey(model.ResourceTypeAssignment.String(), "ListByUser", opts.Resource.String(), "2")
 
-					byResourceKey := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByResource", opts.Resource.String(), "*")
-					byUserKey := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByUser", opts.User.String(), "*")
+					byResourceKey := composeCacheKey(model.ResourceTypeAssignment.String(), "ListByResource", opts.Resource.String(), "*", "*")
+					byUserKey := composeCacheKey(model.ResourceTypeAssignment.String(), "ListByUser", opts.User.String(), "*", "*")
 
 					keysCmd := new(redis.StringSliceCmd)
 					keysCmd.SetVal([]string{key1, key2})
@@ -275,7 +275,7 @@ func TestCachedAssignmentRepository_Get(t *testing.T) {
 			name: "get uncached assignment",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, assignment *Assignment) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeAssignment.String(), id.String())
+					key := composeCacheKey(model.ResourceTypeAssignment.String(), "Get", id.String(), projectionCacheValue(AssignmentDetailProjection()))
 
 					db, err := NewRedisDatabase(
 						WithRedisClient(mock.NewUniversalClient(ctrl)),
@@ -306,7 +306,7 @@ func TestCachedAssignmentRepository_Get(t *testing.T) {
 				},
 				assignmentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, assignment *Assignment) AssignmentRepository {
 					repo := NewMockAssignmentRepository(ctrl)
-					repo.EXPECT().Get(ctx, id).Return(assignment, nil)
+					repo.EXPECT().Get(ctx, id, AssignmentDetailProjection()).Return(assignment, nil)
 					return repo
 				},
 			},
@@ -327,7 +327,7 @@ func TestCachedAssignmentRepository_Get(t *testing.T) {
 			name: "get cached assignment",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, assignment *Assignment) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeAssignment.String(), id.String())
+					key := composeCacheKey(model.ResourceTypeAssignment.String(), "Get", id.String(), projectionCacheValue(AssignmentDetailProjection()))
 
 					db, err := NewRedisDatabase(
 						WithRedisClient(mock.NewUniversalClient(ctrl)),
@@ -375,7 +375,7 @@ func TestCachedAssignmentRepository_Get(t *testing.T) {
 			name: "get uncached assignment error",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *Assignment) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeAssignment.String(), id.String())
+					key := composeCacheKey(model.ResourceTypeAssignment.String(), "Get", id.String(), projectionCacheValue(AssignmentDetailProjection()))
 
 					db, err := NewRedisDatabase(
 						WithRedisClient(mock.NewUniversalClient(ctrl)),
@@ -400,7 +400,7 @@ func TestCachedAssignmentRepository_Get(t *testing.T) {
 				},
 				assignmentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *Assignment) AssignmentRepository {
 					repo := NewMockAssignmentRepository(ctrl)
-					repo.EXPECT().Get(ctx, id).Return(nil, ErrNotFound)
+					repo.EXPECT().Get(ctx, id, AssignmentDetailProjection()).Return(nil, ErrNotFound)
 					return repo
 				},
 			},
@@ -414,7 +414,7 @@ func TestCachedAssignmentRepository_Get(t *testing.T) {
 			name: "get cached assignment error",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *Assignment) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeAssignment.String(), id.String())
+					key := composeCacheKey(model.ResourceTypeAssignment.String(), "Get", id.String(), projectionCacheValue(AssignmentDetailProjection()))
 
 					db, err := NewRedisDatabase(
 						WithRedisClient(mock.NewUniversalClient(ctrl)),
@@ -451,7 +451,7 @@ func TestCachedAssignmentRepository_Get(t *testing.T) {
 			name: "get uncached assignment cache set error",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, assignment *Assignment) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeAssignment.String(), id.String())
+					key := composeCacheKey(model.ResourceTypeAssignment.String(), "Get", id.String(), projectionCacheValue(AssignmentDetailProjection()))
 
 					db, err := NewRedisDatabase(
 						WithRedisClient(mock.NewUniversalClient(ctrl)),
@@ -482,7 +482,7 @@ func TestCachedAssignmentRepository_Get(t *testing.T) {
 				},
 				assignmentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, assignment *Assignment) AssignmentRepository {
 					repo := NewMockAssignmentRepository(ctrl)
-					repo.EXPECT().Get(ctx, id).Return(assignment, nil)
+					repo.EXPECT().Get(ctx, id, AssignmentDetailProjection()).Return(assignment, nil)
 					return repo
 				},
 			},
@@ -509,7 +509,7 @@ func TestCachedAssignmentRepository_Get(t *testing.T) {
 				cacheRepo:      tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, want),
 				assignmentRepo: tt.fields.assignmentRepo(ctrl, tt.args.ctx, tt.args.id, want),
 			}
-			got, err := r.Get(tt.args.ctx, tt.args.id)
+			got, err := r.Get(tt.args.ctx, tt.args.id, AssignmentDetailProjection())
 			assert.ErrorIs(t, err, tt.wantErr)
 			assert.Equal(t, want, got)
 		})
@@ -518,8 +518,8 @@ func TestCachedAssignmentRepository_Get(t *testing.T) {
 
 func TestCachedAssignmentRepository_GetByUser(t *testing.T) {
 	type fields struct {
-		cacheRepo      func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, offset, limit int, assignments []*Assignment) *redisBaseRepository
-		assignmentRepo func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, offset, limit int, assignments []*Assignment) AssignmentRepository
+		cacheRepo      func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, _, limit int, assignments []*Assignment) *redisBaseRepository
+		assignmentRepo func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, _, limit int, assignments []*Assignment) AssignmentRepository
 	}
 	type args struct {
 		ctx    context.Context
@@ -537,8 +537,8 @@ func TestCachedAssignmentRepository_GetByUser(t *testing.T) {
 		{
 			name: "get uncached assignments",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, offset, limit int, assignments []*Assignment) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByUser", userID.String(), offset, limit)
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, _, limit int, assignments []*Assignment) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeAssignment.String(), "ListByUser", userID.String(), projectionCacheValue(AssignmentListProjection()), "", limit)
 
 					db, err := NewRedisDatabase(
 						WithRedisClient(mock.NewUniversalClient(ctrl)),
@@ -557,7 +557,7 @@ func TestCachedAssignmentRepository_GetByUser(t *testing.T) {
 					cacheRepo.EXPECT().Set(&cache.Item{
 						Ctx:   ctx,
 						Key:   key,
-						Value: assignments,
+						Value: Page[*Assignment]{Items: assignments},
 					}).Return(nil)
 
 					return &redisBaseRepository{
@@ -567,9 +567,9 @@ func TestCachedAssignmentRepository_GetByUser(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				assignmentRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, offset, limit int, assignments []*Assignment) AssignmentRepository {
+				assignmentRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, _, limit int, assignments []*Assignment) AssignmentRepository {
 					repo := NewMockAssignmentRepository(ctrl)
-					repo.EXPECT().GetByUser(ctx, userID, offset, limit).Return(assignments, nil)
+					repo.EXPECT().ListByUser(ctx, userID, CursorPage{Size: limit}, AssignmentListProjection()).Return(Page[*Assignment]{Items: assignments}, nil)
 					return repo
 				},
 			},
@@ -595,8 +595,8 @@ func TestCachedAssignmentRepository_GetByUser(t *testing.T) {
 		{
 			name: "get cached assignments",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, offset, limit int, assignments []*Assignment) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByUser", userID.String(), offset, limit)
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, _, limit int, assignments []*Assignment) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeAssignment.String(), "ListByUser", userID.String(), projectionCacheValue(AssignmentListProjection()), "", limit)
 
 					db, err := NewRedisDatabase(
 						WithRedisClient(mock.NewUniversalClient(ctrl)),
@@ -611,8 +611,8 @@ func TestCachedAssignmentRepository_GetByUser(t *testing.T) {
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Do(func(_ context.Context, _ string, dst any) {
-						if listPtr, ok := dst.(*[]*Assignment); ok {
-							*listPtr = assignments
+						if ptr, ok := dst.(*Page[*Assignment]); ok {
+							*ptr = Page[*Assignment]{Items: assignments}
 						}
 					}).Return(nil)
 
@@ -649,8 +649,8 @@ func TestCachedAssignmentRepository_GetByUser(t *testing.T) {
 		{
 			name: "get uncached assignments error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, offset, limit int, _ []*Assignment) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByUser", userID.String(), offset, limit)
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, _, limit int, _ []*Assignment) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeAssignment.String(), "ListByUser", userID.String(), projectionCacheValue(AssignmentListProjection()), "", limit)
 
 					db, err := NewRedisDatabase(
 						WithRedisClient(mock.NewUniversalClient(ctrl)),
@@ -673,9 +673,9 @@ func TestCachedAssignmentRepository_GetByUser(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				assignmentRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, offset, limit int, _ []*Assignment) AssignmentRepository {
+				assignmentRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, _, limit int, _ []*Assignment) AssignmentRepository {
 					repo := NewMockAssignmentRepository(ctrl)
-					repo.EXPECT().GetByUser(ctx, userID, offset, limit).Return(nil, ErrNotFound)
+					repo.EXPECT().ListByUser(ctx, userID, CursorPage{Size: limit}, AssignmentListProjection()).Return(Page[*Assignment]{}, ErrNotFound)
 					return repo
 				},
 			},
@@ -688,8 +688,8 @@ func TestCachedAssignmentRepository_GetByUser(t *testing.T) {
 		{
 			name: "get get assignments cache error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, offset, limit int, _ []*Assignment) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByUser", userID.String(), offset, limit)
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, _, limit int, _ []*Assignment) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeAssignment.String(), "ListByUser", userID.String(), projectionCacheValue(AssignmentListProjection()), "", limit)
 
 					db, err := NewRedisDatabase(
 						WithRedisClient(mock.NewUniversalClient(ctrl)),
@@ -725,8 +725,8 @@ func TestCachedAssignmentRepository_GetByUser(t *testing.T) {
 		{
 			name: "get uncached assignments cache set error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, offset, limit int, assignments []*Assignment) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByUser", userID.String(), offset, limit)
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, _, limit int, assignments []*Assignment) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeAssignment.String(), "ListByUser", userID.String(), projectionCacheValue(AssignmentListProjection()), "", limit)
 
 					db, err := NewRedisDatabase(
 						WithRedisClient(mock.NewUniversalClient(ctrl)),
@@ -745,7 +745,7 @@ func TestCachedAssignmentRepository_GetByUser(t *testing.T) {
 					cacheRepo.EXPECT().Set(&cache.Item{
 						Ctx:   ctx,
 						Key:   key,
-						Value: assignments,
+						Value: Page[*Assignment]{Items: assignments},
 					}).Return(assert.AnError)
 
 					return &redisBaseRepository{
@@ -755,9 +755,9 @@ func TestCachedAssignmentRepository_GetByUser(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				assignmentRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, offset, limit int, assignments []*Assignment) AssignmentRepository {
+				assignmentRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, _, limit int, assignments []*Assignment) AssignmentRepository {
 					repo := NewMockAssignmentRepository(ctrl)
-					repo.EXPECT().GetByUser(ctx, userID, offset, limit).Return(assignments, nil)
+					repo.EXPECT().ListByUser(ctx, userID, CursorPage{Size: limit}, AssignmentListProjection()).Return(Page[*Assignment]{Items: assignments}, nil)
 					return repo
 				},
 			},
@@ -776,20 +776,20 @@ func TestCachedAssignmentRepository_GetByUser(t *testing.T) {
 			var ctrl = gomock.NewController(t)
 			defer ctrl.Finish()
 			r := &RedisCachedAssignmentRepository{
-				cacheRepo:      tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.userID, tt.args.offset, tt.args.limit, tt.want),
-				assignmentRepo: tt.fields.assignmentRepo(ctrl, tt.args.ctx, tt.args.userID, tt.args.offset, tt.args.limit, tt.want),
+				cacheRepo:      tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.userID, tt.args.offset, testPageSize(tt.args.limit), tt.want),
+				assignmentRepo: tt.fields.assignmentRepo(ctrl, tt.args.ctx, tt.args.userID, tt.args.offset, testPageSize(tt.args.limit), tt.want),
 			}
-			got, err := r.GetByUser(tt.args.ctx, tt.args.userID, tt.args.offset, tt.args.limit)
+			got, err := r.ListByUser(tt.args.ctx, tt.args.userID, CursorPage{Size: testPageSize(tt.args.limit)}, AssignmentListProjection())
 			assert.ErrorIs(t, err, tt.wantErr)
-			assert.ElementsMatch(t, tt.want, got)
+			assert.ElementsMatch(t, tt.want, got.Items)
 		})
 	}
 }
 
 func TestCachedAssignmentRepository_GetByResource(t *testing.T) {
 	type fields struct {
-		cacheRepo      func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, offset, limit int, assignments []*Assignment) *redisBaseRepository
-		assignmentRepo func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, offset, limit int, assignments []*Assignment) AssignmentRepository
+		cacheRepo      func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, _, limit int, assignments []*Assignment) *redisBaseRepository
+		assignmentRepo func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, _, limit int, assignments []*Assignment) AssignmentRepository
 	}
 	type args struct {
 		ctx    context.Context
@@ -807,8 +807,8 @@ func TestCachedAssignmentRepository_GetByResource(t *testing.T) {
 		{
 			name: "get uncached assignments",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, offset, limit int, assignments []*Assignment) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByResource", userID.String(), offset, limit)
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, _, limit int, assignments []*Assignment) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeAssignment.String(), "ListByResource", userID.String(), projectionCacheValue(AssignmentListProjection()), "", limit)
 
 					db, err := NewRedisDatabase(
 						WithRedisClient(mock.NewUniversalClient(ctrl)),
@@ -827,7 +827,7 @@ func TestCachedAssignmentRepository_GetByResource(t *testing.T) {
 					cacheRepo.EXPECT().Set(&cache.Item{
 						Ctx:   ctx,
 						Key:   key,
-						Value: assignments,
+						Value: Page[*Assignment]{Items: assignments},
 					}).Return(nil)
 
 					return &redisBaseRepository{
@@ -837,9 +837,9 @@ func TestCachedAssignmentRepository_GetByResource(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				assignmentRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, offset, limit int, assignments []*Assignment) AssignmentRepository {
+				assignmentRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, _, limit int, assignments []*Assignment) AssignmentRepository {
 					repo := NewMockAssignmentRepository(ctrl)
-					repo.EXPECT().GetByResource(ctx, userID, offset, limit).Return(assignments, nil)
+					repo.EXPECT().ListByResource(ctx, userID, CursorPage{Size: limit}, AssignmentListProjection()).Return(Page[*Assignment]{Items: assignments}, nil)
 					return repo
 				},
 			},
@@ -865,8 +865,8 @@ func TestCachedAssignmentRepository_GetByResource(t *testing.T) {
 		{
 			name: "get cached assignments",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, offset, limit int, assignments []*Assignment) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByResource", userID.String(), offset, limit)
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, _, limit int, assignments []*Assignment) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeAssignment.String(), "ListByResource", userID.String(), projectionCacheValue(AssignmentListProjection()), "", limit)
 
 					db, err := NewRedisDatabase(
 						WithRedisClient(mock.NewUniversalClient(ctrl)),
@@ -881,8 +881,8 @@ func TestCachedAssignmentRepository_GetByResource(t *testing.T) {
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Do(func(_ context.Context, _ string, dst any) {
-						if listPtr, ok := dst.(*[]*Assignment); ok {
-							*listPtr = assignments
+						if ptr, ok := dst.(*Page[*Assignment]); ok {
+							*ptr = Page[*Assignment]{Items: assignments}
 						}
 					}).Return(nil)
 
@@ -919,8 +919,8 @@ func TestCachedAssignmentRepository_GetByResource(t *testing.T) {
 		{
 			name: "get uncached assignments error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, offset, limit int, _ []*Assignment) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByResource", userID.String(), offset, limit)
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, _, limit int, _ []*Assignment) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeAssignment.String(), "ListByResource", userID.String(), projectionCacheValue(AssignmentListProjection()), "", limit)
 
 					db, err := NewRedisDatabase(
 						WithRedisClient(mock.NewUniversalClient(ctrl)),
@@ -943,9 +943,9 @@ func TestCachedAssignmentRepository_GetByResource(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				assignmentRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, offset, limit int, _ []*Assignment) AssignmentRepository {
+				assignmentRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, _, limit int, _ []*Assignment) AssignmentRepository {
 					repo := NewMockAssignmentRepository(ctrl)
-					repo.EXPECT().GetByResource(ctx, userID, offset, limit).Return(nil, ErrNotFound)
+					repo.EXPECT().ListByResource(ctx, userID, CursorPage{Size: limit}, AssignmentListProjection()).Return(Page[*Assignment]{}, ErrNotFound)
 					return repo
 				},
 			},
@@ -958,8 +958,8 @@ func TestCachedAssignmentRepository_GetByResource(t *testing.T) {
 		{
 			name: "get get assignments cache error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, offset, limit int, _ []*Assignment) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByResource", userID.String(), offset, limit)
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, _, limit int, _ []*Assignment) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeAssignment.String(), "ListByResource", userID.String(), projectionCacheValue(AssignmentListProjection()), "", limit)
 
 					db, err := NewRedisDatabase(
 						WithRedisClient(mock.NewUniversalClient(ctrl)),
@@ -995,8 +995,8 @@ func TestCachedAssignmentRepository_GetByResource(t *testing.T) {
 		{
 			name: "get uncached assignments cache set error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, offset, limit int, assignments []*Assignment) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByResource", userID.String(), offset, limit)
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, _, limit int, assignments []*Assignment) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeAssignment.String(), "ListByResource", userID.String(), projectionCacheValue(AssignmentListProjection()), "", limit)
 
 					db, err := NewRedisDatabase(
 						WithRedisClient(mock.NewUniversalClient(ctrl)),
@@ -1015,7 +1015,7 @@ func TestCachedAssignmentRepository_GetByResource(t *testing.T) {
 					cacheRepo.EXPECT().Set(&cache.Item{
 						Ctx:   ctx,
 						Key:   key,
-						Value: assignments,
+						Value: Page[*Assignment]{Items: assignments},
 					}).Return(assert.AnError)
 
 					return &redisBaseRepository{
@@ -1025,9 +1025,9 @@ func TestCachedAssignmentRepository_GetByResource(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				assignmentRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, offset, limit int, assignments []*Assignment) AssignmentRepository {
+				assignmentRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, _, limit int, assignments []*Assignment) AssignmentRepository {
 					repo := NewMockAssignmentRepository(ctrl)
-					repo.EXPECT().GetByResource(ctx, userID, offset, limit).Return(assignments, nil)
+					repo.EXPECT().ListByResource(ctx, userID, CursorPage{Size: limit}, AssignmentListProjection()).Return(Page[*Assignment]{Items: assignments}, nil)
 					return repo
 				},
 			},
@@ -1046,12 +1046,12 @@ func TestCachedAssignmentRepository_GetByResource(t *testing.T) {
 			var ctrl = gomock.NewController(t)
 			defer ctrl.Finish()
 			r := &RedisCachedAssignmentRepository{
-				cacheRepo:      tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.userID, tt.args.offset, tt.args.limit, tt.want),
-				assignmentRepo: tt.fields.assignmentRepo(ctrl, tt.args.ctx, tt.args.userID, tt.args.offset, tt.args.limit, tt.want),
+				cacheRepo:      tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.userID, tt.args.offset, testPageSize(tt.args.limit), tt.want),
+				assignmentRepo: tt.fields.assignmentRepo(ctrl, tt.args.ctx, tt.args.userID, tt.args.offset, testPageSize(tt.args.limit), tt.want),
 			}
-			got, err := r.GetByResource(tt.args.ctx, tt.args.userID, tt.args.offset, tt.args.limit)
+			got, err := r.ListByResource(tt.args.ctx, tt.args.userID, CursorPage{Size: testPageSize(tt.args.limit)}, AssignmentListProjection())
 			assert.ErrorIs(t, err, tt.wantErr)
-			assert.ElementsMatch(t, tt.want, got)
+			assert.ElementsMatch(t, tt.want, got.Items)
 		})
 	}
 }
@@ -1075,9 +1075,9 @@ func TestCachedAssignmentRepository_Delete(t *testing.T) {
 			name: "delete assignment success",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeAssignment.String(), id.String())
-					byResourceKey := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByResource", "*")
-					byUserKey := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByUser", "*")
+					key := composeCacheKey(model.ResourceTypeAssignment.String(), "Get", id.String(), "*")
+					byResourceKey := composeCacheKey(model.ResourceTypeAssignment.String(), "ListByResource", "*", "*", "*")
+					byUserKey := composeCacheKey(model.ResourceTypeAssignment.String(), "ListByUser", "*", "*", "*")
 					issuesKey := composeCacheKey(model.ResourceTypeIssue.String(), "*")
 
 					byResourceKeyCmd := new(redis.StringSliceCmd)
@@ -1089,7 +1089,11 @@ func TestCachedAssignmentRepository_Delete(t *testing.T) {
 					issuesKeyCmd := new(redis.StringSliceCmd)
 					issuesKeyCmd.SetVal([]string{issuesKey})
 
+					keyCmd := new(redis.StringSliceCmd)
+					keyCmd.SetVal([]string{key})
+
 					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, key).Return(keyCmd)
 					dbClient.EXPECT().Keys(ctx, byResourceKey).Return(byResourceKeyCmd)
 					dbClient.EXPECT().Keys(ctx, byUserKey).Return(byUserKeyCmd)
 					dbClient.EXPECT().Keys(ctx, issuesKey).Return(issuesKeyCmd)
@@ -1103,8 +1107,7 @@ func TestCachedAssignmentRepository_Delete(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0)).Times(4)
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Delete", gomock.Len(0)).Return(ctx, span)
-					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(3)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(4)
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
@@ -1134,9 +1137,9 @@ func TestCachedAssignmentRepository_Delete(t *testing.T) {
 			name: "delete assignment with assignment deletion error",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeAssignment.String(), id.String())
-					byResourceKey := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByResource", "*")
-					byUserKey := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByUser", "*")
+					key := composeCacheKey(model.ResourceTypeAssignment.String(), "Get", id.String(), "*")
+					byResourceKey := composeCacheKey(model.ResourceTypeAssignment.String(), "ListByResource", "*", "*", "*")
+					byUserKey := composeCacheKey(model.ResourceTypeAssignment.String(), "ListByUser", "*", "*", "*")
 					issuesKey := composeCacheKey(model.ResourceTypeIssue.String(), "*")
 
 					byResourceKeyCmd := new(redis.StringSliceCmd)
@@ -1148,7 +1151,11 @@ func TestCachedAssignmentRepository_Delete(t *testing.T) {
 					issuesKeyCmd := new(redis.StringSliceCmd)
 					issuesKeyCmd.SetVal([]string{issuesKey})
 
+					keyCmd := new(redis.StringSliceCmd)
+					keyCmd.SetVal([]string{key})
+
 					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, key).Return(keyCmd)
 					dbClient.EXPECT().Keys(ctx, byResourceKey).Return(byResourceKeyCmd)
 					dbClient.EXPECT().Keys(ctx, byUserKey).Return(byUserKeyCmd)
 					dbClient.EXPECT().Keys(ctx, issuesKey).Return(issuesKeyCmd)
@@ -1162,8 +1169,7 @@ func TestCachedAssignmentRepository_Delete(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0)).Times(4)
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Delete", gomock.Len(0)).Return(ctx, span)
-					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(3)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(4)
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
@@ -1194,9 +1200,13 @@ func TestCachedAssignmentRepository_Delete(t *testing.T) {
 			name: "delete assignment with cache deletion error",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeAssignment.String(), id.String())
+					key := composeCacheKey(model.ResourceTypeAssignment.String(), "Get", id.String(), "*")
+
+					keyCmd := new(redis.StringSliceCmd)
+					keyCmd.SetVal([]string{key})
 
 					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, key).Return(keyCmd)
 
 					db, err := NewRedisDatabase(
 						WithRedisClient(dbClient),
@@ -1207,7 +1217,7 @@ func TestCachedAssignmentRepository_Delete(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0)).Times(1)
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span)
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(ErrCacheDelete)
@@ -1233,13 +1243,17 @@ func TestCachedAssignmentRepository_Delete(t *testing.T) {
 			name: "delete assignment cache by resource key error",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeAssignment.String(), id.String())
-					byResourceKey := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByResource", "*")
+					key := composeCacheKey(model.ResourceTypeAssignment.String(), "Get", id.String(), "*")
+					byResourceKey := composeCacheKey(model.ResourceTypeAssignment.String(), "ListByResource", "*", "*", "*")
 
 					byResourceKeyCmd := new(redis.StringSliceCmd)
 					byResourceKeyCmd.SetVal([]string{byResourceKey})
 
+					keyCmd := new(redis.StringSliceCmd)
+					keyCmd.SetVal([]string{key})
+
 					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, key).Return(keyCmd)
 					dbClient.EXPECT().Keys(ctx, byResourceKey).Return(byResourceKeyCmd)
 
 					db, err := NewRedisDatabase(
@@ -1251,8 +1265,7 @@ func TestCachedAssignmentRepository_Delete(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0)).Times(2)
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Delete", gomock.Len(0)).Return(ctx, span)
-					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(2)
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
@@ -1279,9 +1292,9 @@ func TestCachedAssignmentRepository_Delete(t *testing.T) {
 			name: "delete assignment cache by user key error",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeAssignment.String(), id.String())
-					byResourceKey := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByResource", "*")
-					byUserKey := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByUser", "*")
+					key := composeCacheKey(model.ResourceTypeAssignment.String(), "Get", id.String(), "*")
+					byResourceKey := composeCacheKey(model.ResourceTypeAssignment.String(), "ListByResource", "*", "*", "*")
+					byUserKey := composeCacheKey(model.ResourceTypeAssignment.String(), "ListByUser", "*", "*", "*")
 
 					byResourceKeyCmd := new(redis.StringSliceCmd)
 					byResourceKeyCmd.SetVal([]string{byResourceKey})
@@ -1289,7 +1302,11 @@ func TestCachedAssignmentRepository_Delete(t *testing.T) {
 					byUserKeyCmd := new(redis.StringSliceCmd)
 					byUserKeyCmd.SetVal([]string{byUserKey})
 
+					keyCmd := new(redis.StringSliceCmd)
+					keyCmd.SetVal([]string{key})
+
 					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, key).Return(keyCmd)
 					dbClient.EXPECT().Keys(ctx, byResourceKey).Return(byResourceKeyCmd)
 					dbClient.EXPECT().Keys(ctx, byUserKey).Return(byUserKeyCmd)
 
@@ -1302,8 +1319,7 @@ func TestCachedAssignmentRepository_Delete(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0)).Times(3)
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Delete", gomock.Len(0)).Return(ctx, span)
-					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(2)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(3)
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
@@ -1330,9 +1346,9 @@ func TestCachedAssignmentRepository_Delete(t *testing.T) {
 			name: "delete assignment cache by issues key error",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeAssignment.String(), id.String())
-					byResourceKey := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByResource", "*")
-					byUserKey := composeCacheKey(model.ResourceTypeAssignment.String(), "GetByUser", "*")
+					key := composeCacheKey(model.ResourceTypeAssignment.String(), "Get", id.String(), "*")
+					byResourceKey := composeCacheKey(model.ResourceTypeAssignment.String(), "ListByResource", "*", "*", "*")
+					byUserKey := composeCacheKey(model.ResourceTypeAssignment.String(), "ListByUser", "*", "*", "*")
 					issuesKey := composeCacheKey(model.ResourceTypeIssue.String(), "*")
 
 					byResourceKeyCmd := new(redis.StringSliceCmd)
@@ -1344,7 +1360,11 @@ func TestCachedAssignmentRepository_Delete(t *testing.T) {
 					issuesKeyCmd := new(redis.StringSliceCmd)
 					issuesKeyCmd.SetVal([]string{issuesKey})
 
+					keyCmd := new(redis.StringSliceCmd)
+					keyCmd.SetVal([]string{key})
+
 					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, key).Return(keyCmd)
 					dbClient.EXPECT().Keys(ctx, byResourceKey).Return(byResourceKeyCmd)
 					dbClient.EXPECT().Keys(ctx, byUserKey).Return(byUserKeyCmd)
 					dbClient.EXPECT().Keys(ctx, issuesKey).Return(issuesKeyCmd)
@@ -1358,8 +1378,7 @@ func TestCachedAssignmentRepository_Delete(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0)).Times(4)
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Delete", gomock.Len(0)).Return(ctx, span)
-					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(3)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(4)
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)

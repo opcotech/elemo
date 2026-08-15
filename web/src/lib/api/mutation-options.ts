@@ -1,6 +1,11 @@
 import "@/lib/api/client";
 
 export {
+  v1IssueDeleteMutation,
+  v1IssueRelationDeleteMutation,
+  v1IssueRelationsCreateMutation,
+  v1IssueRelationUpdateMutation,
+  v1IssueUpdateMutation,
   v1NamespaceDeleteMutation,
   v1NotificationDeleteMutation,
   v1NotificationUpdateMutation,

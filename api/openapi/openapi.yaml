@@ -31,17 +31,11 @@ info:
 
     ## Pagination
 
-    All endpoints that are returning a list of resources supports and requires pagination. The default page size is `100` items, controlled by the `limit` query parameter. To utilize pagination, you may define `offset` in addition which skips the defined results. Therefore, if `offset` is set to `100`, the endpoint will return the next page's results. Sample request:
+    List endpoints use cursor pagination. Pass `page_size` (default `100`, max `1000`) and an opaque `page_token` from a previous response's `page_info.next_page_token` to continue. Responses wrap items with `page_info` (`has_more`, optional `next_page_token`, optional `total_count`).
 
     ```shell
-    $ curl -H "Authorization: Bearer {access_token}" https://{domain}/api/v1/users?limit=100&offset=100
+    $ curl -H "Authorization: Bearer {access_token}" "https://{domain}/api/v1/users?page_size=100&page_token={token}"
     ```
-
-    Although the pagination is very flexible, it defines some constraints:
-
-    * The maximum `limit` cannot be greater than `1000`
-    * The minimum `limit` cannot be less than `1`
-    * The minimum `offset` cannot be less than `0`
 
     ## Versioning
 
@@ -63,6 +57,10 @@ tags:
     description: Namespaces in organizations.
   - name: Project
     description: Projects in namespaces.
+  - name: Issue
+    description: Issues in projects.
+  - name: Label
+    description: Labels that can be attached to resources.
   - name: User
     description: Users in the system.
   - name: Notification
@@ -186,6 +184,12 @@ components:
             $ref: "#/components/schemas/Language"
         status:
           $ref: "#/components/schemas/UserStatus"
+        document_count:
+          type: integer
+          format: int64
+          description: Number of documents that belong to the user when projected.
+          example: 3
+          nullable: true
         created_at:
           type: string
           format: date-time
@@ -313,27 +317,24 @@ components:
           nullable: true
         status:
           $ref: "#/components/schemas/OrganizationStatus"
-        members:
-          type: array
-          description: IDs of the users in the organization.
-          uniqueItems: true
-          items:
-            type: string
-            example: 9bsv0s46s6s002p9ltq0
-        teams:
-          type: array
-          description: IDs of the teams in the organization.
-          uniqueItems: true
-          items:
-            type: string
-            example: 9bsv0s46s6s002p9ltq0
-        namespaces:
-          type: array
-          description: IDs of the namespaces in the organization.
-          uniqueItems: true
-          items:
-            type: string
-            example: 9bsv0s46s6s002p9ltq0
+        member_count:
+          type: integer
+          format: int64
+          description: Number of members in the organization when projected.
+          example: 12
+          nullable: true
+        team_count:
+          type: integer
+          format: int64
+          description: Number of teams in the organization when projected.
+          example: 3
+          nullable: true
+        namespace_count:
+          type: integer
+          format: int64
+          description: Number of namespaces in the organization when projected.
+          example: 2
+          nullable: true
         created_at:
           type: string
           format: date-time
@@ -350,9 +351,6 @@ components:
         - logo
         - website
         - status
-        - members
-        - teams
-        - namespaces
         - created_at
         - updated_at
     OrganizationStatus:
@@ -380,19 +378,8 @@ components:
           id: 9bsv0s46s6s002p9ltq0
           name: Engineering
           description: Engineering team namespace
-          projects:
-            - id: 9bsv0s46s6s002p9ltq0
-              key: ENG
-              name: Engineering Project
-              description: Main engineering project
-              logo: "https://example.com/logo.png"
-              status: active
-          documents:
-            - id: 9bsv0s46s6s002p9ltq0
-              name: Project Plan
-              excerpt: Overview of the project plan
-              created_by: 9bsv0s46s6s002p9ltq0
-              created_at: "2023-01-01T00:00:00Z"
+          project_count: 1
+          document_count: 1
           created_at: "2023-01-01T00:00:00Z"
           updated_at: null
       properties:
@@ -413,18 +400,18 @@ components:
           example: Engineering team namespace
           minLength: 5
           nullable: true
-        projects:
-          type: array
-          description: Projects in the namespace.
-          uniqueItems: true
-          items:
-            $ref: "#/components/schemas/PartialProject"
-        documents:
-          type: array
-          description: Documents in the namespace.
-          uniqueItems: true
-          items:
-            $ref: "#/components/schemas/PartialDocument"
+        project_count:
+          type: integer
+          format: int64
+          description: Number of projects in the namespace when projected.
+          example: 4
+          nullable: true
+        document_count:
+          type: integer
+          format: int64
+          description: Number of documents in the namespace when projected.
+          example: 8
+          nullable: true
         created_at:
           type: string
           format: date-time
@@ -437,11 +424,172 @@ components:
       required:
         - id
         - name
-        - projects
-        - documents
         - created_at
         - updated_at
+    PageInfo:
+      title: PageInfo
+      type: object
+      description: Cursor pagination metadata for a page of results.
+      properties:
+        next_page_token:
+          type: string
+          description: Opaque token for the next page. Omitted when has_more is false.
+          nullable: true
+        has_more:
+          type: boolean
+          description: Whether more results are available.
+        total_count:
+          type: integer
+          format: int64
+          description: Optional total count when requested by the server.
+          nullable: true
+      required:
+        - has_more
+    ProjectPage:
+      title: ProjectPage
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Project"
+        page_info:
+          $ref: "#/components/schemas/PageInfo"
+      required:
+        - items
+        - page_info
+    PartialIssuePage:
+      title: PartialIssuePage
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/PartialIssue"
+        page_info:
+          $ref: "#/components/schemas/PageInfo"
+      required:
+        - items
+        - page_info
+    IssueRelationPage:
+      title: IssueRelationPage
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/IssueRelation"
+        page_info:
+          $ref: "#/components/schemas/PageInfo"
+      required:
+        - items
+        - page_info
+    OrganizationPage:
+      title: OrganizationPage
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Organization"
+        page_info:
+          $ref: "#/components/schemas/PageInfo"
+      required:
+        - items
+        - page_info
+    NamespacePage:
+      title: NamespacePage
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Namespace"
+        page_info:
+          $ref: "#/components/schemas/PageInfo"
+      required:
+        - items
+        - page_info
+    UserPage:
+      title: UserPage
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/User"
+        page_info:
+          $ref: "#/components/schemas/PageInfo"
+      required:
+        - items
+        - page_info
+    TodoPage:
+      title: TodoPage
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Todo"
+        page_info:
+          $ref: "#/components/schemas/PageInfo"
+      required:
+        - items
+        - page_info
+    NotificationPage:
+      title: NotificationPage
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Notification"
+        page_info:
+          $ref: "#/components/schemas/PageInfo"
+      required:
+        - items
+        - page_info
+    RolePage:
+      title: RolePage
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Role"
+        page_info:
+          $ref: "#/components/schemas/PageInfo"
+      required:
+        - items
+        - page_info
+    PartialDocumentPage:
+      title: PartialDocumentPage
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/PartialDocument"
+        page_info:
+          $ref: "#/components/schemas/PageInfo"
+      required:
+        - items
+        - page_info
+    OrganizationMemberPage:
+      title: OrganizationMemberPage
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrganizationMember"
+        page_info:
+          $ref: "#/components/schemas/PageInfo"
+      required:
+        - items
+        - page_info
     PartialProject:
+
       title: PartialProject
       type: object
       description: A simplified project that can be used in lists.
@@ -461,7 +609,7 @@ components:
         key:
           type: string
           description: Key of the project.
-          minLength: 3
+          minLength: 2
           maxLength: 6
           example: ENG
         name:
@@ -505,14 +653,8 @@ components:
           status: active
           teams:
             - 9bsv0s46s6s002p9ltq0
-          documents:
-            - id: 9bsv0s46s6s002p9ltq0
-              name: Project Plan
-              excerpt: Overview of the project plan
-              created_by: 9bsv0s46s6s002p9ltq0
-              created_at: "2023-01-01T00:00:00Z"
-          issues:
-            - 9bsv0s46s6s002p9ltq0
+          document_count: 1
+          issue_count: 1
           created_at: "2023-01-01T00:00:00Z"
           updated_at: null
       properties:
@@ -523,7 +665,7 @@ components:
         key:
           type: string
           description: Key of the project.
-          minLength: 3
+          minLength: 2
           maxLength: 6
           example: ENG
         name:
@@ -555,19 +697,18 @@ components:
           items:
             type: string
             example: 9bsv0s46s6s002p9ltq0
-        documents:
-          type: array
-          description: Documents in the project.
-          uniqueItems: true
-          items:
-            $ref: "#/components/schemas/PartialDocument"
-        issues:
-          type: array
-          description: IDs of the issues in the project.
-          uniqueItems: true
-          items:
-            type: string
-            example: 9bsv0s46s6s002p9ltq0
+        document_count:
+          type: integer
+          format: int64
+          description: Number of documents that belong to the project when projected.
+          example: 4
+          nullable: true
+        issue_count:
+          type: integer
+          format: int64
+          description: Number of issues that belong to the project when projected.
+          example: 12
+          nullable: true
         created_at:
           type: string
           format: date-time
@@ -583,8 +724,6 @@ components:
         - name
         - status
         - teams
-        - documents
-        - issues
         - created_at
         - updated_at
     PartialDocument:
@@ -617,9 +756,8 @@ components:
           minLength: 10
           nullable: true
         created_by:
-          type: string
-          description: ID of the user who created the document.
-          example: 9bsv0s46s6s002p9ltq0
+          $ref: "#/components/schemas/PartialUser"
+          description: User who created the document.
         created_at:
           type: string
           format: date-time
@@ -629,6 +767,547 @@ components:
         - id
         - name
         - created_by
+    PartialIssue:
+      title: PartialIssue
+      type: object
+      description: A simplified issue that can be used in lists.
+      x-examples:
+        example:
+          id: 9bsv0s46s6s002p9ltq0
+          key: MOB-1
+          numeric_id: 1
+          parent: null
+          kind: story
+          title: Implement authentication
+          status: open
+          priority: normal
+          assignees: []
+          reviewers: []
+          labels: []
+          due_date: null
+          start_date: null
+          reported_by: 9bsv0s46s6s002p9ltq0
+      properties:
+        id:
+          type: string
+          description: Unique identifier of the issue.
+          example: 9bsv0s46s6s002p9ltq0
+        key:
+          type: string
+          description: Composite issue key built from the owner project key and numeric ID.
+          pattern: "^[A-Z]{2,6}-[1-9][0-9]*$"
+          example: MOB-1
+        numeric_id:
+          type: integer
+          minimum: 1
+          description: Numeric identifier of the issue within its project.
+          example: 1
+        parent:
+          allOf:
+            - $ref: "#/components/schemas/PartialIssue"
+          nullable: true
+          description: Parent issue of this issue.
+        kind:
+          $ref: "#/components/schemas/IssueKind"
+        title:
+          type: string
+          description: Title of the issue.
+          minLength: 3
+          maxLength: 120
+          example: Implement authentication
+        description:
+          type: string
+          description: Description of the issue.
+          minLength: 3
+          example: Add OAuth2 password and authorization code flows.
+          nullable: true
+        status:
+          $ref: "#/components/schemas/IssueStatus"
+        priority:
+          $ref: "#/components/schemas/IssuePriority"
+        reported_by:
+          allOf:
+            - $ref: "#/components/schemas/PartialUser"
+          nullable: true
+          description: User who reported the issue.
+        assignees:
+          type: array
+          description: Users assigned to the issue.
+          items:
+            $ref: "#/components/schemas/PartialUser"
+        reviewers:
+          type: array
+          description: Users reviewing the issue.
+          items:
+            $ref: "#/components/schemas/PartialUser"
+        labels:
+          type: array
+          description: Labels attached to the issue.
+          items:
+            $ref: "#/components/schemas/PartialLabel"
+        project:
+          allOf:
+            - $ref: "#/components/schemas/PartialProject"
+          nullable: true
+          description: Project the issue belongs to.
+        namespace:
+          allOf:
+            - $ref: "#/components/schemas/PartialNamespace"
+          nullable: true
+          description: Namespace that owns the issue's project.
+        due_date:
+          type: string
+          format: date-time
+          description: Due date of the issue.
+          nullable: true
+        start_date:
+          type: string
+          format: date-time
+          description: Start date of the issue.
+          nullable: true
+      required:
+        - id
+        - key
+        - numeric_id
+        - kind
+        - title
+        - status
+        - priority
+        - assignees
+        - reviewers
+        - labels
+    IssueKind:
+      type: string
+      enum:
+        - epic
+        - story
+        - task
+        - bug
+      example: story
+      description: Kind of the issue.
+      title: IssueKind
+    IssueStatus:
+      type: string
+      enum:
+        - open
+        - in progress
+        - blocked
+        - review
+        - done
+        - closed
+      example: open
+      description: Status of the issue.
+      title: IssueStatus
+    IssuePriority:
+      type: string
+      enum:
+        - lowest
+        - low
+        - normal
+        - high
+        - highest
+      example: normal
+      description: Priority of the issue.
+      title: IssuePriority
+    IssueResolution:
+      type: string
+      enum:
+        - none
+        - fixed
+        - duplicate
+        - won't fix
+        - invalid
+        - incomplete
+        - cannot reproduce
+      example: none
+      description: Resolution of the issue.
+      title: IssueResolution
+    IssueRelationKind:
+      type: string
+      enum:
+        - blocked by
+        - blocks
+        - depends on
+        - duplicated by
+        - duplicates
+        - related to
+        - subtask of
+      example: blocks
+      description: Kind of relation between two issues.
+      title: IssueRelationKind
+    IssueRelationDirection:
+      type: string
+      enum:
+        - outgoing
+        - incoming
+      example: outgoing
+      description: Whether the relation edge leaves (outgoing) or enters (incoming) the issue in the URL.
+      title: IssueRelationDirection
+    IssueLink:
+      title: IssueLink
+      type: object
+      description: An external URL attached to an issue, with a visible label.
+      x-examples:
+        example:
+          url: "https://example.com/ticket/1"
+          label: Design spec
+      properties:
+        url:
+          type: string
+          format: uri
+          description: Destination URL of the link.
+          example: "https://example.com/ticket/1"
+          maxLength: 2000
+        label:
+          type: string
+          description: Visible label of the link.
+          example: Design spec
+          minLength: 1
+          maxLength: 120
+      required:
+        - url
+        - label
+    Issue:
+      title: Issue
+      type: object
+      description: An issue in a project.
+      x-examples:
+        example:
+          id: 9bsv0s46s6s002p9ltq0
+          key: MOB-1
+          numeric_id: 1
+          parent: null
+          kind: story
+          title: Implement authentication
+          description: Add OAuth2 password and authorization code flows.
+          status: open
+          priority: normal
+          resolution: none
+          reported_by: 9bsv0s46s6s002p9ltq0
+          assignees: []
+          reviewers: []
+          labels: []
+          comment_count: 0
+          attachment_count: 0
+          watcher_count: 0
+          relation_count: 0
+          links: []
+          due_date: null
+          start_date: null
+          created_at: "2023-01-01T00:00:00Z"
+          updated_at: null
+      properties:
+        id:
+          type: string
+          description: Unique identifier of the issue.
+          example: 9bsv0s46s6s002p9ltq0
+        key:
+          type: string
+          description: Composite issue key built from the owner project key and numeric ID.
+          pattern: "^[A-Z]{2,6}-[1-9][0-9]*$"
+          example: MOB-1
+        numeric_id:
+          type: integer
+          minimum: 1
+          description: Numeric identifier of the issue within its project.
+          example: 1
+        parent:
+          allOf:
+            - $ref: "#/components/schemas/PartialIssue"
+          nullable: true
+          description: Parent issue of this issue.
+        kind:
+          $ref: "#/components/schemas/IssueKind"
+        title:
+          type: string
+          description: Title of the issue.
+          minLength: 3
+          maxLength: 120
+          example: Implement authentication
+        description:
+          type: string
+          description: Description of the issue.
+          minLength: 3
+          example: Add OAuth2 password and authorization code flows.
+          nullable: true
+        status:
+          $ref: "#/components/schemas/IssueStatus"
+        priority:
+          $ref: "#/components/schemas/IssuePriority"
+        resolution:
+          $ref: "#/components/schemas/IssueResolution"
+        reported_by:
+          $ref: "#/components/schemas/PartialUser"
+          description: User who reported the issue.
+        assignees:
+          type: array
+          description: Users assigned to the issue.
+          items:
+            $ref: "#/components/schemas/PartialUser"
+        reviewers:
+          type: array
+          description: Users reviewing the issue.
+          items:
+            $ref: "#/components/schemas/PartialUser"
+        labels:
+          type: array
+          description: Labels attached to the issue.
+          items:
+            $ref: "#/components/schemas/PartialLabel"
+        project:
+          allOf:
+            - $ref: "#/components/schemas/PartialProject"
+          nullable: true
+          description: Project the issue belongs to.
+        namespace:
+          allOf:
+            - $ref: "#/components/schemas/PartialNamespace"
+          nullable: true
+          description: Namespace that owns the issue's project.
+        comment_count:
+          type: integer
+          format: int64
+          description: Number of comments on the issue when projected.
+          example: 3
+          nullable: true
+        attachment_count:
+          type: integer
+          format: int64
+          description: Number of attachments on the issue when projected.
+          example: 1
+          nullable: true
+        watcher_count:
+          type: integer
+          format: int64
+          description: Number of users watching the issue when projected.
+          example: 2
+          nullable: true
+        relation_count:
+          type: integer
+          format: int64
+          description: Number of related issues when projected.
+          example: 0
+          nullable: true
+        links:
+          type: array
+          description: External links related to the issue.
+          items:
+            $ref: "#/components/schemas/IssueLink"
+        due_date:
+          type: string
+          format: date-time
+          description: Due date of the issue.
+          nullable: true
+        start_date:
+          type: string
+          format: date-time
+          description: Start date of the issue.
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          description: Date when the issue was created.
+        updated_at:
+          type: string
+          format: date-time
+          description: Date when the issue was updated.
+          nullable: true
+      required:
+        - id
+        - key
+        - numeric_id
+        - kind
+        - title
+        - status
+        - priority
+        - resolution
+        - reported_by
+        - assignees
+        - reviewers
+        - labels
+        - links
+        - created_at
+        - updated_at
+    IssueRelation:
+      title: IssueRelation
+      type: object
+      description: A directed relation between the issue in the URL and another issue.
+      x-examples:
+        example:
+          id: 9bsv0s46s6s002p9ltq0
+          kind: blocks
+          direction: outgoing
+          related:
+            id: 9bsv0s46s6s002p9ltq1
+            key: MOB-2
+            numeric_id: 2
+            kind: task
+            title: Related work
+            status: open
+            priority: normal
+            assignees: []
+            reviewers: []
+            labels: []
+          created_at: "2023-01-01T00:00:00Z"
+      properties:
+        id:
+          type: string
+          description: Unique identifier of the relation.
+          example: 9bsv0s46s6s002p9ltq0
+        kind:
+          $ref: "#/components/schemas/IssueRelationKind"
+        direction:
+          $ref: "#/components/schemas/IssueRelationDirection"
+        related:
+          $ref: "#/components/schemas/PartialIssue"
+        created_at:
+          type: string
+          format: date-time
+          description: Date when the relation was created.
+      required:
+        - id
+        - kind
+        - direction
+        - related
+        - created_at
+    PartialUser:
+      title: PartialUser
+      type: object
+      description: A simplified user used on issue list and detail responses.
+      x-examples:
+        example:
+          id: 9bsv0s46s6s002p9ltq0
+          first_name: Test
+          last_name: User
+          picture: "https://example.com/users/my-user.png"
+      properties:
+        id:
+          type: string
+          description: Unique identifier of the user.
+          example: 9bsv0s46s6s002p9ltq0
+        first_name:
+          type: string
+          description: First name of the user.
+          minLength: 1
+          maxLength: 50
+          example: Test
+        last_name:
+          type: string
+          description: Last name of the user.
+          minLength: 1
+          maxLength: 50
+          example: User
+        picture:
+          type: string
+          description: Profile picture of the user.
+          format: uri
+          example: "https://example.com/users/my-user.png"
+          maxLength: 2000
+          nullable: true
+      required:
+        - id
+        - first_name
+        - last_name
+    PartialNamespace:
+      title: PartialNamespace
+      type: object
+      description: A simplified namespace used on issue list and detail responses.
+      x-examples:
+        example:
+          id: 9bsv0s46s6s002p9ltq0
+          name: Engineering
+      properties:
+        id:
+          type: string
+          description: Unique identifier of the namespace.
+          example: 9bsv0s46s6s002p9ltq0
+        name:
+          type: string
+          description: Name of the namespace.
+          minLength: 3
+          maxLength: 120
+          example: Engineering
+      required:
+        - id
+        - name
+    PartialLabel:
+      title: PartialLabel
+      type: object
+      description: A simplified label used on issue list and detail responses.
+      x-examples:
+        example:
+          id: 9bsv0s46s6s002p9ltq0
+          name: frontend
+      properties:
+        id:
+          type: string
+          description: Unique identifier of the label.
+          example: 9bsv0s46s6s002p9ltq0
+        name:
+          type: string
+          description: Name of the label.
+          minLength: 3
+          maxLength: 120
+          example: frontend
+      required:
+        - id
+        - name
+    Label:
+      title: Label
+      type: object
+      description: A label that can be attached to resources.
+      x-examples:
+        example:
+          id: 9bsv0s46s6s002p9ltq0
+          name: frontend
+          description: Frontend work
+          created_at: "2023-01-01T00:00:00Z"
+          updated_at: null
+      properties:
+        id:
+          type: string
+          description: Unique identifier of the label.
+          example: 9bsv0s46s6s002p9ltq0
+        name:
+          type: string
+          description: Name of the label.
+          minLength: 3
+          maxLength: 120
+          example: frontend
+        description:
+          type: string
+          description: Description of the label.
+          minLength: 5
+          maxLength: 500
+          example: Frontend work
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          description: Date when the label was created.
+        updated_at:
+          type: string
+          format: date-time
+          description: Date when the label was updated.
+          nullable: true
+      required:
+        - id
+        - name
+        - created_at
+        - updated_at
+    LabelPage:
+      title: LabelPage
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Label"
+        page_info:
+          $ref: "#/components/schemas/PageInfo"
+      required:
+        - items
+        - page_info
     Todo:
       title: Todo
       type: object
@@ -1190,8 +1869,7 @@ components:
           id: 9bsv0s46s6s002p9ltq0
           name: Collaborators
           description: Users who can collaborate on the project.
-          members:
-            - 9bsv0s46s6s002p9ltq0
+          member_count: 1
           permissions:
             - 9bsv0s46s6s002p9ltq0
           created_at: "2023-01-01T00:00:00Z"
@@ -1214,13 +1892,12 @@ components:
           example: Users who can collaborate on the project.
           minLength: 5
           nullable: true
-        members:
-          type: array
-          description: IDs of the users assigned to the role.
-          uniqueItems: true
-          items:
-            type: string
-            example: 9bsv0s46s6s002p9ltq0
+        member_count:
+          type: integer
+          format: int64
+          description: Number of users assigned to the role when projected.
+          example: 4
+          nullable: true
         permissions:
           type: array
           description: IDs of the permissions assigned to the role.
@@ -1240,7 +1917,6 @@ components:
       required:
         - id
         - name
-        - members
         - permissions
         - created_at
         - updated_at
@@ -1277,6 +1953,12 @@ components:
             namespace.read: Read access to namespaces.
             project: Read and write access to projects.
             project.read: Read access to projects.
+            issue: Read and write access to issues.
+            issue.read: Read access to issues.
+            document: Read and write access to documents.
+            document.read: Read access to documents.
+            label: Read and write access to labels.
+            label.read: Read access to labels.
             user: Read and write access to users.
             user.read: Read access to users.
             todo: Read and write access to todo items.
@@ -1296,6 +1978,12 @@ components:
             namespace.read: Read access to namespaces.
             project: Read and write access to projects.
             project.read: Read access to projects.
+            issue: Read and write access to issues.
+            issue.read: Read access to issues.
+            document: Read and write access to documents.
+            document.read: Read access to documents.
+            label: Read and write access to labels.
+            label.read: Read access to labels.
             user: Read and write access to users.
             user.read: Read access to users.
             todo: Read and write access to todo items.
@@ -1315,6 +2003,12 @@ components:
             namespace.read: Read access to namespaces.
             project: Read and write access to projects.
             project.read: Read access to projects.
+            issue: Read and write access to issues.
+            issue.read: Read access to issues.
+            document: Read and write access to documents.
+            document.read: Read access to documents.
+            label: Read and write access to labels.
+            label.read: Read access to labels.
             user: Read and write access to users.
             user.read: Read access to users.
             todo: Read and write access to todo items.
@@ -1392,13 +2086,25 @@ components:
       name: offset
       in: query
       required: false
+      deprecated: true
       schema:
         type: integer
         minimum: 0
         default: 0
-      description: Number of resources to skip.
+      description: Deprecated. Use page_token/page_size instead.
     limit:
       name: limit
+      in: query
+      required: false
+      deprecated: true
+      schema:
+        type: integer
+        default: 100
+        minimum: 1
+        maximum: 1000
+      description: Deprecated. Use page_size instead.
+    page_size:
+      name: page_size
       in: query
       required: false
       schema:
@@ -1406,7 +2112,14 @@ components:
         default: 100
         minimum: 1
         maximum: 1000
-      description: Number of resources to return.
+      description: Maximum number of items to return.
+    page_token:
+      name: page_token
+      in: query
+      required: false
+      schema:
+        type: string
+      description: Opaque continuation token from a previous page_info.next_page_token.
     id:
       name: id
       in: path
@@ -1415,6 +2128,23 @@ components:
         type: string
         example: 9bsv0s46s6s002p9ltq0
       description: ID of the resource.
+    relation_id:
+      name: relation_id
+      in: path
+      required: true
+      schema:
+        type: string
+        example: 9bsv0s46s6s002p9ltq0
+      description: ID of the issue relation.
+    issueKey:
+      name: key
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: "^[A-Z]{2,6}-[1-9][0-9]*$"
+        example: MOB-1
+      description: Composite issue key built from the owner project key and numeric ID.
     resourceId:
       name: resourceId
       in: path
@@ -1924,7 +2654,7 @@ components:
               key:
                 type: string
                 description: Key of the project.
-                minLength: 3
+                minLength: 2
                 maxLength: 6
                 example: ENG
               name:
@@ -1963,7 +2693,7 @@ components:
               key:
                 type: string
                 description: Key of the project.
-                minLength: 3
+                minLength: 2
                 maxLength: 6
                 example: ENG
               name:
@@ -1992,6 +2722,164 @@ components:
                 x-go-type-skip-optional-pointer: true
               status:
                 $ref: "#/components/schemas/ProjectStatus"
+    IssueCreate:
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              parent:
+                type: string
+                description: ID of the parent issue.
+                example: 9bsv0s46s6s002p9ltq0
+                nullable: true
+              kind:
+                $ref: "#/components/schemas/IssueKind"
+              title:
+                type: string
+                description: Title of the issue.
+                minLength: 3
+                maxLength: 120
+                example: Implement authentication
+              description:
+                type: string
+                description: Description of the issue.
+                minLength: 3
+                example: Add OAuth2 password and authorization code flows.
+                nullable: true
+                x-go-type: "Optional[string]"
+                x-go-type-skip-optional-pointer: true
+              status:
+                $ref: "#/components/schemas/IssueStatus"
+              priority:
+                $ref: "#/components/schemas/IssuePriority"
+              resolution:
+                $ref: "#/components/schemas/IssueResolution"
+              links:
+                type: array
+                description: External links related to the issue.
+                items:
+                  $ref: "#/components/schemas/IssueLink"
+              due_date:
+                type: string
+                format: date-time
+                description: Due date of the issue.
+                nullable: true
+              start_date:
+                type: string
+                format: date-time
+                description: Start date of the issue.
+                nullable: true
+            required:
+              - kind
+              - title
+    IssuePatch:
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              kind:
+                $ref: "#/components/schemas/IssueKind"
+              title:
+                type: string
+                description: Title of the issue.
+                minLength: 3
+                maxLength: 120
+                example: Implement authentication
+                x-go-type: "Optional[string]"
+                x-go-type-skip-optional-pointer: true
+              description:
+                type: string
+                description: Description of the issue.
+                minLength: 3
+                example: Add OAuth2 password and authorization code flows.
+                nullable: true
+                x-go-type: "Optional[string]"
+                x-go-type-skip-optional-pointer: true
+              status:
+                $ref: "#/components/schemas/IssueStatus"
+              priority:
+                $ref: "#/components/schemas/IssuePriority"
+              resolution:
+                $ref: "#/components/schemas/IssueResolution"
+              links:
+                type: array
+                description: External links related to the issue.
+                items:
+                  $ref: "#/components/schemas/IssueLink"
+                x-go-type: "Optional[[]IssueLink]"
+                x-go-type-skip-optional-pointer: true
+              due_date:
+                type: string
+                format: date-time
+                description: Due date of the issue.
+                nullable: true
+                x-go-type: "Optional[time.Time]"
+                x-go-type-skip-optional-pointer: true
+              assignees:
+                type: array
+                description: IDs of users assigned to the issue. Empty array clears assignees.
+                uniqueItems: true
+                items:
+                  type: string
+                x-go-type: "Optional[[]string]"
+                x-go-type-skip-optional-pointer: true
+              reviewers:
+                type: array
+                description: IDs of users reviewing the issue. Empty array clears reviewers.
+                uniqueItems: true
+                items:
+                  type: string
+                x-go-type: "Optional[[]string]"
+                x-go-type-skip-optional-pointer: true
+              labels:
+                type: array
+                description: IDs of labels attached to the issue. Empty array clears labels.
+                uniqueItems: true
+                items:
+                  type: string
+                x-go-type: "Optional[[]string]"
+                x-go-type-skip-optional-pointer: true
+              start_date:
+                type: string
+                format: date-time
+                description: Start date of the issue.
+                nullable: true
+                x-go-type: "Optional[time.Time]"
+                x-go-type-skip-optional-pointer: true
+              parent:
+                type: string
+                description: ID of the parent issue. Null clears the parent. Omitted leaves the parent unchanged.
+                example: 9bsv0s46s6s002p9ltq0
+                nullable: true
+                x-go-type: "Optional[string]"
+                x-go-type-skip-optional-pointer: true
+    IssueRelationCreate:
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              related_id:
+                type: string
+                description: ID of the related issue. The created edge is always outgoing from the issue in the URL.
+                example: 9bsv0s46s6s002p9ltq0
+              kind:
+                $ref: "#/components/schemas/IssueRelationKind"
+            required:
+              - related_id
+              - kind
+    IssueRelationPatch:
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              kind:
+                $ref: "#/components/schemas/IssueRelationKind"
+            required:
+              - kind
     PermissionCreate:
       content:
         application/json:
@@ -2106,10 +2994,9 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                uniqueItems: true
-                items:
-                  $ref: "#/components/schemas/User"
+                $ref: "#/components/schemas/UserPage"
+        "400":
+          $ref: "#/components/responses/400"
         "401":
           $ref: "#/components/responses/401"
         "403":
@@ -2119,8 +3006,8 @@ paths:
       operationId: v1UsersGet
       description: Returns the paginated list of users
       parameters:
-        - $ref: "#/components/parameters/offset"
-        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/page_size"
+        - $ref: "#/components/parameters/page_token"
       security:
         - oauth2:
             - user.read
@@ -2266,6 +3153,68 @@ paths:
       security:
         - oauth2:
             - user
+  "/v1/users/{id}/issues":
+    parameters:
+      - $ref: "#/components/parameters/id"
+    get:
+      summary: Get user issues
+      tags:
+        - User
+        - Issue
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PartialIssuePage"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+      operationId: v1UsersIssuesGet
+      security:
+        - oauth2:
+            - user.read
+            - issue.read
+      description: Return a cursor-paginated page of issues assigned to the user.
+      parameters:
+        - $ref: "#/components/parameters/page_size"
+        - $ref: "#/components/parameters/page_token"
+  /v1/labels:
+    get:
+      summary: List labels
+      tags:
+        - Label
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LabelPage"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "500":
+          $ref: "#/components/responses/500"
+      parameters:
+        - $ref: "#/components/parameters/page_size"
+        - $ref: "#/components/parameters/page_token"
+      operationId: v1LabelsGet
+      description: Returns a cursor-paginated page of labels.
+      security:
+        - oauth2:
+            - label.read
   /v1/todos:
     get:
       summary: Get todo item
@@ -2277,10 +3226,9 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                uniqueItems: true
-                items:
-                  $ref: "#/components/schemas/Todo"
+                $ref: "#/components/schemas/TodoPage"
+        "400":
+          $ref: "#/components/responses/400"
         "401":
           $ref: "#/components/responses/401"
         "403":
@@ -2290,8 +3238,8 @@ paths:
         "500":
           $ref: "#/components/responses/500"
       parameters:
-        - $ref: "#/components/parameters/offset"
-        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/page_size"
+        - $ref: "#/components/parameters/page_token"
         - schema:
             type: boolean
           in: query
@@ -2414,10 +3362,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                uniqueItems: true
-                items:
-                  $ref: "#/components/schemas/Notification"
+                $ref: "#/components/schemas/NotificationPage"
         "400":
           $ref: "#/components/responses/400"
         "401":
@@ -2429,8 +3374,8 @@ paths:
       operationId: v1NotificationsGet
       description: Returns the paginated list of in-app notifications
       parameters:
-        - $ref: "#/components/parameters/offset"
-        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/page_size"
+        - $ref: "#/components/parameters/page_token"
       security:
         - oauth2:
             - notification.read
@@ -2524,10 +3469,9 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                uniqueItems: true
-                items:
-                  $ref: "#/components/schemas/Organization"
+                $ref: "#/components/schemas/OrganizationPage"
+        "400":
+          $ref: "#/components/responses/400"
         "401":
           $ref: "#/components/responses/401"
         "403":
@@ -2540,8 +3484,8 @@ paths:
         - oauth2:
             - organization.read
       parameters:
-        - $ref: "#/components/parameters/offset"
-        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/page_size"
+        - $ref: "#/components/parameters/page_token"
     post:
       summary: Create organization
       operationId: v1OrganizationsCreate
@@ -2659,10 +3603,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                uniqueItems: true
-                items:
-                  $ref: "#/components/schemas/OrganizationMember"
+                $ref: "#/components/schemas/OrganizationMemberPage"
         "400":
           $ref: "#/components/responses/400"
         "401":
@@ -2678,7 +3619,10 @@ paths:
         - oauth2:
             - organization.read
             - user.read
-      description: Return the users that are members of the organization.
+      description: Return a cursor-paginated page of users that are members of the organization.
+      parameters:
+        - $ref: "#/components/parameters/page_size"
+        - $ref: "#/components/parameters/page_token"
     post:
       summary: Add organization member
       operationId: v1OrganizationMembersAdd
@@ -2864,18 +3808,15 @@ paths:
             - organization.read
             - role.read
       parameters:
-        - $ref: "#/components/parameters/offset"
-        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/page_size"
+        - $ref: "#/components/parameters/page_token"
       responses:
         "200":
           description: OK
           content:
             application/json:
               schema:
-                type: array
-                uniqueItems: true
-                items:
-                  $ref: "#/components/schemas/Role"
+                $ref: "#/components/schemas/RolePage"
         "400":
           $ref: "#/components/responses/400"
         "401":
@@ -3026,10 +3967,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                uniqueItems: true
-                items:
-                  $ref: "#/components/schemas/User"
+                $ref: "#/components/schemas/UserPage"
         "400":
           $ref: "#/components/responses/400"
         "401":
@@ -3046,7 +3984,10 @@ paths:
             - organization.read
             - role.read
             - user.read
-      description: Return the users that are members of the organization's role.
+      description: Return a cursor-paginated page of users that are members of the organization's role.
+      parameters:
+        - $ref: "#/components/parameters/page_size"
+        - $ref: "#/components/parameters/page_token"
     post:
       summary: Add organization role member
       operationId: v1OrganizationRoleMembersAdd
@@ -3254,10 +4195,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                uniqueItems: true
-                items:
-                  $ref: "#/components/schemas/Namespace"
+                $ref: "#/components/schemas/NamespacePage"
         "400":
           $ref: "#/components/responses/400"
         "401":
@@ -3275,8 +4213,8 @@ paths:
             - namespace.read
       description: Return the namespaces that belong to the organization.
       parameters:
-        - $ref: "#/components/parameters/offset"
-        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/page_size"
+        - $ref: "#/components/parameters/page_token"
     post:
       summary: Create namespace in organization
       operationId: v1OrganizationsNamespacesCreate
@@ -3396,10 +4334,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                uniqueItems: true
-                items:
-                  $ref: "#/components/schemas/Project"
+                $ref: "#/components/schemas/ProjectPage"
         "400":
           $ref: "#/components/responses/400"
         "401":
@@ -3415,10 +4350,10 @@ paths:
         - oauth2:
             - namespace.read
             - project.read
-      description: Return the projects that belong to the namespace.
+      description: Return a cursor-paginated page of projects that belong to the namespace.
       parameters:
-        - $ref: "#/components/parameters/offset"
-        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/page_size"
+        - $ref: "#/components/parameters/page_token"
     post:
       summary: Create project in namespace
       operationId: v1NamespacesProjectsCreate
@@ -3445,6 +4380,106 @@ paths:
         - Project
       requestBody:
         $ref: "#/components/requestBodies/ProjectCreate"
+  "/v1/namespaces/{id}/documents":
+    parameters:
+      - $ref: "#/components/parameters/id"
+    get:
+      summary: Get namespace documents
+      tags:
+        - Namespace
+        - Document
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PartialDocumentPage"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+      operationId: v1NamespacesDocumentsGet
+      security:
+        - oauth2:
+            - namespace.read
+            - document.read
+      description: Return a cursor-paginated page of documents that belong to the namespace.
+      parameters:
+        - $ref: "#/components/parameters/page_size"
+        - $ref: "#/components/parameters/page_token"
+  "/v1/namespaces/{id}/issues":
+    parameters:
+      - $ref: "#/components/parameters/id"
+    get:
+      summary: Get namespace issues
+      tags:
+        - Namespace
+        - Issue
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PartialIssuePage"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+      operationId: v1NamespacesIssuesGet
+      security:
+        - oauth2:
+            - namespace.read
+            - issue.read
+      description: Return a cursor-paginated page of issues that belong to projects in the namespace.
+      parameters:
+        - $ref: "#/components/parameters/page_size"
+        - $ref: "#/components/parameters/page_token"
+  "/v1/namespaces/{id}/issues/{key}":
+    parameters:
+      - $ref: "#/components/parameters/id"
+      - $ref: "#/components/parameters/issueKey"
+    get:
+      summary: Get issue by key
+      tags:
+        - Namespace
+        - Issue
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Issue"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+      operationId: v1NamespacesIssuesKeyGet
+      security:
+        - oauth2:
+            - namespace.read
+            - issue.read
+      description: Return the issue identified by composite key within the given namespace.
   "/v1/projects/{id}":
     parameters:
       - $ref: "#/components/parameters/id"
@@ -3524,6 +4559,297 @@ paths:
             - project
       tags:
         - Project
+  "/v1/projects/{id}/issues":
+    parameters:
+      - $ref: "#/components/parameters/id"
+    get:
+      summary: Get project issues
+      tags:
+        - Project
+        - Issue
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PartialIssuePage"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+      operationId: v1ProjectsIssuesGet
+      security:
+        - oauth2:
+            - project.read
+            - issue.read
+      description: Return a cursor-paginated page of issues that belong to the project.
+      parameters:
+        - $ref: "#/components/parameters/page_size"
+        - $ref: "#/components/parameters/page_token"
+    post:
+      summary: Create issue in project
+      operationId: v1ProjectsIssuesCreate
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Issue"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+      description: Create a new issue in the project.
+      security:
+        - oauth2:
+            - project
+            - issue
+      tags:
+        - Project
+        - Issue
+      requestBody:
+        $ref: "#/components/requestBodies/IssueCreate"
+  "/v1/projects/{id}/documents":
+    parameters:
+      - $ref: "#/components/parameters/id"
+    get:
+      summary: Get project documents
+      tags:
+        - Project
+        - Document
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PartialDocumentPage"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+      operationId: v1ProjectsDocumentsGet
+      security:
+        - oauth2:
+            - project.read
+            - document.read
+      description: Return a cursor-paginated page of documents that belong to the project.
+      parameters:
+        - $ref: "#/components/parameters/page_size"
+        - $ref: "#/components/parameters/page_token"
+  "/v1/issues/{id}":
+    parameters:
+      - $ref: "#/components/parameters/id"
+    get:
+      summary: Get issue
+      tags:
+        - Issue
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Issue"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+      operationId: v1IssueGet
+      security:
+        - oauth2:
+            - issue.read
+      description: Return the requested issue by its ID.
+    patch:
+      summary: Update issue
+      operationId: v1IssueUpdate
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Issue"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+      description: Update the issue by its ID.
+      security:
+        - oauth2:
+            - issue
+      tags:
+        - Issue
+      requestBody:
+        $ref: "#/components/requestBodies/IssuePatch"
+    delete:
+      summary: Delete issue
+      operationId: v1IssueDelete
+      responses:
+        "204":
+          description: No Content
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+      description: Delete the issue by its ID.
+      security:
+        - oauth2:
+            - issue
+      tags:
+        - Issue
+  "/v1/issues/{id}/relations":
+    parameters:
+      - $ref: "#/components/parameters/id"
+    get:
+      summary: Get issue relations
+      tags:
+        - Issue
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IssueRelationPage"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+      operationId: v1IssueRelationsGet
+      security:
+        - oauth2:
+            - issue.read
+      description: Return a cursor-paginated page of relations for the issue, including incoming and outgoing edges.
+      parameters:
+        - $ref: "#/components/parameters/page_size"
+        - $ref: "#/components/parameters/page_token"
+    post:
+      summary: Add issue relation
+      operationId: v1IssueRelationsCreate
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IssueRelation"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+      description: Create an outgoing relation from the issue in the URL to another issue. Self-relations and the reserved "subtask of" kind are rejected.
+      security:
+        - oauth2:
+            - issue
+      tags:
+        - Issue
+      requestBody:
+        $ref: "#/components/requestBodies/IssueRelationCreate"
+  "/v1/issues/{id}/relations/{relation_id}":
+    parameters:
+      - $ref: "#/components/parameters/id"
+      - $ref: "#/components/parameters/relation_id"
+    patch:
+      summary: Update issue relation
+      operationId: v1IssueRelationUpdate
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IssueRelation"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+      description: Change the relation kind from this issue's point of view by replacing the edge with a new outgoing relation. Self-relations and the reserved "subtask of" kind are rejected.
+      security:
+        - oauth2:
+            - issue
+      tags:
+        - Issue
+      requestBody:
+        $ref: "#/components/requestBodies/IssueRelationPatch"
+    delete:
+      summary: Delete issue relation
+      operationId: v1IssueRelationDelete
+      responses:
+        "204":
+          description: No Content
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+      description: Delete a relation of the issue by its relation ID.
+      security:
+        - oauth2:
+            - issue
+      tags:
+        - Issue
   /v1/permissions:
     post:
       summary: Create permission

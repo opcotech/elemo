@@ -85,19 +85,19 @@ func (mr *MockTodoRepositoryMockRecorder) Get(ctx, id any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockTodoRepository)(nil).Get), ctx, id)
 }
 
-// GetByOwner mocks base method.
-func (m *MockTodoRepository) GetByOwner(ctx context.Context, ownerID model.ID, offset, limit int, completed *bool) ([]*Todo, error) {
+// ListByOwner mocks base method.
+func (m *MockTodoRepository) ListByOwner(ctx context.Context, ownerID model.ID, page CursorPage, completed *bool) (Page[*Todo], error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetByOwner", ctx, ownerID, offset, limit, completed)
-	ret0, _ := ret[0].([]*Todo)
+	ret := m.ctrl.Call(m, "ListByOwner", ctx, ownerID, page, completed)
+	ret0, _ := ret[0].(Page[*Todo])
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetByOwner indicates an expected call of GetByOwner.
-func (mr *MockTodoRepositoryMockRecorder) GetByOwner(ctx, ownerID, offset, limit, completed any) *gomock.Call {
+// ListByOwner indicates an expected call of ListByOwner.
+func (mr *MockTodoRepositoryMockRecorder) ListByOwner(ctx, ownerID, page, completed any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByOwner", reflect.TypeOf((*MockTodoRepository)(nil).GetByOwner), ctx, ownerID, offset, limit, completed)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListByOwner", reflect.TypeOf((*MockTodoRepository)(nil).ListByOwner), ctx, ownerID, page, completed)
 }
 
 // Update mocks base method.

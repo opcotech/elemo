@@ -147,9 +147,9 @@ func (s *OrganizationServiceIntegrationTestSuite) TestGetAll() {
 	_, err = s.organizationService.Create(s.ctx, s.owner.ID, serviceCreateOrgOpts())
 	s.Require().NoError(err)
 
-	orgs, err := s.organizationService.GetAll(s.ctx, 0, 10)
+	orgs, err := s.organizationService.List(s.ctx, service.CursorPage{Size: 10})
 	s.Require().NoError(err)
-	s.Assert().GreaterOrEqual(len(orgs), 2)
+	s.Assert().GreaterOrEqual(len(orgs.Items), 2)
 }
 
 func (s *OrganizationServiceIntegrationTestSuite) TestUpdate() {
@@ -173,9 +173,9 @@ func (s *OrganizationServiceIntegrationTestSuite) TestAddMember() {
 
 	s.Require().NoError(s.organizationService.AddMember(s.ctx, created.ID, member.ID))
 
-	members, err := s.organizationService.GetMembers(s.ctx, created.ID)
+	members, err := s.organizationService.ListMembers(s.ctx, created.ID, service.CursorPage{Size: 10})
 	s.Require().NoError(err)
-	s.Assert().GreaterOrEqual(len(members), 2)
+	s.Assert().GreaterOrEqual(len(members.Items), 2)
 }
 
 func (s *OrganizationServiceIntegrationTestSuite) TestRemoveMember() {

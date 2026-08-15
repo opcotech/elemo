@@ -28,13 +28,11 @@ func TestNewDocument(t *testing.T) {
 				owner:  ID{Inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, Type: ResourceTypeUser},
 			},
 			want: &Document{
-				ID:          ID{Inner: xid.NilID(), Type: ResourceTypeDocument},
-				Name:        "test",
-				FileID:      "file_id",
-				CreatedBy:   ID{Inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, Type: ResourceTypeUser},
-				Labels:      make([]ID, 0),
-				Comments:    make([]ID, 0),
-				Attachments: make([]ID, 0),
+				ID:        ID{Inner: xid.NilID(), Type: ResourceTypeDocument},
+				Name:      "test",
+				FileID:    "file_id",
+				CreatedBy: ID{Inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, Type: ResourceTypeUser},
+				Labels:    make([]ID, 0),
 			},
 		},
 		{
@@ -78,13 +76,12 @@ func TestNewDocument(t *testing.T) {
 
 func TestDocument_Validate(t *testing.T) {
 	type fields struct {
-		ID       ID
-		Name     string
-		Excerpt  string
-		FileID   string
-		OwnedBy  ID
-		Labels   []ID
-		Comments []ID
+		ID      ID
+		Name    string
+		Excerpt string
+		FileID  string
+		OwnedBy ID
+		Labels  []ID
 	}
 	tests := []struct {
 		name    string
@@ -174,19 +171,6 @@ func TestDocument_Validate(t *testing.T) {
 			},
 			wantErr: ErrInvalidDocumentDetails,
 		},
-		{
-			name: "validate document with invalid labels",
-			fields: fields{
-				ID:      ID{Inner: xid.NilID(), Type: ResourceType(0)},
-				Name:    "test",
-				FileID:  "file_id",
-				OwnedBy: ID{Inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, Type: ResourceTypeUser},
-				Comments: []ID{
-					{},
-				},
-			},
-			wantErr: ErrInvalidDocumentDetails,
-		},
 	}
 	for _, tt := range tests {
 		tt := tt
@@ -199,7 +183,6 @@ func TestDocument_Validate(t *testing.T) {
 				FileID:    tt.fields.FileID,
 				CreatedBy: tt.fields.OwnedBy,
 				Labels:    tt.fields.Labels,
-				Comments:  tt.fields.Comments,
 			}
 			err := d.Validate()
 			require.ErrorIs(t, err, tt.wantErr)

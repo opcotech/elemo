@@ -2,7 +2,11 @@ package model
 
 import (
 	"errors"
+	"fmt"
+	"strconv"
+	"strings"
 	"time"
+	"unicode"
 
 	"github.com/opcotech/elemo/internal/pkg/validate"
 )
@@ -34,10 +38,11 @@ const (
 )
 
 const (
-	IssuePriorityLow      IssuePriority = iota + 1 // low
-	IssuePriorityMedium                            // medium
-	IssuePriorityHigh                              // high
-	IssuePriorityCritical                          // critical
+	IssuePriorityLowest  IssuePriority = iota + 1 // lowest
+	IssuePriorityLow                              // low
+	IssuePriorityNormal                           // normal
+	IssuePriorityHigh                             // high
+	IssuePriorityHighest                          // highest
 )
 
 const (
@@ -102,6 +107,12 @@ func (i *IssueRelation) Validate() error {
 	return nil
 }
 
+// IssueLink is an external URL attached to an issue, with a visible label.
+type IssueLink struct {
+	URL   string `json:"url" validate:"required,url"`
+	Label string `json:"label" validate:"required,min=1,max=120"`
+}
+
 // Issue represents an issue in the system that can be assigned to a
 // user and belong to a project or another Issue.
 type Issue struct {
@@ -110,19 +121,16 @@ type Issue struct {
 	Parent      *ID             `json:"parent" validate:"omitempty"`
 	Kind        IssueKind       `json:"kind" validate:"required,min=1,max=4"`
 	Title       string          `json:"title" validate:"required,min=3,max=120"`
-	Description string          `json:"description" validate:"omitempty,min=10"`
+	Description string          `json:"description" validate:"omitempty,min=3"`
 	Status      IssueStatus     `json:"status" validate:"required,min=1,max=6"`
 	Priority    IssuePriority   `json:"priority" validate:"required,min=1,max=5"`
 	Resolution  IssueResolution `json:"resolution" validate:"required,min=1,max=7"`
 	ReportedBy  ID              `json:"reported_by" validate:"required"`
 	Assignees   []ID            `json:"assignees" validate:"omitempty,dive"`
 	Labels      []ID            `json:"labels" validate:"omitempty,dive"`
-	Comments    []ID            `json:"comments" validate:"omitempty,dive"`
-	Attachments []ID            `json:"attachments" validate:"omitempty,dive"`
-	Watchers    []ID            `json:"watchers" validate:"omitempty,dive"`
-	Relations   []ID            `json:"relations" validate:"omitempty,dive"`
-	Links       []string        `json:"links" validate:"omitempty,dive,url"`
+	Links       []IssueLink     `json:"links" validate:"omitempty,dive"`
 	DueDate     *time.Time      `json:"due_date" validate:"omitempty"`
+	StartDate   *time.Time      `json:"start_date" validate:"omitempty"`
 	CreatedAt   *time.Time      `json:"created_at" validate:"omitempty"`
 	UpdatedAt   *time.Time      `json:"updated_at" validate:"omitempty"`
 }
@@ -153,26 +161,6 @@ func (i *Issue) Validate() error {
 			return errors.Join(ErrInvalidIssueDetails, err)
 		}
 	}
-	for _, id := range i.Comments {
-		if err := id.Validate(); err != nil {
-			return errors.Join(ErrInvalidIssueDetails, err)
-		}
-	}
-	for _, id := range i.Attachments {
-		if err := id.Validate(); err != nil {
-			return errors.Join(ErrInvalidIssueDetails, err)
-		}
-	}
-	for _, id := range i.Watchers {
-		if err := id.Validate(); err != nil {
-			return errors.Join(ErrInvalidIssueDetails, err)
-		}
-	}
-	for _, id := range i.Relations {
-		if err := id.Validate(); err != nil {
-			return errors.Join(ErrInvalidIssueDetails, err)
-		}
-	}
 	return nil
 }
 
@@ -194,21 +182,17 @@ func NewIssueRelation(source, target ID, kind IssueRelationKind) (*IssueRelation
 // NewIssue creates a new issue with the given details.
 func NewIssue(numericID uint, title string, kind IssueKind, reportedBy ID) (*Issue, error) {
 	issue := &Issue{
-		ID:          MustNewNilID(ResourceTypeIssue),
-		NumericID:   numericID,
-		Kind:        kind,
-		Title:       title,
-		Status:      IssueStatusOpen,
-		Priority:    IssuePriorityMedium,
-		Resolution:  IssueResolutionNone,
-		ReportedBy:  reportedBy,
-		Assignees:   make([]ID, 0),
-		Labels:      make([]ID, 0),
-		Comments:    make([]ID, 0),
-		Attachments: make([]ID, 0),
-		Watchers:    make([]ID, 0),
-		Relations:   make([]ID, 0),
-		Links:       make([]string, 0),
+		ID:         MustNewNilID(ResourceTypeIssue),
+		NumericID:  numericID,
+		Kind:       kind,
+		Title:      title,
+		Status:     IssueStatusOpen,
+		Priority:   IssuePriorityNormal,
+		Resolution: IssueResolutionNone,
+		ReportedBy: reportedBy,
+		Assignees:  make([]ID, 0),
+		Labels:     make([]ID, 0),
+		Links:      make([]IssueLink, 0),
 	}
 
 	if err := issue.Validate(); err != nil {
@@ -216,4 +200,37 @@ func NewIssue(numericID uint, title string, kind IssueKind, reportedBy ID) (*Iss
 	}
 
 	return issue, nil
+}
+
+// FormatIssueKey builds the composite issue key from a project key and numeric
+// ID.
+func FormatIssueKey(projectKey string, numericID uint) string {
+	return fmt.Sprintf("%s-%d", strings.ToUpper(projectKey), numericID)
+}
+
+// ParseIssueKey splits a composite issue key into project key and numeric ID.
+func ParseIssueKey(key string) (string, uint, error) {
+	key = strings.TrimSpace(key)
+	sep := strings.LastIndex(key, "-")
+	if sep <= 0 || sep == len(key)-1 {
+		return "", 0, ErrInvalidIssueDetails
+	}
+
+	projectKey := strings.ToUpper(key[:sep])
+	if len(projectKey) < 2 || len(projectKey) > 6 {
+		return "", 0, ErrInvalidIssueDetails
+	}
+	for _, r := range projectKey {
+		if !unicode.IsLetter(r) {
+			return "", 0, ErrInvalidIssueDetails
+		}
+	}
+
+	numericPart := key[sep+1:]
+	numericID, err := strconv.ParseUint(numericPart, 10, 64)
+	if err != nil || numericID == 0 {
+		return "", 0, ErrInvalidIssueDetails
+	}
+
+	return projectKey, uint(numericID), nil
 }

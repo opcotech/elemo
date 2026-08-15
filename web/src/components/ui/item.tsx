@@ -21,7 +21,7 @@ function ItemGroup({
       className={cn(
         "group/item-group flex w-full flex-col gap-3 has-data-[size=sm]:gap-2.5 has-data-[size=xs]:gap-2",
         variant === "outline" &&
-          "bg-card divide-border/60 gap-0 divide-y overflow-hidden rounded-lg border has-data-[size=sm]:gap-0 has-data-[size=xs]:gap-0 [&>[data-slot=item]]:rounded-none [&>[data-slot=item]]:border-0",
+          "bg-card divide-border/60 gap-0 divide-y overflow-hidden rounded-lg border has-data-[size=sm]:gap-0 has-data-[size=xs]:gap-0 *:data-[slot=item]:rounded-none *:data-[slot=item]:border-0",
         className
       )}
       {...props}

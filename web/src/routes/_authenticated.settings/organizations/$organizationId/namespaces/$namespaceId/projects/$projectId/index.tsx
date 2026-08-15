@@ -1,37 +1,23 @@
 import type { ErrorComponentProps } from "@tanstack/react-router";
 import { createFileRoute } from "@tanstack/react-router";
 
-import { ScopedDocumentsList } from "@/components/documents/scoped-documents-list";
-import { OrganizationNotFound } from "@/components/organizations";
+import { ProjectDangerZone } from "@/components/projects/project-danger-zone";
+import { ProjectDetailInfo } from "@/components/projects/project-detail-info";
 import {
-  ProjectDangerZone,
-  ProjectDetailInfo,
-  ProjectIssuesList,
-} from "@/components/projects";
-import {
+  SettingsAccessDenied,
   SettingsEntityDetailError,
   SettingsEntityDetailSkeleton,
 } from "@/components/settings/settings-entity-detail-state";
-import { PageHeader } from "@/components/shared/page-header";
+import { SettingsNotFound } from "@/components/settings/settings-not-found";
+import { PageHeader } from "@/components/ui/page-header";
 import { isPermissionDenied } from "@/lib/api/errors";
 import { entityBreadcrumb } from "@/lib/breadcrumb";
 import { loadProjectDetail } from "@/lib/route-data";
 import { isAccessDeniedRouteData, withRouteErrors } from "@/lib/route-errors";
 
-function ProjectAccessDenied() {
-  return (
-    <div className="space-y-6">
-      <PageHeader title="Access Denied" />
-      <div className="text-muted-foreground">
-        You do not have permission to view this project.
-      </div>
-    </div>
-  );
-}
-
 function ProjectDetailError({ error }: ErrorComponentProps) {
   if (isPermissionDenied(error)) {
-    return <ProjectAccessDenied />;
+    return <SettingsAccessDenied resource="project" />;
   }
   return <SettingsEntityDetailError />;
 }
@@ -60,7 +46,7 @@ export const Route = createFileRoute(
   },
   pendingComponent: SettingsEntityDetailSkeleton,
   errorComponent: ProjectDetailError,
-  notFoundComponent: OrganizationNotFound,
+  notFoundComponent: SettingsNotFound,
   component: ProjectDetailPage,
 });
 
@@ -68,7 +54,7 @@ function ProjectDetailPage() {
   const loaderData = Route.useLoaderData();
 
   if (isAccessDeniedRouteData(loaderData)) {
-    return <ProjectAccessDenied />;
+    return <SettingsAccessDenied resource="project" />;
   }
 
   const { organizationId, namespaceId } = Route.useParams();
@@ -83,19 +69,6 @@ function ProjectDetailPage() {
         organizationId={organizationId}
         namespaceId={namespaceId}
         namespaceName={namespace.name}
-      />
-
-      <ScopedDocumentsList
-        scope="project"
-        documents={project.documents || []}
-        isLoading={false}
-        error={null}
-      />
-
-      <ProjectIssuesList
-        issues={project.issues || []}
-        isLoading={false}
-        error={null}
       />
 
       <ProjectDangerZone

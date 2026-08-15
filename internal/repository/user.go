@@ -5,7 +5,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
+	"github.com/neo4j/neo4j-go-driver/v6/neo4j"
 
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/convert"
@@ -19,26 +19,34 @@ var (
 	ErrUserUpdate = errors.New("failed to update user") // user cannot be updated
 )
 
+// PartialUser is a lean user used on issue and document reads.
+type PartialUser struct {
+	ID        model.ID `json:"id"`
+	FirstName string   `json:"first_name"`
+	LastName  string   `json:"last_name"`
+	Picture   string   `json:"picture"`
+}
+
 // User represents a user persisted by the repository.
 type User struct {
-	ID          model.ID         `json:"id"`
-	Username    string           `json:"username"`
-	Email       string           `json:"email"`
-	Password    string           `json:"password"`
-	Status      model.UserStatus `json:"status"`
-	FirstName   string           `json:"first_name"`
-	LastName    string           `json:"last_name"`
-	Picture     string           `json:"picture"`
-	Title       string           `json:"title"`
-	Bio         string           `json:"bio"`
-	Phone       string           `json:"phone"`
-	Address     string           `json:"address"`
-	Links       []string         `json:"links"`
-	Languages   []model.Language `json:"languages"`
-	Documents   []model.ID       `json:"documents"`
-	Permissions []model.ID       `json:"permissions"`
-	CreatedAt   *time.Time       `json:"created_at"`
-	UpdatedAt   *time.Time       `json:"updated_at"`
+	ID            model.ID         `json:"id"`
+	Username      string           `json:"username"`
+	Email         string           `json:"email"`
+	Password      string           `json:"password"`
+	Status        model.UserStatus `json:"status"`
+	FirstName     string           `json:"first_name"`
+	LastName      string           `json:"last_name"`
+	Picture       string           `json:"picture"`
+	Title         string           `json:"title"`
+	Bio           string           `json:"bio"`
+	Phone         string           `json:"phone"`
+	Address       string           `json:"address"`
+	Links         []string         `json:"links"`
+	Languages     []model.Language `json:"languages"`
+	DocumentCount *int64           `json:"document_count"`
+	Permissions   []model.ID       `json:"permissions"`
+	CreatedAt     *time.Time       `json:"created_at"`
+	UpdatedAt     *time.Time       `json:"updated_at"`
 }
 
 // CreateUserOpts holds the data required to create a user.
@@ -158,16 +166,12 @@ func (o UpdateUserOpts) patch() map[string]any {
 //go:generate go tool mockgen -source=user.go -destination=user_mock_gen.go -package=repository -mock_names "UserRepository=MockUserRepository"
 type UserRepository interface {
 	Create(ctx context.Context, opts CreateUserOpts) (*User, error)
-	Get(ctx context.Context, id model.ID) (*User, error)
-	GetByEmail(ctx context.Context, email string) (*User, error)
-	GetAll(ctx context.Context, offset, limit int) ([]*User, error)
+	Get(ctx context.Context, id model.ID, proj UserProjection) (*User, error)
+	GetByEmail(ctx context.Context, email string, proj UserProjection) (*User, error)
+	List(ctx context.Context, page CursorPage, proj UserProjection) (Page[*User], error)
 	Update(ctx context.Context, id model.ID, opts UpdateUserOpts) (*User, error)
 	Delete(ctx context.Context, id model.ID) error
 }
-
-const (
-	languageIDType = "Language" // label for language nodes
-)
 
 // Neo4jUserRepository is a repository for managing users.
 type Neo4jUserRepository struct {
@@ -175,28 +179,29 @@ type Neo4jUserRepository struct {
 }
 
 // scan is a helper function for scanning a user from a Neo4j Record.
-func (r *Neo4jUserRepository) scan(up, pp, dp string) func(rec *neo4j.Record) (*User, error) {
+func (r *Neo4jUserRepository) scan(up string, proj UserProjection) func(rec *neo4j.Record) (*User, error) {
 	return func(rec *neo4j.Record) (*User, error) {
 		user := new(User)
 		user.Links = make([]string, 0)
+		user.Permissions = make([]model.ID, 0)
 
 		val, _, err := neo4j.GetRecordValue[neo4j.Node](rec, up)
 		if err != nil {
 			return nil, err
 		}
 
-		if err := Neo4jScanIntoStruct(&val, &user, []string{"id"}); err != nil {
+		if err := Neo4jScanIntoStruct(&val, &user, []string{"id", "document_count"}); err != nil {
 			return nil, err
 		}
 
 		user.ID, _ = model.NewIDFromString(val.GetProperties()["id"].(string), model.ResourceTypeUser.String())
 
-		if user.Permissions, err = Neo4jParseIDsFromRecord(rec, pp, model.ResourceTypePermission.String()); err != nil {
-			return nil, err
-		}
-
-		if user.Documents, err = Neo4jParseIDsFromRecord(rec, dp, model.ResourceTypeDocument.String()); err != nil {
-			return nil, err
+		if proj.DocumentCount {
+			documentCount, err := Neo4jParseValueFromRecord[int64](rec, "document_count")
+			if err != nil {
+				return nil, err
+			}
+			user.DocumentCount = convert.ToPointer(documentCount)
 		}
 
 		return user, nil
@@ -209,45 +214,29 @@ func (r *Neo4jUserRepository) Create(ctx context.Context, opts CreateUserOpts) (
 	defer span.End()
 
 	createdAt := time.Now().UTC()
+	id := model.MustNewID(model.ResourceTypeUser)
 
-	user := &User{
-		ID:          model.MustNewID(model.ResourceTypeUser),
-		Username:    opts.Username,
-		Email:       opts.Email,
-		Password:    opts.Password,
-		Status:      opts.Status,
-		FirstName:   opts.FirstName,
-		LastName:    opts.LastName,
-		Picture:     opts.Picture,
-		Title:       opts.Title,
-		Bio:         opts.Bio,
-		Phone:       opts.Phone,
-		Address:     opts.Address,
-		Links:       opts.Links,
-		Languages:   opts.Languages,
-		Documents:   make([]model.ID, 0),
-		Permissions: make([]model.ID, 0),
-		CreatedAt:   convert.ToPointer(createdAt),
-		UpdatedAt:   nil,
+	status := opts.Status
+	if status == 0 {
+		status = model.UserStatusActive
 	}
 
-	if user.Links == nil {
-		user.Links = make([]string, 0)
-	}
-	if user.Languages == nil {
-		user.Languages = make([]model.Language, 0)
-	}
-	if user.Status == 0 {
-		user.Status = model.UserStatusActive
+	links := opts.Links
+	if links == nil {
+		links = make([]string, 0)
 	}
 
-	languages := make([]string, len(user.Languages))
-	for i, l := range user.Languages {
-		languages[i] = l.String()
+	languages := opts.Languages
+	if languages == nil {
+		languages = make([]model.Language, 0)
+	}
+	languageValues := make([]string, len(languages))
+	for i, language := range languages {
+		languageValues[i] = language.String()
 	}
 
 	cypher := `
-	MERGE (u:` + user.ID.Label() + ` {id: $id})
+	MERGE (u:` + id.Label() + ` {id: $id})
 	ON CREATE SET u += {
 		username: $username, email: $email, password: $password, status: $status, first_name: $first_name,
 		last_name: $last_name, picture: $picture, title: $title, bio: $bio, phone: $phone, address: $address,
@@ -255,20 +244,20 @@ func (r *Neo4jUserRepository) Create(ctx context.Context, opts CreateUserOpts) (
 	}`
 
 	params := map[string]any{
-		"id":         user.ID.String(),
-		"username":   user.Username,
-		"email":      user.Email,
-		"password":   user.Password,
-		"status":     user.Status.String(),
-		"first_name": user.FirstName,
-		"last_name":  user.LastName,
-		"picture":    user.Picture,
-		"title":      user.Title,
-		"bio":        user.Bio,
-		"phone":      user.Phone,
-		"address":    user.Address,
-		"links":      user.Links,
-		"languages":  languages,
+		"id":         id.String(),
+		"username":   opts.Username,
+		"email":      opts.Email,
+		"password":   opts.Password,
+		"status":     status.String(),
+		"first_name": opts.FirstName,
+		"last_name":  opts.LastName,
+		"picture":    opts.Picture,
+		"title":      opts.Title,
+		"bio":        opts.Bio,
+		"phone":      opts.Phone,
+		"address":    opts.Address,
+		"links":      links,
+		"languages":  languageValues,
 		"created_at": createdAt.Format(time.RFC3339Nano),
 	}
 
@@ -276,24 +265,83 @@ func (r *Neo4jUserRepository) Create(ctx context.Context, opts CreateUserOpts) (
 		return nil, errors.Join(err, ErrUserCreate)
 	}
 
-	return user, nil
+	return r.Get(ctx, id, UserDetailProjection())
+}
+
+func (r *Neo4jUserRepository) applyUserLoaders(ctx context.Context, tx neo4j.ManagedTransaction, plan QueryPlan, users []*User) error {
+	if len(plan.Loaders) == 0 || len(users) == 0 {
+		return nil
+	}
+
+	userByID := make(map[string]*User, len(users))
+	ids := make([]string, 0, len(users))
+	for _, user := range users {
+		if user == nil {
+			continue
+		}
+		userByID[user.ID.String()] = user
+		ids = append(ids, user.ID.String())
+	}
+
+	for _, loader := range plan.Loaders {
+		query := loader
+		query.Params = cloneParams(loader.Params)
+		query.Params["ids"] = ids
+		switch loader.Name {
+		case "user.load_permissions":
+			type permissionRow struct {
+				UserID        string
+				PermissionIDs []model.ID
+			}
+			rows, _, err := Neo4jRunQuery(ctx, tx, query, func(rec *neo4j.Record) (permissionRow, error) {
+				userID, err := Neo4jParseValueFromRecord[string](rec, "user_id")
+				if err != nil {
+					return permissionRow{}, err
+				}
+				ids, err := Neo4jParseIDsFromRecord(rec, "permission_ids", model.ResourceTypePermission.String())
+				if err != nil {
+					return permissionRow{}, err
+				}
+				return permissionRow{UserID: userID, PermissionIDs: ids}, nil
+			})
+			if err != nil {
+				return err
+			}
+			for _, row := range rows {
+				if user := userByID[row.UserID]; user != nil {
+					user.Permissions = row.PermissionIDs
+				}
+			}
+		default:
+			return ErrQueryCompile
+		}
+	}
+
+	return nil
 }
 
 // Get returns a user by its ID.
-func (r *Neo4jUserRepository) Get(ctx context.Context, id model.ID) (*User, error) {
+func (r *Neo4jUserRepository) Get(ctx context.Context, id model.ID, proj UserProjection) (*User, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.UserRepository/Get")
 	defer span.End()
 
-	cypher := `MATCH (u:` + model.ResourceTypeUser.String() + ` {id: $id})
-	OPTIONAL MATCH (u)-[p:` + EdgeKindHasPermission.String() + `]->()
-	OPTIONAL MATCH (u)<-[r:` + EdgeKindBelongsTo.String() + `]-(d:` + model.ResourceTypeDocument.String() + `)
-	RETURN u, collect(DISTINCT p.id) AS p, collect(DISTINCT d.id) AS d`
-
-	params := map[string]any{
-		"id": id.String(),
+	plan, err := CompileQuery(UserGetQuery{
+		ID:         id,
+		Projection: proj,
+	})
+	if err != nil {
+		return nil, errors.Join(ErrUserRead, err)
 	}
 
-	user, err := Neo4jExecuteReadAndReadSingle(ctx, r.db, cypher, params, r.scan("u", "p", "d"))
+	var user *User
+	err = Neo4jExecuteReadPlan(ctx, r.db, plan, func(tx neo4j.ManagedTransaction) error {
+		var readErr error
+		user, _, readErr = Neo4jRunQuerySingle(ctx, tx, plan.Root, r.scan("u", proj))
+		if readErr != nil {
+			return readErr
+		}
+		return r.applyUserLoaders(ctx, tx, plan, []*User{user})
+	})
 	if err != nil {
 		if errors.As(err, &ErrNoMoreRecords) {
 			return nil, errors.Join(ErrUserRead, ErrNotFound)
@@ -305,20 +353,27 @@ func (r *Neo4jUserRepository) Get(ctx context.Context, id model.ID) (*User, erro
 }
 
 // GetByEmail returns a user by its email.
-func (r *Neo4jUserRepository) GetByEmail(ctx context.Context, email string) (*User, error) {
+func (r *Neo4jUserRepository) GetByEmail(ctx context.Context, email string, proj UserProjection) (*User, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.UserRepository/GetByEmail")
 	defer span.End()
 
-	cypher := `MATCH (u:` + model.ResourceTypeUser.String() + ` {email: $email})
-	OPTIONAL MATCH (u)-[p:` + EdgeKindHasPermission.String() + `]->()
-	OPTIONAL MATCH (u)<-[r:` + EdgeKindBelongsTo.String() + `]-(d:` + model.ResourceTypeDocument.String() + `)
-	RETURN u, collect(DISTINCT p.id) AS p, collect(DISTINCT d.id) AS d`
-
-	params := map[string]any{
-		"email": email,
+	plan, err := CompileQuery(UserGetByEmailQuery{
+		Email:      email,
+		Projection: proj,
+	})
+	if err != nil {
+		return nil, errors.Join(ErrUserRead, err)
 	}
 
-	user, err := Neo4jExecuteReadAndReadSingle(ctx, r.db, cypher, params, r.scan("u", "p", "d"))
+	var user *User
+	err = Neo4jExecuteReadPlan(ctx, r.db, plan, func(tx neo4j.ManagedTransaction) error {
+		var readErr error
+		user, _, readErr = Neo4jRunQuerySingle(ctx, tx, plan.Root, r.scan("u", proj))
+		if readErr != nil {
+			return readErr
+		}
+		return r.applyUserLoaders(ctx, tx, plan, []*User{user})
+	})
 	if err != nil {
 		if errors.As(err, &ErrNoMoreRecords) {
 			return nil, errors.Join(ErrUserRead, ErrNotFound)
@@ -329,33 +384,43 @@ func (r *Neo4jUserRepository) GetByEmail(ctx context.Context, email string) (*Us
 	return user, nil
 }
 
-// GetAll returns all users respecting the given offset and limit.
-func (r *Neo4jUserRepository) GetAll(ctx context.Context, offset, limit int) ([]*User, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.UserRepository/GetAllBelongsTo")
+// List returns users with cursor pagination.
+func (r *Neo4jUserRepository) List(ctx context.Context, page CursorPage, proj UserProjection) (Page[*User], error) {
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.UserRepository/List")
 	defer span.End()
 
-	cypher := `
-	MATCH (u:` + model.ResourceTypeUser.String() + `)
-	OPTIONAL MATCH (u)-[p:` + EdgeKindHasPermission.String() + `]->()
-	OPTIONAL MATCH (u)<-[r:` + EdgeKindBelongsTo.String() + `]-(d:` + model.ResourceTypeDocument.String() + `)
-	RETURN u, collect(DISTINCT p.id) AS p, collect(DISTINCT d.id) AS d
-	ORDER BY u.created_at DESC
-	SKIP $offset LIMIT $limit`
-
-	params := map[string]any{
-		"offset": offset,
-		"limit":  limit,
+	normalized, err := page.Normalize()
+	if err != nil {
+		return Page[*User]{}, errors.Join(ErrUserRead, err)
+	}
+	plan, err := CompileQuery(UserListQuery{
+		Page:       normalized,
+		Order:      SortDirectionDesc,
+		Projection: proj,
+	})
+	if err != nil {
+		return Page[*User]{}, errors.Join(ErrUserRead, err)
 	}
 
-	users, err := Neo4jExecuteWriteAndReadAll(ctx, r.db, cypher, params, r.scan("u", "p", "d"))
+	users := make([]*User, 0)
+	err = Neo4jExecuteReadPlan(ctx, r.db, plan, func(tx neo4j.ManagedTransaction) error {
+		var readErr error
+		users, _, readErr = Neo4jRunQuery(ctx, tx, plan.Root, r.scan("u", proj))
+		if readErr != nil {
+			return readErr
+		}
+		return r.applyUserLoaders(ctx, tx, plan, users)
+	})
 	if err != nil {
 		if errors.As(err, &ErrNoMoreRecords) {
-			return nil, errors.Join(ErrUserRead, ErrNotFound)
+			return Page[*User]{}, errors.Join(ErrUserRead, ErrNotFound)
 		}
-		return nil, errors.Join(ErrUserRead, err)
+		return Page[*User]{}, errors.Join(ErrUserRead, err)
 	}
 
-	return users, nil
+	return PaginateSlice(users, normalized.Size, func(user *User) model.ID {
+		return user.ID
+	})
 }
 
 // Update updates a user by its ID with any given opts.
@@ -366,17 +431,16 @@ func (r *Neo4jUserRepository) Update(ctx context.Context, id model.ID, opts Upda
 	cypher := `
 	MATCH (u:` + id.Label() + ` {id: $id})
 	SET u += $patch, u.updated_at = datetime()
-	WITH u
-	OPTIONAL MATCH (u)-[p:` + EdgeKindHasPermission.String() + `]->()
-	OPTIONAL MATCH (u)<-[r:` + EdgeKindBelongsTo.String() + `]-(d:` + model.ResourceTypeDocument.String() + `)
-	RETURN u, collect(DISTINCT p.id) AS p, collect(DISTINCT d.id) AS d
+	RETURN u.id AS id
 	`
 	params := map[string]any{
 		"id":    id.String(),
 		"patch": opts.patch(),
 	}
 
-	updated, err := Neo4jExecuteWriteAndReadSingle(ctx, r.db, cypher, params, r.scan("u", "p", "d"))
+	_, err := Neo4jExecuteWriteAndReadSingle(ctx, r.db, cypher, params, func(_ *neo4j.Record) (*struct{}, error) {
+		return &struct{}{}, nil
+	})
 	if err != nil {
 		if errors.As(err, &ErrNoMoreRecords) {
 			return nil, errors.Join(ErrUserRead, ErrNotFound)
@@ -384,7 +448,7 @@ func (r *Neo4jUserRepository) Update(ctx context.Context, id model.ID, opts Upda
 		return nil, errors.Join(ErrUserUpdate, err)
 	}
 
-	return updated, nil
+	return r.Get(ctx, id, UserDetailProjection())
 }
 
 // Delete deletes a user by its ID.
@@ -421,11 +485,11 @@ func clearUsersPattern(ctx context.Context, r *redisBaseRepository, pattern ...s
 }
 
 func clearUsersKey(ctx context.Context, r *redisBaseRepository, id model.ID) error {
-	return r.Delete(ctx, composeCacheKey(model.ResourceTypeUser.String(), id.String()))
+	return clearUsersPattern(ctx, r, "Get", id.String(), "*")
 }
 
 func clearUsersByEmail(ctx context.Context, r *redisBaseRepository, email string) error {
-	return r.Delete(ctx, composeCacheKey(model.ResourceTypeUser.String(), "GetByEmail", email))
+	return clearUsersPattern(ctx, r, "GetByEmail", email, "*")
 }
 
 func clearUsersAllByEmail(ctx context.Context, r *redisBaseRepository) error {
@@ -433,7 +497,7 @@ func clearUsersAllByEmail(ctx context.Context, r *redisBaseRepository) error {
 }
 
 func clearUserAll(ctx context.Context, r *redisBaseRepository) error {
-	return clearUsersPattern(ctx, r, "GetAll", "*")
+	return clearUsersPattern(ctx, r, "List", "*", "*", "*")
 }
 
 func clearUserAllCrossCache(ctx context.Context, r *redisBaseRepository) error {
@@ -468,11 +532,11 @@ func (r *RedisCachedUserRepository) Create(ctx context.Context, opts CreateUserO
 	return r.userRepo.Create(ctx, opts)
 }
 
-func (r *RedisCachedUserRepository) Get(ctx context.Context, id model.ID) (*User, error) {
+func (r *RedisCachedUserRepository) Get(ctx context.Context, id model.ID, proj UserProjection) (*User, error) {
 	var user *User
 	var err error
 
-	key := composeCacheKey(model.ResourceTypeUser.String(), id.String())
+	key := composeCacheKey(model.ResourceTypeUser.String(), "Get", id.String(), projectionCacheValue(proj))
 	if err = r.cacheRepo.Get(ctx, key, &user); err != nil {
 		return nil, err
 	}
@@ -481,7 +545,7 @@ func (r *RedisCachedUserRepository) Get(ctx context.Context, id model.ID) (*User
 		return user, nil
 	}
 
-	if user, err = r.userRepo.Get(ctx, id); err != nil {
+	if user, err = r.userRepo.Get(ctx, id, proj); err != nil {
 		return nil, err
 	}
 
@@ -492,11 +556,11 @@ func (r *RedisCachedUserRepository) Get(ctx context.Context, id model.ID) (*User
 	return user, nil
 }
 
-func (r *RedisCachedUserRepository) GetByEmail(ctx context.Context, email string) (*User, error) {
+func (r *RedisCachedUserRepository) GetByEmail(ctx context.Context, email string, proj UserProjection) (*User, error) {
 	var user *User
 	var err error
 
-	key := composeCacheKey(model.ResourceTypeUser.String(), "GetByEmail", email)
+	key := composeCacheKey(model.ResourceTypeUser.String(), "GetByEmail", email, projectionCacheValue(proj))
 	if err = r.cacheRepo.Get(ctx, key, &user); err != nil {
 		return nil, err
 	}
@@ -505,7 +569,7 @@ func (r *RedisCachedUserRepository) GetByEmail(ctx context.Context, email string
 		return user, nil
 	}
 
-	if user, err = r.userRepo.GetByEmail(ctx, email); err != nil {
+	if user, err = r.userRepo.GetByEmail(ctx, email, proj); err != nil {
 		return nil, err
 	}
 
@@ -516,25 +580,30 @@ func (r *RedisCachedUserRepository) GetByEmail(ctx context.Context, email string
 	return user, nil
 }
 
-func (r *RedisCachedUserRepository) GetAll(ctx context.Context, offset, limit int) ([]*User, error) {
-	var users []*User
+func (r *RedisCachedUserRepository) List(ctx context.Context, page CursorPage, proj UserProjection) (Page[*User], error) {
+	var users Page[*User]
 	var err error
 
-	key := composeCacheKey(model.ResourceTypeUser.String(), "GetAll", offset, limit)
+	normalized, err := normalizedPage(page)
+	if err != nil {
+		return Page[*User]{}, err
+	}
+
+	key := composeCacheKey(model.ResourceTypeUser.String(), "List", projectionCacheValue(proj), pageTokenValue(normalized.Token), normalized.Size)
 	if err = r.cacheRepo.Get(ctx, key, &users); err != nil {
-		return nil, err
+		return Page[*User]{}, err
 	}
 
-	if users != nil {
+	if users.Items != nil {
 		return users, nil
 	}
 
-	if users, err = r.userRepo.GetAll(ctx, offset, limit); err != nil {
-		return nil, err
+	if users, err = r.userRepo.List(ctx, normalized, proj); err != nil {
+		return Page[*User]{}, err
 	}
 
 	if err = r.cacheRepo.Set(ctx, key, users); err != nil {
-		return nil, err
+		return Page[*User]{}, err
 	}
 
 	return users, nil
@@ -546,7 +615,7 @@ func (r *RedisCachedUserRepository) Update(ctx context.Context, id model.ID, opt
 		return nil, err
 	}
 
-	key := composeCacheKey(model.ResourceTypeUser.String(), id.String())
+	key := composeCacheKey(model.ResourceTypeUser.String(), "Get", id.String(), projectionCacheValue(UserDetailProjection()))
 	if err = r.cacheRepo.Set(ctx, key, user); err != nil {
 		return nil, err
 	}

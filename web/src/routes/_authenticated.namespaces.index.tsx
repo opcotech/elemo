@@ -4,10 +4,8 @@ import { useMemo, useState } from "react";
 import { z } from "zod";
 
 import { ContentWidth } from "@/components/layout/content-width";
-import { NamespaceEntitySubtitle } from "@/components/namespaces";
-import { AppEmptyState } from "@/components/shared/app-feedback";
+import { NamespaceEntitySubtitle } from "@/components/namespaces/namespace-entity-subtitle";
 import { AppList, EntityLink } from "@/components/shared/entity-link";
-import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import {
   Command,
@@ -17,7 +15,10 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
+import { EmptyState } from "@/components/ui/empty-state";
 import { InternalLink } from "@/components/ui/internal-link";
+import { ListSkeleton } from "@/components/ui/list-skeleton";
+import { PageHeader } from "@/components/ui/page-header";
 import {
   Popover,
   PopoverContent,
@@ -188,7 +189,7 @@ function NamespacesListPage() {
       </div>
 
       {isLoading ? (
-        <p className="text-muted-foreground text-sm">Loading namespaces…</p>
+        <ListSkeleton />
       ) : filteredNamespaces.length > 0 ? (
         <AppList>
           {filteredNamespaces.map((namespace) => (
@@ -201,15 +202,15 @@ function NamespacesListPage() {
                 <NamespaceEntitySubtitle
                   description={namespace.description}
                   organizationName={namespace.organizationName}
-                  projectCount={namespace.projects.length}
-                  documentCount={namespace.documents.length}
+                  projectCount={namespace.project_count ?? 0}
+                  documentCount={namespace.document_count ?? 0}
                 />
               }
             />
           ))}
         </AppList>
       ) : (
-        <AppEmptyState
+        <EmptyState
           icon={<Layers3Icon />}
           title={hasActiveFilters ? "No matching namespaces" : "No namespaces"}
           description={

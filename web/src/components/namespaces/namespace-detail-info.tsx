@@ -1,20 +1,13 @@
 import { Link } from "@tanstack/react-router";
 import { Edit } from "lucide-react";
 
-import { DetailField } from "@/components/shared/detail-field";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { CountBadge } from "@/components/ui/count-badge";
+import { DetailCard } from "@/components/ui/detail-card";
+import { DetailField } from "@/components/ui/detail-field";
 import type { Namespace, Permission } from "@/lib/api/types";
 import { can } from "@/lib/auth/permissions";
 import { formatDate } from "@/lib/format-date";
-import { pluralize } from "@/lib/utils";
 
 interface NamespaceDetailInfoProps {
   namespace: Namespace;
@@ -31,88 +24,78 @@ export function NamespaceDetailInfo({
 }: NamespaceDetailInfoProps) {
   const hasWritePermission = can(permissions, "write");
 
-  const projectCount = namespace.projects?.length || 0;
-  const documentCount = namespace.documents?.length || 0;
+  const projectCount = namespace.project_count ?? 0;
+  const documentCount = namespace.document_count ?? 0;
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-start justify-between">
-          <div className="space-y-1">
-            <CardTitle>Namespace Information</CardTitle>
-            <CardDescription>
-              Details about the namespace and its resources.
-            </CardDescription>
-          </div>
-          <div className="flex items-center gap-2">
+    <DetailCard
+      title="Namespace Information"
+      description="Details about the namespace and its resources."
+      actions={
+        <>
+          <Button
+            variant="outline"
+            size="sm"
+            render={
+              <Link
+                to="/namespaces/$namespaceId"
+                params={{ namespaceId: namespace.id }}
+              />
+            }
+          >
+            Open namespace
+          </Button>
+          {hasWritePermission && (
             <Button
               variant="outline"
               size="sm"
               render={
                 <Link
-                  to="/namespaces/$namespaceId"
-                  params={{ namespaceId: namespace.id }}
+                  to="/settings/organizations/$organizationId/namespaces/$namespaceId/edit"
+                  params={{
+                    organizationId,
+                    namespaceId: namespace.id,
+                  }}
                 />
               }
             >
-              Open namespace
+              <Edit className="size-4" />
+              Edit
             </Button>
-            {hasWritePermission && (
-              <Button
-                variant="outline"
-                size="sm"
-                render={
-                  <Link
-                    to="/settings/organizations/$organizationId/namespaces/$namespaceId/edit"
-                    params={{
-                      organizationId,
-                      namespaceId: namespace.id,
-                    }}
-                  />
-                }
-              >
-                <Edit className="size-4" />
-                Edit
-              </Button>
-            )}
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <DetailField label="Name" value={namespace.name} />
+          )}
+        </>
+      }
+    >
+      <DetailField label="Name" value={namespace.name} />
 
-          <DetailField label="Organization">
-            <Link
-              to="/settings/organizations/$organizationId"
-              params={{ organizationId }}
-              className="text-primary hover:underline"
-            >
-              {organizationName}
-            </Link>
-          </DetailField>
+      <DetailField label="Organization">
+        <Link
+          to="/settings/organizations/$organizationId"
+          params={{ organizationId }}
+          className="text-primary hover:underline"
+        >
+          {organizationName}
+        </Link>
+      </DetailField>
 
-          <DetailField label="Description" value={namespace.description} />
+      <DetailField label="Description" value={namespace.description} />
 
-          <DetailField label="Projects">
-            <Badge variant="secondary">
-              {projectCount} {pluralize(projectCount, "project", "projects")}
-            </Badge>
-          </DetailField>
+      <DetailField label="Projects">
+        <CountBadge count={projectCount} singular="project" plural="projects" />
+      </DetailField>
 
-          <DetailField label="Documents">
-            <Badge variant="secondary">
-              {documentCount}{" "}
-              {pluralize(documentCount, "document", "documents")}
-            </Badge>
-          </DetailField>
+      <DetailField label="Documents">
+        <CountBadge
+          count={documentCount}
+          singular="document"
+          plural="documents"
+        />
+      </DetailField>
 
-          <DetailField
-            label="Created At"
-            value={formatDate(namespace.created_at)}
-          />
-        </div>
-      </CardContent>
-    </Card>
+      <DetailField
+        label="Created At"
+        value={formatDate(namespace.created_at)}
+      />
+    </DetailCard>
   );
 }

@@ -1,11 +1,14 @@
 import { useState } from "react";
 
-import { dateLabel, paginate } from "./utils";
+import { PriorityRibbon } from "./priority-ribbon";
+import { dateLabel, paginate, workItemPath } from "./utils";
+import { WorkLabelBadges } from "./work-label-badges";
 
-import { StatusIndicator } from "@/components/shared/status-indicator";
 import { Button } from "@/components/ui/button";
 import { InternalLink } from "@/components/ui/internal-link";
+import { PersonAvatarStack } from "@/components/ui/person-avatar-stack";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { StatusIndicator } from "@/components/ui/status-indicator";
 import {
   Table,
   TableBody,
@@ -15,9 +18,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { internalPath } from "@/lib/internal-url";
-import { getPerson } from "@/lib/mock-data";
 import type { WorkItem } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
+import { workItemAssignmentPeople } from "@/lib/work/resolve-work-people";
 
 const TABLE_PAGE_SIZE = 50;
 
@@ -39,12 +42,16 @@ export function WorkTable({
         <Table className="min-w-195">
           <TableHeader className="bg-background sticky top-0 z-10">
             <TableRow>
-              <TableHead className="bg-background sticky left-0">Key</TableHead>
+              <TableHead className="bg-background sticky left-0 min-w-20">
+                Key
+              </TableHead>
               <TableHead className="min-w-72">Title</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Assignee</TableHead>
               <TableHead>Priority</TableHead>
-              <TableHead>Target</TableHead>
+              <TableHead>People</TableHead>
+              <TableHead>Labels</TableHead>
+              <TableHead>Start date</TableHead>
+              <TableHead>Due date</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -57,8 +64,8 @@ export function WorkTable({
                   )}
                 >
                   <InternalLink
-                    to={internalPath(`/work/${item.id}`)}
-                    className="hover:text-primary"
+                    to={internalPath(workItemPath(item))}
+                    className="text-primary hover:text-primary-pressed"
                   >
                     {item.key}
                   </InternalLink>
@@ -77,14 +84,22 @@ export function WorkTable({
                   <StatusIndicator status={item.status} />
                 </TableCell>
                 <TableCell className={cn(compact ? "py-2" : "py-3")}>
-                  {item.assigneeId
-                    ? (getPerson(item.assigneeId)?.displayName ?? "Assigned")
-                    : "Unassigned"}
+                  <PriorityRibbon priority={item.priority} />
                 </TableCell>
-                <TableCell
-                  className={cn("capitalize", compact ? "py-2" : "py-3")}
-                >
-                  {item.priority}
+                <TableCell className={cn(compact ? "py-2" : "py-3")}>
+                  <PersonAvatarStack
+                    people={workItemAssignmentPeople(item)}
+                    size="sm"
+                  />
+                </TableCell>
+                <TableCell className={cn(compact ? "py-2" : "py-3")}>
+                  <WorkLabelBadges
+                    labelIds={item.labelIds}
+                    labels={item.labels}
+                  />
+                </TableCell>
+                <TableCell className={cn(compact ? "py-2" : "py-3")}>
+                  {dateLabel(item.startDate)}
                 </TableCell>
                 <TableCell className={cn(compact ? "py-2" : "py-3")}>
                   {dateLabel(item.dueDate)}

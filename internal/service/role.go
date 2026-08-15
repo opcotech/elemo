@@ -20,7 +20,7 @@ type Role struct {
 	ID          model.ID
 	Name        string
 	Description string
-	Members     []model.ID
+	MemberCount *int64
 	Permissions []model.ID
 	CreatedAt   *time.Time
 	UpdatedAt   *time.Time
@@ -56,17 +56,15 @@ type RoleService interface {
 	// Get returns a role by its ID. If the role does not exist, an error is
 	// returned.
 	Get(ctx context.Context, id, belongsTo model.ID) (*Role, error)
-	// GetAllBelongsTo returns all roles that belong to a resource. The offset
-	// and limit parameters are used to paginate the results. If the offset is
-	// greater than the number of roles in the system, an empty slice is
-	// returned.
-	GetAllBelongsTo(ctx context.Context, belongsTo model.ID, offset, limit int) ([]*Role, error)
+	// ListBelongsTo returns a cursor-paginated page of roles for a resource.
+	ListBelongsTo(ctx context.Context, belongsTo model.ID, page CursorPage) (Page[*Role], error)
 	// Update updates a role in the system. If the role does not exist, an
 	// error is returned.
 	Update(ctx context.Context, id, belongsTo model.ID, opts UpdateRoleOpts) (*Role, error)
-	// GetMembers returns all members of a role that belongs to a resource. If
-	// the resource does not exist, an error is returned.
-	GetMembers(ctx context.Context, id, belongsTo model.ID) ([]*User, error)
+	// ListMembers returns a cursor-paginated page of members of a role that
+	// belongs to a resource. If the resource does not exist, an error is
+	// returned.
+	ListMembers(ctx context.Context, id, belongsTo model.ID, page CursorPage) (Page[*User], error)
 	// AddMember adds a member to a role. If the member is already a member of
 	// the role, an error is returned.
 	AddMember(ctx context.Context, roleID, memberID, belongsToID model.ID) error
@@ -102,7 +100,7 @@ func roleFromRepository(r *repository.Role) *Role {
 		ID:          r.ID,
 		Name:        r.Name,
 		Description: r.Description,
-		Members:     r.Members,
+		MemberCount: r.MemberCount,
 		Permissions: r.Permissions,
 		CreatedAt:   r.CreatedAt,
 		UpdatedAt:   r.UpdatedAt,
@@ -166,7 +164,7 @@ func (s *roleService) Get(ctx context.Context, id, belongsTo model.ID) (*Role, e
 		return nil, errors.Join(ErrRoleGet, ErrNoPermission)
 	}
 
-	role, err := s.roleRepo.Get(ctx, id, belongsTo)
+	role, err := s.roleRepo.Get(ctx, id, belongsTo, repository.RoleDetailProjection())
 	if err != nil {
 		return nil, errors.Join(ErrRoleGet, err)
 	}
@@ -174,28 +172,34 @@ func (s *roleService) Get(ctx context.Context, id, belongsTo model.ID) (*Role, e
 	return roleFromRepository(role), nil
 }
 
-func (s *roleService) GetAllBelongsTo(ctx context.Context, belongsTo model.ID, offset, limit int) ([]*Role, error) {
-	ctx, span := s.tracer.Start(ctx, "service.roleService/GetAllBelongsTo")
+func (s *roleService) ListBelongsTo(ctx context.Context, belongsTo model.ID, page CursorPage) (Page[*Role], error) {
+	ctx, span := s.tracer.Start(ctx, "service.roleService/ListBelongsTo")
 	defer span.End()
 
 	if err := belongsTo.Validate(); err != nil {
-		return nil, errors.Join(ErrRoleGetBelongsTo, err)
+		return Page[*Role]{}, errors.Join(ErrRoleGetBelongsTo, err)
 	}
 
-	if offset < 0 || limit <= 0 {
-		return nil, errors.Join(ErrRoleGetBelongsTo, ErrInvalidPaginationParams)
+	normalized, err := page.Normalize()
+	if err != nil {
+		return Page[*Role]{}, errors.Join(ErrRoleGetBelongsTo, err)
 	}
 
 	if !s.permissionService.CtxUserHasPermission(ctx, belongsTo, model.PermissionKindRead) {
-		return nil, errors.Join(ErrRoleGetBelongsTo, ErrNoPermission)
+		return Page[*Role]{}, errors.Join(ErrRoleGetBelongsTo, ErrNoPermission)
 	}
 
-	roles, err := s.roleRepo.GetAllBelongsTo(ctx, belongsTo, offset, limit)
+	roles, err := s.roleRepo.ListBelongsTo(
+		ctx,
+		belongsTo,
+		normalized,
+		repository.RoleListProjection(),
+	)
 	if err != nil {
-		return nil, errors.Join(ErrRoleGetBelongsTo, err)
+		return Page[*Role]{}, errors.Join(ErrRoleGetBelongsTo, err)
 	}
 
-	return rolesFromRepository(roles), nil
+	return mapPage(roles, roleFromRepository), nil
 }
 
 func (s *roleService) Update(ctx context.Context, id, belongsTo model.ID, opts UpdateRoleOpts) (*Role, error) {
@@ -229,37 +233,33 @@ func (s *roleService) Update(ctx context.Context, id, belongsTo model.ID, opts U
 	return roleFromRepository(role), nil
 }
 
-func (s *roleService) GetMembers(ctx context.Context, id, belongsTo model.ID) ([]*User, error) {
-	ctx, span := s.tracer.Start(ctx, "service.roleService/GetMembers")
+func (s *roleService) ListMembers(ctx context.Context, id, belongsTo model.ID, page CursorPage) (Page[*User], error) {
+	ctx, span := s.tracer.Start(ctx, "service.roleService/ListMembers")
 	defer span.End()
 
 	if err := belongsTo.Validate(); err != nil {
-		return nil, errors.Join(ErrRoleGetBelongsTo, err)
+		return Page[*User]{}, errors.Join(ErrRoleGetBelongsTo, err)
+	}
+
+	normalized, err := page.Normalize()
+	if err != nil {
+		return Page[*User]{}, errors.Join(ErrRoleGetBelongsTo, err)
 	}
 
 	if !s.permissionService.CtxUserHasPermission(ctx, id, model.PermissionKindRead) {
-		return nil, errors.Join(ErrRoleGetBelongsTo, ErrNoPermission)
+		return Page[*User]{}, errors.Join(ErrRoleGetBelongsTo, ErrNoPermission)
 	}
 
 	if !s.permissionService.CtxUserHasPermission(ctx, belongsTo, model.PermissionKindRead) {
-		return nil, errors.Join(ErrRoleGetBelongsTo, ErrNoPermission)
+		return Page[*User]{}, errors.Join(ErrRoleGetBelongsTo, ErrNoPermission)
 	}
 
-	role, err := s.roleRepo.Get(ctx, id, belongsTo)
+	members, err := s.roleRepo.ListMembers(ctx, id, belongsTo, normalized)
 	if err != nil {
-		return nil, errors.Join(ErrOrganizationMembersGet, err)
+		return Page[*User]{}, errors.Join(ErrOrganizationMembersGet, err)
 	}
 
-	members := make([]*User, 0, len(role.Members))
-	for _, member := range role.Members {
-		user, err := s.userRepo.Get(ctx, member)
-		if err != nil {
-			return nil, errors.Join(ErrOrganizationMembersGet, err)
-		}
-		members = append(members, userFromRepository(user))
-	}
-
-	return members, nil
+	return mapPage(members, userFromRepository), nil
 }
 
 func (s *roleService) AddMember(ctx context.Context, roleID, memberID, belongsToID model.ID) error {
@@ -292,13 +292,13 @@ func (s *roleService) AddMember(ctx context.Context, roleID, memberID, belongsTo
 	}
 
 	if s.notificationService != nil && s.organizationRepo != nil {
-		role, err := s.roleRepo.Get(ctx, roleID, belongsToID)
+		role, err := s.roleRepo.Get(ctx, roleID, belongsToID, repository.RoleDetailProjection())
 		if err != nil {
 			s.logger.Warn(ctx, "failed to get role for notification when adding member",
 				log.WithError(err),
 				slog.String("role_id", roleID.String()))
 		} else {
-			organization, err := s.organizationRepo.Get(ctx, belongsToID)
+			organization, err := s.organizationRepo.Get(ctx, belongsToID, repository.OrganizationDetailProjection())
 			if err != nil {
 				s.logger.Warn(ctx, "failed to get organization for notification when adding member to role",
 					log.WithError(err),
@@ -353,13 +353,13 @@ func (s *roleService) RemoveMember(ctx context.Context, roleID, memberID, belong
 	}
 
 	if s.notificationService != nil && s.organizationRepo != nil {
-		role, err := s.roleRepo.Get(ctx, roleID, belongsToID)
+		role, err := s.roleRepo.Get(ctx, roleID, belongsToID, repository.RoleDetailProjection())
 		if err != nil {
 			s.logger.Warn(ctx, "failed to get role for notification when removing member",
 				log.WithError(err),
 				slog.String("role_id", roleID.String()))
 		} else {
-			organization, err := s.organizationRepo.Get(ctx, belongsToID)
+			organization, err := s.organizationRepo.Get(ctx, belongsToID, repository.OrganizationDetailProjection())
 			if err != nil {
 				s.logger.Warn(ctx, "failed to get organization for notification when removing member from role",
 					log.WithError(err),
@@ -432,7 +432,7 @@ func (s *roleService) AddPermission(ctx context.Context, roleID, belongsToID, ta
 		return errors.Join(ErrRoleAddPermission, err)
 	}
 
-	if _, err := s.roleRepo.Get(ctx, roleID, belongsToID); err != nil {
+	if _, err := s.roleRepo.Get(ctx, roleID, belongsToID, repository.RoleDetailProjection()); err != nil {
 		return errors.Join(ErrRoleAddPermission, err)
 	}
 
@@ -471,7 +471,7 @@ func (s *roleService) RemovePermission(ctx context.Context, roleID, belongsToID,
 		return errors.Join(ErrRoleRemovePermission, err)
 	}
 
-	if _, err := s.roleRepo.Get(ctx, roleID, belongsToID); err != nil {
+	if _, err := s.roleRepo.Get(ctx, roleID, belongsToID, repository.RoleDetailProjection()); err != nil {
 		return errors.Join(ErrRoleRemovePermission, err)
 	}
 
@@ -507,7 +507,7 @@ func (s *roleService) GetPermissions(ctx context.Context, roleID, belongsToID mo
 		return nil, errors.Join(ErrRoleGetPermissions, err)
 	}
 
-	if _, err := s.roleRepo.Get(ctx, roleID, belongsToID); err != nil {
+	if _, err := s.roleRepo.Get(ctx, roleID, belongsToID, repository.RoleDetailProjection()); err != nil {
 		return nil, errors.Join(ErrRoleGetPermissions, err)
 	}
 

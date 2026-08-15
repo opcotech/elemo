@@ -99,33 +99,18 @@ func (mr *MockOrganizationRepositoryMockRecorder) Delete(ctx, id any) *gomock.Ca
 }
 
 // Get mocks base method.
-func (m *MockOrganizationRepository) Get(ctx context.Context, id model.ID) (*Organization, error) {
+func (m *MockOrganizationRepository) Get(ctx context.Context, id model.ID, proj OrganizationProjection) (*Organization, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Get", ctx, id)
+	ret := m.ctrl.Call(m, "Get", ctx, id, proj)
 	ret0, _ := ret[0].(*Organization)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Get indicates an expected call of Get.
-func (mr *MockOrganizationRepositoryMockRecorder) Get(ctx, id any) *gomock.Call {
+func (mr *MockOrganizationRepositoryMockRecorder) Get(ctx, id, proj any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockOrganizationRepository)(nil).Get), ctx, id)
-}
-
-// GetAll mocks base method.
-func (m *MockOrganizationRepository) GetAll(ctx context.Context, userID model.ID, offset, limit int) ([]*Organization, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAll", ctx, userID, offset, limit)
-	ret0, _ := ret[0].([]*Organization)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetAll indicates an expected call of GetAll.
-func (mr *MockOrganizationRepositoryMockRecorder) GetAll(ctx, userID, offset, limit any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAll", reflect.TypeOf((*MockOrganizationRepository)(nil).GetAll), ctx, userID, offset, limit)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockOrganizationRepository)(nil).Get), ctx, id, proj)
 }
 
 // GetInvitations mocks base method.
@@ -143,19 +128,34 @@ func (mr *MockOrganizationRepositoryMockRecorder) GetInvitations(ctx, orgID any)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetInvitations", reflect.TypeOf((*MockOrganizationRepository)(nil).GetInvitations), ctx, orgID)
 }
 
-// GetMembers mocks base method.
-func (m *MockOrganizationRepository) GetMembers(ctx context.Context, orgID model.ID) ([]*OrganizationMember, error) {
+// List mocks base method.
+func (m *MockOrganizationRepository) List(ctx context.Context, userID model.ID, page CursorPage, proj OrganizationProjection) (Page[*Organization], error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetMembers", ctx, orgID)
-	ret0, _ := ret[0].([]*OrganizationMember)
+	ret := m.ctrl.Call(m, "List", ctx, userID, page, proj)
+	ret0, _ := ret[0].(Page[*Organization])
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetMembers indicates an expected call of GetMembers.
-func (mr *MockOrganizationRepositoryMockRecorder) GetMembers(ctx, orgID any) *gomock.Call {
+// List indicates an expected call of List.
+func (mr *MockOrganizationRepositoryMockRecorder) List(ctx, userID, page, proj any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMembers", reflect.TypeOf((*MockOrganizationRepository)(nil).GetMembers), ctx, orgID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockOrganizationRepository)(nil).List), ctx, userID, page, proj)
+}
+
+// ListMembers mocks base method.
+func (m *MockOrganizationRepository) ListMembers(ctx context.Context, orgID model.ID, page CursorPage) (Page[*OrganizationMember], error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListMembers", ctx, orgID, page)
+	ret0, _ := ret[0].(Page[*OrganizationMember])
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListMembers indicates an expected call of ListMembers.
+func (mr *MockOrganizationRepositoryMockRecorder) ListMembers(ctx, orgID, page any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListMembers", reflect.TypeOf((*MockOrganizationRepository)(nil).ListMembers), ctx, orgID, page)
 }
 
 // RemoveInvitation mocks base method.

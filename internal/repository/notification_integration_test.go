@@ -60,7 +60,7 @@ func (s *NotificationRepositoryIntegrationTestSuite) TestGet() {
 	created, err := s.NotificationRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 
-	notification, err := s.NotificationRepo.Get(context.Background(), created.ID, created.Recipient)
+	notification, err := s.NotificationRepo.Get(context.Background(), created.ID, created.Recipient, repository.NotificationDetailProjection())
 	s.Require().NoError(err)
 
 	s.Assert().Equal(created.ID, notification.ID)
@@ -73,21 +73,19 @@ func (s *NotificationRepositoryIntegrationTestSuite) TestGetAllByRecipient() {
 	_, err = s.NotificationRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 
-	notifications, err := s.NotificationRepo.GetAllByRecipient(context.Background(), s.createOpts.Recipient, 0, 10)
+	notifications, err := s.NotificationRepo.ListByRecipient(context.Background(), s.createOpts.Recipient, repository.CursorPage{Size: 10}, repository.NotificationListProjection())
 	s.Require().NoError(err)
-	s.Assert().Len(notifications, 2)
+	s.Assert().Len(notifications.Items, 2)
 
-	notifications, err = s.NotificationRepo.GetAllByRecipient(context.Background(), s.createOpts.Recipient, 0, 1)
+	notifications, err = s.NotificationRepo.ListByRecipient(context.Background(), s.createOpts.Recipient, repository.CursorPage{Size: 1}, repository.NotificationListProjection())
 	s.Require().NoError(err)
-	s.Assert().Len(notifications, 1)
+	s.Assert().Len(notifications.Items, 1)
+	s.Assert().True(notifications.PageInfo.HasMore)
 
-	notifications, err = s.NotificationRepo.GetAllByRecipient(context.Background(), s.createOpts.Recipient, 1, 1)
+	notifications, err = s.NotificationRepo.ListByRecipient(context.Background(), s.createOpts.Recipient, repository.CursorPage{Size: 1, Token: notifications.PageInfo.NextPageToken}, repository.NotificationListProjection())
 	s.Require().NoError(err)
-	s.Assert().Len(notifications, 1)
-
-	notifications, err = s.NotificationRepo.GetAllByRecipient(context.Background(), s.createOpts.Recipient, 2, 1)
-	s.Require().NoError(err)
-	s.Assert().Len(notifications, 0)
+	s.Assert().Len(notifications.Items, 1)
+	s.Assert().False(notifications.PageInfo.HasMore)
 }
 
 func (s *NotificationRepositoryIntegrationTestSuite) TestUpdate() {
@@ -109,7 +107,7 @@ func (s *NotificationRepositoryIntegrationTestSuite) TestDelete() {
 
 	s.Require().NoError(s.NotificationRepo.Delete(context.Background(), created.ID, created.Recipient))
 
-	_, err = s.NotificationRepo.Get(context.Background(), created.ID, created.Recipient)
+	_, err = s.NotificationRepo.Get(context.Background(), created.ID, created.Recipient, repository.NotificationDetailProjection())
 	s.Assert().ErrorIs(err, repository.ErrNotFound)
 }
 

@@ -1,4 +1,4 @@
-import { useQueries, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Building2, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -8,93 +8,71 @@ import { OrganizationRow } from "./organization-row";
 import { Button } from "@/components/ui/button";
 import { ListContainer } from "@/components/ui/list-container";
 import { SearchInput } from "@/components/ui/search-input";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
-  TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { TableSkeletonRows } from "@/components/ui/table-skeleton";
 import {
   ResourceType,
   usePermissions,
+  usePermissionsByResourceId,
   withResourceType,
 } from "@/hooks/use-permissions";
-import {
-  v1OrganizationsGetOptions,
-  v1PermissionResourceGetOptions,
-} from "@/lib/api/query-options";
+import { collectedListQuery, cursorPageQuery } from "@/lib/api/cursor-pages";
+import { v1OrganizationsGetOptions } from "@/lib/api/query-options";
+import { v1OrganizationsGet } from "@/lib/api/sdk";
 import { can } from "@/lib/auth/permissions";
 import { zOrganizationStatus } from "@/lib/client/zod.gen";
 
-function OrganizationTableSkeletonRow() {
-  return (
-    <TableRow>
-      <TableCell>
-        <Skeleton className="h-5 w-32" />
-      </TableCell>
-      <TableCell>
-        <Skeleton className="h-5 w-40" />
-      </TableCell>
-      <TableCell>
-        <Skeleton className="h-5 w-48" />
-      </TableCell>
-      <TableCell>
-        <Skeleton className="h-6 w-16" />
-      </TableCell>
-      <TableCell>
-        <Skeleton className="h-5 w-24" />
-      </TableCell>
-      <TableCell>
-        <Skeleton className="h-5 w-24" />
-      </TableCell>
-      <TableCell className="text-right">
-        <div className="flex items-center justify-end gap-x-1">
-          <Skeleton className="h-5 w-8" />
-          <Skeleton className="h-5 w-8" />
-          <Skeleton className="h-5 w-8" />
-        </div>
-      </TableCell>
-    </TableRow>
-  );
-}
-
-function OrganizationTableSkeletonRows({ count = 5 }: { count?: number }) {
-  return (
-    <>
-      {Array.from({ length: count }).map((_, i) => (
-        <OrganizationTableSkeletonRow key={i} />
-      ))}
-    </>
-  );
-}
+const organizationTableSkeletonColumns = [
+  { header: "Name", skeletonClassName: "h-5 w-32" },
+  { header: "Email", skeletonClassName: "h-5 w-40" },
+  { header: "Website", skeletonClassName: "h-5 w-48" },
+  { header: "Members", skeletonClassName: "h-6 w-16" },
+  { header: "Status", skeletonClassName: "h-5 w-24" },
+  {
+    header: "Actions",
+    skeletonClassName: "h-5 w-8",
+    cellClassName: "text-right",
+    srOnly: true,
+    count: 3,
+  },
+] as const;
 
 export function OrganizationList() {
   const [searchTerm, setSearchTerm] = useState("");
 
+  const listOptions = v1OrganizationsGetOptions();
   const {
-    data: organizations,
+    data: organizationsPage,
     isLoading,
     error,
-  } = useQuery(v1OrganizationsGetOptions());
+  } = useQuery(
+    collectedListQuery(listOptions, async (pageToken, signal) => {
+      const { data } = await v1OrganizationsGet({
+        query: cursorPageQuery(pageToken),
+        signal,
+        throwOnError: true,
+      });
+      return data;
+    })
+  );
+  const organizations = organizationsPage?.items;
 
   const { data: systemPermissions } = usePermissions(
     withResourceType(ResourceType.Organization)
   );
-  const organizationPermissionQueries = useQueries({
-    queries: (organizations || []).map((organization) =>
-      v1PermissionResourceGetOptions({
-        path: {
-          resourceId: withResourceType(
-            ResourceType.Organization,
-            organization.id
-          ),
-        },
-      })
-    ),
-  });
+  const organizationIds = (organizations || []).map(
+    (organization) => organization.id
+  );
+  const organizationPermissionsById = usePermissionsByResourceId(
+    ResourceType.Organization,
+    organizationIds
+  );
   const canCreate = can(systemPermissions, "create");
 
   const sortedOrganizations = useMemo(() => {
@@ -186,16 +164,13 @@ export function OrganizationList() {
         </TableHeader>
         <TableBody>
           {isLoading ? (
-            <OrganizationTableSkeletonRows />
+            <TableSkeletonRows columns={organizationTableSkeletonColumns} />
           ) : (
             <>
               {filteredOrganizations.map((organization) => {
-                const sourceIndex =
-                  organizations?.findIndex(
-                    (candidate) => candidate.id === organization.id
-                  ) ?? -1;
-                const permissionQuery =
-                  organizationPermissionQueries[sourceIndex];
+                const permissionQuery = organizationPermissionsById.get(
+                  organization.id
+                );
                 return (
                   <OrganizationRow
                     key={organization.id}

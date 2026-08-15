@@ -2,11 +2,14 @@ import type { QueryClient } from "@tanstack/react-query";
 import { notFound } from "@tanstack/react-router";
 
 import { accessibleNamespacesOptions } from "@/lib/api/accessible-namespaces";
+import { collectListedPage, cursorPageQuery } from "@/lib/api/cursor-pages";
 import {
   v1NamespaceGetOptions,
+  v1NamespacesProjectsGetOptions,
   v1NotificationsGetOptions,
   v1OrganizationRoleGetOptions,
   v1OrganizationsGetOptions,
+  v1OrganizationsNamespacesGetOptions,
   v1ProjectGetOptions,
 } from "@/lib/api/query-options";
 import { ResourceType } from "@/lib/auth/permissions";
@@ -21,6 +24,25 @@ import {
 
 export { loadOrganization };
 
+async function requireProjectInNamespace(
+  queryClient: QueryClient,
+  namespaceId: string,
+  projectId: string
+) {
+  const projectsPage = await collectListedPage(async (pageToken) =>
+    queryClient.fetchQuery(
+      v1NamespacesProjectsGetOptions({
+        path: { id: namespaceId },
+        query: cursorPageQuery(pageToken),
+      })
+    )
+  );
+
+  if (!projectsPage.items.some((item) => item.id === projectId)) {
+    throw notFound();
+  }
+}
+
 export const loadOrganizationDetail = loadOrganizationWorkspace;
 
 export async function loadNamespaceHierarchy(
@@ -28,14 +50,22 @@ export async function loadNamespaceHierarchy(
   organizationId: string,
   namespaceId: string
 ) {
-  const [organization, namespace] = await Promise.all([
+  const [organization, namespace, namespacesPage] = await Promise.all([
     loadOrganization(queryClient, organizationId),
     queryClient.fetchQuery(
       v1NamespaceGetOptions({ path: { id: namespaceId } })
     ),
+    collectListedPage(async (pageToken) =>
+      queryClient.fetchQuery(
+        v1OrganizationsNamespacesGetOptions({
+          path: { id: organizationId },
+          query: cursorPageQuery(pageToken),
+        })
+      )
+    ),
   ]);
 
-  if (!organization.namespaces.includes(namespaceId)) {
+  if (!namespacesPage.items.some((item) => item.id === namespaceId)) {
     throw notFound();
   }
 
@@ -72,9 +102,7 @@ export async function loadProjectHierarchy(
     namespaceId
   );
 
-  if (!namespace.projects.some((project) => project.id === projectId)) {
-    throw notFound();
-  }
+  await requireProjectInNamespace(queryClient, namespaceId, projectId);
 
   const project = await queryClient.fetchQuery(
     v1ProjectGetOptions({ path: { id: projectId } })
@@ -101,9 +129,7 @@ export async function loadProjectDetail(
     v1NamespaceGetOptions({ path: { id: namespaceId } })
   );
 
-  if (!namespace.projects.some((project) => project.id === projectId)) {
-    throw notFound();
-  }
+  await requireProjectInNamespace(queryClient, namespaceId, projectId);
 
   const permissions = await requireResourcePermission(
     queryClient,
@@ -147,9 +173,10 @@ export async function loadOrganizations(
   queryClient: QueryClient,
   includeRowPermissions = false
 ) {
-  const organizations = await queryClient.fetchQuery(
+  const organizationsPage = await queryClient.fetchQuery(
     v1OrganizationsGetOptions()
   );
+  const organizations = organizationsPage.items;
   const permissionLoads = [
     loadResourcePermissions(queryClient, ResourceType.Organization),
   ];

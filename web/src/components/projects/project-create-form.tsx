@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/field";
 import { FormCard } from "@/components/ui/form-card";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { NameDescriptionFields } from "@/components/ui/name-description-fields";
 import { useFormMutation } from "@/hooks/use-form-mutation";
 import { accessibleNamespacesQueryKey } from "@/lib/api/accessible-namespaces";
 import {
@@ -32,7 +32,6 @@ import type {
   V1NamespacesProjectsCreateData,
 } from "@/lib/api/types";
 import { normalizeFormData } from "@/lib/forms";
-import { getDefaultValue } from "@/lib/utils";
 
 const defaultValues: ProjectCreateFormValues = {
   key: "",
@@ -140,42 +139,11 @@ export function ProjectCreateForm({
             )}
           />
 
-          <ControlledField
+          <NameDescriptionFields
             control={form.control}
-            name="name"
-            render={({ field }) => (
-              <Field>
-                <FieldLabel>Name</FieldLabel>
-                <FieldControl>
-                  <Input
-                    placeholder="Enter project name"
-                    {...field}
-                    disabled={mutation.isPending}
-                  />
-                </FieldControl>
-                <FieldError />
-              </Field>
-            )}
-          />
-
-          <ControlledField
-            control={form.control}
-            name="description"
-            render={({ field }) => (
-              <Field>
-                <FieldLabel>Description</FieldLabel>
-                <FieldControl>
-                  <Textarea
-                    placeholder="Enter project description (optional)"
-                    {...field}
-                    value={getDefaultValue(field.value)}
-                    rows={4}
-                    disabled={mutation.isPending}
-                  />
-                </FieldControl>
-                <FieldError />
-              </Field>
-            )}
+            isPending={mutation.isPending}
+            namePlaceholder="Enter project name"
+            descriptionPlaceholder="Enter project description"
           />
         </FieldGroup>
       </FieldProvider>

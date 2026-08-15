@@ -3,7 +3,16 @@ import "@tanstack/react-start/server-only";
 import { getAuthServerEnv } from "./server-env";
 import type { AuthTokens, LoginCredentials } from "./types";
 
-const OAUTH_SCOPES = ["user", "organization", "todo", "notification"];
+const OAUTH_SCOPES = [
+  "user",
+  "organization",
+  "namespace",
+  "project",
+  "issue",
+  "label",
+  "todo",
+  "notification",
+];
 
 export class OAuthError extends Error {
   readonly status: number;
