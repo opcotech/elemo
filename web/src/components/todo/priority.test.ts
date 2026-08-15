@@ -26,7 +26,7 @@ describe("todo priority", () => {
     expect(todoPriorityToneClassName).toEqual({
       normal: "text-muted-foreground",
       important: "text-primary",
-      urgent: "text-warning",
+      urgent: "text-warning-on-subtle",
       critical: "text-destructive",
     });
   });

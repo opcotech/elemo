@@ -87,18 +87,12 @@ function DraggableWorkCard({
   onSelect: (item: WorkItem) => void;
   disabled: boolean;
 }) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({
-    id: item.id,
-    disabled,
-    data: { type: "item", item },
-  });
+  const { listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({
+      id: item.id,
+      disabled,
+      data: { type: "item", item },
+    });
 
   return (
     <div
@@ -108,7 +102,6 @@ function DraggableWorkCard({
         transition,
       }}
       className={cn(isDragging && "opacity-40")}
-      {...attributes}
       {...listeners}
     >
       <WorkCard

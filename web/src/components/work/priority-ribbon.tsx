@@ -22,7 +22,7 @@ const priorityIcons: Record<IssuePriority, LucideIcon> = {
 
 const priorityToneClassName: Record<IssuePriority, string> = {
   highest: "text-destructive",
-  high: "text-warning",
+  high: "text-warning-on-subtle",
   normal: "text-foreground",
   low: "text-primary",
   lowest: "text-muted-foreground",

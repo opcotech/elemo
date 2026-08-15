@@ -217,7 +217,7 @@ function TimelineRow({
           "bg-background focus-visible:ring-ring sticky left-0 z-50 truncate border-r px-4 text-left text-sm outline-none focus-visible:ring-2 focus-visible:ring-inset",
           compact ? "py-2" : "py-3",
           entry.kind === "milestone"
-            ? "text-pink-500 hover:text-pink-600"
+            ? "text-pink-700 hover:text-pink-800 dark:text-pink-400 dark:hover:text-pink-300"
             : "text-primary hover:text-primary-pressed"
         )}
         aria-label={`Inspect ${item.key}: ${item.title}, ${rangeLabel}`}

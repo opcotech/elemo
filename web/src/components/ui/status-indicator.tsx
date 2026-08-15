@@ -10,7 +10,7 @@ const statusIndicatorVariants = cva("inline-flex items-center gap-2", {
       neutral: "text-foreground",
       primary: "text-primary",
       success: "text-success",
-      warning: "text-warning",
+      warning: "text-warning-on-subtle",
       danger: "text-destructive",
       info: "text-info",
     },

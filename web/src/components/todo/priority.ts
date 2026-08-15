@@ -32,6 +32,6 @@ export const todoPriorityIcons: Record<TodoPriority, LucideIcon> = {
 export const todoPriorityToneClassName: Record<TodoPriority, string> = {
   normal: "text-muted-foreground",
   important: "text-primary",
-  urgent: "text-warning",
+  urgent: "text-warning-on-subtle",
   critical: "text-destructive",
 };

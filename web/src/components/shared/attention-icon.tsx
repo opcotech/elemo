@@ -9,7 +9,7 @@ export function AttentionIcon({ severity }: { severity: string }) {
     return <AlertTriangleIcon className="text-destructive size-4" />;
   }
   if (severity === "warning") {
-    return <CircleDotIcon className="text-warning size-4" />;
+    return <CircleDotIcon className="text-warning-on-subtle size-4" />;
   }
   return <CheckCircle2Icon className="text-info size-4" />;
 }
