@@ -400,22 +400,6 @@ func TestNamespaceService_Get(t *testing.T) {
 	namespaceID := model.MustNewID(model.ResourceTypeNamespace)
 	repoNamespace := testModel.NewRepositoryNamespace()
 	repoNamespace.ID = namespaceID
-	repoNamespace.Projects = []*repository.PartialProject{
-		{
-			ID:     model.MustNewID(model.ResourceTypeProject),
-			Key:    "ENG",
-			Name:   "Engineering",
-			Status: model.ProjectStatusActive,
-		},
-	}
-	repoNamespace.Documents = []*repository.PartialDocument{
-		{
-			ID:        model.MustNewID(model.ResourceTypeDocument),
-			Name:      "Plan",
-			Excerpt:   "Overview",
-			CreatedBy: model.MustNewID(model.ResourceTypeUser),
-		},
-	}
 	want := namespaceFromRepository(repoNamespace)
 
 	type fields struct {
@@ -443,7 +427,7 @@ func TestNamespaceService_Get(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.namespaceService/Get", gomock.Len(0)).Return(ctx, span)
 
 					namespaceRepo := repository.NewMockNamespaceRepository(ctrl)
-					namespaceRepo.EXPECT().Get(ctx, id).Return(repoNamespace, nil)
+					namespaceRepo.EXPECT().Get(ctx, id, repository.NamespaceDetailProjection()).Return(repoNamespace, nil)
 
 					permSvc := NewMockPermissionService(ctrl)
 					permSvc.EXPECT().CtxUserHasPermission(ctx, id, []model.PermissionKind{model.PermissionKindRead}).Return(true)
@@ -521,7 +505,7 @@ func TestNamespaceService_Get(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.namespaceService/Get", gomock.Len(0)).Return(ctx, span)
 
 					namespaceRepo := repository.NewMockNamespaceRepository(ctrl)
-					namespaceRepo.EXPECT().Get(ctx, id).Return(nil, repository.ErrNamespaceRead)
+					namespaceRepo.EXPECT().Get(ctx, id, repository.NamespaceDetailProjection()).Return(nil, repository.ErrNamespaceRead)
 
 					permSvc := NewMockPermissionService(ctrl)
 					permSvc.EXPECT().CtxUserHasPermission(ctx, id, []model.PermissionKind{model.PermissionKindRead}).Return(true)
@@ -564,27 +548,11 @@ func TestNamespaceService_Get(t *testing.T) {
 	}
 }
 
-func TestNamespaceService_GetAll(t *testing.T) {
+func TestNamespaceService_List(t *testing.T) {
 	orgID := model.MustNewID(model.ResourceTypeOrganization)
 	repoNamespaces := []*repository.Namespace{
 		testModel.NewRepositoryNamespace(),
 		testModel.NewRepositoryNamespace(),
-	}
-	repoNamespaces[0].Projects = []*repository.PartialProject{
-		{
-			ID:     model.MustNewID(model.ResourceTypeProject),
-			Key:    "ENG",
-			Name:   "Engineering",
-			Status: model.ProjectStatusActive,
-		},
-	}
-	repoNamespaces[0].Documents = []*repository.PartialDocument{
-		{
-			ID:        model.MustNewID(model.ResourceTypeDocument),
-			Name:      "Plan",
-			Excerpt:   "Overview",
-			CreatedBy: model.MustNewID(model.ResourceTypeUser),
-		},
 	}
 	want := namespacesFromRepository(repoNamespaces)
 
@@ -592,16 +560,15 @@ func TestNamespaceService_GetAll(t *testing.T) {
 		baseService func(ctrl *gomock.Controller, ctx context.Context, orgID model.ID) *baseService
 	}
 	type args struct {
-		ctx    context.Context
-		orgID  model.ID
-		offset int
-		limit  int
+		ctx   context.Context
+		orgID model.ID
+		page  CursorPage
 	}
 	tests := []struct {
 		name    string
 		fields  fields
 		args    args
-		want    []*Namespace
+		want    Page[*Namespace]
 		wantErr error
 	}{
 		{
@@ -612,10 +579,15 @@ func TestNamespaceService_GetAll(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.namespaceService/GetAll", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "service.namespaceService/List", gomock.Len(0)).Return(ctx, span)
 
 					namespaceRepo := repository.NewMockNamespaceRepository(ctrl)
-					namespaceRepo.EXPECT().GetAll(ctx, orgID, 0, 10).Return(repoNamespaces, nil)
+					namespaceRepo.EXPECT().List(
+						ctx,
+						orgID,
+						repository.CursorPage{Size: 10},
+						repository.NamespaceListProjection(),
+					).Return(repository.Page[*repository.Namespace]{Items: repoNamespaces}, nil)
 
 					permSvc := NewMockPermissionService(ctrl)
 					permSvc.EXPECT().CtxUserHasPermission(ctx, orgID, []model.PermissionKind{model.PermissionKindRead}).Return(true)
@@ -629,12 +601,11 @@ func TestNamespaceService_GetAll(t *testing.T) {
 				},
 			},
 			args: args{
-				ctx:    context.Background(),
-				orgID:  orgID,
-				offset: 0,
-				limit:  10,
+				ctx:   context.Background(),
+				orgID: orgID,
+				page:  CursorPage{Size: 10},
 			},
-			want: want,
+			want: Page[*Namespace]{Items: want},
 		},
 		{
 			name: "get all namespaces with no permission",
@@ -644,7 +615,7 @@ func TestNamespaceService_GetAll(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.namespaceService/GetAll", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "service.namespaceService/List", gomock.Len(0)).Return(ctx, span)
 
 					permSvc := NewMockPermissionService(ctrl)
 					permSvc.EXPECT().CtxUserHasPermission(ctx, orgID, []model.PermissionKind{model.PermissionKindRead}).Return(false)
@@ -657,10 +628,9 @@ func TestNamespaceService_GetAll(t *testing.T) {
 				},
 			},
 			args: args{
-				ctx:    context.Background(),
-				orgID:  orgID,
-				offset: 0,
-				limit:  10,
+				ctx:   context.Background(),
+				orgID: orgID,
+				page:  CursorPage{Size: 10},
 			},
 			wantErr: ErrNoPermission,
 		},
@@ -672,7 +642,7 @@ func TestNamespaceService_GetAll(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.namespaceService/GetAll", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "service.namespaceService/List", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
 						logger: mock.NewMockLogger(ctrl),
@@ -681,22 +651,21 @@ func TestNamespaceService_GetAll(t *testing.T) {
 				},
 			},
 			args: args{
-				ctx:    context.Background(),
-				orgID:  model.ID{},
-				offset: 0,
-				limit:  10,
+				ctx:   context.Background(),
+				orgID: model.ID{},
+				page:  CursorPage{Size: 10},
 			},
 			wantErr: model.ErrInvalidID,
 		},
 		{
-			name: "get all namespaces with invalid pagination",
+			name: "list namespaces with invalid page size",
 			fields: fields{
 				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.namespaceService/GetAll", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "service.namespaceService/List", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
 						logger: mock.NewMockLogger(ctrl),
@@ -705,12 +674,11 @@ func TestNamespaceService_GetAll(t *testing.T) {
 				},
 			},
 			args: args{
-				ctx:    context.Background(),
-				orgID:  orgID,
-				offset: -1,
-				limit:  10,
+				ctx:   context.Background(),
+				orgID: orgID,
+				page:  CursorPage{Size: -1},
 			},
-			wantErr: ErrInvalidPaginationParams,
+			wantErr: repository.ErrInvalidPageSize,
 		},
 		{
 			name: "get all namespaces with repository error",
@@ -720,10 +688,15 @@ func TestNamespaceService_GetAll(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.namespaceService/GetAll", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "service.namespaceService/List", gomock.Len(0)).Return(ctx, span)
 
 					namespaceRepo := repository.NewMockNamespaceRepository(ctrl)
-					namespaceRepo.EXPECT().GetAll(ctx, orgID, 0, 10).Return(nil, repository.ErrNamespaceRead)
+					namespaceRepo.EXPECT().List(
+						ctx,
+						orgID,
+						repository.CursorPage{Size: 10},
+						repository.NamespaceListProjection(),
+					).Return(repository.Page[*repository.Namespace]{}, repository.ErrNamespaceRead)
 
 					permSvc := NewMockPermissionService(ctrl)
 					permSvc.EXPECT().CtxUserHasPermission(ctx, orgID, []model.PermissionKind{model.PermissionKindRead}).Return(true)
@@ -737,10 +710,9 @@ func TestNamespaceService_GetAll(t *testing.T) {
 				},
 			},
 			args: args{
-				ctx:    context.Background(),
-				orgID:  orgID,
-				offset: 0,
-				limit:  10,
+				ctx:   context.Background(),
+				orgID: orgID,
+				page:  CursorPage{Size: 10},
 			},
 			wantErr: repository.ErrNamespaceRead,
 		},
@@ -756,7 +728,7 @@ func TestNamespaceService_GetAll(t *testing.T) {
 				baseService: tt.fields.baseService(ctrl, tt.args.ctx, tt.args.orgID),
 			}
 
-			got, err := s.GetAll(tt.args.ctx, tt.args.orgID, tt.args.offset, tt.args.limit)
+			got, err := s.List(tt.args.ctx, tt.args.orgID, tt.args.page)
 			if tt.wantErr != nil {
 				require.Error(t, err)
 				assert.ErrorIs(t, err, tt.wantErr)
@@ -1174,10 +1146,5 @@ func TestNamespaceFromRepository(t *testing.T) {
 	t.Run("nil partial project", func(t *testing.T) {
 		t.Parallel()
 		assert.Nil(t, partialProjectFromRepository(nil))
-	})
-
-	t.Run("nil partial document", func(t *testing.T) {
-		t.Parallel()
-		assert.Nil(t, partialDocumentFromRepository(nil))
 	})
 }

@@ -85,19 +85,19 @@ func (mr *MockCommentRepositoryMockRecorder) Get(ctx, id any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockCommentRepository)(nil).Get), ctx, id)
 }
 
-// GetAllBelongsTo mocks base method.
-func (m *MockCommentRepository) GetAllBelongsTo(ctx context.Context, belongsTo model.ID, offset, limit int) ([]*Comment, error) {
+// ListBelongsTo mocks base method.
+func (m *MockCommentRepository) ListBelongsTo(ctx context.Context, belongsTo model.ID, page CursorPage) (Page[*Comment], error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAllBelongsTo", ctx, belongsTo, offset, limit)
-	ret0, _ := ret[0].([]*Comment)
+	ret := m.ctrl.Call(m, "ListBelongsTo", ctx, belongsTo, page)
+	ret0, _ := ret[0].(Page[*Comment])
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetAllBelongsTo indicates an expected call of GetAllBelongsTo.
-func (mr *MockCommentRepositoryMockRecorder) GetAllBelongsTo(ctx, belongsTo, offset, limit any) *gomock.Call {
+// ListBelongsTo indicates an expected call of ListBelongsTo.
+func (mr *MockCommentRepositoryMockRecorder) ListBelongsTo(ctx, belongsTo, page any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllBelongsTo", reflect.TypeOf((*MockCommentRepository)(nil).GetAllBelongsTo), ctx, belongsTo, offset, limit)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListBelongsTo", reflect.TypeOf((*MockCommentRepository)(nil).ListBelongsTo), ctx, belongsTo, page)
 }
 
 // Update mocks base method.

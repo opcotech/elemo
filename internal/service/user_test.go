@@ -433,7 +433,7 @@ func TestUserService_Get(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.userService/Get", gomock.Len(0)).Return(ctx, span)
 
 					userRepo := repository.NewMockUserRepository(ctrl)
-					userRepo.EXPECT().Get(ctx, id).Return(user, nil)
+					userRepo.EXPECT().Get(ctx, id, repository.UserDetailProjection()).Return(user, nil)
 
 					return &baseService{
 						logger:   mock.NewMockLogger(ctrl),
@@ -482,7 +482,7 @@ func TestUserService_Get(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.userService/Get", gomock.Len(0)).Return(ctx, span)
 
 					userRepo := repository.NewMockUserRepository(ctrl)
-					userRepo.EXPECT().Get(ctx, id).Return(nil, assert.AnError)
+					userRepo.EXPECT().Get(ctx, id, repository.UserDetailProjection()).Return(nil, assert.AnError)
 
 					return &baseService{
 						logger:   mock.NewMockLogger(ctrl),
@@ -546,7 +546,7 @@ func TestUserService_GetByEmail(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.userService/GetByEmail", gomock.Len(0)).Return(ctx, span)
 
 					userRepo := repository.NewMockUserRepository(ctrl)
-					userRepo.EXPECT().GetByEmail(ctx, email).Return(user, nil)
+					userRepo.EXPECT().GetByEmail(ctx, email, repository.UserDetailProjection()).Return(user, nil)
 
 					return &baseService{
 						logger:   mock.NewMockLogger(ctrl),
@@ -595,7 +595,7 @@ func TestUserService_GetByEmail(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.userService/GetByEmail", gomock.Len(0)).Return(ctx, span)
 
 					userRepo := repository.NewMockUserRepository(ctrl)
-					userRepo.EXPECT().GetByEmail(ctx, email).Return(nil, assert.AnError)
+					userRepo.EXPECT().GetByEmail(ctx, email, repository.UserDetailProjection()).Return(nil, assert.AnError)
 
 					return &baseService{
 						logger:   mock.NewMockLogger(ctrl),
@@ -633,34 +633,33 @@ func TestUserService_GetByEmail(t *testing.T) {
 	}
 }
 
-func TestUserService_GetAll(t *testing.T) {
+func TestUserService_List(t *testing.T) {
 	type fields struct {
-		baseService func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, users []*repository.User) *baseService
+		baseService func(ctrl *gomock.Controller, ctx context.Context, page CursorPage, users []*repository.User) *baseService
 	}
 	type args struct {
-		ctx    context.Context
-		offset int
-		limit  int
+		ctx  context.Context
+		page CursorPage
 	}
 	tests := []struct {
 		name    string
 		fields  fields
 		args    args
-		want    []*User
+		want    Page[*User]
 		wantErr error
 	}{
 		{
-			name: "get all users user",
+			name: "list users",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, users []*repository.User) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, page CursorPage, users []*repository.User) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.userService/GetAll", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "service.userService/List", gomock.Len(0)).Return(ctx, span)
 
 					userRepo := repository.NewMockUserRepository(ctrl)
-					userRepo.EXPECT().GetAll(ctx, offset, limit).Return(users, nil)
+					userRepo.EXPECT().List(ctx, page, repository.UserListProjection()).Return(repository.Page[*repository.User]{Items: users}, nil)
 
 					return &baseService{
 						logger:   mock.NewMockLogger(ctrl),
@@ -670,24 +669,23 @@ func TestUserService_GetAll(t *testing.T) {
 				},
 			},
 			args: args{
-				ctx:    context.Background(),
-				offset: 0,
-				limit:  10,
+				ctx:  context.Background(),
+				page: CursorPage{Size: 10},
 			},
-			want: []*User{ // converted
+			want: Page[*User]{Items: []*User{
 				repoUserToService(testModel.NewUser()),
 				repoUserToService(testModel.NewUser()),
-			},
+			}},
 		},
 		{
-			name: "get all users with invalid offset",
+			name: "list users with invalid page size",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ int, _ []*repository.User) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ CursorPage, _ []*repository.User) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.userService/GetAll", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "service.userService/List", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
 						logger:   mock.NewMockLogger(ctrl),
@@ -697,21 +695,20 @@ func TestUserService_GetAll(t *testing.T) {
 				},
 			},
 			args: args{
-				ctx:    context.Background(),
-				offset: -1,
-				limit:  10,
+				ctx:  context.Background(),
+				page: CursorPage{Size: -1},
 			},
 			wantErr: ErrUserGetAll,
 		},
 		{
-			name: "get all users with invalid limit",
+			name: "list users with oversized page",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _, _ int, _ []*repository.User) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ CursorPage, _ []*repository.User) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.userService/GetAll", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "service.userService/List", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
 						logger:   mock.NewMockLogger(ctrl),
@@ -721,24 +718,23 @@ func TestUserService_GetAll(t *testing.T) {
 				},
 			},
 			args: args{
-				ctx:    context.Background(),
-				offset: 0,
-				limit:  -1,
+				ctx:  context.Background(),
+				page: CursorPage{Size: repository.MaxPageSize + 1},
 			},
 			wantErr: ErrUserGetAll,
 		},
 		{
-			name: "get all users with error",
+			name: "list users with error",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, offset, limit int, _ []*repository.User) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, page CursorPage, _ []*repository.User) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.userService/GetAll", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "service.userService/List", gomock.Len(0)).Return(ctx, span)
 
 					userRepo := repository.NewMockUserRepository(ctrl)
-					userRepo.EXPECT().GetAll(ctx, offset, limit).Return(nil, assert.AnError)
+					userRepo.EXPECT().List(ctx, page, repository.UserListProjection()).Return(repository.Page[*repository.User]{}, assert.AnError)
 
 					return &baseService{
 						logger:   mock.NewMockLogger(ctrl),
@@ -748,9 +744,8 @@ func TestUserService_GetAll(t *testing.T) {
 				},
 			},
 			args: args{
-				ctx:    context.Background(),
-				offset: 0,
-				limit:  10,
+				ctx:  context.Background(),
+				page: CursorPage{Size: 10},
 			},
 			wantErr: ErrUserGetAll,
 		},
@@ -764,13 +759,13 @@ func TestUserService_GetAll(t *testing.T) {
 			s := &userService{
 				baseService: func() *baseService {
 					users := []*repository.User{testModel.NewUser(), testModel.NewUser()}
-					if tt.want != nil {
-						tt.want = repoUsersToService(users)
+					if tt.wantErr == nil {
+						tt.want = Page[*User]{Items: repoUsersToService(users)}
 					}
-					return tt.fields.baseService(ctrl, tt.args.ctx, tt.args.offset, tt.args.limit, users)
+					return tt.fields.baseService(ctrl, tt.args.ctx, tt.args.page, users)
 				}(),
 			}
-			got, err := s.GetAll(tt.args.ctx, tt.args.offset, tt.args.limit)
+			got, err := s.List(tt.args.ctx, tt.args.page)
 			require.ErrorIs(t, err, tt.wantErr)
 			require.Equal(t, tt.want, got)
 		})

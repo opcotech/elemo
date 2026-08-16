@@ -1,3 +1,4 @@
+import { useQuery } from "@tanstack/react-query";
 import { useRouterState } from "@tanstack/react-router";
 import {
   ActivityIcon,
@@ -22,6 +23,7 @@ import {
 } from "@/components/ui/sidebar";
 import { useNavigationContext } from "@/hooks/use-navigation-context";
 import { useAccessibleNamespaces } from "@/lib/api/accessible-namespaces";
+import { v1ProjectGetOptions } from "@/lib/api/query-options";
 import { internalPath } from "@/lib/internal-url";
 import { uiActions } from "@/lib/ui-store";
 
@@ -47,9 +49,10 @@ export function ContextualNavigationSection() {
   const namespace = accessibleWorkspace?.namespaces.find(
     (item) => item.id === context.namespaceId
   );
-  const project = namespace?.projects.find(
-    (item) => item.id === context.projectId
-  );
+  const { data: project } = useQuery({
+    ...v1ProjectGetOptions({ path: { id: context.projectId ?? "" } }),
+    enabled: Boolean(context.projectId),
+  });
 
   const navigation = useMemo(() => {
     if (!context.namespaceId || context.type === "global") {

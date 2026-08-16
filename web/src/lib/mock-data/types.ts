@@ -1,7 +1,10 @@
+import type { IssueKind, IssuePriority, IssueResolution } from "@/lib/client";
+
 export const API_BACKED_DOMAINS = [
   "organizations",
   "namespaces",
   "projects",
+  "issues",
   "todos",
   "notifications",
   "memberships",
@@ -22,6 +25,8 @@ export const MOCK_ONLY_DOMAINS = [
 
 export type ApiBackedDomain = (typeof API_BACKED_DOMAINS)[number];
 export type MockOnlyDomain = (typeof MOCK_ONLY_DOMAINS)[number];
+
+export type DataSource = "mock" | "api";
 
 export interface MockRecord {
   readonly dataSource: "mock";
@@ -46,25 +51,65 @@ export type Scope =
   | { readonly type: "person"; readonly personId: string };
 
 export type WorkStatus =
-  "backlog" | "planned" | "in-progress" | "blocked" | "done" | "canceled";
+  "backlog" | "in progress" | "in review" | "blocked" | "done" | "closed";
 
-export type WorkPriority = "urgent" | "high" | "medium" | "low" | "none";
+export type WorkPriority = IssuePriority;
 
-export interface WorkItem extends MockRecord {
+export interface WorkPerson {
+  readonly id: string;
+  readonly name: string;
+  readonly picture?: string | null;
+}
+
+export interface WorkNamespaceRef {
+  readonly id: string;
+  readonly name: string;
+}
+
+export interface WorkProjectRef {
+  readonly id: string;
+  readonly key: string;
+  readonly name: string;
+}
+
+export interface WorkParentRef {
+  readonly id: string;
+  readonly key: string;
+  readonly title: string;
+  readonly namespaceId?: string;
+}
+
+export interface WorkItem {
+  readonly dataSource: DataSource;
   readonly id: string;
   readonly key: string;
   readonly title: string;
   readonly summary: string;
   readonly namespaceId: string;
   readonly projectId: string | null;
+  readonly namespace?: WorkNamespaceRef;
+  readonly project?: WorkProjectRef;
+  readonly kind?: IssueKind;
+  readonly resolution?: IssueResolution;
+  readonly parent?: WorkParentRef | null;
+  readonly links?: readonly {
+    readonly url: string;
+    readonly label: string;
+  }[];
   readonly status: WorkStatus;
   readonly priority: WorkPriority;
+  readonly assigneeIds: readonly string[];
+  readonly reviewerIds: readonly string[];
+  readonly assignees?: readonly WorkPerson[];
+  readonly reviewers?: readonly WorkPerson[];
+  /** First assignee; kept for filters/grouping. */
   readonly assigneeId: string | null;
   readonly creatorId: string;
   readonly labelIds: readonly string[];
-  readonly estimatePoints: number | null;
+  readonly labels?: readonly { readonly id: string; readonly name: string }[];
   readonly rank: number;
   readonly dueDate: string | null;
+  readonly startDate: string | null;
   readonly createdAt: string;
   readonly updatedAt: string;
 }

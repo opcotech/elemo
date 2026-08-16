@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/field";
 import { FormCard } from "@/components/ui/form-card";
 import { Input } from "@/components/ui/input";
+import { NameDescriptionFields } from "@/components/ui/name-description-fields";
 import {
   Select,
   SelectContent,
@@ -27,7 +28,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { useFormMutation } from "@/hooks/use-form-mutation";
 import { accessibleNamespacesQueryKey } from "@/lib/api/accessible-namespaces";
 import {
@@ -172,42 +172,11 @@ export function ProjectEditForm({
             )}
           />
 
-          <ControlledField
+          <NameDescriptionFields
             control={form.control}
-            name="name"
-            render={({ field }) => (
-              <Field>
-                <FieldLabel>Name</FieldLabel>
-                <FieldControl>
-                  <Input
-                    placeholder="Enter project name"
-                    {...field}
-                    disabled={mutation.isPending}
-                  />
-                </FieldControl>
-                <FieldError />
-              </Field>
-            )}
-          />
-
-          <ControlledField
-            control={form.control}
-            name="description"
-            render={({ field }) => (
-              <Field>
-                <FieldLabel>Description</FieldLabel>
-                <FieldControl>
-                  <Textarea
-                    placeholder="Enter project description (optional)"
-                    {...field}
-                    value={getDefaultValue(field.value)}
-                    rows={4}
-                    disabled={mutation.isPending}
-                  />
-                </FieldControl>
-                <FieldError />
-              </Field>
-            )}
+            isPending={mutation.isPending}
+            namePlaceholder="Enter project name"
+            descriptionPlaceholder="Enter project description"
           />
 
           <ControlledField

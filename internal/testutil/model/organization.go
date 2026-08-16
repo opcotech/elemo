@@ -25,16 +25,16 @@ func NewCreateOrganizationOpts(owner model.ID) repository.CreateOrganizationOpts
 // NewRepositoryOrganization creates a repository.Organization for mock returns.
 func NewRepositoryOrganization() *repository.Organization {
 	return &repository.Organization{
-		ID:         model.MustNewID(model.ResourceTypeOrganization),
-		Name:       pkg.GenerateRandomString(10),
-		Email:      testutil.GenerateEmail(10),
-		Logo:       imageURL,
-		Website:    "https://example.com/",
-		Status:     model.OrganizationStatusActive,
-		Namespaces: make([]model.ID, 0),
-		Teams:      make([]model.ID, 0),
-		Members:    make([]model.ID, 0),
-		CreatedAt:  convert.ToPointer(time.Now().UTC()),
+		ID:             model.MustNewID(model.ResourceTypeOrganization),
+		Name:           pkg.GenerateRandomString(10),
+		Email:          testutil.GenerateEmail(10),
+		Logo:           imageURL,
+		Website:        "https://example.com/",
+		Status:         model.OrganizationStatusActive,
+		NamespaceCount: convert.ToPointer(int64(0)),
+		TeamCount:      convert.ToPointer(int64(0)),
+		MemberCount:    convert.ToPointer(int64(0)),
+		CreatedAt:      convert.ToPointer(time.Now().UTC()),
 	}
 }
 

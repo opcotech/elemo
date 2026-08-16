@@ -4,13 +4,14 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { CircleCheckBig, Plus } from "lucide-react";
 import { useMemo } from "react";
 
-import { AppEmptyState } from "@/components/shared/app-feedback";
+import { TodoItem } from "./todo-item";
+
 import { AppList } from "@/components/shared/entity-link";
-import { TodoItem } from "@/components/todo";
 import { AddTodoForm } from "@/components/todo/add-todo-form";
 import { EditTodoForm } from "@/components/todo/edit-todo-form";
 import { groupTodosByDueDate } from "@/components/todo/grouping";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Sheet,
@@ -19,13 +20,24 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
+import { collectedListQuery, cursorPageQuery } from "@/lib/api/cursor-pages";
 import { v1TodosGetOptions } from "@/lib/api/query-options";
+import { v1TodosGet } from "@/lib/api/sdk";
 import { uiActions, useUiSelector } from "@/lib/ui-store";
 
 export function TodoSheet() {
-  const { data: todos = [], isLoading } = useQuery({
-    ...v1TodosGetOptions(),
-  });
+  const listOptions = v1TodosGetOptions();
+  const { data: todosPage, isLoading } = useQuery(
+    collectedListQuery(listOptions, async (pageToken, signal) => {
+      const { data } = await v1TodosGet({
+        query: cursorPageQuery(pageToken),
+        signal,
+        throwOnError: true,
+      });
+      return data;
+    })
+  );
+  const todos = todosPage?.items ?? [];
   const queryClient = useQueryClient();
   const isOpen = useUiSelector((state) => state.todoSheetOpen);
   const isAddFormOpen = useUiSelector((state) => state.addTodoOpen);
@@ -46,7 +58,10 @@ export function TodoSheet() {
         if (!open) uiActions.closeTodoSheet();
       }}
     >
-      <SheetContent className="gap-4 px-4 pb-4 data-[side=right]:w-full data-[side=right]:sm:max-w-lg">
+      <SheetContent
+        className="gap-4 px-4 pb-4 data-[side=right]:w-full data-[side=right]:sm:max-w-lg"
+        data-section="todo-sheet"
+      >
         <SheetHeader className="px-0 pt-4 pb-0">
           <SheetTitle>Todo Items</SheetTitle>
           {!isLoading && todos.length > 0 && (
@@ -64,7 +79,7 @@ export function TodoSheet() {
           <Plus />
           Add Todo
         </Button>
-        <ScrollArea className="h-full">
+        <ScrollArea className="min-h-0 flex-1">
           {isLoading ? (
             <div className="pr-3">
               <AppList aria-label="Loading todos" aria-busy="true">
@@ -76,7 +91,7 @@ export function TodoSheet() {
               </AppList>
             </div>
           ) : todos.length === 0 ? (
-            <AppEmptyState
+            <EmptyState
               icon={<CircleCheckBig />}
               title="No todos found"
               description="Create your first todo to get started"
@@ -98,7 +113,10 @@ export function TodoSheet() {
                   <h3 className="text-muted-foreground mb-2 text-xs font-semibold tracking-wide uppercase">
                     {group.label}
                   </h3>
-                  <AppList aria-label={`${group.label} todos`}>
+                  <AppList
+                    aria-label={`${group.label} todos`}
+                    className="overflow-visible"
+                  >
                     {group.todos.map((todo) => (
                       <TodoItem key={todo.id} todo={todo} />
                     ))}

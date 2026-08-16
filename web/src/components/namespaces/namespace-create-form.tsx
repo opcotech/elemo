@@ -5,13 +5,6 @@ import { useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-} from "@/components/ui/card";
 import { EntitySelect } from "@/components/ui/entity-select";
 import {
   ControlledField,
@@ -22,10 +15,9 @@ import {
   FieldLabel,
   FieldProvider,
 } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
+import { FormCard } from "@/components/ui/form-card";
+import { NameDescriptionFields } from "@/components/ui/name-description-fields";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Spinner } from "@/components/ui/spinner";
-import { Textarea } from "@/components/ui/textarea";
 import { useFormMutation } from "@/hooks/use-form-mutation";
 import { ResourceType, withResourceType } from "@/hooks/use-permissions";
 import { accessibleNamespacesQueryKey } from "@/lib/api/accessible-namespaces";
@@ -38,12 +30,12 @@ import { v1OrganizationsNamespacesCreate } from "@/lib/api/sdk";
 import type {
   NamespaceCreate,
   Options,
+  Organization,
   V1OrganizationsNamespacesCreateData,
 } from "@/lib/api/types";
 import { can } from "@/lib/auth/permissions";
 import { zNamespaceCreate } from "@/lib/client/zod.gen";
 import { createFormSchema, normalizeFormData } from "@/lib/forms";
-import { getDefaultValue } from "@/lib/utils";
 
 const namespaceFormSchema = createFormSchema(zNamespaceCreate);
 const namespaceCreateWithOrgSchema = namespaceFormSchema.extend({
@@ -64,28 +56,24 @@ export function NamespaceCreateForm({
   const navigate = useNavigate();
   const showOrganizationSelector = !organizationId;
 
-  const { data: organizations, isLoading: isLoadingOrgs } = useQuery({
+  const { data: organizationsPage, isLoading: isLoadingOrgs } = useQuery({
     ...v1OrganizationsGetOptions(),
     enabled: showOrganizationSelector,
   });
+  const organizations: Organization[] = organizationsPage?.items ?? [];
 
-  // Check permissions for each organization (only if showing selector)
   const permissionQueries = useQueries({
-    queries:
-      showOrganizationSelector && organizations && organizations.length > 0
-        ? organizations.map((org) =>
-            v1PermissionResourceGetOptions({
-              path: {
-                resourceId: withResourceType(ResourceType.Organization, org.id),
-              },
-            })
-          )
-        : [],
+    queries: (showOrganizationSelector ? organizations : []).map((org) =>
+      v1PermissionResourceGetOptions({
+        path: {
+          resourceId: withResourceType(ResourceType.Organization, org.id),
+        },
+      })
+    ),
   });
 
-  // Filter organizations to only those where user has write permission
   const writableOrganizations = useMemo(() => {
-    if (!showOrganizationSelector || !organizations) return [];
+    if (!showOrganizationSelector) return [];
     return organizations.filter((org, index) => {
       const permissions = permissionQueries[index]?.data;
       return can(permissions, "write");
@@ -170,128 +158,65 @@ export function NamespaceCreateForm({
     showOrganizationSelector && (isLoadingOrgs || isLoadingPermissions);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardDescription>
-          {showOrganizationSelector
-            ? "Enter the namespace details below to create a new namespace. Select the organization where the namespace will be created."
-            : "Enter the namespace details below to create a new namespace."}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <FieldProvider {...form}>
-          <form
-            onSubmit={mutation.handleSubmit}
-            className="flex flex-col gap-y-6"
-          >
-            {mutation.isError && (
-              <div className="text-destructive text-sm">
-                {mutation.error?.message}
-              </div>
-            )}
-
-            <FieldGroup>
-              {showOrganizationSelector && (
-                <ControlledField
-                  control={form.control}
-                  name="organizationId"
-                  render={({ field }) => (
-                    <Field>
-                      <FieldLabel>Organization</FieldLabel>
-                      <FieldControl>
-                        {isLoading ? (
-                          <Skeleton className="h-10 w-full" />
-                        ) : writableOrganizations &&
-                          writableOrganizations.length > 0 ? (
-                          <EntitySelect
-                            options={writableOrganizations.map((org) => ({
-                              value: org.id,
-                              title: org.name,
-                              description:
-                                org.email || org.website || undefined,
-                              avatarSrc:
-                                (org as { logo?: string | null }).logo || null,
-                              avatarFallback: org.name,
-                            }))}
-                            value={field.value}
-                            onValueChange={field.onChange}
-                            placeholder="Select an organization"
-                            disabled={mutation.isPending}
-                          />
-                        ) : (
-                          <div className="text-muted-foreground text-sm">
-                            No organizations available
-                          </div>
-                        )}
-                      </FieldControl>
-                      <FieldError />
-                    </Field>
-                  )}
-                />
+    <FormCard
+      data-section="namespace-create-form"
+      description={
+        showOrganizationSelector
+          ? "Enter the namespace details below to create a new namespace. Select the organization where the namespace will be created."
+          : "Enter the namespace details below to create a new namespace."
+      }
+      onSubmit={mutation.handleSubmit}
+      onCancel={handleCancel}
+      isPending={mutation.isPending}
+      error={mutation.error || null}
+      submitButtonText="Create Namespace"
+    >
+      <FieldProvider {...form}>
+        <FieldGroup>
+          {showOrganizationSelector && (
+            <ControlledField
+              control={form.control}
+              name="organizationId"
+              render={({ field }) => (
+                <Field>
+                  <FieldLabel>Organization</FieldLabel>
+                  <FieldControl>
+                    {isLoading ? (
+                      <Skeleton className="h-10 w-full" />
+                    ) : writableOrganizations.length > 0 ? (
+                      <EntitySelect
+                        options={writableOrganizations.map((org) => ({
+                          value: org.id,
+                          title: org.name,
+                          description: org.email || org.website || undefined,
+                          avatarSrc: org.logo || null,
+                          avatarFallback: org.name,
+                        }))}
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        placeholder="Select an organization"
+                        disabled={mutation.isPending}
+                      />
+                    ) : (
+                      <div className="text-muted-foreground text-sm">
+                        No organizations available
+                      </div>
+                    )}
+                  </FieldControl>
+                  <FieldError />
+                </Field>
               )}
+            />
+          )}
 
-              <ControlledField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <Field>
-                    <FieldLabel>Name</FieldLabel>
-                    <FieldControl>
-                      <Input
-                        placeholder="Enter namespace name"
-                        {...field}
-                        disabled={mutation.isPending}
-                      />
-                    </FieldControl>
-                    <FieldError />
-                  </Field>
-                )}
-              />
-
-              <ControlledField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <Field>
-                    <FieldLabel>Description</FieldLabel>
-                    <FieldControl>
-                      <Textarea
-                        placeholder="Enter namespace description (optional)"
-                        {...field}
-                        value={getDefaultValue(field.value)}
-                        rows={4}
-                        disabled={mutation.isPending}
-                      />
-                    </FieldControl>
-                    <FieldError />
-                  </Field>
-                )}
-              />
-            </FieldGroup>
-
-            <div className="flex justify-end gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleCancel}
-                disabled={mutation.isPending}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={mutation.isPending}>
-                {mutation.isPending ? (
-                  <>
-                    <Spinner size="xs" className="mr-0.5 text-white" />
-                    <span>Saving...</span>
-                  </>
-                ) : (
-                  "Create Namespace"
-                )}
-              </Button>
-            </div>
-          </form>
-        </FieldProvider>
-      </CardContent>
-    </Card>
+          <NameDescriptionFields
+            control={form.control}
+            isPending={mutation.isPending}
+            namePlaceholder="Enter namespace name"
+            descriptionPlaceholder="Enter namespace description"
+          />
+        </FieldGroup>
+      </FieldProvider>
+    </FormCard>
   );
 }

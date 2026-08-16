@@ -23,24 +23,32 @@ const (
 
 // User represents a user returned by the service.
 type User struct {
-	ID          model.ID
-	Username    string
-	Email       string
-	Password    string
-	Status      model.UserStatus
-	FirstName   string
-	LastName    string
-	Picture     string
-	Title       string
-	Bio         string
-	Phone       string
-	Address     string
-	Links       []string
-	Languages   []model.Language
-	Documents   []model.ID
-	Permissions []model.ID
-	CreatedAt   *time.Time
-	UpdatedAt   *time.Time
+	ID            model.ID
+	Username      string
+	Email         string
+	Password      string
+	Status        model.UserStatus
+	FirstName     string
+	LastName      string
+	Picture       string
+	Title         string
+	Bio           string
+	Phone         string
+	Address       string
+	Links         []string
+	Languages     []model.Language
+	DocumentCount *int64
+	Permissions   []model.ID
+	CreatedAt     *time.Time
+	UpdatedAt     *time.Time
+}
+
+// PartialUser is a lean user used on issue and document reads.
+type PartialUser struct {
+	ID        model.ID
+	FirstName string
+	LastName  string
+	Picture   string
 }
 
 // CreateUserOpts holds the data required to create a user.
@@ -132,10 +140,8 @@ type UserService interface {
 	// GetByEmail returns a user by their email address. If the user does not
 	// exist, an error is returned.
 	GetByEmail(ctx context.Context, email string) (*User, error)
-	// GetAll returns all users in the system. The offset and limit parameters
-	// are used to paginate the results. If the offset is greater than the
-	// number of users in the system, an empty slice is returned.
-	GetAll(ctx context.Context, offset, limit int) ([]*User, error)
+	// List returns a cursor-paginated page of users in the system.
+	List(ctx context.Context, page CursorPage) (Page[*User], error)
 	// Update updates a user in the system. If the user does not exist, an
 	// error is returned.
 	Update(ctx context.Context, id model.ID, opts UpdateUserOpts) (*User, error)
@@ -166,33 +172,44 @@ func userFromRepository(u *repository.User) *User {
 		return nil
 	}
 	return &User{
-		ID:          u.ID,
-		Username:    u.Username,
-		Email:       u.Email,
-		Password:    u.Password,
-		Status:      u.Status,
-		FirstName:   u.FirstName,
-		LastName:    u.LastName,
-		Picture:     u.Picture,
-		Title:       u.Title,
-		Bio:         u.Bio,
-		Phone:       u.Phone,
-		Address:     u.Address,
-		Links:       u.Links,
-		Languages:   u.Languages,
-		Documents:   u.Documents,
-		Permissions: u.Permissions,
-		CreatedAt:   u.CreatedAt,
-		UpdatedAt:   u.UpdatedAt,
+		ID:            u.ID,
+		Username:      u.Username,
+		Email:         u.Email,
+		Password:      u.Password,
+		Status:        u.Status,
+		FirstName:     u.FirstName,
+		LastName:      u.LastName,
+		Picture:       u.Picture,
+		Title:         u.Title,
+		Bio:           u.Bio,
+		Phone:         u.Phone,
+		Address:       u.Address,
+		Links:         u.Links,
+		Languages:     u.Languages,
+		DocumentCount: u.DocumentCount,
+		Permissions:   u.Permissions,
+		CreatedAt:     u.CreatedAt,
+		UpdatedAt:     u.UpdatedAt,
 	}
 }
 
-func usersFromRepository(users []*repository.User) []*User {
-	out := make([]*User, len(users))
-	for i, u := range users {
-		out[i] = userFromRepository(u)
+func partialUserFromRepository(u *repository.PartialUser) *PartialUser {
+	if u == nil {
+		return nil
 	}
-	return out
+	return &PartialUser{
+		ID:        u.ID,
+		FirstName: u.FirstName,
+		LastName:  u.LastName,
+		Picture:   u.Picture,
+	}
+}
+
+func partialUserValueFromRepository(u repository.PartialUser) PartialUser {
+	if mapped := partialUserFromRepository(&u); mapped != nil {
+		return *mapped
+	}
+	return PartialUser{}
 }
 
 func (s *userService) Create(ctx context.Context, opts CreateUserOpts) (*User, error) {
@@ -250,7 +267,7 @@ func (s *userService) Get(ctx context.Context, id model.ID) (*User, error) {
 		return nil, errors.Join(ErrUserGet, err)
 	}
 
-	user, err := s.userRepo.Get(ctx, id)
+	user, err := s.userRepo.Get(ctx, id, repository.UserDetailProjection())
 	if err != nil {
 		return nil, errors.Join(ErrUserGet, err)
 	}
@@ -266,7 +283,7 @@ func (s *userService) GetByEmail(ctx context.Context, email string) (*User, erro
 		return nil, errors.Join(ErrUserGet, ErrInvalidEmail)
 	}
 
-	user, err := s.userRepo.GetByEmail(ctx, email)
+	user, err := s.userRepo.GetByEmail(ctx, email, repository.UserDetailProjection())
 	if err != nil {
 		return nil, errors.Join(ErrUserGet, err)
 	}
@@ -274,20 +291,21 @@ func (s *userService) GetByEmail(ctx context.Context, email string) (*User, erro
 	return userFromRepository(user), nil
 }
 
-func (s *userService) GetAll(ctx context.Context, offset, limit int) ([]*User, error) {
-	ctx, span := s.tracer.Start(ctx, "service.userService/GetAll")
+func (s *userService) List(ctx context.Context, page CursorPage) (Page[*User], error) {
+	ctx, span := s.tracer.Start(ctx, "service.userService/List")
 	defer span.End()
 
-	if offset < 0 || limit <= 0 {
-		return nil, errors.Join(ErrUserGetAll, ErrInvalidPaginationParams)
-	}
-
-	users, err := s.userRepo.GetAll(ctx, offset, limit)
+	normalized, err := page.Normalize()
 	if err != nil {
-		return nil, errors.Join(ErrUserGetAll, err)
+		return Page[*User]{}, errors.Join(ErrUserGetAll, err)
 	}
 
-	return usersFromRepository(users), nil
+	users, err := s.userRepo.List(ctx, normalized, repository.UserListProjection())
+	if err != nil {
+		return Page[*User]{}, errors.Join(ErrUserGetAll, err)
+	}
+
+	return mapPage(users, userFromRepository), nil
 }
 
 func (s *userService) Update(ctx context.Context, id model.ID, opts UpdateUserOpts) (*User, error) {

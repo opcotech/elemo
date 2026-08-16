@@ -56,3 +56,21 @@ export const Disabled: Story = {
     </div>
   ),
 };
+
+export const Clearable: Story = {
+  render: () => {
+    const [date, setDate] = useState<Date | null>(new Date());
+
+    return (
+      <div className="w-[280px] space-y-2">
+        <Label>Due date</Label>
+        <DatePicker
+          clearable
+          date={date}
+          onDateChange={setDate}
+          placeholder="Due date"
+        />
+      </div>
+    );
+  },
+};

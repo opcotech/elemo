@@ -23,15 +23,15 @@ func NewCreateDocumentOpts(belongsTo, createdBy model.ID) repository.CreateDocum
 // NewRepositoryDocument creates a repository.Document for mock returns.
 func NewRepositoryDocument(createdBy model.ID) *repository.Document {
 	return &repository.Document{
-		ID:          model.MustNewID(model.ResourceTypeDocument),
-		Name:        pkg.GenerateRandomString(10),
-		Excerpt:     pkg.GenerateRandomString(10),
-		FileID:      pkg.GenerateRandomString(10),
-		CreatedBy:   createdBy,
-		Labels:      make([]model.ID, 0),
-		Comments:    make([]model.ID, 0),
-		Attachments: make([]model.ID, 0),
-		CreatedAt:   convert.ToPointer(time.Now().UTC()),
+		ID:              model.MustNewID(model.ResourceTypeDocument),
+		Name:            pkg.GenerateRandomString(10),
+		Excerpt:         pkg.GenerateRandomString(10),
+		FileID:          pkg.GenerateRandomString(10),
+		CreatedBy:       repository.PartialUser{ID: createdBy},
+		Labels:          make([]repository.PartialLabel, 0),
+		CommentCount:    convert.ToPointer(int64(0)),
+		AttachmentCount: convert.ToPointer(int64(0)),
+		CreatedAt:       convert.ToPointer(time.Now().UTC()),
 	}
 }
 

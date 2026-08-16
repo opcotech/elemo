@@ -3,9 +3,9 @@ import { useState } from "react";
 
 import { withRouter } from "../../.storybook/with-router";
 
-import { WorkSurface } from "@/components/work";
 import { WorkBoard as Board } from "@/components/work/work-board";
 import { CompactWorkList } from "@/components/work/work-list";
+import { WorkSurface } from "@/components/work/work-surface";
 import { WorkTable } from "@/components/work/work-table";
 import { WorkTimeline } from "@/components/work/work-timeline";
 import { mockWorkItems } from "@/lib/mock-data";
@@ -52,9 +52,9 @@ const denseItems: WorkItem[] = Array.from({ length: 30 }, (_, index) => {
     id: `${source.id}-dense-${index}`,
     key: `DENSE-${String(index + 1).padStart(2, "0")}`,
     rank: index + 1,
-    status: (["backlog", "planned", "in-progress", "blocked", "done"] as const)[
-      index % 5
-    ],
+    status: (
+      ["backlog", "in review", "in progress", "blocked", "done"] as const
+    )[index % 5],
     title: `${source.title} · scenario ${index + 1}`,
   };
 });
@@ -139,13 +139,9 @@ export const TimelineProjection: Story = {
       <h1 className="sr-only">Work timeline projection</h1>
       <WorkTimeline
         items={mockWorkItems.slice(0, 10)}
-        scope={{
-          type: "project",
-          namespaceId: "namespace-product",
-          projectId: "project-web",
-        }}
         compact={false}
         onSelect={() => undefined}
+        onDatesChange={() => undefined}
       />
     </div>
   ),
@@ -170,7 +166,7 @@ export const InspectorOpen: Story = {
       initialSearch={{
         ...defaultSearch,
         layout: "table",
-        selected: `work:${mockWorkItems[0].id}`,
+        selected: `work:${mockWorkItems[0].key}`,
       }}
     />
   ),

@@ -81,21 +81,19 @@ func (s *CommentRepositoryIntegrationTestSuite) TestGetAllBelongsTo() {
 	_, err = s.CommentRepo.Create(context.Background(), testModel.NewCreateCommentOpts(s.testDoc.ID, s.testUser.ID))
 	s.Require().NoError(err)
 
-	comments, err := s.CommentRepo.GetAllBelongsTo(context.Background(), s.testDoc.ID, 0, 10)
+	comments, err := s.CommentRepo.ListBelongsTo(context.Background(), s.testDoc.ID, repository.CursorPage{Size: 10})
 	s.Require().NoError(err)
-	s.Assert().Len(comments, 3)
+	s.Assert().Len(comments.Items, 3)
 
-	comments, err = s.CommentRepo.GetAllBelongsTo(context.Background(), s.testDoc.ID, 1, 2)
+	comments, err = s.CommentRepo.ListBelongsTo(context.Background(), s.testDoc.ID, repository.CursorPage{Size: 2})
 	s.Require().NoError(err)
-	s.Assert().Len(comments, 2)
+	s.Assert().Len(comments.Items, 2)
+	s.Assert().True(comments.PageInfo.HasMore)
 
-	comments, err = s.CommentRepo.GetAllBelongsTo(context.Background(), s.testDoc.ID, 2, 2)
+	comments, err = s.CommentRepo.ListBelongsTo(context.Background(), s.testDoc.ID, repository.CursorPage{Size: 2, Token: comments.PageInfo.NextPageToken})
 	s.Require().NoError(err)
-	s.Assert().Len(comments, 1)
-
-	comments, err = s.CommentRepo.GetAllBelongsTo(context.Background(), s.testDoc.ID, 3, 2)
-	s.Require().NoError(err)
-	s.Assert().Len(comments, 0)
+	s.Assert().Len(comments.Items, 1)
+	s.Assert().False(comments.PageInfo.HasMore)
 }
 
 func (s *CommentRepositoryIntegrationTestSuite) TestUpdate() {
@@ -201,10 +199,10 @@ func (s *CachedCommentRepositoryIntegrationTestSuite) TestGetAllBelongsTo() {
 	_, err = s.commentRepo.Create(context.Background(), testModel.NewCreateCommentOpts(s.testDoc.ID, s.testUser.ID))
 	s.Require().NoError(err)
 
-	original, err := s.CommentRepo.GetAllBelongsTo(context.Background(), s.testDoc.ID, 0, 10)
+	original, err := s.CommentRepo.ListBelongsTo(context.Background(), s.testDoc.ID, repository.CursorPage{Size: 10})
 	s.Require().NoError(err)
 
-	usingCache, err := s.commentRepo.GetAllBelongsTo(context.Background(), s.testDoc.ID, 0, 10)
+	usingCache, err := s.commentRepo.ListBelongsTo(context.Background(), s.testDoc.ID, repository.CursorPage{Size: 10})
 	s.Require().NoError(err)
 
 	s.Assert().Equal(original, usingCache)

@@ -120,9 +120,9 @@ func (s *RoleServiceIntegrationTestSuite) TestGetAllBelongsTo() {
 	})
 	s.Require().NoError(err)
 
-	roles, err := s.roleService.GetAllBelongsTo(s.ctx, s.organization.ID, 0, 10)
+	roles, err := s.roleService.ListBelongsTo(s.ctx, s.organization.ID, service.CursorPage{Size: 10})
 	s.Require().NoError(err)
-	s.Assert().GreaterOrEqual(len(roles), 2)
+	s.Assert().GreaterOrEqual(len(roles.Items), 2)
 }
 
 func (s *RoleServiceIntegrationTestSuite) TestUpdate() {
@@ -151,9 +151,9 @@ func (s *RoleServiceIntegrationTestSuite) TestAddMember() {
 
 	s.Require().NoError(s.roleService.AddMember(s.ctx, created.ID, member.ID, s.organization.ID))
 
-	members, err := s.roleService.GetMembers(s.ctx, created.ID, s.organization.ID)
+	members, err := s.roleService.ListMembers(s.ctx, created.ID, s.organization.ID, service.CursorPage{Size: 10})
 	s.Require().NoError(err)
-	s.Assert().GreaterOrEqual(len(members), 1)
+	s.Assert().GreaterOrEqual(len(members.Items), 1)
 }
 
 func (s *RoleServiceIntegrationTestSuite) TestRemoveMember() {

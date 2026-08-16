@@ -182,7 +182,7 @@ export function OrganizationEditForm({
                 <FieldControl>
                   <Input
                     type="url"
-                    placeholder="https://example.com (optional)"
+                    placeholder="https://example.com"
                     {...field}
                     value={getDefaultValue(field.value)}
                   />

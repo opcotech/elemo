@@ -15,3 +15,6 @@ export { SettingsOrganizationNamespaceDetailsPage } from "./settings-organizatio
 export { SettingsOrganizationProjectCreatePage } from "./settings-organization-project-create-page";
 export { SettingsOrganizationProjectDetailsPage } from "./settings-organization-project-details-page";
 export { SettingsOrganizationProjectEditPage } from "./settings-organization-project-edit-page";
+export { WorkPage } from "./work-page";
+export { WorkItemPage } from "./work-item-page";
+export { HomePage } from "./home-page";

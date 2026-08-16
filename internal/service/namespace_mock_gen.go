@@ -85,19 +85,19 @@ func (mr *MockNamespaceServiceMockRecorder) Get(ctx, id any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockNamespaceService)(nil).Get), ctx, id)
 }
 
-// GetAll mocks base method.
-func (m *MockNamespaceService) GetAll(ctx context.Context, orgID model.ID, offset, limit int) ([]*Namespace, error) {
+// List mocks base method.
+func (m *MockNamespaceService) List(ctx context.Context, orgID model.ID, page CursorPage) (Page[*Namespace], error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAll", ctx, orgID, offset, limit)
-	ret0, _ := ret[0].([]*Namespace)
+	ret := m.ctrl.Call(m, "List", ctx, orgID, page)
+	ret0, _ := ret[0].(Page[*Namespace])
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetAll indicates an expected call of GetAll.
-func (mr *MockNamespaceServiceMockRecorder) GetAll(ctx, orgID, offset, limit any) *gomock.Call {
+// List indicates an expected call of List.
+func (mr *MockNamespaceServiceMockRecorder) List(ctx, orgID, page any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAll", reflect.TypeOf((*MockNamespaceService)(nil).GetAll), ctx, orgID, offset, limit)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockNamespaceService)(nil).List), ctx, orgID, page)
 }
 
 // Update mocks base method.

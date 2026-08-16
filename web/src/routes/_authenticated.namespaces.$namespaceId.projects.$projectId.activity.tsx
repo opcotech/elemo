@@ -1,6 +1,6 @@
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 
-import { ProjectActivityPage } from "@/components/projects";
+import { ProjectActivityPage } from "@/components/projects/project-pages";
 
 const projectRoute = getRouteApi(
   "/_authenticated/namespaces/$namespaceId/projects/$projectId"

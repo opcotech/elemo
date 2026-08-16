@@ -36,14 +36,10 @@ func roleToDTO(role *service.Role) api.Role {
 		Id:          role.ID.String(),
 		Description: &role.Description,
 		Name:        role.Name,
-		Members:     make([]api.Id, len(role.Members)),
+		MemberCount: role.MemberCount,
 		Permissions: make([]api.Id, len(role.Permissions)),
 		CreatedAt:   *role.CreatedAt,
 		UpdatedAt:   role.UpdatedAt,
-	}
-
-	for i, memberID := range role.Members {
-		dto.Members[i] = api.Id(memberID.String())
 	}
 
 	for i, permissionID := range role.Permissions {

@@ -1,6 +1,6 @@
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 
-import { WorkSurface } from "@/components/work";
+import { WorkSurface } from "@/components/work/work-surface";
 import { workRouteSearchSchema } from "@/lib/work-route-search";
 
 const projectRoute = getRouteApi(
@@ -22,7 +22,7 @@ function ProjectWorkRoute() {
   return (
     <WorkSurface
       title={`${project.name} / Work`}
-      description="Project-scoped work using the shared projection query."
+      description="Project-scoped work from the live issue API."
       context={{ namespace: namespace.name, project: project.name }}
       scope={{
         type: "project",

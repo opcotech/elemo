@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-redis/cache/v9"
 	"github.com/opcotech/elemo/internal/model"
+	"github.com/opcotech/elemo/internal/pkg/convert"
 	"github.com/opcotech/elemo/internal/testutil/mock"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
@@ -32,8 +33,8 @@ func TestCachedDocumentRepository_Create(t *testing.T) {
 			name: "create document",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, opts CreateDocumentOpts) *redisBaseRepository {
-					belongsToKey := composeCacheKey(model.ResourceTypeDocument.String(), "GetAllBelongsTo", opts.BelongsTo.String(), "*")
-					byCreatorKey := composeCacheKey(model.ResourceTypeDocument.String(), "GetByCreator", opts.CreatedBy.String(), "*")
+					belongsToKey := composeCacheKey(model.ResourceTypeDocument.String(), "ListBelongsTo", opts.BelongsTo.String(), "*", "*", "*")
+					byCreatorKey := composeCacheKey(model.ResourceTypeDocument.String(), "ListByCreator", opts.CreatedBy.String(), "*", "*", "*")
 					namespacesKey := composeCacheKey(model.ResourceTypeNamespace.String(), "*")
 					projectsKey := composeCacheKey(model.ResourceTypeProject.String(), "*")
 					usersKey := composeCacheKey(model.ResourceTypeUser.String(), "*")
@@ -106,8 +107,8 @@ func TestCachedDocumentRepository_Create(t *testing.T) {
 			name: "create document with error",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, opts CreateDocumentOpts) *redisBaseRepository {
-					belongsToKey := composeCacheKey(model.ResourceTypeDocument.String(), "GetAllBelongsTo", opts.BelongsTo.String(), "*")
-					byCreatorKey := composeCacheKey(model.ResourceTypeDocument.String(), "GetByCreator", opts.CreatedBy.String(), "*")
+					belongsToKey := composeCacheKey(model.ResourceTypeDocument.String(), "ListBelongsTo", opts.BelongsTo.String(), "*", "*", "*")
+					byCreatorKey := composeCacheKey(model.ResourceTypeDocument.String(), "ListByCreator", opts.CreatedBy.String(), "*", "*", "*")
 					namespacesKey := composeCacheKey(model.ResourceTypeNamespace.String(), "*")
 					projectsKey := composeCacheKey(model.ResourceTypeProject.String(), "*")
 					usersKey := composeCacheKey(model.ResourceTypeUser.String(), "*")
@@ -181,7 +182,7 @@ func TestCachedDocumentRepository_Create(t *testing.T) {
 			name: "create document with belongs to cache delete error",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, opts CreateDocumentOpts) *redisBaseRepository {
-					belongsToKey := composeCacheKey(model.ResourceTypeDocument.String(), "GetAllBelongsTo", opts.BelongsTo.String(), "*")
+					belongsToKey := composeCacheKey(model.ResourceTypeDocument.String(), "ListBelongsTo", opts.BelongsTo.String(), "*", "*", "*")
 
 					belongsToKeyResult := new(redis.StringSliceCmd)
 					belongsToKeyResult.SetVal([]string{belongsToKey})
@@ -230,8 +231,8 @@ func TestCachedDocumentRepository_Create(t *testing.T) {
 			name: "create document with by creator cache delete error",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, opts CreateDocumentOpts) *redisBaseRepository {
-					belongsToKey := composeCacheKey(model.ResourceTypeDocument.String(), "GetAllBelongsTo", opts.BelongsTo.String(), "*")
-					byCreatorKey := composeCacheKey(model.ResourceTypeDocument.String(), "GetByCreator", opts.CreatedBy.String(), "*")
+					belongsToKey := composeCacheKey(model.ResourceTypeDocument.String(), "ListBelongsTo", opts.BelongsTo.String(), "*", "*", "*")
+					byCreatorKey := composeCacheKey(model.ResourceTypeDocument.String(), "ListByCreator", opts.CreatedBy.String(), "*", "*", "*")
 
 					belongsToKeyResult := new(redis.StringSliceCmd)
 					belongsToKeyResult.SetVal([]string{belongsToKey})
@@ -285,8 +286,8 @@ func TestCachedDocumentRepository_Create(t *testing.T) {
 			name: "create document with namespace cross cache delete error",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, opts CreateDocumentOpts) *redisBaseRepository {
-					belongsToKey := composeCacheKey(model.ResourceTypeDocument.String(), "GetAllBelongsTo", opts.BelongsTo.String(), "*")
-					byCreatorKey := composeCacheKey(model.ResourceTypeDocument.String(), "GetByCreator", opts.CreatedBy.String(), "*")
+					belongsToKey := composeCacheKey(model.ResourceTypeDocument.String(), "ListBelongsTo", opts.BelongsTo.String(), "*", "*", "*")
+					byCreatorKey := composeCacheKey(model.ResourceTypeDocument.String(), "ListByCreator", opts.CreatedBy.String(), "*", "*", "*")
 					namespacesKey := composeCacheKey(model.ResourceTypeNamespace.String(), "*")
 
 					belongsToKeyResult := new(redis.StringSliceCmd)
@@ -346,8 +347,8 @@ func TestCachedDocumentRepository_Create(t *testing.T) {
 			name: "create document with project cross cache delete error",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, opts CreateDocumentOpts) *redisBaseRepository {
-					belongsToKey := composeCacheKey(model.ResourceTypeDocument.String(), "GetAllBelongsTo", opts.BelongsTo.String(), "*")
-					byCreatorKey := composeCacheKey(model.ResourceTypeDocument.String(), "GetByCreator", opts.CreatedBy.String(), "*")
+					belongsToKey := composeCacheKey(model.ResourceTypeDocument.String(), "ListBelongsTo", opts.BelongsTo.String(), "*", "*", "*")
+					byCreatorKey := composeCacheKey(model.ResourceTypeDocument.String(), "ListByCreator", opts.CreatedBy.String(), "*", "*", "*")
 					namespacesKey := composeCacheKey(model.ResourceTypeNamespace.String(), "*")
 					projectsKey := composeCacheKey(model.ResourceTypeProject.String(), "*")
 
@@ -413,8 +414,8 @@ func TestCachedDocumentRepository_Create(t *testing.T) {
 			name: "create document with user cross cache delete error",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, opts CreateDocumentOpts) *redisBaseRepository {
-					belongsToKey := composeCacheKey(model.ResourceTypeDocument.String(), "GetAllBelongsTo", opts.BelongsTo.String(), "*")
-					byCreatorKey := composeCacheKey(model.ResourceTypeDocument.String(), "GetByCreator", opts.CreatedBy.String(), "*")
+					belongsToKey := composeCacheKey(model.ResourceTypeDocument.String(), "ListBelongsTo", opts.BelongsTo.String(), "*", "*", "*")
+					byCreatorKey := composeCacheKey(model.ResourceTypeDocument.String(), "ListByCreator", opts.CreatedBy.String(), "*", "*", "*")
 					namespacesKey := composeCacheKey(model.ResourceTypeNamespace.String(), "*")
 					projectsKey := composeCacheKey(model.ResourceTypeProject.String(), "*")
 					usersKey := composeCacheKey(model.ResourceTypeUser.String(), "*")
@@ -519,7 +520,7 @@ func TestCachedDocumentRepository_Get(t *testing.T) {
 			name: "get uncached document",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, document *Document) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeDocument.String(), id.String())
+					key := composeCacheKey(model.ResourceTypeDocument.String(), "Get", id.String(), projectionCacheValue(DocumentDetailProjection()))
 
 					db, err := NewRedisDatabase(
 						WithRedisClient(mock.NewUniversalClient(ctrl)),
@@ -550,7 +551,7 @@ func TestCachedDocumentRepository_Get(t *testing.T) {
 				},
 				documentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, document *Document) DocumentRepository {
 					repo := NewMockDocumentRepository(ctrl)
-					repo.EXPECT().Get(ctx, id).Return(document, nil)
+					repo.EXPECT().Get(ctx, id, DocumentDetailProjection()).Return(document, nil)
 					return repo
 				},
 			},
@@ -560,14 +561,14 @@ func TestCachedDocumentRepository_Get(t *testing.T) {
 			},
 			want: func(id model.ID) *Document {
 				return &Document{
-					ID:          id,
-					Name:        "test document",
-					Excerpt:     "test excerpt",
-					FileID:      "test file subject",
-					CreatedBy:   model.MustNewID(model.ResourceTypeUser),
-					Labels:      make([]model.ID, 0),
-					Comments:    make([]model.ID, 0),
-					Attachments: make([]model.ID, 0),
+					ID:              id,
+					Name:            "test document",
+					Excerpt:         "test excerpt",
+					FileID:          "test file subject",
+					CreatedBy:       PartialUser{ID: model.MustNewID(model.ResourceTypeUser)},
+					Labels:          make([]PartialLabel, 0),
+					CommentCount:    convert.ToPointer(int64(0)),
+					AttachmentCount: convert.ToPointer(int64(0)),
 				}
 			},
 		},
@@ -575,7 +576,7 @@ func TestCachedDocumentRepository_Get(t *testing.T) {
 			name: "get cached document",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, document *Document) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeDocument.String(), id.String())
+					key := composeCacheKey(model.ResourceTypeDocument.String(), "Get", id.String(), projectionCacheValue(DocumentDetailProjection()))
 
 					db, err := NewRedisDatabase(
 						WithRedisClient(mock.NewUniversalClient(ctrl)),
@@ -612,14 +613,14 @@ func TestCachedDocumentRepository_Get(t *testing.T) {
 			},
 			want: func(id model.ID) *Document {
 				return &Document{
-					ID:          id,
-					Name:        "test document",
-					Excerpt:     "test excerpt",
-					FileID:      "test file subject",
-					CreatedBy:   model.MustNewID(model.ResourceTypeUser),
-					Labels:      make([]model.ID, 0),
-					Comments:    make([]model.ID, 0),
-					Attachments: make([]model.ID, 0),
+					ID:              id,
+					Name:            "test document",
+					Excerpt:         "test excerpt",
+					FileID:          "test file subject",
+					CreatedBy:       PartialUser{ID: model.MustNewID(model.ResourceTypeUser)},
+					Labels:          make([]PartialLabel, 0),
+					CommentCount:    convert.ToPointer(int64(0)),
+					AttachmentCount: convert.ToPointer(int64(0)),
 				}
 			},
 		},
@@ -627,7 +628,7 @@ func TestCachedDocumentRepository_Get(t *testing.T) {
 			name: "get uncached document error",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, document *Document) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeDocument.String(), id.String())
+					key := composeCacheKey(model.ResourceTypeDocument.String(), "Get", id.String(), projectionCacheValue(DocumentDetailProjection()))
 
 					db, err := NewRedisDatabase(
 						WithRedisClient(mock.NewUniversalClient(ctrl)),
@@ -656,7 +657,7 @@ func TestCachedDocumentRepository_Get(t *testing.T) {
 				},
 				documentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *Document) DocumentRepository {
 					repo := NewMockDocumentRepository(ctrl)
-					repo.EXPECT().Get(ctx, id).Return(nil, ErrNotFound)
+					repo.EXPECT().Get(ctx, id, DocumentDetailProjection()).Return(nil, ErrNotFound)
 					return repo
 				},
 			},
@@ -670,7 +671,7 @@ func TestCachedDocumentRepository_Get(t *testing.T) {
 			name: "get cached document error",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *Document) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeDocument.String(), id.String())
+					key := composeCacheKey(model.ResourceTypeDocument.String(), "Get", id.String(), projectionCacheValue(DocumentDetailProjection()))
 
 					db, err := NewRedisDatabase(
 						WithRedisClient(mock.NewUniversalClient(ctrl)),
@@ -707,7 +708,7 @@ func TestCachedDocumentRepository_Get(t *testing.T) {
 			name: "get uncached document cache set error",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, document *Document) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeDocument.String(), id.String())
+					key := composeCacheKey(model.ResourceTypeDocument.String(), "Get", id.String(), projectionCacheValue(DocumentDetailProjection()))
 
 					db, err := NewRedisDatabase(
 						WithRedisClient(mock.NewUniversalClient(ctrl)),
@@ -738,7 +739,7 @@ func TestCachedDocumentRepository_Get(t *testing.T) {
 				},
 				documentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, document *Document) DocumentRepository {
 					repo := NewMockDocumentRepository(ctrl)
-					repo.EXPECT().Get(ctx, id).Return(document, nil)
+					repo.EXPECT().Get(ctx, id, DocumentDetailProjection()).Return(document, nil)
 					return repo
 				},
 			},
@@ -764,17 +765,17 @@ func TestCachedDocumentRepository_Get(t *testing.T) {
 				cacheRepo:    tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, want),
 				documentRepo: tt.fields.documentRepo(ctrl, tt.args.ctx, tt.args.id, want),
 			}
-			got, err := r.Get(tt.args.ctx, tt.args.id)
+			got, err := r.Get(tt.args.ctx, tt.args.id, DocumentDetailProjection())
 			assert.ErrorIs(t, err, tt.wantErr)
 			assert.Equal(t, want, got)
 		})
 	}
 }
 
-func TestCachedDocumentRepository_GetByCreator(t *testing.T) {
+func TestCachedDocumentRepository_ListByCreator(t *testing.T) {
 	type fields struct {
-		cacheRepo    func(ctrl *gomock.Controller, ctx context.Context, createdBy model.ID, offset, limit int, documents []*Document) *redisBaseRepository
-		documentRepo func(ctrl *gomock.Controller, ctx context.Context, createdBy model.ID, offset, limit int, documents []*Document) DocumentRepository
+		cacheRepo    func(ctrl *gomock.Controller, ctx context.Context, createdBy model.ID, _, limit int, documents []*Document) *redisBaseRepository
+		documentRepo func(ctrl *gomock.Controller, ctx context.Context, createdBy model.ID, _, limit int, documents []*Document) DocumentRepository
 	}
 	type args struct {
 		ctx       context.Context
@@ -792,8 +793,8 @@ func TestCachedDocumentRepository_GetByCreator(t *testing.T) {
 		{
 			name: "get uncached documents",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, createdBy model.ID, offset, limit int, documents []*Document) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeDocument.String(), "GetByCreator", createdBy.String(), offset, limit)
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, createdBy model.ID, _, limit int, documents []*Document) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeDocument.String(), "ListByCreator", createdBy.String(), projectionCacheValue(DocumentListProjection()), "", limit)
 
 					db, err := NewRedisDatabase(
 						WithRedisClient(mock.NewUniversalClient(ctrl)),
@@ -812,7 +813,7 @@ func TestCachedDocumentRepository_GetByCreator(t *testing.T) {
 					cacheRepo.EXPECT().Set(&cache.Item{
 						Ctx:   ctx,
 						Key:   key,
-						Value: documents,
+						Value: Page[*Document]{Items: documents},
 					}).Return(nil)
 
 					return &redisBaseRepository{
@@ -822,9 +823,9 @@ func TestCachedDocumentRepository_GetByCreator(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				documentRepo: func(ctrl *gomock.Controller, ctx context.Context, createdBy model.ID, offset, limit int, documents []*Document) DocumentRepository {
+				documentRepo: func(ctrl *gomock.Controller, ctx context.Context, createdBy model.ID, _, limit int, documents []*Document) DocumentRepository {
 					repo := NewMockDocumentRepository(ctrl)
-					repo.EXPECT().GetByCreator(ctx, createdBy, offset, limit).Return(documents, nil)
+					repo.EXPECT().ListByCreator(ctx, createdBy, CursorPage{Size: limit}, DocumentListProjection()).Return(Page[*Document]{Items: documents}, nil)
 					return repo
 				},
 			},
@@ -834,32 +835,32 @@ func TestCachedDocumentRepository_GetByCreator(t *testing.T) {
 			},
 			want: []*Document{
 				{
-					ID:          model.MustNewID(model.ResourceTypeDocument),
-					Name:        "test document",
-					Excerpt:     "test excerpt",
-					FileID:      "test file subject",
-					CreatedBy:   model.MustNewID(model.ResourceTypeUser),
-					Labels:      make([]model.ID, 0),
-					Comments:    make([]model.ID, 0),
-					Attachments: make([]model.ID, 0),
+					ID:              model.MustNewID(model.ResourceTypeDocument),
+					Name:            "test document",
+					Excerpt:         "test excerpt",
+					FileID:          "test file subject",
+					CreatedBy:       PartialUser{ID: model.MustNewID(model.ResourceTypeUser)},
+					Labels:          make([]PartialLabel, 0),
+					CommentCount:    convert.ToPointer(int64(0)),
+					AttachmentCount: convert.ToPointer(int64(0)),
 				},
 				{
-					ID:          model.MustNewID(model.ResourceTypeDocument),
-					Name:        "test document",
-					Excerpt:     "test excerpt",
-					FileID:      "test file subject",
-					CreatedBy:   model.MustNewID(model.ResourceTypeUser),
-					Labels:      make([]model.ID, 0),
-					Comments:    make([]model.ID, 0),
-					Attachments: make([]model.ID, 0),
+					ID:              model.MustNewID(model.ResourceTypeDocument),
+					Name:            "test document",
+					Excerpt:         "test excerpt",
+					FileID:          "test file subject",
+					CreatedBy:       PartialUser{ID: model.MustNewID(model.ResourceTypeUser)},
+					Labels:          make([]PartialLabel, 0),
+					CommentCount:    convert.ToPointer(int64(0)),
+					AttachmentCount: convert.ToPointer(int64(0)),
 				},
 			},
 		},
 		{
 			name: "get cached documents",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, createdBy model.ID, offset, limit int, documents []*Document) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeDocument.String(), "GetByCreator", createdBy.String(), offset, limit)
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, createdBy model.ID, _, limit int, documents []*Document) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeDocument.String(), "ListByCreator", createdBy.String(), projectionCacheValue(DocumentListProjection()), "", limit)
 
 					db, err := NewRedisDatabase(
 						WithRedisClient(mock.NewUniversalClient(ctrl)),
@@ -874,8 +875,8 @@ func TestCachedDocumentRepository_GetByCreator(t *testing.T) {
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Do(func(_ context.Context, _ string, dst any) {
-						if docsPtr, ok := dst.(*[]*Document); ok {
-							*docsPtr = documents
+						if ptr, ok := dst.(*Page[*Document]); ok {
+							*ptr = Page[*Document]{Items: documents}
 						}
 					}).Return(nil)
 
@@ -896,32 +897,32 @@ func TestCachedDocumentRepository_GetByCreator(t *testing.T) {
 			},
 			want: []*Document{
 				{
-					ID:          model.MustNewID(model.ResourceTypeDocument),
-					Name:        "test document",
-					Excerpt:     "test excerpt",
-					FileID:      "test file subject",
-					CreatedBy:   model.MustNewID(model.ResourceTypeUser),
-					Labels:      make([]model.ID, 0),
-					Comments:    make([]model.ID, 0),
-					Attachments: make([]model.ID, 0),
+					ID:              model.MustNewID(model.ResourceTypeDocument),
+					Name:            "test document",
+					Excerpt:         "test excerpt",
+					FileID:          "test file subject",
+					CreatedBy:       PartialUser{ID: model.MustNewID(model.ResourceTypeUser)},
+					Labels:          make([]PartialLabel, 0),
+					CommentCount:    convert.ToPointer(int64(0)),
+					AttachmentCount: convert.ToPointer(int64(0)),
 				},
 				{
-					ID:          model.MustNewID(model.ResourceTypeDocument),
-					Name:        "test document",
-					Excerpt:     "test excerpt",
-					FileID:      "test file subject",
-					CreatedBy:   model.MustNewID(model.ResourceTypeUser),
-					Labels:      make([]model.ID, 0),
-					Comments:    make([]model.ID, 0),
-					Attachments: make([]model.ID, 0),
+					ID:              model.MustNewID(model.ResourceTypeDocument),
+					Name:            "test document",
+					Excerpt:         "test excerpt",
+					FileID:          "test file subject",
+					CreatedBy:       PartialUser{ID: model.MustNewID(model.ResourceTypeUser)},
+					Labels:          make([]PartialLabel, 0),
+					CommentCount:    convert.ToPointer(int64(0)),
+					AttachmentCount: convert.ToPointer(int64(0)),
 				},
 			},
 		},
 		{
 			name: "get uncached documents error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, createdBy model.ID, offset, limit int, _ []*Document) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeDocument.String(), "GetByCreator", createdBy.String(), offset, limit)
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, createdBy model.ID, _, limit int, _ []*Document) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeDocument.String(), "ListByCreator", createdBy.String(), projectionCacheValue(DocumentListProjection()), "", limit)
 
 					db, err := NewRedisDatabase(
 						WithRedisClient(mock.NewUniversalClient(ctrl)),
@@ -944,9 +945,9 @@ func TestCachedDocumentRepository_GetByCreator(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				documentRepo: func(ctrl *gomock.Controller, ctx context.Context, createdBy model.ID, offset, limit int, _ []*Document) DocumentRepository {
+				documentRepo: func(ctrl *gomock.Controller, ctx context.Context, createdBy model.ID, _, limit int, _ []*Document) DocumentRepository {
 					repo := NewMockDocumentRepository(ctrl)
-					repo.EXPECT().GetByCreator(ctx, createdBy, offset, limit).Return(nil, ErrNotFound)
+					repo.EXPECT().ListByCreator(ctx, createdBy, CursorPage{Size: limit}, DocumentListProjection()).Return(Page[*Document]{}, ErrNotFound)
 					return repo
 				},
 			},
@@ -959,8 +960,8 @@ func TestCachedDocumentRepository_GetByCreator(t *testing.T) {
 		{
 			name: "get get documents cache error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, createdBy model.ID, offset, limit int, _ []*Document) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeDocument.String(), "GetByCreator", createdBy.String(), offset, limit)
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, createdBy model.ID, _, limit int, _ []*Document) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeDocument.String(), "ListByCreator", createdBy.String(), projectionCacheValue(DocumentListProjection()), "", limit)
 
 					db, err := NewRedisDatabase(
 						WithRedisClient(mock.NewUniversalClient(ctrl)),
@@ -996,8 +997,8 @@ func TestCachedDocumentRepository_GetByCreator(t *testing.T) {
 		{
 			name: "get uncached documents cache set error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, createdBy model.ID, offset, limit int, documents []*Document) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeDocument.String(), "GetByCreator", createdBy.String(), offset, limit)
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, createdBy model.ID, _, limit int, documents []*Document) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeDocument.String(), "ListByCreator", createdBy.String(), projectionCacheValue(DocumentListProjection()), "", limit)
 
 					db, err := NewRedisDatabase(
 						WithRedisClient(mock.NewUniversalClient(ctrl)),
@@ -1016,7 +1017,7 @@ func TestCachedDocumentRepository_GetByCreator(t *testing.T) {
 					cacheRepo.EXPECT().Set(&cache.Item{
 						Ctx:   ctx,
 						Key:   key,
-						Value: documents,
+						Value: Page[*Document]{Items: documents},
 					}).Return(assert.AnError)
 
 					return &redisBaseRepository{
@@ -1026,9 +1027,9 @@ func TestCachedDocumentRepository_GetByCreator(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				documentRepo: func(ctrl *gomock.Controller, ctx context.Context, createdBy model.ID, offset, limit int, documents []*Document) DocumentRepository {
+				documentRepo: func(ctrl *gomock.Controller, ctx context.Context, createdBy model.ID, _, limit int, documents []*Document) DocumentRepository {
 					repo := NewMockDocumentRepository(ctrl)
-					repo.EXPECT().GetByCreator(ctx, createdBy, offset, limit).Return(documents, nil)
+					repo.EXPECT().ListByCreator(ctx, createdBy, CursorPage{Size: limit}, DocumentListProjection()).Return(Page[*Document]{Items: documents}, nil)
 					return repo
 				},
 			},
@@ -1046,20 +1047,20 @@ func TestCachedDocumentRepository_GetByCreator(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			r := &RedisCachedDocumentRepository{
-				cacheRepo:    tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.createdBy, tt.args.offset, tt.args.limit, tt.want),
-				documentRepo: tt.fields.documentRepo(ctrl, tt.args.ctx, tt.args.createdBy, tt.args.offset, tt.args.limit, tt.want),
+				cacheRepo:    tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.createdBy, tt.args.offset, testPageSize(tt.args.limit), tt.want),
+				documentRepo: tt.fields.documentRepo(ctrl, tt.args.ctx, tt.args.createdBy, tt.args.offset, testPageSize(tt.args.limit), tt.want),
 			}
-			got, err := r.GetByCreator(tt.args.ctx, tt.args.createdBy, tt.args.offset, tt.args.limit)
+			got, err := r.ListByCreator(tt.args.ctx, tt.args.createdBy, CursorPage{Size: testPageSize(tt.args.limit)}, DocumentListProjection())
 			assert.ErrorIs(t, err, tt.wantErr)
-			assert.ElementsMatch(t, tt.want, got)
+			assert.ElementsMatch(t, tt.want, got.Items)
 		})
 	}
 }
 
-func TestCachedDocumentRepository_GetAllBelongsTo(t *testing.T) {
+func TestCachedDocumentRepository_ListBelongsTo(t *testing.T) {
 	type fields struct {
-		cacheRepo    func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, documents []*Document) *redisBaseRepository
-		documentRepo func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, documents []*Document) DocumentRepository
+		cacheRepo    func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, _, limit int, documents []*Document) *redisBaseRepository
+		documentRepo func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, _, limit int, documents []*Document) DocumentRepository
 	}
 	type args struct {
 		ctx       context.Context
@@ -1077,8 +1078,8 @@ func TestCachedDocumentRepository_GetAllBelongsTo(t *testing.T) {
 		{
 			name: "get uncached documents",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, documents []*Document) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeDocument.String(), "GetAllBelongsTo", belongsTo.String(), offset, limit)
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, _, limit int, documents []*Document) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeDocument.String(), "ListBelongsTo", belongsTo.String(), projectionCacheValue(DocumentListProjection()), "", limit)
 
 					db, err := NewRedisDatabase(
 						WithRedisClient(mock.NewUniversalClient(ctrl)),
@@ -1097,7 +1098,7 @@ func TestCachedDocumentRepository_GetAllBelongsTo(t *testing.T) {
 					cacheRepo.EXPECT().Set(&cache.Item{
 						Ctx:   ctx,
 						Key:   key,
-						Value: documents,
+						Value: Page[*Document]{Items: documents},
 					}).Return(nil)
 
 					return &redisBaseRepository{
@@ -1107,9 +1108,9 @@ func TestCachedDocumentRepository_GetAllBelongsTo(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				documentRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, documents []*Document) DocumentRepository {
+				documentRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, _, limit int, documents []*Document) DocumentRepository {
 					repo := NewMockDocumentRepository(ctrl)
-					repo.EXPECT().GetAllBelongsTo(ctx, belongsTo, offset, limit).Return(documents, nil)
+					repo.EXPECT().ListBelongsTo(ctx, belongsTo, CursorPage{Size: limit}, DocumentListProjection()).Return(Page[*Document]{Items: documents}, nil)
 					return repo
 				},
 			},
@@ -1119,32 +1120,32 @@ func TestCachedDocumentRepository_GetAllBelongsTo(t *testing.T) {
 			},
 			want: []*Document{
 				{
-					ID:          model.MustNewID(model.ResourceTypeDocument),
-					Name:        "test document",
-					Excerpt:     "test excerpt",
-					FileID:      "test file subject",
-					CreatedBy:   model.MustNewID(model.ResourceTypeUser),
-					Labels:      make([]model.ID, 0),
-					Comments:    make([]model.ID, 0),
-					Attachments: make([]model.ID, 0),
+					ID:              model.MustNewID(model.ResourceTypeDocument),
+					Name:            "test document",
+					Excerpt:         "test excerpt",
+					FileID:          "test file subject",
+					CreatedBy:       PartialUser{ID: model.MustNewID(model.ResourceTypeUser)},
+					Labels:          make([]PartialLabel, 0),
+					CommentCount:    convert.ToPointer(int64(0)),
+					AttachmentCount: convert.ToPointer(int64(0)),
 				},
 				{
-					ID:          model.MustNewID(model.ResourceTypeDocument),
-					Name:        "test document",
-					Excerpt:     "test excerpt",
-					FileID:      "test file subject",
-					CreatedBy:   model.MustNewID(model.ResourceTypeUser),
-					Labels:      make([]model.ID, 0),
-					Comments:    make([]model.ID, 0),
-					Attachments: make([]model.ID, 0),
+					ID:              model.MustNewID(model.ResourceTypeDocument),
+					Name:            "test document",
+					Excerpt:         "test excerpt",
+					FileID:          "test file subject",
+					CreatedBy:       PartialUser{ID: model.MustNewID(model.ResourceTypeUser)},
+					Labels:          make([]PartialLabel, 0),
+					CommentCount:    convert.ToPointer(int64(0)),
+					AttachmentCount: convert.ToPointer(int64(0)),
 				},
 			},
 		},
 		{
 			name: "get cached documents",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, documents []*Document) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeDocument.String(), "GetAllBelongsTo", belongsTo.String(), offset, limit)
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, _, limit int, documents []*Document) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeDocument.String(), "ListBelongsTo", belongsTo.String(), projectionCacheValue(DocumentListProjection()), "", limit)
 
 					db, err := NewRedisDatabase(
 						WithRedisClient(mock.NewUniversalClient(ctrl)),
@@ -1159,8 +1160,8 @@ func TestCachedDocumentRepository_GetAllBelongsTo(t *testing.T) {
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Do(func(_ context.Context, _ string, dst any) {
-						if docsPtr, ok := dst.(*[]*Document); ok {
-							*docsPtr = documents
+						if ptr, ok := dst.(*Page[*Document]); ok {
+							*ptr = Page[*Document]{Items: documents}
 						}
 					}).Return(nil)
 
@@ -1181,32 +1182,32 @@ func TestCachedDocumentRepository_GetAllBelongsTo(t *testing.T) {
 			},
 			want: []*Document{
 				{
-					ID:          model.MustNewID(model.ResourceTypeDocument),
-					Name:        "test document",
-					Excerpt:     "test excerpt",
-					FileID:      "test file subject",
-					CreatedBy:   model.MustNewID(model.ResourceTypeUser),
-					Labels:      make([]model.ID, 0),
-					Comments:    make([]model.ID, 0),
-					Attachments: make([]model.ID, 0),
+					ID:              model.MustNewID(model.ResourceTypeDocument),
+					Name:            "test document",
+					Excerpt:         "test excerpt",
+					FileID:          "test file subject",
+					CreatedBy:       PartialUser{ID: model.MustNewID(model.ResourceTypeUser)},
+					Labels:          make([]PartialLabel, 0),
+					CommentCount:    convert.ToPointer(int64(0)),
+					AttachmentCount: convert.ToPointer(int64(0)),
 				},
 				{
-					ID:          model.MustNewID(model.ResourceTypeDocument),
-					Name:        "test document",
-					Excerpt:     "test excerpt",
-					FileID:      "test file subject",
-					CreatedBy:   model.MustNewID(model.ResourceTypeUser),
-					Labels:      make([]model.ID, 0),
-					Comments:    make([]model.ID, 0),
-					Attachments: make([]model.ID, 0),
+					ID:              model.MustNewID(model.ResourceTypeDocument),
+					Name:            "test document",
+					Excerpt:         "test excerpt",
+					FileID:          "test file subject",
+					CreatedBy:       PartialUser{ID: model.MustNewID(model.ResourceTypeUser)},
+					Labels:          make([]PartialLabel, 0),
+					CommentCount:    convert.ToPointer(int64(0)),
+					AttachmentCount: convert.ToPointer(int64(0)),
 				},
 			},
 		},
 		{
 			name: "get uncached documents error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, _ []*Document) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeDocument.String(), "GetAllBelongsTo", belongsTo.String(), offset, limit)
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, _, limit int, _ []*Document) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeDocument.String(), "ListBelongsTo", belongsTo.String(), projectionCacheValue(DocumentListProjection()), "", limit)
 
 					db, err := NewRedisDatabase(
 						WithRedisClient(mock.NewUniversalClient(ctrl)),
@@ -1229,9 +1230,9 @@ func TestCachedDocumentRepository_GetAllBelongsTo(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				documentRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, _ []*Document) DocumentRepository {
+				documentRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, _, limit int, _ []*Document) DocumentRepository {
 					repo := NewMockDocumentRepository(ctrl)
-					repo.EXPECT().GetAllBelongsTo(ctx, belongsTo, offset, limit).Return(nil, ErrNotFound)
+					repo.EXPECT().ListBelongsTo(ctx, belongsTo, CursorPage{Size: limit}, DocumentListProjection()).Return(Page[*Document]{}, ErrNotFound)
 					return repo
 				},
 			},
@@ -1244,8 +1245,8 @@ func TestCachedDocumentRepository_GetAllBelongsTo(t *testing.T) {
 		{
 			name: "get get documents cache error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, _ []*Document) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeDocument.String(), "GetAllBelongsTo", belongsTo.String(), offset, limit)
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, _, limit int, _ []*Document) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeDocument.String(), "ListBelongsTo", belongsTo.String(), projectionCacheValue(DocumentListProjection()), "", limit)
 
 					db, err := NewRedisDatabase(
 						WithRedisClient(mock.NewUniversalClient(ctrl)),
@@ -1281,8 +1282,8 @@ func TestCachedDocumentRepository_GetAllBelongsTo(t *testing.T) {
 		{
 			name: "get uncached documents cache set error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, documents []*Document) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeDocument.String(), "GetAllBelongsTo", belongsTo.String(), offset, limit)
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, _, limit int, documents []*Document) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeDocument.String(), "ListBelongsTo", belongsTo.String(), projectionCacheValue(DocumentListProjection()), "", limit)
 
 					db, err := NewRedisDatabase(
 						WithRedisClient(mock.NewUniversalClient(ctrl)),
@@ -1301,7 +1302,7 @@ func TestCachedDocumentRepository_GetAllBelongsTo(t *testing.T) {
 					cacheRepo.EXPECT().Set(&cache.Item{
 						Ctx:   ctx,
 						Key:   key,
-						Value: documents,
+						Value: Page[*Document]{Items: documents},
 					}).Return(assert.AnError)
 
 					return &redisBaseRepository{
@@ -1311,9 +1312,9 @@ func TestCachedDocumentRepository_GetAllBelongsTo(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				documentRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, documents []*Document) DocumentRepository {
+				documentRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, _, limit int, documents []*Document) DocumentRepository {
 					repo := NewMockDocumentRepository(ctrl)
-					repo.EXPECT().GetAllBelongsTo(ctx, belongsTo, offset, limit).Return(documents, nil)
+					repo.EXPECT().ListBelongsTo(ctx, belongsTo, CursorPage{Size: limit}, DocumentListProjection()).Return(Page[*Document]{Items: documents}, nil)
 					return repo
 				},
 			},
@@ -1331,12 +1332,12 @@ func TestCachedDocumentRepository_GetAllBelongsTo(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			r := &RedisCachedDocumentRepository{
-				cacheRepo:    tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.belongsTo, tt.args.offset, tt.args.limit, tt.want),
-				documentRepo: tt.fields.documentRepo(ctrl, tt.args.ctx, tt.args.belongsTo, tt.args.offset, tt.args.limit, tt.want),
+				cacheRepo:    tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.belongsTo, tt.args.offset, testPageSize(tt.args.limit), tt.want),
+				documentRepo: tt.fields.documentRepo(ctrl, tt.args.ctx, tt.args.belongsTo, tt.args.offset, testPageSize(tt.args.limit), tt.want),
 			}
-			got, err := r.GetAllBelongsTo(tt.args.ctx, tt.args.belongsTo, tt.args.offset, tt.args.limit)
+			got, err := r.ListBelongsTo(tt.args.ctx, tt.args.belongsTo, CursorPage{Size: testPageSize(tt.args.limit)}, DocumentListProjection())
 			assert.ErrorIs(t, err, tt.wantErr)
-			assert.ElementsMatch(t, tt.want, got)
+			assert.ElementsMatch(t, tt.want, got.Items)
 		})
 	}
 }
@@ -1362,9 +1363,9 @@ func TestCachedDocumentRepository_Update(t *testing.T) {
 			name: "update document",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, document *Document) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeDocument.String(), id.String())
-					belongsToKey := composeCacheKey(model.ResourceTypeDocument.String(), "GetAllBelongsTo", "*")
-					byCreatorKey := composeCacheKey(model.ResourceTypeDocument.String(), "GetByCreator", document.CreatedBy.String(), "*")
+					key := composeCacheKey(model.ResourceTypeDocument.String(), "Get", id.String(), projectionCacheValue(DocumentDetailProjection()))
+					belongsToKey := composeCacheKey(model.ResourceTypeDocument.String(), "ListBelongsTo", "*")
+					byCreatorKey := composeCacheKey(model.ResourceTypeDocument.String(), "ListByCreator", document.CreatedBy.ID.String(), "*", "*", "*")
 
 					belongsToKeyCmd := new(redis.StringSliceCmd)
 					belongsToKeyCmd.SetVal([]string{belongsToKey})
@@ -1416,14 +1417,14 @@ func TestCachedDocumentRepository_Update(t *testing.T) {
 				opts: UpdateDocumentOpts{},
 			},
 			want: &Document{
-				ID:          model.MustNewID(model.ResourceTypeDocument),
-				Name:        "new document",
-				Excerpt:     "new excerpt",
-				FileID:      "test file subject",
-				CreatedBy:   model.MustNewID(model.ResourceTypeUser),
-				Labels:      make([]model.ID, 0),
-				Comments:    make([]model.ID, 0),
-				Attachments: make([]model.ID, 0),
+				ID:              model.MustNewID(model.ResourceTypeDocument),
+				Name:            "new document",
+				Excerpt:         "new excerpt",
+				FileID:          "test file subject",
+				CreatedBy:       PartialUser{ID: model.MustNewID(model.ResourceTypeUser)},
+				Labels:          make([]PartialLabel, 0),
+				CommentCount:    convert.ToPointer(int64(0)),
+				AttachmentCount: convert.ToPointer(int64(0)),
 			},
 		},
 		{
@@ -1459,7 +1460,7 @@ func TestCachedDocumentRepository_Update(t *testing.T) {
 			name: "update document set cache error",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, document *Document) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeDocument.String(), id.String())
+					key := composeCacheKey(model.ResourceTypeDocument.String(), "Get", id.String(), projectionCacheValue(DocumentDetailProjection()))
 
 					dbClient := mock.NewUniversalClient(ctrl)
 					cacheRepo := mock.NewCacheBackend(ctrl)
@@ -1505,8 +1506,8 @@ func TestCachedDocumentRepository_Update(t *testing.T) {
 			name: "update document delete belongs to cache error",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, document *Document) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeDocument.String(), id.String())
-					belongsToKey := composeCacheKey(model.ResourceTypeDocument.String(), "GetAllBelongsTo", "*")
+					key := composeCacheKey(model.ResourceTypeDocument.String(), "Get", id.String(), projectionCacheValue(DocumentDetailProjection()))
+					belongsToKey := composeCacheKey(model.ResourceTypeDocument.String(), "ListBelongsTo", "*")
 
 					belongsToKeyCmd := new(redis.StringSliceCmd)
 					belongsToKeyCmd.SetVal([]string{belongsToKey})
@@ -1558,9 +1559,9 @@ func TestCachedDocumentRepository_Update(t *testing.T) {
 			name: "update document with delete by creator cache error",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, document *Document) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeDocument.String(), id.String())
-					belongsToKey := composeCacheKey(model.ResourceTypeDocument.String(), "GetAllBelongsTo", "*")
-					byCreatorKey := composeCacheKey(model.ResourceTypeDocument.String(), "GetByCreator", document.CreatedBy.String(), "*")
+					key := composeCacheKey(model.ResourceTypeDocument.String(), "Get", id.String(), projectionCacheValue(DocumentDetailProjection()))
+					belongsToKey := composeCacheKey(model.ResourceTypeDocument.String(), "ListBelongsTo", "*")
+					byCreatorKey := composeCacheKey(model.ResourceTypeDocument.String(), "ListByCreator", document.CreatedBy.ID.String(), "*", "*", "*")
 
 					belongsToKeyCmd := new(redis.StringSliceCmd)
 					belongsToKeyCmd.SetVal([]string{belongsToKey})
@@ -1612,14 +1613,14 @@ func TestCachedDocumentRepository_Update(t *testing.T) {
 				opts: UpdateDocumentOpts{},
 			},
 			want: &Document{
-				ID:          model.MustNewID(model.ResourceTypeDocument),
-				Name:        "new document",
-				Excerpt:     "new excerpt",
-				FileID:      "test file subject",
-				CreatedBy:   model.MustNewID(model.ResourceTypeUser),
-				Labels:      make([]model.ID, 0),
-				Comments:    make([]model.ID, 0),
-				Attachments: make([]model.ID, 0),
+				ID:              model.MustNewID(model.ResourceTypeDocument),
+				Name:            "new document",
+				Excerpt:         "new excerpt",
+				FileID:          "test file subject",
+				CreatedBy:       PartialUser{ID: model.MustNewID(model.ResourceTypeUser)},
+				Labels:          make([]PartialLabel, 0),
+				CommentCount:    convert.ToPointer(int64(0)),
+				AttachmentCount: convert.ToPointer(int64(0)),
 			},
 			wantErr: ErrCacheDelete,
 		},
@@ -1663,9 +1664,9 @@ func TestCachedDocumentRepository_Delete(t *testing.T) {
 			name: "delete document",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeDocument.String(), id.String())
-					belongsToKey := composeCacheKey(model.ResourceTypeDocument.String(), "GetAllBelongsTo", "*")
-					byCreatorKey := composeCacheKey(model.ResourceTypeDocument.String(), "GetByCreator", "*")
+					key := composeCacheKey(model.ResourceTypeDocument.String(), "Get", id.String(), "*")
+					belongsToKey := composeCacheKey(model.ResourceTypeDocument.String(), "ListBelongsTo", "*")
+					byCreatorKey := composeCacheKey(model.ResourceTypeDocument.String(), "ListByCreator", "*")
 					namespacesKey := composeCacheKey(model.ResourceTypeNamespace.String(), "*")
 					projectsKey := composeCacheKey(model.ResourceTypeProject.String(), "*")
 					usersKey := composeCacheKey(model.ResourceTypeUser.String(), "*")
@@ -1685,7 +1686,11 @@ func TestCachedDocumentRepository_Delete(t *testing.T) {
 					usersKeyResult := new(redis.StringSliceCmd)
 					usersKeyResult.SetVal([]string{usersKey})
 
+					keyCmd := new(redis.StringSliceCmd)
+					keyCmd.SetVal([]string{key})
+
 					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, key).Return(keyCmd)
 					dbClient.EXPECT().Keys(ctx, belongsToKey).Return(belongsToKeyResult)
 					dbClient.EXPECT().Keys(ctx, byCreatorKey).Return(byCreatorKeyResult)
 					dbClient.EXPECT().Keys(ctx, namespacesKey).Return(namespacesKeyResult)
@@ -1701,8 +1706,7 @@ func TestCachedDocumentRepository_Delete(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0)).Times(6)
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Delete", gomock.Len(0)).Return(ctx, span)
-					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(5)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(6)
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
@@ -1734,9 +1738,9 @@ func TestCachedDocumentRepository_Delete(t *testing.T) {
 			name: "delete document with error",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeDocument.String(), id.String())
-					belongsToKey := composeCacheKey(model.ResourceTypeDocument.String(), "GetAllBelongsTo", "*")
-					byCreatorKey := composeCacheKey(model.ResourceTypeDocument.String(), "GetByCreator", "*")
+					key := composeCacheKey(model.ResourceTypeDocument.String(), "Get", id.String(), "*")
+					belongsToKey := composeCacheKey(model.ResourceTypeDocument.String(), "ListBelongsTo", "*")
+					byCreatorKey := composeCacheKey(model.ResourceTypeDocument.String(), "ListByCreator", "*")
 					namespacesKey := composeCacheKey(model.ResourceTypeNamespace.String(), "*")
 					projectsKey := composeCacheKey(model.ResourceTypeProject.String(), "*")
 					usersKey := composeCacheKey(model.ResourceTypeUser.String(), "*")
@@ -1756,7 +1760,11 @@ func TestCachedDocumentRepository_Delete(t *testing.T) {
 					usersKeyResult := new(redis.StringSliceCmd)
 					usersKeyResult.SetVal([]string{usersKey})
 
+					keyCmd := new(redis.StringSliceCmd)
+					keyCmd.SetVal([]string{key})
+
 					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, key).Return(keyCmd)
 					dbClient.EXPECT().Keys(ctx, belongsToKey).Return(belongsToKeyResult)
 					dbClient.EXPECT().Keys(ctx, byCreatorKey).Return(byCreatorKeyResult)
 					dbClient.EXPECT().Keys(ctx, namespacesKey).Return(namespacesKeyResult)
@@ -1772,8 +1780,7 @@ func TestCachedDocumentRepository_Delete(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0)).Times(6)
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Delete", gomock.Len(0)).Return(ctx, span)
-					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(5)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(6)
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
@@ -1806,9 +1813,13 @@ func TestCachedDocumentRepository_Delete(t *testing.T) {
 			name: "delete document with cache delete error",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeDocument.String(), id.String())
+					key := composeCacheKey(model.ResourceTypeDocument.String(), "Get", id.String(), "*")
+
+					keyCmd := new(redis.StringSliceCmd)
+					keyCmd.SetVal([]string{key})
 
 					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, key).Return(keyCmd)
 
 					db, err := NewRedisDatabase(
 						WithRedisClient(dbClient),
@@ -1819,7 +1830,7 @@ func TestCachedDocumentRepository_Delete(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0)).Times(1)
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span)
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(ErrCacheDelete)
@@ -1845,13 +1856,17 @@ func TestCachedDocumentRepository_Delete(t *testing.T) {
 			name: "delete document with belongs to cache delete error",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeDocument.String(), id.String())
-					belongsToKey := composeCacheKey(model.ResourceTypeDocument.String(), "GetAllBelongsTo", "*")
+					key := composeCacheKey(model.ResourceTypeDocument.String(), "Get", id.String(), "*")
+					belongsToKey := composeCacheKey(model.ResourceTypeDocument.String(), "ListBelongsTo", "*")
 
 					belongsToKeyResult := new(redis.StringSliceCmd)
 					belongsToKeyResult.SetVal([]string{belongsToKey})
 
+					keyCmd := new(redis.StringSliceCmd)
+					keyCmd.SetVal([]string{key})
+
 					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, key).Return(keyCmd)
 					dbClient.EXPECT().Keys(ctx, belongsToKey).Return(belongsToKeyResult)
 
 					db, err := NewRedisDatabase(
@@ -1863,8 +1878,7 @@ func TestCachedDocumentRepository_Delete(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0)).Times(2)
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Delete", gomock.Len(0)).Return(ctx, span)
-					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(2)
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
@@ -1891,9 +1905,9 @@ func TestCachedDocumentRepository_Delete(t *testing.T) {
 			name: "delete document with by creator cache delete error",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeDocument.String(), id.String())
-					belongsToKey := composeCacheKey(model.ResourceTypeDocument.String(), "GetAllBelongsTo", "*")
-					byCreatorKey := composeCacheKey(model.ResourceTypeDocument.String(), "GetByCreator", "*")
+					key := composeCacheKey(model.ResourceTypeDocument.String(), "Get", id.String(), "*")
+					belongsToKey := composeCacheKey(model.ResourceTypeDocument.String(), "ListBelongsTo", "*")
+					byCreatorKey := composeCacheKey(model.ResourceTypeDocument.String(), "ListByCreator", "*")
 
 					belongsToKeyResult := new(redis.StringSliceCmd)
 					belongsToKeyResult.SetVal([]string{belongsToKey})
@@ -1901,7 +1915,11 @@ func TestCachedDocumentRepository_Delete(t *testing.T) {
 					byCreatorKeyResult := new(redis.StringSliceCmd)
 					byCreatorKeyResult.SetVal([]string{byCreatorKey})
 
+					keyCmd := new(redis.StringSliceCmd)
+					keyCmd.SetVal([]string{key})
+
 					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, key).Return(keyCmd)
 					dbClient.EXPECT().Keys(ctx, belongsToKey).Return(belongsToKeyResult)
 					dbClient.EXPECT().Keys(ctx, byCreatorKey).Return(byCreatorKeyResult)
 
@@ -1914,8 +1932,7 @@ func TestCachedDocumentRepository_Delete(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0)).Times(3)
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Delete", gomock.Len(0)).Return(ctx, span)
-					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(2)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(3)
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
@@ -1943,9 +1960,9 @@ func TestCachedDocumentRepository_Delete(t *testing.T) {
 			name: "delete document with namespaces cache delete error",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeDocument.String(), id.String())
-					belongsToKey := composeCacheKey(model.ResourceTypeDocument.String(), "GetAllBelongsTo", "*")
-					byCreatorKey := composeCacheKey(model.ResourceTypeDocument.String(), "GetByCreator", "*")
+					key := composeCacheKey(model.ResourceTypeDocument.String(), "Get", id.String(), "*")
+					belongsToKey := composeCacheKey(model.ResourceTypeDocument.String(), "ListBelongsTo", "*")
+					byCreatorKey := composeCacheKey(model.ResourceTypeDocument.String(), "ListByCreator", "*")
 					namespacesKey := composeCacheKey(model.ResourceTypeNamespace.String(), "*")
 
 					belongsToKeyResult := new(redis.StringSliceCmd)
@@ -1957,7 +1974,11 @@ func TestCachedDocumentRepository_Delete(t *testing.T) {
 					namespacesKeyResult := new(redis.StringSliceCmd)
 					namespacesKeyResult.SetVal([]string{namespacesKey})
 
+					keyCmd := new(redis.StringSliceCmd)
+					keyCmd.SetVal([]string{key})
+
 					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, key).Return(keyCmd)
 					dbClient.EXPECT().Keys(ctx, belongsToKey).Return(belongsToKeyResult)
 					dbClient.EXPECT().Keys(ctx, byCreatorKey).Return(byCreatorKeyResult)
 					dbClient.EXPECT().Keys(ctx, namespacesKey).Return(namespacesKeyResult)
@@ -1971,8 +1992,7 @@ func TestCachedDocumentRepository_Delete(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0)).Times(4)
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Delete", gomock.Len(0)).Return(ctx, span)
-					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(3)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(4)
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
@@ -2001,9 +2021,9 @@ func TestCachedDocumentRepository_Delete(t *testing.T) {
 			name: "delete document with projects cache delete error",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeDocument.String(), id.String())
-					belongsToKey := composeCacheKey(model.ResourceTypeDocument.String(), "GetAllBelongsTo", "*")
-					byCreatorKey := composeCacheKey(model.ResourceTypeDocument.String(), "GetByCreator", "*")
+					key := composeCacheKey(model.ResourceTypeDocument.String(), "Get", id.String(), "*")
+					belongsToKey := composeCacheKey(model.ResourceTypeDocument.String(), "ListBelongsTo", "*")
+					byCreatorKey := composeCacheKey(model.ResourceTypeDocument.String(), "ListByCreator", "*")
 					namespacesKey := composeCacheKey(model.ResourceTypeNamespace.String(), "*")
 					projectsKey := composeCacheKey(model.ResourceTypeProject.String(), "*")
 
@@ -2019,7 +2039,11 @@ func TestCachedDocumentRepository_Delete(t *testing.T) {
 					projectsKeyResult := new(redis.StringSliceCmd)
 					projectsKeyResult.SetVal([]string{projectsKey})
 
+					keyCmd := new(redis.StringSliceCmd)
+					keyCmd.SetVal([]string{key})
+
 					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, key).Return(keyCmd)
 					dbClient.EXPECT().Keys(ctx, belongsToKey).Return(belongsToKeyResult)
 					dbClient.EXPECT().Keys(ctx, byCreatorKey).Return(byCreatorKeyResult)
 					dbClient.EXPECT().Keys(ctx, namespacesKey).Return(namespacesKeyResult)
@@ -2034,8 +2058,7 @@ func TestCachedDocumentRepository_Delete(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0)).Times(5)
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Delete", gomock.Len(0)).Return(ctx, span)
-					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(4)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(5)
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
@@ -2065,9 +2088,9 @@ func TestCachedDocumentRepository_Delete(t *testing.T) {
 			name: "delete document with users cache delete error",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeDocument.String(), id.String())
-					belongsToKey := composeCacheKey(model.ResourceTypeDocument.String(), "GetAllBelongsTo", "*")
-					byCreatorKey := composeCacheKey(model.ResourceTypeDocument.String(), "GetByCreator", "*")
+					key := composeCacheKey(model.ResourceTypeDocument.String(), "Get", id.String(), "*")
+					belongsToKey := composeCacheKey(model.ResourceTypeDocument.String(), "ListBelongsTo", "*")
+					byCreatorKey := composeCacheKey(model.ResourceTypeDocument.String(), "ListByCreator", "*")
 					namespacesKey := composeCacheKey(model.ResourceTypeNamespace.String(), "*")
 					projectsKey := composeCacheKey(model.ResourceTypeProject.String(), "*")
 					usersKey := composeCacheKey(model.ResourceTypeUser.String(), "*")
@@ -2087,7 +2110,11 @@ func TestCachedDocumentRepository_Delete(t *testing.T) {
 					usersKeyResult := new(redis.StringSliceCmd)
 					usersKeyResult.SetVal([]string{usersKey})
 
+					keyCmd := new(redis.StringSliceCmd)
+					keyCmd.SetVal([]string{key})
+
 					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, key).Return(keyCmd)
 					dbClient.EXPECT().Keys(ctx, belongsToKey).Return(belongsToKeyResult)
 					dbClient.EXPECT().Keys(ctx, byCreatorKey).Return(byCreatorKeyResult)
 					dbClient.EXPECT().Keys(ctx, namespacesKey).Return(namespacesKeyResult)
@@ -2103,8 +2130,7 @@ func TestCachedDocumentRepository_Delete(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0)).Times(6)
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Delete", gomock.Len(0)).Return(ctx, span)
-					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(5)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(6)
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
@@ -2146,4 +2172,14 @@ func TestCachedDocumentRepository_Delete(t *testing.T) {
 			assert.ErrorIs(t, err, tt.wantErr)
 		})
 	}
+}
+
+func TestNeo4jDocumentRepository_applyDocumentLoadersUnknown(t *testing.T) {
+	t.Parallel()
+
+	r := new(Neo4jDocumentRepository)
+	err := r.applyDocumentLoaders(context.Background(), nil, QueryPlan{
+		Loaders: []CompiledQuery{{Name: "document.load_unknown", Params: map[string]any{}}},
+	}, []*Document{{ID: model.MustNewID(model.ResourceTypeDocument)}})
+	assert.ErrorIs(t, err, ErrQueryCompile)
 }

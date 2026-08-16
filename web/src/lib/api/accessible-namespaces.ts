@@ -1,6 +1,7 @@
 import { queryOptions, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { QueryClient } from "@tanstack/react-query";
 
+import { collectListedPage, cursorPageQuery } from "@/lib/api/cursor-pages";
 import {
   v1OrganizationsGetOptions,
   v1OrganizationsNamespacesGetOptions,
@@ -25,28 +26,36 @@ export const accessibleNamespacesQueryKey = [
 ] as const;
 
 export function accessibleNamespacesOptions(queryClient: QueryClient) {
-  return queryOptions({
+  return queryOptions<AccessibleWorkspace>({
     queryKey: accessibleNamespacesQueryKey,
     queryFn: async (): Promise<AccessibleWorkspace> => {
-      const organizations = await queryClient.fetchQuery({
-        ...v1OrganizationsGetOptions(),
-        staleTime: 0,
-      });
+      const organizationsPage = await collectListedPage(async (pageToken) =>
+        queryClient.fetchQuery({
+          ...v1OrganizationsGetOptions({
+            query: cursorPageQuery(pageToken),
+          }),
+          staleTime: 0,
+        })
+      );
+      const organizations = organizationsPage.items;
       const namespacesByOrganization = await Promise.all(
         organizations.map((organization) =>
-          queryClient.fetchQuery({
-            ...v1OrganizationsNamespacesGetOptions({
-              path: { id: organization.id },
-            }),
-            staleTime: 0,
-          })
+          collectListedPage(async (pageToken) =>
+            queryClient.fetchQuery({
+              ...v1OrganizationsNamespacesGetOptions({
+                path: { id: organization.id },
+                query: cursorPageQuery(pageToken),
+              }),
+              staleTime: 0,
+            })
+          )
         )
       );
 
       return {
         organizations,
         namespaces: organizations.flatMap((organization, index) =>
-          (namespacesByOrganization[index] ?? []).map((namespace) => ({
+          (namespacesByOrganization[index]?.items ?? []).map((namespace) => ({
             ...namespace,
             organization,
             organizationId: organization.id,

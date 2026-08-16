@@ -9,7 +9,7 @@ import {
   v1NotificationUpdateMutation,
 } from "@/lib/api/mutation-options";
 import { v1NotificationsGetOptions } from "@/lib/api/query-options";
-import type { Notification } from "@/lib/api/types";
+import type { Notification, NotificationPage } from "@/lib/client";
 import { showErrorToast, showSuccessToast } from "@/lib/toast";
 
 interface NotificationItemProps {
@@ -28,12 +28,20 @@ export function NotificationItem({
     ...v1NotificationDeleteMutation(),
     onMutate: async () => {
       await queryClient.cancelQueries({ queryKey: notificationsQueryKey });
-      const previous = queryClient.getQueryData<Notification[]>(
+      const previous = queryClient.getQueryData<NotificationPage>(
         notificationsQueryKey
       );
-      queryClient.setQueryData<Notification[]>(
+      queryClient.setQueryData<NotificationPage>(
         notificationsQueryKey,
-        (current = []) => current.filter((item) => item.id !== notification.id)
+        (current) =>
+          current
+            ? {
+                ...current,
+                items: current.items.filter(
+                  (item) => item.id !== notification.id
+                ),
+              }
+            : current
       );
       return { previous };
     },
@@ -54,15 +62,20 @@ export function NotificationItem({
     ...v1NotificationUpdateMutation(),
     onMutate: async () => {
       await queryClient.cancelQueries({ queryKey: notificationsQueryKey });
-      const previous = queryClient.getQueryData<Notification[]>(
+      const previous = queryClient.getQueryData<NotificationPage>(
         notificationsQueryKey
       );
-      queryClient.setQueryData<Notification[]>(
+      queryClient.setQueryData<NotificationPage>(
         notificationsQueryKey,
-        (current = []) =>
-          current.map((item) =>
-            item.id === notification.id ? { ...item, read: true } : item
-          )
+        (current) =>
+          current
+            ? {
+                ...current,
+                items: current.items.map((item) =>
+                  item.id === notification.id ? { ...item, read: true } : item
+                ),
+              }
+            : current
       );
       return { previous };
     },

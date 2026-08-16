@@ -2,13 +2,25 @@ import type { ErrorComponentProps } from "@tanstack/react-router";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Spinner } from "@/components/ui/spinner";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function DefaultPendingComponent() {
   return (
-    <div className="flex min-h-48 items-center justify-center" aria-busy="true">
-      <Spinner />
+    <div
+      className="space-y-6 px-4 py-6 sm:px-6 lg:px-8 lg:py-8"
+      role="status"
+      aria-busy="true"
+    >
       <span className="sr-only">Loading page</span>
+      <div className="space-y-2">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-4 w-80 max-w-full" />
+      </div>
+      <div className="space-y-3">
+        <Skeleton className="h-24 w-full" />
+        <Skeleton className="h-24 w-full" />
+        <Skeleton className="h-24 w-full" />
+      </div>
     </div>
   );
 }

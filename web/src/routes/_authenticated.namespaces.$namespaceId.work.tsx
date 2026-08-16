@@ -1,6 +1,6 @@
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 
-import { WorkSurface } from "@/components/work";
+import { WorkSurface } from "@/components/work/work-surface";
 import { workRouteSearchSchema } from "@/lib/work-route-search";
 
 const namespaceRoute = getRouteApi("/_authenticated/namespaces/$namespaceId");

@@ -57,13 +57,17 @@ func (s *DocumentRepositoryIntegrationTestSuite) TestCreate() {
 func (s *DocumentRepositoryIntegrationTestSuite) TestGet() {
 	created, err := s.DocumentRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
-	doc, err := s.DocumentRepo.Get(context.Background(), created.ID)
+	doc, err := s.DocumentRepo.Get(context.Background(), created.ID, repository.DocumentDetailProjection())
 	s.Require().NoError(err)
 	s.Assert().Equal(created.ID, doc.ID)
 	s.Assert().Equal(s.createOpts.Name, doc.Name)
 	s.Assert().Equal(s.createOpts.Excerpt, doc.Excerpt)
 	s.Assert().Equal(s.createOpts.FileID, doc.FileID)
-	s.Assert().Equal(s.createOpts.CreatedBy, doc.CreatedBy)
+	s.Assert().Equal(s.createOpts.CreatedBy, doc.CreatedBy.ID)
+	s.Require().NotNil(doc.CommentCount)
+	s.Assert().Equal(int64(0), *doc.CommentCount)
+	s.Require().NotNil(doc.AttachmentCount)
+	s.Assert().Equal(int64(0), *doc.AttachmentCount)
 	s.Assert().WithinDuration(*created.CreatedAt, *doc.CreatedAt, 100*time.Millisecond)
 }
 
@@ -73,13 +77,14 @@ func (s *DocumentRepositoryIntegrationTestSuite) TestGetByCreator() {
 	_, err = s.DocumentRepo.Create(context.Background(), testModel.NewCreateDocumentOpts(s.testOrg.ID, s.testUser.ID))
 	s.Require().NoError(err)
 
-	docs, err := s.DocumentRepo.GetByCreator(context.Background(), s.testUser.ID, 0, 10)
+	docs, err := s.DocumentRepo.ListByCreator(context.Background(), s.testUser.ID, repository.CursorPage{Size: 10}, repository.DocumentListProjection())
 	s.Require().NoError(err)
-	s.Assert().Len(docs, 2)
+	s.Assert().Len(docs.Items, 2)
 
-	docs, err = s.DocumentRepo.GetByCreator(context.Background(), s.testUser.ID, 0, 1)
+	docs, err = s.DocumentRepo.ListByCreator(context.Background(), s.testUser.ID, repository.CursorPage{Size: 1}, repository.DocumentListProjection())
 	s.Require().NoError(err)
-	s.Assert().Len(docs, 1)
+	s.Assert().Len(docs.Items, 1)
+	s.Assert().True(docs.PageInfo.HasMore)
 }
 
 func (s *DocumentRepositoryIntegrationTestSuite) TestGetAllBelongsTo() {
@@ -90,9 +95,9 @@ func (s *DocumentRepositoryIntegrationTestSuite) TestGetAllBelongsTo() {
 	_, err = s.DocumentRepo.Create(context.Background(), testModel.NewCreateDocumentOpts(s.testOrg.ID, s.testUser.ID))
 	s.Require().NoError(err)
 
-	docs, err := s.DocumentRepo.GetAllBelongsTo(context.Background(), s.testOrg.ID, 0, 10)
+	docs, err := s.DocumentRepo.ListBelongsTo(context.Background(), s.testOrg.ID, repository.CursorPage{Size: 10}, repository.DocumentListProjection())
 	s.Require().NoError(err)
-	s.Assert().Len(docs, 3)
+	s.Assert().Len(docs.Items, 3)
 }
 
 func (s *DocumentRepositoryIntegrationTestSuite) TestUpdate() {
@@ -112,7 +117,7 @@ func (s *DocumentRepositoryIntegrationTestSuite) TestDelete() {
 	created, err := s.DocumentRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 	s.Require().NoError(s.DocumentRepo.Delete(context.Background(), created.ID))
-	_, err = s.DocumentRepo.Get(context.Background(), created.ID)
+	_, err = s.DocumentRepo.Get(context.Background(), created.ID, repository.DocumentDetailProjection())
 	s.Assert().ErrorIs(err, repository.ErrNotFound)
 }
 
@@ -169,9 +174,9 @@ func (s *CachedDocumentRepositoryIntegrationTestSuite) TestCreate() {
 func (s *CachedDocumentRepositoryIntegrationTestSuite) TestGet() {
 	created, err := s.documentRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
-	original, err := s.DocumentRepo.Get(context.Background(), created.ID)
+	original, err := s.DocumentRepo.Get(context.Background(), created.ID, repository.DocumentDetailProjection())
 	s.Require().NoError(err)
-	usingCache, err := s.documentRepo.Get(context.Background(), created.ID)
+	usingCache, err := s.documentRepo.Get(context.Background(), created.ID, repository.DocumentDetailProjection())
 	s.Require().NoError(err)
 	s.Assert().Equal(original, usingCache)
 	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
@@ -180,9 +185,9 @@ func (s *CachedDocumentRepositoryIntegrationTestSuite) TestGet() {
 func (s *CachedDocumentRepositoryIntegrationTestSuite) TestGetByCreator() {
 	_, err := s.documentRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
-	original, err := s.DocumentRepo.GetByCreator(context.Background(), s.testUser.ID, 0, 10)
+	original, err := s.DocumentRepo.ListByCreator(context.Background(), s.testUser.ID, repository.CursorPage{Size: 10}, repository.DocumentListProjection())
 	s.Require().NoError(err)
-	usingCache, err := s.documentRepo.GetByCreator(context.Background(), s.testUser.ID, 0, 10)
+	usingCache, err := s.documentRepo.ListByCreator(context.Background(), s.testUser.ID, repository.CursorPage{Size: 10}, repository.DocumentListProjection())
 	s.Require().NoError(err)
 	s.Assert().Equal(original, usingCache)
 	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
@@ -191,9 +196,9 @@ func (s *CachedDocumentRepositoryIntegrationTestSuite) TestGetByCreator() {
 func (s *CachedDocumentRepositoryIntegrationTestSuite) TestGetAllBelongsTo() {
 	_, err := s.documentRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
-	original, err := s.DocumentRepo.GetAllBelongsTo(context.Background(), s.testOrg.ID, 0, 10)
+	original, err := s.DocumentRepo.ListBelongsTo(context.Background(), s.testOrg.ID, repository.CursorPage{Size: 10}, repository.DocumentListProjection())
 	s.Require().NoError(err)
-	usingCache, err := s.documentRepo.GetAllBelongsTo(context.Background(), s.testOrg.ID, 0, 10)
+	usingCache, err := s.documentRepo.ListBelongsTo(context.Background(), s.testOrg.ID, repository.CursorPage{Size: 10}, repository.DocumentListProjection())
 	s.Require().NoError(err)
 	s.Assert().Equal(original, usingCache)
 	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
@@ -213,10 +218,10 @@ func (s *CachedDocumentRepositoryIntegrationTestSuite) TestUpdate() {
 func (s *CachedDocumentRepositoryIntegrationTestSuite) TestDelete() {
 	created, err := s.documentRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
-	_, err = s.documentRepo.Get(context.Background(), created.ID)
+	_, err = s.documentRepo.Get(context.Background(), created.ID, repository.DocumentDetailProjection())
 	s.Require().NoError(err)
 	s.Require().NoError(s.documentRepo.Delete(context.Background(), created.ID))
-	_, err = s.documentRepo.Get(context.Background(), created.ID)
+	_, err = s.documentRepo.Get(context.Background(), created.ID, repository.DocumentDetailProjection())
 	s.Assert().ErrorIs(err, repository.ErrNotFound)
 	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }

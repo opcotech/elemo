@@ -27,24 +27,16 @@ func newTestProjectController(t *testing.T, ps service.ProjectService) ProjectCo
 
 func newServiceProject() *service.Project {
 	return &service.Project{
-		ID:          model.MustNewID(model.ResourceTypeProject),
-		Key:         "ENG",
-		Name:        "Engineering",
-		Description: "Main engineering project",
-		Logo:        "https://example.com/logo.png",
-		Status:      model.ProjectStatusActive,
-		Teams:       []model.ID{model.MustNewID(model.ResourceTypeRole)},
-		Documents: []*service.PartialDocument{
-			{
-				ID:        model.MustNewID(model.ResourceTypeDocument),
-				Name:      "Plan",
-				Excerpt:   "Overview",
-				CreatedBy: model.MustNewID(model.ResourceTypeUser),
-				CreatedAt: convert.ToPointer(time.Now().UTC()),
-			},
-		},
-		Issues:    []model.ID{},
-		CreatedAt: convert.ToPointer(time.Now().UTC()),
+		ID:            model.MustNewID(model.ResourceTypeProject),
+		Key:           "ENG",
+		Name:          "Engineering",
+		Description:   "Main engineering project",
+		Logo:          "https://example.com/logo.png",
+		Status:        model.ProjectStatusActive,
+		Teams:         []model.ID{model.MustNewID(model.ResourceTypeRole)},
+		DocumentCount: convert.ToPointer(int64(1)),
+		IssueCount:    convert.ToPointer(int64(0)),
+		CreatedAt:     convert.ToPointer(time.Now().UTC()),
 	}
 }
 
@@ -189,7 +181,7 @@ func TestProjectController_V1NamespacesProjectsGet(t *testing.T) {
 		defer ctrl.Finish()
 
 		ps := service.NewMockProjectService(ctrl)
-		ps.EXPECT().GetAll(gomock.Any(), namespaceID, DefaultOffset, DefaultLimit).Return([]*service.Project{project}, nil)
+		ps.EXPECT().List(gomock.Any(), namespaceID, gomock.Any()).Return(service.Page[*service.Project]{Items: []*service.Project{project}}, nil)
 
 		c := newTestProjectController(t, ps)
 		resp, err := c.V1NamespacesProjectsGet(context.Background(), api.V1NamespacesProjectsGetRequestObject{
@@ -199,11 +191,11 @@ func TestProjectController_V1NamespacesProjectsGet(t *testing.T) {
 		require.NoError(t, err)
 		got, ok := resp.(api.V1NamespacesProjectsGet200JSONResponse)
 		require.True(t, ok)
-		require.Len(t, got, 1)
-		assert.Equal(t, project.ID.String(), got[0].Id)
-		assert.Equal(t, project.Key, got[0].Key)
-		require.Len(t, got[0].Documents, 1)
-		assert.Equal(t, "Plan", got[0].Documents[0].Name)
+		require.Len(t, got.Items, 1)
+		assert.Equal(t, project.ID.String(), got.Items[0].Id)
+		assert.Equal(t, project.Key, got.Items[0].Key)
+		require.NotNil(t, got.Items[0].DocumentCount)
+		assert.Equal(t, int64(1), *got.Items[0].DocumentCount)
 	})
 
 	t.Run("bad namespace id", func(t *testing.T) {
@@ -226,7 +218,7 @@ func TestProjectController_V1NamespacesProjectsGet(t *testing.T) {
 		defer ctrl.Finish()
 
 		ps := service.NewMockProjectService(ctrl)
-		ps.EXPECT().GetAll(gomock.Any(), namespaceID, DefaultOffset, DefaultLimit).Return(nil, service.ErrNoPermission)
+		ps.EXPECT().List(gomock.Any(), namespaceID, gomock.Any()).Return(service.Page[*service.Project]{}, service.ErrNoPermission)
 
 		c := newTestProjectController(t, ps)
 		resp, err := c.V1NamespacesProjectsGet(context.Background(), api.V1NamespacesProjectsGetRequestObject{
@@ -243,7 +235,7 @@ func TestProjectController_V1NamespacesProjectsGet(t *testing.T) {
 		defer ctrl.Finish()
 
 		ps := service.NewMockProjectService(ctrl)
-		ps.EXPECT().GetAll(gomock.Any(), namespaceID, DefaultOffset, DefaultLimit).Return(nil, errors.Join(service.ErrProjectGetAll, repository.ErrNotFound))
+		ps.EXPECT().List(gomock.Any(), namespaceID, gomock.Any()).Return(service.Page[*service.Project]{}, errors.Join(service.ErrProjectGetAll, repository.ErrNotFound))
 
 		c := newTestProjectController(t, ps)
 		resp, err := c.V1NamespacesProjectsGet(context.Background(), api.V1NamespacesProjectsGetRequestObject{
@@ -467,23 +459,72 @@ func TestProjectController_V1ProjectDelete(t *testing.T) {
 	})
 }
 
-func TestPartialProjectToDTO(t *testing.T) {
+func TestPartialIssueToDTO(t *testing.T) {
 	t.Parallel()
 
-	p := &service.PartialProject{
-		ID:          model.MustNewID(model.ResourceTypeProject),
-		Key:         "ENG",
-		Name:        "Engineering",
-		Description: "desc",
-		Logo:        "https://example.com/logo.png",
-		Status:      model.ProjectStatusActive,
+	parentID := model.MustNewID(model.ResourceTypeIssue)
+	assigneeID := model.MustNewID(model.ResourceTypeUser)
+	reporterID := model.MustNewID(model.ResourceTypeUser)
+	labelID := model.MustNewID(model.ResourceTypeLabel)
+	dueDate := time.Now().UTC()
+
+	issue := &service.PartialIssue{
+		ID:        model.MustNewID(model.ResourceTypeIssue),
+		Key:       "ENG-7",
+		NumericID: 7,
+		Parent: &service.PartialIssue{
+			ID:          parentID,
+			Key:         "ENG-1",
+			NumericID:   1,
+			Kind:        model.IssueKindEpic,
+			Title:       "Parent epic",
+			Status:      model.IssueStatusOpen,
+			Priority:    model.IssuePriorityHigh,
+			Assignments: make([]service.PartialAssignee, 0),
+			Labels:      make([]service.PartialLabel, 0),
+		},
+		Kind:        model.IssueKindStory,
+		Title:       "Implement authentication",
+		Description: "Add OAuth2 login flow",
+		Status:      model.IssueStatusInProgress,
+		Priority:    model.IssuePriorityNormal,
+		Assignments: []service.PartialAssignee{
+			{ID: assigneeID, Kind: model.AssignmentKindAssignee, FirstName: "Ada", LastName: "Lovelace"},
+		},
+		Labels:     []service.PartialLabel{{ID: labelID, Name: "frontend"}},
+		Project:    &service.PartialProject{ID: model.MustNewID(model.ResourceTypeProject), Key: "ENG", Name: "Engineering", Status: model.ProjectStatusActive},
+		Namespace:  &service.PartialNamespace{ID: model.MustNewID(model.ResourceTypeNamespace), Name: "Platform"},
+		ReportedBy: &service.PartialUser{ID: reporterID},
+		DueDate:    &dueDate,
 	}
 
-	dto := partialProjectToDTO(p)
-	assert.Equal(t, p.ID.String(), dto.Id)
-	assert.Equal(t, p.Key, dto.Key)
+	dto := partialIssueToDTO(issue)
+	assert.Equal(t, issue.ID.String(), dto.Id)
+	assert.Equal(t, issue.Key, dto.Key)
+	assert.Equal(t, int(issue.NumericID), dto.NumericId)
+	assert.Equal(t, issue.Title, dto.Title)
 	require.NotNil(t, dto.Description)
-	assert.Equal(t, p.Description, *dto.Description)
-	require.NotNil(t, dto.Logo)
-	assert.Equal(t, p.Logo, *dto.Logo)
+	assert.Equal(t, issue.Description, *dto.Description)
+	assert.Equal(t, api.IssueKind(issue.Kind.String()), dto.Kind)
+	assert.Equal(t, api.IssueStatus(issue.Status.String()), dto.Status)
+	assert.Equal(t, api.IssuePriority(issue.Priority.String()), dto.Priority)
+	require.NotNil(t, dto.ReportedBy)
+	assert.Equal(t, reporterID.String(), dto.ReportedBy.Id)
+	require.NotNil(t, dto.Parent)
+	assert.Equal(t, parentID.String(), dto.Parent.Id)
+	assert.Equal(t, "ENG-1", dto.Parent.Key)
+	assert.Equal(t, "Parent epic", dto.Parent.Title)
+	assert.Equal(t, []api.PartialUser{{
+		Id:        assigneeID.String(),
+		FirstName: "Ada",
+		LastName:  "Lovelace",
+	}}, dto.Assignees)
+	assert.Empty(t, dto.Reviewers)
+	require.NotNil(t, dto.Project)
+	assert.Equal(t, "ENG", dto.Project.Key)
+	require.NotNil(t, dto.Namespace)
+	assert.Equal(t, "Platform", dto.Namespace.Name)
+	assert.Equal(t, []api.PartialLabel{{Id: labelID.String(), Name: "frontend"}}, dto.Labels)
+	require.NotNil(t, dto.DueDate)
+	assert.Equal(t, dueDate, *dto.DueDate)
 }

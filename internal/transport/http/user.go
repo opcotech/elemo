@@ -96,8 +96,16 @@ func (c *userController) V1UsersGet(ctx context.Context, request api.V1UsersGetR
 	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1UsersGet")
 	defer span.End()
 
-	users, err := c.userService.GetAll(ctx, pkg.DefaultPtr(request.Params.Offset, DefaultOffset), pkg.DefaultPtr(request.Params.Limit, DefaultLimit))
+	pageParams, err := cursorPageFromParams(request.Params.PageSize, request.Params.PageToken)
 	if err != nil {
+		return api.V1UsersGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
+	}
+
+	page, err := c.userService.List(ctx, pageParams)
+	if err != nil {
+		if isInvalidPageError(err) {
+			return api.V1UsersGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
+		}
 		if errors.Is(err, service.ErrNoPermission) {
 			return api.V1UsersGet403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		}
@@ -106,12 +114,15 @@ func (c *userController) V1UsersGet(ctx context.Context, request api.V1UsersGetR
 		}}, nil
 	}
 
-	usersDTO := make([]api.User, len(users))
-	for i, user := range users {
+	usersDTO := make([]api.User, len(page.Items))
+	for i, user := range page.Items {
 		usersDTO[i] = userToDTO(user)
 	}
 
-	return api.V1UsersGet200JSONResponse(usersDTO), nil
+	return api.V1UsersGet200JSONResponse{
+		Items:    usersDTO,
+		PageInfo: pageInfoToDTO(page.PageInfo),
+	}, nil
 }
 
 func (c *userController) V1UserUpdate(ctx context.Context, request api.V1UserUpdateRequestObject) (api.V1UserUpdateResponseObject, error) {
@@ -441,21 +452,22 @@ func updateUserJSONRequestBodyToUpdateUserOpts(body *api.V1UserUpdateJSONRequest
 
 func userToDTO(user *service.User) api.User {
 	u := api.User{
-		Id:        user.ID.String(),
-		Address:   &user.Address,
-		Bio:       &user.Bio,
-		Email:     oapiTypes.Email(user.Email),
-		FirstName: user.FirstName,
-		LastName:  user.LastName,
-		Links:     &user.Links,
-		Username:  user.Username,
-		Phone:     &user.Phone,
-		Picture:   &user.Picture,
-		Status:    api.UserStatus(user.Status.String()),
-		Title:     &user.Title,
-		Languages: make([]api.Language, len(user.Languages)),
-		CreatedAt: *user.CreatedAt,
-		UpdatedAt: user.UpdatedAt,
+		Id:            user.ID.String(),
+		Address:       &user.Address,
+		Bio:           &user.Bio,
+		Email:         oapiTypes.Email(user.Email),
+		FirstName:     user.FirstName,
+		LastName:      user.LastName,
+		Links:         &user.Links,
+		Username:      user.Username,
+		Phone:         &user.Phone,
+		Picture:       &user.Picture,
+		Status:        api.UserStatus(user.Status.String()),
+		Title:         &user.Title,
+		DocumentCount: user.DocumentCount,
+		Languages:     make([]api.Language, len(user.Languages)),
+		CreatedAt:     *user.CreatedAt,
+		UpdatedAt:     user.UpdatedAt,
 	}
 
 	for i, language := range user.Languages {

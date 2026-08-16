@@ -1,14 +1,12 @@
-import { useQueries } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Edit, Folder, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { ProjectDeleteDialog } from "@/components/projects/project-delete-dialog";
+import { SettingsResourceTable } from "@/components/settings/settings-resource-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConditionalLink } from "@/components/ui/conditional-link";
-import { ListContainer } from "@/components/ui/list-container";
-import { SearchInput } from "@/components/ui/search-input";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -18,50 +16,27 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ResourceType, withResourceType } from "@/hooks/use-permissions";
-import { v1PermissionResourceGetOptions } from "@/lib/api/query-options";
+import { TableSkeleton } from "@/components/ui/table-skeleton";
+import {
+  ResourceType,
+  usePermissionsByResourceId,
+} from "@/hooks/use-permissions";
 import type { PartialProject, Permission } from "@/lib/api/types";
 import { can } from "@/lib/auth/permissions";
 
-function NamespaceProjectsListSkeleton() {
-  return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Key</TableHead>
-          <TableHead>Name</TableHead>
-          <TableHead>Description</TableHead>
-          <TableHead>Status</TableHead>
-          <TableHead className="text-right">Actions</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {Array.from({ length: 5 }).map((_, i) => (
-          <TableRow key={i}>
-            <TableCell>
-              <Skeleton className="h-5 w-16" />
-            </TableCell>
-            <TableCell>
-              <Skeleton className="h-5 w-32" />
-            </TableCell>
-            <TableCell>
-              <Skeleton className="h-4 w-48" />
-            </TableCell>
-            <TableCell>
-              <Skeleton className="h-6 w-16" />
-            </TableCell>
-            <TableCell className="text-right">
-              <div className="flex justify-end gap-1">
-                <Skeleton className="h-8 w-8" />
-                <Skeleton className="h-8 w-8" />
-              </div>
-            </TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
-  );
-}
+const namespaceProjectsListSkeletonColumns = [
+  { header: "Key", skeletonClassName: "h-5 w-16" },
+  { header: "Name", skeletonClassName: "h-5 w-32" },
+  { header: "Description", skeletonClassName: "h-4 w-48" },
+  { header: "Status", skeletonClassName: "h-6 w-16" },
+  {
+    header: "Actions",
+    skeletonClassName: "h-8 w-8",
+    headerClassName: "text-right",
+    cellClassName: "text-right",
+    count: 2,
+  },
+] as const;
 
 interface ProjectRowProps {
   project: PartialProject;
@@ -189,24 +164,9 @@ export function NamespaceProjectsList({
     null
   );
   const hasCreatePermission = can(namespacePermissions, "write");
-  const projectPermissionQueries = useQueries({
-    queries: projects.map((project) =>
-      v1PermissionResourceGetOptions({
-        path: {
-          resourceId: withResourceType(ResourceType.Project, project.id),
-        },
-      })
-    ),
-  });
-  const projectPermissionsById = useMemo(
-    () =>
-      new Map(
-        projects.map((project, index) => [
-          project.id,
-          projectPermissionQueries[index],
-        ])
-      ),
-    [projects, projectPermissionQueries]
+  const projectPermissionsById = usePermissionsByResourceId(
+    ResourceType.Project,
+    projects.map((project) => project.id)
   );
 
   const filteredProjects = useMemo(() => {
@@ -230,38 +190,6 @@ export function NamespaceProjectsList({
     setSelectedProject(null);
   };
 
-  const emptyState =
-    projects.length === 0
-      ? {
-          icon: <Folder />,
-          title: "No projects found",
-          description: "Create a project to organize work in this namespace.",
-          action: hasCreatePermission ? (
-            <Button
-              variant="outline"
-              size="sm"
-              render={
-                <Link
-                  to="/settings/organizations/$organizationId/namespaces/$namespaceId/projects/new"
-                  params={{ organizationId, namespaceId }}
-                />
-              }
-            >
-              <Plus className="size-4" />
-              Create Project
-            </Button>
-          ) : undefined,
-        }
-      : filteredProjects.length === 0 && searchTerm.trim()
-        ? {
-            icon: <Folder />,
-            title: "No projects found",
-            description:
-              "No projects match your search criteria. Try adjusting your search.",
-          }
-        : undefined;
-
-  const shouldShowSearch = projects.length > 0 || searchTerm.trim() !== "";
   const createButton = hasCreatePermission ? (
     <Button
       variant="outline"
@@ -280,59 +208,64 @@ export function NamespaceProjectsList({
 
   return (
     <>
-      <ListContainer
-        data-section="namespace-projects"
+      <SettingsResourceTable
+        dataSection="namespace-projects"
         title="Projects"
         description="Projects in this namespace."
         isLoading={isLoading}
         error={error}
-        emptyState={emptyState}
         actionButton={createButton}
-        searchInput={
-          shouldShowSearch ? (
-            <SearchInput
-              value={searchTerm}
-              onChange={setSearchTerm}
-              placeholder="Search projects..."
-              disabled={isLoading}
-            />
-          ) : undefined
+        search={{
+          value: searchTerm,
+          onChange: setSearchTerm,
+          placeholder: "Search projects...",
+          itemCount: projects.length,
+        }}
+        empty={{
+          icon: <Folder />,
+          title: "No projects found",
+          description: "Create a project to organize work in this namespace.",
+          action: createButton,
+          searchTitle: "No projects found",
+          searchDescription:
+            "No projects match your search criteria. Try adjusting your search.",
+          hasItems: projects.length > 0,
+          hasFilteredItems: filteredProjects.length > 0,
+        }}
+        skeleton={
+          <TableSkeleton columns={namespaceProjectsListSkeletonColumns} />
         }
       >
-        {isLoading ? (
-          <NamespaceProjectsListSkeleton />
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Key</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">
-                  <span className="sr-only">Actions</span>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredProjects.map((project) => {
-                const permissionQuery = projectPermissionsById.get(project.id);
-                return (
-                  <ProjectRow
-                    key={project.id}
-                    project={project}
-                    permissions={permissionQuery?.data}
-                    isPermissionsLoading={permissionQuery?.isLoading ?? true}
-                    organizationId={organizationId}
-                    namespaceId={namespaceId}
-                    onDeleteClick={handleDeleteClick}
-                  />
-                );
-              })}
-            </TableBody>
-          </Table>
-        )}
-      </ListContainer>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Key</TableHead>
+              <TableHead>Name</TableHead>
+              <TableHead>Description</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">
+                <span className="sr-only">Actions</span>
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredProjects.map((project) => {
+              const permissionQuery = projectPermissionsById.get(project.id);
+              return (
+                <ProjectRow
+                  key={project.id}
+                  project={project}
+                  permissions={permissionQuery?.data}
+                  isPermissionsLoading={permissionQuery?.isLoading ?? true}
+                  organizationId={organizationId}
+                  namespaceId={namespaceId}
+                  onDeleteClick={handleDeleteClick}
+                />
+              );
+            })}
+          </TableBody>
+        </Table>
+      </SettingsResourceTable>
 
       {selectedProject && (
         <ProjectDeleteDialog

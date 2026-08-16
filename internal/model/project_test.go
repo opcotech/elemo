@@ -94,13 +94,10 @@ func TestNewProject(t *testing.T) {
 				name: "Test Project",
 			},
 			want: &Project{
-				ID:        ID{Inner: xid.NilID(), Type: ResourceTypeProject},
-				Key:       "test",
-				Name:      "Test Project",
-				Status:    ProjectStatusActive,
-				Teams:     make([]ID, 0),
-				Documents: make([]ID, 0),
-				Issues:    make([]ID, 0),
+				ID:     ID{Inner: xid.NilID(), Type: ResourceTypeProject},
+				Key:    "test",
+				Name:   "Test Project",
+				Status: ProjectStatusActive,
 			},
 		},
 		{
@@ -141,9 +138,6 @@ func TestProject_Validate(t *testing.T) {
 		Name        string
 		Description string
 		Status      ProjectStatus
-		Teams       []ID
-		Documents   []ID
-		Issues      []ID
 	}
 	tests := []struct {
 		name    string
@@ -158,9 +152,6 @@ func TestProject_Validate(t *testing.T) {
 				Name:        "test",
 				Description: "Test description",
 				Status:      ProjectStatusActive,
-				Teams:       make([]ID, 0),
-				Documents:   make([]ID, 0),
-				Issues:      make([]ID, 0),
 			},
 		},
 		{
@@ -171,9 +162,6 @@ func TestProject_Validate(t *testing.T) {
 				Name:        "test",
 				Description: "Test description",
 				Status:      ProjectStatusActive,
-				Teams:       make([]ID, 0),
-				Documents:   make([]ID, 0),
-				Issues:      make([]ID, 0),
 			},
 			wantErr: ErrInvalidProjectDetails,
 		},
@@ -185,9 +173,6 @@ func TestProject_Validate(t *testing.T) {
 				Name:        "test",
 				Description: "Test description",
 				Status:      ProjectStatusActive,
-				Teams:       make([]ID, 0),
-				Documents:   make([]ID, 0),
-				Issues:      make([]ID, 0),
 			},
 			wantErr: ErrInvalidProjectDetails,
 		},
@@ -199,9 +184,6 @@ func TestProject_Validate(t *testing.T) {
 				Name:        "t",
 				Description: "Test description",
 				Status:      ProjectStatusActive,
-				Teams:       make([]ID, 0),
-				Documents:   make([]ID, 0),
-				Issues:      make([]ID, 0),
 			},
 			wantErr: ErrInvalidProjectDetails,
 		},
@@ -213,9 +195,6 @@ func TestProject_Validate(t *testing.T) {
 				Name:        "test",
 				Description: "Test",
 				Status:      ProjectStatusActive,
-				Teams:       make([]ID, 0),
-				Documents:   make([]ID, 0),
-				Issues:      make([]ID, 0),
 			},
 			wantErr: ErrInvalidProjectDetails,
 		},
@@ -227,57 +206,6 @@ func TestProject_Validate(t *testing.T) {
 				Name:        "test",
 				Description: "Test description",
 				Status:      ProjectStatus(0),
-				Teams:       make([]ID, 0),
-				Documents:   make([]ID, 0),
-				Issues:      make([]ID, 0),
-			},
-			wantErr: ErrInvalidProjectDetails,
-		},
-		{
-			name: "invalid project teams",
-			fields: fields{
-				ID:          ID{Inner: xid.NilID(), Type: ResourceTypeOrganization},
-				Key:         "test",
-				Name:        "test",
-				Description: "Test description",
-				Status:      ProjectStatusActive,
-				Teams: []ID{
-					{},
-				},
-				Documents: make([]ID, 0),
-				Issues:    make([]ID, 0),
-			},
-			wantErr: ErrInvalidProjectDetails,
-		},
-		{
-			name: "invalid project documents",
-			fields: fields{
-				ID:          ID{Inner: xid.NilID(), Type: ResourceTypeOrganization},
-				Key:         "test",
-				Name:        "test",
-				Description: "Test description",
-				Status:      ProjectStatusActive,
-				Teams:       make([]ID, 0),
-				Documents: []ID{
-					{},
-				},
-				Issues: make([]ID, 0),
-			},
-			wantErr: ErrInvalidProjectDetails,
-		},
-		{
-			name: "invalid project issues",
-			fields: fields{
-				ID:          ID{Inner: xid.NilID(), Type: ResourceTypeOrganization},
-				Key:         "test",
-				Name:        "test",
-				Description: "Test description",
-				Status:      ProjectStatusActive,
-				Teams:       make([]ID, 0),
-				Documents:   make([]ID, 0),
-				Issues: []ID{
-					{},
-				},
 			},
 			wantErr: ErrInvalidProjectDetails,
 		},
@@ -292,9 +220,6 @@ func TestProject_Validate(t *testing.T) {
 				Name:        tt.fields.Name,
 				Description: tt.fields.Description,
 				Status:      tt.fields.Status,
-				Teams:       tt.fields.Teams,
-				Documents:   tt.fields.Documents,
-				Issues:      tt.fields.Issues,
 			}
 			require.ErrorIs(t, p.Validate(), tt.wantErr)
 		})

@@ -1,13 +1,13 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
-import { NamespaceCreateForm } from "@/components/namespaces";
-import { OrganizationNotFound } from "@/components/organizations";
+import { NamespaceCreateForm } from "@/components/namespaces/namespace-create-form";
 import {
   SettingsEntityDetailError,
   SettingsEntityDetailSkeleton,
 } from "@/components/settings/settings-entity-detail-state";
-import { PageHeader } from "@/components/shared/page-header";
+import { SettingsNotFound } from "@/components/settings/settings-not-found";
+import { PageHeader } from "@/components/ui/page-header";
 import { v1OrganizationGetOptions } from "@/lib/api/query-options";
 import { ResourceType } from "@/lib/auth/permissions";
 import { requirePermissionBeforeLoad } from "@/lib/auth/require-auth";
@@ -33,7 +33,7 @@ export const Route = createFileRoute(
   },
   pendingComponent: SettingsEntityDetailSkeleton,
   errorComponent: SettingsEntityDetailError,
-  notFoundComponent: OrganizationNotFound,
+  notFoundComponent: SettingsNotFound,
   component: OrganizationNamespaceCreatePage,
 });
 

@@ -63,7 +63,7 @@ func (s *AssignmentRepositoryIntegrationTestSuite) TestGet() {
 	created, err := s.AssignmentRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 
-	assignment, err := s.AssignmentRepo.Get(context.Background(), created.ID)
+	assignment, err := s.AssignmentRepo.Get(context.Background(), created.ID, repository.AssignmentDetailProjection())
 	s.Require().NoError(err)
 
 	s.Assert().Equal(created.ID, assignment.ID)
@@ -79,21 +79,19 @@ func (s *AssignmentRepositoryIntegrationTestSuite) TestGetByUser() {
 	_, err = s.AssignmentRepo.Create(context.Background(), testModel.NewCreateAssignmentOpts(s.testUser.ID, s.testDoc.ID, model.AssignmentKindReviewer))
 	s.Require().NoError(err)
 
-	assignments, err := s.AssignmentRepo.GetByUser(context.Background(), s.testUser.ID, 0, 10)
+	assignments, err := s.AssignmentRepo.ListByUser(context.Background(), s.testUser.ID, repository.CursorPage{Size: 10}, repository.AssignmentListProjection())
 	s.Require().NoError(err)
-	s.Assert().Len(assignments, 2)
+	s.Assert().Len(assignments.Items, 2)
 
-	assignments, err = s.AssignmentRepo.GetByUser(context.Background(), s.testUser.ID, 0, 1)
+	assignments, err = s.AssignmentRepo.ListByUser(context.Background(), s.testUser.ID, repository.CursorPage{Size: 1}, repository.AssignmentListProjection())
 	s.Require().NoError(err)
-	s.Assert().Len(assignments, 1)
+	s.Assert().Len(assignments.Items, 1)
+	s.Assert().True(assignments.PageInfo.HasMore)
 
-	assignments, err = s.AssignmentRepo.GetByUser(context.Background(), s.testUser.ID, 1, 1)
+	assignments, err = s.AssignmentRepo.ListByUser(context.Background(), s.testUser.ID, repository.CursorPage{Size: 1, Token: assignments.PageInfo.NextPageToken}, repository.AssignmentListProjection())
 	s.Require().NoError(err)
-	s.Assert().Len(assignments, 1)
-
-	assignments, err = s.AssignmentRepo.GetByUser(context.Background(), s.testUser.ID, 2, 1)
-	s.Require().NoError(err)
-	s.Assert().Len(assignments, 0)
+	s.Assert().Len(assignments.Items, 1)
+	s.Assert().False(assignments.PageInfo.HasMore)
 }
 
 func (s *AssignmentRepositoryIntegrationTestSuite) TestGetByResource() {
@@ -102,9 +100,9 @@ func (s *AssignmentRepositoryIntegrationTestSuite) TestGetByResource() {
 	_, err = s.AssignmentRepo.Create(context.Background(), testModel.NewCreateAssignmentOpts(s.testUser.ID, s.testDoc.ID, model.AssignmentKindReviewer))
 	s.Require().NoError(err)
 
-	assignments, err := s.AssignmentRepo.GetByResource(context.Background(), s.testDoc.ID, 0, 10)
+	assignments, err := s.AssignmentRepo.ListByResource(context.Background(), s.testDoc.ID, repository.CursorPage{Size: 10}, repository.AssignmentListProjection())
 	s.Require().NoError(err)
-	s.Assert().Len(assignments, 2)
+	s.Assert().Len(assignments.Items, 2)
 }
 
 func (s *AssignmentRepositoryIntegrationTestSuite) TestDelete() {
@@ -113,7 +111,7 @@ func (s *AssignmentRepositoryIntegrationTestSuite) TestDelete() {
 
 	s.Require().NoError(s.AssignmentRepo.Delete(context.Background(), created.ID))
 
-	_, err = s.AssignmentRepo.Get(context.Background(), created.ID)
+	_, err = s.AssignmentRepo.Get(context.Background(), created.ID, repository.AssignmentDetailProjection())
 	s.Assert().ErrorIs(err, repository.ErrNotFound)
 }
 
@@ -188,10 +186,10 @@ func (s *CachedAssignmentRepositoryIntegrationTestSuite) TestGet() {
 	created, err := s.assignmentRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 
-	original, err := s.AssignmentRepo.Get(context.Background(), created.ID)
+	original, err := s.AssignmentRepo.Get(context.Background(), created.ID, repository.AssignmentDetailProjection())
 	s.Require().NoError(err)
 
-	usingCache, err := s.assignmentRepo.Get(context.Background(), created.ID)
+	usingCache, err := s.assignmentRepo.Get(context.Background(), created.ID, repository.AssignmentDetailProjection())
 	s.Require().NoError(err)
 
 	s.Assert().Equal(original, usingCache)
@@ -204,10 +202,10 @@ func (s *CachedAssignmentRepositoryIntegrationTestSuite) TestGetByUser() {
 	_, err = s.assignmentRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 
-	original, err := s.AssignmentRepo.GetByUser(context.Background(), s.testUser.ID, 0, 10)
+	original, err := s.AssignmentRepo.ListByUser(context.Background(), s.testUser.ID, repository.CursorPage{Size: 10}, repository.AssignmentListProjection())
 	s.Require().NoError(err)
 
-	usingCache, err := s.assignmentRepo.GetByUser(context.Background(), s.testUser.ID, 0, 10)
+	usingCache, err := s.assignmentRepo.ListByUser(context.Background(), s.testUser.ID, repository.CursorPage{Size: 10}, repository.AssignmentListProjection())
 	s.Require().NoError(err)
 
 	s.Assert().Equal(original, usingCache)
@@ -218,10 +216,10 @@ func (s *CachedAssignmentRepositoryIntegrationTestSuite) TestGetByResource() {
 	_, err := s.assignmentRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 
-	original, err := s.AssignmentRepo.GetByResource(context.Background(), s.testIssue.ID, 0, 10)
+	original, err := s.AssignmentRepo.ListByResource(context.Background(), s.testIssue.ID, repository.CursorPage{Size: 10}, repository.AssignmentListProjection())
 	s.Require().NoError(err)
 
-	usingCache, err := s.assignmentRepo.GetByResource(context.Background(), s.testIssue.ID, 0, 10)
+	usingCache, err := s.assignmentRepo.ListByResource(context.Background(), s.testIssue.ID, repository.CursorPage{Size: 10}, repository.AssignmentListProjection())
 	s.Require().NoError(err)
 
 	s.Assert().Equal(original, usingCache)
@@ -232,13 +230,13 @@ func (s *CachedAssignmentRepositoryIntegrationTestSuite) TestDelete() {
 	created, err := s.assignmentRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 
-	_, err = s.assignmentRepo.Get(context.Background(), created.ID)
+	_, err = s.assignmentRepo.Get(context.Background(), created.ID, repository.AssignmentDetailProjection())
 	s.Require().NoError(err)
 	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
 
 	s.Require().NoError(s.assignmentRepo.Delete(context.Background(), created.ID))
 
-	_, err = s.assignmentRepo.Get(context.Background(), created.ID)
+	_, err = s.assignmentRepo.Get(context.Background(), created.ID, repository.AssignmentDetailProjection())
 	s.Assert().ErrorIs(err, repository.ErrNotFound)
 	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }

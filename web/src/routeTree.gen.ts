@@ -30,7 +30,6 @@ import { Route as AuthenticatedOrganizationsIndexRouteImport } from './routes/_a
 import { Route as AuthenticatedOrganizationsOrganizationIdRouteImport } from './routes/_authenticated.organizations.$organizationId'
 import { Route as AuthenticatedSettingsIndexRouteImport } from './routes/_authenticated.settings/index'
 import { Route as AuthenticatedSettingsSecurityRouteImport } from './routes/_authenticated.settings/security'
-import { Route as AuthenticatedWorkWorkIdRouteImport } from './routes/_authenticated.work.$workId'
 import { Route as AuthenticatedNamespacesNamespaceIdIndexRouteImport } from './routes/_authenticated.namespaces.$namespaceId.index'
 import { Route as AuthenticatedNamespacesNamespaceIdAdministrationRouteImport } from './routes/_authenticated.namespaces.$namespaceId.administration'
 import { Route as AuthenticatedNamespacesNamespaceIdDocumentsRouteImport } from './routes/_authenticated.namespaces.$namespaceId.documents'
@@ -41,6 +40,7 @@ import { Route as AuthenticatedSettingsNamespacesIndexRouteImport } from './rout
 import { Route as AuthenticatedSettingsNamespacesNewRouteImport } from './routes/_authenticated.settings/namespaces/new'
 import { Route as AuthenticatedSettingsOrganizationsIndexRouteImport } from './routes/_authenticated.settings/organizations/index'
 import { Route as AuthenticatedSettingsOrganizationsNewRouteImport } from './routes/_authenticated.settings/organizations/new'
+import { Route as AuthenticatedWorkNamespaceIdIssueKeyRouteImport } from './routes/_authenticated.work.$namespaceId.$issueKey'
 import { Route as AuthenticatedNamespacesNamespaceIdProjectsIndexRouteImport } from './routes/_authenticated.namespaces.$namespaceId.projects.index'
 import { Route as AuthenticatedNamespacesNamespaceIdProjectsProjectIdRouteImport } from './routes/_authenticated.namespaces.$namespaceId.projects.$projectId'
 import { Route as AuthenticatedSettingsOrganizationsOrganizationIdIndexRouteImport } from './routes/_authenticated.settings/organizations/$organizationId/index'
@@ -171,11 +171,6 @@ const AuthenticatedSettingsSecurityRoute =
     path: '/security',
     getParentRoute: () => AuthenticatedSettingsRoute,
   } as any)
-const AuthenticatedWorkWorkIdRoute = AuthenticatedWorkWorkIdRouteImport.update({
-  id: '/work/$workId',
-  path: '/work/$workId',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
 const AuthenticatedNamespacesNamespaceIdIndexRoute =
   AuthenticatedNamespacesNamespaceIdIndexRouteImport.update({
     id: '/',
@@ -235,6 +230,12 @@ const AuthenticatedSettingsOrganizationsNewRoute =
     id: '/organizations/new',
     path: '/organizations/new',
     getParentRoute: () => AuthenticatedSettingsRoute,
+  } as any)
+const AuthenticatedWorkNamespaceIdIssueKeyRoute =
+  AuthenticatedWorkNamespaceIdIssueKeyRouteImport.update({
+    id: '/work/$namespaceId/$issueKey',
+    path: '/work/$namespaceId/$issueKey',
+    getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedNamespacesNamespaceIdProjectsIndexRoute =
   AuthenticatedNamespacesNamespaceIdProjectsIndexRouteImport.update({
@@ -373,7 +374,6 @@ export interface FileRoutesByFullPath {
   '/namespaces/$namespaceId': typeof AuthenticatedNamespacesNamespaceIdRouteWithChildren
   '/organizations/$organizationId': typeof AuthenticatedOrganizationsOrganizationIdRoute
   '/settings/security': typeof AuthenticatedSettingsSecurityRoute
-  '/work/$workId': typeof AuthenticatedWorkWorkIdRoute
   '/namespaces/': typeof AuthenticatedNamespacesIndexRoute
   '/organizations/': typeof AuthenticatedOrganizationsIndexRoute
   '/settings/': typeof AuthenticatedSettingsIndexRoute
@@ -384,6 +384,7 @@ export interface FileRoutesByFullPath {
   '/relations/$entityType/$entityId': typeof AuthenticatedRelationsEntityTypeEntityIdRoute
   '/settings/namespaces/new': typeof AuthenticatedSettingsNamespacesNewRoute
   '/settings/organizations/new': typeof AuthenticatedSettingsOrganizationsNewRoute
+  '/work/$namespaceId/$issueKey': typeof AuthenticatedWorkNamespaceIdIssueKeyRoute
   '/namespaces/$namespaceId/': typeof AuthenticatedNamespacesNamespaceIdIndexRoute
   '/settings/namespaces/': typeof AuthenticatedSettingsNamespacesIndexRoute
   '/settings/organizations/': typeof AuthenticatedSettingsOrganizationsIndexRoute
@@ -418,7 +419,6 @@ export interface FileRoutesByTo {
   '/documents/$documentId': typeof AuthenticatedDocumentsDocumentIdRoute
   '/organizations/$organizationId': typeof AuthenticatedOrganizationsOrganizationIdRoute
   '/settings/security': typeof AuthenticatedSettingsSecurityRoute
-  '/work/$workId': typeof AuthenticatedWorkWorkIdRoute
   '/namespaces': typeof AuthenticatedNamespacesIndexRoute
   '/organizations': typeof AuthenticatedOrganizationsIndexRoute
   '/settings': typeof AuthenticatedSettingsIndexRoute
@@ -428,6 +428,7 @@ export interface FileRoutesByTo {
   '/relations/$entityType/$entityId': typeof AuthenticatedRelationsEntityTypeEntityIdRoute
   '/settings/namespaces/new': typeof AuthenticatedSettingsNamespacesNewRoute
   '/settings/organizations/new': typeof AuthenticatedSettingsOrganizationsNewRoute
+  '/work/$namespaceId/$issueKey': typeof AuthenticatedWorkNamespaceIdIssueKeyRoute
   '/namespaces/$namespaceId': typeof AuthenticatedNamespacesNamespaceIdIndexRoute
   '/settings/namespaces': typeof AuthenticatedSettingsNamespacesIndexRoute
   '/settings/organizations': typeof AuthenticatedSettingsOrganizationsIndexRoute
@@ -467,7 +468,6 @@ export interface FileRoutesById {
   '/_authenticated/namespaces/$namespaceId': typeof AuthenticatedNamespacesNamespaceIdRouteWithChildren
   '/_authenticated/organizations/$organizationId': typeof AuthenticatedOrganizationsOrganizationIdRoute
   '/_authenticated/settings/security': typeof AuthenticatedSettingsSecurityRoute
-  '/_authenticated/work/$workId': typeof AuthenticatedWorkWorkIdRoute
   '/_authenticated/namespaces/': typeof AuthenticatedNamespacesIndexRoute
   '/_authenticated/organizations/': typeof AuthenticatedOrganizationsIndexRoute
   '/_authenticated/settings/': typeof AuthenticatedSettingsIndexRoute
@@ -478,6 +478,7 @@ export interface FileRoutesById {
   '/_authenticated/relations/$entityType/$entityId': typeof AuthenticatedRelationsEntityTypeEntityIdRoute
   '/_authenticated/settings/namespaces/new': typeof AuthenticatedSettingsNamespacesNewRoute
   '/_authenticated/settings/organizations/new': typeof AuthenticatedSettingsOrganizationsNewRoute
+  '/_authenticated/work/$namespaceId/$issueKey': typeof AuthenticatedWorkNamespaceIdIssueKeyRoute
   '/_authenticated/namespaces/$namespaceId/': typeof AuthenticatedNamespacesNamespaceIdIndexRoute
   '/_authenticated/settings/namespaces/': typeof AuthenticatedSettingsNamespacesIndexRoute
   '/_authenticated/settings/organizations/': typeof AuthenticatedSettingsOrganizationsIndexRoute
@@ -518,7 +519,6 @@ export interface FileRouteTypes {
     | '/namespaces/$namespaceId'
     | '/organizations/$organizationId'
     | '/settings/security'
-    | '/work/$workId'
     | '/namespaces/'
     | '/organizations/'
     | '/settings/'
@@ -529,6 +529,7 @@ export interface FileRouteTypes {
     | '/relations/$entityType/$entityId'
     | '/settings/namespaces/new'
     | '/settings/organizations/new'
+    | '/work/$namespaceId/$issueKey'
     | '/namespaces/$namespaceId/'
     | '/settings/namespaces/'
     | '/settings/organizations/'
@@ -563,7 +564,6 @@ export interface FileRouteTypes {
     | '/documents/$documentId'
     | '/organizations/$organizationId'
     | '/settings/security'
-    | '/work/$workId'
     | '/namespaces'
     | '/organizations'
     | '/settings'
@@ -573,6 +573,7 @@ export interface FileRouteTypes {
     | '/relations/$entityType/$entityId'
     | '/settings/namespaces/new'
     | '/settings/organizations/new'
+    | '/work/$namespaceId/$issueKey'
     | '/namespaces/$namespaceId'
     | '/settings/namespaces'
     | '/settings/organizations'
@@ -611,7 +612,6 @@ export interface FileRouteTypes {
     | '/_authenticated/namespaces/$namespaceId'
     | '/_authenticated/organizations/$organizationId'
     | '/_authenticated/settings/security'
-    | '/_authenticated/work/$workId'
     | '/_authenticated/namespaces/'
     | '/_authenticated/organizations/'
     | '/_authenticated/settings/'
@@ -622,6 +622,7 @@ export interface FileRouteTypes {
     | '/_authenticated/relations/$entityType/$entityId'
     | '/_authenticated/settings/namespaces/new'
     | '/_authenticated/settings/organizations/new'
+    | '/_authenticated/work/$namespaceId/$issueKey'
     | '/_authenticated/namespaces/$namespaceId/'
     | '/_authenticated/settings/namespaces/'
     | '/_authenticated/settings/organizations/'
@@ -800,13 +801,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsSecurityRouteImport
       parentRoute: typeof AuthenticatedSettingsRoute
     }
-    '/_authenticated/work/$workId': {
-      id: '/_authenticated/work/$workId'
-      path: '/work/$workId'
-      fullPath: '/work/$workId'
-      preLoaderRoute: typeof AuthenticatedWorkWorkIdRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
     '/_authenticated/namespaces/$namespaceId/': {
       id: '/_authenticated/namespaces/$namespaceId/'
       path: '/'
@@ -876,6 +870,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/settings/organizations/new'
       preLoaderRoute: typeof AuthenticatedSettingsOrganizationsNewRouteImport
       parentRoute: typeof AuthenticatedSettingsRoute
+    }
+    '/_authenticated/work/$namespaceId/$issueKey': {
+      id: '/_authenticated/work/$namespaceId/$issueKey'
+      path: '/work/$namespaceId/$issueKey'
+      fullPath: '/work/$namespaceId/$issueKey'
+      preLoaderRoute: typeof AuthenticatedWorkNamespaceIdIssueKeyRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/namespaces/$namespaceId/projects/': {
       id: '/_authenticated/namespaces/$namespaceId/projects/'
@@ -1163,8 +1164,8 @@ interface AuthenticatedRouteChildren {
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRouteWithChildren
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedDocumentsDocumentIdRoute: typeof AuthenticatedDocumentsDocumentIdRoute
-  AuthenticatedWorkWorkIdRoute: typeof AuthenticatedWorkWorkIdRoute
   AuthenticatedRelationsEntityTypeEntityIdRoute: typeof AuthenticatedRelationsEntityTypeEntityIdRoute
+  AuthenticatedWorkNamespaceIdIssueKeyRoute: typeof AuthenticatedWorkNamespaceIdIssueKeyRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
@@ -1178,9 +1179,10 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedSettingsRoute: AuthenticatedSettingsRouteWithChildren,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedDocumentsDocumentIdRoute: AuthenticatedDocumentsDocumentIdRoute,
-  AuthenticatedWorkWorkIdRoute: AuthenticatedWorkWorkIdRoute,
   AuthenticatedRelationsEntityTypeEntityIdRoute:
     AuthenticatedRelationsEntityTypeEntityIdRoute,
+  AuthenticatedWorkNamespaceIdIssueKeyRoute:
+    AuthenticatedWorkNamespaceIdIssueKeyRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(

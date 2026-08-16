@@ -1,4 +1,3 @@
-import { useQueries } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Edit, Plus, Shield, Trash2, UserPlus } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -6,10 +5,9 @@ import { useMemo, useState } from "react";
 import { RoleDeleteDialog } from "./role-delete-dialog";
 import { RoleMemberAddDialog } from "./role-member-add-dialog";
 
-import { Badge } from "@/components/ui/badge";
+import { SettingsResourceTable } from "@/components/settings/settings-resource-table";
 import { Button } from "@/components/ui/button";
-import { ListContainer } from "@/components/ui/list-container";
-import { SearchInput } from "@/components/ui/search-input";
+import { CountBadge } from "@/components/ui/count-badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -19,47 +17,26 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ResourceType, withResourceType } from "@/hooks/use-permissions";
-import { v1PermissionResourceGetOptions } from "@/lib/api/query-options";
+import { TableSkeleton } from "@/components/ui/table-skeleton";
+import {
+  ResourceType,
+  usePermissionsByResourceId,
+} from "@/hooks/use-permissions";
 import type { Permission, Role } from "@/lib/api/types";
 import { can } from "@/lib/auth/permissions";
-import { pluralize } from "@/lib/utils";
 
-function RolesListSkeleton() {
-  return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Name</TableHead>
-          <TableHead>Description</TableHead>
-          <TableHead>Members</TableHead>
-          <TableHead className="text-right">Actions</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {Array.from({ length: 5 }).map((_, i) => (
-          <TableRow key={i}>
-            <TableCell>
-              <Skeleton className="h-5 w-32" />
-            </TableCell>
-            <TableCell>
-              <Skeleton className="h-4 w-48" />
-            </TableCell>
-            <TableCell>
-              <Skeleton className="h-6 w-16" />
-            </TableCell>
-            <TableCell className="text-right">
-              <div className="flex justify-end gap-1">
-                <Skeleton className="h-8 w-8" />
-                <Skeleton className="h-8 w-8" />
-              </div>
-            </TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
-  );
-}
+const rolesListSkeletonColumns = [
+  { header: "Name", skeletonClassName: "h-5 w-32" },
+  { header: "Description", skeletonClassName: "h-4 w-48" },
+  { header: "Members", skeletonClassName: "h-6 w-16" },
+  {
+    header: "Actions",
+    skeletonClassName: "h-8 w-8",
+    headerClassName: "text-right",
+    cellClassName: "text-right",
+    count: 2,
+  },
+] as const;
 
 interface RoleRowProps {
   role: Role;
@@ -90,10 +67,11 @@ function RoleRow({
         </span>
       </TableCell>
       <TableCell>
-        <Badge variant="secondary">
-          {role.members.length}{" "}
-          {pluralize(role.members.length, "member", "members")}
-        </Badge>
+        <CountBadge
+          count={role.member_count ?? 0}
+          singular="member"
+          plural="members"
+        />
       </TableCell>
       <TableCell className="text-right">
         {isPermissionsLoading ? (
@@ -171,21 +149,9 @@ export function RolesList({
 
   const hasOrgWritePermission = can(organizationPermissions, "write");
   const hasCreatePermission = hasOrgWritePermission;
-  const rolePermissionQueries = useQueries({
-    queries: roles.map((role) =>
-      v1PermissionResourceGetOptions({
-        path: {
-          resourceId: withResourceType(ResourceType.Role, role.id),
-        },
-      })
-    ),
-  });
-  const rolePermissionsById = useMemo(
-    () =>
-      new Map(
-        roles.map((role, index) => [role.id, rolePermissionQueries[index]])
-      ),
-    [roles, rolePermissionQueries]
+  const rolePermissionsById = usePermissionsByResourceId(
+    ResourceType.Role,
+    roles.map((role) => role.id)
   );
 
   const filteredRoles = useMemo(() => {
@@ -229,94 +195,64 @@ export function RolesList({
     </Button>
   ) : undefined;
 
-  const emptyState =
-    roles.length === 0
-      ? {
-          icon: <Shield />,
-          title: "No roles found",
-          description:
-            "Roles help organize permissions and member access. Create a role to get started.",
-          action: hasCreatePermission ? (
-            <Button
-              variant="outline"
-              size="sm"
-              render={
-                <Link
-                  to="/settings/organizations/$organizationId/roles/new"
-                  params={{ organizationId }}
-                />
-              }
-            >
-              <Plus className="size-4" />
-              Create Role
-            </Button>
-          ) : undefined,
-        }
-      : filteredRoles.length === 0 && searchTerm.trim()
-        ? {
-            icon: <Shield />,
-            title: "No roles found",
-            description:
-              "No roles match your search criteria. Try adjusting your search.",
-          }
-        : undefined;
-
-  const shouldShowSearch = roles.length > 0 || searchTerm.trim() !== "";
-
   return (
     <>
-      <ListContainer
-        data-section="roles"
+      <SettingsResourceTable
+        dataSection="roles"
         title="Roles"
         description="Organization roles and their members."
         isLoading={isLoading}
         error={error}
-        emptyState={emptyState}
         actionButton={createButton}
-        searchInput={
-          shouldShowSearch ? (
-            <SearchInput
-              value={searchTerm}
-              onChange={setSearchTerm}
-              placeholder="Search roles..."
-              disabled={isLoading}
-            />
-          ) : undefined
-        }
+        search={{
+          value: searchTerm,
+          onChange: setSearchTerm,
+          placeholder: "Search roles...",
+          itemCount: roles.length,
+        }}
+        empty={{
+          icon: <Shield />,
+          title: "No roles found",
+          description:
+            "Roles help organize permissions and member access. Create a role to get started.",
+          action: createButton,
+          searchTitle: "No roles found",
+          searchDescription:
+            "No roles match your search criteria. Try adjusting your search.",
+          hasItems: roles.length > 0,
+          hasFilteredItems: filteredRoles.length > 0,
+        }}
+        skeleton={<TableSkeleton columns={rolesListSkeletonColumns} />}
       >
-        {isLoading ? (
-          <RolesListSkeleton />
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>Members</TableHead>
-                <TableHead>
-                  <span className="sr-only">Actions</span>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredRoles.map((role) => {
-                const permissionQuery = rolePermissionsById.get(role.id);
-                return (
-                  <RoleRow
-                    key={role.id}
-                    role={role}
-                    permissions={permissionQuery?.data}
-                    isPermissionsLoading={permissionQuery?.isLoading ?? true}
-                    organizationId={organizationId}
-                    onAddMemberClick={handleAddMemberClick}
-                    onDeleteClick={handleDeleteClick}
-                  />
-                );
-              })}
-            </TableBody>
-          </Table>
-        )}
-      </ListContainer>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Description</TableHead>
+              <TableHead>Members</TableHead>
+              <TableHead>
+                <span className="sr-only">Actions</span>
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredRoles.map((role) => {
+              const permissionQuery = rolePermissionsById.get(role.id);
+              return (
+                <RoleRow
+                  key={role.id}
+                  role={role}
+                  permissions={permissionQuery?.data}
+                  isPermissionsLoading={permissionQuery?.isLoading ?? true}
+                  organizationId={organizationId}
+                  onAddMemberClick={handleAddMemberClick}
+                  onDeleteClick={handleDeleteClick}
+                />
+              );
+            })}
+          </TableBody>
+        </Table>
+      </SettingsResourceTable>
 
       {selectedRole && (
         <RoleDeleteDialog

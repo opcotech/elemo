@@ -27,6 +27,7 @@ interface DialogFormProps<TFormValues extends FieldValues> {
   cancelButtonText?: string;
   onReset?: () => void;
   className?: string;
+  "data-section"?: string;
 }
 
 export function DialogForm<TFormValues extends FieldValues>({
@@ -42,6 +43,7 @@ export function DialogForm<TFormValues extends FieldValues>({
   cancelButtonText = "Cancel",
   onReset,
   className,
+  "data-section": dataSection,
 }: DialogFormProps<TFormValues>) {
   const prevOpenRef = useRef(open);
 
@@ -57,7 +59,7 @@ export function DialogForm<TFormValues extends FieldValues>({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={className}>
+      <DialogContent className={className} data-section={dataSection}>
         <FieldProvider {...form}>
           <form onSubmit={onSubmit} className="flex flex-col gap-y-6">
             <DialogHeader>

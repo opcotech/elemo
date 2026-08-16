@@ -4,9 +4,9 @@ import { useState } from "react";
 import { withRouter } from "../../.storybook/with-router";
 
 import { ResponsiveInspectorShell } from "@/components/layout/responsive-inspector-shell";
-import { PropertyList } from "@/components/shared/property-list";
-import { StatusIndicator } from "@/components/shared/status-indicator";
 import { Button } from "@/components/ui/button";
+import { PropertyList } from "@/components/ui/property-list";
+import { StatusIndicator } from "@/components/ui/status-indicator";
 import { WorkInspector } from "@/components/work/work-inspector";
 import { mockWorkItems } from "@/lib/mock-data";
 

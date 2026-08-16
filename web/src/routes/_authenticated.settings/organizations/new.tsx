@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { OrganizationCreateForm } from "@/components/organizations";
-import { PageHeader } from "@/components/shared/page-header";
+import { OrganizationCreateForm } from "@/components/organizations/organization-create-form";
+import { PageHeader } from "@/components/ui/page-header";
 import { ResourceType } from "@/lib/auth/permissions";
 import { requirePermissionBeforeLoad } from "@/lib/auth/require-auth";
 

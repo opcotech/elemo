@@ -71,46 +71,46 @@ func (mr *MockAssignmentRepositoryMockRecorder) Delete(ctx, id any) *gomock.Call
 }
 
 // Get mocks base method.
-func (m *MockAssignmentRepository) Get(ctx context.Context, id model.ID) (*Assignment, error) {
+func (m *MockAssignmentRepository) Get(ctx context.Context, id model.ID, proj AssignmentProjection) (*Assignment, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Get", ctx, id)
+	ret := m.ctrl.Call(m, "Get", ctx, id, proj)
 	ret0, _ := ret[0].(*Assignment)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Get indicates an expected call of Get.
-func (mr *MockAssignmentRepositoryMockRecorder) Get(ctx, id any) *gomock.Call {
+func (mr *MockAssignmentRepositoryMockRecorder) Get(ctx, id, proj any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockAssignmentRepository)(nil).Get), ctx, id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockAssignmentRepository)(nil).Get), ctx, id, proj)
 }
 
-// GetByResource mocks base method.
-func (m *MockAssignmentRepository) GetByResource(ctx context.Context, resourceID model.ID, offset, limit int) ([]*Assignment, error) {
+// ListByResource mocks base method.
+func (m *MockAssignmentRepository) ListByResource(ctx context.Context, resourceID model.ID, page CursorPage, proj AssignmentProjection) (Page[*Assignment], error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetByResource", ctx, resourceID, offset, limit)
-	ret0, _ := ret[0].([]*Assignment)
+	ret := m.ctrl.Call(m, "ListByResource", ctx, resourceID, page, proj)
+	ret0, _ := ret[0].(Page[*Assignment])
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetByResource indicates an expected call of GetByResource.
-func (mr *MockAssignmentRepositoryMockRecorder) GetByResource(ctx, resourceID, offset, limit any) *gomock.Call {
+// ListByResource indicates an expected call of ListByResource.
+func (mr *MockAssignmentRepositoryMockRecorder) ListByResource(ctx, resourceID, page, proj any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByResource", reflect.TypeOf((*MockAssignmentRepository)(nil).GetByResource), ctx, resourceID, offset, limit)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListByResource", reflect.TypeOf((*MockAssignmentRepository)(nil).ListByResource), ctx, resourceID, page, proj)
 }
 
-// GetByUser mocks base method.
-func (m *MockAssignmentRepository) GetByUser(ctx context.Context, userID model.ID, offset, limit int) ([]*Assignment, error) {
+// ListByUser mocks base method.
+func (m *MockAssignmentRepository) ListByUser(ctx context.Context, userID model.ID, page CursorPage, proj AssignmentProjection) (Page[*Assignment], error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetByUser", ctx, userID, offset, limit)
-	ret0, _ := ret[0].([]*Assignment)
+	ret := m.ctrl.Call(m, "ListByUser", ctx, userID, page, proj)
+	ret0, _ := ret[0].(Page[*Assignment])
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetByUser indicates an expected call of GetByUser.
-func (mr *MockAssignmentRepositoryMockRecorder) GetByUser(ctx, userID, offset, limit any) *gomock.Call {
+// ListByUser indicates an expected call of ListByUser.
+func (mr *MockAssignmentRepositoryMockRecorder) ListByUser(ctx, userID, page, proj any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByUser", reflect.TypeOf((*MockAssignmentRepository)(nil).GetByUser), ctx, userID, offset, limit)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListByUser", reflect.TypeOf((*MockAssignmentRepository)(nil).ListByUser), ctx, userID, page, proj)
 }

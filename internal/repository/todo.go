@@ -5,10 +5,9 @@ import (
 	"errors"
 	"time"
 
-	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
+	"github.com/neo4j/neo4j-go-driver/v6/neo4j"
 
 	"github.com/opcotech/elemo/internal/model"
-	"github.com/opcotech/elemo/internal/pkg/convert"
 	"github.com/opcotech/elemo/internal/pkg/optional"
 )
 
@@ -85,7 +84,7 @@ func (o UpdateTodoOpts) patch() map[string]any {
 type TodoRepository interface {
 	Create(ctx context.Context, opts CreateTodoOpts) (*Todo, error)
 	Get(ctx context.Context, id model.ID) (*Todo, error)
-	GetByOwner(ctx context.Context, ownerID model.ID, offset, limit int, completed *bool) ([]*Todo, error)
+	ListByOwner(ctx context.Context, ownerID model.ID, page CursorPage, completed *bool) (Page[*Todo], error)
 	Update(ctx context.Context, id model.ID, opts UpdateTodoOpts) (*Todo, error)
 	Delete(ctx context.Context, id model.ID) error
 }
@@ -130,26 +129,14 @@ func (r *Neo4jTodoRepository) Create(ctx context.Context, opts CreateTodoOpts) (
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.TodoRepository/Create")
 	defer span.End()
 
-	createdAt := convert.ToPointer(time.Now().UTC())
-
-	todo := &Todo{
-		ID:          model.MustNewID(model.ResourceTypeTodo),
-		Title:       opts.Title,
-		Description: opts.Description,
-		Priority:    opts.Priority,
-		Completed:   opts.Completed,
-		OwnedBy:     opts.OwnedBy,
-		CreatedBy:   opts.CreatedBy,
-		DueDate:     opts.DueDate,
-		CreatedAt:   createdAt,
-		UpdatedAt:   nil,
-	}
+	createdAt := time.Now().UTC()
+	id := model.MustNewID(model.ResourceTypeTodo)
 
 	cypher := `
-	MATCH (o:` + todo.OwnedBy.Label() + ` {id: $owner_id})
-	MATCH (c:` + todo.CreatedBy.Label() + ` {id: $creator_id})
+	MATCH (o:` + opts.OwnedBy.Label() + ` {id: $owner_id})
+	MATCH (c:` + opts.CreatedBy.Label() + ` {id: $creator_id})
 	CREATE
-		(t:` + todo.ID.Label() + ` {
+		(t:` + id.Label() + ` {
 			id: $id, title: $title, description: $description, priority: $priority, completed: $completed,
 			due_date: datetime($due_date), created_at: datetime($created_at)
 		}),
@@ -160,49 +147,51 @@ func (r *Neo4jTodoRepository) Create(ctx context.Context, opts CreateTodoOpts) (
 	ON CREATE SET rel += {id: $creator_perm_id, kind: $creator_perm_kind, created_at: datetime($created_at)}`
 
 	params := map[string]any{
-		"id":                todo.ID.String(),
-		"title":             todo.Title,
-		"description":       todo.Description,
-		"priority":          todo.Priority.String(),
-		"completed":         todo.Completed,
+		"id":                id.String(),
+		"title":             opts.Title,
+		"description":       opts.Description,
+		"priority":          opts.Priority.String(),
+		"completed":         opts.Completed,
 		"due_date":          nil,
-		"created_at":        todo.CreatedAt.Format(time.RFC3339Nano),
-		"owner_id":          todo.OwnedBy.String(),
+		"created_at":        createdAt.Format(time.RFC3339Nano),
+		"owner_id":          opts.OwnedBy.String(),
 		"owned_rel_id":      model.NewRawID(),
 		"owner_perm_id":     model.NewRawID(),
 		"owner_perm_kind":   model.PermissionKindAll.String(),
-		"creator_id":        todo.CreatedBy.String(),
+		"creator_id":        opts.CreatedBy.String(),
 		"created_rel_id":    model.NewRawID(),
 		"creator_perm_id":   model.NewRawID(),
 		"creator_perm_kind": model.PermissionKindAll.String(),
 	}
 
-	if todo.DueDate != nil {
-		params["due_date"] = todo.DueDate.Format(time.RFC3339Nano)
+	if opts.DueDate != nil {
+		params["due_date"] = opts.DueDate.Format(time.RFC3339Nano)
 	}
 
 	if err := Neo4jExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
 		return nil, errors.Join(err, ErrTodoCreate)
 	}
 
-	return todo, nil
+	return r.Get(ctx, id)
 }
 
 func (r *Neo4jTodoRepository) Get(ctx context.Context, id model.ID) (*Todo, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.TodoRepository/Get")
 	defer span.End()
 
-	cypher := `
-	MATCH (t:` + id.Label() + ` {id: $id})
-	OPTIONAL MATCH (t)-[:` + EdgeKindBelongsTo.String() + `]->(o)
-	OPTIONAL MATCH (t)<-[:` + EdgeKindCreated.String() + `]-(c)
-	RETURN t, o.id as o, c.id as c`
-
-	params := map[string]any{
-		"id": id.String(),
+	plan, err := CompileQuery(TodoGetQuery{
+		ID: id,
+	})
+	if err != nil {
+		return nil, errors.Join(err, ErrTodoRead)
 	}
 
-	todo, err := Neo4jExecuteReadAndReadSingle(ctx, r.db, cypher, params, r.scan("t", "o", "c"))
+	var todo *Todo
+	err = Neo4jExecuteReadPlan(ctx, r.db, plan, func(tx neo4j.ManagedTransaction) error {
+		var runErr error
+		todo, _, runErr = Neo4jRunQuerySingle(ctx, tx, plan.Root, r.scan("t", "o", "c"))
+		return runErr
+	})
 	if err != nil {
 		return nil, errors.Join(err, ErrTodoRead)
 	}
@@ -210,31 +199,37 @@ func (r *Neo4jTodoRepository) Get(ctx context.Context, id model.ID) (*Todo, erro
 	return todo, nil
 }
 
-func (r *Neo4jTodoRepository) GetByOwner(ctx context.Context, ownerID model.ID, offset, limit int, completed *bool) ([]*Todo, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.TodoRepository/GetByOwner")
+func (r *Neo4jTodoRepository) ListByOwner(ctx context.Context, ownerID model.ID, page CursorPage, completed *bool) (Page[*Todo], error) {
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.TodoRepository/ListByOwner")
 	defer span.End()
 
-	cypher := `
-	MATCH (t:` + model.ResourceTypeTodo.String() + `)-[:` + EdgeKindBelongsTo.String() + `]->(o:` + ownerID.Label() + ` {id: $owner_id})
-	WHERE $completed IS NULL OR t.completed = $completed
-	OPTIONAL MATCH (t)<-[:` + EdgeKindCreated.String() + `]-(c)
-	RETURN t, o.id as o, c.id as c
-	ORDER BY t.created_at DESC
-	SKIP $offset LIMIT $limit`
-
-	params := map[string]any{
-		"owner_id":  ownerID.String(),
-		"offset":    offset,
-		"limit":     limit,
-		"completed": completed,
-	}
-
-	todos, err := Neo4jExecuteReadAndReadAll(ctx, r.db, cypher, params, r.scan("t", "o", "c"))
+	normalized, err := page.Normalize()
 	if err != nil {
-		return nil, errors.Join(err, ErrTodoRead)
+		return Page[*Todo]{}, errors.Join(err, ErrTodoRead)
+	}
+	plan, err := CompileQuery(TodoListByOwnerQuery{
+		OwnerID:   ownerID,
+		Page:      normalized,
+		Order:     SortDirectionDesc,
+		Completed: completed,
+	})
+	if err != nil {
+		return Page[*Todo]{}, errors.Join(err, ErrTodoRead)
 	}
 
-	return todos, nil
+	todos := make([]*Todo, 0)
+	err = Neo4jExecuteReadPlan(ctx, r.db, plan, func(tx neo4j.ManagedTransaction) error {
+		var runErr error
+		todos, _, runErr = Neo4jRunQuery(ctx, tx, plan.Root, r.scan("t", "o", "c"))
+		return runErr
+	})
+	if err != nil {
+		return Page[*Todo]{}, errors.Join(err, ErrTodoRead)
+	}
+
+	return PaginateSlice(todos, normalized.Size, func(todo *Todo) model.ID {
+		return todo.ID
+	})
 }
 
 func (r *Neo4jTodoRepository) Update(ctx context.Context, id model.ID, opts UpdateTodoOpts) (*Todo, error) {
@@ -244,22 +239,20 @@ func (r *Neo4jTodoRepository) Update(ctx context.Context, id model.ID, opts Upda
 	cypher := `
 	MATCH (t:` + id.Label() + ` {id: $id})
 	SET t += $patch, t.updated_at = datetime()
-	WITH t
-	OPTIONAL MATCH (t)-[:` + EdgeKindBelongsTo.String() + `]->(o)
-	OPTIONAL MATCH (t)<-[:` + EdgeKindCreated.String() + `]-(c)
-	RETURN t, o.id as o, c.id as c`
+	RETURN t.id AS id`
 
 	params := map[string]any{
 		"id":    id.String(),
 		"patch": opts.patch(),
 	}
 
-	todo, err := Neo4jExecuteWriteAndReadSingle(ctx, r.db, cypher, params, r.scan("t", "o", "c"))
-	if err != nil {
+	if _, err := Neo4jExecuteWriteAndReadSingle(ctx, r.db, cypher, params, func(_ *neo4j.Record) (*struct{}, error) {
+		return &struct{}{}, nil
+	}); err != nil {
 		return nil, errors.Join(ErrTodoUpdate, err)
 	}
 
-	return todo, nil
+	return r.Get(ctx, id)
 }
 
 func (r *Neo4jTodoRepository) Delete(ctx context.Context, id model.ID) error {
@@ -297,7 +290,7 @@ type RedisCachedTodoRepository struct {
 }
 
 func (r *RedisCachedTodoRepository) Create(ctx context.Context, opts CreateTodoOpts) (*Todo, error) {
-	pattern := composeCacheKey(model.ResourceTypeTodo.String(), "GetByOwner", opts.OwnedBy.String(), "*")
+	pattern := composeCacheKey(model.ResourceTypeTodo.String(), "ListByOwner", opts.OwnedBy.String(), "*")
 	if err := r.cacheRepo.DeletePattern(ctx, pattern); err != nil {
 		return nil, err
 	}
@@ -309,7 +302,7 @@ func (r *RedisCachedTodoRepository) Get(ctx context.Context, id model.ID) (*Todo
 	var todo *Todo
 	var err error
 
-	key := composeCacheKey(model.ResourceTypeTodo.String(), id.String())
+	key := composeCacheKey(model.ResourceTypeTodo.String(), "Get", id.String())
 	if err = r.cacheRepo.Get(ctx, key, &todo); err != nil {
 		return nil, err
 	}
@@ -329,26 +322,31 @@ func (r *RedisCachedTodoRepository) Get(ctx context.Context, id model.ID) (*Todo
 	return todo, nil
 }
 
-func (r *RedisCachedTodoRepository) GetByOwner(ctx context.Context, ownerID model.ID, offset, limit int, completed *bool) ([]*Todo, error) {
-	var todos []*Todo
+func (r *RedisCachedTodoRepository) ListByOwner(ctx context.Context, ownerID model.ID, page CursorPage, completed *bool) (Page[*Todo], error) {
+	var todos Page[*Todo]
 	var err error
 
-	key := composeCacheKey(model.ResourceTypeTodo.String(), "GetByOwner", ownerID.String(), offset, limit, completed)
-	if err = r.cacheRepo.Get(ctx, key, &todos); err != nil {
-		return nil, err
+	normalized, err := normalizedPage(page)
+	if err != nil {
+		return Page[*Todo]{}, err
 	}
 
-	if todos != nil {
+	key := composeCacheKey(model.ResourceTypeTodo.String(), "ListByOwner", ownerID.String(), pageTokenValue(normalized.Token), normalized.Size, completed)
+	if err = r.cacheRepo.Get(ctx, key, &todos); err != nil {
+		return Page[*Todo]{}, err
+	}
+
+	if todos.Items != nil {
 		return todos, nil
 	}
 
-	todos, err = r.todoRepo.GetByOwner(ctx, ownerID, offset, limit, completed)
+	todos, err = r.todoRepo.ListByOwner(ctx, ownerID, normalized, completed)
 	if err != nil {
-		return nil, err
+		return Page[*Todo]{}, err
 	}
 
 	if err = r.cacheRepo.Set(ctx, key, todos); err != nil {
-		return nil, err
+		return Page[*Todo]{}, err
 	}
 
 	return todos, nil
@@ -360,12 +358,12 @@ func (r *RedisCachedTodoRepository) Update(ctx context.Context, id model.ID, opt
 		return nil, err
 	}
 
-	key := composeCacheKey(model.ResourceTypeTodo.String(), id.String())
+	key := composeCacheKey(model.ResourceTypeTodo.String(), "Get", id.String())
 	if err = r.cacheRepo.Set(ctx, key, todo); err != nil {
 		return nil, err
 	}
 
-	pattern := composeCacheKey(model.ResourceTypeTodo.String(), "GetByOwner", todo.OwnedBy.String(), "*")
+	pattern := composeCacheKey(model.ResourceTypeTodo.String(), "ListByOwner", todo.OwnedBy.String(), "*")
 	if err := r.cacheRepo.DeletePattern(ctx, pattern); err != nil {
 		return nil, err
 	}
@@ -374,12 +372,12 @@ func (r *RedisCachedTodoRepository) Update(ctx context.Context, id model.ID, opt
 }
 
 func (r *RedisCachedTodoRepository) Delete(ctx context.Context, id model.ID) error {
-	key := composeCacheKey(model.ResourceTypeTodo.String(), id.String())
-	if err := r.cacheRepo.Delete(ctx, key); err != nil {
+	key := composeCacheKey(model.ResourceTypeTodo.String(), "Get", id.String()+"*")
+	if err := r.cacheRepo.DeletePattern(ctx, key); err != nil {
 		return err
 	}
 
-	pattern := composeCacheKey(model.ResourceTypeTodo.String(), "GetByOwner", "*")
+	pattern := composeCacheKey(model.ResourceTypeTodo.String(), "ListByOwner", "*")
 	if err := r.cacheRepo.DeletePattern(ctx, pattern); err != nil {
 		return err
 	}

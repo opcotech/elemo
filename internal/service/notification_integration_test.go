@@ -93,9 +93,9 @@ func (s *NotificationServiceIntegrationTestSuite) TestGetAllByRecipient() {
 	})
 	s.Require().NoError(err)
 
-	notifications, err := s.notificationService.GetAllByRecipient(s.testUserContext, s.testUser.ID, 0, 10)
+	notifications, err := s.notificationService.ListByRecipient(s.testUserContext, s.testUser.ID, service.CursorPage{Size: 10})
 	s.Require().NoError(err)
-	s.Assert().Len(notifications, 2)
+	s.Assert().Len(notifications.Items, 2)
 }
 
 func (s *NotificationServiceIntegrationTestSuite) TestUpdate() {

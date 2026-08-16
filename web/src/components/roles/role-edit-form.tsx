@@ -4,21 +4,12 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import type { z } from "zod";
 
+import { RoleFormFields, roleFormSchema } from "./role-form-fields";
 import { RoleMemberAssignment } from "./role-member-assignment";
 import { RolePermissionAssignment } from "./role-permission-assignment";
 
-import {
-  ControlledField,
-  Field,
-  FieldControl,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-  FieldProvider,
-} from "@/components/ui/field";
+import { FieldProvider } from "@/components/ui/field";
 import { FormCard } from "@/components/ui/form-card";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { useFormMutation } from "@/hooks/use-form-mutation";
 import {
   v1OrganizationRoleGetOptions,
@@ -30,13 +21,13 @@ import type {
   Role,
   V1OrganizationRoleUpdateData,
 } from "@/lib/api/types";
-import { zRoleCreate, zRolePatch } from "@/lib/client/zod.gen";
+import { zRolePatch } from "@/lib/client/zod.gen";
 import { createFormSchema, normalizePatchData } from "@/lib/forms";
 import { getDefaultValue } from "@/lib/utils";
 
 const roleEditFormSchema = createFormSchema(
   zRolePatch.extend({
-    name: zRoleCreate.def.shape.name,
+    name: roleFormSchema.shape.name,
   })
 );
 
@@ -134,40 +125,7 @@ export function RoleEditForm({
       description="Update the role details below."
     >
       <FieldProvider {...form}>
-        <FieldGroup>
-          <ControlledField
-            control={form.control}
-            name="name"
-            render={({ field }) => (
-              <Field>
-                <FieldLabel>Name</FieldLabel>
-                <FieldControl>
-                  <Input placeholder="Enter role name" {...field} />
-                </FieldControl>
-                <FieldError />
-              </Field>
-            )}
-          />
-
-          <ControlledField
-            control={form.control}
-            name="description"
-            render={({ field }) => (
-              <Field>
-                <FieldLabel>Description</FieldLabel>
-                <FieldControl>
-                  <Textarea
-                    placeholder="Enter role description (optional)"
-                    {...field}
-                    value={getDefaultValue(field.value)}
-                    rows={4}
-                  />
-                </FieldControl>
-                <FieldError />
-              </Field>
-            )}
-          />
-        </FieldGroup>
+        <RoleFormFields control={form.control} isPending={mutation.isPending} />
       </FieldProvider>
     </FormCard>
   );

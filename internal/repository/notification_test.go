@@ -339,18 +339,18 @@ func TestNotificationRepository_Get(t *testing.T) {
 			notificationRepo := &PGNotificationRepository{
 				pgBaseRepository: tt.fields.pgBaseRepository(tt.args.ctx, ctrl, tt.args.id, tt.args.recipient, tt.want),
 			}
-			got, err := notificationRepo.Get(tt.args.ctx, tt.args.id, tt.args.recipient)
+			got, err := notificationRepo.Get(tt.args.ctx, tt.args.id, tt.args.recipient, NotificationDetailProjection())
 			require.ErrorIs(t, err, tt.wantErr)
 			require.Equal(t, tt.want, got)
 		})
 	}
 }
 
-func TestNotificationRepository_GetAllByRecipient(t *testing.T) {
+func TestNotificationRepository_ListByRecipient(t *testing.T) {
 	recipientID := model.MustNewID(model.ResourceTypeUser)
 
 	type fields struct {
-		pgBaseRepository func(ctx context.Context, ctrl *gomock.Controller, recipient model.ID, offset, limit int, notifications []*Notification) *pgBaseRepository
+		pgBaseRepository func(ctx context.Context, ctrl *gomock.Controller, recipient model.ID, _, limit int, notifications []*Notification) *pgBaseRepository
 	}
 	type args struct {
 		ctx       context.Context
@@ -373,7 +373,7 @@ func TestNotificationRepository_GetAllByRecipient(t *testing.T) {
 					span.EXPECT().End().Return()
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "repository.pg.NotificationRepository/GetAllByRecipient").Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.pg.NotificationRepository/ListByRecipient").Return(ctx, span)
 
 					mockDBPool := mock.NewPGPool(ctrl)
 					mockDB, err := NewPGDatabase(WithDatabasePool(mockDBPool))
@@ -383,6 +383,7 @@ func TestNotificationRepository_GetAllByRecipient(t *testing.T) {
 					mockRows.EXPECT().Close().Return()
 					mockRows.EXPECT().Next().Return(true).Times(limit)
 					mockRows.EXPECT().Next().Return(false)
+					mockRows.EXPECT().Err().Return(nil)
 
 					for _, notification := range notifications[offset:] {
 						mockRows.EXPECT().
@@ -401,8 +402,8 @@ func TestNotificationRepository_GetAllByRecipient(t *testing.T) {
 					}
 
 					mockDBPool.EXPECT().Query(ctx,
-						"SELECT * FROM notifications WHERE recipient = $1 LIMIT $2 OFFSET $3",
-						recipient, limit, offset,
+						"SELECT * FROM notifications WHERE recipient = $1 ORDER BY id DESC LIMIT $2",
+						recipient, limit+1,
 					).Return(mockRows, nil)
 
 					return &pgBaseRepository{
@@ -442,20 +443,20 @@ func TestNotificationRepository_GetAllByRecipient(t *testing.T) {
 		{
 			name: "get all notifications by recipient with error",
 			fields: fields{
-				pgBaseRepository: func(ctx context.Context, ctrl *gomock.Controller, recipient model.ID, offset, limit int, _ []*Notification) *pgBaseRepository {
+				pgBaseRepository: func(ctx context.Context, ctrl *gomock.Controller, recipient model.ID, _, limit int, _ []*Notification) *pgBaseRepository {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End().Return()
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "repository.pg.NotificationRepository/GetAllByRecipient").Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.pg.NotificationRepository/ListByRecipient").Return(ctx, span)
 
 					mockDBPool := mock.NewPGPool(ctrl)
 					mockDB, err := NewPGDatabase(WithDatabasePool(mockDBPool))
 					require.NoError(t, err)
 
 					mockDBPool.EXPECT().Query(ctx,
-						"SELECT * FROM notifications WHERE recipient = $1 LIMIT $2 OFFSET $3",
-						recipient, limit, offset,
+						"SELECT * FROM notifications WHERE recipient = $1 ORDER BY id DESC LIMIT $2",
+						recipient, limit+1,
 					).Return(mock.NewPGRows(nil), assert.AnError)
 
 					return &pgBaseRepository{
@@ -476,12 +477,12 @@ func TestNotificationRepository_GetAllByRecipient(t *testing.T) {
 		{
 			name: "get all notifications with scan error",
 			fields: fields{
-				pgBaseRepository: func(ctx context.Context, ctrl *gomock.Controller, recipient model.ID, offset, limit int, _ []*Notification) *pgBaseRepository {
+				pgBaseRepository: func(ctx context.Context, ctrl *gomock.Controller, recipient model.ID, _, limit int, _ []*Notification) *pgBaseRepository {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End().Return()
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "repository.pg.NotificationRepository/GetAllByRecipient").Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.pg.NotificationRepository/ListByRecipient").Return(ctx, span)
 
 					mockDBPool := mock.NewPGPool(ctrl)
 					mockDB, err := NewPGDatabase(WithDatabasePool(mockDBPool))
@@ -495,8 +496,8 @@ func TestNotificationRepository_GetAllByRecipient(t *testing.T) {
 						Return(assert.AnError)
 
 					mockDBPool.EXPECT().Query(ctx,
-						"SELECT * FROM notifications WHERE recipient = $1 LIMIT $2 OFFSET $3",
-						recipient, limit, offset,
+						"SELECT * FROM notifications WHERE recipient = $1 ORDER BY id DESC LIMIT $2",
+						recipient, limit+1,
 					).Return(mockRows, nil)
 
 					return &pgBaseRepository{
@@ -522,11 +523,13 @@ func TestNotificationRepository_GetAllByRecipient(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			notificationRepo := &PGNotificationRepository{
-				pgBaseRepository: tt.fields.pgBaseRepository(tt.args.ctx, ctrl, tt.args.recipient, tt.args.offset, tt.args.limit, tt.want),
+				pgBaseRepository: tt.fields.pgBaseRepository(tt.args.ctx, ctrl, tt.args.recipient, tt.args.offset, testPageSize(tt.args.limit), tt.want),
 			}
-			got, err := notificationRepo.GetAllByRecipient(tt.args.ctx, tt.args.recipient, tt.args.offset, tt.args.limit)
+			got, err := notificationRepo.ListByRecipient(tt.args.ctx, tt.args.recipient, CursorPage{Size: testPageSize(tt.args.limit)}, NotificationListProjection())
 			require.ErrorIs(t, err, tt.wantErr)
-			require.Equal(t, tt.want, got)
+			if tt.wantErr == nil {
+				require.Equal(t, tt.want, got.Items)
+			}
 		})
 	}
 }

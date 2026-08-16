@@ -46,12 +46,12 @@ func WithOrganizationRepository(organizationRepo repository.OrganizationReposito
 	}
 }
 
-// WithRoleRepository sets the organization repository for the
+// WithRoleRepository sets the role repository for the
 // baseService.
 func WithRoleRepository(roleRepo repository.RoleRepository) Option {
 	return func(s *baseService) error {
 		if roleRepo == nil {
-			return ErrNoOrganizationRepository
+			return ErrNoRoleRepository
 		}
 
 		s.roleRepo = roleRepo
@@ -135,7 +135,7 @@ func WithEmailService(emailService EmailService) Option {
 func WithNotificationService(notificationService NotificationService) Option {
 	return func(s *baseService) error {
 		if notificationService == nil {
-			return ErrNoPermissionService
+			return ErrNoNotificationService
 		}
 
 		s.notificationService = notificationService
@@ -167,6 +167,54 @@ func WithProjectRepository(projectRepo repository.ProjectRepository) Option {
 	}
 }
 
+// WithIssueRepository sets the issue repository for the baseService.
+func WithIssueRepository(issueRepo repository.IssueRepository) Option {
+	return func(s *baseService) error {
+		if issueRepo == nil {
+			return ErrNoIssueRepository
+		}
+
+		s.issueRepo = issueRepo
+		return nil
+	}
+}
+
+// WithAssignmentRepository sets the assignment repository for the baseService.
+func WithAssignmentRepository(assignmentRepo repository.AssignmentRepository) Option {
+	return func(s *baseService) error {
+		if assignmentRepo == nil {
+			return ErrNoAssignmentRepository
+		}
+
+		s.assignmentRepo = assignmentRepo
+		return nil
+	}
+}
+
+// WithLabelRepository sets the label repository for the baseService.
+func WithLabelRepository(labelRepo repository.LabelRepository) Option {
+	return func(s *baseService) error {
+		if labelRepo == nil {
+			return ErrNoLabelRepository
+		}
+
+		s.labelRepo = labelRepo
+		return nil
+	}
+}
+
+// WithDocumentRepository sets the document repository for the baseService.
+func WithDocumentRepository(documentRepo repository.DocumentRepository) Option {
+	return func(s *baseService) error {
+		if documentRepo == nil {
+			return ErrNoDocumentRepository
+		}
+
+		s.documentRepo = documentRepo
+		return nil
+	}
+}
+
 // baseService defines the dependencies that are required to interact with the
 // core functionality.
 type baseService struct {
@@ -176,6 +224,10 @@ type baseService struct {
 	organizationRepo repository.OrganizationRepository
 	namespaceRepo    repository.NamespaceRepository
 	projectRepo      repository.ProjectRepository
+	issueRepo        repository.IssueRepository
+	assignmentRepo   repository.AssignmentRepository
+	labelRepo        repository.LabelRepository
+	documentRepo     repository.DocumentRepository
 	roleRepo         repository.RoleRepository
 	todoRepo         repository.TodoRepository
 	userRepo         repository.UserRepository

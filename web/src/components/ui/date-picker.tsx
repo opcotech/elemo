@@ -12,6 +12,10 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  RemovableInputGroup,
+  RemovableInputGroupRemove,
+} from "@/components/ui/removable-input-group";
 import { cn } from "@/lib/utils";
 
 const Calendar = lazy(() =>
@@ -30,6 +34,8 @@ interface DatePickerProps extends Pick<
   placeholder?: string;
   className?: string;
   disabledDays?: Matcher | Matcher[];
+  clearable?: boolean;
+  clearAriaLabel?: string;
 }
 
 export function DatePicker({
@@ -39,6 +45,8 @@ export function DatePicker({
   placeholder = "Pick a date",
   className,
   disabledDays = [],
+  clearable = false,
+  clearAriaLabel = "Clear date",
   id,
   "aria-describedby": ariaDescribedBy,
   "aria-invalid": ariaInvalid,
@@ -46,7 +54,7 @@ export function DatePicker({
 }: DatePickerProps) {
   const [open, setOpen] = useState(false);
 
-  return (
+  const picker = (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger
         render={
@@ -57,9 +65,11 @@ export function DatePicker({
             aria-label={ariaLabel}
             variant="outline"
             className={cn(
-              "border-border bg-card hover:bg-card dark:bg-input dark:hover:bg-input/80 h-9 w-full justify-start rounded-md border font-normal shadow-none",
+              "border-border bg-card hover:bg-card dark:bg-input dark:hover:bg-input/80 h-9 w-full justify-start rounded-md border px-0 font-normal shadow-none",
               !date && "text-muted-foreground",
-              className
+              clearable &&
+                "group-has-[[data-slot=input-group-remove]:hover]/input-group:text-destructive h-full min-w-0 flex-1 border-0 bg-transparent shadow-none hover:bg-transparent dark:bg-transparent dark:hover:bg-transparent",
+              !clearable && className
             )}
             disabled={disabled}
           />
@@ -88,5 +98,26 @@ export function DatePicker({
         ) : null}
       </PopoverContent>
     </Popover>
+  );
+
+  if (!clearable) {
+    return picker;
+  }
+
+  return (
+    <RemovableInputGroup size="default" className={cn("h-9", className)}>
+      {picker}
+      {date ? (
+        <RemovableInputGroupRemove
+          addonClassName="pr-0.5"
+          disabled={disabled}
+          aria-label={clearAriaLabel}
+          title={clearAriaLabel}
+          onClick={() => {
+            onDateChange?.(null);
+          }}
+        />
+      ) : null}
+    </RemovableInputGroup>
   );
 }

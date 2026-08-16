@@ -52,7 +52,7 @@ func (s *UserRepositoryIntegrationTestSuite) TestGet() {
 	created, err := s.UserRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 
-	user, err := s.UserRepo.Get(context.Background(), created.ID)
+	user, err := s.UserRepo.Get(context.Background(), created.ID, repository.UserDetailProjection())
 	s.Require().NoError(err)
 
 	s.Assert().Equal(s.createOpts.Username, user.Username)
@@ -76,7 +76,7 @@ func (s *UserRepositoryIntegrationTestSuite) TestGetByEmail() {
 	created, err := s.UserRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 
-	user, err := s.UserRepo.GetByEmail(context.Background(), s.createOpts.Email)
+	user, err := s.UserRepo.GetByEmail(context.Background(), s.createOpts.Email, repository.UserDetailProjection())
 	s.Require().NoError(err)
 
 	s.Assert().Equal(created.ID, user.ID)
@@ -91,21 +91,19 @@ func (s *UserRepositoryIntegrationTestSuite) TestGetAll() {
 	_, err = s.UserRepo.Create(context.Background(), testModel.NewCreateUserOpts())
 	s.Require().NoError(err)
 
-	users, err := s.UserRepo.GetAll(context.Background(), 0, 10)
+	users, err := s.UserRepo.List(context.Background(), repository.CursorPage{Size: 10}, repository.UserListProjection())
 	s.Require().NoError(err)
-	s.Assert().Len(users, 3)
+	s.Assert().Len(users.Items, 3)
 
-	users, err = s.UserRepo.GetAll(context.Background(), 1, 2)
+	users, err = s.UserRepo.List(context.Background(), repository.CursorPage{Size: 2}, repository.UserListProjection())
 	s.Require().NoError(err)
-	s.Assert().Len(users, 2)
+	s.Assert().Len(users.Items, 2)
+	s.Assert().True(users.PageInfo.HasMore)
 
-	users, err = s.UserRepo.GetAll(context.Background(), 2, 2)
+	users, err = s.UserRepo.List(context.Background(), repository.CursorPage{Size: 2, Token: users.PageInfo.NextPageToken}, repository.UserListProjection())
 	s.Require().NoError(err)
-	s.Assert().Len(users, 1)
-
-	users, err = s.UserRepo.GetAll(context.Background(), 3, 2)
-	s.Require().NoError(err)
-	s.Assert().Len(users, 0)
+	s.Assert().Len(users.Items, 1)
+	s.Assert().False(users.PageInfo.HasMore)
 }
 
 func (s *UserRepositoryIntegrationTestSuite) TestUpdate() {
@@ -140,7 +138,7 @@ func (s *UserRepositoryIntegrationTestSuite) TestDelete() {
 	err = s.UserRepo.Delete(context.Background(), created.ID)
 	s.Require().NoError(err)
 
-	_, err = s.UserRepo.Get(context.Background(), created.ID)
+	_, err = s.UserRepo.Get(context.Background(), created.ID, repository.UserDetailProjection())
 	s.Assert().ErrorIs(err, repository.ErrNotFound)
 }
 
@@ -196,16 +194,16 @@ func (s *CachedUserRepositoryIntegrationTestSuite) TestGet() {
 	created, err := s.userRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 
-	original, err := s.UserRepo.Get(context.Background(), created.ID)
+	original, err := s.UserRepo.Get(context.Background(), created.ID, repository.UserDetailProjection())
 	s.Require().NoError(err)
 
-	usingCache, err := s.userRepo.Get(context.Background(), created.ID)
+	usingCache, err := s.userRepo.Get(context.Background(), created.ID, repository.UserDetailProjection())
 	s.Require().NoError(err)
 
 	s.Assert().Equal(original, usingCache)
 	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
 
-	cached, err := s.userRepo.Get(context.Background(), created.ID)
+	cached, err := s.userRepo.Get(context.Background(), created.ID, repository.UserDetailProjection())
 	s.Require().NoError(err)
 
 	s.Assert().Equal(usingCache.ID, cached.ID)
@@ -216,16 +214,16 @@ func (s *CachedUserRepositoryIntegrationTestSuite) TestGetByEmail() {
 	created, err := s.userRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 
-	original, err := s.UserRepo.GetByEmail(context.Background(), created.Email)
+	original, err := s.UserRepo.GetByEmail(context.Background(), created.Email, repository.UserDetailProjection())
 	s.Require().NoError(err)
 
-	usingCache, err := s.userRepo.GetByEmail(context.Background(), created.Email)
+	usingCache, err := s.userRepo.GetByEmail(context.Background(), created.Email, repository.UserDetailProjection())
 	s.Require().NoError(err)
 
 	s.Assert().Equal(original, usingCache)
 	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
 
-	cached, err := s.userRepo.GetByEmail(context.Background(), created.Email)
+	cached, err := s.userRepo.GetByEmail(context.Background(), created.Email, repository.UserDetailProjection())
 	s.Require().NoError(err)
 
 	s.Assert().Equal(usingCache.ID, cached.ID)
@@ -238,18 +236,18 @@ func (s *CachedUserRepositoryIntegrationTestSuite) TestGetAll() {
 	_, err = s.userRepo.Create(context.Background(), testModel.NewCreateUserOpts())
 	s.Require().NoError(err)
 
-	originalUsers, err := s.UserRepo.GetAll(context.Background(), 0, 10)
+	originalUsers, err := s.UserRepo.List(context.Background(), repository.CursorPage{Size: 10}, repository.UserListProjection())
 	s.Require().NoError(err)
 
-	usingCacheUsers, err := s.userRepo.GetAll(context.Background(), 0, 10)
+	usingCacheUsers, err := s.userRepo.List(context.Background(), repository.CursorPage{Size: 10}, repository.UserListProjection())
 	s.Require().NoError(err)
 
 	s.Assert().Equal(originalUsers, usingCacheUsers)
 	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
 
-	cachedUsers, err := s.userRepo.GetAll(context.Background(), 0, 10)
+	cachedUsers, err := s.userRepo.List(context.Background(), repository.CursorPage{Size: 10}, repository.UserListProjection())
 	s.Require().NoError(err)
-	s.Assert().Equal(len(usingCacheUsers), len(cachedUsers))
+	s.Assert().Equal(len(usingCacheUsers.Items), len(cachedUsers.Items))
 }
 
 func (s *CachedUserRepositoryIntegrationTestSuite) TestUpdate() {
@@ -278,14 +276,14 @@ func (s *CachedUserRepositoryIntegrationTestSuite) TestDelete() {
 	created, err := s.userRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 
-	_, err = s.userRepo.Get(context.Background(), created.ID)
+	_, err = s.userRepo.Get(context.Background(), created.ID, repository.UserDetailProjection())
 	s.Require().NoError(err)
 
 	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
 
 	s.Require().NoError(s.userRepo.Delete(context.Background(), created.ID))
 
-	_, err = s.userRepo.Get(context.Background(), created.ID)
+	_, err = s.userRepo.Get(context.Background(), created.ID, repository.UserDetailProjection())
 	s.Assert().ErrorIs(err, repository.ErrNotFound)
 
 	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 0)

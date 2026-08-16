@@ -1,19 +1,46 @@
 import { CopyIcon, MoreHorizontalIcon } from "lucide-react";
+import { Fragment } from "react";
 import type { ReactNode } from "react";
 
 import { EntityIcon } from "@/components/shared/entity-link";
 import type { AppEntityType } from "@/components/shared/entity-link";
-import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { InternalLink } from "@/components/ui/internal-link";
+import { PageHeader } from "@/components/ui/page-header";
 import { internalPath } from "@/lib/internal-url";
 import { showErrorToast, showSuccessToast } from "@/lib/toast";
+
+async function writeClipboardText(value: string): Promise<void> {
+  if (navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(value);
+      return;
+    } catch {
+      // Firefox/WebKit often reject the Clipboard API without a Chromium-style
+      // permission grant. Fall back to a user-gesture execCommand copy.
+    }
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.value = value;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.left = "-9999px";
+  document.body.appendChild(textarea);
+  textarea.select();
+  const copied = document.execCommand("copy");
+  textarea.remove();
+  if (!copied) {
+    throw new Error("Clipboard unavailable");
+  }
+}
 
 export { PageHeader };
 
@@ -74,7 +101,7 @@ export function EntityHeader({
                 aria-label={copyLabel}
                 title={copyLabel}
                 onClick={() => {
-                  void navigator.clipboard.writeText(copyValue).then(
+                  void writeClipboardText(copyValue).then(
                     () => {
                       showSuccessToast("Copied", copyValue);
                     },
@@ -106,7 +133,12 @@ export function PageActions({
   secondary = [],
 }: {
   primary?: ReactNode;
-  secondary?: { label: string; href?: string; onSelect?: () => void }[];
+  secondary?: {
+    label: string;
+    href?: string;
+    onSelect?: () => void;
+    variant?: "default" | "destructive";
+  }[];
 }) {
   return (
     <>
@@ -125,18 +157,23 @@ export function PageActions({
             <MoreHorizontalIcon />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            {secondary.map((item) => (
-              <DropdownMenuItem
-                key={item.label}
-                render={
-                  item.href ? (
-                    <InternalLink to={internalPath(item.href)} />
-                  ) : undefined
-                }
-                onClick={item.onSelect}
-              >
-                {item.label}
-              </DropdownMenuItem>
+            {secondary.map((item, index) => (
+              <Fragment key={item.label}>
+                {item.variant === "destructive" && index > 0 && (
+                  <DropdownMenuSeparator />
+                )}
+                <DropdownMenuItem
+                  variant={item.variant}
+                  render={
+                    item.href ? (
+                      <InternalLink to={internalPath(item.href)} />
+                    ) : undefined
+                  }
+                  onClick={item.onSelect}
+                >
+                  {item.label}
+                </DropdownMenuItem>
+              </Fragment>
             ))}
           </DropdownMenuContent>
         </DropdownMenu>

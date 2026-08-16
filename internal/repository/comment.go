@@ -5,10 +5,9 @@ import (
 	"errors"
 	"time"
 
-	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
+	"github.com/neo4j/neo4j-go-driver/v6/neo4j"
 
 	"github.com/opcotech/elemo/internal/model"
-	"github.com/opcotech/elemo/internal/pkg/convert"
 )
 
 var (
@@ -43,7 +42,7 @@ type UpdateCommentOpts struct {
 type CommentRepository interface {
 	Create(ctx context.Context, opts CreateCommentOpts) (*Comment, error)
 	Get(ctx context.Context, id model.ID) (*Comment, error)
-	GetAllBelongsTo(ctx context.Context, belongsTo model.ID, offset, limit int) ([]*Comment, error)
+	ListBelongsTo(ctx context.Context, belongsTo model.ID, page CursorPage) (Page[*Comment], error)
 	Update(ctx context.Context, id model.ID, opts UpdateCommentOpts) (*Comment, error)
 	Delete(ctx context.Context, id model.ID) error
 }
@@ -82,21 +81,14 @@ func (r *Neo4jCommentRepository) Create(ctx context.Context, opts CreateCommentO
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.CommentRepository/Create")
 	defer span.End()
 
-	createdAt := convert.ToPointer(time.Now().UTC())
-
-	comment := &Comment{
-		ID:        model.MustNewID(model.ResourceTypeComment),
-		Content:   opts.Content,
-		CreatedBy: opts.CreatedBy,
-		CreatedAt: createdAt,
-		UpdatedAt: nil,
-	}
+	createdAt := time.Now().UTC()
+	id := model.MustNewID(model.ResourceTypeComment)
 
 	cypher := `
 	MATCH (b:` + opts.BelongsTo.Label() + ` {id: $belong_to_id})
-	MATCH (o:` + comment.CreatedBy.Label() + ` {id: $created_by_id})
+	MATCH (o:` + opts.CreatedBy.Label() + ` {id: $created_by_id})
 	CREATE
-		(c:` + comment.ID.Label() + ` {id: $id, content: $content, created_by: $created_by_id, created_at: datetime($created_at)}),
+		(c:` + id.Label() + ` {id: $id, content: $content, created_by: $created_by_id, created_at: datetime($created_at)}),
 		(b)-[:` + EdgeKindHasComment.String() + ` {id: $has_comment_rel_id, created_at: datetime($created_at)}]->(c),
 		(o)-[:` + EdgeKindCommented.String() + ` {id: $commented_rel_id, created_at: datetime($created_at)}]->(c),
 		(o)-[:` + EdgeKindHasPermission.String() + ` {id: $comment_perm_rel_id, kind: $perm_kind, created_at: datetime($created_at)}]->(c)`
@@ -104,12 +96,12 @@ func (r *Neo4jCommentRepository) Create(ctx context.Context, opts CreateCommentO
 	params := map[string]any{
 		"belong_to_id":        opts.BelongsTo.String(),
 		"has_comment_rel_id":  model.NewRawID(),
-		"created_by_id":       comment.CreatedBy.String(),
+		"created_by_id":       opts.CreatedBy.String(),
 		"commented_rel_id":    model.NewRawID(),
 		"comment_perm_rel_id": model.NewRawID(),
 		"perm_kind":           model.PermissionKindAll.String(),
-		"id":                  comment.ID.String(),
-		"content":             comment.Content,
+		"id":                  id.String(),
+		"content":             opts.Content,
 		"created_at":          createdAt.Format(time.RFC3339Nano),
 	}
 
@@ -117,53 +109,61 @@ func (r *Neo4jCommentRepository) Create(ctx context.Context, opts CreateCommentO
 		return nil, errors.Join(ErrCommentCreate, err)
 	}
 
-	return comment, nil
+	return r.Get(ctx, id)
 }
 
 func (r *Neo4jCommentRepository) Get(ctx context.Context, id model.ID) (*Comment, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.CommentRepository/Get")
 	defer span.End()
 
-	cypher := `
-	MATCH (c:` + id.Label() + ` {id: $id})<-[:` + EdgeKindCommented.String() + `]-(o:` + model.ResourceTypeUser.String() + `)
-	RETURN c, o.id AS o`
-
-	params := map[string]any{
-		"id": id.String(),
-	}
-
-	doc, err := Neo4jExecuteReadAndReadSingle(ctx, r.db, cypher, params, r.scan("c", "o"))
+	plan, err := CompileQuery(CommentGetQuery{ID: id})
 	if err != nil {
 		return nil, errors.Join(ErrCommentRead, err)
 	}
 
-	return doc, nil
+	var comment *Comment
+	err = Neo4jExecuteReadPlan(ctx, r.db, plan, func(tx neo4j.ManagedTransaction) error {
+		var runErr error
+		comment, _, runErr = Neo4jRunQuerySingle(ctx, tx, plan.Root, r.scan("c", "o"))
+		return runErr
+	})
+	if err != nil {
+		return nil, errors.Join(ErrCommentRead, err)
+	}
+
+	return comment, nil
 }
 
-func (r *Neo4jCommentRepository) GetAllBelongsTo(ctx context.Context, belongsTo model.ID, offset, limit int) ([]*Comment, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.CommentRepository/GetAllBelongsTo")
+func (r *Neo4jCommentRepository) ListBelongsTo(ctx context.Context, belongsTo model.ID, page CursorPage) (Page[*Comment], error) {
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.CommentRepository/ListBelongsTo")
 	defer span.End()
 
-	cypher := `
-	MATCH
-		(:` + belongsTo.Label() + ` {id: $id})-[:` + EdgeKindHasComment.String() + `]->(c:` + model.ResourceTypeComment.String() + `),
-		(o:` + model.ResourceTypeUser.String() + `)-[:` + EdgeKindCommented.String() + `]->(c)
-	RETURN c, o.id AS o
-	ORDER BY c.created_at DESC
-	SKIP $offset LIMIT $limit`
-
-	params := map[string]any{
-		"id":     belongsTo.String(),
-		"offset": offset,
-		"limit":  limit,
-	}
-
-	docs, err := Neo4jExecuteReadAndReadAll(ctx, r.db, cypher, params, r.scan("c", "o"))
+	normalized, err := page.Normalize()
 	if err != nil {
-		return nil, errors.Join(ErrCommentRead, err)
+		return Page[*Comment]{}, errors.Join(ErrCommentRead, err)
+	}
+	plan, err := CompileQuery(CommentListBelongsToQuery{
+		BelongsTo: belongsTo,
+		Page:      normalized,
+		Order:     SortDirectionDesc,
+	})
+	if err != nil {
+		return Page[*Comment]{}, errors.Join(ErrCommentRead, err)
 	}
 
-	return docs, nil
+	comments := make([]*Comment, 0)
+	err = Neo4jExecuteReadPlan(ctx, r.db, plan, func(tx neo4j.ManagedTransaction) error {
+		var runErr error
+		comments, _, runErr = Neo4jRunQuery(ctx, tx, plan.Root, r.scan("c", "o"))
+		return runErr
+	})
+	if err != nil {
+		return Page[*Comment]{}, errors.Join(ErrCommentRead, err)
+	}
+
+	return PaginateSlice(comments, normalized.Size, func(comment *Comment) model.ID {
+		return comment.ID
+	})
 }
 
 func (r *Neo4jCommentRepository) Update(ctx context.Context, id model.ID, opts UpdateCommentOpts) (*Comment, error) {
@@ -173,21 +173,20 @@ func (r *Neo4jCommentRepository) Update(ctx context.Context, id model.ID, opts U
 	cypher := `
 	MATCH (c:` + id.Label() + ` {id: $id})
 	SET c.content = $content, c.updated_at = datetime()
-	WITH c
-	MATCH (o:` + model.ResourceTypeUser.String() + `)-[:` + EdgeKindCommented.String() + `]->(c)
-	RETURN c, o.id AS o`
+	RETURN c.id AS id`
 
 	params := map[string]any{
 		"id":      id.String(),
 		"content": opts.Content,
 	}
 
-	doc, err := Neo4jExecuteWriteAndReadSingle(ctx, r.db, cypher, params, r.scan("c", "o"))
-	if err != nil {
+	if _, err := Neo4jExecuteWriteAndReadSingle(ctx, r.db, cypher, params, func(_ *neo4j.Record) (*struct{}, error) {
+		return &struct{}{}, nil
+	}); err != nil {
 		return nil, errors.Join(ErrCommentUpdate, err)
 	}
 
-	return doc, nil
+	return r.Get(ctx, id)
 }
 
 func (r *Neo4jCommentRepository) Delete(ctx context.Context, id model.ID) error {
@@ -219,7 +218,7 @@ func NewNeo4jCommentRepository(opts ...Neo4jRepositoryOption) (*Neo4jCommentRepo
 }
 
 func clearCommentsKey(ctx context.Context, r *redisBaseRepository, id model.ID) error {
-	return r.Delete(ctx, composeCacheKey(model.ResourceTypeComment.String(), id.String()))
+	return clearCommentsPattern(ctx, r, "Get", id.String()+"*")
 }
 
 func clearCommentsPattern(ctx context.Context, r *redisBaseRepository, pattern ...string) error {
@@ -238,11 +237,11 @@ func clearCommentBelongsTo(ctx context.Context, r *redisBaseRepository, resource
 		}
 	}
 
-	return clearCommentsPattern(ctx, r, "GetAllBelongsTo", resourceID.String(), "*")
+	return clearCommentsPattern(ctx, r, "ListBelongsTo", resourceID.String(), "*", "*")
 }
 
 func clearCommentAllBelongsTo(ctx context.Context, r *redisBaseRepository) error {
-	return clearCommentsPattern(ctx, r, "GetAllBelongsTo", "*")
+	return clearCommentsPattern(ctx, r, "ListBelongsTo", "*", "*", "*")
 }
 
 func clearCommentAllCrossCache(ctx context.Context, r *redisBaseRepository) error {
@@ -277,7 +276,7 @@ func (r *RedisCachedCommentRepository) Get(ctx context.Context, id model.ID) (*C
 	var comment *Comment
 	var err error
 
-	key := composeCacheKey(model.ResourceTypeComment.String(), id.String())
+	key := composeCacheKey(model.ResourceTypeComment.String(), "Get", id.String())
 	if err = r.cacheRepo.Get(ctx, key, &comment); err != nil {
 		return nil, err
 	}
@@ -297,25 +296,36 @@ func (r *RedisCachedCommentRepository) Get(ctx context.Context, id model.ID) (*C
 	return comment, nil
 }
 
-func (r *RedisCachedCommentRepository) GetAllBelongsTo(ctx context.Context, belongsTo model.ID, offset, limit int) ([]*Comment, error) {
-	var comments []*Comment
+func (r *RedisCachedCommentRepository) ListBelongsTo(ctx context.Context, belongsTo model.ID, page CursorPage) (Page[*Comment], error) {
+	var comments Page[*Comment]
 	var err error
 
-	key := composeCacheKey(model.ResourceTypeComment.String(), "GetAllBelongsTo", belongsTo.String(), offset, limit)
-	if err = r.cacheRepo.Get(ctx, key, &comments); err != nil {
-		return nil, err
+	normalized, err := normalizedPage(page)
+	if err != nil {
+		return Page[*Comment]{}, err
 	}
 
-	if comments != nil {
+	key := composeCacheKey(
+		model.ResourceTypeComment.String(),
+		"ListBelongsTo",
+		belongsTo.String(),
+		pageTokenValue(normalized.Token),
+		normalized.Size,
+	)
+	if err = r.cacheRepo.Get(ctx, key, &comments); err != nil {
+		return Page[*Comment]{}, err
+	}
+
+	if comments.Items != nil {
 		return comments, nil
 	}
 
-	if comments, err = r.commentRepo.GetAllBelongsTo(ctx, belongsTo, offset, limit); err != nil {
-		return nil, err
+	if comments, err = r.commentRepo.ListBelongsTo(ctx, belongsTo, normalized); err != nil {
+		return Page[*Comment]{}, err
 	}
 
 	if err = r.cacheRepo.Set(ctx, key, comments); err != nil {
-		return nil, err
+		return Page[*Comment]{}, err
 	}
 
 	return comments, nil
@@ -327,7 +337,7 @@ func (r *RedisCachedCommentRepository) Update(ctx context.Context, id model.ID, 
 		return nil, err
 	}
 
-	key := composeCacheKey(model.ResourceTypeComment.String(), id.String())
+	key := composeCacheKey(model.ResourceTypeComment.String(), "Get", id.String())
 	if err = r.cacheRepo.Set(ctx, key, comment); err != nil {
 		return nil, err
 	}

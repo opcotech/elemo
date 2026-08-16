@@ -60,7 +60,7 @@ func (s *AttachmentRepositoryIntegrationTestSuite) TestGet() {
 	created, err := s.AttachmentRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 
-	attachment, err := s.AttachmentRepo.Get(context.Background(), created.ID)
+	attachment, err := s.AttachmentRepo.Get(context.Background(), created.ID, repository.AttachmentDetailProjection())
 	s.Require().NoError(err)
 	s.Assert().Equal(created.ID, attachment.ID)
 	s.Assert().Equal(s.createOpts.Name, attachment.Name)
@@ -77,13 +77,13 @@ func (s *AttachmentRepositoryIntegrationTestSuite) TestGetAllBelongsTo() {
 	_, err = s.AttachmentRepo.Create(context.Background(), testModel.NewCreateAttachmentOpts(s.testDoc.ID, s.testUser.ID))
 	s.Require().NoError(err)
 
-	attachments, err := s.AttachmentRepo.GetAllBelongsTo(context.Background(), s.testDoc.ID, 0, 10)
+	attachments, err := s.AttachmentRepo.ListBelongsTo(context.Background(), s.testDoc.ID, repository.CursorPage{Size: 10}, repository.AttachmentListProjection())
 	s.Require().NoError(err)
-	s.Assert().Len(attachments, 3)
+	s.Assert().Len(attachments.Items, 3)
 
-	attachments, err = s.AttachmentRepo.GetAllBelongsTo(context.Background(), s.testDoc.ID, 1, 2)
+	attachments, err = s.AttachmentRepo.ListBelongsTo(context.Background(), s.testDoc.ID, repository.CursorPage{Size: 2}, repository.AttachmentListProjection())
 	s.Require().NoError(err)
-	s.Assert().Len(attachments, 2)
+	s.Assert().Len(attachments.Items, 2)
 }
 
 func (s *AttachmentRepositoryIntegrationTestSuite) TestUpdate() {
@@ -100,7 +100,7 @@ func (s *AttachmentRepositoryIntegrationTestSuite) TestDelete() {
 	created, err := s.AttachmentRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 	s.Require().NoError(s.AttachmentRepo.Delete(context.Background(), created.ID))
-	_, err = s.AttachmentRepo.Get(context.Background(), created.ID)
+	_, err = s.AttachmentRepo.Get(context.Background(), created.ID, repository.AttachmentDetailProjection())
 	s.Assert().ErrorIs(err, repository.ErrNotFound)
 }
 
@@ -160,9 +160,9 @@ func (s *CachedAttachmentRepositoryIntegrationTestSuite) TestCreate() {
 func (s *CachedAttachmentRepositoryIntegrationTestSuite) TestGet() {
 	created, err := s.attachmentRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
-	original, err := s.AttachmentRepo.Get(context.Background(), created.ID)
+	original, err := s.AttachmentRepo.Get(context.Background(), created.ID, repository.AttachmentDetailProjection())
 	s.Require().NoError(err)
-	usingCache, err := s.attachmentRepo.Get(context.Background(), created.ID)
+	usingCache, err := s.attachmentRepo.Get(context.Background(), created.ID, repository.AttachmentDetailProjection())
 	s.Require().NoError(err)
 	s.Assert().Equal(original, usingCache)
 	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
@@ -171,9 +171,9 @@ func (s *CachedAttachmentRepositoryIntegrationTestSuite) TestGet() {
 func (s *CachedAttachmentRepositoryIntegrationTestSuite) TestGetAllBelongsTo() {
 	_, err := s.attachmentRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
-	original, err := s.AttachmentRepo.GetAllBelongsTo(context.Background(), s.testDoc.ID, 0, 10)
+	original, err := s.AttachmentRepo.ListBelongsTo(context.Background(), s.testDoc.ID, repository.CursorPage{Size: 10}, repository.AttachmentListProjection())
 	s.Require().NoError(err)
-	usingCache, err := s.attachmentRepo.GetAllBelongsTo(context.Background(), s.testDoc.ID, 0, 10)
+	usingCache, err := s.attachmentRepo.ListBelongsTo(context.Background(), s.testDoc.ID, repository.CursorPage{Size: 10}, repository.AttachmentListProjection())
 	s.Require().NoError(err)
 	s.Assert().Equal(original, usingCache)
 	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
@@ -191,11 +191,11 @@ func (s *CachedAttachmentRepositoryIntegrationTestSuite) TestUpdate() {
 func (s *CachedAttachmentRepositoryIntegrationTestSuite) TestDelete() {
 	created, err := s.attachmentRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
-	_, err = s.attachmentRepo.Get(context.Background(), created.ID)
+	_, err = s.attachmentRepo.Get(context.Background(), created.ID, repository.AttachmentDetailProjection())
 	s.Require().NoError(err)
 	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
 	s.Require().NoError(s.attachmentRepo.Delete(context.Background(), created.ID))
-	_, err = s.attachmentRepo.Get(context.Background(), created.ID)
+	_, err = s.attachmentRepo.Get(context.Background(), created.ID, repository.AttachmentDetailProjection())
 	s.Assert().ErrorIs(err, repository.ErrNotFound)
 	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }

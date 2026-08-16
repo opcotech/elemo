@@ -12,6 +12,17 @@ export async function fillLocator(
   await expect(field).toBeVisible();
   await expect(field).toBeEditable();
 
+  // Prefer a single fill() so URL-synced / remounting inputs keep one value.
+  // Fall back to key events for Base UI + Firefox/WebKit.
+  await field.click();
+  await field.fill(value);
+  try {
+    await expect(field).toHaveValue(value, { timeout: 1_000 });
+    return;
+  } catch {
+    // continue with sequential typing
+  }
+
   for (let attempt = 0; attempt < 2; attempt++) {
     await field.click();
     await field.press("ControlOrMeta+A");

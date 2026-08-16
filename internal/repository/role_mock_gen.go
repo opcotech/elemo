@@ -85,33 +85,48 @@ func (mr *MockRoleRepositoryMockRecorder) Delete(ctx, id, belongsTo any) *gomock
 }
 
 // Get mocks base method.
-func (m *MockRoleRepository) Get(ctx context.Context, id, belongsTo model.ID) (*Role, error) {
+func (m *MockRoleRepository) Get(ctx context.Context, id, belongsTo model.ID, proj RoleProjection) (*Role, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Get", ctx, id, belongsTo)
+	ret := m.ctrl.Call(m, "Get", ctx, id, belongsTo, proj)
 	ret0, _ := ret[0].(*Role)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Get indicates an expected call of Get.
-func (mr *MockRoleRepositoryMockRecorder) Get(ctx, id, belongsTo any) *gomock.Call {
+func (mr *MockRoleRepositoryMockRecorder) Get(ctx, id, belongsTo, proj any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockRoleRepository)(nil).Get), ctx, id, belongsTo)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockRoleRepository)(nil).Get), ctx, id, belongsTo, proj)
 }
 
-// GetAllBelongsTo mocks base method.
-func (m *MockRoleRepository) GetAllBelongsTo(ctx context.Context, belongsTo model.ID, offset, limit int) ([]*Role, error) {
+// ListBelongsTo mocks base method.
+func (m *MockRoleRepository) ListBelongsTo(ctx context.Context, belongsTo model.ID, page CursorPage, proj RoleProjection) (Page[*Role], error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAllBelongsTo", ctx, belongsTo, offset, limit)
-	ret0, _ := ret[0].([]*Role)
+	ret := m.ctrl.Call(m, "ListBelongsTo", ctx, belongsTo, page, proj)
+	ret0, _ := ret[0].(Page[*Role])
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetAllBelongsTo indicates an expected call of GetAllBelongsTo.
-func (mr *MockRoleRepositoryMockRecorder) GetAllBelongsTo(ctx, belongsTo, offset, limit any) *gomock.Call {
+// ListBelongsTo indicates an expected call of ListBelongsTo.
+func (mr *MockRoleRepositoryMockRecorder) ListBelongsTo(ctx, belongsTo, page, proj any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllBelongsTo", reflect.TypeOf((*MockRoleRepository)(nil).GetAllBelongsTo), ctx, belongsTo, offset, limit)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListBelongsTo", reflect.TypeOf((*MockRoleRepository)(nil).ListBelongsTo), ctx, belongsTo, page, proj)
+}
+
+// ListMembers mocks base method.
+func (m *MockRoleRepository) ListMembers(ctx context.Context, roleID, belongsTo model.ID, page CursorPage) (Page[*User], error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListMembers", ctx, roleID, belongsTo, page)
+	ret0, _ := ret[0].(Page[*User])
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListMembers indicates an expected call of ListMembers.
+func (mr *MockRoleRepositoryMockRecorder) ListMembers(ctx, roleID, belongsTo, page any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListMembers", reflect.TypeOf((*MockRoleRepository)(nil).ListMembers), ctx, roleID, belongsTo, page)
 }
 
 // RemoveMember mocks base method.

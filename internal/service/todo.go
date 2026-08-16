@@ -72,11 +72,9 @@ type TodoService interface {
 	// Get returns a todo by its ID. If the todo does not exist, an error is
 	// returned.
 	Get(ctx context.Context, id model.ID) (*Todo, error)
-	// GetAll returns all todos for the authenticated user. If the completed
-	// parameter is set to true, only completed todos are returned. If the
-	// completed parameter is set to false, only incomplete todos are
-	// returned. If the completed parameter is nil, all todos are returned.
-	GetAll(ctx context.Context, offset, limit int, completed *bool) ([]*Todo, error)
+	// List returns a cursor-paginated page of todos for the authenticated user.
+	// If completed is nil, all todos are returned.
+	List(ctx context.Context, page CursorPage, completed *bool) (Page[*Todo], error)
 	// Update updates a todo by its ID. If the todo does not exist, an error
 	// is returned.
 	Update(ctx context.Context, id model.ID, opts UpdateTodoOpts) (*Todo, error)
@@ -106,14 +104,6 @@ func todoFromRepository(t *repository.Todo) *Todo {
 		CreatedAt:   t.CreatedAt,
 		UpdatedAt:   t.UpdatedAt,
 	}
-}
-
-func todosFromRepository(todos []*repository.Todo) []*Todo {
-	out := make([]*Todo, len(todos))
-	for i, t := range todos {
-		out[i] = todoFromRepository(t)
-	}
-	return out
 }
 
 func (s *todoService) Create(ctx context.Context, opts CreateTodoOpts) (*Todo, error) {
@@ -174,21 +164,31 @@ func (s *todoService) Get(ctx context.Context, id model.ID) (*Todo, error) {
 	return todoFromRepository(todo), nil
 }
 
-func (s *todoService) GetAll(ctx context.Context, offset, limit int, completed *bool) ([]*Todo, error) {
-	ctx, span := s.tracer.Start(ctx, "service.todoService/GetAll")
+func (s *todoService) List(ctx context.Context, page CursorPage, completed *bool) (Page[*Todo], error) {
+	ctx, span := s.tracer.Start(ctx, "service.todoService/List")
 	defer span.End()
 
 	userID, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID)
 	if !ok {
-		return nil, errors.Join(ErrTodoGetAll, ErrNoUser)
+		return Page[*Todo]{}, errors.Join(ErrTodoGetAll, ErrNoUser)
 	}
 
-	todos, err := s.todoRepo.GetByOwner(ctx, userID, offset, limit, completed)
+	normalized, err := page.Normalize()
 	if err != nil {
-		return nil, errors.Join(ErrTodoGetAll, err)
+		return Page[*Todo]{}, errors.Join(ErrTodoGetAll, err)
 	}
 
-	return todosFromRepository(todos), nil
+	todos, err := s.todoRepo.ListByOwner(
+		ctx,
+		userID,
+		normalized,
+		completed,
+	)
+	if err != nil {
+		return Page[*Todo]{}, errors.Join(ErrTodoGetAll, err)
+	}
+
+	return mapPage(todos, todoFromRepository), nil
 }
 
 func (s *todoService) Update(ctx context.Context, id model.ID, opts UpdateTodoOpts) (*Todo, error) {

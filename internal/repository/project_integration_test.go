@@ -60,34 +60,32 @@ func (s *ProjectRepositoryIntegrationTestSuite) TestCreate() {
 func (s *ProjectRepositoryIntegrationTestSuite) TestGet() {
 	created, err := s.ProjectRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
-	doc, err := s.DocumentRepo.Create(context.Background(), testModel.NewCreateDocumentOpts(created.ID, s.testUser.ID))
+	_, err = s.DocumentRepo.Create(context.Background(), testModel.NewCreateDocumentOpts(created.ID, s.testUser.ID))
 	s.Require().NoError(err)
 
-	project, err := s.ProjectRepo.Get(context.Background(), created.ID)
+	project, err := s.ProjectRepo.Get(context.Background(), created.ID, repository.ProjectDetailProjection())
 	s.Require().NoError(err)
 	s.Assert().Equal(created.ID, project.ID)
 	s.Assert().Equal(s.createOpts.Key, project.Key)
 	s.Assert().Equal(s.createOpts.Name, project.Name)
 	s.Assert().Equal(s.createOpts.Description, project.Description)
 	s.Assert().WithinDuration(*created.CreatedAt, *project.CreatedAt, 100*time.Millisecond)
-	s.Require().Len(project.Documents, 1)
-	s.Assert().Equal(doc.ID, project.Documents[0].ID)
-	s.Assert().Equal(doc.Name, project.Documents[0].Name)
-	s.Assert().Equal(doc.Excerpt, project.Documents[0].Excerpt)
+	s.Require().NotNil(project.DocumentCount)
+	s.Assert().Equal(int64(1), *project.DocumentCount)
 }
 
 func (s *ProjectRepositoryIntegrationTestSuite) TestGetByKey() {
 	created, err := s.ProjectRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
-	doc, err := s.DocumentRepo.Create(context.Background(), testModel.NewCreateDocumentOpts(created.ID, s.testUser.ID))
+	_, err = s.DocumentRepo.Create(context.Background(), testModel.NewCreateDocumentOpts(created.ID, s.testUser.ID))
 	s.Require().NoError(err)
 
-	project, err := s.ProjectRepo.GetByKey(context.Background(), created.Key)
+	project, err := s.ProjectRepo.GetByKey(context.Background(), created.Key, repository.ProjectDetailProjection())
 	s.Require().NoError(err)
-	s.Assert().Equal(created.ID, project.ID)
+	s.Assert().Equal(created.ID, project.ID, repository.ProjectDetailProjection())
 	s.Assert().Equal(created.Key, project.Key)
-	s.Require().Len(project.Documents, 1)
-	s.Assert().Equal(doc.ID, project.Documents[0].ID)
+	s.Require().NotNil(project.DocumentCount)
+	s.Assert().Equal(int64(1), *project.DocumentCount)
 }
 
 func (s *ProjectRepositoryIntegrationTestSuite) TestGetAll() {
@@ -98,13 +96,13 @@ func (s *ProjectRepositoryIntegrationTestSuite) TestGetAll() {
 	_, err = s.ProjectRepo.Create(context.Background(), testModel.NewCreateProjectOpts(s.testNamespace.ID, s.testUser.ID))
 	s.Require().NoError(err)
 
-	projects, err := s.ProjectRepo.GetAll(context.Background(), s.testNamespace.ID, 0, 10)
+	projects, err := s.ProjectRepo.List(context.Background(), s.testNamespace.ID, repository.CursorPage{Size: 10}, repository.ProjectListProjection())
 	s.Require().NoError(err)
-	s.Assert().Len(projects, 3)
+	s.Assert().Len(projects.Items, 3)
 
-	projects, err = s.ProjectRepo.GetAll(context.Background(), s.testNamespace.ID, 1, 2)
+	projects, err = s.ProjectRepo.List(context.Background(), s.testNamespace.ID, repository.CursorPage{Size: 2}, repository.ProjectListProjection())
 	s.Require().NoError(err)
-	s.Assert().Len(projects, 2)
+	s.Assert().Len(projects.Items, 2)
 }
 
 func (s *ProjectRepositoryIntegrationTestSuite) TestUpdate() {
@@ -113,7 +111,7 @@ func (s *ProjectRepositoryIntegrationTestSuite) TestUpdate() {
 	project, err := s.ProjectRepo.Update(context.Background(), created.ID, repository.UpdateProjectOpts{
 		Name:        optional.Some("new name"),
 		Description: optional.Some("new description"),
-	})
+	}, repository.ProjectDetailProjection())
 	s.Require().NoError(err)
 	s.Assert().Equal("new name", project.Name)
 	s.Assert().Equal("new description", project.Description)
@@ -124,7 +122,7 @@ func (s *ProjectRepositoryIntegrationTestSuite) TestDelete() {
 	created, err := s.ProjectRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 	s.Require().NoError(s.ProjectRepo.Delete(context.Background(), created.ID))
-	_, err = s.ProjectRepo.Get(context.Background(), created.ID)
+	_, err = s.ProjectRepo.Get(context.Background(), created.ID, repository.ProjectDetailProjection())
 	s.Assert().ErrorIs(err, repository.ErrNotFound)
 }
 
@@ -184,9 +182,9 @@ func (s *CachedProjectRepositoryIntegrationTestSuite) TestCreate() {
 func (s *CachedProjectRepositoryIntegrationTestSuite) TestGet() {
 	created, err := s.projectRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
-	original, err := s.ProjectRepo.Get(context.Background(), created.ID)
+	original, err := s.ProjectRepo.Get(context.Background(), created.ID, repository.ProjectDetailProjection())
 	s.Require().NoError(err)
-	usingCache, err := s.projectRepo.Get(context.Background(), created.ID)
+	usingCache, err := s.projectRepo.Get(context.Background(), created.ID, repository.ProjectDetailProjection())
 	s.Require().NoError(err)
 	s.Assert().Equal(original, usingCache)
 	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
@@ -195,9 +193,9 @@ func (s *CachedProjectRepositoryIntegrationTestSuite) TestGet() {
 func (s *CachedProjectRepositoryIntegrationTestSuite) TestGetByKey() {
 	created, err := s.projectRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
-	original, err := s.ProjectRepo.GetByKey(context.Background(), created.Key)
+	original, err := s.ProjectRepo.GetByKey(context.Background(), created.Key, repository.ProjectDetailProjection())
 	s.Require().NoError(err)
-	usingCache, err := s.projectRepo.GetByKey(context.Background(), created.Key)
+	usingCache, err := s.projectRepo.GetByKey(context.Background(), created.Key, repository.ProjectDetailProjection())
 	s.Require().NoError(err)
 	s.Assert().Equal(original, usingCache)
 	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
@@ -206,9 +204,9 @@ func (s *CachedProjectRepositoryIntegrationTestSuite) TestGetByKey() {
 func (s *CachedProjectRepositoryIntegrationTestSuite) TestGetAll() {
 	_, err := s.projectRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
-	original, err := s.ProjectRepo.GetAll(context.Background(), s.testNamespace.ID, 0, 10)
+	original, err := s.ProjectRepo.List(context.Background(), s.testNamespace.ID, repository.CursorPage{Size: 10}, repository.ProjectListProjection())
 	s.Require().NoError(err)
-	usingCache, err := s.projectRepo.GetAll(context.Background(), s.testNamespace.ID, 0, 10)
+	usingCache, err := s.projectRepo.List(context.Background(), s.testNamespace.ID, repository.CursorPage{Size: 10}, repository.ProjectListProjection())
 	s.Require().NoError(err)
 	s.Assert().Equal(original, usingCache)
 	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
@@ -219,7 +217,7 @@ func (s *CachedProjectRepositoryIntegrationTestSuite) TestUpdate() {
 	s.Require().NoError(err)
 	project, err := s.projectRepo.Update(context.Background(), created.ID, repository.UpdateProjectOpts{
 		Name: optional.Some("new name"),
-	})
+	}, repository.ProjectDetailProjection())
 	s.Require().NoError(err)
 	s.Assert().Equal("new name", project.Name)
 	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
@@ -228,10 +226,10 @@ func (s *CachedProjectRepositoryIntegrationTestSuite) TestUpdate() {
 func (s *CachedProjectRepositoryIntegrationTestSuite) TestDelete() {
 	created, err := s.projectRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
-	_, err = s.projectRepo.Get(context.Background(), created.ID)
+	_, err = s.projectRepo.Get(context.Background(), created.ID, repository.ProjectDetailProjection())
 	s.Require().NoError(err)
 	s.Require().NoError(s.projectRepo.Delete(context.Background(), created.ID))
-	_, err = s.projectRepo.Get(context.Background(), created.ID)
+	_, err = s.projectRepo.Get(context.Background(), created.ID, repository.ProjectDetailProjection())
 	s.Assert().ErrorIs(err, repository.ErrNotFound)
 	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }

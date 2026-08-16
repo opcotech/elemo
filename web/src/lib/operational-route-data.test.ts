@@ -36,6 +36,10 @@ function queryId(options: { queryKey: readonly unknown[] }) {
   return JSON.stringify(options.queryKey);
 }
 
+function listedPage<T>(items: T[]) {
+  return { items, page_info: { has_more: false } };
+}
+
 function isAccessibleNamespacesQuery(options: {
   queryKey: readonly unknown[];
 }) {
@@ -124,6 +128,9 @@ describe("operational route loaders", () => {
       if (queryId(options) === "v1PermissionResourceGet") {
         return [{ kind: "read" }];
       }
+      if (queryId(options) === "v1NamespacesProjectsGet") {
+        return listedPage([{ id: "other-project", name: "Other" }]);
+      }
       if (queryId(options) === "v1ProjectGet") {
         return project;
       }
@@ -145,6 +152,9 @@ describe("operational route loaders", () => {
       }
       if (queryId(options) === "v1PermissionResourceGet") {
         return [{ kind: "read" }];
+      }
+      if (queryId(options) === "v1NamespacesProjectsGet") {
+        return listedPage([project]);
       }
       if (queryId(options) === "v1ProjectGet") {
         return project;

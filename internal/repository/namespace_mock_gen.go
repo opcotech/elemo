@@ -71,33 +71,33 @@ func (mr *MockNamespaceRepositoryMockRecorder) Delete(ctx, id any) *gomock.Call 
 }
 
 // Get mocks base method.
-func (m *MockNamespaceRepository) Get(ctx context.Context, id model.ID) (*Namespace, error) {
+func (m *MockNamespaceRepository) Get(ctx context.Context, id model.ID, proj NamespaceProjection) (*Namespace, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Get", ctx, id)
+	ret := m.ctrl.Call(m, "Get", ctx, id, proj)
 	ret0, _ := ret[0].(*Namespace)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Get indicates an expected call of Get.
-func (mr *MockNamespaceRepositoryMockRecorder) Get(ctx, id any) *gomock.Call {
+func (mr *MockNamespaceRepositoryMockRecorder) Get(ctx, id, proj any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockNamespaceRepository)(nil).Get), ctx, id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockNamespaceRepository)(nil).Get), ctx, id, proj)
 }
 
-// GetAll mocks base method.
-func (m *MockNamespaceRepository) GetAll(ctx context.Context, orgID model.ID, offset, limit int) ([]*Namespace, error) {
+// List mocks base method.
+func (m *MockNamespaceRepository) List(ctx context.Context, orgID model.ID, page CursorPage, proj NamespaceProjection) (Page[*Namespace], error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAll", ctx, orgID, offset, limit)
-	ret0, _ := ret[0].([]*Namespace)
+	ret := m.ctrl.Call(m, "List", ctx, orgID, page, proj)
+	ret0, _ := ret[0].(Page[*Namespace])
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetAll indicates an expected call of GetAll.
-func (mr *MockNamespaceRepositoryMockRecorder) GetAll(ctx, orgID, offset, limit any) *gomock.Call {
+// List indicates an expected call of List.
+func (mr *MockNamespaceRepositoryMockRecorder) List(ctx, orgID, page, proj any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAll", reflect.TypeOf((*MockNamespaceRepository)(nil).GetAll), ctx, orgID, offset, limit)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockNamespaceRepository)(nil).List), ctx, orgID, page, proj)
 }
 
 // Update mocks base method.

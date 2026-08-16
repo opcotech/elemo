@@ -31,6 +31,7 @@ describe("mock-data boundary", () => {
         "organizations",
         "namespaces",
         "projects",
+        "issues",
         "todos",
         "notifications",
         "memberships",
@@ -104,8 +105,8 @@ describe("selectWorkItems", () => {
     const result = selectWorkItems({
       filters: {
         text: "projection",
-        statuses: ["in-progress"],
-        priorities: ["urgent"],
+        statuses: ["in progress"],
+        priorities: ["highest"],
         assigneeIds: ["person-ada"],
         labelIds: ["frontend", "navigation"],
       },

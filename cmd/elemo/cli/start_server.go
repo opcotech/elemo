@@ -247,6 +247,94 @@ var startServerCmd = &cobra.Command{
 			}
 		}
 
+		var issueRepo repository.IssueRepository
+		{
+			repo, err := repository.NewNeo4jIssueRepository(
+				repository.WithNeo4jDatabase(graphDB),
+				repository.WithNeo4jRepositoryLogger(logger.Named("issue_repository")),
+				repository.WithNeo4jRepositoryTracer(tracer),
+			)
+			if err != nil {
+				logger.Fatal(context.Background(), "failed to initialize issue repository", slog.Any("error", err))
+			}
+
+			issueRepo, err = repository.NewCachedIssueRepository(
+				repo,
+				repository.WithRedisDatabase(cacheDB),
+				repository.WithRedisRepositoryLogger(logger.Named("cached_issue_repository")),
+				repository.WithRedisRepositoryTracer(tracer),
+			)
+			if err != nil {
+				logger.Fatal(context.Background(), "failed to initialize cached issue repository", slog.Any("error", err))
+			}
+		}
+
+		var assignmentRepo repository.AssignmentRepository
+		{
+			repo, err := repository.NewNeo4jAssignmentRepository(
+				repository.WithNeo4jDatabase(graphDB),
+				repository.WithNeo4jRepositoryLogger(logger.Named("assignment_repository")),
+				repository.WithNeo4jRepositoryTracer(tracer),
+			)
+			if err != nil {
+				logger.Fatal(context.Background(), "failed to initialize assignment repository", slog.Any("error", err))
+			}
+
+			assignmentRepo, err = repository.NewCachedAssignmentRepository(
+				repo,
+				repository.WithRedisDatabase(cacheDB),
+				repository.WithRedisRepositoryLogger(logger.Named("cached_assignment_repository")),
+				repository.WithRedisRepositoryTracer(tracer),
+			)
+			if err != nil {
+				logger.Fatal(context.Background(), "failed to initialize cached assignment repository", slog.Any("error", err))
+			}
+		}
+
+		var labelRepo repository.LabelRepository
+		{
+			repo, err := repository.NewNeo4jLabelRepository(
+				repository.WithNeo4jDatabase(graphDB),
+				repository.WithNeo4jRepositoryLogger(logger.Named("label_repository")),
+				repository.WithNeo4jRepositoryTracer(tracer),
+			)
+			if err != nil {
+				logger.Fatal(context.Background(), "failed to initialize label repository", slog.Any("error", err))
+			}
+
+			labelRepo, err = repository.NewCachedLabelRepository(
+				repo,
+				repository.WithRedisDatabase(cacheDB),
+				repository.WithRedisRepositoryLogger(logger.Named("cached_label_repository")),
+				repository.WithRedisRepositoryTracer(tracer),
+			)
+			if err != nil {
+				logger.Fatal(context.Background(), "failed to initialize cached label repository", slog.Any("error", err))
+			}
+		}
+
+		var documentRepo repository.DocumentRepository
+		{
+			repo, err := repository.NewNeo4jDocumentRepository(
+				repository.WithNeo4jDatabase(graphDB),
+				repository.WithNeo4jRepositoryLogger(logger.Named("document_repository")),
+				repository.WithNeo4jRepositoryTracer(tracer),
+			)
+			if err != nil {
+				logger.Fatal(context.Background(), "failed to initialize document repository", slog.Any("error", err))
+			}
+
+			documentRepo, err = repository.NewCachedDocumentRepository(
+				repo,
+				repository.WithRedisDatabase(cacheDB),
+				repository.WithRedisRepositoryLogger(logger.Named("cached_document_repository")),
+				repository.WithRedisRepositoryTracer(tracer),
+			)
+			if err != nil {
+				logger.Fatal(context.Background(), "failed to initialize cached document repository", slog.Any("error", err))
+			}
+		}
+
 		var notificationRepo repository.NotificationRepository
 		{
 			repo, err := repository.NewNotificationRepository(
@@ -384,6 +472,38 @@ var startServerCmd = &cobra.Command{
 			logger.Fatal(context.Background(), "failed to initialize project service", slog.Any("error", err))
 		}
 
+		issueService, err := service.NewIssueService(
+			service.WithIssueRepository(issueRepo),
+			service.WithAssignmentRepository(assignmentRepo),
+			service.WithLabelRepository(labelRepo),
+			service.WithPermissionService(permissionService),
+			service.WithLicenseService(licenseService),
+			service.WithLogger(logger.Named("issue_service")),
+			service.WithTracer(tracer),
+		)
+		if err != nil {
+			logger.Fatal(context.Background(), "failed to initialize issue service", slog.Any("error", err))
+		}
+
+		documentService, err := service.NewDocumentService(
+			service.WithDocumentRepository(documentRepo),
+			service.WithPermissionService(permissionService),
+			service.WithLogger(logger.Named("document_service")),
+			service.WithTracer(tracer),
+		)
+		if err != nil {
+			logger.Fatal(context.Background(), "failed to initialize document service", slog.Any("error", err))
+		}
+
+		labelService, err := service.NewLabelService(
+			service.WithLabelRepository(labelRepo),
+			service.WithLogger(logger.Named("label_service")),
+			service.WithTracer(tracer),
+		)
+		if err != nil {
+			logger.Fatal(context.Background(), "failed to initialize label service", slog.Any("error", err))
+		}
+
 		organizationService, err := service.NewOrganizationService(
 			service.WithOrganizationRepository(organizationRepo),
 			service.WithUserRepository(userRepo),
@@ -411,6 +531,9 @@ var startServerCmd = &cobra.Command{
 			elemoHttp.WithOrganizationService(organizationService),
 			elemoHttp.WithNamespaceService(namespaceService),
 			elemoHttp.WithProjectService(projectService),
+			elemoHttp.WithIssueService(issueService),
+			elemoHttp.WithDocumentService(documentService),
+			elemoHttp.WithLabelService(labelService),
 			elemoHttp.WithRoleService(roleService),
 			elemoHttp.WithUserService(userService),
 			elemoHttp.WithTodoService(todoService),

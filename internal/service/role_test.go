@@ -423,7 +423,7 @@ func TestRoleService_Get(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.roleService/Get", gomock.Len(0)).Return(ctx, span)
 
 					roleRepo := repository.NewMockRoleRepository(ctrl)
-					roleRepo.EXPECT().Get(ctx, id, belongsTo).Return(role, nil)
+					roleRepo.EXPECT().Get(ctx, id, belongsTo, repository.RoleDetailProjection()).Return(role, nil)
 
 					permSvc := NewMockPermissionService(ctrl)
 					permSvc.EXPECT().CtxUserHasPermission(ctx, id, model.PermissionKindRead).Return(true)
@@ -456,7 +456,7 @@ func TestRoleService_Get(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.roleService/Get", gomock.Len(0)).Return(ctx, span)
 
 					roleRepo := repository.NewMockRoleRepository(ctrl)
-					roleRepo.EXPECT().Get(ctx, id, belongsTo).Return(role, assert.AnError)
+					roleRepo.EXPECT().Get(ctx, id, belongsTo, repository.RoleDetailProjection()).Return(role, assert.AnError)
 
 					permSvc := NewMockPermissionService(ctrl)
 					permSvc.EXPECT().CtxUserHasPermission(ctx, id, model.PermissionKindRead).Return(true)
@@ -586,13 +586,12 @@ func TestRoleService_Get(t *testing.T) {
 
 func TestRoleService_GetAllBelongsTo(t *testing.T) {
 	type fields struct {
-		baseService func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, roles []*repository.Role) *baseService
+		baseService func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, page CursorPage, roles []*repository.Role) *baseService
 	}
 	type args struct {
 		ctx       context.Context
 		belongsTo model.ID
-		offset    int
-		limit     int
+		page      CursorPage
 	}
 	tests := []struct {
 		name      string
@@ -604,15 +603,15 @@ func TestRoleService_GetAllBelongsTo(t *testing.T) {
 		{
 			name: "get roles belongs to",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, roles []*repository.Role) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, page CursorPage, roles []*repository.Role) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.roleService/GetAllBelongsTo", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "service.roleService/ListBelongsTo", gomock.Len(0)).Return(ctx, span)
 
 					roleRepo := repository.NewMockRoleRepository(ctrl)
-					roleRepo.EXPECT().GetAllBelongsTo(ctx, belongsTo, offset, limit).Return(roles, nil)
+					roleRepo.EXPECT().ListBelongsTo(ctx, belongsTo, page, repository.RoleListProjection()).Return(repository.Page[*repository.Role]{Items: roles}, nil)
 
 					permSvc := NewMockPermissionService(ctrl)
 					permSvc.EXPECT().CtxUserHasPermission(ctx, belongsTo, model.PermissionKindRead).Return(true)
@@ -629,8 +628,7 @@ func TestRoleService_GetAllBelongsTo(t *testing.T) {
 			args: args{
 				ctx:       context.WithValue(context.Background(), pkg.CtxKeyUserID, model.MustNewID(model.ResourceTypeUser)),
 				belongsTo: model.MustNewID(model.ResourceTypeOrganization),
-				offset:    0,
-				limit:     10,
+				page:      CursorPage{Size: 10},
 			},
 			repoRoles: []*repository.Role{
 				testModel.NewRepositoryRole(),
@@ -640,15 +638,15 @@ func TestRoleService_GetAllBelongsTo(t *testing.T) {
 		{
 			name: "get roles belongs to with error",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, offset, limit int, roles []*repository.Role) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, page CursorPage, _ []*repository.Role) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.roleService/GetAllBelongsTo", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "service.roleService/ListBelongsTo", gomock.Len(0)).Return(ctx, span)
 
 					roleRepo := repository.NewMockRoleRepository(ctrl)
-					roleRepo.EXPECT().GetAllBelongsTo(ctx, belongsTo, offset, limit).Return(roles, assert.AnError)
+					roleRepo.EXPECT().ListBelongsTo(ctx, belongsTo, page, repository.RoleListProjection()).Return(repository.Page[*repository.Role]{}, assert.AnError)
 
 					permSvc := NewMockPermissionService(ctrl)
 					permSvc.EXPECT().CtxUserHasPermission(ctx, belongsTo, model.PermissionKindRead).Return(true)
@@ -665,20 +663,19 @@ func TestRoleService_GetAllBelongsTo(t *testing.T) {
 			args: args{
 				ctx:       context.WithValue(context.Background(), pkg.CtxKeyUserID, model.MustNewID(model.ResourceTypeUser)),
 				belongsTo: model.MustNewID(model.ResourceTypeOrganization),
-				offset:    0,
-				limit:     10,
+				page:      CursorPage{Size: 10},
 			},
 			wantErr: assert.AnError,
 		},
 		{
 			name: "get roles belongs to with invalid role id",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _, _ int, _ []*repository.Role) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ CursorPage, _ []*repository.Role) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.roleService/GetAllBelongsTo", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "service.roleService/ListBelongsTo", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
 						logger:            mock.NewMockLogger(ctrl),
@@ -692,20 +689,19 @@ func TestRoleService_GetAllBelongsTo(t *testing.T) {
 			args: args{
 				ctx:       context.WithValue(context.Background(), pkg.CtxKeyUserID, model.MustNewID(model.ResourceTypeUser)),
 				belongsTo: model.ID{},
-				offset:    0,
-				limit:     10,
+				page:      CursorPage{Size: 10},
 			},
 			wantErr: ErrRoleGetBelongsTo,
 		},
 		{
 			name: "get roles belongs to with no permissions",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, _, _ int, _ []*repository.Role) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, _ CursorPage, _ []*repository.Role) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.roleService/GetAllBelongsTo", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "service.roleService/ListBelongsTo", gomock.Len(0)).Return(ctx, span)
 
 					permSvc := NewMockPermissionService(ctrl)
 					permSvc.EXPECT().CtxUserHasPermission(ctx, belongsTo, model.PermissionKindRead).Return(false)
@@ -722,20 +718,19 @@ func TestRoleService_GetAllBelongsTo(t *testing.T) {
 			args: args{
 				ctx:       context.WithValue(context.Background(), pkg.CtxKeyUserID, model.MustNewID(model.ResourceTypeUser)),
 				belongsTo: model.MustNewID(model.ResourceTypeOrganization),
-				offset:    0,
-				limit:     10,
+				page:      CursorPage{Size: 10},
 			},
 			wantErr: ErrNoPermission,
 		},
 		{
-			name: "get roles belongs to with invalid pagination offset",
+			name: "get roles belongs to with invalid page size",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _, _ int, _ []*repository.Role) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ CursorPage, _ []*repository.Role) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.roleService/GetAllBelongsTo", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "service.roleService/ListBelongsTo", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
 						logger:            mock.NewMockLogger(ctrl),
@@ -749,20 +744,19 @@ func TestRoleService_GetAllBelongsTo(t *testing.T) {
 			args: args{
 				ctx:       context.WithValue(context.Background(), pkg.CtxKeyUserID, model.MustNewID(model.ResourceTypeUser)),
 				belongsTo: model.MustNewID(model.ResourceTypeOrganization),
-				offset:    -1,
-				limit:     10,
+				page:      CursorPage{Size: -1},
 			},
-			wantErr: ErrInvalidPaginationParams,
+			wantErr: ErrRoleGetBelongsTo,
 		},
 		{
-			name: "get roles belongs to with invalid pagination limit",
+			name: "get roles belongs to with oversized page",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _, _ int, _ []*repository.Role) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ CursorPage, _ []*repository.Role) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.roleService/GetAllBelongsTo", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "service.roleService/ListBelongsTo", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
 						logger:            mock.NewMockLogger(ctrl),
@@ -776,10 +770,9 @@ func TestRoleService_GetAllBelongsTo(t *testing.T) {
 			args: args{
 				ctx:       context.WithValue(context.Background(), pkg.CtxKeyUserID, model.MustNewID(model.ResourceTypeUser)),
 				belongsTo: model.MustNewID(model.ResourceTypeOrganization),
-				offset:    0,
-				limit:     0,
+				page:      CursorPage{Size: repository.MaxPageSize + 1},
 			},
-			wantErr: ErrInvalidPaginationParams,
+			wantErr: ErrRoleGetBelongsTo,
 		},
 	}
 	for _, tt := range tests {
@@ -789,14 +782,14 @@ func TestRoleService_GetAllBelongsTo(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			s := &roleService{
-				baseService: tt.fields.baseService(ctrl, tt.args.ctx, tt.args.belongsTo, tt.args.offset, tt.args.limit, tt.repoRoles),
+				baseService: tt.fields.baseService(ctrl, tt.args.ctx, tt.args.belongsTo, tt.args.page, tt.repoRoles),
 			}
-			got, err := s.GetAllBelongsTo(tt.args.ctx, tt.args.belongsTo, tt.args.offset, tt.args.limit)
+			got, err := s.ListBelongsTo(tt.args.ctx, tt.args.belongsTo, tt.args.page)
 			assert.ErrorIs(t, err, tt.wantErr)
 			if tt.wantErr == nil {
-				assert.Equal(t, rolesFromRepository(tt.repoRoles), got)
+				assert.Equal(t, rolesFromRepository(tt.repoRoles), got.Items)
 			} else {
-				assert.Nil(t, got)
+				assert.Empty(t, got.Items)
 			}
 		})
 	}
@@ -855,7 +848,7 @@ func TestRoleService_Update(t *testing.T) {
 	}
 }
 
-func TestRoleService_GetMembers(t *testing.T) {
+func TestRoleService_ListMembers(t *testing.T) {
 	type fields struct {
 		baseService *baseService
 	}
@@ -880,7 +873,7 @@ func TestRoleService_GetMembers(t *testing.T) {
 			s := &roleService{
 				baseService: tt.fields.baseService,
 			}
-			got, err := s.GetMembers(tt.args.ctx, tt.args.roleID, tt.args.belongsTo)
+			got, err := s.ListMembers(tt.args.ctx, tt.args.roleID, tt.args.belongsTo, CursorPage{Size: 100})
 			assert.ErrorIs(t, err, tt.wantErr)
 			assert.Equal(t, tt.want, got)
 		})
@@ -1077,7 +1070,7 @@ func TestRoleService_AddPermission(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.roleService/AddPermission", gomock.Len(0)).Return(ctx, span)
 
 					roleRepo := repository.NewMockRoleRepository(ctrl)
-					roleRepo.EXPECT().Get(ctx, roleID, belongsToID).Return(testModel.NewRepositoryRole(), nil)
+					roleRepo.EXPECT().Get(ctx, roleID, belongsToID, repository.RoleDetailProjection()).Return(testModel.NewRepositoryRole(), nil)
 
 					permSvc := NewMockPermissionService(ctrl)
 					permSvc.EXPECT().CtxUserHasPermission(ctx, belongsToID, model.PermissionKindWrite).Return(true)
@@ -1147,7 +1140,7 @@ func TestRoleService_AddPermission(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.roleService/AddPermission", gomock.Len(0)).Return(ctx, span)
 
 					roleRepo := repository.NewMockRoleRepository(ctrl)
-					roleRepo.EXPECT().Get(ctx, roleID, belongsToID).Return(nil, repository.ErrNotFound)
+					roleRepo.EXPECT().Get(ctx, roleID, belongsToID, repository.RoleDetailProjection()).Return(nil, repository.ErrNotFound)
 
 					licenseSvc := mock.NewMockLicenseService(ctrl)
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
@@ -1182,7 +1175,7 @@ func TestRoleService_AddPermission(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.roleService/AddPermission", gomock.Len(0)).Return(ctx, span)
 
 					roleRepo := repository.NewMockRoleRepository(ctrl)
-					roleRepo.EXPECT().Get(ctx, roleID, belongsToID).Return(testModel.NewRepositoryRole(), nil)
+					roleRepo.EXPECT().Get(ctx, roleID, belongsToID, repository.RoleDetailProjection()).Return(testModel.NewRepositoryRole(), nil)
 
 					permSvc := NewMockPermissionService(ctrl)
 					permSvc.EXPECT().CtxUserHasPermission(ctx, belongsToID, model.PermissionKindWrite).Return(false)
@@ -1220,7 +1213,7 @@ func TestRoleService_AddPermission(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.roleService/AddPermission", gomock.Len(0)).Return(ctx, span)
 
 					roleRepo := repository.NewMockRoleRepository(ctrl)
-					roleRepo.EXPECT().Get(ctx, roleID, belongsToID).Return(nil, assert.AnError)
+					roleRepo.EXPECT().Get(ctx, roleID, belongsToID, repository.RoleDetailProjection()).Return(nil, assert.AnError)
 
 					licenseSvc := mock.NewMockLicenseService(ctrl)
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
@@ -1255,7 +1248,7 @@ func TestRoleService_AddPermission(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.roleService/AddPermission", gomock.Len(0)).Return(ctx, span)
 
 					roleRepo := repository.NewMockRoleRepository(ctrl)
-					roleRepo.EXPECT().Get(ctx, roleID, belongsToID).Return(testModel.NewRepositoryRole(), nil)
+					roleRepo.EXPECT().Get(ctx, roleID, belongsToID, repository.RoleDetailProjection()).Return(testModel.NewRepositoryRole(), nil)
 
 					permSvc := NewMockPermissionService(ctrl)
 					permSvc.EXPECT().CtxUserHasPermission(ctx, belongsToID, model.PermissionKindWrite).Return(true)
@@ -1328,7 +1321,7 @@ func TestRoleService_RemovePermission(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.roleService/RemovePermission", gomock.Len(0)).Return(ctx, span)
 
 					roleRepo := repository.NewMockRoleRepository(ctrl)
-					roleRepo.EXPECT().Get(ctx, roleID, belongsToID).Return(testModel.NewRepositoryRole(), nil)
+					roleRepo.EXPECT().Get(ctx, roleID, belongsToID, repository.RoleDetailProjection()).Return(testModel.NewRepositoryRole(), nil)
 
 					permSvc := NewMockPermissionService(ctrl)
 					permSvc.EXPECT().CtxUserHasPermission(ctx, belongsToID, model.PermissionKindWrite).Return(true)
@@ -1398,7 +1391,7 @@ func TestRoleService_RemovePermission(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.roleService/RemovePermission", gomock.Len(0)).Return(ctx, span)
 
 					roleRepo := repository.NewMockRoleRepository(ctrl)
-					roleRepo.EXPECT().Get(ctx, roleID, belongsToID).Return(testModel.NewRepositoryRole(), nil)
+					roleRepo.EXPECT().Get(ctx, roleID, belongsToID, repository.RoleDetailProjection()).Return(testModel.NewRepositoryRole(), nil)
 
 					permSvc := NewMockPermissionService(ctrl)
 					permSvc.EXPECT().CtxUserHasPermission(ctx, belongsToID, model.PermissionKindWrite).Return(true)
@@ -1436,7 +1429,7 @@ func TestRoleService_RemovePermission(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.roleService/RemovePermission", gomock.Len(0)).Return(ctx, span)
 
 					roleRepo := repository.NewMockRoleRepository(ctrl)
-					roleRepo.EXPECT().Get(ctx, roleID, belongsToID).Return(testModel.NewRepositoryRole(), nil)
+					roleRepo.EXPECT().Get(ctx, roleID, belongsToID, repository.RoleDetailProjection()).Return(testModel.NewRepositoryRole(), nil)
 
 					permSvc := NewMockPermissionService(ctrl)
 					permSvc.EXPECT().CtxUserHasPermission(ctx, belongsToID, model.PermissionKindWrite).Return(false)
@@ -1473,7 +1466,7 @@ func TestRoleService_RemovePermission(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.roleService/RemovePermission", gomock.Len(0)).Return(ctx, span)
 
 					roleRepo := repository.NewMockRoleRepository(ctrl)
-					roleRepo.EXPECT().Get(ctx, roleID, belongsToID).Return(testModel.NewRepositoryRole(), nil)
+					roleRepo.EXPECT().Get(ctx, roleID, belongsToID, repository.RoleDetailProjection()).Return(testModel.NewRepositoryRole(), nil)
 
 					permSvc := NewMockPermissionService(ctrl)
 					permSvc.EXPECT().CtxUserHasPermission(ctx, belongsToID, model.PermissionKindWrite).Return(true)
@@ -1550,7 +1543,7 @@ func TestRoleService_GetPermissions(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.roleService/GetPermissions", gomock.Len(0)).Return(ctx, span)
 
 					roleRepo := repository.NewMockRoleRepository(ctrl)
-					roleRepo.EXPECT().Get(ctx, roleID, belongsToID).Return(testModel.NewRepositoryRole(), nil)
+					roleRepo.EXPECT().Get(ctx, roleID, belongsToID, repository.RoleDetailProjection()).Return(testModel.NewRepositoryRole(), nil)
 
 					permSvc := NewMockPermissionService(ctrl)
 					permSvc.EXPECT().CtxUserHasPermission(ctx, belongsToID, model.PermissionKindRead).Return(true)
@@ -1589,7 +1582,7 @@ func TestRoleService_GetPermissions(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.roleService/GetPermissions", gomock.Len(0)).Return(ctx, span)
 
 					roleRepo := repository.NewMockRoleRepository(ctrl)
-					roleRepo.EXPECT().Get(ctx, roleID, belongsToID).Return(nil, repository.ErrNotFound)
+					roleRepo.EXPECT().Get(ctx, roleID, belongsToID, repository.RoleDetailProjection()).Return(nil, repository.ErrNotFound)
 
 					return &baseService{
 						logger:            mock.NewMockLogger(ctrl),
@@ -1619,7 +1612,7 @@ func TestRoleService_GetPermissions(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.roleService/GetPermissions", gomock.Len(0)).Return(ctx, span)
 
 					roleRepo := repository.NewMockRoleRepository(ctrl)
-					roleRepo.EXPECT().Get(ctx, roleID, belongsToID).Return(testModel.NewRepositoryRole(), nil)
+					roleRepo.EXPECT().Get(ctx, roleID, belongsToID, repository.RoleDetailProjection()).Return(testModel.NewRepositoryRole(), nil)
 
 					permSvc := NewMockPermissionService(ctrl)
 					permSvc.EXPECT().CtxUserHasPermission(ctx, belongsToID, model.PermissionKindRead).Return(false)

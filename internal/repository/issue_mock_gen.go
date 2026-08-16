@@ -100,48 +100,48 @@ func (mr *MockIssueRepositoryMockRecorder) Delete(ctx, id any) *gomock.Call {
 }
 
 // Get mocks base method.
-func (m *MockIssueRepository) Get(ctx context.Context, id model.ID) (*Issue, error) {
+func (m *MockIssueRepository) Get(ctx context.Context, id model.ID, proj IssueProjection) (*Issue, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Get", ctx, id)
+	ret := m.ctrl.Call(m, "Get", ctx, id, proj)
 	ret0, _ := ret[0].(*Issue)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Get indicates an expected call of Get.
-func (mr *MockIssueRepositoryMockRecorder) Get(ctx, id any) *gomock.Call {
+func (mr *MockIssueRepositoryMockRecorder) Get(ctx, id, proj any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockIssueRepository)(nil).Get), ctx, id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockIssueRepository)(nil).Get), ctx, id, proj)
 }
 
-// GetAllForIssue mocks base method.
-func (m *MockIssueRepository) GetAllForIssue(ctx context.Context, issueID model.ID, offset, limit int) ([]*Issue, error) {
+// GetByKey mocks base method.
+func (m *MockIssueRepository) GetByKey(ctx context.Context, namespaceID model.ID, key string, proj IssueProjection) (*Issue, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAllForIssue", ctx, issueID, offset, limit)
-	ret0, _ := ret[0].([]*Issue)
+	ret := m.ctrl.Call(m, "GetByKey", ctx, namespaceID, key, proj)
+	ret0, _ := ret[0].(*Issue)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetAllForIssue indicates an expected call of GetAllForIssue.
-func (mr *MockIssueRepositoryMockRecorder) GetAllForIssue(ctx, issueID, offset, limit any) *gomock.Call {
+// GetByKey indicates an expected call of GetByKey.
+func (mr *MockIssueRepositoryMockRecorder) GetByKey(ctx, namespaceID, key, proj any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllForIssue", reflect.TypeOf((*MockIssueRepository)(nil).GetAllForIssue), ctx, issueID, offset, limit)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByKey", reflect.TypeOf((*MockIssueRepository)(nil).GetByKey), ctx, namespaceID, key, proj)
 }
 
-// GetAllForProject mocks base method.
-func (m *MockIssueRepository) GetAllForProject(ctx context.Context, projectID model.ID, offset, limit int) ([]*Issue, error) {
+// GetRelation mocks base method.
+func (m *MockIssueRepository) GetRelation(ctx context.Context, relationID model.ID) (*IssueRelation, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAllForProject", ctx, projectID, offset, limit)
-	ret0, _ := ret[0].([]*Issue)
+	ret := m.ctrl.Call(m, "GetRelation", ctx, relationID)
+	ret0, _ := ret[0].(*IssueRelation)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetAllForProject indicates an expected call of GetAllForProject.
-func (mr *MockIssueRepositoryMockRecorder) GetAllForProject(ctx, projectID, offset, limit any) *gomock.Call {
+// GetRelation indicates an expected call of GetRelation.
+func (mr *MockIssueRepositoryMockRecorder) GetRelation(ctx, relationID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllForProject", reflect.TypeOf((*MockIssueRepository)(nil).GetAllForProject), ctx, projectID, offset, limit)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRelation", reflect.TypeOf((*MockIssueRepository)(nil).GetRelation), ctx, relationID)
 }
 
 // GetRelations mocks base method.
@@ -174,6 +174,81 @@ func (mr *MockIssueRepositoryMockRecorder) GetWatchers(ctx, issue any) *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetWatchers", reflect.TypeOf((*MockIssueRepository)(nil).GetWatchers), ctx, issue)
 }
 
+// ListForIssue mocks base method.
+func (m *MockIssueRepository) ListForIssue(ctx context.Context, query IssueListForIssueQuery) (Page[*Issue], error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListForIssue", ctx, query)
+	ret0, _ := ret[0].(Page[*Issue])
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListForIssue indicates an expected call of ListForIssue.
+func (mr *MockIssueRepositoryMockRecorder) ListForIssue(ctx, query any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListForIssue", reflect.TypeOf((*MockIssueRepository)(nil).ListForIssue), ctx, query)
+}
+
+// ListForNamespace mocks base method.
+func (m *MockIssueRepository) ListForNamespace(ctx context.Context, query IssueListForNamespaceQuery) (Page[*PartialIssue], error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListForNamespace", ctx, query)
+	ret0, _ := ret[0].(Page[*PartialIssue])
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListForNamespace indicates an expected call of ListForNamespace.
+func (mr *MockIssueRepositoryMockRecorder) ListForNamespace(ctx, query any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListForNamespace", reflect.TypeOf((*MockIssueRepository)(nil).ListForNamespace), ctx, query)
+}
+
+// ListForProject mocks base method.
+func (m *MockIssueRepository) ListForProject(ctx context.Context, query IssueListQuery) (Page[*PartialIssue], error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListForProject", ctx, query)
+	ret0, _ := ret[0].(Page[*PartialIssue])
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListForProject indicates an expected call of ListForProject.
+func (mr *MockIssueRepositoryMockRecorder) ListForProject(ctx, query any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListForProject", reflect.TypeOf((*MockIssueRepository)(nil).ListForProject), ctx, query)
+}
+
+// ListForUser mocks base method.
+func (m *MockIssueRepository) ListForUser(ctx context.Context, query IssueListForUserQuery) (Page[*PartialIssue], error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListForUser", ctx, query)
+	ret0, _ := ret[0].(Page[*PartialIssue])
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListForUser indicates an expected call of ListForUser.
+func (mr *MockIssueRepositoryMockRecorder) ListForUser(ctx, query any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListForUser", reflect.TypeOf((*MockIssueRepository)(nil).ListForUser), ctx, query)
+}
+
+// ListRelations mocks base method.
+func (m *MockIssueRepository) ListRelations(ctx context.Context, query IssueRelationListQuery) (Page[*IssueRelationItem], error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListRelations", ctx, query)
+	ret0, _ := ret[0].(Page[*IssueRelationItem])
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListRelations indicates an expected call of ListRelations.
+func (mr *MockIssueRepositoryMockRecorder) ListRelations(ctx, query any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListRelations", reflect.TypeOf((*MockIssueRepository)(nil).ListRelations), ctx, query)
+}
+
 // RemoveRelation mocks base method.
 func (m *MockIssueRepository) RemoveRelation(ctx context.Context, source, target model.ID, kind model.IssueRelationKind) error {
 	m.ctrl.T.Helper()
@@ -186,6 +261,20 @@ func (m *MockIssueRepository) RemoveRelation(ctx context.Context, source, target
 func (mr *MockIssueRepositoryMockRecorder) RemoveRelation(ctx, source, target, kind any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveRelation", reflect.TypeOf((*MockIssueRepository)(nil).RemoveRelation), ctx, source, target, kind)
+}
+
+// RemoveRelationByID mocks base method.
+func (m *MockIssueRepository) RemoveRelationByID(ctx context.Context, relationID model.ID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RemoveRelationByID", ctx, relationID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RemoveRelationByID indicates an expected call of RemoveRelationByID.
+func (mr *MockIssueRepositoryMockRecorder) RemoveRelationByID(ctx, relationID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveRelationByID", reflect.TypeOf((*MockIssueRepository)(nil).RemoveRelationByID), ctx, relationID)
 }
 
 // RemoveWatcher mocks base method.
@@ -203,16 +292,16 @@ func (mr *MockIssueRepositoryMockRecorder) RemoveWatcher(ctx, issue, user any) *
 }
 
 // Update mocks base method.
-func (m *MockIssueRepository) Update(ctx context.Context, id model.ID, opts UpdateIssueOpts) (*Issue, error) {
+func (m *MockIssueRepository) Update(ctx context.Context, id model.ID, opts UpdateIssueOpts, proj IssueProjection) (*Issue, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Update", ctx, id, opts)
+	ret := m.ctrl.Call(m, "Update", ctx, id, opts, proj)
 	ret0, _ := ret[0].(*Issue)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Update indicates an expected call of Update.
-func (mr *MockIssueRepositoryMockRecorder) Update(ctx, id, opts any) *gomock.Call {
+func (mr *MockIssueRepositoryMockRecorder) Update(ctx, id, opts, proj any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockIssueRepository)(nil).Update), ctx, id, opts)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockIssueRepository)(nil).Update), ctx, id, opts, proj)
 }

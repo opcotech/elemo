@@ -51,17 +51,18 @@ const config: StorybookConfig = {
         plugins: [tailwindcss(), viteReact()],
         resolve: {
           tsconfigPaths: true,
-          alias: {
-            "@": path.resolve(dirname, "../src"),
-            "@tanstack/react-start/server": path.resolve(
-              dirname,
-              "./tanstack-start-stub.ts"
-            ),
-            "@tanstack/react-start": path.resolve(
-              dirname,
-              "./tanstack-start-stub.ts"
-            ),
-          },
+          alias: [
+            {
+              // String aliases for the package root append subpaths onto the
+              // stub file (`tanstack-start-stub.ts/server-only`).
+              find: /^@tanstack\/react-start(?:\/.*)?$/,
+              replacement: path.resolve(dirname, "./tanstack-start-stub.ts"),
+            },
+            {
+              find: "@",
+              replacement: path.resolve(dirname, "../src"),
+            },
+          ],
         },
       }
     );

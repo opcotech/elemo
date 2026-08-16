@@ -33,7 +33,7 @@ func TestCachedTodoRepository_Create(t *testing.T) {
 			name: "create new todo",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, todo CreateTodoOpts) *redisBaseRepository {
-					getByOwner := composeCacheKey(model.ResourceTypeTodo.String(), "GetByOwner", todo.OwnedBy.String(), "*")
+					getByOwner := composeCacheKey(model.ResourceTypeTodo.String(), "ListByOwner", todo.OwnedBy.String(), "*")
 
 					getByOwnerResult := new(redis.StringSliceCmd)
 					getByOwnerResult.SetVal([]string{getByOwner})
@@ -84,7 +84,7 @@ func TestCachedTodoRepository_Create(t *testing.T) {
 			name: "add new todo with error",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, todo CreateTodoOpts) *redisBaseRepository {
-					getByOwner := composeCacheKey(model.ResourceTypeTodo.String(), "GetByOwner", todo.OwnedBy.String(), "*")
+					getByOwner := composeCacheKey(model.ResourceTypeTodo.String(), "ListByOwner", todo.OwnedBy.String(), "*")
 
 					getByOwnerResult := new(redis.StringSliceCmd)
 					getByOwnerResult.SetVal([]string{getByOwner})
@@ -136,7 +136,7 @@ func TestCachedTodoRepository_Create(t *testing.T) {
 			name: "add new todo get by owner cache delete error",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, todo CreateTodoOpts) *redisBaseRepository {
-					getByOwner := composeCacheKey(model.ResourceTypeTodo.String(), "GetByOwner", todo.OwnedBy.String(), "*")
+					getByOwner := composeCacheKey(model.ResourceTypeTodo.String(), "ListByOwner", todo.OwnedBy.String(), "*")
 
 					getByOwnerResult := new(redis.StringSliceCmd)
 					getByOwnerResult.SetVal([]string{getByOwner})
@@ -219,7 +219,7 @@ func TestCachedTodoRepository_Get(t *testing.T) {
 			name: "get uncached todo",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, todo *Todo) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeTodo.String(), id.String())
+					key := composeCacheKey(model.ResourceTypeTodo.String(), "Get", id.String())
 
 					db, err := NewRedisDatabase(
 						WithRedisClient(mock.NewUniversalClient(ctrl)),
@@ -274,7 +274,7 @@ func TestCachedTodoRepository_Get(t *testing.T) {
 			name: "get cached todo",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, todo *Todo) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeTodo.String(), id.String())
+					key := composeCacheKey(model.ResourceTypeTodo.String(), "Get", id.String())
 
 					db, err := NewRedisDatabase(
 						WithRedisClient(mock.NewUniversalClient(ctrl)),
@@ -325,7 +325,7 @@ func TestCachedTodoRepository_Get(t *testing.T) {
 			name: "get uncached todo error",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *Todo) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeTodo.String(), id.String())
+					key := composeCacheKey(model.ResourceTypeTodo.String(), "Get", id.String())
 
 					db, err := NewRedisDatabase(
 						WithRedisClient(mock.NewUniversalClient(ctrl)),
@@ -364,7 +364,7 @@ func TestCachedTodoRepository_Get(t *testing.T) {
 			name: "get cached todo error",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *Todo) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeTodo.String(), id.String())
+					key := composeCacheKey(model.ResourceTypeTodo.String(), "Get", id.String())
 
 					db, err := NewRedisDatabase(
 						WithRedisClient(mock.NewUniversalClient(ctrl)),
@@ -401,7 +401,7 @@ func TestCachedTodoRepository_Get(t *testing.T) {
 			name: "get uncached todo cache set error",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, todo *Todo) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeTodo.String(), id.String())
+					key := composeCacheKey(model.ResourceTypeTodo.String(), "Get", id.String())
 
 					db, err := NewRedisDatabase(
 						WithRedisClient(mock.NewUniversalClient(ctrl)),
@@ -467,8 +467,8 @@ func TestCachedTodoRepository_Get(t *testing.T) {
 
 func TestCachedTodoRepository_GetByOwner(t *testing.T) {
 	type fields struct {
-		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, owner model.ID, offset, limit int, completed *bool, todos []*Todo) *redisBaseRepository
-		todoRepo  func(ctrl *gomock.Controller, ctx context.Context, owner model.ID, offset, limit int, completed *bool, todos []*Todo) TodoRepository
+		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, owner model.ID, _, limit int, completed *bool, todos []*Todo) *redisBaseRepository
+		todoRepo  func(ctrl *gomock.Controller, ctx context.Context, owner model.ID, _, limit int, completed *bool, todos []*Todo) TodoRepository
 	}
 	type args struct {
 		ctx       context.Context
@@ -487,8 +487,8 @@ func TestCachedTodoRepository_GetByOwner(t *testing.T) {
 		{
 			name: "get uncached todos",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, owner model.ID, offset, limit int, completed *bool, todos []*Todo) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeTodo.String(), "GetByOwner", owner.String(), offset, limit, completed)
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, owner model.ID, _, limit int, completed *bool, todos []*Todo) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeTodo.String(), "ListByOwner", owner.String(), "", limit, completed)
 
 					db, err := NewRedisDatabase(
 						WithRedisClient(mock.NewUniversalClient(ctrl)),
@@ -507,7 +507,7 @@ func TestCachedTodoRepository_GetByOwner(t *testing.T) {
 					cacheRepo.EXPECT().Set(&cache.Item{
 						Ctx:   ctx,
 						Key:   key,
-						Value: todos,
+						Value: Page[*Todo]{Items: todos},
 					}).Return(nil)
 
 					return &redisBaseRepository{
@@ -517,9 +517,9 @@ func TestCachedTodoRepository_GetByOwner(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				todoRepo: func(ctrl *gomock.Controller, ctx context.Context, owner model.ID, offset, limit int, completed *bool, todos []*Todo) TodoRepository {
+				todoRepo: func(ctrl *gomock.Controller, ctx context.Context, owner model.ID, _, limit int, completed *bool, todos []*Todo) TodoRepository {
 					repo := NewMockTodoRepository(ctrl)
-					repo.EXPECT().GetByOwner(ctx, owner, offset, limit, completed).Return(todos, nil)
+					repo.EXPECT().ListByOwner(ctx, owner, CursorPage{Size: limit}, completed).Return(Page[*Todo]{Items: todos}, nil)
 					return repo
 				},
 			},
@@ -553,8 +553,8 @@ func TestCachedTodoRepository_GetByOwner(t *testing.T) {
 		{
 			name: "get cached todos",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, owner model.ID, offset, limit int, completed *bool, todos []*Todo) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeTodo.String(), "GetByOwner", owner.String(), offset, limit, completed)
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, owner model.ID, _, limit int, completed *bool, todos []*Todo) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeTodo.String(), "ListByOwner", owner.String(), "", limit, completed)
 
 					db, err := NewRedisDatabase(
 						WithRedisClient(mock.NewUniversalClient(ctrl)),
@@ -569,8 +569,8 @@ func TestCachedTodoRepository_GetByOwner(t *testing.T) {
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Do(func(_ context.Context, _ string, dst any) {
-						if listPtr, ok := dst.(*[]*Todo); ok {
-							*listPtr = todos
+						if ptr, ok := dst.(*Page[*Todo]); ok {
+							*ptr = Page[*Todo]{Items: todos}
 						}
 					}).Return(nil)
 
@@ -615,8 +615,8 @@ func TestCachedTodoRepository_GetByOwner(t *testing.T) {
 		{
 			name: "get uncached todos error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, owner model.ID, offset, limit int, completed *bool, _ []*Todo) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeTodo.String(), "GetByOwner", owner.String(), offset, limit, completed)
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, owner model.ID, _, limit int, completed *bool, _ []*Todo) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeTodo.String(), "ListByOwner", owner.String(), "", limit, completed)
 
 					db, err := NewRedisDatabase(
 						WithRedisClient(mock.NewUniversalClient(ctrl)),
@@ -639,9 +639,9 @@ func TestCachedTodoRepository_GetByOwner(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				todoRepo: func(ctrl *gomock.Controller, ctx context.Context, owner model.ID, offset, limit int, completed *bool, todos []*Todo) TodoRepository {
+				todoRepo: func(ctrl *gomock.Controller, ctx context.Context, owner model.ID, _, limit int, completed *bool, _ []*Todo) TodoRepository {
 					repo := NewMockTodoRepository(ctrl)
-					repo.EXPECT().GetByOwner(ctx, owner, offset, limit, completed).Return(todos, ErrNotFound)
+					repo.EXPECT().ListByOwner(ctx, owner, CursorPage{Size: limit}, completed).Return(Page[*Todo]{}, ErrNotFound)
 					return repo
 				},
 			},
@@ -656,8 +656,8 @@ func TestCachedTodoRepository_GetByOwner(t *testing.T) {
 		{
 			name: "get get todos cache error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, owner model.ID, offset, limit int, completed *bool, _ []*Todo) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeTodo.String(), "GetByOwner", owner.String(), offset, limit, completed)
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, owner model.ID, _, limit int, completed *bool, _ []*Todo) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeTodo.String(), "ListByOwner", owner.String(), "", limit, completed)
 
 					db, err := NewRedisDatabase(
 						WithRedisClient(mock.NewUniversalClient(ctrl)),
@@ -695,8 +695,8 @@ func TestCachedTodoRepository_GetByOwner(t *testing.T) {
 		{
 			name: "get uncached todos cache set error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, owner model.ID, offset, limit int, completed *bool, todos []*Todo) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeTodo.String(), "GetByOwner", owner.String(), offset, limit, completed)
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, owner model.ID, _, limit int, completed *bool, todos []*Todo) *redisBaseRepository {
+					key := composeCacheKey(model.ResourceTypeTodo.String(), "ListByOwner", owner.String(), "", limit, completed)
 
 					db, err := NewRedisDatabase(
 						WithRedisClient(mock.NewUniversalClient(ctrl)),
@@ -715,7 +715,7 @@ func TestCachedTodoRepository_GetByOwner(t *testing.T) {
 					cacheRepo.EXPECT().Set(&cache.Item{
 						Ctx:   ctx,
 						Key:   key,
-						Value: todos,
+						Value: Page[*Todo]{Items: todos},
 					}).Return(assert.AnError)
 
 					return &redisBaseRepository{
@@ -725,9 +725,9 @@ func TestCachedTodoRepository_GetByOwner(t *testing.T) {
 						logger: mock.NewMockLogger(ctrl),
 					}
 				},
-				todoRepo: func(ctrl *gomock.Controller, ctx context.Context, owner model.ID, offset, limit int, completed *bool, todos []*Todo) TodoRepository {
+				todoRepo: func(ctrl *gomock.Controller, ctx context.Context, owner model.ID, _, limit int, completed *bool, todos []*Todo) TodoRepository {
 					repo := NewMockTodoRepository(ctrl)
-					repo.EXPECT().GetByOwner(ctx, owner, offset, limit, completed).Return(todos, nil)
+					repo.EXPECT().ListByOwner(ctx, owner, CursorPage{Size: limit}, completed).Return(Page[*Todo]{Items: todos}, nil)
 					return repo
 				},
 			},
@@ -747,12 +747,12 @@ func TestCachedTodoRepository_GetByOwner(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			r := &RedisCachedTodoRepository{
-				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.owner, tt.args.offset, tt.args.limit, tt.args.completed, tt.want),
-				todoRepo:  tt.fields.todoRepo(ctrl, tt.args.ctx, tt.args.owner, tt.args.offset, tt.args.limit, tt.args.completed, tt.want),
+				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.owner, tt.args.offset, testPageSize(tt.args.limit), tt.args.completed, tt.want),
+				todoRepo:  tt.fields.todoRepo(ctrl, tt.args.ctx, tt.args.owner, tt.args.offset, testPageSize(tt.args.limit), tt.args.completed, tt.want),
 			}
-			got, err := r.GetByOwner(tt.args.ctx, tt.args.owner, tt.args.offset, tt.args.limit, tt.args.completed)
+			got, err := r.ListByOwner(tt.args.ctx, tt.args.owner, CursorPage{Size: testPageSize(tt.args.limit)}, tt.args.completed)
 			require.ErrorIs(t, err, tt.wantErr)
-			require.ElementsMatch(t, tt.want, got)
+			require.ElementsMatch(t, tt.want, got.Items)
 		})
 	}
 }
@@ -778,8 +778,8 @@ func TestCachedTodoRepository_Update(t *testing.T) {
 			name: "update todo",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, todo *Todo) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeTodo.String(), id.String())
-					getByOwnerKey := composeCacheKey(model.ResourceTypeTodo.String(), "GetByOwner", todo.OwnedBy.String(), "*")
+					key := composeCacheKey(model.ResourceTypeTodo.String(), "Get", id.String())
+					getByOwnerKey := composeCacheKey(model.ResourceTypeTodo.String(), "ListByOwner", todo.OwnedBy.String(), "*")
 
 					getByOwnerKeyCmd := new(redis.StringSliceCmd)
 					getByOwnerKeyCmd.SetVal([]string{getByOwnerKey})
@@ -883,7 +883,7 @@ func TestCachedTodoRepository_Update(t *testing.T) {
 			name: "update todo set cache error",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, todo *Todo) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeTodo.String(), id.String())
+					key := composeCacheKey(model.ResourceTypeTodo.String(), "Get", id.String())
 
 					dbClient := mock.NewUniversalClient(ctrl)
 
@@ -941,8 +941,8 @@ func TestCachedTodoRepository_Update(t *testing.T) {
 			name: "update todo delete get by owner cache error",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, todo *Todo) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeTodo.String(), id.String())
-					getByOwnerKey := composeCacheKey(model.ResourceTypeTodo.String(), "GetByOwner", todo.OwnedBy.String(), "*")
+					key := composeCacheKey(model.ResourceTypeTodo.String(), "Get", id.String())
+					getByOwnerKey := composeCacheKey(model.ResourceTypeTodo.String(), "ListByOwner", todo.OwnedBy.String(), "*")
 
 					getByOwnerKeyCmd := new(redis.StringSliceCmd)
 					getByOwnerKeyCmd.SetVal([]string{getByOwnerKey})
@@ -1042,13 +1042,17 @@ func TestCachedTodoRepository_Delete(t *testing.T) {
 			name: "delete todo success",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeTodo.String(), id.String())
-					getByOwnerKey := composeCacheKey(model.ResourceTypeTodo.String(), "GetByOwner", "*")
+					key := composeCacheKey(model.ResourceTypeTodo.String(), "Get", id.String()+"*")
+					getByOwnerKey := composeCacheKey(model.ResourceTypeTodo.String(), "ListByOwner", "*")
 
 					getByOwnerKeyCmd := new(redis.StringSliceCmd)
 					getByOwnerKeyCmd.SetVal([]string{getByOwnerKey})
 
+					keyCmd := new(redis.StringSliceCmd)
+					keyCmd.SetVal([]string{key})
+
 					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, key).Return(keyCmd)
 					dbClient.EXPECT().Keys(ctx, getByOwnerKey).Return(getByOwnerKeyCmd)
 
 					db, err := NewRedisDatabase(
@@ -1060,8 +1064,7 @@ func TestCachedTodoRepository_Delete(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0)).Times(2)
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Delete", gomock.Len(0)).Return(ctx, span)
-					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(2)
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
@@ -1089,13 +1092,17 @@ func TestCachedTodoRepository_Delete(t *testing.T) {
 			name: "delete todo with todo deletion error",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeTodo.String(), id.String())
-					getByOwnerKey := composeCacheKey(model.ResourceTypeTodo.String(), "GetByOwner", "*")
+					key := composeCacheKey(model.ResourceTypeTodo.String(), "Get", id.String()+"*")
+					getByOwnerKey := composeCacheKey(model.ResourceTypeTodo.String(), "ListByOwner", "*")
 
 					getByOwnerKeyCmd := new(redis.StringSliceCmd)
 					getByOwnerKeyCmd.SetVal([]string{getByOwnerKey})
 
+					keyCmd := new(redis.StringSliceCmd)
+					keyCmd.SetVal([]string{key})
+
 					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, key).Return(keyCmd)
 					dbClient.EXPECT().Keys(ctx, getByOwnerKey).Return(getByOwnerKeyCmd)
 
 					db, err := NewRedisDatabase(
@@ -1107,8 +1114,7 @@ func TestCachedTodoRepository_Delete(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0)).Times(2)
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Delete", gomock.Len(0)).Return(ctx, span)
-					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(2)
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
@@ -1137,9 +1143,13 @@ func TestCachedTodoRepository_Delete(t *testing.T) {
 			name: "delete todo with cache deletion error",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeTodo.String(), id.String())
+					key := composeCacheKey(model.ResourceTypeTodo.String(), "Get", id.String()+"*")
+
+					keyCmd := new(redis.StringSliceCmd)
+					keyCmd.SetVal([]string{key})
 
 					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, key).Return(keyCmd)
 
 					db, err := NewRedisDatabase(
 						WithRedisClient(dbClient),
@@ -1150,7 +1160,7 @@ func TestCachedTodoRepository_Delete(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0)).Times(1)
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span)
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(ErrCacheDelete)
@@ -1177,13 +1187,17 @@ func TestCachedTodoRepository_Delete(t *testing.T) {
 			name: "delete todo with get by owner cache deletion error",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeTodo.String(), id.String())
-					getByOwnerKey := composeCacheKey(model.ResourceTypeTodo.String(), "GetByOwner", "*")
+					key := composeCacheKey(model.ResourceTypeTodo.String(), "Get", id.String()+"*")
+					getByOwnerKey := composeCacheKey(model.ResourceTypeTodo.String(), "ListByOwner", "*")
 
 					getByOwnerKeyCmd := new(redis.StringSliceCmd)
 					getByOwnerKeyCmd.SetVal([]string{getByOwnerKey})
 
+					keyCmd := new(redis.StringSliceCmd)
+					keyCmd.SetVal([]string{key})
+
 					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient.EXPECT().Keys(ctx, key).Return(keyCmd)
 					dbClient.EXPECT().Keys(ctx, getByOwnerKey).Return(getByOwnerKeyCmd)
 
 					db, err := NewRedisDatabase(
@@ -1195,8 +1209,7 @@ func TestCachedTodoRepository_Delete(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0)).Times(2)
 
 					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Delete", gomock.Len(0)).Return(ctx, span)
-					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(2)
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)

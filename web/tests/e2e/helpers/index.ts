@@ -1,5 +1,6 @@
 export * from "./api";
 export * from "./card";
+export * from "./command-palette";
 export * from "./dialogs";
 export * from "./elements";
 export * from "./forms";
@@ -7,3 +8,4 @@ export * from "./navigation";
 export * from "./pages";
 export * from "./permissions";
 export * from "./toast";
+export * from "./workspace";

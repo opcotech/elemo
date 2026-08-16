@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { NamespaceCreateForm } from "@/components/namespaces";
-import { PageHeader } from "@/components/shared/page-header";
+import { NamespaceCreateForm } from "@/components/namespaces/namespace-create-form";
+import { PageHeader } from "@/components/ui/page-header";
 
 export const Route = createFileRoute("/_authenticated/settings/namespaces/new")(
   {

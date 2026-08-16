@@ -1,17 +1,13 @@
 import type { Page } from "@playwright/test";
 
-import { createOrganization, createProject, getRandomProjectKey } from "./api";
+import { createIssue } from "./api";
 import { expect, test } from "./fixtures";
+import { seedOwnerWorkspace } from "./helpers";
+import type { OwnerWorkspace } from "./helpers";
+import { WorkItemPage } from "./pages";
 import { USER_DEFAULT_PASSWORD, loginUser } from "./utils/auth";
-import { createUser, grantSystemOwnerMembershipToUser } from "./utils/db";
 import { getRandomString } from "./utils/random";
 
-import type { User } from "@/lib/api/types";
-import type { Client } from "@/lib/client/client";
-import { v1OrganizationsNamespacesCreate } from "@/lib/client/sdk.gen";
-
-const WORK_LABEL = "LMO-101 Preserve work context across projections";
-const WORK_TITLE = "Preserve work context across projections";
 const DOCUMENT_LABEL = "Work projection model";
 const NAVIGATION_STORAGE_KEY = "elemo_navigation_context";
 
@@ -44,48 +40,29 @@ async function expectRecentTypePersisted(page: Page, type: string) {
 }
 
 test.describe("@operational Recent sidebar entities", () => {
-  let ownerUser: User;
-  let ownerApiClient: Client;
-  let namespaceId: string;
-  let projectId: string;
-  let projectName: string;
+  let workspace: OwnerWorkspace;
+  let workKey: string;
+  let workTitle: string;
+  let workLabel: string;
 
-  test.beforeAll(async ({ testConfig, createApiClient }) => {
-    ownerUser = await createUser(testConfig);
-    await grantSystemOwnerMembershipToUser(testConfig, ownerUser.email);
-
-    ownerApiClient = await createApiClient(
-      ownerUser.email,
-      USER_DEFAULT_PASSWORD
-    );
-    const organization = await createOrganization(ownerApiClient, {
-      name: `Recent Entities Org ${getRandomString(8)}`,
-      email: `recent-entities-${getRandomString(8)}@example.com`,
+  test.beforeAll(async ({ testConfig }) => {
+    workspace = await seedOwnerWorkspace(testConfig, {
+      namePrefix: "Recent Entities",
     });
-
-    const namespaceResponse = await v1OrganizationsNamespacesCreate({
-      client: ownerApiClient,
-      path: { id: organization.id },
-      body: {
-        name: `Recent Entities Namespace ${getRandomString(8)}`,
-        description: `Namespace for recent entities ${getRandomString(8)}`,
-      },
-      throwOnError: true,
+    workTitle = `Preserve work context ${getRandomString(8)}`;
+    const issue = await createIssue(workspace.client, workspace.projectId, {
+      title: workTitle,
     });
-    namespaceId = namespaceResponse.data.id ?? "";
-
-    projectName = `Recent Entities Project ${getRandomString(8)}`;
-    const project = await createProject(ownerApiClient, namespaceId, {
-      key: getRandomProjectKey(),
-      name: projectName,
-      description: `Project for recent entities ${getRandomString(8)}`,
-    });
-    projectId = project.id;
+    if (!issue.key) {
+      throw new Error("Created issue is missing a key");
+    }
+    workKey = issue.key;
+    workLabel = `${workKey} ${workTitle}`;
   });
 
   test.beforeEach(async ({ page }) => {
     await loginUser(page, {
-      email: ownerUser.email,
+      email: workspace.owner.email,
       password: USER_DEFAULT_PASSWORD,
     });
     await page.evaluate((key) => {
@@ -101,14 +78,16 @@ test.describe("@operational Recent sidebar entities", () => {
     const sidebar = page.locator(
       '[data-slot="sidebar"][data-variant="sidebar"]'
     );
+    const workItemPage = new WorkItemPage(page);
 
-    await page.goto("/work/lmo-101", { waitUntil: "domcontentloaded" });
-    await expect(page.getByRole("heading", { name: WORK_TITLE })).toBeVisible();
+    await workItemPage.goto(workspace.namespaceId, workKey);
+    await workItemPage.waitForLoad();
+    await expect(workItemPage.getTitleButton()).toHaveText(workTitle);
     await expect(
       sidebar.getByText("Recent Work Items", { exact: true })
     ).toBeVisible();
     await expect(
-      sidebar.getByRole("link", { name: WORK_LABEL, exact: true })
+      sidebar.getByRole("link", { name: workLabel, exact: true })
     ).toBeVisible();
     await expectRecentTypePersisted(page, "work");
 
@@ -125,21 +104,24 @@ test.describe("@operational Recent sidebar entities", () => {
       sidebar.getByRole("link", { name: DOCUMENT_LABEL, exact: true })
     ).toBeVisible();
     await expect(
-      sidebar.getByRole("link", { name: WORK_LABEL, exact: true })
+      sidebar.getByRole("link", { name: workLabel, exact: true })
     ).toBeVisible();
     await expectRecentTypePersisted(page, "document");
 
-    await page.goto(`/namespaces/${namespaceId}/projects/${projectId}`, {
-      waitUntil: "domcontentloaded",
-    });
+    await page.goto(
+      `/namespaces/${workspace.namespaceId}/projects/${workspace.projectId}`,
+      {
+        waitUntil: "domcontentloaded",
+      }
+    );
     await expect(
-      page.getByRole("heading", { name: projectName })
+      page.getByRole("heading", { name: workspace.projectName })
     ).toBeVisible();
     await expect(
       sidebar.getByText("Recent Projects", { exact: true })
     ).toBeVisible();
     await expect(
-      sidebar.getByRole("link", { name: projectName, exact: true })
+      sidebar.getByRole("link", { name: workspace.projectName, exact: true })
     ).toBeVisible();
     await expectRecentTypePersisted(page, "project");
 
@@ -168,12 +150,12 @@ test.describe("@operational Recent sidebar entities", () => {
     expect(documentsBox!.y).toBeLessThan(projectsBox!.y);
 
     const workLink = sidebar.getByRole("link", {
-      name: WORK_LABEL,
+      name: workLabel,
       exact: true,
     });
     await workLink.hover();
     await sidebar
-      .getByRole("button", { name: `Remove ${WORK_LABEL} from recents` })
+      .getByRole("button", { name: `Remove ${workLabel} from recents` })
       .click();
     await expect(workLink).toHaveCount(0);
     await expect(workSection).toHaveCount(0);
@@ -181,7 +163,7 @@ test.describe("@operational Recent sidebar entities", () => {
     await page.reload();
     await expect(page.getByRole("heading", { name: "Home" })).toBeVisible();
     await expect(
-      sidebar.getByRole("link", { name: WORK_LABEL, exact: true })
+      sidebar.getByRole("link", { name: workLabel, exact: true })
     ).toHaveCount(0);
     await expect(
       sidebar.getByText("Recent Work Items", { exact: true })
@@ -190,7 +172,10 @@ test.describe("@operational Recent sidebar entities", () => {
       sidebar.getByRole("link", { name: DOCUMENT_LABEL, exact: true })
     ).toBeVisible();
     await expect(
-      sidebar.getByRole("link", { name: projectName, exact: true })
+      sidebar.getByRole("link", {
+        name: workspace.projectName,
+        exact: true,
+      })
     ).toBeVisible();
 
     await sidebar

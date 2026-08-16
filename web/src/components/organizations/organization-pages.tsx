@@ -8,17 +8,17 @@ import {
 import { useMemo } from "react";
 
 import { ContentWidth } from "@/components/layout/content-width";
-import { NamespaceEntitySubtitle } from "@/components/namespaces";
-import { AppEmptyState } from "@/components/shared/app-feedback";
+import { NamespaceEntitySubtitle } from "@/components/namespaces/namespace-entity-subtitle";
 import { EntityHeader, PageActions } from "@/components/shared/entity-header";
 import { AppList, EntityLink } from "@/components/shared/entity-link";
-import { PropertyList } from "@/components/shared/property-list";
-import { Section } from "@/components/shared/section";
-import { StatusIndicator } from "@/components/shared/status-indicator";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { ExternalLink } from "@/components/ui/external-link";
 import { InternalLink } from "@/components/ui/internal-link";
+import { PropertyList } from "@/components/ui/property-list";
+import { Section } from "@/components/ui/section";
+import { StatusIndicator } from "@/components/ui/status-indicator";
 import { UserAvatarCompact } from "@/components/ui/user-avatar";
 import { useAuth } from "@/hooks/use-auth";
 import { can } from "@/lib/auth/permissions";
@@ -118,15 +118,15 @@ export function OrganizationOverviewPage({
                         subtitle={
                           <NamespaceEntitySubtitle
                             description={namespace.description}
-                            projectCount={namespace.projects.length}
-                            documentCount={namespace.documents.length}
+                            projectCount={namespace.project_count ?? 0}
+                            documentCount={namespace.document_count ?? 0}
                           />
                         }
                       />
                     ))}
                   </AppList>
                 ) : (
-                  <AppEmptyState
+                  <EmptyState
                     compact
                     icon={<Layers3Icon />}
                     title="No namespaces"
@@ -211,7 +211,7 @@ export function OrganizationOverviewPage({
                     })}
                   </AppList>
                 ) : (
-                  <AppEmptyState
+                  <EmptyState
                     compact
                     icon={<UsersIcon />}
                     title="No members"
@@ -261,8 +261,8 @@ export function OrganizationOverviewPage({
                           </p>
                           <p className="text-muted-foreground truncate text-xs">
                             {role.description ||
-                              `${role.members.length} ${pluralize(
-                                role.members.length,
+                              `${role.member_count ?? 0} ${pluralize(
+                                role.member_count ?? 0,
                                 "member",
                                 "members"
                               )}`}
@@ -272,7 +272,7 @@ export function OrganizationOverviewPage({
                     ))}
                   </AppList>
                 ) : (
-                  <AppEmptyState
+                  <EmptyState
                     compact
                     icon={<ShieldIcon />}
                     title="No roles"
@@ -296,7 +296,7 @@ export function OrganizationOverviewPage({
               </Section>
             </>
           ) : (
-            <AppEmptyState
+            <EmptyState
               icon={<Building2Icon />}
               title="Limited access"
               description="You can view basic organization details, but members, roles, and namespaces require read permission."

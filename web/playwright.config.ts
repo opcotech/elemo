@@ -55,7 +55,11 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      use: {
+        ...devices['Desktop Chrome'],
+        // Firefox/WebKit reject these permission names.
+        permissions: ['clipboard-read', 'clipboard-write'],
+      },
     },
 
     {

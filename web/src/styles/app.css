@@ -310,6 +310,360 @@
   }
 }
 
+/* TipTap / Markdown description surfaces */
+.rich-text-editor__surface .ProseMirror {
+  min-height: 10rem;
+  padding: 1.25rem;
+  outline: none;
+}
+
+.rich-text-editor__fallback {
+  min-height: 10rem;
+  padding: 1.25rem;
+}
+
+.rich-text-editor__surface .ProseMirror p.is-editor-empty:first-child::before {
+  color: var(--muted-foreground);
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+.rich-text-editor__content {
+  color: var(--foreground);
+  font-size: 0.95rem;
+  line-height: 1.75;
+}
+
+.rich-text-content {
+  color: var(--foreground);
+  font-size: 0.95rem;
+  line-height: 1.75;
+}
+
+.rich-text-content[data-size="sm"] {
+  color: var(--muted-foreground);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.rich-text-content[data-size="xs"] {
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  line-height: 1.25rem;
+}
+
+/* Beat base heading colors so sized summaries stay consistent. */
+.rich-text-content[data-size="sm"] :is(h1, h2, h3, h4, h5, h6, p, li, a),
+.rich-text-content[data-size="xs"] :is(h1, h2, h3, h4, h5, h6, p, li, a) {
+  color: inherit;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+.rich-text-content[data-size="sm"] :is(h1, h2, h3, h4, h5, h6),
+.rich-text-content[data-size="xs"] :is(h1, h2, h3, h4, h5, h6) {
+  font-weight: 600;
+}
+
+.rich-text-editor__content p,
+.rich-text-content p {
+  margin: 0 0 0.75rem;
+}
+
+.rich-text-editor__content p:last-child,
+.rich-text-content p:last-child {
+  margin-bottom: 0;
+}
+
+.rich-text-editor__content ul,
+.rich-text-content ul,
+.rich-text-editor__content ol,
+.rich-text-content ol {
+  margin: 0 0 0.75rem;
+  padding-left: 1.25rem;
+}
+
+.rich-text-editor__content ul,
+.rich-text-content ul {
+  list-style: disc;
+}
+
+.rich-text-editor__content ol,
+.rich-text-content ol {
+  list-style: decimal;
+}
+
+.rich-text-editor__content strong,
+.rich-text-content strong {
+  font-weight: 600;
+}
+
+.rich-text-editor__content em,
+.rich-text-content em {
+  font-style: italic;
+}
+
+.rich-text-editor__content s,
+.rich-text-content s {
+  text-decoration: line-through;
+}
+
+.rich-text-editor__content blockquote,
+.rich-text-content blockquote {
+  border-left: 3px solid var(--border);
+  color: var(--muted-foreground);
+  margin: 0 0 0.75rem;
+  padding-left: 0.875rem;
+}
+
+.rich-text-editor__content blockquote:last-child,
+.rich-text-content blockquote:last-child {
+  margin-bottom: 0;
+}
+
+.rich-text-editor__content code,
+.rich-text-content code {
+  background: var(--muted);
+  border-radius: 0.25rem;
+  font-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", monospace;
+  font-size: 0.875em;
+  padding: 0.125rem 0.35rem;
+}
+
+.rich-text-editor__content pre,
+.rich-text-content pre {
+  background: var(--muted);
+  border-radius: 0.5rem;
+  margin: 0 0 0.75rem;
+  overflow-x: auto;
+  padding: 0.75rem 1rem;
+}
+
+.rich-text-editor__content pre:last-child,
+.rich-text-content pre:last-child {
+  margin-bottom: 0;
+}
+
+.rich-text-editor__content pre code,
+.rich-text-content pre code {
+  background: transparent;
+  border-radius: 0;
+  font-size: 0.8125rem;
+  padding: 0;
+}
+
+.rich-text-editor__content a,
+.rich-text-content a {
+  color: var(--primary);
+  text-decoration: none;
+}
+
+.rich-text-editor__content a:hover,
+.rich-text-content a:hover {
+  text-decoration: underline;
+}
+
+.rich-text-editor__content h1,
+.rich-text-content h1 {
+  font-size: 1.5rem;
+  font-weight: 650;
+  line-height: 1.3;
+  margin: 0 0 0.75rem;
+}
+
+.rich-text-editor__content h2,
+.rich-text-content h2 {
+  font-size: 1.25rem;
+  font-weight: 650;
+  line-height: 1.35;
+  margin: 0 0 0.75rem;
+}
+
+.rich-text-editor__content h3,
+.rich-text-content h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  line-height: 1.4;
+  margin: 0 0 0.75rem;
+}
+
+.rich-text-editor__content u,
+.rich-text-content u {
+  text-decoration: underline;
+}
+
+.rich-text-editor__content hr,
+.rich-text-content hr {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: 1rem 0;
+}
+
+.rich-text-editor__content ul[data-type="taskList"],
+.rich-text-content ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0;
+}
+
+.rich-text-editor__content ul[data-type="taskList"] li,
+.rich-text-content ul[data-type="taskList"] li {
+  align-items: flex-start;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.rich-text-editor__content ul[data-type="taskList"] li > label,
+.rich-text-content ul[data-type="taskList"] li > label {
+  flex: none;
+  margin-top: 0.3rem;
+}
+
+.rich-text-editor__content ul[data-type="taskList"] li > div,
+.rich-text-content ul[data-type="taskList"] li > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.rich-text-editor__content table,
+.rich-text-content table {
+  border-collapse: collapse;
+  margin: 0 0 0.75rem;
+  overflow: hidden;
+  table-layout: fixed;
+  width: 100%;
+}
+
+.rich-text-editor__content th,
+.rich-text-content th,
+.rich-text-editor__content td,
+.rich-text-content td {
+  border: 1px solid var(--border);
+  padding: 0.4rem 0.6rem;
+  position: relative;
+  text-align: left;
+  vertical-align: top;
+}
+
+.rich-text-editor__content th,
+.rich-text-content th {
+  background: var(--muted);
+  font-weight: 600;
+}
+
+.rich-text-editor__content .mention,
+.rich-text-content .mention {
+  background: color-mix(in oklab, var(--primary) 12%, transparent);
+  border-radius: 0.25rem;
+  color: var(--primary);
+  font-weight: 500;
+  padding: 0.05rem 0.3rem;
+}
+
+.rich-text-editor__content pre code.hljs,
+.rich-text-content pre code.hljs,
+.rich-text-editor__content pre .hljs,
+.rich-text-content pre .hljs {
+  background: transparent;
+  color: inherit;
+}
+
+.rich-text-editor__content .hljs-comment,
+.rich-text-content .hljs-comment,
+.rich-text-editor__content .hljs-quote,
+.rich-text-content .hljs-quote {
+  color: var(--muted-foreground);
+  font-style: italic;
+}
+
+.rich-text-editor__content .hljs-keyword,
+.rich-text-content .hljs-keyword,
+.rich-text-editor__content .hljs-selector-tag,
+.rich-text-content .hljs-selector-tag,
+.rich-text-editor__content .hljs-meta .hljs-keyword,
+.rich-text-content .hljs-meta .hljs-keyword {
+  color: var(--primary);
+}
+
+.rich-text-editor__content .hljs-string,
+.rich-text-content .hljs-string,
+.rich-text-editor__content .hljs-attr,
+.rich-text-content .hljs-attr,
+.rich-text-editor__content .hljs-template-variable,
+.rich-text-content .hljs-template-variable {
+  color: color-mix(in oklab, var(--primary) 70%, #16a34a);
+}
+
+.rich-text-editor__content .hljs-number,
+.rich-text-content .hljs-number,
+.rich-text-editor__content .hljs-literal,
+.rich-text-content .hljs-literal,
+.rich-text-editor__content .hljs-variable,
+.rich-text-content .hljs-variable {
+  color: color-mix(in oklab, var(--foreground) 35%, #d97706);
+}
+
+.rich-text-editor__content .hljs-title,
+.rich-text-content .hljs-title,
+.rich-text-editor__content .hljs-section,
+.rich-text-content .hljs-section,
+.rich-text-editor__content .hljs-function,
+.rich-text-content .hljs-function {
+  color: color-mix(in oklab, var(--primary) 45%, #2563eb);
+  font-weight: 600;
+}
+
+.rich-text-editor__content .hljs-built_in,
+.rich-text-content .hljs-built_in,
+.rich-text-editor__content .hljs-type,
+.rich-text-content .hljs-type {
+  color: color-mix(in oklab, var(--foreground) 40%, #0d9488);
+}
+
+.rich-text-suggestion {
+  border-radius: 0.5rem;
+  border-style: solid;
+  border-width: 1px;
+  max-height: 14rem;
+  min-width: 12rem;
+  overflow: auto;
+  padding: 0.25rem;
+}
+
+.rich-text-suggestion__empty {
+  color: var(--muted-foreground);
+  font-size: 0.8125rem;
+  padding: 0.5rem 0.625rem;
+}
+
+.rich-text-suggestion__item {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 0.375rem;
+  color: inherit;
+  cursor: pointer;
+  display: flex;
+  gap: 0.5rem;
+  justify-content: space-between;
+  padding: 0.4rem 0.625rem;
+  text-align: left;
+  width: 100%;
+}
+
+.rich-text-suggestion__item.is-active,
+.rich-text-suggestion__item:hover {
+  background: var(--muted);
+}
+
+.rich-text-suggestion__detail {
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+}
+
 @layer utilities {
   .animate-fade-in {
     animation: fadeIn 0.22s cubic-bezier(0.4, 0, 0.2, 1);

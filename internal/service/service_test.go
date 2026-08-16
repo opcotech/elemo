@@ -337,6 +337,160 @@ func TestWithProjectRepository(t *testing.T) {
 	}
 }
 
+func TestWithIssueRepository(t *testing.T) {
+	type args struct {
+		issueRepo repository.IssueRepository
+	}
+	tests := []struct {
+		name    string
+		argsFn  func(ctrl *gomock.Controller) args
+		want    func(ctrl *gomock.Controller) repository.IssueRepository
+		wantErr bool
+	}{
+		{
+			name: "set the issue repository for the baseService",
+			argsFn: func(ctrl *gomock.Controller) args {
+				return args{issueRepo: repository.NewMockIssueRepository(ctrl)}
+			},
+			want: func(ctrl *gomock.Controller) repository.IssueRepository {
+				return repository.NewMockIssueRepository(ctrl)
+			},
+		},
+		{
+			name: "return an error if no issue repository is provided",
+			argsFn: func(_ *gomock.Controller) args {
+				return args{issueRepo: nil}
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			var s baseService
+			args := tt.argsFn(ctrl)
+			err := WithIssueRepository(args.issueRepo)(&s)
+			if (err != nil) != tt.wantErr {
+				require.NoError(t, err)
+			}
+			if !tt.wantErr {
+				assert.Equal(t, tt.want(ctrl), s.issueRepo)
+			} else {
+				assert.ErrorIs(t, err, ErrNoIssueRepository)
+			}
+		})
+	}
+}
+
+func TestWithAssignmentRepository(t *testing.T) {
+	type args struct {
+		assignmentRepo repository.AssignmentRepository
+	}
+	tests := []struct {
+		name    string
+		argsFn  func(ctrl *gomock.Controller) args
+		want    func(ctrl *gomock.Controller) repository.AssignmentRepository
+		wantErr bool
+	}{
+		{
+			name: "set the assignment repository for the baseService",
+			argsFn: func(ctrl *gomock.Controller) args {
+				return args{assignmentRepo: repository.NewMockAssignmentRepository(ctrl)}
+			},
+			want: func(ctrl *gomock.Controller) repository.AssignmentRepository {
+				return repository.NewMockAssignmentRepository(ctrl)
+			},
+		},
+		{
+			name: "return an error if no assignment repository is provided",
+			argsFn: func(_ *gomock.Controller) args {
+				return args{assignmentRepo: nil}
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			var s baseService
+			args := tt.argsFn(ctrl)
+			err := WithAssignmentRepository(args.assignmentRepo)(&s)
+			if (err != nil) != tt.wantErr {
+				require.NoError(t, err)
+			}
+			if !tt.wantErr {
+				assert.Equal(t, tt.want(ctrl), s.assignmentRepo)
+			} else {
+				assert.ErrorIs(t, err, ErrNoAssignmentRepository)
+			}
+		})
+	}
+}
+
+func TestWithRoleRepository(t *testing.T) {
+	type args struct {
+		roleRepo repository.RoleRepository
+	}
+	tests := []struct {
+		name    string
+		argsFn  func(ctrl *gomock.Controller) args
+		wantErr error
+	}{
+		{
+			name: "set the role repository for the baseService",
+			argsFn: func(ctrl *gomock.Controller) args {
+				return args{roleRepo: repository.NewMockRoleRepository(ctrl)}
+			},
+		},
+		{
+			name: "return an error if no role repository is provided",
+			argsFn: func(_ *gomock.Controller) args {
+				return args{roleRepo: nil}
+			},
+			wantErr: ErrNoRoleRepository,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			var s baseService
+			args := tt.argsFn(ctrl)
+			err := WithRoleRepository(args.roleRepo)(&s)
+			require.ErrorIs(t, err, tt.wantErr)
+			if tt.wantErr == nil {
+				assert.Equal(t, args.roleRepo, s.roleRepo)
+			}
+		})
+	}
+}
+
+func TestWithNotificationService(t *testing.T) {
+	t.Parallel()
+
+	t.Run("return an error if no notification service is provided", func(t *testing.T) {
+		t.Parallel()
+
+		var s baseService
+		err := WithNotificationService(nil)(&s)
+		assert.ErrorIs(t, err, ErrNoNotificationService)
+	})
+}
+
 func Test_newService(t *testing.T) {
 	type args struct {
 		opts []Option

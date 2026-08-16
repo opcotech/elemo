@@ -76,13 +76,42 @@ export async function waitForAnimations(locator: Locator): Promise<void> {
  * Wait for a dropdown/combobox to open and be ready for interaction.
  * @param combobox - The combobox locator
  */
-export async function waitForDropdownOpen(combobox: Locator): Promise<void> {
-  await expect(combobox).toHaveAttribute("aria-expanded", "true");
+export async function waitForDropdownOpen(
+  combobox: Locator,
+  options?: { timeout?: number }
+): Promise<void> {
+  await expect(combobox).toHaveAttribute("aria-expanded", "true", {
+    timeout: options?.timeout,
+  });
   await expect(
     combobox.page().locator('[role="listbox"], [role="menu"]').filter({
       visible: true,
     })
   ).not.toHaveCount(0);
+}
+
+/**
+ * Click a trigger until `overlay` is visible. Firefox/WebKit often drop the
+ * first pointer event on Base UI popups.
+ *
+ * Do not call `scrollIntoViewIfNeeded` here: Playwright's click already
+ * scrolls, and an explicit scroll on a remounting trigger detaches the node.
+ */
+export async function clickUntilVisible(
+  trigger: Locator,
+  overlay: Locator,
+  options?: { timeout?: number }
+): Promise<void> {
+  await expect(trigger).toBeVisible();
+  await trigger.click();
+  try {
+    await expect(overlay).toBeVisible({
+      timeout: options?.timeout ?? 2_000,
+    });
+  } catch {
+    await trigger.click();
+    await expect(overlay).toBeVisible();
+  }
 }
 
 /**

@@ -1,46 +1,22 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import type { z } from "zod";
+
+import {
+  TodoFormFields,
+  todoCreateFormSchema,
+  todoFormDefaultValues,
+} from "./todo-form-fields";
+import type { TodoCreateFormValues } from "./todo-form-fields";
 
 import { Checkbox } from "@/components/ui/checkbox";
-import { DatePicker } from "@/components/ui/date-picker";
 import { DialogForm } from "@/components/ui/dialog-form";
-import {
-  ControlledField,
-  Field,
-  FieldControl,
-  FieldError,
-  FieldLabel,
-} from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/use-auth";
 import { useFormMutation } from "@/hooks/use-form-mutation";
 import { v1TodosCreate } from "@/lib/api/sdk";
 import type { Options, TodoCreate, V1TodosCreateData } from "@/lib/api/types";
-import { zTodoCreate } from "@/lib/client/zod.gen";
-import { createFormSchema, normalizeFormData } from "@/lib/forms";
-import { getDefaultValue } from "@/lib/utils";
-
-const todoFormSchema = createFormSchema(zTodoCreate.omit({ owned_by: true }));
-
-type TodoFormValues = z.infer<typeof todoFormSchema>;
-
-const defaultValues: TodoFormValues = {
-  title: "",
-  description: "",
-  priority: "normal",
-  due_date: null,
-};
+import { normalizeFormData } from "@/lib/forms";
 
 interface AddTodoFormProps {
   open: boolean;
@@ -56,15 +32,15 @@ export function AddTodoForm({
   const { user } = useAuth();
   const [createMore, setCreateMore] = useState(false);
 
-  const form = useForm<TodoFormValues>({
-    resolver: zodResolver(todoFormSchema),
-    defaultValues,
+  const form = useForm<TodoCreateFormValues>({
+    resolver: zodResolver(todoCreateFormSchema),
+    defaultValues: todoFormDefaultValues,
   });
 
   const mutation = useFormMutation<
     unknown,
     Options<V1TodosCreateData>,
-    TodoFormValues
+    TodoCreateFormValues
   >({
     mutationFn: async (variables) => {
       const { data } = await v1TodosCreate({
@@ -76,10 +52,10 @@ export function AddTodoForm({
     form,
     successMessage: "Todo added successfully",
     errorMessagePrefix: "Failed to add todo",
-    resetFormOnSuccess: false, // We'll handle reset manually based on createMore
+    resetFormOnSuccess: false,
     transformValues: (values) => {
       const normalizedBody = normalizeFormData(
-        todoFormSchema,
+        todoCreateFormSchema,
         values
       ) as TodoCreate;
       return {
@@ -94,13 +70,12 @@ export function AddTodoForm({
         onOpenChange(false);
       }
       onSuccess?.();
-      form.reset(defaultValues);
-      setCreateMore(false);
+      form.reset(todoFormDefaultValues);
     },
   });
 
   const handleReset = () => {
-    form.reset(defaultValues);
+    form.reset(todoFormDefaultValues);
     setCreateMore(false);
   };
 
@@ -110,6 +85,7 @@ export function AddTodoForm({
       open={open}
       onOpenChange={onOpenChange}
       title="Add Todo"
+      data-section="todo-add-form"
       onSubmit={mutation.handleSubmit}
       isPending={mutation.isPending}
       error={mutation.error || null}
@@ -117,98 +93,7 @@ export function AddTodoForm({
       onReset={handleReset}
       className="sm:max-w-xl"
     >
-      <ControlledField
-        control={form.control}
-        name="title"
-        render={({ field }) => (
-          <Field>
-            <FieldLabel>Title</FieldLabel>
-            <FieldControl>
-              <Input placeholder="Enter todo title" {...field} />
-            </FieldControl>
-            <FieldError />
-          </Field>
-        )}
-      />
-
-      <ControlledField
-        control={form.control}
-        name="description"
-        render={({ field }) => (
-          <Field>
-            <FieldLabel>Description</FieldLabel>
-            <FieldControl>
-              <Textarea
-                placeholder="Enter todo description (optional)"
-                className="min-h-40 resize-y"
-                rows={6}
-                {...field}
-                value={getDefaultValue(field.value)}
-              />
-            </FieldControl>
-            <FieldError />
-          </Field>
-        )}
-      />
-
-      <div className="flex gap-4">
-        <ControlledField
-          control={form.control}
-          name="priority"
-          render={({ field }) => (
-            <Field className="w-1/3">
-              <FieldLabel>Priority</FieldLabel>
-              <Select
-                value={field.value}
-                onValueChange={field.onChange}
-                items={{
-                  normal: "Normal",
-                  important: "Important",
-                  urgent: "Urgent",
-                  critical: "Critical",
-                }}
-              >
-                <FieldControl>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select a priority" />
-                  </SelectTrigger>
-                </FieldControl>
-                <SelectContent>
-                  <SelectItem value="normal">Normal</SelectItem>
-                  <SelectItem value="important">Important</SelectItem>
-                  <SelectItem value="urgent">Urgent</SelectItem>
-                  <SelectItem value="critical">Critical</SelectItem>
-                </SelectContent>
-              </Select>
-              <FieldError />
-            </Field>
-          )}
-        />
-
-        <ControlledField
-          control={form.control}
-          name="due_date"
-          render={({ field }) => (
-            <Field className="w-2/3">
-              <FieldLabel>Due Date</FieldLabel>
-              <FieldControl>
-                <DatePicker
-                  date={field.value ? new Date(field.value) : null}
-                  onDateChange={(date) => {
-                    field.onChange(date ? date.toISOString() : null);
-                  }}
-                  placeholder="Due date (optional)"
-                  disabledDays={[
-                    { before: new Date(new Date().setHours(0, 0, 0, 0)) },
-                  ]}
-                />
-              </FieldControl>
-              <FieldError />
-            </Field>
-          )}
-        />
-      </div>
-
+      <TodoFormFields control={form.control} />
       <div className="flex items-center gap-2">
         <Checkbox
           id="createMore"

@@ -60,6 +60,10 @@ export type User = {
   languages: Array<Language>;
   status: UserStatus;
   /**
+   * Number of documents that belong to the user when projected.
+   */
+  document_count?: number | null;
+  /**
    * Date when the user was created.
    */
   created_at: string;
@@ -137,17 +141,17 @@ export type Organization = {
   website: string | null;
   status: OrganizationStatus;
   /**
-   * IDs of the users in the organization.
+   * Number of members in the organization when projected.
    */
-  members: Array<string>;
+  member_count?: number | null;
   /**
-   * IDs of the teams in the organization.
+   * Number of teams in the organization when projected.
    */
-  teams: Array<string>;
+  team_count?: number | null;
   /**
-   * IDs of the namespaces in the organization.
+   * Number of namespaces in the organization when projected.
    */
-  namespaces: Array<string>;
+  namespace_count?: number | null;
   /**
    * Date when the organization was created.
    */
@@ -191,13 +195,13 @@ export type Namespace = {
    */
   description?: string | null;
   /**
-   * Projects in the namespace.
+   * Number of projects in the namespace when projected.
    */
-  projects: Array<PartialProject>;
+  project_count?: number | null;
   /**
-   * Documents in the namespace.
+   * Number of documents in the namespace when projected.
    */
-  documents: Array<PartialDocument>;
+  document_count?: number | null;
   /**
    * Date when the namespace was created.
    */
@@ -206,6 +210,114 @@ export type Namespace = {
    * Date when the namespace was updated.
    */
   updated_at: string | null;
+};
+
+/**
+ * PageInfo
+ *
+ * Cursor pagination metadata for a page of results.
+ */
+export type PageInfo = {
+  /**
+   * Opaque token for the next page. Omitted when has_more is false.
+   */
+  next_page_token?: string | null;
+  /**
+   * Whether more results are available.
+   */
+  has_more: boolean;
+  /**
+   * Optional total count when requested by the server.
+   */
+  total_count?: number | null;
+};
+
+/**
+ * ProjectPage
+ */
+export type ProjectPage = {
+  items: Array<Project>;
+  page_info: PageInfo;
+};
+
+/**
+ * PartialIssuePage
+ */
+export type PartialIssuePage = {
+  items: Array<PartialIssue>;
+  page_info: PageInfo;
+};
+
+/**
+ * IssueRelationPage
+ */
+export type IssueRelationPage = {
+  items: Array<IssueRelation>;
+  page_info: PageInfo;
+};
+
+/**
+ * OrganizationPage
+ */
+export type OrganizationPage = {
+  items: Array<Organization>;
+  page_info: PageInfo;
+};
+
+/**
+ * NamespacePage
+ */
+export type NamespacePage = {
+  items: Array<Namespace>;
+  page_info: PageInfo;
+};
+
+/**
+ * UserPage
+ */
+export type UserPage = {
+  items: Array<User>;
+  page_info: PageInfo;
+};
+
+/**
+ * TodoPage
+ */
+export type TodoPage = {
+  items: Array<Todo>;
+  page_info: PageInfo;
+};
+
+/**
+ * NotificationPage
+ */
+export type NotificationPage = {
+  items: Array<Notification>;
+  page_info: PageInfo;
+};
+
+/**
+ * RolePage
+ */
+export type RolePage = {
+  items: Array<Role>;
+  page_info: PageInfo;
+};
+
+/**
+ * PartialDocumentPage
+ */
+export type PartialDocumentPage = {
+  items: Array<PartialDocument>;
+  page_info: PageInfo;
+};
+
+/**
+ * OrganizationMemberPage
+ */
+export type OrganizationMemberPage = {
+  items: Array<OrganizationMember>;
+  page_info: PageInfo;
 };
 
 /**
@@ -269,13 +381,13 @@ export type Project = {
    */
   teams: Array<string>;
   /**
-   * Documents in the project.
+   * Number of documents that belong to the project when projected.
    */
-  documents: Array<PartialDocument>;
+  document_count?: number | null;
   /**
-   * IDs of the issues in the project.
+   * Number of issues that belong to the project when projected.
    */
-  issues: Array<string>;
+  issue_count?: number | null;
   /**
    * Date when the project was created.
    */
@@ -304,14 +416,355 @@ export type PartialDocument = {
    * Excerpt of the document.
    */
   excerpt?: string | null;
-  /**
-   * ID of the user who created the document.
-   */
-  created_by: string;
+  created_by: PartialUser;
   /**
    * Date when the document was created.
    */
   created_at?: string | null;
+};
+
+/**
+ * PartialIssue
+ *
+ * A simplified issue that can be used in lists.
+ */
+export type PartialIssue = {
+  /**
+   * Unique identifier of the issue.
+   */
+  id: string;
+  /**
+   * Composite issue key built from the owner project key and numeric ID.
+   */
+  key: string;
+  /**
+   * Numeric identifier of the issue within its project.
+   */
+  numeric_id: number;
+  /**
+   * Parent issue of this issue.
+   */
+  parent?: PartialIssue | null;
+  kind: IssueKind;
+  /**
+   * Title of the issue.
+   */
+  title: string;
+  /**
+   * Description of the issue.
+   */
+  description?: string | null;
+  status: IssueStatus;
+  priority: IssuePriority;
+  /**
+   * User who reported the issue.
+   */
+  reported_by?: PartialUser | null;
+  /**
+   * Users assigned to the issue.
+   */
+  assignees: Array<PartialUser>;
+  /**
+   * Users reviewing the issue.
+   */
+  reviewers: Array<PartialUser>;
+  /**
+   * Labels attached to the issue.
+   */
+  labels: Array<PartialLabel>;
+  /**
+   * Project the issue belongs to.
+   */
+  project?: PartialProject | null;
+  /**
+   * Namespace that owns the issue's project.
+   */
+  namespace?: PartialNamespace | null;
+  /**
+   * Due date of the issue.
+   */
+  due_date?: string | null;
+  /**
+   * Start date of the issue.
+   */
+  start_date?: string | null;
+};
+
+/**
+ * IssueKind
+ *
+ * Kind of the issue.
+ */
+export type IssueKind = "epic" | "story" | "task" | "bug";
+
+/**
+ * IssueStatus
+ *
+ * Status of the issue.
+ */
+export type IssueStatus =
+  "open" | "in progress" | "blocked" | "review" | "done" | "closed";
+
+/**
+ * IssuePriority
+ *
+ * Priority of the issue.
+ */
+export type IssuePriority = "lowest" | "low" | "normal" | "high" | "highest";
+
+/**
+ * IssueResolution
+ *
+ * Resolution of the issue.
+ */
+export type IssueResolution =
+  | "none"
+  | "fixed"
+  | "duplicate"
+  | "won't fix"
+  | "invalid"
+  | "incomplete"
+  | "cannot reproduce";
+
+/**
+ * IssueRelationKind
+ *
+ * Kind of relation between two issues.
+ */
+export type IssueRelationKind =
+  | "blocked by"
+  | "blocks"
+  | "depends on"
+  | "duplicated by"
+  | "duplicates"
+  | "related to"
+  | "subtask of";
+
+/**
+ * IssueRelationDirection
+ *
+ * Whether the relation edge leaves (outgoing) or enters (incoming) the issue in the URL.
+ */
+export type IssueRelationDirection = "outgoing" | "incoming";
+
+/**
+ * IssueLink
+ *
+ * An external URL attached to an issue, with a visible label.
+ */
+export type IssueLink = {
+  /**
+   * Destination URL of the link.
+   */
+  url: string;
+  /**
+   * Visible label of the link.
+   */
+  label: string;
+};
+
+/**
+ * Issue
+ *
+ * An issue in a project.
+ */
+export type Issue = {
+  /**
+   * Unique identifier of the issue.
+   */
+  id: string;
+  /**
+   * Composite issue key built from the owner project key and numeric ID.
+   */
+  key: string;
+  /**
+   * Numeric identifier of the issue within its project.
+   */
+  numeric_id: number;
+  /**
+   * Parent issue of this issue.
+   */
+  parent?: PartialIssue | null;
+  kind: IssueKind;
+  /**
+   * Title of the issue.
+   */
+  title: string;
+  /**
+   * Description of the issue.
+   */
+  description?: string | null;
+  status: IssueStatus;
+  priority: IssuePriority;
+  resolution: IssueResolution;
+  reported_by: PartialUser;
+  /**
+   * Users assigned to the issue.
+   */
+  assignees: Array<PartialUser>;
+  /**
+   * Users reviewing the issue.
+   */
+  reviewers: Array<PartialUser>;
+  /**
+   * Labels attached to the issue.
+   */
+  labels: Array<PartialLabel>;
+  /**
+   * Project the issue belongs to.
+   */
+  project?: PartialProject | null;
+  /**
+   * Namespace that owns the issue's project.
+   */
+  namespace?: PartialNamespace | null;
+  /**
+   * Number of comments on the issue when projected.
+   */
+  comment_count?: number | null;
+  /**
+   * Number of attachments on the issue when projected.
+   */
+  attachment_count?: number | null;
+  /**
+   * Number of users watching the issue when projected.
+   */
+  watcher_count?: number | null;
+  /**
+   * Number of related issues when projected.
+   */
+  relation_count?: number | null;
+  /**
+   * External links related to the issue.
+   */
+  links: Array<IssueLink>;
+  /**
+   * Due date of the issue.
+   */
+  due_date?: string | null;
+  /**
+   * Start date of the issue.
+   */
+  start_date?: string | null;
+  /**
+   * Date when the issue was created.
+   */
+  created_at: string;
+  /**
+   * Date when the issue was updated.
+   */
+  updated_at: string | null;
+};
+
+/**
+ * IssueRelation
+ *
+ * A directed relation between the issue in the URL and another issue.
+ */
+export type IssueRelation = {
+  /**
+   * Unique identifier of the relation.
+   */
+  id: string;
+  kind: IssueRelationKind;
+  direction: IssueRelationDirection;
+  related: PartialIssue;
+  /**
+   * Date when the relation was created.
+   */
+  created_at: string;
+};
+
+/**
+ * PartialUser
+ *
+ * A simplified user used on issue list and detail responses.
+ */
+export type PartialUser = {
+  /**
+   * Unique identifier of the user.
+   */
+  id: string;
+  /**
+   * First name of the user.
+   */
+  first_name: string;
+  /**
+   * Last name of the user.
+   */
+  last_name: string;
+  /**
+   * Profile picture of the user.
+   */
+  picture?: string | null;
+};
+
+/**
+ * PartialNamespace
+ *
+ * A simplified namespace used on issue list and detail responses.
+ */
+export type PartialNamespace = {
+  /**
+   * Unique identifier of the namespace.
+   */
+  id: string;
+  /**
+   * Name of the namespace.
+   */
+  name: string;
+};
+
+/**
+ * PartialLabel
+ *
+ * A simplified label used on issue list and detail responses.
+ */
+export type PartialLabel = {
+  /**
+   * Unique identifier of the label.
+   */
+  id: string;
+  /**
+   * Name of the label.
+   */
+  name: string;
+};
+
+/**
+ * Label
+ *
+ * A label that can be attached to resources.
+ */
+export type Label = {
+  /**
+   * Unique identifier of the label.
+   */
+  id: string;
+  /**
+   * Name of the label.
+   */
+  name: string;
+  /**
+   * Description of the label.
+   */
+  description?: string | null;
+  /**
+   * Date when the label was created.
+   */
+  created_at: string;
+  /**
+   * Date when the label was updated.
+   */
+  updated_at: string | null;
+};
+
+/**
+ * LabelPage
+ */
+export type LabelPage = {
+  items: Array<Label>;
+  page_info: PageInfo;
 };
 
 /**
@@ -766,9 +1219,9 @@ export type Role = {
    */
   description?: string | null;
   /**
-   * IDs of the users assigned to the role.
+   * Number of users assigned to the role when projected.
    */
-  members: Array<string>;
+  member_count?: number | null;
   /**
    * IDs of the permissions assigned to the role.
    */
@@ -804,19 +1257,43 @@ export type ResourceType =
   | "User";
 
 /**
- * Number of resources to skip.
+ * Deprecated. Use page_token/page_size instead.
+ *
+ * @deprecated
  */
 export type Offset = number;
 
 /**
- * Number of resources to return.
+ * Deprecated. Use page_size instead.
+ *
+ * @deprecated
  */
 export type Limit = number;
+
+/**
+ * Maximum number of items to return.
+ */
+export type PageSize = number;
+
+/**
+ * Opaque continuation token from a previous page_info.next_page_token.
+ */
+export type PageToken = string;
 
 /**
  * ID of the resource.
  */
 export type Id = string;
+
+/**
+ * ID of the issue relation.
+ */
+export type RelationId = string;
+
+/**
+ * Composite issue key built from the owner project key and numeric ID.
+ */
+export type IssueKey = string;
 
 /**
  * ID of the resource combined with its resource type.
@@ -1125,6 +1602,92 @@ export type ProjectPatch = {
   status?: ProjectStatus;
 };
 
+export type IssueCreate = {
+  /**
+   * ID of the parent issue.
+   */
+  parent?: string | null;
+  kind: IssueKind;
+  /**
+   * Title of the issue.
+   */
+  title: string;
+  /**
+   * Description of the issue.
+   */
+  description?: string | null;
+  status?: IssueStatus;
+  priority?: IssuePriority;
+  resolution?: IssueResolution;
+  /**
+   * External links related to the issue.
+   */
+  links?: Array<IssueLink>;
+  /**
+   * Due date of the issue.
+   */
+  due_date?: string | null;
+  /**
+   * Start date of the issue.
+   */
+  start_date?: string | null;
+};
+
+export type IssuePatch = {
+  kind?: IssueKind;
+  /**
+   * Title of the issue.
+   */
+  title?: string;
+  /**
+   * Description of the issue.
+   */
+  description?: string | null;
+  status?: IssueStatus;
+  priority?: IssuePriority;
+  resolution?: IssueResolution;
+  /**
+   * External links related to the issue.
+   */
+  links?: Array<IssueLink>;
+  /**
+   * Due date of the issue.
+   */
+  due_date?: string | null;
+  /**
+   * IDs of users assigned to the issue. Empty array clears assignees.
+   */
+  assignees?: Array<string>;
+  /**
+   * IDs of users reviewing the issue. Empty array clears reviewers.
+   */
+  reviewers?: Array<string>;
+  /**
+   * IDs of labels attached to the issue. Empty array clears labels.
+   */
+  labels?: Array<string>;
+  /**
+   * Start date of the issue.
+   */
+  start_date?: string | null;
+  /**
+   * ID of the parent issue. Null clears the parent. Omitted leaves the parent unchanged.
+   */
+  parent?: string | null;
+};
+
+export type IssueRelationCreate = {
+  /**
+   * ID of the related issue. The created edge is always outgoing from the issue in the URL.
+   */
+  related_id: string;
+  kind: IssueRelationKind;
+};
+
+export type IssueRelationPatch = {
+  kind: IssueRelationKind;
+};
+
 export type PermissionCreate = {
   kind: PermissionKind;
   subject: {
@@ -1176,18 +1739,22 @@ export type V1UsersGetData = {
   path?: never;
   query?: {
     /**
-     * Number of resources to skip.
+     * Maximum number of items to return.
      */
-    offset?: number;
+    page_size?: number;
     /**
-     * Number of resources to return.
+     * Opaque continuation token from a previous page_info.next_page_token.
      */
-    limit?: number;
+    page_token?: string;
   };
   url: "/v1/users";
 };
 
 export type V1UsersGetErrors = {
+  /**
+   * Bad request
+   */
+  400: HttpError;
   /**
    * Unauthorized request
    */
@@ -1208,7 +1775,7 @@ export type V1UsersGetResponses = {
   /**
    * OK
    */
-  200: Array<User>;
+  200: UserPage;
 };
 
 export type V1UsersGetResponse = V1UsersGetResponses[keyof V1UsersGetResponses];
@@ -1480,18 +2047,122 @@ export type V1UserUpdateResponses = {
 export type V1UserUpdateResponse =
   V1UserUpdateResponses[keyof V1UserUpdateResponses];
 
+export type V1UsersIssuesGetData = {
+  body?: never;
+  path: {
+    /**
+     * ID of the resource.
+     */
+    id: string;
+  };
+  query?: {
+    /**
+     * Maximum number of items to return.
+     */
+    page_size?: number;
+    /**
+     * Opaque continuation token from a previous page_info.next_page_token.
+     */
+    page_token?: string;
+  };
+  url: "/v1/users/{id}/issues";
+};
+
+export type V1UsersIssuesGetErrors = {
+  /**
+   * Bad request
+   */
+  400: HttpError;
+  /**
+   * Unauthorized request
+   */
+  401: HttpError;
+  /**
+   * Forbidden
+   */
+  403: HttpError;
+  /**
+   * The requested resource not found
+   */
+  404: HttpError;
+  /**
+   * Internal Server Error
+   */
+  500: HttpError;
+};
+
+export type V1UsersIssuesGetError =
+  V1UsersIssuesGetErrors[keyof V1UsersIssuesGetErrors];
+
+export type V1UsersIssuesGetResponses = {
+  /**
+   * OK
+   */
+  200: PartialIssuePage;
+};
+
+export type V1UsersIssuesGetResponse =
+  V1UsersIssuesGetResponses[keyof V1UsersIssuesGetResponses];
+
+export type V1LabelsGetData = {
+  body?: never;
+  path?: never;
+  query?: {
+    /**
+     * Maximum number of items to return.
+     */
+    page_size?: number;
+    /**
+     * Opaque continuation token from a previous page_info.next_page_token.
+     */
+    page_token?: string;
+  };
+  url: "/v1/labels";
+};
+
+export type V1LabelsGetErrors = {
+  /**
+   * Bad request
+   */
+  400: HttpError;
+  /**
+   * Unauthorized request
+   */
+  401: HttpError;
+  /**
+   * Forbidden
+   */
+  403: HttpError;
+  /**
+   * Internal Server Error
+   */
+  500: HttpError;
+};
+
+export type V1LabelsGetError = V1LabelsGetErrors[keyof V1LabelsGetErrors];
+
+export type V1LabelsGetResponses = {
+  /**
+   * OK
+   */
+  200: LabelPage;
+};
+
+export type V1LabelsGetResponse =
+  V1LabelsGetResponses[keyof V1LabelsGetResponses];
+
 export type V1TodosGetData = {
   body?: never;
   path?: never;
   query?: {
     /**
-     * Number of resources to skip.
+     * Maximum number of items to return.
      */
-    offset?: number;
+    page_size?: number;
     /**
-     * Number of resources to return.
+     * Opaque continuation token from a previous page_info.next_page_token.
      */
-    limit?: number;
+    page_token?: string;
     /**
      * Completion status of the items.
      */
@@ -1501,6 +2172,10 @@ export type V1TodosGetData = {
 };
 
 export type V1TodosGetErrors = {
+  /**
+   * Bad request
+   */
+  400: HttpError;
   /**
    * Unauthorized request
    */
@@ -1525,7 +2200,7 @@ export type V1TodosGetResponses = {
   /**
    * OK
    */
-  200: Array<Todo>;
+  200: TodoPage;
 };
 
 export type V1TodosGetResponse = V1TodosGetResponses[keyof V1TodosGetResponses];
@@ -1718,13 +2393,13 @@ export type V1NotificationsGetData = {
   path?: never;
   query?: {
     /**
-     * Number of resources to skip.
+     * Maximum number of items to return.
      */
-    offset?: number;
+    page_size?: number;
     /**
-     * Number of resources to return.
+     * Opaque continuation token from a previous page_info.next_page_token.
      */
-    limit?: number;
+    page_token?: string;
   };
   url: "/v1/notifications";
 };
@@ -1755,7 +2430,7 @@ export type V1NotificationsGetResponses = {
   /**
    * OK
    */
-  200: Array<Notification>;
+  200: NotificationPage;
 };
 
 export type V1NotificationsGetResponse =
@@ -1910,18 +2585,22 @@ export type V1OrganizationsGetData = {
   path?: never;
   query?: {
     /**
-     * Number of resources to skip.
+     * Maximum number of items to return.
      */
-    offset?: number;
+    page_size?: number;
     /**
-     * Number of resources to return.
+     * Opaque continuation token from a previous page_info.next_page_token.
      */
-    limit?: number;
+    page_token?: string;
   };
   url: "/v1/organizations";
 };
 
 export type V1OrganizationsGetErrors = {
+  /**
+   * Bad request
+   */
+  400: HttpError;
   /**
    * Unauthorized request
    */
@@ -1943,7 +2622,7 @@ export type V1OrganizationsGetResponses = {
   /**
    * OK
    */
-  200: Array<Organization>;
+  200: OrganizationPage;
 };
 
 export type V1OrganizationsGetResponse =
@@ -2150,7 +2829,16 @@ export type V1OrganizationMembersGetData = {
      */
     id: string;
   };
-  query?: never;
+  query?: {
+    /**
+     * Maximum number of items to return.
+     */
+    page_size?: number;
+    /**
+     * Opaque continuation token from a previous page_info.next_page_token.
+     */
+    page_token?: string;
+  };
   url: "/v1/organizations/{id}/members";
 };
 
@@ -2184,7 +2872,7 @@ export type V1OrganizationMembersGetResponses = {
   /**
    * OK
    */
-  200: Array<OrganizationMember>;
+  200: OrganizationMemberPage;
 };
 
 export type V1OrganizationMembersGetResponse =
@@ -2475,13 +3163,13 @@ export type V1OrganizationRolesGetData = {
   };
   query?: {
     /**
-     * Number of resources to skip.
+     * Maximum number of items to return.
      */
-    offset?: number;
+    page_size?: number;
     /**
-     * Number of resources to return.
+     * Opaque continuation token from a previous page_info.next_page_token.
      */
-    limit?: number;
+    page_token?: string;
   };
   url: "/v1/organizations/{id}/roles";
 };
@@ -2516,7 +3204,7 @@ export type V1OrganizationRolesGetResponses = {
   /**
    * OK
    */
-  200: Array<Role>;
+  200: RolePage;
 };
 
 export type V1OrganizationRolesGetResponse =
@@ -2743,7 +3431,16 @@ export type V1OrganizationRoleMembersGetData = {
      */
     role_id: string;
   };
-  query?: never;
+  query?: {
+    /**
+     * Maximum number of items to return.
+     */
+    page_size?: number;
+    /**
+     * Opaque continuation token from a previous page_info.next_page_token.
+     */
+    page_token?: string;
+  };
   url: "/v1/organizations/{id}/roles/{role_id}/members";
 };
 
@@ -2777,7 +3474,7 @@ export type V1OrganizationRoleMembersGetResponses = {
   /**
    * OK
    */
-  200: Array<User>;
+  200: UserPage;
 };
 
 export type V1OrganizationRoleMembersGetResponse =
@@ -3076,13 +3773,13 @@ export type V1OrganizationsNamespacesGetData = {
   };
   query?: {
     /**
-     * Number of resources to skip.
+     * Maximum number of items to return.
      */
-    offset?: number;
+    page_size?: number;
     /**
-     * Number of resources to return.
+     * Opaque continuation token from a previous page_info.next_page_token.
      */
-    limit?: number;
+    page_token?: string;
   };
   url: "/v1/organizations/{id}/namespaces";
 };
@@ -3117,7 +3814,7 @@ export type V1OrganizationsNamespacesGetResponses = {
   /**
    * OK
    */
-  200: Array<Namespace>;
+  200: NamespacePage;
 };
 
 export type V1OrganizationsNamespacesGetResponse =
@@ -3330,13 +4027,13 @@ export type V1NamespacesProjectsGetData = {
   };
   query?: {
     /**
-     * Number of resources to skip.
+     * Maximum number of items to return.
      */
-    offset?: number;
+    page_size?: number;
     /**
-     * Number of resources to return.
+     * Opaque continuation token from a previous page_info.next_page_token.
      */
-    limit?: number;
+    page_token?: string;
   };
   url: "/v1/namespaces/{id}/projects";
 };
@@ -3371,7 +4068,7 @@ export type V1NamespacesProjectsGetResponses = {
   /**
    * OK
    */
-  200: Array<Project>;
+  200: ProjectPage;
 };
 
 export type V1NamespacesProjectsGetResponse =
@@ -3429,6 +4126,172 @@ export type V1NamespacesProjectsCreateResponses = {
 
 export type V1NamespacesProjectsCreateResponse =
   V1NamespacesProjectsCreateResponses[keyof V1NamespacesProjectsCreateResponses];
+
+export type V1NamespacesDocumentsGetData = {
+  body?: never;
+  path: {
+    /**
+     * ID of the resource.
+     */
+    id: string;
+  };
+  query?: {
+    /**
+     * Maximum number of items to return.
+     */
+    page_size?: number;
+    /**
+     * Opaque continuation token from a previous page_info.next_page_token.
+     */
+    page_token?: string;
+  };
+  url: "/v1/namespaces/{id}/documents";
+};
+
+export type V1NamespacesDocumentsGetErrors = {
+  /**
+   * Bad request
+   */
+  400: HttpError;
+  /**
+   * Unauthorized request
+   */
+  401: HttpError;
+  /**
+   * Forbidden
+   */
+  403: HttpError;
+  /**
+   * The requested resource not found
+   */
+  404: HttpError;
+  /**
+   * Internal Server Error
+   */
+  500: HttpError;
+};
+
+export type V1NamespacesDocumentsGetError =
+  V1NamespacesDocumentsGetErrors[keyof V1NamespacesDocumentsGetErrors];
+
+export type V1NamespacesDocumentsGetResponses = {
+  /**
+   * OK
+   */
+  200: PartialDocumentPage;
+};
+
+export type V1NamespacesDocumentsGetResponse =
+  V1NamespacesDocumentsGetResponses[keyof V1NamespacesDocumentsGetResponses];
+
+export type V1NamespacesIssuesGetData = {
+  body?: never;
+  path: {
+    /**
+     * ID of the resource.
+     */
+    id: string;
+  };
+  query?: {
+    /**
+     * Maximum number of items to return.
+     */
+    page_size?: number;
+    /**
+     * Opaque continuation token from a previous page_info.next_page_token.
+     */
+    page_token?: string;
+  };
+  url: "/v1/namespaces/{id}/issues";
+};
+
+export type V1NamespacesIssuesGetErrors = {
+  /**
+   * Bad request
+   */
+  400: HttpError;
+  /**
+   * Unauthorized request
+   */
+  401: HttpError;
+  /**
+   * Forbidden
+   */
+  403: HttpError;
+  /**
+   * The requested resource not found
+   */
+  404: HttpError;
+  /**
+   * Internal Server Error
+   */
+  500: HttpError;
+};
+
+export type V1NamespacesIssuesGetError =
+  V1NamespacesIssuesGetErrors[keyof V1NamespacesIssuesGetErrors];
+
+export type V1NamespacesIssuesGetResponses = {
+  /**
+   * OK
+   */
+  200: PartialIssuePage;
+};
+
+export type V1NamespacesIssuesGetResponse =
+  V1NamespacesIssuesGetResponses[keyof V1NamespacesIssuesGetResponses];
+
+export type V1NamespacesIssuesKeyGetData = {
+  body?: never;
+  path: {
+    /**
+     * ID of the resource.
+     */
+    id: string;
+    /**
+     * Composite issue key built from the owner project key and numeric ID.
+     */
+    key: string;
+  };
+  query?: never;
+  url: "/v1/namespaces/{id}/issues/{key}";
+};
+
+export type V1NamespacesIssuesKeyGetErrors = {
+  /**
+   * Bad request
+   */
+  400: HttpError;
+  /**
+   * Unauthorized request
+   */
+  401: HttpError;
+  /**
+   * Forbidden
+   */
+  403: HttpError;
+  /**
+   * The requested resource not found
+   */
+  404: HttpError;
+  /**
+   * Internal Server Error
+   */
+  500: HttpError;
+};
+
+export type V1NamespacesIssuesKeyGetError =
+  V1NamespacesIssuesKeyGetErrors[keyof V1NamespacesIssuesKeyGetErrors];
+
+export type V1NamespacesIssuesKeyGetResponses = {
+  /**
+   * OK
+   */
+  200: Issue;
+};
+
+export type V1NamespacesIssuesKeyGetResponse =
+  V1NamespacesIssuesKeyGetResponses[keyof V1NamespacesIssuesKeyGetResponses];
 
 export type V1ProjectDeleteData = {
   body?: never;
@@ -3572,6 +4435,517 @@ export type V1ProjectUpdateResponses = {
 
 export type V1ProjectUpdateResponse =
   V1ProjectUpdateResponses[keyof V1ProjectUpdateResponses];
+
+export type V1ProjectsIssuesGetData = {
+  body?: never;
+  path: {
+    /**
+     * ID of the resource.
+     */
+    id: string;
+  };
+  query?: {
+    /**
+     * Maximum number of items to return.
+     */
+    page_size?: number;
+    /**
+     * Opaque continuation token from a previous page_info.next_page_token.
+     */
+    page_token?: string;
+  };
+  url: "/v1/projects/{id}/issues";
+};
+
+export type V1ProjectsIssuesGetErrors = {
+  /**
+   * Bad request
+   */
+  400: HttpError;
+  /**
+   * Unauthorized request
+   */
+  401: HttpError;
+  /**
+   * Forbidden
+   */
+  403: HttpError;
+  /**
+   * The requested resource not found
+   */
+  404: HttpError;
+  /**
+   * Internal Server Error
+   */
+  500: HttpError;
+};
+
+export type V1ProjectsIssuesGetError =
+  V1ProjectsIssuesGetErrors[keyof V1ProjectsIssuesGetErrors];
+
+export type V1ProjectsIssuesGetResponses = {
+  /**
+   * OK
+   */
+  200: PartialIssuePage;
+};
+
+export type V1ProjectsIssuesGetResponse =
+  V1ProjectsIssuesGetResponses[keyof V1ProjectsIssuesGetResponses];
+
+export type V1ProjectsIssuesCreateData = {
+  body?: IssueCreate;
+  path: {
+    /**
+     * ID of the resource.
+     */
+    id: string;
+  };
+  query?: never;
+  url: "/v1/projects/{id}/issues";
+};
+
+export type V1ProjectsIssuesCreateErrors = {
+  /**
+   * Bad request
+   */
+  400: HttpError;
+  /**
+   * Unauthorized request
+   */
+  401: HttpError;
+  /**
+   * Forbidden
+   */
+  403: HttpError;
+  /**
+   * The requested resource not found
+   */
+  404: HttpError;
+  /**
+   * Internal Server Error
+   */
+  500: HttpError;
+};
+
+export type V1ProjectsIssuesCreateError =
+  V1ProjectsIssuesCreateErrors[keyof V1ProjectsIssuesCreateErrors];
+
+export type V1ProjectsIssuesCreateResponses = {
+  /**
+   * Created
+   */
+  201: Issue;
+};
+
+export type V1ProjectsIssuesCreateResponse =
+  V1ProjectsIssuesCreateResponses[keyof V1ProjectsIssuesCreateResponses];
+
+export type V1ProjectsDocumentsGetData = {
+  body?: never;
+  path: {
+    /**
+     * ID of the resource.
+     */
+    id: string;
+  };
+  query?: {
+    /**
+     * Maximum number of items to return.
+     */
+    page_size?: number;
+    /**
+     * Opaque continuation token from a previous page_info.next_page_token.
+     */
+    page_token?: string;
+  };
+  url: "/v1/projects/{id}/documents";
+};
+
+export type V1ProjectsDocumentsGetErrors = {
+  /**
+   * Bad request
+   */
+  400: HttpError;
+  /**
+   * Unauthorized request
+   */
+  401: HttpError;
+  /**
+   * Forbidden
+   */
+  403: HttpError;
+  /**
+   * The requested resource not found
+   */
+  404: HttpError;
+  /**
+   * Internal Server Error
+   */
+  500: HttpError;
+};
+
+export type V1ProjectsDocumentsGetError =
+  V1ProjectsDocumentsGetErrors[keyof V1ProjectsDocumentsGetErrors];
+
+export type V1ProjectsDocumentsGetResponses = {
+  /**
+   * OK
+   */
+  200: PartialDocumentPage;
+};
+
+export type V1ProjectsDocumentsGetResponse =
+  V1ProjectsDocumentsGetResponses[keyof V1ProjectsDocumentsGetResponses];
+
+export type V1IssueDeleteData = {
+  body?: never;
+  path: {
+    /**
+     * ID of the resource.
+     */
+    id: string;
+  };
+  query?: never;
+  url: "/v1/issues/{id}";
+};
+
+export type V1IssueDeleteErrors = {
+  /**
+   * Bad request
+   */
+  400: HttpError;
+  /**
+   * Unauthorized request
+   */
+  401: HttpError;
+  /**
+   * Forbidden
+   */
+  403: HttpError;
+  /**
+   * The requested resource not found
+   */
+  404: HttpError;
+  /**
+   * Internal Server Error
+   */
+  500: HttpError;
+};
+
+export type V1IssueDeleteError = V1IssueDeleteErrors[keyof V1IssueDeleteErrors];
+
+export type V1IssueDeleteResponses = {
+  /**
+   * No Content
+   */
+  204: void;
+};
+
+export type V1IssueDeleteResponse =
+  V1IssueDeleteResponses[keyof V1IssueDeleteResponses];
+
+export type V1IssueGetData = {
+  body?: never;
+  path: {
+    /**
+     * ID of the resource.
+     */
+    id: string;
+  };
+  query?: never;
+  url: "/v1/issues/{id}";
+};
+
+export type V1IssueGetErrors = {
+  /**
+   * Bad request
+   */
+  400: HttpError;
+  /**
+   * Unauthorized request
+   */
+  401: HttpError;
+  /**
+   * Forbidden
+   */
+  403: HttpError;
+  /**
+   * The requested resource not found
+   */
+  404: HttpError;
+  /**
+   * Internal Server Error
+   */
+  500: HttpError;
+};
+
+export type V1IssueGetError = V1IssueGetErrors[keyof V1IssueGetErrors];
+
+export type V1IssueGetResponses = {
+  /**
+   * OK
+   */
+  200: Issue;
+};
+
+export type V1IssueGetResponse = V1IssueGetResponses[keyof V1IssueGetResponses];
+
+export type V1IssueUpdateData = {
+  body?: IssuePatch;
+  path: {
+    /**
+     * ID of the resource.
+     */
+    id: string;
+  };
+  query?: never;
+  url: "/v1/issues/{id}";
+};
+
+export type V1IssueUpdateErrors = {
+  /**
+   * Bad request
+   */
+  400: HttpError;
+  /**
+   * Unauthorized request
+   */
+  401: HttpError;
+  /**
+   * Forbidden
+   */
+  403: HttpError;
+  /**
+   * The requested resource not found
+   */
+  404: HttpError;
+  /**
+   * Internal Server Error
+   */
+  500: HttpError;
+};
+
+export type V1IssueUpdateError = V1IssueUpdateErrors[keyof V1IssueUpdateErrors];
+
+export type V1IssueUpdateResponses = {
+  /**
+   * OK
+   */
+  200: Issue;
+};
+
+export type V1IssueUpdateResponse =
+  V1IssueUpdateResponses[keyof V1IssueUpdateResponses];
+
+export type V1IssueRelationsGetData = {
+  body?: never;
+  path: {
+    /**
+     * ID of the resource.
+     */
+    id: string;
+  };
+  query?: {
+    /**
+     * Maximum number of items to return.
+     */
+    page_size?: number;
+    /**
+     * Opaque continuation token from a previous page_info.next_page_token.
+     */
+    page_token?: string;
+  };
+  url: "/v1/issues/{id}/relations";
+};
+
+export type V1IssueRelationsGetErrors = {
+  /**
+   * Bad request
+   */
+  400: HttpError;
+  /**
+   * Unauthorized request
+   */
+  401: HttpError;
+  /**
+   * Forbidden
+   */
+  403: HttpError;
+  /**
+   * The requested resource not found
+   */
+  404: HttpError;
+  /**
+   * Internal Server Error
+   */
+  500: HttpError;
+};
+
+export type V1IssueRelationsGetError =
+  V1IssueRelationsGetErrors[keyof V1IssueRelationsGetErrors];
+
+export type V1IssueRelationsGetResponses = {
+  /**
+   * OK
+   */
+  200: IssueRelationPage;
+};
+
+export type V1IssueRelationsGetResponse =
+  V1IssueRelationsGetResponses[keyof V1IssueRelationsGetResponses];
+
+export type V1IssueRelationsCreateData = {
+  body?: IssueRelationCreate;
+  path: {
+    /**
+     * ID of the resource.
+     */
+    id: string;
+  };
+  query?: never;
+  url: "/v1/issues/{id}/relations";
+};
+
+export type V1IssueRelationsCreateErrors = {
+  /**
+   * Bad request
+   */
+  400: HttpError;
+  /**
+   * Unauthorized request
+   */
+  401: HttpError;
+  /**
+   * Forbidden
+   */
+  403: HttpError;
+  /**
+   * The requested resource not found
+   */
+  404: HttpError;
+  /**
+   * Internal Server Error
+   */
+  500: HttpError;
+};
+
+export type V1IssueRelationsCreateError =
+  V1IssueRelationsCreateErrors[keyof V1IssueRelationsCreateErrors];
+
+export type V1IssueRelationsCreateResponses = {
+  /**
+   * Created
+   */
+  201: IssueRelation;
+};
+
+export type V1IssueRelationsCreateResponse =
+  V1IssueRelationsCreateResponses[keyof V1IssueRelationsCreateResponses];
+
+export type V1IssueRelationDeleteData = {
+  body?: never;
+  path: {
+    /**
+     * ID of the resource.
+     */
+    id: string;
+    /**
+     * ID of the issue relation.
+     */
+    relation_id: string;
+  };
+  query?: never;
+  url: "/v1/issues/{id}/relations/{relation_id}";
+};
+
+export type V1IssueRelationDeleteErrors = {
+  /**
+   * Bad request
+   */
+  400: HttpError;
+  /**
+   * Unauthorized request
+   */
+  401: HttpError;
+  /**
+   * Forbidden
+   */
+  403: HttpError;
+  /**
+   * The requested resource not found
+   */
+  404: HttpError;
+  /**
+   * Internal Server Error
+   */
+  500: HttpError;
+};
+
+export type V1IssueRelationDeleteError =
+  V1IssueRelationDeleteErrors[keyof V1IssueRelationDeleteErrors];
+
+export type V1IssueRelationDeleteResponses = {
+  /**
+   * No Content
+   */
+  204: void;
+};
+
+export type V1IssueRelationDeleteResponse =
+  V1IssueRelationDeleteResponses[keyof V1IssueRelationDeleteResponses];
+
+export type V1IssueRelationUpdateData = {
+  body?: IssueRelationPatch;
+  path: {
+    /**
+     * ID of the resource.
+     */
+    id: string;
+    /**
+     * ID of the issue relation.
+     */
+    relation_id: string;
+  };
+  query?: never;
+  url: "/v1/issues/{id}/relations/{relation_id}";
+};
+
+export type V1IssueRelationUpdateErrors = {
+  /**
+   * Bad request
+   */
+  400: HttpError;
+  /**
+   * Unauthorized request
+   */
+  401: HttpError;
+  /**
+   * Forbidden
+   */
+  403: HttpError;
+  /**
+   * The requested resource not found
+   */
+  404: HttpError;
+  /**
+   * Internal Server Error
+   */
+  500: HttpError;
+};
+
+export type V1IssueRelationUpdateError =
+  V1IssueRelationUpdateErrors[keyof V1IssueRelationUpdateErrors];
+
+export type V1IssueRelationUpdateResponses = {
+  /**
+   * OK
+   */
+  200: IssueRelation;
+};
+
+export type V1IssueRelationUpdateResponse =
+  V1IssueRelationUpdateResponses[keyof V1IssueRelationUpdateResponses];
 
 export type V1PermissionsCreateData = {
   body?: PermissionCreate;

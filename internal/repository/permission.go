@@ -5,7 +5,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
+	"github.com/neo4j/neo4j-go-driver/v6/neo4j"
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/convert"
 )
@@ -247,16 +247,17 @@ func (r *Neo4jPermissionRepository) Get(ctx context.Context, id model.ID) (*Perm
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.PermissionRepository/Get")
 	defer span.End()
 
-	cypher := `
-	MATCH (s)-[p:` + EdgeKindHasPermission.String() + ` {id: $id}]->(t)
-	RETURN s, p, t
-	`
-
-	params := map[string]any{
-		"id": id.String(),
+	query, err := PermissionGetQuery(id)
+	if err != nil {
+		return nil, errors.Join(err, ErrPermissionRead)
 	}
 
-	perm, err := Neo4jExecuteWriteAndReadSingle(ctx, r.db, cypher, params, r.scan("p", "s", "t"))
+	var perm *Permission
+	err = Neo4jExecuteReadPlan(ctx, r.db, QueryPlan{Root: query}, func(tx neo4j.ManagedTransaction) error {
+		var readErr error
+		perm, _, readErr = Neo4jRunQuerySingle(ctx, tx, query, r.scan("p", "s", "t"))
+		return readErr
+	})
 	if err != nil {
 		return nil, errors.Join(err, ErrPermissionRead)
 	}
@@ -270,16 +271,17 @@ func (r *Neo4jPermissionRepository) GetBySubject(ctx context.Context, id model.I
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.PermissionRepository/GetBySubject")
 	defer span.End()
 
-	cypher := `
-	MATCH (s:` + id.Label() + ` {id: $id})-[p:` + EdgeKindHasPermission.String() + `]->(t)
-	RETURN s, p, t
-	ORDER BY p.created_at DESC`
-
-	params := map[string]any{
-		"id": id.String(),
+	query, err := PermissionGetBySubjectQuery(id)
+	if err != nil {
+		return nil, errors.Join(err, ErrPermissionRead)
 	}
 
-	perms, err := Neo4jExecuteReadAndReadAll(ctx, r.db, cypher, params, r.scan("p", "s", "t"))
+	var perms []*Permission
+	err = Neo4jExecuteReadPlan(ctx, r.db, QueryPlan{Root: query}, func(tx neo4j.ManagedTransaction) error {
+		var readErr error
+		perms, _, readErr = Neo4jRunQuery(ctx, tx, query, r.scan("p", "s", "t"))
+		return readErr
+	})
 	if err != nil {
 		return nil, errors.Join(err, ErrPermissionRead)
 	}
@@ -293,16 +295,17 @@ func (r *Neo4jPermissionRepository) GetByTarget(ctx context.Context, id model.ID
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.PermissionRepository/GetByTarget")
 	defer span.End()
 
-	cypher := `
-	MATCH (s)-[p:` + EdgeKindHasPermission.String() + `]->(t:` + id.Label() + ` {id: $id})
-	RETURN s, p, t
-	ORDER BY p.created_at DESC`
-
-	params := map[string]any{
-		"id": id.String(),
+	query, err := PermissionGetByTargetQuery(id)
+	if err != nil {
+		return nil, errors.Join(err, ErrPermissionRead)
 	}
 
-	perms, err := Neo4jExecuteReadAndReadAll(ctx, r.db, cypher, params, r.scan("p", "s", "t"))
+	var perms []*Permission
+	err = Neo4jExecuteReadPlan(ctx, r.db, QueryPlan{Root: query}, func(tx neo4j.ManagedTransaction) error {
+		var readErr error
+		perms, _, readErr = Neo4jRunQuery(ctx, tx, query, r.scan("p", "s", "t"))
+		return readErr
+	})
 	if err != nil {
 		return nil, errors.Join(err, ErrPermissionRead)
 	}
@@ -332,20 +335,17 @@ func (r *Neo4jPermissionRepository) GetBySubjectAndTarget(ctx context.Context, s
 		return deduplicatePermissions(directPerms, systemRolePerms), nil
 	}
 
-	cypher := `
-	MATCH (s:` + source.Label() + ` {id: $source}), (t:` + target.Label() + ` {id: $target})
-	MATCH path=(s)-[:` + EdgeKindHasPermission.String() + `|` + EdgeKindMemberOf.String() + `*..2]->(t)
-	WITH s, t, last(relationships(path)) AS p
-	WHERE type(p) = "` + EdgeKindHasPermission.String() + `"
-	RETURN s, p, t
-	ORDER BY p.created_at DESC`
-
-	params := map[string]any{
-		"source": source.String(),
-		"target": target.String(),
+	query, err := PermissionGetBySubjectAndTargetQuery(source, target)
+	if err != nil {
+		return nil, errors.Join(err, ErrPermissionRead)
 	}
 
-	perms, err := Neo4jExecuteReadAndReadAll(ctx, r.db, cypher, params, r.scan("p", "s", "t"))
+	var perms []*Permission
+	err = Neo4jExecuteReadPlan(ctx, r.db, QueryPlan{Root: query}, func(tx neo4j.ManagedTransaction) error {
+		var readErr error
+		perms, _, readErr = Neo4jRunQuery(ctx, tx, query, r.scan("p", "s", "t"))
+		return readErr
+	})
 	if err != nil {
 		return nil, errors.Join(err, ErrPermissionRead)
 	}

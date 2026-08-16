@@ -4,17 +4,18 @@ import { BellRingIcon, Link2Icon, PlusIcon } from "lucide-react";
 import { withRouter } from "../../.storybook/with-router";
 
 import { ActivityFeed } from "@/components/shared/activity-feed";
-import { AppEmptyState, MockDataAlert } from "@/components/shared/app-feedback";
-import { CreateButton } from "@/components/shared/create-button";
+import { MockDataAlert } from "@/components/shared/app-feedback";
 import { EntityHeader } from "@/components/shared/entity-header";
 import { AppList, EntityLink } from "@/components/shared/entity-link";
-import { PropertyList } from "@/components/shared/property-list";
 import { RelationList } from "@/components/shared/relation-list";
-import { Section } from "@/components/shared/section";
-import { StatusIndicator } from "@/components/shared/status-indicator";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { CreateButton } from "@/components/ui/create-button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { EntitySelect } from "@/components/ui/entity-select";
+import { PropertyList } from "@/components/ui/property-list";
+import { Section } from "@/components/ui/section";
+import { StatusIndicator } from "@/components/ui/status-indicator";
 import {
   mockPeople,
   mockWorkItems,
@@ -57,7 +58,7 @@ export const Populated: Story = {
         description="A representative populated entity header with progressive actions and operational context."
         meta={
           <div className="flex items-center gap-3">
-            <StatusIndicator status="in-progress" />
+            <StatusIndicator status="in progress" />
             <Badge variant="secondary">6 contributors</Badge>
           </div>
         }
@@ -80,7 +81,7 @@ export const Populated: Story = {
             {mockWorkItems.slice(0, 3).map((item) => (
               <EntityLink
                 key={item.id}
-                href={`/work/${item.id}`}
+                href={`/work/${item.namespaceId}/${item.key}`}
                 type="work-item"
                 title={`${item.key} ${item.title}`}
                 subtitle={item.summary}
@@ -97,7 +98,10 @@ export const Populated: Story = {
                 value: <StatusIndicator status={selectedWork.status} />,
               },
               { label: "Priority", value: selectedWork.priority },
-              { label: "Target", value: selectedWork.dueDate ?? "Unscheduled" },
+              {
+                label: "Due date",
+                value: selectedWork.dueDate ?? "Unscheduled",
+              },
               {
                 label: "Labels",
                 value: selectedWork.labelIds.map((label) => (
@@ -145,12 +149,12 @@ export const Populated: Story = {
 export const Empty: Story = {
   render: () => (
     <div className="mx-auto grid max-w-5xl gap-6 p-6 md:grid-cols-2">
-      <AppEmptyState
+      <EmptyState
         icon={<BellRingIcon />}
         title="You’re all caught up"
         description="New attention signals will appear here when work needs a response."
       />
-      <AppEmptyState
+      <EmptyState
         icon={<Link2Icon />}
         title="No relationships"
         description="Connect this entity to work or documents to build its context."

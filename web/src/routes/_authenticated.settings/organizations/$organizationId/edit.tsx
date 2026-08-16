@@ -1,15 +1,13 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
-import {
-  OrganizationEditForm,
-  OrganizationNotFound,
-} from "@/components/organizations";
+import { OrganizationEditForm } from "@/components/organizations/organization-edit-form";
+import { OrganizationNotFound } from "@/components/organizations/organization-not-found";
 import {
   SettingsEntityDetailError,
   SettingsEntityDetailSkeleton,
 } from "@/components/settings/settings-entity-detail-state";
-import { PageHeader } from "@/components/shared/page-header";
+import { PageHeader } from "@/components/ui/page-header";
 import { v1OrganizationGetOptions } from "@/lib/api/query-options";
 import { ResourceType } from "@/lib/auth/permissions";
 import { requirePermissionBeforeLoad } from "@/lib/auth/require-auth";

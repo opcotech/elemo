@@ -13,13 +13,11 @@ import {
 const organization = {
   id: "organization-1",
   name: "Acme",
-  namespaces: ["namespace-1"],
 };
 
 const namespace = {
   id: "namespace-1",
   name: "Product",
-  projects: [{ id: "project-1", name: "Web" }],
 };
 
 const project = {
@@ -29,6 +27,10 @@ const project = {
 };
 
 const readPermissions = [{ kind: "read" }];
+
+function listedPage<T>(items: T[]) {
+  return { items, page_info: { has_more: false } };
+}
 
 function queryId(options: { queryKey: readonly unknown[] }) {
   const key = options.queryKey[0];
@@ -55,6 +57,9 @@ describe("settings hierarchy loaders", () => {
     const queryClient = createQueryClient((options) => {
       if (queryId(options) === "v1OrganizationGet") return organization;
       if (queryId(options) === "v1NamespaceGet") return namespace;
+      if (queryId(options) === "v1OrganizationsNamespacesGet") {
+        return listedPage([namespace]);
+      }
       throw new Error(`Unexpected query ${JSON.stringify(options.queryKey)}`);
     });
 
@@ -65,10 +70,11 @@ describe("settings hierarchy loaders", () => {
 
   it("throws not-found when the namespace is not owned by the organization", async () => {
     const queryClient = createQueryClient((options) => {
-      if (queryId(options) === "v1OrganizationGet") {
-        return { ...organization, namespaces: ["other-namespace"] };
-      }
+      if (queryId(options) === "v1OrganizationGet") return organization;
       if (queryId(options) === "v1NamespaceGet") return namespace;
+      if (queryId(options) === "v1OrganizationsNamespacesGet") {
+        return listedPage([{ id: "other-namespace" }]);
+      }
       throw new Error(`Unexpected query ${JSON.stringify(options.queryKey)}`);
     });
 
@@ -81,6 +87,9 @@ describe("settings hierarchy loaders", () => {
     const queryClient = createQueryClient((options) => {
       if (queryId(options) === "v1OrganizationGet") return organization;
       if (queryId(options) === "v1NamespaceGet") return namespace;
+      if (queryId(options) === "v1OrganizationsNamespacesGet") {
+        return listedPage([namespace]);
+      }
       if (queryId(options) === "v1PermissionResourceGet")
         return readPermissions;
       throw new Error(`Unexpected query ${JSON.stringify(options.queryKey)}`);
@@ -99,6 +108,9 @@ describe("settings hierarchy loaders", () => {
     const queryClient = createQueryClient((options) => {
       if (queryId(options) === "v1OrganizationGet") return organization;
       if (queryId(options) === "v1NamespaceGet") return namespace;
+      if (queryId(options) === "v1OrganizationsNamespacesGet") {
+        return listedPage([namespace]);
+      }
       if (queryId(options) === "v1PermissionResourceGet") return [];
       throw new Error(`Unexpected query ${JSON.stringify(options.queryKey)}`);
     });
@@ -111,8 +123,12 @@ describe("settings hierarchy loaders", () => {
   it("throws not-found when the project is outside the namespace", async () => {
     const queryClient = createQueryClient((options) => {
       if (queryId(options) === "v1OrganizationGet") return organization;
-      if (queryId(options) === "v1NamespaceGet") {
-        return { ...namespace, projects: [{ id: "other-project" }] };
+      if (queryId(options) === "v1NamespaceGet") return namespace;
+      if (queryId(options) === "v1OrganizationsNamespacesGet") {
+        return listedPage([namespace]);
+      }
+      if (queryId(options) === "v1NamespacesProjectsGet") {
+        return listedPage([{ id: "other-project" }]);
       }
       if (queryId(options) === "v1ProjectGet") return project;
       throw new Error(`Unexpected query ${JSON.stringify(options.queryKey)}`);
@@ -132,6 +148,12 @@ describe("settings hierarchy loaders", () => {
     const queryClient = createQueryClient((options) => {
       if (queryId(options) === "v1OrganizationGet") return organization;
       if (queryId(options) === "v1NamespaceGet") return namespace;
+      if (queryId(options) === "v1OrganizationsNamespacesGet") {
+        return listedPage([namespace]);
+      }
+      if (queryId(options) === "v1NamespacesProjectsGet") {
+        return listedPage([project]);
+      }
       if (queryId(options) === "v1ProjectGet") return project;
       throw new Error(`Unexpected query ${JSON.stringify(options.queryKey)}`);
     });
@@ -150,6 +172,12 @@ describe("settings hierarchy loaders", () => {
     const queryClient = createQueryClient((options) => {
       if (queryId(options) === "v1OrganizationGet") return organization;
       if (queryId(options) === "v1NamespaceGet") return namespace;
+      if (queryId(options) === "v1OrganizationsNamespacesGet") {
+        return listedPage([namespace]);
+      }
+      if (queryId(options) === "v1NamespacesProjectsGet") {
+        return listedPage([project]);
+      }
       if (queryId(options) === "v1PermissionResourceGet")
         return readPermissions;
       if (queryId(options) === "v1ProjectGet") return project;
@@ -181,9 +209,9 @@ describe("settings hierarchy loaders", () => {
       const id = queryId(options);
       if (id === "v1OrganizationGet") return organization;
       if (id === "v1PermissionResourceGet") return readPermissions;
-      if (id === "v1OrganizationMembersGet") return members;
-      if (id === "v1OrganizationsNamespacesGet") return namespaces;
-      if (id === "v1OrganizationRolesGet") return roles;
+      if (id === "v1OrganizationMembersGet") return listedPage(members);
+      if (id === "v1OrganizationsNamespacesGet") return listedPage(namespaces);
+      if (id === "v1OrganizationRolesGet") return listedPage(roles);
       throw new Error(`Unexpected query ${JSON.stringify(options.queryKey)}`);
     });
 
@@ -224,8 +252,12 @@ describe("settings hierarchy loaders", () => {
   it("throws not-found from project detail when the refreshed namespace lacks the project", async () => {
     const queryClient = createQueryClient((options) => {
       if (queryId(options) === "v1OrganizationGet") return organization;
-      if (queryId(options) === "v1NamespaceGet") {
-        return { ...namespace, projects: [{ id: "other-project" }] };
+      if (queryId(options) === "v1NamespaceGet") return namespace;
+      if (queryId(options) === "v1OrganizationsNamespacesGet") {
+        return listedPage([namespace]);
+      }
+      if (queryId(options) === "v1NamespacesProjectsGet") {
+        return listedPage([{ id: "other-project" }]);
       }
       throw new Error(`Unexpected query ${JSON.stringify(options.queryKey)}`);
     });
@@ -244,6 +276,12 @@ describe("settings hierarchy loaders", () => {
     const queryClient = createQueryClient((options) => {
       if (queryId(options) === "v1OrganizationGet") return organization;
       if (queryId(options) === "v1NamespaceGet") return namespace;
+      if (queryId(options) === "v1OrganizationsNamespacesGet") {
+        return listedPage([namespace]);
+      }
+      if (queryId(options) === "v1NamespacesProjectsGet") {
+        return listedPage([project]);
+      }
       if (queryId(options) === "v1PermissionResourceGet") return [];
       throw new Error(`Unexpected query ${JSON.stringify(options.queryKey)}`);
     });

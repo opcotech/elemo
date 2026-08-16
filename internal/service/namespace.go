@@ -13,15 +13,21 @@ import (
 	"github.com/opcotech/elemo/internal/repository"
 )
 
+// PartialNamespace is a lean namespace used on issue reads.
+type PartialNamespace struct {
+	ID   model.ID
+	Name string
+}
+
 // Namespace represents a namespace returned by the service.
 type Namespace struct {
-	ID          model.ID
-	Name        string
-	Description string
-	Projects    []*PartialProject
-	Documents   []*PartialDocument
-	CreatedAt   *time.Time
-	UpdatedAt   *time.Time
+	ID            model.ID
+	Name          string
+	Description   string
+	ProjectCount  *int64
+	DocumentCount *int64
+	CreatedAt     *time.Time
+	UpdatedAt     *time.Time
 }
 
 // CreateNamespaceOpts holds the data required to create a namespace.
@@ -55,11 +61,8 @@ type NamespaceService interface {
 	// Get returns a namespace by its ID. If the namespace does not exist, an
 	// error is returned.
 	Get(ctx context.Context, id model.ID) (*Namespace, error)
-	// GetAll returns all namespaces for an organization. The offset and limit
-	// parameters are used to paginate the results. If the offset is greater
-	// than the number of namespaces in the organization, an empty slice is
-	// returned.
-	GetAll(ctx context.Context, orgID model.ID, offset, limit int) ([]*Namespace, error)
+	// List returns a cursor-paginated page of namespaces for an organization.
+	List(ctx context.Context, orgID model.ID, page CursorPage) (Page[*Namespace], error)
 	// Update updates a namespace. If the namespace does not exist, an error
 	// is returned.
 	Update(ctx context.Context, id model.ID, opts UpdateNamespaceOpts) (*Namespace, error)
@@ -73,16 +76,13 @@ type namespaceService struct {
 	*baseService
 }
 
-func partialDocumentFromRepository(d *repository.PartialDocument) *PartialDocument {
-	if d == nil {
+func partialNamespaceFromRepository(n *repository.PartialNamespace) *PartialNamespace {
+	if n == nil {
 		return nil
 	}
-	return &PartialDocument{
-		ID:        d.ID,
-		Name:      d.Name,
-		Excerpt:   d.Excerpt,
-		CreatedBy: d.CreatedBy,
-		CreatedAt: d.CreatedAt,
+	return &PartialNamespace{
+		ID:   n.ID,
+		Name: n.Name,
 	}
 }
 
@@ -91,24 +91,14 @@ func namespaceFromRepository(n *repository.Namespace) *Namespace {
 		return nil
 	}
 
-	projects := make([]*PartialProject, len(n.Projects))
-	for i, p := range n.Projects {
-		projects[i] = partialProjectFromRepository(p)
-	}
-
-	documents := make([]*PartialDocument, len(n.Documents))
-	for i, d := range n.Documents {
-		documents[i] = partialDocumentFromRepository(d)
-	}
-
 	return &Namespace{
-		ID:          n.ID,
-		Name:        n.Name,
-		Description: n.Description,
-		Projects:    projects,
-		Documents:   documents,
-		CreatedAt:   n.CreatedAt,
-		UpdatedAt:   n.UpdatedAt,
+		ID:            n.ID,
+		Name:          n.Name,
+		Description:   n.Description,
+		ProjectCount:  n.ProjectCount,
+		DocumentCount: n.DocumentCount,
+		CreatedAt:     n.CreatedAt,
+		UpdatedAt:     n.UpdatedAt,
 	}
 }
 
@@ -170,7 +160,7 @@ func (s *namespaceService) Get(ctx context.Context, id model.ID) (*Namespace, er
 		return nil, errors.Join(ErrNamespaceGet, ErrNoPermission)
 	}
 
-	namespace, err := s.namespaceRepo.Get(ctx, id)
+	namespace, err := s.namespaceRepo.Get(ctx, id, repository.NamespaceDetailProjection())
 	if err != nil {
 		return nil, errors.Join(ErrNamespaceGet, err)
 	}
@@ -178,28 +168,34 @@ func (s *namespaceService) Get(ctx context.Context, id model.ID) (*Namespace, er
 	return namespaceFromRepository(namespace), nil
 }
 
-func (s *namespaceService) GetAll(ctx context.Context, orgID model.ID, offset, limit int) ([]*Namespace, error) {
-	ctx, span := s.tracer.Start(ctx, "service.namespaceService/GetAll")
+func (s *namespaceService) List(ctx context.Context, orgID model.ID, page CursorPage) (Page[*Namespace], error) {
+	ctx, span := s.tracer.Start(ctx, "service.namespaceService/List")
 	defer span.End()
 
 	if err := orgID.Validate(); err != nil {
-		return nil, errors.Join(ErrNamespaceGetAll, err)
+		return Page[*Namespace]{}, errors.Join(ErrNamespaceGetAll, err)
 	}
 
-	if offset < 0 || limit <= 0 {
-		return nil, errors.Join(ErrNamespaceGetAll, ErrInvalidPaginationParams)
+	normalized, err := page.Normalize()
+	if err != nil {
+		return Page[*Namespace]{}, errors.Join(ErrNamespaceGetAll, err)
 	}
 
 	if !s.permissionService.CtxUserHasPermission(ctx, orgID, model.PermissionKindRead) {
-		return nil, errors.Join(ErrNamespaceGetAll, ErrNoPermission)
+		return Page[*Namespace]{}, errors.Join(ErrNamespaceGetAll, ErrNoPermission)
 	}
 
-	namespaces, err := s.namespaceRepo.GetAll(ctx, orgID, offset, limit)
+	namespaces, err := s.namespaceRepo.List(
+		ctx,
+		orgID,
+		normalized,
+		repository.NamespaceListProjection(),
+	)
 	if err != nil {
-		return nil, errors.Join(ErrNamespaceGetAll, err)
+		return Page[*Namespace]{}, errors.Join(ErrNamespaceGetAll, err)
 	}
 
-	return namespacesFromRepository(namespaces), nil
+	return mapPage(namespaces, namespaceFromRepository), nil
 }
 
 func (s *namespaceService) Update(ctx context.Context, id model.ID, opts UpdateNamespaceOpts) (*Namespace, error) {

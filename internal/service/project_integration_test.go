@@ -166,9 +166,9 @@ func (s *ProjectServiceIntegrationTestSuite) TestGetAll() {
 	_, err = s.projectService.Create(s.ctx, s.namespace.ID, s.newCreateOpts())
 	s.Require().NoError(err)
 
-	projects, err := s.projectService.GetAll(s.ctx, s.namespace.ID, 0, 10)
+	projects, err := s.projectService.List(s.ctx, s.namespace.ID, service.CursorPage{Size: 10})
 	s.Require().NoError(err)
-	s.Assert().Len(projects, 2)
+	s.Assert().Len(projects.Items, 2)
 }
 
 func (s *ProjectServiceIntegrationTestSuite) TestUpdate() {

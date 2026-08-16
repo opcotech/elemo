@@ -4,26 +4,9 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import type { z } from "zod";
 
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-} from "@/components/ui/card";
-import {
-  ControlledField,
-  Field,
-  FieldControl,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-  FieldProvider,
-} from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
-import { Spinner } from "@/components/ui/spinner";
-import { Textarea } from "@/components/ui/textarea";
+import { FieldGroup, FieldProvider } from "@/components/ui/field";
+import { FormCard } from "@/components/ui/form-card";
+import { NameDescriptionFields } from "@/components/ui/name-description-fields";
 import { useFormMutation } from "@/hooks/use-form-mutation";
 import { accessibleNamespacesQueryKey } from "@/lib/api/accessible-namespaces";
 import {
@@ -119,91 +102,28 @@ export function NamespaceEditForm({
   });
 
   return (
-    <Card>
-      <CardHeader>
-        <CardDescription>Update the namespace details below.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <FieldProvider {...form}>
-          <form
-            onSubmit={mutation.handleSubmit}
-            className="flex flex-col gap-y-6"
-          >
-            {mutation.isError && (
-              <Alert variant="destructive">
-                <AlertTitle>Failed to update namespace</AlertTitle>
-                <AlertDescription>{mutation.error?.message}</AlertDescription>
-              </Alert>
-            )}
-
-            <FieldGroup>
-              <ControlledField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <Field>
-                    <FieldLabel>Name</FieldLabel>
-                    <FieldControl>
-                      <Input
-                        placeholder="Enter namespace name"
-                        {...field}
-                        disabled={mutation.isPending}
-                      />
-                    </FieldControl>
-                    <FieldError />
-                  </Field>
-                )}
-              />
-
-              <ControlledField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <Field>
-                    <FieldLabel>Description</FieldLabel>
-                    <FieldControl>
-                      <Textarea
-                        placeholder="Enter namespace description (optional)"
-                        {...field}
-                        value={getDefaultValue(field.value)}
-                        rows={4}
-                        disabled={mutation.isPending}
-                      />
-                    </FieldControl>
-                    <FieldError />
-                  </Field>
-                )}
-              />
-            </FieldGroup>
-
-            <div className="flex justify-end gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() =>
-                  navigate({
-                    to: "/settings/organizations/$organizationId",
-                    params: { organizationId },
-                  })
-                }
-                disabled={mutation.isPending}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={mutation.isPending}>
-                {mutation.isPending ? (
-                  <>
-                    <Spinner size="xs" className="mr-0.5 text-white" />
-                    <span>Saving...</span>
-                  </>
-                ) : (
-                  "Save Changes"
-                )}
-              </Button>
-            </div>
-          </form>
-        </FieldProvider>
-      </CardContent>
-    </Card>
+    <FormCard
+      description="Update the namespace details below."
+      onSubmit={mutation.handleSubmit}
+      onCancel={() =>
+        navigate({
+          to: "/settings/organizations/$organizationId",
+          params: { organizationId },
+        })
+      }
+      isPending={mutation.isPending}
+      error={mutation.error || null}
+    >
+      <FieldProvider {...form}>
+        <FieldGroup>
+          <NameDescriptionFields
+            control={form.control}
+            isPending={mutation.isPending}
+            namePlaceholder="Enter namespace name"
+            descriptionPlaceholder="Enter namespace description"
+          />
+        </FieldGroup>
+      </FieldProvider>
+    </FormCard>
   );
 }

@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   ArrowRightIcon,
   CheckCircle2Icon,
+  CircleAlertIcon,
   ListChecksIcon,
   SparklesIcon,
 } from "lucide-react";
@@ -9,51 +10,82 @@ import { useMemo } from "react";
 
 import { ContentWidth } from "@/components/layout/content-width";
 import { openQuickCreate } from "@/components/quick-create/open";
-import { AppEmptyState, MockDataAlert } from "@/components/shared/app-feedback";
+import { MockDataAlert } from "@/components/shared/app-feedback";
 import { AttentionIcon } from "@/components/shared/attention-icon";
-import { CreateButton } from "@/components/shared/create-button";
 import { AppList, EntityLink } from "@/components/shared/entity-link";
-import { PageHeader } from "@/components/shared/page-header";
-import { Section } from "@/components/shared/section";
-import { StatusIndicator } from "@/components/shared/status-indicator";
 import { groupTodosByDueDate } from "@/components/todo/grouping";
-import { todoPriorityTone } from "@/components/todo/priority";
+import { TodoPriorityRibbon } from "@/components/todo/todo-priority-ribbon";
 import { Button } from "@/components/ui/button";
+import { CreateButton } from "@/components/ui/create-button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { InternalLink } from "@/components/ui/internal-link";
+import { ListSkeleton } from "@/components/ui/list-skeleton";
+import { PageHeader } from "@/components/ui/page-header";
+import { Section } from "@/components/ui/section";
 import { CompactWorkList } from "@/components/work/work-list";
 import { useAuth } from "@/hooks/use-auth";
+import type { AccessibleNamespace } from "@/lib/api/accessible-namespaces";
 import { useAccessibleNamespaces } from "@/lib/api/accessible-namespaces";
-import { v1TodosGetOptions } from "@/lib/api/query-options";
+import { collectedListQuery, cursorPageQuery } from "@/lib/api/cursor-pages";
+import {
+  v1TodosGetOptions,
+  v1UsersIssuesGetOptions,
+} from "@/lib/api/query-options";
+import { v1UsersIssuesGet } from "@/lib/api/sdk";
 import type { Todo } from "@/lib/api/types";
 import {
   getWorkItem,
+  queryWorkItems,
   resolveDemoPerson,
   selectAttentionSignals,
-  selectWorkItems,
 } from "@/lib/mock-data";
 import { recentEntityLinkType } from "@/lib/recent-entity";
 import { uiActions, useUiSelector } from "@/lib/ui-store";
+import { issuesToWorkItems } from "@/lib/work/issue-adapter";
 
 const HOME_TODO_PREVIEW_LIMIT = 5;
 
 export function HomePage() {
   const { user } = useAuth();
+  const userId = user?.id;
   const demoPerson = resolveDemoPerson(user);
   const { data: accessibleWorkspace } = useAccessibleNamespaces();
-  const namespaces = accessibleWorkspace?.namespaces ?? [];
-  const { data: todosData } = useQuery(v1TodosGetOptions());
-  const todos: Todo[] = todosData ?? [];
+  const namespaces: AccessibleNamespace[] =
+    accessibleWorkspace?.namespaces ?? [];
+  const { data: todosPage } = useQuery(v1TodosGetOptions());
+  const userIssuesOptions = v1UsersIssuesGetOptions({
+    path: { id: userId ?? "" },
+    query: cursorPageQuery(),
+  });
+  const {
+    data: issuesPage,
+    error: issuesError,
+    isLoading: issuesLoading,
+  } = useQuery({
+    ...collectedListQuery(userIssuesOptions, async (pageToken, signal) => {
+      const { data } = await v1UsersIssuesGet({
+        path: { id: userId ?? "" },
+        query: cursorPageQuery(pageToken),
+        signal,
+        throwOnError: true,
+      });
+      return data;
+    }),
+    enabled: Boolean(userId),
+  });
+  const todos: Todo[] = todosPage?.items ?? [];
   const recentEntities = useUiSelector((state) => state.recentEntities);
   const attention = selectAttentionSignals({
     personId: demoPerson.id,
   });
-  const work = selectWorkItems({
-    scope: { type: "person", personId: demoPerson.id },
-    filters: {
-      statuses: ["planned", "in-progress", "blocked"],
-    },
-    sort: [{ field: "updatedAt", direction: "desc" }],
-  });
+  const continueWorking = useMemo(
+    () =>
+      queryWorkItems(issuesToWorkItems(issuesPage?.items ?? []), {
+        filters: { statuses: ["in progress"] },
+        sort: [{ field: "priority", direction: "desc" }],
+      }),
+    [issuesPage]
+  );
   const openTodoGroups = useMemo(() => {
     const openTodos = todos.filter((todo) => !todo.completed);
     const groups = groupTodosByDueDate(openTodos);
@@ -110,7 +142,11 @@ export function HomePage() {
                   return (
                     <InternalLink
                       key={signal.id}
-                      to={item ? (`/work/${item.id}` as const) : "/my-work"}
+                      to={
+                        item
+                          ? (`/work/${item.namespaceId}/${item.key}` as const)
+                          : "/my-work"
+                      }
                       className="hover:bg-muted/50 flex items-center gap-3 px-3 py-2.5"
                     >
                       <AttentionIcon severity={signal.severity} />
@@ -130,7 +166,7 @@ export function HomePage() {
                 })}
               </AppList>
             ) : (
-              <AppEmptyState
+              <EmptyState
                 compact
                 icon={<CheckCircle2Icon />}
                 title="You’re clear"
@@ -141,6 +177,7 @@ export function HomePage() {
 
           <Section
             title="Continue working"
+            data-section="home-continue-working"
             action={
               <Button
                 variant="ghost"
@@ -151,15 +188,30 @@ export function HomePage() {
               </Button>
             }
           >
-            <MockDataAlert title="Illustrative work items" className="mb-3">
-              Work items shown here are illustrative examples until live work
-              tracking is available in this view.
-            </MockDataAlert>
-            <CompactWorkList items={work} limit={6} />
+            {issuesLoading ? (
+              <ListSkeleton rows={6} />
+            ) : issuesError ? (
+              <EmptyState
+                compact
+                icon={<CircleAlertIcon />}
+                title="Couldn't load work"
+                description="Assigned in-progress work could not be loaded. Try again later."
+              />
+            ) : (
+              <CompactWorkList
+                items={continueWorking}
+                limit={6}
+                showAssignees={false}
+                showLabels={false}
+                emptyTitle="No in-progress work"
+                emptyDescription="Assigned work that is in progress will appear here."
+              />
+            )}
           </Section>
 
           <Section
             title="Personal todos"
+            data-section="home-personal-todos"
             description="Your personal todos"
             action={
               hasOpenTodos ? (
@@ -197,9 +249,11 @@ export function HomePage() {
                               {todo.description || "No description"}
                             </span>
                           </span>
-                          <StatusIndicator
-                            status={todo.priority}
-                            tone={todoPriorityTone[todo.priority]}
+                          <TodoPriorityRibbon
+                            priority={todo.priority}
+                            className="gap-1"
+                            iconClassName="size-3"
+                            labelClassName="text-xs font-medium"
                           />
                         </button>
                       ))}
@@ -208,7 +262,7 @@ export function HomePage() {
                 ))}
               </div>
             ) : (
-              <AppEmptyState
+              <EmptyState
                 compact
                 icon={<ListChecksIcon />}
                 title="No open todos"
@@ -238,7 +292,7 @@ export function HomePage() {
                 ))}
               </AppList>
             ) : (
-              <AppEmptyState
+              <EmptyState
                 compact
                 icon={<SparklesIcon />}
                 title="No namespaces"

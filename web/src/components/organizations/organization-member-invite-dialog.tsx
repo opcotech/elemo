@@ -49,11 +49,12 @@ export function OrganizationMemberInviteDialog({
   onOpenChange,
   onSuccess,
 }: OrganizationMemberInviteDialogProps) {
-  const { data: roles, isLoading: isLoadingRoles } = useQuery(
+  const { data: rolesPage, isLoading: isLoadingRoles } = useQuery(
     v1OrganizationRolesGetOptions({
       path: { id: organizationId },
     })
   );
+  const roles = rolesPage?.items;
 
   const form = useForm<InviteFormValues>({
     resolver: zodResolver(inviteFormSchema),
@@ -159,7 +160,7 @@ export function OrganizationMemberInviteDialog({
             >
               <FieldControl>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select a role (optional)" />
+                  <SelectValue placeholder="Select a role" />
                 </SelectTrigger>
               </FieldControl>
               <SelectContent>

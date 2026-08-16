@@ -69,13 +69,14 @@ export function ResponsiveInspectorShell({
             className="relative flex h-full min-h-0 flex-col"
             role="complementary"
             aria-label={`${inspectorTitle} details`}
+            data-section="work-inspector"
           >
             <Button
               ref={closeButtonRef}
               type="button"
               variant="ghost"
               size="icon-sm"
-              className="absolute top-3 right-3 z-10"
+              className="absolute top-3 right-3 z-10 rounded-full"
               onClick={() => setOpen(false)}
               aria-label="Close inspector"
             >

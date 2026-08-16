@@ -9,6 +9,7 @@ import (
 	awsS3 "github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/smithy-go"
 	"github.com/opcotech/elemo/internal/config"
+	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/log"
 	"github.com/opcotech/elemo/internal/pkg/tracing"
 	"github.com/opcotech/elemo/internal/testutil/mock"
@@ -17,6 +18,60 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 )
+
+func testPageSize(limit int) int {
+	if limit < MinPageSize {
+		return DefaultPageSize
+	}
+	return limit
+}
+
+func issueListForIssueCacheKey(issueID model.ID, page CursorPage, proj IssueProjection) string {
+	plan, err := CompileQuery(IssueListForIssueQuery{IssueID: issueID, Page: page, Projection: proj})
+	if err != nil {
+		panic(err)
+	}
+	return plan.CacheKey(model.ResourceTypeIssue.String(), "ListForIssue", issueID.String())
+}
+
+// redisCacheExpectingPatterns mocks Keys+DeletePattern for each pattern in order.
+// If failIndex >= 0, that pattern's cache.Delete returns failErr and later patterns are not expected.
+//
+//nolint:revive // test cache factories take gomock.Controller first
+func redisCacheExpectingPatterns(ctrl *gomock.Controller, ctx context.Context, patterns []string, failIndex int, failErr error) *redisBaseRepository {
+	client := mock.NewUniversalClient(ctrl)
+	backend := mock.NewCacheBackend(ctrl)
+	span := mock.NewMockSpan(ctrl)
+	tracer := mock.NewMockTracer(ctrl)
+
+	count := 0
+	for i, pattern := range patterns {
+		count++
+		cmd := new(redis.StringSliceCmd)
+		cmd.SetVal([]string{pattern})
+		client.EXPECT().Keys(ctx, pattern).Return(cmd)
+		if i == failIndex {
+			backend.EXPECT().Delete(ctx, pattern).Return(failErr)
+			break
+		}
+		backend.EXPECT().Delete(ctx, pattern).Return(nil)
+	}
+
+	span.EXPECT().End(gomock.Len(0)).Times(count)
+	tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(count)
+
+	db, err := NewRedisDatabase(WithRedisClient(client))
+	if err != nil {
+		panic(err)
+	}
+
+	return &redisBaseRepository{
+		db:     db,
+		cache:  backend,
+		tracer: tracer,
+		logger: mock.NewMockLogger(ctrl),
+	}
+}
 
 func TestEdgeKind_String(t *testing.T) {
 	tests := []struct {

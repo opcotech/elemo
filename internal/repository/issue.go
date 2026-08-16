@@ -3,9 +3,10 @@ package repository
 import (
 	"context"
 	"errors"
+	"strings"
 	"time"
 
-	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
+	"github.com/neo4j/neo4j-go-driver/v6/neo4j"
 
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/convert"
@@ -17,6 +18,7 @@ var (
 	ErrIssueAddWatcher     = errors.New("failed to add watcher to issue")       // the watcher could not be added to the issue
 	ErrIssueCreate         = errors.New("failed to create issue")               // the issue could not be created
 	ErrIssueDelete         = errors.New("failed to delete issue")               // the issue could not be deleted
+	ErrIssueGetRelation    = errors.New("failed to get issue relation")         // the relation could not be retrieved
 	ErrIssueGetRelations   = errors.New("failed to get relations for issue")    // the relations could not be retrieved for the issue
 	ErrIssueGetWatchers    = errors.New("failed to get watchers for issue")     // the watchers could not be retrieved for the issue
 	ErrIssueRead           = errors.New("failed to read issue")                 // the issue could not be retrieved
@@ -25,28 +27,61 @@ var (
 	ErrIssueUpdate         = errors.New("failed to update issue")               // the issue could not be updated
 )
 
+// PartialAssignee is a lean assignment of a user to an issue.
+type PartialAssignee struct {
+	ID        model.ID             `json:"id"`
+	Kind      model.AssignmentKind `json:"kind"`
+	FirstName string               `json:"first_name"`
+	LastName  string               `json:"last_name"`
+	Picture   string               `json:"picture"`
+}
+
+// PartialIssue represents a simplified issue that can be used in lists.
+type PartialIssue struct {
+	ID          model.ID            `json:"id"`
+	Key         string              `json:"key"`
+	NumericID   uint                `json:"numeric_id"`
+	Parent      *PartialIssue       `json:"parent"`
+	Kind        model.IssueKind     `json:"kind"`
+	Title       string              `json:"title"`
+	Description string              `json:"description"`
+	Status      model.IssueStatus   `json:"status"`
+	Priority    model.IssuePriority `json:"priority"`
+	Assignments []PartialAssignee   `json:"assignments"`
+	Labels      []PartialLabel      `json:"labels"`
+	Project     *PartialProject     `json:"project"`
+	Namespace   *PartialNamespace   `json:"namespace"`
+	ReportedBy  *PartialUser        `json:"reported_by"`
+	DueDate     *time.Time          `json:"due_date"`
+	StartDate   *time.Time          `json:"start_date"`
+}
+
 // Issue represents an issue persisted by the repository.
 type Issue struct {
-	ID          model.ID              `json:"id"`
-	NumericID   uint                  `json:"numeric_id"`
-	Parent      *model.ID             `json:"parent"`
-	Kind        model.IssueKind       `json:"kind"`
-	Title       string                `json:"title"`
-	Description string                `json:"description"`
-	Status      model.IssueStatus     `json:"status"`
-	Priority    model.IssuePriority   `json:"priority"`
-	Resolution  model.IssueResolution `json:"resolution"`
-	ReportedBy  model.ID              `json:"reported_by"`
-	Assignees   []model.ID            `json:"assignees"`
-	Labels      []model.ID            `json:"labels"`
-	Comments    []model.ID            `json:"comments"`
-	Attachments []model.ID            `json:"attachments"`
-	Watchers    []model.ID            `json:"watchers"`
-	Relations   []model.ID            `json:"relations"`
-	Links       []string              `json:"links"`
-	DueDate     *time.Time            `json:"due_date"`
-	CreatedAt   *time.Time            `json:"created_at"`
-	UpdatedAt   *time.Time            `json:"updated_at"`
+	ID              model.ID              `json:"id"`
+	Key             string                `json:"key"`
+	NumericID       uint                  `json:"numeric_id"`
+	Parent          *PartialIssue         `json:"parent"`
+	Kind            model.IssueKind       `json:"kind"`
+	Title           string                `json:"title"`
+	Description     string                `json:"description"`
+	Status          model.IssueStatus     `json:"status"`
+	Priority        model.IssuePriority   `json:"priority"`
+	Resolution      model.IssueResolution `json:"resolution"`
+	ReportedBy      *PartialUser          `json:"reported_by"`
+	Assignments     []PartialAssignee     `json:"assignments"`
+	Labels          []PartialLabel        `json:"labels"`
+	Project         *PartialProject       `json:"project"`
+	Namespace       *PartialNamespace     `json:"namespace"`
+	CommentCount    *int64                `json:"comment_count"`
+	AttachmentCount *int64                `json:"attachment_count"`
+	WatcherCount    *int64                `json:"watcher_count"`
+	RelationCount   *int64                `json:"relation_count"`
+	Links           []model.IssueLink     `json:"links"`
+	DueDate         *time.Time            `json:"due_date"`
+	StartDate       *time.Time            `json:"start_date"`
+	CreatedAt       *time.Time            `json:"created_at"`
+	UpdatedAt       *time.Time            `json:"updated_at"`
 }
 
 // IssueRelation represents a relation between issues persisted by the repository.
@@ -59,10 +94,21 @@ type IssueRelation struct {
 	UpdatedAt *time.Time              `json:"updated_at"`
 }
 
+// IssueRelationItem is a paginated relation row with the related issue loaded
+// as a lean PartialIssue. Source and Target follow startNode/endNode.
+type IssueRelationItem struct {
+	ID        model.ID                `json:"id"`
+	Kind      model.IssueRelationKind `json:"kind"`
+	Source    model.ID                `json:"source"`
+	Target    model.ID                `json:"target"`
+	Related   *PartialIssue           `json:"related"`
+	CreatedAt *time.Time              `json:"created_at"`
+}
+
 // CreateIssueOpts holds the data required to create an issue.
+// NumericID is allocated atomically from the project's next_issue_id counter.
 type CreateIssueOpts struct {
 	ProjectID   model.ID
-	NumericID   uint
 	Parent      *model.ID
 	Kind        model.IssueKind
 	Title       string
@@ -71,8 +117,9 @@ type CreateIssueOpts struct {
 	Priority    model.IssuePriority
 	Resolution  model.IssueResolution
 	ReportedBy  model.ID
-	Links       []string
+	Links       []model.IssueLink
 	DueDate     *time.Time
+	StartDate   *time.Time
 }
 
 // CreateIssueRelationOpts holds the data required to create an issue relation.
@@ -91,8 +138,10 @@ type UpdateIssueOpts struct {
 	Status      optional.Optional[model.IssueStatus]
 	Priority    optional.Optional[model.IssuePriority]
 	Resolution  optional.Optional[model.IssueResolution]
-	Links       optional.Optional[[]string]
+	Links       optional.Optional[[]model.IssueLink]
 	DueDate     optional.Optional[time.Time]
+	StartDate   optional.Optional[time.Time]
+	Parent      optional.Optional[model.ID]
 }
 
 // patch builds a Neo4j property map from defined optional fields.
@@ -106,7 +155,11 @@ func (o UpdateIssueOpts) patch() map[string]any {
 		p["title"] = *o.Title.Value
 	}
 	if o.Description.Defined {
-		p["description"] = *o.Description.Value
+		if o.Description.Value == nil {
+			p["description"] = nil
+		} else {
+			p["description"] = *o.Description.Value
+		}
 	}
 	if o.Status.Defined {
 		p["status"] = o.Status.Value.String()
@@ -118,11 +171,12 @@ func (o UpdateIssueOpts) patch() map[string]any {
 		p["resolution"] = o.Resolution.Value.String()
 	}
 	if o.Links.Defined {
-		if o.Links.Value == nil {
-			p["links"] = []string{}
-		} else {
-			p["links"] = *o.Links.Value
+		links := make([]model.IssueLink, 0)
+		if o.Links.Value != nil {
+			links = *o.Links.Value
 		}
+		p["links"] = encodeIssueLinks(links)
+		p["link_labels"] = nil
 	}
 	if o.DueDate.Defined {
 		if o.DueDate.Value == nil {
@@ -131,38 +185,170 @@ func (o UpdateIssueOpts) patch() map[string]any {
 			p["due_date"] = o.DueDate.Value.Format(time.RFC3339Nano)
 		}
 	}
+	if o.StartDate.Defined {
+		if o.StartDate.Value == nil {
+			p["start_date"] = nil
+		} else {
+			p["start_date"] = o.StartDate.Value.Format(time.RFC3339Nano)
+		}
+	}
 
 	return p
+}
+
+// issueLinkLabelSep separates an optional label from the URL in a stored link
+// entry. Neo4j cannot persist MAP or LIST<LIST<STRING>> properties, so each
+// pair is one STRING in a homogeneous LIST<STRING>: "url" or "url\tlabel".
+const issueLinkLabelSep = "\t"
+
+func encodeIssueLinks(links []model.IssueLink) []string {
+	out := make([]string, len(links))
+	for i, link := range links {
+		if link.Label == "" || link.Label == link.URL {
+			out[i] = link.URL
+			continue
+		}
+		out[i] = link.URL + issueLinkLabelSep + link.Label
+	}
+	return out
+}
+
+func neo4jStringList(val any) []string {
+	switch items := val.(type) {
+	case []string:
+		out := make([]string, len(items))
+		copy(out, items)
+		return out
+	case []any:
+		out := make([]string, 0, len(items))
+		for _, item := range items {
+			s, ok := item.(string)
+			if !ok || s == "" {
+				continue
+			}
+			out = append(out, s)
+		}
+		return out
+	default:
+		return make([]string, 0)
+	}
+}
+
+func decodeIssueLinkEntry(entry string) model.IssueLink {
+	url, label, found := strings.Cut(entry, issueLinkLabelSep)
+	if !found || label == "" {
+		return model.IssueLink{URL: url, Label: url}
+	}
+	return model.IssueLink{URL: url, Label: label}
+}
+
+func decodeIssueLinks(props map[string]any) []model.IssueLink {
+	entries := neo4jStringList(props["links"])
+	legacyLabels := neo4jStringList(props["link_labels"])
+	links := make([]model.IssueLink, 0, len(entries))
+	for i, entry := range entries {
+		link := decodeIssueLinkEntry(entry)
+		if strings.Contains(entry, issueLinkLabelSep) {
+			links = append(links, link)
+			continue
+		}
+		if i < len(legacyLabels) && legacyLabels[i] != "" {
+			link.Label = legacyLabels[i]
+		}
+		links = append(links, link)
+	}
+	return links
+}
+
+func applyDecodedIssueLinks(issue *Issue, props map[string]any) {
+	issue.Links = decodeIssueLinks(props)
+}
+
+// issueAssignmentsPattern returns a Cypher pattern comprehension that collects
+// AssignedTo edges (both assignee and reviewer) as user maps.
+func issueAssignmentsPattern(issueVar string) string {
+	return `[(` + issueVar + `)<-[at:` + EdgeKindAssignedTo.String() +
+		`]-(u:` + model.ResourceTypeUser.String() +
+		`) | {id: u.id, kind: at.kind, first_name: u.first_name, last_name: u.last_name, picture: u.picture}]`
+}
+
+// parsePartialAssignees parses [{id, kind}, ...] values from Neo4j into PartialAssignee.
+func parsePartialAssignees(val any) ([]PartialAssignee, error) {
+	items, ok := val.([]any)
+	if !ok {
+		return make([]PartialAssignee, 0), nil
+	}
+
+	assignees := make([]PartialAssignee, 0, len(items))
+	for _, item := range items {
+		if item == nil {
+			continue
+		}
+		m, ok := item.(map[string]any)
+		if !ok {
+			return nil, ErrMalformedResult
+		}
+
+		idStr, ok := m["id"].(string)
+		if !ok {
+			return nil, ErrMalformedResult
+		}
+		kindStr, ok := m["kind"].(string)
+		if !ok {
+			return nil, ErrMalformedResult
+		}
+
+		id, err := model.NewIDFromString(idStr, model.ResourceTypeUser.String())
+		if err != nil {
+			return nil, err
+		}
+
+		var kind model.AssignmentKind
+		if err := kind.UnmarshalText([]byte(kindStr)); err != nil {
+			return nil, err
+		}
+
+		assignees = append(assignees, PartialAssignee{
+			ID:        id,
+			Kind:      kind,
+			FirstName: mapString(m, "first_name"),
+			LastName:  mapString(m, "last_name"),
+			Picture:   mapString(m, "picture"),
+		})
+	}
+
+	return assignees, nil
+}
+
+// Neo4jParsePartialAssigneesFromRecord parses PartialAssignee values from a record key.
+func Neo4jParsePartialAssigneesFromRecord(record *neo4j.Record, key string) ([]PartialAssignee, error) {
+	val, err := Neo4jParseValueFromRecord[[]any](record, key)
+	if err != nil {
+		return nil, err
+	}
+	return parsePartialAssignees(val)
 }
 
 //go:generate go tool mockgen -source=issue.go -destination=issue_mock_gen.go -package=repository -mock_names "IssueRepository=MockIssueRepository"
 type IssueRepository interface {
 	Create(ctx context.Context, opts CreateIssueOpts) (*Issue, error)
-	Get(ctx context.Context, id model.ID) (*Issue, error)
-	GetAllForProject(ctx context.Context, projectID model.ID, offset, limit int) ([]*Issue, error)
-	GetAllForIssue(ctx context.Context, issueID model.ID, offset, limit int) ([]*Issue, error)
+	Get(ctx context.Context, id model.ID, proj IssueProjection) (*Issue, error)
+	GetByKey(ctx context.Context, namespaceID model.ID, key string, proj IssueProjection) (*Issue, error)
+	ListForProject(ctx context.Context, query IssueListQuery) (Page[*PartialIssue], error)
+	ListForNamespace(ctx context.Context, query IssueListForNamespaceQuery) (Page[*PartialIssue], error)
+	ListForUser(ctx context.Context, query IssueListForUserQuery) (Page[*PartialIssue], error)
+	ListForIssue(ctx context.Context, query IssueListForIssueQuery) (Page[*Issue], error)
 	AddWatcher(ctx context.Context, issue model.ID, user model.ID) error
 	GetWatchers(ctx context.Context, issue model.ID) ([]*User, error)
 	RemoveWatcher(ctx context.Context, issue model.ID, user model.ID) error
 	AddRelation(ctx context.Context, opts CreateIssueRelationOpts) (*IssueRelation, error)
+	GetRelation(ctx context.Context, relationID model.ID) (*IssueRelation, error)
 	GetRelations(ctx context.Context, issue model.ID) ([]*IssueRelation, error)
+	ListRelations(ctx context.Context, query IssueRelationListQuery) (Page[*IssueRelationItem], error)
 	RemoveRelation(ctx context.Context, source, target model.ID, kind model.IssueRelationKind) error
-	Update(ctx context.Context, id model.ID, opts UpdateIssueOpts) (*Issue, error)
+	RemoveRelationByID(ctx context.Context, relationID model.ID) error
+	Update(ctx context.Context, id model.ID, opts UpdateIssueOpts, proj IssueProjection) (*Issue, error)
 	Delete(ctx context.Context, id model.ID) error
-}
-
-// issueScanParams is a struct for holding the cypher return parameter names
-// for scanning an issue.
-type issueScanParams struct {
-	issue       string
-	parent      string
-	reportedBy  string
-	assignees   string
-	labels      string
-	comments    string
-	attachments string
-	watchers    string
-	relations   string
 }
 
 // Neo4jIssueRepository is a repository for managing user issues.
@@ -170,59 +356,413 @@ type Neo4jIssueRepository struct {
 	*neo4jBaseRepository
 }
 
-func (r *Neo4jIssueRepository) scan(params *issueScanParams) func(rec *neo4j.Record) (*Issue, error) {
-	return func(rec *neo4j.Record) (*Issue, error) {
-		issue := new(Issue)
-		issue.Links = make([]string, 0)
+type issueListRow struct {
+	projectKey string
+	issue      *PartialIssue
+}
 
-		val, _, err := neo4j.GetRecordValue[neo4j.Node](rec, params.issue)
-		if err != nil {
-			return nil, err
-		}
+type issueDetailRow struct {
+	projectKey string
+	issue      *Issue
+}
 
-		parent, err := Neo4jParseValueFromRecord[string](rec, params.parent)
-		if err != nil {
-			return nil, err
-		}
-
-		reportedBy, err := Neo4jParseValueFromRecord[string](rec, params.reportedBy)
-		if err != nil {
-			return nil, err
-		}
-
-		if err := Neo4jScanIntoStruct(&val, &issue, []string{"id", "parent", "reported_by"}); err != nil {
-			return nil, err
-		}
-
-		issue.ID, _ = model.NewIDFromString(val.GetProperties()["id"].(string), model.ResourceTypeIssue.String())
-		issue.ReportedBy, _ = model.NewIDFromString(reportedBy, model.ResourceTypeUser.String())
-
-		if parent != "" {
-			parentID, _ := model.NewIDFromString(parent, model.ResourceTypeIssue.String())
-			issue.Parent = &parentID
-		}
-
-		if issue.Assignees, err = Neo4jParseIDsFromRecord(rec, params.assignees, model.ResourceTypeUser.String()); err != nil {
-			return nil, err
-		}
-		if issue.Labels, err = Neo4jParseIDsFromRecord(rec, params.labels, model.ResourceTypeLabel.String()); err != nil {
-			return nil, err
-		}
-		if issue.Comments, err = Neo4jParseIDsFromRecord(rec, params.comments, model.ResourceTypeComment.String()); err != nil {
-			return nil, err
-		}
-		if issue.Attachments, err = Neo4jParseIDsFromRecord(rec, params.attachments, model.ResourceTypeAttachment.String()); err != nil {
-			return nil, err
-		}
-		if issue.Watchers, err = Neo4jParseIDsFromRecord(rec, params.watchers, model.ResourceTypeUser.String()); err != nil {
-			return nil, err
-		}
-		if issue.Relations, err = Neo4jParseIDsFromRecord(rec, params.relations, model.ResourceTypeIssue.String()); err != nil {
-			return nil, err
-		}
-
-		return issue, nil
+func applyIssueKeys(issue *Issue, projectKey string) {
+	issue.Key = model.FormatIssueKey(projectKey, issue.NumericID)
+	if issue.Parent != nil {
+		issue.Parent.Key = model.FormatIssueKey(projectKey, issue.Parent.NumericID)
 	}
+}
+
+func decodePartialIssueNode(node neo4j.Node, projectKey string) (*PartialIssue, error) {
+	issueID, err := Neo4jDecodeID(node, model.ResourceTypeIssue)
+	if err != nil {
+		return nil, err
+	}
+
+	var tempIssue struct {
+		NumericID   uint       `json:"numeric_id"`
+		Title       string     `json:"title"`
+		Description string     `json:"description"`
+		Kind        string     `json:"kind"`
+		Status      string     `json:"status"`
+		Priority    string     `json:"priority"`
+		DueDate     *time.Time `json:"due_date"`
+		StartDate   *time.Time `json:"start_date"`
+	}
+	if err := Neo4jScanIntoStruct(&node, &tempIssue, []string{"id"}); err != nil {
+		return nil, err
+	}
+
+	var kind model.IssueKind
+	if err := kind.UnmarshalText([]byte(tempIssue.Kind)); err != nil {
+		return nil, err
+	}
+
+	var status model.IssueStatus
+	if err := status.UnmarshalText([]byte(tempIssue.Status)); err != nil {
+		return nil, err
+	}
+
+	var priority model.IssuePriority
+	if err := priority.UnmarshalText([]byte(tempIssue.Priority)); err != nil {
+		return nil, err
+	}
+
+	return &PartialIssue{
+		ID:          issueID,
+		Key:         model.FormatIssueKey(projectKey, tempIssue.NumericID),
+		NumericID:   tempIssue.NumericID,
+		Kind:        kind,
+		Title:       tempIssue.Title,
+		Description: tempIssue.Description,
+		Status:      status,
+		Priority:    priority,
+		Assignments: make([]PartialAssignee, 0),
+		Labels:      make([]PartialLabel, 0),
+		DueDate:     tempIssue.DueDate,
+		StartDate:   tempIssue.StartDate,
+	}, nil
+}
+
+func parentProjectKeyFromRecord(record *neo4j.Record, fallback string) string {
+	val, ok := record.Get("parent_project_key")
+	if !ok || val == nil {
+		return fallback
+	}
+	key, ok := val.(string)
+	if !ok || key == "" {
+		return fallback
+	}
+	return key
+}
+
+func relationCountAfterCreate(hasParent bool) *int64 {
+	if hasParent {
+		return convert.ToPointer(int64(1))
+	}
+	return convert.ToPointer(int64(0))
+}
+
+func (r *Neo4jIssueRepository) scanDetail(proj IssueProjection) func(rec *neo4j.Record) (*issueDetailRow, error) {
+	return func(rec *neo4j.Record) (*issueDetailRow, error) {
+		node, err := Neo4jRecordNode(rec, "i")
+		if err != nil {
+			return nil, err
+		}
+		project, err := Neo4jRecordPartialProject(rec, "p")
+		if err != nil {
+			return nil, err
+		}
+		namespace, err := Neo4jRecordOptionalPartialNamespace(rec, "n")
+		if err != nil {
+			return nil, err
+		}
+		reportedBy, err := Neo4jRecordPartialUser(rec, "u")
+		if err != nil {
+			return nil, err
+		}
+
+		issue := new(Issue)
+		if err := Neo4jScanIntoStruct(&node, &issue, []string{"id", "key", "parent", "reported_by", "links", "link_labels"}); err != nil {
+			return nil, err
+		}
+		applyDecodedIssueLinks(issue, node.GetProperties())
+		issue.ID, err = Neo4jDecodeID(node, model.ResourceTypeIssue)
+		if err != nil {
+			return nil, err
+		}
+		issue.ReportedBy = reportedBy
+		issue.Project = project
+		issue.Namespace = namespace
+		applyIssueKeys(issue, project.Key)
+		if proj.Assignments {
+			issue.Assignments = make([]PartialAssignee, 0)
+		}
+		if proj.Labels {
+			issue.Labels = make([]PartialLabel, 0)
+		}
+		if proj.CommentCount {
+			issue.CommentCount = convert.ToPointer(int64(0))
+		}
+		if proj.AttachmentCount {
+			issue.AttachmentCount = convert.ToPointer(int64(0))
+		}
+		if proj.WatcherCount {
+			issue.WatcherCount = convert.ToPointer(int64(0))
+		}
+		if proj.RelationCount {
+			issue.RelationCount = convert.ToPointer(int64(0))
+		}
+
+		return &issueDetailRow{projectKey: project.Key, issue: issue}, nil
+	}
+}
+
+func (r *Neo4jIssueRepository) applyIssueLoaders(ctx context.Context, tx neo4j.ManagedTransaction, plan QueryPlan, rows []*issueDetailRow) error {
+	if len(plan.Loaders) == 0 || len(rows) == 0 {
+		return nil
+	}
+
+	rowByID := make(map[string]*issueDetailRow, len(rows))
+	targets := make(map[string]issueRelationTarget, len(rows))
+	ids := make([]string, 0, len(rows))
+	for _, row := range rows {
+		if row == nil || row.issue == nil {
+			continue
+		}
+		id := row.issue.ID.String()
+		rowByID[id] = row
+		targets[id] = issueRelationTarget{
+			projectKey:  row.projectKey,
+			parent:      &row.issue.Parent,
+			assignments: &row.issue.Assignments,
+			labels:      &row.issue.Labels,
+		}
+		ids = append(ids, id)
+	}
+
+	for _, loader := range plan.Loaders {
+		query := loaderQueryWithIDs(loader, ids)
+		handled, err := applyIssueRelationLoader(ctx, tx, query, loader.Name, targets)
+		if err != nil {
+			return err
+		}
+		if handled {
+			continue
+		}
+		switch loader.Name {
+		case "issue.load_comment_count":
+			if err := applyIssueCountLoader(ctx, tx, query, rowByID, "comment_count", func(issue *Issue, count int64) {
+				issue.CommentCount = convert.ToPointer(count)
+			}); err != nil {
+				return err
+			}
+		case "issue.load_attachment_count":
+			if err := applyIssueCountLoader(ctx, tx, query, rowByID, "attachment_count", func(issue *Issue, count int64) {
+				issue.AttachmentCount = convert.ToPointer(count)
+			}); err != nil {
+				return err
+			}
+		case "issue.load_watcher_count":
+			if err := applyIssueCountLoader(ctx, tx, query, rowByID, "watcher_count", func(issue *Issue, count int64) {
+				issue.WatcherCount = convert.ToPointer(count)
+			}); err != nil {
+				return err
+			}
+		case "issue.load_relation_count":
+			if err := applyIssueCountLoader(ctx, tx, query, rowByID, "relation_count", func(issue *Issue, count int64) {
+				issue.RelationCount = convert.ToPointer(count)
+			}); err != nil {
+				return err
+			}
+		default:
+			return ErrQueryCompile
+		}
+	}
+
+	return nil
+}
+
+type issueRelationTarget struct {
+	projectKey  string
+	parent      **PartialIssue
+	assignments *[]PartialAssignee
+	labels      *[]PartialLabel
+}
+
+func loaderQueryWithIDs(loader CompiledQuery, ids []string) CompiledQuery {
+	query := loader
+	query.Params = cloneParams(loader.Params)
+	query.Params["ids"] = ids
+	return query
+}
+
+func applyIssueRelationLoader(
+	ctx context.Context,
+	tx neo4j.ManagedTransaction,
+	query CompiledQuery,
+	name string,
+	targets map[string]issueRelationTarget,
+) (bool, error) {
+	switch name {
+	case "issue.load_parent":
+		return true, applyIssueParentLoader(ctx, tx, query, targets)
+	case "issue.load_assignments":
+		return true, applyIssueAssignmentsLoader(ctx, tx, query, targets)
+	case "issue.load_labels":
+		return true, applyIssueLabelsLoader(ctx, tx, query, targets)
+	default:
+		return false, nil
+	}
+}
+
+func applyIssueParentLoader(ctx context.Context, tx neo4j.ManagedTransaction, query CompiledQuery, targets map[string]issueRelationTarget) error {
+	parentRows, _, err := Neo4jRunQuery(ctx, tx, query, func(rec *neo4j.Record) (struct {
+		IssueID string
+		Parent  *PartialIssue
+	}, error) {
+		issueID, err := Neo4jParseValueFromRecord[string](rec, "issue_id")
+		if err != nil {
+			return struct {
+				IssueID string
+				Parent  *PartialIssue
+			}{}, err
+		}
+
+		parentVal, ok := rec.AsMap()["parent"]
+		if !ok || parentVal == nil {
+			return struct {
+				IssueID string
+				Parent  *PartialIssue
+			}{IssueID: issueID}, nil
+		}
+
+		parentNode, ok := parentVal.(neo4j.Node)
+		if !ok {
+			return struct {
+				IssueID string
+				Parent  *PartialIssue
+			}{}, ErrMalformedResult
+		}
+		target, exists := targets[issueID]
+		if !exists {
+			return struct {
+				IssueID string
+				Parent  *PartialIssue
+			}{}, ErrMalformedResult
+		}
+		parent, err := decodePartialIssueNode(parentNode, parentProjectKeyFromRecord(rec, target.projectKey))
+		if err != nil {
+			return struct {
+				IssueID string
+				Parent  *PartialIssue
+			}{}, err
+		}
+		return struct {
+			IssueID string
+			Parent  *PartialIssue
+		}{IssueID: issueID, Parent: parent}, nil
+	})
+	if err != nil {
+		return err
+	}
+	for _, parentRow := range parentRows {
+		target, ok := targets[parentRow.IssueID]
+		if !ok || target.parent == nil {
+			continue
+		}
+		*target.parent = parentRow.Parent
+	}
+	return nil
+}
+
+func applyIssueAssignmentsLoader(ctx context.Context, tx neo4j.ManagedTransaction, query CompiledQuery, targets map[string]issueRelationTarget) error {
+	assignmentRows, _, err := Neo4jRunQuery(ctx, tx, query, func(rec *neo4j.Record) (struct {
+		IssueID     string
+		Assignments []PartialAssignee
+	}, error) {
+		issueID, err := Neo4jParseValueFromRecord[string](rec, "issue_id")
+		if err != nil {
+			return struct {
+				IssueID     string
+				Assignments []PartialAssignee
+			}{}, err
+		}
+		assignments, err := Neo4jParsePartialAssigneesFromRecord(rec, "assignments")
+		if err != nil {
+			return struct {
+				IssueID     string
+				Assignments []PartialAssignee
+			}{}, err
+		}
+		return struct {
+			IssueID     string
+			Assignments []PartialAssignee
+		}{IssueID: issueID, Assignments: assignments}, nil
+	})
+	if err != nil {
+		return err
+	}
+	for _, assignmentRow := range assignmentRows {
+		target, ok := targets[assignmentRow.IssueID]
+		if !ok || target.assignments == nil {
+			continue
+		}
+		*target.assignments = assignmentRow.Assignments
+	}
+	return nil
+}
+
+func applyIssueLabelsLoader(ctx context.Context, tx neo4j.ManagedTransaction, query CompiledQuery, targets map[string]issueRelationTarget) error {
+	rows, _, err := Neo4jRunQuery(ctx, tx, query, func(rec *neo4j.Record) (struct {
+		IssueID string
+		Labels  []PartialLabel
+	}, error) {
+		issueID, err := Neo4jParseValueFromRecord[string](rec, "issue_id")
+		if err != nil {
+			return struct {
+				IssueID string
+				Labels  []PartialLabel
+			}{}, err
+		}
+		labels, err := Neo4jRecordPartialLabels(rec, "labels")
+		if err != nil {
+			return struct {
+				IssueID string
+				Labels  []PartialLabel
+			}{}, err
+		}
+		return struct {
+			IssueID string
+			Labels  []PartialLabel
+		}{IssueID: issueID, Labels: labels}, nil
+	})
+	if err != nil {
+		return err
+	}
+	for _, row := range rows {
+		target, ok := targets[row.IssueID]
+		if !ok || target.labels == nil {
+			continue
+		}
+		*target.labels = row.Labels
+	}
+	return nil
+}
+
+func applyIssueCountLoader(ctx context.Context, tx neo4j.ManagedTransaction, query CompiledQuery, rowByID map[string]*issueDetailRow, field string, assign func(issue *Issue, count int64)) error {
+	rows, _, err := Neo4jRunQuery(ctx, tx, query, func(rec *neo4j.Record) (struct {
+		IssueID string
+		Count   int64
+	}, error) {
+		issueID, err := Neo4jParseValueFromRecord[string](rec, "issue_id")
+		if err != nil {
+			return struct {
+				IssueID string
+				Count   int64
+			}{}, err
+		}
+		count, err := Neo4jParseValueFromRecord[int64](rec, field)
+		if err != nil {
+			return struct {
+				IssueID string
+				Count   int64
+			}{}, err
+		}
+		return struct {
+			IssueID string
+			Count   int64
+		}{IssueID: issueID, Count: count}, nil
+	})
+	if err != nil {
+		return err
+	}
+	for _, row := range rows {
+		if issueRow := rowByID[row.IssueID]; issueRow != nil && issueRow.issue != nil {
+			assign(issueRow.issue, row.Count)
+		}
+	}
+	return nil
 }
 
 func (r *Neo4jIssueRepository) scanRelation(ip, rp, tp string) func(rec *neo4j.Record) (*IssueRelation, error) {
@@ -256,130 +796,144 @@ func (r *Neo4jIssueRepository) scanRelation(ip, rp, tp string) func(rec *neo4j.R
 	}
 }
 
+func (r *Neo4jIssueRepository) scanRelationItem() func(rec *neo4j.Record) (*IssueRelationItem, error) {
+	return func(rec *neo4j.Record) (*IssueRelationItem, error) {
+		rel, err := r.scanRelation("source_id", "r", "target_id")(rec)
+		if err != nil {
+			return nil, err
+		}
+
+		relatedNode, err := Neo4jRecordNode(rec, "n")
+		if err != nil {
+			return nil, err
+		}
+		project, err := Neo4jRecordPartialProject(rec, "p")
+		if err != nil {
+			return nil, err
+		}
+		namespace, err := Neo4jRecordOptionalPartialNamespace(rec, "ns")
+		if err != nil {
+			return nil, err
+		}
+
+		related, err := decodePartialIssueNode(relatedNode, project.Key)
+		if err != nil {
+			return nil, err
+		}
+		related.Project = project
+		related.Namespace = namespace
+
+		return &IssueRelationItem{
+			ID:        rel.ID,
+			Kind:      rel.Kind,
+			Source:    rel.Source,
+			Target:    rel.Target,
+			Related:   related,
+			CreatedAt: rel.CreatedAt,
+		}, nil
+	}
+}
+
 func (r *Neo4jIssueRepository) Create(ctx context.Context, opts CreateIssueOpts) (*Issue, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.IssueRepository/Create")
 	defer span.End()
 
-	createdAt := convert.ToPointer(time.Now().UTC())
+	createdAt := time.Now().UTC()
+	id := model.MustNewID(model.ResourceTypeIssue)
 
 	links := opts.Links
 	if links == nil {
-		links = make([]string, 0)
-	}
-
-	issue := &Issue{
-		ID:          model.MustNewID(model.ResourceTypeIssue),
-		NumericID:   opts.NumericID,
-		Parent:      opts.Parent,
-		Kind:        opts.Kind,
-		Title:       opts.Title,
-		Description: opts.Description,
-		Status:      opts.Status,
-		Priority:    opts.Priority,
-		Resolution:  opts.Resolution,
-		ReportedBy:  opts.ReportedBy,
-		Assignees:   make([]model.ID, 0),
-		Labels:      make([]model.ID, 0),
-		Comments:    make([]model.ID, 0),
-		Attachments: make([]model.ID, 0),
-		Watchers:    make([]model.ID, 0),
-		Relations:   make([]model.ID, 0),
-		Links:       links,
-		DueDate:     opts.DueDate,
-		CreatedAt:   createdAt,
-		UpdatedAt:   nil,
+		links = make([]model.IssueLink, 0)
 	}
 
 	cypher := `
 	MATCH (p:` + opts.ProjectID.Label() + ` {id: $project_id})
-	MATCH (u:` + issue.ReportedBy.Label() + ` {id: $reported_by_id})
+	MATCH (u:` + opts.ReportedBy.Label() + ` {id: $reported_by_id})
+	SET p.next_issue_id = coalesce(p.next_issue_id, 0) + 1
+	WITH p, u, p.next_issue_id AS numeric_id
 	CREATE
-		(i:` + issue.ID.Label() + ` {
-			id: $id, numeric_id: $numeric_id, kind: $kind, title: $title, description: $description, status: $status,
+		(i:` + id.Label() + ` {
+			id: $id, numeric_id: numeric_id, kind: $kind, title: $title, description: $description, status: $status,
 			priority: $priority, resolution: $resolution, links: $links, due_date: datetime($due_date),
-			created_at: datetime($created_at)
+			start_date: datetime($start_date), created_at: datetime($created_at)
 		}),
 		(u)-[:` + EdgeKindCreated.String() + ` {id: $created_rel_id, created_at: datetime($created_at)}]->(i),
 		(u)-[:` + EdgeKindWatches.String() + ` {id: $watches_rel_id, created_at: datetime($created_at)}]->(i),
+		(u)-[:` + EdgeKindHasPermission.String() + ` {id: $perm_id, kind: $perm_kind, created_at: datetime($created_at)}]->(i),
 		(i)-[:` + EdgeKindBelongsTo.String() + ` {id: $belongs_to_rel_id, created_at: datetime($created_at)}]->(p)`
 
 	params := map[string]any{
 		"project_id":        opts.ProjectID.String(),
-		"reported_by_id":    issue.ReportedBy.String(),
-		"id":                issue.ID.String(),
-		"numeric_id":        issue.NumericID,
-		"kind":              issue.Kind.String(),
-		"title":             issue.Title,
-		"description":       issue.Description,
-		"status":            issue.Status.String(),
-		"priority":          issue.Priority.String(),
-		"resolution":        issue.Resolution.String(),
-		"links":             issue.Links,
+		"reported_by_id":    opts.ReportedBy.String(),
+		"id":                id.String(),
+		"kind":              opts.Kind.String(),
+		"title":             opts.Title,
+		"description":       opts.Description,
+		"status":            opts.Status.String(),
+		"priority":          opts.Priority.String(),
+		"resolution":        opts.Resolution.String(),
+		"links":             encodeIssueLinks(links),
 		"due_date":          nil,
+		"start_date":        nil,
 		"created_at":        createdAt.Format(time.RFC3339Nano),
 		"created_rel_id":    model.NewRawID(),
 		"watches_rel_id":    model.NewRawID(),
+		"perm_id":           model.NewRawID(),
+		"perm_kind":         model.PermissionKindAll.String(),
 		"belongs_to_rel_id": model.NewRawID(),
 	}
 
-	if issue.DueDate != nil {
-		params["due_date"] = issue.DueDate.Format(time.RFC3339Nano)
+	if opts.DueDate != nil {
+		params["due_date"] = opts.DueDate.Format(time.RFC3339Nano)
+	}
+	if opts.StartDate != nil {
+		params["start_date"] = opts.StartDate.Format(time.RFC3339Nano)
 	}
 
-	if issue.Parent != nil {
+	if opts.Parent != nil {
 		cypher += `
 		WITH i
-		MATCH (p:` + issue.Parent.Label() + ` {id: $parent_id})
-		CREATE (i)-[:` + EdgeKindRelatedTo.String() + ` {id: $issue_rel_id, kind: $rel_kind, created_at: datetime($created_at)}]->(p)`
+		MATCH (parent:` + opts.Parent.Label() + ` {id: $parent_id})
+		CREATE (i)-[:` + EdgeKindRelatedTo.String() + ` {id: $issue_rel_id, kind: $rel_kind, created_at: datetime($created_at)}]->(parent)`
 
-		params["parent_id"] = issue.Parent.String()
+		params["parent_id"] = opts.Parent.String()
 		params["issue_rel_id"] = model.NewRawID()
 		params["rel_kind"] = model.IssueRelationKindSubtaskOf.String()
 	}
 
-	if err := Neo4jExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
+	cypher += `
+	RETURN i.id AS id`
+
+	if _, err := Neo4jExecuteWriteAndReadSingle(ctx, r.db, cypher, params, func(_ *neo4j.Record) (*struct{}, error) {
+		return &struct{}{}, nil
+	}); err != nil {
 		return nil, errors.Join(ErrIssueCreate, err)
 	}
 
-	return issue, nil
+	return r.Get(ctx, id, IssueDetailProjection())
 }
 
-func (r *Neo4jIssueRepository) Get(ctx context.Context, id model.ID) (*Issue, error) {
+func (r *Neo4jIssueRepository) Get(ctx context.Context, id model.ID, proj IssueProjection) (*Issue, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.IssueRepository/Read")
 	defer span.End()
 
-	cypher := `
-	MATCH (i:` + id.Label() + ` {id: $id})
-	OPTIONAL MATCH (i)-[:` + EdgeKindRelatedTo.String() + ` {kind: $parent_kind}]->(par:` + model.ResourceTypeIssue.String() + `)
-	OPTIONAL MATCH (i)-[:` + EdgeKindRelatedTo.String() + `]->(rel:` + model.ResourceTypeIssue.String() + `)
-	OPTIONAL MATCH (i)-[:` + EdgeKindHasComment.String() + `]->(comm:` + model.ResourceTypeComment.String() + `)
-	OPTIONAL MATCH (i)-[:` + EdgeKindHasAttachment.String() + `]->(att:` + model.ResourceTypeAttachment.String() + `)
-	OPTIONAL MATCH (i)<-[:` + EdgeKindWatches.String() + `]-(watch:` + model.ResourceTypeUser.String() + `)
-	OPTIONAL MATCH (i)-[:` + EdgeKindHasLabel.String() + `]->(l:` + model.ResourceTypeLabel.String() + `)
-	OPTIONAL MATCH (i)<-[:` + EdgeKindCreated.String() + `]-(cr:` + model.ResourceTypeUser.String() + `)
-	OPTIONAL MATCH (i)<-[:` + EdgeKindAssignedTo.String() + `]-(assignees:` + model.ResourceTypeUser.String() + `)
-	RETURN i, par.id AS par, collect(DISTINCT rel.id) AS rel, collect(DISTINCT comm.id) AS comm,
-		collect(DISTINCT att.id) AS att, collect(DISTINCT watch.id) AS watch, collect(DISTINCT l.id) AS l, cr.id as cr,
-		collect(DISTINCT assignees.id) AS assignees`
-
-	params := map[string]any{
-		"id":          id.String(),
-		"parent_kind": model.IssueRelationKindSubtaskOf.String(),
+	plan, err := CompileQuery(IssueGetQuery{ID: id, Projection: proj})
+	if err != nil {
+		return nil, errors.Join(ErrIssueRead, err)
 	}
 
-	scanParams := &issueScanParams{
-		issue:       "i",
-		parent:      "par",
-		reportedBy:  "cr",
-		assignees:   "assignees",
-		labels:      "l",
-		comments:    "comm",
-		attachments: "att",
-		watchers:    "watch",
-		relations:   "rel",
-	}
-
-	issue, err := Neo4jExecuteReadAndReadSingle(ctx, r.db, cypher, params, r.scan(scanParams))
+	var issue *Issue
+	err = Neo4jExecuteReadPlan(ctx, r.db, plan, func(tx neo4j.ManagedTransaction) error {
+		row, _, readErr := Neo4jRunQuerySingle(ctx, tx, plan.Root, r.scanDetail(proj))
+		if readErr != nil {
+			return readErr
+		}
+		if err := r.applyIssueLoaders(ctx, tx, plan, []*issueDetailRow{row}); err != nil {
+			return err
+		}
+		issue = row.issue
+		return nil
+	})
 	if err != nil {
 		return nil, errors.Join(ErrIssueRead, err)
 	}
@@ -387,98 +941,239 @@ func (r *Neo4jIssueRepository) Get(ctx context.Context, id model.ID) (*Issue, er
 	return issue, nil
 }
 
-func (r *Neo4jIssueRepository) GetAllForProject(ctx context.Context, projectID model.ID, offset, limit int) ([]*Issue, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.IssueRepository/GetAllForProject")
+func (r *Neo4jIssueRepository) GetByKey(ctx context.Context, namespaceID model.ID, key string, proj IssueProjection) (*Issue, error) {
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.IssueRepository/GetByKey")
 	defer span.End()
 
-	cypher := `
-	MATCH (i:` + model.ResourceTypeIssue.String() + `)-[:` + EdgeKindBelongsTo.String() + `]->(:` + projectID.Label() + ` {id: $id})
-	OPTIONAL MATCH (i)-[:` + EdgeKindRelatedTo.String() + ` {kind: $parent_kind}]->(par:` + model.ResourceTypeIssue.String() + `)
-	OPTIONAL MATCH (i)-[:` + EdgeKindRelatedTo.String() + `]->(rel:` + model.ResourceTypeIssue.String() + `)
-	OPTIONAL MATCH (i)-[:` + EdgeKindHasComment.String() + `]->(comm:` + model.ResourceTypeComment.String() + `)
-	OPTIONAL MATCH (i)-[:` + EdgeKindHasAttachment.String() + `]->(att:` + model.ResourceTypeAttachment.String() + `)
-	OPTIONAL MATCH (i)<-[:` + EdgeKindWatches.String() + `]-(watch:` + model.ResourceTypeUser.String() + `)
-	OPTIONAL MATCH (i)-[:` + EdgeKindHasLabel.String() + `]->(l:` + model.ResourceTypeLabel.String() + `)
-	OPTIONAL MATCH (i)<-[:` + EdgeKindCreated.String() + `]-(cr:` + model.ResourceTypeUser.String() + `)
-	OPTIONAL MATCH (i)<-[:` + EdgeKindAssignedTo.String() + `]-(assignees:` + model.ResourceTypeUser.String() + `)
-	RETURN i, par.id AS par, collect(DISTINCT rel.id) AS rel, collect(DISTINCT comm.id) AS comm,
-		collect(DISTINCT att.id) AS att, collect(DISTINCT watch.id) AS watch, collect(DISTINCT l.id) AS l, cr.id as cr,
-		collect(DISTINCT assignees.id) AS assignees
-	ORDER BY i.created_at DESC
-	SKIP $offset LIMIT $limit`
-
-	params := map[string]any{
-		"id":          projectID.String(),
-		"parent_kind": model.IssueRelationKindSubtaskOf.String(),
-		"offset":      offset,
-		"limit":       limit,
+	if _, _, err := model.ParseIssueKey(key); err != nil {
+		return nil, errors.Join(ErrIssueRead, err)
 	}
 
-	scanParams := &issueScanParams{
-		issue:       "i",
-		parent:      "par",
-		reportedBy:  "cr",
-		assignees:   "assignees",
-		labels:      "l",
-		comments:    "comm",
-		attachments: "att",
-		watchers:    "watch",
-		relations:   "rel",
-	}
-
-	issues, err := Neo4jExecuteReadAndReadAll(ctx, r.db, cypher, params, r.scan(scanParams))
+	plan, err := CompileQuery(IssueGetByKeyQuery{
+		NamespaceID: namespaceID,
+		IssueKey:    key,
+		Projection:  proj,
+	})
 	if err != nil {
 		return nil, errors.Join(ErrIssueRead, err)
 	}
 
-	return issues, nil
+	var issue *Issue
+	err = Neo4jExecuteReadPlan(ctx, r.db, plan, func(tx neo4j.ManagedTransaction) error {
+		row, _, readErr := Neo4jRunQuerySingle(ctx, tx, plan.Root, r.scanDetail(proj))
+		if readErr != nil {
+			return readErr
+		}
+		if err := r.applyIssueLoaders(ctx, tx, plan, []*issueDetailRow{row}); err != nil {
+			return err
+		}
+		issue = row.issue
+		return nil
+	})
+	if err != nil {
+		return nil, errors.Join(ErrIssueRead, err)
+	}
+
+	return issue, nil
 }
 
-func (r *Neo4jIssueRepository) GetAllForIssue(ctx context.Context, issueID model.ID, offset, limit int) ([]*Issue, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.IssueRepository/GetAllForProject")
+func (r *Neo4jIssueRepository) ListForProject(ctx context.Context, query IssueListQuery) (Page[*PartialIssue], error) {
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.IssueRepository/ListForProject")
 	defer span.End()
 
-	cypher := `
-	MATCH (i:` + model.ResourceTypeIssue.String() + `)-[:` + EdgeKindRelatedTo.String() + `]-(:` + issueID.Label() + ` {id: $id})
-	OPTIONAL MATCH (i)-[:` + EdgeKindRelatedTo.String() + ` {kind: $parent_kind}]->(par:` + model.ResourceTypeIssue.String() + `)
-	OPTIONAL MATCH (i)-[:` + EdgeKindRelatedTo.String() + `]->(rel:` + model.ResourceTypeIssue.String() + `)
-	OPTIONAL MATCH (i)-[:` + EdgeKindHasComment.String() + `]->(comm:` + model.ResourceTypeComment.String() + `)
-	OPTIONAL MATCH (i)-[:` + EdgeKindHasAttachment.String() + `]->(att:` + model.ResourceTypeAttachment.String() + `)
-	OPTIONAL MATCH (i)<-[:` + EdgeKindWatches.String() + `]-(watch:` + model.ResourceTypeUser.String() + `)
-	OPTIONAL MATCH (i)-[:` + EdgeKindHasLabel.String() + `]->(l:` + model.ResourceTypeLabel.String() + `)
-	OPTIONAL MATCH (i)<-[:` + EdgeKindCreated.String() + `]-(cr:` + model.ResourceTypeUser.String() + `)
-	OPTIONAL MATCH (i)<-[:` + EdgeKindAssignedTo.String() + `]-(assignees:` + model.ResourceTypeUser.String() + `)
-	RETURN i, par.id AS par, collect(DISTINCT rel.id) AS rel, collect(DISTINCT comm.id) AS comm,
-		collect(DISTINCT att.id) AS att, collect(DISTINCT watch.id) AS watch, collect(DISTINCT l.id) AS l, cr.id as cr,
-		collect(DISTINCT assignees.id) AS assignees
-	ORDER BY i.created_at DESC
-	SKIP $offset LIMIT $limit`
-
-	params := map[string]any{
-		"id":          issueID.String(),
-		"parent_kind": model.IssueRelationKindSubtaskOf.String(),
-		"offset":      offset,
-		"limit":       limit,
-	}
-
-	scanParams := &issueScanParams{
-		issue:       "i",
-		parent:      "par",
-		reportedBy:  "cr",
-		assignees:   "assignees",
-		labels:      "l",
-		comments:    "comm",
-		attachments: "att",
-		watchers:    "watch",
-		relations:   "rel",
-	}
-
-	issues, err := Neo4jExecuteReadAndReadAll(ctx, r.db, cypher, params, r.scan(scanParams))
+	page, err := query.Page.Normalize()
 	if err != nil {
-		return nil, errors.Join(ErrIssueRead, err)
+		return Page[*PartialIssue]{}, errors.Join(ErrIssueRead, err)
+	}
+	query.Page = page
+	if query.Order == SortDirectionUnknown {
+		query.Order = SortDirectionDesc
 	}
 
-	return issues, nil
+	plan, err := CompileQuery(query)
+	if err != nil {
+		return Page[*PartialIssue]{}, errors.Join(ErrIssueRead, err)
+	}
+
+	return r.executePartialIssueList(ctx, plan, page)
+}
+
+func (r *Neo4jIssueRepository) ListForNamespace(ctx context.Context, query IssueListForNamespaceQuery) (Page[*PartialIssue], error) {
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.IssueRepository/ListForNamespace")
+	defer span.End()
+
+	page, err := query.Page.Normalize()
+	if err != nil {
+		return Page[*PartialIssue]{}, errors.Join(ErrIssueRead, err)
+	}
+	query.Page = page
+	if query.Order == SortDirectionUnknown {
+		query.Order = SortDirectionDesc
+	}
+
+	plan, err := CompileQuery(query)
+	if err != nil {
+		return Page[*PartialIssue]{}, errors.Join(ErrIssueRead, err)
+	}
+
+	return r.executePartialIssueList(ctx, plan, page)
+}
+
+func (r *Neo4jIssueRepository) ListForUser(ctx context.Context, query IssueListForUserQuery) (Page[*PartialIssue], error) {
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.IssueRepository/ListForUser")
+	defer span.End()
+
+	page, err := query.Page.Normalize()
+	if err != nil {
+		return Page[*PartialIssue]{}, errors.Join(ErrIssueRead, err)
+	}
+	query.Page = page
+	if query.Order == SortDirectionUnknown {
+		query.Order = SortDirectionDesc
+	}
+
+	plan, err := CompileQuery(query)
+	if err != nil {
+		return Page[*PartialIssue]{}, errors.Join(ErrIssueRead, err)
+	}
+
+	return r.executePartialIssueList(ctx, plan, page)
+}
+
+func (r *Neo4jIssueRepository) executePartialIssueList(ctx context.Context, plan QueryPlan, page CursorPage) (Page[*PartialIssue], error) {
+	rows := make([]*issueListRow, 0)
+	if err := Neo4jExecuteReadPlan(ctx, r.db, plan, func(tx neo4j.ManagedTransaction) error {
+		rootRows, _, err := Neo4jRunQuery(ctx, tx, plan.Root, func(record *neo4j.Record) (*issueListRow, error) {
+			issueNode, err := Neo4jRecordNode(record, "i")
+			if err != nil {
+				return nil, err
+			}
+			project, err := Neo4jRecordPartialProject(record, "p")
+			if err != nil {
+				return nil, err
+			}
+			namespace, err := Neo4jRecordOptionalPartialNamespace(record, "n")
+			if err != nil {
+				return nil, err
+			}
+			issue, err := decodePartialIssueNode(issueNode, project.Key)
+			if err != nil {
+				return nil, err
+			}
+			issue.ReportedBy, err = Neo4jRecordPartialUser(record, "u")
+			if err != nil {
+				return nil, err
+			}
+			issue.Project = project
+			issue.Namespace = namespace
+			return &issueListRow{
+				projectKey: project.Key,
+				issue:      issue,
+			}, nil
+		})
+		if err != nil {
+			return err
+		}
+
+		rows = rootRows
+		if len(rows) == 0 || len(plan.Loaders) == 0 {
+			return nil
+		}
+
+		ids := make([]string, 0, len(rows))
+		targets := make(map[string]issueRelationTarget, len(rows))
+		for _, row := range rows {
+			if row == nil || row.issue == nil {
+				continue
+			}
+			id := row.issue.ID.String()
+			ids = append(ids, id)
+			targets[id] = issueRelationTarget{
+				projectKey:  row.projectKey,
+				parent:      &row.issue.Parent,
+				assignments: &row.issue.Assignments,
+				labels:      &row.issue.Labels,
+			}
+		}
+
+		for _, loader := range plan.Loaders {
+			query := loaderQueryWithIDs(loader, ids)
+			handled, err := applyIssueRelationLoader(ctx, tx, query, loader.Name, targets)
+			if err != nil {
+				return err
+			}
+			if !handled {
+				return ErrQueryCompile
+			}
+		}
+
+		return nil
+	}); err != nil {
+		return Page[*PartialIssue]{}, errors.Join(ErrIssueRead, err)
+	}
+
+	pagedRows, err := PaginateSlice(rows, page.Size, func(row *issueListRow) model.ID {
+		return row.issue.ID
+	})
+	if err != nil {
+		return Page[*PartialIssue]{}, errors.Join(ErrIssueRead, err)
+	}
+
+	items := make([]*PartialIssue, 0, len(pagedRows.Items))
+	for _, row := range pagedRows.Items {
+		items = append(items, row.issue)
+	}
+
+	return Page[*PartialIssue]{
+		Items:    items,
+		PageInfo: pagedRows.PageInfo,
+	}, nil
+}
+
+func (r *Neo4jIssueRepository) ListForIssue(ctx context.Context, query IssueListForIssueQuery) (Page[*Issue], error) {
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.IssueRepository/ListForIssue")
+	defer span.End()
+
+	normalized, err := query.Page.Normalize()
+	if err != nil {
+		return Page[*Issue]{}, errors.Join(ErrIssueRead, err)
+	}
+	query.Page = normalized
+	if query.Order == SortDirectionUnknown {
+		query.Order = SortDirectionDesc
+	}
+
+	plan, err := CompileQuery(query)
+	if err != nil {
+		return Page[*Issue]{}, errors.Join(ErrIssueRead, err)
+	}
+
+	rows := make([]*issueDetailRow, 0)
+	err = Neo4jExecuteReadPlan(ctx, r.db, plan, func(tx neo4j.ManagedTransaction) error {
+		var readErr error
+		rows, _, readErr = Neo4jRunQuery(ctx, tx, plan.Root, r.scanDetail(query.Projection))
+		if readErr != nil {
+			return readErr
+		}
+		return r.applyIssueLoaders(ctx, tx, plan, rows)
+	})
+	if err != nil {
+		return Page[*Issue]{}, errors.Join(ErrIssueRead, err)
+	}
+
+	pagedRows, err := PaginateSlice(rows, normalized.Size, func(row *issueDetailRow) model.ID {
+		return row.issue.ID
+	})
+	if err != nil {
+		return Page[*Issue]{}, errors.Join(ErrIssueRead, err)
+	}
+
+	items := make([]*Issue, 0, len(pagedRows.Items))
+	for _, row := range pagedRows.Items {
+		items = append(items, row.issue)
+	}
+
+	return Page[*Issue]{Items: items, PageInfo: pagedRows.PageInfo}, nil
 }
 
 func (r *Neo4jIssueRepository) AddWatcher(ctx context.Context, issue model.ID, user model.ID) error {
@@ -508,18 +1203,32 @@ func (r *Neo4jIssueRepository) GetWatchers(ctx context.Context, issue model.ID) 
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.IssueRepository/GetWatchers")
 	defer span.End()
 
-	cypher := `
-	MATCH (i:` + issue.Label() + ` {id: $issue_id})<-[:` + EdgeKindWatches.String() + `]-(u:` + model.ResourceTypeUser.String() + `)
-	OPTIONAL MATCH (u)-[:` + EdgeKindSpeaks.String() + `]->(l:` + languageIDType + `)
-	OPTIONAL MATCH (u)-[p:` + EdgeKindHasPermission.String() + `]->()
-	OPTIONAL MATCH (u)<-[r:` + EdgeKindBelongsTo.String() + `]-(d:` + model.ResourceTypeDocument.String() + `)
-	RETURN u, collect(DISTINCT p.id) AS p, collect(DISTINCT d.id) AS d`
-
-	params := map[string]any{
-		"issue_id": issue.String(),
+	root, err := IssueWatchersQuery(issue)
+	if err != nil {
+		return nil, errors.Join(ErrIssueGetWatchers, err)
 	}
 
-	users, err := Neo4jExecuteReadAndReadAll(ctx, r.db, cypher, params, new(Neo4jUserRepository).scan("u", "p", "d"))
+	proj := UserProjection{}
+	plan, err := compileUserRootQuery(userRootQueryInput{
+		Name:       root.Name,
+		Match:      root.Cypher,
+		Params:     root.Params,
+		Projection: proj,
+	})
+	if err != nil {
+		return nil, errors.Join(ErrIssueGetWatchers, err)
+	}
+
+	userRepo := new(Neo4jUserRepository)
+	users := make([]*User, 0)
+	err = Neo4jExecuteReadPlan(ctx, r.db, plan, func(tx neo4j.ManagedTransaction) error {
+		var readErr error
+		users, _, readErr = Neo4jRunQuery(ctx, tx, plan.Root, userRepo.scan("u", proj))
+		if readErr != nil {
+			return readErr
+		}
+		return userRepo.applyUserLoaders(ctx, tx, plan, users)
+	})
 	if err != nil {
 		return nil, errors.Join(ErrIssueGetWatchers, err)
 	}
@@ -588,20 +1297,88 @@ func (r *Neo4jIssueRepository) GetRelations(ctx context.Context, issue model.ID)
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.IssueRepository/GetRelations")
 	defer span.End()
 
-	cypher := `
-	MATCH (i:` + issue.Label() + ` {id: $issue_id})-[r:` + EdgeKindRelatedTo.String() + `]-(t)
-	RETURN i.id as i, r, t.id as t`
-
-	params := map[string]any{
-		"issue_id": issue.String(),
+	query, err := IssueRelationsQuery(issue)
+	if err != nil {
+		return nil, errors.Join(ErrIssueGetRelations, err)
 	}
 
-	relations, err := Neo4jExecuteReadAndReadAll(ctx, r.db, cypher, params, r.scanRelation("i", "r", "t"))
+	var relations []*IssueRelation
+	err = Neo4jExecuteReadPlan(ctx, r.db, QueryPlan{Root: query}, func(tx neo4j.ManagedTransaction) error {
+		var readErr error
+		relations, _, readErr = Neo4jRunQuery(ctx, tx, query, r.scanRelation("issue_id", "r", "related_issue_id"))
+		return readErr
+	})
 	if err != nil {
 		return nil, errors.Join(ErrIssueGetRelations, err)
 	}
 
 	return relations, nil
+}
+
+func (r *Neo4jIssueRepository) GetRelation(ctx context.Context, relationID model.ID) (*IssueRelation, error) {
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.IssueRepository/GetRelation")
+	defer span.End()
+
+	query, err := IssueRelationByIDQuery(relationID)
+	if err != nil {
+		return nil, errors.Join(ErrIssueGetRelation, err)
+	}
+
+	var relation *IssueRelation
+	err = Neo4jExecuteReadPlan(ctx, r.db, QueryPlan{Root: query}, func(tx neo4j.ManagedTransaction) error {
+		relations, _, readErr := Neo4jRunQuery(ctx, tx, query, r.scanRelation("source_id", "r", "target_id"))
+		if readErr != nil {
+			return readErr
+		}
+		if len(relations) == 0 {
+			return ErrNotFound
+		}
+		relation = relations[0]
+		return nil
+	})
+	if err != nil {
+		return nil, errors.Join(ErrIssueGetRelation, err)
+	}
+
+	return relation, nil
+}
+
+func (r *Neo4jIssueRepository) ListRelations(ctx context.Context, query IssueRelationListQuery) (Page[*IssueRelationItem], error) {
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.IssueRepository/ListRelations")
+	defer span.End()
+
+	page, err := query.Page.Normalize()
+	if err != nil {
+		return Page[*IssueRelationItem]{}, errors.Join(ErrIssueGetRelations, err)
+	}
+	query.Page = page
+	if query.Order == SortDirectionUnknown {
+		query.Order = SortDirectionDesc
+	}
+
+	plan, err := CompileQuery(query)
+	if err != nil {
+		return Page[*IssueRelationItem]{}, errors.Join(ErrIssueGetRelations, err)
+	}
+
+	var items []*IssueRelationItem
+	err = Neo4jExecuteReadPlan(ctx, r.db, plan, func(tx neo4j.ManagedTransaction) error {
+		var readErr error
+		items, _, readErr = Neo4jRunQuery(ctx, tx, plan.Root, r.scanRelationItem())
+		return readErr
+	})
+	if err != nil {
+		return Page[*IssueRelationItem]{}, errors.Join(ErrIssueGetRelations, err)
+	}
+
+	paged, err := PaginateSlice(items, page.Size, func(item *IssueRelationItem) model.ID {
+		return item.ID
+	})
+	if err != nil {
+		return Page[*IssueRelationItem]{}, errors.Join(ErrIssueGetRelations, err)
+	}
+
+	return paged, nil
 }
 
 func (r *Neo4jIssueRepository) RemoveRelation(ctx context.Context, source, target model.ID, kind model.IssueRelationKind) error {
@@ -625,50 +1402,47 @@ func (r *Neo4jIssueRepository) RemoveRelation(ctx context.Context, source, targe
 	return nil
 }
 
-func (r *Neo4jIssueRepository) Update(ctx context.Context, id model.ID, opts UpdateIssueOpts) (*Issue, error) {
+func (r *Neo4jIssueRepository) RemoveRelationByID(ctx context.Context, relationID model.ID) error {
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.IssueRepository/RemoveRelationByID")
+	defer span.End()
+
+	cypher := `
+	MATCH ()-[r:` + EdgeKindRelatedTo.String() + ` {id: $id}]-()
+	DELETE r`
+
+	params := map[string]any{
+		"id": relationID.String(),
+	}
+
+	if err := Neo4jExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
+		return errors.Join(ErrIssueRemoveRelation, err)
+	}
+
+	return nil
+}
+
+func (r *Neo4jIssueRepository) Update(ctx context.Context, id model.ID, opts UpdateIssueOpts, proj IssueProjection) (*Issue, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.IssueRepository/Update")
 	defer span.End()
 
 	cypher := `
 	MATCH (i:` + id.Label() + ` {id: $id})
 	SET i += $patch, i.updated_at = datetime()
-	WITH i
-	OPTIONAL MATCH (i)-[:` + EdgeKindRelatedTo.String() + ` {kind: $parent_kind}]->(par:` + model.ResourceTypeIssue.String() + `)
-	OPTIONAL MATCH (i)-[:` + EdgeKindRelatedTo.String() + `]->(rel:` + model.ResourceTypeIssue.String() + `)
-	OPTIONAL MATCH (i)-[:` + EdgeKindHasComment.String() + `]->(comm:` + model.ResourceTypeComment.String() + `)
-	OPTIONAL MATCH (i)-[:` + EdgeKindHasAttachment.String() + `]->(att:` + model.ResourceTypeAttachment.String() + `)
-	OPTIONAL MATCH (i)<-[:` + EdgeKindWatches.String() + `]-(watch:` + model.ResourceTypeUser.String() + `)
-	OPTIONAL MATCH (i)-[:` + EdgeKindHasLabel.String() + `]->(l:` + model.ResourceTypeLabel.String() + `)
-	OPTIONAL MATCH (i)<-[:` + EdgeKindCreated.String() + `]-(cr:` + model.ResourceTypeUser.String() + `)
-	OPTIONAL MATCH (i)<-[:` + EdgeKindAssignedTo.String() + `]-(assignees:` + model.ResourceTypeUser.String() + `)
-	RETURN i, par.id AS par, collect(DISTINCT rel.id) AS rel, collect(DISTINCT comm.id) AS comm,
-		collect(DISTINCT att.id) AS att, collect(DISTINCT watch.id) AS watch, collect(DISTINCT l.id) AS l, cr.id as cr,
-		collect(DISTINCT assignees.id) AS assignees`
+	RETURN i.id AS id`
 
 	params := map[string]any{
-		"id":          id.String(),
-		"patch":       opts.patch(),
-		"parent_kind": model.IssueRelationKindSubtaskOf.String(),
+		"id":    id.String(),
+		"patch": opts.patch(),
 	}
 
-	scanParams := &issueScanParams{
-		issue:       "i",
-		parent:      "par",
-		reportedBy:  "cr",
-		assignees:   "assignees",
-		labels:      "l",
-		comments:    "comm",
-		attachments: "att",
-		watchers:    "watch",
-		relations:   "rel",
-	}
-
-	issue, err := Neo4jExecuteWriteAndReadSingle(ctx, r.db, cypher, params, r.scan(scanParams))
+	_, err := Neo4jExecuteWriteAndReadSingle(ctx, r.db, cypher, params, func(_ *neo4j.Record) (*struct{}, error) {
+		return &struct{}{}, nil
+	})
 	if err != nil {
 		return nil, errors.Join(ErrIssueUpdate, err)
 	}
 
-	return issue, nil
+	return r.Get(ctx, id, proj)
 }
 
 func (r *Neo4jIssueRepository) Delete(ctx context.Context, id model.ID) error {
@@ -704,23 +1478,27 @@ func clearIssuesPattern(ctx context.Context, r *redisBaseRepository, pattern ...
 }
 
 func clearIssuesKey(ctx context.Context, r *redisBaseRepository, id model.ID) error {
-	return r.Delete(ctx, composeCacheKey(model.ResourceTypeIssue.String(), id.String()))
+	return clearIssuesPattern(ctx, r, "Get", id.String(), "*")
 }
 
 func clearIssueForProject(ctx context.Context, r *redisBaseRepository, projectID model.ID) error {
-	return clearIssuesPattern(ctx, r, "GetAllForProject", projectID.String(), "*")
+	return clearIssuesPattern(ctx, r, "*", "ListForProject", projectID.String(), "*")
 }
 
 func clearIssueAllForProject(ctx context.Context, r *redisBaseRepository) error {
-	return clearIssuesPattern(ctx, r, "GetAllForProject", "*")
+	return clearIssuesPattern(ctx, r, "*", "ListFor*", "*")
+}
+
+func clearIssueAllForNamespace(ctx context.Context, r *redisBaseRepository) error {
+	return clearIssuesPattern(ctx, r, "*", "ListForNamespace", "*")
 }
 
 func clearIssueForIssue(ctx context.Context, r *redisBaseRepository, issueID model.ID) error {
-	return clearIssuesPattern(ctx, r, "GetAllForIssue", issueID.String(), "*")
+	return clearIssuesPattern(ctx, r, "*", "ListForIssue", issueID.String(), "*")
 }
 
 func clearIssueAllForIssue(ctx context.Context, r *redisBaseRepository) error {
-	return clearIssuesPattern(ctx, r, "GetAllForIssue", "*")
+	return clearIssuesPattern(ctx, r, "*", "ListForIssue", "*")
 }
 
 func clearIssueWatchers(ctx context.Context, r *redisBaseRepository, issueID model.ID) error {
@@ -728,7 +1506,35 @@ func clearIssueWatchers(ctx context.Context, r *redisBaseRepository, issueID mod
 }
 
 func clearIssueRelations(ctx context.Context, r *redisBaseRepository, issueID model.ID) error {
-	return clearIssuesPattern(ctx, r, "GetRelations", issueID.String(), "*")
+	if err := clearIssuesPattern(ctx, r, "GetRelations", issueID.String(), "*"); err != nil {
+		return err
+	}
+	return clearIssuesPattern(ctx, r, "*", "ListRelations", issueID.String(), "*")
+}
+
+func clearIssueRelationPair(ctx context.Context, r *redisBaseRepository, source, target model.ID) error {
+	for _, id := range []model.ID{source, target} {
+		if err := clearIssuesKey(ctx, r, id); err != nil {
+			return err
+		}
+		if err := clearIssueRelations(ctx, r, id); err != nil {
+			return err
+		}
+	}
+
+	if err := clearIssueAllForIssue(ctx, r); err != nil {
+		return err
+	}
+
+	return clearIssueAllForProject(ctx, r)
+}
+
+func clearIssueGetByKey(ctx context.Context, r *redisBaseRepository, issueKey string) error {
+	return clearIssuesPattern(ctx, r, "GetByKey", "*", issueKey, "*")
+}
+
+func clearIssueAllGetByKey(ctx context.Context, r *redisBaseRepository) error {
+	return clearIssuesPattern(ctx, r, "GetByKey", "*")
 }
 
 func clearIssueAllCrossCache(ctx context.Context, r *redisBaseRepository) error {
@@ -756,6 +1562,10 @@ func (r *RedisCachedIssueRepository) Create(ctx context.Context, opts CreateIssu
 		return nil, err
 	}
 
+	if err := clearIssueAllForNamespace(ctx, r.cacheRepo); err != nil {
+		return nil, err
+	}
+
 	if opts.Parent != nil {
 		if err := clearIssueForIssue(ctx, r.cacheRepo, *opts.Parent); err != nil {
 			return nil, err
@@ -766,14 +1576,18 @@ func (r *RedisCachedIssueRepository) Create(ctx context.Context, opts CreateIssu
 		return nil, err
 	}
 
+	if err := clearIssueAllGetByKey(ctx, r.cacheRepo); err != nil {
+		return nil, err
+	}
+
 	return r.issueRepo.Create(ctx, opts)
 }
 
-func (r *RedisCachedIssueRepository) Get(ctx context.Context, id model.ID) (*Issue, error) {
+func (r *RedisCachedIssueRepository) Get(ctx context.Context, id model.ID, proj IssueProjection) (*Issue, error) {
 	var issue *Issue
 	var err error
 
-	key := composeCacheKey(model.ResourceTypeIssue.String(), id.String())
+	key := composeCacheKey(model.ResourceTypeIssue.String(), "Get", id.String(), projectionCacheValue(proj))
 	if err = r.cacheRepo.Get(ctx, key, &issue); err != nil {
 		return nil, err
 	}
@@ -782,7 +1596,7 @@ func (r *RedisCachedIssueRepository) Get(ctx context.Context, id model.ID) (*Iss
 		return issue, nil
 	}
 
-	if issue, err = r.issueRepo.Get(ctx, id); err != nil {
+	if issue, err = r.issueRepo.Get(ctx, id, proj); err != nil {
 		return nil, err
 	}
 
@@ -793,49 +1607,159 @@ func (r *RedisCachedIssueRepository) Get(ctx context.Context, id model.ID) (*Iss
 	return issue, nil
 }
 
-func (r *RedisCachedIssueRepository) GetAllForProject(ctx context.Context, projectID model.ID, offset, limit int) ([]*Issue, error) {
-	var issues []*Issue
+func (r *RedisCachedIssueRepository) GetByKey(ctx context.Context, namespaceID model.ID, issueKey string, proj IssueProjection) (*Issue, error) {
+	var issue *Issue
 	var err error
 
-	key := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForProject", projectID.String(), offset, limit)
-	if err = r.cacheRepo.Get(ctx, key, &issues); err != nil {
+	cacheKey := composeCacheKey(model.ResourceTypeIssue.String(), "GetByKey", namespaceID.String(), issueKey, projectionCacheValue(proj))
+	if err = r.cacheRepo.Get(ctx, cacheKey, &issue); err != nil {
 		return nil, err
 	}
 
-	if issues != nil {
+	if issue != nil {
+		return issue, nil
+	}
+
+	if issue, err = r.issueRepo.GetByKey(ctx, namespaceID, issueKey, proj); err != nil {
+		return nil, err
+	}
+
+	if err = r.cacheRepo.Set(ctx, cacheKey, issue); err != nil {
+		return nil, err
+	}
+
+	return issue, nil
+}
+
+func issueListForProjectCacheKey(query IssueListQuery) (string, error) {
+	plan, err := CompileQuery(query)
+	if err != nil {
+		return "", err
+	}
+	return plan.CacheKey(model.ResourceTypeIssue.String(), "ListForProject", query.ProjectID.String()), nil
+}
+
+func (r *RedisCachedIssueRepository) ListForProject(ctx context.Context, query IssueListQuery) (Page[*PartialIssue], error) {
+	var issues Page[*PartialIssue]
+	var err error
+
+	key, err := issueListForProjectCacheKey(query)
+	if err != nil {
+		return Page[*PartialIssue]{}, err
+	}
+	if err = r.cacheRepo.Get(ctx, key, &issues); err != nil {
+		return Page[*PartialIssue]{}, err
+	}
+
+	if issues.Items != nil {
 		return issues, nil
 	}
 
-	if issues, err = r.issueRepo.GetAllForProject(ctx, projectID, offset, limit); err != nil {
-		return nil, err
+	if issues, err = r.issueRepo.ListForProject(ctx, query); err != nil {
+		return Page[*PartialIssue]{}, err
 	}
 
 	if err = r.cacheRepo.Set(ctx, key, issues); err != nil {
-		return nil, err
+		return Page[*PartialIssue]{}, err
 	}
 
 	return issues, nil
 }
 
-func (r *RedisCachedIssueRepository) GetAllForIssue(ctx context.Context, issueID model.ID, offset, limit int) ([]*Issue, error) {
-	var issues []*Issue
+func issueListForNamespaceCacheKey(query IssueListForNamespaceQuery) (string, error) {
+	plan, err := CompileQuery(query)
+	if err != nil {
+		return "", err
+	}
+	return plan.CacheKey(model.ResourceTypeIssue.String(), "ListForNamespace", query.NamespaceID.String()), nil
+}
+
+func (r *RedisCachedIssueRepository) ListForNamespace(ctx context.Context, query IssueListForNamespaceQuery) (Page[*PartialIssue], error) {
+	var issues Page[*PartialIssue]
 	var err error
 
-	key := composeCacheKey(model.ResourceTypeIssue.String(), "GetAllForIssue", issueID.String(), offset, limit)
+	key, err := issueListForNamespaceCacheKey(query)
+	if err != nil {
+		return Page[*PartialIssue]{}, err
+	}
 	if err = r.cacheRepo.Get(ctx, key, &issues); err != nil {
-		return nil, err
+		return Page[*PartialIssue]{}, err
 	}
 
-	if issues != nil {
+	if issues.Items != nil {
 		return issues, nil
 	}
 
-	if issues, err = r.issueRepo.GetAllForIssue(ctx, issueID, offset, limit); err != nil {
-		return nil, err
+	if issues, err = r.issueRepo.ListForNamespace(ctx, query); err != nil {
+		return Page[*PartialIssue]{}, err
 	}
 
 	if err = r.cacheRepo.Set(ctx, key, issues); err != nil {
-		return nil, err
+		return Page[*PartialIssue]{}, err
+	}
+
+	return issues, nil
+}
+
+func issueListForUserCacheKey(query IssueListForUserQuery) (string, error) {
+	plan, err := CompileQuery(query)
+	if err != nil {
+		return "", err
+	}
+	return plan.CacheKey(model.ResourceTypeIssue.String(), "ListForUser", query.UserID.String()), nil
+}
+
+func (r *RedisCachedIssueRepository) ListForUser(ctx context.Context, query IssueListForUserQuery) (Page[*PartialIssue], error) {
+	var issues Page[*PartialIssue]
+	var err error
+
+	key, err := issueListForUserCacheKey(query)
+	if err != nil {
+		return Page[*PartialIssue]{}, err
+	}
+	if err = r.cacheRepo.Get(ctx, key, &issues); err != nil {
+		return Page[*PartialIssue]{}, err
+	}
+
+	if issues.Items != nil {
+		return issues, nil
+	}
+
+	if issues, err = r.issueRepo.ListForUser(ctx, query); err != nil {
+		return Page[*PartialIssue]{}, err
+	}
+
+	if err = r.cacheRepo.Set(ctx, key, issues); err != nil {
+		return Page[*PartialIssue]{}, err
+	}
+
+	return issues, nil
+}
+
+func (r *RedisCachedIssueRepository) ListForIssue(ctx context.Context, query IssueListForIssueQuery) (Page[*Issue], error) {
+	var issues Page[*Issue]
+	var err error
+
+	plan, err := CompileQuery(query)
+	if err != nil {
+		return Page[*Issue]{}, err
+	}
+
+	key := plan.CacheKey(model.ResourceTypeIssue.String(), "ListForIssue", query.IssueID.String())
+	if err = r.cacheRepo.Get(ctx, key, &issues); err != nil {
+		return Page[*Issue]{}, err
+	}
+
+	if issues.Items != nil {
+		return issues, nil
+	}
+
+	if issues, err = r.issueRepo.ListForIssue(ctx, query); err != nil {
+		return Page[*Issue]{}, err
+	}
+
+	if err = r.cacheRepo.Set(ctx, key, issues); err != nil {
+		return Page[*Issue]{}, err
 	}
 
 	return issues, nil
@@ -906,30 +1830,50 @@ func (r *RedisCachedIssueRepository) RemoveWatcher(ctx context.Context, issue mo
 }
 
 func (r *RedisCachedIssueRepository) AddRelation(ctx context.Context, opts CreateIssueRelationOpts) (*IssueRelation, error) {
-	var issueID model.ID
-	if opts.Source.Type == model.ResourceTypeIssue {
-		issueID = opts.Source
-	} else {
-		issueID = opts.Target
-	}
-
-	if err := clearIssuesKey(ctx, r.cacheRepo, issueID); err != nil {
-		return nil, err
-	}
-
-	if err := clearIssueRelations(ctx, r.cacheRepo, issueID); err != nil {
-		return nil, err
-	}
-
-	if err := clearIssueAllForIssue(ctx, r.cacheRepo); err != nil {
-		return nil, err
-	}
-
-	if err := clearIssueAllForProject(ctx, r.cacheRepo); err != nil {
+	if err := clearIssueRelationPair(ctx, r.cacheRepo, opts.Source, opts.Target); err != nil {
 		return nil, err
 	}
 
 	return r.issueRepo.AddRelation(ctx, opts)
+}
+
+func (r *RedisCachedIssueRepository) GetRelation(ctx context.Context, relationID model.ID) (*IssueRelation, error) {
+	return r.issueRepo.GetRelation(ctx, relationID)
+}
+
+func issueListRelationsCacheKey(query IssueRelationListQuery) (string, error) {
+	plan, err := CompileQuery(query)
+	if err != nil {
+		return "", err
+	}
+	return plan.CacheKey(model.ResourceTypeIssue.String(), "ListRelations", query.IssueID.String()), nil
+}
+
+func (r *RedisCachedIssueRepository) ListRelations(ctx context.Context, query IssueRelationListQuery) (Page[*IssueRelationItem], error) {
+	var relations Page[*IssueRelationItem]
+	var err error
+
+	key, err := issueListRelationsCacheKey(query)
+	if err != nil {
+		return Page[*IssueRelationItem]{}, err
+	}
+	if err = r.cacheRepo.Get(ctx, key, &relations); err != nil {
+		return Page[*IssueRelationItem]{}, err
+	}
+
+	if relations.Items != nil {
+		return relations, nil
+	}
+
+	if relations, err = r.issueRepo.ListRelations(ctx, query); err != nil {
+		return Page[*IssueRelationItem]{}, err
+	}
+
+	if err = r.cacheRepo.Set(ctx, key, relations); err != nil {
+		return Page[*IssueRelationItem]{}, err
+	}
+
+	return relations, nil
 }
 
 func (r *RedisCachedIssueRepository) GetRelations(ctx context.Context, issue model.ID) ([]*IssueRelation, error) {
@@ -957,51 +1901,55 @@ func (r *RedisCachedIssueRepository) GetRelations(ctx context.Context, issue mod
 }
 
 func (r *RedisCachedIssueRepository) RemoveRelation(ctx context.Context, source, target model.ID, kind model.IssueRelationKind) error {
-	var issueID model.ID
-	if source.Type == model.ResourceTypeIssue {
-		issueID = source
-	} else {
-		issueID = target
-	}
-
-	if err := clearIssuesKey(ctx, r.cacheRepo, issueID); err != nil {
-		return err
-	}
-
-	if err := clearIssueRelations(ctx, r.cacheRepo, issueID); err != nil {
-		return err
-	}
-
-	if err := clearIssueAllForIssue(ctx, r.cacheRepo); err != nil {
-		return err
-	}
-
-	if err := clearIssueAllForProject(ctx, r.cacheRepo); err != nil {
+	if err := clearIssueRelationPair(ctx, r.cacheRepo, source, target); err != nil {
 		return err
 	}
 
 	return r.issueRepo.RemoveRelation(ctx, source, target, kind)
 }
 
-func (r *RedisCachedIssueRepository) Update(ctx context.Context, id model.ID, opts UpdateIssueOpts) (*Issue, error) {
-	issue, err := r.issueRepo.Update(ctx, id, opts)
+func (r *RedisCachedIssueRepository) RemoveRelationByID(ctx context.Context, relationID model.ID) error {
+	rel, err := r.issueRepo.GetRelation(ctx, relationID)
+	if err != nil {
+		return err
+	}
+
+	if err := clearIssueRelationPair(ctx, r.cacheRepo, rel.Source, rel.Target); err != nil {
+		return err
+	}
+
+	return r.issueRepo.RemoveRelationByID(ctx, relationID)
+}
+
+func (r *RedisCachedIssueRepository) Update(ctx context.Context, id model.ID, opts UpdateIssueOpts, proj IssueProjection) (*Issue, error) {
+	issue, err := r.issueRepo.Update(ctx, id, opts, proj)
 	if err != nil {
 		return nil, err
 	}
 
-	key := composeCacheKey(model.ResourceTypeIssue.String(), id.String())
+	key := composeCacheKey(model.ResourceTypeIssue.String(), "Get", id.String(), projectionCacheValue(proj))
 	if err = r.cacheRepo.Set(ctx, key, issue); err != nil {
 		return nil, err
 	}
 
 	if issue.Parent != nil {
-		if err := clearIssueForIssue(ctx, r.cacheRepo, *issue.Parent); err != nil {
+		if err := clearIssueForIssue(ctx, r.cacheRepo, issue.Parent.ID); err != nil {
 			return nil, err
 		}
 	}
 
+	if err := clearIssueAllForProject(ctx, r.cacheRepo); err != nil {
+		return nil, err
+	}
+
 	if err := clearIssueAllCrossCache(ctx, r.cacheRepo); err != nil {
 		return nil, err
+	}
+
+	if issue.Key != "" {
+		if err := clearIssueGetByKey(ctx, r.cacheRepo, issue.Key); err != nil {
+			return nil, err
+		}
 	}
 
 	return issue, nil
@@ -1025,6 +1973,10 @@ func (r *RedisCachedIssueRepository) Delete(ctx context.Context, id model.ID) er
 	}
 
 	if err := clearIssueAllForProject(ctx, r.cacheRepo); err != nil {
+		return err
+	}
+
+	if err := clearIssueAllGetByKey(ctx, r.cacheRepo); err != nil {
 		return err
 	}
 

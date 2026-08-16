@@ -91,12 +91,16 @@ func (c *todoController) V1TodosGet(ctx context.Context, request api.V1TodosGetR
 	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1TodosGet")
 	defer span.End()
 
-	todos, err := c.todoService.GetAll(ctx,
-		pkg.DefaultPtr(request.Params.Offset, DefaultOffset),
-		pkg.DefaultPtr(request.Params.Limit, DefaultLimit),
-		request.Params.Completed,
-	)
+	pageParams, err := cursorPageFromParams(request.Params.PageSize, request.Params.PageToken)
 	if err != nil {
+		return api.V1TodosGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
+	}
+
+	page, err := c.todoService.List(ctx, pageParams, request.Params.Completed)
+	if err != nil {
+		if isInvalidPageError(err) {
+			return api.V1TodosGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
+		}
 		if errors.Is(err, service.ErrNoPermission) {
 			return api.V1TodosGet403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		}
@@ -105,12 +109,15 @@ func (c *todoController) V1TodosGet(ctx context.Context, request api.V1TodosGetR
 		}}, nil
 	}
 
-	todosDTO := make([]api.Todo, len(todos))
-	for i, todo := range todos {
+	todosDTO := make([]api.Todo, len(page.Items))
+	for i, todo := range page.Items {
 		todosDTO[i] = todoToDTO(todo)
 	}
 
-	return api.V1TodosGet200JSONResponse(todosDTO), nil
+	return api.V1TodosGet200JSONResponse{
+		Items:    todosDTO,
+		PageInfo: pageInfoToDTO(page.PageInfo),
+	}, nil
 }
 
 func (c *todoController) V1TodoUpdate(ctx context.Context, request api.V1TodoUpdateRequestObject) (api.V1TodoUpdateResponseObject, error) {

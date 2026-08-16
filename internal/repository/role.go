@@ -5,7 +5,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
+	"github.com/neo4j/neo4j-go-driver/v6/neo4j"
 
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/convert"
@@ -26,7 +26,7 @@ type Role struct {
 	ID          model.ID   `json:"id"`
 	Name        string     `json:"name"`
 	Description string     `json:"description"`
-	Members     []model.ID `json:"members"`
+	MemberCount *int64     `json:"member_count"`
 	Permissions []model.ID `json:"permissions"`
 	CreatedAt   *time.Time `json:"created_at"`
 	UpdatedAt   *time.Time `json:"updated_at"`
@@ -68,8 +68,9 @@ func (o UpdateRoleOpts) patch() map[string]any {
 //go:generate go tool mockgen -source=role.go -destination=role_mock_gen.go -package=repository -mock_names "RoleRepository=MockRoleRepository"
 type RoleRepository interface {
 	Create(ctx context.Context, opts CreateRoleOpts) (*Role, error)
-	Get(ctx context.Context, id, belongsTo model.ID) (*Role, error)
-	GetAllBelongsTo(ctx context.Context, belongsTo model.ID, offset, limit int) ([]*Role, error)
+	Get(ctx context.Context, id, belongsTo model.ID, proj RoleProjection) (*Role, error)
+	ListBelongsTo(ctx context.Context, belongsTo model.ID, page CursorPage, proj RoleProjection) (Page[*Role], error)
+	ListMembers(ctx context.Context, roleID, belongsTo model.ID, page CursorPage) (Page[*User], error)
 	Update(ctx context.Context, id, belongsTo model.ID, opts UpdateRoleOpts) (*Role, error)
 	AddMember(ctx context.Context, roleID, memberID, belongsToID model.ID) error
 	RemoveMember(ctx context.Context, roleID, memberID, belongsToID model.ID) error
@@ -81,53 +82,106 @@ type Neo4jRoleRepository struct {
 	*neo4jBaseRepository
 }
 
-func (r *Neo4jRoleRepository) scan(rp, mp, pp string) func(rec *neo4j.Record) (*Role, error) {
+func (r *Neo4jRoleRepository) scan(proj RoleProjection) func(rec *neo4j.Record) (*Role, error) {
 	return func(rec *neo4j.Record) (*Role, error) {
-		role := new(Role)
-
-		val, _, err := neo4j.GetRecordValue[neo4j.Node](rec, rp)
+		node, err := Neo4jRecordNode(rec, "r")
 		if err != nil {
 			return nil, err
 		}
 
-		if err := Neo4jScanIntoStruct(&val, &role, []string{"id"}); err != nil {
+		role := new(Role)
+		if err := Neo4jScanIntoStruct(&node, &role, []string{"id"}); err != nil {
 			return nil, err
 		}
 
-		role.ID, _ = model.NewIDFromString(val.GetProperties()["id"].(string), model.ResourceTypeRole.String())
-
-		if role.Members, err = Neo4jParseIDsFromRecord(rec, mp, model.ResourceTypeUser.String()); err != nil {
+		role.ID, err = Neo4jDecodeID(node, model.ResourceTypeRole)
+		if err != nil {
 			return nil, err
 		}
-
-		if role.Permissions, err = Neo4jParseIDsFromRecord(rec, pp, model.ResourceTypePermission.String()); err != nil {
-			return nil, err
+		if proj.MemberCount {
+			memberCount, err := Neo4jParseValueFromRecord[int64](rec, "member_count")
+			if err != nil {
+				return nil, err
+			}
+			role.MemberCount = convert.ToPointer(memberCount)
+		}
+		if proj.Permissions {
+			role.Permissions = make([]model.ID, 0)
 		}
 
 		return role, nil
 	}
 }
 
+func (r *Neo4jRoleRepository) applyRoleLoaders(ctx context.Context, tx neo4j.ManagedTransaction, plan QueryPlan, roles []*Role) error {
+	if len(plan.Loaders) == 0 || len(roles) == 0 {
+		return nil
+	}
+
+	roleByID := make(map[string]*Role, len(roles))
+	ids := make([]string, 0, len(roles))
+	for _, role := range roles {
+		if role == nil {
+			continue
+		}
+		id := role.ID.String()
+		roleByID[id] = role
+		ids = append(ids, id)
+	}
+
+	for _, loader := range plan.Loaders {
+		query := loader
+		query.Params = cloneParams(loader.Params)
+		query.Params["ids"] = ids
+		if loader.Name == "role.load_permissions" {
+			rows, _, err := Neo4jRunQuery(ctx, tx, query, func(rec *neo4j.Record) (struct {
+				RoleID        string
+				PermissionIDs []model.ID
+			}, error) {
+				roleID, err := Neo4jParseValueFromRecord[string](rec, "role_id")
+				if err != nil {
+					return struct {
+						RoleID        string
+						PermissionIDs []model.ID
+					}{}, err
+				}
+				permissionIDs, err := Neo4jRecordIDs(rec, "permission_ids", model.ResourceTypePermission)
+				if err != nil {
+					return struct {
+						RoleID        string
+						PermissionIDs []model.ID
+					}{}, err
+				}
+				return struct {
+					RoleID        string
+					PermissionIDs []model.ID
+				}{RoleID: roleID, PermissionIDs: permissionIDs}, nil
+			})
+			if err != nil {
+				return err
+			}
+			for _, row := range rows {
+				if role := roleByID[row.RoleID]; role != nil {
+					role.Permissions = row.PermissionIDs
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
 func (r *Neo4jRoleRepository) Create(ctx context.Context, opts CreateRoleOpts) (*Role, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.RoleRepository/Create")
 	defer span.End()
 
-	createdAt := convert.ToPointer(time.Now().UTC())
-
-	role := &Role{
-		ID:          model.MustNewID(model.ResourceTypeRole),
-		Name:        opts.Name,
-		Description: opts.Description,
-		Members:     make([]model.ID, 0),
-		Permissions: make([]model.ID, 0),
-		CreatedAt:   createdAt,
-		UpdatedAt:   nil,
-	}
+	createdAt := time.Now().UTC()
+	id := model.MustNewID(model.ResourceTypeRole)
 
 	cypher := `
 	MATCH (u:` + opts.CreatedBy.Label() + ` {id: $owner_id})
 	MATCH (b:` + opts.BelongsTo.Label() + ` {id: $belongs_to_id})
-	MERGE (r:` + role.ID.Label() + ` {id: $role_id})
+	MERGE (r:` + id.Label() + ` {id: $role_id})
 	ON CREATE SET r += { name: $name, description: $description, created_at: datetime($created_at) }
 	CREATE (r)<-[:` + EdgeKindHasTeam.String() + ` { id: $has_team_id, created_at: datetime($created_at) }]-(b)
 	CREATE (u)-[:` + EdgeKindMemberOf.String() + ` { id: $membership_id, created_at: datetime($created_at) }]->(r)
@@ -137,13 +191,13 @@ func (r *Neo4jRoleRepository) Create(ctx context.Context, opts CreateRoleOpts) (
 	params := map[string]any{
 		"owner_id":      opts.CreatedBy.String(),
 		"belongs_to_id": opts.BelongsTo.String(),
-		"role_id":       role.ID.String(),
+		"role_id":       id.String(),
 		"membership_id": model.NewRawID(),
 		"has_team_id":   model.NewRawID(),
 		"perm_id":       model.NewRawID(),
 		"perm_kind":     model.PermissionKindAll.String(),
-		"name":          role.Name,
-		"description":   role.Description,
+		"name":          opts.Name,
+		"description":   opts.Description,
 		"created_at":    createdAt.Format(time.RFC3339Nano),
 	}
 
@@ -151,27 +205,27 @@ func (r *Neo4jRoleRepository) Create(ctx context.Context, opts CreateRoleOpts) (
 		return nil, errors.Join(err, ErrRoleCreate)
 	}
 
-	return role, nil
+	return r.Get(ctx, id, opts.BelongsTo, RoleDetailProjection())
 }
 
-func (r *Neo4jRoleRepository) Get(ctx context.Context, id, belongsTo model.ID) (*Role, error) {
+func (r *Neo4jRoleRepository) Get(ctx context.Context, id, belongsTo model.ID, proj RoleProjection) (*Role, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.RoleRepository/Get")
 	defer span.End()
 
-	cypher := `
-	MATCH (r:` + id.Label() + ` {id: $id})
-	MATCH (b:` + belongsTo.Label() + ` {id: $belongs_to_id})
-	OPTIONAL MATCH (r)<-[:` + EdgeKindMemberOf.String() + `]-(u:` + model.ResourceTypeUser.String() + `)
-	OPTIONAL MATCH (r)-[p:` + EdgeKindHasPermission.String() + `]->()
-	RETURN r, collect(DISTINCT u.id) AS m, collect(DISTINCT p.id) AS p
-	`
-
-	params := map[string]any{
-		"id":            id.String(),
-		"belongs_to_id": belongsTo.String(),
+	plan, err := CompileQuery(RoleGetQuery{ID: id, BelongsTo: belongsTo, Projection: proj})
+	if err != nil {
+		return nil, errors.Join(err, ErrRoleRead)
 	}
 
-	role, err := Neo4jExecuteReadAndReadSingle(ctx, r.db, cypher, params, r.scan("r", "m", "p"))
+	var role *Role
+	err = Neo4jExecuteReadPlan(ctx, r.db, plan, func(tx neo4j.ManagedTransaction) error {
+		var readErr error
+		role, _, readErr = Neo4jRunQuerySingle(ctx, tx, plan.Root, r.scan(proj))
+		if readErr != nil {
+			return readErr
+		}
+		return r.applyRoleLoaders(ctx, tx, plan, []*Role{role})
+	})
 	if err != nil {
 		return nil, errors.Join(err, ErrRoleRead)
 	}
@@ -179,34 +233,95 @@ func (r *Neo4jRoleRepository) Get(ctx context.Context, id, belongsTo model.ID) (
 	return role, nil
 }
 
-func (r *Neo4jRoleRepository) GetAllBelongsTo(ctx context.Context, belongsTo model.ID, offset, limit int) ([]*Role, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.RoleRepository/GetAllBelongsTo")
+func (r *Neo4jRoleRepository) ListBelongsTo(ctx context.Context, belongsTo model.ID, page CursorPage, proj RoleProjection) (Page[*Role], error) {
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.RoleRepository/ListBelongsTo")
 	defer span.End()
 
-	if err := belongsTo.Validate(); err != nil {
-		return nil, errors.Join(ErrRoleRead, err)
-	}
-
-	cypher := `
-	MATCH (r:` + model.ResourceTypeRole.String() + `)<-[:` + EdgeKindHasTeam.String() + `]-(:` + belongsTo.Label() + ` {id: $id})
-	OPTIONAL MATCH (r)<-[:` + EdgeKindMemberOf.String() + `]-(u:` + model.ResourceTypeUser.String() + `)
-	OPTIONAL MATCH (r)-[p:` + EdgeKindHasPermission.String() + `]->()
-	RETURN r, collect(DISTINCT u.id) AS m, collect(DISTINCT p.id) AS p
-	ORDER BY r.created_at DESC
-	SKIP $offset LIMIT $limit`
-
-	params := map[string]any{
-		"id":     belongsTo.String(),
-		"offset": offset,
-		"limit":  limit,
-	}
-
-	roles, err := Neo4jExecuteReadAndReadAll(ctx, r.db, cypher, params, r.scan("r", "m", "p"))
+	normalized, err := page.Normalize()
 	if err != nil {
-		return nil, errors.Join(ErrRoleRead, err)
+		return Page[*Role]{}, errors.Join(ErrRoleRead, err)
+	}
+	plan, err := CompileQuery(RoleListBelongsToQuery{
+		BelongsTo:  belongsTo,
+		Page:       normalized,
+		Order:      SortDirectionDesc,
+		Projection: proj,
+	})
+	if err != nil {
+		return Page[*Role]{}, errors.Join(ErrRoleRead, err)
 	}
 
-	return roles, nil
+	roles := make([]*Role, 0)
+	err = Neo4jExecuteReadPlan(ctx, r.db, plan, func(tx neo4j.ManagedTransaction) error {
+		var readErr error
+		roles, _, readErr = Neo4jRunQuery(ctx, tx, plan.Root, r.scan(proj))
+		if readErr != nil {
+			return readErr
+		}
+		return r.applyRoleLoaders(ctx, tx, plan, roles)
+	})
+	if err != nil {
+		return Page[*Role]{}, errors.Join(ErrRoleRead, err)
+	}
+
+	return PaginateSlice(roles, normalized.Size, func(role *Role) model.ID {
+		return role.ID
+	})
+}
+
+func (r *Neo4jRoleRepository) ListMembers(ctx context.Context, roleID, belongsTo model.ID, page CursorPage) (Page[*User], error) {
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.RoleRepository/ListMembers")
+	defer span.End()
+
+	normalized, err := page.Normalize()
+	if err != nil {
+		return Page[*User]{}, errors.Join(ErrRoleRead, err)
+	}
+	plan, err := CompileQuery(RoleMemberListQuery{
+		RoleID:    roleID,
+		BelongsTo: belongsTo,
+		Page:      normalized,
+		Order:     SortDirectionDesc,
+	})
+	if err != nil {
+		return Page[*User]{}, errors.Join(ErrRoleRead, err)
+	}
+
+	users := make([]*User, 0)
+	err = Neo4jExecuteReadPlan(ctx, r.db, plan, func(tx neo4j.ManagedTransaction) error {
+		scanned, _, readErr := Neo4jRunQuery(ctx, tx, plan.Root, scanRoleMemberUser)
+		if readErr != nil {
+			return readErr
+		}
+		users = scanned
+		return nil
+	})
+	if err != nil {
+		return Page[*User]{}, errors.Join(ErrRoleRead, err)
+	}
+
+	return PaginateSlice(users, normalized.Size, func(user *User) model.ID {
+		return user.ID
+	})
+}
+
+func scanRoleMemberUser(rec *neo4j.Record) (*User, error) {
+	user := new(User)
+	user.Links = make([]string, 0)
+	user.Permissions = make([]model.ID, 0)
+
+	val, _, err := neo4j.GetRecordValue[neo4j.Node](rec, "u")
+	if err != nil {
+		return nil, err
+	}
+	if err := Neo4jScanIntoStruct(&val, &user, []string{"id"}); err != nil {
+		return nil, err
+	}
+	user.ID, err = model.NewIDFromString(val.GetProperties()["id"].(string), model.ResourceTypeUser.String())
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
 }
 
 func (r *Neo4jRoleRepository) Update(ctx context.Context, id, belongsTo model.ID, opts UpdateRoleOpts) (*Role, error) {
@@ -214,13 +329,9 @@ func (r *Neo4jRoleRepository) Update(ctx context.Context, id, belongsTo model.ID
 	defer span.End()
 
 	cypher := `
-	MATCH (r:` + id.Label() + ` {id: $id})
-	MATCH (b:` + belongsTo.Label() + ` {id: $belongs_to_id})
+	MATCH (:` + belongsTo.Label() + ` {id: $belongs_to_id})-[:` + EdgeKindHasTeam.String() + `]->(r:` + id.Label() + ` {id: $id})
 	SET r += $patch, r.updated_at = datetime()
-	WITH r
-	OPTIONAL MATCH (r)<-[:` + EdgeKindMemberOf.String() + `]-(u:` + model.ResourceTypeUser.String() + `)
-	OPTIONAL MATCH (r)-[p:` + EdgeKindHasPermission.String() + `]->()
-	RETURN r, collect(DISTINCT u.id) AS m, collect(DISTINCT p.id) AS p`
+	RETURN r.id AS id`
 
 	params := map[string]any{
 		"id":            id.String(),
@@ -228,12 +339,14 @@ func (r *Neo4jRoleRepository) Update(ctx context.Context, id, belongsTo model.ID
 		"patch":         opts.patch(),
 	}
 
-	role, err := Neo4jExecuteWriteAndReadSingle(ctx, r.db, cypher, params, r.scan("r", "m", "p"))
+	_, err := Neo4jExecuteWriteAndReadSingle(ctx, r.db, cypher, params, func(_ *neo4j.Record) (*struct{}, error) {
+		return &struct{}{}, nil
+	})
 	if err != nil {
 		return nil, errors.Join(err, ErrRoleUpdate)
 	}
 
-	return role, nil
+	return r.Get(ctx, id, belongsTo, RoleDetailProjection())
 }
 
 func (r *Neo4jRoleRepository) AddMember(ctx context.Context, roleID, memberID, belongsToID model.ID) error {
@@ -321,15 +434,15 @@ func clearRolesPattern(ctx context.Context, r *redisBaseRepository, pattern ...s
 }
 
 func clearRolesKey(ctx context.Context, r *redisBaseRepository, id model.ID) error {
-	return r.Delete(ctx, composeCacheKey(model.ResourceTypeRole.String(), id.String()))
+	return clearRolesPattern(ctx, r, "Get", id.String(), "*")
 }
 
 func clearRolesBelongsTo(ctx context.Context, r *redisBaseRepository, id model.ID) error {
-	return clearRolesPattern(ctx, r, "GetAllBelongsTo", id.String(), "*")
+	return clearRolesPattern(ctx, r, "ListBelongsTo", id.String(), "*", "*", "*")
 }
 
 func clearRolesAllBelongsTo(ctx context.Context, r *redisBaseRepository) error {
-	return clearRolesPattern(ctx, r, "GetAllBelongsTo", "*")
+	return clearRolesPattern(ctx, r, "ListBelongsTo", "*")
 }
 
 func clearRoleAllCrossCache(ctx context.Context, r *redisBaseRepository) error {
@@ -364,11 +477,11 @@ func (r *RedisCachedRoleRepository) Create(ctx context.Context, opts CreateRoleO
 	return r.roleRepo.Create(ctx, opts)
 }
 
-func (r *RedisCachedRoleRepository) Get(ctx context.Context, id, belongsTo model.ID) (*Role, error) {
+func (r *RedisCachedRoleRepository) Get(ctx context.Context, id, belongsTo model.ID, proj RoleProjection) (*Role, error) {
 	var role *Role
 	var err error
 
-	key := composeCacheKey(model.ResourceTypeRole.String(), id.String())
+	key := composeCacheKey(model.ResourceTypeRole.String(), "Get", id.String(), projectionCacheValue(proj))
 	if err = r.cacheRepo.Get(ctx, key, &role); err != nil {
 		return nil, err
 	}
@@ -377,7 +490,7 @@ func (r *RedisCachedRoleRepository) Get(ctx context.Context, id, belongsTo model
 		return role, nil
 	}
 
-	if role, err = r.roleRepo.Get(ctx, id, belongsTo); err != nil {
+	if role, err = r.roleRepo.Get(ctx, id, belongsTo, proj); err != nil {
 		return nil, err
 	}
 
@@ -388,28 +501,37 @@ func (r *RedisCachedRoleRepository) Get(ctx context.Context, id, belongsTo model
 	return role, nil
 }
 
-func (r *RedisCachedRoleRepository) GetAllBelongsTo(ctx context.Context, belongsTo model.ID, offset, limit int) ([]*Role, error) {
-	var roles []*Role
+func (r *RedisCachedRoleRepository) ListBelongsTo(ctx context.Context, belongsTo model.ID, page CursorPage, proj RoleProjection) (Page[*Role], error) {
+	var roles Page[*Role]
 	var err error
 
-	key := composeCacheKey(model.ResourceTypeRole.String(), "GetAllBelongsTo", belongsTo.String(), offset, limit)
-	if err = r.cacheRepo.Get(ctx, key, &roles); err != nil {
-		return nil, err
+	normalized, err := normalizedPage(page)
+	if err != nil {
+		return Page[*Role]{}, err
 	}
 
-	if roles != nil {
+	key := composeCacheKey(model.ResourceTypeRole.String(), "ListBelongsTo", belongsTo.String(), projectionCacheValue(proj), pageTokenValue(normalized.Token), normalized.Size)
+	if err = r.cacheRepo.Get(ctx, key, &roles); err != nil {
+		return Page[*Role]{}, err
+	}
+
+	if roles.Items != nil {
 		return roles, nil
 	}
 
-	if roles, err = r.roleRepo.GetAllBelongsTo(ctx, belongsTo, offset, limit); err != nil {
-		return nil, err
+	if roles, err = r.roleRepo.ListBelongsTo(ctx, belongsTo, normalized, proj); err != nil {
+		return Page[*Role]{}, err
 	}
 
 	if err = r.cacheRepo.Set(ctx, key, roles); err != nil {
-		return nil, err
+		return Page[*Role]{}, err
 	}
 
 	return roles, nil
+}
+
+func (r *RedisCachedRoleRepository) ListMembers(ctx context.Context, roleID, belongsTo model.ID, page CursorPage) (Page[*User], error) {
+	return r.roleRepo.ListMembers(ctx, roleID, belongsTo, page)
 }
 
 func (r *RedisCachedRoleRepository) Update(ctx context.Context, id, belongsTo model.ID, opts UpdateRoleOpts) (*Role, error) {
@@ -418,7 +540,7 @@ func (r *RedisCachedRoleRepository) Update(ctx context.Context, id, belongsTo mo
 		return nil, err
 	}
 
-	key := composeCacheKey(model.ResourceTypeRole.String(), id.String())
+	key := composeCacheKey(model.ResourceTypeRole.String(), "Get", id.String(), projectionCacheValue(RoleDetailProjection()))
 	if err = r.cacheRepo.Set(ctx, key, role); err != nil {
 		return nil, err
 	}

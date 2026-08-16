@@ -7,11 +7,11 @@ import (
 	"strings"
 )
 
-const _IssuePriorityName = "lowmediumhighcritical"
+const _IssuePriorityName = "lowestlownormalhighhighest"
 
-var _IssuePriorityIndex = [...]uint8{0, 3, 9, 13, 21}
+var _IssuePriorityIndex = [...]uint8{0, 6, 9, 15, 19, 26}
 
-const _IssuePriorityLowerName = "lowmediumhighcritical"
+const _IssuePriorityLowerName = "lowestlownormalhighhighest"
 
 func (i IssuePriority) String() string {
 	i -= 1
@@ -25,30 +25,34 @@ func (i IssuePriority) String() string {
 // Re-run the stringer command to generate them again.
 func _IssuePriorityNoOp() {
 	var x [1]struct{}
-	_ = x[IssuePriorityLow-(1)]
-	_ = x[IssuePriorityMedium-(2)]
-	_ = x[IssuePriorityHigh-(3)]
-	_ = x[IssuePriorityCritical-(4)]
+	_ = x[IssuePriorityLowest-(1)]
+	_ = x[IssuePriorityLow-(2)]
+	_ = x[IssuePriorityNormal-(3)]
+	_ = x[IssuePriorityHigh-(4)]
+	_ = x[IssuePriorityHighest-(5)]
 }
 
-var _IssuePriorityValues = []IssuePriority{IssuePriorityLow, IssuePriorityMedium, IssuePriorityHigh, IssuePriorityCritical}
+var _IssuePriorityValues = []IssuePriority{IssuePriorityLowest, IssuePriorityLow, IssuePriorityNormal, IssuePriorityHigh, IssuePriorityHighest}
 
 var _IssuePriorityNameToValueMap = map[string]IssuePriority{
-	_IssuePriorityName[0:3]:        IssuePriorityLow,
-	_IssuePriorityLowerName[0:3]:   IssuePriorityLow,
-	_IssuePriorityName[3:9]:        IssuePriorityMedium,
-	_IssuePriorityLowerName[3:9]:   IssuePriorityMedium,
-	_IssuePriorityName[9:13]:       IssuePriorityHigh,
-	_IssuePriorityLowerName[9:13]:  IssuePriorityHigh,
-	_IssuePriorityName[13:21]:      IssuePriorityCritical,
-	_IssuePriorityLowerName[13:21]: IssuePriorityCritical,
+	_IssuePriorityName[0:6]:        IssuePriorityLowest,
+	_IssuePriorityLowerName[0:6]:   IssuePriorityLowest,
+	_IssuePriorityName[6:9]:        IssuePriorityLow,
+	_IssuePriorityLowerName[6:9]:   IssuePriorityLow,
+	_IssuePriorityName[9:15]:       IssuePriorityNormal,
+	_IssuePriorityLowerName[9:15]:  IssuePriorityNormal,
+	_IssuePriorityName[15:19]:      IssuePriorityHigh,
+	_IssuePriorityLowerName[15:19]: IssuePriorityHigh,
+	_IssuePriorityName[19:26]:      IssuePriorityHighest,
+	_IssuePriorityLowerName[19:26]: IssuePriorityHighest,
 }
 
 var _IssuePriorityNames = []string{
-	_IssuePriorityName[0:3],
-	_IssuePriorityName[3:9],
-	_IssuePriorityName[9:13],
-	_IssuePriorityName[13:21],
+	_IssuePriorityName[0:6],
+	_IssuePriorityName[6:9],
+	_IssuePriorityName[9:15],
+	_IssuePriorityName[15:19],
+	_IssuePriorityName[19:26],
 }
 
 // IssuePriorityString retrieves an enum value from the enum constants string name.

@@ -136,9 +136,9 @@ func (s *NamespaceServiceIntegrationTestSuite) TestGetAll() {
 	})
 	s.Require().NoError(err)
 
-	namespaces, err := s.namespaceService.GetAll(s.ctx, s.organization.ID, 0, 10)
+	namespaces, err := s.namespaceService.List(s.ctx, s.organization.ID, service.CursorPage{Size: 10})
 	s.Require().NoError(err)
-	s.Assert().Len(namespaces, 2)
+	s.Assert().Len(namespaces.Items, 2)
 }
 
 func (s *NamespaceServiceIntegrationTestSuite) TestUpdate() {

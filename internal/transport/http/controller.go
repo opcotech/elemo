@@ -142,11 +142,11 @@ func WithUserService(userService service.UserService) ControllerOption {
 	}
 }
 
-// WithUserService sets the user service for the controller.
+// WithEmailService sets the email service for the controller.
 func WithEmailService(emailService service.EmailService) ControllerOption {
 	return func(c *baseController) error {
 		if emailService == nil {
-			return ErrNoUserService
+			return ErrNoEmailService
 		}
 
 		c.emailService = emailService
@@ -172,7 +172,7 @@ func WithTodoService(todoService service.TodoService) ControllerOption {
 func WithNotificationService(notificationService service.NotificationService) ControllerOption {
 	return func(c *baseController) error {
 		if notificationService == nil {
-			return ErrNoTodoService
+			return ErrNoNotificationService
 		}
 
 		c.notificationService = notificationService
@@ -207,6 +207,45 @@ func WithProjectService(projectService service.ProjectService) ControllerOption 
 	}
 }
 
+// WithIssueService sets the issue service for the controller.
+func WithIssueService(issueService service.IssueService) ControllerOption {
+	return func(c *baseController) error {
+		if issueService == nil {
+			return ErrNoIssueService
+		}
+
+		c.issueService = issueService
+
+		return nil
+	}
+}
+
+// WithDocumentService sets the document service for the controller.
+func WithDocumentService(documentService service.DocumentService) ControllerOption {
+	return func(c *baseController) error {
+		if documentService == nil {
+			return ErrNoDocumentService
+		}
+
+		c.documentService = documentService
+
+		return nil
+	}
+}
+
+// WithLabelService sets the label service for the controller.
+func WithLabelService(labelService service.LabelService) ControllerOption {
+	return func(c *baseController) error {
+		if labelService == nil {
+			return ErrNoLabelService
+		}
+
+		c.labelService = labelService
+
+		return nil
+	}
+}
+
 // baseController defines the dependencies that are required to be injected
 // into a controller.
 type baseController struct {
@@ -219,6 +258,9 @@ type baseController struct {
 	organizationService service.OrganizationService
 	namespaceService    service.NamespaceService
 	projectService      service.ProjectService
+	issueService        service.IssueService
+	documentService     service.DocumentService
+	labelService        service.LabelService
 	roleService         service.RoleService
 	userService         service.UserService
 	emailService        service.EmailService

@@ -71,33 +71,33 @@ func (mr *MockNotificationRepositoryMockRecorder) Delete(ctx, id, recipient any)
 }
 
 // Get mocks base method.
-func (m *MockNotificationRepository) Get(ctx context.Context, id, recipient model.ID) (*Notification, error) {
+func (m *MockNotificationRepository) Get(ctx context.Context, id, recipient model.ID, proj NotificationProjection) (*Notification, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Get", ctx, id, recipient)
+	ret := m.ctrl.Call(m, "Get", ctx, id, recipient, proj)
 	ret0, _ := ret[0].(*Notification)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Get indicates an expected call of Get.
-func (mr *MockNotificationRepositoryMockRecorder) Get(ctx, id, recipient any) *gomock.Call {
+func (mr *MockNotificationRepositoryMockRecorder) Get(ctx, id, recipient, proj any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockNotificationRepository)(nil).Get), ctx, id, recipient)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockNotificationRepository)(nil).Get), ctx, id, recipient, proj)
 }
 
-// GetAllByRecipient mocks base method.
-func (m *MockNotificationRepository) GetAllByRecipient(ctx context.Context, recipient model.ID, offset, limit int) ([]*Notification, error) {
+// ListByRecipient mocks base method.
+func (m *MockNotificationRepository) ListByRecipient(ctx context.Context, recipient model.ID, page CursorPage, proj NotificationProjection) (Page[*Notification], error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAllByRecipient", ctx, recipient, offset, limit)
-	ret0, _ := ret[0].([]*Notification)
+	ret := m.ctrl.Call(m, "ListByRecipient", ctx, recipient, page, proj)
+	ret0, _ := ret[0].(Page[*Notification])
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetAllByRecipient indicates an expected call of GetAllByRecipient.
-func (mr *MockNotificationRepositoryMockRecorder) GetAllByRecipient(ctx, recipient, offset, limit any) *gomock.Call {
+// ListByRecipient indicates an expected call of ListByRecipient.
+func (mr *MockNotificationRepositoryMockRecorder) ListByRecipient(ctx, recipient, page, proj any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllByRecipient", reflect.TypeOf((*MockNotificationRepository)(nil).GetAllByRecipient), ctx, recipient, offset, limit)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListByRecipient", reflect.TypeOf((*MockNotificationRepository)(nil).ListByRecipient), ctx, recipient, page, proj)
 }
 
 // Update mocks base method.

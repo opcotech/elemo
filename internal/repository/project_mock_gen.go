@@ -71,61 +71,61 @@ func (mr *MockProjectRepositoryMockRecorder) Delete(ctx, id any) *gomock.Call {
 }
 
 // Get mocks base method.
-func (m *MockProjectRepository) Get(ctx context.Context, id model.ID) (*Project, error) {
+func (m *MockProjectRepository) Get(ctx context.Context, id model.ID, proj ProjectProjection) (*Project, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Get", ctx, id)
+	ret := m.ctrl.Call(m, "Get", ctx, id, proj)
 	ret0, _ := ret[0].(*Project)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Get indicates an expected call of Get.
-func (mr *MockProjectRepositoryMockRecorder) Get(ctx, id any) *gomock.Call {
+func (mr *MockProjectRepositoryMockRecorder) Get(ctx, id, proj any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockProjectRepository)(nil).Get), ctx, id)
-}
-
-// GetAll mocks base method.
-func (m *MockProjectRepository) GetAll(ctx context.Context, namespaceID model.ID, offset, limit int) ([]*Project, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAll", ctx, namespaceID, offset, limit)
-	ret0, _ := ret[0].([]*Project)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetAll indicates an expected call of GetAll.
-func (mr *MockProjectRepositoryMockRecorder) GetAll(ctx, namespaceID, offset, limit any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAll", reflect.TypeOf((*MockProjectRepository)(nil).GetAll), ctx, namespaceID, offset, limit)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockProjectRepository)(nil).Get), ctx, id, proj)
 }
 
 // GetByKey mocks base method.
-func (m *MockProjectRepository) GetByKey(ctx context.Context, key string) (*Project, error) {
+func (m *MockProjectRepository) GetByKey(ctx context.Context, key string, proj ProjectProjection) (*Project, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetByKey", ctx, key)
+	ret := m.ctrl.Call(m, "GetByKey", ctx, key, proj)
 	ret0, _ := ret[0].(*Project)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetByKey indicates an expected call of GetByKey.
-func (mr *MockProjectRepositoryMockRecorder) GetByKey(ctx, key any) *gomock.Call {
+func (mr *MockProjectRepositoryMockRecorder) GetByKey(ctx, key, proj any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByKey", reflect.TypeOf((*MockProjectRepository)(nil).GetByKey), ctx, key)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByKey", reflect.TypeOf((*MockProjectRepository)(nil).GetByKey), ctx, key, proj)
+}
+
+// List mocks base method.
+func (m *MockProjectRepository) List(ctx context.Context, namespaceID model.ID, page CursorPage, proj ProjectProjection) (Page[*Project], error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "List", ctx, namespaceID, page, proj)
+	ret0, _ := ret[0].(Page[*Project])
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// List indicates an expected call of List.
+func (mr *MockProjectRepositoryMockRecorder) List(ctx, namespaceID, page, proj any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockProjectRepository)(nil).List), ctx, namespaceID, page, proj)
 }
 
 // Update mocks base method.
-func (m *MockProjectRepository) Update(ctx context.Context, id model.ID, opts UpdateProjectOpts) (*Project, error) {
+func (m *MockProjectRepository) Update(ctx context.Context, id model.ID, opts UpdateProjectOpts, proj ProjectProjection) (*Project, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Update", ctx, id, opts)
+	ret := m.ctrl.Call(m, "Update", ctx, id, opts, proj)
 	ret0, _ := ret[0].(*Project)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Update indicates an expected call of Update.
-func (mr *MockProjectRepositoryMockRecorder) Update(ctx, id, opts any) *gomock.Call {
+func (mr *MockProjectRepositoryMockRecorder) Update(ctx, id, opts, proj any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockProjectRepository)(nil).Update), ctx, id, opts)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockProjectRepository)(nil).Update), ctx, id, opts, proj)
 }
