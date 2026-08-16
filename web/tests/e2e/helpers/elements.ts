@@ -93,13 +93,16 @@ export async function waitForDropdownOpen(
 /**
  * Click a trigger until `overlay` is visible. Firefox/WebKit often drop the
  * first pointer event on Base UI popups.
+ *
+ * Do not call `scrollIntoViewIfNeeded` here: Playwright's click already
+ * scrolls, and an explicit scroll on a remounting trigger detaches the node.
  */
 export async function clickUntilVisible(
   trigger: Locator,
   overlay: Locator,
   options?: { timeout?: number }
 ): Promise<void> {
-  await trigger.scrollIntoViewIfNeeded();
+  await expect(trigger).toBeVisible();
   await trigger.click();
   try {
     await expect(overlay).toBeVisible({

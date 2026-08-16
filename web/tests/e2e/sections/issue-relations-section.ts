@@ -1,6 +1,7 @@
 import type { Locator, Page } from "@playwright/test";
 
 import { Form } from "../components";
+import { clickUntilVisible } from "../helpers";
 import { DialogMixin, SectionContainerMixin } from "../mixins";
 
 /**
@@ -28,7 +29,10 @@ export class IssueRelationsSection extends DialogMixin(
   }
 
   async clickAdd(): Promise<void> {
-    await this.getAddButton().click();
+    await clickUntilVisible(
+      this.getAddButton(),
+      this.page.getByRole("dialog").filter({ hasText: "Add relation" })
+    );
     await this.waitForDialog("Add relation");
   }
 

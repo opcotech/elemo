@@ -88,11 +88,11 @@ export class IssueDetailsSection extends SectionContainerMixin(BaseComponent) {
   }
 
   async openAssignees(): Promise<void> {
-    await this.getAssigneesSelect().click();
+    await this.openCommandSelect(this.getAssigneesSelect());
   }
 
   async openReviewers(): Promise<void> {
-    await this.getReviewersSelect().click();
+    await this.openCommandSelect(this.getReviewersSelect());
   }
 
   async selectPersonOption(name: string): Promise<void> {
@@ -104,12 +104,12 @@ export class IssueDetailsSection extends SectionContainerMixin(BaseComponent) {
   }
 
   async selectParent(name: string): Promise<void> {
-    await this.getParentSelect().click();
-    await this.page
+    const item = this.page
       .locator('[data-slot="command-item"]')
       .filter({ hasText: name })
-      .first()
-      .click();
+      .first();
+    await clickUntilVisible(this.getParentSelect(), item, { timeout: 8_000 });
+    await item.click();
   }
 
   async clearParent(): Promise<void> {
@@ -132,8 +132,15 @@ export class IssueDetailsSection extends SectionContainerMixin(BaseComponent) {
     );
   }
 
+  private async openCommandSelect(trigger: Locator): Promise<void> {
+    await clickUntilVisible(
+      trigger,
+      this.page.locator('[data-slot="command-item"]').first(),
+      { timeout: 8_000 }
+    );
+  }
+
   private async selectOption(trigger: Locator, name: string): Promise<void> {
-    await trigger.scrollIntoViewIfNeeded();
     await trigger.click();
     try {
       await waitForDropdownOpen(trigger, { timeout: 2_000 });

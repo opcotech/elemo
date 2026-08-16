@@ -52,6 +52,16 @@ test.describe("@issues.detail Issue Detail E2E Tests", () => {
   test("should copy the issue link", async ({ page }) => {
     const { workItem } = await openIssue(page);
 
+    // WebKit/Firefox often reject the Clipboard API in Playwright.
+    await page.evaluate(() => {
+      Object.defineProperty(navigator, "clipboard", {
+        configurable: true,
+        value: {
+          writeText: () => undefined,
+        },
+      });
+    });
+
     await workItem.copyLink();
     await waitForSuccessToast(page, "Copied");
   });

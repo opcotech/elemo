@@ -27,7 +27,10 @@ export class IssueLinksSection extends DialogMixin(
   }
 
   async clickAdd(): Promise<void> {
-    await clickUntilVisible(this.getAddButton(), this.getDialog().getContent());
+    await clickUntilVisible(
+      this.getAddButton(),
+      this.page.getByRole("dialog").filter({ hasText: "Add link" })
+    );
     await this.waitForDialog("Add link");
   }
 

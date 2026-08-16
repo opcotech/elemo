@@ -52,7 +52,7 @@ export class WorkItemPage extends BaseComponent {
   async openMoreActions(): Promise<void> {
     await clickUntilVisible(
       this.getMoreActionsButton(),
-      this.page.getByRole("menu")
+      this.page.locator('[data-slot="dropdown-menu-content"]')
     );
   }
 
@@ -70,7 +70,7 @@ export class WorkItemPage extends BaseComponent {
   }
 
   async editTitle(title: string): Promise<void> {
-    await this.getTitleButton().click();
+    await clickUntilVisible(this.getTitleButton(), this.getTitleInput());
     await fillLocator(this.getTitleInput(), title);
     await this.getTitleInput().press("Enter");
   }

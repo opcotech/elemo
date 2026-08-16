@@ -52,12 +52,13 @@ test.describe("@operational Namespace and project Work surfaces", () => {
       page.getByRole("heading", { name: workspace.projectName })
     ).toBeVisible();
 
-    await page.getByRole("link", { name: "Work", exact: true }).click();
-    await expect(page).toHaveURL(
-      new RegExp(
-        `/namespaces/${workspace.namespaceId}/projects/${workspace.projectId}/work`
-      )
+    const projectWorkPath = new RegExp(
+      `/namespaces/${workspace.namespaceId}/projects/${workspace.projectId}/work`
     );
+    const workLink = page.getByRole("link", { name: "Work", exact: true });
+    await expect(workLink).toHaveAttribute("href", projectWorkPath);
+    await workLink.click();
+    await page.waitForURL(projectWorkPath);
     await workPage.waitForLoad(`${workspace.projectName} / Work`);
     await expect(workPage.surface.getEmptyState()).toBeVisible();
 
