@@ -59,6 +59,10 @@ tags:
     description: Projects in namespaces.
   - name: Issue
     description: Issues in projects.
+  - name: Document
+    description: Documents in organization and namespace libraries.
+  - name: Folder
+    description: Nested folders in document libraries.
   - name: Label
     description: Labels that can be attached to resources.
   - name: User
@@ -187,7 +191,7 @@ components:
         document_count:
           type: integer
           format: int64
-          description: Number of documents that belong to the user when projected.
+          description: Number of documents the user created when projected.
           example: 3
           nullable: true
         created_at:
@@ -322,6 +326,12 @@ components:
           format: int64
           description: Number of members in the organization when projected.
           example: 12
+          nullable: true
+        document_count:
+          type: integer
+          format: int64
+          description: Number of documents that belong to the organization when projected.
+          example: 4
           nullable: true
         team_count:
           type: integer
@@ -733,7 +743,7 @@ components:
       x-examples:
         example:
           id: 9bsv0s46s6s002p9ltq0
-          name: Project Plan
+          title: Project Plan
           excerpt: Overview of the project plan
           created_by: 9bsv0s46s6s002p9ltq0
           created_at: "2023-01-01T00:00:00Z"
@@ -742,9 +752,9 @@ components:
           type: string
           description: Unique identifier of the document.
           example: 9bsv0s46s6s002p9ltq0
-        name:
+        title:
           type: string
-          description: Name of the document.
+          description: Title of the document.
           minLength: 3
           maxLength: 120
           example: Project Plan
@@ -763,10 +773,229 @@ components:
           format: date-time
           description: Date when the document was created.
           nullable: true
+        updated_at:
+          type: string
+          format: date-time
+          description: Date when the document was last updated.
+          nullable: true
+      required:
+        - id
+        - title
+        - created_by
+    Document:
+      title: Document
+      type: object
+      description: A document in an organization or namespace library.
+      x-examples:
+        example:
+          id: 9bsv0s46s6s002p9ltq0
+          title: Project Plan
+          excerpt: Overview of the project plan
+          content: "# Project Plan\n\nGoals and timeline."
+          created_by: 9bsv0s46s6s002p9ltq0
+          library:
+            id: 9bsv0s46s6s002p9ltq0
+            type: Namespace
+            name: Product
+          folder: null
+          relations: []
+          labels: []
+          comment_count: 0
+          attachment_count: 0
+          created_at: "2023-01-01T00:00:00Z"
+          updated_at: null
+      properties:
+        id:
+          type: string
+          description: Unique identifier of the document.
+          example: 9bsv0s46s6s002p9ltq0
+        title:
+          type: string
+          description: Title of the document.
+          minLength: 3
+          maxLength: 120
+          example: Project Plan
+        excerpt:
+          type: string
+          description: Excerpt of the document.
+          maxLength: 500
+          example: Overview of the project plan
+          minLength: 10
+          nullable: true
+        content:
+          type: string
+          description: Body of the document.
+          example: "# Project Plan\n\nGoals and timeline."
+        created_by:
+          $ref: "#/components/schemas/PartialUser"
+          description: User who created the document.
+        library:
+          $ref: "#/components/schemas/DocumentLibrary"
+        folder:
+          allOf:
+            - $ref: "#/components/schemas/DocumentFolder"
+          nullable: true
+        relations:
+          type: array
+          description: Projects and issues this document is related to.
+          items:
+            $ref: "#/components/schemas/DocumentRelation"
+        labels:
+          type: array
+          description: Labels attached to the document.
+          items:
+            $ref: "#/components/schemas/PartialLabel"
+        comment_count:
+          type: integer
+          format: int64
+          description: Number of comments on the document when projected.
+          example: 3
+          nullable: true
+        attachment_count:
+          type: integer
+          format: int64
+          description: Number of attachments on the document when projected.
+          example: 1
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          description: Date when the document was created.
+        updated_at:
+          type: string
+          format: date-time
+          description: Date when the document was updated.
+          nullable: true
+      required:
+        - id
+        - title
+        - content
+        - created_by
+        - library
+        - folder
+        - relations
+        - labels
+        - created_at
+        - updated_at
+    DocumentLibrary:
+      title: DocumentLibrary
+      type: object
+      description: The organization or namespace a document or folder is scoped to.
+      properties:
+        id:
+          type: string
+          description: Unique identifier of the library.
+          example: 9bsv0s46s6s002p9ltq0
+        type:
+          type: string
+          description: Resource type of the library.
+          enum:
+            - Organization
+            - Namespace
+        name:
+          type: string
+          description: Name of the organization or namespace.
+          example: Product
+      required:
+        - id
+        - type
+        - name
+    DocumentFolder:
+      title: DocumentFolder
+      type: object
+      description: The folder a document or nested folder is located in.
+      properties:
+        id:
+          type: string
+          description: Unique identifier of the folder.
+          example: 9bsv0s46s6s002p9ltq0
+        name:
+          type: string
+          description: Name of the folder.
+          example: Guides
+        parent_id:
+          type: string
+          description: Parent folder ID when the folder is nested.
+          example: 9bsv0s46s6s002p9ltq0
       required:
         - id
         - name
+    DocumentRelation:
+      title: DocumentRelation
+      type: object
+      description: A project or issue a document is related to. Issues use the issue key as name.
+      properties:
+        id:
+          type: string
+          description: Unique identifier of the related resource.
+          example: 9bsv0s46s6s002p9ltq0
+        type:
+          type: string
+          description: Resource type of the related resource.
+          enum:
+            - Project
+            - Issue
+        name:
+          type: string
+          description: Project name, or issue key.
+          example: PLAT-1
+      required:
+        - id
+        - type
+        - name
+    Folder:
+      title: Folder
+      type: object
+      description: A nested folder in an organization or namespace document library.
+      properties:
+        id:
+          type: string
+          description: Unique identifier of the folder.
+          example: 9bsv0s46s6s002p9ltq0
+        name:
+          type: string
+          description: Name of the folder.
+          minLength: 1
+          maxLength: 120
+          example: Guides
+        library:
+          $ref: "#/components/schemas/DocumentLibrary"
+        parent:
+          allOf:
+            - $ref: "#/components/schemas/DocumentFolder"
+          nullable: true
+        created_by:
+          $ref: "#/components/schemas/PartialUser"
+        created_at:
+          type: string
+          format: date-time
+          description: Date when the folder was created.
+        updated_at:
+          type: string
+          format: date-time
+          description: Date when the folder was updated.
+          nullable: true
+      required:
+        - id
+        - name
+        - library
+        - parent
         - created_by
+        - created_at
+        - updated_at
+    FolderPage:
+      title: FolderPage
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Folder"
+        page_info:
+          $ref: "#/components/schemas/PageInfo"
+      required:
+        - items
+        - page_info
     PartialIssue:
       title: PartialIssue
       type: object
@@ -988,6 +1217,7 @@ components:
           reviewers: []
           labels: []
           comment_count: 0
+          document_count: 0
           attachment_count: 0
           watcher_count: 0
           relation_count: 0
@@ -1069,6 +1299,12 @@ components:
           format: int64
           description: Number of comments on the issue when projected.
           example: 3
+          nullable: true
+        document_count:
+          type: integer
+          format: int64
+          description: Number of documents that belong to the issue when projected.
+          example: 2
           nullable: true
         attachment_count:
           type: integer
@@ -1939,6 +2175,7 @@ components:
         - Role
         - Todo
         - User
+        - Folder
   examples: {}
   securitySchemes:
     oauth2:
@@ -2128,6 +2365,38 @@ components:
         type: string
         example: 9bsv0s46s6s002p9ltq0
       description: ID of the resource.
+    documentId:
+      name: documentId
+      in: path
+      required: true
+      schema:
+        type: string
+        example: 9bsv0s46s6s002p9ltq0
+      description: ID of the document.
+    folder_id:
+      name: folder_id
+      in: query
+      required: false
+      schema:
+        type: string
+        example: 9bsv0s46s6s002p9ltq0
+      description: Browse documents located in this folder. Omit to list unfiled documents at the library root.
+    all:
+      name: all
+      in: query
+      required: false
+      schema:
+        type: boolean
+        default: false
+      description: When true, return every document in the library regardless of folder.
+    parent_id:
+      name: parent_id
+      in: query
+      required: false
+      schema:
+        type: string
+        example: 9bsv0s46s6s002p9ltq0
+      description: List folders located in this parent folder. Omit to list folders at the library root.
     relation_id:
       name: relation_id
       in: path
@@ -2773,6 +3042,117 @@ components:
             required:
               - kind
               - title
+    DocumentCreate:
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              title:
+                type: string
+                description: Title of the document.
+                minLength: 3
+                maxLength: 120
+                example: Project Plan
+              excerpt:
+                type: string
+                description: Excerpt of the document.
+                maxLength: 500
+                example: Overview of the project plan
+                minLength: 10
+                nullable: true
+                x-go-type: "Optional[string]"
+                x-go-type-skip-optional-pointer: true
+              content:
+                type: string
+                description: Body of the document.
+                example: "# Project Plan\n\nGoals and timeline."
+                x-go-type: "Optional[string]"
+                x-go-type-skip-optional-pointer: true
+            required:
+              - title
+    DocumentPatch:
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              title:
+                type: string
+                description: Title of the document.
+                minLength: 3
+                maxLength: 120
+                example: Project Plan
+                x-go-type: "Optional[string]"
+                x-go-type-skip-optional-pointer: true
+              excerpt:
+                type: string
+                description: Excerpt of the document.
+                maxLength: 500
+                example: Overview of the project plan
+                minLength: 10
+                nullable: true
+                x-go-type: "Optional[string]"
+                x-go-type-skip-optional-pointer: true
+              content:
+                type: string
+                description: Body of the document.
+                example: "# Project Plan\n\nGoals and timeline."
+                x-go-type: "Optional[string]"
+                x-go-type-skip-optional-pointer: true
+              library_id:
+                type: string
+                description: Move the document to this organization or namespace library. Clears the folder.
+                example: 9bsv0s46s6s002p9ltq0
+                x-go-type: "Optional[string]"
+                x-go-type-skip-optional-pointer: true
+              folder_id:
+                type: string
+                description: Move the document into this folder. JSON null removes it from the folder (library root).
+                example: 9bsv0s46s6s002p9ltq0
+                nullable: true
+                x-go-type: "Optional[string]"
+                x-go-type-skip-optional-pointer: true
+    FolderCreate:
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              name:
+                type: string
+                description: Name of the folder.
+                minLength: 1
+                maxLength: 120
+                example: Guides
+              parent_id:
+                type: string
+                description: Parent folder ID. Omit to create at the library root.
+                example: 9bsv0s46s6s002p9ltq0
+                nullable: true
+            required:
+              - name
+    FolderPatch:
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              name:
+                type: string
+                description: Name of the folder.
+                minLength: 1
+                maxLength: 120
+                example: Guides
+                x-go-type: "Optional[string]"
+                x-go-type-skip-optional-pointer: true
+              parent_id:
+                type: string
+                description: Parent folder ID. JSON null moves the folder to the library root.
+                example: 9bsv0s46s6s002p9ltq0
+                nullable: true
+                x-go-type: "Optional[string]"
+                x-go-type-skip-optional-pointer: true
     IssuePatch:
       content:
         application/json:
@@ -4241,6 +4621,137 @@ paths:
         - Namespace
       requestBody:
         $ref: "#/components/requestBodies/NamespaceCreate"
+  "/v1/organizations/{id}/documents":
+    parameters:
+      - $ref: "#/components/parameters/id"
+    get:
+      summary: Get organization documents
+      tags:
+        - Organization
+        - Document
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PartialDocumentPage"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+      operationId: v1OrganizationsDocumentsGet
+      security:
+        - oauth2:
+            - organization.read
+            - document.read
+      description: Return a cursor-paginated page of documents in the organization library.
+      parameters:
+        - $ref: "#/components/parameters/page_size"
+        - $ref: "#/components/parameters/page_token"
+        - $ref: "#/components/parameters/folder_id"
+        - $ref: "#/components/parameters/all"
+    post:
+      summary: Create document in organization
+      operationId: v1OrganizationsDocumentsCreate
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Document"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+      description: Create a new document in the organization library.
+      security:
+        - oauth2:
+            - organization
+            - document
+      tags:
+        - Organization
+        - Document
+      requestBody:
+        $ref: "#/components/requestBodies/DocumentCreate"
+  "/v1/organizations/{id}/folders":
+    parameters:
+      - $ref: "#/components/parameters/id"
+    get:
+      summary: Get organization folders
+      tags:
+        - Organization
+        - Folder
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FolderPage"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+      operationId: v1OrganizationsFoldersGet
+      security:
+        - oauth2:
+            - organization.read
+            - document.read
+      description: Return a cursor-paginated page of folders at a location in the organization library.
+      parameters:
+        - $ref: "#/components/parameters/page_size"
+        - $ref: "#/components/parameters/page_token"
+        - $ref: "#/components/parameters/parent_id"
+    post:
+      summary: Create folder in organization
+      operationId: v1OrganizationsFoldersCreate
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Folder"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+      description: Create a new folder in the organization library.
+      security:
+        - oauth2:
+            - organization
+            - document
+      tags:
+        - Organization
+        - Folder
+      requestBody:
+        $ref: "#/components/requestBodies/FolderCreate"
   "/v1/namespaces/{id}":
     parameters:
       - $ref: "#/components/parameters/id"
@@ -4410,10 +4921,107 @@ paths:
         - oauth2:
             - namespace.read
             - document.read
-      description: Return a cursor-paginated page of documents that belong to the namespace.
+      description: Return a cursor-paginated page of documents in the namespace library.
       parameters:
         - $ref: "#/components/parameters/page_size"
         - $ref: "#/components/parameters/page_token"
+        - $ref: "#/components/parameters/folder_id"
+        - $ref: "#/components/parameters/all"
+    post:
+      summary: Create document in namespace
+      operationId: v1NamespacesDocumentsCreate
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Document"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+      description: Create a new document in the namespace library.
+      security:
+        - oauth2:
+            - namespace
+            - document
+      tags:
+        - Namespace
+        - Document
+      requestBody:
+        $ref: "#/components/requestBodies/DocumentCreate"
+  "/v1/namespaces/{id}/folders":
+    parameters:
+      - $ref: "#/components/parameters/id"
+    get:
+      summary: Get namespace folders
+      tags:
+        - Namespace
+        - Folder
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FolderPage"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+      operationId: v1NamespacesFoldersGet
+      security:
+        - oauth2:
+            - namespace.read
+            - document.read
+      description: Return a cursor-paginated page of folders at a location in the namespace library.
+      parameters:
+        - $ref: "#/components/parameters/page_size"
+        - $ref: "#/components/parameters/page_token"
+        - $ref: "#/components/parameters/parent_id"
+    post:
+      summary: Create folder in namespace
+      operationId: v1NamespacesFoldersCreate
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Folder"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+      description: Create a new folder in the namespace library.
+      security:
+        - oauth2:
+            - namespace
+            - document
+      tags:
+        - Namespace
+        - Folder
+      requestBody:
+        $ref: "#/components/requestBodies/FolderCreate"
   "/v1/namespaces/{id}/issues":
     parameters:
       - $ref: "#/components/parameters/id"
@@ -4653,10 +5261,250 @@ paths:
         - oauth2:
             - project.read
             - document.read
-      description: Return a cursor-paginated page of documents that belong to the project.
+      description: Return a cursor-paginated page of documents related to the project.
       parameters:
         - $ref: "#/components/parameters/page_size"
         - $ref: "#/components/parameters/page_token"
+    post:
+      summary: Create document in project
+      operationId: v1ProjectsDocumentsCreate
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Document"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+      description: Create a new document in the namespace library, related to the project.
+      security:
+        - oauth2:
+            - project
+            - document
+      tags:
+        - Project
+        - Document
+      requestBody:
+        $ref: "#/components/requestBodies/DocumentCreate"
+  "/v1/projects/{id}/documents/{documentId}":
+    parameters:
+      - $ref: "#/components/parameters/id"
+      - $ref: "#/components/parameters/documentId"
+    post:
+      summary: Relate document to project
+      operationId: v1ProjectsDocumentsRelate
+      responses:
+        "204":
+          description: No Content
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+      description: Relate an existing document to the project.
+      security:
+        - oauth2:
+            - project
+            - document
+      tags:
+        - Project
+        - Document
+    delete:
+      summary: Unrelate document from project
+      operationId: v1ProjectsDocumentsUnrelate
+      responses:
+        "204":
+          description: No Content
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+      description: Remove the relation between the document and the project.
+      security:
+        - oauth2:
+            - project
+            - document
+      tags:
+        - Project
+        - Document
+  "/v1/documents/{id}":
+    parameters:
+      - $ref: "#/components/parameters/id"
+    get:
+      summary: Get document
+      tags:
+        - Document
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Document"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+      operationId: v1DocumentGet
+      security:
+        - oauth2:
+            - document.read
+      description: Return the requested document by its ID, including the stored body.
+    patch:
+      summary: Update document
+      operationId: v1DocumentUpdate
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Document"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+      description: Update the document by its ID. Optional library_id moves the document to another library and clears its folder. Optional folder_id moves it within the library; JSON null removes it from the folder.
+      security:
+        - oauth2:
+            - document
+      tags:
+        - Document
+      requestBody:
+        $ref: "#/components/requestBodies/DocumentPatch"
+    delete:
+      summary: Delete document
+      operationId: v1DocumentDelete
+      responses:
+        "204":
+          description: No Content
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+      description: Delete the document by its ID.
+      security:
+        - oauth2:
+            - document
+      tags:
+        - Document
+  "/v1/folders/{id}":
+    parameters:
+      - $ref: "#/components/parameters/id"
+    get:
+      summary: Get folder
+      tags:
+        - Folder
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Folder"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+      operationId: v1FolderGet
+      security:
+        - oauth2:
+            - document.read
+      description: Return the requested folder by its ID.
+    patch:
+      summary: Update folder
+      operationId: v1FolderUpdate
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Folder"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+      description: Update the folder by its ID. JSON null parent_id moves it to the library root.
+      security:
+        - oauth2:
+            - document
+      tags:
+        - Folder
+      requestBody:
+        $ref: "#/components/requestBodies/FolderPatch"
+    delete:
+      summary: Delete folder
+      operationId: v1FolderDelete
+      responses:
+        "204":
+          description: No Content
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+      description: Delete the folder by its ID. Child folders and documents are reparented one level up.
+      security:
+        - oauth2:
+            - document
+      tags:
+        - Folder
   "/v1/issues/{id}":
     parameters:
       - $ref: "#/components/parameters/id"
@@ -4736,6 +5584,122 @@ paths:
             - issue
       tags:
         - Issue
+  "/v1/issues/{id}/documents":
+    parameters:
+      - $ref: "#/components/parameters/id"
+    get:
+      summary: Get issue documents
+      tags:
+        - Issue
+        - Document
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PartialDocumentPage"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+      operationId: v1IssuesDocumentsGet
+      security:
+        - oauth2:
+            - issue.read
+            - document.read
+      description: Return a cursor-paginated page of documents related to the issue.
+      parameters:
+        - $ref: "#/components/parameters/page_size"
+        - $ref: "#/components/parameters/page_token"
+    post:
+      summary: Create document in issue
+      operationId: v1IssuesDocumentsCreate
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Document"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+      description: Create a new document in the namespace library, related to the issue.
+      security:
+        - oauth2:
+            - issue
+            - document
+      tags:
+        - Issue
+        - Document
+      requestBody:
+        $ref: "#/components/requestBodies/DocumentCreate"
+  "/v1/issues/{id}/documents/{documentId}":
+    parameters:
+      - $ref: "#/components/parameters/id"
+      - $ref: "#/components/parameters/documentId"
+    post:
+      summary: Relate document to issue
+      operationId: v1IssuesDocumentsRelate
+      responses:
+        "204":
+          description: No Content
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+      description: Relate an existing document to the issue.
+      security:
+        - oauth2:
+            - issue
+            - document
+      tags:
+        - Issue
+        - Document
+    delete:
+      summary: Unrelate document from issue
+      operationId: v1IssuesDocumentsUnrelate
+      responses:
+        "204":
+          description: No Content
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+      description: Remove the relation between the document and the issue.
+      security:
+        - oauth2:
+            - issue
+            - document
+      tags:
+        - Issue
+        - Document
   "/v1/issues/{id}/relations":
     parameters:
       - $ref: "#/components/parameters/id"

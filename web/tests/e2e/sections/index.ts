@@ -27,6 +27,9 @@ export { IssueRelationsSection } from "./issue-relations-section";
 export { TodoSheetSection } from "./todo-sheet-section";
 export { TodoFormSection } from "./todo-form-section";
 export { QuickCreateSection } from "./quick-create-section";
+export { DocumentEditorSection } from "./document-editor-section";
+export { DocumentListSection } from "./document-list-section";
+export { IssueDocumentsSection } from "./issue-documents-section";
 export type {
   WorkLayoutName,
   WorkGroupName,

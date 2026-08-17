@@ -1,5 +1,6 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
+  FileTextIcon,
   HomeIcon,
   InboxIcon,
   ListChecksIcon,
@@ -80,6 +81,7 @@ export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
     { label: "Home", href: "/", icon: HomeIcon },
     { label: "My Work", href: "/my-work", icon: ListChecksIcon },
     { label: "Inbox", href: "/inbox", icon: InboxIcon },
+    { label: "Documents", href: "/documents", icon: FileTextIcon },
   ] as const;
 
   useLayoutEffect(() => {
@@ -157,7 +159,12 @@ export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
                       <SidebarMenuButton
                         render={<Link to={item.href} />}
                         tooltip={item.label}
-                        isActive={currentPath === item.href}
+                        isActive={
+                          item.href === "/"
+                            ? currentPath === "/"
+                            : currentPath === item.href ||
+                              currentPath.startsWith(`${item.href}/`)
+                        }
                       >
                         <item.icon />
                         <span>{item.label}</span>

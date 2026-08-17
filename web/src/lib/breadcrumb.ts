@@ -16,19 +16,20 @@ export function resolveRouteBreadcrumb(
 export function entityBreadcrumb(
   data: unknown,
   key: string,
-  fallback: string
+  fallback: string,
+  property = "name"
 ): string {
   if (!data || typeof data !== "object" || !(key in data)) {
     return fallback;
   }
 
   const entity = (data as Record<string, unknown>)[key];
-  if (!entity || typeof entity !== "object" || !("name" in entity)) {
+  if (!entity || typeof entity !== "object" || !(property in entity)) {
     return fallback;
   }
 
-  const name = (entity as { name: unknown }).name;
-  return typeof name === "string" && name.length > 0 ? name : fallback;
+  const value = (entity as Record<string, unknown>)[property];
+  return typeof value === "string" && value.length > 0 ? value : fallback;
 }
 
 /** Breadcrumb label when loader data is the named entity itself (e.g. organization). */

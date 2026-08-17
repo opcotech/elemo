@@ -49,10 +49,12 @@ export function HomePage() {
   const { user } = useAuth();
   const userId = user?.id;
   const demoPerson = resolveDemoPerson(user);
-  const { data: accessibleWorkspace } = useAccessibleNamespaces();
+  const { data: accessibleWorkspace, isLoading: namespacesLoading } =
+    useAccessibleNamespaces();
   const namespaces: AccessibleNamespace[] =
     accessibleWorkspace?.namespaces ?? [];
-  const { data: todosPage } = useQuery(v1TodosGetOptions());
+  const { data: todosPage, isLoading: todosLoading } =
+    useQuery(v1TodosGetOptions());
   const userIssuesOptions = v1UsersIssuesGetOptions({
     path: { id: userId ?? "" },
     query: cursorPageQuery(),
@@ -225,7 +227,9 @@ export function HomePage() {
               ) : undefined
             }
           >
-            {hasOpenTodos ? (
+            {todosLoading ? (
+              <ListSkeleton rows={4} />
+            ) : hasOpenTodos ? (
               <div className="flex flex-col gap-5">
                 {openTodoGroups.map((group) => (
                   <section key={group.id} className="min-w-0">
@@ -279,7 +283,9 @@ export function HomePage() {
 
         <div className="space-y-8">
           <Section title="Recent context">
-            {namespaces.length > 0 ? (
+            {namespacesLoading ? (
+              <ListSkeleton rows={4} />
+            ) : namespaces.length > 0 ? (
               <AppList>
                 {namespaces.slice(0, 5).map((namespace) => (
                   <EntityLink

@@ -13,7 +13,7 @@ import (
 // permissions on the front-end.
 type Document struct {
 	ID        ID         `json:"id" validate:"required"`
-	Name      string     `json:"name" validate:"required,min=3,max=120"`
+	Title     string     `json:"title" validate:"required,min=3,max=120"`
 	Excerpt   string     `json:"excerpt" validate:"omitempty,min=10,max=500"`
 	FileID    string     `json:"file_id" validate:"required"`
 	CreatedBy ID         `json:"created_by" validate:"required"`
@@ -41,10 +41,10 @@ func (d *Document) Validate() error {
 }
 
 // NewDocument creates a new Document.
-func NewDocument(name, fileID string, createdBy ID) (*Document, error) {
+func NewDocument(title, fileID string, createdBy ID) (*Document, error) {
 	document := &Document{
 		ID:        MustNewNilID(ResourceTypeDocument),
-		Name:      name,
+		Title:     title,
 		FileID:    fileID,
 		CreatedBy: createdBy,
 		Labels:    make([]ID, 0),

@@ -53,19 +53,24 @@ export function SectionAccordion({
   title,
   value,
   defaultOpen = false,
+  action,
   children,
 }: {
   title: string;
   value: string;
   defaultOpen?: boolean;
+  action?: ReactNode;
   children: ReactNode;
 }) {
   return (
     <Accordion defaultValue={defaultOpen ? [value] : []}>
       <AccordionItem value={value} className="border-0">
-        <AccordionTrigger className="text-foreground mb-0 min-h-8 py-0 text-sm font-semibold tracking-wide uppercase hover:no-underline">
-          {title}
-        </AccordionTrigger>
+        <div className="flex min-h-8 items-center gap-3">
+          <AccordionTrigger className="text-foreground mb-0 min-h-8 flex-1 py-0 text-sm font-semibold tracking-wide uppercase hover:no-underline">
+            {title}
+          </AccordionTrigger>
+          {action}
+        </div>
         <AccordionContent className="pt-3 pb-0">{children}</AccordionContent>
       </AccordionItem>
     </Accordion>

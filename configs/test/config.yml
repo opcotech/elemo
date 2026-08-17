@@ -98,6 +98,13 @@ relational_database:
   max_connection_idle_time: 10
   min_connections: 5
 
+s3_storage:
+  bucket: "elemo"
+  region: "us-east-1"
+  access_key_id: "access-key-id"
+  secret_access_key: "secret-access-key"
+  base_endpoint: "http://localstack:4566"
+
 metrics_server:
   address: 127.0.0.1:35479
   read_timeout: 10

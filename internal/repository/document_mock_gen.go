@@ -85,21 +85,6 @@ func (mr *MockDocumentRepositoryMockRecorder) Get(ctx, id, proj any) *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockDocumentRepository)(nil).Get), ctx, id, proj)
 }
 
-// ListBelongsTo mocks base method.
-func (m *MockDocumentRepository) ListBelongsTo(ctx context.Context, belongsTo model.ID, page CursorPage, proj DocumentProjection) (Page[*Document], error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListBelongsTo", ctx, belongsTo, page, proj)
-	ret0, _ := ret[0].(Page[*Document])
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// ListBelongsTo indicates an expected call of ListBelongsTo.
-func (mr *MockDocumentRepositoryMockRecorder) ListBelongsTo(ctx, belongsTo, page, proj any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListBelongsTo", reflect.TypeOf((*MockDocumentRepository)(nil).ListBelongsTo), ctx, belongsTo, page, proj)
-}
-
 // ListByCreator mocks base method.
 func (m *MockDocumentRepository) ListByCreator(ctx context.Context, createdBy model.ID, page CursorPage, proj DocumentProjection) (Page[*Document], error) {
 	m.ctrl.T.Helper()
@@ -113,6 +98,109 @@ func (m *MockDocumentRepository) ListByCreator(ctx context.Context, createdBy mo
 func (mr *MockDocumentRepositoryMockRecorder) ListByCreator(ctx, createdBy, page, proj any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListByCreator", reflect.TypeOf((*MockDocumentRepository)(nil).ListByCreator), ctx, createdBy, page, proj)
+}
+
+// ListLibrary mocks base method.
+func (m *MockDocumentRepository) ListLibrary(ctx context.Context, libraryID model.ID, filter LibraryListFilter, page CursorPage, proj DocumentProjection) (Page[*Document], error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListLibrary", ctx, libraryID, filter, page, proj)
+	ret0, _ := ret[0].(Page[*Document])
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListLibrary indicates an expected call of ListLibrary.
+func (mr *MockDocumentRepositoryMockRecorder) ListLibrary(ctx, libraryID, filter, page, proj any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListLibrary", reflect.TypeOf((*MockDocumentRepository)(nil).ListLibrary), ctx, libraryID, filter, page, proj)
+}
+
+// ListRelated mocks base method.
+func (m *MockDocumentRepository) ListRelated(ctx context.Context, relatedTo model.ID, page CursorPage, proj DocumentProjection) (Page[*Document], error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListRelated", ctx, relatedTo, page, proj)
+	ret0, _ := ret[0].(Page[*Document])
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListRelated indicates an expected call of ListRelated.
+func (mr *MockDocumentRepositoryMockRecorder) ListRelated(ctx, relatedTo, page, proj any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListRelated", reflect.TypeOf((*MockDocumentRepository)(nil).ListRelated), ctx, relatedTo, page, proj)
+}
+
+// MoveLibrary mocks base method.
+func (m *MockDocumentRepository) MoveLibrary(ctx context.Context, id, libraryID model.ID) (*Document, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "MoveLibrary", ctx, id, libraryID)
+	ret0, _ := ret[0].(*Document)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// MoveLibrary indicates an expected call of MoveLibrary.
+func (mr *MockDocumentRepositoryMockRecorder) MoveLibrary(ctx, id, libraryID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MoveLibrary", reflect.TypeOf((*MockDocumentRepository)(nil).MoveLibrary), ctx, id, libraryID)
+}
+
+// MoveToFolder mocks base method.
+func (m *MockDocumentRepository) MoveToFolder(ctx context.Context, id model.ID, folderID *model.ID) (*Document, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "MoveToFolder", ctx, id, folderID)
+	ret0, _ := ret[0].(*Document)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// MoveToFolder indicates an expected call of MoveToFolder.
+func (mr *MockDocumentRepositoryMockRecorder) MoveToFolder(ctx, id, folderID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MoveToFolder", reflect.TypeOf((*MockDocumentRepository)(nil).MoveToFolder), ctx, id, folderID)
+}
+
+// Relate mocks base method.
+func (m *MockDocumentRepository) Relate(ctx context.Context, id, targetID model.ID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Relate", ctx, id, targetID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Relate indicates an expected call of Relate.
+func (mr *MockDocumentRepositoryMockRecorder) Relate(ctx, id, targetID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Relate", reflect.TypeOf((*MockDocumentRepository)(nil).Relate), ctx, id, targetID)
+}
+
+// ResolveLibrary mocks base method.
+func (m *MockDocumentRepository) ResolveLibrary(ctx context.Context, contextID model.ID) (model.ID, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ResolveLibrary", ctx, contextID)
+	ret0, _ := ret[0].(model.ID)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ResolveLibrary indicates an expected call of ResolveLibrary.
+func (mr *MockDocumentRepositoryMockRecorder) ResolveLibrary(ctx, contextID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResolveLibrary", reflect.TypeOf((*MockDocumentRepository)(nil).ResolveLibrary), ctx, contextID)
+}
+
+// Unrelate mocks base method.
+func (m *MockDocumentRepository) Unrelate(ctx context.Context, id, targetID model.ID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Unrelate", ctx, id, targetID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Unrelate indicates an expected call of Unrelate.
+func (mr *MockDocumentRepositoryMockRecorder) Unrelate(ctx, id, targetID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Unrelate", reflect.TypeOf((*MockDocumentRepository)(nil).Unrelate), ctx, id, targetID)
 }
 
 // Update mocks base method.

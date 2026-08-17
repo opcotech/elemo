@@ -9,7 +9,7 @@ const contentWidthVariants = cva(
   {
     variants: {
       width: {
-        document: "max-w-3xl",
+        document: "max-w-5xl",
         entity: "max-w-5xl",
         overview: "max-w-7xl",
         settings: "max-w-6xl",

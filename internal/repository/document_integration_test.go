@@ -60,7 +60,7 @@ func (s *DocumentRepositoryIntegrationTestSuite) TestGet() {
 	doc, err := s.DocumentRepo.Get(context.Background(), created.ID, repository.DocumentDetailProjection())
 	s.Require().NoError(err)
 	s.Assert().Equal(created.ID, doc.ID)
-	s.Assert().Equal(s.createOpts.Name, doc.Name)
+	s.Assert().Equal(s.createOpts.Title, doc.Title)
 	s.Assert().Equal(s.createOpts.Excerpt, doc.Excerpt)
 	s.Assert().Equal(s.createOpts.FileID, doc.FileID)
 	s.Assert().Equal(s.createOpts.CreatedBy, doc.CreatedBy.ID)
@@ -87,7 +87,7 @@ func (s *DocumentRepositoryIntegrationTestSuite) TestGetByCreator() {
 	s.Assert().True(docs.PageInfo.HasMore)
 }
 
-func (s *DocumentRepositoryIntegrationTestSuite) TestGetAllBelongsTo() {
+func (s *DocumentRepositoryIntegrationTestSuite) TestListLibrary() {
 	_, err := s.DocumentRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 	_, err = s.DocumentRepo.Create(context.Background(), testModel.NewCreateDocumentOpts(s.testOrg.ID, s.testUser.ID))
@@ -95,20 +95,46 @@ func (s *DocumentRepositoryIntegrationTestSuite) TestGetAllBelongsTo() {
 	_, err = s.DocumentRepo.Create(context.Background(), testModel.NewCreateDocumentOpts(s.testOrg.ID, s.testUser.ID))
 	s.Require().NoError(err)
 
-	docs, err := s.DocumentRepo.ListBelongsTo(context.Background(), s.testOrg.ID, repository.CursorPage{Size: 10}, repository.DocumentListProjection())
+	docs, err := s.DocumentRepo.ListLibrary(context.Background(), s.testOrg.ID, repository.LibraryListFilter{All: true}, repository.CursorPage{Size: 10}, repository.DocumentListProjection())
 	s.Require().NoError(err)
 	s.Assert().Len(docs.Items, 3)
+}
+
+func (s *DocumentRepositoryIntegrationTestSuite) TestMoveToFolderAndRelate() {
+	folder, err := s.FolderRepo.Create(context.Background(), testModel.NewCreateFolderOpts(s.testOrg.ID, s.testUser.ID))
+	s.Require().NoError(err)
+
+	created, err := s.DocumentRepo.Create(context.Background(), s.createOpts)
+	s.Require().NoError(err)
+	s.Assert().Nil(created.Folder)
+
+	moved, err := s.DocumentRepo.MoveToFolder(context.Background(), created.ID, &folder.ID)
+	s.Require().NoError(err)
+	s.Require().NotNil(moved.Folder)
+	s.Assert().Equal(folder.ID, moved.Folder.ID)
+
+	inFolder, err := s.DocumentRepo.ListLibrary(context.Background(), s.testOrg.ID, repository.LibraryListFilter{FolderID: &folder.ID}, repository.CursorPage{Size: 10}, repository.DocumentListProjection())
+	s.Require().NoError(err)
+	s.Assert().Len(inFolder.Items, 1)
+
+	atRoot, err := s.DocumentRepo.ListLibrary(context.Background(), s.testOrg.ID, repository.LibraryListFilter{}, repository.CursorPage{Size: 10}, repository.DocumentListProjection())
+	s.Require().NoError(err)
+	s.Assert().Empty(atRoot.Items)
+
+	cleared, err := s.DocumentRepo.MoveToFolder(context.Background(), created.ID, nil)
+	s.Require().NoError(err)
+	s.Assert().Nil(cleared.Folder)
 }
 
 func (s *DocumentRepositoryIntegrationTestSuite) TestUpdate() {
 	created, err := s.DocumentRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 	doc, err := s.DocumentRepo.Update(context.Background(), created.ID, repository.UpdateDocumentOpts{
-		Name:    optional.Some("new name"),
+		Title:   optional.Some("new title"),
 		Excerpt: optional.Some("new excerpt"),
 	})
 	s.Require().NoError(err)
-	s.Assert().Equal("new name", doc.Name)
+	s.Assert().Equal("new title", doc.Title)
 	s.Assert().Equal("new excerpt", doc.Excerpt)
 	s.Assert().NotNil(doc.UpdatedAt)
 }
@@ -193,12 +219,12 @@ func (s *CachedDocumentRepositoryIntegrationTestSuite) TestGetByCreator() {
 	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
 }
 
-func (s *CachedDocumentRepositoryIntegrationTestSuite) TestGetAllBelongsTo() {
+func (s *CachedDocumentRepositoryIntegrationTestSuite) TestListLibrary() {
 	_, err := s.documentRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
-	original, err := s.DocumentRepo.ListBelongsTo(context.Background(), s.testOrg.ID, repository.CursorPage{Size: 10}, repository.DocumentListProjection())
+	original, err := s.DocumentRepo.ListLibrary(context.Background(), s.testOrg.ID, repository.LibraryListFilter{All: true}, repository.CursorPage{Size: 10}, repository.DocumentListProjection())
 	s.Require().NoError(err)
-	usingCache, err := s.documentRepo.ListBelongsTo(context.Background(), s.testOrg.ID, repository.CursorPage{Size: 10}, repository.DocumentListProjection())
+	usingCache, err := s.documentRepo.ListLibrary(context.Background(), s.testOrg.ID, repository.LibraryListFilter{All: true}, repository.CursorPage{Size: 10}, repository.DocumentListProjection())
 	s.Require().NoError(err)
 	s.Assert().Equal(original, usingCache)
 	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
@@ -208,10 +234,10 @@ func (s *CachedDocumentRepositoryIntegrationTestSuite) TestUpdate() {
 	created, err := s.documentRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 	doc, err := s.documentRepo.Update(context.Background(), created.ID, repository.UpdateDocumentOpts{
-		Name: optional.Some("new name"),
+		Title: optional.Some("new title"),
 	})
 	s.Require().NoError(err)
-	s.Assert().Equal("new name", doc.Name)
+	s.Assert().Equal("new title", doc.Title)
 	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
 }
 

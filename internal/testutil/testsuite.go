@@ -53,6 +53,7 @@ type Neo4jContainerIntegrationTestSuite struct {
 	AttachmentRepo   *repository.Neo4jAttachmentRepository
 	CommentRepo      *repository.Neo4jCommentRepository
 	DocumentRepo     *repository.Neo4jDocumentRepository
+	FolderRepo       *repository.Neo4jFolderRepository
 	IssueRepo        *repository.Neo4jIssueRepository
 	LabelRepo        *repository.Neo4jLabelRepository
 	LicenseRepo      *repository.Neo4jLicenseRepository
@@ -87,6 +88,9 @@ func (s *Neo4jContainerIntegrationTestSuite) SetupNeo4j(ts *ContainerIntegration
 	ts.Require().NoError(err)
 
 	s.DocumentRepo, err = repository.NewNeo4jDocumentRepository(repository.WithNeo4jDatabase(s.Neo4jDB))
+	ts.Require().NoError(err)
+
+	s.FolderRepo, err = repository.NewNeo4jFolderRepository(repository.WithNeo4jDatabase(s.Neo4jDB))
 	ts.Require().NoError(err)
 
 	s.IssueRepo, err = repository.NewNeo4jIssueRepository(repository.WithNeo4jDatabase(s.Neo4jDB))

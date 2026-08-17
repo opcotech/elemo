@@ -34,6 +34,7 @@ func NewRepositoryOrganization() *repository.Organization {
 		NamespaceCount: convert.ToPointer(int64(0)),
 		TeamCount:      convert.ToPointer(int64(0)),
 		MemberCount:    convert.ToPointer(int64(0)),
+		DocumentCount:  convert.ToPointer(int64(0)),
 		CreatedAt:      convert.ToPointer(time.Now().UTC()),
 	}
 }

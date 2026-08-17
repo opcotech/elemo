@@ -40,11 +40,13 @@ export function CommandPalette({
     contextProp ||
     (navigationContext.type === "global"
       ? "global"
-      : navigationContext.type === "namespace"
-        ? "namespace"
-        : navigationContext.type === "project"
-          ? "project"
-          : undefined);
+      : navigationContext.type === "organization"
+        ? "organization"
+        : navigationContext.type === "namespace"
+          ? "namespace"
+          : navigationContext.type === "project"
+            ? "project"
+            : undefined);
 
   const handleSelect = (commandId: string) => {
     availableCommands.find((command) => command.id === commandId)?.action();

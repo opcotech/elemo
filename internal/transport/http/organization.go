@@ -23,6 +23,7 @@ func isOrganizationScopedResource(resourceType model.ResourceType) bool {
 	case model.ResourceTypeOrganization,
 		model.ResourceTypeNamespace,
 		model.ResourceTypeDocument,
+		model.ResourceTypeFolder,
 		model.ResourceTypeProject,
 		model.ResourceTypeRole:
 		return true
@@ -979,6 +980,7 @@ func organizationToDTO(organization *service.Organization) api.Organization {
 		MemberCount:    organization.MemberCount,
 		TeamCount:      organization.TeamCount,
 		NamespaceCount: organization.NamespaceCount,
+		DocumentCount:  organization.DocumentCount,
 		CreatedAt:      *organization.CreatedAt,
 		UpdatedAt:      organization.UpdatedAt,
 	}

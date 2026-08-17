@@ -70,6 +70,21 @@ var startServerCmd = &cobra.Command{
 			}
 		}(messageQueue)
 
+		s3Client, err := repository.NewS3Client(context.Background(), &cfg.S3Storage)
+		if err != nil {
+			logger.Fatal(context.Background(), "failed to initialize S3 client", slog.Any("error", err))
+		}
+
+		s3Storage, err := repository.NewStorage(
+			repository.WithStorageClient(s3Client),
+			repository.WithStorageBucket(cfg.S3Storage.Bucket),
+			repository.WithStorageLogger(logger.Named("static_file_storage")),
+			repository.WithStorageTracer(tracer),
+		)
+		if err != nil {
+			logger.Fatal(context.Background(), "failed to initialize storage", slog.Any("error", err))
+		}
+
 		licenseRepo, err := repository.NewNeo4jLicenseRepository(
 			repository.WithNeo4jDatabase(graphDB),
 			repository.WithNeo4jRepositoryLogger(logger.Named("license_repository")),
@@ -335,6 +350,28 @@ var startServerCmd = &cobra.Command{
 			}
 		}
 
+		var folderRepo repository.FolderRepository
+		{
+			repo, err := repository.NewNeo4jFolderRepository(
+				repository.WithNeo4jDatabase(graphDB),
+				repository.WithNeo4jRepositoryLogger(logger.Named("folder_repository")),
+				repository.WithNeo4jRepositoryTracer(tracer),
+			)
+			if err != nil {
+				logger.Fatal(context.Background(), "failed to initialize folder repository", slog.Any("error", err))
+			}
+
+			folderRepo, err = repository.NewCachedFolderRepository(
+				repo,
+				repository.WithRedisDatabase(cacheDB),
+				repository.WithRedisRepositoryLogger(logger.Named("cached_folder_repository")),
+				repository.WithRedisRepositoryTracer(tracer),
+			)
+			if err != nil {
+				logger.Fatal(context.Background(), "failed to initialize cached folder repository", slog.Any("error", err))
+			}
+		}
+
 		var notificationRepo repository.NotificationRepository
 		{
 			repo, err := repository.NewNotificationRepository(
@@ -355,6 +392,20 @@ var startServerCmd = &cobra.Command{
 			if err != nil {
 				logger.Fatal(context.Background(), "failed to initialize cached notification repository", slog.Any("error", err))
 			}
+		}
+
+		var staticFileRepo repository.StaticFileRepository
+		{
+			repo, err := repository.NewStaticFileRepository(
+				repository.WithS3Storage(s3Storage),
+				repository.WithS3RepositoryLogger(logger.Named("static_file_repository")),
+				repository.WithS3RepositoryTracer(tracer),
+			)
+			if err != nil {
+				logger.Fatal(context.Background(), "failed to initialize static file repository", slog.Any("error", err))
+			}
+
+			staticFileRepo = repo
 		}
 
 		notificationService, err := service.NewNotificationService(
@@ -393,6 +444,7 @@ var startServerCmd = &cobra.Command{
 				model.HealthCheckComponentRelationalDB: relDB,
 				model.HealthCheckComponentLicense:      licenseService,
 				model.HealthCheckComponentMessageQueue: messageQueue,
+				model.HealthCheckComponentS3Storage:    s3Storage,
 			},
 			versionInfo,
 			service.WithLogger(logger.Named("system_service")),
@@ -450,6 +502,16 @@ var startServerCmd = &cobra.Command{
 			logger.Fatal(context.Background(), "failed to initialize email service", slog.Any("error", err))
 		}
 
+		staticFileService, err := service.NewStaticFileService(
+			staticFileRepo,
+			service.WithLicenseService(licenseService),
+			service.WithLogger(logger.Named("static_file_service")),
+			service.WithTracer(tracer),
+		)
+		if err != nil {
+			logger.Fatal(context.Background(), "failed to initialize static file service", slog.Any("error", err))
+		}
+
 		namespaceService, err := service.NewNamespaceService(
 			service.WithNamespaceRepository(namespaceRepo),
 			service.WithPermissionService(permissionService),
@@ -487,12 +549,24 @@ var startServerCmd = &cobra.Command{
 
 		documentService, err := service.NewDocumentService(
 			service.WithDocumentRepository(documentRepo),
+			service.WithLicenseService(licenseService),
 			service.WithPermissionService(permissionService),
+			service.WithStaticFileService(staticFileService),
 			service.WithLogger(logger.Named("document_service")),
 			service.WithTracer(tracer),
 		)
 		if err != nil {
 			logger.Fatal(context.Background(), "failed to initialize document service", slog.Any("error", err))
+		}
+
+		folderService, err := service.NewFolderService(
+			service.WithFolderRepository(folderRepo),
+			service.WithPermissionService(permissionService),
+			service.WithLogger(logger.Named("folder_service")),
+			service.WithTracer(tracer),
+		)
+		if err != nil {
+			logger.Fatal(context.Background(), "failed to initialize folder service", slog.Any("error", err))
 		}
 
 		labelService, err := service.NewLabelService(
@@ -533,6 +607,7 @@ var startServerCmd = &cobra.Command{
 			elemoHttp.WithProjectService(projectService),
 			elemoHttp.WithIssueService(issueService),
 			elemoHttp.WithDocumentService(documentService),
+			elemoHttp.WithFolderService(folderService),
 			elemoHttp.WithLabelService(labelService),
 			elemoHttp.WithRoleService(roleService),
 			elemoHttp.WithUserService(userService),

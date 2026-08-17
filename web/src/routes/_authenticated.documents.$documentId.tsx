@@ -1,31 +1,21 @@
-import { createFileRoute, notFound } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 
-import { DocumentPage } from "@/components/documents";
-import { getDocumentBody } from "@/lib/mock-data";
+import { DocumentPage, DocumentPageSkeleton } from "@/components/documents";
+import { entityBreadcrumb } from "@/lib/breadcrumb";
+import { loadDocumentPage } from "@/lib/documents/load-document";
 
 export const Route = createFileRoute("/_authenticated/documents/$documentId")({
-  loader: ({ params }) => {
-    const document = getDocumentBody(params.documentId);
-    if (!document) {
-      throw notFound();
-    }
-    return { document };
-  },
+  pendingComponent: DocumentPageSkeleton,
+  loader: async ({ context, params }) =>
+    loadDocumentPage(context.queryClient, params.documentId),
   staticData: {
     breadcrumb: (data) =>
-      data &&
-      typeof data === "object" &&
-      "document" in data &&
-      data.document &&
-      typeof data.document === "object" &&
-      "title" in data.document
-        ? String(data.document.title)
-        : "Document",
+      entityBreadcrumb(data, "document", "Document", "title"),
   },
   component: DocumentRoute,
 });
 
 function DocumentRoute() {
-  const { documentId } = Route.useParams();
-  return <DocumentPage documentId={documentId} />;
+  const { document } = Route.useLoaderData();
+  return <DocumentPage initialDocument={document} />;
 }

@@ -546,99 +546,136 @@ MERGE (l:Label {id: 'd9tcjmf92rs8isainmjg'})
   ON CREATE SET l += { name: 'security', description: 'Auth, secrets, and access control.', created_at: datetime() };
 
 // ============================================================================
-// 7. Documents
+// 7. Documents and folders
 // ============================================================================
 
-// Product handbook (Product namespace)
+// Product library folders: Guides / Architecture
+MATCH (ns:Namespace {id: 'd9tcjmf92rs8isainj50'})
+MATCH (u:User {id: '9bsv0s46s6s002p9ltq0'})
+MERGE (guides:Folder {id: 'd9tcjmf92rs8isainq00'})
+  ON CREATE SET guides += {
+    name:       'Guides',
+    created_by: '9bsv0s46s6s002p9ltq0',
+    created_at: datetime() - duration('P21D')
+  }
+MERGE (arch:Folder {id: 'd9tcjmf92rs8isainq10'})
+  ON CREATE SET arch += {
+    name:       'Architecture',
+    created_by: '9bsv0s46s6s002p9ltq0',
+    created_at: datetime() - duration('P21D')
+  }
+CREATE
+  (guides)-[:SCOPED_TO {id: 'd9tcjmf92rs8isainq20', created_at: datetime() - duration('P21D')}]->(ns),
+  (arch)-[:SCOPED_TO {id: 'd9tcjmf92rs8isainq30', created_at: datetime() - duration('P21D')}]->(ns),
+  (arch)-[:LOCATED_IN {id: 'd9tcjmf92rs8isainq40', created_at: datetime() - duration('P21D')}]->(guides),
+  (u)-[:CREATED {id: 'd9tcjmf92rs8isainq50', created_at: datetime() - duration('P21D')}]->(guides),
+  (u)-[:CREATED {id: 'd9tcjmf92rs8isainq60', created_at: datetime() - duration('P21D')}]->(arch);
+
+// Product handbook (Product namespace root)
 MATCH (ns:Namespace {id: 'd9tcjmf92rs8isainj50'})
 MATCH (u:User {id: '9bsv0s46s6s002p9ltq0'})
 MERGE (d:Document {id: 'd9tcjmf92rs8isainjm0'})
   ON CREATE SET d += {
-    name:       'Product Handbook',
+    title:      'Product Handbook',
     excerpt:    'Orientation guide for ACME product engineering and partners.',
     file_id:    'demo/product-handbook.md',
     created_by: '9bsv0s46s6s002p9ltq0',
     created_at: datetime() - duration('P20D')
   }
 CREATE
-  (d)-[:BELONGS_TO {id: 'd9tcjmf92rs8isainjmg', created_at: datetime() - duration('P20D')}]->(ns),
-  (u)-[:CREATED {id: 'd9tcjmf92rs8isainjn0', created_at: datetime() - duration('P20D')}]->(d);
+  (d)-[:SCOPED_TO {id: 'd9tcjmf92rs8isainjmg', created_at: datetime() - duration('P20D')}]->(ns),
+  (u)-[:CREATED {id: 'd9tcjmf92rs8isainjn0', created_at: datetime() - duration('P20D')}]->(d),
+  (u)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainq70', created_at: datetime() - duration('P20D'), kind: '*'}]->(d);
 
 MATCH (d:Document {id: 'd9tcjmf92rs8isainjm0'})
 MATCH (l:Label {id: 'd9tcjmf92rs8isainmhg'})
 CREATE (d)-[:HAS_LABEL]->(l);
 
-// Platform overview (PLAT)
+// Platform overview (Product library / Architecture, related to PLAT)
+MATCH (ns:Namespace {id: 'd9tcjmf92rs8isainj50'})
 MATCH (p:Project {id: 'd9tcjmf92rs8isainj9g'})
+MATCH (arch:Folder {id: 'd9tcjmf92rs8isainq10'})
 MATCH (u:User {id: '9bsv0s46s6s002p9ltq0'})
 MERGE (d:Document {id: 'd9tcjmf92rs8isainjng'})
   ON CREATE SET d += {
-    name:       'Platform Overview',
+    title:      'Platform Overview',
     excerpt:    'Architecture notes and onboarding for the Elemo platform project.',
     file_id:    'demo/platform-overview.md',
     created_by: '9bsv0s46s6s002p9ltq0',
     created_at: datetime() - duration('P14D')
   }
 CREATE
-  (d)-[:BELONGS_TO {id: 'd9tcjmf92rs8isainjo0', created_at: datetime() - duration('P14D')}]->(p),
-  (u)-[:CREATED {id: 'd9tcjmf92rs8isainjog', created_at: datetime() - duration('P14D')}]->(d);
+  (d)-[:SCOPED_TO {id: 'd9tcjmf92rs8isainjo0', created_at: datetime() - duration('P14D')}]->(ns),
+  (d)-[:LOCATED_IN {id: 'd9tcjmf92rs8isainq80', created_at: datetime() - duration('P14D')}]->(arch),
+  (d)-[:RELATED_TO {id: 'd9tcjmf92rs8isainq90', created_at: datetime() - duration('P14D')}]->(p),
+  (u)-[:CREATED {id: 'd9tcjmf92rs8isainjog', created_at: datetime() - duration('P14D')}]->(d),
+  (u)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainqa0', created_at: datetime() - duration('P14D'), kind: '*'}]->(d);
 
 MATCH (d:Document {id: 'd9tcjmf92rs8isainjng'})
 MATCH (l:Label {id: 'd9tcjmf92rs8isainmig'})
 CREATE (d)-[:HAS_LABEL]->(l);
 
-// Integration guide (INTEG)
+// Integration guide (Delivery library root, related to INTEG)
+MATCH (ns:Namespace {id: 'd9tcjmf92rs8isainj80'})
 MATCH (p:Project {id: 'd9tcjmf92rs8isainjcg'})
 MATCH (u:User {id: 'd9tcjmf92rs8isainivg'})
 MERGE (d:Document {id: 'd9tcjmf92rs8isainjp0'})
   ON CREATE SET d += {
-    name:       'Integration Guide',
+    title:      'Integration Guide',
     excerpt:    'How Nova Labs integrates with ACME platform APIs and workflows.',
     file_id:    'demo/integration-guide.md',
     created_by: 'd9tcjmf92rs8isainivg',
     created_at: datetime() - duration('P10D')
   }
 CREATE
-  (d)-[:BELONGS_TO {id: 'd9tcjmf92rs8isainjpg', created_at: datetime() - duration('P10D')}]->(p),
-  (u)-[:CREATED {id: 'd9tcjmf92rs8isainjq0', created_at: datetime() - duration('P10D')}]->(d);
+  (d)-[:SCOPED_TO {id: 'd9tcjmf92rs8isainjpg', created_at: datetime() - duration('P10D')}]->(ns),
+  (d)-[:RELATED_TO {id: 'd9tcjmf92rs8isainqb0', created_at: datetime() - duration('P10D')}]->(p),
+  (u)-[:CREATED {id: 'd9tcjmf92rs8isainjq0', created_at: datetime() - duration('P10D')}]->(d),
+  (u)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainqc0', created_at: datetime() - duration('P10D'), kind: '*'}]->(d);
 
 MATCH (d:Document {id: 'd9tcjmf92rs8isainjp0'})
 MATCH (l:Label {id: 'd9tcjmf92rs8isainjlg'})
 CREATE (d)-[:HAS_LABEL]->(l);
 
-// Operations runbook (Operations namespace)
+// Operations runbook (Operations namespace root)
 MATCH (ns:Namespace {id: 'd9tcjmf92rs8isainj6g'})
 MATCH (u:User {id: 'd9tcjmf92rs8isainm00'})
 MERGE (d:Document {id: 'd9tcjmf92rs8isainmk0'})
   ON CREATE SET d += {
-    name:       'Operations Runbook',
+    title:      'Operations Runbook',
     excerpt:    'Paging, deploy freezes, and guest-collaborator secret rotation.',
     file_id:    'demo/operations-runbook.md',
     created_by: 'd9tcjmf92rs8isainm00',
     created_at: datetime() - duration('P8D')
   }
 CREATE
-  (d)-[:BELONGS_TO {id: 'd9tcjmf92rs8isainmkg', created_at: datetime() - duration('P8D')}]->(ns),
-  (u)-[:CREATED {id: 'd9tcjmf92rs8isainml0', created_at: datetime() - duration('P8D')}]->(d);
+  (d)-[:SCOPED_TO {id: 'd9tcjmf92rs8isainmkg', created_at: datetime() - duration('P8D')}]->(ns),
+  (u)-[:CREATED {id: 'd9tcjmf92rs8isainml0', created_at: datetime() - duration('P8D')}]->(d),
+  (u)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainqd0', created_at: datetime() - duration('P8D'), kind: '*'}]->(d);
 
 MATCH (d:Document {id: 'd9tcjmf92rs8isainmk0'})
 MATCH (l:Label {id: 'd9tcjmf92rs8isainmi0'})
 CREATE (d)-[:HAS_LABEL]->(l);
 
-// Mobile design notes (MOB)
+// Mobile design notes (Product library / Guides, related to MOB)
+MATCH (ns:Namespace {id: 'd9tcjmf92rs8isainj50'})
 MATCH (p:Project {id: 'd9tcjmf92rs8isainjag'})
+MATCH (guides:Folder {id: 'd9tcjmf92rs8isainq00'})
 MATCH (u:User {id: 'd9tcjmf92rs8isainm10'})
 MERGE (d:Document {id: 'd9tcjmf92rs8isainmlg'})
   ON CREATE SET d += {
-    name:       'Mobile Design Notes',
+    title:      'Mobile Design Notes',
     excerpt:    'Navigation, offline states, and biometric unlock patterns.',
     file_id:    'demo/mobile-design-notes.md',
     created_by: 'd9tcjmf92rs8isainm10',
     created_at: datetime() - duration('P6D')
   }
 CREATE
-  (d)-[:BELONGS_TO {id: 'd9tcjmf92rs8isainmm0', created_at: datetime() - duration('P6D')}]->(p),
-  (u)-[:CREATED {id: 'd9tcjmf92rs8isainmmg', created_at: datetime() - duration('P6D')}]->(d);
+  (d)-[:SCOPED_TO {id: 'd9tcjmf92rs8isainmm0', created_at: datetime() - duration('P6D')}]->(ns),
+  (d)-[:LOCATED_IN {id: 'd9tcjmf92rs8isainqe0', created_at: datetime() - duration('P6D')}]->(guides),
+  (d)-[:RELATED_TO {id: 'd9tcjmf92rs8isainqf0', created_at: datetime() - duration('P6D')}]->(p),
+  (u)-[:CREATED {id: 'd9tcjmf92rs8isainmmg', created_at: datetime() - duration('P6D')}]->(d),
+  (u)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainqg0', created_at: datetime() - duration('P6D'), kind: '*'}]->(d);
 
 MATCH (d:Document {id: 'd9tcjmf92rs8isainmlg'})
 MATCH (l:Label {id: 'd9tcjmf92rs8isainmj0'})

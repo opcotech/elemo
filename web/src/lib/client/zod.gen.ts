@@ -52,6 +52,15 @@ export const zOrganization = z.object({
       error: "Invalid value: Expected int64 to be <= 9223372036854775807",
     })
     .nullish(),
+  document_count: z.coerce
+    .bigint()
+    .min(BigInt("-9223372036854775808"), {
+      error: "Invalid value: Expected int64 to be >= -9223372036854775808",
+    })
+    .max(BigInt("9223372036854775807"), {
+      error: "Invalid value: Expected int64 to be <= 9223372036854775807",
+    })
+    .nullish(),
   team_count: z.coerce
     .bigint()
     .min(BigInt("-9223372036854775808"), {
@@ -213,6 +222,39 @@ export const zProjectPage = z.object({
 });
 
 /**
+ * DocumentLibrary
+ *
+ * The organization or namespace a document or folder is scoped to.
+ */
+export const zDocumentLibrary = z.object({
+  id: z.string(),
+  type: z.enum(["Organization", "Namespace"]),
+  name: z.string(),
+});
+
+/**
+ * DocumentFolder
+ *
+ * The folder a document or nested folder is located in.
+ */
+export const zDocumentFolder = z.object({
+  id: z.string(),
+  name: z.string(),
+  parent_id: z.string().optional(),
+});
+
+/**
+ * DocumentRelation
+ *
+ * A project or issue a document is related to. Issues use the issue key as name.
+ */
+export const zDocumentRelation = z.object({
+  id: z.string(),
+  type: z.enum(["Project", "Issue"]),
+  name: z.string(),
+});
+
+/**
  * IssueKind
  *
  * Kind of the issue.
@@ -312,10 +354,11 @@ export const zPartialUser = z.object({
  */
 export const zPartialDocument = z.object({
   id: z.string(),
-  name: z.string().min(3).max(120),
+  title: z.string().min(3).max(120),
   excerpt: z.string().min(10).max(500).nullish(),
   created_by: zPartialUser,
   created_at: z.iso.datetime().nullish(),
+  updated_at: z.iso.datetime().nullish(),
 });
 
 /**
@@ -323,6 +366,29 @@ export const zPartialDocument = z.object({
  */
 export const zPartialDocumentPage = z.object({
   items: z.array(zPartialDocument),
+  page_info: zPageInfo,
+});
+
+/**
+ * Folder
+ *
+ * A nested folder in an organization or namespace document library.
+ */
+export const zFolder = z.object({
+  id: z.string(),
+  name: z.string().min(1).max(120),
+  library: zDocumentLibrary,
+  parent: zDocumentFolder.nullable(),
+  created_by: zPartialUser,
+  created_at: z.iso.datetime(),
+  updated_at: z.iso.datetime().nullable(),
+});
+
+/**
+ * FolderPage
+ */
+export const zFolderPage = z.object({
+  items: z.array(zFolder),
   page_info: zPageInfo,
 });
 
@@ -344,6 +410,43 @@ export const zPartialNamespace = z.object({
 export const zPartialLabel = z.object({
   id: z.string(),
   name: z.string().min(3).max(120),
+});
+
+/**
+ * Document
+ *
+ * A document in an organization or namespace library.
+ */
+export const zDocument = z.object({
+  id: z.string(),
+  title: z.string().min(3).max(120),
+  excerpt: z.string().min(10).max(500).nullish(),
+  content: z.string(),
+  created_by: zPartialUser,
+  library: zDocumentLibrary,
+  folder: zDocumentFolder.nullable(),
+  relations: z.array(zDocumentRelation),
+  labels: z.array(zPartialLabel),
+  comment_count: z.coerce
+    .bigint()
+    .min(BigInt("-9223372036854775808"), {
+      error: "Invalid value: Expected int64 to be >= -9223372036854775808",
+    })
+    .max(BigInt("9223372036854775807"), {
+      error: "Invalid value: Expected int64 to be <= 9223372036854775807",
+    })
+    .nullish(),
+  attachment_count: z.coerce
+    .bigint()
+    .min(BigInt("-9223372036854775808"), {
+      error: "Invalid value: Expected int64 to be >= -9223372036854775808",
+    })
+    .max(BigInt("9223372036854775807"), {
+      error: "Invalid value: Expected int64 to be <= 9223372036854775807",
+    })
+    .nullish(),
+  created_at: z.iso.datetime(),
+  updated_at: z.iso.datetime().nullable(),
 });
 
 /**
@@ -402,6 +505,15 @@ export const zIssue = z.object({
   project: zPartialProject.nullish(),
   namespace: zPartialNamespace.nullish(),
   comment_count: z.coerce
+    .bigint()
+    .min(BigInt("-9223372036854775808"), {
+      error: "Invalid value: Expected int64 to be >= -9223372036854775808",
+    })
+    .max(BigInt("9223372036854775807"), {
+      error: "Invalid value: Expected int64 to be <= 9223372036854775807",
+    })
+    .nullish(),
+  document_count: z.coerce
     .bigint()
     .min(BigInt("-9223372036854775808"), {
       error: "Invalid value: Expected int64 to be >= -9223372036854775808",
@@ -922,6 +1034,7 @@ export const zResourceType = z.enum([
   "Role",
   "Todo",
   "User",
+  "Folder",
 ]);
 
 /**
@@ -952,6 +1065,26 @@ export const zPageToken = z.string();
  * ID of the resource.
  */
 export const zId = z.string();
+
+/**
+ * ID of the document.
+ */
+export const zDocumentId = z.string();
+
+/**
+ * Browse documents located in this folder. Omit to list unfiled documents at the library root.
+ */
+export const zFolderId = z.string();
+
+/**
+ * When true, return every document in the library regardless of folder.
+ */
+export const zAll = z.boolean().default(false);
+
+/**
+ * List folders located in this parent folder. Omit to list folders at the library root.
+ */
+export const zParentId = z.string();
 
 /**
  * ID of the issue relation.
@@ -1113,6 +1246,30 @@ export const zIssueCreate = z.object({
   links: z.array(zIssueLink).optional(),
   due_date: z.iso.datetime().nullish(),
   start_date: z.iso.datetime().nullish(),
+});
+
+export const zDocumentCreate = z.object({
+  title: z.string().min(3).max(120),
+  excerpt: z.string().min(10).max(500).nullish(),
+  content: z.string().optional(),
+});
+
+export const zDocumentPatch = z.object({
+  title: z.string().min(3).max(120).optional(),
+  excerpt: z.string().min(10).max(500).nullish(),
+  content: z.string().optional(),
+  library_id: z.string().optional(),
+  folder_id: z.string().nullish(),
+});
+
+export const zFolderCreate = z.object({
+  name: z.string().min(1).max(120),
+  parent_id: z.string().nullish(),
+});
+
+export const zFolderPatch = z.object({
+  name: z.string().min(1).max(120).optional(),
+  parent_id: z.string().nullish(),
 });
 
 export const zIssuePatch = z.object({
@@ -1640,6 +1797,59 @@ export const zV1OrganizationsNamespacesCreateResponse = z.object({
   id: z.string(),
 });
 
+export const zV1OrganizationsDocumentsGetPath = z.object({
+  id: z.string(),
+});
+
+export const zV1OrganizationsDocumentsGetQuery = z.object({
+  page_size: z.int().gte(1).lte(1000).optional().default(100),
+  page_token: z.string().optional(),
+  folder_id: z.string().optional(),
+  all: z.boolean().optional().default(false),
+});
+
+/**
+ * OK
+ */
+export const zV1OrganizationsDocumentsGetResponse = zPartialDocumentPage;
+
+export const zV1OrganizationsDocumentsCreateBody = zDocumentCreate;
+
+export const zV1OrganizationsDocumentsCreatePath = z.object({
+  id: z.string(),
+});
+
+/**
+ * Created
+ */
+export const zV1OrganizationsDocumentsCreateResponse = zDocument;
+
+export const zV1OrganizationsFoldersGetPath = z.object({
+  id: z.string(),
+});
+
+export const zV1OrganizationsFoldersGetQuery = z.object({
+  page_size: z.int().gte(1).lte(1000).optional().default(100),
+  page_token: z.string().optional(),
+  parent_id: z.string().optional(),
+});
+
+/**
+ * OK
+ */
+export const zV1OrganizationsFoldersGetResponse = zFolderPage;
+
+export const zV1OrganizationsFoldersCreateBody = zFolderCreate;
+
+export const zV1OrganizationsFoldersCreatePath = z.object({
+  id: z.string(),
+});
+
+/**
+ * Created
+ */
+export const zV1OrganizationsFoldersCreateResponse = zFolder;
+
 export const zV1NamespaceDeletePath = z.object({
   id: z.string(),
 });
@@ -1703,12 +1913,51 @@ export const zV1NamespacesDocumentsGetPath = z.object({
 export const zV1NamespacesDocumentsGetQuery = z.object({
   page_size: z.int().gte(1).lte(1000).optional().default(100),
   page_token: z.string().optional(),
+  folder_id: z.string().optional(),
+  all: z.boolean().optional().default(false),
 });
 
 /**
  * OK
  */
 export const zV1NamespacesDocumentsGetResponse = zPartialDocumentPage;
+
+export const zV1NamespacesDocumentsCreateBody = zDocumentCreate;
+
+export const zV1NamespacesDocumentsCreatePath = z.object({
+  id: z.string(),
+});
+
+/**
+ * Created
+ */
+export const zV1NamespacesDocumentsCreateResponse = zDocument;
+
+export const zV1NamespacesFoldersGetPath = z.object({
+  id: z.string(),
+});
+
+export const zV1NamespacesFoldersGetQuery = z.object({
+  page_size: z.int().gte(1).lte(1000).optional().default(100),
+  page_token: z.string().optional(),
+  parent_id: z.string().optional(),
+});
+
+/**
+ * OK
+ */
+export const zV1NamespacesFoldersGetResponse = zFolderPage;
+
+export const zV1NamespacesFoldersCreateBody = zFolderCreate;
+
+export const zV1NamespacesFoldersCreatePath = z.object({
+  id: z.string(),
+});
+
+/**
+ * Created
+ */
+export const zV1NamespacesFoldersCreateResponse = zFolder;
 
 export const zV1NamespacesIssuesGetPath = z.object({
   id: z.string(),
@@ -1802,6 +2051,95 @@ export const zV1ProjectsDocumentsGetQuery = z.object({
  */
 export const zV1ProjectsDocumentsGetResponse = zPartialDocumentPage;
 
+export const zV1ProjectsDocumentsCreateBody = zDocumentCreate;
+
+export const zV1ProjectsDocumentsCreatePath = z.object({
+  id: z.string(),
+});
+
+/**
+ * Created
+ */
+export const zV1ProjectsDocumentsCreateResponse = zDocument;
+
+export const zV1ProjectsDocumentsUnrelatePath = z.object({
+  id: z.string(),
+  documentId: z.string(),
+});
+
+/**
+ * No Content
+ */
+export const zV1ProjectsDocumentsUnrelateResponse = z.void();
+
+export const zV1ProjectsDocumentsRelatePath = z.object({
+  id: z.string(),
+  documentId: z.string(),
+});
+
+/**
+ * No Content
+ */
+export const zV1ProjectsDocumentsRelateResponse = z.void();
+
+export const zV1DocumentDeletePath = z.object({
+  id: z.string(),
+});
+
+/**
+ * No Content
+ */
+export const zV1DocumentDeleteResponse = z.void();
+
+export const zV1DocumentGetPath = z.object({
+  id: z.string(),
+});
+
+/**
+ * OK
+ */
+export const zV1DocumentGetResponse = zDocument;
+
+export const zV1DocumentUpdateBody = zDocumentPatch;
+
+export const zV1DocumentUpdatePath = z.object({
+  id: z.string(),
+});
+
+/**
+ * OK
+ */
+export const zV1DocumentUpdateResponse = zDocument;
+
+export const zV1FolderDeletePath = z.object({
+  id: z.string(),
+});
+
+/**
+ * No Content
+ */
+export const zV1FolderDeleteResponse = z.void();
+
+export const zV1FolderGetPath = z.object({
+  id: z.string(),
+});
+
+/**
+ * OK
+ */
+export const zV1FolderGetResponse = zFolder;
+
+export const zV1FolderUpdateBody = zFolderPatch;
+
+export const zV1FolderUpdatePath = z.object({
+  id: z.string(),
+});
+
+/**
+ * OK
+ */
+export const zV1FolderUpdateResponse = zFolder;
+
 export const zV1IssueDeletePath = z.object({
   id: z.string(),
 });
@@ -1830,6 +2168,51 @@ export const zV1IssueUpdatePath = z.object({
  * OK
  */
 export const zV1IssueUpdateResponse = zIssue;
+
+export const zV1IssuesDocumentsGetPath = z.object({
+  id: z.string(),
+});
+
+export const zV1IssuesDocumentsGetQuery = z.object({
+  page_size: z.int().gte(1).lte(1000).optional().default(100),
+  page_token: z.string().optional(),
+});
+
+/**
+ * OK
+ */
+export const zV1IssuesDocumentsGetResponse = zPartialDocumentPage;
+
+export const zV1IssuesDocumentsCreateBody = zDocumentCreate;
+
+export const zV1IssuesDocumentsCreatePath = z.object({
+  id: z.string(),
+});
+
+/**
+ * Created
+ */
+export const zV1IssuesDocumentsCreateResponse = zDocument;
+
+export const zV1IssuesDocumentsUnrelatePath = z.object({
+  id: z.string(),
+  documentId: z.string(),
+});
+
+/**
+ * No Content
+ */
+export const zV1IssuesDocumentsUnrelateResponse = z.void();
+
+export const zV1IssuesDocumentsRelatePath = z.object({
+  id: z.string(),
+  documentId: z.string(),
+});
+
+/**
+ * No Content
+ */
+export const zV1IssuesDocumentsRelateResponse = z.void();
 
 export const zV1IssueRelationsGetPath = z.object({
   id: z.string(),

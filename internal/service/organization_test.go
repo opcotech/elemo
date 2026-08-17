@@ -30,7 +30,8 @@ func organizationsToRepository(orgs []*Organization) []*repository.Organization 
 		out[i] = &repository.Organization{
 			ID: o.ID, Name: o.Name, Email: o.Email, Logo: o.Logo, Website: o.Website,
 			Status: o.Status, NamespaceCount: o.NamespaceCount, TeamCount: o.TeamCount, MemberCount: o.MemberCount,
-			CreatedAt: o.CreatedAt, UpdatedAt: o.UpdatedAt,
+			DocumentCount: o.DocumentCount,
+			CreatedAt:     o.CreatedAt, UpdatedAt: o.UpdatedAt,
 		}
 	}
 	return out
@@ -43,7 +44,8 @@ func organizationToRepository(o *Organization) *repository.Organization {
 	return &repository.Organization{
 		ID: o.ID, Name: o.Name, Email: o.Email, Logo: o.Logo, Website: o.Website,
 		Status: o.Status, NamespaceCount: o.NamespaceCount, TeamCount: o.TeamCount, MemberCount: o.MemberCount,
-		CreatedAt: o.CreatedAt, UpdatedAt: o.UpdatedAt,
+		DocumentCount: o.DocumentCount,
+		CreatedAt:     o.CreatedAt, UpdatedAt: o.UpdatedAt,
 	}
 }
 

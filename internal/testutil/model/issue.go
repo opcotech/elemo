@@ -51,6 +51,7 @@ func NewRepositoryIssue(reportedBy model.ID) *repository.Issue {
 		Assignments:     make([]repository.PartialAssignee, 0),
 		Labels:          make([]repository.PartialLabel, 0),
 		CommentCount:    convert.ToPointer(int64(0)),
+		DocumentCount:   convert.ToPointer(int64(0)),
 		AttachmentCount: convert.ToPointer(int64(0)),
 		WatcherCount:    convert.ToPointer(int64(0)),
 		RelationCount:   convert.ToPointer(int64(0)),

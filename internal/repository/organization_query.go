@@ -11,6 +11,7 @@ type OrganizationProjection struct {
 	NamespaceCount bool
 	TeamCount      bool
 	MemberCount    bool
+	DocumentCount  bool
 }
 
 func OrganizationListProjection() OrganizationProjection {
@@ -18,6 +19,7 @@ func OrganizationListProjection() OrganizationProjection {
 		NamespaceCount: true,
 		TeamCount:      true,
 		MemberCount:    true,
+		DocumentCount:  true,
 	}
 }
 
@@ -26,6 +28,7 @@ func OrganizationDetailProjection() OrganizationProjection {
 		NamespaceCount: true,
 		TeamCount:      true,
 		MemberCount:    true,
+		DocumentCount:  true,
 	}
 }
 
@@ -167,6 +170,14 @@ func compileOrganizationRoot(in organizationRootQueryInput) (QueryPlan, error) {
 			"COUNT { (:%s)-[:%s]->(%s) } AS member_count",
 			model.ResourceTypeUser.String(),
 			EdgeKindMemberOf.String(),
+			in.Alias,
+		))
+	}
+	if in.Projection.DocumentCount {
+		returns = append(returns, fmt.Sprintf(
+			"COUNT { (:%s)-[:%s]->(%s) } AS document_count",
+			model.ResourceTypeDocument.String(),
+			EdgeKindScopedTo.String(),
 			in.Alias,
 		))
 	}

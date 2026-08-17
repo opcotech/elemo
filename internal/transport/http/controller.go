@@ -233,6 +233,19 @@ func WithDocumentService(documentService service.DocumentService) ControllerOpti
 	}
 }
 
+// WithFolderService sets the folder service for the controller.
+func WithFolderService(folderService service.FolderService) ControllerOption {
+	return func(c *baseController) error {
+		if folderService == nil {
+			return ErrNoFolderService
+		}
+
+		c.folderService = folderService
+
+		return nil
+	}
+}
+
 // WithLabelService sets the label service for the controller.
 func WithLabelService(labelService service.LabelService) ControllerOption {
 	return func(c *baseController) error {
@@ -260,6 +273,7 @@ type baseController struct {
 	projectService      service.ProjectService
 	issueService        service.IssueService
 	documentService     service.DocumentService
+	folderService       service.FolderService
 	labelService        service.LabelService
 	roleService         service.RoleService
 	userService         service.UserService

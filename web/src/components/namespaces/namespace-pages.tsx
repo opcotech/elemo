@@ -7,16 +7,19 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 
+import { DocumentLibraryPage } from "@/components/documents/document-library-page";
+import { DocumentSummaryList } from "@/components/documents/document-summary-list";
 import { ContentWidth } from "@/components/layout/content-width";
 import { openQuickCreate } from "@/components/quick-create/open";
 import { MockDataAlert } from "@/components/shared/app-feedback";
 import { EntityHeader, PageActions } from "@/components/shared/entity-header";
 import { AppList, EntityLink } from "@/components/shared/entity-link";
 import { Button } from "@/components/ui/button";
-import { CreateButton } from "@/components/ui/create-button";
+import { AddButton, CreateButton } from "@/components/ui/create-button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { InternalLink } from "@/components/ui/internal-link";
+import { ListSkeleton } from "@/components/ui/list-skeleton";
 import { Section } from "@/components/ui/section";
 import { StatusIndicator } from "@/components/ui/status-indicator";
 import { CompactWorkList } from "@/components/work/work-list";
@@ -30,10 +33,7 @@ import {
   v1NamespacesDocumentsGetOptions,
   v1NamespacesProjectsGetOptions,
 } from "@/lib/api/query-options";
-import {
-  v1NamespacesDocumentsGet,
-  v1NamespacesProjectsGet,
-} from "@/lib/api/sdk";
+import { v1NamespacesProjectsGet } from "@/lib/api/sdk";
 import type {
   Namespace,
   Organization,
@@ -41,12 +41,9 @@ import type {
   Project,
 } from "@/lib/api/types";
 import { can } from "@/lib/auth/permissions";
+import type { DocumentLibrarySearch } from "@/lib/documents/library";
 import { internalPath } from "@/lib/internal-url";
-import {
-  selectAttentionSignals,
-  selectDocumentBodies,
-  selectWorkItems,
-} from "@/lib/mock-data";
+import { selectAttentionSignals, selectWorkItems } from "@/lib/mock-data";
 
 export function NamespaceOverviewPage({
   namespace,
@@ -58,16 +55,16 @@ export function NamespaceOverviewPage({
   const { data: permissions } = usePermissions(
     withResourceType(ResourceType.Namespace, namespace.id)
   );
-  const { data: projectsPage } = useQuery(
+  const { data: projectsPage, isLoading: isProjectsLoading } = useQuery(
     v1NamespacesProjectsGetOptions({
       path: { id: namespace.id },
       query: { page_size: 6 },
     })
   );
-  const { data: documentsPage } = useQuery(
+  const { data: documentsPage, isLoading: isDocumentsLoading } = useQuery(
     v1NamespacesDocumentsGetOptions({
       path: { id: namespace.id },
-      query: { page_size: 5 },
+      query: { page_size: 5, all: true },
     })
   );
   const projects: Project[] = projectsPage?.items ?? [];
@@ -79,10 +76,6 @@ export function NamespaceOverviewPage({
   const work = scopedWork;
   const attention = selectAttentionSignals({
     scope: { type: "namespace", namespaceId: namespace.id },
-  });
-  const fixtureDocuments = selectDocumentBodies({
-    type: "namespace",
-    namespaceId: namespace.id,
   });
 
   return (
@@ -143,7 +136,9 @@ export function NamespaceOverviewPage({
               </Button>
             }
           >
-            {projects.length > 0 ? (
+            {isProjectsLoading ? (
+              <ListSkeleton rows={4} />
+            ) : projects.length > 0 ? (
               <AppList>
                 {projects.map((project) => (
                   <EntityLink
@@ -224,43 +219,46 @@ export function NamespaceOverviewPage({
             )}
           </Section>
 
-          <Section title="Recent documents">
-            {documents.length > 0 ? (
-              <AppList>
-                {documents.map((document) => (
-                  <EntityLink
-                    key={document.id}
-                    type="document"
-                    href={`/documents/${document.id}`}
-                    title={document.name}
-                    subtitle={document.excerpt || "No summary"}
+          <Section
+            title="Recent documents"
+            data-section="documents"
+            action={
+              <div className="flex items-center gap-2">
+                {mayWrite ? (
+                  <AddButton
+                    size="sm"
+                    onClick={() => openQuickCreate("document")}
                   />
-                ))}
-              </AppList>
-            ) : fixtureDocuments.length > 0 ? (
-              <>
-                <MockDataAlert
-                  title="Illustrative document summaries"
-                  className="mb-3"
+                ) : null}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  render={
+                    <InternalLink
+                      to={internalPath(`/namespaces/${namespace.id}/documents`)}
+                    />
+                  }
                 >
-                  This fallback list uses centralized document fixtures.
-                </MockDataAlert>
-                {fixtureDocuments.map((document) => (
-                  <EntityLink
-                    key={document.documentId}
-                    type="document"
-                    href={`/documents/${document.documentId}`}
-                    title={document.title}
-                    subtitle={document.excerpt}
-                  />
-                ))}
-              </>
+                  View all <ArrowRightIcon />
+                </Button>
+              </div>
+            }
+          >
+            {isDocumentsLoading ? (
+              <ListSkeleton rows={4} />
+            ) : documents.length > 0 ? (
+              <DocumentSummaryList documents={documents} />
             ) : (
               <EmptyState
                 compact
                 icon={<FileTextIcon />}
                 title="No documents"
-                description="Decisions, specifications, and knowledge will appear here."
+                description="Documents that live in this namespace will appear here."
+                action={
+                  mayWrite ? (
+                    <CreateButton onClick={() => openQuickCreate("document")} />
+                  ) : undefined
+                }
               />
             )}
           </Section>
@@ -284,7 +282,7 @@ export function NamespaceProjectsPage({
   const listOptions = v1NamespacesProjectsGetOptions({
     path: { id: namespace.id },
   });
-  const { data: projectsPage } = useQuery(
+  const { data: projectsPage, isLoading } = useQuery(
     collectedListQuery<Project>(listOptions, async (pageToken, signal) => {
       const { data } = await v1NamespacesProjectsGet({
         path: { id: namespace.id },
@@ -345,7 +343,9 @@ export function NamespaceProjectsPage({
         Progress, lead, target, and risk are unavailable for these projects
         right now.
       </MockDataAlert>
-      {projects.length > 0 ? (
+      {isLoading ? (
+        <ListSkeleton />
+      ) : projects.length > 0 ? (
         <AppList>
           {projects.map((project, index) => (
             <InternalLink
@@ -419,102 +419,26 @@ export function NamespaceProjectsPage({
 
 export function NamespaceDocumentsPage({
   namespace,
+  search,
 }: {
   namespace: Namespace;
+  search: DocumentLibrarySearch;
 }) {
-  const [query, setQuery] = useState("");
-  const listOptions = v1NamespacesDocumentsGetOptions({
-    path: { id: namespace.id },
-  });
-  const { data: documentsPage } = useQuery(
-    collectedListQuery<PartialDocument>(
-      listOptions,
-      async (pageToken, signal) => {
-        const { data } = await v1NamespacesDocumentsGet({
-          path: { id: namespace.id },
-          query: cursorPageQuery(pageToken),
-          signal,
-          throwOnError: true,
-        });
-        return data;
-      }
-    )
+  const { data: permissions } = usePermissions(
+    withResourceType(ResourceType.Namespace, namespace.id)
   );
-  const documents = useMemo(() => {
-    const items: PartialDocument[] = documentsPage?.items ?? [];
-    const normalized = query.trim().toLowerCase();
-    if (!normalized) return items;
-    return items.filter((document) =>
-      [document.name, document.excerpt]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase()
-        .includes(normalized)
-    );
-  }, [documentsPage?.items, query]);
+  const mayWrite = can(permissions, "write");
 
   return (
-    <ContentWidth width="overview" className="space-y-6">
-      <EntityHeader
-        type="document"
-        eyebrow={namespace.name}
-        title="Documents"
-        description="Decisions, specifications, and knowledge connected to this namespace."
-        showIcon={false}
-      />
-      <div className="bg-background sticky top-0 z-10 py-3">
-        <div className="relative">
-          <SearchIcon className="text-muted-foreground absolute top-2.5 left-3 size-4" />
-          <Input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search documents..."
-            className="pl-9"
-          />
-        </div>
-      </div>
-      {documents.length > 0 ? (
-        <AppList>
-          {documents.map((document) => (
-            <EntityLink
-              key={document.id}
-              type="document"
-              href={`/documents/${document.id}`}
-              title={document.name}
-              subtitle={
-                <span>
-                  {document.excerpt || "No summary"} ·{" "}
-                  {document.created_at
-                    ? new Intl.DateTimeFormat(undefined, {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      }).format(new Date(document.created_at))
-                    : "Date unavailable"}
-                </span>
-              }
-              className="px-4 py-3"
-            />
-          ))}
-        </AppList>
-      ) : (
-        <EmptyState
-          icon={<FileTextIcon />}
-          title={query ? "No document matches" : "No documents yet"}
-          description={
-            query
-              ? "Try a different title or summary."
-              : "Documents hold decisions and knowledge without requiring folders or projects."
-          }
-          action={
-            query ? (
-              <Button variant="outline" onClick={() => setQuery("")}>
-                Clear search
-              </Button>
-            ) : undefined
-          }
-        />
-      )}
-    </ContentWidth>
+    <DocumentLibraryPage
+      kind="namespace"
+      libraryId={namespace.id}
+      libraryName={namespace.name}
+      search={search}
+      mayWrite={mayWrite}
+      documentCount={namespace.document_count ?? 0}
+      limitedAccessTitle="Limited access"
+      limitedAccessDescription="Documents require read permission on this namespace."
+    />
   );
 }

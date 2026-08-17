@@ -691,6 +691,7 @@ func issueToDTO(issue *service.Issue) api.Issue {
 		Project:         partialProjectToDTO(issue.Project),
 		Namespace:       partialNamespaceToDTO(issue.Namespace),
 		CommentCount:    issue.CommentCount,
+		DocumentCount:   issue.DocumentCount,
 		AttachmentCount: issue.AttachmentCount,
 		WatcherCount:    issue.WatcherCount,
 		RelationCount:   issue.RelationCount,

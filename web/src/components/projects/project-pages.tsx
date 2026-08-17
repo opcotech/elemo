@@ -1,24 +1,31 @@
-import { useQuery } from "@tanstack/react-query";
-import {
-  ActivityIcon,
-  ArrowRightIcon,
-  FileTextIcon,
-  SearchIcon,
-} from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ActivityIcon, ArrowRightIcon, FileTextIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 
+import { DocumentCreateDialog } from "@/components/documents/document-create-dialog";
+import { DocumentDeleteDialog } from "@/components/documents/document-delete-dialog";
+import { DocumentLinkDialog } from "@/components/documents/document-link-dialog";
+import {
+  DocumentList,
+  DocumentListToolbar,
+} from "@/components/documents/document-list";
+import { DocumentRenameDialog } from "@/components/documents/document-rename-dialog";
+import { DocumentSummaryList } from "@/components/documents/document-summary-list";
 import { ContentWidth } from "@/components/layout/content-width";
 import { openQuickCreate } from "@/components/quick-create/open";
 import { ActivityFeed } from "@/components/shared/activity-feed";
 import { MockDataAlert } from "@/components/shared/app-feedback";
 import { EntityHeader, PageActions } from "@/components/shared/entity-header";
-import { AppList, EntityLink } from "@/components/shared/entity-link";
 import { RelationList } from "@/components/shared/relation-list";
 import { Button } from "@/components/ui/button";
-import { CreateButton } from "@/components/ui/create-button";
+import {
+  AddButton,
+  CreateButton,
+  LinkButton,
+} from "@/components/ui/create-button";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Input } from "@/components/ui/input";
 import { InternalLink } from "@/components/ui/internal-link";
+import { ListSkeleton } from "@/components/ui/list-skeleton";
 import { Progress } from "@/components/ui/progress";
 import { PropertyList } from "@/components/ui/property-list";
 import { Section } from "@/components/ui/section";
@@ -31,15 +38,29 @@ import {
 } from "@/hooks/use-permissions";
 import { collectedListQuery, cursorPageQuery } from "@/lib/api/cursor-pages";
 import { v1ProjectsDocumentsGetOptions } from "@/lib/api/query-options";
-import { v1ProjectsDocumentsGet } from "@/lib/api/sdk";
-import type { Namespace, Project } from "@/lib/api/types";
+import {
+  v1ProjectsDocumentsCreate,
+  v1ProjectsDocumentsGet,
+  v1ProjectsDocumentsRelate,
+  v1ProjectsDocumentsUnrelate,
+} from "@/lib/api/sdk";
+import type { Namespace, PartialDocument, Project } from "@/lib/api/types";
 import { can } from "@/lib/auth/permissions";
+import { documentListQueryKey } from "@/lib/documents/create";
+import {
+  ALL_DOCUMENT_CREATORS,
+  documentCreators,
+  visibleDocuments,
+} from "@/lib/documents/document-list";
+import type { DocumentListSort } from "@/lib/documents/document-list";
+import { invalidateDocumentQueries } from "@/lib/documents/document-queries";
 import { internalPath } from "@/lib/internal-url";
 import {
   selectActivity,
   selectRelations,
   selectWorkItems,
 } from "@/lib/mock-data";
+import { showErrorToast, showSuccessToast } from "@/lib/toast";
 
 export function ProjectOverviewPage({
   namespace,
@@ -52,6 +73,8 @@ export function ProjectOverviewPage({
     withResourceType(ResourceType.Project, project.id)
   );
   const mayWrite = can(permissions, "write");
+  const [createOpen, setCreateOpen] = useState(false);
+  const [linkOpen, setLinkOpen] = useState(false);
   const scopedWork = selectWorkItems({
     scope: {
       type: "project",
@@ -64,13 +87,14 @@ export function ProjectOverviewPage({
     entity: { id: work[0]?.id ?? "", type: "work-item" },
   });
   const issueCount = project.issue_count ?? 0;
-  const { data: documentsPage } = useQuery(
+  const { data: documentsPage, isLoading: isDocumentsLoading } = useQuery(
     v1ProjectsDocumentsGetOptions({
       path: { id: project.id },
       query: { page_size: 5 },
     })
   );
   const documents = documentsPage?.items ?? [];
+  const relatedIds = new Set(documents.map((document) => document.id));
   const documentCount = project.document_count ?? 0;
   const progress = issueCount ? Math.min(92, 28 + issueCount * 9) : 0;
 
@@ -165,43 +189,76 @@ export function ProjectOverviewPage({
 
           <Section
             title="Documents"
+            data-section="documents"
             action={
-              <Button
-                variant="ghost"
-                size="sm"
-                render={
-                  <InternalLink
-                    to={internalPath(
-                      `/namespaces/${namespace.id}/projects/${project.id}/documents`
-                    )}
-                  />
-                }
-              >
-                View all <ArrowRightIcon />
-              </Button>
+              <div className="flex items-center gap-2">
+                {mayWrite ? (
+                  <>
+                    <LinkButton size="sm" onClick={() => setLinkOpen(true)} />
+                    <AddButton size="sm" onClick={() => setCreateOpen(true)} />
+                  </>
+                ) : null}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  render={
+                    <InternalLink
+                      to={internalPath(
+                        `/namespaces/${namespace.id}/projects/${project.id}/documents`
+                      )}
+                    />
+                  }
+                >
+                  View all <ArrowRightIcon />
+                </Button>
+              </div>
             }
           >
-            {documents.length > 0 ? (
-              <AppList>
-                {documents.map((document) => (
-                  <EntityLink
-                    key={document.id}
-                    type="document"
-                    href={`/documents/${document.id}`}
-                    title={document.name}
-                    subtitle={document.excerpt || "No summary"}
-                  />
-                ))}
-              </AppList>
+            {isDocumentsLoading ? (
+              <ListSkeleton rows={4} />
+            ) : documents.length > 0 ? (
+              <DocumentSummaryList documents={documents} />
             ) : (
               <EmptyState
                 compact
                 icon={<FileTextIcon />}
-                title="No project documents"
-                description="Documents can explain outcomes and decisions without becoming folders."
+                title="No related documents"
+                description="Documents related to this project will appear here."
               />
             )}
           </Section>
+          {mayWrite ? (
+            <>
+              <DocumentCreateDialog
+                open={createOpen}
+                onOpenChange={setCreateOpen}
+                create={async (body) => {
+                  const { data } = await v1ProjectsDocumentsCreate({
+                    path: { id: project.id },
+                    body,
+                    throwOnError: true,
+                  });
+                  return data;
+                }}
+                queryKeysToInvalidate={[
+                  documentListQueryKey("project", project.id),
+                ]}
+              />
+              <DocumentLinkDialog
+                namespaceId={namespace.id}
+                relatedIds={relatedIds}
+                relatedLabel="this project"
+                open={linkOpen}
+                onOpenChange={setLinkOpen}
+                onLink={async (documentId) => {
+                  await v1ProjectsDocumentsRelate({
+                    path: { id: project.id, documentId },
+                    throwOnError: true,
+                  });
+                }}
+              />
+            </>
+          ) : null}
         </div>
 
         <div className="space-y-8">
@@ -262,10 +319,44 @@ export function ProjectDocumentsPage({
   project: Project;
 }) {
   const [query, setQuery] = useState("");
+  const [sort, setSort] = useState<DocumentListSort>("updated-desc");
+  const [creatorId, setCreatorId] = useState(ALL_DOCUMENT_CREATORS);
+  const [renamingDocument, setRenamingDocument] =
+    useState<PartialDocument | null>(null);
+  const [deletingDocument, setDeletingDocument] =
+    useState<PartialDocument | null>(null);
+  const [linkOpen, setLinkOpen] = useState(false);
+  const { data: permissions } = usePermissions(
+    withResourceType(ResourceType.Project, project.id)
+  );
+  const mayWrite = can(permissions, "write");
+  const queryClient = useQueryClient();
+  const unlinkMutation = useMutation({
+    mutationFn: async (document: PartialDocument) => {
+      await v1ProjectsDocumentsUnrelate({
+        path: { id: project.id, documentId: document.id },
+        throwOnError: true,
+      });
+      return document;
+    },
+    onSuccess: async (document) => {
+      await invalidateDocumentQueries(queryClient, document.id);
+      showSuccessToast(
+        "Document unlinked",
+        `${document.title} is no longer related to this project`
+      );
+    },
+    onError: (error) => {
+      showErrorToast(
+        "Failed to unlink document",
+        error instanceof Error ? error.message : "Unknown error occurred"
+      );
+    },
+  });
   const listOptions = v1ProjectsDocumentsGetOptions({
     path: { id: project.id },
   });
-  const { data: documentsPage } = useQuery(
+  const { data: documentsPage, isLoading } = useQuery(
     collectedListQuery(listOptions, async (pageToken, signal) => {
       const { data } = await v1ProjectsDocumentsGet({
         path: { id: project.id },
@@ -276,81 +367,134 @@ export function ProjectDocumentsPage({
       return data;
     })
   );
-  const documents = useMemo(() => {
-    const items = documentsPage?.items ?? [];
-    const normalized = query.trim().toLowerCase();
-    if (!normalized) return items;
-    return items.filter((document) =>
-      [document.name, document.excerpt]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase()
-        .includes(normalized)
-    );
-  }, [documentsPage?.items, query]);
+  const documents = useMemo(
+    () => visibleDocuments(documentsPage?.items ?? [], query, sort, creatorId),
+    [creatorId, documentsPage?.items, query, sort]
+  );
+  const relatedIds = useMemo(
+    () => new Set((documentsPage?.items ?? []).map((document) => document.id)),
+    [documentsPage?.items]
+  );
+  const creators = useMemo(
+    () => documentCreators(documentsPage?.items ?? []),
+    [documentsPage?.items]
+  );
 
   return (
-    <ContentWidth width="overview" className="space-y-6">
+    <ContentWidth
+      width="overview"
+      className="space-y-6"
+      data-section="documents"
+    >
       <EntityHeader
         type="document"
         eyebrow={`${namespace.name} / ${project.name}`}
         title="Documents"
-        description="Documents linked to this project."
+        description="Documents related to this project."
         showIcon={false}
+        actions={
+          mayWrite ? (
+            <div className="flex items-center gap-2">
+              <LinkButton size="sm" onClick={() => setLinkOpen(true)} />
+              <CreateButton onClick={() => openQuickCreate("document")} />
+            </div>
+          ) : undefined
+        }
       />
-      <div className="bg-background sticky top-0 z-10 py-3">
-        <div className="relative">
-          <SearchIcon className="text-muted-foreground absolute top-2.5 left-3 size-4" />
-          <Input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search documents..."
-            className="pl-9"
-          />
-        </div>
-      </div>
-      {documents.length > 0 ? (
-        <AppList>
-          {documents.map((document) => (
-            <EntityLink
-              key={document.id}
-              type="document"
-              href={`/documents/${document.id}`}
-              title={document.name}
-              subtitle={
-                <span>
-                  {document.excerpt || "No summary"}
-                  {document.created_at
-                    ? ` · ${new Intl.DateTimeFormat(undefined, {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      }).format(new Date(document.created_at))}`
-                    : ""}
-                </span>
-              }
-              className="px-4 py-3"
-            />
-          ))}
-        </AppList>
+      <DocumentListToolbar
+        query={query}
+        onQueryChange={setQuery}
+        sort={sort}
+        onSortChange={setSort}
+        creators={creators}
+        creatorId={creatorId}
+        onCreatorChange={setCreatorId}
+      />
+      {isLoading ? (
+        <ListSkeleton />
+      ) : documents.length > 0 ? (
+        <DocumentList
+          documents={documents}
+          onRename={
+            mayWrite
+              ? (document) => {
+                  setRenamingDocument(document);
+                }
+              : undefined
+          }
+          onUnlink={
+            mayWrite
+              ? (document) => {
+                  void unlinkMutation.mutateAsync(document);
+                }
+              : undefined
+          }
+          onDelete={
+            mayWrite
+              ? (document) => {
+                  setDeletingDocument(document);
+                }
+              : undefined
+          }
+        />
       ) : (
         <EmptyState
           icon={<FileTextIcon />}
-          title={query ? "No document matches" : "No project documents"}
+          title={query ? "No document matches" : "No related documents"}
           description={
             query
               ? "Try a different title or summary."
-              : "Documents added to this project will appear here."
+              : "Documents related to this project will appear here."
           }
           action={
             query ? (
               <Button variant="outline" onClick={() => setQuery("")}>
                 Clear search
               </Button>
+            ) : mayWrite ? (
+              <CreateButton onClick={() => openQuickCreate("document")} />
             ) : undefined
           }
         />
       )}
+      {renamingDocument ? (
+        <DocumentRenameDialog
+          document={renamingDocument}
+          open
+          onOpenChange={(open) => {
+            if (!open) {
+              setRenamingDocument(null);
+            }
+          }}
+        />
+      ) : null}
+      {deletingDocument ? (
+        <DocumentDeleteDialog
+          document={deletingDocument}
+          open
+          onOpenChange={(open) => {
+            if (!open) {
+              setDeletingDocument(null);
+            }
+          }}
+          navigateOnSuccess={false}
+        />
+      ) : null}
+      {mayWrite ? (
+        <DocumentLinkDialog
+          namespaceId={namespace.id}
+          relatedIds={relatedIds}
+          relatedLabel="this project"
+          open={linkOpen}
+          onOpenChange={setLinkOpen}
+          onLink={async (documentId) => {
+            await v1ProjectsDocumentsRelate({
+              path: { id: project.id, documentId },
+              throwOnError: true,
+            });
+          }}
+        />
+      ) : null}
     </ContentWidth>
   );
 }

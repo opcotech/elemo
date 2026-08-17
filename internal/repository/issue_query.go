@@ -11,6 +11,7 @@ type IssueProjection struct {
 	Assignments     bool
 	Labels          bool
 	CommentCount    bool
+	DocumentCount   bool
 	AttachmentCount bool
 	WatcherCount    bool
 	RelationCount   bool
@@ -22,6 +23,7 @@ func IssueDetailProjection() IssueProjection {
 		Assignments:     true,
 		Labels:          true,
 		CommentCount:    true,
+		DocumentCount:   true,
 		AttachmentCount: true,
 		WatcherCount:    true,
 		RelationCount:   true,
@@ -296,7 +298,7 @@ func compileIssueRootQuery(in issueRootQueryInput) (QueryPlan, error) {
 }
 
 func issueRelationLoaders(proj IssueProjection) []CompiledQuery {
-	loaders := make([]CompiledQuery, 0, 7)
+	loaders := make([]CompiledQuery, 0, 8)
 
 	if proj.Parent {
 		loaders = append(loaders, CompiledQuery{
@@ -341,6 +343,17 @@ func issueRelationLoaders(proj IssueProjection) []CompiledQuery {
 				UNWIND $ids AS issue_id
 				MATCH (i:` + model.ResourceTypeIssue.String() + ` {id: issue_id})
 				RETURN issue_id, COUNT { (i)-[:` + EdgeKindHasComment.String() + `]->(:` + model.ResourceTypeComment.String() + `) } AS comment_count`,
+			Params: map[string]any{},
+		})
+	}
+
+	if proj.DocumentCount {
+		loaders = append(loaders, CompiledQuery{
+			Name: "issue.load_document_count",
+			Cypher: `
+				UNWIND $ids AS issue_id
+				MATCH (i:` + model.ResourceTypeIssue.String() + ` {id: issue_id})
+				RETURN issue_id, COUNT { (:` + model.ResourceTypeDocument.String() + `)-[:` + EdgeKindRelatedTo.String() + `]->(i) } AS document_count`,
 			Params: map[string]any{},
 		})
 	}

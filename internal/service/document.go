@@ -5,26 +5,105 @@ import (
 	"errors"
 	"time"
 
+	"github.com/opcotech/elemo/internal/license"
 	"github.com/opcotech/elemo/internal/model"
+	"github.com/opcotech/elemo/internal/pkg"
+	"github.com/opcotech/elemo/internal/pkg/optional"
+	"github.com/opcotech/elemo/internal/pkg/validate"
 	"github.com/opcotech/elemo/internal/repository"
 )
 
-// PartialDocument represents a simplified document within a namespace or project.
+const documentFilePrefix = "documents/"
+
+// PartialDocument represents a simplified document within a library or related view.
 type PartialDocument struct {
 	ID        model.ID
-	Name      string
+	Title     string
 	Excerpt   string
 	CreatedBy PartialUser
 	CreatedAt *time.Time
+	UpdatedAt *time.Time
 }
 
-// DocumentService serves the business logic of reading documents.
+// DocumentRelation is a project or issue a document is related to.
+type DocumentRelation struct {
+	ID   model.ID
+	Type model.ResourceType
+	Name string
+}
+
+// Document represents a document returned by the service.
+type Document struct {
+	ID              model.ID
+	Title           string
+	Excerpt         string
+	FileID          string
+	CreatedBy       PartialUser
+	Library         DocumentLibrary
+	Folder          *DocumentFolder
+	Relations       []DocumentRelation
+	Labels          []PartialLabel
+	CommentCount    *int64
+	AttachmentCount *int64
+	CreatedAt       *time.Time
+	UpdatedAt       *time.Time
+	Content         []byte
+}
+
+// CreateDocumentOpts holds the data required to create a document.
+type CreateDocumentOpts struct {
+	Title   string `json:"title" validate:"required,min=3,max=120"`
+	Excerpt string `json:"excerpt" validate:"omitempty,min=10,max=500"`
+	Content []byte `json:"content" validate:"omitempty"`
+}
+
+// Validate validates the create options.
+func (o *CreateDocumentOpts) Validate() error {
+	if err := validate.Struct(o); err != nil {
+		return errors.Join(model.ErrInvalidDocumentDetails, err)
+	}
+	return nil
+}
+
+// UpdateDocumentOpts holds the fields that can be updated on a document.
+type UpdateDocumentOpts struct {
+	Title     optional.Optional[string]
+	Excerpt   optional.Optional[string]
+	Content   optional.Optional[[]byte]
+	LibraryID optional.Optional[model.ID]
+	FolderID  optional.Optional[model.ID]
+}
+
+// LibraryListFilter selects which documents to return from a library.
+type LibraryListFilter struct {
+	FolderID *model.ID
+	All      bool
+}
+
+// DocumentService serves the business logic of interacting with documents.
 //
 //go:generate go tool mockgen -destination=document_mock_gen.go -package=service -mock_names DocumentService=MockDocumentService . DocumentService
 type DocumentService interface {
-	// ListBelongsTo returns a cursor-paginated page of documents that belong
-	// to a namespace or project.
-	ListBelongsTo(ctx context.Context, belongsTo model.ID, page CursorPage) (Page[*PartialDocument], error)
+	// Create creates a new document in the library inferred from contextID.
+	Create(ctx context.Context, contextID model.ID, opts CreateDocumentOpts) (*Document, error)
+	// Get returns a document by its ID, including the stored body.
+	Get(ctx context.Context, id model.ID) (*Document, error)
+	// ListLibrary returns documents scoped to an organization or namespace.
+	ListLibrary(ctx context.Context, libraryID model.ID, filter LibraryListFilter, page CursorPage) (Page[*PartialDocument], error)
+	// ListRelated returns documents related to a project or issue.
+	ListRelated(ctx context.Context, relatedTo model.ID, page CursorPage) (Page[*PartialDocument], error)
+	// Update updates a document. Optional library and folder fields move it.
+	Update(ctx context.Context, id model.ID, opts UpdateDocumentOpts) (*Document, error)
+	// MoveLibrary replaces SCOPED_TO and clears LOCATED_IN.
+	MoveLibrary(ctx context.Context, id, libraryID model.ID) (*Document, error)
+	// MoveToFolder sets or clears LOCATED_IN. folderID == nil is library root.
+	MoveToFolder(ctx context.Context, id model.ID, folderID *model.ID) (*Document, error)
+	// Relate creates RELATED_TO a project or issue.
+	Relate(ctx context.Context, id, targetID model.ID) error
+	// Unrelate removes RELATED_TO a project or issue.
+	Unrelate(ctx context.Context, id, targetID model.ID) error
+	// Delete deletes a document.
+	Delete(ctx context.Context, id model.ID) error
 }
 
 type documentService struct {
@@ -37,19 +116,180 @@ func partialDocumentFromDocument(d *repository.Document) *PartialDocument {
 	}
 	return &PartialDocument{
 		ID:        d.ID,
-		Name:      d.Name,
+		Title:     d.Title,
 		Excerpt:   d.Excerpt,
 		CreatedBy: partialUserValueFromRepository(d.CreatedBy),
 		CreatedAt: d.CreatedAt,
+		UpdatedAt: d.UpdatedAt,
 	}
 }
 
-func (s *documentService) ListBelongsTo(ctx context.Context, belongsTo model.ID, page CursorPage) (Page[*PartialDocument], error) {
-	ctx, span := s.tracer.Start(ctx, "service.documentService/ListBelongsTo")
+func documentRelationsFromRepository(relations []repository.DocumentRelation) []DocumentRelation {
+	out := make([]DocumentRelation, len(relations))
+	for i, relation := range relations {
+		out[i] = DocumentRelation{
+			ID:   relation.ID,
+			Type: relation.Type,
+			Name: relation.Name,
+		}
+	}
+	return out
+}
+
+func documentFromRepository(d *repository.Document, content []byte) *Document {
+	if d == nil {
+		return nil
+	}
+
+	return &Document{
+		ID:              d.ID,
+		Title:           d.Title,
+		Excerpt:         d.Excerpt,
+		FileID:          d.FileID,
+		CreatedBy:       partialUserValueFromRepository(d.CreatedBy),
+		Library:         documentLibraryFromRepository(d.Library),
+		Folder:          documentFolderFromRepository(d.Folder),
+		Relations:       documentRelationsFromRepository(d.Relations),
+		Labels:          partialLabelsFromRepository(d.Labels),
+		CommentCount:    d.CommentCount,
+		AttachmentCount: d.AttachmentCount,
+		CreatedAt:       d.CreatedAt,
+		UpdatedAt:       d.UpdatedAt,
+		Content:         content,
+	}
+}
+
+// documentContent returns stored file bytes. A missing blob is treated as
+// empty so metadata and location updates can succeed when object storage has no object.
+func (s *documentService) documentContent(ctx context.Context, fileID string) ([]byte, error) {
+	content, err := s.staticFileService.Get(ctx, fileID)
+	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			return []byte{}, nil
+		}
+		return nil, err
+	}
+	return content, nil
+}
+
+func (s *documentService) hasDocumentOrLibraryPermission(ctx context.Context, doc *repository.Document, kind model.PermissionKind) bool {
+	if s.permissionService.CtxUserHasPermission(ctx, doc.ID, kind) {
+		return true
+	}
+	return s.permissionService.CtxUserHasPermission(ctx, doc.Library.ID, kind)
+}
+
+func isLibraryID(id model.ID) bool {
+	return id.Type == model.ResourceTypeOrganization || id.Type == model.ResourceTypeNamespace
+}
+
+func isRelatedID(id model.ID) bool {
+	return id.Type == model.ResourceTypeProject || id.Type == model.ResourceTypeIssue
+}
+
+func (s *documentService) Create(ctx context.Context, contextID model.ID, opts CreateDocumentOpts) (*Document, error) {
+	ctx, span := s.tracer.Start(ctx, "service.documentService/Create")
 	defer span.End()
 
-	if err := belongsTo.Validate(); err != nil {
+	if expired, err := s.licenseService.Expired(ctx); expired || err != nil {
+		return nil, errors.Join(ErrDocumentCreate, license.ErrLicenseExpired)
+	}
+
+	if err := contextID.Validate(); err != nil {
+		return nil, errors.Join(ErrDocumentCreate, err)
+	}
+
+	if err := opts.Validate(); err != nil {
+		return nil, errors.Join(ErrDocumentCreate, err)
+	}
+
+	if !s.permissionService.CtxUserHasPermission(ctx, contextID, model.PermissionKindWrite) {
+		return nil, errors.Join(ErrDocumentCreate, ErrNoPermission)
+	}
+
+	libraryID := contextID
+	var relatedTo *model.ID
+	switch contextID.Type {
+	case model.ResourceTypeOrganization, model.ResourceTypeNamespace:
+	case model.ResourceTypeProject, model.ResourceTypeIssue:
+		resolved, err := s.documentRepo.ResolveLibrary(ctx, contextID)
+		if err != nil {
+			return nil, errors.Join(ErrDocumentCreate, err)
+		}
+		libraryID = resolved
+		relatedTo = &contextID
+	default:
+		return nil, errors.Join(ErrDocumentCreate, model.ErrInvalidID)
+	}
+
+	if !s.permissionService.CtxUserHasPermission(ctx, libraryID, model.PermissionKindWrite) {
+		return nil, errors.Join(ErrDocumentCreate, ErrNoPermission)
+	}
+
+	if ok, err := s.licenseService.WithinThreshold(ctx, license.QuotaDocuments); !ok || err != nil {
+		return nil, errors.Join(ErrDocumentCreate, ErrQuotaExceeded)
+	}
+
+	userID, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID)
+	if !ok {
+		return nil, errors.Join(ErrDocumentCreate, model.ErrInvalidID)
+	}
+
+	fileID := documentFilePrefix + model.NewRawID()
+	if err := s.staticFileService.Create(ctx, fileID, opts.Content); err != nil {
+		return nil, errors.Join(ErrDocumentCreate, err)
+	}
+
+	doc, err := s.documentRepo.Create(ctx, repository.CreateDocumentOpts{
+		Library:   libraryID,
+		RelatedTo: relatedTo,
+		Title:     opts.Title,
+		Excerpt:   opts.Excerpt,
+		FileID:    fileID,
+		CreatedBy: userID,
+	})
+	if err != nil {
+		_ = s.staticFileService.Delete(ctx, fileID)
+		return nil, errors.Join(ErrDocumentCreate, err)
+	}
+
+	return documentFromRepository(doc, opts.Content), nil
+}
+
+func (s *documentService) Get(ctx context.Context, id model.ID) (*Document, error) {
+	ctx, span := s.tracer.Start(ctx, "service.documentService/Get")
+	defer span.End()
+
+	if err := id.Validate(); err != nil {
+		return nil, errors.Join(ErrDocumentGet, err)
+	}
+
+	doc, err := s.documentRepo.Get(ctx, id, repository.DocumentDetailProjection())
+	if err != nil {
+		return nil, errors.Join(ErrDocumentGet, err)
+	}
+
+	if !s.hasDocumentOrLibraryPermission(ctx, doc, model.PermissionKindRead) {
+		return nil, errors.Join(ErrDocumentGet, ErrNoPermission)
+	}
+
+	content, err := s.staticFileService.Get(ctx, doc.FileID)
+	if err != nil {
+		return nil, errors.Join(ErrDocumentGet, err)
+	}
+
+	return documentFromRepository(doc, content), nil
+}
+
+func (s *documentService) ListLibrary(ctx context.Context, libraryID model.ID, filter LibraryListFilter, page CursorPage) (Page[*PartialDocument], error) {
+	ctx, span := s.tracer.Start(ctx, "service.documentService/ListLibrary")
+	defer span.End()
+
+	if err := libraryID.Validate(); err != nil {
 		return Page[*PartialDocument]{}, errors.Join(ErrDocumentGetAll, err)
+	}
+	if !isLibraryID(libraryID) {
+		return Page[*PartialDocument]{}, errors.Join(ErrDocumentGetAll, model.ErrInvalidID)
 	}
 
 	normalized, err := page.Normalize()
@@ -57,16 +297,289 @@ func (s *documentService) ListBelongsTo(ctx context.Context, belongsTo model.ID,
 		return Page[*PartialDocument]{}, errors.Join(ErrDocumentGetAll, err)
 	}
 
-	if !s.permissionService.CtxUserHasPermission(ctx, belongsTo, model.PermissionKindRead) {
+	if !s.permissionService.CtxUserHasPermission(ctx, libraryID, model.PermissionKindRead) {
 		return Page[*PartialDocument]{}, errors.Join(ErrDocumentGetAll, ErrNoPermission)
 	}
 
-	documents, err := s.documentRepo.ListBelongsTo(ctx, belongsTo, normalized, repository.DocumentSummaryProjection())
+	documents, err := s.documentRepo.ListLibrary(ctx, libraryID, repository.LibraryListFilter{
+		FolderID: filter.FolderID,
+		All:      filter.All,
+	}, normalized, repository.DocumentSummaryProjection())
 	if err != nil {
 		return Page[*PartialDocument]{}, errors.Join(ErrDocumentGetAll, err)
 	}
 
 	return mapPage(documents, partialDocumentFromDocument), nil
+}
+
+func (s *documentService) ListRelated(ctx context.Context, relatedTo model.ID, page CursorPage) (Page[*PartialDocument], error) {
+	ctx, span := s.tracer.Start(ctx, "service.documentService/ListRelated")
+	defer span.End()
+
+	if err := relatedTo.Validate(); err != nil {
+		return Page[*PartialDocument]{}, errors.Join(ErrDocumentGetAll, err)
+	}
+	if !isRelatedID(relatedTo) {
+		return Page[*PartialDocument]{}, errors.Join(ErrDocumentGetAll, model.ErrInvalidID)
+	}
+
+	normalized, err := page.Normalize()
+	if err != nil {
+		return Page[*PartialDocument]{}, errors.Join(ErrDocumentGetAll, err)
+	}
+
+	if !s.permissionService.CtxUserHasPermission(ctx, relatedTo, model.PermissionKindRead) {
+		return Page[*PartialDocument]{}, errors.Join(ErrDocumentGetAll, ErrNoPermission)
+	}
+
+	documents, err := s.documentRepo.ListRelated(ctx, relatedTo, normalized, repository.DocumentSummaryProjection())
+	if err != nil {
+		return Page[*PartialDocument]{}, errors.Join(ErrDocumentGetAll, err)
+	}
+
+	return mapPage(documents, partialDocumentFromDocument), nil
+}
+
+func (s *documentService) Update(ctx context.Context, id model.ID, opts UpdateDocumentOpts) (*Document, error) {
+	ctx, span := s.tracer.Start(ctx, "service.documentService/Update")
+	defer span.End()
+
+	if expired, err := s.licenseService.Expired(ctx); expired || err != nil {
+		return nil, errors.Join(ErrDocumentUpdate, license.ErrLicenseExpired)
+	}
+
+	if err := id.Validate(); err != nil {
+		return nil, errors.Join(ErrDocumentUpdate, err)
+	}
+
+	current, err := s.documentRepo.Get(ctx, id, repository.DocumentDetailProjection())
+	if err != nil {
+		return nil, errors.Join(ErrDocumentUpdate, err)
+	}
+
+	if !s.hasDocumentOrLibraryPermission(ctx, current, model.PermissionKindWrite) {
+		return nil, errors.Join(ErrDocumentUpdate, ErrNoPermission)
+	}
+
+	if opts.Content.Defined && opts.Content.Value != nil {
+		if err := s.staticFileService.Update(ctx, current.FileID, *opts.Content.Value); err != nil {
+			return nil, errors.Join(ErrDocumentUpdate, err)
+		}
+	}
+
+	if opts.Title.Defined || opts.Excerpt.Defined {
+		current, err = s.documentRepo.Update(ctx, id, repository.UpdateDocumentOpts{
+			Title:   opts.Title,
+			Excerpt: opts.Excerpt,
+		})
+		if err != nil {
+			return nil, errors.Join(ErrDocumentUpdate, err)
+		}
+	}
+
+	if opts.LibraryID.Defined && opts.LibraryID.Value != nil {
+		moved, err := s.MoveLibrary(ctx, id, *opts.LibraryID.Value)
+		if err != nil {
+			return nil, err
+		}
+		if !opts.FolderID.Defined {
+			return moved, nil
+		}
+	}
+
+	if opts.FolderID.Defined {
+		moved, err := s.MoveToFolder(ctx, id, opts.FolderID.Value)
+		if err != nil {
+			return nil, err
+		}
+		return moved, nil
+	}
+
+	content, err := s.documentContent(ctx, current.FileID)
+	if err != nil {
+		return nil, errors.Join(ErrDocumentUpdate, err)
+	}
+
+	return documentFromRepository(current, content), nil
+}
+
+func (s *documentService) MoveLibrary(ctx context.Context, id, libraryID model.ID) (*Document, error) {
+	ctx, span := s.tracer.Start(ctx, "service.documentService/MoveLibrary")
+	defer span.End()
+
+	if err := id.Validate(); err != nil {
+		return nil, errors.Join(ErrDocumentMove, err)
+	}
+	if err := libraryID.Validate(); err != nil {
+		return nil, errors.Join(ErrDocumentMove, err)
+	}
+	if !isLibraryID(libraryID) {
+		return nil, errors.Join(ErrDocumentMove, model.ErrInvalidID)
+	}
+
+	resolved, err := s.documentRepo.ResolveLibrary(ctx, libraryID)
+	if err != nil {
+		return nil, errors.Join(ErrDocumentMove, err)
+	}
+	libraryID = resolved
+
+	current, err := s.documentRepo.Get(ctx, id, repository.DocumentDetailProjection())
+	if err != nil {
+		return nil, errors.Join(ErrDocumentMove, err)
+	}
+
+	if !s.permissionService.CtxUserHasPermission(ctx, current.Library.ID, model.PermissionKindWrite) {
+		return nil, errors.Join(ErrDocumentMove, ErrNoPermission)
+	}
+	if !s.permissionService.CtxUserHasPermission(ctx, libraryID, model.PermissionKindWrite) {
+		return nil, errors.Join(ErrDocumentMove, ErrNoPermission)
+	}
+
+	content, err := s.documentContent(ctx, current.FileID)
+	if err != nil {
+		return nil, errors.Join(ErrDocumentMove, err)
+	}
+
+	doc, err := s.documentRepo.MoveLibrary(ctx, id, libraryID)
+	if err != nil {
+		return nil, errors.Join(ErrDocumentMove, err)
+	}
+
+	return documentFromRepository(doc, content), nil
+}
+
+func (s *documentService) MoveToFolder(ctx context.Context, id model.ID, folderID *model.ID) (*Document, error) {
+	ctx, span := s.tracer.Start(ctx, "service.documentService/MoveToFolder")
+	defer span.End()
+
+	if err := id.Validate(); err != nil {
+		return nil, errors.Join(ErrDocumentMove, err)
+	}
+	if folderID != nil {
+		if err := folderID.Validate(); err != nil {
+			return nil, errors.Join(ErrDocumentMove, err)
+		}
+		if folderID.Type != model.ResourceTypeFolder {
+			return nil, errors.Join(ErrDocumentMove, model.ErrInvalidID)
+		}
+	}
+
+	current, err := s.documentRepo.Get(ctx, id, repository.DocumentDetailProjection())
+	if err != nil {
+		return nil, errors.Join(ErrDocumentMove, err)
+	}
+
+	if !s.permissionService.CtxUserHasPermission(ctx, current.Library.ID, model.PermissionKindWrite) {
+		return nil, errors.Join(ErrDocumentMove, ErrNoPermission)
+	}
+
+	content, err := s.documentContent(ctx, current.FileID)
+	if err != nil {
+		return nil, errors.Join(ErrDocumentMove, err)
+	}
+
+	doc, err := s.documentRepo.MoveToFolder(ctx, id, folderID)
+	if err != nil {
+		return nil, errors.Join(ErrDocumentMove, err)
+	}
+
+	return documentFromRepository(doc, content), nil
+}
+
+func (s *documentService) Relate(ctx context.Context, id, targetID model.ID) error {
+	ctx, span := s.tracer.Start(ctx, "service.documentService/Relate")
+	defer span.End()
+
+	if err := id.Validate(); err != nil {
+		return errors.Join(ErrDocumentRelate, err)
+	}
+	if err := targetID.Validate(); err != nil {
+		return errors.Join(ErrDocumentRelate, err)
+	}
+	if !isRelatedID(targetID) {
+		return errors.Join(ErrDocumentRelate, model.ErrInvalidID)
+	}
+
+	current, err := s.documentRepo.Get(ctx, id, repository.DocumentDetailProjection())
+	if err != nil {
+		return errors.Join(ErrDocumentRelate, err)
+	}
+
+	if !s.permissionService.CtxUserHasPermission(ctx, current.Library.ID, model.PermissionKindWrite) {
+		return errors.Join(ErrDocumentRelate, ErrNoPermission)
+	}
+	if !s.permissionService.CtxUserHasPermission(ctx, targetID, model.PermissionKindRead) {
+		return errors.Join(ErrDocumentRelate, ErrNoPermission)
+	}
+
+	if err := s.documentRepo.Relate(ctx, id, targetID); err != nil {
+		return errors.Join(ErrDocumentRelate, err)
+	}
+	return nil
+}
+
+func (s *documentService) Unrelate(ctx context.Context, id, targetID model.ID) error {
+	ctx, span := s.tracer.Start(ctx, "service.documentService/Unrelate")
+	defer span.End()
+
+	if err := id.Validate(); err != nil {
+		return errors.Join(ErrDocumentUnrelate, err)
+	}
+	if err := targetID.Validate(); err != nil {
+		return errors.Join(ErrDocumentUnrelate, err)
+	}
+	if !isRelatedID(targetID) {
+		return errors.Join(ErrDocumentUnrelate, model.ErrInvalidID)
+	}
+
+	current, err := s.documentRepo.Get(ctx, id, repository.DocumentDetailProjection())
+	if err != nil {
+		return errors.Join(ErrDocumentUnrelate, err)
+	}
+
+	if !s.permissionService.CtxUserHasPermission(ctx, current.Library.ID, model.PermissionKindWrite) {
+		return errors.Join(ErrDocumentUnrelate, ErrNoPermission)
+	}
+	if !s.permissionService.CtxUserHasPermission(ctx, targetID, model.PermissionKindRead) {
+		return errors.Join(ErrDocumentUnrelate, ErrNoPermission)
+	}
+
+	if err := s.documentRepo.Unrelate(ctx, id, targetID); err != nil {
+		return errors.Join(ErrDocumentUnrelate, err)
+	}
+	return nil
+}
+
+func (s *documentService) Delete(ctx context.Context, id model.ID) error {
+	ctx, span := s.tracer.Start(ctx, "service.documentService/Delete")
+	defer span.End()
+
+	if expired, err := s.licenseService.Expired(ctx); expired || err != nil {
+		return errors.Join(ErrDocumentDelete, license.ErrLicenseExpired)
+	}
+
+	if err := id.Validate(); err != nil {
+		return errors.Join(ErrDocumentDelete, err)
+	}
+
+	current, err := s.documentRepo.Get(ctx, id, repository.DocumentDetailProjection())
+	if err != nil {
+		return errors.Join(ErrDocumentDelete, err)
+	}
+
+	if !s.hasDocumentOrLibraryPermission(ctx, current, model.PermissionKindDelete) {
+		return errors.Join(ErrDocumentDelete, ErrNoPermission)
+	}
+
+	if err := s.documentRepo.Delete(ctx, id); err != nil {
+		return errors.Join(ErrDocumentDelete, err)
+	}
+
+	if err := s.staticFileService.Delete(ctx, current.FileID); err != nil {
+		return errors.Join(ErrDocumentDelete, err)
+	}
+
+	return nil
 }
 
 // NewDocumentService returns a new instance of the DocumentService interface.
@@ -84,8 +597,16 @@ func NewDocumentService(opts ...Option) (DocumentService, error) {
 		return nil, ErrNoDocumentRepository
 	}
 
+	if svc.licenseService == nil {
+		return nil, ErrNoLicenseService
+	}
+
 	if svc.permissionService == nil {
 		return nil, ErrNoPermissionService
+	}
+
+	if svc.staticFileService == nil {
+		return nil, ErrNoStaticFileService
 	}
 
 	return svc, nil

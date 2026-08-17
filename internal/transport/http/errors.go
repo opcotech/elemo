@@ -17,6 +17,7 @@ var (
 	ErrNoProjectService      = errors.New("no project service provided")      // no project service provided
 	ErrNoIssueService        = errors.New("no issue service provided")        // no issue service provided
 	ErrNoDocumentService     = errors.New("no document service provided")     // no document service provided
+	ErrNoFolderService       = errors.New("no folder service provided")       // no folder service provided
 	ErrNoLabelService        = errors.New("no label service provided")        // no label service provided
 	ErrNoRoleService         = errors.New("no role service provided")         // no role service provided
 	ErrNoSystemService       = errors.New("no system service provided")       // no system service provided

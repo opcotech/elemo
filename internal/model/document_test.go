@@ -10,7 +10,7 @@ import (
 
 func TestNewDocument(t *testing.T) {
 	type args struct {
-		name   string
+		title  string
 		fileID string
 		owner  ID
 	}
@@ -23,30 +23,30 @@ func TestNewDocument(t *testing.T) {
 		{
 			name: "create document with valid details",
 			args: args{
-				name:   "test",
+				title:  "test",
 				fileID: "file_id",
 				owner:  ID{Inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, Type: ResourceTypeUser},
 			},
 			want: &Document{
 				ID:        ID{Inner: xid.NilID(), Type: ResourceTypeDocument},
-				Name:      "test",
+				Title:     "test",
 				FileID:    "file_id",
 				CreatedBy: ID{Inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, Type: ResourceTypeUser},
 				Labels:    make([]ID, 0),
 			},
 		},
 		{
-			name: "create document with invalid name",
+			name: "create document with invalid title",
 			args: args{
-				name:   "t",
+				title:  "t",
 				fileID: "file_id",
 			},
 			wantErr: ErrInvalidDocumentDetails,
 		},
 		{
-			name: "create document with empty name",
+			name: "create document with empty title",
 			args: args{
-				name:   "",
+				title:  "",
 				fileID: "file_id",
 			},
 			wantErr: ErrInvalidDocumentDetails,
@@ -54,7 +54,7 @@ func TestNewDocument(t *testing.T) {
 		{
 			name: "create document with nil owner",
 			args: args{
-				name:   "test",
+				title:  "test",
 				fileID: "file_id",
 			},
 			wantErr: ErrInvalidDocumentDetails,
@@ -64,7 +64,7 @@ func TestNewDocument(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			got, err := NewDocument(tt.args.name, tt.args.fileID, tt.args.owner)
+			got, err := NewDocument(tt.args.title, tt.args.fileID, tt.args.owner)
 			require.ErrorIs(t, err, tt.wantErr)
 
 			if tt.wantErr == nil {
@@ -77,7 +77,7 @@ func TestNewDocument(t *testing.T) {
 func TestDocument_Validate(t *testing.T) {
 	type fields struct {
 		ID      ID
-		Name    string
+		Title   string
 		Excerpt string
 		FileID  string
 		OwnedBy ID
@@ -92,26 +92,26 @@ func TestDocument_Validate(t *testing.T) {
 			name: "validate document with valid details",
 			fields: fields{
 				ID:      ID{Inner: xid.NilID(), Type: ResourceTypeDocument},
-				Name:    "test",
+				Title:   "test",
 				FileID:  "file_id",
 				OwnedBy: ID{Inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, Type: ResourceTypeUser},
 			},
 		},
 		{
-			name: "validate document with invalid name",
+			name: "validate document with invalid title",
 			fields: fields{
 				ID:      ID{Inner: xid.NilID(), Type: ResourceTypeDocument},
-				Name:    "t",
+				Title:   "t",
 				FileID:  "file_id",
 				OwnedBy: ID{Inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, Type: ResourceTypeUser},
 			},
 			wantErr: ErrInvalidDocumentDetails,
 		},
 		{
-			name: "validate document with empty name",
+			name: "validate document with empty title",
 			fields: fields{
 				ID:      ID{Inner: xid.NilID(), Type: ResourceTypeDocument},
-				Name:    "",
+				Title:   "",
 				FileID:  "file_id",
 				OwnedBy: ID{Inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, Type: ResourceTypeUser},
 			},
@@ -121,7 +121,7 @@ func TestDocument_Validate(t *testing.T) {
 			name: "validate document with nil owner",
 			fields: fields{
 				ID:      ID{Inner: xid.NilID(), Type: ResourceTypeDocument},
-				Name:    "test",
+				Title:   "test",
 				FileID:  "file_id",
 				OwnedBy: ID{},
 			},
@@ -131,7 +131,7 @@ func TestDocument_Validate(t *testing.T) {
 			name: "validate document with nil file id",
 			fields: fields{
 				ID:      ID{Inner: xid.NilID(), Type: ResourceTypeDocument},
-				Name:    "test",
+				Title:   "test",
 				FileID:  "",
 				OwnedBy: ID{Inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, Type: ResourceTypeUser},
 			},
@@ -141,7 +141,7 @@ func TestDocument_Validate(t *testing.T) {
 			name: "validate document with nil id",
 			fields: fields{
 				ID:      ID{},
-				Name:    "test",
+				Title:   "test",
 				FileID:  "file_id",
 				OwnedBy: ID{Inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, Type: ResourceTypeUser},
 			},
@@ -151,7 +151,7 @@ func TestDocument_Validate(t *testing.T) {
 			name: "validate document with invalid excerpt",
 			fields: fields{
 				ID:      ID{Inner: xid.NilID(), Type: ResourceTypeDocument},
-				Name:    "test",
+				Title:   "test",
 				Excerpt: "t",
 				FileID:  "file_id",
 				OwnedBy: ID{Inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, Type: ResourceTypeUser},
@@ -162,7 +162,7 @@ func TestDocument_Validate(t *testing.T) {
 			name: "validate document with invalid labels",
 			fields: fields{
 				ID:      ID{Inner: xid.NilID(), Type: ResourceType(0)},
-				Name:    "test",
+				Title:   "test",
 				FileID:  "file_id",
 				OwnedBy: ID{Inner: xid.ID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}, Type: ResourceTypeUser},
 				Labels: []ID{
@@ -178,7 +178,7 @@ func TestDocument_Validate(t *testing.T) {
 			t.Parallel()
 			d := &Document{
 				ID:        tt.fields.ID,
-				Name:      tt.fields.Name,
+				Title:     tt.fields.Title,
 				Excerpt:   tt.fields.Excerpt,
 				FileID:    tt.fields.FileID,
 				CreatedBy: tt.fields.OwnedBy,

@@ -1,101 +1,158 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useQueryClient } from "@tanstack/react-query";
 import { PlusIcon } from "lucide-react";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
 
+import { DocumentCreateFields } from "@/components/documents/document-create-fields";
 import { QuickCreateContext } from "@/components/quick-create/context-panel";
-import { MoreProperties } from "@/components/quick-create/more-properties";
 import type { QuickCreateKindProps } from "@/components/quick-create/types";
 import { MockDataAlert } from "@/components/shared/app-feedback";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { DialogFooter } from "@/components/ui/dialog";
+import { FieldGroup, FieldProvider } from "@/components/ui/field";
+import { Spinner } from "@/components/ui/spinner";
+import { useFormMutation } from "@/hooks/use-form-mutation";
+import { useNavigationContext } from "@/hooks/use-navigation-context";
 import {
-  ControlledField,
-  Field,
-  FieldControl,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-  FieldProvider,
-} from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { getDefaultValue } from "@/lib/utils";
+  v1NamespacesDocumentsCreate,
+  v1OrganizationsDocumentsCreate,
+  v1ProjectsDocumentsCreate,
+} from "@/lib/api/sdk";
+import type { Document, DocumentCreate } from "@/lib/api/types";
+import {
+  documentCreateBody,
+  documentCreateFormDefaults,
+  documentCreateFormSchema,
+  documentCreateParentFromNavigation,
+  documentListQueryKey,
+} from "@/lib/documents/create";
+import type { DocumentCreateFormValues } from "@/lib/documents/create";
+import { invalidateDocumentQueries } from "@/lib/documents/document-queries";
 
-const documentQuickCreateSchema = z.object({
-  title: z.string().trim().min(1, "Title is required"),
-  description: z.string().optional(),
-});
+export function DocumentQuickCreate({
+  onCancel,
+  onComplete,
+}: QuickCreateKindProps) {
+  const navigation = useNavigationContext();
+  const queryClient = useQueryClient();
+  const parent = documentCreateParentFromNavigation(navigation);
+  const form = useForm<DocumentCreateFormValues>({
+    resolver: zodResolver(documentCreateFormSchema),
+    defaultValues: documentCreateFormDefaults,
+  });
 
-type DocumentQuickCreateValues = z.infer<typeof documentQuickCreateSchema>;
-
-export function DocumentQuickCreate({ onCancel }: QuickCreateKindProps) {
-  const form = useForm<DocumentQuickCreateValues>({
-    resolver: zodResolver(documentQuickCreateSchema),
-    defaultValues: {
-      title: "",
-      description: "",
+  const mutation = useFormMutation<
+    Document,
+    { path: { id: string }; body: DocumentCreate },
+    DocumentCreateFormValues
+  >({
+    mutationFn: async (variables) => {
+      const create =
+        parent?.type === "project"
+          ? v1ProjectsDocumentsCreate
+          : parent?.type === "namespace"
+            ? v1NamespacesDocumentsCreate
+            : v1OrganizationsDocumentsCreate;
+      const { data } = await create({
+        ...variables,
+        throwOnError: true,
+      });
+      return data;
+    },
+    form,
+    successMessage: "Document created successfully",
+    errorMessagePrefix: "Failed to create document",
+    resetFormOnSuccess: true,
+    queryKeysToInvalidate: parent
+      ? [documentListQueryKey(parent.type, parent.id)]
+      : [],
+    transformValues: (values) => {
+      return {
+        path: { id: parent!.id },
+        body: documentCreateBody(values),
+      };
+    },
+    navigateOnSuccess: (navigate, document) =>
+      navigate({
+        to: "/documents/$documentId",
+        params: { documentId: document.id },
+      }),
+    onSuccess: async (document) => {
+      await invalidateDocumentQueries(queryClient, document.id);
+      onComplete();
     },
   });
 
+  const errorMessage = mutation.error?.message;
+
+  if (!parent) {
+    return (
+      <FieldProvider {...form}>
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+          }}
+        >
+          <FieldGroup className="my-5">
+            <DocumentCreateFields control={form.control} />
+            <QuickCreateContext />
+            <MockDataAlert title="Parent context required">
+              Documents can be created from an organization, namespace, or
+              project. Open one first, then use quick create.
+            </MockDataAlert>
+          </FieldGroup>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onCancel}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled>
+              <PlusIcon />
+              Create unavailable
+            </Button>
+          </DialogFooter>
+        </form>
+      </FieldProvider>
+    );
+  }
+
   return (
     <FieldProvider {...form}>
-      <form
-        onSubmit={(event) => {
-          event.preventDefault();
-        }}
-      >
+      <form onSubmit={mutation.handleSubmit}>
         <FieldGroup className="my-5">
-          <ControlledField
-            control={form.control}
-            name="title"
-            render={({ field }) => (
-              <Field>
-                <FieldLabel>Title</FieldLabel>
-                <FieldControl>
-                  <Input autoFocus placeholder="Untitled document" {...field} />
-                </FieldControl>
-                <FieldError />
-              </Field>
-            )}
-          />
+          {errorMessage && (
+            <Alert variant="destructive">
+              <AlertTitle>Failed to save</AlertTitle>
+              <AlertDescription>{errorMessage}</AlertDescription>
+            </Alert>
+          )}
 
-          <MoreProperties>
-            <ControlledField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <Field>
-                  <FieldLabel>Description</FieldLabel>
-                  <FieldControl>
-                    <Textarea
-                      placeholder="Add context"
-                      rows={3}
-                      {...field}
-                      value={getDefaultValue(field.value)}
-                    />
-                  </FieldControl>
-                  <FieldError />
-                </Field>
-              )}
-            />
-          </MoreProperties>
-
+          <DocumentCreateFields control={form.control} />
           <QuickCreateContext />
-
-          <MockDataAlert title="Document creation unavailable">
-            This type of item cannot be created from here yet. Drafts are not
-            saved.
-          </MockDataAlert>
         </FieldGroup>
 
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={onCancel}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onCancel}
+            disabled={mutation.isPending}
+          >
             Cancel
           </Button>
-          <Button type="submit" disabled>
-            <PlusIcon />
-            Create unavailable
+          <Button type="submit" disabled={mutation.isPending}>
+            {mutation.isPending ? (
+              <>
+                <Spinner size="xs" className="mr-0.5 text-white" />
+                <span>Saving...</span>
+              </>
+            ) : (
+              <>
+                <PlusIcon />
+                Create document
+              </>
+            )}
           </Button>
         </DialogFooter>
       </form>

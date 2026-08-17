@@ -23,7 +23,10 @@ import {
 } from "@/components/ui/sidebar";
 import { useNavigationContext } from "@/hooks/use-navigation-context";
 import { useAccessibleNamespaces } from "@/lib/api/accessible-namespaces";
-import { v1ProjectGetOptions } from "@/lib/api/query-options";
+import {
+  v1OrganizationGetOptions,
+  v1ProjectGetOptions,
+} from "@/lib/api/query-options";
 import { internalPath } from "@/lib/internal-url";
 import { uiActions } from "@/lib/ui-store";
 
@@ -53,13 +56,19 @@ export function ContextualNavigationSection() {
     ...v1ProjectGetOptions({ path: { id: context.projectId ?? "" } }),
     enabled: Boolean(context.projectId),
   });
+  const { data: organization } = useQuery({
+    ...v1OrganizationGetOptions({
+      path: { id: context.organizationId ?? "" },
+    }),
+    enabled: context.type === "organization" && Boolean(context.organizationId),
+  });
 
   const navigation = useMemo(() => {
-    if (!context.namespaceId || context.type === "global") {
-      return browseNavigation;
-    }
-
-    if (context.type === "project" && context.projectId) {
+    if (
+      context.type === "project" &&
+      context.projectId &&
+      context.namespaceId
+    ) {
       const projectBase = `/namespaces/${context.namespaceId}/projects/${context.projectId}`;
 
       return [
@@ -82,37 +91,63 @@ export function ContextualNavigationSection() {
       ];
     }
 
-    const namespaceBase = `/namespaces/${context.namespaceId}`;
+    if (context.type === "namespace" && context.namespaceId) {
+      const namespaceBase = `/namespaces/${context.namespaceId}`;
 
-    return [
-      {
-        label: "Overview",
-        href: namespaceBase,
-        icon: LayoutDashboardIcon,
-      },
-      {
-        label: "Projects",
-        href: `${namespaceBase}/projects`,
-        icon: FolderKanbanIcon,
-      },
-      {
-        label: "Work",
-        href: `${namespaceBase}/work`,
-        icon: ListTodoIcon,
-      },
-      {
-        label: "Documents",
-        href: `${namespaceBase}/documents`,
-        icon: FileTextIcon,
-      },
-      {
-        label: "Administration",
-        href: `${namespaceBase}/administration`,
-        icon: SettingsIcon,
-        separated: true,
-      },
-    ];
-  }, [context.namespaceId, context.projectId, context.type]);
+      return [
+        {
+          label: "Overview",
+          href: namespaceBase,
+          icon: LayoutDashboardIcon,
+        },
+        {
+          label: "Projects",
+          href: `${namespaceBase}/projects`,
+          icon: FolderKanbanIcon,
+        },
+        {
+          label: "Work",
+          href: `${namespaceBase}/work`,
+          icon: ListTodoIcon,
+        },
+        {
+          label: "Documents",
+          href: `${namespaceBase}/documents`,
+          icon: FileTextIcon,
+        },
+        {
+          label: "Administration",
+          href: `${namespaceBase}/administration`,
+          icon: SettingsIcon,
+          separated: true,
+        },
+      ];
+    }
+
+    if (context.type === "organization" && context.organizationId) {
+      const organizationBase = `/organizations/${context.organizationId}`;
+
+      return [
+        {
+          label: "Overview",
+          href: organizationBase,
+          icon: LayoutDashboardIcon,
+        },
+        {
+          label: "Documents",
+          href: `${organizationBase}/documents`,
+          icon: FileTextIcon,
+        },
+      ];
+    }
+
+    return browseNavigation;
+  }, [
+    context.namespaceId,
+    context.organizationId,
+    context.projectId,
+    context.type,
+  ]);
 
   useEffect(() => {
     if (currentPath.startsWith("/settings")) {
@@ -152,10 +187,13 @@ export function ContextualNavigationSection() {
     project,
   ]);
 
-  const isBrowse = context.type === "global" || !context.namespaceId;
+  const isBrowse = context.type === "global";
   const groupLabel = isBrowse
     ? "Browse"
-    : (project?.name ?? namespace?.name ?? "Current context");
+    : (project?.name ??
+      namespace?.name ??
+      organization?.name ??
+      "Current context");
 
   return (
     <SidebarGroup>

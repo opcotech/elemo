@@ -10,10 +10,10 @@ import (
 )
 
 // NewCreateDocumentOpts creates repository.CreateDocumentOpts for tests.
-func NewCreateDocumentOpts(belongsTo, createdBy model.ID) repository.CreateDocumentOpts {
+func NewCreateDocumentOpts(library, createdBy model.ID) repository.CreateDocumentOpts {
 	return repository.CreateDocumentOpts{
-		BelongsTo: belongsTo,
-		Name:      pkg.GenerateRandomString(10),
+		Library:   library,
+		Title:     pkg.GenerateRandomString(10),
 		Excerpt:   pkg.GenerateRandomString(10),
 		FileID:    pkg.GenerateRandomString(10),
 		CreatedBy: createdBy,
@@ -22,16 +22,32 @@ func NewCreateDocumentOpts(belongsTo, createdBy model.ID) repository.CreateDocum
 
 // NewRepositoryDocument creates a repository.Document for mock returns.
 func NewRepositoryDocument(createdBy model.ID) *repository.Document {
+	libraryID := model.MustNewID(model.ResourceTypeNamespace)
 	return &repository.Document{
-		ID:              model.MustNewID(model.ResourceTypeDocument),
-		Name:            pkg.GenerateRandomString(10),
-		Excerpt:         pkg.GenerateRandomString(10),
-		FileID:          pkg.GenerateRandomString(10),
-		CreatedBy:       repository.PartialUser{ID: createdBy},
+		ID:        model.MustNewID(model.ResourceTypeDocument),
+		Title:     pkg.GenerateRandomString(10),
+		Excerpt:   pkg.GenerateRandomString(10),
+		FileID:    pkg.GenerateRandomString(10),
+		CreatedBy: repository.PartialUser{ID: createdBy},
+		Library: repository.DocumentLibrary{
+			ID:   libraryID,
+			Type: model.ResourceTypeNamespace,
+			Name: "Library",
+		},
+		Relations:       make([]repository.DocumentRelation, 0),
 		Labels:          make([]repository.PartialLabel, 0),
 		CommentCount:    convert.ToPointer(int64(0)),
 		AttachmentCount: convert.ToPointer(int64(0)),
 		CreatedAt:       convert.ToPointer(time.Now().UTC()),
+	}
+}
+
+// NewCreateFolderOpts creates repository.CreateFolderOpts for tests.
+func NewCreateFolderOpts(library, createdBy model.ID) repository.CreateFolderOpts {
+	return repository.CreateFolderOpts{
+		Library:   library,
+		Name:      pkg.GenerateRandomString(10),
+		CreatedBy: createdBy,
 	}
 }
 

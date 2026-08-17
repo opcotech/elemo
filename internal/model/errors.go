@@ -8,6 +8,7 @@ var (
 	ErrInvalidAttachmentDetails         = errors.New("invalid attachment details")              // the attachment details are invalid
 	ErrInvalidCommentDetails            = errors.New("invalid comment details")                 // the comment details are invalid
 	ErrInvalidDocumentDetails           = errors.New("invalid document details")                // the document details are invalid
+	ErrInvalidFolderDetails             = errors.New("invalid folder details")                  // the folder details are invalid
 	ErrInvalidHealthStatus              = errors.New("invalid health status")                   // health status is invalid
 	ErrInvalidID                        = errors.New("invalid id")                              // the id is invalid
 	ErrInvalidIssueDetails              = errors.New("invalid issue details")                   // the issue details are invalid

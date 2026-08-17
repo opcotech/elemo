@@ -63,6 +63,7 @@ export interface SearchableEntitySelectProps extends Pick<
   emptyMessage?: string;
   disabled?: boolean;
   size?: "sm" | "default";
+  appearance?: "field" | "button";
   triggerClassName?: string;
   contentClassName?: string;
   onValueChange?: (value: string) => void;
@@ -101,8 +102,13 @@ export function optionCommandValue(option: EntitySelectOption): string {
 
 function entitySelectTriggerClassName(
   size: "sm" | "default",
-  triggerClassName?: string
+  triggerClassName?: string,
+  appearance: "field" | "button" = "field"
 ) {
+  if (appearance === "button") {
+    return triggerClassName;
+  }
+
   return cn(
     "border-border bg-card hover:bg-card dark:bg-input dark:hover:bg-input/80 w-full justify-between font-normal shadow-none",
     size === "sm" ? "h-8 px-2" : "h-9 px-3",
@@ -139,7 +145,10 @@ function OptionContent({
       )}
     >
       {showAvatar ? (
-        <Avatar className={size === "sm" ? "size-5" : "size-8"}>
+        <Avatar
+          size={size === "sm" ? "sm" : "default"}
+          className={size === "sm" ? "size-5" : undefined}
+        >
           {option.avatarSrc ? (
             <AvatarImage src={option.avatarSrc} alt={option.title} />
           ) : null}
@@ -227,6 +236,7 @@ function EntityCommandPopover({
   onOpenChange,
   disabled,
   size = "default",
+  appearance = "field",
   triggerClassName,
   contentClassName,
   searchPlaceholder,
@@ -243,6 +253,7 @@ function EntityCommandPopover({
   onOpenChange: (open: boolean) => void;
   disabled?: boolean;
   size?: "sm" | "default";
+  appearance?: "field" | "button";
   triggerClassName?: string;
   contentClassName?: string;
   searchPlaceholder?: string;
@@ -269,12 +280,21 @@ function EntityCommandPopover({
             aria-invalid={ariaInvalid}
             aria-label={ariaLabel}
             aria-expanded={open}
-            className={entitySelectTriggerClassName(size, triggerClassName)}
+            className={entitySelectTriggerClassName(
+              size,
+              triggerClassName,
+              appearance
+            )}
           />
         }
       >
         {trigger}
-        <TriggerIcon className="text-muted-foreground pointer-events-none size-4 shrink-0" />
+        <TriggerIcon
+          className={cn(
+            "pointer-events-none size-4 shrink-0",
+            appearance === "field" && "text-muted-foreground"
+          )}
+        />
       </PopoverTrigger>
       <PopoverContent
         align="start"
@@ -365,6 +385,7 @@ export function SearchableEntitySelect({
   emptyMessage = "No results found.",
   disabled,
   size = "default",
+  appearance = "field",
   triggerClassName,
   contentClassName,
   onValueChange,
@@ -377,13 +398,16 @@ export function SearchableEntitySelect({
   const selectedOption = value
     ? options.find((option) => option.value === value)
     : undefined;
+  const triggerSize = appearance === "button" ? "default" : size;
+  const optionSize = appearance === "button" ? "sm" : size;
 
   return (
     <EntityCommandPopover
       open={open}
       onOpenChange={setOpen}
       disabled={disabled}
-      size={size}
+      size={triggerSize}
+      appearance={appearance}
       triggerClassName={triggerClassName}
       contentClassName={cn("w-(--anchor-width) min-w-72", contentClassName)}
       searchPlaceholder={searchPlaceholder}
@@ -393,7 +417,7 @@ export function SearchableEntitySelect({
         selectedOption ? (
           <OptionContent
             option={selectedOption}
-            size={size}
+            size={optionSize}
             className="min-w-0 flex-1 justify-start"
           />
         ) : (
@@ -416,9 +440,9 @@ export function SearchableEntitySelect({
             onValueChange?.(option.value);
             setOpen(false);
           }}
-          className={size === "sm" ? "py-1.5" : "py-2"}
+          className={optionSize === "sm" ? "py-1.5" : "py-2"}
         >
-          <OptionContent option={option} size={size} showDetails />
+          <OptionContent option={option} size={optionSize} showDetails />
         </CommandItem>
       ))}
     </EntityCommandPopover>
