@@ -108,13 +108,12 @@ function SidebarProvider({
       }
 
       const target = event.target;
-      if(target instanceof HTMLElement && target.isContentEditable){
+      if (target instanceof HTMLElement && target.isContentEditable) {
         return;
       }
 
       event.preventDefault();
       toggleSidebar();
-
     };
 
     window.addEventListener("keydown", handleKeyDown);
