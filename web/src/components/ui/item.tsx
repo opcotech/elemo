@@ -77,9 +77,6 @@ function Item({
     props: mergeProps<"div">(
       {
         className: cn(itemVariants({ variant, size, className })),
-        "data-slot": "item",
-        "data-size": size,
-        "data-variant": variant,
       },
       props
     ),
