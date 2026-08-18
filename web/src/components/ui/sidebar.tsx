@@ -101,12 +101,19 @@ function SidebarProvider({
   React.useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (
-        event.key === SIDEBAR_KEYBOARD_SHORTCUT &&
-        (event.metaKey || event.ctrlKey)
+        event.key !== SIDEBAR_KEYBOARD_SHORTCUT ||
+        (!event.metaKey && !event.ctrlKey)
       ) {
-        event.preventDefault();
-        toggleSidebar();
+        return;
       }
+
+      const target = event.target;
+      if (target instanceof HTMLElement && target.isContentEditable) {
+        return;
+      }
+
+      event.preventDefault();
+      toggleSidebar();
     };
 
     window.addEventListener("keydown", handleKeyDown);
