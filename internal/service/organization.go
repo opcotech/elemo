@@ -32,6 +32,7 @@ type Organization struct {
 	NamespaceCount *int64
 	TeamCount      *int64
 	MemberCount    *int64
+	DocumentCount  *int64
 	CreatedAt      *time.Time
 	UpdatedAt      *time.Time
 }
@@ -173,6 +174,7 @@ func organizationFromRepository(o *repository.Organization) *Organization {
 		NamespaceCount: o.NamespaceCount,
 		TeamCount:      o.TeamCount,
 		MemberCount:    o.MemberCount,
+		DocumentCount:  o.DocumentCount,
 		CreatedAt:      o.CreatedAt,
 		UpdatedAt:      o.UpdatedAt,
 	}

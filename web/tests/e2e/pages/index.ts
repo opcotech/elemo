@@ -1,3 +1,5 @@
+export { DocumentPage } from "./document-page";
+export { DocumentsListPage } from "./documents-list-page";
 export { SettingsSecurityPage } from "./settings-security-page";
 export { SettingsOrganizationsPage } from "./settings-organizations-page";
 export { SettingsOrganizationCreatePage } from "./settings-organization-create-page";
@@ -17,4 +19,5 @@ export { SettingsOrganizationProjectDetailsPage } from "./settings-organization-
 export { SettingsOrganizationProjectEditPage } from "./settings-organization-project-edit-page";
 export { WorkPage } from "./work-page";
 export { WorkItemPage } from "./work-item-page";
+export { ProjectPage } from "./project-page";
 export { HomePage } from "./home-page";

@@ -1,21 +1,7 @@
-import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
-import Emoji, { emojis } from "@tiptap/extension-emoji";
-import Link from "@tiptap/extension-link";
-import Mention from "@tiptap/extension-mention";
-import Placeholder from "@tiptap/extension-placeholder";
-import { Table } from "@tiptap/extension-table";
-import TableCell from "@tiptap/extension-table-cell";
-import TableHeader from "@tiptap/extension-table-header";
-import TableRow from "@tiptap/extension-table-row";
-import TaskItem from "@tiptap/extension-task-item";
-import TaskList from "@tiptap/extension-task-list";
-import Underline from "@tiptap/extension-underline";
-import { Markdown } from "@tiptap/markdown";
 import { EditorContent, useEditor, useEditorState } from "@tiptap/react";
-import type { Editor } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
-import { common, createLowlight } from "lowlight";
 import {
+  BetweenHorizontalEndIcon,
+  BetweenVerticalEndIcon,
   BoldIcon,
   CodeIcon,
   Heading1Icon,
@@ -32,7 +18,9 @@ import {
   SmileIcon,
   SquareCodeIcon,
   StrikethroughIcon,
+  TableColumnsSplitIcon,
   TableIcon,
+  TableRowsSplitIcon,
   UnderlineIcon,
   Undo2Icon,
 } from "lucide-react";
@@ -41,45 +29,25 @@ import type { ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 import { LinkAddDialog } from "@/components/ui/link-add-dialog";
-import { createSuggestionListRenderer } from "@/components/ui/rich-text-suggestion";
-import type { SuggestionListItem } from "@/components/ui/rich-text-suggestion";
+import {
+  CODE_BLOCK_LANGUAGES,
+  createRichTextExtensions,
+  editorValueFrom,
+  preventLinkNavigation,
+} from "@/components/ui/rich-text-extensions";
+import type {
+  RichTextEditorValue,
+  RichTextMentionItem,
+} from "@/components/ui/rich-text-extensions";
+import {
+  applyLinkDraft,
+  captureLinkDraft,
+  removeLinkDraft,
+} from "@/components/ui/rich-text-link";
+import type { LinkDialogDraft } from "@/components/ui/rich-text-link";
 import { cn } from "@/lib/utils";
 
-const lowlight = createLowlight(common);
-
-export const CODE_BLOCK_LANGUAGES = [
-  "plaintext",
-  "bash",
-  "c",
-  "cpp",
-  "css",
-  "go",
-  "java",
-  "javascript",
-  "json",
-  "kotlin",
-  "markdown",
-  "php",
-  "python",
-  "ruby",
-  "rust",
-  "shell",
-  "sql",
-  "typescript",
-  "xml",
-  "yaml",
-] as const;
-
-export interface RichTextMentionItem {
-  id: string;
-  label: string;
-  detail?: string;
-}
-
-export interface RichTextEditorValue {
-  markdown: string;
-  plainText: string;
-}
+export type { RichTextEditorValue, RichTextMentionItem };
 
 interface RichTextEditorProps {
   content?: string;
@@ -134,120 +102,6 @@ function ToolbarDivider() {
   );
 }
 
-interface LinkDialogDraft {
-  href: string;
-  label: string;
-  from: number;
-  to: number;
-  empty: boolean;
-  selectedText: string;
-  editing: boolean;
-}
-
-function captureLinkDraft(editor: Editor): LinkDialogDraft {
-  const editing = editor.isActive("link");
-  if (editing) {
-    editor.chain().focus().extendMarkRange("link").run();
-  }
-
-  const { from, to, empty } = editor.state.selection;
-  const selectedText = empty ? "" : editor.state.doc.textBetween(from, to, " ");
-  const previousHref = editor.getAttributes("link").href as string | undefined;
-
-  return {
-    href: previousHref ?? "https://",
-    label: selectedText || previousHref || "",
-    from,
-    to,
-    empty,
-    selectedText,
-    editing,
-  };
-}
-
-function applyLinkDraft(editor: Editor, draft: LinkDialogDraft) {
-  const href = draft.href.trim();
-  const label = draft.label.trim();
-  if (!href || !label) {
-    return;
-  }
-
-  const chain = editor
-    .chain()
-    .focus()
-    .setTextSelection({ from: draft.from, to: draft.to });
-
-  if (draft.empty || label !== draft.selectedText) {
-    chain
-      .insertContent({
-        type: "text",
-        text: label,
-        marks: [{ type: "link", attrs: { href } }],
-      })
-      .run();
-    return;
-  }
-
-  chain.setLink({ href }).run();
-}
-
-function removeLinkDraft(editor: Editor, draft: LinkDialogDraft) {
-  editor
-    .chain()
-    .focus()
-    .setTextSelection({ from: draft.from, to: draft.to })
-    .extendMarkRange("link")
-    .unsetLink()
-    .run();
-}
-
-function filterMentionItems(
-  items: readonly RichTextMentionItem[],
-  query: string
-): SuggestionListItem[] {
-  const normalized = query.trim().toLowerCase();
-  return items
-    .filter((item) => {
-      if (!normalized) {
-        return true;
-      }
-      return (
-        item.label.toLowerCase().includes(normalized) ||
-        (item.detail?.toLowerCase().includes(normalized) ?? false) ||
-        item.id.toLowerCase().includes(normalized)
-      );
-    })
-    .slice(0, 8)
-    .map((item) => ({
-      id: item.id,
-      label: item.label,
-      detail: item.detail,
-    }));
-}
-
-function filterEmojiItems(query: string): SuggestionListItem[] {
-  const normalized = query.trim().toLowerCase();
-  return emojis
-    .filter((item) => {
-      if (!item.emoji) {
-        return false;
-      }
-      if (!normalized) {
-        return true;
-      }
-      return (
-        item.name.includes(normalized) ||
-        item.shortcodes.some((code) => code.includes(normalized)) ||
-        item.tags.some((tag) => tag.includes(normalized))
-      );
-    })
-    .slice(0, 8)
-    .map((item) => ({
-      id: item.name,
-      label: `${item.emoji} :${item.name}:`,
-    }));
-}
-
 export function RichTextEditor({
   content = "",
   editable = true,
@@ -267,67 +121,11 @@ export function RichTextEditor({
   const [linkDraft, setLinkDraft] = useState<LinkDialogDraft | null>(null);
 
   const extensions = useMemo(
-    () => [
-      StarterKit.configure({
-        heading: { levels: [1, 2, 3] },
-        codeBlock: false,
-      }),
-      CodeBlockLowlight.configure({
-        lowlight,
-        defaultLanguage: "plaintext",
-      }),
-      Link.configure({
-        openOnClick: false,
-        enableClickSelection: true,
-        autolink: true,
-        defaultProtocol: "https",
-        HTMLAttributes: {
-          rel: "noopener noreferrer",
-          target: "_blank",
-        },
-      }),
-      Underline,
-      Emoji.configure({
-        enableEmoticons: false,
-        suggestion: {
-          items: ({ query }) => filterEmojiItems(query),
-          render: createSuggestionListRenderer((item) => ({
-            name: item.id,
-          })),
-        },
-      }),
-      Mention.configure({
-        HTMLAttributes: {
-          class: "mention",
-        },
-        suggestion: {
-          items: ({ query }) =>
-            filterMentionItems(mentionItemsRef.current, query),
-          render: createSuggestionListRenderer((item) => ({
-            id: item.id,
-            label: item.label,
-          })),
-        },
-      }),
-      Table.configure({
-        resizable: false,
-      }),
-      TableRow,
-      TableHeader,
-      TableCell,
-      TaskList,
-      TaskItem.configure({
-        nested: true,
-      }),
-      Markdown.configure({
-        markedOptions: {
-          gfm: true,
-        },
-      }),
-      Placeholder.configure({
+    () =>
+      createRichTextExtensions({
         placeholder,
+        getMentionItems: () => mentionItemsRef.current,
       }),
-    ],
     [placeholder]
   );
 
@@ -346,50 +144,21 @@ export function RichTextEditor({
         class: "rich-text-editor__content focus:outline-none",
       },
       handleDOMEvents: {
-        // TipTap openOnClick:false skips window.open but does not cancel the
-        // browser default for <a target="_blank">, so block navigation while editing.
-        click: (view, event) => {
-          if (!view.editable) {
-            return false;
-          }
-          const target = event.target;
-          if (!(target instanceof Element)) {
-            return false;
-          }
-          const link = target.closest("a");
-          if (link && view.dom.contains(link)) {
-            event.preventDefault();
-          }
-          return false;
-        },
+        click: preventLinkNavigation,
         auxclick: (view, event) => {
-          if (!view.editable || event.button !== 1) {
+          if (event.button !== 1) {
             return false;
           }
-          const target = event.target;
-          if (!(target instanceof Element)) {
-            return false;
-          }
-          const link = target.closest("a");
-          if (link && view.dom.contains(link)) {
-            event.preventDefault();
-          }
-          return false;
+          return preventLinkNavigation(view, event);
         },
       },
     },
     onCreate: ({ editor: current }) => {
-      onChange?.({
-        markdown: current.getMarkdown(),
-        plainText: current.getText(),
-      });
+      onChange?.(editorValueFrom(current));
       onReady?.();
     },
     onUpdate: ({ editor: current }) => {
-      onChange?.({
-        markdown: current.getMarkdown(),
-        plainText: current.getText(),
-      });
+      onChange?.(editorValueFrom(current));
     },
   });
 
@@ -422,6 +191,10 @@ export function RichTextEditor({
           link: false,
           canUndo: false,
           canRedo: false,
+          canAddRow: false,
+          canDeleteRow: false,
+          canAddColumn: false,
+          canDeleteColumn: false,
         };
       }
       return {
@@ -444,6 +217,10 @@ export function RichTextEditor({
         link: current.isActive("link"),
         canUndo: current.can().undo(),
         canRedo: current.can().redo(),
+        canAddRow: current.can().addRowAfter(),
+        canDeleteRow: current.can().deleteRow(),
+        canAddColumn: current.can().addColumnAfter(),
+        canDeleteColumn: current.can().deleteColumn(),
       };
     },
   });
@@ -665,6 +442,34 @@ export function RichTextEditor({
                 }
               >
                 <TableIcon />
+              </ToolbarButton>
+              <ToolbarButton
+                label="Add row"
+                disabled={controlsDisabled || !toolbarState?.canAddRow}
+                onClick={() => editor.chain().focus().addRowAfter().run()}
+              >
+                <BetweenHorizontalEndIcon />
+              </ToolbarButton>
+              <ToolbarButton
+                label="Delete row"
+                disabled={controlsDisabled || !toolbarState?.canDeleteRow}
+                onClick={() => editor.chain().focus().deleteRow().run()}
+              >
+                <TableRowsSplitIcon />
+              </ToolbarButton>
+              <ToolbarButton
+                label="Add column"
+                disabled={controlsDisabled || !toolbarState?.canAddColumn}
+                onClick={() => editor.chain().focus().addColumnAfter().run()}
+              >
+                <BetweenVerticalEndIcon />
+              </ToolbarButton>
+              <ToolbarButton
+                label="Delete column"
+                disabled={controlsDisabled || !toolbarState?.canDeleteColumn}
+                onClick={() => editor.chain().focus().deleteColumn().run()}
+              >
+                <TableColumnsSplitIcon />
               </ToolbarButton>
               <ToolbarButton
                 label="Insert emoji"

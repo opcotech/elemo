@@ -190,6 +190,48 @@ func TestIssueGetQuery_Compile(t *testing.T) {
 		assert.Equal(t, "issue.load_parent", plan.Loaders[0].Name)
 		assert.Contains(t, plan.Loaders[0].Cypher, "pp.key AS parent_project_key")
 	})
+
+	t.Run("detail projection loads document count", func(t *testing.T) {
+		t.Parallel()
+
+		plan, err := CompileQuery(IssueGetQuery{
+			ID:         issueID,
+			Projection: IssueDetailProjection(),
+		})
+		require.NoError(t, err)
+		names := make([]string, 0, len(plan.Loaders))
+		for _, loader := range plan.Loaders {
+			names = append(names, loader.Name)
+		}
+		assert.Contains(t, names, "issue.load_document_count")
+		assert.Contains(t, names, "issue.load_comment_count")
+		for _, loader := range plan.Loaders {
+			if loader.Name == "issue.load_document_count" {
+				assert.Contains(t, loader.Cypher, "COUNT { (:Document)-[:RELATED_TO]->(i) } AS document_count")
+			}
+		}
+	})
+}
+
+func TestIssueListQuery_CompileOmitsDocumentCount(t *testing.T) {
+	t.Parallel()
+
+	projectID := model.MustNewID(model.ResourceTypeProject)
+
+	t.Run("list projection omits document count", func(t *testing.T) {
+		t.Parallel()
+
+		plan, err := CompileQuery(IssueListQuery{
+			ProjectID:  projectID,
+			Page:       CursorPage{Size: 10},
+			Projection: IssueListForProjectProjection(),
+		})
+		require.NoError(t, err)
+		for _, loader := range plan.Loaders {
+			assert.NotEqual(t, "issue.load_document_count", loader.Name)
+			assert.NotContains(t, loader.Cypher, "document_count")
+		}
+	})
 }
 
 func TestIssueWatchersQuery(t *testing.T) {

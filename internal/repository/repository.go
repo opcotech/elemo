@@ -45,6 +45,8 @@ const (
 	EdgeKindRelatedTo                         // RELATED_TO
 	EdgeKindSpeaks                            // SPEAKS
 	EdgeKindWatches                           // WATCHES
+	EdgeKindScopedTo                          // SCOPED_TO
+	EdgeKindLocatedIn                         // LOCATED_IN
 )
 
 var (

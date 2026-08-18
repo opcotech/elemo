@@ -1,28 +1,37 @@
+import { useQuery } from "@tanstack/react-query";
 import {
   ArrowRightIcon,
   Building2Icon,
+  FileTextIcon,
   Layers3Icon,
   ShieldIcon,
   UsersIcon,
 } from "lucide-react";
 import { useMemo } from "react";
 
+import { DocumentLibraryPage } from "@/components/documents/document-library-page";
+import { DocumentSummaryList } from "@/components/documents/document-summary-list";
 import { ContentWidth } from "@/components/layout/content-width";
 import { NamespaceEntitySubtitle } from "@/components/namespaces/namespace-entity-subtitle";
+import { openQuickCreate } from "@/components/quick-create/open";
 import { EntityHeader, PageActions } from "@/components/shared/entity-header";
 import { AppList, EntityLink } from "@/components/shared/entity-link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { AddButton, CreateButton } from "@/components/ui/create-button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ExternalLink } from "@/components/ui/external-link";
 import { InternalLink } from "@/components/ui/internal-link";
+import { ListSkeleton } from "@/components/ui/list-skeleton";
 import { PropertyList } from "@/components/ui/property-list";
 import { Section } from "@/components/ui/section";
 import { StatusIndicator } from "@/components/ui/status-indicator";
 import { UserAvatarCompact } from "@/components/ui/user-avatar";
 import { useAuth } from "@/hooks/use-auth";
+import { v1OrganizationsDocumentsGetOptions } from "@/lib/api/query-options";
 import { can } from "@/lib/auth/permissions";
 import { zUserStatus } from "@/lib/client/zod.gen";
+import type { DocumentLibrarySearch } from "@/lib/documents/library";
 import { formatDate } from "@/lib/format-date";
 import { internalPath } from "@/lib/internal-url";
 import { sortOrganizationMembers } from "@/lib/organization-members";
@@ -46,6 +55,15 @@ export function OrganizationOverviewPage({
   } = data;
   const organizationId = organization.id;
   const hasOrgWritePermission = can(permissions, "write");
+  const documentCount = organization.document_count ?? 0;
+  const { data: documentsPage, isLoading: isDocumentsLoading } = useQuery({
+    ...v1OrganizationsDocumentsGetOptions({
+      path: { id: organizationId },
+      query: { page_size: 5, all: true },
+    }),
+    enabled: hasReadAccess,
+  });
+  const documents = documentsPage?.items ?? [];
 
   const sortedMembers = useMemo(() => {
     return sortOrganizationMembers(members);
@@ -145,6 +163,59 @@ export function OrganizationOverviewPage({
                         >
                           Create namespace
                         </Button>
+                      ) : undefined
+                    }
+                  />
+                )}
+              </Section>
+
+              <Section
+                title="Documents"
+                data-section="documents"
+                description={
+                  documentCount
+                    ? `${documentCount} ${pluralize(documentCount, "document", "documents")}`
+                    : undefined
+                }
+                action={
+                  <div className="flex items-center gap-2">
+                    {hasOrgWritePermission ? (
+                      <AddButton
+                        size="sm"
+                        onClick={() => openQuickCreate("document")}
+                      />
+                    ) : null}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      render={
+                        <InternalLink
+                          to={internalPath(
+                            `/organizations/${organizationId}/documents`
+                          )}
+                        />
+                      }
+                    >
+                      View all <ArrowRightIcon />
+                    </Button>
+                  </div>
+                }
+              >
+                {isDocumentsLoading ? (
+                  <ListSkeleton rows={4} />
+                ) : documents.length > 0 ? (
+                  <DocumentSummaryList documents={documents} />
+                ) : (
+                  <EmptyState
+                    compact
+                    icon={<FileTextIcon />}
+                    title="No documents"
+                    description="Documents that live in this organization will appear here."
+                    action={
+                      hasOrgWritePermission ? (
+                        <CreateButton
+                          onClick={() => openQuickCreate("document")}
+                        />
                       ) : undefined
                     }
                   />
@@ -334,11 +405,40 @@ export function OrganizationOverviewPage({
                   label: "Created",
                   value: formatDate(organization.created_at),
                 },
+                {
+                  label: "Documents",
+                  value: documentCount,
+                },
               ]}
             />
           </Section>
         </div>
       </div>
     </ContentWidth>
+  );
+}
+
+export function OrganizationDocumentsPage({
+  data,
+  search,
+}: {
+  data: OrganizationWorkspaceData;
+  search: DocumentLibrarySearch;
+}) {
+  const { organization, permissions, hasReadAccess } = data;
+  const hasOrgWritePermission = can(permissions, "write");
+
+  return (
+    <DocumentLibraryPage
+      kind="organization"
+      libraryId={organization.id}
+      libraryName={organization.name}
+      search={search}
+      mayWrite={hasOrgWritePermission}
+      hasReadAccess={hasReadAccess}
+      documentCount={organization.document_count ?? 0}
+      limitedAccessTitle="Limited access"
+      limitedAccessDescription="Documents require read permission on this organization."
+    />
   );
 }

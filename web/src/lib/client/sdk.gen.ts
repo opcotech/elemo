@@ -9,6 +9,24 @@ import type {
 } from "./client";
 import { client } from "./client.gen";
 import type {
+  V1DocumentDeleteData,
+  V1DocumentDeleteErrors,
+  V1DocumentDeleteResponses,
+  V1DocumentGetData,
+  V1DocumentGetErrors,
+  V1DocumentGetResponses,
+  V1DocumentUpdateData,
+  V1DocumentUpdateErrors,
+  V1DocumentUpdateResponses,
+  V1FolderDeleteData,
+  V1FolderDeleteErrors,
+  V1FolderDeleteResponses,
+  V1FolderGetData,
+  V1FolderGetErrors,
+  V1FolderGetResponses,
+  V1FolderUpdateData,
+  V1FolderUpdateErrors,
+  V1FolderUpdateResponses,
   V1IssueDeleteData,
   V1IssueDeleteErrors,
   V1IssueDeleteResponses,
@@ -27,6 +45,18 @@ import type {
   V1IssueRelationUpdateData,
   V1IssueRelationUpdateErrors,
   V1IssueRelationUpdateResponses,
+  V1IssuesDocumentsCreateData,
+  V1IssuesDocumentsCreateErrors,
+  V1IssuesDocumentsCreateResponses,
+  V1IssuesDocumentsGetData,
+  V1IssuesDocumentsGetErrors,
+  V1IssuesDocumentsGetResponses,
+  V1IssuesDocumentsRelateData,
+  V1IssuesDocumentsRelateErrors,
+  V1IssuesDocumentsRelateResponses,
+  V1IssuesDocumentsUnrelateData,
+  V1IssuesDocumentsUnrelateErrors,
+  V1IssuesDocumentsUnrelateResponses,
   V1IssueUpdateData,
   V1IssueUpdateErrors,
   V1IssueUpdateResponses,
@@ -39,9 +69,18 @@ import type {
   V1NamespaceGetData,
   V1NamespaceGetErrors,
   V1NamespaceGetResponses,
+  V1NamespacesDocumentsCreateData,
+  V1NamespacesDocumentsCreateErrors,
+  V1NamespacesDocumentsCreateResponses,
   V1NamespacesDocumentsGetData,
   V1NamespacesDocumentsGetErrors,
   V1NamespacesDocumentsGetResponses,
+  V1NamespacesFoldersCreateData,
+  V1NamespacesFoldersCreateErrors,
+  V1NamespacesFoldersCreateResponses,
+  V1NamespacesFoldersGetData,
+  V1NamespacesFoldersGetErrors,
+  V1NamespacesFoldersGetResponses,
   V1NamespacesIssuesGetData,
   V1NamespacesIssuesGetErrors,
   V1NamespacesIssuesGetResponses,
@@ -129,6 +168,18 @@ import type {
   V1OrganizationsCreateData,
   V1OrganizationsCreateErrors,
   V1OrganizationsCreateResponses,
+  V1OrganizationsDocumentsCreateData,
+  V1OrganizationsDocumentsCreateErrors,
+  V1OrganizationsDocumentsCreateResponses,
+  V1OrganizationsDocumentsGetData,
+  V1OrganizationsDocumentsGetErrors,
+  V1OrganizationsDocumentsGetResponses,
+  V1OrganizationsFoldersCreateData,
+  V1OrganizationsFoldersCreateErrors,
+  V1OrganizationsFoldersCreateResponses,
+  V1OrganizationsFoldersGetData,
+  V1OrganizationsFoldersGetErrors,
+  V1OrganizationsFoldersGetResponses,
   V1OrganizationsGetData,
   V1OrganizationsGetErrors,
   V1OrganizationsGetResponses,
@@ -168,9 +219,18 @@ import type {
   V1ProjectGetData,
   V1ProjectGetErrors,
   V1ProjectGetResponses,
+  V1ProjectsDocumentsCreateData,
+  V1ProjectsDocumentsCreateErrors,
+  V1ProjectsDocumentsCreateResponses,
   V1ProjectsDocumentsGetData,
   V1ProjectsDocumentsGetErrors,
   V1ProjectsDocumentsGetResponses,
+  V1ProjectsDocumentsRelateData,
+  V1ProjectsDocumentsRelateErrors,
+  V1ProjectsDocumentsRelateResponses,
+  V1ProjectsDocumentsUnrelateData,
+  V1ProjectsDocumentsUnrelateErrors,
+  V1ProjectsDocumentsUnrelateResponses,
   V1ProjectsIssuesCreateData,
   V1ProjectsIssuesCreateErrors,
   V1ProjectsIssuesCreateResponses,
@@ -1216,6 +1276,108 @@ export const v1OrganizationsNamespacesCreate = <
   });
 
 /**
+ * Get organization documents
+ *
+ * Return a cursor-paginated page of documents in the organization library.
+ */
+export const v1OrganizationsDocumentsGet = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<V1OrganizationsDocumentsGetData, ThrowOnError>
+): RequestResult<
+  V1OrganizationsDocumentsGetResponses,
+  V1OrganizationsDocumentsGetErrors,
+  ThrowOnError
+> =>
+  (options.client ?? client).get<
+    V1OrganizationsDocumentsGetResponses,
+    V1OrganizationsDocumentsGetErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: "bearer", type: "http" }],
+    url: "/v1/organizations/{id}/documents",
+    ...options,
+  });
+
+/**
+ * Create document in organization
+ *
+ * Create a new document in the organization library.
+ */
+export const v1OrganizationsDocumentsCreate = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<V1OrganizationsDocumentsCreateData, ThrowOnError>
+): RequestResult<
+  V1OrganizationsDocumentsCreateResponses,
+  V1OrganizationsDocumentsCreateErrors,
+  ThrowOnError
+> =>
+  (options.client ?? client).post<
+    V1OrganizationsDocumentsCreateResponses,
+    V1OrganizationsDocumentsCreateErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: "bearer", type: "http" }],
+    url: "/v1/organizations/{id}/documents",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+/**
+ * Get organization folders
+ *
+ * Return a cursor-paginated page of folders at a location in the organization library.
+ */
+export const v1OrganizationsFoldersGet = <ThrowOnError extends boolean = false>(
+  options: Options<V1OrganizationsFoldersGetData, ThrowOnError>
+): RequestResult<
+  V1OrganizationsFoldersGetResponses,
+  V1OrganizationsFoldersGetErrors,
+  ThrowOnError
+> =>
+  (options.client ?? client).get<
+    V1OrganizationsFoldersGetResponses,
+    V1OrganizationsFoldersGetErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: "bearer", type: "http" }],
+    url: "/v1/organizations/{id}/folders",
+    ...options,
+  });
+
+/**
+ * Create folder in organization
+ *
+ * Create a new folder in the organization library.
+ */
+export const v1OrganizationsFoldersCreate = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<V1OrganizationsFoldersCreateData, ThrowOnError>
+): RequestResult<
+  V1OrganizationsFoldersCreateResponses,
+  V1OrganizationsFoldersCreateErrors,
+  ThrowOnError
+> =>
+  (options.client ?? client).post<
+    V1OrganizationsFoldersCreateResponses,
+    V1OrganizationsFoldersCreateErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: "bearer", type: "http" }],
+    url: "/v1/organizations/{id}/folders",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+/**
  * Delete namespace
  *
  * Delete the namespace by its ID.
@@ -1334,7 +1496,7 @@ export const v1NamespacesProjectsCreate = <
 /**
  * Get namespace documents
  *
- * Return a cursor-paginated page of documents that belong to the namespace.
+ * Return a cursor-paginated page of documents in the namespace library.
  */
 export const v1NamespacesDocumentsGet = <ThrowOnError extends boolean = false>(
   options: Options<V1NamespacesDocumentsGetData, ThrowOnError>
@@ -1351,6 +1513,82 @@ export const v1NamespacesDocumentsGet = <ThrowOnError extends boolean = false>(
     security: [{ scheme: "bearer", type: "http" }],
     url: "/v1/namespaces/{id}/documents",
     ...options,
+  });
+
+/**
+ * Create document in namespace
+ *
+ * Create a new document in the namespace library.
+ */
+export const v1NamespacesDocumentsCreate = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<V1NamespacesDocumentsCreateData, ThrowOnError>
+): RequestResult<
+  V1NamespacesDocumentsCreateResponses,
+  V1NamespacesDocumentsCreateErrors,
+  ThrowOnError
+> =>
+  (options.client ?? client).post<
+    V1NamespacesDocumentsCreateResponses,
+    V1NamespacesDocumentsCreateErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: "bearer", type: "http" }],
+    url: "/v1/namespaces/{id}/documents",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+/**
+ * Get namespace folders
+ *
+ * Return a cursor-paginated page of folders at a location in the namespace library.
+ */
+export const v1NamespacesFoldersGet = <ThrowOnError extends boolean = false>(
+  options: Options<V1NamespacesFoldersGetData, ThrowOnError>
+): RequestResult<
+  V1NamespacesFoldersGetResponses,
+  V1NamespacesFoldersGetErrors,
+  ThrowOnError
+> =>
+  (options.client ?? client).get<
+    V1NamespacesFoldersGetResponses,
+    V1NamespacesFoldersGetErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: "bearer", type: "http" }],
+    url: "/v1/namespaces/{id}/folders",
+    ...options,
+  });
+
+/**
+ * Create folder in namespace
+ *
+ * Create a new folder in the namespace library.
+ */
+export const v1NamespacesFoldersCreate = <ThrowOnError extends boolean = false>(
+  options: Options<V1NamespacesFoldersCreateData, ThrowOnError>
+): RequestResult<
+  V1NamespacesFoldersCreateResponses,
+  V1NamespacesFoldersCreateErrors,
+  ThrowOnError
+> =>
+  (options.client ?? client).post<
+    V1NamespacesFoldersCreateResponses,
+    V1NamespacesFoldersCreateErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: "bearer", type: "http" }],
+    url: "/v1/namespaces/{id}/folders",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
   });
 
 /**
@@ -1514,7 +1752,7 @@ export const v1ProjectsIssuesCreate = <ThrowOnError extends boolean = false>(
 /**
  * Get project documents
  *
- * Return a cursor-paginated page of documents that belong to the project.
+ * Return a cursor-paginated page of documents related to the project.
  */
 export const v1ProjectsDocumentsGet = <ThrowOnError extends boolean = false>(
   options: Options<V1ProjectsDocumentsGetData, ThrowOnError>
@@ -1531,6 +1769,202 @@ export const v1ProjectsDocumentsGet = <ThrowOnError extends boolean = false>(
     security: [{ scheme: "bearer", type: "http" }],
     url: "/v1/projects/{id}/documents",
     ...options,
+  });
+
+/**
+ * Create document in project
+ *
+ * Create a new document in the namespace library, related to the project.
+ */
+export const v1ProjectsDocumentsCreate = <ThrowOnError extends boolean = false>(
+  options: Options<V1ProjectsDocumentsCreateData, ThrowOnError>
+): RequestResult<
+  V1ProjectsDocumentsCreateResponses,
+  V1ProjectsDocumentsCreateErrors,
+  ThrowOnError
+> =>
+  (options.client ?? client).post<
+    V1ProjectsDocumentsCreateResponses,
+    V1ProjectsDocumentsCreateErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: "bearer", type: "http" }],
+    url: "/v1/projects/{id}/documents",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+/**
+ * Unrelate document from project
+ *
+ * Remove the relation between the document and the project.
+ */
+export const v1ProjectsDocumentsUnrelate = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<V1ProjectsDocumentsUnrelateData, ThrowOnError>
+): RequestResult<
+  V1ProjectsDocumentsUnrelateResponses,
+  V1ProjectsDocumentsUnrelateErrors,
+  ThrowOnError
+> =>
+  (options.client ?? client).delete<
+    V1ProjectsDocumentsUnrelateResponses,
+    V1ProjectsDocumentsUnrelateErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: "bearer", type: "http" }],
+    url: "/v1/projects/{id}/documents/{documentId}",
+    ...options,
+  });
+
+/**
+ * Relate document to project
+ *
+ * Relate an existing document to the project.
+ */
+export const v1ProjectsDocumentsRelate = <ThrowOnError extends boolean = false>(
+  options: Options<V1ProjectsDocumentsRelateData, ThrowOnError>
+): RequestResult<
+  V1ProjectsDocumentsRelateResponses,
+  V1ProjectsDocumentsRelateErrors,
+  ThrowOnError
+> =>
+  (options.client ?? client).post<
+    V1ProjectsDocumentsRelateResponses,
+    V1ProjectsDocumentsRelateErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: "bearer", type: "http" }],
+    url: "/v1/projects/{id}/documents/{documentId}",
+    ...options,
+  });
+
+/**
+ * Delete document
+ *
+ * Delete the document by its ID.
+ */
+export const v1DocumentDelete = <ThrowOnError extends boolean = false>(
+  options: Options<V1DocumentDeleteData, ThrowOnError>
+): RequestResult<
+  V1DocumentDeleteResponses,
+  V1DocumentDeleteErrors,
+  ThrowOnError
+> =>
+  (options.client ?? client).delete<
+    V1DocumentDeleteResponses,
+    V1DocumentDeleteErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: "bearer", type: "http" }],
+    url: "/v1/documents/{id}",
+    ...options,
+  });
+
+/**
+ * Get document
+ *
+ * Return the requested document by its ID, including the stored body.
+ */
+export const v1DocumentGet = <ThrowOnError extends boolean = false>(
+  options: Options<V1DocumentGetData, ThrowOnError>
+): RequestResult<V1DocumentGetResponses, V1DocumentGetErrors, ThrowOnError> =>
+  (options.client ?? client).get<
+    V1DocumentGetResponses,
+    V1DocumentGetErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: "bearer", type: "http" }],
+    url: "/v1/documents/{id}",
+    ...options,
+  });
+
+/**
+ * Update document
+ *
+ * Update the document by its ID. Optional library_id moves the document to another library and clears its folder. Optional folder_id moves it within the library; JSON null removes it from the folder.
+ */
+export const v1DocumentUpdate = <ThrowOnError extends boolean = false>(
+  options: Options<V1DocumentUpdateData, ThrowOnError>
+): RequestResult<
+  V1DocumentUpdateResponses,
+  V1DocumentUpdateErrors,
+  ThrowOnError
+> =>
+  (options.client ?? client).patch<
+    V1DocumentUpdateResponses,
+    V1DocumentUpdateErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: "bearer", type: "http" }],
+    url: "/v1/documents/{id}",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+/**
+ * Delete folder
+ *
+ * Delete the folder by its ID. Child folders and documents are reparented one level up.
+ */
+export const v1FolderDelete = <ThrowOnError extends boolean = false>(
+  options: Options<V1FolderDeleteData, ThrowOnError>
+): RequestResult<V1FolderDeleteResponses, V1FolderDeleteErrors, ThrowOnError> =>
+  (options.client ?? client).delete<
+    V1FolderDeleteResponses,
+    V1FolderDeleteErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: "bearer", type: "http" }],
+    url: "/v1/folders/{id}",
+    ...options,
+  });
+
+/**
+ * Get folder
+ *
+ * Return the requested folder by its ID.
+ */
+export const v1FolderGet = <ThrowOnError extends boolean = false>(
+  options: Options<V1FolderGetData, ThrowOnError>
+): RequestResult<V1FolderGetResponses, V1FolderGetErrors, ThrowOnError> =>
+  (options.client ?? client).get<
+    V1FolderGetResponses,
+    V1FolderGetErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: "bearer", type: "http" }],
+    url: "/v1/folders/{id}",
+    ...options,
+  });
+
+/**
+ * Update folder
+ *
+ * Update the folder by its ID. JSON null parent_id moves it to the library root.
+ */
+export const v1FolderUpdate = <ThrowOnError extends boolean = false>(
+  options: Options<V1FolderUpdateData, ThrowOnError>
+): RequestResult<V1FolderUpdateResponses, V1FolderUpdateErrors, ThrowOnError> =>
+  (options.client ?? client).patch<
+    V1FolderUpdateResponses,
+    V1FolderUpdateErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: "bearer", type: "http" }],
+    url: "/v1/folders/{id}",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
   });
 
 /**
@@ -1589,6 +2023,98 @@ export const v1IssueUpdate = <ThrowOnError extends boolean = false>(
       "Content-Type": "application/json",
       ...options.headers,
     },
+  });
+
+/**
+ * Get issue documents
+ *
+ * Return a cursor-paginated page of documents related to the issue.
+ */
+export const v1IssuesDocumentsGet = <ThrowOnError extends boolean = false>(
+  options: Options<V1IssuesDocumentsGetData, ThrowOnError>
+): RequestResult<
+  V1IssuesDocumentsGetResponses,
+  V1IssuesDocumentsGetErrors,
+  ThrowOnError
+> =>
+  (options.client ?? client).get<
+    V1IssuesDocumentsGetResponses,
+    V1IssuesDocumentsGetErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: "bearer", type: "http" }],
+    url: "/v1/issues/{id}/documents",
+    ...options,
+  });
+
+/**
+ * Create document in issue
+ *
+ * Create a new document in the namespace library, related to the issue.
+ */
+export const v1IssuesDocumentsCreate = <ThrowOnError extends boolean = false>(
+  options: Options<V1IssuesDocumentsCreateData, ThrowOnError>
+): RequestResult<
+  V1IssuesDocumentsCreateResponses,
+  V1IssuesDocumentsCreateErrors,
+  ThrowOnError
+> =>
+  (options.client ?? client).post<
+    V1IssuesDocumentsCreateResponses,
+    V1IssuesDocumentsCreateErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: "bearer", type: "http" }],
+    url: "/v1/issues/{id}/documents",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+/**
+ * Unrelate document from issue
+ *
+ * Remove the relation between the document and the issue.
+ */
+export const v1IssuesDocumentsUnrelate = <ThrowOnError extends boolean = false>(
+  options: Options<V1IssuesDocumentsUnrelateData, ThrowOnError>
+): RequestResult<
+  V1IssuesDocumentsUnrelateResponses,
+  V1IssuesDocumentsUnrelateErrors,
+  ThrowOnError
+> =>
+  (options.client ?? client).delete<
+    V1IssuesDocumentsUnrelateResponses,
+    V1IssuesDocumentsUnrelateErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: "bearer", type: "http" }],
+    url: "/v1/issues/{id}/documents/{documentId}",
+    ...options,
+  });
+
+/**
+ * Relate document to issue
+ *
+ * Relate an existing document to the issue.
+ */
+export const v1IssuesDocumentsRelate = <ThrowOnError extends boolean = false>(
+  options: Options<V1IssuesDocumentsRelateData, ThrowOnError>
+): RequestResult<
+  V1IssuesDocumentsRelateResponses,
+  V1IssuesDocumentsRelateErrors,
+  ThrowOnError
+> =>
+  (options.client ?? client).post<
+    V1IssuesDocumentsRelateResponses,
+    V1IssuesDocumentsRelateErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: "bearer", type: "http" }],
+    url: "/v1/issues/{id}/documents/{documentId}",
+    ...options,
   });
 
 /**

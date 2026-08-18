@@ -1,8 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { Outlet, createFileRoute } from "@tanstack/react-router";
 
 import { OrganizationDetailError } from "@/components/organizations/organization-detail-error";
 import { OrganizationNotFound } from "@/components/organizations/organization-not-found";
-import { OrganizationOverviewPage } from "@/components/organizations/organization-pages";
 import { DetailPageSkeleton } from "@/components/ui/detail-card";
 import { entityBreadcrumb } from "@/lib/breadcrumb";
 import { loadOrganizationWorkspace } from "@/lib/organization-workspace";
@@ -22,9 +21,9 @@ export const Route = createFileRoute(
   pendingComponent: DetailPageSkeleton,
   errorComponent: OrganizationDetailError,
   notFoundComponent: OrganizationNotFound,
-  component: OrganizationDetailRoute,
+  component: OrganizationLayoutRoute,
 });
 
-function OrganizationDetailRoute() {
-  return <OrganizationOverviewPage data={Route.useLoaderData()} />;
+function OrganizationLayoutRoute() {
+  return <Outlet />;
 }

@@ -25,6 +25,7 @@ interface CommandPaletteActions {
   handleSetSystemTheme: () => void;
   handleCreateOrganization: () => void;
   handleShowOrganizations: () => void;
+  handleShowDocuments: () => void;
   handleGoToOrganization: () => void;
   handleCreateNamespace: () => void;
   handleShowNamespaces: () => void;
@@ -106,6 +107,11 @@ export function useCommandPalette(): CommandPaletteState &
   const handleShowOrganizations = useCallback(() => {
     setOpen(false);
     navigate({ to: "/organizations" });
+  }, [navigate]);
+
+  const handleShowDocuments = useCallback(() => {
+    setOpen(false);
+    navigate({ to: "/documents" });
   }, [navigate]);
 
   const handleGoToOrganization = useCallback(() => {
@@ -349,6 +355,7 @@ export function useCommandPalette(): CommandPaletteState &
     handleSetSystemTheme,
     handleCreateOrganization,
     handleShowOrganizations,
+    handleShowDocuments,
     handleGoToOrganization,
     handleCreateNamespace,
     handleShowNamespaces,

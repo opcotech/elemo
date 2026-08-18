@@ -32,6 +32,8 @@ func TestCompileDocumentGetQuery(t *testing.T) {
 				"document.load_labels",
 				"document.load_comment_count",
 				"document.load_attachment_count",
+				"document.load_folder",
+				"document.load_relations",
 			},
 		},
 	}
@@ -53,6 +55,45 @@ func TestCompileDocumentGetQuery(t *testing.T) {
 				return
 			}
 			assert.Equal(t, tt.loaderNames, got)
+		})
+	}
+}
+
+func TestCompileDocumentListLibraryQuery(t *testing.T) {
+	t.Parallel()
+
+	libraryID := model.MustNewID(model.ResourceTypeNamespace)
+	folderID := model.MustNewID(model.ResourceTypeFolder)
+
+	tests := []struct {
+		name   string
+		filter LibraryListFilter
+		want   string
+	}{
+		{name: "root unfiled", filter: LibraryListFilter{}, want: "document.list_library"},
+		{name: "all", filter: LibraryListFilter{All: true}, want: "document.list_library"},
+		{name: "folder", filter: LibraryListFilter{FolderID: &folderID}, want: "document.list_library"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			plan, err := CompileQuery(DocumentListLibraryQuery{
+				LibraryID: libraryID,
+				Filter:    tt.filter,
+				Page:      CursorPage{Size: 10},
+			})
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, plan.Root.Name)
+			if tt.filter.All {
+				assert.NotContains(t, plan.Root.Cypher, "LOCATED_IN")
+			}
+			if tt.filter.FolderID != nil {
+				assert.Contains(t, plan.Root.Cypher, "LOCATED_IN")
+			}
+			if !tt.filter.All && tt.filter.FolderID == nil {
+				assert.Contains(t, plan.Root.Cypher, "NOT (d)-[:LOCATED_IN]->(:Folder)")
+			}
 		})
 	}
 }

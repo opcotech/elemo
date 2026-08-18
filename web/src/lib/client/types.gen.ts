@@ -60,7 +60,7 @@ export type User = {
   languages: Array<Language>;
   status: UserStatus;
   /**
-   * Number of documents that belong to the user when projected.
+   * Number of documents the user created when projected.
    */
   document_count?: number | null;
   /**
@@ -144,6 +144,10 @@ export type Organization = {
    * Number of members in the organization when projected.
    */
   member_count?: number | null;
+  /**
+   * Number of documents that belong to the organization when projected.
+   */
+  document_count?: number | null;
   /**
    * Number of teams in the organization when projected.
    */
@@ -409,9 +413,9 @@ export type PartialDocument = {
    */
   id: string;
   /**
-   * Name of the document.
+   * Title of the document.
    */
-  name: string;
+  title: string;
   /**
    * Excerpt of the document.
    */
@@ -421,6 +425,156 @@ export type PartialDocument = {
    * Date when the document was created.
    */
   created_at?: string | null;
+  /**
+   * Date when the document was last updated.
+   */
+  updated_at?: string | null;
+};
+
+/**
+ * Document
+ *
+ * A document in an organization or namespace library.
+ */
+export type Document = {
+  /**
+   * Unique identifier of the document.
+   */
+  id: string;
+  /**
+   * Title of the document.
+   */
+  title: string;
+  /**
+   * Excerpt of the document.
+   */
+  excerpt?: string | null;
+  /**
+   * Body of the document.
+   */
+  content: string;
+  created_by: PartialUser;
+  library: DocumentLibrary;
+  folder: DocumentFolder | null;
+  /**
+   * Projects and issues this document is related to.
+   */
+  relations: Array<DocumentRelation>;
+  /**
+   * Labels attached to the document.
+   */
+  labels: Array<PartialLabel>;
+  /**
+   * Number of comments on the document when projected.
+   */
+  comment_count?: number | null;
+  /**
+   * Number of attachments on the document when projected.
+   */
+  attachment_count?: number | null;
+  /**
+   * Date when the document was created.
+   */
+  created_at: string;
+  /**
+   * Date when the document was updated.
+   */
+  updated_at: string | null;
+};
+
+/**
+ * DocumentLibrary
+ *
+ * The organization or namespace a document or folder is scoped to.
+ */
+export type DocumentLibrary = {
+  /**
+   * Unique identifier of the library.
+   */
+  id: string;
+  /**
+   * Resource type of the library.
+   */
+  type: "Organization" | "Namespace";
+  /**
+   * Name of the organization or namespace.
+   */
+  name: string;
+};
+
+/**
+ * DocumentFolder
+ *
+ * The folder a document or nested folder is located in.
+ */
+export type DocumentFolder = {
+  /**
+   * Unique identifier of the folder.
+   */
+  id: string;
+  /**
+   * Name of the folder.
+   */
+  name: string;
+  /**
+   * Parent folder ID when the folder is nested.
+   */
+  parent_id?: string;
+};
+
+/**
+ * DocumentRelation
+ *
+ * A project or issue a document is related to. Issues use the issue key as name.
+ */
+export type DocumentRelation = {
+  /**
+   * Unique identifier of the related resource.
+   */
+  id: string;
+  /**
+   * Resource type of the related resource.
+   */
+  type: "Project" | "Issue";
+  /**
+   * Project name, or issue key.
+   */
+  name: string;
+};
+
+/**
+ * Folder
+ *
+ * A nested folder in an organization or namespace document library.
+ */
+export type Folder = {
+  /**
+   * Unique identifier of the folder.
+   */
+  id: string;
+  /**
+   * Name of the folder.
+   */
+  name: string;
+  library: DocumentLibrary;
+  parent: DocumentFolder | null;
+  created_by: PartialUser;
+  /**
+   * Date when the folder was created.
+   */
+  created_at: string;
+  /**
+   * Date when the folder was updated.
+   */
+  updated_at: string | null;
+};
+
+/**
+ * FolderPage
+ */
+export type FolderPage = {
+  items: Array<Folder>;
+  page_info: PageInfo;
 };
 
 /**
@@ -622,6 +776,10 @@ export type Issue = {
    * Number of comments on the issue when projected.
    */
   comment_count?: number | null;
+  /**
+   * Number of documents that belong to the issue when projected.
+   */
+  document_count?: number | null;
   /**
    * Number of attachments on the issue when projected.
    */
@@ -1254,7 +1412,8 @@ export type ResourceType =
   | "ResourceType"
   | "Role"
   | "Todo"
-  | "User";
+  | "User"
+  | "Folder";
 
 /**
  * Deprecated. Use page_token/page_size instead.
@@ -1284,6 +1443,26 @@ export type PageToken = string;
  * ID of the resource.
  */
 export type Id = string;
+
+/**
+ * ID of the document.
+ */
+export type DocumentId = string;
+
+/**
+ * Browse documents located in this folder. Omit to list unfiled documents at the library root.
+ */
+export type FolderId = string;
+
+/**
+ * When true, return every document in the library regardless of folder.
+ */
+export type All = boolean;
+
+/**
+ * List folders located in this parent folder. Omit to list folders at the library root.
+ */
+export type ParentId = string;
 
 /**
  * ID of the issue relation.
@@ -1631,6 +1810,66 @@ export type IssueCreate = {
    * Start date of the issue.
    */
   start_date?: string | null;
+};
+
+export type DocumentCreate = {
+  /**
+   * Title of the document.
+   */
+  title: string;
+  /**
+   * Excerpt of the document.
+   */
+  excerpt?: string | null;
+  /**
+   * Body of the document.
+   */
+  content?: string;
+};
+
+export type DocumentPatch = {
+  /**
+   * Title of the document.
+   */
+  title?: string;
+  /**
+   * Excerpt of the document.
+   */
+  excerpt?: string | null;
+  /**
+   * Body of the document.
+   */
+  content?: string;
+  /**
+   * Move the document to this organization or namespace library. Clears the folder.
+   */
+  library_id?: string;
+  /**
+   * Move the document into this folder. JSON null removes it from the folder (library root).
+   */
+  folder_id?: string | null;
+};
+
+export type FolderCreate = {
+  /**
+   * Name of the folder.
+   */
+  name: string;
+  /**
+   * Parent folder ID. Omit to create at the library root.
+   */
+  parent_id?: string | null;
+};
+
+export type FolderPatch = {
+  /**
+   * Name of the folder.
+   */
+  name?: string;
+  /**
+   * Parent folder ID. JSON null moves the folder to the library root.
+   */
+  parent_id?: string | null;
 };
 
 export type IssuePatch = {
@@ -3873,6 +4112,228 @@ export type V1OrganizationsNamespacesCreateResponses = {
 export type V1OrganizationsNamespacesCreateResponse =
   V1OrganizationsNamespacesCreateResponses[keyof V1OrganizationsNamespacesCreateResponses];
 
+export type V1OrganizationsDocumentsGetData = {
+  body?: never;
+  path: {
+    /**
+     * ID of the resource.
+     */
+    id: string;
+  };
+  query?: {
+    /**
+     * Maximum number of items to return.
+     */
+    page_size?: number;
+    /**
+     * Opaque continuation token from a previous page_info.next_page_token.
+     */
+    page_token?: string;
+    /**
+     * Browse documents located in this folder. Omit to list unfiled documents at the library root.
+     */
+    folder_id?: string;
+    /**
+     * When true, return every document in the library regardless of folder.
+     */
+    all?: boolean;
+  };
+  url: "/v1/organizations/{id}/documents";
+};
+
+export type V1OrganizationsDocumentsGetErrors = {
+  /**
+   * Bad request
+   */
+  400: HttpError;
+  /**
+   * Unauthorized request
+   */
+  401: HttpError;
+  /**
+   * Forbidden
+   */
+  403: HttpError;
+  /**
+   * The requested resource not found
+   */
+  404: HttpError;
+  /**
+   * Internal Server Error
+   */
+  500: HttpError;
+};
+
+export type V1OrganizationsDocumentsGetError =
+  V1OrganizationsDocumentsGetErrors[keyof V1OrganizationsDocumentsGetErrors];
+
+export type V1OrganizationsDocumentsGetResponses = {
+  /**
+   * OK
+   */
+  200: PartialDocumentPage;
+};
+
+export type V1OrganizationsDocumentsGetResponse =
+  V1OrganizationsDocumentsGetResponses[keyof V1OrganizationsDocumentsGetResponses];
+
+export type V1OrganizationsDocumentsCreateData = {
+  body?: DocumentCreate;
+  path: {
+    /**
+     * ID of the resource.
+     */
+    id: string;
+  };
+  query?: never;
+  url: "/v1/organizations/{id}/documents";
+};
+
+export type V1OrganizationsDocumentsCreateErrors = {
+  /**
+   * Bad request
+   */
+  400: HttpError;
+  /**
+   * Unauthorized request
+   */
+  401: HttpError;
+  /**
+   * Forbidden
+   */
+  403: HttpError;
+  /**
+   * The requested resource not found
+   */
+  404: HttpError;
+  /**
+   * Internal Server Error
+   */
+  500: HttpError;
+};
+
+export type V1OrganizationsDocumentsCreateError =
+  V1OrganizationsDocumentsCreateErrors[keyof V1OrganizationsDocumentsCreateErrors];
+
+export type V1OrganizationsDocumentsCreateResponses = {
+  /**
+   * Created
+   */
+  201: Document;
+};
+
+export type V1OrganizationsDocumentsCreateResponse =
+  V1OrganizationsDocumentsCreateResponses[keyof V1OrganizationsDocumentsCreateResponses];
+
+export type V1OrganizationsFoldersGetData = {
+  body?: never;
+  path: {
+    /**
+     * ID of the resource.
+     */
+    id: string;
+  };
+  query?: {
+    /**
+     * Maximum number of items to return.
+     */
+    page_size?: number;
+    /**
+     * Opaque continuation token from a previous page_info.next_page_token.
+     */
+    page_token?: string;
+    /**
+     * List folders located in this parent folder. Omit to list folders at the library root.
+     */
+    parent_id?: string;
+  };
+  url: "/v1/organizations/{id}/folders";
+};
+
+export type V1OrganizationsFoldersGetErrors = {
+  /**
+   * Bad request
+   */
+  400: HttpError;
+  /**
+   * Unauthorized request
+   */
+  401: HttpError;
+  /**
+   * Forbidden
+   */
+  403: HttpError;
+  /**
+   * The requested resource not found
+   */
+  404: HttpError;
+  /**
+   * Internal Server Error
+   */
+  500: HttpError;
+};
+
+export type V1OrganizationsFoldersGetError =
+  V1OrganizationsFoldersGetErrors[keyof V1OrganizationsFoldersGetErrors];
+
+export type V1OrganizationsFoldersGetResponses = {
+  /**
+   * OK
+   */
+  200: FolderPage;
+};
+
+export type V1OrganizationsFoldersGetResponse =
+  V1OrganizationsFoldersGetResponses[keyof V1OrganizationsFoldersGetResponses];
+
+export type V1OrganizationsFoldersCreateData = {
+  body?: FolderCreate;
+  path: {
+    /**
+     * ID of the resource.
+     */
+    id: string;
+  };
+  query?: never;
+  url: "/v1/organizations/{id}/folders";
+};
+
+export type V1OrganizationsFoldersCreateErrors = {
+  /**
+   * Bad request
+   */
+  400: HttpError;
+  /**
+   * Unauthorized request
+   */
+  401: HttpError;
+  /**
+   * Forbidden
+   */
+  403: HttpError;
+  /**
+   * The requested resource not found
+   */
+  404: HttpError;
+  /**
+   * Internal Server Error
+   */
+  500: HttpError;
+};
+
+export type V1OrganizationsFoldersCreateError =
+  V1OrganizationsFoldersCreateErrors[keyof V1OrganizationsFoldersCreateErrors];
+
+export type V1OrganizationsFoldersCreateResponses = {
+  /**
+   * Created
+   */
+  201: Folder;
+};
+
+export type V1OrganizationsFoldersCreateResponse =
+  V1OrganizationsFoldersCreateResponses[keyof V1OrganizationsFoldersCreateResponses];
+
 export type V1NamespaceDeleteData = {
   body?: never;
   path: {
@@ -4144,6 +4605,14 @@ export type V1NamespacesDocumentsGetData = {
      * Opaque continuation token from a previous page_info.next_page_token.
      */
     page_token?: string;
+    /**
+     * Browse documents located in this folder. Omit to list unfiled documents at the library root.
+     */
+    folder_id?: string;
+    /**
+     * When true, return every document in the library regardless of folder.
+     */
+    all?: boolean;
   };
   url: "/v1/namespaces/{id}/documents";
 };
@@ -4183,6 +4652,163 @@ export type V1NamespacesDocumentsGetResponses = {
 
 export type V1NamespacesDocumentsGetResponse =
   V1NamespacesDocumentsGetResponses[keyof V1NamespacesDocumentsGetResponses];
+
+export type V1NamespacesDocumentsCreateData = {
+  body?: DocumentCreate;
+  path: {
+    /**
+     * ID of the resource.
+     */
+    id: string;
+  };
+  query?: never;
+  url: "/v1/namespaces/{id}/documents";
+};
+
+export type V1NamespacesDocumentsCreateErrors = {
+  /**
+   * Bad request
+   */
+  400: HttpError;
+  /**
+   * Unauthorized request
+   */
+  401: HttpError;
+  /**
+   * Forbidden
+   */
+  403: HttpError;
+  /**
+   * The requested resource not found
+   */
+  404: HttpError;
+  /**
+   * Internal Server Error
+   */
+  500: HttpError;
+};
+
+export type V1NamespacesDocumentsCreateError =
+  V1NamespacesDocumentsCreateErrors[keyof V1NamespacesDocumentsCreateErrors];
+
+export type V1NamespacesDocumentsCreateResponses = {
+  /**
+   * Created
+   */
+  201: Document;
+};
+
+export type V1NamespacesDocumentsCreateResponse =
+  V1NamespacesDocumentsCreateResponses[keyof V1NamespacesDocumentsCreateResponses];
+
+export type V1NamespacesFoldersGetData = {
+  body?: never;
+  path: {
+    /**
+     * ID of the resource.
+     */
+    id: string;
+  };
+  query?: {
+    /**
+     * Maximum number of items to return.
+     */
+    page_size?: number;
+    /**
+     * Opaque continuation token from a previous page_info.next_page_token.
+     */
+    page_token?: string;
+    /**
+     * List folders located in this parent folder. Omit to list folders at the library root.
+     */
+    parent_id?: string;
+  };
+  url: "/v1/namespaces/{id}/folders";
+};
+
+export type V1NamespacesFoldersGetErrors = {
+  /**
+   * Bad request
+   */
+  400: HttpError;
+  /**
+   * Unauthorized request
+   */
+  401: HttpError;
+  /**
+   * Forbidden
+   */
+  403: HttpError;
+  /**
+   * The requested resource not found
+   */
+  404: HttpError;
+  /**
+   * Internal Server Error
+   */
+  500: HttpError;
+};
+
+export type V1NamespacesFoldersGetError =
+  V1NamespacesFoldersGetErrors[keyof V1NamespacesFoldersGetErrors];
+
+export type V1NamespacesFoldersGetResponses = {
+  /**
+   * OK
+   */
+  200: FolderPage;
+};
+
+export type V1NamespacesFoldersGetResponse =
+  V1NamespacesFoldersGetResponses[keyof V1NamespacesFoldersGetResponses];
+
+export type V1NamespacesFoldersCreateData = {
+  body?: FolderCreate;
+  path: {
+    /**
+     * ID of the resource.
+     */
+    id: string;
+  };
+  query?: never;
+  url: "/v1/namespaces/{id}/folders";
+};
+
+export type V1NamespacesFoldersCreateErrors = {
+  /**
+   * Bad request
+   */
+  400: HttpError;
+  /**
+   * Unauthorized request
+   */
+  401: HttpError;
+  /**
+   * Forbidden
+   */
+  403: HttpError;
+  /**
+   * The requested resource not found
+   */
+  404: HttpError;
+  /**
+   * Internal Server Error
+   */
+  500: HttpError;
+};
+
+export type V1NamespacesFoldersCreateError =
+  V1NamespacesFoldersCreateErrors[keyof V1NamespacesFoldersCreateErrors];
+
+export type V1NamespacesFoldersCreateResponses = {
+  /**
+   * Created
+   */
+  201: Folder;
+};
+
+export type V1NamespacesFoldersCreateResponse =
+  V1NamespacesFoldersCreateResponses[keyof V1NamespacesFoldersCreateResponses];
 
 export type V1NamespacesIssuesGetData = {
   body?: never;
@@ -4598,6 +5224,444 @@ export type V1ProjectsDocumentsGetResponses = {
 export type V1ProjectsDocumentsGetResponse =
   V1ProjectsDocumentsGetResponses[keyof V1ProjectsDocumentsGetResponses];
 
+export type V1ProjectsDocumentsCreateData = {
+  body?: DocumentCreate;
+  path: {
+    /**
+     * ID of the resource.
+     */
+    id: string;
+  };
+  query?: never;
+  url: "/v1/projects/{id}/documents";
+};
+
+export type V1ProjectsDocumentsCreateErrors = {
+  /**
+   * Bad request
+   */
+  400: HttpError;
+  /**
+   * Unauthorized request
+   */
+  401: HttpError;
+  /**
+   * Forbidden
+   */
+  403: HttpError;
+  /**
+   * The requested resource not found
+   */
+  404: HttpError;
+  /**
+   * Internal Server Error
+   */
+  500: HttpError;
+};
+
+export type V1ProjectsDocumentsCreateError =
+  V1ProjectsDocumentsCreateErrors[keyof V1ProjectsDocumentsCreateErrors];
+
+export type V1ProjectsDocumentsCreateResponses = {
+  /**
+   * Created
+   */
+  201: Document;
+};
+
+export type V1ProjectsDocumentsCreateResponse =
+  V1ProjectsDocumentsCreateResponses[keyof V1ProjectsDocumentsCreateResponses];
+
+export type V1ProjectsDocumentsUnrelateData = {
+  body?: never;
+  path: {
+    /**
+     * ID of the resource.
+     */
+    id: string;
+    /**
+     * ID of the document.
+     */
+    documentId: string;
+  };
+  query?: never;
+  url: "/v1/projects/{id}/documents/{documentId}";
+};
+
+export type V1ProjectsDocumentsUnrelateErrors = {
+  /**
+   * Bad request
+   */
+  400: HttpError;
+  /**
+   * Unauthorized request
+   */
+  401: HttpError;
+  /**
+   * Forbidden
+   */
+  403: HttpError;
+  /**
+   * The requested resource not found
+   */
+  404: HttpError;
+  /**
+   * Internal Server Error
+   */
+  500: HttpError;
+};
+
+export type V1ProjectsDocumentsUnrelateError =
+  V1ProjectsDocumentsUnrelateErrors[keyof V1ProjectsDocumentsUnrelateErrors];
+
+export type V1ProjectsDocumentsUnrelateResponses = {
+  /**
+   * No Content
+   */
+  204: void;
+};
+
+export type V1ProjectsDocumentsUnrelateResponse =
+  V1ProjectsDocumentsUnrelateResponses[keyof V1ProjectsDocumentsUnrelateResponses];
+
+export type V1ProjectsDocumentsRelateData = {
+  body?: never;
+  path: {
+    /**
+     * ID of the resource.
+     */
+    id: string;
+    /**
+     * ID of the document.
+     */
+    documentId: string;
+  };
+  query?: never;
+  url: "/v1/projects/{id}/documents/{documentId}";
+};
+
+export type V1ProjectsDocumentsRelateErrors = {
+  /**
+   * Bad request
+   */
+  400: HttpError;
+  /**
+   * Unauthorized request
+   */
+  401: HttpError;
+  /**
+   * Forbidden
+   */
+  403: HttpError;
+  /**
+   * The requested resource not found
+   */
+  404: HttpError;
+  /**
+   * Internal Server Error
+   */
+  500: HttpError;
+};
+
+export type V1ProjectsDocumentsRelateError =
+  V1ProjectsDocumentsRelateErrors[keyof V1ProjectsDocumentsRelateErrors];
+
+export type V1ProjectsDocumentsRelateResponses = {
+  /**
+   * No Content
+   */
+  204: void;
+};
+
+export type V1ProjectsDocumentsRelateResponse =
+  V1ProjectsDocumentsRelateResponses[keyof V1ProjectsDocumentsRelateResponses];
+
+export type V1DocumentDeleteData = {
+  body?: never;
+  path: {
+    /**
+     * ID of the resource.
+     */
+    id: string;
+  };
+  query?: never;
+  url: "/v1/documents/{id}";
+};
+
+export type V1DocumentDeleteErrors = {
+  /**
+   * Bad request
+   */
+  400: HttpError;
+  /**
+   * Unauthorized request
+   */
+  401: HttpError;
+  /**
+   * Forbidden
+   */
+  403: HttpError;
+  /**
+   * The requested resource not found
+   */
+  404: HttpError;
+  /**
+   * Internal Server Error
+   */
+  500: HttpError;
+};
+
+export type V1DocumentDeleteError =
+  V1DocumentDeleteErrors[keyof V1DocumentDeleteErrors];
+
+export type V1DocumentDeleteResponses = {
+  /**
+   * No Content
+   */
+  204: void;
+};
+
+export type V1DocumentDeleteResponse =
+  V1DocumentDeleteResponses[keyof V1DocumentDeleteResponses];
+
+export type V1DocumentGetData = {
+  body?: never;
+  path: {
+    /**
+     * ID of the resource.
+     */
+    id: string;
+  };
+  query?: never;
+  url: "/v1/documents/{id}";
+};
+
+export type V1DocumentGetErrors = {
+  /**
+   * Bad request
+   */
+  400: HttpError;
+  /**
+   * Unauthorized request
+   */
+  401: HttpError;
+  /**
+   * Forbidden
+   */
+  403: HttpError;
+  /**
+   * The requested resource not found
+   */
+  404: HttpError;
+  /**
+   * Internal Server Error
+   */
+  500: HttpError;
+};
+
+export type V1DocumentGetError = V1DocumentGetErrors[keyof V1DocumentGetErrors];
+
+export type V1DocumentGetResponses = {
+  /**
+   * OK
+   */
+  200: Document;
+};
+
+export type V1DocumentGetResponse =
+  V1DocumentGetResponses[keyof V1DocumentGetResponses];
+
+export type V1DocumentUpdateData = {
+  body?: DocumentPatch;
+  path: {
+    /**
+     * ID of the resource.
+     */
+    id: string;
+  };
+  query?: never;
+  url: "/v1/documents/{id}";
+};
+
+export type V1DocumentUpdateErrors = {
+  /**
+   * Bad request
+   */
+  400: HttpError;
+  /**
+   * Unauthorized request
+   */
+  401: HttpError;
+  /**
+   * Forbidden
+   */
+  403: HttpError;
+  /**
+   * The requested resource not found
+   */
+  404: HttpError;
+  /**
+   * Internal Server Error
+   */
+  500: HttpError;
+};
+
+export type V1DocumentUpdateError =
+  V1DocumentUpdateErrors[keyof V1DocumentUpdateErrors];
+
+export type V1DocumentUpdateResponses = {
+  /**
+   * OK
+   */
+  200: Document;
+};
+
+export type V1DocumentUpdateResponse =
+  V1DocumentUpdateResponses[keyof V1DocumentUpdateResponses];
+
+export type V1FolderDeleteData = {
+  body?: never;
+  path: {
+    /**
+     * ID of the resource.
+     */
+    id: string;
+  };
+  query?: never;
+  url: "/v1/folders/{id}";
+};
+
+export type V1FolderDeleteErrors = {
+  /**
+   * Bad request
+   */
+  400: HttpError;
+  /**
+   * Unauthorized request
+   */
+  401: HttpError;
+  /**
+   * Forbidden
+   */
+  403: HttpError;
+  /**
+   * The requested resource not found
+   */
+  404: HttpError;
+  /**
+   * Internal Server Error
+   */
+  500: HttpError;
+};
+
+export type V1FolderDeleteError =
+  V1FolderDeleteErrors[keyof V1FolderDeleteErrors];
+
+export type V1FolderDeleteResponses = {
+  /**
+   * No Content
+   */
+  204: void;
+};
+
+export type V1FolderDeleteResponse =
+  V1FolderDeleteResponses[keyof V1FolderDeleteResponses];
+
+export type V1FolderGetData = {
+  body?: never;
+  path: {
+    /**
+     * ID of the resource.
+     */
+    id: string;
+  };
+  query?: never;
+  url: "/v1/folders/{id}";
+};
+
+export type V1FolderGetErrors = {
+  /**
+   * Bad request
+   */
+  400: HttpError;
+  /**
+   * Unauthorized request
+   */
+  401: HttpError;
+  /**
+   * Forbidden
+   */
+  403: HttpError;
+  /**
+   * The requested resource not found
+   */
+  404: HttpError;
+  /**
+   * Internal Server Error
+   */
+  500: HttpError;
+};
+
+export type V1FolderGetError = V1FolderGetErrors[keyof V1FolderGetErrors];
+
+export type V1FolderGetResponses = {
+  /**
+   * OK
+   */
+  200: Folder;
+};
+
+export type V1FolderGetResponse =
+  V1FolderGetResponses[keyof V1FolderGetResponses];
+
+export type V1FolderUpdateData = {
+  body?: FolderPatch;
+  path: {
+    /**
+     * ID of the resource.
+     */
+    id: string;
+  };
+  query?: never;
+  url: "/v1/folders/{id}";
+};
+
+export type V1FolderUpdateErrors = {
+  /**
+   * Bad request
+   */
+  400: HttpError;
+  /**
+   * Unauthorized request
+   */
+  401: HttpError;
+  /**
+   * Forbidden
+   */
+  403: HttpError;
+  /**
+   * The requested resource not found
+   */
+  404: HttpError;
+  /**
+   * Internal Server Error
+   */
+  500: HttpError;
+};
+
+export type V1FolderUpdateError =
+  V1FolderUpdateErrors[keyof V1FolderUpdateErrors];
+
+export type V1FolderUpdateResponses = {
+  /**
+   * OK
+   */
+  200: Folder;
+};
+
+export type V1FolderUpdateResponse =
+  V1FolderUpdateResponses[keyof V1FolderUpdateResponses];
+
 export type V1IssueDeleteData = {
   body?: never;
   path: {
@@ -4737,6 +5801,215 @@ export type V1IssueUpdateResponses = {
 
 export type V1IssueUpdateResponse =
   V1IssueUpdateResponses[keyof V1IssueUpdateResponses];
+
+export type V1IssuesDocumentsGetData = {
+  body?: never;
+  path: {
+    /**
+     * ID of the resource.
+     */
+    id: string;
+  };
+  query?: {
+    /**
+     * Maximum number of items to return.
+     */
+    page_size?: number;
+    /**
+     * Opaque continuation token from a previous page_info.next_page_token.
+     */
+    page_token?: string;
+  };
+  url: "/v1/issues/{id}/documents";
+};
+
+export type V1IssuesDocumentsGetErrors = {
+  /**
+   * Bad request
+   */
+  400: HttpError;
+  /**
+   * Unauthorized request
+   */
+  401: HttpError;
+  /**
+   * Forbidden
+   */
+  403: HttpError;
+  /**
+   * The requested resource not found
+   */
+  404: HttpError;
+  /**
+   * Internal Server Error
+   */
+  500: HttpError;
+};
+
+export type V1IssuesDocumentsGetError =
+  V1IssuesDocumentsGetErrors[keyof V1IssuesDocumentsGetErrors];
+
+export type V1IssuesDocumentsGetResponses = {
+  /**
+   * OK
+   */
+  200: PartialDocumentPage;
+};
+
+export type V1IssuesDocumentsGetResponse =
+  V1IssuesDocumentsGetResponses[keyof V1IssuesDocumentsGetResponses];
+
+export type V1IssuesDocumentsCreateData = {
+  body?: DocumentCreate;
+  path: {
+    /**
+     * ID of the resource.
+     */
+    id: string;
+  };
+  query?: never;
+  url: "/v1/issues/{id}/documents";
+};
+
+export type V1IssuesDocumentsCreateErrors = {
+  /**
+   * Bad request
+   */
+  400: HttpError;
+  /**
+   * Unauthorized request
+   */
+  401: HttpError;
+  /**
+   * Forbidden
+   */
+  403: HttpError;
+  /**
+   * The requested resource not found
+   */
+  404: HttpError;
+  /**
+   * Internal Server Error
+   */
+  500: HttpError;
+};
+
+export type V1IssuesDocumentsCreateError =
+  V1IssuesDocumentsCreateErrors[keyof V1IssuesDocumentsCreateErrors];
+
+export type V1IssuesDocumentsCreateResponses = {
+  /**
+   * Created
+   */
+  201: Document;
+};
+
+export type V1IssuesDocumentsCreateResponse =
+  V1IssuesDocumentsCreateResponses[keyof V1IssuesDocumentsCreateResponses];
+
+export type V1IssuesDocumentsUnrelateData = {
+  body?: never;
+  path: {
+    /**
+     * ID of the resource.
+     */
+    id: string;
+    /**
+     * ID of the document.
+     */
+    documentId: string;
+  };
+  query?: never;
+  url: "/v1/issues/{id}/documents/{documentId}";
+};
+
+export type V1IssuesDocumentsUnrelateErrors = {
+  /**
+   * Bad request
+   */
+  400: HttpError;
+  /**
+   * Unauthorized request
+   */
+  401: HttpError;
+  /**
+   * Forbidden
+   */
+  403: HttpError;
+  /**
+   * The requested resource not found
+   */
+  404: HttpError;
+  /**
+   * Internal Server Error
+   */
+  500: HttpError;
+};
+
+export type V1IssuesDocumentsUnrelateError =
+  V1IssuesDocumentsUnrelateErrors[keyof V1IssuesDocumentsUnrelateErrors];
+
+export type V1IssuesDocumentsUnrelateResponses = {
+  /**
+   * No Content
+   */
+  204: void;
+};
+
+export type V1IssuesDocumentsUnrelateResponse =
+  V1IssuesDocumentsUnrelateResponses[keyof V1IssuesDocumentsUnrelateResponses];
+
+export type V1IssuesDocumentsRelateData = {
+  body?: never;
+  path: {
+    /**
+     * ID of the resource.
+     */
+    id: string;
+    /**
+     * ID of the document.
+     */
+    documentId: string;
+  };
+  query?: never;
+  url: "/v1/issues/{id}/documents/{documentId}";
+};
+
+export type V1IssuesDocumentsRelateErrors = {
+  /**
+   * Bad request
+   */
+  400: HttpError;
+  /**
+   * Unauthorized request
+   */
+  401: HttpError;
+  /**
+   * Forbidden
+   */
+  403: HttpError;
+  /**
+   * The requested resource not found
+   */
+  404: HttpError;
+  /**
+   * Internal Server Error
+   */
+  500: HttpError;
+};
+
+export type V1IssuesDocumentsRelateError =
+  V1IssuesDocumentsRelateErrors[keyof V1IssuesDocumentsRelateErrors];
+
+export type V1IssuesDocumentsRelateResponses = {
+  /**
+   * No Content
+   */
+  204: void;
+};
+
+export type V1IssuesDocumentsRelateResponse =
+  V1IssuesDocumentsRelateResponses[keyof V1IssuesDocumentsRelateResponses];
 
 export type V1IssueRelationsGetData = {
   body?: never;

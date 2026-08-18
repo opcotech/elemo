@@ -92,12 +92,16 @@ func isIssueForbidden(err error) bool {
 }
 
 // classifyServiceError maps service/repository errors to HTTP status codes.
-// Issue handlers wrap the result in generated OpenAPI response types.
+// Handlers wrap the result in generated OpenAPI response types.
 func classifyServiceError(err error) int {
 	switch {
 	case isInvalidPageError(err),
 		isIssueRelationBadRequest(err),
-		errors.Is(err, model.ErrInvalidIssueDetails):
+		errors.Is(err, model.ErrInvalidIssueDetails),
+		errors.Is(err, model.ErrInvalidDocumentDetails),
+		errors.Is(err, model.ErrInvalidFolderDetails),
+		errors.Is(err, repository.ErrFolderNameConflict),
+		errors.Is(err, repository.ErrFolderCycle):
 		return http.StatusBadRequest
 	case isIssueForbidden(err):
 		return http.StatusForbidden

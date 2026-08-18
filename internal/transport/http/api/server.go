@@ -27,6 +27,18 @@ const (
 	Oauth2Scopes = "oauth2.Scopes"
 )
 
+// Defines values for DocumentLibraryType.
+const (
+	DocumentLibraryTypeNamespace    DocumentLibraryType = "Namespace"
+	DocumentLibraryTypeOrganization DocumentLibraryType = "Organization"
+)
+
+// Defines values for DocumentRelationType.
+const (
+	DocumentRelationTypeIssue   DocumentRelationType = "Issue"
+	DocumentRelationTypeProject DocumentRelationType = "Project"
+)
+
 // Defines values for IssueKind.
 const (
 	IssueKindBug   IssueKind = "bug"
@@ -297,6 +309,7 @@ const (
 	ResourceTypeAttachment    ResourceType = "Attachment"
 	ResourceTypeComment       ResourceType = "Comment"
 	ResourceTypeDocument      ResourceType = "Document"
+	ResourceTypeFolder        ResourceType = "Folder"
 	ResourceTypeIssue         ResourceType = "Issue"
 	ResourceTypeIssueRelation ResourceType = "IssueRelation"
 	ResourceTypeLabel         ResourceType = "Label"
@@ -377,6 +390,118 @@ const (
 	V1PermissionHasSystemRoleParamsRolesSupport V1PermissionHasSystemRoleParamsRoles = "Support"
 )
 
+// Document A document in an organization or namespace library.
+type Document struct {
+	// AttachmentCount Number of attachments on the document when projected.
+	AttachmentCount *int64 `json:"attachment_count"`
+
+	// CommentCount Number of comments on the document when projected.
+	CommentCount *int64 `json:"comment_count"`
+
+	// Content Body of the document.
+	Content string `json:"content"`
+
+	// CreatedAt Date when the document was created.
+	CreatedAt time.Time `json:"created_at"`
+
+	// CreatedBy A simplified user used on issue list and detail responses.
+	CreatedBy PartialUser `json:"created_by"`
+
+	// Excerpt Excerpt of the document.
+	Excerpt *string         `json:"excerpt"`
+	Folder  *DocumentFolder `json:"folder"`
+
+	// Id Unique identifier of the document.
+	Id string `json:"id"`
+
+	// Labels Labels attached to the document.
+	Labels []PartialLabel `json:"labels"`
+
+	// Library The organization or namespace a document or folder is scoped to.
+	Library DocumentLibrary `json:"library"`
+
+	// Relations Projects and issues this document is related to.
+	Relations []DocumentRelation `json:"relations"`
+
+	// Title Title of the document.
+	Title string `json:"title"`
+
+	// UpdatedAt Date when the document was updated.
+	UpdatedAt *time.Time `json:"updated_at"`
+}
+
+// DocumentFolder The folder a document or nested folder is located in.
+type DocumentFolder struct {
+	// Id Unique identifier of the folder.
+	Id string `json:"id"`
+
+	// Name Name of the folder.
+	Name string `json:"name"`
+
+	// ParentId Parent folder ID when the folder is nested.
+	ParentId *string `json:"parent_id,omitempty"`
+}
+
+// DocumentLibrary The organization or namespace a document or folder is scoped to.
+type DocumentLibrary struct {
+	// Id Unique identifier of the library.
+	Id string `json:"id"`
+
+	// Name Name of the organization or namespace.
+	Name string `json:"name"`
+
+	// Type Resource type of the library.
+	Type DocumentLibraryType `json:"type"`
+}
+
+// DocumentLibraryType Resource type of the library.
+type DocumentLibraryType string
+
+// DocumentRelation A project or issue a document is related to. Issues use the issue key as name.
+type DocumentRelation struct {
+	// Id Unique identifier of the related resource.
+	Id string `json:"id"`
+
+	// Name Project name, or issue key.
+	Name string `json:"name"`
+
+	// Type Resource type of the related resource.
+	Type DocumentRelationType `json:"type"`
+}
+
+// DocumentRelationType Resource type of the related resource.
+type DocumentRelationType string
+
+// Folder A nested folder in an organization or namespace document library.
+type Folder struct {
+	// CreatedAt Date when the folder was created.
+	CreatedAt time.Time `json:"created_at"`
+
+	// CreatedBy A simplified user used on issue list and detail responses.
+	CreatedBy PartialUser `json:"created_by"`
+
+	// Id Unique identifier of the folder.
+	Id string `json:"id"`
+
+	// Library The organization or namespace a document or folder is scoped to.
+	Library DocumentLibrary `json:"library"`
+
+	// Name Name of the folder.
+	Name   string          `json:"name"`
+	Parent *DocumentFolder `json:"parent"`
+
+	// UpdatedAt Date when the folder was updated.
+	UpdatedAt *time.Time `json:"updated_at"`
+}
+
+// FolderPage defines model for FolderPage.
+type FolderPage struct {
+	Items []Folder `json:"items"`
+
+	// PageInfo Cursor pagination metadata for a page of results.
+	PageInfo PageInfo `json:"page_info"`
+}
+
 // HTTPError HTTP error description.
 type HTTPError struct {
 	// Message Description of the error.
@@ -399,6 +524,9 @@ type Issue struct {
 
 	// Description Description of the issue.
 	Description *string `json:"description"`
+
+	// DocumentCount Number of documents that belong to the issue when projected.
+	DocumentCount *int64 `json:"document_count"`
 
 	// DueDate Due date of the issue.
 	DueDate *time.Time `json:"due_date"`
@@ -612,6 +740,9 @@ type Organization struct {
 	// CreatedAt Date when the organization was created.
 	CreatedAt time.Time `json:"created_at"`
 
+	// DocumentCount Number of documents that belong to the organization when projected.
+	DocumentCount *int64 `json:"document_count"`
+
 	// Email Email address of the organization.
 	Email openapi_types.Email `json:"email"`
 
@@ -712,8 +843,11 @@ type PartialDocument struct {
 	// Id Unique identifier of the document.
 	Id string `json:"id"`
 
-	// Name Name of the document.
-	Name string `json:"name"`
+	// Title Title of the document.
+	Title string `json:"title"`
+
+	// UpdatedAt Date when the document was last updated.
+	UpdatedAt *time.Time `json:"updated_at"`
 }
 
 // PartialDocumentPage defines model for PartialDocumentPage.
@@ -1092,7 +1226,7 @@ type User struct {
 	// CreatedAt Date when the user was created.
 	CreatedAt time.Time `json:"created_at"`
 
-	// DocumentCount Number of documents that belong to the user when projected.
+	// DocumentCount Number of documents the user created when projected.
 	DocumentCount *int64 `json:"document_count"`
 
 	// Email Email address of the user.
@@ -1143,6 +1277,15 @@ type UserPage struct {
 // UserStatus Status of the user.
 type UserStatus string
 
+// All defines model for all.
+type All = bool
+
+// DocumentId defines model for documentId.
+type DocumentId = string
+
+// FolderId defines model for folder_id.
+type FolderId = string
+
 // Force defines model for force.
 type Force = bool
 
@@ -1157,6 +1300,9 @@ type PageSize = int
 
 // PageToken defines model for page_token.
 type PageToken = string
+
+// ParentId defines model for parent_id.
+type ParentId = string
 
 // RelationId defines model for relation_id.
 type RelationId = string
@@ -1190,6 +1336,54 @@ type N404 = HTTPError
 
 // N500 HTTP error description.
 type N500 = HTTPError
+
+// DocumentCreate defines model for DocumentCreate.
+type DocumentCreate struct {
+	// Content Body of the document.
+	Content Optional[string] `json:"content,omitempty"`
+
+	// Excerpt Excerpt of the document.
+	Excerpt Optional[string] `json:"excerpt"`
+
+	// Title Title of the document.
+	Title string `json:"title"`
+}
+
+// DocumentPatch defines model for DocumentPatch.
+type DocumentPatch struct {
+	// Content Body of the document.
+	Content Optional[string] `json:"content,omitempty"`
+
+	// Excerpt Excerpt of the document.
+	Excerpt Optional[string] `json:"excerpt"`
+
+	// FolderId Move the document into this folder. JSON null removes it from the folder (library root).
+	FolderId Optional[string] `json:"folder_id"`
+
+	// LibraryId Move the document to this organization or namespace library. Clears the folder.
+	LibraryId Optional[string] `json:"library_id,omitempty"`
+
+	// Title Title of the document.
+	Title Optional[string] `json:"title,omitempty"`
+}
+
+// FolderCreate defines model for FolderCreate.
+type FolderCreate struct {
+	// Name Name of the folder.
+	Name string `json:"name"`
+
+	// ParentId Parent folder ID. Omit to create at the library root.
+	ParentId *string `json:"parent_id"`
+}
+
+// FolderPatch defines model for FolderPatch.
+type FolderPatch struct {
+	// Name Name of the folder.
+	Name Optional[string] `json:"name,omitempty"`
+
+	// ParentId Parent folder ID. JSON null moves the folder to the library root.
+	ParentId Optional[string] `json:"parent_id"`
+}
 
 // IssueCreate defines model for IssueCreate.
 type IssueCreate struct {
@@ -1562,6 +1756,33 @@ type UserPatch struct {
 	Username *string `json:"username,omitempty"`
 }
 
+// V1DocumentUpdateJSONBody defines parameters for V1DocumentUpdate.
+type V1DocumentUpdateJSONBody struct {
+	// Content Body of the document.
+	Content Optional[string] `json:"content,omitempty"`
+
+	// Excerpt Excerpt of the document.
+	Excerpt Optional[string] `json:"excerpt"`
+
+	// FolderId Move the document into this folder. JSON null removes it from the folder (library root).
+	FolderId Optional[string] `json:"folder_id"`
+
+	// LibraryId Move the document to this organization or namespace library. Clears the folder.
+	LibraryId Optional[string] `json:"library_id,omitempty"`
+
+	// Title Title of the document.
+	Title Optional[string] `json:"title,omitempty"`
+}
+
+// V1FolderUpdateJSONBody defines parameters for V1FolderUpdate.
+type V1FolderUpdateJSONBody struct {
+	// Name Name of the folder.
+	Name Optional[string] `json:"name,omitempty"`
+
+	// ParentId Parent folder ID. JSON null moves the folder to the library root.
+	ParentId Optional[string] `json:"parent_id"`
+}
+
 // V1IssueUpdateJSONBody defines parameters for V1IssueUpdate.
 type V1IssueUpdateJSONBody struct {
 	// Assignees IDs of users assigned to the issue. Empty array clears assignees.
@@ -1602,6 +1823,27 @@ type V1IssueUpdateJSONBody struct {
 
 	// Title Title of the issue.
 	Title Optional[string] `json:"title,omitempty"`
+}
+
+// V1IssuesDocumentsGetParams defines parameters for V1IssuesDocumentsGet.
+type V1IssuesDocumentsGetParams struct {
+	// PageSize Maximum number of items to return.
+	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
+
+	// PageToken Opaque continuation token from a previous page_info.next_page_token.
+	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
+}
+
+// V1IssuesDocumentsCreateJSONBody defines parameters for V1IssuesDocumentsCreate.
+type V1IssuesDocumentsCreateJSONBody struct {
+	// Content Body of the document.
+	Content Optional[string] `json:"content,omitempty"`
+
+	// Excerpt Excerpt of the document.
+	Excerpt Optional[string] `json:"excerpt"`
+
+	// Title Title of the document.
+	Title string `json:"title"`
 }
 
 // V1IssueRelationsGetParams defines parameters for V1IssueRelationsGet.
@@ -1653,6 +1895,45 @@ type V1NamespacesDocumentsGetParams struct {
 
 	// PageToken Opaque continuation token from a previous page_info.next_page_token.
 	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
+
+	// FolderId Browse documents located in this folder. Omit to list unfiled documents at the library root.
+	FolderId *FolderId `form:"folder_id,omitempty" json:"folder_id,omitempty"`
+
+	// All When true, return every document in the library regardless of folder.
+	All *All `form:"all,omitempty" json:"all,omitempty"`
+}
+
+// V1NamespacesDocumentsCreateJSONBody defines parameters for V1NamespacesDocumentsCreate.
+type V1NamespacesDocumentsCreateJSONBody struct {
+	// Content Body of the document.
+	Content Optional[string] `json:"content,omitempty"`
+
+	// Excerpt Excerpt of the document.
+	Excerpt Optional[string] `json:"excerpt"`
+
+	// Title Title of the document.
+	Title string `json:"title"`
+}
+
+// V1NamespacesFoldersGetParams defines parameters for V1NamespacesFoldersGet.
+type V1NamespacesFoldersGetParams struct {
+	// PageSize Maximum number of items to return.
+	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
+
+	// PageToken Opaque continuation token from a previous page_info.next_page_token.
+	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
+
+	// ParentId List folders located in this parent folder. Omit to list folders at the library root.
+	ParentId *ParentId `form:"parent_id,omitempty" json:"parent_id,omitempty"`
+}
+
+// V1NamespacesFoldersCreateJSONBody defines parameters for V1NamespacesFoldersCreate.
+type V1NamespacesFoldersCreateJSONBody struct {
+	// Name Name of the folder.
+	Name string `json:"name"`
+
+	// ParentId Parent folder ID. Omit to create at the library root.
+	ParentId *string `json:"parent_id"`
 }
 
 // V1NamespacesIssuesGetParams defines parameters for V1NamespacesIssuesGet.
@@ -1752,6 +2033,54 @@ type V1OrganizationUpdateJSONBody struct {
 
 	// Website Work title of the user.
 	Website Optional[string] `json:"website"`
+}
+
+// V1OrganizationsDocumentsGetParams defines parameters for V1OrganizationsDocumentsGet.
+type V1OrganizationsDocumentsGetParams struct {
+	// PageSize Maximum number of items to return.
+	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
+
+	// PageToken Opaque continuation token from a previous page_info.next_page_token.
+	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
+
+	// FolderId Browse documents located in this folder. Omit to list unfiled documents at the library root.
+	FolderId *FolderId `form:"folder_id,omitempty" json:"folder_id,omitempty"`
+
+	// All When true, return every document in the library regardless of folder.
+	All *All `form:"all,omitempty" json:"all,omitempty"`
+}
+
+// V1OrganizationsDocumentsCreateJSONBody defines parameters for V1OrganizationsDocumentsCreate.
+type V1OrganizationsDocumentsCreateJSONBody struct {
+	// Content Body of the document.
+	Content Optional[string] `json:"content,omitempty"`
+
+	// Excerpt Excerpt of the document.
+	Excerpt Optional[string] `json:"excerpt"`
+
+	// Title Title of the document.
+	Title string `json:"title"`
+}
+
+// V1OrganizationsFoldersGetParams defines parameters for V1OrganizationsFoldersGet.
+type V1OrganizationsFoldersGetParams struct {
+	// PageSize Maximum number of items to return.
+	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
+
+	// PageToken Opaque continuation token from a previous page_info.next_page_token.
+	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
+
+	// ParentId List folders located in this parent folder. Omit to list folders at the library root.
+	ParentId *ParentId `form:"parent_id,omitempty" json:"parent_id,omitempty"`
+}
+
+// V1OrganizationsFoldersCreateJSONBody defines parameters for V1OrganizationsFoldersCreate.
+type V1OrganizationsFoldersCreateJSONBody struct {
+	// Name Name of the folder.
+	Name string `json:"name"`
+
+	// ParentId Parent folder ID. Omit to create at the library root.
+	ParentId *string `json:"parent_id"`
 }
 
 // V1OrganizationMembersGetParams defines parameters for V1OrganizationMembersGet.
@@ -1910,6 +2239,18 @@ type V1ProjectsDocumentsGetParams struct {
 
 	// PageToken Opaque continuation token from a previous page_info.next_page_token.
 	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
+}
+
+// V1ProjectsDocumentsCreateJSONBody defines parameters for V1ProjectsDocumentsCreate.
+type V1ProjectsDocumentsCreateJSONBody struct {
+	// Content Body of the document.
+	Content Optional[string] `json:"content,omitempty"`
+
+	// Excerpt Excerpt of the document.
+	Excerpt Optional[string] `json:"excerpt"`
+
+	// Title Title of the document.
+	Title string `json:"title"`
 }
 
 // V1ProjectsIssuesGetParams defines parameters for V1ProjectsIssuesGet.
@@ -2128,8 +2469,17 @@ type V1UsersIssuesGetParams struct {
 	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
 }
 
+// V1DocumentUpdateJSONRequestBody defines body for V1DocumentUpdate for application/json ContentType.
+type V1DocumentUpdateJSONRequestBody V1DocumentUpdateJSONBody
+
+// V1FolderUpdateJSONRequestBody defines body for V1FolderUpdate for application/json ContentType.
+type V1FolderUpdateJSONRequestBody V1FolderUpdateJSONBody
+
 // V1IssueUpdateJSONRequestBody defines body for V1IssueUpdate for application/json ContentType.
 type V1IssueUpdateJSONRequestBody V1IssueUpdateJSONBody
+
+// V1IssuesDocumentsCreateJSONRequestBody defines body for V1IssuesDocumentsCreate for application/json ContentType.
+type V1IssuesDocumentsCreateJSONRequestBody V1IssuesDocumentsCreateJSONBody
 
 // V1IssueRelationsCreateJSONRequestBody defines body for V1IssueRelationsCreate for application/json ContentType.
 type V1IssueRelationsCreateJSONRequestBody V1IssueRelationsCreateJSONBody
@@ -2139,6 +2489,12 @@ type V1IssueRelationUpdateJSONRequestBody V1IssueRelationUpdateJSONBody
 
 // V1NamespaceUpdateJSONRequestBody defines body for V1NamespaceUpdate for application/json ContentType.
 type V1NamespaceUpdateJSONRequestBody V1NamespaceUpdateJSONBody
+
+// V1NamespacesDocumentsCreateJSONRequestBody defines body for V1NamespacesDocumentsCreate for application/json ContentType.
+type V1NamespacesDocumentsCreateJSONRequestBody V1NamespacesDocumentsCreateJSONBody
+
+// V1NamespacesFoldersCreateJSONRequestBody defines body for V1NamespacesFoldersCreate for application/json ContentType.
+type V1NamespacesFoldersCreateJSONRequestBody V1NamespacesFoldersCreateJSONBody
 
 // V1NamespacesProjectsCreateJSONRequestBody defines body for V1NamespacesProjectsCreate for application/json ContentType.
 type V1NamespacesProjectsCreateJSONRequestBody V1NamespacesProjectsCreateJSONBody
@@ -2151,6 +2507,12 @@ type V1OrganizationsCreateJSONRequestBody V1OrganizationsCreateJSONBody
 
 // V1OrganizationUpdateJSONRequestBody defines body for V1OrganizationUpdate for application/json ContentType.
 type V1OrganizationUpdateJSONRequestBody V1OrganizationUpdateJSONBody
+
+// V1OrganizationsDocumentsCreateJSONRequestBody defines body for V1OrganizationsDocumentsCreate for application/json ContentType.
+type V1OrganizationsDocumentsCreateJSONRequestBody V1OrganizationsDocumentsCreateJSONBody
+
+// V1OrganizationsFoldersCreateJSONRequestBody defines body for V1OrganizationsFoldersCreate for application/json ContentType.
+type V1OrganizationsFoldersCreateJSONRequestBody V1OrganizationsFoldersCreateJSONBody
 
 // V1OrganizationMembersAddJSONRequestBody defines body for V1OrganizationMembersAdd for application/json ContentType.
 type V1OrganizationMembersAddJSONRequestBody V1OrganizationMembersAddJSONBody
@@ -2185,6 +2547,9 @@ type V1PermissionUpdateJSONRequestBody V1PermissionUpdateJSONBody
 // V1ProjectUpdateJSONRequestBody defines body for V1ProjectUpdate for application/json ContentType.
 type V1ProjectUpdateJSONRequestBody V1ProjectUpdateJSONBody
 
+// V1ProjectsDocumentsCreateJSONRequestBody defines body for V1ProjectsDocumentsCreate for application/json ContentType.
+type V1ProjectsDocumentsCreateJSONRequestBody V1ProjectsDocumentsCreateJSONBody
+
 // V1ProjectsIssuesCreateJSONRequestBody defines body for V1ProjectsIssuesCreate for application/json ContentType.
 type V1ProjectsIssuesCreateJSONRequestBody V1ProjectsIssuesCreateJSONBody
 
@@ -2205,6 +2570,24 @@ type V1UserUpdateJSONRequestBody V1UserUpdateJSONBody
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// Delete document
+	// (DELETE /v1/documents/{id})
+	V1DocumentDelete(w http.ResponseWriter, r *http.Request, id Id)
+	// Get document
+	// (GET /v1/documents/{id})
+	V1DocumentGet(w http.ResponseWriter, r *http.Request, id Id)
+	// Update document
+	// (PATCH /v1/documents/{id})
+	V1DocumentUpdate(w http.ResponseWriter, r *http.Request, id Id)
+	// Delete folder
+	// (DELETE /v1/folders/{id})
+	V1FolderDelete(w http.ResponseWriter, r *http.Request, id Id)
+	// Get folder
+	// (GET /v1/folders/{id})
+	V1FolderGet(w http.ResponseWriter, r *http.Request, id Id)
+	// Update folder
+	// (PATCH /v1/folders/{id})
+	V1FolderUpdate(w http.ResponseWriter, r *http.Request, id Id)
 	// Delete issue
 	// (DELETE /v1/issues/{id})
 	V1IssueDelete(w http.ResponseWriter, r *http.Request, id Id)
@@ -2214,6 +2597,18 @@ type ServerInterface interface {
 	// Update issue
 	// (PATCH /v1/issues/{id})
 	V1IssueUpdate(w http.ResponseWriter, r *http.Request, id Id)
+	// Get issue documents
+	// (GET /v1/issues/{id}/documents)
+	V1IssuesDocumentsGet(w http.ResponseWriter, r *http.Request, id Id, params V1IssuesDocumentsGetParams)
+	// Create document in issue
+	// (POST /v1/issues/{id}/documents)
+	V1IssuesDocumentsCreate(w http.ResponseWriter, r *http.Request, id Id)
+	// Unrelate document from issue
+	// (DELETE /v1/issues/{id}/documents/{documentId})
+	V1IssuesDocumentsUnrelate(w http.ResponseWriter, r *http.Request, id Id, documentId DocumentId)
+	// Relate document to issue
+	// (POST /v1/issues/{id}/documents/{documentId})
+	V1IssuesDocumentsRelate(w http.ResponseWriter, r *http.Request, id Id, documentId DocumentId)
 	// Get issue relations
 	// (GET /v1/issues/{id}/relations)
 	V1IssueRelationsGet(w http.ResponseWriter, r *http.Request, id Id, params V1IssueRelationsGetParams)
@@ -2241,6 +2636,15 @@ type ServerInterface interface {
 	// Get namespace documents
 	// (GET /v1/namespaces/{id}/documents)
 	V1NamespacesDocumentsGet(w http.ResponseWriter, r *http.Request, id Id, params V1NamespacesDocumentsGetParams)
+	// Create document in namespace
+	// (POST /v1/namespaces/{id}/documents)
+	V1NamespacesDocumentsCreate(w http.ResponseWriter, r *http.Request, id Id)
+	// Get namespace folders
+	// (GET /v1/namespaces/{id}/folders)
+	V1NamespacesFoldersGet(w http.ResponseWriter, r *http.Request, id Id, params V1NamespacesFoldersGetParams)
+	// Create folder in namespace
+	// (POST /v1/namespaces/{id}/folders)
+	V1NamespacesFoldersCreate(w http.ResponseWriter, r *http.Request, id Id)
 	// Get namespace issues
 	// (GET /v1/namespaces/{id}/issues)
 	V1NamespacesIssuesGet(w http.ResponseWriter, r *http.Request, id Id, params V1NamespacesIssuesGetParams)
@@ -2280,6 +2684,18 @@ type ServerInterface interface {
 	// Update organization
 	// (PATCH /v1/organizations/{id})
 	V1OrganizationUpdate(w http.ResponseWriter, r *http.Request, id Id)
+	// Get organization documents
+	// (GET /v1/organizations/{id}/documents)
+	V1OrganizationsDocumentsGet(w http.ResponseWriter, r *http.Request, id Id, params V1OrganizationsDocumentsGetParams)
+	// Create document in organization
+	// (POST /v1/organizations/{id}/documents)
+	V1OrganizationsDocumentsCreate(w http.ResponseWriter, r *http.Request, id Id)
+	// Get organization folders
+	// (GET /v1/organizations/{id}/folders)
+	V1OrganizationsFoldersGet(w http.ResponseWriter, r *http.Request, id Id, params V1OrganizationsFoldersGetParams)
+	// Create folder in organization
+	// (POST /v1/organizations/{id}/folders)
+	V1OrganizationsFoldersCreate(w http.ResponseWriter, r *http.Request, id Id)
 	// Get organization members
 	// (GET /v1/organizations/{id}/members)
 	V1OrganizationMembersGet(w http.ResponseWriter, r *http.Request, id Id, params V1OrganizationMembersGetParams)
@@ -2370,6 +2786,15 @@ type ServerInterface interface {
 	// Get project documents
 	// (GET /v1/projects/{id}/documents)
 	V1ProjectsDocumentsGet(w http.ResponseWriter, r *http.Request, id Id, params V1ProjectsDocumentsGetParams)
+	// Create document in project
+	// (POST /v1/projects/{id}/documents)
+	V1ProjectsDocumentsCreate(w http.ResponseWriter, r *http.Request, id Id)
+	// Unrelate document from project
+	// (DELETE /v1/projects/{id}/documents/{documentId})
+	V1ProjectsDocumentsUnrelate(w http.ResponseWriter, r *http.Request, id Id, documentId DocumentId)
+	// Relate document to project
+	// (POST /v1/projects/{id}/documents/{documentId})
+	V1ProjectsDocumentsRelate(w http.ResponseWriter, r *http.Request, id Id, documentId DocumentId)
 	// Get project issues
 	// (GET /v1/projects/{id}/issues)
 	V1ProjectsIssuesGet(w http.ResponseWriter, r *http.Request, id Id, params V1ProjectsIssuesGetParams)
@@ -2433,6 +2858,42 @@ type ServerInterface interface {
 
 type Unimplemented struct{}
 
+// Delete document
+// (DELETE /v1/documents/{id})
+func (_ Unimplemented) V1DocumentDelete(w http.ResponseWriter, r *http.Request, id Id) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get document
+// (GET /v1/documents/{id})
+func (_ Unimplemented) V1DocumentGet(w http.ResponseWriter, r *http.Request, id Id) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Update document
+// (PATCH /v1/documents/{id})
+func (_ Unimplemented) V1DocumentUpdate(w http.ResponseWriter, r *http.Request, id Id) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Delete folder
+// (DELETE /v1/folders/{id})
+func (_ Unimplemented) V1FolderDelete(w http.ResponseWriter, r *http.Request, id Id) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get folder
+// (GET /v1/folders/{id})
+func (_ Unimplemented) V1FolderGet(w http.ResponseWriter, r *http.Request, id Id) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Update folder
+// (PATCH /v1/folders/{id})
+func (_ Unimplemented) V1FolderUpdate(w http.ResponseWriter, r *http.Request, id Id) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // Delete issue
 // (DELETE /v1/issues/{id})
 func (_ Unimplemented) V1IssueDelete(w http.ResponseWriter, r *http.Request, id Id) {
@@ -2448,6 +2909,30 @@ func (_ Unimplemented) V1IssueGet(w http.ResponseWriter, r *http.Request, id Id)
 // Update issue
 // (PATCH /v1/issues/{id})
 func (_ Unimplemented) V1IssueUpdate(w http.ResponseWriter, r *http.Request, id Id) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get issue documents
+// (GET /v1/issues/{id}/documents)
+func (_ Unimplemented) V1IssuesDocumentsGet(w http.ResponseWriter, r *http.Request, id Id, params V1IssuesDocumentsGetParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Create document in issue
+// (POST /v1/issues/{id}/documents)
+func (_ Unimplemented) V1IssuesDocumentsCreate(w http.ResponseWriter, r *http.Request, id Id) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Unrelate document from issue
+// (DELETE /v1/issues/{id}/documents/{documentId})
+func (_ Unimplemented) V1IssuesDocumentsUnrelate(w http.ResponseWriter, r *http.Request, id Id, documentId DocumentId) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Relate document to issue
+// (POST /v1/issues/{id}/documents/{documentId})
+func (_ Unimplemented) V1IssuesDocumentsRelate(w http.ResponseWriter, r *http.Request, id Id, documentId DocumentId) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -2502,6 +2987,24 @@ func (_ Unimplemented) V1NamespaceUpdate(w http.ResponseWriter, r *http.Request,
 // Get namespace documents
 // (GET /v1/namespaces/{id}/documents)
 func (_ Unimplemented) V1NamespacesDocumentsGet(w http.ResponseWriter, r *http.Request, id Id, params V1NamespacesDocumentsGetParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Create document in namespace
+// (POST /v1/namespaces/{id}/documents)
+func (_ Unimplemented) V1NamespacesDocumentsCreate(w http.ResponseWriter, r *http.Request, id Id) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get namespace folders
+// (GET /v1/namespaces/{id}/folders)
+func (_ Unimplemented) V1NamespacesFoldersGet(w http.ResponseWriter, r *http.Request, id Id, params V1NamespacesFoldersGetParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Create folder in namespace
+// (POST /v1/namespaces/{id}/folders)
+func (_ Unimplemented) V1NamespacesFoldersCreate(w http.ResponseWriter, r *http.Request, id Id) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -2580,6 +3083,30 @@ func (_ Unimplemented) V1OrganizationGet(w http.ResponseWriter, r *http.Request,
 // Update organization
 // (PATCH /v1/organizations/{id})
 func (_ Unimplemented) V1OrganizationUpdate(w http.ResponseWriter, r *http.Request, id Id) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get organization documents
+// (GET /v1/organizations/{id}/documents)
+func (_ Unimplemented) V1OrganizationsDocumentsGet(w http.ResponseWriter, r *http.Request, id Id, params V1OrganizationsDocumentsGetParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Create document in organization
+// (POST /v1/organizations/{id}/documents)
+func (_ Unimplemented) V1OrganizationsDocumentsCreate(w http.ResponseWriter, r *http.Request, id Id) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get organization folders
+// (GET /v1/organizations/{id}/folders)
+func (_ Unimplemented) V1OrganizationsFoldersGet(w http.ResponseWriter, r *http.Request, id Id, params V1OrganizationsFoldersGetParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Create folder in organization
+// (POST /v1/organizations/{id}/folders)
+func (_ Unimplemented) V1OrganizationsFoldersCreate(w http.ResponseWriter, r *http.Request, id Id) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -2763,6 +3290,24 @@ func (_ Unimplemented) V1ProjectsDocumentsGet(w http.ResponseWriter, r *http.Req
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// Create document in project
+// (POST /v1/projects/{id}/documents)
+func (_ Unimplemented) V1ProjectsDocumentsCreate(w http.ResponseWriter, r *http.Request, id Id) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Unrelate document from project
+// (DELETE /v1/projects/{id}/documents/{documentId})
+func (_ Unimplemented) V1ProjectsDocumentsUnrelate(w http.ResponseWriter, r *http.Request, id Id, documentId DocumentId) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Relate document to project
+// (POST /v1/projects/{id}/documents/{documentId})
+func (_ Unimplemented) V1ProjectsDocumentsRelate(w http.ResponseWriter, r *http.Request, id Id, documentId DocumentId) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // Get project issues
 // (GET /v1/projects/{id}/issues)
 func (_ Unimplemented) V1ProjectsIssuesGet(w http.ResponseWriter, r *http.Request, id Id, params V1ProjectsIssuesGetParams) {
@@ -2886,6 +3431,192 @@ type ServerInterfaceWrapper struct {
 
 type MiddlewareFunc func(http.Handler) http.Handler
 
+// V1DocumentDelete operation middleware
+func (siw *ServerInterfaceWrapper) V1DocumentDelete(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, Oauth2Scopes, []string{"document"})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1DocumentDelete(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// V1DocumentGet operation middleware
+func (siw *ServerInterfaceWrapper) V1DocumentGet(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, Oauth2Scopes, []string{"document.read"})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1DocumentGet(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// V1DocumentUpdate operation middleware
+func (siw *ServerInterfaceWrapper) V1DocumentUpdate(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, Oauth2Scopes, []string{"document"})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1DocumentUpdate(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// V1FolderDelete operation middleware
+func (siw *ServerInterfaceWrapper) V1FolderDelete(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, Oauth2Scopes, []string{"document"})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1FolderDelete(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// V1FolderGet operation middleware
+func (siw *ServerInterfaceWrapper) V1FolderGet(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, Oauth2Scopes, []string{"document.read"})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1FolderGet(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// V1FolderUpdate operation middleware
+func (siw *ServerInterfaceWrapper) V1FolderUpdate(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, Oauth2Scopes, []string{"document"})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1FolderUpdate(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // V1IssueDelete operation middleware
 func (siw *ServerInterfaceWrapper) V1IssueDelete(w http.ResponseWriter, r *http.Request) {
 
@@ -2970,6 +3701,167 @@ func (siw *ServerInterfaceWrapper) V1IssueUpdate(w http.ResponseWriter, r *http.
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.V1IssueUpdate(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// V1IssuesDocumentsGet operation middleware
+func (siw *ServerInterfaceWrapper) V1IssuesDocumentsGet(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, Oauth2Scopes, []string{"issue.read", "document.read"})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params V1IssuesDocumentsGetParams
+
+	// ------------- Optional query parameter "page_size" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "page_size", r.URL.Query(), &params.PageSize)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_size", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "page_token" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "page_token", r.URL.Query(), &params.PageToken)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_token", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1IssuesDocumentsGet(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// V1IssuesDocumentsCreate operation middleware
+func (siw *ServerInterfaceWrapper) V1IssuesDocumentsCreate(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, Oauth2Scopes, []string{"issue", "document"})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1IssuesDocumentsCreate(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// V1IssuesDocumentsUnrelate operation middleware
+func (siw *ServerInterfaceWrapper) V1IssuesDocumentsUnrelate(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "documentId" -------------
+	var documentId DocumentId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "documentId", chi.URLParam(r, "documentId"), &documentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "documentId", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, Oauth2Scopes, []string{"issue", "document"})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1IssuesDocumentsUnrelate(w, r, id, documentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// V1IssuesDocumentsRelate operation middleware
+func (siw *ServerInterfaceWrapper) V1IssuesDocumentsRelate(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "documentId" -------------
+	var documentId DocumentId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "documentId", chi.URLParam(r, "documentId"), &documentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "documentId", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, Oauth2Scopes, []string{"issue", "document"})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1IssuesDocumentsRelate(w, r, id, documentId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -3313,8 +4205,144 @@ func (siw *ServerInterfaceWrapper) V1NamespacesDocumentsGet(w http.ResponseWrite
 		return
 	}
 
+	// ------------- Optional query parameter "folder_id" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "folder_id", r.URL.Query(), &params.FolderId)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "folder_id", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "all" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "all", r.URL.Query(), &params.All)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "all", Err: err})
+		return
+	}
+
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.V1NamespacesDocumentsGet(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// V1NamespacesDocumentsCreate operation middleware
+func (siw *ServerInterfaceWrapper) V1NamespacesDocumentsCreate(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, Oauth2Scopes, []string{"namespace", "document"})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1NamespacesDocumentsCreate(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// V1NamespacesFoldersGet operation middleware
+func (siw *ServerInterfaceWrapper) V1NamespacesFoldersGet(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, Oauth2Scopes, []string{"namespace.read", "document.read"})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params V1NamespacesFoldersGetParams
+
+	// ------------- Optional query parameter "page_size" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "page_size", r.URL.Query(), &params.PageSize)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_size", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "page_token" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "page_token", r.URL.Query(), &params.PageToken)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_token", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "parent_id" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "parent_id", r.URL.Query(), &params.ParentId)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "parent_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1NamespacesFoldersGet(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// V1NamespacesFoldersCreate operation middleware
+func (siw *ServerInterfaceWrapper) V1NamespacesFoldersCreate(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, Oauth2Scopes, []string{"namespace", "document"})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1NamespacesFoldersCreate(w, r, id)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -3785,6 +4813,192 @@ func (siw *ServerInterfaceWrapper) V1OrganizationUpdate(w http.ResponseWriter, r
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.V1OrganizationUpdate(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// V1OrganizationsDocumentsGet operation middleware
+func (siw *ServerInterfaceWrapper) V1OrganizationsDocumentsGet(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, Oauth2Scopes, []string{"organization.read", "document.read"})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params V1OrganizationsDocumentsGetParams
+
+	// ------------- Optional query parameter "page_size" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "page_size", r.URL.Query(), &params.PageSize)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_size", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "page_token" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "page_token", r.URL.Query(), &params.PageToken)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_token", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "folder_id" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "folder_id", r.URL.Query(), &params.FolderId)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "folder_id", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "all" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "all", r.URL.Query(), &params.All)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "all", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1OrganizationsDocumentsGet(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// V1OrganizationsDocumentsCreate operation middleware
+func (siw *ServerInterfaceWrapper) V1OrganizationsDocumentsCreate(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, Oauth2Scopes, []string{"organization", "document"})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1OrganizationsDocumentsCreate(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// V1OrganizationsFoldersGet operation middleware
+func (siw *ServerInterfaceWrapper) V1OrganizationsFoldersGet(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, Oauth2Scopes, []string{"organization.read", "document.read"})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params V1OrganizationsFoldersGetParams
+
+	// ------------- Optional query parameter "page_size" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "page_size", r.URL.Query(), &params.PageSize)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_size", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "page_token" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "page_token", r.URL.Query(), &params.PageToken)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_token", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "parent_id" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "parent_id", r.URL.Query(), &params.ParentId)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "parent_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1OrganizationsFoldersGet(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// V1OrganizationsFoldersCreate operation middleware
+func (siw *ServerInterfaceWrapper) V1OrganizationsFoldersCreate(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, Oauth2Scopes, []string{"organization", "document"})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1OrganizationsFoldersCreate(w, r, id)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -4928,6 +6142,117 @@ func (siw *ServerInterfaceWrapper) V1ProjectsDocumentsGet(w http.ResponseWriter,
 	handler.ServeHTTP(w, r)
 }
 
+// V1ProjectsDocumentsCreate operation middleware
+func (siw *ServerInterfaceWrapper) V1ProjectsDocumentsCreate(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, Oauth2Scopes, []string{"project", "document"})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1ProjectsDocumentsCreate(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// V1ProjectsDocumentsUnrelate operation middleware
+func (siw *ServerInterfaceWrapper) V1ProjectsDocumentsUnrelate(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "documentId" -------------
+	var documentId DocumentId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "documentId", chi.URLParam(r, "documentId"), &documentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "documentId", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, Oauth2Scopes, []string{"project", "document"})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1ProjectsDocumentsUnrelate(w, r, id, documentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// V1ProjectsDocumentsRelate operation middleware
+func (siw *ServerInterfaceWrapper) V1ProjectsDocumentsRelate(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "documentId" -------------
+	var documentId DocumentId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "documentId", chi.URLParam(r, "documentId"), &documentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "documentId", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, Oauth2Scopes, []string{"project", "document"})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1ProjectsDocumentsRelate(w, r, id, documentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // V1ProjectsIssuesGet operation middleware
 func (siw *ServerInterfaceWrapper) V1ProjectsIssuesGet(w http.ResponseWriter, r *http.Request) {
 
@@ -5610,6 +6935,24 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	}
 
 	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/v1/documents/{id}", wrapper.V1DocumentDelete)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/documents/{id}", wrapper.V1DocumentGet)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/v1/documents/{id}", wrapper.V1DocumentUpdate)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/v1/folders/{id}", wrapper.V1FolderDelete)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/folders/{id}", wrapper.V1FolderGet)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/v1/folders/{id}", wrapper.V1FolderUpdate)
+	})
+	r.Group(func(r chi.Router) {
 		r.Delete(options.BaseURL+"/v1/issues/{id}", wrapper.V1IssueDelete)
 	})
 	r.Group(func(r chi.Router) {
@@ -5617,6 +6960,18 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Patch(options.BaseURL+"/v1/issues/{id}", wrapper.V1IssueUpdate)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/issues/{id}/documents", wrapper.V1IssuesDocumentsGet)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/issues/{id}/documents", wrapper.V1IssuesDocumentsCreate)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/v1/issues/{id}/documents/{documentId}", wrapper.V1IssuesDocumentsUnrelate)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/issues/{id}/documents/{documentId}", wrapper.V1IssuesDocumentsRelate)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/v1/issues/{id}/relations", wrapper.V1IssueRelationsGet)
@@ -5644,6 +6999,15 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/v1/namespaces/{id}/documents", wrapper.V1NamespacesDocumentsGet)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/namespaces/{id}/documents", wrapper.V1NamespacesDocumentsCreate)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/namespaces/{id}/folders", wrapper.V1NamespacesFoldersGet)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/namespaces/{id}/folders", wrapper.V1NamespacesFoldersCreate)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/v1/namespaces/{id}/issues", wrapper.V1NamespacesIssuesGet)
@@ -5683,6 +7047,18 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Patch(options.BaseURL+"/v1/organizations/{id}", wrapper.V1OrganizationUpdate)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/organizations/{id}/documents", wrapper.V1OrganizationsDocumentsGet)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/organizations/{id}/documents", wrapper.V1OrganizationsDocumentsCreate)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/organizations/{id}/folders", wrapper.V1OrganizationsFoldersGet)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/organizations/{id}/folders", wrapper.V1OrganizationsFoldersCreate)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/v1/organizations/{id}/members", wrapper.V1OrganizationMembersGet)
@@ -5775,6 +7151,15 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/v1/projects/{id}/documents", wrapper.V1ProjectsDocumentsGet)
 	})
 	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/projects/{id}/documents", wrapper.V1ProjectsDocumentsCreate)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/v1/projects/{id}/documents/{documentId}", wrapper.V1ProjectsDocumentsUnrelate)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/projects/{id}/documents/{documentId}", wrapper.V1ProjectsDocumentsRelate)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/v1/projects/{id}/issues", wrapper.V1ProjectsIssuesGet)
 	})
 	r.Group(func(r chi.Router) {
@@ -5849,6 +7234,378 @@ type N403JSONResponse HTTPError
 type N404JSONResponse HTTPError
 
 type N500JSONResponse HTTPError
+
+type V1DocumentDeleteRequestObject struct {
+	Id Id `json:"id"`
+}
+
+type V1DocumentDeleteResponseObject interface {
+	VisitV1DocumentDeleteResponse(w http.ResponseWriter) error
+}
+
+type V1DocumentDelete204Response struct {
+}
+
+func (response V1DocumentDelete204Response) VisitV1DocumentDeleteResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type V1DocumentDelete400JSONResponse struct{ N400JSONResponse }
+
+func (response V1DocumentDelete400JSONResponse) VisitV1DocumentDeleteResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1DocumentDelete401JSONResponse struct{ N401JSONResponse }
+
+func (response V1DocumentDelete401JSONResponse) VisitV1DocumentDeleteResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1DocumentDelete403JSONResponse struct{ N403JSONResponse }
+
+func (response V1DocumentDelete403JSONResponse) VisitV1DocumentDeleteResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1DocumentDelete404JSONResponse struct{ N404JSONResponse }
+
+func (response V1DocumentDelete404JSONResponse) VisitV1DocumentDeleteResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1DocumentDelete500JSONResponse struct{ N500JSONResponse }
+
+func (response V1DocumentDelete500JSONResponse) VisitV1DocumentDeleteResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1DocumentGetRequestObject struct {
+	Id Id `json:"id"`
+}
+
+type V1DocumentGetResponseObject interface {
+	VisitV1DocumentGetResponse(w http.ResponseWriter) error
+}
+
+type V1DocumentGet200JSONResponse Document
+
+func (response V1DocumentGet200JSONResponse) VisitV1DocumentGetResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1DocumentGet400JSONResponse struct{ N400JSONResponse }
+
+func (response V1DocumentGet400JSONResponse) VisitV1DocumentGetResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1DocumentGet401JSONResponse struct{ N401JSONResponse }
+
+func (response V1DocumentGet401JSONResponse) VisitV1DocumentGetResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1DocumentGet403JSONResponse struct{ N403JSONResponse }
+
+func (response V1DocumentGet403JSONResponse) VisitV1DocumentGetResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1DocumentGet404JSONResponse struct{ N404JSONResponse }
+
+func (response V1DocumentGet404JSONResponse) VisitV1DocumentGetResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1DocumentGet500JSONResponse struct{ N500JSONResponse }
+
+func (response V1DocumentGet500JSONResponse) VisitV1DocumentGetResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1DocumentUpdateRequestObject struct {
+	Id   Id `json:"id"`
+	Body *V1DocumentUpdateJSONRequestBody
+}
+
+type V1DocumentUpdateResponseObject interface {
+	VisitV1DocumentUpdateResponse(w http.ResponseWriter) error
+}
+
+type V1DocumentUpdate200JSONResponse Document
+
+func (response V1DocumentUpdate200JSONResponse) VisitV1DocumentUpdateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1DocumentUpdate400JSONResponse struct{ N400JSONResponse }
+
+func (response V1DocumentUpdate400JSONResponse) VisitV1DocumentUpdateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1DocumentUpdate401JSONResponse struct{ N401JSONResponse }
+
+func (response V1DocumentUpdate401JSONResponse) VisitV1DocumentUpdateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1DocumentUpdate403JSONResponse struct{ N403JSONResponse }
+
+func (response V1DocumentUpdate403JSONResponse) VisitV1DocumentUpdateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1DocumentUpdate404JSONResponse struct{ N404JSONResponse }
+
+func (response V1DocumentUpdate404JSONResponse) VisitV1DocumentUpdateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1DocumentUpdate500JSONResponse struct{ N500JSONResponse }
+
+func (response V1DocumentUpdate500JSONResponse) VisitV1DocumentUpdateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1FolderDeleteRequestObject struct {
+	Id Id `json:"id"`
+}
+
+type V1FolderDeleteResponseObject interface {
+	VisitV1FolderDeleteResponse(w http.ResponseWriter) error
+}
+
+type V1FolderDelete204Response struct {
+}
+
+func (response V1FolderDelete204Response) VisitV1FolderDeleteResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type V1FolderDelete400JSONResponse struct{ N400JSONResponse }
+
+func (response V1FolderDelete400JSONResponse) VisitV1FolderDeleteResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1FolderDelete401JSONResponse struct{ N401JSONResponse }
+
+func (response V1FolderDelete401JSONResponse) VisitV1FolderDeleteResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1FolderDelete403JSONResponse struct{ N403JSONResponse }
+
+func (response V1FolderDelete403JSONResponse) VisitV1FolderDeleteResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1FolderDelete404JSONResponse struct{ N404JSONResponse }
+
+func (response V1FolderDelete404JSONResponse) VisitV1FolderDeleteResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1FolderDelete500JSONResponse struct{ N500JSONResponse }
+
+func (response V1FolderDelete500JSONResponse) VisitV1FolderDeleteResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1FolderGetRequestObject struct {
+	Id Id `json:"id"`
+}
+
+type V1FolderGetResponseObject interface {
+	VisitV1FolderGetResponse(w http.ResponseWriter) error
+}
+
+type V1FolderGet200JSONResponse Folder
+
+func (response V1FolderGet200JSONResponse) VisitV1FolderGetResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1FolderGet400JSONResponse struct{ N400JSONResponse }
+
+func (response V1FolderGet400JSONResponse) VisitV1FolderGetResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1FolderGet401JSONResponse struct{ N401JSONResponse }
+
+func (response V1FolderGet401JSONResponse) VisitV1FolderGetResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1FolderGet403JSONResponse struct{ N403JSONResponse }
+
+func (response V1FolderGet403JSONResponse) VisitV1FolderGetResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1FolderGet404JSONResponse struct{ N404JSONResponse }
+
+func (response V1FolderGet404JSONResponse) VisitV1FolderGetResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1FolderGet500JSONResponse struct{ N500JSONResponse }
+
+func (response V1FolderGet500JSONResponse) VisitV1FolderGetResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1FolderUpdateRequestObject struct {
+	Id   Id `json:"id"`
+	Body *V1FolderUpdateJSONRequestBody
+}
+
+type V1FolderUpdateResponseObject interface {
+	VisitV1FolderUpdateResponse(w http.ResponseWriter) error
+}
+
+type V1FolderUpdate200JSONResponse Folder
+
+func (response V1FolderUpdate200JSONResponse) VisitV1FolderUpdateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1FolderUpdate400JSONResponse struct{ N400JSONResponse }
+
+func (response V1FolderUpdate400JSONResponse) VisitV1FolderUpdateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1FolderUpdate401JSONResponse struct{ N401JSONResponse }
+
+func (response V1FolderUpdate401JSONResponse) VisitV1FolderUpdateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1FolderUpdate403JSONResponse struct{ N403JSONResponse }
+
+func (response V1FolderUpdate403JSONResponse) VisitV1FolderUpdateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1FolderUpdate404JSONResponse struct{ N404JSONResponse }
+
+func (response V1FolderUpdate404JSONResponse) VisitV1FolderUpdateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1FolderUpdate500JSONResponse struct{ N500JSONResponse }
+
+func (response V1FolderUpdate500JSONResponse) VisitV1FolderUpdateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
 
 type V1IssueDeleteRequestObject struct {
 	Id Id `json:"id"`
@@ -6030,6 +7787,256 @@ func (response V1IssueUpdate404JSONResponse) VisitV1IssueUpdateResponse(w http.R
 type V1IssueUpdate500JSONResponse struct{ N500JSONResponse }
 
 func (response V1IssueUpdate500JSONResponse) VisitV1IssueUpdateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1IssuesDocumentsGetRequestObject struct {
+	Id     Id `json:"id"`
+	Params V1IssuesDocumentsGetParams
+}
+
+type V1IssuesDocumentsGetResponseObject interface {
+	VisitV1IssuesDocumentsGetResponse(w http.ResponseWriter) error
+}
+
+type V1IssuesDocumentsGet200JSONResponse PartialDocumentPage
+
+func (response V1IssuesDocumentsGet200JSONResponse) VisitV1IssuesDocumentsGetResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1IssuesDocumentsGet400JSONResponse struct{ N400JSONResponse }
+
+func (response V1IssuesDocumentsGet400JSONResponse) VisitV1IssuesDocumentsGetResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1IssuesDocumentsGet401JSONResponse struct{ N401JSONResponse }
+
+func (response V1IssuesDocumentsGet401JSONResponse) VisitV1IssuesDocumentsGetResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1IssuesDocumentsGet403JSONResponse struct{ N403JSONResponse }
+
+func (response V1IssuesDocumentsGet403JSONResponse) VisitV1IssuesDocumentsGetResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1IssuesDocumentsGet404JSONResponse struct{ N404JSONResponse }
+
+func (response V1IssuesDocumentsGet404JSONResponse) VisitV1IssuesDocumentsGetResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1IssuesDocumentsGet500JSONResponse struct{ N500JSONResponse }
+
+func (response V1IssuesDocumentsGet500JSONResponse) VisitV1IssuesDocumentsGetResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1IssuesDocumentsCreateRequestObject struct {
+	Id   Id `json:"id"`
+	Body *V1IssuesDocumentsCreateJSONRequestBody
+}
+
+type V1IssuesDocumentsCreateResponseObject interface {
+	VisitV1IssuesDocumentsCreateResponse(w http.ResponseWriter) error
+}
+
+type V1IssuesDocumentsCreate201JSONResponse Document
+
+func (response V1IssuesDocumentsCreate201JSONResponse) VisitV1IssuesDocumentsCreateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1IssuesDocumentsCreate400JSONResponse struct{ N400JSONResponse }
+
+func (response V1IssuesDocumentsCreate400JSONResponse) VisitV1IssuesDocumentsCreateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1IssuesDocumentsCreate401JSONResponse struct{ N401JSONResponse }
+
+func (response V1IssuesDocumentsCreate401JSONResponse) VisitV1IssuesDocumentsCreateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1IssuesDocumentsCreate403JSONResponse struct{ N403JSONResponse }
+
+func (response V1IssuesDocumentsCreate403JSONResponse) VisitV1IssuesDocumentsCreateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1IssuesDocumentsCreate404JSONResponse struct{ N404JSONResponse }
+
+func (response V1IssuesDocumentsCreate404JSONResponse) VisitV1IssuesDocumentsCreateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1IssuesDocumentsCreate500JSONResponse struct{ N500JSONResponse }
+
+func (response V1IssuesDocumentsCreate500JSONResponse) VisitV1IssuesDocumentsCreateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1IssuesDocumentsUnrelateRequestObject struct {
+	Id         Id         `json:"id"`
+	DocumentId DocumentId `json:"documentId"`
+}
+
+type V1IssuesDocumentsUnrelateResponseObject interface {
+	VisitV1IssuesDocumentsUnrelateResponse(w http.ResponseWriter) error
+}
+
+type V1IssuesDocumentsUnrelate204Response struct {
+}
+
+func (response V1IssuesDocumentsUnrelate204Response) VisitV1IssuesDocumentsUnrelateResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type V1IssuesDocumentsUnrelate400JSONResponse struct{ N400JSONResponse }
+
+func (response V1IssuesDocumentsUnrelate400JSONResponse) VisitV1IssuesDocumentsUnrelateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1IssuesDocumentsUnrelate401JSONResponse struct{ N401JSONResponse }
+
+func (response V1IssuesDocumentsUnrelate401JSONResponse) VisitV1IssuesDocumentsUnrelateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1IssuesDocumentsUnrelate403JSONResponse struct{ N403JSONResponse }
+
+func (response V1IssuesDocumentsUnrelate403JSONResponse) VisitV1IssuesDocumentsUnrelateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1IssuesDocumentsUnrelate404JSONResponse struct{ N404JSONResponse }
+
+func (response V1IssuesDocumentsUnrelate404JSONResponse) VisitV1IssuesDocumentsUnrelateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1IssuesDocumentsUnrelate500JSONResponse struct{ N500JSONResponse }
+
+func (response V1IssuesDocumentsUnrelate500JSONResponse) VisitV1IssuesDocumentsUnrelateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1IssuesDocumentsRelateRequestObject struct {
+	Id         Id         `json:"id"`
+	DocumentId DocumentId `json:"documentId"`
+}
+
+type V1IssuesDocumentsRelateResponseObject interface {
+	VisitV1IssuesDocumentsRelateResponse(w http.ResponseWriter) error
+}
+
+type V1IssuesDocumentsRelate204Response struct {
+}
+
+func (response V1IssuesDocumentsRelate204Response) VisitV1IssuesDocumentsRelateResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type V1IssuesDocumentsRelate400JSONResponse struct{ N400JSONResponse }
+
+func (response V1IssuesDocumentsRelate400JSONResponse) VisitV1IssuesDocumentsRelateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1IssuesDocumentsRelate401JSONResponse struct{ N401JSONResponse }
+
+func (response V1IssuesDocumentsRelate401JSONResponse) VisitV1IssuesDocumentsRelateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1IssuesDocumentsRelate403JSONResponse struct{ N403JSONResponse }
+
+func (response V1IssuesDocumentsRelate403JSONResponse) VisitV1IssuesDocumentsRelateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1IssuesDocumentsRelate404JSONResponse struct{ N404JSONResponse }
+
+func (response V1IssuesDocumentsRelate404JSONResponse) VisitV1IssuesDocumentsRelateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1IssuesDocumentsRelate500JSONResponse struct{ N500JSONResponse }
+
+func (response V1IssuesDocumentsRelate500JSONResponse) VisitV1IssuesDocumentsRelateResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(500)
 
@@ -6584,6 +8591,195 @@ func (response V1NamespacesDocumentsGet404JSONResponse) VisitV1NamespacesDocumen
 type V1NamespacesDocumentsGet500JSONResponse struct{ N500JSONResponse }
 
 func (response V1NamespacesDocumentsGet500JSONResponse) VisitV1NamespacesDocumentsGetResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1NamespacesDocumentsCreateRequestObject struct {
+	Id   Id `json:"id"`
+	Body *V1NamespacesDocumentsCreateJSONRequestBody
+}
+
+type V1NamespacesDocumentsCreateResponseObject interface {
+	VisitV1NamespacesDocumentsCreateResponse(w http.ResponseWriter) error
+}
+
+type V1NamespacesDocumentsCreate201JSONResponse Document
+
+func (response V1NamespacesDocumentsCreate201JSONResponse) VisitV1NamespacesDocumentsCreateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1NamespacesDocumentsCreate400JSONResponse struct{ N400JSONResponse }
+
+func (response V1NamespacesDocumentsCreate400JSONResponse) VisitV1NamespacesDocumentsCreateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1NamespacesDocumentsCreate401JSONResponse struct{ N401JSONResponse }
+
+func (response V1NamespacesDocumentsCreate401JSONResponse) VisitV1NamespacesDocumentsCreateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1NamespacesDocumentsCreate403JSONResponse struct{ N403JSONResponse }
+
+func (response V1NamespacesDocumentsCreate403JSONResponse) VisitV1NamespacesDocumentsCreateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1NamespacesDocumentsCreate404JSONResponse struct{ N404JSONResponse }
+
+func (response V1NamespacesDocumentsCreate404JSONResponse) VisitV1NamespacesDocumentsCreateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1NamespacesDocumentsCreate500JSONResponse struct{ N500JSONResponse }
+
+func (response V1NamespacesDocumentsCreate500JSONResponse) VisitV1NamespacesDocumentsCreateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1NamespacesFoldersGetRequestObject struct {
+	Id     Id `json:"id"`
+	Params V1NamespacesFoldersGetParams
+}
+
+type V1NamespacesFoldersGetResponseObject interface {
+	VisitV1NamespacesFoldersGetResponse(w http.ResponseWriter) error
+}
+
+type V1NamespacesFoldersGet200JSONResponse FolderPage
+
+func (response V1NamespacesFoldersGet200JSONResponse) VisitV1NamespacesFoldersGetResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1NamespacesFoldersGet400JSONResponse struct{ N400JSONResponse }
+
+func (response V1NamespacesFoldersGet400JSONResponse) VisitV1NamespacesFoldersGetResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1NamespacesFoldersGet401JSONResponse struct{ N401JSONResponse }
+
+func (response V1NamespacesFoldersGet401JSONResponse) VisitV1NamespacesFoldersGetResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1NamespacesFoldersGet403JSONResponse struct{ N403JSONResponse }
+
+func (response V1NamespacesFoldersGet403JSONResponse) VisitV1NamespacesFoldersGetResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1NamespacesFoldersGet404JSONResponse struct{ N404JSONResponse }
+
+func (response V1NamespacesFoldersGet404JSONResponse) VisitV1NamespacesFoldersGetResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1NamespacesFoldersGet500JSONResponse struct{ N500JSONResponse }
+
+func (response V1NamespacesFoldersGet500JSONResponse) VisitV1NamespacesFoldersGetResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1NamespacesFoldersCreateRequestObject struct {
+	Id   Id `json:"id"`
+	Body *V1NamespacesFoldersCreateJSONRequestBody
+}
+
+type V1NamespacesFoldersCreateResponseObject interface {
+	VisitV1NamespacesFoldersCreateResponse(w http.ResponseWriter) error
+}
+
+type V1NamespacesFoldersCreate201JSONResponse Folder
+
+func (response V1NamespacesFoldersCreate201JSONResponse) VisitV1NamespacesFoldersCreateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1NamespacesFoldersCreate400JSONResponse struct{ N400JSONResponse }
+
+func (response V1NamespacesFoldersCreate400JSONResponse) VisitV1NamespacesFoldersCreateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1NamespacesFoldersCreate401JSONResponse struct{ N401JSONResponse }
+
+func (response V1NamespacesFoldersCreate401JSONResponse) VisitV1NamespacesFoldersCreateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1NamespacesFoldersCreate403JSONResponse struct{ N403JSONResponse }
+
+func (response V1NamespacesFoldersCreate403JSONResponse) VisitV1NamespacesFoldersCreateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1NamespacesFoldersCreate404JSONResponse struct{ N404JSONResponse }
+
+func (response V1NamespacesFoldersCreate404JSONResponse) VisitV1NamespacesFoldersCreateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1NamespacesFoldersCreate500JSONResponse struct{ N500JSONResponse }
+
+func (response V1NamespacesFoldersCreate500JSONResponse) VisitV1NamespacesFoldersCreateResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(500)
 
@@ -7368,6 +9564,258 @@ func (response V1OrganizationUpdate404JSONResponse) VisitV1OrganizationUpdateRes
 type V1OrganizationUpdate500JSONResponse struct{ N500JSONResponse }
 
 func (response V1OrganizationUpdate500JSONResponse) VisitV1OrganizationUpdateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationsDocumentsGetRequestObject struct {
+	Id     Id `json:"id"`
+	Params V1OrganizationsDocumentsGetParams
+}
+
+type V1OrganizationsDocumentsGetResponseObject interface {
+	VisitV1OrganizationsDocumentsGetResponse(w http.ResponseWriter) error
+}
+
+type V1OrganizationsDocumentsGet200JSONResponse PartialDocumentPage
+
+func (response V1OrganizationsDocumentsGet200JSONResponse) VisitV1OrganizationsDocumentsGetResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationsDocumentsGet400JSONResponse struct{ N400JSONResponse }
+
+func (response V1OrganizationsDocumentsGet400JSONResponse) VisitV1OrganizationsDocumentsGetResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationsDocumentsGet401JSONResponse struct{ N401JSONResponse }
+
+func (response V1OrganizationsDocumentsGet401JSONResponse) VisitV1OrganizationsDocumentsGetResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationsDocumentsGet403JSONResponse struct{ N403JSONResponse }
+
+func (response V1OrganizationsDocumentsGet403JSONResponse) VisitV1OrganizationsDocumentsGetResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationsDocumentsGet404JSONResponse struct{ N404JSONResponse }
+
+func (response V1OrganizationsDocumentsGet404JSONResponse) VisitV1OrganizationsDocumentsGetResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationsDocumentsGet500JSONResponse struct{ N500JSONResponse }
+
+func (response V1OrganizationsDocumentsGet500JSONResponse) VisitV1OrganizationsDocumentsGetResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationsDocumentsCreateRequestObject struct {
+	Id   Id `json:"id"`
+	Body *V1OrganizationsDocumentsCreateJSONRequestBody
+}
+
+type V1OrganizationsDocumentsCreateResponseObject interface {
+	VisitV1OrganizationsDocumentsCreateResponse(w http.ResponseWriter) error
+}
+
+type V1OrganizationsDocumentsCreate201JSONResponse Document
+
+func (response V1OrganizationsDocumentsCreate201JSONResponse) VisitV1OrganizationsDocumentsCreateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationsDocumentsCreate400JSONResponse struct{ N400JSONResponse }
+
+func (response V1OrganizationsDocumentsCreate400JSONResponse) VisitV1OrganizationsDocumentsCreateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationsDocumentsCreate401JSONResponse struct{ N401JSONResponse }
+
+func (response V1OrganizationsDocumentsCreate401JSONResponse) VisitV1OrganizationsDocumentsCreateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationsDocumentsCreate403JSONResponse struct{ N403JSONResponse }
+
+func (response V1OrganizationsDocumentsCreate403JSONResponse) VisitV1OrganizationsDocumentsCreateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationsDocumentsCreate404JSONResponse struct{ N404JSONResponse }
+
+func (response V1OrganizationsDocumentsCreate404JSONResponse) VisitV1OrganizationsDocumentsCreateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationsDocumentsCreate500JSONResponse struct{ N500JSONResponse }
+
+func (response V1OrganizationsDocumentsCreate500JSONResponse) VisitV1OrganizationsDocumentsCreateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationsFoldersGetRequestObject struct {
+	Id     Id `json:"id"`
+	Params V1OrganizationsFoldersGetParams
+}
+
+type V1OrganizationsFoldersGetResponseObject interface {
+	VisitV1OrganizationsFoldersGetResponse(w http.ResponseWriter) error
+}
+
+type V1OrganizationsFoldersGet200JSONResponse FolderPage
+
+func (response V1OrganizationsFoldersGet200JSONResponse) VisitV1OrganizationsFoldersGetResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationsFoldersGet400JSONResponse struct{ N400JSONResponse }
+
+func (response V1OrganizationsFoldersGet400JSONResponse) VisitV1OrganizationsFoldersGetResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationsFoldersGet401JSONResponse struct{ N401JSONResponse }
+
+func (response V1OrganizationsFoldersGet401JSONResponse) VisitV1OrganizationsFoldersGetResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationsFoldersGet403JSONResponse struct{ N403JSONResponse }
+
+func (response V1OrganizationsFoldersGet403JSONResponse) VisitV1OrganizationsFoldersGetResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationsFoldersGet404JSONResponse struct{ N404JSONResponse }
+
+func (response V1OrganizationsFoldersGet404JSONResponse) VisitV1OrganizationsFoldersGetResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationsFoldersGet500JSONResponse struct{ N500JSONResponse }
+
+func (response V1OrganizationsFoldersGet500JSONResponse) VisitV1OrganizationsFoldersGetResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationsFoldersCreateRequestObject struct {
+	Id   Id `json:"id"`
+	Body *V1OrganizationsFoldersCreateJSONRequestBody
+}
+
+type V1OrganizationsFoldersCreateResponseObject interface {
+	VisitV1OrganizationsFoldersCreateResponse(w http.ResponseWriter) error
+}
+
+type V1OrganizationsFoldersCreate201JSONResponse Folder
+
+func (response V1OrganizationsFoldersCreate201JSONResponse) VisitV1OrganizationsFoldersCreateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationsFoldersCreate400JSONResponse struct{ N400JSONResponse }
+
+func (response V1OrganizationsFoldersCreate400JSONResponse) VisitV1OrganizationsFoldersCreateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationsFoldersCreate401JSONResponse struct{ N401JSONResponse }
+
+func (response V1OrganizationsFoldersCreate401JSONResponse) VisitV1OrganizationsFoldersCreateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationsFoldersCreate403JSONResponse struct{ N403JSONResponse }
+
+func (response V1OrganizationsFoldersCreate403JSONResponse) VisitV1OrganizationsFoldersCreateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationsFoldersCreate404JSONResponse struct{ N404JSONResponse }
+
+func (response V1OrganizationsFoldersCreate404JSONResponse) VisitV1OrganizationsFoldersCreateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1OrganizationsFoldersCreate500JSONResponse struct{ N500JSONResponse }
+
+func (response V1OrganizationsFoldersCreate500JSONResponse) VisitV1OrganizationsFoldersCreateResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(500)
 
@@ -9208,6 +11656,193 @@ func (response V1ProjectsDocumentsGet500JSONResponse) VisitV1ProjectsDocumentsGe
 	return json.NewEncoder(w).Encode(response)
 }
 
+type V1ProjectsDocumentsCreateRequestObject struct {
+	Id   Id `json:"id"`
+	Body *V1ProjectsDocumentsCreateJSONRequestBody
+}
+
+type V1ProjectsDocumentsCreateResponseObject interface {
+	VisitV1ProjectsDocumentsCreateResponse(w http.ResponseWriter) error
+}
+
+type V1ProjectsDocumentsCreate201JSONResponse Document
+
+func (response V1ProjectsDocumentsCreate201JSONResponse) VisitV1ProjectsDocumentsCreateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1ProjectsDocumentsCreate400JSONResponse struct{ N400JSONResponse }
+
+func (response V1ProjectsDocumentsCreate400JSONResponse) VisitV1ProjectsDocumentsCreateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1ProjectsDocumentsCreate401JSONResponse struct{ N401JSONResponse }
+
+func (response V1ProjectsDocumentsCreate401JSONResponse) VisitV1ProjectsDocumentsCreateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1ProjectsDocumentsCreate403JSONResponse struct{ N403JSONResponse }
+
+func (response V1ProjectsDocumentsCreate403JSONResponse) VisitV1ProjectsDocumentsCreateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1ProjectsDocumentsCreate404JSONResponse struct{ N404JSONResponse }
+
+func (response V1ProjectsDocumentsCreate404JSONResponse) VisitV1ProjectsDocumentsCreateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1ProjectsDocumentsCreate500JSONResponse struct{ N500JSONResponse }
+
+func (response V1ProjectsDocumentsCreate500JSONResponse) VisitV1ProjectsDocumentsCreateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1ProjectsDocumentsUnrelateRequestObject struct {
+	Id         Id         `json:"id"`
+	DocumentId DocumentId `json:"documentId"`
+}
+
+type V1ProjectsDocumentsUnrelateResponseObject interface {
+	VisitV1ProjectsDocumentsUnrelateResponse(w http.ResponseWriter) error
+}
+
+type V1ProjectsDocumentsUnrelate204Response struct {
+}
+
+func (response V1ProjectsDocumentsUnrelate204Response) VisitV1ProjectsDocumentsUnrelateResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type V1ProjectsDocumentsUnrelate400JSONResponse struct{ N400JSONResponse }
+
+func (response V1ProjectsDocumentsUnrelate400JSONResponse) VisitV1ProjectsDocumentsUnrelateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1ProjectsDocumentsUnrelate401JSONResponse struct{ N401JSONResponse }
+
+func (response V1ProjectsDocumentsUnrelate401JSONResponse) VisitV1ProjectsDocumentsUnrelateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1ProjectsDocumentsUnrelate403JSONResponse struct{ N403JSONResponse }
+
+func (response V1ProjectsDocumentsUnrelate403JSONResponse) VisitV1ProjectsDocumentsUnrelateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1ProjectsDocumentsUnrelate404JSONResponse struct{ N404JSONResponse }
+
+func (response V1ProjectsDocumentsUnrelate404JSONResponse) VisitV1ProjectsDocumentsUnrelateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1ProjectsDocumentsUnrelate500JSONResponse struct{ N500JSONResponse }
+
+func (response V1ProjectsDocumentsUnrelate500JSONResponse) VisitV1ProjectsDocumentsUnrelateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1ProjectsDocumentsRelateRequestObject struct {
+	Id         Id         `json:"id"`
+	DocumentId DocumentId `json:"documentId"`
+}
+
+type V1ProjectsDocumentsRelateResponseObject interface {
+	VisitV1ProjectsDocumentsRelateResponse(w http.ResponseWriter) error
+}
+
+type V1ProjectsDocumentsRelate204Response struct {
+}
+
+func (response V1ProjectsDocumentsRelate204Response) VisitV1ProjectsDocumentsRelateResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type V1ProjectsDocumentsRelate400JSONResponse struct{ N400JSONResponse }
+
+func (response V1ProjectsDocumentsRelate400JSONResponse) VisitV1ProjectsDocumentsRelateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1ProjectsDocumentsRelate401JSONResponse struct{ N401JSONResponse }
+
+func (response V1ProjectsDocumentsRelate401JSONResponse) VisitV1ProjectsDocumentsRelateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1ProjectsDocumentsRelate403JSONResponse struct{ N403JSONResponse }
+
+func (response V1ProjectsDocumentsRelate403JSONResponse) VisitV1ProjectsDocumentsRelateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1ProjectsDocumentsRelate404JSONResponse struct{ N404JSONResponse }
+
+func (response V1ProjectsDocumentsRelate404JSONResponse) VisitV1ProjectsDocumentsRelateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type V1ProjectsDocumentsRelate500JSONResponse struct{ N500JSONResponse }
+
+func (response V1ProjectsDocumentsRelate500JSONResponse) VisitV1ProjectsDocumentsRelateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type V1ProjectsIssuesGetRequestObject struct {
 	Id     Id `json:"id"`
 	Params V1ProjectsIssuesGetParams
@@ -10197,6 +12832,24 @@ func (response V1UsersIssuesGet500JSONResponse) VisitV1UsersIssuesGetResponse(w 
 
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
+	// Delete document
+	// (DELETE /v1/documents/{id})
+	V1DocumentDelete(ctx context.Context, request V1DocumentDeleteRequestObject) (V1DocumentDeleteResponseObject, error)
+	// Get document
+	// (GET /v1/documents/{id})
+	V1DocumentGet(ctx context.Context, request V1DocumentGetRequestObject) (V1DocumentGetResponseObject, error)
+	// Update document
+	// (PATCH /v1/documents/{id})
+	V1DocumentUpdate(ctx context.Context, request V1DocumentUpdateRequestObject) (V1DocumentUpdateResponseObject, error)
+	// Delete folder
+	// (DELETE /v1/folders/{id})
+	V1FolderDelete(ctx context.Context, request V1FolderDeleteRequestObject) (V1FolderDeleteResponseObject, error)
+	// Get folder
+	// (GET /v1/folders/{id})
+	V1FolderGet(ctx context.Context, request V1FolderGetRequestObject) (V1FolderGetResponseObject, error)
+	// Update folder
+	// (PATCH /v1/folders/{id})
+	V1FolderUpdate(ctx context.Context, request V1FolderUpdateRequestObject) (V1FolderUpdateResponseObject, error)
 	// Delete issue
 	// (DELETE /v1/issues/{id})
 	V1IssueDelete(ctx context.Context, request V1IssueDeleteRequestObject) (V1IssueDeleteResponseObject, error)
@@ -10206,6 +12859,18 @@ type StrictServerInterface interface {
 	// Update issue
 	// (PATCH /v1/issues/{id})
 	V1IssueUpdate(ctx context.Context, request V1IssueUpdateRequestObject) (V1IssueUpdateResponseObject, error)
+	// Get issue documents
+	// (GET /v1/issues/{id}/documents)
+	V1IssuesDocumentsGet(ctx context.Context, request V1IssuesDocumentsGetRequestObject) (V1IssuesDocumentsGetResponseObject, error)
+	// Create document in issue
+	// (POST /v1/issues/{id}/documents)
+	V1IssuesDocumentsCreate(ctx context.Context, request V1IssuesDocumentsCreateRequestObject) (V1IssuesDocumentsCreateResponseObject, error)
+	// Unrelate document from issue
+	// (DELETE /v1/issues/{id}/documents/{documentId})
+	V1IssuesDocumentsUnrelate(ctx context.Context, request V1IssuesDocumentsUnrelateRequestObject) (V1IssuesDocumentsUnrelateResponseObject, error)
+	// Relate document to issue
+	// (POST /v1/issues/{id}/documents/{documentId})
+	V1IssuesDocumentsRelate(ctx context.Context, request V1IssuesDocumentsRelateRequestObject) (V1IssuesDocumentsRelateResponseObject, error)
 	// Get issue relations
 	// (GET /v1/issues/{id}/relations)
 	V1IssueRelationsGet(ctx context.Context, request V1IssueRelationsGetRequestObject) (V1IssueRelationsGetResponseObject, error)
@@ -10233,6 +12898,15 @@ type StrictServerInterface interface {
 	// Get namespace documents
 	// (GET /v1/namespaces/{id}/documents)
 	V1NamespacesDocumentsGet(ctx context.Context, request V1NamespacesDocumentsGetRequestObject) (V1NamespacesDocumentsGetResponseObject, error)
+	// Create document in namespace
+	// (POST /v1/namespaces/{id}/documents)
+	V1NamespacesDocumentsCreate(ctx context.Context, request V1NamespacesDocumentsCreateRequestObject) (V1NamespacesDocumentsCreateResponseObject, error)
+	// Get namespace folders
+	// (GET /v1/namespaces/{id}/folders)
+	V1NamespacesFoldersGet(ctx context.Context, request V1NamespacesFoldersGetRequestObject) (V1NamespacesFoldersGetResponseObject, error)
+	// Create folder in namespace
+	// (POST /v1/namespaces/{id}/folders)
+	V1NamespacesFoldersCreate(ctx context.Context, request V1NamespacesFoldersCreateRequestObject) (V1NamespacesFoldersCreateResponseObject, error)
 	// Get namespace issues
 	// (GET /v1/namespaces/{id}/issues)
 	V1NamespacesIssuesGet(ctx context.Context, request V1NamespacesIssuesGetRequestObject) (V1NamespacesIssuesGetResponseObject, error)
@@ -10272,6 +12946,18 @@ type StrictServerInterface interface {
 	// Update organization
 	// (PATCH /v1/organizations/{id})
 	V1OrganizationUpdate(ctx context.Context, request V1OrganizationUpdateRequestObject) (V1OrganizationUpdateResponseObject, error)
+	// Get organization documents
+	// (GET /v1/organizations/{id}/documents)
+	V1OrganizationsDocumentsGet(ctx context.Context, request V1OrganizationsDocumentsGetRequestObject) (V1OrganizationsDocumentsGetResponseObject, error)
+	// Create document in organization
+	// (POST /v1/organizations/{id}/documents)
+	V1OrganizationsDocumentsCreate(ctx context.Context, request V1OrganizationsDocumentsCreateRequestObject) (V1OrganizationsDocumentsCreateResponseObject, error)
+	// Get organization folders
+	// (GET /v1/organizations/{id}/folders)
+	V1OrganizationsFoldersGet(ctx context.Context, request V1OrganizationsFoldersGetRequestObject) (V1OrganizationsFoldersGetResponseObject, error)
+	// Create folder in organization
+	// (POST /v1/organizations/{id}/folders)
+	V1OrganizationsFoldersCreate(ctx context.Context, request V1OrganizationsFoldersCreateRequestObject) (V1OrganizationsFoldersCreateResponseObject, error)
 	// Get organization members
 	// (GET /v1/organizations/{id}/members)
 	V1OrganizationMembersGet(ctx context.Context, request V1OrganizationMembersGetRequestObject) (V1OrganizationMembersGetResponseObject, error)
@@ -10362,6 +13048,15 @@ type StrictServerInterface interface {
 	// Get project documents
 	// (GET /v1/projects/{id}/documents)
 	V1ProjectsDocumentsGet(ctx context.Context, request V1ProjectsDocumentsGetRequestObject) (V1ProjectsDocumentsGetResponseObject, error)
+	// Create document in project
+	// (POST /v1/projects/{id}/documents)
+	V1ProjectsDocumentsCreate(ctx context.Context, request V1ProjectsDocumentsCreateRequestObject) (V1ProjectsDocumentsCreateResponseObject, error)
+	// Unrelate document from project
+	// (DELETE /v1/projects/{id}/documents/{documentId})
+	V1ProjectsDocumentsUnrelate(ctx context.Context, request V1ProjectsDocumentsUnrelateRequestObject) (V1ProjectsDocumentsUnrelateResponseObject, error)
+	// Relate document to project
+	// (POST /v1/projects/{id}/documents/{documentId})
+	V1ProjectsDocumentsRelate(ctx context.Context, request V1ProjectsDocumentsRelateRequestObject) (V1ProjectsDocumentsRelateResponseObject, error)
 	// Get project issues
 	// (GET /v1/projects/{id}/issues)
 	V1ProjectsIssuesGet(ctx context.Context, request V1ProjectsIssuesGetRequestObject) (V1ProjectsIssuesGetResponseObject, error)
@@ -10450,6 +13145,176 @@ type strictHandler struct {
 	options     StrictHTTPServerOptions
 }
 
+// V1DocumentDelete operation middleware
+func (sh *strictHandler) V1DocumentDelete(w http.ResponseWriter, r *http.Request, id Id) {
+	var request V1DocumentDeleteRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1DocumentDelete(ctx, request.(V1DocumentDeleteRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1DocumentDelete")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1DocumentDeleteResponseObject); ok {
+		if err := validResponse.VisitV1DocumentDeleteResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1DocumentGet operation middleware
+func (sh *strictHandler) V1DocumentGet(w http.ResponseWriter, r *http.Request, id Id) {
+	var request V1DocumentGetRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1DocumentGet(ctx, request.(V1DocumentGetRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1DocumentGet")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1DocumentGetResponseObject); ok {
+		if err := validResponse.VisitV1DocumentGetResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1DocumentUpdate operation middleware
+func (sh *strictHandler) V1DocumentUpdate(w http.ResponseWriter, r *http.Request, id Id) {
+	var request V1DocumentUpdateRequestObject
+
+	request.Id = id
+
+	var body V1DocumentUpdateJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1DocumentUpdate(ctx, request.(V1DocumentUpdateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1DocumentUpdate")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1DocumentUpdateResponseObject); ok {
+		if err := validResponse.VisitV1DocumentUpdateResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1FolderDelete operation middleware
+func (sh *strictHandler) V1FolderDelete(w http.ResponseWriter, r *http.Request, id Id) {
+	var request V1FolderDeleteRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1FolderDelete(ctx, request.(V1FolderDeleteRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1FolderDelete")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1FolderDeleteResponseObject); ok {
+		if err := validResponse.VisitV1FolderDeleteResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1FolderGet operation middleware
+func (sh *strictHandler) V1FolderGet(w http.ResponseWriter, r *http.Request, id Id) {
+	var request V1FolderGetRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1FolderGet(ctx, request.(V1FolderGetRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1FolderGet")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1FolderGetResponseObject); ok {
+		if err := validResponse.VisitV1FolderGetResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1FolderUpdate operation middleware
+func (sh *strictHandler) V1FolderUpdate(w http.ResponseWriter, r *http.Request, id Id) {
+	var request V1FolderUpdateRequestObject
+
+	request.Id = id
+
+	var body V1FolderUpdateJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1FolderUpdate(ctx, request.(V1FolderUpdateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1FolderUpdate")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1FolderUpdateResponseObject); ok {
+		if err := validResponse.VisitV1FolderUpdateResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // V1IssueDelete operation middleware
 func (sh *strictHandler) V1IssueDelete(w http.ResponseWriter, r *http.Request, id Id) {
 	var request V1IssueDeleteRequestObject
@@ -10528,6 +13393,120 @@ func (sh *strictHandler) V1IssueUpdate(w http.ResponseWriter, r *http.Request, i
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(V1IssueUpdateResponseObject); ok {
 		if err := validResponse.VisitV1IssueUpdateResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1IssuesDocumentsGet operation middleware
+func (sh *strictHandler) V1IssuesDocumentsGet(w http.ResponseWriter, r *http.Request, id Id, params V1IssuesDocumentsGetParams) {
+	var request V1IssuesDocumentsGetRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1IssuesDocumentsGet(ctx, request.(V1IssuesDocumentsGetRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1IssuesDocumentsGet")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1IssuesDocumentsGetResponseObject); ok {
+		if err := validResponse.VisitV1IssuesDocumentsGetResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1IssuesDocumentsCreate operation middleware
+func (sh *strictHandler) V1IssuesDocumentsCreate(w http.ResponseWriter, r *http.Request, id Id) {
+	var request V1IssuesDocumentsCreateRequestObject
+
+	request.Id = id
+
+	var body V1IssuesDocumentsCreateJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1IssuesDocumentsCreate(ctx, request.(V1IssuesDocumentsCreateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1IssuesDocumentsCreate")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1IssuesDocumentsCreateResponseObject); ok {
+		if err := validResponse.VisitV1IssuesDocumentsCreateResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1IssuesDocumentsUnrelate operation middleware
+func (sh *strictHandler) V1IssuesDocumentsUnrelate(w http.ResponseWriter, r *http.Request, id Id, documentId DocumentId) {
+	var request V1IssuesDocumentsUnrelateRequestObject
+
+	request.Id = id
+	request.DocumentId = documentId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1IssuesDocumentsUnrelate(ctx, request.(V1IssuesDocumentsUnrelateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1IssuesDocumentsUnrelate")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1IssuesDocumentsUnrelateResponseObject); ok {
+		if err := validResponse.VisitV1IssuesDocumentsUnrelateResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1IssuesDocumentsRelate operation middleware
+func (sh *strictHandler) V1IssuesDocumentsRelate(w http.ResponseWriter, r *http.Request, id Id, documentId DocumentId) {
+	var request V1IssuesDocumentsRelateRequestObject
+
+	request.Id = id
+	request.DocumentId = documentId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1IssuesDocumentsRelate(ctx, request.(V1IssuesDocumentsRelateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1IssuesDocumentsRelate")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1IssuesDocumentsRelateResponseObject); ok {
+		if err := validResponse.VisitV1IssuesDocumentsRelateResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -10787,6 +13766,99 @@ func (sh *strictHandler) V1NamespacesDocumentsGet(w http.ResponseWriter, r *http
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(V1NamespacesDocumentsGetResponseObject); ok {
 		if err := validResponse.VisitV1NamespacesDocumentsGetResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1NamespacesDocumentsCreate operation middleware
+func (sh *strictHandler) V1NamespacesDocumentsCreate(w http.ResponseWriter, r *http.Request, id Id) {
+	var request V1NamespacesDocumentsCreateRequestObject
+
+	request.Id = id
+
+	var body V1NamespacesDocumentsCreateJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1NamespacesDocumentsCreate(ctx, request.(V1NamespacesDocumentsCreateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1NamespacesDocumentsCreate")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1NamespacesDocumentsCreateResponseObject); ok {
+		if err := validResponse.VisitV1NamespacesDocumentsCreateResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1NamespacesFoldersGet operation middleware
+func (sh *strictHandler) V1NamespacesFoldersGet(w http.ResponseWriter, r *http.Request, id Id, params V1NamespacesFoldersGetParams) {
+	var request V1NamespacesFoldersGetRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1NamespacesFoldersGet(ctx, request.(V1NamespacesFoldersGetRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1NamespacesFoldersGet")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1NamespacesFoldersGetResponseObject); ok {
+		if err := validResponse.VisitV1NamespacesFoldersGetResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1NamespacesFoldersCreate operation middleware
+func (sh *strictHandler) V1NamespacesFoldersCreate(w http.ResponseWriter, r *http.Request, id Id) {
+	var request V1NamespacesFoldersCreateRequestObject
+
+	request.Id = id
+
+	var body V1NamespacesFoldersCreateJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1NamespacesFoldersCreate(ctx, request.(V1NamespacesFoldersCreateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1NamespacesFoldersCreate")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1NamespacesFoldersCreateResponseObject); ok {
+		if err := validResponse.VisitV1NamespacesFoldersCreateResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -11155,6 +14227,126 @@ func (sh *strictHandler) V1OrganizationUpdate(w http.ResponseWriter, r *http.Req
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(V1OrganizationUpdateResponseObject); ok {
 		if err := validResponse.VisitV1OrganizationUpdateResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1OrganizationsDocumentsGet operation middleware
+func (sh *strictHandler) V1OrganizationsDocumentsGet(w http.ResponseWriter, r *http.Request, id Id, params V1OrganizationsDocumentsGetParams) {
+	var request V1OrganizationsDocumentsGetRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1OrganizationsDocumentsGet(ctx, request.(V1OrganizationsDocumentsGetRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1OrganizationsDocumentsGet")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1OrganizationsDocumentsGetResponseObject); ok {
+		if err := validResponse.VisitV1OrganizationsDocumentsGetResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1OrganizationsDocumentsCreate operation middleware
+func (sh *strictHandler) V1OrganizationsDocumentsCreate(w http.ResponseWriter, r *http.Request, id Id) {
+	var request V1OrganizationsDocumentsCreateRequestObject
+
+	request.Id = id
+
+	var body V1OrganizationsDocumentsCreateJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1OrganizationsDocumentsCreate(ctx, request.(V1OrganizationsDocumentsCreateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1OrganizationsDocumentsCreate")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1OrganizationsDocumentsCreateResponseObject); ok {
+		if err := validResponse.VisitV1OrganizationsDocumentsCreateResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1OrganizationsFoldersGet operation middleware
+func (sh *strictHandler) V1OrganizationsFoldersGet(w http.ResponseWriter, r *http.Request, id Id, params V1OrganizationsFoldersGetParams) {
+	var request V1OrganizationsFoldersGetRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1OrganizationsFoldersGet(ctx, request.(V1OrganizationsFoldersGetRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1OrganizationsFoldersGet")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1OrganizationsFoldersGetResponseObject); ok {
+		if err := validResponse.VisitV1OrganizationsFoldersGetResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1OrganizationsFoldersCreate operation middleware
+func (sh *strictHandler) V1OrganizationsFoldersCreate(w http.ResponseWriter, r *http.Request, id Id) {
+	var request V1OrganizationsFoldersCreateRequestObject
+
+	request.Id = id
+
+	var body V1OrganizationsFoldersCreateJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1OrganizationsFoldersCreate(ctx, request.(V1OrganizationsFoldersCreateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1OrganizationsFoldersCreate")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1OrganizationsFoldersCreateResponseObject); ok {
+		if err := validResponse.VisitV1OrganizationsFoldersCreateResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -12035,6 +15227,93 @@ func (sh *strictHandler) V1ProjectsDocumentsGet(w http.ResponseWriter, r *http.R
 	}
 }
 
+// V1ProjectsDocumentsCreate operation middleware
+func (sh *strictHandler) V1ProjectsDocumentsCreate(w http.ResponseWriter, r *http.Request, id Id) {
+	var request V1ProjectsDocumentsCreateRequestObject
+
+	request.Id = id
+
+	var body V1ProjectsDocumentsCreateJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1ProjectsDocumentsCreate(ctx, request.(V1ProjectsDocumentsCreateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1ProjectsDocumentsCreate")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1ProjectsDocumentsCreateResponseObject); ok {
+		if err := validResponse.VisitV1ProjectsDocumentsCreateResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1ProjectsDocumentsUnrelate operation middleware
+func (sh *strictHandler) V1ProjectsDocumentsUnrelate(w http.ResponseWriter, r *http.Request, id Id, documentId DocumentId) {
+	var request V1ProjectsDocumentsUnrelateRequestObject
+
+	request.Id = id
+	request.DocumentId = documentId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1ProjectsDocumentsUnrelate(ctx, request.(V1ProjectsDocumentsUnrelateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1ProjectsDocumentsUnrelate")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1ProjectsDocumentsUnrelateResponseObject); ok {
+		if err := validResponse.VisitV1ProjectsDocumentsUnrelateResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1ProjectsDocumentsRelate operation middleware
+func (sh *strictHandler) V1ProjectsDocumentsRelate(w http.ResponseWriter, r *http.Request, id Id, documentId DocumentId) {
+	var request V1ProjectsDocumentsRelateRequestObject
+
+	request.Id = id
+	request.DocumentId = documentId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1ProjectsDocumentsRelate(ctx, request.(V1ProjectsDocumentsRelateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1ProjectsDocumentsRelate")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1ProjectsDocumentsRelateResponseObject); ok {
+		if err := validResponse.VisitV1ProjectsDocumentsRelateResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // V1ProjectsIssuesGet operation middleware
 func (sh *strictHandler) V1ProjectsIssuesGet(w http.ResponseWriter, r *http.Request, id Id, params V1ProjectsIssuesGetParams) {
 	var request V1ProjectsIssuesGetRequestObject
@@ -12563,216 +15842,247 @@ func (sh *strictHandler) V1UsersIssuesGet(w http.ResponseWriter, r *http.Request
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
+	"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",
+	"BwIA",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

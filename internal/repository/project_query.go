@@ -126,7 +126,7 @@ func compileProjectRoot(in projectRootQueryInput) (QueryPlan, error) {
 		returns = append(returns, fmt.Sprintf(
 			"COUNT { (:%s)-[:%s]->(%s) } AS document_count",
 			model.ResourceTypeDocument.String(),
-			EdgeKindBelongsTo.String(),
+			EdgeKindRelatedTo.String(),
 			in.Alias,
 		))
 	}

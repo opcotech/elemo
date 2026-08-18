@@ -63,6 +63,12 @@ export class QuickCreateSection extends DialogMixin(
     });
   }
 
+  getCreateDocumentButton(): Locator {
+    return this.getSectionContainer().getByRole("button", {
+      name: "Create document",
+    });
+  }
+
   async fillWorkTitle(title: string): Promise<void> {
     await this.fillField("Title", title);
   }
@@ -84,6 +90,14 @@ export class QuickCreateSection extends DialogMixin(
 
   async submitTodo(): Promise<void> {
     await this.getCreateTodoButton().click();
+  }
+
+  async fillDocumentTitle(title: string): Promise<void> {
+    await this.fillField("Title", title);
+  }
+
+  async submitDocument(): Promise<void> {
+    await this.getCreateDocumentButton().click();
   }
 
   async cancel(): Promise<void> {

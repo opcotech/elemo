@@ -55,6 +55,7 @@ export function EntityLink({
   subtitle,
   imageUrl,
   className,
+  actions,
 }: {
   href: string;
   type: AppEntityType;
@@ -62,6 +63,7 @@ export function EntityLink({
   subtitle?: ReactNode;
   imageUrl?: string | null;
   className?: string;
+  actions?: ReactNode;
 }) {
   return (
     <Item
@@ -71,7 +73,7 @@ export function EntityLink({
     >
       <InternalLink
         to={internalPath(href)}
-        className="text-foreground flex w-full min-w-0 items-center gap-2.5 px-3 py-2.5 hover:no-underline"
+        className="text-foreground flex min-w-0 flex-1 items-center gap-2.5 px-3 py-2.5 hover:no-underline"
       >
         {imageUrl ? (
           <ItemMedia variant="image">
@@ -86,16 +88,17 @@ export function EntityLink({
           </ItemMedia>
         )}
         <ItemContent className="min-w-0">
+          <ItemTitle className="group-hover/entity:text-primary block max-w-full truncate">
+            {title}
+          </ItemTitle>
           {subtitle && (
             <span className="text-muted-foreground block truncate text-xs">
               {subtitle}
             </span>
           )}
-          <ItemTitle className="group-hover/entity:text-primary block max-w-full truncate">
-            {title}
-          </ItemTitle>
         </ItemContent>
       </InternalLink>
+      {actions}
     </Item>
   );
 }

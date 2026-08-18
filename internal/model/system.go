@@ -6,6 +6,7 @@ const (
 	HealthCheckComponentRelationalDB HealthCheckComponent = "relational_database" // relational database
 	HealthCheckComponentLicense      HealthCheckComponent = "license"             // license
 	HealthCheckComponentMessageQueue HealthCheckComponent = "message_queue"       // message_queue
+	HealthCheckComponentS3Storage    HealthCheckComponent = "s3_storage"          // s3 storage
 )
 
 const (

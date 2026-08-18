@@ -41,6 +41,7 @@ func newServiceIssue() *service.Issue {
 		Assignments:     []service.PartialAssignee{},
 		Labels:          []service.PartialLabel{},
 		CommentCount:    convert.ToPointer(int64(0)),
+		DocumentCount:   convert.ToPointer(int64(0)),
 		AttachmentCount: convert.ToPointer(int64(0)),
 		WatcherCount:    convert.ToPointer(int64(0)),
 		RelationCount:   convert.ToPointer(int64(0)),
@@ -951,6 +952,10 @@ func TestIssueToDTO(t *testing.T) {
 	assert.Equal(t, parent.Key, dto.Parent.Key)
 	assert.Equal(t, parent.Title, dto.Parent.Title)
 	assert.Empty(t, dto.Parent.Reviewers)
+	require.NotNil(t, dto.CommentCount)
+	assert.Equal(t, int64(0), *dto.CommentCount)
+	require.NotNil(t, dto.DocumentCount)
+	assert.Equal(t, int64(0), *dto.DocumentCount)
 
 	t.Run("nil created at does not panic", func(t *testing.T) {
 		t.Parallel()

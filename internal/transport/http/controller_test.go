@@ -113,3 +113,26 @@ func TestWithNotificationService(t *testing.T) {
 		assert.ErrorIs(t, err, ErrNoNotificationService)
 	})
 }
+
+func TestWithFolderService(t *testing.T) {
+	t.Parallel()
+
+	t.Run("set folder service", func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		fs := service.NewMockFolderService(ctrl)
+		var c baseController
+		err := WithFolderService(fs)(&c)
+		require.NoError(t, err)
+		assert.Equal(t, fs, c.folderService)
+	})
+
+	t.Run("nil folder service", func(t *testing.T) {
+		t.Parallel()
+		var c baseController
+		err := WithFolderService(nil)(&c)
+		assert.ErrorIs(t, err, ErrNoFolderService)
+	})
+}

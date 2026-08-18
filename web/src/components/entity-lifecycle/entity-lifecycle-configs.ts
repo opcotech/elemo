@@ -2,6 +2,7 @@ import type { EntityLifecycleConfig } from "./entity-lifecycle";
 
 import { accessibleNamespacesQueryKey } from "@/lib/api/accessible-namespaces";
 import {
+  v1DocumentGetOptions,
   v1NamespaceGetOptions,
   v1NamespacesProjectsGetOptions,
   v1OrganizationGetOptions,
@@ -12,6 +13,7 @@ import {
   v1ProjectGetOptions,
 } from "@/lib/api/query-options";
 import type {
+  Document,
   Namespace,
   Options,
   Organization,
@@ -19,6 +21,7 @@ import type {
   Permission,
   Project,
   Role,
+  V1DocumentDeleteData,
   V1NamespaceDeleteData,
   V1OrganizationDeleteData,
   V1OrganizationRoleDeleteData,
@@ -48,6 +51,7 @@ type OrganizationDeleteVariables = Options<V1OrganizationDeleteData>;
 type NamespaceDeleteVariables = Options<V1NamespaceDeleteData>;
 type ProjectDeleteVariables = Options<V1ProjectDeleteData>;
 type RoleDeleteVariables = Options<V1OrganizationRoleDeleteData>;
+type DocumentDeleteVariables = Options<V1DocumentDeleteData>;
 
 const hasDeletePermission = (_entity: unknown, permissions: Permission[]) =>
   can(permissions, "delete");
@@ -258,4 +262,33 @@ export const roleLifecycleConfig: EntityLifecycleConfig<
       },
     }).queryKey,
   ],
+};
+
+type DocumentLifecycleEntity = Pick<Document, "id" | "title">;
+
+export const documentLifecycleConfig: EntityLifecycleConfig<
+  DocumentLifecycleEntity,
+  undefined,
+  DocumentDeleteVariables
+> = {
+  entityName: "Document",
+  deleteDialog: {
+    title: (document) => `Are you sure you want to delete ${document.title}?`,
+    description:
+      "This will permanently delete the document. This action cannot be undone.",
+    consequences: [
+      "The document will be permanently deleted",
+      "The document will be removed from listings and search",
+    ],
+  },
+  canDelete: hasDeletePermission,
+  deleteVariables: (document) => ({
+    path: { id: document.id },
+  }),
+  queryKeys: (document) => [
+    v1DocumentGetOptions({
+      path: { id: document.id },
+    }).queryKey,
+  ],
+  navigateAfterDelete: (navigate) => navigate({ to: "/" }),
 };

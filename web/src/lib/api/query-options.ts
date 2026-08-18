@@ -1,6 +1,7 @@
 import "@/lib/api/client";
 
 import {
+  v1DocumentGetOptions as generatedDocumentGetOptions,
   v1IssueGetOptions as generatedIssueGetOptions,
   v1IssueRelationsGetOptions as generatedIssueRelationsGetOptions,
   v1LabelsGetOptions as generatedLabelsGetOptions,
@@ -16,8 +17,10 @@ import {
 import { cacheProfiles } from "@/lib/query-client";
 
 export {
+  v1IssuesDocumentsGetOptions,
   v1NamespaceGetOptions,
   v1NamespacesDocumentsGetOptions,
+  v1NamespacesFoldersGetOptions,
   v1NamespacesProjectsGetOptions,
   v1OrganizationGetOptions,
   v1OrganizationMembersGetOptions,
@@ -25,11 +28,23 @@ export {
   v1OrganizationRoleMembersGetOptions,
   v1OrganizationRolePermissionsGetOptions,
   v1OrganizationRolesGetOptions,
+  v1OrganizationsDocumentsGetOptions,
+  v1OrganizationsFoldersGetOptions,
   v1OrganizationsNamespacesGetOptions,
+  v1FolderGetOptions,
   v1ProjectGetOptions,
   v1ProjectsDocumentsGetOptions,
   v1UserRequestPasswordResetOptions,
 } from "@/lib/client/@tanstack/react-query.gen";
+
+export function v1DocumentGetOptions(
+  ...args: Parameters<typeof generatedDocumentGetOptions>
+) {
+  return {
+    ...generatedDocumentGetOptions(...args),
+    ...cacheProfiles.volatile,
+  };
+}
 
 export function v1OrganizationsGetOptions(
   ...args: Parameters<typeof generatedOrganizationsGetOptions>

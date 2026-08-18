@@ -7,6 +7,7 @@ import {
   IssueDetailsProperties,
   IssueParentSelect,
 } from "./issue-details-properties";
+import { IssueDocumentsSection } from "./issue-documents";
 import { IssueInlineTitle } from "./issue-inline-title";
 import { IssueLinks } from "./issue-links";
 import {
@@ -403,14 +404,13 @@ function LiveWorkItemPage({
             namespaceId={namespaceId}
             disabled={isPending || deleteMutation.isPending}
           />
-          <SectionAccordion title="Linked documents" value="documents">
-            <EmptyState
-              compact
-              icon={<Code2Icon />}
-              title="No linked documents"
-              description="Specifications and decisions related to this work will appear here."
-            />
-          </SectionAccordion>
+          <IssueDocumentsSection
+            issueId={issue.id}
+            namespaceId={namespaceId}
+            issueKey={issueKey}
+            documentCount={issue.document_count}
+            canCreate={!isPending && !deleteMutation.isPending}
+          />
           <SectionAccordion title="Activity" value="activity">
             <EmptyState
               compact

@@ -13,6 +13,8 @@ export * from "./permissions";
 export * from "./projects";
 export * from "./roles";
 export * from "./issues";
+export * from "./documents";
+export * from "./folders";
 export * from "./todos";
 export * from "./client";
 export * from "./error-handler";

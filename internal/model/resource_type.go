@@ -23,6 +23,7 @@ const (
 	ResourceTypeTodo                                  // Todo
 	ResourceTypeUser                                  // User
 	ResourceTypeUserToken                             // UserToken
+	ResourceTypeFolder                                // Folder
 )
 
 // ResourceType is the type of resource that is being managed in the system.

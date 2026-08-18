@@ -74,6 +74,7 @@ type Issue struct {
 	Project         *PartialProject       `json:"project"`
 	Namespace       *PartialNamespace     `json:"namespace"`
 	CommentCount    *int64                `json:"comment_count"`
+	DocumentCount   *int64                `json:"document_count"`
 	AttachmentCount *int64                `json:"attachment_count"`
 	WatcherCount    *int64                `json:"watcher_count"`
 	RelationCount   *int64                `json:"relation_count"`
@@ -484,6 +485,9 @@ func (r *Neo4jIssueRepository) scanDetail(proj IssueProjection) func(rec *neo4j.
 		if proj.CommentCount {
 			issue.CommentCount = convert.ToPointer(int64(0))
 		}
+		if proj.DocumentCount {
+			issue.DocumentCount = convert.ToPointer(int64(0))
+		}
 		if proj.AttachmentCount {
 			issue.AttachmentCount = convert.ToPointer(int64(0))
 		}
@@ -534,6 +538,12 @@ func (r *Neo4jIssueRepository) applyIssueLoaders(ctx context.Context, tx neo4j.M
 		case "issue.load_comment_count":
 			if err := applyIssueCountLoader(ctx, tx, query, rowByID, "comment_count", func(issue *Issue, count int64) {
 				issue.CommentCount = convert.ToPointer(count)
+			}); err != nil {
+				return err
+			}
+		case "issue.load_document_count":
+			if err := applyIssueCountLoader(ctx, tx, query, rowByID, "document_count", func(issue *Issue, count int64) {
+				issue.DocumentCount = convert.ToPointer(count)
 			}); err != nil {
 				return err
 			}

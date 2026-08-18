@@ -32,6 +32,7 @@ type Organization struct {
 	NamespaceCount *int64                   `json:"namespace_count"`
 	TeamCount      *int64                   `json:"team_count"`
 	MemberCount    *int64                   `json:"member_count"`
+	DocumentCount  *int64                   `json:"document_count"`
 	CreatedAt      *time.Time               `json:"created_at"`
 	UpdatedAt      *time.Time               `json:"updated_at"`
 }
@@ -127,7 +128,7 @@ func (r *Neo4jOrganizationRepository) scan(proj OrganizationProjection) func(rec
 		}
 
 		org := new(Organization)
-		if err := Neo4jScanIntoStruct(&node, &org, []string{"id", "namespace_count", "team_count", "member_count"}); err != nil {
+		if err := Neo4jScanIntoStruct(&node, &org, []string{"id", "namespace_count", "team_count", "member_count", "document_count"}); err != nil {
 			return nil, err
 		}
 
@@ -155,6 +156,13 @@ func (r *Neo4jOrganizationRepository) scan(proj OrganizationProjection) func(rec
 				return nil, err
 			}
 			org.MemberCount = convert.ToPointer(memberCount)
+		}
+		if proj.DocumentCount {
+			documentCount, err := Neo4jParseValueFromRecord[int64](rec, "document_count")
+			if err != nil {
+				return nil, err
+			}
+			org.DocumentCount = convert.ToPointer(documentCount)
 		}
 
 		return org, nil

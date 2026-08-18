@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
-export type CommandContext = "global" | "namespace" | "project";
+export type CommandContext =
+  "global" | "organization" | "namespace" | "project";
 
 export interface Command {
   id: string;

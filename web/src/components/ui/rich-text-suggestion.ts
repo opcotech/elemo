@@ -7,6 +7,8 @@ export interface SuggestionListItem {
   id: string;
   label: string;
   detail?: string;
+  group?: string;
+  icon?: string;
 }
 
 type SuggestionRendererProps<T> = SuggestionProps<T>;
@@ -54,6 +56,13 @@ export function createSuggestionListRenderer<T extends SuggestionListItem>(
       }
 
       items.forEach((item, index) => {
+        if (item.group && item.group !== items[index - 1]?.group) {
+          const heading = document.createElement("div");
+          heading.className = "rich-text-suggestion__group";
+          heading.textContent = item.group;
+          element?.appendChild(heading);
+        }
+
         const button = document.createElement("button");
         button.type = "button";
         button.className = "rich-text-suggestion__item";
@@ -61,7 +70,15 @@ export function createSuggestionListRenderer<T extends SuggestionListItem>(
           button.classList.add("is-active");
         }
 
+        if (item.icon) {
+          const icon = document.createElement("span");
+          icon.className = "rich-text-suggestion__icon";
+          icon.textContent = item.icon;
+          button.appendChild(icon);
+        }
+
         const label = document.createElement("span");
+        label.className = "rich-text-suggestion__label";
         label.textContent = item.label;
         button.appendChild(label);
 

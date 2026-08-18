@@ -41,17 +41,149 @@ func (m *MockDocumentService) EXPECT() *MockDocumentServiceMockRecorder {
 	return m.recorder
 }
 
-// ListBelongsTo mocks base method.
-func (m *MockDocumentService) ListBelongsTo(ctx context.Context, belongsTo model.ID, page CursorPage) (Page[*PartialDocument], error) {
+// Create mocks base method.
+func (m *MockDocumentService) Create(ctx context.Context, contextID model.ID, opts CreateDocumentOpts) (*Document, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListBelongsTo", ctx, belongsTo, page)
+	ret := m.ctrl.Call(m, "Create", ctx, contextID, opts)
+	ret0, _ := ret[0].(*Document)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Create indicates an expected call of Create.
+func (mr *MockDocumentServiceMockRecorder) Create(ctx, contextID, opts any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockDocumentService)(nil).Create), ctx, contextID, opts)
+}
+
+// Delete mocks base method.
+func (m *MockDocumentService) Delete(ctx context.Context, id model.ID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Delete", ctx, id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Delete indicates an expected call of Delete.
+func (mr *MockDocumentServiceMockRecorder) Delete(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockDocumentService)(nil).Delete), ctx, id)
+}
+
+// Get mocks base method.
+func (m *MockDocumentService) Get(ctx context.Context, id model.ID) (*Document, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Get", ctx, id)
+	ret0, _ := ret[0].(*Document)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Get indicates an expected call of Get.
+func (mr *MockDocumentServiceMockRecorder) Get(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockDocumentService)(nil).Get), ctx, id)
+}
+
+// ListLibrary mocks base method.
+func (m *MockDocumentService) ListLibrary(ctx context.Context, libraryID model.ID, filter LibraryListFilter, page CursorPage) (Page[*PartialDocument], error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListLibrary", ctx, libraryID, filter, page)
 	ret0, _ := ret[0].(Page[*PartialDocument])
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// ListBelongsTo indicates an expected call of ListBelongsTo.
-func (mr *MockDocumentServiceMockRecorder) ListBelongsTo(ctx, belongsTo, page any) *gomock.Call {
+// ListLibrary indicates an expected call of ListLibrary.
+func (mr *MockDocumentServiceMockRecorder) ListLibrary(ctx, libraryID, filter, page any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListBelongsTo", reflect.TypeOf((*MockDocumentService)(nil).ListBelongsTo), ctx, belongsTo, page)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListLibrary", reflect.TypeOf((*MockDocumentService)(nil).ListLibrary), ctx, libraryID, filter, page)
+}
+
+// ListRelated mocks base method.
+func (m *MockDocumentService) ListRelated(ctx context.Context, relatedTo model.ID, page CursorPage) (Page[*PartialDocument], error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListRelated", ctx, relatedTo, page)
+	ret0, _ := ret[0].(Page[*PartialDocument])
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListRelated indicates an expected call of ListRelated.
+func (mr *MockDocumentServiceMockRecorder) ListRelated(ctx, relatedTo, page any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListRelated", reflect.TypeOf((*MockDocumentService)(nil).ListRelated), ctx, relatedTo, page)
+}
+
+// MoveLibrary mocks base method.
+func (m *MockDocumentService) MoveLibrary(ctx context.Context, id, libraryID model.ID) (*Document, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "MoveLibrary", ctx, id, libraryID)
+	ret0, _ := ret[0].(*Document)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// MoveLibrary indicates an expected call of MoveLibrary.
+func (mr *MockDocumentServiceMockRecorder) MoveLibrary(ctx, id, libraryID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MoveLibrary", reflect.TypeOf((*MockDocumentService)(nil).MoveLibrary), ctx, id, libraryID)
+}
+
+// MoveToFolder mocks base method.
+func (m *MockDocumentService) MoveToFolder(ctx context.Context, id model.ID, folderID *model.ID) (*Document, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "MoveToFolder", ctx, id, folderID)
+	ret0, _ := ret[0].(*Document)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// MoveToFolder indicates an expected call of MoveToFolder.
+func (mr *MockDocumentServiceMockRecorder) MoveToFolder(ctx, id, folderID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MoveToFolder", reflect.TypeOf((*MockDocumentService)(nil).MoveToFolder), ctx, id, folderID)
+}
+
+// Relate mocks base method.
+func (m *MockDocumentService) Relate(ctx context.Context, id, targetID model.ID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Relate", ctx, id, targetID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Relate indicates an expected call of Relate.
+func (mr *MockDocumentServiceMockRecorder) Relate(ctx, id, targetID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Relate", reflect.TypeOf((*MockDocumentService)(nil).Relate), ctx, id, targetID)
+}
+
+// Unrelate mocks base method.
+func (m *MockDocumentService) Unrelate(ctx context.Context, id, targetID model.ID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Unrelate", ctx, id, targetID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Unrelate indicates an expected call of Unrelate.
+func (mr *MockDocumentServiceMockRecorder) Unrelate(ctx, id, targetID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Unrelate", reflect.TypeOf((*MockDocumentService)(nil).Unrelate), ctx, id, targetID)
+}
+
+// Update mocks base method.
+func (m *MockDocumentService) Update(ctx context.Context, id model.ID, opts UpdateDocumentOpts) (*Document, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Update", ctx, id, opts)
+	ret0, _ := ret[0].(*Document)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Update indicates an expected call of Update.
+func (mr *MockDocumentServiceMockRecorder) Update(ctx, id, opts any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockDocumentService)(nil).Update), ctx, id, opts)
 }

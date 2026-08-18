@@ -19,6 +19,7 @@ var (
 	ErrFileUpdate = errors.New("failed to update file") // the file could not be updated
 )
 
+//go:generate go tool mockgen -source=staticfile.go -destination=staticfile_mock_gen.go -package=repository -mock_names "StaticFileRepository=MockStaticFileRepository"
 type StaticFileRepository interface {
 	// Create puts a new file in the static storage for the given path, reading
 	// its data from the reader. It returns an error if the operation failed.

@@ -62,6 +62,7 @@ type Issue struct {
 	Project         *PartialProject
 	Namespace       *PartialNamespace
 	CommentCount    *int64
+	DocumentCount   *int64
 	AttachmentCount *int64
 	WatcherCount    *int64
 	RelationCount   *int64
@@ -318,6 +319,7 @@ func issueFromRepository(i *repository.Issue) *Issue {
 		Project:         partialProjectFromRepository(i.Project),
 		Namespace:       partialNamespaceFromRepository(i.Namespace),
 		CommentCount:    i.CommentCount,
+		DocumentCount:   i.DocumentCount,
 		AttachmentCount: i.AttachmentCount,
 		WatcherCount:    i.WatcherCount,
 		RelationCount:   i.RelationCount,

@@ -9,6 +9,7 @@ const OAUTH_SCOPES = [
   "namespace",
   "project",
   "issue",
+  "document",
   "label",
   "todo",
   "notification",

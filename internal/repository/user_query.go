@@ -93,7 +93,7 @@ type userRootQueryInput struct {
 func compileUserRootQuery(in userRootQueryInput) (QueryPlan, error) {
 	returns := []string{"u"}
 	if in.Projection.DocumentCount {
-		returns = append(returns, "COUNT { (u)<-[:"+EdgeKindBelongsTo.String()+"]-(:"+model.ResourceTypeDocument.String()+") } AS document_count")
+		returns = append(returns, "COUNT { (u)-[:"+EdgeKindCreated.String()+"]->(:"+model.ResourceTypeDocument.String()+") } AS document_count")
 	}
 
 	plan := QueryPlan{

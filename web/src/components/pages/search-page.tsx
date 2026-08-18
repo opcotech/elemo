@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { InternalLink } from "@/components/ui/internal-link";
+import { ListSkeleton } from "@/components/ui/list-skeleton";
 import { PageHeader } from "@/components/ui/page-header";
 import { Section } from "@/components/ui/section";
 import {
@@ -38,7 +39,8 @@ export function SearchPage({
   search: SearchRouteSearch;
   onSearchChange: (patch: Partial<SearchRouteSearch>) => void;
 }) {
-  const { data: accessibleWorkspace } = useAccessibleNamespaces();
+  const { data: accessibleWorkspace, isLoading: isWorkspaceLoading } =
+    useAccessibleNamespaces();
   const namespaces = accessibleWorkspace?.namespaces ?? [];
   const recent = useUiSelector((state) => state.recentEntities);
   const scope: Scope =
@@ -109,6 +111,10 @@ export function SearchPage({
     fixtureResults.length +
     realNamespaceResults.length +
     realProjectResults.length;
+  const isSearchLoading =
+    Boolean(search.q) &&
+    search.type === "all" &&
+    (isWorkspaceLoading || projectQueries.some((query) => query.isLoading));
 
   const groupedFixtures = useMemo(
     () =>
@@ -277,6 +283,8 @@ export function SearchPage({
                 </AppList>
               </Section>
             </div>
+          ) : isSearchLoading && total === 0 ? (
+            <ListSkeleton />
           ) : total === 0 ? (
             <EmptyState
               icon={<SearchIcon />}

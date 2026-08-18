@@ -1,14 +1,13 @@
 import type { Page } from "@playwright/test";
 
-import { createIssue } from "./api";
+import { createIssue, createProjectDocument } from "./api";
 import { expect, test } from "./fixtures";
 import { seedOwnerWorkspace } from "./helpers";
 import type { OwnerWorkspace } from "./helpers";
-import { WorkItemPage } from "./pages";
+import { DocumentPage, WorkItemPage } from "./pages";
 import { USER_DEFAULT_PASSWORD, loginUser } from "./utils/auth";
 import { getRandomString } from "./utils/random";
 
-const DOCUMENT_LABEL = "Work projection model";
 const NAVIGATION_STORAGE_KEY = "elemo_navigation_context";
 
 async function expectRecentTypePersisted(page: Page, type: string) {
@@ -44,6 +43,8 @@ test.describe("@operational Recent sidebar entities", () => {
   let workKey: string;
   let workTitle: string;
   let workLabel: string;
+  let documentId: string;
+  let documentLabel: string;
 
   test.beforeAll(async ({ testConfig }) => {
     workspace = await seedOwnerWorkspace(testConfig, {
@@ -58,6 +59,14 @@ test.describe("@operational Recent sidebar entities", () => {
     }
     workKey = issue.key;
     workLabel = `${workKey} ${workTitle}`;
+
+    documentLabel = `Work projection model ${getRandomString(8)}`;
+    const document = await createProjectDocument(
+      workspace.client,
+      workspace.projectId,
+      { title: documentLabel }
+    );
+    documentId = document.id;
   });
 
   test.beforeEach(async ({ page }) => {
@@ -79,6 +88,7 @@ test.describe("@operational Recent sidebar entities", () => {
       '[data-slot="sidebar"][data-variant="sidebar"]'
     );
     const workItemPage = new WorkItemPage(page);
+    const documentPage = new DocumentPage(page);
 
     await workItemPage.goto(workspace.namespaceId, workKey);
     await workItemPage.waitForLoad();
@@ -91,17 +101,16 @@ test.describe("@operational Recent sidebar entities", () => {
     ).toBeVisible();
     await expectRecentTypePersisted(page, "work");
 
-    await page.goto("/documents/document-projection-model", {
-      waitUntil: "domcontentloaded",
-    });
-    await expect(
-      page.getByRole("heading", { name: DOCUMENT_LABEL })
-    ).toBeVisible();
+    await documentPage.goto(documentId);
+    await documentPage.waitForLoad();
+    await expect(documentPage.editor.getTitleInput()).toHaveValue(
+      documentLabel
+    );
     await expect(
       sidebar.getByText("Recent Documents", { exact: true })
     ).toBeVisible();
     await expect(
-      sidebar.getByRole("link", { name: DOCUMENT_LABEL, exact: true })
+      sidebar.getByRole("link", { name: documentLabel, exact: true })
     ).toBeVisible();
     await expect(
       sidebar.getByRole("link", { name: workLabel, exact: true })
@@ -169,7 +178,7 @@ test.describe("@operational Recent sidebar entities", () => {
       sidebar.getByText("Recent Work Items", { exact: true })
     ).toHaveCount(0);
     await expect(
-      sidebar.getByRole("link", { name: DOCUMENT_LABEL, exact: true })
+      sidebar.getByRole("link", { name: documentLabel, exact: true })
     ).toBeVisible();
     await expect(
       sidebar.getByRole("link", {
@@ -179,11 +188,12 @@ test.describe("@operational Recent sidebar entities", () => {
     ).toBeVisible();
 
     await sidebar
-      .getByRole("link", { name: DOCUMENT_LABEL, exact: true })
+      .getByRole("link", { name: documentLabel, exact: true })
       .click();
-    await expect(page).toHaveURL("/documents/document-projection-model");
-    await expect(
-      page.getByRole("heading", { name: DOCUMENT_LABEL })
-    ).toBeVisible();
+    await expect(page).toHaveURL(`/documents/${documentId}`);
+    await documentPage.waitForLoad();
+    await expect(documentPage.editor.getTitleInput()).toHaveValue(
+      documentLabel
+    );
   });
 });

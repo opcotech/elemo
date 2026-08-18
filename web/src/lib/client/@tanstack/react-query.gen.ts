@@ -5,17 +5,30 @@ import { queryOptions, type UseMutationOptions } from "@tanstack/react-query";
 import { client } from "../client.gen";
 import {
   type Options,
+  v1DocumentDelete,
+  v1DocumentGet,
+  v1DocumentUpdate,
+  v1FolderDelete,
+  v1FolderGet,
+  v1FolderUpdate,
   v1IssueDelete,
   v1IssueGet,
   v1IssueRelationDelete,
   v1IssueRelationsCreate,
   v1IssueRelationsGet,
   v1IssueRelationUpdate,
+  v1IssuesDocumentsCreate,
+  v1IssuesDocumentsGet,
+  v1IssuesDocumentsRelate,
+  v1IssuesDocumentsUnrelate,
   v1IssueUpdate,
   v1LabelsGet,
   v1NamespaceDelete,
   v1NamespaceGet,
+  v1NamespacesDocumentsCreate,
   v1NamespacesDocumentsGet,
+  v1NamespacesFoldersCreate,
+  v1NamespacesFoldersGet,
   v1NamespacesIssuesGet,
   v1NamespacesIssuesKeyGet,
   v1NamespacesProjectsCreate,
@@ -45,6 +58,10 @@ import {
   v1OrganizationRolesGet,
   v1OrganizationRoleUpdate,
   v1OrganizationsCreate,
+  v1OrganizationsDocumentsCreate,
+  v1OrganizationsDocumentsGet,
+  v1OrganizationsFoldersCreate,
+  v1OrganizationsFoldersGet,
   v1OrganizationsGet,
   v1OrganizationsNamespacesCreate,
   v1OrganizationsNamespacesGet,
@@ -58,7 +75,10 @@ import {
   v1PermissionUpdate,
   v1ProjectDelete,
   v1ProjectGet,
+  v1ProjectsDocumentsCreate,
   v1ProjectsDocumentsGet,
+  v1ProjectsDocumentsRelate,
+  v1ProjectsDocumentsUnrelate,
   v1ProjectsIssuesCreate,
   v1ProjectsIssuesGet,
   v1ProjectUpdate,
@@ -81,6 +101,24 @@ import {
   v1UserUpdate,
 } from "../sdk.gen";
 import type {
+  V1DocumentDeleteData,
+  V1DocumentDeleteError,
+  V1DocumentDeleteResponse,
+  V1DocumentGetData,
+  V1DocumentGetError,
+  V1DocumentGetResponse,
+  V1DocumentUpdateData,
+  V1DocumentUpdateError,
+  V1DocumentUpdateResponse,
+  V1FolderDeleteData,
+  V1FolderDeleteError,
+  V1FolderDeleteResponse,
+  V1FolderGetData,
+  V1FolderGetError,
+  V1FolderGetResponse,
+  V1FolderUpdateData,
+  V1FolderUpdateError,
+  V1FolderUpdateResponse,
   V1IssueDeleteData,
   V1IssueDeleteError,
   V1IssueDeleteResponse,
@@ -99,6 +137,18 @@ import type {
   V1IssueRelationUpdateData,
   V1IssueRelationUpdateError,
   V1IssueRelationUpdateResponse,
+  V1IssuesDocumentsCreateData,
+  V1IssuesDocumentsCreateError,
+  V1IssuesDocumentsCreateResponse,
+  V1IssuesDocumentsGetData,
+  V1IssuesDocumentsGetError,
+  V1IssuesDocumentsGetResponse,
+  V1IssuesDocumentsRelateData,
+  V1IssuesDocumentsRelateError,
+  V1IssuesDocumentsRelateResponse,
+  V1IssuesDocumentsUnrelateData,
+  V1IssuesDocumentsUnrelateError,
+  V1IssuesDocumentsUnrelateResponse,
   V1IssueUpdateData,
   V1IssueUpdateError,
   V1IssueUpdateResponse,
@@ -111,9 +161,18 @@ import type {
   V1NamespaceGetData,
   V1NamespaceGetError,
   V1NamespaceGetResponse,
+  V1NamespacesDocumentsCreateData,
+  V1NamespacesDocumentsCreateError,
+  V1NamespacesDocumentsCreateResponse,
   V1NamespacesDocumentsGetData,
   V1NamespacesDocumentsGetError,
   V1NamespacesDocumentsGetResponse,
+  V1NamespacesFoldersCreateData,
+  V1NamespacesFoldersCreateError,
+  V1NamespacesFoldersCreateResponse,
+  V1NamespacesFoldersGetData,
+  V1NamespacesFoldersGetError,
+  V1NamespacesFoldersGetResponse,
   V1NamespacesIssuesGetData,
   V1NamespacesIssuesGetError,
   V1NamespacesIssuesGetResponse,
@@ -201,6 +260,18 @@ import type {
   V1OrganizationsCreateData,
   V1OrganizationsCreateError,
   V1OrganizationsCreateResponse,
+  V1OrganizationsDocumentsCreateData,
+  V1OrganizationsDocumentsCreateError,
+  V1OrganizationsDocumentsCreateResponse,
+  V1OrganizationsDocumentsGetData,
+  V1OrganizationsDocumentsGetError,
+  V1OrganizationsDocumentsGetResponse,
+  V1OrganizationsFoldersCreateData,
+  V1OrganizationsFoldersCreateError,
+  V1OrganizationsFoldersCreateResponse,
+  V1OrganizationsFoldersGetData,
+  V1OrganizationsFoldersGetError,
+  V1OrganizationsFoldersGetResponse,
   V1OrganizationsGetData,
   V1OrganizationsGetError,
   V1OrganizationsGetResponse,
@@ -240,9 +311,18 @@ import type {
   V1ProjectGetData,
   V1ProjectGetError,
   V1ProjectGetResponse,
+  V1ProjectsDocumentsCreateData,
+  V1ProjectsDocumentsCreateError,
+  V1ProjectsDocumentsCreateResponse,
   V1ProjectsDocumentsGetData,
   V1ProjectsDocumentsGetError,
   V1ProjectsDocumentsGetResponse,
+  V1ProjectsDocumentsRelateData,
+  V1ProjectsDocumentsRelateError,
+  V1ProjectsDocumentsRelateResponse,
+  V1ProjectsDocumentsUnrelateData,
+  V1ProjectsDocumentsUnrelateError,
+  V1ProjectsDocumentsUnrelateResponse,
   V1ProjectsIssuesCreateData,
   V1ProjectsIssuesCreateError,
   V1ProjectsIssuesCreateResponse,
@@ -1564,6 +1644,124 @@ export const v1OrganizationsNamespacesCreateMutation = (
   return mutationOptions;
 };
 
+export const v1OrganizationsDocumentsGetQueryKey = (
+  options: Options<V1OrganizationsDocumentsGetData>
+) => createQueryKey("v1OrganizationsDocumentsGet", options);
+
+/**
+ * Get organization documents
+ *
+ * Return a cursor-paginated page of documents in the organization library.
+ */
+export const v1OrganizationsDocumentsGetOptions = (
+  options: Options<V1OrganizationsDocumentsGetData>
+) =>
+  queryOptions<
+    V1OrganizationsDocumentsGetResponse,
+    V1OrganizationsDocumentsGetError,
+    V1OrganizationsDocumentsGetResponse,
+    ReturnType<typeof v1OrganizationsDocumentsGetQueryKey>
+  >({
+    queryFn: async ({ queryKey, signal }) => {
+      const { data } = await v1OrganizationsDocumentsGet({
+        ...options,
+        ...queryKey[0],
+        signal,
+        throwOnError: true,
+      });
+      return data;
+    },
+    queryKey: v1OrganizationsDocumentsGetQueryKey(options),
+  });
+
+/**
+ * Create document in organization
+ *
+ * Create a new document in the organization library.
+ */
+export const v1OrganizationsDocumentsCreateMutation = (
+  options?: Partial<Options<V1OrganizationsDocumentsCreateData>>
+): UseMutationOptions<
+  V1OrganizationsDocumentsCreateResponse,
+  V1OrganizationsDocumentsCreateError,
+  Options<V1OrganizationsDocumentsCreateData>
+> => {
+  const mutationOptions: UseMutationOptions<
+    V1OrganizationsDocumentsCreateResponse,
+    V1OrganizationsDocumentsCreateError,
+    Options<V1OrganizationsDocumentsCreateData>
+  > = {
+    mutationFn: async (fnOptions) => {
+      const { data } = await v1OrganizationsDocumentsCreate({
+        ...options,
+        ...fnOptions,
+        throwOnError: true,
+      });
+      return data;
+    },
+  };
+  return mutationOptions;
+};
+
+export const v1OrganizationsFoldersGetQueryKey = (
+  options: Options<V1OrganizationsFoldersGetData>
+) => createQueryKey("v1OrganizationsFoldersGet", options);
+
+/**
+ * Get organization folders
+ *
+ * Return a cursor-paginated page of folders at a location in the organization library.
+ */
+export const v1OrganizationsFoldersGetOptions = (
+  options: Options<V1OrganizationsFoldersGetData>
+) =>
+  queryOptions<
+    V1OrganizationsFoldersGetResponse,
+    V1OrganizationsFoldersGetError,
+    V1OrganizationsFoldersGetResponse,
+    ReturnType<typeof v1OrganizationsFoldersGetQueryKey>
+  >({
+    queryFn: async ({ queryKey, signal }) => {
+      const { data } = await v1OrganizationsFoldersGet({
+        ...options,
+        ...queryKey[0],
+        signal,
+        throwOnError: true,
+      });
+      return data;
+    },
+    queryKey: v1OrganizationsFoldersGetQueryKey(options),
+  });
+
+/**
+ * Create folder in organization
+ *
+ * Create a new folder in the organization library.
+ */
+export const v1OrganizationsFoldersCreateMutation = (
+  options?: Partial<Options<V1OrganizationsFoldersCreateData>>
+): UseMutationOptions<
+  V1OrganizationsFoldersCreateResponse,
+  V1OrganizationsFoldersCreateError,
+  Options<V1OrganizationsFoldersCreateData>
+> => {
+  const mutationOptions: UseMutationOptions<
+    V1OrganizationsFoldersCreateResponse,
+    V1OrganizationsFoldersCreateError,
+    Options<V1OrganizationsFoldersCreateData>
+  > = {
+    mutationFn: async (fnOptions) => {
+      const { data } = await v1OrganizationsFoldersCreate({
+        ...options,
+        ...fnOptions,
+        throwOnError: true,
+      });
+      return data;
+    },
+  };
+  return mutationOptions;
+};
+
 /**
  * Delete namespace
  *
@@ -1715,7 +1913,7 @@ export const v1NamespacesDocumentsGetQueryKey = (
 /**
  * Get namespace documents
  *
- * Return a cursor-paginated page of documents that belong to the namespace.
+ * Return a cursor-paginated page of documents in the namespace library.
  */
 export const v1NamespacesDocumentsGetOptions = (
   options: Options<V1NamespacesDocumentsGetData>
@@ -1737,6 +1935,94 @@ export const v1NamespacesDocumentsGetOptions = (
     },
     queryKey: v1NamespacesDocumentsGetQueryKey(options),
   });
+
+/**
+ * Create document in namespace
+ *
+ * Create a new document in the namespace library.
+ */
+export const v1NamespacesDocumentsCreateMutation = (
+  options?: Partial<Options<V1NamespacesDocumentsCreateData>>
+): UseMutationOptions<
+  V1NamespacesDocumentsCreateResponse,
+  V1NamespacesDocumentsCreateError,
+  Options<V1NamespacesDocumentsCreateData>
+> => {
+  const mutationOptions: UseMutationOptions<
+    V1NamespacesDocumentsCreateResponse,
+    V1NamespacesDocumentsCreateError,
+    Options<V1NamespacesDocumentsCreateData>
+  > = {
+    mutationFn: async (fnOptions) => {
+      const { data } = await v1NamespacesDocumentsCreate({
+        ...options,
+        ...fnOptions,
+        throwOnError: true,
+      });
+      return data;
+    },
+  };
+  return mutationOptions;
+};
+
+export const v1NamespacesFoldersGetQueryKey = (
+  options: Options<V1NamespacesFoldersGetData>
+) => createQueryKey("v1NamespacesFoldersGet", options);
+
+/**
+ * Get namespace folders
+ *
+ * Return a cursor-paginated page of folders at a location in the namespace library.
+ */
+export const v1NamespacesFoldersGetOptions = (
+  options: Options<V1NamespacesFoldersGetData>
+) =>
+  queryOptions<
+    V1NamespacesFoldersGetResponse,
+    V1NamespacesFoldersGetError,
+    V1NamespacesFoldersGetResponse,
+    ReturnType<typeof v1NamespacesFoldersGetQueryKey>
+  >({
+    queryFn: async ({ queryKey, signal }) => {
+      const { data } = await v1NamespacesFoldersGet({
+        ...options,
+        ...queryKey[0],
+        signal,
+        throwOnError: true,
+      });
+      return data;
+    },
+    queryKey: v1NamespacesFoldersGetQueryKey(options),
+  });
+
+/**
+ * Create folder in namespace
+ *
+ * Create a new folder in the namespace library.
+ */
+export const v1NamespacesFoldersCreateMutation = (
+  options?: Partial<Options<V1NamespacesFoldersCreateData>>
+): UseMutationOptions<
+  V1NamespacesFoldersCreateResponse,
+  V1NamespacesFoldersCreateError,
+  Options<V1NamespacesFoldersCreateData>
+> => {
+  const mutationOptions: UseMutationOptions<
+    V1NamespacesFoldersCreateResponse,
+    V1NamespacesFoldersCreateError,
+    Options<V1NamespacesFoldersCreateData>
+  > = {
+    mutationFn: async (fnOptions) => {
+      const { data } = await v1NamespacesFoldersCreate({
+        ...options,
+        ...fnOptions,
+        throwOnError: true,
+      });
+      return data;
+    },
+  };
+  return mutationOptions;
+};
 
 export const v1NamespacesIssuesGetQueryKey = (
   options: Options<V1NamespacesIssuesGetData>
@@ -1949,7 +2235,7 @@ export const v1ProjectsDocumentsGetQueryKey = (
 /**
  * Get project documents
  *
- * Return a cursor-paginated page of documents that belong to the project.
+ * Return a cursor-paginated page of documents related to the project.
  */
 export const v1ProjectsDocumentsGetOptions = (
   options: Options<V1ProjectsDocumentsGetData>
@@ -1971,6 +2257,263 @@ export const v1ProjectsDocumentsGetOptions = (
     },
     queryKey: v1ProjectsDocumentsGetQueryKey(options),
   });
+
+/**
+ * Create document in project
+ *
+ * Create a new document in the namespace library, related to the project.
+ */
+export const v1ProjectsDocumentsCreateMutation = (
+  options?: Partial<Options<V1ProjectsDocumentsCreateData>>
+): UseMutationOptions<
+  V1ProjectsDocumentsCreateResponse,
+  V1ProjectsDocumentsCreateError,
+  Options<V1ProjectsDocumentsCreateData>
+> => {
+  const mutationOptions: UseMutationOptions<
+    V1ProjectsDocumentsCreateResponse,
+    V1ProjectsDocumentsCreateError,
+    Options<V1ProjectsDocumentsCreateData>
+  > = {
+    mutationFn: async (fnOptions) => {
+      const { data } = await v1ProjectsDocumentsCreate({
+        ...options,
+        ...fnOptions,
+        throwOnError: true,
+      });
+      return data;
+    },
+  };
+  return mutationOptions;
+};
+
+/**
+ * Unrelate document from project
+ *
+ * Remove the relation between the document and the project.
+ */
+export const v1ProjectsDocumentsUnrelateMutation = (
+  options?: Partial<Options<V1ProjectsDocumentsUnrelateData>>
+): UseMutationOptions<
+  V1ProjectsDocumentsUnrelateResponse,
+  V1ProjectsDocumentsUnrelateError,
+  Options<V1ProjectsDocumentsUnrelateData>
+> => {
+  const mutationOptions: UseMutationOptions<
+    V1ProjectsDocumentsUnrelateResponse,
+    V1ProjectsDocumentsUnrelateError,
+    Options<V1ProjectsDocumentsUnrelateData>
+  > = {
+    mutationFn: async (fnOptions) => {
+      const { data } = await v1ProjectsDocumentsUnrelate({
+        ...options,
+        ...fnOptions,
+        throwOnError: true,
+      });
+      return data;
+    },
+  };
+  return mutationOptions;
+};
+
+/**
+ * Relate document to project
+ *
+ * Relate an existing document to the project.
+ */
+export const v1ProjectsDocumentsRelateMutation = (
+  options?: Partial<Options<V1ProjectsDocumentsRelateData>>
+): UseMutationOptions<
+  V1ProjectsDocumentsRelateResponse,
+  V1ProjectsDocumentsRelateError,
+  Options<V1ProjectsDocumentsRelateData>
+> => {
+  const mutationOptions: UseMutationOptions<
+    V1ProjectsDocumentsRelateResponse,
+    V1ProjectsDocumentsRelateError,
+    Options<V1ProjectsDocumentsRelateData>
+  > = {
+    mutationFn: async (fnOptions) => {
+      const { data } = await v1ProjectsDocumentsRelate({
+        ...options,
+        ...fnOptions,
+        throwOnError: true,
+      });
+      return data;
+    },
+  };
+  return mutationOptions;
+};
+
+/**
+ * Delete document
+ *
+ * Delete the document by its ID.
+ */
+export const v1DocumentDeleteMutation = (
+  options?: Partial<Options<V1DocumentDeleteData>>
+): UseMutationOptions<
+  V1DocumentDeleteResponse,
+  V1DocumentDeleteError,
+  Options<V1DocumentDeleteData>
+> => {
+  const mutationOptions: UseMutationOptions<
+    V1DocumentDeleteResponse,
+    V1DocumentDeleteError,
+    Options<V1DocumentDeleteData>
+  > = {
+    mutationFn: async (fnOptions) => {
+      const { data } = await v1DocumentDelete({
+        ...options,
+        ...fnOptions,
+        throwOnError: true,
+      });
+      return data;
+    },
+  };
+  return mutationOptions;
+};
+
+export const v1DocumentGetQueryKey = (options: Options<V1DocumentGetData>) =>
+  createQueryKey("v1DocumentGet", options);
+
+/**
+ * Get document
+ *
+ * Return the requested document by its ID, including the stored body.
+ */
+export const v1DocumentGetOptions = (options: Options<V1DocumentGetData>) =>
+  queryOptions<
+    V1DocumentGetResponse,
+    V1DocumentGetError,
+    V1DocumentGetResponse,
+    ReturnType<typeof v1DocumentGetQueryKey>
+  >({
+    queryFn: async ({ queryKey, signal }) => {
+      const { data } = await v1DocumentGet({
+        ...options,
+        ...queryKey[0],
+        signal,
+        throwOnError: true,
+      });
+      return data;
+    },
+    queryKey: v1DocumentGetQueryKey(options),
+  });
+
+/**
+ * Update document
+ *
+ * Update the document by its ID. Optional library_id moves the document to another library and clears its folder. Optional folder_id moves it within the library; JSON null removes it from the folder.
+ */
+export const v1DocumentUpdateMutation = (
+  options?: Partial<Options<V1DocumentUpdateData>>
+): UseMutationOptions<
+  V1DocumentUpdateResponse,
+  V1DocumentUpdateError,
+  Options<V1DocumentUpdateData>
+> => {
+  const mutationOptions: UseMutationOptions<
+    V1DocumentUpdateResponse,
+    V1DocumentUpdateError,
+    Options<V1DocumentUpdateData>
+  > = {
+    mutationFn: async (fnOptions) => {
+      const { data } = await v1DocumentUpdate({
+        ...options,
+        ...fnOptions,
+        throwOnError: true,
+      });
+      return data;
+    },
+  };
+  return mutationOptions;
+};
+
+/**
+ * Delete folder
+ *
+ * Delete the folder by its ID. Child folders and documents are reparented one level up.
+ */
+export const v1FolderDeleteMutation = (
+  options?: Partial<Options<V1FolderDeleteData>>
+): UseMutationOptions<
+  V1FolderDeleteResponse,
+  V1FolderDeleteError,
+  Options<V1FolderDeleteData>
+> => {
+  const mutationOptions: UseMutationOptions<
+    V1FolderDeleteResponse,
+    V1FolderDeleteError,
+    Options<V1FolderDeleteData>
+  > = {
+    mutationFn: async (fnOptions) => {
+      const { data } = await v1FolderDelete({
+        ...options,
+        ...fnOptions,
+        throwOnError: true,
+      });
+      return data;
+    },
+  };
+  return mutationOptions;
+};
+
+export const v1FolderGetQueryKey = (options: Options<V1FolderGetData>) =>
+  createQueryKey("v1FolderGet", options);
+
+/**
+ * Get folder
+ *
+ * Return the requested folder by its ID.
+ */
+export const v1FolderGetOptions = (options: Options<V1FolderGetData>) =>
+  queryOptions<
+    V1FolderGetResponse,
+    V1FolderGetError,
+    V1FolderGetResponse,
+    ReturnType<typeof v1FolderGetQueryKey>
+  >({
+    queryFn: async ({ queryKey, signal }) => {
+      const { data } = await v1FolderGet({
+        ...options,
+        ...queryKey[0],
+        signal,
+        throwOnError: true,
+      });
+      return data;
+    },
+    queryKey: v1FolderGetQueryKey(options),
+  });
+
+/**
+ * Update folder
+ *
+ * Update the folder by its ID. JSON null parent_id moves it to the library root.
+ */
+export const v1FolderUpdateMutation = (
+  options?: Partial<Options<V1FolderUpdateData>>
+): UseMutationOptions<
+  V1FolderUpdateResponse,
+  V1FolderUpdateError,
+  Options<V1FolderUpdateData>
+> => {
+  const mutationOptions: UseMutationOptions<
+    V1FolderUpdateResponse,
+    V1FolderUpdateError,
+    Options<V1FolderUpdateData>
+  > = {
+    mutationFn: async (fnOptions) => {
+      const { data } = await v1FolderUpdate({
+        ...options,
+        ...fnOptions,
+        throwOnError: true,
+      });
+      return data;
+    },
+  };
+  return mutationOptions;
+};
 
 /**
  * Delete issue
@@ -2047,6 +2590,123 @@ export const v1IssueUpdateMutation = (
   > = {
     mutationFn: async (fnOptions) => {
       const { data } = await v1IssueUpdate({
+        ...options,
+        ...fnOptions,
+        throwOnError: true,
+      });
+      return data;
+    },
+  };
+  return mutationOptions;
+};
+
+export const v1IssuesDocumentsGetQueryKey = (
+  options: Options<V1IssuesDocumentsGetData>
+) => createQueryKey("v1IssuesDocumentsGet", options);
+
+/**
+ * Get issue documents
+ *
+ * Return a cursor-paginated page of documents related to the issue.
+ */
+export const v1IssuesDocumentsGetOptions = (
+  options: Options<V1IssuesDocumentsGetData>
+) =>
+  queryOptions<
+    V1IssuesDocumentsGetResponse,
+    V1IssuesDocumentsGetError,
+    V1IssuesDocumentsGetResponse,
+    ReturnType<typeof v1IssuesDocumentsGetQueryKey>
+  >({
+    queryFn: async ({ queryKey, signal }) => {
+      const { data } = await v1IssuesDocumentsGet({
+        ...options,
+        ...queryKey[0],
+        signal,
+        throwOnError: true,
+      });
+      return data;
+    },
+    queryKey: v1IssuesDocumentsGetQueryKey(options),
+  });
+
+/**
+ * Create document in issue
+ *
+ * Create a new document in the namespace library, related to the issue.
+ */
+export const v1IssuesDocumentsCreateMutation = (
+  options?: Partial<Options<V1IssuesDocumentsCreateData>>
+): UseMutationOptions<
+  V1IssuesDocumentsCreateResponse,
+  V1IssuesDocumentsCreateError,
+  Options<V1IssuesDocumentsCreateData>
+> => {
+  const mutationOptions: UseMutationOptions<
+    V1IssuesDocumentsCreateResponse,
+    V1IssuesDocumentsCreateError,
+    Options<V1IssuesDocumentsCreateData>
+  > = {
+    mutationFn: async (fnOptions) => {
+      const { data } = await v1IssuesDocumentsCreate({
+        ...options,
+        ...fnOptions,
+        throwOnError: true,
+      });
+      return data;
+    },
+  };
+  return mutationOptions;
+};
+
+/**
+ * Unrelate document from issue
+ *
+ * Remove the relation between the document and the issue.
+ */
+export const v1IssuesDocumentsUnrelateMutation = (
+  options?: Partial<Options<V1IssuesDocumentsUnrelateData>>
+): UseMutationOptions<
+  V1IssuesDocumentsUnrelateResponse,
+  V1IssuesDocumentsUnrelateError,
+  Options<V1IssuesDocumentsUnrelateData>
+> => {
+  const mutationOptions: UseMutationOptions<
+    V1IssuesDocumentsUnrelateResponse,
+    V1IssuesDocumentsUnrelateError,
+    Options<V1IssuesDocumentsUnrelateData>
+  > = {
+    mutationFn: async (fnOptions) => {
+      const { data } = await v1IssuesDocumentsUnrelate({
+        ...options,
+        ...fnOptions,
+        throwOnError: true,
+      });
+      return data;
+    },
+  };
+  return mutationOptions;
+};
+
+/**
+ * Relate document to issue
+ *
+ * Relate an existing document to the issue.
+ */
+export const v1IssuesDocumentsRelateMutation = (
+  options?: Partial<Options<V1IssuesDocumentsRelateData>>
+): UseMutationOptions<
+  V1IssuesDocumentsRelateResponse,
+  V1IssuesDocumentsRelateError,
+  Options<V1IssuesDocumentsRelateData>
+> => {
+  const mutationOptions: UseMutationOptions<
+    V1IssuesDocumentsRelateResponse,
+    V1IssuesDocumentsRelateError,
+    Options<V1IssuesDocumentsRelateData>
+  > = {
+    mutationFn: async (fnOptions) => {
+      const { data } = await v1IssuesDocumentsRelate({
         ...options,
         ...fnOptions,
         throwOnError: true,

@@ -95,54 +95,6 @@ func WithTodoRepository(todoRepo repository.TodoRepository) Option {
 	}
 }
 
-// WithLicenseService sets the license service for the baseService.
-func WithLicenseService(licenseService LicenseService) Option {
-	return func(s *baseService) error {
-		if licenseService == nil {
-			return ErrNoLicenseService
-		}
-
-		s.licenseService = licenseService
-		return nil
-	}
-}
-
-// WithPermissionService sets the permission service for the baseService.
-func WithPermissionService(permissionService PermissionService) Option {
-	return func(s *baseService) error {
-		if permissionService == nil {
-			return ErrNoPermissionService
-		}
-
-		s.permissionService = permissionService
-		return nil
-	}
-}
-
-// WithEmailService sets the email service for the baseService.
-func WithEmailService(emailService EmailService) Option {
-	return func(s *baseService) error {
-		if emailService == nil {
-			return ErrNoEmailService
-		}
-
-		s.emailService = emailService
-		return nil
-	}
-}
-
-// WithNotificationService sets the notification service for the baseService.
-func WithNotificationService(notificationService NotificationService) Option {
-	return func(s *baseService) error {
-		if notificationService == nil {
-			return ErrNoNotificationService
-		}
-
-		s.notificationService = notificationService
-		return nil
-	}
-}
-
 // WithNamespaceRepository sets the namespace repository for the baseService.
 func WithNamespaceRepository(namespaceRepo repository.NamespaceRepository) Option {
 	return func(s *baseService) error {
@@ -215,6 +167,78 @@ func WithDocumentRepository(documentRepo repository.DocumentRepository) Option {
 	}
 }
 
+// WithFolderRepository sets the folder repository for the baseService.
+func WithFolderRepository(folderRepo repository.FolderRepository) Option {
+	return func(s *baseService) error {
+		if folderRepo == nil {
+			return ErrNoFolderRepository
+		}
+
+		s.folderRepo = folderRepo
+		return nil
+	}
+}
+
+// WithLicenseService sets the license service for the baseService.
+func WithLicenseService(licenseService LicenseService) Option {
+	return func(s *baseService) error {
+		if licenseService == nil {
+			return ErrNoLicenseService
+		}
+
+		s.licenseService = licenseService
+		return nil
+	}
+}
+
+// WithPermissionService sets the permission service for the baseService.
+func WithPermissionService(permissionService PermissionService) Option {
+	return func(s *baseService) error {
+		if permissionService == nil {
+			return ErrNoPermissionService
+		}
+
+		s.permissionService = permissionService
+		return nil
+	}
+}
+
+// WithNotificationService sets the notification service for the baseService.
+func WithNotificationService(notificationService NotificationService) Option {
+	return func(s *baseService) error {
+		if notificationService == nil {
+			return ErrNoNotificationService
+		}
+
+		s.notificationService = notificationService
+		return nil
+	}
+}
+
+// WithEmailService sets the email service for the baseService.
+func WithEmailService(emailService EmailService) Option {
+	return func(s *baseService) error {
+		if emailService == nil {
+			return ErrNoEmailService
+		}
+
+		s.emailService = emailService
+		return nil
+	}
+}
+
+// WithStaticFileService sets the static file service for the baseService.
+func WithStaticFileService(staticFileService StaticFileService) Option {
+	return func(s *baseService) error {
+		if staticFileService == nil {
+			return ErrNoStaticFileService
+		}
+
+		s.staticFileService = staticFileService
+		return nil
+	}
+}
+
 // baseService defines the dependencies that are required to interact with the
 // core functionality.
 type baseService struct {
@@ -228,6 +252,7 @@ type baseService struct {
 	assignmentRepo   repository.AssignmentRepository
 	labelRepo        repository.LabelRepository
 	documentRepo     repository.DocumentRepository
+	folderRepo       repository.FolderRepository
 	roleRepo         repository.RoleRepository
 	todoRepo         repository.TodoRepository
 	userRepo         repository.UserRepository
@@ -237,6 +262,7 @@ type baseService struct {
 	permissionService   PermissionService
 	notificationService NotificationService
 	emailService        EmailService
+	staticFileService   StaticFileService
 }
 
 // newService creates a new baseService and defines the default values. Those

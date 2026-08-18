@@ -101,7 +101,7 @@ func compileNamespaceRoot(in namespaceRootQueryInput) (QueryPlan, error) {
 		returns = append(returns, fmt.Sprintf(
 			"COUNT { (:%s)-[:%s]->(%s) } AS document_count",
 			model.ResourceTypeDocument.String(),
-			EdgeKindBelongsTo.String(),
+			EdgeKindScopedTo.String(),
 			in.Alias,
 		))
 	}

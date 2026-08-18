@@ -131,14 +131,17 @@ export function EntityHeader({
 export function PageActions({
   primary,
   secondary = [],
+  size = "icon-sm",
 }: {
   primary?: ReactNode;
   secondary?: {
     label: string;
     href?: string;
     onSelect?: () => void;
+    disabled?: boolean;
     variant?: "default" | "destructive";
   }[];
+  size?: "icon-sm" | "icon-xs";
 }) {
   return (
     <>
@@ -148,8 +151,8 @@ export function PageActions({
           <DropdownMenuTrigger
             render={
               <Button
-                variant="outline"
-                size="icon-sm"
+                variant={size === "icon-xs" ? "ghost" : "outline"}
+                size={size}
                 aria-label="More actions"
               />
             }
@@ -164,6 +167,7 @@ export function PageActions({
                 )}
                 <DropdownMenuItem
                   variant={item.variant}
+                  disabled={item.disabled}
                   render={
                     item.href ? (
                       <InternalLink to={internalPath(item.href)} />

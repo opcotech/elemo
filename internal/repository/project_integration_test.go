@@ -60,7 +60,9 @@ func (s *ProjectRepositoryIntegrationTestSuite) TestCreate() {
 func (s *ProjectRepositoryIntegrationTestSuite) TestGet() {
 	created, err := s.ProjectRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
-	_, err = s.DocumentRepo.Create(context.Background(), testModel.NewCreateDocumentOpts(created.ID, s.testUser.ID))
+	docOpts := testModel.NewCreateDocumentOpts(s.testNamespace.ID, s.testUser.ID)
+	docOpts.RelatedTo = &created.ID
+	_, err = s.DocumentRepo.Create(context.Background(), docOpts)
 	s.Require().NoError(err)
 
 	project, err := s.ProjectRepo.Get(context.Background(), created.ID, repository.ProjectDetailProjection())
@@ -77,7 +79,9 @@ func (s *ProjectRepositoryIntegrationTestSuite) TestGet() {
 func (s *ProjectRepositoryIntegrationTestSuite) TestGetByKey() {
 	created, err := s.ProjectRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
-	_, err = s.DocumentRepo.Create(context.Background(), testModel.NewCreateDocumentOpts(created.ID, s.testUser.ID))
+	docOpts := testModel.NewCreateDocumentOpts(s.testNamespace.ID, s.testUser.ID)
+	docOpts.RelatedTo = &created.ID
+	_, err = s.DocumentRepo.Create(context.Background(), docOpts)
 	s.Require().NoError(err)
 
 	project, err := s.ProjectRepo.GetByKey(context.Background(), created.Key, repository.ProjectDetailProjection())
