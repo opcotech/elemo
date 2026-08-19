@@ -9,9 +9,9 @@ import {
 import { USER_DEFAULT_PASSWORD, loginUser } from "./utils/auth";
 import {
   createUser,
+  grantActionsToUser,
   grantMembershipToUser,
-  grantPermissionToUser,
-  grantSystemOwnerMembershipToUser,
+  grantOrganizationCreateToUser,
 } from "./utils/db";
 import { getRandomString } from "./utils/random";
 
@@ -23,8 +23,8 @@ test.describe("@settings.organization-delete Organization Delete E2E Tests", () 
   test.beforeAll(async ({ testConfig }) => {
     ownerUser = await createUser(testConfig);
 
-    // Grant system owner membership so users can create organizations
-    await grantSystemOwnerMembershipToUser(testConfig, ownerUser.email);
+    // Grant organization.create on Installation so the user can create organizations
+    await grantOrganizationCreateToUser(testConfig, ownerUser.email);
   });
 
   test("should delete organization", async ({ page, createApiClient }) => {
@@ -92,19 +92,19 @@ test.describe("@settings.organization-delete Organization Delete E2E Tests", () 
       "Organization",
       orgToDelete.id
     );
-    await grantPermissionToUser(
+    await grantActionsToUser(
       testConfig,
       deletePermissionUser.email,
       "Organization",
       orgToDelete.id,
-      "read"
+      ["organization.read"]
     );
-    await grantPermissionToUser(
+    await grantActionsToUser(
       testConfig,
       deletePermissionUser.email,
       "Organization",
       orgToDelete.id,
-      "delete"
+      ["organization.delete"]
     );
 
     await loginUser(page, {
@@ -162,12 +162,12 @@ test.describe("@settings.organization-delete Organization Delete E2E Tests", () 
       "Organization",
       organization.id
     );
-    await grantPermissionToUser(
+    await grantActionsToUser(
       testConfig,
       noDeletePermissionUser.email,
       "Organization",
       organization.id,
-      "read"
+      ["organization.read"]
     );
 
     await loginUser(page, {

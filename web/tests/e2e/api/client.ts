@@ -63,10 +63,10 @@ export async function createAuthenticatedClient(
 }
 
 /**
- * Create an authenticated API client using system owner credentials.
- * This is the primary method for tests to get an API client.
+ * Create an authenticated API client using the e2e privileged user.
+ * That user has organization.create on Installation, not a system role.
  */
-export async function createSystemOwnerClient(): Promise<Client> {
+export async function createPrivilegedClient(): Promise<Client> {
   // Return cached client if available and tokens are still valid
   if (cachedClient && cachedTokens) {
     try {

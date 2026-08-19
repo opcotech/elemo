@@ -65,9 +65,8 @@ type UpdateTodoOpts struct {
 // TodoService serves the business logic of interacting with todos in the
 // system.
 type TodoService interface {
-	// Create creates a new todo item. Users can create todos for each other
-	// if they are related in some way. If the creator and owner are not
-	// related, an error is returned.
+	// Create creates a new todo item. Todos are personal: the creator must
+	// also be the owner.
 	Create(ctx context.Context, opts CreateTodoOpts) (*Todo, error)
 	// Get returns a todo by its ID. If the todo does not exist, an error is
 	// returned.
@@ -119,13 +118,7 @@ func (s *todoService) Create(ctx context.Context, opts CreateTodoOpts) (*Todo, e
 	}
 
 	if opts.CreatedBy != opts.OwnedBy {
-		hasRelation, err := s.permissionService.HasAnyRelation(ctx, opts.CreatedBy, opts.OwnedBy)
-		if err != nil {
-			return nil, errors.Join(ErrTodoCreate, err)
-		}
-		if !hasRelation {
-			return nil, errors.Join(ErrTodoCreate, ErrNoPermission)
-		}
+		return nil, errors.Join(ErrTodoCreate, ErrNoPermission)
 	}
 
 	todo, err := s.todoRepo.Create(ctx, repository.CreateTodoOpts{
@@ -152,11 +145,7 @@ func (s *todoService) Get(ctx context.Context, id model.ID) (*Todo, error) {
 		return nil, errors.Join(ErrTodoGet, err)
 	}
 
-	if !s.permissionService.CtxUserHasPermission(ctx, id, model.PermissionKindRead) {
-		return nil, errors.Join(ErrTodoGet, ErrNoPermission)
-	}
-
-	todo, err := s.todoRepo.Get(ctx, id)
+	todo, err := s.ownedTodo(ctx, id)
 	if err != nil {
 		return nil, errors.Join(ErrTodoGet, err)
 	}
@@ -203,8 +192,8 @@ func (s *todoService) Update(ctx context.Context, id model.ID, opts UpdateTodoOp
 		return nil, errors.Join(ErrTodoUpdate, err)
 	}
 
-	if !s.permissionService.CtxUserHasPermission(ctx, id, model.PermissionKindWrite) {
-		return nil, errors.Join(ErrTodoUpdate, ErrNoPermission)
+	if _, err := s.ownedTodo(ctx, id); err != nil {
+		return nil, errors.Join(ErrTodoUpdate, err)
 	}
 
 	todo, err := s.todoRepo.Update(ctx, id, repository.UpdateTodoOpts{
@@ -233,8 +222,8 @@ func (s *todoService) Delete(ctx context.Context, id model.ID) error {
 		return errors.Join(ErrTodoDelete, err)
 	}
 
-	if !s.permissionService.CtxUserHasPermission(ctx, id, model.PermissionKindDelete) {
-		return errors.Join(ErrTodoDelete, ErrNoPermission)
+	if _, err := s.ownedTodo(ctx, id); err != nil {
+		return errors.Join(ErrTodoDelete, err)
 	}
 
 	if err := s.todoRepo.Delete(ctx, id); err != nil {
@@ -242,6 +231,23 @@ func (s *todoService) Delete(ctx context.Context, id model.ID) error {
 	}
 
 	return nil
+}
+
+func (s *todoService) ownedTodo(ctx context.Context, id model.ID) (*repository.Todo, error) {
+	userID, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID)
+	if !ok {
+		return nil, ErrNoUser
+	}
+
+	todo, err := s.todoRepo.Get(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if todo.OwnedBy != userID {
+		return nil, ErrNoPermission
+	}
+
+	return todo, nil
 }
 
 // NewTodoService returns a new instance of the TodoService interface.
@@ -257,10 +263,6 @@ func NewTodoService(opts ...Option) (TodoService, error) {
 
 	if svc.todoRepo == nil {
 		return nil, ErrNoTodoRepository
-	}
-
-	if svc.permissionService == nil {
-		return nil, ErrNoPermissionService
 	}
 
 	if svc.licenseService == nil {

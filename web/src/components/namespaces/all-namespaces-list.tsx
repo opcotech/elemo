@@ -26,8 +26,8 @@ import {
   withResourceType,
 } from "@/hooks/use-permissions";
 import { v1PermissionResourceGetOptions } from "@/lib/api/query-options";
-import type { Namespace, Organization, Permission } from "@/lib/api/types";
-import { can } from "@/lib/auth/permissions";
+import type { EffectiveActions, Namespace } from "@/lib/api/types";
+import { Action, can } from "@/lib/auth/permissions";
 
 interface NamespaceWithOrganization extends Namespace {
   organizationId: string;
@@ -51,7 +51,7 @@ const allNamespacesListSkeletonColumns = [
 
 interface AllNamespaceRowProps {
   namespace: NamespaceWithOrganization;
-  permissions: Permission[] | undefined;
+  permissions: EffectiveActions | undefined;
   isPermissionsLoading: boolean;
   onDeleteClick: (namespace: NamespaceWithOrganization) => void;
 }
@@ -65,9 +65,9 @@ function AllNamespaceRow({
   const projectCount = namespace.project_count ?? 0;
   const documentCount = namespace.document_count ?? 0;
 
-  const hasNamespaceReadPermission = can(permissions, "read");
-  const hasNamespaceWritePermission = can(permissions, "write");
-  const hasNamespaceDeletePermission = can(permissions, "delete");
+  const hasNamespaceReadPermission = can(permissions, Action.NamespaceRead);
+  const hasNamespaceWritePermission = can(permissions, Action.NamespaceUpdate);
+  const hasNamespaceDeletePermission = can(permissions, Action.NamespaceDelete);
 
   return (
     <TableRow>
@@ -151,7 +151,7 @@ function AllNamespaceRow({
 }
 
 interface AllNamespacesListProps {
-  organizations: Organization[];
+  organizations: { id: string; name: string }[];
   namespaces: NamespaceWithOrganization[];
   isLoading: boolean;
   error: unknown;
@@ -188,7 +188,7 @@ export function AllNamespacesList({
   const canCreateNamespace = useMemo(() => {
     return organizations.some((org, index) => {
       const permissions = permissionQueries[index]?.data;
-      return can(permissions, "write");
+      return can(permissions, Action.NamespaceCreate);
     });
   }, [organizations, permissionQueries]);
 

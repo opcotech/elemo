@@ -1,3 +1,5 @@
+//go:build integration
+
 package service_test
 
 import (
@@ -75,10 +77,10 @@ func (s *DocumentServiceIntegrationTestSuite) SetupTest() {
 	s.organization, err = s.OrganizationRepo.Create(context.Background(), testModel.NewCreateOrganizationOpts(s.owner.ID))
 	s.Require().NoError(err)
 
-	_, err = s.PermissionRepo.Create(context.Background(), repository.CreatePermissionOpts{
-		Subject: s.owner.ID,
-		Target:  s.organization.ID,
-		Kind:    model.PermissionKindWrite,
+	_, err = s.PermissionRepo.Create(context.Background(), repository.CreateGrantOpts{
+		Principal: s.owner.ID,
+		Scope:     s.organization.ID,
+		Actions:   testModel.OrgAdminActions(),
 	})
 	s.Require().NoError(err)
 }

@@ -22,11 +22,17 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { useNavigationContext } from "@/hooks/use-navigation-context";
+import {
+  ResourceType,
+  usePermissions,
+  withResourceType,
+} from "@/hooks/use-permissions";
 import { useAccessibleNamespaces } from "@/lib/api/accessible-namespaces";
 import {
   v1OrganizationGetOptions,
   v1ProjectGetOptions,
 } from "@/lib/api/query-options";
+import { Action, can } from "@/lib/auth/permissions";
 import { internalPath } from "@/lib/internal-url";
 import { uiActions } from "@/lib/ui-store";
 
@@ -51,6 +57,10 @@ export function ContextualNavigationSection() {
   const { data: accessibleWorkspace } = useAccessibleNamespaces();
   const namespace = accessibleWorkspace?.namespaces.find(
     (item) => item.id === context.namespaceId
+  );
+  const { data: namespacePermissions } = usePermissions(
+    withResourceType(ResourceType.Namespace, context.namespaceId ?? ""),
+    context.type !== "namespace" || !context.namespaceId
   );
   const { data: project } = useQuery({
     ...v1ProjectGetOptions({ path: { id: context.projectId ?? "" } }),
@@ -93,8 +103,12 @@ export function ContextualNavigationSection() {
 
     if (context.type === "namespace" && context.namespaceId) {
       const namespaceBase = `/namespaces/${context.namespaceId}`;
-
-      return [
+      const items: {
+        label: string;
+        href: string;
+        icon: typeof LayoutDashboardIcon;
+        separated?: boolean;
+      }[] = [
         {
           label: "Overview",
           href: namespaceBase,
@@ -110,18 +124,23 @@ export function ContextualNavigationSection() {
           href: `${namespaceBase}/work`,
           icon: ListTodoIcon,
         },
-        {
+      ];
+      if (can(namespacePermissions, Action.DocumentRead)) {
+        items.push({
           label: "Documents",
           href: `${namespaceBase}/documents`,
           icon: FileTextIcon,
-        },
-        {
+        });
+      }
+      if (can(namespacePermissions, Action.NamespaceRead)) {
+        items.push({
           label: "Administration",
           href: `${namespaceBase}/administration`,
           icon: SettingsIcon,
           separated: true,
-        },
-      ];
+        });
+      }
+      return items;
     }
 
     if (context.type === "organization" && context.organizationId) {
@@ -147,6 +166,7 @@ export function ContextualNavigationSection() {
     context.organizationId,
     context.projectId,
     context.type,
+    namespacePermissions,
   ]);
 
   useEffect(() => {

@@ -6,7 +6,7 @@ import {
   withErrorHandling,
 } from "../api";
 import { USER_DEFAULT_PASSWORD } from "../utils/auth";
-import { createUser, grantSystemOwnerMembershipToUser } from "../utils/db";
+import { createUser, grantOrganizationCreateToUser } from "../utils/db";
 import { getRandomString } from "../utils/random";
 import type { TestConfig } from "../utils/test-config";
 
@@ -37,7 +37,7 @@ export async function seedOwnerWorkspace(
   const suffix = getRandomString(8);
 
   const owner = await createUser(testConfig);
-  await grantSystemOwnerMembershipToUser(testConfig, owner.email);
+  await grantOrganizationCreateToUser(testConfig, owner.email);
 
   const client = await createAuthenticatedClient(
     owner.email,

@@ -22,8 +22,8 @@ import {
   ResourceType,
   usePermissionsByResourceId,
 } from "@/hooks/use-permissions";
-import type { Namespace, Permission } from "@/lib/api/types";
-import { can } from "@/lib/auth/permissions";
+import type { EffectiveActions, Namespace } from "@/lib/api/types";
+import { Action, can } from "@/lib/auth/permissions";
 
 const namespacesListSkeletonColumns = [
   { header: "Name", skeletonClassName: "h-5 w-32" },
@@ -41,7 +41,7 @@ const namespacesListSkeletonColumns = [
 
 interface NamespaceRowProps {
   namespace: Namespace;
-  permissions: Permission[] | undefined;
+  permissions: EffectiveActions | undefined;
   isPermissionsLoading: boolean;
   organizationId: string;
   onDeleteClick: (namespace: Namespace) => void;
@@ -57,9 +57,9 @@ function NamespaceRow({
   const projectCount = namespace.project_count ?? 0;
   const documentCount = namespace.document_count ?? 0;
 
-  const hasNamespaceReadPermission = can(permissions, "read");
-  const hasNamespaceWritePermission = can(permissions, "write");
-  const hasNamespaceDeletePermission = can(permissions, "delete");
+  const hasNamespaceReadPermission = can(permissions, Action.NamespaceRead);
+  const hasNamespaceWritePermission = can(permissions, Action.NamespaceUpdate);
+  const hasNamespaceDeletePermission = can(permissions, Action.NamespaceDelete);
 
   return (
     <TableRow>
@@ -135,7 +135,7 @@ interface NamespacesListProps {
   isLoading: boolean;
   error: unknown;
   organizationId: string;
-  organizationPermissions: Permission[];
+  organizationPermissions: EffectiveActions;
 }
 
 export function NamespacesList({
@@ -151,7 +151,10 @@ export function NamespacesList({
     null
   );
 
-  const hasOrgWritePermission = can(organizationPermissions, "write");
+  const hasOrgWritePermission = can(
+    organizationPermissions,
+    Action.NamespaceCreate
+  );
   const hasCreatePermission = hasOrgWritePermission;
   const namespacePermissionsById = usePermissionsByResourceId(
     ResourceType.Namespace,

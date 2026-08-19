@@ -12,6 +12,7 @@ import (
 
 // NamespaceController is a controller for namespace endpoints.
 type NamespaceController interface {
+	V1NamespacesGet(ctx context.Context, request api.V1NamespacesGetRequestObject) (api.V1NamespacesGetResponseObject, error)
 	V1OrganizationsNamespacesCreate(ctx context.Context, request api.V1OrganizationsNamespacesCreateRequestObject) (api.V1OrganizationsNamespacesCreateResponseObject, error)
 	V1OrganizationsNamespacesGet(ctx context.Context, request api.V1OrganizationsNamespacesGetRequestObject) (api.V1OrganizationsNamespacesGetResponseObject, error)
 	V1NamespaceGet(ctx context.Context, request api.V1NamespaceGetRequestObject) (api.V1NamespaceGetResponseObject, error)
@@ -22,6 +23,36 @@ type NamespaceController interface {
 // namespaceController is the concrete implementation of NamespaceController.
 type namespaceController struct {
 	*baseController
+}
+
+func (c *namespaceController) V1NamespacesGet(ctx context.Context, request api.V1NamespacesGetRequestObject) (api.V1NamespacesGetResponseObject, error) {
+	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1NamespacesGet")
+	defer span.End()
+
+	pageParams, err := cursorPageFromParams(request.Params.PageSize, request.Params.PageToken)
+	if err != nil {
+		return api.V1NamespacesGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
+	}
+
+	page, err := c.namespaceService.ListAccessible(ctx, pageParams)
+	if err != nil {
+		if isInvalidPageError(err) {
+			return api.V1NamespacesGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
+		}
+		return api.V1NamespacesGet500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+			Message: err.Error(),
+		}}, nil
+	}
+
+	namespacesDTO := make([]api.AccessibleNamespace, len(page.Items))
+	for i, namespace := range page.Items {
+		namespacesDTO[i] = accessibleNamespaceToDTO(namespace)
+	}
+
+	return api.V1NamespacesGet200JSONResponse{
+		Items:    namespacesDTO,
+		PageInfo: pageInfoToDTO(page.PageInfo),
+	}, nil
 }
 
 func (c *namespaceController) V1OrganizationsNamespacesCreate(ctx context.Context, request api.V1OrganizationsNamespacesCreateRequestObject) (api.V1OrganizationsNamespacesCreateResponseObject, error) {
@@ -221,6 +252,27 @@ func namespaceToDTO(namespace *service.Namespace) api.Namespace {
 		DocumentCount: namespace.DocumentCount,
 		CreatedAt:     *namespace.CreatedAt,
 		UpdatedAt:     namespace.UpdatedAt,
+	}
+
+	if namespace.Description != "" {
+		n.Description = &namespace.Description
+	}
+
+	return n
+}
+
+func accessibleNamespaceToDTO(namespace *service.AccessibleNamespace) api.AccessibleNamespace {
+	n := api.AccessibleNamespace{
+		Id:            namespace.ID.String(),
+		Name:          namespace.Name,
+		ProjectCount:  namespace.ProjectCount,
+		DocumentCount: namespace.DocumentCount,
+		CreatedAt:     *namespace.CreatedAt,
+		UpdatedAt:     namespace.UpdatedAt,
+		Organization: api.PartialOrganization{
+			Id:   namespace.Organization.ID.String(),
+			Name: namespace.Organization.Name,
+		},
 	}
 
 	if namespace.Description != "" {

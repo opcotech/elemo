@@ -257,24 +257,22 @@ func (r *Neo4jOrganizationRepository) Create(ctx context.Context, opts CreateOrg
 
 	cypher := `
 	MATCH (u:` + opts.Owner.Label() + ` {id: $owner_id})
-	CREATE (o:` + id.Label() + ` { id: $id, name: $name, email: $email, logo: $logo, website: $website,
+	SET u:` + model.LabelPrincipal + `
+	CREATE (o:` + id.Label() + `:` + model.LabelPrincipal + ` { id: $id, name: $name, email: $email, logo: $logo, website: $website,
 		status: $status, created_at: datetime($created_at)
 	}),
-	(u)-[:` + EdgeKindMemberOf.String() + ` {id: $membership_id, created_at: datetime($created_at)}]->(o),
-	(u)-[:` + EdgeKindHasPermission.String() + `{id: $permission_id, created_at: datetime($created_at), kind: $permission_kind}]->(o)`
+	(u)-[:` + EdgeKindMemberOf.String() + ` {id: $membership_id, created_at: datetime($created_at)}]->(o)`
 
 	params := map[string]any{
-		"id":              id.String(),
-		"name":            opts.Name,
-		"email":           opts.Email,
-		"logo":            opts.Logo,
-		"website":         opts.Website,
-		"status":          status.String(),
-		"created_at":      createdAt.Format(time.RFC3339Nano),
-		"owner_id":        opts.Owner.String(),
-		"membership_id":   model.NewRawID(),
-		"permission_id":   model.NewRawID(),
-		"permission_kind": model.PermissionKindAll.String(),
+		"id":            id.String(),
+		"name":          opts.Name,
+		"email":         opts.Email,
+		"logo":          opts.Logo,
+		"website":       opts.Website,
+		"status":        status.String(),
+		"created_at":    createdAt.Format(time.RFC3339Nano),
+		"owner_id":      opts.Owner.String(),
+		"membership_id": model.NewRawID(),
 	}
 
 	if err := Neo4jExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
@@ -319,6 +317,7 @@ func (r *Neo4jOrganizationRepository) List(ctx context.Context, userID model.ID,
 	}
 	plan, err := CompileQuery(OrganizationListQuery{
 		UserID:     userID,
+		Action:     model.ActionOrganizationRead,
 		Page:       normalized,
 		Order:      SortDirectionDesc,
 		Projection: proj,

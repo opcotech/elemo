@@ -81,6 +81,9 @@ import type {
   V1NamespacesFoldersGetData,
   V1NamespacesFoldersGetErrors,
   V1NamespacesFoldersGetResponses,
+  V1NamespacesGetData,
+  V1NamespacesGetErrors,
+  V1NamespacesGetResponses,
   V1NamespacesIssuesGetData,
   V1NamespacesIssuesGetErrors,
   V1NamespacesIssuesGetResponses,
@@ -138,24 +141,6 @@ import type {
   V1OrganizationRoleGetData,
   V1OrganizationRoleGetErrors,
   V1OrganizationRoleGetResponses,
-  V1OrganizationRoleMemberRemoveData,
-  V1OrganizationRoleMemberRemoveErrors,
-  V1OrganizationRoleMemberRemoveResponses,
-  V1OrganizationRoleMembersAddData,
-  V1OrganizationRoleMembersAddErrors,
-  V1OrganizationRoleMembersAddResponses,
-  V1OrganizationRoleMembersGetData,
-  V1OrganizationRoleMembersGetErrors,
-  V1OrganizationRoleMembersGetResponses,
-  V1OrganizationRolePermissionAddData,
-  V1OrganizationRolePermissionAddErrors,
-  V1OrganizationRolePermissionAddResponses,
-  V1OrganizationRolePermissionRemoveData,
-  V1OrganizationRolePermissionRemoveErrors,
-  V1OrganizationRolePermissionRemoveResponses,
-  V1OrganizationRolePermissionsGetData,
-  V1OrganizationRolePermissionsGetErrors,
-  V1OrganizationRolePermissionsGetResponses,
   V1OrganizationRolesCreateData,
   V1OrganizationRolesCreateErrors,
   V1OrganizationRolesCreateResponses,
@@ -189,6 +174,30 @@ import type {
   V1OrganizationsNamespacesGetData,
   V1OrganizationsNamespacesGetErrors,
   V1OrganizationsNamespacesGetResponses,
+  V1OrganizationTeamDeleteData,
+  V1OrganizationTeamDeleteErrors,
+  V1OrganizationTeamDeleteResponses,
+  V1OrganizationTeamGetData,
+  V1OrganizationTeamGetErrors,
+  V1OrganizationTeamGetResponses,
+  V1OrganizationTeamMemberRemoveData,
+  V1OrganizationTeamMemberRemoveErrors,
+  V1OrganizationTeamMemberRemoveResponses,
+  V1OrganizationTeamMembersAddData,
+  V1OrganizationTeamMembersAddErrors,
+  V1OrganizationTeamMembersAddResponses,
+  V1OrganizationTeamMembersGetData,
+  V1OrganizationTeamMembersGetErrors,
+  V1OrganizationTeamMembersGetResponses,
+  V1OrganizationTeamsCreateData,
+  V1OrganizationTeamsCreateErrors,
+  V1OrganizationTeamsCreateResponses,
+  V1OrganizationTeamsGetData,
+  V1OrganizationTeamsGetErrors,
+  V1OrganizationTeamsGetResponses,
+  V1OrganizationTeamUpdateData,
+  V1OrganizationTeamUpdateErrors,
+  V1OrganizationTeamUpdateResponses,
   V1OrganizationUpdateData,
   V1OrganizationUpdateErrors,
   V1OrganizationUpdateResponses,
@@ -198,21 +207,12 @@ import type {
   V1PermissionGetData,
   V1PermissionGetErrors,
   V1PermissionGetResponses,
-  V1PermissionHasRelationsData,
-  V1PermissionHasRelationsErrors,
-  V1PermissionHasRelationsResponses,
-  V1PermissionHasSystemRoleData,
-  V1PermissionHasSystemRoleErrors,
-  V1PermissionHasSystemRoleResponses,
   V1PermissionResourceGetData,
   V1PermissionResourceGetErrors,
   V1PermissionResourceGetResponses,
   V1PermissionsCreateData,
   V1PermissionsCreateErrors,
   V1PermissionsCreateResponses,
-  V1PermissionUpdateData,
-  V1PermissionUpdateErrors,
-  V1PermissionUpdateResponses,
   V1ProjectDeleteData,
   V1ProjectDeleteErrors,
   V1ProjectDeleteResponses,
@@ -1072,50 +1072,46 @@ export const v1OrganizationRoleUpdate = <ThrowOnError extends boolean = false>(
   });
 
 /**
- * Get organization role members
+ * Get organization teams
  *
- * Return a cursor-paginated page of users that are members of the organization's role.
+ * Return the teams that belong to the organization.
  */
-export const v1OrganizationRoleMembersGet = <
-  ThrowOnError extends boolean = false,
->(
-  options: Options<V1OrganizationRoleMembersGetData, ThrowOnError>
+export const v1OrganizationTeamsGet = <ThrowOnError extends boolean = false>(
+  options: Options<V1OrganizationTeamsGetData, ThrowOnError>
 ): RequestResult<
-  V1OrganizationRoleMembersGetResponses,
-  V1OrganizationRoleMembersGetErrors,
+  V1OrganizationTeamsGetResponses,
+  V1OrganizationTeamsGetErrors,
   ThrowOnError
 > =>
   (options.client ?? client).get<
-    V1OrganizationRoleMembersGetResponses,
-    V1OrganizationRoleMembersGetErrors,
+    V1OrganizationTeamsGetResponses,
+    V1OrganizationTeamsGetErrors,
     ThrowOnError
   >({
     security: [{ scheme: "bearer", type: "http" }],
-    url: "/v1/organizations/{id}/roles/{role_id}/members",
+    url: "/v1/organizations/{id}/teams",
     ...options,
   });
 
 /**
- * Add organization role member
+ * Create a new team in the organization
  *
- * Add an existing user to an organization's role.
+ * Create a new team and assign it to the organization.
  */
-export const v1OrganizationRoleMembersAdd = <
-  ThrowOnError extends boolean = false,
->(
-  options: Options<V1OrganizationRoleMembersAddData, ThrowOnError>
+export const v1OrganizationTeamsCreate = <ThrowOnError extends boolean = false>(
+  options: Options<V1OrganizationTeamsCreateData, ThrowOnError>
 ): RequestResult<
-  V1OrganizationRoleMembersAddResponses,
-  V1OrganizationRoleMembersAddErrors,
+  V1OrganizationTeamsCreateResponses,
+  V1OrganizationTeamsCreateErrors,
   ThrowOnError
 > =>
   (options.client ?? client).post<
-    V1OrganizationRoleMembersAddResponses,
-    V1OrganizationRoleMembersAddErrors,
+    V1OrganizationTeamsCreateResponses,
+    V1OrganizationTeamsCreateErrors,
     ThrowOnError
   >({
     security: [{ scheme: "bearer", type: "http" }],
-    url: "/v1/organizations/{id}/roles/{role_id}/members",
+    url: "/v1/organizations/{id}/teams",
     ...options,
     headers: {
       "Content-Type": "application/json",
@@ -1124,74 +1120,68 @@ export const v1OrganizationRoleMembersAdd = <
   });
 
 /**
- * Remove organization role member
+ * Delete organization team
  *
- * Removes a member from the organization's role
+ * Deletes a team that belongs to the organization.
  */
-export const v1OrganizationRoleMemberRemove = <
-  ThrowOnError extends boolean = false,
->(
-  options: Options<V1OrganizationRoleMemberRemoveData, ThrowOnError>
+export const v1OrganizationTeamDelete = <ThrowOnError extends boolean = false>(
+  options: Options<V1OrganizationTeamDeleteData, ThrowOnError>
 ): RequestResult<
-  V1OrganizationRoleMemberRemoveResponses,
-  V1OrganizationRoleMemberRemoveErrors,
+  V1OrganizationTeamDeleteResponses,
+  V1OrganizationTeamDeleteErrors,
   ThrowOnError
 > =>
   (options.client ?? client).delete<
-    V1OrganizationRoleMemberRemoveResponses,
-    V1OrganizationRoleMemberRemoveErrors,
+    V1OrganizationTeamDeleteResponses,
+    V1OrganizationTeamDeleteErrors,
     ThrowOnError
   >({
     security: [{ scheme: "bearer", type: "http" }],
-    url: "/v1/organizations/{id}/roles/{role_id}/members/{user_id}",
+    url: "/v1/organizations/{id}/teams/{team_id}",
     ...options,
   });
 
 /**
- * Get organization role permissions
+ * Get organization team
  *
- * Return the permissions assigned to the organization's role.
+ * Returns the given organization team by its ID.
  */
-export const v1OrganizationRolePermissionsGet = <
-  ThrowOnError extends boolean = false,
->(
-  options: Options<V1OrganizationRolePermissionsGetData, ThrowOnError>
+export const v1OrganizationTeamGet = <ThrowOnError extends boolean = false>(
+  options: Options<V1OrganizationTeamGetData, ThrowOnError>
 ): RequestResult<
-  V1OrganizationRolePermissionsGetResponses,
-  V1OrganizationRolePermissionsGetErrors,
+  V1OrganizationTeamGetResponses,
+  V1OrganizationTeamGetErrors,
   ThrowOnError
 > =>
   (options.client ?? client).get<
-    V1OrganizationRolePermissionsGetResponses,
-    V1OrganizationRolePermissionsGetErrors,
+    V1OrganizationTeamGetResponses,
+    V1OrganizationTeamGetErrors,
     ThrowOnError
   >({
     security: [{ scheme: "bearer", type: "http" }],
-    url: "/v1/organizations/{id}/roles/{role_id}/permissions",
+    url: "/v1/organizations/{id}/teams/{team_id}",
     ...options,
   });
 
 /**
- * Add permission to organization role
+ * Update organization team
  *
- * Add a permission to an organization's role. Only organization-scoped resources (Organization, Namespace, Document, Project, Role) are allowed.
+ * Update the organization team by its ID.
  */
-export const v1OrganizationRolePermissionAdd = <
-  ThrowOnError extends boolean = false,
->(
-  options: Options<V1OrganizationRolePermissionAddData, ThrowOnError>
+export const v1OrganizationTeamUpdate = <ThrowOnError extends boolean = false>(
+  options: Options<V1OrganizationTeamUpdateData, ThrowOnError>
 ): RequestResult<
-  V1OrganizationRolePermissionAddResponses,
-  V1OrganizationRolePermissionAddErrors,
+  V1OrganizationTeamUpdateResponses,
+  V1OrganizationTeamUpdateErrors,
   ThrowOnError
 > =>
-  (options.client ?? client).post<
-    V1OrganizationRolePermissionAddResponses,
-    V1OrganizationRolePermissionAddErrors,
+  (options.client ?? client).patch<
+    V1OrganizationTeamUpdateResponses,
+    V1OrganizationTeamUpdateErrors,
     ThrowOnError
   >({
     security: [{ scheme: "bearer", type: "http" }],
-    url: "/v1/organizations/{id}/roles/{role_id}/permissions",
+    url: "/v1/organizations/{id}/teams/{team_id}",
     ...options,
     headers: {
       "Content-Type": "application/json",
@@ -1200,26 +1190,78 @@ export const v1OrganizationRolePermissionAdd = <
   });
 
 /**
- * Remove permission from organization role
+ * Get organization team members
  *
- * Removes a permission from the organization's role.
+ * Return a cursor-paginated page of users that are members of the organization's team.
  */
-export const v1OrganizationRolePermissionRemove = <
+export const v1OrganizationTeamMembersGet = <
   ThrowOnError extends boolean = false,
 >(
-  options: Options<V1OrganizationRolePermissionRemoveData, ThrowOnError>
+  options: Options<V1OrganizationTeamMembersGetData, ThrowOnError>
 ): RequestResult<
-  V1OrganizationRolePermissionRemoveResponses,
-  V1OrganizationRolePermissionRemoveErrors,
+  V1OrganizationTeamMembersGetResponses,
+  V1OrganizationTeamMembersGetErrors,
   ThrowOnError
 > =>
-  (options.client ?? client).delete<
-    V1OrganizationRolePermissionRemoveResponses,
-    V1OrganizationRolePermissionRemoveErrors,
+  (options.client ?? client).get<
+    V1OrganizationTeamMembersGetResponses,
+    V1OrganizationTeamMembersGetErrors,
     ThrowOnError
   >({
     security: [{ scheme: "bearer", type: "http" }],
-    url: "/v1/organizations/{id}/roles/{role_id}/permissions/{permission_id}",
+    url: "/v1/organizations/{id}/teams/{team_id}/members",
+    ...options,
+  });
+
+/**
+ * Add organization team member
+ *
+ * Add an existing user to an organization's team.
+ */
+export const v1OrganizationTeamMembersAdd = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<V1OrganizationTeamMembersAddData, ThrowOnError>
+): RequestResult<
+  V1OrganizationTeamMembersAddResponses,
+  V1OrganizationTeamMembersAddErrors,
+  ThrowOnError
+> =>
+  (options.client ?? client).post<
+    V1OrganizationTeamMembersAddResponses,
+    V1OrganizationTeamMembersAddErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: "bearer", type: "http" }],
+    url: "/v1/organizations/{id}/teams/{team_id}/members",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+/**
+ * Remove organization team member
+ *
+ * Removes a member from the organization's team.
+ */
+export const v1OrganizationTeamMemberRemove = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<V1OrganizationTeamMemberRemoveData, ThrowOnError>
+): RequestResult<
+  V1OrganizationTeamMemberRemoveResponses,
+  V1OrganizationTeamMemberRemoveErrors,
+  ThrowOnError
+> =>
+  (options.client ?? client).delete<
+    V1OrganizationTeamMemberRemoveResponses,
+    V1OrganizationTeamMemberRemoveErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: "bearer", type: "http" }],
+    url: "/v1/organizations/{id}/teams/{team_id}/members/{user_id}",
     ...options,
   });
 
@@ -1375,6 +1417,29 @@ export const v1OrganizationsFoldersCreate = <
       "Content-Type": "application/json",
       ...options.headers,
     },
+  });
+
+/**
+ * List reachable namespaces
+ *
+ * Return a cursor-paginated page of namespaces the actor can reach. A namespace is reachable when the actor has namespace.read on it or can read at least one descendant. Organization stubs are included without requiring organization.read.
+ *
+ */
+export const v1NamespacesGet = <ThrowOnError extends boolean = false>(
+  options?: Options<V1NamespacesGetData, ThrowOnError>
+): RequestResult<
+  V1NamespacesGetResponses,
+  V1NamespacesGetErrors,
+  ThrowOnError
+> =>
+  (options?.client ?? client).get<
+    V1NamespacesGetResponses,
+    V1NamespacesGetErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: "bearer", type: "http" }],
+    url: "/v1/namespaces",
+    ...options,
   });
 
 /**
@@ -2214,9 +2279,9 @@ export const v1IssueRelationUpdate = <ThrowOnError extends boolean = false>(
   });
 
 /**
- * Create permission
+ * Create grant
  *
- * Create a new permission for a subject to the given target.
+ * Create a new grant for a principal on the given scope. Either role_id or actions is required. Grants are immutable; delete and recreate to change them.
  */
 export const v1PermissionsCreate = <ThrowOnError extends boolean = false>(
   options?: Options<V1PermissionsCreateData, ThrowOnError>
@@ -2240,9 +2305,9 @@ export const v1PermissionsCreate = <ThrowOnError extends boolean = false>(
   });
 
 /**
- * Delete permission
+ * Delete grant
  *
- * Delete a permission by its ID.
+ * Delete a grant by its ID.
  */
 export const v1PermissionDelete = <ThrowOnError extends boolean = false>(
   options: Options<V1PermissionDeleteData, ThrowOnError>
@@ -2262,9 +2327,9 @@ export const v1PermissionDelete = <ThrowOnError extends boolean = false>(
   });
 
 /**
- * Get permission
+ * Get grant
  *
- * Get a permission by its ID.
+ * Get a grant by its ID.
  */
 export const v1PermissionGet = <ThrowOnError extends boolean = false>(
   options: Options<V1PermissionGetData, ThrowOnError>
@@ -2284,35 +2349,9 @@ export const v1PermissionGet = <ThrowOnError extends boolean = false>(
   });
 
 /**
- * Update permission
+ * Get effective actions for a resource
  *
- * Update a permission.
- */
-export const v1PermissionUpdate = <ThrowOnError extends boolean = false>(
-  options: Options<V1PermissionUpdateData, ThrowOnError>
-): RequestResult<
-  V1PermissionUpdateResponses,
-  V1PermissionUpdateErrors,
-  ThrowOnError
-> =>
-  (options.client ?? client).patch<
-    V1PermissionUpdateResponses,
-    V1PermissionUpdateErrors,
-    ThrowOnError
-  >({
-    security: [{ scheme: "bearer", type: "http" }],
-    url: "/v1/permissions/{id}",
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-  });
-
-/**
- * Get permissions for a resource
- *
- * Get all permissions the caller have for a given resource.
+ * Returns the caller's effective actions on the given resource.
  */
 export const v1PermissionResourceGet = <ThrowOnError extends boolean = false>(
   options: Options<V1PermissionResourceGetData, ThrowOnError>
@@ -2328,50 +2367,6 @@ export const v1PermissionResourceGet = <ThrowOnError extends boolean = false>(
   >({
     security: [{ scheme: "bearer", type: "http" }],
     url: "/v1/permissions/resources/{resourceId}",
-    ...options,
-  });
-
-/**
- * Check relations to resource
- *
- * Check if the caller has any relations to a given resource.
- */
-export const v1PermissionHasRelations = <ThrowOnError extends boolean = false>(
-  options: Options<V1PermissionHasRelationsData, ThrowOnError>
-): RequestResult<
-  V1PermissionHasRelationsResponses,
-  V1PermissionHasRelationsErrors,
-  ThrowOnError
-> =>
-  (options.client ?? client).get<
-    V1PermissionHasRelationsResponses,
-    V1PermissionHasRelationsErrors,
-    ThrowOnError
-  >({
-    security: [{ scheme: "bearer", type: "http" }],
-    url: "/v1/permissions/has-relations/{resourceId}",
-    ...options,
-  });
-
-/**
- * Check system role assignment
- *
- * Check if the user is member of one or more system roles.
- */
-export const v1PermissionHasSystemRole = <ThrowOnError extends boolean = false>(
-  options: Options<V1PermissionHasSystemRoleData, ThrowOnError>
-): RequestResult<
-  V1PermissionHasSystemRoleResponses,
-  V1PermissionHasSystemRoleErrors,
-  ThrowOnError
-> =>
-  (options.client ?? client).get<
-    V1PermissionHasSystemRoleResponses,
-    V1PermissionHasSystemRoleErrors,
-    ThrowOnError
-  >({
-    security: [{ scheme: "bearer", type: "http" }],
-    url: "/v1/permissions/has-system-role",
     ...options,
   });
 

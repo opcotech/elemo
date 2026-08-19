@@ -217,6 +217,59 @@ export type Namespace = {
 };
 
 /**
+ * PartialOrganization
+ *
+ * Owning organization stub returned with a reachable namespace.
+ */
+export type PartialOrganization = {
+  /**
+   * Unique identifier of the organization.
+   */
+  id: string;
+  /**
+   * Name of the organization.
+   */
+  name: string;
+};
+
+/**
+ * AccessibleNamespace
+ *
+ * A reachable namespace with its owning organization stub.
+ */
+export type AccessibleNamespace = {
+  /**
+   * Unique identifier of the namespace.
+   */
+  id: string;
+  /**
+   * Name of the namespace.
+   */
+  name: string;
+  /**
+   * Description of the namespace.
+   */
+  description?: string | null;
+  /**
+   * Number of projects in the namespace when projected.
+   */
+  project_count?: number | null;
+  /**
+   * Number of documents in the namespace when projected.
+   */
+  document_count?: number | null;
+  /**
+   * Date when the namespace was created.
+   */
+  created_at: string;
+  /**
+   * Date when the namespace was updated.
+   */
+  updated_at: string | null;
+  organization: PartialOrganization;
+};
+
+/**
  * PageInfo
  *
  * Cursor pagination metadata for a page of results.
@@ -277,6 +330,14 @@ export type NamespacePage = {
 };
 
 /**
+ * AccessibleNamespacePage
+ */
+export type AccessibleNamespacePage = {
+  items: Array<AccessibleNamespace>;
+  page_info: PageInfo;
+};
+
+/**
  * UserPage
  */
 export type UserPage = {
@@ -305,6 +366,14 @@ export type NotificationPage = {
  */
 export type RolePage = {
   items: Array<Role>;
+  page_info: PageInfo;
+};
+
+/**
+ * TeamPage
+ */
+export type TeamPage = {
+  items: Array<Team>;
   page_info: PageInfo;
 };
 
@@ -1322,52 +1391,83 @@ export type Language =
   | "zu";
 
 /**
- * Permission
+ * Action
  *
- * A permission in the system.
+ * Fine-grained authorization action. Exact match only; wildcards are not supported.
+ *
+ * Registry: organization.create, organization.read, organization.update, organization.delete, organization.members.manage, namespace.create, namespace.read, namespace.update, namespace.delete, project.create, project.read, project.update, project.delete, project.members.manage, issue.create, issue.read, issue.update, issue.delete, issue.assign, document.create, document.read, document.update, document.delete, folder.create, role.manage, team.manage, permission.manage.
+ *
  */
-export type Permission = {
+export type Action = string;
+
+/**
+ * Grant
+ *
+ * A scoped ReBAC grant that binds a principal to actions on a resource.
+ */
+export type Grant = {
   /**
-   * Unique identifier of the user.
+   * Unique identifier of the grant.
    */
   id: string;
-  kind: PermissionKind;
-  subject: string;
   /**
-   * Resource ID.
+   * ID of the principal that holds the grant.
    */
-  target: string;
+  principal: string;
+  principal_type: ResourceType;
   /**
-   * Resource type of the target resource.
+   * ID of the resource the grant applies to.
    */
-  target_type: string;
+  scope: string;
+  scope_type: ResourceType;
   /**
-   * Date when the user was created.
+   * ID of the role whose actions are included in this grant.
+   */
+  role_id: string | null;
+  /**
+   * Actions granted on the scope.
+   */
+  actions: Array<Action>;
+  /**
+   * Date when the grant was created.
    */
   created_at: string;
   /**
-   * Date when the user was updated.
+   * Date when the grant was updated.
    */
   updated_at: string | null;
 };
 
 /**
- * PermissionKind
+ * EffectiveActions
  *
- * Kind of a permission.
+ * Actions the caller can perform on a resource after ReBAC evaluation.
  */
-export type PermissionKind = "*" | "create" | "write" | "read" | "delete";
+export type EffectiveActions = {
+  actions: Array<Action>;
+};
+
+/**
+ * GrantPrincipalType
+ *
+ * Principal kinds that can hold grants.
+ */
+export type GrantPrincipalType = "User" | "Team" | "Organization";
 
 /**
  * Role
  *
- * A role in the system.
+ * A role bundle of actions that can be granted on a scope.
  */
 export type Role = {
   /**
    * Unique identifier of the role.
    */
   id: string;
+  /**
+   * Stable role template key.
+   */
+  key: string;
   /**
    * Name of the role.
    */
@@ -1381,15 +1481,47 @@ export type Role = {
    */
   member_count?: number | null;
   /**
-   * IDs of the permissions assigned to the role.
+   * Actions bundled by this role.
    */
-  permissions: Array<string>;
+  actions: Array<Action>;
   /**
-   * Date when the organization was created.
+   * Date when the role was created.
    */
   created_at: string;
   /**
-   * Date when the organization was updated.
+   * Date when the role was updated.
+   */
+  updated_at: string | null;
+};
+
+/**
+ * Team
+ *
+ * A team of users that belongs to an organization.
+ */
+export type Team = {
+  /**
+   * Unique identifier of the team.
+   */
+  id: string;
+  /**
+   * Name of the team.
+   */
+  name: string;
+  /**
+   * Description of the team.
+   */
+  description?: string | null;
+  /**
+   * Number of users in the team when projected.
+   */
+  member_count?: number | null;
+  /**
+   * Date when the team was created.
+   */
+  created_at: string;
+  /**
+   * Date when the team was updated.
    */
   updated_at: string | null;
 };
@@ -1406,14 +1538,18 @@ export type ResourceType =
   | "IssueRelation"
   | "Label"
   | "Namespace"
+  | "Notification"
   | "Organization"
   | "Permission"
   | "Project"
   | "ResourceType"
   | "Role"
+  | "Team"
   | "Todo"
   | "User"
-  | "Folder";
+  | "UserToken"
+  | "Folder"
+  | "Installation";
 
 /**
  * Deprecated. Use page_token/page_size instead.
@@ -1488,11 +1624,6 @@ export type UserEmail = string;
  * Irreversibly delete the user.
  */
 export type Force = boolean;
-
-/**
- * ID of a role.
- */
-export type Roles = Array<"Owner" | "Admin" | "Support">;
 
 export type UserPatch = {
   /**
@@ -1927,23 +2058,39 @@ export type IssueRelationPatch = {
   kind: IssueRelationKind;
 };
 
-export type PermissionCreate = {
-  kind: PermissionKind;
-  subject: {
+/**
+ * Create a grant. Either role_id or a non-empty actions array is required.
+ */
+export type GrantCreate = {
+  /**
+   * Principal that receives the grant. Must be User, Team, or Organization.
+   */
+  principal: {
+    resourceType: GrantPrincipalType;
+    id: string;
+  };
+  /**
+   * Resource the grant applies to.
+   */
+  scope: {
     resourceType: ResourceType;
     id: string;
   };
-  target: {
-    resourceType: ResourceType;
-    id: string;
-  };
-};
-
-export type PermissionPatch = {
-  kind: PermissionKind;
+  /**
+   * Optional role whose bundled actions are granted on the scope.
+   */
+  role_id?: string;
+  /**
+   * Optional explicit actions granted on the scope.
+   */
+  actions?: Array<Action>;
 };
 
 export type RoleCreate = {
+  /**
+   * Stable role template key.
+   */
+  key?: string;
   /**
    * Name of the role.
    */
@@ -1952,6 +2099,10 @@ export type RoleCreate = {
    * Description of the role.
    */
   description?: string;
+  /**
+   * Actions bundled by this role.
+   */
+  actions?: Array<Action>;
 };
 
 export type RolePatch = {
@@ -1963,14 +2114,32 @@ export type RolePatch = {
    * Description of the role.
    */
   description?: string | null;
+  /**
+   * Actions bundled by this role. Empty array clears actions.
+   */
+  actions?: Array<Action>;
 };
 
-export type RolePermissionCreate = {
+export type TeamCreate = {
   /**
-   * Resource ID string in the format "ResourceType:id" or "ResourceType:00000000000000000000" for system-level permissions.
+   * Name of the team.
    */
-  target: string;
-  kind: PermissionKind;
+  name: string;
+  /**
+   * Description of the team.
+   */
+  description?: string;
+};
+
+export type TeamPatch = {
+  /**
+   * Name of the team.
+   */
+  name?: string;
+  /**
+   * Description of the team.
+   */
+  description?: string | null;
 };
 
 export type V1UsersGetData = {
@@ -3658,17 +3827,13 @@ export type V1OrganizationRoleUpdateResponses = {
 export type V1OrganizationRoleUpdateResponse =
   V1OrganizationRoleUpdateResponses[keyof V1OrganizationRoleUpdateResponses];
 
-export type V1OrganizationRoleMembersGetData = {
+export type V1OrganizationTeamsGetData = {
   body?: never;
   path: {
     /**
      * ID of the resource.
      */
     id: string;
-    /**
-     * ID of the role.
-     */
-    role_id: string;
   };
   query?: {
     /**
@@ -3680,10 +3845,10 @@ export type V1OrganizationRoleMembersGetData = {
      */
     page_token?: string;
   };
-  url: "/v1/organizations/{id}/roles/{role_id}/members";
+  url: "/v1/organizations/{id}/teams";
 };
 
-export type V1OrganizationRoleMembersGetErrors = {
+export type V1OrganizationTeamsGetErrors = {
   /**
    * Bad request
    */
@@ -3706,20 +3871,290 @@ export type V1OrganizationRoleMembersGetErrors = {
   500: HttpError;
 };
 
-export type V1OrganizationRoleMembersGetError =
-  V1OrganizationRoleMembersGetErrors[keyof V1OrganizationRoleMembersGetErrors];
+export type V1OrganizationTeamsGetError =
+  V1OrganizationTeamsGetErrors[keyof V1OrganizationTeamsGetErrors];
 
-export type V1OrganizationRoleMembersGetResponses = {
+export type V1OrganizationTeamsGetResponses = {
+  /**
+   * OK
+   */
+  200: TeamPage;
+};
+
+export type V1OrganizationTeamsGetResponse =
+  V1OrganizationTeamsGetResponses[keyof V1OrganizationTeamsGetResponses];
+
+export type V1OrganizationTeamsCreateData = {
+  body?: TeamCreate;
+  path: {
+    /**
+     * ID of the resource.
+     */
+    id: string;
+  };
+  query?: never;
+  url: "/v1/organizations/{id}/teams";
+};
+
+export type V1OrganizationTeamsCreateErrors = {
+  /**
+   * Bad request
+   */
+  400: HttpError;
+  /**
+   * Unauthorized request
+   */
+  401: HttpError;
+  /**
+   * Forbidden
+   */
+  403: HttpError;
+  /**
+   * The requested resource not found
+   */
+  404: HttpError;
+  /**
+   * Internal Server Error
+   */
+  500: HttpError;
+};
+
+export type V1OrganizationTeamsCreateError =
+  V1OrganizationTeamsCreateErrors[keyof V1OrganizationTeamsCreateErrors];
+
+export type V1OrganizationTeamsCreateResponses = {
+  /**
+   * Example response
+   */
+  201: {
+    /**
+     * ID of the newly created resource.
+     */
+    id: string;
+  };
+};
+
+export type V1OrganizationTeamsCreateResponse =
+  V1OrganizationTeamsCreateResponses[keyof V1OrganizationTeamsCreateResponses];
+
+export type V1OrganizationTeamDeleteData = {
+  body?: never;
+  path: {
+    /**
+     * ID of the resource.
+     */
+    id: string;
+    /**
+     * ID of the team.
+     */
+    team_id: string;
+  };
+  query?: never;
+  url: "/v1/organizations/{id}/teams/{team_id}";
+};
+
+export type V1OrganizationTeamDeleteErrors = {
+  /**
+   * Bad request
+   */
+  400: HttpError;
+  /**
+   * Unauthorized request
+   */
+  401: HttpError;
+  /**
+   * Forbidden
+   */
+  403: HttpError;
+  /**
+   * The requested resource not found
+   */
+  404: HttpError;
+  /**
+   * Internal Server Error
+   */
+  500: HttpError;
+};
+
+export type V1OrganizationTeamDeleteError =
+  V1OrganizationTeamDeleteErrors[keyof V1OrganizationTeamDeleteErrors];
+
+export type V1OrganizationTeamDeleteResponses = {
+  /**
+   * No Content
+   */
+  204: void;
+};
+
+export type V1OrganizationTeamDeleteResponse =
+  V1OrganizationTeamDeleteResponses[keyof V1OrganizationTeamDeleteResponses];
+
+export type V1OrganizationTeamGetData = {
+  body?: never;
+  path: {
+    /**
+     * ID of the resource.
+     */
+    id: string;
+    /**
+     * ID of the team.
+     */
+    team_id: string;
+  };
+  query?: never;
+  url: "/v1/organizations/{id}/teams/{team_id}";
+};
+
+export type V1OrganizationTeamGetErrors = {
+  /**
+   * Bad request
+   */
+  400: HttpError;
+  /**
+   * Unauthorized request
+   */
+  401: HttpError;
+  /**
+   * Forbidden
+   */
+  403: HttpError;
+  /**
+   * The requested resource not found
+   */
+  404: HttpError;
+  /**
+   * Internal Server Error
+   */
+  500: HttpError;
+};
+
+export type V1OrganizationTeamGetError =
+  V1OrganizationTeamGetErrors[keyof V1OrganizationTeamGetErrors];
+
+export type V1OrganizationTeamGetResponses = {
+  /**
+   * OK
+   */
+  200: Team;
+};
+
+export type V1OrganizationTeamGetResponse =
+  V1OrganizationTeamGetResponses[keyof V1OrganizationTeamGetResponses];
+
+export type V1OrganizationTeamUpdateData = {
+  body?: TeamPatch;
+  path: {
+    /**
+     * ID of the resource.
+     */
+    id: string;
+    /**
+     * ID of the team.
+     */
+    team_id: string;
+  };
+  query?: never;
+  url: "/v1/organizations/{id}/teams/{team_id}";
+};
+
+export type V1OrganizationTeamUpdateErrors = {
+  /**
+   * Bad request
+   */
+  400: HttpError;
+  /**
+   * Unauthorized request
+   */
+  401: HttpError;
+  /**
+   * Forbidden
+   */
+  403: HttpError;
+  /**
+   * The requested resource not found
+   */
+  404: HttpError;
+  /**
+   * Internal Server Error
+   */
+  500: HttpError;
+};
+
+export type V1OrganizationTeamUpdateError =
+  V1OrganizationTeamUpdateErrors[keyof V1OrganizationTeamUpdateErrors];
+
+export type V1OrganizationTeamUpdateResponses = {
+  /**
+   * OK
+   */
+  200: Team;
+};
+
+export type V1OrganizationTeamUpdateResponse =
+  V1OrganizationTeamUpdateResponses[keyof V1OrganizationTeamUpdateResponses];
+
+export type V1OrganizationTeamMembersGetData = {
+  body?: never;
+  path: {
+    /**
+     * ID of the resource.
+     */
+    id: string;
+    /**
+     * ID of the team.
+     */
+    team_id: string;
+  };
+  query?: {
+    /**
+     * Maximum number of items to return.
+     */
+    page_size?: number;
+    /**
+     * Opaque continuation token from a previous page_info.next_page_token.
+     */
+    page_token?: string;
+  };
+  url: "/v1/organizations/{id}/teams/{team_id}/members";
+};
+
+export type V1OrganizationTeamMembersGetErrors = {
+  /**
+   * Bad request
+   */
+  400: HttpError;
+  /**
+   * Unauthorized request
+   */
+  401: HttpError;
+  /**
+   * Forbidden
+   */
+  403: HttpError;
+  /**
+   * The requested resource not found
+   */
+  404: HttpError;
+  /**
+   * Internal Server Error
+   */
+  500: HttpError;
+};
+
+export type V1OrganizationTeamMembersGetError =
+  V1OrganizationTeamMembersGetErrors[keyof V1OrganizationTeamMembersGetErrors];
+
+export type V1OrganizationTeamMembersGetResponses = {
   /**
    * OK
    */
   200: UserPage;
 };
 
-export type V1OrganizationRoleMembersGetResponse =
-  V1OrganizationRoleMembersGetResponses[keyof V1OrganizationRoleMembersGetResponses];
+export type V1OrganizationTeamMembersGetResponse =
+  V1OrganizationTeamMembersGetResponses[keyof V1OrganizationTeamMembersGetResponses];
 
-export type V1OrganizationRoleMembersAddData = {
+export type V1OrganizationTeamMembersAddData = {
   body?: {
     /**
      * ID of the user to add.
@@ -3732,15 +4167,15 @@ export type V1OrganizationRoleMembersAddData = {
      */
     id: string;
     /**
-     * ID of the role.
+     * ID of the team.
      */
-    role_id: string;
+    team_id: string;
   };
   query?: never;
-  url: "/v1/organizations/{id}/roles/{role_id}/members";
+  url: "/v1/organizations/{id}/teams/{team_id}/members";
 };
 
-export type V1OrganizationRoleMembersAddErrors = {
+export type V1OrganizationTeamMembersAddErrors = {
   /**
    * Bad request
    */
@@ -3763,10 +4198,10 @@ export type V1OrganizationRoleMembersAddErrors = {
   500: HttpError;
 };
 
-export type V1OrganizationRoleMembersAddError =
-  V1OrganizationRoleMembersAddErrors[keyof V1OrganizationRoleMembersAddErrors];
+export type V1OrganizationTeamMembersAddError =
+  V1OrganizationTeamMembersAddErrors[keyof V1OrganizationTeamMembersAddErrors];
 
-export type V1OrganizationRoleMembersAddResponses = {
+export type V1OrganizationTeamMembersAddResponses = {
   /**
    * Example response
    */
@@ -3778,10 +4213,10 @@ export type V1OrganizationRoleMembersAddResponses = {
   };
 };
 
-export type V1OrganizationRoleMembersAddResponse =
-  V1OrganizationRoleMembersAddResponses[keyof V1OrganizationRoleMembersAddResponses];
+export type V1OrganizationTeamMembersAddResponse =
+  V1OrganizationTeamMembersAddResponses[keyof V1OrganizationTeamMembersAddResponses];
 
-export type V1OrganizationRoleMemberRemoveData = {
+export type V1OrganizationTeamMemberRemoveData = {
   body?: never;
   path: {
     /**
@@ -3789,19 +4224,19 @@ export type V1OrganizationRoleMemberRemoveData = {
      */
     id: string;
     /**
-     * ID of the role.
+     * ID of the team.
      */
-    role_id: string;
+    team_id: string;
     /**
      * ID of the user.
      */
     user_id: string;
   };
   query?: never;
-  url: "/v1/organizations/{id}/roles/{role_id}/members/{user_id}";
+  url: "/v1/organizations/{id}/teams/{team_id}/members/{user_id}";
 };
 
-export type V1OrganizationRoleMemberRemoveErrors = {
+export type V1OrganizationTeamMemberRemoveErrors = {
   /**
    * Bad request
    */
@@ -3824,183 +4259,18 @@ export type V1OrganizationRoleMemberRemoveErrors = {
   500: HttpError;
 };
 
-export type V1OrganizationRoleMemberRemoveError =
-  V1OrganizationRoleMemberRemoveErrors[keyof V1OrganizationRoleMemberRemoveErrors];
+export type V1OrganizationTeamMemberRemoveError =
+  V1OrganizationTeamMemberRemoveErrors[keyof V1OrganizationTeamMemberRemoveErrors];
 
-export type V1OrganizationRoleMemberRemoveResponses = {
+export type V1OrganizationTeamMemberRemoveResponses = {
   /**
    * No Content
    */
   204: void;
 };
 
-export type V1OrganizationRoleMemberRemoveResponse =
-  V1OrganizationRoleMemberRemoveResponses[keyof V1OrganizationRoleMemberRemoveResponses];
-
-export type V1OrganizationRolePermissionsGetData = {
-  body?: never;
-  path: {
-    /**
-     * ID of the resource.
-     */
-    id: string;
-    /**
-     * ID of the role.
-     */
-    role_id: string;
-  };
-  query?: never;
-  url: "/v1/organizations/{id}/roles/{role_id}/permissions";
-};
-
-export type V1OrganizationRolePermissionsGetErrors = {
-  /**
-   * Bad request
-   */
-  400: HttpError;
-  /**
-   * Unauthorized request
-   */
-  401: HttpError;
-  /**
-   * Forbidden
-   */
-  403: HttpError;
-  /**
-   * The requested resource not found
-   */
-  404: HttpError;
-  /**
-   * Internal Server Error
-   */
-  500: HttpError;
-};
-
-export type V1OrganizationRolePermissionsGetError =
-  V1OrganizationRolePermissionsGetErrors[keyof V1OrganizationRolePermissionsGetErrors];
-
-export type V1OrganizationRolePermissionsGetResponses = {
-  /**
-   * OK
-   */
-  200: Array<Permission>;
-};
-
-export type V1OrganizationRolePermissionsGetResponse =
-  V1OrganizationRolePermissionsGetResponses[keyof V1OrganizationRolePermissionsGetResponses];
-
-export type V1OrganizationRolePermissionAddData = {
-  body?: RolePermissionCreate;
-  path: {
-    /**
-     * ID of the resource.
-     */
-    id: string;
-    /**
-     * ID of the role.
-     */
-    role_id: string;
-  };
-  query?: never;
-  url: "/v1/organizations/{id}/roles/{role_id}/permissions";
-};
-
-export type V1OrganizationRolePermissionAddErrors = {
-  /**
-   * Bad request
-   */
-  400: HttpError;
-  /**
-   * Unauthorized request
-   */
-  401: HttpError;
-  /**
-   * Forbidden
-   */
-  403: HttpError;
-  /**
-   * The requested resource not found
-   */
-  404: HttpError;
-  /**
-   * Internal Server Error
-   */
-  500: HttpError;
-};
-
-export type V1OrganizationRolePermissionAddError =
-  V1OrganizationRolePermissionAddErrors[keyof V1OrganizationRolePermissionAddErrors];
-
-export type V1OrganizationRolePermissionAddResponses = {
-  /**
-   * Example response
-   */
-  201: {
-    /**
-     * ID of the newly created resource.
-     */
-    id: string;
-  };
-};
-
-export type V1OrganizationRolePermissionAddResponse =
-  V1OrganizationRolePermissionAddResponses[keyof V1OrganizationRolePermissionAddResponses];
-
-export type V1OrganizationRolePermissionRemoveData = {
-  body?: never;
-  path: {
-    /**
-     * ID of the resource.
-     */
-    id: string;
-    /**
-     * ID of the role.
-     */
-    role_id: string;
-    /**
-     * ID of the permission.
-     */
-    permission_id: string;
-  };
-  query?: never;
-  url: "/v1/organizations/{id}/roles/{role_id}/permissions/{permission_id}";
-};
-
-export type V1OrganizationRolePermissionRemoveErrors = {
-  /**
-   * Bad request
-   */
-  400: HttpError;
-  /**
-   * Unauthorized request
-   */
-  401: HttpError;
-  /**
-   * Forbidden
-   */
-  403: HttpError;
-  /**
-   * The requested resource not found
-   */
-  404: HttpError;
-  /**
-   * Internal Server Error
-   */
-  500: HttpError;
-};
-
-export type V1OrganizationRolePermissionRemoveError =
-  V1OrganizationRolePermissionRemoveErrors[keyof V1OrganizationRolePermissionRemoveErrors];
-
-export type V1OrganizationRolePermissionRemoveResponses = {
-  /**
-   * No Content
-   */
-  204: void;
-};
-
-export type V1OrganizationRolePermissionRemoveResponse =
-  V1OrganizationRolePermissionRemoveResponses[keyof V1OrganizationRolePermissionRemoveResponses];
+export type V1OrganizationTeamMemberRemoveResponse =
+  V1OrganizationTeamMemberRemoveResponses[keyof V1OrganizationTeamMemberRemoveResponses];
 
 export type V1OrganizationsNamespacesGetData = {
   body?: never;
@@ -4333,6 +4603,50 @@ export type V1OrganizationsFoldersCreateResponses = {
 
 export type V1OrganizationsFoldersCreateResponse =
   V1OrganizationsFoldersCreateResponses[keyof V1OrganizationsFoldersCreateResponses];
+
+export type V1NamespacesGetData = {
+  body?: never;
+  path?: never;
+  query?: {
+    /**
+     * Maximum number of items to return.
+     */
+    page_size?: number;
+    /**
+     * Opaque continuation token from a previous page_info.next_page_token.
+     */
+    page_token?: string;
+  };
+  url: "/v1/namespaces";
+};
+
+export type V1NamespacesGetErrors = {
+  /**
+   * Bad request
+   */
+  400: HttpError;
+  /**
+   * Unauthorized request
+   */
+  401: HttpError;
+  /**
+   * Internal Server Error
+   */
+  500: HttpError;
+};
+
+export type V1NamespacesGetError =
+  V1NamespacesGetErrors[keyof V1NamespacesGetErrors];
+
+export type V1NamespacesGetResponses = {
+  /**
+   * OK
+   */
+  200: AccessibleNamespacePage;
+};
+
+export type V1NamespacesGetResponse =
+  V1NamespacesGetResponses[keyof V1NamespacesGetResponses];
 
 export type V1NamespaceDeleteData = {
   body?: never;
@@ -6221,7 +6535,7 @@ export type V1IssueRelationUpdateResponse =
   V1IssueRelationUpdateResponses[keyof V1IssueRelationUpdateResponses];
 
 export type V1PermissionsCreateData = {
-  body?: PermissionCreate;
+  body?: GrantCreate;
   path?: never;
   query?: never;
   url: "/v1/permissions";
@@ -6350,59 +6664,11 @@ export type V1PermissionGetResponses = {
   /**
    * OK
    */
-  200: Permission;
+  200: Grant;
 };
 
 export type V1PermissionGetResponse =
   V1PermissionGetResponses[keyof V1PermissionGetResponses];
-
-export type V1PermissionUpdateData = {
-  body?: PermissionPatch;
-  path: {
-    /**
-     * ID of the resource.
-     */
-    id: string;
-  };
-  query?: never;
-  url: "/v1/permissions/{id}";
-};
-
-export type V1PermissionUpdateErrors = {
-  /**
-   * Bad request
-   */
-  400: HttpError;
-  /**
-   * Unauthorized request
-   */
-  401: HttpError;
-  /**
-   * Forbidden
-   */
-  403: HttpError;
-  /**
-   * The requested resource not found
-   */
-  404: HttpError;
-  /**
-   * Internal Server Error
-   */
-  500: HttpError;
-};
-
-export type V1PermissionUpdateError =
-  V1PermissionUpdateErrors[keyof V1PermissionUpdateErrors];
-
-export type V1PermissionUpdateResponses = {
-  /**
-   * OK
-   */
-  200: Permission;
-};
-
-export type V1PermissionUpdateResponse =
-  V1PermissionUpdateResponses[keyof V1PermissionUpdateResponses];
 
 export type V1PermissionResourceGetData = {
   body?: never;
@@ -6446,95 +6712,11 @@ export type V1PermissionResourceGetResponses = {
   /**
    * OK
    */
-  200: Array<Permission>;
+  200: EffectiveActions;
 };
 
 export type V1PermissionResourceGetResponse =
   V1PermissionResourceGetResponses[keyof V1PermissionResourceGetResponses];
-
-export type V1PermissionHasRelationsData = {
-  body?: never;
-  path: {
-    /**
-     * ID of the resource combined with its resource type.
-     */
-    resourceId: string;
-  };
-  query?: never;
-  url: "/v1/permissions/has-relations/{resourceId}";
-};
-
-export type V1PermissionHasRelationsErrors = {
-  /**
-   * Bad request
-   */
-  400: HttpError;
-  /**
-   * Unauthorized request
-   */
-  401: HttpError;
-  /**
-   * The requested resource not found
-   */
-  404: HttpError;
-  /**
-   * Internal Server Error
-   */
-  500: HttpError;
-};
-
-export type V1PermissionHasRelationsError =
-  V1PermissionHasRelationsErrors[keyof V1PermissionHasRelationsErrors];
-
-export type V1PermissionHasRelationsResponses = {
-  /**
-   * OK
-   */
-  200: boolean;
-};
-
-export type V1PermissionHasRelationsResponse =
-  V1PermissionHasRelationsResponses[keyof V1PermissionHasRelationsResponses];
-
-export type V1PermissionHasSystemRoleData = {
-  body?: never;
-  path?: never;
-  query: {
-    /**
-     * ID of a role.
-     */
-    roles: Array<"Owner" | "Admin" | "Support">;
-  };
-  url: "/v1/permissions/has-system-role";
-};
-
-export type V1PermissionHasSystemRoleErrors = {
-  /**
-   * Bad request
-   */
-  400: HttpError;
-  /**
-   * Unauthorized request
-   */
-  401: HttpError;
-  /**
-   * Internal Server Error
-   */
-  500: HttpError;
-};
-
-export type V1PermissionHasSystemRoleError =
-  V1PermissionHasSystemRoleErrors[keyof V1PermissionHasSystemRoleErrors];
-
-export type V1PermissionHasSystemRoleResponses = {
-  /**
-   * OK
-   */
-  200: boolean;
-};
-
-export type V1PermissionHasSystemRoleResponse =
-  V1PermissionHasSystemRoleResponses[keyof V1PermissionHasSystemRoleResponses];
 
 export type V1SystemHealthData = {
   body?: never;

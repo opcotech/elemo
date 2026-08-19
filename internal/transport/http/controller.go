@@ -129,6 +129,19 @@ func WithRoleService(roleService service.RoleService) ControllerOption {
 	}
 }
 
+// WithTeamService sets the team service for the controller.
+func WithTeamService(teamService service.TeamService) ControllerOption {
+	return func(c *baseController) error {
+		if teamService == nil {
+			return ErrNoTeamService
+		}
+
+		c.teamService = teamService
+
+		return nil
+	}
+}
+
 // WithUserService sets the user service for the controller.
 func WithUserService(userService service.UserService) ControllerOption {
 	return func(c *baseController) error {
@@ -276,6 +289,7 @@ type baseController struct {
 	folderService       service.FolderService
 	labelService        service.LabelService
 	roleService         service.RoleService
+	teamService         service.TeamService
 	userService         service.UserService
 	emailService        service.EmailService
 	todoService         service.TodoService

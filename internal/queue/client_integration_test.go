@@ -1,3 +1,5 @@
+//go:build integration
+
 package queue_test
 
 import (

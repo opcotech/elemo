@@ -4,7 +4,6 @@ import { redirect } from "@tanstack/react-router";
 import { can } from "./permissions";
 import type { ResourceType } from "./permissions";
 
-import type { PermissionKind } from "@/lib/api/types";
 import { loadResourcePermissions } from "@/lib/entity-context";
 
 export async function redirectIfAuthenticated() {
@@ -19,12 +18,12 @@ export async function redirectIfAuthenticated() {
 export async function requirePermissionBeforeLoad({
   queryClient,
   resourceType,
-  permissionKind,
+  action,
   resourceId,
 }: {
   queryClient: QueryClient;
   resourceType: ResourceType;
-  permissionKind: PermissionKind;
+  action: string;
   resourceId?: string;
 }) {
   const permissions = await loadResourcePermissions(
@@ -33,7 +32,7 @@ export async function requirePermissionBeforeLoad({
     resourceId
   );
 
-  if (!can(permissions, permissionKind)) {
+  if (!can(permissions, action)) {
     throw redirect({
       to: "/permission-denied",
     });

@@ -1,39 +1,47 @@
 import { describe, expect, it } from "vitest";
 
-import { ResourceType, can, withResourceType } from "./permissions";
+import { Action, ResourceType, can, withResourceType } from "./permissions";
 
-import type { Permission, PermissionKind } from "@/lib/api/types";
 import { SYSTEM_NIL_ID } from "@/lib/utils";
 
-function permission(kind: PermissionKind): Permission {
-  return { kind } as Permission;
-}
-
 describe("permission checks", () => {
-  it("rejects missing and empty permission sets", () => {
-    expect(can(undefined, "read")).toBe(false);
-    expect(can([], "read")).toBe(false);
+  it("rejects missing and empty action sets", () => {
+    expect(can(undefined, Action.OrganizationRead)).toBe(false);
+    expect(can([], Action.OrganizationRead)).toBe(false);
+    expect(can({ actions: [] }, Action.OrganizationRead)).toBe(false);
   });
 
-  it("accepts exact and wildcard grants", () => {
-    expect(can([permission("delete")], "delete")).toBe(true);
-    expect(can([permission("*")], "delete")).toBe(true);
+  it("accepts exact action matches only", () => {
+    expect(
+      can({ actions: [Action.OrganizationDelete] }, Action.OrganizationDelete)
+    ).toBe(true);
+    expect(can([Action.OrganizationDelete], Action.OrganizationDelete)).toBe(
+      true
+    );
+    expect(
+      can({ actions: [Action.OrganizationRead] }, Action.OrganizationDelete)
+    ).toBe(false);
   });
 
-  it("lets write imply read without implying other actions", () => {
-    const permissions = [permission("write")];
+  it("does not treat * as allow-all", () => {
+    expect(can({ actions: ["*"] }, Action.OrganizationDelete)).toBe(false);
+    expect(can(["*"], Action.OrganizationRead)).toBe(false);
+  });
 
-    expect(can(permissions, "read")).toBe(true);
-    expect(can(permissions, "delete")).toBe(false);
-    expect(can([permission("read")], "write")).toBe(false);
+  it("does not let write imply read", () => {
+    const permissions = { actions: [Action.OrganizationUpdate] };
+
+    expect(can(permissions, Action.OrganizationRead)).toBe(false);
+    expect(can(permissions, Action.OrganizationDelete)).toBe(false);
+    expect(can(permissions, Action.OrganizationUpdate)).toBe(true);
   });
 
   it("builds resource keys with explicit and system identifiers", () => {
     expect(withResourceType(ResourceType.Project, "project-1")).toBe(
       "Project:project-1"
     );
-    expect(withResourceType(ResourceType.Organization)).toBe(
-      `Organization:${SYSTEM_NIL_ID}`
+    expect(withResourceType(ResourceType.Installation)).toBe(
+      `Installation:${SYSTEM_NIL_ID}`
     );
   });
 });

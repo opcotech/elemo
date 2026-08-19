@@ -29,6 +29,7 @@ import {
   v1NamespacesDocumentsGet,
   v1NamespacesFoldersCreate,
   v1NamespacesFoldersGet,
+  v1NamespacesGet,
   v1NamespacesIssuesGet,
   v1NamespacesIssuesKeyGet,
   v1NamespacesProjectsCreate,
@@ -48,12 +49,6 @@ import {
   v1OrganizationMembersInvite,
   v1OrganizationRoleDelete,
   v1OrganizationRoleGet,
-  v1OrganizationRoleMemberRemove,
-  v1OrganizationRoleMembersAdd,
-  v1OrganizationRoleMembersGet,
-  v1OrganizationRolePermissionAdd,
-  v1OrganizationRolePermissionRemove,
-  v1OrganizationRolePermissionsGet,
   v1OrganizationRolesCreate,
   v1OrganizationRolesGet,
   v1OrganizationRoleUpdate,
@@ -65,14 +60,19 @@ import {
   v1OrganizationsGet,
   v1OrganizationsNamespacesCreate,
   v1OrganizationsNamespacesGet,
+  v1OrganizationTeamDelete,
+  v1OrganizationTeamGet,
+  v1OrganizationTeamMemberRemove,
+  v1OrganizationTeamMembersAdd,
+  v1OrganizationTeamMembersGet,
+  v1OrganizationTeamsCreate,
+  v1OrganizationTeamsGet,
+  v1OrganizationTeamUpdate,
   v1OrganizationUpdate,
   v1PermissionDelete,
   v1PermissionGet,
-  v1PermissionHasRelations,
-  v1PermissionHasSystemRole,
   v1PermissionResourceGet,
   v1PermissionsCreate,
-  v1PermissionUpdate,
   v1ProjectDelete,
   v1ProjectGet,
   v1ProjectsDocumentsCreate,
@@ -173,6 +173,9 @@ import type {
   V1NamespacesFoldersGetData,
   V1NamespacesFoldersGetError,
   V1NamespacesFoldersGetResponse,
+  V1NamespacesGetData,
+  V1NamespacesGetError,
+  V1NamespacesGetResponse,
   V1NamespacesIssuesGetData,
   V1NamespacesIssuesGetError,
   V1NamespacesIssuesGetResponse,
@@ -230,24 +233,6 @@ import type {
   V1OrganizationRoleGetData,
   V1OrganizationRoleGetError,
   V1OrganizationRoleGetResponse,
-  V1OrganizationRoleMemberRemoveData,
-  V1OrganizationRoleMemberRemoveError,
-  V1OrganizationRoleMemberRemoveResponse,
-  V1OrganizationRoleMembersAddData,
-  V1OrganizationRoleMembersAddError,
-  V1OrganizationRoleMembersAddResponse,
-  V1OrganizationRoleMembersGetData,
-  V1OrganizationRoleMembersGetError,
-  V1OrganizationRoleMembersGetResponse,
-  V1OrganizationRolePermissionAddData,
-  V1OrganizationRolePermissionAddError,
-  V1OrganizationRolePermissionAddResponse,
-  V1OrganizationRolePermissionRemoveData,
-  V1OrganizationRolePermissionRemoveError,
-  V1OrganizationRolePermissionRemoveResponse,
-  V1OrganizationRolePermissionsGetData,
-  V1OrganizationRolePermissionsGetError,
-  V1OrganizationRolePermissionsGetResponse,
   V1OrganizationRolesCreateData,
   V1OrganizationRolesCreateError,
   V1OrganizationRolesCreateResponse,
@@ -281,6 +266,30 @@ import type {
   V1OrganizationsNamespacesGetData,
   V1OrganizationsNamespacesGetError,
   V1OrganizationsNamespacesGetResponse,
+  V1OrganizationTeamDeleteData,
+  V1OrganizationTeamDeleteError,
+  V1OrganizationTeamDeleteResponse,
+  V1OrganizationTeamGetData,
+  V1OrganizationTeamGetError,
+  V1OrganizationTeamGetResponse,
+  V1OrganizationTeamMemberRemoveData,
+  V1OrganizationTeamMemberRemoveError,
+  V1OrganizationTeamMemberRemoveResponse,
+  V1OrganizationTeamMembersAddData,
+  V1OrganizationTeamMembersAddError,
+  V1OrganizationTeamMembersAddResponse,
+  V1OrganizationTeamMembersGetData,
+  V1OrganizationTeamMembersGetError,
+  V1OrganizationTeamMembersGetResponse,
+  V1OrganizationTeamsCreateData,
+  V1OrganizationTeamsCreateError,
+  V1OrganizationTeamsCreateResponse,
+  V1OrganizationTeamsGetData,
+  V1OrganizationTeamsGetError,
+  V1OrganizationTeamsGetResponse,
+  V1OrganizationTeamUpdateData,
+  V1OrganizationTeamUpdateError,
+  V1OrganizationTeamUpdateResponse,
   V1OrganizationUpdateData,
   V1OrganizationUpdateError,
   V1OrganizationUpdateResponse,
@@ -290,21 +299,12 @@ import type {
   V1PermissionGetData,
   V1PermissionGetError,
   V1PermissionGetResponse,
-  V1PermissionHasRelationsData,
-  V1PermissionHasRelationsError,
-  V1PermissionHasRelationsResponse,
-  V1PermissionHasSystemRoleData,
-  V1PermissionHasSystemRoleError,
-  V1PermissionHasSystemRoleResponse,
   V1PermissionResourceGetData,
   V1PermissionResourceGetError,
   V1PermissionResourceGetResponse,
   V1PermissionsCreateData,
   V1PermissionsCreateError,
   V1PermissionsCreateResponse,
-  V1PermissionUpdateData,
-  V1PermissionUpdateError,
-  V1PermissionUpdateResponse,
   V1ProjectDeleteData,
   V1ProjectDeleteError,
   V1ProjectDeleteResponse,
@@ -1409,26 +1409,26 @@ export const v1OrganizationRoleUpdateMutation = (
   return mutationOptions;
 };
 
-export const v1OrganizationRoleMembersGetQueryKey = (
-  options: Options<V1OrganizationRoleMembersGetData>
-) => createQueryKey("v1OrganizationRoleMembersGet", options);
+export const v1OrganizationTeamsGetQueryKey = (
+  options: Options<V1OrganizationTeamsGetData>
+) => createQueryKey("v1OrganizationTeamsGet", options);
 
 /**
- * Get organization role members
+ * Get organization teams
  *
- * Return a cursor-paginated page of users that are members of the organization's role.
+ * Return the teams that belong to the organization.
  */
-export const v1OrganizationRoleMembersGetOptions = (
-  options: Options<V1OrganizationRoleMembersGetData>
+export const v1OrganizationTeamsGetOptions = (
+  options: Options<V1OrganizationTeamsGetData>
 ) =>
   queryOptions<
-    V1OrganizationRoleMembersGetResponse,
-    V1OrganizationRoleMembersGetError,
-    V1OrganizationRoleMembersGetResponse,
-    ReturnType<typeof v1OrganizationRoleMembersGetQueryKey>
+    V1OrganizationTeamsGetResponse,
+    V1OrganizationTeamsGetError,
+    V1OrganizationTeamsGetResponse,
+    ReturnType<typeof v1OrganizationTeamsGetQueryKey>
   >({
     queryFn: async ({ queryKey, signal }) => {
-      const { data } = await v1OrganizationRoleMembersGet({
+      const { data } = await v1OrganizationTeamsGet({
         ...options,
         ...queryKey[0],
         signal,
@@ -1436,28 +1436,28 @@ export const v1OrganizationRoleMembersGetOptions = (
       });
       return data;
     },
-    queryKey: v1OrganizationRoleMembersGetQueryKey(options),
+    queryKey: v1OrganizationTeamsGetQueryKey(options),
   });
 
 /**
- * Add organization role member
+ * Create a new team in the organization
  *
- * Add an existing user to an organization's role.
+ * Create a new team and assign it to the organization.
  */
-export const v1OrganizationRoleMembersAddMutation = (
-  options?: Partial<Options<V1OrganizationRoleMembersAddData>>
+export const v1OrganizationTeamsCreateMutation = (
+  options?: Partial<Options<V1OrganizationTeamsCreateData>>
 ): UseMutationOptions<
-  V1OrganizationRoleMembersAddResponse,
-  V1OrganizationRoleMembersAddError,
-  Options<V1OrganizationRoleMembersAddData>
+  V1OrganizationTeamsCreateResponse,
+  V1OrganizationTeamsCreateError,
+  Options<V1OrganizationTeamsCreateData>
 > => {
   const mutationOptions: UseMutationOptions<
-    V1OrganizationRoleMembersAddResponse,
-    V1OrganizationRoleMembersAddError,
-    Options<V1OrganizationRoleMembersAddData>
+    V1OrganizationTeamsCreateResponse,
+    V1OrganizationTeamsCreateError,
+    Options<V1OrganizationTeamsCreateData>
   > = {
     mutationFn: async (fnOptions) => {
-      const { data } = await v1OrganizationRoleMembersAdd({
+      const { data } = await v1OrganizationTeamsCreate({
         ...options,
         ...fnOptions,
         throwOnError: true,
@@ -1469,24 +1469,24 @@ export const v1OrganizationRoleMembersAddMutation = (
 };
 
 /**
- * Remove organization role member
+ * Delete organization team
  *
- * Removes a member from the organization's role
+ * Deletes a team that belongs to the organization.
  */
-export const v1OrganizationRoleMemberRemoveMutation = (
-  options?: Partial<Options<V1OrganizationRoleMemberRemoveData>>
+export const v1OrganizationTeamDeleteMutation = (
+  options?: Partial<Options<V1OrganizationTeamDeleteData>>
 ): UseMutationOptions<
-  V1OrganizationRoleMemberRemoveResponse,
-  V1OrganizationRoleMemberRemoveError,
-  Options<V1OrganizationRoleMemberRemoveData>
+  V1OrganizationTeamDeleteResponse,
+  V1OrganizationTeamDeleteError,
+  Options<V1OrganizationTeamDeleteData>
 > => {
   const mutationOptions: UseMutationOptions<
-    V1OrganizationRoleMemberRemoveResponse,
-    V1OrganizationRoleMemberRemoveError,
-    Options<V1OrganizationRoleMemberRemoveData>
+    V1OrganizationTeamDeleteResponse,
+    V1OrganizationTeamDeleteError,
+    Options<V1OrganizationTeamDeleteData>
   > = {
     mutationFn: async (fnOptions) => {
-      const { data } = await v1OrganizationRoleMemberRemove({
+      const { data } = await v1OrganizationTeamDelete({
         ...options,
         ...fnOptions,
         throwOnError: true,
@@ -1497,26 +1497,26 @@ export const v1OrganizationRoleMemberRemoveMutation = (
   return mutationOptions;
 };
 
-export const v1OrganizationRolePermissionsGetQueryKey = (
-  options: Options<V1OrganizationRolePermissionsGetData>
-) => createQueryKey("v1OrganizationRolePermissionsGet", options);
+export const v1OrganizationTeamGetQueryKey = (
+  options: Options<V1OrganizationTeamGetData>
+) => createQueryKey("v1OrganizationTeamGet", options);
 
 /**
- * Get organization role permissions
+ * Get organization team
  *
- * Return the permissions assigned to the organization's role.
+ * Returns the given organization team by its ID.
  */
-export const v1OrganizationRolePermissionsGetOptions = (
-  options: Options<V1OrganizationRolePermissionsGetData>
+export const v1OrganizationTeamGetOptions = (
+  options: Options<V1OrganizationTeamGetData>
 ) =>
   queryOptions<
-    V1OrganizationRolePermissionsGetResponse,
-    V1OrganizationRolePermissionsGetError,
-    V1OrganizationRolePermissionsGetResponse,
-    ReturnType<typeof v1OrganizationRolePermissionsGetQueryKey>
+    V1OrganizationTeamGetResponse,
+    V1OrganizationTeamGetError,
+    V1OrganizationTeamGetResponse,
+    ReturnType<typeof v1OrganizationTeamGetQueryKey>
   >({
     queryFn: async ({ queryKey, signal }) => {
-      const { data } = await v1OrganizationRolePermissionsGet({
+      const { data } = await v1OrganizationTeamGet({
         ...options,
         ...queryKey[0],
         signal,
@@ -1524,28 +1524,87 @@ export const v1OrganizationRolePermissionsGetOptions = (
       });
       return data;
     },
-    queryKey: v1OrganizationRolePermissionsGetQueryKey(options),
+    queryKey: v1OrganizationTeamGetQueryKey(options),
   });
 
 /**
- * Add permission to organization role
+ * Update organization team
  *
- * Add a permission to an organization's role. Only organization-scoped resources (Organization, Namespace, Document, Project, Role) are allowed.
+ * Update the organization team by its ID.
  */
-export const v1OrganizationRolePermissionAddMutation = (
-  options?: Partial<Options<V1OrganizationRolePermissionAddData>>
+export const v1OrganizationTeamUpdateMutation = (
+  options?: Partial<Options<V1OrganizationTeamUpdateData>>
 ): UseMutationOptions<
-  V1OrganizationRolePermissionAddResponse,
-  V1OrganizationRolePermissionAddError,
-  Options<V1OrganizationRolePermissionAddData>
+  V1OrganizationTeamUpdateResponse,
+  V1OrganizationTeamUpdateError,
+  Options<V1OrganizationTeamUpdateData>
 > => {
   const mutationOptions: UseMutationOptions<
-    V1OrganizationRolePermissionAddResponse,
-    V1OrganizationRolePermissionAddError,
-    Options<V1OrganizationRolePermissionAddData>
+    V1OrganizationTeamUpdateResponse,
+    V1OrganizationTeamUpdateError,
+    Options<V1OrganizationTeamUpdateData>
   > = {
     mutationFn: async (fnOptions) => {
-      const { data } = await v1OrganizationRolePermissionAdd({
+      const { data } = await v1OrganizationTeamUpdate({
+        ...options,
+        ...fnOptions,
+        throwOnError: true,
+      });
+      return data;
+    },
+  };
+  return mutationOptions;
+};
+
+export const v1OrganizationTeamMembersGetQueryKey = (
+  options: Options<V1OrganizationTeamMembersGetData>
+) => createQueryKey("v1OrganizationTeamMembersGet", options);
+
+/**
+ * Get organization team members
+ *
+ * Return a cursor-paginated page of users that are members of the organization's team.
+ */
+export const v1OrganizationTeamMembersGetOptions = (
+  options: Options<V1OrganizationTeamMembersGetData>
+) =>
+  queryOptions<
+    V1OrganizationTeamMembersGetResponse,
+    V1OrganizationTeamMembersGetError,
+    V1OrganizationTeamMembersGetResponse,
+    ReturnType<typeof v1OrganizationTeamMembersGetQueryKey>
+  >({
+    queryFn: async ({ queryKey, signal }) => {
+      const { data } = await v1OrganizationTeamMembersGet({
+        ...options,
+        ...queryKey[0],
+        signal,
+        throwOnError: true,
+      });
+      return data;
+    },
+    queryKey: v1OrganizationTeamMembersGetQueryKey(options),
+  });
+
+/**
+ * Add organization team member
+ *
+ * Add an existing user to an organization's team.
+ */
+export const v1OrganizationTeamMembersAddMutation = (
+  options?: Partial<Options<V1OrganizationTeamMembersAddData>>
+): UseMutationOptions<
+  V1OrganizationTeamMembersAddResponse,
+  V1OrganizationTeamMembersAddError,
+  Options<V1OrganizationTeamMembersAddData>
+> => {
+  const mutationOptions: UseMutationOptions<
+    V1OrganizationTeamMembersAddResponse,
+    V1OrganizationTeamMembersAddError,
+    Options<V1OrganizationTeamMembersAddData>
+  > = {
+    mutationFn: async (fnOptions) => {
+      const { data } = await v1OrganizationTeamMembersAdd({
         ...options,
         ...fnOptions,
         throwOnError: true,
@@ -1557,24 +1616,24 @@ export const v1OrganizationRolePermissionAddMutation = (
 };
 
 /**
- * Remove permission from organization role
+ * Remove organization team member
  *
- * Removes a permission from the organization's role.
+ * Removes a member from the organization's team.
  */
-export const v1OrganizationRolePermissionRemoveMutation = (
-  options?: Partial<Options<V1OrganizationRolePermissionRemoveData>>
+export const v1OrganizationTeamMemberRemoveMutation = (
+  options?: Partial<Options<V1OrganizationTeamMemberRemoveData>>
 ): UseMutationOptions<
-  V1OrganizationRolePermissionRemoveResponse,
-  V1OrganizationRolePermissionRemoveError,
-  Options<V1OrganizationRolePermissionRemoveData>
+  V1OrganizationTeamMemberRemoveResponse,
+  V1OrganizationTeamMemberRemoveError,
+  Options<V1OrganizationTeamMemberRemoveData>
 > => {
   const mutationOptions: UseMutationOptions<
-    V1OrganizationRolePermissionRemoveResponse,
-    V1OrganizationRolePermissionRemoveError,
-    Options<V1OrganizationRolePermissionRemoveData>
+    V1OrganizationTeamMemberRemoveResponse,
+    V1OrganizationTeamMemberRemoveError,
+    Options<V1OrganizationTeamMemberRemoveData>
   > = {
     mutationFn: async (fnOptions) => {
-      const { data } = await v1OrganizationRolePermissionRemove({
+      const { data } = await v1OrganizationTeamMemberRemove({
         ...options,
         ...fnOptions,
         throwOnError: true,
@@ -1761,6 +1820,37 @@ export const v1OrganizationsFoldersCreateMutation = (
   };
   return mutationOptions;
 };
+
+export const v1NamespacesGetQueryKey = (
+  options?: Options<V1NamespacesGetData>
+) => createQueryKey("v1NamespacesGet", options);
+
+/**
+ * List reachable namespaces
+ *
+ * Return a cursor-paginated page of namespaces the actor can reach. A namespace is reachable when the actor has namespace.read on it or can read at least one descendant. Organization stubs are included without requiring organization.read.
+ *
+ */
+export const v1NamespacesGetOptions = (
+  options?: Options<V1NamespacesGetData>
+) =>
+  queryOptions<
+    V1NamespacesGetResponse,
+    V1NamespacesGetError,
+    V1NamespacesGetResponse,
+    ReturnType<typeof v1NamespacesGetQueryKey>
+  >({
+    queryFn: async ({ queryKey, signal }) => {
+      const { data } = await v1NamespacesGet({
+        ...options,
+        ...queryKey[0],
+        signal,
+        throwOnError: true,
+      });
+      return data;
+    },
+    queryKey: v1NamespacesGetQueryKey(options),
+  });
 
 /**
  * Delete namespace
@@ -2835,9 +2925,9 @@ export const v1IssueRelationUpdateMutation = (
 };
 
 /**
- * Create permission
+ * Create grant
  *
- * Create a new permission for a subject to the given target.
+ * Create a new grant for a principal on the given scope. Either role_id or actions is required. Grants are immutable; delete and recreate to change them.
  */
 export const v1PermissionsCreateMutation = (
   options?: Partial<Options<V1PermissionsCreateData>>
@@ -2864,9 +2954,9 @@ export const v1PermissionsCreateMutation = (
 };
 
 /**
- * Delete permission
+ * Delete grant
  *
- * Delete a permission by its ID.
+ * Delete a grant by its ID.
  */
 export const v1PermissionDeleteMutation = (
   options?: Partial<Options<V1PermissionDeleteData>>
@@ -2897,9 +2987,9 @@ export const v1PermissionGetQueryKey = (
 ) => createQueryKey("v1PermissionGet", options);
 
 /**
- * Get permission
+ * Get grant
  *
- * Get a permission by its ID.
+ * Get a grant by its ID.
  */
 export const v1PermissionGetOptions = (options: Options<V1PermissionGetData>) =>
   queryOptions<
@@ -2920,43 +3010,14 @@ export const v1PermissionGetOptions = (options: Options<V1PermissionGetData>) =>
     queryKey: v1PermissionGetQueryKey(options),
   });
 
-/**
- * Update permission
- *
- * Update a permission.
- */
-export const v1PermissionUpdateMutation = (
-  options?: Partial<Options<V1PermissionUpdateData>>
-): UseMutationOptions<
-  V1PermissionUpdateResponse,
-  V1PermissionUpdateError,
-  Options<V1PermissionUpdateData>
-> => {
-  const mutationOptions: UseMutationOptions<
-    V1PermissionUpdateResponse,
-    V1PermissionUpdateError,
-    Options<V1PermissionUpdateData>
-  > = {
-    mutationFn: async (fnOptions) => {
-      const { data } = await v1PermissionUpdate({
-        ...options,
-        ...fnOptions,
-        throwOnError: true,
-      });
-      return data;
-    },
-  };
-  return mutationOptions;
-};
-
 export const v1PermissionResourceGetQueryKey = (
   options: Options<V1PermissionResourceGetData>
 ) => createQueryKey("v1PermissionResourceGet", options);
 
 /**
- * Get permissions for a resource
+ * Get effective actions for a resource
  *
- * Get all permissions the caller have for a given resource.
+ * Returns the caller's effective actions on the given resource.
  */
 export const v1PermissionResourceGetOptions = (
   options: Options<V1PermissionResourceGetData>
@@ -2977,66 +3038,6 @@ export const v1PermissionResourceGetOptions = (
       return data;
     },
     queryKey: v1PermissionResourceGetQueryKey(options),
-  });
-
-export const v1PermissionHasRelationsQueryKey = (
-  options: Options<V1PermissionHasRelationsData>
-) => createQueryKey("v1PermissionHasRelations", options);
-
-/**
- * Check relations to resource
- *
- * Check if the caller has any relations to a given resource.
- */
-export const v1PermissionHasRelationsOptions = (
-  options: Options<V1PermissionHasRelationsData>
-) =>
-  queryOptions<
-    V1PermissionHasRelationsResponse,
-    V1PermissionHasRelationsError,
-    V1PermissionHasRelationsResponse,
-    ReturnType<typeof v1PermissionHasRelationsQueryKey>
-  >({
-    queryFn: async ({ queryKey, signal }) => {
-      const { data } = await v1PermissionHasRelations({
-        ...options,
-        ...queryKey[0],
-        signal,
-        throwOnError: true,
-      });
-      return data;
-    },
-    queryKey: v1PermissionHasRelationsQueryKey(options),
-  });
-
-export const v1PermissionHasSystemRoleQueryKey = (
-  options: Options<V1PermissionHasSystemRoleData>
-) => createQueryKey("v1PermissionHasSystemRole", options);
-
-/**
- * Check system role assignment
- *
- * Check if the user is member of one or more system roles.
- */
-export const v1PermissionHasSystemRoleOptions = (
-  options: Options<V1PermissionHasSystemRoleData>
-) =>
-  queryOptions<
-    V1PermissionHasSystemRoleResponse,
-    V1PermissionHasSystemRoleError,
-    V1PermissionHasSystemRoleResponse,
-    ReturnType<typeof v1PermissionHasSystemRoleQueryKey>
-  >({
-    queryFn: async ({ queryKey, signal }) => {
-      const { data } = await v1PermissionHasSystemRole({
-        ...options,
-        ...queryKey[0],
-        signal,
-        throwOnError: true,
-      });
-      return data;
-    },
-    queryKey: v1PermissionHasSystemRoleQueryKey(options),
   });
 
 export const v1SystemHealthQueryKey = (options?: Options<V1SystemHealthData>) =>

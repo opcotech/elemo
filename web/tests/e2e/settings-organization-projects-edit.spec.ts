@@ -9,9 +9,9 @@ import {
 import { USER_DEFAULT_PASSWORD, loginUser } from "./utils/auth";
 import {
   createUser,
+  grantActionsToUser,
   grantMembershipToUser,
-  grantPermissionToUser,
-  grantSystemOwnerMembershipToUser,
+  grantOrganizationCreateToUser,
 } from "./utils/db";
 import { getRandomString } from "./utils/random";
 
@@ -34,7 +34,7 @@ test.describe("@settings.organization-projects-edit Organization Projects Edit E
     writerUser = await createUser(testConfig);
     readerUser = await createUser(testConfig);
 
-    await grantSystemOwnerMembershipToUser(testConfig, ownerUser.email);
+    await grantOrganizationCreateToUser(testConfig, ownerUser.email);
 
     ownerApiClient = await createApiClient(
       ownerUser.email,
@@ -63,19 +63,19 @@ test.describe("@settings.organization-projects-edit Organization Projects Edit E
       "Organization",
       organizationId
     );
-    await grantPermissionToUser(
+    await grantActionsToUser(
       testConfig,
       writerUser.email,
       "Organization",
       organizationId,
-      "read"
+      ["organization.read"]
     );
-    await grantPermissionToUser(
+    await grantActionsToUser(
       testConfig,
       writerUser.email,
       "Namespace",
       namespaceId,
-      "read"
+      ["namespace.read"]
     );
 
     await grantMembershipToUser(
@@ -84,24 +84,24 @@ test.describe("@settings.organization-projects-edit Organization Projects Edit E
       "Organization",
       organizationId
     );
-    await grantPermissionToUser(
+    await grantActionsToUser(
       testConfig,
       readerUser.email,
       "Organization",
       organizationId,
-      "read"
+      ["organization.read"]
     );
-    await grantPermissionToUser(
+    await grantActionsToUser(
       testConfig,
       readerUser.email,
       "Namespace",
       namespaceId,
-      "read"
+      ["namespace.read"]
     );
   });
 
   const seedProjectWithWriteAccess = async (
-    testConfig: Parameters<typeof grantPermissionToUser>[0]
+    testConfig: Parameters<typeof grantActionsToUser>[0]
   ) => {
     const project = await createProject(ownerApiClient, namespaceId, {
       key: getRandomProjectKey(),
@@ -109,19 +109,28 @@ test.describe("@settings.organization-projects-edit Organization Projects Edit E
       description: `Project description ${getRandomString(8)}`,
     });
 
-    await grantPermissionToUser(
+    await grantActionsToUser(
       testConfig,
       writerUser.email,
       "Project",
       project.id,
-      "read"
+      ["project.read", "issue.read", "document.read"]
     );
-    await grantPermissionToUser(
+    await grantActionsToUser(
       testConfig,
       writerUser.email,
       "Project",
       project.id,
-      "write"
+      [
+        "project.update",
+        "project.members.manage",
+        "issue.create",
+        "issue.update",
+        "issue.assign",
+        "document.create",
+        "document.update",
+        "folder.create",
+      ]
     );
 
     return project;
@@ -261,12 +270,12 @@ test.describe("@settings.organization-projects-edit Organization Projects Edit E
       description: `Project description ${getRandomString(8)}`,
     });
 
-    await grantPermissionToUser(
+    await grantActionsToUser(
       testConfig,
       readerUser.email,
       "Project",
       project.id,
-      "read"
+      ["project.read", "issue.read", "document.read"]
     );
 
     await loginUser(page, {

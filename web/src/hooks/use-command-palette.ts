@@ -8,7 +8,7 @@ import {
   usePermissions,
   withResourceType,
 } from "@/hooks/use-permissions";
-import { can } from "@/lib/auth/permissions";
+import { Action, can } from "@/lib/auth/permissions";
 import { uiActions, useUiSelector } from "@/lib/ui-store";
 
 interface CommandPaletteState {
@@ -55,7 +55,7 @@ export function useCommandPalette(): CommandPaletteState &
   const hasProject = hasNamespace && !!projectId;
 
   const { data: systemOrganizationPermissions } = usePermissions(
-    withResourceType(ResourceType.Organization),
+    withResourceType(ResourceType.Installation),
     !open
   );
   const { data: organizationPermissions } = usePermissions(
@@ -67,11 +67,15 @@ export function useCommandPalette(): CommandPaletteState &
     !open || !namespaceId
   );
 
-  const canCreateOrganization = can(systemOrganizationPermissions, "create");
+  const canCreateOrganization = can(
+    systemOrganizationPermissions,
+    Action.OrganizationCreate
+  );
   const canCreateNamespace = organizationId
-    ? can(organizationPermissions, "write")
+    ? can(organizationPermissions, Action.NamespaceCreate)
     : true;
-  const canCreateProject = hasNamespace && can(namespacePermissions, "write");
+  const canCreateProject =
+    hasNamespace && can(namespacePermissions, Action.ProjectCreate);
 
   const handleAddTodo = useCallback(() => {
     uiActions.openAddTodo();

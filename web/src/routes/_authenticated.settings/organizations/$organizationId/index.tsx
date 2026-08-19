@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
+import { GrantCreateForm } from "@/components/grants/grant-create-form";
 import { NamespacesList } from "@/components/namespaces/namespaces-list";
 import { OrganizationDangerZone } from "@/components/organizations/organization-danger-zone";
 import { OrganizationDetailInfo } from "@/components/organizations/organization-detail-info";
@@ -10,6 +11,7 @@ import {
   SettingsEntityDetailError,
   SettingsEntityDetailSkeleton,
 } from "@/components/settings/settings-entity-detail-state";
+import { TeamsList } from "@/components/teams/teams-list";
 import { PageHeader } from "@/components/ui/page-header";
 import { useAuth } from "@/hooks/use-auth";
 import { entityBreadcrumb } from "@/lib/breadcrumb";
@@ -43,6 +45,7 @@ function OrganizationDetailPage() {
     members,
     namespaces,
     roles,
+    teams,
     permissions,
     hasReadAccess,
   } = Route.useLoaderData();
@@ -82,6 +85,16 @@ function OrganizationDetailPage() {
             organizationId={organizationId}
             organizationPermissions={permissions}
           />
+
+          <TeamsList
+            teams={teams}
+            isLoading={false}
+            error={null}
+            organizationId={organizationId}
+            organizationPermissions={permissions}
+          />
+
+          <GrantCreateForm organizationId={organizationId} />
         </>
       )}
 

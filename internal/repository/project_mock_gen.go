@@ -101,18 +101,18 @@ func (mr *MockProjectRepositoryMockRecorder) GetByKey(ctx, key, proj any) *gomoc
 }
 
 // List mocks base method.
-func (m *MockProjectRepository) List(ctx context.Context, namespaceID model.ID, page CursorPage, proj ProjectProjection) (Page[*Project], error) {
+func (m *MockProjectRepository) List(ctx context.Context, namespaceID, actor model.ID, page CursorPage, proj ProjectProjection) (Page[*Project], error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "List", ctx, namespaceID, page, proj)
+	ret := m.ctrl.Call(m, "List", ctx, namespaceID, actor, page, proj)
 	ret0, _ := ret[0].(Page[*Project])
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // List indicates an expected call of List.
-func (mr *MockProjectRepositoryMockRecorder) List(ctx, namespaceID, page, proj any) *gomock.Call {
+func (mr *MockProjectRepositoryMockRecorder) List(ctx, namespaceID, actor, page, proj any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockProjectRepository)(nil).List), ctx, namespaceID, page, proj)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockProjectRepository)(nil).List), ctx, namespaceID, actor, page, proj)
 }
 
 // Update mocks base method.

@@ -12,7 +12,7 @@ import {
   v1OrganizationGetOptions,
   v1OrganizationRoleGetOptions,
 } from "@/lib/api/query-options";
-import { ResourceType } from "@/lib/auth/permissions";
+import { Action, ResourceType } from "@/lib/auth/permissions";
 import { requirePermissionBeforeLoad } from "@/lib/auth/require-auth";
 import { loadOrganizationRole } from "@/lib/route-data";
 import { withRouteErrors } from "@/lib/route-errors";
@@ -25,13 +25,13 @@ export const Route = createFileRoute(
       requirePermissionBeforeLoad({
         queryClient: context.queryClient,
         resourceType: ResourceType.Organization,
-        permissionKind: "write",
+        action: Action.RoleManage,
         resourceId: params.organizationId,
       }),
       requirePermissionBeforeLoad({
         queryClient: context.queryClient,
         resourceType: ResourceType.Role,
-        permissionKind: "write",
+        action: Action.RoleManage,
         resourceId: params.roleId,
       }),
     ]),

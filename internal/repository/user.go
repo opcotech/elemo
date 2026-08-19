@@ -241,7 +241,8 @@ func (r *Neo4jUserRepository) Create(ctx context.Context, opts CreateUserOpts) (
 		username: $username, email: $email, password: $password, status: $status, first_name: $first_name,
 		last_name: $last_name, picture: $picture, title: $title, bio: $bio, phone: $phone, address: $address,
 		links: $links, languages: $languages, created_at: datetime($created_at)
-	}`
+	}
+	SET u:` + model.LabelPrincipal
 
 	params := map[string]any{
 		"id":         id.String(),

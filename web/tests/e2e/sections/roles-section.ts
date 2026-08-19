@@ -1,8 +1,7 @@
-import { expect } from "@playwright/test";
 import type { Locator, Page } from "@playwright/test";
 
 import { BaseComponent } from "../components/base";
-import { waitForSuccessToast } from "../helpers";
+import { clickUntilURL, waitForSuccessToast } from "../helpers";
 import {
   DialogMixin,
   EmptyStateMixin,
@@ -87,9 +86,7 @@ export class RolesSection extends DialogMixin(
    */
   async clickCreateRoleButton(): Promise<void> {
     const createButton = this.getCreateRoleButton().first();
-    await expect(createButton).toBeVisible();
-    await createButton.click();
-    await this.page.waitForURL(/\/roles\/new/);
+    await clickUntilURL(createButton, /\/roles\/new/);
   }
 
   /**

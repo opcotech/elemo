@@ -1,11 +1,11 @@
 import { EntityDangerZone } from "@/components/entity-lifecycle/entity-lifecycle";
 import { namespaceLifecycleConfig } from "@/components/entity-lifecycle/entity-lifecycle-configs";
 import { v1NamespaceDeleteMutation } from "@/lib/api/mutation-options";
-import type { Namespace, Permission } from "@/lib/api/types";
+import type { EffectiveActions, Namespace } from "@/lib/api/types";
 
 interface NamespaceDangerZoneProps {
   namespace: Namespace;
-  permissions: Permission[];
+  permissions: EffectiveActions;
   organizationId: string;
 }
 

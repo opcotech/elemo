@@ -8,26 +8,30 @@ import {
   v1OrganizationGetOptions,
   v1OrganizationRoleGetOptions,
   v1OrganizationRolesGetOptions,
+  v1OrganizationTeamGetOptions,
+  v1OrganizationTeamsGetOptions,
   v1OrganizationsGetOptions,
   v1OrganizationsNamespacesGetOptions,
   v1ProjectGetOptions,
 } from "@/lib/api/query-options";
 import type {
   Document,
+  EffectiveActions,
   Namespace,
   Options,
   Organization,
   PartialProject,
-  Permission,
   Project,
   Role,
+  Team,
   V1DocumentDeleteData,
   V1NamespaceDeleteData,
   V1OrganizationDeleteData,
   V1OrganizationRoleDeleteData,
+  V1OrganizationTeamDeleteData,
   V1ProjectDeleteData,
 } from "@/lib/api/types";
-import { can } from "@/lib/auth/permissions";
+import { Action, can } from "@/lib/auth/permissions";
 import { zOrganizationStatus } from "@/lib/client/zod.gen";
 
 interface OrganizationLifecycleEntity extends Pick<
@@ -47,14 +51,41 @@ interface RoleLifecycleContext {
   organizationId: string;
 }
 
+interface TeamLifecycleContext {
+  organizationId: string;
+}
+
 type OrganizationDeleteVariables = Options<V1OrganizationDeleteData>;
 type NamespaceDeleteVariables = Options<V1NamespaceDeleteData>;
 type ProjectDeleteVariables = Options<V1ProjectDeleteData>;
 type RoleDeleteVariables = Options<V1OrganizationRoleDeleteData>;
+type TeamDeleteVariables = Options<V1OrganizationTeamDeleteData>;
 type DocumentDeleteVariables = Options<V1DocumentDeleteData>;
 
-const hasDeletePermission = (_entity: unknown, permissions: Permission[]) =>
-  can(permissions, "delete");
+const hasNamespaceDeletePermission = (
+  _entity: unknown,
+  permissions: EffectiveActions
+) => can(permissions, Action.NamespaceDelete);
+
+const hasProjectDeletePermission = (
+  _entity: unknown,
+  permissions: EffectiveActions
+) => can(permissions, Action.ProjectDelete);
+
+const hasRoleManagePermission = (
+  _entity: unknown,
+  permissions: EffectiveActions
+) => can(permissions, Action.RoleManage);
+
+const hasTeamManagePermission = (
+  _entity: unknown,
+  permissions: EffectiveActions
+) => can(permissions, Action.TeamManage);
+
+const hasDocumentDeletePermission = (
+  _entity: unknown,
+  permissions: EffectiveActions
+) => can(permissions, Action.DocumentDelete);
 
 export const organizationLifecycleConfig: EntityLifecycleConfig<
   OrganizationLifecycleEntity,
@@ -97,7 +128,7 @@ export const organizationLifecycleConfig: EntityLifecycleConfig<
   },
   canDelete: (organization, permissions) =>
     organization.status === zOrganizationStatus.enum.active &&
-    can(permissions, "delete"),
+    can(permissions, Action.OrganizationDelete),
   deleteVariables: (organization) => ({
     path: { id: organization.id },
     query: { force: false },
@@ -148,7 +179,7 @@ export const namespaceLifecycleConfig: EntityLifecycleConfig<
     ],
     buttonLabel: "Delete Namespace",
   },
-  canDelete: hasDeletePermission,
+  canDelete: hasNamespaceDeletePermission,
   deleteVariables: (namespace) => ({
     path: { id: namespace.id },
   }),
@@ -205,7 +236,7 @@ export const projectLifecycleConfig: EntityLifecycleConfig<
     ],
     buttonLabel: "Delete Project",
   },
-  canDelete: hasDeletePermission,
+  canDelete: hasProjectDeletePermission,
   deleteVariables: (project) => ({
     path: { id: project.id },
   }),
@@ -240,11 +271,11 @@ export const roleLifecycleConfig: EntityLifecycleConfig<
       "This will permanently delete the role. This action cannot be undone.",
     consequences: [
       "The role will be permanently deleted",
-      "All members assigned to this role will lose their role assignment",
-      "Role permissions will be removed",
+      "Grants that reference this role will no longer include its bundled actions",
+      "This action cannot be undone",
     ],
   },
-  canDelete: hasDeletePermission,
+  canDelete: hasRoleManagePermission,
   deleteVariables: (role, { organizationId }) => ({
     path: {
       id: organizationId,
@@ -259,6 +290,42 @@ export const roleLifecycleConfig: EntityLifecycleConfig<
       path: {
         id: organizationId,
         role_id: role.id,
+      },
+    }).queryKey,
+  ],
+};
+
+export const teamLifecycleConfig: EntityLifecycleConfig<
+  Team,
+  TeamLifecycleContext,
+  TeamDeleteVariables
+> = {
+  entityName: "Team",
+  deleteDialog: {
+    title: (team) => `Are you sure you want to delete ${team.name}?`,
+    description:
+      "This will permanently delete the team. This action cannot be undone.",
+    consequences: [
+      "The team will be permanently deleted",
+      "Team members will lose membership of this team",
+      "Grants held by this team will no longer apply",
+    ],
+  },
+  canDelete: hasTeamManagePermission,
+  deleteVariables: (team, { organizationId }) => ({
+    path: {
+      id: organizationId,
+      team_id: team.id,
+    },
+  }),
+  queryKeys: (team, { organizationId }) => [
+    v1OrganizationTeamsGetOptions({
+      path: { id: organizationId },
+    }).queryKey,
+    v1OrganizationTeamGetOptions({
+      path: {
+        id: organizationId,
+        team_id: team.id,
       },
     }).queryKey,
   ],
@@ -281,7 +348,7 @@ export const documentLifecycleConfig: EntityLifecycleConfig<
       "The document will be removed from listings and search",
     ],
   },
-  canDelete: hasDeletePermission,
+  canDelete: hasDocumentDeletePermission,
   deleteVariables: (document) => ({
     path: { id: document.id },
   }),

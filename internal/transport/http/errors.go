@@ -20,6 +20,7 @@ var (
 	ErrNoFolderService       = errors.New("no folder service provided")       // no folder service provided
 	ErrNoLabelService        = errors.New("no label service provided")        // no label service provided
 	ErrNoRoleService         = errors.New("no role service provided")         // no role service provided
+	ErrNoTeamService         = errors.New("no team service provided")         // no team service provided
 	ErrNoSystemService       = errors.New("no system service provided")       // no system service provided
 	ErrNoTodoService         = errors.New("no todo service provided")         // no todo service provided
 	ErrNoTracer              = errors.New("no tracer provided")               // no tracer provided

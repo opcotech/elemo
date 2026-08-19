@@ -1,11 +1,48 @@
-import type { Permission, PermissionKind } from "@/lib/api/types";
 import { SYSTEM_NIL_ID } from "@/lib/utils";
+
+export type Action = string;
+
+export const Action = {
+  OrganizationCreate: "organization.create",
+  OrganizationRead: "organization.read",
+  OrganizationUpdate: "organization.update",
+  OrganizationDelete: "organization.delete",
+  OrganizationMembersManage: "organization.members.manage",
+  NamespaceCreate: "namespace.create",
+  NamespaceRead: "namespace.read",
+  NamespaceUpdate: "namespace.update",
+  NamespaceDelete: "namespace.delete",
+  ProjectCreate: "project.create",
+  ProjectRead: "project.read",
+  ProjectUpdate: "project.update",
+  ProjectDelete: "project.delete",
+  ProjectMembersManage: "project.members.manage",
+  IssueCreate: "issue.create",
+  IssueRead: "issue.read",
+  IssueUpdate: "issue.update",
+  IssueDelete: "issue.delete",
+  IssueAssign: "issue.assign",
+  DocumentCreate: "document.create",
+  DocumentRead: "document.read",
+  DocumentUpdate: "document.update",
+  DocumentDelete: "document.delete",
+  FolderCreate: "folder.create",
+  RoleManage: "role.manage",
+  TeamManage: "team.manage",
+  PermissionManage: "permission.manage",
+} as const;
+
+export const inspectableActions = Object.values(Action).filter(
+  (action) => action !== Action.OrganizationCreate
+);
 
 export enum ResourceType {
   Assignment = "Assignment",
   Attachment = "Attachment",
   Comment = "Comment",
   Document = "Document",
+  Folder = "Folder",
+  Installation = "Installation",
   Issue = "Issue",
   IssueRelation = "IssueRelation",
   Label = "Label",
@@ -15,6 +52,7 @@ export enum ResourceType {
   Permission = "Permission",
   Project = "Project",
   Role = "Role",
+  Team = "Team",
   Todo = "Todo",
   User = "User",
   UserToken = "UserToken",
@@ -28,30 +66,22 @@ export function withResourceType(
 }
 
 /**
- * Checks if the given permissions allow the specified action.
- *
- * @param permissions - Array of permissions to check
- * @param kind - The permission kind to check for
- * @returns true if the action is allowed, false otherwise
+ * Checks whether the actor's effective actions include the requested action.
+ * Match is exact: wildcards and write-implies-read are not supported.
  */
 export function can(
-  permissions: Permission[] | undefined,
-  kind: PermissionKind
-) {
-  if (!permissions || permissions.length === 0) {
+  effective: { actions?: string[] } | readonly string[] | undefined,
+  action: string
+): boolean {
+  if (!effective) {
     return false;
   }
 
-  const permissionKinds = new Set(permissions.map((p) => p.kind));
+  const actions = Array.isArray(effective)
+    ? effective
+    : "actions" in effective
+      ? (effective.actions ?? [])
+      : [];
 
-  if (permissionKinds.has("*") || permissionKinds.has(kind)) {
-    return true;
-  }
-
-  // Special case: write permission also grants access to read
-  if (kind === "read" && permissionKinds.has("write")) {
-    return true;
-  }
-
-  return false;
+  return actions.includes(action);
 }

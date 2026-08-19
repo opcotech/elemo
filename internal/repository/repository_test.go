@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsS3 "github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/smithy-go"
+	"github.com/go-redis/cache/v9"
 	"github.com/opcotech/elemo/internal/config"
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/log"
@@ -73,6 +74,147 @@ func redisCacheExpectingPatterns(ctrl *gomock.Controller, ctx context.Context, p
 	}
 }
 
+//nolint:revive // test cache factories take gomock.Controller first
+func redisCacheExpectingSetThenPatterns(ctrl *gomock.Controller, ctx context.Context, setKey string, setValue any, patterns []string, failOnSet bool, failIndex int, failErr error) *redisBaseRepository {
+	client := mock.NewUniversalClient(ctrl)
+	backend := mock.NewCacheBackend(ctrl)
+	span := mock.NewMockSpan(ctrl)
+	tracer := mock.NewMockTracer(ctrl)
+
+	count := 1
+	tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Set", gomock.Len(0)).Return(ctx, span)
+	if failOnSet {
+		backend.EXPECT().Set(&cache.Item{Ctx: ctx, Key: setKey, Value: setValue}).Return(failErr)
+		span.EXPECT().End(gomock.Len(0)).Times(1)
+		db, err := NewRedisDatabase(WithRedisClient(client))
+		if err != nil {
+			panic(err)
+		}
+		return &redisBaseRepository{
+			db:     db,
+			cache:  backend,
+			tracer: tracer,
+			logger: mock.NewMockLogger(ctrl),
+		}
+	}
+
+	backend.EXPECT().Set(&cache.Item{Ctx: ctx, Key: setKey, Value: setValue}).Return(nil)
+	for i, pattern := range patterns {
+		count++
+		cmd := new(redis.StringSliceCmd)
+		cmd.SetVal([]string{pattern})
+		client.EXPECT().Keys(ctx, pattern).Return(cmd)
+		if i == failIndex {
+			backend.EXPECT().Delete(ctx, pattern).Return(failErr)
+			break
+		}
+		backend.EXPECT().Delete(ctx, pattern).Return(nil)
+	}
+
+	span.EXPECT().End(gomock.Len(0)).Times(count)
+	tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(count - 1)
+
+	db, err := NewRedisDatabase(WithRedisClient(client))
+	if err != nil {
+		panic(err)
+	}
+
+	return &redisBaseRepository{
+		db:     db,
+		cache:  backend,
+		tracer: tracer,
+		logger: mock.NewMockLogger(ctrl),
+	}
+}
+
+//nolint:revive // test cache factories take gomock.Controller first
+func redisCacheExpectingBumpThenPatterns(ctrl *gomock.Controller, ctx context.Context, principal model.ID, patterns []string) *redisBaseRepository {
+	client := mock.NewUniversalClient(ctrl)
+	backend := mock.NewCacheBackend(ctrl)
+	span := mock.NewMockSpan(ctrl)
+	tracer := mock.NewMockTracer(ctrl)
+
+	genKey := authzGenKey(principal)
+	count := 2 + len(patterns)
+	span.EXPECT().End(gomock.Len(0)).Times(count)
+	tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
+	tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Set", gomock.Len(0)).Return(ctx, span)
+	tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(len(patterns))
+
+	backend.EXPECT().Get(ctx, genKey, gomock.Any()).Return(cache.ErrCacheMiss)
+	backend.EXPECT().Set(&cache.Item{Ctx: ctx, Key: genKey, Value: int64(1)}).Return(nil)
+	for _, pattern := range patterns {
+		cmd := new(redis.StringSliceCmd)
+		cmd.SetVal([]string{pattern})
+		client.EXPECT().Keys(ctx, pattern).Return(cmd)
+		backend.EXPECT().Delete(ctx, pattern).Return(nil)
+	}
+
+	db, err := NewRedisDatabase(WithRedisClient(client))
+	if err != nil {
+		panic(err)
+	}
+	return &redisBaseRepository{
+		db:     db,
+		cache:  backend,
+		tracer: tracer,
+		logger: mock.NewMockLogger(ctrl),
+	}
+}
+
+func roleCreateCachePatterns(belongsTo model.ID) []string {
+	return []string{
+		composeCacheKey(model.ResourceTypeRole.String(), "ListBelongsTo", belongsTo.String(), "*", "*", "*"),
+		composeCacheKey(model.ResourceTypeRole.String(), "GetByKey", belongsTo.String(), "*"),
+		composeCacheKey(model.ResourceTypeOrganization.String(), "*"),
+		composeCacheKey(model.ResourceTypeProject.String(), "*"),
+	}
+}
+
+func roleDeleteCachePatterns(id, belongsTo model.ID) []string {
+	return []string{
+		composeCacheKey(model.ResourceTypeRole.String(), "Get", id.String(), "*"),
+		composeCacheKey(model.ResourceTypeRole.String(), "GetByID", id.String()),
+		composeCacheKey(model.ResourceTypeRole.String(), "GetByKey", belongsTo.String(), "*"),
+		composeCacheKey(model.ResourceTypeRole.String(), "ListBelongsTo", "*"),
+		composeCacheKey(model.ResourceTypeOrganization.String(), "*"),
+		composeCacheKey(model.ResourceTypeProject.String(), "*"),
+	}
+}
+
+func roleMemberCachePatterns(id, belongsToID model.ID) []string {
+	return []string{
+		composeCacheKey(model.ResourceTypeRole.String(), "Get", id.String(), "*"),
+		composeCacheKey(model.ResourceTypeRole.String(), "GetByID", id.String()),
+		composeCacheKey(model.ResourceTypeRole.String(), "ListBelongsTo", "*"),
+		composeCacheKey(model.ResourceTypeOrganization.String(), "Get", belongsToID.String(), "*"),
+	}
+}
+
+func roleUpdateInvalidatePatterns(id, belongsTo model.ID) []string {
+	return []string{
+		composeCacheKey(model.ResourceTypeRole.String(), "GetByID", id.String()),
+		composeCacheKey(model.ResourceTypeRole.String(), "GetByKey", belongsTo.String(), "*"),
+		composeCacheKey(model.ResourceTypeRole.String(), "ListBelongsTo", "*"),
+	}
+}
+
+func permissionCrossCachePatterns() []string {
+	return []string{
+		composeCacheKey(model.ResourceTypeRole.String(), "*"),
+		composeCacheKey(model.ResourceTypeUser.String(), "*"),
+		composeCacheKey(model.ResourceTypeOrganization.String(), "List", "*", "*", "*", "*"),
+		composeCacheKey(model.ResourceTypeNamespace.String(), "List", "*", "*", "*", "*"),
+		composeCacheKey(model.ResourceTypeNamespace.String(), "ListAccessible", "*", "*", "*", "*"),
+		composeCacheKey(model.ResourceTypeProject.String(), "*", "List", "*"),
+		composeCacheKey(model.ResourceTypeIssue.String(), "*", "ListFor*", "*"),
+		composeCacheKey(model.ResourceTypeDocument.String(), "ListLibrary", "*"),
+		composeCacheKey(model.ResourceTypeDocument.String(), "ListRelated", "*"),
+		composeCacheKey(model.ResourceTypeDocument.String(), "ListByCreator", "*"),
+		composeCacheKey(model.ResourceTypeFolder.String(), "List", "*"),
+	}
+}
+
 func TestEdgeKind_String(t *testing.T) {
 	tests := []struct {
 		name string
@@ -99,6 +241,9 @@ func TestEdgeKind_String(t *testing.T) {
 		{"WATCHES", EdgeKindWatches, "WATCHES"},
 		{"SCOPED_TO", EdgeKindScopedTo, "SCOPED_TO"},
 		{"LOCATED_IN", EdgeKindLocatedIn, "LOCATED_IN"},
+		{"IN_SCOPE_OF", EdgeKindInScopeOf, "IN_SCOPE_OF"},
+		{"GRANTED", EdgeKindGranted, "GRANTED"},
+		{"DEFINES_ROLE", EdgeKindDefinesRole, "DEFINES_ROLE"},
 	}
 	for _, tt := range tests {
 		tt := tt

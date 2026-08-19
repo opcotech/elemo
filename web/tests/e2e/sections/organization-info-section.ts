@@ -1,7 +1,7 @@
 import type { Locator, Page } from "@playwright/test";
 
 import { BaseComponent } from "../components/base";
-import { getElementByText } from "../helpers";
+import { clickUntilURL } from "../helpers";
 import { SectionContainerMixin } from "../mixins";
 
 /**
@@ -30,7 +30,7 @@ export class OrganizationInfoSection extends SectionContainerMixin(
    * Get the edit organization button locator.
    */
   getEditOrganizationButton(): Locator {
-    return getElementByText(this.getSectionContainer(), "Edit");
+    return this.getSectionContainer().getByRole("link", { name: /edit/i });
   }
 
   /**
@@ -45,6 +45,9 @@ export class OrganizationInfoSection extends SectionContainerMixin(
    * Click on the edit organization button.
    */
   async clickEditOrganizationButton(): Promise<void> {
-    await this.getEditOrganizationButton().click();
+    await clickUntilURL(
+      this.getEditOrganizationButton(),
+      /\/settings\/organizations\/[^/]+\/edit$/
+    );
   }
 }

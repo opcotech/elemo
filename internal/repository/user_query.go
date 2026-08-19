@@ -109,7 +109,7 @@ func compileUserRootQuery(in userRootQueryInput) (QueryPlan, error) {
 			Name: "user.load_permissions",
 			Cypher: `
 				UNWIND $ids AS user_id
-				MATCH (u:` + model.ResourceTypeUser.String() + ` {id: user_id})-[p:` + EdgeKindHasPermission.String() + `]->()
+				MATCH (u:` + model.ResourceTypeUser.String() + ` {id: user_id})-[p:` + EdgeKindGranted.String() + `]->()
 				RETURN user_id AS user_id, collect(p.id) AS permission_ids`,
 			Params: map[string]any{},
 		})

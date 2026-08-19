@@ -70,7 +70,9 @@ tags:
   - name: Notification
     description: In-app notifications of the user.
   - name: Permission
-    description: Permissions in the system.
+    description: Scoped ReBAC grants in the system.
+  - name: Team
+    description: Teams that group users within an organization.
 servers:
   - url: "https://{domain}/api"
     description: Self-hosted instance.
@@ -436,6 +438,73 @@ components:
         - name
         - created_at
         - updated_at
+    PartialOrganization:
+      title: PartialOrganization
+      type: object
+      description: Owning organization stub returned with a reachable namespace.
+      properties:
+        id:
+          type: string
+          description: Unique identifier of the organization.
+          example: 9bsv0s46s6s002p9ltq0
+        name:
+          type: string
+          description: Name of the organization.
+          example: ACME Inc.
+      required:
+        - id
+        - name
+    AccessibleNamespace:
+      title: AccessibleNamespace
+      type: object
+      description: A reachable namespace with its owning organization stub.
+      properties:
+        id:
+          type: string
+          description: Unique identifier of the namespace.
+          example: 9bsv0s46s6s002p9ltq0
+        name:
+          type: string
+          description: Name of the namespace.
+          maxLength: 120
+          example: Engineering
+          minLength: 3
+        description:
+          type: string
+          description: Description of the namespace.
+          maxLength: 500
+          example: Engineering team namespace
+          minLength: 5
+          nullable: true
+        project_count:
+          type: integer
+          format: int64
+          description: Number of projects in the namespace when projected.
+          example: 4
+          nullable: true
+        document_count:
+          type: integer
+          format: int64
+          description: Number of documents in the namespace when projected.
+          example: 8
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          description: Date when the namespace was created.
+        updated_at:
+          type: string
+          format: date-time
+          description: Date when the namespace was updated.
+          nullable: true
+        organization:
+          $ref: "#/components/schemas/PartialOrganization"
+      required:
+        - id
+        - name
+        - created_at
+        - updated_at
+        - organization
     PageInfo:
       title: PageInfo
       type: object
@@ -520,6 +589,19 @@ components:
       required:
         - items
         - page_info
+    AccessibleNamespacePage:
+      title: AccessibleNamespacePage
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AccessibleNamespace"
+        page_info:
+          $ref: "#/components/schemas/PageInfo"
+      required:
+        - items
+        - page_info
     UserPage:
       title: UserPage
       type: object
@@ -567,6 +649,19 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Role"
+        page_info:
+          $ref: "#/components/schemas/PageInfo"
+      required:
+        - items
+        - page_info
+    TeamPage:
+      title: TeamPage
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Team"
         page_info:
           $ref: "#/components/schemas/PageInfo"
       required:
@@ -2041,73 +2136,116 @@ components:
         - za
         - zh
         - zu
-    Permission:
-      title: Permission
+    Action:
+      title: Action
+      type: string
+      description: |
+        Fine-grained authorization action. Exact match only; wildcards are not supported.
+
+        Registry: organization.create, organization.read, organization.update, organization.delete, organization.members.manage, namespace.create, namespace.read, namespace.update, namespace.delete, project.create, project.read, project.update, project.delete, project.members.manage, issue.create, issue.read, issue.update, issue.delete, issue.assign, document.create, document.read, document.update, document.delete, folder.create, role.manage, team.manage, permission.manage.
+      examples:
+        - organization.read
+        - project.update
+        - permission.manage
+    Grant:
+      title: Grant
       type: object
-      description: A permission in the system.
+      description: A scoped ReBAC grant that binds a principal to actions on a resource.
       x-examples:
         example:
           id: 9bsv0s46s6s002p9ltq0
-          kind: "*"
+          principal: 9bsv0s46s6s002p9ltq0
+          principal_type: User
+          scope: 9bsv0s46s6s002p9ltq0
+          scope_type: Organization
+          role_id: null
+          actions:
+            - organization.read
+            - project.update
           created_at: "2023-01-01T00:00:00Z"
           updated_at: null
       properties:
         id:
           type: string
-          description: Unique identifier of the user.
+          description: Unique identifier of the grant.
           example: 9bsv0s46s6s002p9ltq0
-        kind:
-          $ref: "#/components/schemas/PermissionKind"
-        subject:
+        principal:
           type: string
+          description: ID of the principal that holds the grant.
           example: 9bsv0s46s6s002p9ltq0
-        target:
+        principal_type:
+          $ref: "#/components/schemas/ResourceType"
+        scope:
           type: string
-          description: Resource ID.
-          example: "9bsv0s46s6s002p9ltq0"
-        target_type:
+          description: ID of the resource the grant applies to.
+          example: 9bsv0s46s6s002p9ltq0
+        scope_type:
+          $ref: "#/components/schemas/ResourceType"
+        role_id:
           type: string
-          description: Resource type of the target resource.
-          example: "Organization"
+          description: ID of the role whose actions are included in this grant.
+          example: 9bsv0s46s6s002p9ltq0
+          nullable: true
+        actions:
+          type: array
+          description: Actions granted on the scope.
+          items:
+            $ref: "#/components/schemas/Action"
         created_at:
           type: string
           format: date-time
-          description: Date when the user was created.
+          description: Date when the grant was created.
         updated_at:
           type: string
           format: date-time
-          description: Date when the user was updated.
+          description: Date when the grant was updated.
           nullable: true
       required:
         - id
-        - kind
-        - subject
-        - target
-        - target_type
+        - principal
+        - principal_type
+        - scope
+        - scope_type
+        - role_id
+        - actions
         - created_at
         - updated_at
-    PermissionKind:
-      title: PermissionKind
+    EffectiveActions:
+      title: EffectiveActions
+      type: object
+      description: Actions the caller can perform on a resource after ReBAC evaluation.
+      properties:
+        actions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Action"
+          example:
+            - project.read
+            - issue.create
+      required:
+        - actions
+    GrantPrincipalType:
+      title: GrantPrincipalType
       type: string
-      description: Kind of a permission.
+      description: Principal kinds that can hold grants.
       enum:
-        - "*"
-        - create
-        - write
-        - read
-        - delete
+        - User
+        - Team
+        - Organization
     Role:
       title: Role
       type: object
-      description: A role in the system.
+      description: A role bundle of actions that can be granted on a scope.
       x-examples:
         example:
           id: 9bsv0s46s6s002p9ltq0
+          key: org-member
           name: Collaborators
           description: Users who can collaborate on the project.
           member_count: 1
-          permissions:
-            - 9bsv0s46s6s002p9ltq0
+          actions:
+            - organization.read
+            - project.read
           created_at: "2023-01-01T00:00:00Z"
           updated_at: null
       properties:
@@ -2115,6 +2253,10 @@ components:
           type: string
           description: Unique identifier of the role.
           example: 9bsv0s46s6s002p9ltq0
+        key:
+          type: string
+          description: Stable role template key.
+          example: org-member
         name:
           type: string
           description: Name of the role.
@@ -2134,26 +2276,75 @@ components:
           description: Number of users assigned to the role when projected.
           example: 4
           nullable: true
-        permissions:
+        actions:
           type: array
-          description: IDs of the permissions assigned to the role.
-          uniqueItems: true
+          description: Actions bundled by this role.
           items:
-            type: string
-            example: 9bsv0s46s6s002p9ltq0
+            $ref: "#/components/schemas/Action"
         created_at:
           type: string
           format: date-time
-          description: Date when the organization was created.
+          description: Date when the role was created.
         updated_at:
           type: string
           format: date-time
-          description: Date when the organization was updated.
+          description: Date when the role was updated.
+          nullable: true
+      required:
+        - id
+        - key
+        - name
+        - actions
+        - created_at
+        - updated_at
+    Team:
+      title: Team
+      type: object
+      description: A team of users that belongs to an organization.
+      x-examples:
+        example:
+          id: 9bsv0s46s6s002p9ltq0
+          name: Platform
+          description: Platform engineering team.
+          member_count: 4
+          created_at: "2023-01-01T00:00:00Z"
+          updated_at: null
+      properties:
+        id:
+          type: string
+          description: Unique identifier of the team.
+          example: 9bsv0s46s6s002p9ltq0
+        name:
+          type: string
+          description: Name of the team.
+          maxLength: 120
+          example: Platform
+          minLength: 3
+        description:
+          type: string
+          description: Description of the team.
+          maxLength: 500
+          example: Platform engineering team.
+          minLength: 5
+          nullable: true
+        member_count:
+          type: integer
+          format: int64
+          description: Number of users in the team when projected.
+          example: 4
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          description: Date when the team was created.
+        updated_at:
+          type: string
+          format: date-time
+          description: Date when the team was updated.
           nullable: true
       required:
         - id
         - name
-        - permissions
         - created_at
         - updated_at
     ResourceType:
@@ -2168,14 +2359,18 @@ components:
         - IssueRelation
         - Label
         - Namespace
+        - Notification
         - Organization
         - Permission
         - Project
         - ResourceType
         - Role
+        - Team
         - Todo
         - User
+        - UserToken
         - Folder
+        - Installation
   examples: {}
   securitySchemes:
     oauth2:
@@ -2438,19 +2633,6 @@ components:
       schema:
         type: boolean
       description: Irreversibly delete the user.
-    roles:
-      name: roles
-      in: query
-      required: true
-      schema:
-        type: array
-        items:
-          type: string
-          enum:
-            - Owner
-            - Admin
-            - Support
-      description: ID of a role.
   requestBodies:
     UserPatch:
       content:
@@ -3260,17 +3442,28 @@ components:
                 $ref: "#/components/schemas/IssueRelationKind"
             required:
               - kind
-    PermissionCreate:
+    GrantCreate:
       content:
         application/json:
           schema:
             type: object
+            description: Create a grant. Either role_id or a non-empty actions array is required.
             properties:
-              kind:
-                $ref: "#/components/schemas/PermissionKind"
-              subject:
+              principal:
                 type: object
-                example: "user:9bsv0s46s6s002p9ltq0"
+                description: Principal that receives the grant. Must be User, Team, or Organization.
+                required:
+                  - resourceType
+                  - id
+                properties:
+                  resourceType:
+                    $ref: "#/components/schemas/GrantPrincipalType"
+                  id:
+                    type: string
+                    example: 9bsv0s46s6s002p9ltq0
+              scope:
+                type: object
+                description: Resource the grant applies to.
                 required:
                   - resourceType
                   - id
@@ -3280,38 +3473,30 @@ components:
                   id:
                     type: string
                     example: 9bsv0s46s6s002p9ltq0
-              target:
-                type: object
-                example: "user:9bsv0s46s6s002p9ltq0"
-                required:
-                  - resourceType
-                  - id
-                properties:
-                  resourceType:
-                    $ref: "#/components/schemas/ResourceType"
-                  id:
-                    type: string
-                    example: 9bsv0s46s6s002p9ltq0
+              role_id:
+                type: string
+                description: Optional role whose bundled actions are granted on the scope.
+                example: 9bsv0s46s6s002p9ltq0
+              actions:
+                type: array
+                description: Optional explicit actions granted on the scope.
+                items:
+                  $ref: "#/components/schemas/Action"
             required:
-              - kind
-              - subject
-              - target
-    PermissionPatch:
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              kind:
-                $ref: "#/components/schemas/PermissionKind"
-            required:
-              - kind
+              - principal
+              - scope
     RoleCreate:
       content:
         application/json:
           schema:
             type: object
             properties:
+              key:
+                type: string
+                description: Stable role template key.
+                maxLength: 120
+                minLength: 1
+                example: org-member
               name:
                 type: string
                 description: Name of the role.
@@ -3324,6 +3509,11 @@ components:
                 minLength: 5
                 maxLength: 500
                 description: Description of the role.
+              actions:
+                type: array
+                description: Actions bundled by this role.
+                items:
+                  $ref: "#/components/schemas/Action"
             required:
               - name
     RolePatch:
@@ -3347,21 +3537,54 @@ components:
                 nullable: true
                 x-go-type: "Optional[string]"
                 x-go-type-skip-optional-pointer: true
-    RolePermissionCreate:
+              actions:
+                type: array
+                description: Actions bundled by this role. Empty array clears actions.
+                items:
+                  $ref: "#/components/schemas/Action"
+                x-go-type: "Optional[[]string]"
+                x-go-type-skip-optional-pointer: true
+    TeamCreate:
       content:
         application/json:
           schema:
             type: object
             properties:
-              target:
+              name:
                 type: string
-                description: Resource ID string in the format "ResourceType:id" or "ResourceType:00000000000000000000" for system-level permissions.
-                example: "Organization:9bsv0s46s6s002p9ltq0"
-              kind:
-                $ref: "#/components/schemas/PermissionKind"
+                description: Name of the team.
+                maxLength: 120
+                example: Platform
+                minLength: 3
+              description:
+                type: string
+                example: Platform engineering team.
+                minLength: 5
+                maxLength: 500
+                description: Description of the team.
             required:
-              - target
-              - kind
+              - name
+    TeamPatch:
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              name:
+                type: string
+                maxLength: 120
+                minLength: 3
+                description: Name of the team.
+                example: Platform
+              description:
+                type: string
+                minLength: 5
+                maxLength: 500
+                description: Description of the team.
+                example: Platform engineering team.
+                nullable: true
+                x-go-type: "Optional[string]"
+                x-go-type-skip-optional-pointer: true
 paths:
   /v1/users:
     get:
@@ -4325,21 +4548,168 @@ paths:
         - oauth2:
             - organization
             - role
-  "/v1/organizations/{id}/roles/{role_id}/members":
+  "/v1/organizations/{id}/teams":
+    parameters:
+      - $ref: "#/components/parameters/id"
+    get:
+      summary: Get organization teams
+      description: Return the teams that belong to the organization.
+      operationId: v1OrganizationTeamsGet
+      tags:
+        - Organization
+        - Team
+      security:
+        - oauth2:
+            - organization.read
+      parameters:
+        - $ref: "#/components/parameters/page_size"
+        - $ref: "#/components/parameters/page_token"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamPage"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+    post:
+      summary: Create a new team in the organization
+      operationId: v1OrganizationTeamsCreate
+      responses:
+        "201":
+          $ref: "#/components/responses/201"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+      description: Create a new team and assign it to the organization.
+      security:
+        - oauth2:
+            - organization
+      tags:
+        - Organization
+        - Team
+      requestBody:
+        $ref: "#/components/requestBodies/TeamCreate"
+  "/v1/organizations/{id}/teams/{team_id}":
     parameters:
       - $ref: "#/components/parameters/id"
       - schema:
           type: string
           example: 9bsv0s46s6s002p9ltq0
-        name: role_id
+        name: team_id
         in: path
         required: true
-        description: ID of the role.
+        description: ID of the team.
     get:
-      summary: Get organization role members
+      summary: Get organization team
+      operationId: v1OrganizationTeamGet
       tags:
         - Organization
-        - Role
+        - Team
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Team"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+      security:
+        - oauth2:
+            - organization.read
+      description: Returns the given organization team by its ID.
+    patch:
+      summary: Update organization team
+      operationId: v1OrganizationTeamUpdate
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Team"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+      description: Update the organization team by its ID.
+      security:
+        - oauth2:
+            - organization
+      tags:
+        - Organization
+        - Team
+      requestBody:
+        $ref: "#/components/requestBodies/TeamPatch"
+    delete:
+      summary: Delete organization team
+      operationId: v1OrganizationTeamDelete
+      tags:
+        - Organization
+        - Team
+      responses:
+        "204":
+          description: No Content
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+      description: Deletes a team that belongs to the organization.
+      security:
+        - oauth2:
+            - organization
+  "/v1/organizations/{id}/teams/{team_id}/members":
+    parameters:
+      - $ref: "#/components/parameters/id"
+      - schema:
+          type: string
+          example: 9bsv0s46s6s002p9ltq0
+        name: team_id
+        in: path
+        required: true
+        description: ID of the team.
+    get:
+      summary: Get organization team members
+      tags:
+        - Organization
+        - Team
         - User
       responses:
         "200":
@@ -4358,19 +4728,18 @@ paths:
           $ref: "#/components/responses/404"
         "500":
           $ref: "#/components/responses/500"
-      operationId: v1OrganizationRoleMembersGet
+      operationId: v1OrganizationTeamMembersGet
       security:
         - oauth2:
             - organization.read
-            - role.read
             - user.read
-      description: Return a cursor-paginated page of users that are members of the organization's role.
+      description: Return a cursor-paginated page of users that are members of the organization's team.
       parameters:
         - $ref: "#/components/parameters/page_size"
         - $ref: "#/components/parameters/page_token"
     post:
-      summary: Add organization role member
-      operationId: v1OrganizationRoleMembersAdd
+      summary: Add organization team member
+      operationId: v1OrganizationTeamMembersAdd
       responses:
         "201":
           $ref: "#/components/responses/201"
@@ -4384,14 +4753,13 @@ paths:
           $ref: "#/components/responses/404"
         "500":
           $ref: "#/components/responses/500"
-      description: Add an existing user to an organization's role.
+      description: Add an existing user to an organization's team.
       security:
         - oauth2:
             - organization
-            - role
       tags:
         - Organization
-        - Role
+        - Team
         - User
       requestBody:
         content:
@@ -4405,16 +4773,16 @@ paths:
                   example: 9bsv0s46s6s002p9ltq0
               required:
                 - user_id
-  "/v1/organizations/{id}/roles/{role_id}/members/{user_id}":
+  "/v1/organizations/{id}/teams/{team_id}/members/{user_id}":
     parameters:
       - $ref: "#/components/parameters/id"
       - schema:
           type: string
           example: 9bsv0s46s6s002p9ltq0
-        name: role_id
+        name: team_id
         in: path
         required: true
-        description: ID of the role.
+        description: ID of the team.
       - schema:
           type: string
           example: 9bsv0s46s6s002p9ltq0
@@ -4423,8 +4791,8 @@ paths:
         required: true
         description: ID of the user.
     delete:
-      summary: Remove organization role member
-      operationId: v1OrganizationRoleMemberRemove
+      summary: Remove organization team member
+      operationId: v1OrganizationTeamMemberRemove
       responses:
         "204":
           description: No Content
@@ -4438,129 +4806,14 @@ paths:
           $ref: "#/components/responses/404"
         "500":
           $ref: "#/components/responses/500"
-      description: Removes a member from the organization's role
+      description: Removes a member from the organization's team.
       security:
         - oauth2:
             - organization
-            - role
       tags:
         - Organization
-        - Role
+        - Team
         - User
-  "/v1/organizations/{id}/roles/{role_id}/permissions":
-    parameters:
-      - $ref: "#/components/parameters/id"
-      - schema:
-          type: string
-          example: 9bsv0s46s6s002p9ltq0
-        name: role_id
-        in: path
-        required: true
-        description: ID of the role.
-    get:
-      summary: Get organization role permissions
-      operationId: v1OrganizationRolePermissionsGet
-      tags:
-        - Organization
-        - Role
-        - Permission
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: array
-                uniqueItems: true
-                items:
-                  $ref: "#/components/schemas/Permission"
-        "400":
-          $ref: "#/components/responses/400"
-        "401":
-          $ref: "#/components/responses/401"
-        "403":
-          $ref: "#/components/responses/403"
-        "404":
-          $ref: "#/components/responses/404"
-        "500":
-          $ref: "#/components/responses/500"
-      description: Return the permissions assigned to the organization's role.
-      security:
-        - oauth2:
-            - organization.read
-            - role.read
-            - permission.read
-    post:
-      summary: Add permission to organization role
-      operationId: v1OrganizationRolePermissionAdd
-      tags:
-        - Organization
-        - Role
-        - Permission
-      responses:
-        "201":
-          $ref: "#/components/responses/201"
-        "400":
-          $ref: "#/components/responses/400"
-        "401":
-          $ref: "#/components/responses/401"
-        "403":
-          $ref: "#/components/responses/403"
-        "404":
-          $ref: "#/components/responses/404"
-        "500":
-          $ref: "#/components/responses/500"
-      description: Add a permission to an organization's role. Only organization-scoped resources (Organization, Namespace, Document, Project, Role) are allowed.
-      security:
-        - oauth2:
-            - organization
-            - role
-            - permission
-      requestBody:
-        $ref: "#/components/requestBodies/RolePermissionCreate"
-  "/v1/organizations/{id}/roles/{role_id}/permissions/{permission_id}":
-    parameters:
-      - $ref: "#/components/parameters/id"
-      - schema:
-          type: string
-          example: 9bsv0s46s6s002p9ltq0
-        name: role_id
-        in: path
-        required: true
-        description: ID of the role.
-      - schema:
-          type: string
-          example: 9bsv0s46s6s002p9ltq0
-        name: permission_id
-        in: path
-        required: true
-        description: ID of the permission.
-    delete:
-      summary: Remove permission from organization role
-      operationId: v1OrganizationRolePermissionRemove
-      tags:
-        - Organization
-        - Role
-        - Permission
-      responses:
-        "204":
-          description: No Content
-        "400":
-          $ref: "#/components/responses/400"
-        "401":
-          $ref: "#/components/responses/401"
-        "403":
-          $ref: "#/components/responses/403"
-        "404":
-          $ref: "#/components/responses/404"
-        "500":
-          $ref: "#/components/responses/500"
-      description: Removes a permission from the organization's role.
-      security:
-        - oauth2:
-            - organization
-            - role
-            - permission
   "/v1/organizations/{id}/namespaces":
     parameters:
       - $ref: "#/components/parameters/id"
@@ -4752,6 +5005,35 @@ paths:
         - Folder
       requestBody:
         $ref: "#/components/requestBodies/FolderCreate"
+  /v1/namespaces:
+    get:
+      summary: List reachable namespaces
+      tags:
+        - Namespace
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccessibleNamespacePage"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "500":
+          $ref: "#/components/responses/500"
+      operationId: v1NamespacesGet
+      security:
+        - oauth2: []
+      description: >
+        Return a cursor-paginated page of namespaces the actor can reach.
+        A namespace is reachable when the actor has namespace.read on it or can
+        read at least one descendant. Organization stubs are included without
+        requiring organization.read.
+      parameters:
+        - $ref: "#/components/parameters/page_size"
+        - $ref: "#/components/parameters/page_token"
   "/v1/namespaces/{id}":
     parameters:
       - $ref: "#/components/parameters/id"
@@ -5816,7 +6098,7 @@ paths:
         - Issue
   /v1/permissions:
     post:
-      summary: Create permission
+      summary: Create grant
       operationId: v1PermissionsCreate
       responses:
         "201":
@@ -5829,45 +6111,18 @@ paths:
           $ref: "#/components/responses/403"
         "500":
           $ref: "#/components/responses/500"
-      description: Create a new permission for a subject to the given target.
+      description: Create a new grant for a principal on the given scope. Either role_id or actions is required. Grants are immutable; delete and recreate to change them.
       security:
         - oauth2: []
       tags:
         - Permission
       requestBody:
-        $ref: "#/components/requestBodies/PermissionCreate"
+        $ref: "#/components/requestBodies/GrantCreate"
   "/v1/permissions/{id}":
     parameters:
       - $ref: "#/components/parameters/id"
-    patch:
-      summary: Update permission
-      operationId: v1PermissionUpdate
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Permission"
-        "400":
-          $ref: "#/components/responses/400"
-        "401":
-          $ref: "#/components/responses/401"
-        "403":
-          $ref: "#/components/responses/403"
-        "404":
-          $ref: "#/components/responses/404"
-        "500":
-          $ref: "#/components/responses/500"
-      description: Update a permission.
-      security:
-        - oauth2: []
-      tags:
-        - Permission
-      requestBody:
-        $ref: "#/components/requestBodies/PermissionPatch"
     delete:
-      summary: Delete permission
+      summary: Delete grant
       operationId: v1PermissionDelete
       responses:
         "204":
@@ -5882,13 +6137,13 @@ paths:
           $ref: "#/components/responses/404"
         "500":
           $ref: "#/components/responses/500"
-      description: Delete a permission by its ID.
+      description: Delete a grant by its ID.
       security:
         - oauth2: []
       tags:
         - Permission
     get:
-      summary: Get permission
+      summary: Get grant
       operationId: v1PermissionGet
       responses:
         "200":
@@ -5896,7 +6151,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Permission"
+                $ref: "#/components/schemas/Grant"
         "400":
           $ref: "#/components/responses/400"
         "401":
@@ -5905,7 +6160,7 @@ paths:
           $ref: "#/components/responses/404"
         "500":
           $ref: "#/components/responses/500"
-      description: Get a permission by its ID.
+      description: Get a grant by its ID.
       security:
         - oauth2: []
       tags:
@@ -5914,7 +6169,7 @@ paths:
     parameters:
       - $ref: "#/components/parameters/resourceId"
     get:
-      summary: Get permissions for a resource
+      summary: Get effective actions for a resource
       operationId: v1PermissionResourceGet
       responses:
         "200":
@@ -5922,9 +6177,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Permission"
+                $ref: "#/components/schemas/EffectiveActions"
         "400":
           $ref: "#/components/responses/400"
         "401":
@@ -5935,62 +6188,11 @@ paths:
           $ref: "#/components/responses/404"
         "500":
           $ref: "#/components/responses/500"
-      description: Get all permissions the caller have for a given resource.
+      description: Returns the caller's effective actions on the given resource.
       security:
         - oauth2: []
       tags:
         - Permission
-  "/v1/permissions/has-relations/{resourceId}":
-    parameters:
-      - $ref: "#/components/parameters/resourceId"
-    get:
-      summary: Check relations to resource
-      operationId: v1PermissionHasRelations
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: boolean
-        "400":
-          $ref: "#/components/responses/400"
-        "401":
-          $ref: "#/components/responses/401"
-        "404":
-          $ref: "#/components/responses/404"
-        "500":
-          $ref: "#/components/responses/500"
-      description: Check if the caller has any relations to a given resource.
-      security:
-        - oauth2: []
-      tags:
-        - Permission
-  /v1/permissions/has-system-role:
-    parameters: []
-    get:
-      summary: Check system role assignment
-      operationId: v1PermissionHasSystemRole
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: boolean
-        "400":
-          $ref: "#/components/responses/400"
-        "401":
-          $ref: "#/components/responses/401"
-        "500":
-          $ref: "#/components/responses/500"
-      description: "Check if the user is member of one or more system roles."
-      security:
-        - oauth2: []
-      tags:
-        - Permission
-      parameters:
-        - $ref: "#/components/parameters/roles"
   /v1/system/health:
     get:
       summary: Get system health

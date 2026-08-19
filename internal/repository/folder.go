@@ -71,7 +71,7 @@ type UpdateFolderOpts struct {
 type FolderRepository interface {
 	Create(ctx context.Context, opts CreateFolderOpts) (*Folder, error)
 	Get(ctx context.Context, id model.ID) (*Folder, error)
-	List(ctx context.Context, libraryID model.ID, parentID *model.ID, page CursorPage) (Page[*Folder], error)
+	List(ctx context.Context, libraryID model.ID, parentID *model.ID, actor model.ID, page CursorPage) (Page[*Folder], error)
 	Update(ctx context.Context, id model.ID, opts UpdateFolderOpts) (*Folder, error)
 	Delete(ctx context.Context, id model.ID) error
 }
@@ -235,6 +235,7 @@ func (r *Neo4jFolderRepository) Create(ctx context.Context, opts CreateFolderOpt
 		"name":           opts.Name,
 		"created_at":     createdAt.Format(time.RFC3339Nano),
 		"scoped_rel_id":  model.NewRawID(),
+		"scope_id":       model.NewRawID(),
 		"created_rel_id": model.NewRawID(),
 	}
 
@@ -246,6 +247,7 @@ func (r *Neo4jFolderRepository) Create(ctx context.Context, opts CreateFolderOpt
 			id: $id, name: $name, created_by: $created_by_id, created_at: datetime($created_at)
 		}),
 		(f)-[:` + EdgeKindScopedTo.String() + ` {id: $scoped_rel_id, created_at: datetime($created_at)}]->(lib),
+		(f)-[:` + EdgeKindInScopeOf.String() + ` {id: $scope_id, created_at: datetime($created_at)}]->(lib),
 		(f)-[:` + EdgeKindLocatedIn.String() + ` {id: $located_rel_id, created_at: datetime($created_at)}]->(parent),
 		(o)-[:` + EdgeKindCreated.String() + ` {id: $created_rel_id, created_at: datetime($created_at)}]->(f)`
 		params["parent_id"] = opts.ParentID.String()
@@ -257,6 +259,7 @@ func (r *Neo4jFolderRepository) Create(ctx context.Context, opts CreateFolderOpt
 			id: $id, name: $name, created_by: $created_by_id, created_at: datetime($created_at)
 		}),
 		(f)-[:` + EdgeKindScopedTo.String() + ` {id: $scoped_rel_id, created_at: datetime($created_at)}]->(lib),
+		(f)-[:` + EdgeKindInScopeOf.String() + ` {id: $scope_id, created_at: datetime($created_at)}]->(lib),
 		(o)-[:` + EdgeKindCreated.String() + ` {id: $created_rel_id, created_at: datetime($created_at)}]->(f)`
 	}
 
@@ -289,7 +292,7 @@ func (r *Neo4jFolderRepository) Get(ctx context.Context, id model.ID) (*Folder, 
 	return folder, nil
 }
 
-func (r *Neo4jFolderRepository) List(ctx context.Context, libraryID model.ID, parentID *model.ID, page CursorPage) (Page[*Folder], error) {
+func (r *Neo4jFolderRepository) List(ctx context.Context, libraryID model.ID, parentID *model.ID, actor model.ID, page CursorPage) (Page[*Folder], error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.FolderRepository/List")
 	defer span.End()
 
@@ -299,6 +302,8 @@ func (r *Neo4jFolderRepository) List(ctx context.Context, libraryID model.ID, pa
 	}
 	plan, err := CompileQuery(FolderListQuery{
 		LibraryID: libraryID,
+		ActorID:   actor,
+		Action:    model.ActionDocumentRead,
 		ParentID:  parentID,
 		Page:      normalized,
 		Order:     SortDirectionDesc,
@@ -469,7 +474,7 @@ func (r *RedisCachedFolderRepository) Get(ctx context.Context, id model.ID) (*Fo
 	return folder, nil
 }
 
-func (r *RedisCachedFolderRepository) List(ctx context.Context, libraryID model.ID, parentID *model.ID, page CursorPage) (Page[*Folder], error) {
+func (r *RedisCachedFolderRepository) List(ctx context.Context, libraryID model.ID, parentID *model.ID, actor model.ID, page CursorPage) (Page[*Folder], error) {
 	var folders Page[*Folder]
 	var err error
 
@@ -482,7 +487,7 @@ func (r *RedisCachedFolderRepository) List(ctx context.Context, libraryID model.
 	if parentID != nil {
 		parentKey = parentID.String()
 	}
-	key := composeCacheKey(model.ResourceTypeFolder.String(), "List", libraryID.String(), parentKey, pageTokenValue(normalized.Token), normalized.Size)
+	key := composeCacheKey(model.ResourceTypeFolder.String(), "List", libraryID.String(), parentKey, actor.String(), pageTokenValue(normalized.Token), normalized.Size)
 	if err = r.cacheRepo.Get(ctx, key, &folders); err != nil {
 		return Page[*Folder]{}, err
 	}
@@ -491,7 +496,7 @@ func (r *RedisCachedFolderRepository) List(ctx context.Context, libraryID model.
 		return folders, nil
 	}
 
-	if folders, err = r.folderRepo.List(ctx, libraryID, parentID, normalized); err != nil {
+	if folders, err = r.folderRepo.List(ctx, libraryID, parentID, actor, normalized); err != nil {
 		return Page[*Folder]{}, err
 	}
 

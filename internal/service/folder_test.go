@@ -93,7 +93,8 @@ func TestFolderService_Create(t *testing.T) {
 		tracer.EXPECT().Start(ctx, "service.folderService/Create", gomock.Len(0)).Return(ctx, span)
 
 		permSvc := NewMockPermissionService(ctrl)
-		permSvc.EXPECT().CtxUserHasPermission(ctx, libraryID, []model.PermissionKind{model.PermissionKindWrite}).Return(true)
+		permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+		permSvc.EXPECT().CtxUserHas(ctx, libraryID, gomock.Any()).Return(true)
 
 		folderRepo := repository.NewMockFolderRepository(ctrl)
 		folderRepo.EXPECT().Create(ctx, repository.CreateFolderOpts{
@@ -127,7 +128,8 @@ func TestFolderService_Create(t *testing.T) {
 		tracer.EXPECT().Start(ctx, "service.folderService/Create", gomock.Len(0)).Return(ctx, span)
 
 		permSvc := NewMockPermissionService(ctrl)
-		permSvc.EXPECT().CtxUserHasPermission(ctx, libraryID, []model.PermissionKind{model.PermissionKindWrite}).Return(false)
+		permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+		permSvc.EXPECT().CtxUserHas(ctx, libraryID, gomock.Any()).Return(false)
 
 		s := &folderService{baseService: &baseService{
 			logger:            mock.NewMockLogger(ctrl),
@@ -165,7 +167,7 @@ func TestFolderService_Get(t *testing.T) {
 	userID := model.MustNewID(model.ResourceTypeUser)
 	repoFolder := newRepositoryFolder(libraryID, userID)
 
-	t.Run("success checks library permission", func(t *testing.T) {
+	t.Run("success checks folder permission", func(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
@@ -180,7 +182,8 @@ func TestFolderService_Get(t *testing.T) {
 		folderRepo.EXPECT().Get(ctx, repoFolder.ID).Return(repoFolder, nil)
 
 		permSvc := NewMockPermissionService(ctrl)
-		permSvc.EXPECT().CtxUserHasPermission(ctx, libraryID, []model.PermissionKind{model.PermissionKindRead}).Return(true)
+		permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+		permSvc.EXPECT().CtxUserHas(ctx, repoFolder.ID, gomock.Any()).Return(true)
 
 		s := &folderService{baseService: &baseService{
 			logger:            mock.NewMockLogger(ctrl),
@@ -207,17 +210,17 @@ func TestFolderService_List(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		ctx := context.Background()
+		ctx := context.WithValue(context.Background(), pkg.CtxKeyUserID, userID)
 		span := mock.NewMockSpan(ctrl)
 		span.EXPECT().End(gomock.Len(0))
 		tracer := mock.NewMockTracer(ctrl)
 		tracer.EXPECT().Start(ctx, "service.folderService/List", gomock.Len(0)).Return(ctx, span)
 
 		permSvc := NewMockPermissionService(ctrl)
-		permSvc.EXPECT().CtxUserHasPermission(ctx, libraryID, []model.PermissionKind{model.PermissionKindRead}).Return(true)
+		permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
 		folderRepo := repository.NewMockFolderRepository(ctrl)
-		folderRepo.EXPECT().List(ctx, libraryID, (*model.ID)(nil), gomock.Any()).Return(repository.Page[*repository.Folder]{
+		folderRepo.EXPECT().List(ctx, libraryID, (*model.ID)(nil), userID, gomock.Any()).Return(repository.Page[*repository.Folder]{
 			Items: []*repository.Folder{repoFolder},
 		}, nil)
 
@@ -280,7 +283,8 @@ func TestFolderService_Update(t *testing.T) {
 		}).Return(&updated, nil)
 
 		permSvc := NewMockPermissionService(ctrl)
-		permSvc.EXPECT().CtxUserHasPermission(ctx, libraryID, []model.PermissionKind{model.PermissionKindWrite}).Return(true)
+		permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+		permSvc.EXPECT().CtxUserHas(ctx, libraryID, gomock.Any()).Return(true)
 
 		s := &folderService{baseService: &baseService{
 			logger:            mock.NewMockLogger(ctrl),
@@ -317,7 +321,8 @@ func TestFolderService_Delete(t *testing.T) {
 		folderRepo.EXPECT().Delete(ctx, repoFolder.ID).Return(nil)
 
 		permSvc := NewMockPermissionService(ctrl)
-		permSvc.EXPECT().CtxUserHasPermission(ctx, libraryID, []model.PermissionKind{model.PermissionKindDelete}).Return(true)
+		permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+		permSvc.EXPECT().CtxUserHas(ctx, libraryID, gomock.Any()).Return(true)
 
 		s := &folderService{baseService: &baseService{
 			logger:            mock.NewMockLogger(ctrl),

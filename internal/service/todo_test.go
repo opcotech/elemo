@@ -54,17 +54,15 @@ func TestNewTodoService(t *testing.T) {
 					WithLogger(mock.NewMockLogger(nil)),
 					WithTracer(mock.NewMockTracer(nil)),
 					WithTodoRepository(repository.NewMockTodoRepository(nil)),
-					WithPermissionService(NewMockPermissionService(nil)),
 					WithLicenseService(mock.NewMockLicenseService(nil)),
 				},
 			},
 			want: &todoService{
 				baseService: &baseService{
-					logger:            mock.NewMockLogger(nil),
-					tracer:            mock.NewMockTracer(nil),
-					todoRepo:          repository.NewMockTodoRepository(nil),
-					permissionService: NewMockPermissionService(nil),
-					licenseService:    mock.NewMockLicenseService(nil),
+					logger:         mock.NewMockLogger(nil),
+					tracer:         mock.NewMockTracer(nil),
+					todoRepo:       repository.NewMockTodoRepository(nil),
+					licenseService: mock.NewMockLicenseService(nil),
 				},
 			},
 		},
@@ -91,25 +89,12 @@ func TestNewTodoService(t *testing.T) {
 			wantErr: ErrNoTodoRepository,
 		},
 		{
-			name: "new todo service with no permission repository",
-			args: args{
-				opts: []Option{
-					WithLogger(mock.NewMockLogger(nil)),
-					WithTracer(mock.NewMockTracer(nil)),
-					WithTodoRepository(repository.NewMockTodoRepository(nil)),
-					WithLicenseService(mock.NewMockLicenseService(nil)),
-				},
-			},
-			wantErr: ErrNoPermissionService,
-		},
-		{
 			name: "new todo service with no license service",
 			args: args{
 				opts: []Option{
 					WithLogger(mock.NewMockLogger(nil)),
 					WithTracer(mock.NewMockTracer(nil)),
 					WithTodoRepository(repository.NewMockTodoRepository(nil)),
-					WithPermissionService(NewMockPermissionService(nil)),
 				},
 			},
 			wantErr: ErrNoLicenseService,
@@ -164,11 +149,10 @@ func TestTodoService_Create(t *testing.T) {
 					todoRepo.EXPECT().Create(ctx, gomock.Any()).Return(testModel.NewRepositoryTodo(model.MustNewID(model.ResourceTypeUser), model.MustNewID(model.ResourceTypeUser)), nil)
 
 					return &baseService{
-						logger:            mock.NewMockLogger(ctrl),
-						tracer:            tracer,
-						todoRepo:          todoRepo,
-						permissionService: NewMockPermissionService(ctrl),
-						licenseService:    licenseSvc,
+						logger:         mock.NewMockLogger(ctrl),
+						tracer:         tracer,
+						todoRepo:       todoRepo,
+						licenseService: licenseSvc,
 					}
 				},
 			},
@@ -190,21 +174,16 @@ func TestTodoService_Create(t *testing.T) {
 					licenseSvc := mock.NewMockLicenseService(ctrl)
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
-					permSvc := NewMockPermissionService(ctrl)
-					permSvc.EXPECT().HasAnyRelation(ctx, peerID, userID).Return(true, nil)
-
-					todoRepo := repository.NewMockTodoRepository(ctrl)
-					todoRepo.EXPECT().Create(ctx, gomock.Any()).Return(testModel.NewRepositoryTodo(model.MustNewID(model.ResourceTypeUser), model.MustNewID(model.ResourceTypeUser)), nil)
-
 					return &baseService{
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
-						todoRepo:          todoRepo,
-						permissionService: permSvc,
+						todoRepo:          repository.NewMockTodoRepository(ctrl),
+						permissionService: NewMockPermissionService(ctrl),
 						licenseService:    licenseSvc,
 					}
 				},
 			},
+			wantErr: ErrNoPermission,
 		},
 		{
 			name: "create todo with invalid todo",
@@ -344,16 +323,13 @@ func TestTodoService_Create(t *testing.T) {
 					licenseSvc := mock.NewMockLicenseService(ctrl)
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
-					permSvc := NewMockPermissionService(ctrl)
-					permSvc.EXPECT().HasAnyRelation(ctx, peerID, userID).Return(false, nil)
-
 					todoRepo := repository.NewMockTodoRepository(ctrl)
 
 					return &baseService{
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						todoRepo:          todoRepo,
-						permissionService: permSvc,
+						permissionService: NewMockPermissionService(ctrl),
 						licenseService:    licenseSvc,
 					}
 				},
@@ -377,16 +353,13 @@ func TestTodoService_Create(t *testing.T) {
 					licenseSvc := mock.NewMockLicenseService(ctrl)
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
-					permSvc := NewMockPermissionService(ctrl)
-					permSvc.EXPECT().HasAnyRelation(ctx, peerID, userID).Return(false, assert.AnError)
-
 					todoRepo := repository.NewMockTodoRepository(ctrl)
 
 					return &baseService{
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						todoRepo:          todoRepo,
-						permissionService: permSvc,
+						permissionService: NewMockPermissionService(ctrl),
 						licenseService:    licenseSvc,
 					}
 				},
@@ -414,11 +387,10 @@ func TestTodoService_Create(t *testing.T) {
 					todoRepo.EXPECT().Create(ctx, gomock.Any()).Return(testModel.NewRepositoryTodo(model.MustNewID(model.ResourceTypeUser), model.MustNewID(model.ResourceTypeUser)), nil)
 
 					return &baseService{
-						logger:            mock.NewMockLogger(ctrl),
-						tracer:            tracer,
-						todoRepo:          todoRepo,
-						permissionService: NewMockPermissionService(ctrl),
-						licenseService:    licenseSvc,
+						logger:         mock.NewMockLogger(ctrl),
+						tracer:         tracer,
+						todoRepo:       todoRepo,
+						licenseService: licenseSvc,
 					}
 				},
 			},
@@ -473,27 +445,21 @@ func TestTodoService_Get(t *testing.T) {
 					tracer := mock.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.todoService/Get", gomock.Len(0)).Return(ctx, span)
 
-					permSvc := NewMockPermissionService(ctrl)
-					permSvc.EXPECT().CtxUserHasPermission(ctx, id, []model.PermissionKind{
-						model.PermissionKindRead,
-					}).Return(true)
-
 					todoRepo := repository.NewMockTodoRepository(ctrl)
 					todoRepo.EXPECT().Get(ctx, id).Return(todo, nil)
 
 					return &baseService{
-						logger:            mock.NewMockLogger(ctrl),
-						tracer:            tracer,
-						todoRepo:          todoRepo,
-						permissionService: permSvc,
-						licenseService:    mock.NewMockLicenseService(ctrl),
+						logger:         mock.NewMockLogger(ctrl),
+						tracer:         tracer,
+						todoRepo:       todoRepo,
+						licenseService: mock.NewMockLicenseService(ctrl),
 					}
 				},
 			},
 			want: todo,
 		},
 		{
-			name: "get todo with no permission",
+			name: "get todo owned by another user",
 			args: args{
 				ctx: context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
 				id:  todo.ID,
@@ -506,51 +472,43 @@ func TestTodoService_Get(t *testing.T) {
 					tracer := mock.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.todoService/Get", gomock.Len(0)).Return(ctx, span)
 
-					permSvc := NewMockPermissionService(ctrl)
-					permSvc.EXPECT().CtxUserHasPermission(ctx, id, []model.PermissionKind{
-						model.PermissionKindRead,
-					}).Return(false)
+					peerID := model.MustNewID(model.ResourceTypeUser)
+					todoRepo := repository.NewMockTodoRepository(ctrl)
+					todoRepo.EXPECT().Get(ctx, id).Return(testModel.NewRepositoryTodo(peerID, peerID), nil)
 
 					return &baseService{
-						logger:            mock.NewMockLogger(ctrl),
-						tracer:            tracer,
-						todoRepo:          repository.NewMockTodoRepository(ctrl),
-						permissionService: permSvc,
-						licenseService:    mock.NewMockLicenseService(ctrl),
+						logger:         mock.NewMockLogger(ctrl),
+						tracer:         tracer,
+						todoRepo:       todoRepo,
+						licenseService: mock.NewMockLicenseService(ctrl),
 					}
 				},
 			},
 			wantErr: ErrNoPermission,
 		},
 		{
-			name: "get todo with permission error",
+			name: "get todo with no user",
 			args: args{
-				ctx: context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
+				ctx: context.Background(),
 				id:  todo.ID,
 			},
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *repository.Todo) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ *repository.Todo) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mock.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.todoService/Get", gomock.Len(0)).Return(ctx, span)
 
-					permSvc := NewMockPermissionService(ctrl)
-					permSvc.EXPECT().CtxUserHasPermission(ctx, id, []model.PermissionKind{
-						model.PermissionKindRead,
-					}).Return(false)
-
 					return &baseService{
-						logger:            mock.NewMockLogger(ctrl),
-						tracer:            tracer,
-						todoRepo:          repository.NewMockTodoRepository(ctrl),
-						permissionService: permSvc,
-						licenseService:    mock.NewMockLicenseService(ctrl),
+						logger:         mock.NewMockLogger(ctrl),
+						tracer:         tracer,
+						todoRepo:       repository.NewMockTodoRepository(ctrl),
+						licenseService: mock.NewMockLicenseService(ctrl),
 					}
 				},
 			},
-			wantErr: ErrNoPermission,
+			wantErr: ErrNoUser,
 		},
 		{
 			name: "get todo with error",
@@ -566,20 +524,14 @@ func TestTodoService_Get(t *testing.T) {
 					tracer := mock.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.todoService/Get", gomock.Len(0)).Return(ctx, span)
 
-					permSvc := NewMockPermissionService(ctrl)
-					permSvc.EXPECT().CtxUserHasPermission(ctx, id, []model.PermissionKind{
-						model.PermissionKindRead,
-					}).Return(true)
-
 					todoRepo := repository.NewMockTodoRepository(ctrl)
 					todoRepo.EXPECT().Get(ctx, id).Return(nil, assert.AnError)
 
 					return &baseService{
-						logger:            mock.NewMockLogger(ctrl),
-						tracer:            tracer,
-						todoRepo:          todoRepo,
-						permissionService: permSvc,
-						licenseService:    mock.NewMockLicenseService(ctrl),
+						logger:         mock.NewMockLogger(ctrl),
+						tracer:         tracer,
+						todoRepo:       todoRepo,
+						licenseService: mock.NewMockLicenseService(ctrl),
 					}
 				},
 			},
@@ -871,27 +823,22 @@ func TestTodoService_Update(t *testing.T) {
 					licenseSvc := mock.NewMockLicenseService(ctrl)
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
-					permSvc := NewMockPermissionService(ctrl)
-					permSvc.EXPECT().CtxUserHasPermission(ctx, id, []model.PermissionKind{
-						model.PermissionKindWrite,
-					}).Return(true)
-
 					todoRepo := repository.NewMockTodoRepository(ctrl)
+					todoRepo.EXPECT().Get(ctx, id).Return(todo, nil)
 					todoRepo.EXPECT().Update(ctx, id, gomock.Any()).Return(todo, nil)
 
 					return &baseService{
-						logger:            mock.NewMockLogger(ctrl),
-						tracer:            tracer,
-						todoRepo:          todoRepo,
-						permissionService: permSvc,
-						licenseService:    licenseSvc,
+						logger:         mock.NewMockLogger(ctrl),
+						tracer:         tracer,
+						todoRepo:       todoRepo,
+						licenseService: licenseSvc,
 					}
 				},
 			},
 			want: todo,
 		},
 		{
-			name: "update todo with no permission",
+			name: "update todo owned by another user",
 			args: args{
 				ctx: context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
 				id:  todo.ID,
@@ -910,33 +857,31 @@ func TestTodoService_Update(t *testing.T) {
 					licenseSvc := mock.NewMockLicenseService(ctrl)
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
-					permSvc := NewMockPermissionService(ctrl)
-					permSvc.EXPECT().CtxUserHasPermission(ctx, id, []model.PermissionKind{
-						model.PermissionKindWrite,
-					}).Return(false)
+					peerID := model.MustNewID(model.ResourceTypeUser)
+					todoRepo := repository.NewMockTodoRepository(ctrl)
+					todoRepo.EXPECT().Get(ctx, id).Return(testModel.NewRepositoryTodo(peerID, peerID), nil)
 
 					return &baseService{
-						logger:            mock.NewMockLogger(ctrl),
-						tracer:            tracer,
-						todoRepo:          repository.NewMockTodoRepository(ctrl),
-						permissionService: permSvc,
-						licenseService:    licenseSvc,
+						logger:         mock.NewMockLogger(ctrl),
+						tracer:         tracer,
+						todoRepo:       todoRepo,
+						licenseService: licenseSvc,
 					}
 				},
 			},
 			wantErr: ErrNoPermission,
 		},
 		{
-			name: "update todo with permission error",
+			name: "update todo with no user",
 			args: args{
-				ctx: context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
+				ctx: context.Background(),
 				id:  todo.ID,
 				patch: UpdateTodoOpts{
 					Title: optional.Some("title"),
 				},
 			},
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ UpdateTodoOpts, _ *repository.Todo) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ UpdateTodoOpts, _ *repository.Todo) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
@@ -946,21 +891,15 @@ func TestTodoService_Update(t *testing.T) {
 					licenseSvc := mock.NewMockLicenseService(ctrl)
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
-					permSvc := NewMockPermissionService(ctrl)
-					permSvc.EXPECT().CtxUserHasPermission(ctx, id, []model.PermissionKind{
-						model.PermissionKindWrite,
-					}).Return(false)
-
 					return &baseService{
-						logger:            mock.NewMockLogger(ctrl),
-						tracer:            tracer,
-						todoRepo:          repository.NewMockTodoRepository(ctrl),
-						permissionService: permSvc,
-						licenseService:    licenseSvc,
+						logger:         mock.NewMockLogger(ctrl),
+						tracer:         tracer,
+						todoRepo:       repository.NewMockTodoRepository(ctrl),
+						licenseService: licenseSvc,
 					}
 				},
 			},
-			wantErr: ErrNoPermission,
+			wantErr: ErrNoUser,
 		},
 		{
 			name: "update todo with error",
@@ -982,20 +921,15 @@ func TestTodoService_Update(t *testing.T) {
 					licenseSvc := mock.NewMockLicenseService(ctrl)
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
-					permSvc := NewMockPermissionService(ctrl)
-					permSvc.EXPECT().CtxUserHasPermission(ctx, id, []model.PermissionKind{
-						model.PermissionKindWrite,
-					}).Return(true)
-
 					todoRepo := repository.NewMockTodoRepository(ctrl)
+					todoRepo.EXPECT().Get(ctx, id).Return(testModel.NewRepositoryTodo(userID, userID), nil)
 					todoRepo.EXPECT().Update(ctx, id, gomock.Any()).Return(nil, assert.AnError)
 
 					return &baseService{
-						logger:            mock.NewMockLogger(ctrl),
-						tracer:            tracer,
-						todoRepo:          todoRepo,
-						permissionService: permSvc,
-						licenseService:    licenseSvc,
+						logger:         mock.NewMockLogger(ctrl),
+						tracer:         tracer,
+						todoRepo:       todoRepo,
+						licenseService: licenseSvc,
 					}
 				},
 			},
@@ -1155,27 +1089,22 @@ func TestTodoService_Delete(t *testing.T) {
 					licenseSvc := mock.NewMockLicenseService(ctrl)
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
-					permSvc := NewMockPermissionService(ctrl)
-					permSvc.EXPECT().CtxUserHasPermission(ctx, id, []model.PermissionKind{
-						model.PermissionKindDelete,
-					}).Return(true)
-
 					todoRepo := repository.NewMockTodoRepository(ctrl)
+					todoRepo.EXPECT().Get(ctx, id).Return(testModel.NewRepositoryTodo(userID, userID), nil)
 					todoRepo.EXPECT().Delete(ctx, id).Return(nil)
 
 					return &baseService{
-						logger:            mock.NewMockLogger(ctrl),
-						tracer:            tracer,
-						todoRepo:          todoRepo,
-						permissionService: permSvc,
-						licenseService:    licenseSvc,
+						logger:         mock.NewMockLogger(ctrl),
+						tracer:         tracer,
+						todoRepo:       todoRepo,
+						licenseService: licenseSvc,
 					}
 				},
 			},
 			want: todo,
 		},
 		{
-			name: "delete todo with no permission",
+			name: "delete todo owned by another user",
 			args: args{
 				ctx: context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
 				id:  todo.ID,
@@ -1191,30 +1120,28 @@ func TestTodoService_Delete(t *testing.T) {
 					licenseSvc := mock.NewMockLicenseService(ctrl)
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
-					permSvc := NewMockPermissionService(ctrl)
-					permSvc.EXPECT().CtxUserHasPermission(ctx, id, []model.PermissionKind{
-						model.PermissionKindDelete,
-					}).Return(false)
+					peerID := model.MustNewID(model.ResourceTypeUser)
+					todoRepo := repository.NewMockTodoRepository(ctrl)
+					todoRepo.EXPECT().Get(ctx, id).Return(testModel.NewRepositoryTodo(peerID, peerID), nil)
 
 					return &baseService{
-						logger:            mock.NewMockLogger(ctrl),
-						tracer:            tracer,
-						todoRepo:          repository.NewMockTodoRepository(ctrl),
-						permissionService: permSvc,
-						licenseService:    licenseSvc,
+						logger:         mock.NewMockLogger(ctrl),
+						tracer:         tracer,
+						todoRepo:       todoRepo,
+						licenseService: licenseSvc,
 					}
 				},
 			},
 			wantErr: ErrNoPermission,
 		},
 		{
-			name: "delete todo with permission error",
+			name: "delete todo with no user",
 			args: args{
-				ctx: context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
+				ctx: context.Background(),
 				id:  todo.ID,
 			},
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
@@ -1224,21 +1151,15 @@ func TestTodoService_Delete(t *testing.T) {
 					licenseSvc := mock.NewMockLicenseService(ctrl)
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
-					permSvc := NewMockPermissionService(ctrl)
-					permSvc.EXPECT().CtxUserHasPermission(ctx, id, []model.PermissionKind{
-						model.PermissionKindDelete,
-					}).Return(false)
-
 					return &baseService{
-						logger:            mock.NewMockLogger(ctrl),
-						tracer:            tracer,
-						todoRepo:          repository.NewMockTodoRepository(ctrl),
-						permissionService: permSvc,
-						licenseService:    licenseSvc,
+						logger:         mock.NewMockLogger(ctrl),
+						tracer:         tracer,
+						todoRepo:       repository.NewMockTodoRepository(ctrl),
+						licenseService: licenseSvc,
 					}
 				},
 			},
-			wantErr: ErrNoPermission,
+			wantErr: ErrNoUser,
 		},
 		{
 			name: "delete todo with error",
@@ -1257,20 +1178,15 @@ func TestTodoService_Delete(t *testing.T) {
 					licenseSvc := mock.NewMockLicenseService(ctrl)
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
-					permSvc := NewMockPermissionService(ctrl)
-					permSvc.EXPECT().CtxUserHasPermission(ctx, id, []model.PermissionKind{
-						model.PermissionKindDelete,
-					}).Return(true)
-
 					todoRepo := repository.NewMockTodoRepository(ctrl)
+					todoRepo.EXPECT().Get(ctx, id).Return(testModel.NewRepositoryTodo(userID, userID), nil)
 					todoRepo.EXPECT().Delete(ctx, id).Return(assert.AnError)
 
 					return &baseService{
-						logger:            mock.NewMockLogger(ctrl),
-						tracer:            tracer,
-						todoRepo:          todoRepo,
-						permissionService: permSvc,
-						licenseService:    licenseSvc,
+						logger:         mock.NewMockLogger(ctrl),
+						tracer:         tracer,
+						todoRepo:       todoRepo,
+						licenseService: licenseSvc,
 					}
 				},
 			},

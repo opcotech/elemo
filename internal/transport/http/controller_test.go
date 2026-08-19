@@ -136,3 +136,26 @@ func TestWithFolderService(t *testing.T) {
 		assert.ErrorIs(t, err, ErrNoFolderService)
 	})
 }
+
+func TestWithTeamService(t *testing.T) {
+	t.Parallel()
+
+	t.Run("set team service", func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		ts := service.NewMockTeamService(ctrl)
+		var c baseController
+		err := WithTeamService(ts)(&c)
+		require.NoError(t, err)
+		assert.Equal(t, ts, c.teamService)
+	})
+
+	t.Run("nil team service", func(t *testing.T) {
+		t.Parallel()
+		var c baseController
+		err := WithTeamService(nil)(&c)
+		assert.ErrorIs(t, err, ErrNoTeamService)
+	})
+}

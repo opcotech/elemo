@@ -1,3 +1,5 @@
+//go:build integration
+
 package service_test
 
 import (
@@ -72,10 +74,10 @@ func (s *ProjectServiceIntegrationTestSuite) SetupTest() {
 	s.namespace, err = s.NamespaceRepo.Create(context.Background(), testModel.NewCreateNamespaceOpts(s.owner.ID, s.org.ID))
 	s.Require().NoError(err)
 
-	_, err = s.PermissionRepo.Create(context.Background(), repository.CreatePermissionOpts{
-		Subject: s.owner.ID,
-		Target:  s.namespace.ID,
-		Kind:    model.PermissionKindWrite,
+	_, err = s.PermissionRepo.Create(context.Background(), repository.CreateGrantOpts{
+		Principal: s.owner.ID,
+		Scope:     s.namespace.ID,
+		Actions:   testModel.OrgAdminActions(),
 	})
 	s.Require().NoError(err)
 }
@@ -110,12 +112,7 @@ func (s *ProjectServiceIntegrationTestSuite) TestCreate() {
 	s.Assert().Equal(opts.Status, project.Status)
 	s.Assert().NotNil(project.CreatedAt)
 
-	hasPermission, err := s.PermissionRepo.HasPermission(
-		context.Background(),
-		s.owner.ID,
-		project.ID,
-		model.PermissionKindAll,
-	)
+	hasPermission, err := s.PermissionRepo.Has(context.Background(), s.owner.ID, project.ID, model.ActionProjectRead)
 	s.Require().NoError(err)
 	s.Assert().True(hasPermission)
 }
@@ -169,6 +166,35 @@ func (s *ProjectServiceIntegrationTestSuite) TestGetAll() {
 	projects, err := s.projectService.List(s.ctx, s.namespace.ID, service.CursorPage{Size: 10})
 	s.Require().NoError(err)
 	s.Assert().Len(projects.Items, 2)
+}
+
+func (s *ProjectServiceIntegrationTestSuite) TestListWithoutNamespaceRead() {
+	created, err := s.projectService.Create(s.ctx, s.namespace.ID, s.newCreateOpts())
+	s.Require().NoError(err)
+	sibling, err := s.projectService.Create(s.ctx, s.namespace.ID, s.newCreateOpts())
+	s.Require().NoError(err)
+
+	viewer, err := s.UserRepo.Create(context.Background(), testModel.NewCreateUserOpts())
+	s.Require().NoError(err)
+	_, err = s.PermissionRepo.Create(context.Background(), repository.CreateGrantOpts{
+		Principal: viewer.ID,
+		Scope:     created.ID,
+		Actions:   testModel.ProjectViewerActions(),
+	})
+	s.Require().NoError(err)
+	viewerCtx := context.WithValue(context.Background(), pkg.CtxKeyUserID, viewer.ID)
+
+	projects, err := s.projectService.List(viewerCtx, s.namespace.ID, service.CursorPage{Size: 10})
+	s.Require().NoError(err)
+	s.Require().Len(projects.Items, 1)
+	s.Assert().Equal(created.ID, projects.Items[0].ID)
+
+	got, err := s.projectService.Get(viewerCtx, created.ID)
+	s.Require().NoError(err)
+	s.Assert().Equal(created.ID, got.ID)
+
+	_, err = s.projectService.Get(viewerCtx, sibling.ID)
+	s.Assert().ErrorIs(err, service.ErrNoPermission)
 }
 
 func (s *ProjectServiceIntegrationTestSuite) TestUpdate() {

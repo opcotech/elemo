@@ -2,19 +2,18 @@ import { expect } from "@playwright/test";
 import type { Locator, Page } from "@playwright/test";
 
 import { BaseComponent } from "../components/base";
-import { fillLocator } from "../helpers";
 import { SectionContainerMixin } from "../mixins";
 
-import type { PermissionKind } from "@/lib/api/types";
+import type { Action } from "@/lib/api/types";
 
-interface DraftPermissionOptions {
-  resourceType: string;
-  resourceId: string;
-  permissionKind: PermissionKind;
+interface DraftActionOptions {
+  action: Action;
 }
 
 /**
- * Section for managing the pending permissions draft on the role create page.
+ * Section for managing bundled actions on the role create page.
+ * Roles are capability bundles; they are not granted until a GRANTED edge
+ * references them at a scope.
  */
 export class RolePermissionDraftSection extends SectionContainerMixin(
   BaseComponent
@@ -30,55 +29,26 @@ export class RolePermissionDraftSection extends SectionContainerMixin(
     await this.waitForContainerLoad(options);
   }
 
-  private getPermissionForm(): Locator {
-    return this.getSectionContainer().locator("form").first();
-  }
-
-  private getPermissionTable(): Locator {
-    return this.getSectionContainer().getByRole("table");
-  }
-
-  getPermissionRow(
-    resourceId: string,
-    permissionKind: PermissionKind
-  ): Locator {
-    return this.getPermissionTable()
+  getActionRow(action: Action): Locator {
+    return this.getSectionContainer()
       .getByRole("row")
-      .filter({ hasText: resourceId })
-      .filter({ hasText: permissionKind });
+      .filter({ hasText: action });
   }
 
-  async waitForPermissionRow(
-    resourceId: string,
-    permissionKind: PermissionKind
-  ): Promise<Locator> {
-    const row = this.getPermissionRow(resourceId, permissionKind).first();
+  async waitForActionRow(action: Action): Promise<Locator> {
+    const row = this.getActionRow(action).first();
     await expect(row).toBeVisible();
     return row;
   }
 
-  async addPermission({
-    resourceType,
-    resourceId,
-    permissionKind,
-  }: DraftPermissionOptions): Promise<void> {
-    const form = this.getPermissionForm();
-    const comboboxes = form.getByRole("combobox");
-
-    await comboboxes.first().click();
-    await this.page
-      .getByRole("option", { name: new RegExp(resourceType, "i") })
-      .click();
-
-    await fillLocator(form.getByPlaceholder("Enter resource ID"), resourceId);
-
-    await comboboxes.nth(1).click();
-    await this.page
-      .getByRole("option", { name: new RegExp(permissionKind, "i") })
-      .click();
-
-    await form.getByRole("button", { name: "Add Permission" }).click();
-
-    await this.waitForPermissionRow(resourceId, permissionKind);
+  async addAction({ action }: DraftActionOptions): Promise<void> {
+    const form = this.getSectionContainer().locator("form").first();
+    const actionField = form
+      .getByRole("combobox")
+      .or(form.getByRole("textbox"));
+    await actionField.first().click();
+    await this.page.getByRole("option", { name: action }).click();
+    await form.getByRole("button", { name: /add/i }).click();
+    await this.waitForActionRow(action);
   }
 }

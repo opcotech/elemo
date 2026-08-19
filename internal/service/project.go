@@ -155,7 +155,7 @@ func (s *projectService) Create(ctx context.Context, namespaceID model.ID, opts 
 		return nil, errors.Join(ErrProjectCreate, err)
 	}
 
-	if !s.permissionService.CtxUserHasPermission(ctx, namespaceID, model.PermissionKindWrite) {
+	if !s.permissionService.CtxUserHas(ctx, namespaceID, model.ActionProjectCreate) {
 		return nil, errors.Join(ErrProjectCreate, ErrNoPermission)
 	}
 
@@ -182,6 +182,14 @@ func (s *projectService) Create(ctx context.Context, namespaceID model.ID, opts 
 		return nil, errors.Join(ErrProjectCreate, err)
 	}
 
+	actions, err := roleTemplateActions(model.RoleKeyProjectMaintainer)
+	if err != nil {
+		return nil, errors.Join(ErrProjectCreate, err)
+	}
+	if err := s.permissionService.BootstrapCreator(ctx, userID, project.ID, actions); err != nil {
+		return nil, errors.Join(ErrProjectCreate, err)
+	}
+
 	return projectFromRepository(project), nil
 }
 
@@ -193,7 +201,7 @@ func (s *projectService) Get(ctx context.Context, id model.ID) (*Project, error)
 		return nil, errors.Join(ErrProjectGet, err)
 	}
 
-	if !s.permissionService.CtxUserHasPermission(ctx, id, model.PermissionKindRead) {
+	if !s.permissionService.CtxUserHas(ctx, id, model.ActionProjectRead) {
 		return nil, errors.Join(ErrProjectGet, ErrNoPermission)
 	}
 
@@ -218,7 +226,7 @@ func (s *projectService) GetByKey(ctx context.Context, key string) (*Project, er
 		return nil, errors.Join(ErrProjectGet, err)
 	}
 
-	if !s.permissionService.CtxUserHasPermission(ctx, project.ID, model.PermissionKindRead) {
+	if !s.permissionService.CtxUserHas(ctx, project.ID, model.ActionProjectRead) {
 		return nil, errors.Join(ErrProjectGet, ErrNoPermission)
 	}
 
@@ -238,13 +246,15 @@ func (s *projectService) List(ctx context.Context, namespaceID model.ID, page Cu
 		return Page[*Project]{}, errors.Join(ErrProjectGetAll, err)
 	}
 
-	if !s.permissionService.CtxUserHasPermission(ctx, namespaceID, model.PermissionKindRead) {
-		return Page[*Project]{}, errors.Join(ErrProjectGetAll, ErrNoPermission)
+	userID, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID)
+	if !ok {
+		return Page[*Project]{}, errors.Join(ErrProjectGetAll, ErrNoUser)
 	}
 
 	projects, err := s.projectRepo.List(
 		ctx,
 		namespaceID,
+		userID,
 		normalized,
 		repository.ProjectListProjection(),
 	)
@@ -267,7 +277,7 @@ func (s *projectService) Update(ctx context.Context, id model.ID, opts UpdatePro
 		return nil, errors.Join(ErrProjectUpdate, err)
 	}
 
-	if !s.permissionService.CtxUserHasPermission(ctx, id, model.PermissionKindWrite) {
+	if !s.permissionService.CtxUserHas(ctx, id, model.ActionProjectUpdate) {
 		return nil, errors.Join(ErrProjectUpdate, ErrNoPermission)
 	}
 
@@ -301,7 +311,7 @@ func (s *projectService) Delete(ctx context.Context, id model.ID) error {
 		return errors.Join(ErrProjectDelete, err)
 	}
 
-	if !s.permissionService.CtxUserHasPermission(ctx, id, model.PermissionKindDelete) {
+	if !s.permissionService.CtxUserHas(ctx, id, model.ActionProjectDelete) {
 		return errors.Join(ErrProjectDelete, ErrNoPermission)
 	}
 

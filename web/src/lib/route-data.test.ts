@@ -26,7 +26,10 @@ const project = {
   key: "WEB",
 };
 
-const readPermissions = [{ kind: "read" }];
+const readPermissions = { actions: ["organization.read"] };
+const namespaceReadPermissions = { actions: ["namespace.read"] };
+const projectReadPermissions = { actions: ["project.read"] };
+const noPermissions = { actions: [] };
 
 function listedPage<T>(items: T[]) {
   return { items, page_info: { has_more: false } };
@@ -91,7 +94,7 @@ describe("settings hierarchy loaders", () => {
         return listedPage([namespace]);
       }
       if (queryId(options) === "v1PermissionResourceGet")
-        return readPermissions;
+        return namespaceReadPermissions;
       throw new Error(`Unexpected query ${JSON.stringify(options.queryKey)}`);
     });
 
@@ -100,7 +103,7 @@ describe("settings hierarchy loaders", () => {
     ).resolves.toEqual({
       organization,
       namespace,
-      permissions: readPermissions,
+      permissions: namespaceReadPermissions,
     });
   });
 
@@ -111,7 +114,7 @@ describe("settings hierarchy loaders", () => {
       if (queryId(options) === "v1OrganizationsNamespacesGet") {
         return listedPage([namespace]);
       }
-      if (queryId(options) === "v1PermissionResourceGet") return [];
+      if (queryId(options) === "v1PermissionResourceGet") return noPermissions;
       throw new Error(`Unexpected query ${JSON.stringify(options.queryKey)}`);
     });
 
@@ -179,7 +182,7 @@ describe("settings hierarchy loaders", () => {
         return listedPage([project]);
       }
       if (queryId(options) === "v1PermissionResourceGet")
-        return readPermissions;
+        return projectReadPermissions;
       if (queryId(options) === "v1ProjectGet") return project;
       throw new Error(`Unexpected query ${JSON.stringify(options.queryKey)}`);
     });
@@ -195,7 +198,7 @@ describe("settings hierarchy loaders", () => {
       organization,
       namespace,
       project,
-      permissions: readPermissions,
+      permissions: projectReadPermissions,
     });
 
     expect(queryClient.fetchQuery).toHaveBeenCalled();
@@ -205,6 +208,7 @@ describe("settings hierarchy loaders", () => {
     const members = [{ id: "member-1" }];
     const namespaces = [namespace];
     const roles = [{ id: "role-1", name: "Owner" }];
+    const teams = [{ id: "team-1", name: "Platform" }];
     const queryClient = createQueryClient((options) => {
       const id = queryId(options);
       if (id === "v1OrganizationGet") return organization;
@@ -212,6 +216,7 @@ describe("settings hierarchy loaders", () => {
       if (id === "v1OrganizationMembersGet") return listedPage(members);
       if (id === "v1OrganizationsNamespacesGet") return listedPage(namespaces);
       if (id === "v1OrganizationRolesGet") return listedPage(roles);
+      if (id === "v1OrganizationTeamsGet") return listedPage(teams);
       throw new Error(`Unexpected query ${JSON.stringify(options.queryKey)}`);
     });
 
@@ -223,6 +228,7 @@ describe("settings hierarchy loaders", () => {
       members,
       namespaces,
       roles,
+      teams,
       hasReadAccess: true,
     });
   });
@@ -231,7 +237,7 @@ describe("settings hierarchy loaders", () => {
     const queryClient = createQueryClient((options) => {
       const id = queryId(options);
       if (id === "v1OrganizationGet") return organization;
-      if (id === "v1PermissionResourceGet") return [];
+      if (id === "v1PermissionResourceGet") return noPermissions;
       throw new Error(`Unexpected query ${JSON.stringify(options.queryKey)}`);
     });
 
@@ -239,10 +245,11 @@ describe("settings hierarchy loaders", () => {
       loadOrganizationWorkspace(queryClient, "organization-1")
     ).resolves.toEqual({
       organization,
-      permissions: [],
+      permissions: noPermissions,
       members: [],
       namespaces: [],
       roles: [],
+      teams: [],
       hasReadAccess: false,
     });
 
@@ -282,7 +289,7 @@ describe("settings hierarchy loaders", () => {
       if (queryId(options) === "v1NamespacesProjectsGet") {
         return listedPage([project]);
       }
-      if (queryId(options) === "v1PermissionResourceGet") return [];
+      if (queryId(options) === "v1PermissionResourceGet") return noPermissions;
       throw new Error(`Unexpected query ${JSON.stringify(options.queryKey)}`);
     });
 

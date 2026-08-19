@@ -49,7 +49,7 @@ func (q RoleGetQuery) Compile() (QueryPlan, error) {
 	return compileRoleRootQuery(roleRootQueryInput{
 		Name: "role.get",
 		Match: `
-				MATCH (:` + q.BelongsTo.Label() + ` {id: $belongs_to_id})-[:` + EdgeKindHasTeam.String() + `]->(r:` + model.ResourceTypeRole.String() + ` {id: $id})`,
+				MATCH (:` + q.BelongsTo.Label() + ` {id: $belongs_to_id})-[:` + EdgeKindDefinesRole.String() + `]->(r:` + model.ResourceTypeRole.String() + ` {id: $id})`,
 		Params: map[string]any{
 			"id":            q.ID.String(),
 			"belongs_to_id": q.BelongsTo.String(),
@@ -71,7 +71,7 @@ func (q RoleListBelongsToQuery) Compile() (QueryPlan, error) {
 	}
 
 	match := strings.TrimSpace(`
-				MATCH (:` + q.BelongsTo.Label() + ` {id: $id})-[:` + EdgeKindHasTeam.String() + `]->(r:` + model.ResourceTypeRole.String() + `)
+				MATCH (:` + q.BelongsTo.Label() + ` {id: $id})-[:` + EdgeKindDefinesRole.String() + `]->(r:` + model.ResourceTypeRole.String() + `)
 				` + cursorWherePrefix(bounds.Where, "WHERE ") + `
 				WITH r
 				ORDER BY r.id ` + bounds.Order.Cypher() + `
@@ -112,7 +112,7 @@ func compileRoleRootQuery(in roleRootQueryInput) (QueryPlan, error) {
 			Cypher: `
 				UNWIND $ids AS role_id
 				MATCH (r:` + model.ResourceTypeRole.String() + ` {id: role_id})
-				OPTIONAL MATCH (r)-[p:` + EdgeKindHasPermission.String() + `]->()
+				OPTIONAL MATCH (r)-[p:` + EdgeKindGranted.String() + `]->()
 				RETURN role_id, collect(DISTINCT p.id) AS permission_ids`,
 			Params: map[string]any{},
 		})

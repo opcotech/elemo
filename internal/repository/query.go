@@ -186,6 +186,20 @@ func cursorWherePrefix(where, prefix string) string {
 	return prefix + where
 }
 
+func whereClause(prefix string, parts ...string) string {
+	joined := make([]string, 0, len(parts))
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part != "" {
+			joined = append(joined, part)
+		}
+	}
+	if len(joined) == 0 {
+		return ""
+	}
+	return prefix + strings.Join(joined, " AND ")
+}
+
 func cloneParams(params map[string]any) map[string]any {
 	cloned := make(map[string]any, len(params))
 	for key, value := range params {

@@ -86,18 +86,33 @@ func (mr *MockNamespaceRepositoryMockRecorder) Get(ctx, id, proj any) *gomock.Ca
 }
 
 // List mocks base method.
-func (m *MockNamespaceRepository) List(ctx context.Context, orgID model.ID, page CursorPage, proj NamespaceProjection) (Page[*Namespace], error) {
+func (m *MockNamespaceRepository) List(ctx context.Context, orgID, actor model.ID, page CursorPage, proj NamespaceProjection) (Page[*Namespace], error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "List", ctx, orgID, page, proj)
+	ret := m.ctrl.Call(m, "List", ctx, orgID, actor, page, proj)
 	ret0, _ := ret[0].(Page[*Namespace])
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // List indicates an expected call of List.
-func (mr *MockNamespaceRepositoryMockRecorder) List(ctx, orgID, page, proj any) *gomock.Call {
+func (mr *MockNamespaceRepositoryMockRecorder) List(ctx, orgID, actor, page, proj any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockNamespaceRepository)(nil).List), ctx, orgID, page, proj)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockNamespaceRepository)(nil).List), ctx, orgID, actor, page, proj)
+}
+
+// ListAccessible mocks base method.
+func (m *MockNamespaceRepository) ListAccessible(ctx context.Context, actor model.ID, page CursorPage, proj NamespaceProjection) (Page[*AccessibleNamespace], error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListAccessible", ctx, actor, page, proj)
+	ret0, _ := ret[0].(Page[*AccessibleNamespace])
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListAccessible indicates an expected call of ListAccessible.
+func (mr *MockNamespaceRepositoryMockRecorder) ListAccessible(ctx, actor, page, proj any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListAccessible", reflect.TypeOf((*MockNamespaceRepository)(nil).ListAccessible), ctx, actor, page, proj)
 }
 
 // Update mocks base method.

@@ -1,11 +1,11 @@
 import { EntityDangerZone } from "@/components/entity-lifecycle/entity-lifecycle";
 import { projectLifecycleConfig } from "@/components/entity-lifecycle/entity-lifecycle-configs";
 import { v1ProjectDeleteMutation } from "@/lib/api/mutation-options";
-import type { Permission, Project } from "@/lib/api/types";
+import type { EffectiveActions, Project } from "@/lib/api/types";
 
 interface ProjectDangerZoneProps {
   project: Project;
-  permissions: Permission[];
+  permissions: EffectiveActions;
   organizationId: string;
   namespaceId: string;
 }

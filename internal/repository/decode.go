@@ -43,20 +43,37 @@ func Neo4jDecodeID(node neo4j.Node, resourceType model.ResourceType) (model.ID, 
 	return id, nil
 }
 
-// Neo4jDecodeIDFromLabel reads an ID using the first node label as resource type.
+// Neo4jDecodeIDFromLabel reads an ID using the node's domain label as resource
+// type.
 func Neo4jDecodeIDFromLabel(node neo4j.Node) (model.ID, error) {
-	if len(node.Labels) == 0 {
+	label := domainLabel(node.Labels)
+	if label == "" {
 		return model.ID{}, ErrMalformedResult
 	}
 	idStr, err := Neo4jNodeProperty[string](node, "id")
 	if err != nil {
 		return model.ID{}, errors.Join(ErrMalformedResult, err)
 	}
-	id, err := model.NewIDFromString(idStr, node.Labels[0])
+	id, err := model.NewIDFromString(idStr, label)
 	if err != nil {
 		return model.ID{}, errors.Join(ErrMalformedResult, err)
 	}
 	return id, nil
+}
+
+// domainLabel returns the first node label that is not the shared Principal
+// marker. Users, teams, and organizations carry both labels, and Neo4j does
+// not guarantee label order.
+func domainLabel(labels []string) string {
+	for _, label := range labels {
+		if label != model.LabelPrincipal {
+			return label
+		}
+	}
+	if len(labels) == 0 {
+		return ""
+	}
+	return labels[0]
 }
 
 // Neo4jDecodeTime parses a temporal property into *time.Time.

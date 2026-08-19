@@ -108,6 +108,25 @@ func TestIssueListForUserQuery_Compile(t *testing.T) {
 		require.Len(t, plan.Loaders, 3)
 	})
 
+	t.Run("authz filter does not rebind the namespace alias", func(t *testing.T) {
+		t.Parallel()
+
+		actorID := model.MustNewID(model.ResourceTypeUser)
+		plan, err := CompileQuery(IssueListForUserQuery{
+			UserID:     userID,
+			ActorID:    actorID,
+			Action:     model.ActionIssueRead,
+			Page:       CursorPage{Size: 10},
+			Projection: IssueListForUserProjection(),
+		})
+		require.NoError(t, err)
+		assert.Contains(t, plan.Root.Cypher, "EXISTS {")
+		assert.Contains(t, plan.Root.Cypher, "ALL(authz_node IN nodes(path)")
+		assert.NotContains(t, plan.Root.Cypher, "ALL(n IN")
+		assert.Equal(t, userID.String(), plan.Root.Params["user_id"])
+		assert.Equal(t, actorID.String(), plan.Root.Params["actor_id"])
+	})
+
 	t.Run("invalid user id", func(t *testing.T) {
 		t.Parallel()
 

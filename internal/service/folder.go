@@ -128,7 +128,7 @@ func (s *folderService) Create(ctx context.Context, libraryID model.ID, opts Cre
 		return nil, errors.Join(ErrFolderCreate, err)
 	}
 
-	if !s.permissionService.CtxUserHasPermission(ctx, libraryID, model.PermissionKindWrite) {
+	if !s.permissionService.CtxUserHas(ctx, libraryID, model.ActionFolderCreate) {
 		return nil, errors.Join(ErrFolderCreate, ErrNoPermission)
 	}
 
@@ -144,6 +144,14 @@ func (s *folderService) Create(ctx context.Context, libraryID model.ID, opts Cre
 		CreatedBy: userID,
 	})
 	if err != nil {
+		return nil, errors.Join(ErrFolderCreate, err)
+	}
+
+	actions, err := roleTemplateActions(model.RoleKeyDocumentMaintainer)
+	if err != nil {
+		return nil, errors.Join(ErrFolderCreate, err)
+	}
+	if err := s.permissionService.BootstrapCreator(ctx, userID, folder.ID, actions); err != nil {
 		return nil, errors.Join(ErrFolderCreate, err)
 	}
 
@@ -163,7 +171,7 @@ func (s *folderService) Get(ctx context.Context, id model.ID) (*Folder, error) {
 		return nil, errors.Join(ErrFolderGet, err)
 	}
 
-	if !s.permissionService.CtxUserHasPermission(ctx, folder.Library.ID, model.PermissionKindRead) {
+	if !s.permissionService.CtxUserHas(ctx, folder.ID, model.ActionDocumentRead) {
 		return nil, errors.Join(ErrFolderGet, ErrNoPermission)
 	}
 
@@ -186,11 +194,12 @@ func (s *folderService) List(ctx context.Context, libraryID model.ID, parentID *
 		return Page[*Folder]{}, errors.Join(ErrFolderGetAll, err)
 	}
 
-	if !s.permissionService.CtxUserHasPermission(ctx, libraryID, model.PermissionKindRead) {
-		return Page[*Folder]{}, errors.Join(ErrFolderGetAll, ErrNoPermission)
+	userID, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID)
+	if !ok {
+		return Page[*Folder]{}, errors.Join(ErrFolderGetAll, ErrNoUser)
 	}
 
-	folders, err := s.folderRepo.List(ctx, libraryID, parentID, normalized)
+	folders, err := s.folderRepo.List(ctx, libraryID, parentID, userID, normalized)
 	if err != nil {
 		return Page[*Folder]{}, errors.Join(ErrFolderGetAll, err)
 	}
@@ -211,7 +220,7 @@ func (s *folderService) Update(ctx context.Context, id model.ID, opts UpdateFold
 		return nil, errors.Join(ErrFolderUpdate, err)
 	}
 
-	if !s.permissionService.CtxUserHasPermission(ctx, current.Library.ID, model.PermissionKindWrite) {
+	if !s.permissionService.CtxUserHas(ctx, current.Library.ID, model.ActionDocumentUpdate) {
 		return nil, errors.Join(ErrFolderUpdate, ErrNoPermission)
 	}
 
@@ -239,7 +248,7 @@ func (s *folderService) Delete(ctx context.Context, id model.ID) error {
 		return errors.Join(ErrFolderDelete, err)
 	}
 
-	if !s.permissionService.CtxUserHasPermission(ctx, current.Library.ID, model.PermissionKindDelete) {
+	if !s.permissionService.CtxUserHas(ctx, current.Library.ID, model.ActionDocumentDelete) {
 		return errors.Join(ErrFolderDelete, ErrNoPermission)
 	}
 

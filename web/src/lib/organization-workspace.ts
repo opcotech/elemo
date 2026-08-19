@@ -5,9 +5,10 @@ import {
   v1OrganizationGetOptions,
   v1OrganizationMembersGetOptions,
   v1OrganizationRolesGetOptions,
+  v1OrganizationTeamsGetOptions,
   v1OrganizationsNamespacesGetOptions,
 } from "@/lib/api/query-options";
-import { ResourceType, can } from "@/lib/auth/permissions";
+import { Action, ResourceType, can } from "@/lib/auth/permissions";
 import { loadResourcePermissions } from "@/lib/entity-context";
 
 export async function loadOrganization(
@@ -35,18 +36,19 @@ export async function loadOrganizationWorkspace(
     ),
   ]);
 
-  if (!can(permissions, "read")) {
+  if (!can(permissions, Action.OrganizationRead)) {
     return {
       organization,
       permissions,
       members: [],
       namespaces: [],
       roles: [],
+      teams: [],
       hasReadAccess: false as const,
     };
   }
 
-  const [membersPage, namespaces, roles] = await Promise.all([
+  const [membersPage, namespaces, roles, teams] = await Promise.all([
     collectListedPage(async (pageToken) =>
       queryClient.fetchQuery(
         v1OrganizationMembersGetOptions({
@@ -71,6 +73,14 @@ export async function loadOrganizationWorkspace(
         })
       )
     ),
+    collectListedPage(async (pageToken) =>
+      queryClient.fetchQuery(
+        v1OrganizationTeamsGetOptions({
+          path: { id: organizationId },
+          query: cursorPageQuery(pageToken),
+        })
+      )
+    ),
   ]);
 
   return {
@@ -79,6 +89,7 @@ export async function loadOrganizationWorkspace(
     members: membersPage.items,
     namespaces: namespaces.items,
     roles: roles.items,
+    teams: teams.items,
     hasReadAccess: true as const,
   };
 }

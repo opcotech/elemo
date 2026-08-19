@@ -1,3 +1,5 @@
+//go:build integration
+
 package service_test
 
 import (
@@ -47,7 +49,6 @@ func (s *TodoServiceIntegrationTestSuite) SetupSuite() {
 
 	s.todoService, err = service.NewTodoService(
 		service.WithTodoRepository(s.TodoRepo),
-		service.WithPermissionService(permissionService),
 		service.WithLicenseService(licenseService),
 	)
 	s.Require().NoError(err)
@@ -93,14 +94,9 @@ func (s *TodoServiceIntegrationTestSuite) TestCreateForOtherUser() {
 	otherUser, err := s.UserRepo.Create(context.Background(), testModel.NewCreateUserOpts())
 	s.Require().NoError(err)
 
-	org, err := s.OrganizationRepo.Create(context.Background(), testModel.NewCreateOrganizationOpts(s.testUser.ID))
-	s.Require().NoError(err)
-	s.Require().NoError(s.OrganizationRepo.AddMember(context.Background(), org.ID, otherUser.ID))
-
 	opts := newTestCreateTodoOpts(otherUser.ID, s.testUser.ID)
-	todo, err := s.todoService.Create(s.testUserContext, opts)
-	s.Require().NoError(err)
-	s.Assert().NotEqual(model.MustNewNilID(model.ResourceTypeTodo), todo.ID)
+	_, err = s.todoService.Create(s.testUserContext, opts)
+	s.Require().ErrorIs(err, service.ErrNoPermission)
 }
 
 func (s *TodoServiceIntegrationTestSuite) TestGet() {
@@ -175,7 +171,7 @@ func (s *TodoServiceIntegrationTestSuite) TestDelete() {
 	s.Require().NoError(s.todoService.Delete(s.testUserContext, createdTodo.ID))
 
 	_, err = s.todoService.Get(s.testUserContext, createdTodo.ID)
-	s.Assert().ErrorIs(err, service.ErrNoPermission)
+	s.Assert().ErrorIs(err, service.ErrTodoGet)
 }
 
 func TestTodoServiceIntegrationTestSuite(t *testing.T) {

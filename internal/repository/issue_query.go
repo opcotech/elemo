@@ -80,6 +80,8 @@ type IssueListForIssueQuery struct {
 // IssueListQuery compiles a cursor-paginated issue list for a project.
 type IssueListQuery struct {
 	ProjectID  model.ID
+	ActorID    model.ID
+	Action     model.Action
 	Page       CursorPage
 	Order      SortDirection
 	Projection IssueListProjection
@@ -88,6 +90,8 @@ type IssueListQuery struct {
 // IssueListForNamespaceQuery compiles a cursor-paginated issue list for a namespace.
 type IssueListForNamespaceQuery struct {
 	NamespaceID model.ID
+	ActorID     model.ID
+	Action      model.Action
 	Page        CursorPage
 	Order       SortDirection
 	Projection  IssueListProjection
@@ -96,6 +100,8 @@ type IssueListForNamespaceQuery struct {
 // IssueListForUserQuery compiles a cursor-paginated list of issues assigned to a user.
 type IssueListForUserQuery struct {
 	UserID     model.ID
+	ActorID    model.ID
+	Action     model.Action
 	Page       CursorPage
 	Order      SortDirection
 	Projection IssueListProjection
@@ -191,11 +197,12 @@ func (q IssueListQuery) Compile() (QueryPlan, error) {
 		return QueryPlan{}, err
 	}
 
+	authz := applyAuthzVisible(q.ActorID, q.Action, "i", "$user_id", params)
 	root := CompiledQuery{
 		Name: "issue.list_for_project",
 		Cypher: `
 		MATCH (p:` + q.ProjectID.Label() + ` {id: $project_id})<-[:` + EdgeKindBelongsTo.String() + `]-(i:` + model.ResourceTypeIssue.String() + `)
-		WHERE true` + cursorWherePrefix(bounds.Where, " AND ") + `
+		WHERE true` + whereClause(" AND ", authz, bounds.Where) + `
 		WITH p, i
 		ORDER BY i.id ` + bounds.Order.Cypher() + `
 		LIMIT $limit
@@ -224,11 +231,12 @@ func (q IssueListForNamespaceQuery) Compile() (QueryPlan, error) {
 		return QueryPlan{}, err
 	}
 
+	authz := applyAuthzVisible(q.ActorID, q.Action, "i", "$user_id", params)
 	root := CompiledQuery{
 		Name: "issue.list_for_namespace",
 		Cypher: `
 		MATCH (n:` + q.NamespaceID.Label() + ` {id: $namespace_id})-[:` + EdgeKindHasProject.String() + `]->(p:` + model.ResourceTypeProject.String() + `)<-[:` + EdgeKindBelongsTo.String() + `]-(i:` + model.ResourceTypeIssue.String() + `)
-		WHERE true` + cursorWherePrefix(bounds.Where, " AND ") + `
+		WHERE true` + whereClause(" AND ", authz, bounds.Where) + `
 		WITH n, p, i
 		ORDER BY i.id ` + bounds.Order.Cypher() + `
 		LIMIT $limit
@@ -257,13 +265,14 @@ func (q IssueListForUserQuery) Compile() (QueryPlan, error) {
 		return QueryPlan{}, err
 	}
 
+	authz := applyAuthzVisible(q.ActorID, q.Action, "i", "$actor_id", params)
 	root := CompiledQuery{
 		Name: "issue.list_for_user",
 		Cypher: `
 		MATCH (assignee:` + q.UserID.Label() + ` {id: $user_id})-[a:` + EdgeKindAssignedTo.String() + ` {kind: $assignee_kind}]->(i:` + model.ResourceTypeIssue.String() + `)
 		MATCH (i)-[:` + EdgeKindBelongsTo.String() + `]->(p:` + model.ResourceTypeProject.String() + `)
 		OPTIONAL MATCH (n:` + model.ResourceTypeNamespace.String() + `)-[:` + EdgeKindHasProject.String() + `]->(p)
-		WHERE true` + cursorWherePrefix(bounds.Where, " AND ") + `
+		WHERE true` + whereClause(" AND ", authz, bounds.Where) + `
 		WITH n, p, i
 		ORDER BY i.id ` + bounds.Order.Cypher() + `
 		LIMIT $limit

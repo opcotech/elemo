@@ -100,6 +100,21 @@ func (mr *MockNamespaceServiceMockRecorder) List(ctx, orgID, page any) *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockNamespaceService)(nil).List), ctx, orgID, page)
 }
 
+// ListAccessible mocks base method.
+func (m *MockNamespaceService) ListAccessible(ctx context.Context, page CursorPage) (Page[*AccessibleNamespace], error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListAccessible", ctx, page)
+	ret0, _ := ret[0].(Page[*AccessibleNamespace])
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListAccessible indicates an expected call of ListAccessible.
+func (mr *MockNamespaceServiceMockRecorder) ListAccessible(ctx, page any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListAccessible", reflect.TypeOf((*MockNamespaceService)(nil).ListAccessible), ctx, page)
+}
+
 // Update mocks base method.
 func (m *MockNamespaceService) Update(ctx context.Context, id model.ID, opts UpdateNamespaceOpts) (*Namespace, error) {
 	m.ctrl.T.Helper()

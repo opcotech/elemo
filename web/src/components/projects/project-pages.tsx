@@ -45,7 +45,7 @@ import {
   v1ProjectsDocumentsUnrelate,
 } from "@/lib/api/sdk";
 import type { Namespace, PartialDocument, Project } from "@/lib/api/types";
-import { can } from "@/lib/auth/permissions";
+import { Action, can } from "@/lib/auth/permissions";
 import { documentListQueryKey } from "@/lib/documents/create";
 import {
   ALL_DOCUMENT_CREATORS,
@@ -72,7 +72,8 @@ export function ProjectOverviewPage({
   const { data: permissions } = usePermissions(
     withResourceType(ResourceType.Project, project.id)
   );
-  const mayWrite = can(permissions, "write");
+  const mayCreateWork = can(permissions, Action.IssueCreate);
+  const mayCreateDocument = can(permissions, Action.DocumentCreate);
   const [createOpen, setCreateOpen] = useState(false);
   const [linkOpen, setLinkOpen] = useState(false);
   const scopedWork = selectWorkItems({
@@ -111,7 +112,7 @@ export function ProjectOverviewPage({
         actions={
           <PageActions
             primary={
-              mayWrite ? (
+              mayCreateWork ? (
                 <CreateButton onClick={() => openQuickCreate("work")}>
                   Work
                 </CreateButton>
@@ -192,7 +193,7 @@ export function ProjectOverviewPage({
             data-section="documents"
             action={
               <div className="flex items-center gap-2">
-                {mayWrite ? (
+                {mayCreateDocument ? (
                   <>
                     <LinkButton size="sm" onClick={() => setLinkOpen(true)} />
                     <AddButton size="sm" onClick={() => setCreateOpen(true)} />
@@ -227,7 +228,7 @@ export function ProjectOverviewPage({
               />
             )}
           </Section>
-          {mayWrite ? (
+          {mayCreateDocument ? (
             <>
               <DocumentCreateDialog
                 open={createOpen}
@@ -329,7 +330,10 @@ export function ProjectDocumentsPage({
   const { data: permissions } = usePermissions(
     withResourceType(ResourceType.Project, project.id)
   );
-  const mayWrite = can(permissions, "write");
+  const mayWrite =
+    can(permissions, Action.DocumentCreate) ||
+    can(permissions, Action.DocumentUpdate) ||
+    can(permissions, Action.DocumentDelete);
   const queryClient = useQueryClient();
   const unlinkMutation = useMutation({
     mutationFn: async (document: PartialDocument) => {

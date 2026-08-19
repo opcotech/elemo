@@ -153,6 +153,7 @@ func TestNeo4jDecodeIDFromLabel(t *testing.T) {
 	t.Parallel()
 
 	id := model.MustNewID(model.ResourceTypeUser)
+	organizationID := model.MustNewID(model.ResourceTypeOrganization)
 
 	tests := []struct {
 		name    string
@@ -169,6 +170,14 @@ func TestNeo4jDecodeIDFromLabel(t *testing.T) {
 			want: id,
 		},
 		{
+			name: "skips principal when it is first",
+			node: testNode(
+				[]string{model.LabelPrincipal, model.ResourceTypeOrganization.String()},
+				map[string]any{"id": organizationID.String()},
+			),
+			want: organizationID,
+		},
+		{
 			name:    "no labels",
 			node:    testNode(nil, map[string]any{"id": id.String()}),
 			wantErr: ErrMalformedResult,
@@ -181,6 +190,14 @@ func TestNeo4jDecodeIDFromLabel(t *testing.T) {
 		{
 			name:    "unknown label",
 			node:    testNode([]string{"NotAType"}, map[string]any{"id": id.String()}),
+			wantErr: ErrMalformedResult,
+		},
+		{
+			name: "principal only",
+			node: testNode(
+				[]string{model.LabelPrincipal},
+				map[string]any{"id": id.String()},
+			),
 			wantErr: ErrMalformedResult,
 		},
 	}

@@ -1,3 +1,5 @@
+//go:build integration
+
 package repository_test
 
 import (
@@ -36,6 +38,12 @@ func (s *ProjectRepositoryIntegrationTestSuite) SetupTest() {
 	s.testUser, err = s.UserRepo.Create(context.Background(), testModel.NewCreateUserOpts())
 	s.Require().NoError(err)
 	s.testOrg, err = s.OrganizationRepo.Create(context.Background(), testModel.NewCreateOrganizationOpts(s.testUser.ID))
+	s.Require().NoError(err)
+	_, err = s.PermissionRepo.Create(context.Background(), testModel.NewCreateGrantOpts(
+		s.testUser.ID,
+		s.testOrg.ID,
+		testModel.OrgAdminActions()...,
+	))
 	s.Require().NoError(err)
 	s.testNamespace, err = s.NamespaceRepo.Create(context.Background(), testModel.NewCreateNamespaceOpts(s.testUser.ID, s.testOrg.ID))
 	s.Require().NoError(err)
@@ -100,11 +108,11 @@ func (s *ProjectRepositoryIntegrationTestSuite) TestGetAll() {
 	_, err = s.ProjectRepo.Create(context.Background(), testModel.NewCreateProjectOpts(s.testNamespace.ID, s.testUser.ID))
 	s.Require().NoError(err)
 
-	projects, err := s.ProjectRepo.List(context.Background(), s.testNamespace.ID, repository.CursorPage{Size: 10}, repository.ProjectListProjection())
+	projects, err := s.ProjectRepo.List(context.Background(), s.testNamespace.ID, s.testUser.ID, repository.CursorPage{Size: 10}, repository.ProjectListProjection())
 	s.Require().NoError(err)
 	s.Assert().Len(projects.Items, 3)
 
-	projects, err = s.ProjectRepo.List(context.Background(), s.testNamespace.ID, repository.CursorPage{Size: 2}, repository.ProjectListProjection())
+	projects, err = s.ProjectRepo.List(context.Background(), s.testNamespace.ID, s.testUser.ID, repository.CursorPage{Size: 2}, repository.ProjectListProjection())
 	s.Require().NoError(err)
 	s.Assert().Len(projects.Items, 2)
 }
@@ -161,6 +169,12 @@ func (s *CachedProjectRepositoryIntegrationTestSuite) SetupTest() {
 	s.Require().NoError(err)
 	s.testOrg, err = s.OrganizationRepo.Create(context.Background(), testModel.NewCreateOrganizationOpts(s.testUser.ID))
 	s.Require().NoError(err)
+	_, err = s.PermissionRepo.Create(context.Background(), testModel.NewCreateGrantOpts(
+		s.testUser.ID,
+		s.testOrg.ID,
+		testModel.OrgAdminActions()...,
+	))
+	s.Require().NoError(err)
 	s.testNamespace, err = s.NamespaceRepo.Create(context.Background(), testModel.NewCreateNamespaceOpts(s.testUser.ID, s.testOrg.ID))
 	s.Require().NoError(err)
 	s.createOpts = testModel.NewCreateProjectOpts(s.testNamespace.ID, s.testUser.ID)
@@ -208,9 +222,9 @@ func (s *CachedProjectRepositoryIntegrationTestSuite) TestGetByKey() {
 func (s *CachedProjectRepositoryIntegrationTestSuite) TestGetAll() {
 	_, err := s.projectRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
-	original, err := s.ProjectRepo.List(context.Background(), s.testNamespace.ID, repository.CursorPage{Size: 10}, repository.ProjectListProjection())
+	original, err := s.ProjectRepo.List(context.Background(), s.testNamespace.ID, s.testUser.ID, repository.CursorPage{Size: 10}, repository.ProjectListProjection())
 	s.Require().NoError(err)
-	usingCache, err := s.projectRepo.List(context.Background(), s.testNamespace.ID, repository.CursorPage{Size: 10}, repository.ProjectListProjection())
+	usingCache, err := s.projectRepo.List(context.Background(), s.testNamespace.ID, s.testUser.ID, repository.CursorPage{Size: 10}, repository.ProjectListProjection())
 	s.Require().NoError(err)
 	s.Assert().Equal(original, usingCache)
 	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)

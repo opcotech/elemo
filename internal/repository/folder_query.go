@@ -12,6 +12,8 @@ type FolderGetQuery struct {
 
 type FolderListQuery struct {
 	LibraryID model.ID
+	ActorID   model.ID
+	Action    model.Action
 	ParentID  *model.ID
 	Page      CursorPage
 	Order     SortDirection
@@ -57,6 +59,7 @@ func (q FolderListQuery) Compile() (QueryPlan, error) {
 		return QueryPlan{}, err
 	}
 
+	authz := applyAuthzVisible(q.ActorID, q.Action, "f", "$user_id", params)
 	var match string
 	cursorPrefix := "WHERE "
 	if q.ParentID != nil {
@@ -81,7 +84,7 @@ func (q FolderListQuery) Compile() (QueryPlan, error) {
 		Root: CompiledQuery{
 			Name: "folder.list",
 			Cypher: strings.TrimSpace(match + `
-				` + cursorWherePrefix(bounds.Where, cursorPrefix) + `
+				` + whereClause(cursorPrefix, authz, bounds.Where) + `
 				RETURN f, lib, c, parent
 				ORDER BY f.id ` + bounds.Order.Cypher() + `
 				LIMIT $limit`),

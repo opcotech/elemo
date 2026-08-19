@@ -4,43 +4,43 @@ import { UserMinus } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
 import { useDeleteMutation } from "@/hooks/use-delete-mutation";
-import { v1OrganizationRoleMemberRemoveMutation } from "@/lib/api/mutation-options";
-import { v1OrganizationRoleMembersGetOptions } from "@/lib/api/query-options";
+import { v1OrganizationTeamMemberRemoveMutation } from "@/lib/api/mutation-options";
+import { v1OrganizationTeamMembersGetOptions } from "@/lib/api/query-options";
 import type { User } from "@/lib/api/types";
 import { getInitials } from "@/lib/utils";
 
-interface RoleMemberRemoveDialogProps {
+interface TeamMemberRemoveDialogProps {
   member: User;
-  roleName: string;
+  teamName: string;
   organizationId: string;
-  roleId: string;
+  teamId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
 }
 
-export function RoleMemberRemoveDialog({
+export function TeamMemberRemoveDialog({
   member,
-  roleName,
+  teamName,
   organizationId,
-  roleId,
+  teamId,
   open,
   onOpenChange,
   onSuccess,
-}: RoleMemberRemoveDialogProps) {
+}: TeamMemberRemoveDialogProps) {
   const queryKeysToInvalidate: QueryKey[] = [
-    v1OrganizationRoleMembersGetOptions({
+    v1OrganizationTeamMembersGetOptions({
       path: {
         id: organizationId,
-        role_id: roleId,
+        team_id: teamId,
       },
     }).queryKey,
   ];
 
   const deleteMutation = useDeleteMutation({
-    mutationOptions: v1OrganizationRoleMemberRemoveMutation(),
+    mutationOptions: v1OrganizationTeamMemberRemoveMutation(),
     successMessage: "Member removed",
-    successDescription: "Member removed from role successfully",
+    successDescription: "Member removed from team successfully",
     errorMessagePrefix: "Failed to remove member",
     queryKeysToInvalidate,
     onSuccess: () => {
@@ -53,7 +53,7 @@ export function RoleMemberRemoveDialog({
     deleteMutation.mutate({
       path: {
         id: organizationId,
-        role_id: roleId,
+        team_id: teamId,
         user_id: member.id,
       },
     });
@@ -65,11 +65,10 @@ export function RoleMemberRemoveDialog({
     <DeleteConfirmationDialog
       open={open}
       onOpenChange={onOpenChange}
-      title={`Remove ${fullName} from ${roleName}?`}
-      description={`Are you sure you want to remove ${fullName} from the ${roleName} role?`}
+      title={`Remove ${fullName} from ${teamName}?`}
+      description={`Are you sure you want to remove ${fullName} from the ${teamName} team?`}
       consequences={[
-        "The member will lose all permissions assigned to this role",
-        "The member will lose access to all resources assigned to this role",
+        "The member will no longer inherit grants held by this team",
         "This action cannot be undone",
       ]}
       deleteButtonIcon={UserMinus}

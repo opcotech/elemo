@@ -7,11 +7,11 @@ import (
 	"strings"
 )
 
-const _ResourceTypeName = "ResourceTypeAssignmentAttachmentCommentDocumentIssueIssueRelationLabelNamespaceNotificationOrganizationPermissionProjectRoleTodoUserUserTokenFolder"
+const _ResourceTypeName = "ResourceTypeAssignmentAttachmentCommentDocumentIssueIssueRelationLabelNamespaceNotificationOrganizationPermissionProjectRoleTodoUserUserTokenFolderInstallationTeam"
 
-var _ResourceTypeIndex = [...]uint8{0, 12, 22, 32, 39, 47, 52, 65, 70, 79, 91, 103, 113, 120, 124, 128, 132, 141, 147}
+var _ResourceTypeIndex = [...]uint8{0, 12, 22, 32, 39, 47, 52, 65, 70, 79, 91, 103, 113, 120, 124, 128, 132, 141, 147, 159, 163}
 
-const _ResourceTypeLowerName = "resourcetypeassignmentattachmentcommentdocumentissueissuerelationlabelnamespacenotificationorganizationpermissionprojectroletodouserusertokenfolder"
+const _ResourceTypeLowerName = "resourcetypeassignmentattachmentcommentdocumentissueissuerelationlabelnamespacenotificationorganizationpermissionprojectroletodouserusertokenfolderinstallationteam"
 
 func (i ResourceType) String() string {
 	i -= 1
@@ -43,9 +43,11 @@ func _ResourceTypeNoOp() {
 	_ = x[ResourceTypeUser-(16)]
 	_ = x[ResourceTypeUserToken-(17)]
 	_ = x[ResourceTypeFolder-(18)]
+	_ = x[ResourceTypeInstallation-(19)]
+	_ = x[ResourceTypeTeam-(20)]
 }
 
-var _ResourceTypeValues = []ResourceType{ResourceTypeKind, ResourceTypeAssignment, ResourceTypeAttachment, ResourceTypeComment, ResourceTypeDocument, ResourceTypeIssue, ResourceTypeIssueRelation, ResourceTypeLabel, ResourceTypeNamespace, ResourceTypeNotification, ResourceTypeOrganization, ResourceTypePermission, ResourceTypeProject, ResourceTypeRole, ResourceTypeTodo, ResourceTypeUser, ResourceTypeUserToken, ResourceTypeFolder}
+var _ResourceTypeValues = []ResourceType{ResourceTypeKind, ResourceTypeAssignment, ResourceTypeAttachment, ResourceTypeComment, ResourceTypeDocument, ResourceTypeIssue, ResourceTypeIssueRelation, ResourceTypeLabel, ResourceTypeNamespace, ResourceTypeNotification, ResourceTypeOrganization, ResourceTypePermission, ResourceTypeProject, ResourceTypeRole, ResourceTypeTodo, ResourceTypeUser, ResourceTypeUserToken, ResourceTypeFolder, ResourceTypeInstallation, ResourceTypeTeam}
 
 var _ResourceTypeNameToValueMap = map[string]ResourceType{
 	_ResourceTypeName[0:12]:         ResourceTypeKind,
@@ -84,6 +86,10 @@ var _ResourceTypeNameToValueMap = map[string]ResourceType{
 	_ResourceTypeLowerName[132:141]: ResourceTypeUserToken,
 	_ResourceTypeName[141:147]:      ResourceTypeFolder,
 	_ResourceTypeLowerName[141:147]: ResourceTypeFolder,
+	_ResourceTypeName[147:159]:      ResourceTypeInstallation,
+	_ResourceTypeLowerName[147:159]: ResourceTypeInstallation,
+	_ResourceTypeName[159:163]:      ResourceTypeTeam,
+	_ResourceTypeLowerName[159:163]: ResourceTypeTeam,
 }
 
 var _ResourceTypeNames = []string{
@@ -105,6 +111,8 @@ var _ResourceTypeNames = []string{
 	_ResourceTypeName[128:132],
 	_ResourceTypeName[132:141],
 	_ResourceTypeName[141:147],
+	_ResourceTypeName[147:159],
+	_ResourceTypeName[159:163],
 }
 
 // ResourceTypeString retrieves an enum value from the enum constants string name.

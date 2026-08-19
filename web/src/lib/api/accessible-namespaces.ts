@@ -2,21 +2,17 @@ import { queryOptions, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { QueryClient } from "@tanstack/react-query";
 
 import { collectListedPage, cursorPageQuery } from "@/lib/api/cursor-pages";
-import {
-  v1OrganizationsGetOptions,
-  v1OrganizationsNamespacesGetOptions,
-} from "@/lib/api/query-options";
-import type { Namespace, Organization } from "@/lib/api/types";
+import { v1NamespacesGetOptions } from "@/lib/api/query-options";
+import type { AccessibleNamespace as ApiAccessibleNamespace } from "@/lib/api/types";
 import { cacheProfiles } from "@/lib/query-client";
 
-export interface AccessibleNamespace extends Namespace {
-  organization: Organization;
+export interface AccessibleNamespace extends ApiAccessibleNamespace {
   organizationId: string;
   organizationName: string;
 }
 
 export interface AccessibleWorkspace {
-  organizations: Organization[];
+  organizations: ApiAccessibleNamespace["organization"][];
   namespaces: AccessibleNamespace[];
 }
 
@@ -25,43 +21,39 @@ export const accessibleNamespacesQueryKey = [
   "accessible-namespaces",
 ] as const;
 
+function uniqueOrganizations(
+  namespaces: AccessibleNamespace[]
+): AccessibleWorkspace["organizations"] {
+  const byId = new Map<string, AccessibleNamespace["organization"]>();
+  for (const namespace of namespaces) {
+    if (!byId.has(namespace.organization.id)) {
+      byId.set(namespace.organization.id, namespace.organization);
+    }
+  }
+  return [...byId.values()];
+}
+
 export function accessibleNamespacesOptions(queryClient: QueryClient) {
   return queryOptions<AccessibleWorkspace>({
     queryKey: accessibleNamespacesQueryKey,
     queryFn: async (): Promise<AccessibleWorkspace> => {
-      const organizationsPage = await collectListedPage(async (pageToken) =>
+      const page = await collectListedPage(async (pageToken) =>
         queryClient.fetchQuery({
-          ...v1OrganizationsGetOptions({
+          ...v1NamespacesGetOptions({
             query: cursorPageQuery(pageToken),
           }),
           staleTime: 0,
         })
       );
-      const organizations = organizationsPage.items;
-      const namespacesByOrganization = await Promise.all(
-        organizations.map((organization) =>
-          collectListedPage(async (pageToken) =>
-            queryClient.fetchQuery({
-              ...v1OrganizationsNamespacesGetOptions({
-                path: { id: organization.id },
-                query: cursorPageQuery(pageToken),
-              }),
-              staleTime: 0,
-            })
-          )
-        )
-      );
+      const namespaces = page.items.map((namespace) => ({
+        ...namespace,
+        organizationId: namespace.organization.id,
+        organizationName: namespace.organization.name,
+      }));
 
       return {
-        organizations,
-        namespaces: organizations.flatMap((organization, index) =>
-          (namespacesByOrganization[index]?.items ?? []).map((namespace) => ({
-            ...namespace,
-            organization,
-            organizationId: organization.id,
-            organizationName: organization.name,
-          }))
-        ),
+        organizations: uniqueOrganizations(namespaces),
+        namespaces,
       };
     },
     ...cacheProfiles.reference,

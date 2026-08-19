@@ -115,6 +115,26 @@ export async function clickUntilVisible(
 }
 
 /**
+ * Click a link/button until the page URL matches. WebKit often drops the
+ * first pointer event on Base UI-rendered links.
+ */
+export async function clickUntilURL(
+  trigger: Locator,
+  url: string | RegExp,
+  options?: { timeout?: number }
+): Promise<void> {
+  const page = trigger.page();
+  await expect(trigger).toBeVisible();
+  await trigger.click();
+  try {
+    await page.waitForURL(url, { timeout: options?.timeout ?? 2_000 });
+  } catch {
+    await trigger.click();
+    await page.waitForURL(url);
+  }
+}
+
+/**
  * Wait for skeleton loaders within a container to disappear, if present.
  * @param container - Locator that may contain skeleton elements
  * @param options - Optional selector and timeout overrides

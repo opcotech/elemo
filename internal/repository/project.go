@@ -94,7 +94,7 @@ type ProjectRepository interface {
 	Create(ctx context.Context, opts CreateProjectOpts) (*Project, error)
 	Get(ctx context.Context, id model.ID, proj ProjectProjection) (*Project, error)
 	GetByKey(ctx context.Context, key string, proj ProjectProjection) (*Project, error)
-	List(ctx context.Context, namespaceID model.ID, page CursorPage, proj ProjectProjection) (Page[*Project], error)
+	List(ctx context.Context, namespaceID, actor model.ID, page CursorPage, proj ProjectProjection) (Page[*Project], error)
 	Update(ctx context.Context, id model.ID, opts UpdateProjectOpts, proj ProjectProjection) (*Project, error)
 	Delete(ctx context.Context, id model.ID) error
 }
@@ -255,7 +255,7 @@ func (r *Neo4jProjectRepository) Create(ctx context.Context, opts CreateProjectO
 			next_issue_id: $next_issue_id, created_at: datetime($created_at)
 		}),
 		(n)-[:` + EdgeKindHasProject.String() + `]->(p),
-		(u)-[:` + EdgeKindHasPermission.String() + ` {id: $perm_id, kind: $perm_kind, created_at: datetime($created_at)}]->(p)`
+		(p)-[:` + EdgeKindInScopeOf.String() + ` {id: $scope_id, created_at: datetime($created_at)}]->(n)`
 
 	params := map[string]any{
 		"id":            id.String(),
@@ -268,8 +268,7 @@ func (r *Neo4jProjectRepository) Create(ctx context.Context, opts CreateProjectO
 		"created_at":    createdAt.Format(time.RFC3339Nano),
 		"creator_id":    opts.CreatorID.String(),
 		"namespace_id":  opts.NamespaceID.String(),
-		"perm_id":       model.NewRawID(),
-		"perm_kind":     model.PermissionKindAll.String(),
+		"scope_id":      model.NewRawID(),
 	}
 
 	if err := Neo4jExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
@@ -336,7 +335,7 @@ func (r *Neo4jProjectRepository) GetByKey(ctx context.Context, key string, proj 
 	return projects[0], nil
 }
 
-func (r *Neo4jProjectRepository) List(ctx context.Context, namespaceID model.ID, page CursorPage, proj ProjectProjection) (Page[*Project], error) {
+func (r *Neo4jProjectRepository) List(ctx context.Context, namespaceID, actor model.ID, page CursorPage, proj ProjectProjection) (Page[*Project], error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.ProjectRepository/List")
 	defer span.End()
 
@@ -347,6 +346,8 @@ func (r *Neo4jProjectRepository) List(ctx context.Context, namespaceID model.ID,
 
 	plan, err := CompileQuery(ProjectListQuery{
 		NamespaceID: namespaceID,
+		ActorID:     actor,
+		Action:      model.ActionProjectRead,
 		Page:        normalizedPage,
 		Order:       SortDirectionDesc,
 		Projection:  proj,
@@ -473,9 +474,11 @@ func projectGetByKeyCacheKey(key string, proj ProjectProjection) (string, error)
 	return plan.CacheKey(model.ResourceTypeProject.String(), "GetByKey", key), nil
 }
 
-func projectListCacheKey(namespaceID model.ID, page CursorPage, proj ProjectProjection) (string, error) {
+func projectListCacheKey(namespaceID, actor model.ID, page CursorPage, proj ProjectProjection) (string, error) {
 	plan, err := CompileQuery(ProjectListQuery{
 		NamespaceID: namespaceID,
+		ActorID:     actor,
+		Action:      model.ActionProjectRead,
 		Page:        page,
 		Order:       SortDirectionDesc,
 		Projection:  proj,
@@ -551,11 +554,11 @@ func (r *RedisCachedProjectRepository) GetByKey(ctx context.Context, key string,
 	return project, nil
 }
 
-func (r *RedisCachedProjectRepository) List(ctx context.Context, namespaceID model.ID, page CursorPage, proj ProjectProjection) (Page[*Project], error) {
+func (r *RedisCachedProjectRepository) List(ctx context.Context, namespaceID, actor model.ID, page CursorPage, proj ProjectProjection) (Page[*Project], error) {
 	var projects Page[*Project]
 	var err error
 
-	key, err := projectListCacheKey(namespaceID, page, proj)
+	key, err := projectListCacheKey(namespaceID, actor, page, proj)
 	if err != nil {
 		return Page[*Project]{}, err
 	}
@@ -567,7 +570,7 @@ func (r *RedisCachedProjectRepository) List(ctx context.Context, namespaceID mod
 		return projects, nil
 	}
 
-	if projects, err = r.projectRepo.List(ctx, namespaceID, page, proj); err != nil {
+	if projects, err = r.projectRepo.List(ctx, namespaceID, actor, page, proj); err != nil {
 		return Page[*Project]{}, err
 	}
 

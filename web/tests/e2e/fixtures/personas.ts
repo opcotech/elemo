@@ -1,7 +1,7 @@
 import { test as base } from "@playwright/test";
 
 import { USER_DEFAULT_PASSWORD } from "../utils/auth";
-import { createUser, grantSystemOwnerMembershipToUser } from "../utils/db";
+import { createUser, grantOrganizationCreateToUser } from "../utils/db";
 import { getTestConfig } from "../utils/test-config";
 
 import type { User } from "@/lib/api/types";
@@ -24,7 +24,7 @@ async function createPersona(owner: boolean): Promise<TestPersona> {
   const user = await createUser(testConfig);
 
   if (owner) {
-    await grantSystemOwnerMembershipToUser(testConfig, user.email);
+    await grantOrganizationCreateToUser(testConfig, user.email);
   }
 
   return {

@@ -7,7 +7,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/opcotech/elemo/internal/config"
-	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/service"
 	"github.com/opcotech/elemo/internal/testutil"
@@ -56,7 +55,7 @@ func NewUserService(t *testing.T, neo4jDBConf *config.GraphDatabaseConfig) servi
 	return s
 }
 
-// NewResourceOwner creates a new user with the Owner role.
+// NewResourceOwner creates a new user with organization.create on Installation.
 func NewResourceOwner(t *testing.T, neo4jDBConf *config.GraphDatabaseConfig) *repository.User {
 	neo4jDB, _ := testRepo.NewNeo4jDatabase(t, neo4jDBConf)
 
@@ -68,18 +67,7 @@ func NewResourceOwner(t *testing.T, neo4jDBConf *config.GraphDatabaseConfig) *re
 	owner, err := userRepo.Create(context.Background(), testModel.NewCreateUserOpts())
 	require.NoError(t, err)
 
-	cypher := `
-	MATCH (u:` + owner.ID.Label() + ` {id: $id})
-	MATCH (r:` + model.ResourceTypeRole.String() + ` {id: $role_label, system: true})
-	CREATE (u)-[:` + repository.EdgeKindMemberOf.String() + `]->(r)`
-
-	params := map[string]any{
-		"id":         owner.ID.String(),
-		"role_label": model.SystemRoleOwner.String(),
-		"perm_kind":  model.PermissionKindAll.String(),
-	}
-
-	require.NoError(t, repository.Neo4jExecuteWriteAndConsume(context.Background(), neo4jDB, cypher, params))
+	require.NoError(t, testRepo.MakeUserSystemOwner(owner.ID, neo4jDB))
 
 	return owner
 }

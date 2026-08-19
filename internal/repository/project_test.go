@@ -53,7 +53,7 @@ func mustProjectGetByKeyKey(t *testing.T, key string, proj ProjectProjection) st
 
 func mustProjectListKey(t *testing.T, namespaceID model.ID, page CursorPage, proj ProjectProjection) string {
 	t.Helper()
-	key, err := projectListCacheKey(namespaceID, page, proj)
+	key, err := projectListCacheKey(namespaceID, model.MustNewNilID(model.ResourceTypeUser), page, proj)
 	require.NoError(t, err)
 	return key
 }
@@ -402,7 +402,7 @@ func TestCachedProjectRepository_List(t *testing.T) {
 				},
 				projectRepo: func(ctrl *gomock.Controller, ctx context.Context, namespaceID model.ID, page CursorPage, proj ProjectProjection, want Page[*Project]) ProjectRepository {
 					repo := NewMockProjectRepository(ctrl)
-					repo.EXPECT().List(ctx, namespaceID, page, proj).Return(want, nil)
+					repo.EXPECT().List(ctx, namespaceID, model.MustNewNilID(model.ResourceTypeUser), page, proj).Return(want, nil)
 					return repo
 				},
 			},
@@ -435,7 +435,7 @@ func TestCachedProjectRepository_List(t *testing.T) {
 				projectRepo: tt.fields.projectRepo(ctrl, tt.args.ctx, tt.args.namespaceID, tt.args.page, tt.args.proj, tt.want),
 			}
 
-			got, err := repo.List(tt.args.ctx, tt.args.namespaceID, tt.args.page, tt.args.proj)
+			got, err := repo.List(tt.args.ctx, tt.args.namespaceID, model.MustNewNilID(model.ResourceTypeUser), tt.args.page, tt.args.proj)
 			require.ErrorIs(t, err, tt.wantErr)
 			require.Equal(t, tt.want, got)
 		})

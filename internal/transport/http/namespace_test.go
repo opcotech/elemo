@@ -72,3 +72,47 @@ func TestNamespaceController_V1NamespaceGet(t *testing.T) {
 		assert.Equal(t, int64(1), *got.DocumentCount)
 	})
 }
+
+func TestNamespaceController_V1NamespacesGet(t *testing.T) {
+	t.Parallel()
+
+	orgID := model.MustNewID(model.ResourceTypeOrganization)
+	namespaceID := model.MustNewID(model.ResourceTypeNamespace)
+	ns := &service.AccessibleNamespace{
+		Namespace: service.Namespace{
+			ID:            namespaceID,
+			Name:          "Engineering",
+			Description:   "Engineering team namespace",
+			ProjectCount:  convert.ToPointer(int64(1)),
+			DocumentCount: convert.ToPointer(int64(1)),
+			CreatedAt:     convert.ToPointer(time.Now().UTC()),
+		},
+		Organization: service.PartialOrganization{
+			ID:   orgID,
+			Name: "ACME",
+		},
+	}
+
+	t.Run("success", func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		nsSvc := service.NewMockNamespaceService(ctrl)
+		nsSvc.EXPECT().ListAccessible(gomock.Any(), gomock.Any()).Return(service.Page[*service.AccessibleNamespace]{
+			Items: []*service.AccessibleNamespace{ns},
+		}, nil)
+
+		c, err := NewNamespaceController(WithNamespaceService(nsSvc))
+		require.NoError(t, err)
+
+		resp, err := c.V1NamespacesGet(context.Background(), api.V1NamespacesGetRequestObject{})
+		require.NoError(t, err)
+		got, ok := resp.(api.V1NamespacesGet200JSONResponse)
+		require.True(t, ok)
+		require.Len(t, got.Items, 1)
+		assert.Equal(t, namespaceID.String(), got.Items[0].Id)
+		assert.Equal(t, orgID.String(), got.Items[0].Organization.Id)
+		assert.Equal(t, "ACME", got.Items[0].Organization.Name)
+	})
+}

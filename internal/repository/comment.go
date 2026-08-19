@@ -90,19 +90,18 @@ func (r *Neo4jCommentRepository) Create(ctx context.Context, opts CreateCommentO
 	CREATE
 		(c:` + id.Label() + ` {id: $id, content: $content, created_by: $created_by_id, created_at: datetime($created_at)}),
 		(b)-[:` + EdgeKindHasComment.String() + ` {id: $has_comment_rel_id, created_at: datetime($created_at)}]->(c),
-		(o)-[:` + EdgeKindCommented.String() + ` {id: $commented_rel_id, created_at: datetime($created_at)}]->(c),
-		(o)-[:` + EdgeKindHasPermission.String() + ` {id: $comment_perm_rel_id, kind: $perm_kind, created_at: datetime($created_at)}]->(c)`
+		(c)-[:` + EdgeKindInScopeOf.String() + ` {id: $scope_id, created_at: datetime($created_at)}]->(b),
+		(o)-[:` + EdgeKindCommented.String() + ` {id: $commented_rel_id, created_at: datetime($created_at)}]->(c)`
 
 	params := map[string]any{
-		"belong_to_id":        opts.BelongsTo.String(),
-		"has_comment_rel_id":  model.NewRawID(),
-		"created_by_id":       opts.CreatedBy.String(),
-		"commented_rel_id":    model.NewRawID(),
-		"comment_perm_rel_id": model.NewRawID(),
-		"perm_kind":           model.PermissionKindAll.String(),
-		"id":                  id.String(),
-		"content":             opts.Content,
-		"created_at":          createdAt.Format(time.RFC3339Nano),
+		"belong_to_id":       opts.BelongsTo.String(),
+		"has_comment_rel_id": model.NewRawID(),
+		"scope_id":           model.NewRawID(),
+		"created_by_id":      opts.CreatedBy.String(),
+		"commented_rel_id":   model.NewRawID(),
+		"id":                 id.String(),
+		"content":            opts.Content,
+		"created_at":         createdAt.Format(time.RFC3339Nano),
 	}
 
 	if err := Neo4jExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {

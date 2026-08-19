@@ -2,11 +2,7 @@ import type { Page } from "@playwright/test";
 
 import { BaseComponent } from "../components/base";
 import { navigateAndWait } from "../helpers";
-import {
-  RoleEditFormSection,
-  RoleMembersSection,
-  RolePermissionsSection,
-} from "../sections";
+import { RoleEditFormSection } from "../sections";
 
 /**
  * Page Object Model for Organization Role Edit page.
@@ -14,14 +10,10 @@ import {
  */
 export class SettingsOrganizationRoleEditPage extends BaseComponent {
   public readonly roleEditForm: RoleEditFormSection;
-  public readonly members: RoleMembersSection;
-  public readonly permissions: RolePermissionsSection;
 
   constructor(page: Page) {
     super(page);
     this.roleEditForm = new RoleEditFormSection(page);
-    this.members = new RoleMembersSection(page);
-    this.permissions = new RolePermissionsSection(page);
   }
 
   /**

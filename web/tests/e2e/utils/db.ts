@@ -6,9 +6,13 @@ import { getRandomString } from "./random";
 import type { getTestConfig } from "./test-config";
 import { generateXid } from "./xid";
 
-import type { PermissionKind, ResourceType, User } from "@/lib/api/types";
+import type { ResourceType, User } from "@/lib/api/types";
 
-const SYSTEM_OWNER_USER_ID = "d49pd9v92rs4hfc796k0";
+/** Stable Installation node id used as the organization.create scope. */
+export const INSTALLATION_ID = "00000000000000000000";
+
+/** Stable e2e privileged user id (organization.create on Installation). */
+export const PRIVILEGED_USER_ID = "d49pd9v92rs4hfc796k0";
 
 let _cachedDriver: Driver | null = null;
 
@@ -28,8 +32,8 @@ function getDriver(config: ReturnType<typeof getTestConfig>) {
 /**
  * Create a new user in the database.
  *
- * This function is used to bypass user invitation flow, mimicing a exsisting
- * condition in the system.
+ * This function is used to bypass user invitation flow, mimicking an existing
+ * condition in the system. Users are labeled Principal so they can hold grants.
  */
 export async function createUser(
   config: ReturnType<typeof getTestConfig>,
@@ -76,6 +80,7 @@ export async function createUser(
       languages: $languages,
       created_at: datetime()
     }
+    SET u:Principal
     RETURN u
   `;
 
@@ -92,37 +97,36 @@ export async function createUser(
 }
 
 /**
- * Grant a permission to a user for a specific resource.
+ * Grant actions to a user on a specific resource via a GRANTED edge.
  *
- * The only acceptable use of this function is to mimic a specific permission
- * setup for a user. This function should only be used in scenarios where we
- * cannot use the API or we need to bypass the API for some reason.
- *
- * @param config - Test configuration
- * @param email - User email
- * @param resourceType - Resource type
- * @param resourceId - Resource ID
- * @param permissionKind - Permission kind
+ * The only acceptable use of this function is to mimic a specific grant
+ * setup for a user. Prefer the permissions API when the caller already has
+ * permission.manage on the scope.
  */
-export async function grantPermissionToUser(
+export async function grantActionsToUser(
   config: ReturnType<typeof getTestConfig>,
   email: string,
   resourceType: ResourceType,
   resourceId: string,
-  permissionKind: PermissionKind
+  actions: string[]
 ) {
   const driver = getDriver(config);
   const session = driver.session();
 
-  const permissionId = generateXid();
-  const createdAt = new Date().toISOString();
+  const grantId = generateXid();
 
   const query = `
     MATCH (u:User {email: $email})
+    SET u:Principal
+    WITH u
     MATCH (t:${resourceType} {id: $resourceId})
-    MERGE (u)-[p:HAS_PERMISSION {kind: $permissionKind}]->(t)
-      ON CREATE SET p.id = $permissionId, p.created_at = datetime($createdAt)
-    RETURN p
+    CREATE (u)-[g:GRANTED {
+      id: $grantId,
+      actions: $actions,
+      role_id: "",
+      created_at: datetime()
+    }]->(t)
+    RETURN g
   `;
 
   try {
@@ -130,15 +134,14 @@ export async function grantPermissionToUser(
       const result = await tx.run(query, {
         email,
         resourceId,
-        permissionKind,
-        permissionId,
-        createdAt,
+        actions,
+        grantId,
       });
       return result.records.length > 0;
     });
     if (!granted) {
       throw new Error(
-        `Failed to grant ${permissionKind} on ${resourceType}:${resourceId} to ${email}`
+        `Failed to grant [${actions.join(", ")}] on ${resourceType}:${resourceId} to ${email}`
       );
     }
   } finally {
@@ -147,60 +150,9 @@ export async function grantPermissionToUser(
 }
 
 /**
- * Grant a permission to a user for a specific resource.
- *
- * The only acceptable use of this function is to mimic a specific permission
- * setup for a user. This function should only be used in scenarios where we
- * cannot use the API or we need to bypass the API for some reason.
- *
- * @param config - Test configuration
- * @param email - User email
- * @param resourceType - Resource type
- * @param permissionKind - Permission kind
+ * Grant organization.create on the Installation node to a user principal.
  */
-export async function grantSystemPermissionToUser(
-  config: ReturnType<typeof getTestConfig>,
-  email: string,
-  resourceType: ResourceType,
-  permissionKind: PermissionKind
-) {
-  const driver = getDriver(config);
-  const session = driver.session();
-
-  const permissionId = generateXid();
-  const createdAt = new Date().toISOString();
-
-  const query = `
-    MATCH (u:User {email: $email})
-    MATCH (rt:ResourceType {id: $resourceType})
-    MERGE (u)-[p:HAS_PERMISSION {kind: $permissionKind}]->(rt)
-      ON CREATE SET p.id = $permissionId, p.created_at = datetime($createdAt)
-  `;
-
-  try {
-    await session.executeWrite(async (tx) => {
-      await tx.run(query, {
-        email,
-        resourceType,
-        permissionKind,
-        permissionId,
-        createdAt,
-      });
-    });
-  } catch (error) {
-    console.error("Error granting system permission to user", error);
-  } finally {
-    await session.close();
-  }
-}
-
-/**
- * Grant system owner membership to a user.
- *
- * @param config - Test configuration
- * @param email - User email
- */
-export async function grantSystemOwnerMembershipToUser(
+export async function grantOrganizationCreateToUser(
   config: ReturnType<typeof getTestConfig>,
   email: string
 ) {
@@ -208,14 +160,29 @@ export async function grantSystemOwnerMembershipToUser(
   const session = driver.session();
   const query = `
     MATCH (u:User {email: $email})
-    MATCH (r:Role {id: 'Owner'})
-    MERGE (u)-[m:MEMBER_OF {id: $membershipId}]->(r)
-      ON CREATE SET m.created_at = datetime()
+    SET u:Principal
+    WITH u
+    MERGE (i:Installation {id: $installationId})
+    ON CREATE SET i.created_at = datetime()
+    MERGE (u)-[g:GRANTED]->(i)
+    ON CREATE SET
+      g.id = $grantId,
+      g.actions = $actions,
+      g.role_id = "",
+      g.created_at = datetime()
+    ON MATCH SET
+      g.actions = $actions,
+      g.updated_at = datetime()
   `;
 
   try {
     await session.executeWrite(async (tx) => {
-      await tx.run(query, { email, membershipId: generateXid() });
+      await tx.run(query, {
+        email,
+        installationId: INSTALLATION_ID,
+        grantId: generateXid(),
+        actions: ["organization.create"],
+      });
     });
   } finally {
     await session.close();
@@ -228,11 +195,6 @@ export async function grantSystemOwnerMembershipToUser(
  * The only acceptable use of this function is to mimic a specific membership
  * setup for a user. This function should only be used in scenarios where we
  * cannot use the API or we need to bypass the API for some reason.
- *
- * @param config - Test configuration
- * @param email - User email
- * @param resourceType - Resource type
- * @param resourceId - Resource ID
  */
 export async function grantMembershipToUser(
   config: ReturnType<typeof getTestConfig>,
@@ -244,6 +206,8 @@ export async function grantMembershipToUser(
   const session = driver.session();
   const query = `
     MATCH (u:User {email: $email})
+    SET u:Principal
+    WITH u
     MATCH (t:${resourceType} {id: $resourceId})
     MERGE (u)-[m:MEMBER_OF {id: $membershipId}]->(t)
       ON CREATE SET m.created_at = datetime()
@@ -264,40 +228,36 @@ export async function grantMembershipToUser(
 }
 
 /**
- * Ensure system owner user exists in the database.
- * Creates the user if it doesn't exist (idempotent).
+ * Ensure the e2e privileged user exists with organization.create on Installation.
+ * Creates the user if it doesn't exist (idempotent). Does not use system roles.
  */
-export async function ensureSystemOwner(
+export async function ensurePrivilegedUser(
   config: ReturnType<typeof getTestConfig>
 ) {
   const driver = getDriver(config);
   const session = driver.session();
 
   try {
-    // Check if user already exists
     const checkResult = await session.executeRead(async (tx) => {
       return await tx.run("MATCH (u:User {id: $userId}) RETURN u", {
-        userId: SYSTEM_OWNER_USER_ID,
+        userId: PRIVILEGED_USER_ID,
       });
     });
 
-    if (checkResult.records.length > 0) {
-      console.log("System owner user already exists, skipping creation");
-      return;
+    if (checkResult.records.length === 0) {
+      await createUser(config, {
+        id: PRIVILEGED_USER_ID,
+        username: "e2e-test-owner",
+        first_name: "E2E Test",
+        last_name: "Owner",
+        email: config.systemOwnerEmail,
+        password: USER_DEFAULT_PASSWORD_HASH,
+      });
     }
 
-    await createUser(config, {
-      id: SYSTEM_OWNER_USER_ID,
-      username: "e2e-test-owner",
-      first_name: "E2E Test",
-      last_name: "Owner",
-      email: config.systemOwnerEmail,
-      password: USER_DEFAULT_PASSWORD_HASH,
-    });
+    await grantOrganizationCreateToUser(config, config.systemOwnerEmail);
 
-    await grantSystemOwnerMembershipToUser(config, config.systemOwnerEmail);
-
-    console.debug("System owner user created successfully");
+    console.debug("E2E privileged user is ready");
   } finally {
     await session.close();
   }

@@ -33,7 +33,7 @@ function generateLicenseKey() {
     -organization "ACME Inc." \
     -private-key configs/test/generator.key \
     -license "${CONFIG_DIR}/license.gen.key" \
-    -quota "users=999,organizations=999,documents=999,namespaces=999,roles=999"
+    -quota "users=99999,organizations=99999,documents=99999,namespaces=99999,projects=99999,roles=99999"
 
   # Ensure files are readable by the nonroot user in the container (UID 65532)
   chmod 0644 "${CONFIG_DIR}/license.gen.key"

@@ -24,6 +24,8 @@ const (
 	ResourceTypeUser                                  // User
 	ResourceTypeUserToken                             // UserToken
 	ResourceTypeFolder                                // Folder
+	ResourceTypeInstallation                          // Installation
+	ResourceTypeTeam                                  // Team
 )
 
 // ResourceType is the type of resource that is being managed in the system.

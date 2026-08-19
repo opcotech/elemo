@@ -3,9 +3,10 @@ import { withErrorHandling } from "./error-handler";
 import type { Client } from "@/lib/client/client";
 import {
   v1OrganizationRoleGet,
+  v1OrganizationRoleUpdate,
   v1OrganizationRolesCreate,
 } from "@/lib/client/sdk.gen";
-import type { Role, RoleCreate } from "@/lib/client/types.gen";
+import type { Role, RoleCreate, RolePatch } from "@/lib/client/types.gen";
 
 /**
  * Create a role via API.
@@ -23,6 +24,8 @@ export async function createRole(
   const roleCreateData: RoleCreate = {
     name: roleData.name,
     description: roleData.description,
+    key: roleData.key,
+    actions: roleData.actions,
   };
 
   const response = await withErrorHandling(
@@ -55,4 +58,31 @@ export async function createRole(
   );
 
   return role.data;
+}
+
+/**
+ * Update a role bundle, including its actions.
+ */
+export async function updateRole(
+  client: Client,
+  organizationId: string,
+  roleId: string,
+  patch: RolePatch
+): Promise<Role> {
+  const response = await withErrorHandling(
+    async () => {
+      return await v1OrganizationRoleUpdate({
+        client,
+        path: { id: organizationId, role_id: roleId },
+        body: patch,
+        throwOnError: true,
+      });
+    },
+    {
+      endpoint: `/v1/organizations/${organizationId}/roles/${roleId}`,
+      method: "PATCH",
+    }
+  );
+
+  return response.data;
 }

@@ -29,6 +29,8 @@ func TestResourceType_String(t *testing.T) {
 		{"User", ResourceTypeUser, "User"},
 		{"UserToken", ResourceTypeUserToken, "UserToken"},
 		{"Folder", ResourceTypeFolder, "Folder"},
+		{"Installation", ResourceTypeInstallation, "Installation"},
+		{"Team", ResourceTypeTeam, "Team"},
 	}
 	for _, tt := range tests {
 		tt := tt
@@ -63,6 +65,8 @@ func TestResourceType_MarshalText(t *testing.T) {
 		{"User", ResourceTypeUser, []byte("User"), nil},
 		{"UserToken", ResourceTypeUserToken, []byte("UserToken"), nil},
 		{"Folder", ResourceTypeFolder, []byte("Folder"), nil},
+		{"Installation", ResourceTypeInstallation, []byte("Installation"), nil},
+		{"Team", ResourceTypeTeam, []byte("Team"), nil},
 		{"type high", ResourceType(100), []byte("ResourceType(100)"), nil},
 		{"type low", ResourceType(0), []byte("ResourceType(0)"), nil},
 	}
@@ -101,6 +105,8 @@ func TestResourceType_UnmarshalText(t *testing.T) {
 		{"User", []byte("User"), ResourceTypeUser, false},
 		{"UserToken", []byte("UserToken"), ResourceTypeUserToken, false},
 		{"Folder", []byte("Folder"), ResourceTypeFolder, false},
+		{"Installation", []byte("Installation"), ResourceTypeInstallation, false},
+		{"Team", []byte("Team"), ResourceTypeTeam, false},
 		{"invalid", []byte("invalid"), 0, true},
 	}
 	for _, tt := range tests {

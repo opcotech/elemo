@@ -122,6 +122,48 @@ export const zNamespace = z.object({
 });
 
 /**
+ * PartialOrganization
+ *
+ * Owning organization stub returned with a reachable namespace.
+ */
+export const zPartialOrganization = z.object({
+  id: z.string(),
+  name: z.string(),
+});
+
+/**
+ * AccessibleNamespace
+ *
+ * A reachable namespace with its owning organization stub.
+ */
+export const zAccessibleNamespace = z.object({
+  id: z.string(),
+  name: z.string().min(3).max(120),
+  description: z.string().min(5).max(500).nullish(),
+  project_count: z.coerce
+    .bigint()
+    .min(BigInt("-9223372036854775808"), {
+      error: "Invalid value: Expected int64 to be >= -9223372036854775808",
+    })
+    .max(BigInt("9223372036854775807"), {
+      error: "Invalid value: Expected int64 to be <= 9223372036854775807",
+    })
+    .nullish(),
+  document_count: z.coerce
+    .bigint()
+    .min(BigInt("-9223372036854775808"), {
+      error: "Invalid value: Expected int64 to be >= -9223372036854775808",
+    })
+    .max(BigInt("9223372036854775807"), {
+      error: "Invalid value: Expected int64 to be <= 9223372036854775807",
+    })
+    .nullish(),
+  created_at: z.iso.datetime(),
+  updated_at: z.iso.datetime().nullable(),
+  organization: zPartialOrganization,
+});
+
+/**
  * PageInfo
  *
  * Cursor pagination metadata for a page of results.
@@ -153,6 +195,14 @@ export const zOrganizationPage = z.object({
  */
 export const zNamespacePage = z.object({
   items: z.array(zNamespace),
+  page_info: zPageInfo,
+});
+
+/**
+ * AccessibleNamespacePage
+ */
+export const zAccessibleNamespacePage = z.object({
+  items: z.array(zAccessibleNamespace),
   page_info: zPageInfo,
 });
 
@@ -957,39 +1007,69 @@ export const zUserPage = z.object({
 });
 
 /**
- * PermissionKind
+ * Action
  *
- * Kind of a permission.
+ * Fine-grained authorization action. Exact match only; wildcards are not supported.
+ *
+ * Registry: organization.create, organization.read, organization.update, organization.delete, organization.members.manage, namespace.create, namespace.read, namespace.update, namespace.delete, project.create, project.read, project.update, project.delete, project.members.manage, issue.create, issue.read, issue.update, issue.delete, issue.assign, document.create, document.read, document.update, document.delete, folder.create, role.manage, team.manage, permission.manage.
+ *
  */
-export const zPermissionKind = z.enum([
-  "*",
-  "create",
-  "write",
-  "read",
-  "delete",
-]);
+export const zAction = z.string();
 
 /**
- * Permission
+ * EffectiveActions
  *
- * A permission in the system.
+ * Actions the caller can perform on a resource after ReBAC evaluation.
  */
-export const zPermission = z.object({
+export const zEffectiveActions = z.object({
+  actions: z.array(zAction),
+});
+
+/**
+ * GrantPrincipalType
+ *
+ * Principal kinds that can hold grants.
+ */
+export const zGrantPrincipalType = z.enum(["User", "Team", "Organization"]);
+
+/**
+ * Role
+ *
+ * A role bundle of actions that can be granted on a scope.
+ */
+export const zRole = z.object({
   id: z.string(),
-  kind: zPermissionKind,
-  subject: z.string(),
-  target: z.string(),
-  target_type: z.string(),
+  key: z.string(),
+  name: z.string().min(3).max(120),
+  description: z.string().min(5).max(500).nullish(),
+  member_count: z.coerce
+    .bigint()
+    .min(BigInt("-9223372036854775808"), {
+      error: "Invalid value: Expected int64 to be >= -9223372036854775808",
+    })
+    .max(BigInt("9223372036854775807"), {
+      error: "Invalid value: Expected int64 to be <= 9223372036854775807",
+    })
+    .nullish(),
+  actions: z.array(zAction),
   created_at: z.iso.datetime(),
   updated_at: z.iso.datetime().nullable(),
 });
 
 /**
- * Role
- *
- * A role in the system.
+ * RolePage
  */
-export const zRole = z.object({
+export const zRolePage = z.object({
+  items: z.array(zRole),
+  page_info: zPageInfo,
+});
+
+/**
+ * Team
+ *
+ * A team of users that belongs to an organization.
+ */
+export const zTeam = z.object({
   id: z.string(),
   name: z.string().min(3).max(120),
   description: z.string().min(5).max(500).nullish(),
@@ -1002,16 +1082,15 @@ export const zRole = z.object({
       error: "Invalid value: Expected int64 to be <= 9223372036854775807",
     })
     .nullish(),
-  permissions: z.array(z.string()),
   created_at: z.iso.datetime(),
   updated_at: z.iso.datetime().nullable(),
 });
 
 /**
- * RolePage
+ * TeamPage
  */
-export const zRolePage = z.object({
-  items: z.array(zRole),
+export const zTeamPage = z.object({
+  items: z.array(zTeam),
   page_info: zPageInfo,
 });
 
@@ -1027,15 +1106,36 @@ export const zResourceType = z.enum([
   "IssueRelation",
   "Label",
   "Namespace",
+  "Notification",
   "Organization",
   "Permission",
   "Project",
   "ResourceType",
   "Role",
+  "Team",
   "Todo",
   "User",
+  "UserToken",
   "Folder",
+  "Installation",
 ]);
+
+/**
+ * Grant
+ *
+ * A scoped ReBAC grant that binds a principal to actions on a resource.
+ */
+export const zGrant = z.object({
+  id: z.string(),
+  principal: z.string(),
+  principal_type: zResourceType,
+  scope: z.string(),
+  scope_type: zResourceType,
+  role_id: z.string().nullable(),
+  actions: z.array(zAction),
+  created_at: z.iso.datetime(),
+  updated_at: z.iso.datetime().nullable(),
+});
 
 /**
  * Deprecated. Use page_token/page_size instead.
@@ -1110,11 +1210,6 @@ export const zUserEmail = z.email();
  * Irreversibly delete the user.
  */
 export const zForce = z.boolean();
-
-/**
- * ID of a role.
- */
-export const zRoles = z.array(z.enum(["Owner", "Admin", "Support"]));
 
 export const zUserPatch = z.object({
   username: z
@@ -1297,35 +1392,43 @@ export const zIssueRelationPatch = z.object({
   kind: zIssueRelationKind,
 });
 
-export const zPermissionCreate = z.object({
-  kind: zPermissionKind,
-  subject: z.object({
+/**
+ * Create a grant. Either role_id or a non-empty actions array is required.
+ */
+export const zGrantCreate = z.object({
+  principal: z.object({
+    resourceType: zGrantPrincipalType,
+    id: z.string(),
+  }),
+  scope: z.object({
     resourceType: zResourceType,
     id: z.string(),
   }),
-  target: z.object({
-    resourceType: zResourceType,
-    id: z.string(),
-  }),
-});
-
-export const zPermissionPatch = z.object({
-  kind: zPermissionKind,
+  role_id: z.string().optional(),
+  actions: z.array(zAction).optional(),
 });
 
 export const zRoleCreate = z.object({
+  key: z.string().min(1).max(120).optional(),
   name: z.string().min(3).max(120),
   description: z.string().min(5).max(500).optional(),
+  actions: z.array(zAction).optional(),
 });
 
 export const zRolePatch = z.object({
   name: z.string().min(3).max(120).optional(),
   description: z.string().min(5).max(500).nullish(),
+  actions: z.array(zAction).optional(),
 });
 
-export const zRolePermissionCreate = z.object({
-  target: z.string(),
-  kind: zPermissionKind,
+export const zTeamCreate = z.object({
+  name: z.string().min(3).max(120),
+  description: z.string().min(5).max(500).optional(),
+});
+
+export const zTeamPatch = z.object({
+  name: z.string().min(3).max(120).optional(),
+  description: z.string().min(5).max(500).nullish(),
 });
 
 export const zV1UsersGetQuery = z.object({
@@ -1693,12 +1796,11 @@ export const zV1OrganizationRoleUpdatePath = z.object({
  */
 export const zV1OrganizationRoleUpdateResponse = zRole;
 
-export const zV1OrganizationRoleMembersGetPath = z.object({
+export const zV1OrganizationTeamsGetPath = z.object({
   id: z.string(),
-  role_id: z.string(),
 });
 
-export const zV1OrganizationRoleMembersGetQuery = z.object({
+export const zV1OrganizationTeamsGetQuery = z.object({
   page_size: z.int().gte(1).lte(1000).optional().default(100),
   page_token: z.string().optional(),
 });
@@ -1706,69 +1808,94 @@ export const zV1OrganizationRoleMembersGetQuery = z.object({
 /**
  * OK
  */
-export const zV1OrganizationRoleMembersGetResponse = zUserPage;
+export const zV1OrganizationTeamsGetResponse = zTeamPage;
 
-export const zV1OrganizationRoleMembersAddBody = z.object({
-  user_id: z.string(),
-});
+export const zV1OrganizationTeamsCreateBody = zTeamCreate;
 
-export const zV1OrganizationRoleMembersAddPath = z.object({
+export const zV1OrganizationTeamsCreatePath = z.object({
   id: z.string(),
-  role_id: z.string(),
 });
 
 /**
  * Example response
  */
-export const zV1OrganizationRoleMembersAddResponse = z.object({
+export const zV1OrganizationTeamsCreateResponse = z.object({
   id: z.string(),
 });
 
-export const zV1OrganizationRoleMemberRemovePath = z.object({
+export const zV1OrganizationTeamDeletePath = z.object({
   id: z.string(),
-  role_id: z.string(),
-  user_id: z.string(),
+  team_id: z.string(),
 });
 
 /**
  * No Content
  */
-export const zV1OrganizationRoleMemberRemoveResponse = z.void();
+export const zV1OrganizationTeamDeleteResponse = z.void();
 
-export const zV1OrganizationRolePermissionsGetPath = z.object({
+export const zV1OrganizationTeamGetPath = z.object({
   id: z.string(),
-  role_id: z.string(),
+  team_id: z.string(),
 });
 
 /**
  * OK
  */
-export const zV1OrganizationRolePermissionsGetResponse = z.array(zPermission);
+export const zV1OrganizationTeamGetResponse = zTeam;
 
-export const zV1OrganizationRolePermissionAddBody = zRolePermissionCreate;
+export const zV1OrganizationTeamUpdateBody = zTeamPatch;
 
-export const zV1OrganizationRolePermissionAddPath = z.object({
+export const zV1OrganizationTeamUpdatePath = z.object({
   id: z.string(),
-  role_id: z.string(),
+  team_id: z.string(),
+});
+
+/**
+ * OK
+ */
+export const zV1OrganizationTeamUpdateResponse = zTeam;
+
+export const zV1OrganizationTeamMembersGetPath = z.object({
+  id: z.string(),
+  team_id: z.string(),
+});
+
+export const zV1OrganizationTeamMembersGetQuery = z.object({
+  page_size: z.int().gte(1).lte(1000).optional().default(100),
+  page_token: z.string().optional(),
+});
+
+/**
+ * OK
+ */
+export const zV1OrganizationTeamMembersGetResponse = zUserPage;
+
+export const zV1OrganizationTeamMembersAddBody = z.object({
+  user_id: z.string(),
+});
+
+export const zV1OrganizationTeamMembersAddPath = z.object({
+  id: z.string(),
+  team_id: z.string(),
 });
 
 /**
  * Example response
  */
-export const zV1OrganizationRolePermissionAddResponse = z.object({
+export const zV1OrganizationTeamMembersAddResponse = z.object({
   id: z.string(),
 });
 
-export const zV1OrganizationRolePermissionRemovePath = z.object({
+export const zV1OrganizationTeamMemberRemovePath = z.object({
   id: z.string(),
-  role_id: z.string(),
-  permission_id: z.string(),
+  team_id: z.string(),
+  user_id: z.string(),
 });
 
 /**
  * No Content
  */
-export const zV1OrganizationRolePermissionRemoveResponse = z.void();
+export const zV1OrganizationTeamMemberRemoveResponse = z.void();
 
 export const zV1OrganizationsNamespacesGetPath = z.object({
   id: z.string(),
@@ -1849,6 +1976,16 @@ export const zV1OrganizationsFoldersCreatePath = z.object({
  * Created
  */
 export const zV1OrganizationsFoldersCreateResponse = zFolder;
+
+export const zV1NamespacesGetQuery = z.object({
+  page_size: z.int().gte(1).lte(1000).optional().default(100),
+  page_token: z.string().optional(),
+});
+
+/**
+ * OK
+ */
+export const zV1NamespacesGetResponse = zAccessibleNamespacePage;
 
 export const zV1NamespaceDeletePath = z.object({
   id: z.string(),
@@ -2261,7 +2398,7 @@ export const zV1IssueRelationUpdatePath = z.object({
  */
 export const zV1IssueRelationUpdateResponse = zIssueRelation;
 
-export const zV1PermissionsCreateBody = zPermissionCreate;
+export const zV1PermissionsCreateBody = zGrantCreate;
 
 /**
  * Example response
@@ -2286,18 +2423,7 @@ export const zV1PermissionGetPath = z.object({
 /**
  * OK
  */
-export const zV1PermissionGetResponse = zPermission;
-
-export const zV1PermissionUpdateBody = zPermissionPatch;
-
-export const zV1PermissionUpdatePath = z.object({
-  id: z.string(),
-});
-
-/**
- * OK
- */
-export const zV1PermissionUpdateResponse = zPermission;
+export const zV1PermissionGetResponse = zGrant;
 
 export const zV1PermissionResourceGetPath = z.object({
   resourceId: z.string(),
@@ -2306,25 +2432,7 @@ export const zV1PermissionResourceGetPath = z.object({
 /**
  * OK
  */
-export const zV1PermissionResourceGetResponse = z.array(zPermission);
-
-export const zV1PermissionHasRelationsPath = z.object({
-  resourceId: z.string(),
-});
-
-/**
- * OK
- */
-export const zV1PermissionHasRelationsResponse = z.boolean();
-
-export const zV1PermissionHasSystemRoleQuery = z.object({
-  roles: z.array(z.enum(["Owner", "Admin", "Support"])),
-});
-
-/**
- * OK
- */
-export const zV1PermissionHasSystemRoleResponse = z.boolean();
+export const zV1PermissionResourceGetResponse = zEffectiveActions;
 
 /**
  * OK

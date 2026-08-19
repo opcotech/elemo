@@ -2,13 +2,13 @@ import type { QueryClient } from "@tanstack/react-query";
 import { describe, expect, it, vi } from "vitest";
 
 import { ApiError } from "@/lib/api/errors";
-import { ResourceType } from "@/lib/auth/permissions";
+import { Action, ResourceType } from "@/lib/auth/permissions";
 import {
   loadResourcePermissions,
   requireResourcePermission,
 } from "@/lib/entity-context";
 
-const readPermissions = [{ kind: "read" as const }];
+const readPermissions = { actions: [Action.OrganizationRead] };
 
 function createQueryClient(permissions: unknown) {
   const fetchQuery = vi.fn(() => Promise.resolve(permissions));
@@ -29,28 +29,28 @@ describe("entity permission context", () => {
     expect(queryClient.fetchQuery).toHaveBeenCalledTimes(1);
   });
 
-  it("returns permissions when the required kind is granted", async () => {
-    const queryClient = createQueryClient([{ kind: "write" }]);
+  it("returns permissions when the required action is granted", async () => {
+    const queryClient = createQueryClient(readPermissions);
 
     await expect(
       requireResourcePermission(
         queryClient,
         ResourceType.Organization,
         "organization-1",
-        "read"
+        Action.OrganizationRead
       )
-    ).resolves.toEqual([{ kind: "write" }]);
+    ).resolves.toEqual(readPermissions);
   });
 
   it("rejects when the required permission is missing", async () => {
-    const queryClient = createQueryClient([]);
+    const queryClient = createQueryClient({ actions: [] });
 
     await expect(
       requireResourcePermission(
         queryClient,
         ResourceType.Namespace,
         "namespace-1",
-        "delete"
+        Action.NamespaceDelete
       )
     ).rejects.toBeInstanceOf(ApiError);
 
@@ -59,7 +59,7 @@ describe("entity permission context", () => {
         queryClient,
         ResourceType.Namespace,
         "namespace-1",
-        "delete"
+        Action.NamespaceDelete
       )
     ).rejects.toMatchObject({ status: 403 });
   });

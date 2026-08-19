@@ -1,3 +1,5 @@
+//go:build integration
+
 package service_test
 
 import (
@@ -67,10 +69,10 @@ func (s *NamespaceServiceIntegrationTestSuite) SetupTest() {
 	s.organization, err = s.OrganizationRepo.Create(context.Background(), testModel.NewCreateOrganizationOpts(s.owner.ID))
 	s.Require().NoError(err)
 
-	_, err = s.PermissionRepo.Create(context.Background(), repository.CreatePermissionOpts{
-		Subject: s.owner.ID,
-		Target:  s.organization.ID,
-		Kind:    model.PermissionKindWrite,
+	_, err = s.PermissionRepo.Create(context.Background(), repository.CreateGrantOpts{
+		Principal: s.owner.ID,
+		Scope:     s.organization.ID,
+		Actions:   testModel.OrgAdminActions(),
 	})
 	s.Require().NoError(err)
 }
@@ -93,12 +95,7 @@ func (s *NamespaceServiceIntegrationTestSuite) TestCreate() {
 	s.Require().NotEmpty(ns.ID)
 	s.Assert().NotNil(ns.CreatedAt)
 
-	hasPermission, err := s.PermissionRepo.HasPermission(
-		context.Background(),
-		s.owner.ID,
-		ns.ID,
-		model.PermissionKindAll,
-	)
+	hasPermission, err := s.PermissionRepo.Has(context.Background(), s.owner.ID, ns.ID, model.ActionNamespaceRead)
 	s.Require().NoError(err)
 	s.Assert().True(hasPermission)
 }
@@ -139,6 +136,116 @@ func (s *NamespaceServiceIntegrationTestSuite) TestGetAll() {
 	namespaces, err := s.namespaceService.List(s.ctx, s.organization.ID, service.CursorPage{Size: 10})
 	s.Require().NoError(err)
 	s.Assert().Len(namespaces.Items, 2)
+}
+
+func (s *NamespaceServiceIntegrationTestSuite) TestListAccessibleFromProjectViewer() {
+	created, err := s.namespaceService.Create(s.ctx, s.organization.ID, service.CreateNamespaceOpts{
+		Name: "viewer-namespace", Description: "viewer namespace description",
+	})
+	s.Require().NoError(err)
+
+	sibling, err := s.namespaceService.Create(s.ctx, s.organization.ID, service.CreateNamespaceOpts{
+		Name: "other-namespace", Description: "other namespace description",
+	})
+	s.Require().NoError(err)
+
+	project, err := s.ProjectRepo.Create(context.Background(), testModel.NewCreateProjectOpts(created.ID, s.owner.ID))
+	s.Require().NoError(err)
+
+	viewer, err := s.UserRepo.Create(context.Background(), testModel.NewCreateUserOpts())
+	s.Require().NoError(err)
+	_, err = s.PermissionRepo.Create(context.Background(), repository.CreateGrantOpts{
+		Principal: viewer.ID,
+		Scope:     project.ID,
+		Actions:   testModel.ProjectViewerActions(),
+	})
+	s.Require().NoError(err)
+	viewerCtx := context.WithValue(context.Background(), pkg.CtxKeyUserID, viewer.ID)
+
+	accessible, err := s.namespaceService.ListAccessible(viewerCtx, service.CursorPage{Size: 10})
+	s.Require().NoError(err)
+	s.Require().Len(accessible.Items, 1)
+	s.Assert().Equal(created.ID, accessible.Items[0].ID)
+	s.Assert().Equal(s.organization.ID, accessible.Items[0].Organization.ID)
+	s.Assert().Equal(s.organization.Name, accessible.Items[0].Organization.Name)
+
+	listed, err := s.namespaceService.List(viewerCtx, s.organization.ID, service.CursorPage{Size: 10})
+	s.Require().NoError(err)
+	s.Require().Len(listed.Items, 1)
+	s.Assert().Equal(created.ID, listed.Items[0].ID)
+
+	_, err = s.namespaceService.Get(viewerCtx, created.ID)
+	s.Assert().ErrorIs(err, service.ErrNoPermission)
+	_, err = s.namespaceService.Get(viewerCtx, sibling.ID)
+	s.Assert().ErrorIs(err, service.ErrNoPermission)
+}
+
+func (s *NamespaceServiceIntegrationTestSuite) TestOrgMemberDoesNotListUnreadableNamespaces() {
+	_, err := s.namespaceService.Create(s.ctx, s.organization.ID, service.CreateNamespaceOpts{
+		Name: "member-hidden", Description: "member hidden description",
+	})
+	s.Require().NoError(err)
+
+	member, err := s.UserRepo.Create(context.Background(), testModel.NewCreateUserOpts())
+	s.Require().NoError(err)
+	s.Require().NoError(s.OrganizationRepo.AddMember(context.Background(), s.organization.ID, member.ID))
+	_, err = s.PermissionRepo.Create(context.Background(), repository.CreateGrantOpts{
+		Principal: s.organization.ID,
+		Scope:     s.organization.ID,
+		Actions:   []model.Action{model.ActionOrganizationRead},
+	})
+	s.Require().NoError(err)
+
+	memberCtx := context.WithValue(context.Background(), pkg.CtxKeyUserID, member.ID)
+	listed, err := s.namespaceService.List(memberCtx, s.organization.ID, service.CursorPage{Size: 10})
+	s.Require().NoError(err)
+	s.Assert().Empty(listed.Items)
+}
+
+func (s *NamespaceServiceIntegrationTestSuite) TestListAccessibleFromCrossOrgProjectViewer() {
+	ns, err := s.namespaceService.Create(s.ctx, s.organization.ID, service.CreateNamespaceOpts{
+		Name: "shared-namespace", Description: "shared namespace description",
+	})
+	s.Require().NoError(err)
+
+	project, err := s.ProjectRepo.Create(context.Background(), testModel.NewCreateProjectOpts(ns.ID, s.owner.ID))
+	s.Require().NoError(err)
+
+	partnerOwner, err := s.UserRepo.Create(context.Background(), testModel.NewCreateUserOpts())
+	s.Require().NoError(err)
+	partnerOrg, err := s.OrganizationRepo.Create(context.Background(), testModel.NewCreateOrganizationOpts(partnerOwner.ID))
+	s.Require().NoError(err)
+	collaborator, err := s.UserRepo.Create(context.Background(), testModel.NewCreateUserOpts())
+	s.Require().NoError(err)
+	s.Require().NoError(s.OrganizationRepo.AddMember(context.Background(), partnerOrg.ID, collaborator.ID))
+
+	_, err = s.PermissionRepo.Create(context.Background(), repository.CreateGrantOpts{
+		Principal: partnerOrg.ID,
+		Scope:     project.ID,
+		Actions:   testModel.ProjectViewerActions(),
+	})
+	s.Require().NoError(err)
+
+	collaboratorCtx := context.WithValue(context.Background(), pkg.CtxKeyUserID, collaborator.ID)
+
+	hasOrgRead, err := s.PermissionRepo.Has(context.Background(), collaborator.ID, s.organization.ID, model.ActionOrganizationRead)
+	s.Require().NoError(err)
+	s.Assert().False(hasOrgRead)
+
+	accessible, err := s.namespaceService.ListAccessible(collaboratorCtx, service.CursorPage{Size: 10})
+	s.Require().NoError(err)
+	s.Require().Len(accessible.Items, 1)
+	s.Assert().Equal(ns.ID, accessible.Items[0].ID)
+	s.Assert().Equal(s.organization.ID, accessible.Items[0].Organization.ID)
+	s.Assert().Equal(s.organization.Name, accessible.Items[0].Organization.Name)
+
+	listed, err := s.namespaceService.List(collaboratorCtx, s.organization.ID, service.CursorPage{Size: 10})
+	s.Require().NoError(err)
+	s.Require().Len(listed.Items, 1)
+	s.Assert().Equal(ns.ID, listed.Items[0].ID)
+
+	_, err = s.namespaceService.Get(collaboratorCtx, ns.ID)
+	s.Assert().ErrorIs(err, service.ErrNoPermission)
 }
 
 func (s *NamespaceServiceIntegrationTestSuite) TestUpdate() {
