@@ -69,9 +69,18 @@ func (r *Neo4jAssignmentRepository) scan(up, ap, rp string) func(rec *neo4j.Reco
 			return nil, err
 		}
 
-		a.ID, _ = model.NewIDFromString(val.GetProperties()["id"].(string), model.ResourceTypeAssignment.String())
-		a.User, _ = model.NewIDFromString(user.GetProperties()["id"].(string), user.Labels[0])
-		a.Resource, _ = model.NewIDFromString(resource.GetProperties()["id"].(string), resource.Labels[0])
+		a.ID, err = model.NewIDFromString(val.GetProperties()["id"].(string), model.ResourceTypeAssignment.String())
+		if err != nil {
+			return nil, err
+		}
+		a.User, err = model.NewIDFromString(user.GetProperties()["id"].(string), domainLabel(user.Labels))
+		if err != nil {
+			return nil, err
+		}
+		a.Resource, err = model.NewIDFromString(resource.GetProperties()["id"].(string), domainLabel(resource.Labels))
+		if err != nil {
+			return nil, err
+		}
 
 		return a, nil
 	}

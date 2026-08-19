@@ -10,10 +10,12 @@ import (
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg"
 	"github.com/opcotech/elemo/internal/pkg/log"
+	"github.com/opcotech/elemo/internal/pkg/optional"
 	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/testutil/mock"
 	testModel "github.com/opcotech/elemo/internal/testutil/model"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewRoleService(t *testing.T) {
@@ -783,247 +785,371 @@ func TestRoleService_GetAllBelongsTo(t *testing.T) {
 	}
 }
 
+//nolint:revive // test factories take gomock.Controller first
+func newRoleServiceTestBase(ctrl *gomock.Controller, ctx context.Context, spanName string) (*baseService, *repository.MockRoleRepository, *MockPermissionService, *mock.MockLicenseService) {
+	span := mock.NewMockSpan(ctrl)
+	span.EXPECT().End(gomock.Len(0))
+
+	tracer := mock.NewMockTracer(ctrl)
+	tracer.EXPECT().Start(ctx, spanName, gomock.Len(0)).Return(ctx, span)
+
+	roleRepo := repository.NewMockRoleRepository(ctrl)
+	permSvc := NewMockPermissionService(ctrl)
+	licenseSvc := mock.NewMockLicenseService(ctrl)
+
+	return &baseService{
+		logger:            mock.NewMockLogger(ctrl),
+		tracer:            tracer,
+		roleRepo:          roleRepo,
+		userRepo:          repository.NewMockUserRepository(ctrl),
+		permissionService: permSvc,
+		licenseService:    licenseSvc,
+	}, roleRepo, permSvc, licenseSvc
+}
+
 func TestRoleService_Update(t *testing.T) {
-	type fields struct {
-		baseService *baseService
-	}
-	type args struct {
-		ctx       context.Context
-		id        model.ID
-		belongsTo model.ID
-		opts      UpdateRoleOpts
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    *Role
-		wantErr error
-	}{
-		/*{
-			name: "update role",
-		},
-		{
-			name:    "update role with error",
-			wantErr: assert.AnError,
-		},
-		{
-			name:    "update role with expired license",
-			wantErr: license.ErrLicenseExpired,
-		},
-		{
-			name:    "update role with invalid role id",
-			wantErr: ErrRoleUpdate,
-		},
-		{
-			name:    "update role with no permissions",
-			wantErr: ErrNoPermission,
-		},*/
-	}
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-			s := &roleService{
-				baseService: tt.fields.baseService,
-			}
-			got, err := s.Update(tt.args.ctx, tt.args.id, tt.args.belongsTo, tt.args.opts)
-			assert.ErrorIs(t, err, tt.wantErr)
-			assert.Equal(t, tt.want, got)
+	t.Parallel()
+
+	orgID := model.MustNewID(model.ResourceTypeOrganization)
+	roleID := model.MustNewID(model.ResourceTypeRole)
+	repoRole := testModel.NewRepositoryRole()
+	repoRole.Name = "updated-role"
+	ctx := context.Background()
+	opts := UpdateRoleOpts{Name: optional.Some("updated-role")}
+
+	t.Run("update role", func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		base, roleRepo, permSvc, licenseSvc := newRoleServiceTestBase(ctrl, ctx, "service.roleService/Update")
+		licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+		permSvc.EXPECT().CtxUserHas(ctx, orgID, model.ActionRoleManage).Return(true)
+		roleRepo.EXPECT().Update(ctx, roleID, orgID, repository.UpdateRoleOpts{Name: opts.Name}).Return(repoRole, nil)
+
+		got, err := (&roleService{baseService: base}).Update(ctx, roleID, orgID, opts)
+		require.NoError(t, err)
+		assert.Equal(t, "updated-role", got.Name)
+	})
+
+	t.Run("update role clears actions", func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		base, roleRepo, permSvc, licenseSvc := newRoleServiceTestBase(ctrl, ctx, "service.roleService/Update")
+		cleared := testModel.NewRepositoryRole()
+		cleared.Actions = []string{}
+		licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+		permSvc.EXPECT().CtxUserHas(ctx, orgID, model.ActionRoleManage).Return(true)
+		roleRepo.EXPECT().Update(ctx, roleID, orgID, repository.UpdateRoleOpts{
+			Actions: optional.Some([]string{}),
+		}).Return(cleared, nil)
+
+		got, err := (&roleService{baseService: base}).Update(ctx, roleID, orgID, UpdateRoleOpts{
+			Actions: optional.Null[[]model.Action](),
 		})
-	}
+		require.NoError(t, err)
+		assert.Empty(t, got.Actions)
+	})
+
+	t.Run("update role with error", func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		base, roleRepo, permSvc, licenseSvc := newRoleServiceTestBase(ctrl, ctx, "service.roleService/Update")
+		licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+		permSvc.EXPECT().CtxUserHas(ctx, orgID, model.ActionRoleManage).Return(true)
+		roleRepo.EXPECT().Update(ctx, roleID, orgID, repository.UpdateRoleOpts{Name: opts.Name}).Return(nil, assert.AnError)
+
+		_, err := (&roleService{baseService: base}).Update(ctx, roleID, orgID, opts)
+		require.ErrorIs(t, err, ErrRoleUpdate)
+	})
+
+	t.Run("update role with expired license", func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		base, _, _, licenseSvc := newRoleServiceTestBase(ctrl, ctx, "service.roleService/Update")
+		licenseSvc.EXPECT().Expired(ctx).Return(true, nil)
+
+		_, err := (&roleService{baseService: base}).Update(ctx, roleID, orgID, opts)
+		require.ErrorIs(t, err, license.ErrLicenseExpired)
+	})
+
+	t.Run("update role with invalid role id", func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		base, _, _, licenseSvc := newRoleServiceTestBase(ctrl, ctx, "service.roleService/Update")
+		licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+
+		_, err := (&roleService{baseService: base}).Update(ctx, model.ID{}, orgID, opts)
+		require.ErrorIs(t, err, ErrRoleUpdate)
+	})
+
+	t.Run("update role with no permission", func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		base, _, permSvc, licenseSvc := newRoleServiceTestBase(ctrl, ctx, "service.roleService/Update")
+		licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+		permSvc.EXPECT().CtxUserHas(ctx, orgID, model.ActionRoleManage).Return(false)
+
+		_, err := (&roleService{baseService: base}).Update(ctx, roleID, orgID, opts)
+		require.ErrorIs(t, err, ErrNoPermission)
+	})
 }
 
 func TestRoleService_ListMembers(t *testing.T) {
-	type fields struct {
-		baseService *baseService
-	}
-	type args struct {
-		ctx       context.Context
-		roleID    model.ID
-		belongsTo model.ID
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    []*repository.User
-		wantErr error
-	}{}
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-			s := &roleService{
-				baseService: tt.fields.baseService,
-			}
-			got, err := s.ListMembers(tt.args.ctx, tt.args.roleID, tt.args.belongsTo, CursorPage{Size: 100})
-			assert.ErrorIs(t, err, tt.wantErr)
-			assert.Equal(t, tt.want, got)
-		})
-	}
+	t.Parallel()
+
+	orgID := model.MustNewID(model.ResourceTypeOrganization)
+	roleID := model.MustNewID(model.ResourceTypeRole)
+	repoUser := testModel.NewRepositoryUser()
+	page := CursorPage{Size: 10}
+	ctx := context.Background()
+
+	t.Run("list role members", func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		base, roleRepo, permSvc, _ := newRoleServiceTestBase(ctrl, ctx, "service.roleService/ListMembers")
+		permSvc.EXPECT().CtxUserHas(ctx, orgID, model.ActionTeamManage).Return(true)
+		roleRepo.EXPECT().ListMembers(ctx, roleID, orgID, page).Return(repository.Page[*repository.User]{Items: []*repository.User{repoUser}}, nil)
+
+		got, err := (&roleService{baseService: base}).ListMembers(ctx, roleID, orgID, page)
+		require.NoError(t, err)
+		require.Len(t, got.Items, 1)
+		assert.Equal(t, repoUser.ID, got.Items[0].ID)
+	})
+
+	t.Run("list role members with error", func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		base, roleRepo, permSvc, _ := newRoleServiceTestBase(ctrl, ctx, "service.roleService/ListMembers")
+		permSvc.EXPECT().CtxUserHas(ctx, orgID, model.ActionTeamManage).Return(true)
+		roleRepo.EXPECT().ListMembers(ctx, roleID, orgID, page).Return(repository.Page[*repository.User]{}, assert.AnError)
+
+		_, err := (&roleService{baseService: base}).ListMembers(ctx, roleID, orgID, page)
+		require.ErrorIs(t, err, ErrOrganizationMembersGet)
+	})
+
+	t.Run("list role members with invalid belongs-to id", func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		base, _, _, _ := newRoleServiceTestBase(ctrl, ctx, "service.roleService/ListMembers")
+
+		_, err := (&roleService{baseService: base}).ListMembers(ctx, roleID, model.ID{}, page)
+		require.ErrorIs(t, err, ErrRoleGetBelongsTo)
+	})
+
+	t.Run("list role members with no permission", func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		base, _, permSvc, _ := newRoleServiceTestBase(ctrl, ctx, "service.roleService/ListMembers")
+		permSvc.EXPECT().CtxUserHas(ctx, orgID, model.ActionTeamManage).Return(false)
+
+		_, err := (&roleService{baseService: base}).ListMembers(ctx, roleID, orgID, page)
+		require.ErrorIs(t, err, ErrNoPermission)
+	})
 }
 
 func TestRoleService_AddMember(t *testing.T) {
-	type fields struct {
-		baseService *baseService
-	}
-	type args struct {
-		ctx       context.Context
-		roleID    model.ID
-		belongsTo model.ID
-		memberID  model.ID
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr error
-	}{
-		/*{
-			name: "add member to role",
-		},
-		{
-			name:    "add member to role with error",
-			wantErr: assert.AnError,
-		},
-		{
-			name:    "add member to role with expired license",
-			wantErr: license.ErrLicenseExpired,
-		},
-		{
-			name:    "add member to role with invalid member id",
-			wantErr: ErrRoleAddMember,
-		},
-		{
-			name:    "add member to role with invalid role id",
-			wantErr: ErrRoleAddMember,
-		},
-		{
-			name:    "add member to role with no permissions",
-			wantErr: ErrNoPermission,
-		},*/
-	}
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-			s := &roleService{
-				baseService: tt.fields.baseService,
-			}
-			err := s.AddMember(tt.args.ctx, tt.args.roleID, tt.args.memberID, tt.args.belongsTo)
-			assert.ErrorIs(t, err, tt.wantErr)
-		})
-	}
+	t.Parallel()
+
+	orgID := model.MustNewID(model.ResourceTypeOrganization)
+	roleID := model.MustNewID(model.ResourceTypeRole)
+	memberID := model.MustNewID(model.ResourceTypeUser)
+	ctx := context.Background()
+
+	t.Run("add member to role", func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		base, roleRepo, permSvc, licenseSvc := newRoleServiceTestBase(ctrl, ctx, "service.roleService/AddMember")
+		licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+		permSvc.EXPECT().CtxUserHas(ctx, orgID, model.ActionTeamManage).Return(true)
+		roleRepo.EXPECT().AddMember(ctx, roleID, memberID, orgID).Return(nil)
+
+		require.NoError(t, (&roleService{baseService: base}).AddMember(ctx, roleID, memberID, orgID))
+	})
+
+	t.Run("add member to role with error", func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		base, roleRepo, permSvc, licenseSvc := newRoleServiceTestBase(ctrl, ctx, "service.roleService/AddMember")
+		licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+		permSvc.EXPECT().CtxUserHas(ctx, orgID, model.ActionTeamManage).Return(true)
+		roleRepo.EXPECT().AddMember(ctx, roleID, memberID, orgID).Return(assert.AnError)
+
+		err := (&roleService{baseService: base}).AddMember(ctx, roleID, memberID, orgID)
+		require.ErrorIs(t, err, ErrRoleAddMember)
+	})
+
+	t.Run("add member to role with expired license", func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		base, _, _, licenseSvc := newRoleServiceTestBase(ctrl, ctx, "service.roleService/AddMember")
+		licenseSvc.EXPECT().Expired(ctx).Return(true, nil)
+
+		err := (&roleService{baseService: base}).AddMember(ctx, roleID, memberID, orgID)
+		require.ErrorIs(t, err, license.ErrLicenseExpired)
+	})
+
+	t.Run("add member to role with invalid member id", func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		base, _, _, licenseSvc := newRoleServiceTestBase(ctrl, ctx, "service.roleService/AddMember")
+		licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+
+		err := (&roleService{baseService: base}).AddMember(ctx, roleID, model.ID{}, orgID)
+		require.ErrorIs(t, err, ErrRoleAddMember)
+	})
+
+	t.Run("add member to role with invalid role id", func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		base, _, _, licenseSvc := newRoleServiceTestBase(ctrl, ctx, "service.roleService/AddMember")
+		licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+
+		err := (&roleService{baseService: base}).AddMember(ctx, model.ID{}, memberID, orgID)
+		require.ErrorIs(t, err, ErrRoleAddMember)
+	})
+
+	t.Run("add member to role with no permission", func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		base, _, permSvc, licenseSvc := newRoleServiceTestBase(ctrl, ctx, "service.roleService/AddMember")
+		licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+		permSvc.EXPECT().CtxUserHas(ctx, orgID, model.ActionTeamManage).Return(false)
+
+		err := (&roleService{baseService: base}).AddMember(ctx, roleID, memberID, orgID)
+		require.ErrorIs(t, err, ErrNoPermission)
+	})
 }
 
 func TestRoleService_RemoveMember(t *testing.T) {
-	type fields struct {
-		baseService *baseService
-	}
-	type args struct {
-		ctx       context.Context
-		roleID    model.ID
-		belongsTo model.ID
-		memberID  model.ID
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr error
-	}{
-		/*{
-			name: "remove member from role",
-		},
-		{
-			name:    "remove member from role with error",
-			wantErr: assert.AnError,
-		},
-		{
-			name:    "remove member from role with expired license",
-			wantErr: license.ErrLicenseExpired,
-		},
-		{
-			name:    "remove member from role with invalid member id",
-			wantErr: ErrRoleRemoveMember,
-		},
-		{
-			name:    "remove member from role with invalid role id",
-			wantErr: ErrRoleRemoveMember,
-		},
-		{
-			name:    "remove member from role with no permissions",
-			wantErr: ErrNoPermission,
-		},*/
-	}
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-			s := &roleService{
-				baseService: tt.fields.baseService,
-			}
-			err := s.RemoveMember(tt.args.ctx, tt.args.roleID, tt.args.memberID, tt.args.belongsTo)
-			assert.ErrorIs(t, err, tt.wantErr)
-		})
-	}
+	t.Parallel()
+
+	orgID := model.MustNewID(model.ResourceTypeOrganization)
+	roleID := model.MustNewID(model.ResourceTypeRole)
+	memberID := model.MustNewID(model.ResourceTypeUser)
+	ctx := context.Background()
+
+	t.Run("remove member from role", func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		base, roleRepo, permSvc, licenseSvc := newRoleServiceTestBase(ctrl, ctx, "service.roleService/RemoveMember")
+		licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+		permSvc.EXPECT().CtxUserHas(ctx, orgID, model.ActionTeamManage).Return(true)
+		roleRepo.EXPECT().RemoveMember(ctx, roleID, memberID, orgID).Return(nil)
+
+		require.NoError(t, (&roleService{baseService: base}).RemoveMember(ctx, roleID, memberID, orgID))
+	})
+
+	t.Run("remove member from role with error", func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		base, roleRepo, permSvc, licenseSvc := newRoleServiceTestBase(ctrl, ctx, "service.roleService/RemoveMember")
+		licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+		permSvc.EXPECT().CtxUserHas(ctx, orgID, model.ActionTeamManage).Return(true)
+		roleRepo.EXPECT().RemoveMember(ctx, roleID, memberID, orgID).Return(assert.AnError)
+
+		err := (&roleService{baseService: base}).RemoveMember(ctx, roleID, memberID, orgID)
+		require.ErrorIs(t, err, ErrRoleRemoveMember)
+	})
+
+	t.Run("remove member from role with expired license", func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		base, _, _, licenseSvc := newRoleServiceTestBase(ctrl, ctx, "service.roleService/RemoveMember")
+		licenseSvc.EXPECT().Expired(ctx).Return(true, nil)
+
+		err := (&roleService{baseService: base}).RemoveMember(ctx, roleID, memberID, orgID)
+		require.ErrorIs(t, err, license.ErrLicenseExpired)
+	})
+
+	t.Run("remove member from role with invalid member id", func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		base, _, _, licenseSvc := newRoleServiceTestBase(ctrl, ctx, "service.roleService/RemoveMember")
+		licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+
+		err := (&roleService{baseService: base}).RemoveMember(ctx, roleID, model.ID{}, orgID)
+		require.ErrorIs(t, err, ErrRoleRemoveMember)
+	})
+
+	t.Run("remove member from role with invalid role id", func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		base, _, _, licenseSvc := newRoleServiceTestBase(ctrl, ctx, "service.roleService/RemoveMember")
+		licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+
+		err := (&roleService{baseService: base}).RemoveMember(ctx, model.ID{}, memberID, orgID)
+		require.ErrorIs(t, err, ErrRoleRemoveMember)
+	})
+
+	t.Run("remove member from role with no permission", func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		base, _, permSvc, licenseSvc := newRoleServiceTestBase(ctrl, ctx, "service.roleService/RemoveMember")
+		licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+		permSvc.EXPECT().CtxUserHas(ctx, orgID, model.ActionTeamManage).Return(false)
+
+		err := (&roleService{baseService: base}).RemoveMember(ctx, roleID, memberID, orgID)
+		require.ErrorIs(t, err, ErrNoPermission)
+	})
 }
 
 func TestRoleService_Delete(t *testing.T) {
-	type fields struct {
-		baseService *baseService
-	}
-	type args struct {
-		ctx       context.Context
-		id        model.ID
-		belongsTo model.ID
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr error
-	}{
-		/*{
-			name: "delete role",
-		},
-		{
-			name:    "delete role with error",
-			wantErr: assert.AnError,
-		},
-		{
-			name:    "delete role with expired license",
-			wantErr: license.ErrLicenseExpired,
-		},
-		{
-			name:    "delete role with invalid role id",
-			wantErr: ErrRoleUpdate,
-		},
-		{
-			name:    "delete role with no permissions",
-			wantErr: ErrNoPermission,
-		},*/
-	}
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-			s := &roleService{
-				baseService: tt.fields.baseService,
-			}
-			err := s.Delete(tt.args.ctx, tt.args.id, tt.args.belongsTo)
-			assert.ErrorIs(t, err, tt.wantErr)
-		})
-	}
+	t.Parallel()
+
+	orgID := model.MustNewID(model.ResourceTypeOrganization)
+	roleID := model.MustNewID(model.ResourceTypeRole)
+	ctx := context.Background()
+
+	t.Run("delete role", func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		base, roleRepo, permSvc, licenseSvc := newRoleServiceTestBase(ctrl, ctx, "service.roleService/Delete")
+		licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+		permSvc.EXPECT().CtxUserHas(ctx, orgID, model.ActionRoleManage).Return(true)
+		roleRepo.EXPECT().Delete(ctx, roleID, orgID).Return(nil)
+
+		require.NoError(t, (&roleService{baseService: base}).Delete(ctx, roleID, orgID))
+	})
+
+	t.Run("delete role with error", func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		base, roleRepo, permSvc, licenseSvc := newRoleServiceTestBase(ctrl, ctx, "service.roleService/Delete")
+		licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+		permSvc.EXPECT().CtxUserHas(ctx, orgID, model.ActionRoleManage).Return(true)
+		roleRepo.EXPECT().Delete(ctx, roleID, orgID).Return(assert.AnError)
+
+		err := (&roleService{baseService: base}).Delete(ctx, roleID, orgID)
+		require.ErrorIs(t, err, ErrRoleDelete)
+	})
+
+	t.Run("delete role with expired license", func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		base, _, _, licenseSvc := newRoleServiceTestBase(ctrl, ctx, "service.roleService/Delete")
+		licenseSvc.EXPECT().Expired(ctx).Return(true, nil)
+
+		err := (&roleService{baseService: base}).Delete(ctx, roleID, orgID)
+		require.ErrorIs(t, err, license.ErrLicenseExpired)
+	})
+
+	t.Run("delete role with invalid role id", func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		base, _, _, licenseSvc := newRoleServiceTestBase(ctrl, ctx, "service.roleService/Delete")
+		licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+
+		err := (&roleService{baseService: base}).Delete(ctx, model.ID{}, orgID)
+		require.ErrorIs(t, err, ErrRoleDelete)
+	})
+
+	t.Run("delete role with no permission", func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		base, _, permSvc, licenseSvc := newRoleServiceTestBase(ctrl, ctx, "service.roleService/Delete")
+		licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+		permSvc.EXPECT().CtxUserHas(ctx, orgID, model.ActionRoleManage).Return(false)
+
+		err := (&roleService{baseService: base}).Delete(ctx, roleID, orgID)
+		require.ErrorIs(t, err, ErrNoPermission)
+	})
 }

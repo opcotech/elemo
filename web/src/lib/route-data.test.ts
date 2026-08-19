@@ -263,6 +263,8 @@ describe("settings hierarchy loaders", () => {
       if (queryId(options) === "v1OrganizationsNamespacesGet") {
         return listedPage([namespace]);
       }
+      if (queryId(options) === "v1PermissionResourceGet")
+        return projectReadPermissions;
       if (queryId(options) === "v1NamespacesProjectsGet") {
         return listedPage([{ id: "other-project" }]);
       }
@@ -277,6 +279,27 @@ describe("settings hierarchy loaders", () => {
         "project-1"
       )
     ).rejects.toMatchObject({ isNotFound: true });
+  });
+
+  it("throws permission denied when the project is omitted from the filtered namespace list", async () => {
+    const queryClient = createQueryClient((options) => {
+      if (queryId(options) === "v1OrganizationGet") return organization;
+      if (queryId(options) === "v1NamespaceGet") return namespace;
+      if (queryId(options) === "v1OrganizationsNamespacesGet") {
+        return listedPage([namespace]);
+      }
+      if (queryId(options) === "v1PermissionResourceGet") return noPermissions;
+      throw new Error(`Unexpected query ${JSON.stringify(options.queryKey)}`);
+    });
+
+    await expect(
+      loadProjectDetail(
+        queryClient,
+        "organization-1",
+        "namespace-1",
+        "project-1"
+      )
+    ).rejects.toMatchObject({ status: 403 });
   });
 
   it("throws permission denied when the user cannot read the project", async () => {

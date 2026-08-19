@@ -219,6 +219,20 @@ func TestCachedPermissionRepository_Delete(t *testing.T) {
 		}
 		require.ErrorIs(t, r.Delete(ctx, id), ErrPermissionDelete)
 	})
+
+	t.Run("get failure still deletes and skips generation bump", func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+		inner := NewMockPermissionRepository(ctrl)
+		inner.EXPECT().Get(ctx, id).Return(nil, ErrNotFound)
+		inner.EXPECT().Delete(ctx, id).Return(nil)
+		r := &RedisCachedPermissionRepository{
+			cacheRepo:      redisCacheExpectingPatterns(ctrl, ctx, permissionCrossCachePatterns(), -1, nil),
+			permissionRepo: inner,
+		}
+		require.NoError(t, r.Delete(ctx, id))
+	})
 }
 
 func TestCachedPermissionRepository_LinkInScopeOf(t *testing.T) {

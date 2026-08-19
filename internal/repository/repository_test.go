@@ -162,6 +162,38 @@ func redisCacheExpectingBumpThenPatterns(ctrl *gomock.Controller, ctx context.Co
 	}
 }
 
+func teamCreateCachePatterns(belongsTo model.ID) []string {
+	return []string{
+		composeCacheKey(model.ResourceTypeTeam.String(), "ListBelongsTo", belongsTo.String(), "*", "*", "*"),
+		composeCacheKey(model.ResourceTypeOrganization.String(), "*"),
+		composeCacheKey(model.ResourceTypeProject.String(), "*"),
+	}
+}
+
+func teamDeleteCachePatterns(id model.ID) []string {
+	return []string{
+		composeCacheKey(model.ResourceTypeTeam.String(), "Get", id.String(), "*"),
+		composeCacheKey(model.ResourceTypeTeam.String(), "ListBelongsTo", "*"),
+		composeCacheKey(model.ResourceTypeOrganization.String(), "*"),
+		composeCacheKey(model.ResourceTypeProject.String(), "*"),
+	}
+}
+
+func teamMemberCachePatterns(id, belongsToID model.ID) []string {
+	return []string{
+		composeCacheKey(model.ResourceTypeTeam.String(), "Get", id.String(), "*"),
+		composeCacheKey(model.ResourceTypeTeam.String(), "ListBelongsTo", "*"),
+		composeCacheKey(model.ResourceTypeOrganization.String(), "Get", belongsToID.String(), "*"),
+		composeCacheKey(model.ResourceTypeProject.String(), "*", "Get", belongsToID.String(), "*"),
+	}
+}
+
+func teamUpdateInvalidatePatterns() []string {
+	return []string{
+		composeCacheKey(model.ResourceTypeTeam.String(), "ListBelongsTo", "*"),
+	}
+}
+
 func roleCreateCachePatterns(belongsTo model.ID) []string {
 	return []string{
 		composeCacheKey(model.ResourceTypeRole.String(), "ListBelongsTo", belongsTo.String(), "*", "*", "*"),

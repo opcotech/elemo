@@ -1,5 +1,3 @@
-//go:build integration
-
 package repository_test
 
 import (
@@ -66,7 +64,7 @@ func (s *RoleRepositoryIntegrationTestSuite) TestGet() {
 	s.Assert().Equal(s.createOpts.Name, role.Name)
 	s.Assert().Equal(s.createOpts.Description, role.Description)
 	s.Require().NotNil(role.MemberCount)
-	s.Assert().Equal(int64(1), *role.MemberCount)
+	s.Assert().Equal(int64(0), *role.MemberCount)
 	s.Assert().WithinDuration(*created.CreatedAt, *role.CreatedAt, 100*time.Millisecond)
 }
 
@@ -112,7 +110,7 @@ func (s *RoleRepositoryIntegrationTestSuite) TestAddMember() {
 	role, err := s.RoleRepo.Get(context.Background(), created.ID, s.testOrg.ID, repository.RoleDetailProjection())
 	s.Require().NoError(err)
 	s.Require().NotNil(role.MemberCount)
-	s.Assert().Equal(int64(2), *role.MemberCount)
+	s.Assert().Equal(int64(1), *role.MemberCount)
 }
 
 func (s *RoleRepositoryIntegrationTestSuite) TestRemoveMember() {

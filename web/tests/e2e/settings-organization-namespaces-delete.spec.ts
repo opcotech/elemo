@@ -118,6 +118,13 @@ test.describe("@settings.organization-namespaces-delete Organization Namespaces 
       writerUser.email,
       "Namespace",
       namespace.id,
+      ["namespace.read"]
+    );
+    await grantActionsToUser(
+      testConfig,
+      writerUser.email,
+      "Namespace",
+      namespace.id,
       ["namespace.delete"]
     );
 
@@ -154,6 +161,13 @@ test.describe("@settings.organization-namespaces-delete Organization Namespaces 
       writerUser.email,
       "Namespace",
       namespace.id,
+      ["namespace.read"]
+    );
+    await grantActionsToUser(
+      testConfig,
+      writerUser.email,
+      "Namespace",
+      namespace.id,
       ["namespace.delete"]
     );
 
@@ -178,6 +192,13 @@ test.describe("@settings.organization-namespaces-delete Organization Namespaces 
   }) => {
     const namespace = await createNamespaceViaApi();
 
+    await grantActionsToUser(
+      testConfig,
+      writerUser.email,
+      "Namespace",
+      namespace.id,
+      ["namespace.read"]
+    );
     await grantActionsToUser(
       testConfig,
       writerUser.email,

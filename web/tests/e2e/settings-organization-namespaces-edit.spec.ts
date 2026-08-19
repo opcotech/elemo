@@ -168,12 +168,19 @@ test.describe("@settings.organization-namespaces-edit Organization Namespaces Ed
 
     const namespaceEditPage = new SettingsOrganizationNamespaceEditPage(page);
     await namespaceEditPage.goto(organizationId, namespace.id);
+    await expect(namespaceEditPage.namespaceForm.getField("Name")).toHaveValue(
+      namespace.name
+    );
+
     const updatedName = `Updated ${getRandomString(6)}`;
-    await namespaceEditPage.namespaceForm.clearField("Name");
+    const updatedDescription = `Updated description ${getRandomString(6)}`;
     await namespaceEditPage.namespaceForm.fillFields({
+      Description: updatedDescription,
       Name: updatedName,
-      Description: `Updated description ${getRandomString(6)}`,
     });
+    await expect(namespaceEditPage.namespaceForm.getField("Name")).toHaveValue(
+      updatedName
+    );
     await namespaceEditPage.namespaceForm.submit("Save Changes");
     await waitForSuccessToast(page, "Namespace updated");
 
@@ -194,6 +201,13 @@ test.describe("@settings.organization-namespaces-edit Organization Namespaces Ed
     await grantActionsToUser(
       testConfig,
       readerUser.email,
+      "Namespace",
+      namespace.id,
+      ["namespace.read"]
+    );
+    await grantActionsToUser(
+      testConfig,
+      writerUser.email,
       "Namespace",
       namespace.id,
       ["namespace.read"]

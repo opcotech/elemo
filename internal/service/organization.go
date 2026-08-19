@@ -117,6 +117,8 @@ func (o *AcceptOrganizationInvitationOpts) Validate() error {
 
 // OrganizationService serves the business logic of interacting with
 // organizations.
+//
+//go:generate go tool mockgen -destination=organization_mock_gen.go -package=service -mock_names OrganizationService=MockOrganizationService . OrganizationService
 type OrganizationService interface {
 	// Create creates a new organization. The owner of the organization is
 	// automatically added as a member of the organization. If the owner

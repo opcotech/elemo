@@ -1,5 +1,3 @@
-//go:build integration
-
 package service_test
 
 import (
@@ -100,7 +98,7 @@ func (s *OrganizationServiceIntegrationTestSuite) SetupTest() {
 	s.Require().NoError(err)
 
 	s.ctx = context.WithValue(context.Background(), pkg.CtxKeyUserID, s.owner.ID)
-	s.Require().NoError(testRepo.MakeUserSystemOwner(s.owner.ID, s.Neo4jDB))
+	s.Require().NoError(testRepo.GrantOrganizationCreate(s.owner.ID, s.Neo4jDB))
 	s.capturedTokens = make(map[string]string)
 }
 
@@ -130,6 +128,15 @@ func (s *OrganizationServiceIntegrationTestSuite) TestCreate() {
 	s.Require().NotEmpty(org.ID)
 	s.Assert().NotNil(org.CreatedAt)
 	s.Assert().Nil(org.UpdatedAt)
+}
+
+func (s *OrganizationServiceIntegrationTestSuite) TestCreateWithoutGrant() {
+	user, err := s.UserRepo.Create(context.Background(), testModel.NewCreateUserOpts())
+	s.Require().NoError(err)
+	ctx := context.WithValue(context.Background(), pkg.CtxKeyUserID, user.ID)
+
+	_, err = s.organizationService.Create(ctx, user.ID, serviceCreateOrgOpts())
+	s.Assert().ErrorIs(err, service.ErrNoPermission)
 }
 
 func (s *OrganizationServiceIntegrationTestSuite) TestGet() {

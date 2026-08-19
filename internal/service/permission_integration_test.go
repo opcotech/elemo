@@ -1,5 +1,3 @@
-//go:build integration
-
 package service_test
 
 import (
@@ -88,7 +86,7 @@ func (s *PermissionServiceIntegrationTestSuite) TestOrganizationCreateGrant() {
 	ctx := s.userCtx(user.ID)
 	s.Assert().False(s.permissionService.CtxUserHas(ctx, model.InstallationID(), model.ActionOrganizationCreate))
 
-	s.Require().NoError(testRepo.MakeUserSystemOwner(user.ID, s.Neo4jDB))
+	s.Require().NoError(testRepo.GrantOrganizationCreate(user.ID, s.Neo4jDB))
 	s.Assert().True(s.permissionService.CtxUserHas(ctx, model.InstallationID(), model.ActionOrganizationCreate))
 }
 
@@ -97,7 +95,6 @@ func (s *PermissionServiceIntegrationTestSuite) TestOrgAdminDoesNotIncludeOrgani
 	guest := s.createUser()
 	org, err := s.OrganizationRepo.Create(s.ctx, testModel.NewCreateOrganizationOpts(owner.ID))
 	s.Require().NoError(err)
-	s.Require().NoError(testRepo.MakeUserSystemOwner(owner.ID, s.Neo4jDB))
 
 	tmpl, err := model.RoleTemplateByKey(model.RoleKeyOrgAdmin)
 	s.Require().NoError(err)

@@ -1,5 +1,3 @@
-//go:build integration
-
 package repository_test
 
 import (
@@ -91,7 +89,7 @@ func (s *PermissionRepositoryIntegrationTestSuite) TestOrganizationCreateRequire
 	user := s.createUser()
 	s.Assert().False(s.has(user.ID, model.InstallationID(), model.ActionOrganizationCreate))
 
-	s.Require().NoError(testRepo.MakeUserSystemOwner(user.ID, s.Neo4jDB))
+	s.Require().NoError(testRepo.GrantOrganizationCreate(user.ID, s.Neo4jDB))
 	s.Assert().True(s.has(user.ID, model.InstallationID(), model.ActionOrganizationCreate))
 }
 
@@ -99,7 +97,6 @@ func (s *PermissionRepositoryIntegrationTestSuite) TestOrgAdminDoesNotIncludeOrg
 	owner := s.createUser()
 	guest := s.createUser()
 	org := s.createOrg(owner.ID)
-	s.Require().NoError(testRepo.MakeUserSystemOwner(owner.ID, s.Neo4jDB))
 
 	tmpl, err := model.RoleTemplateByKey(model.RoleKeyOrgAdmin)
 	s.Require().NoError(err)
@@ -122,7 +119,6 @@ func (s *PermissionRepositoryIntegrationTestSuite) TestOrgAdminDoesNotIncludeOrg
 
 	s.Assert().True(s.has(guest.ID, org.ID, model.ActionOrganizationRead))
 	s.Assert().False(s.has(guest.ID, model.InstallationID(), model.ActionOrganizationCreate))
-	s.Assert().True(s.has(owner.ID, model.InstallationID(), model.ActionOrganizationCreate))
 }
 
 func (s *PermissionRepositoryIntegrationTestSuite) TestAncestorGrantAppliesToDescendantsNotSiblings() {
@@ -431,6 +427,33 @@ func (s *PermissionRepositoryIntegrationTestSuite) TestExplain() {
 	s.Assert().Equal(org.ID, *allowed.Scope)
 	s.Require().NotNil(allowed.GrantID)
 	s.Assert().Equal(grant.ID, *allowed.GrantID)
+	s.Assert().Nil(allowed.RoleID)
+
+	tmpl, err := model.RoleTemplateByKey(model.RoleKeyOrgMember)
+	s.Require().NoError(err)
+	role, err := s.RoleRepo.Create(s.ctx, repository.CreateRoleOpts{
+		Key:         tmpl.Key,
+		Name:        tmpl.Name,
+		Description: tmpl.Description,
+		Actions:     tmpl.ActionStrings(),
+		CreatedBy:   owner.ID,
+		BelongsTo:   org.ID,
+	})
+	s.Require().NoError(err)
+	rolePrincipal := s.createUser()
+	roleGrant, err := s.PermissionRepo.Create(s.ctx, repository.CreateGrantOpts{
+		Principal: rolePrincipal.ID,
+		Scope:     org.ID,
+		RoleID:    &role.ID,
+	})
+	s.Require().NoError(err)
+	roleAllowed, err := s.PermissionRepo.Explain(s.ctx, rolePrincipal.ID, org.ID, model.ActionOrganizationRead)
+	s.Require().NoError(err)
+	s.Assert().True(roleAllowed.Allowed)
+	s.Require().NotNil(roleAllowed.RoleID)
+	s.Assert().Equal(role.ID, *roleAllowed.RoleID)
+	s.Require().NotNil(roleAllowed.GrantID)
+	s.Assert().Equal(roleGrant.ID, *roleAllowed.GrantID)
 }
 
 func (s *PermissionRepositoryIntegrationTestSuite) TestListVisibleUnderParent() {

@@ -13,9 +13,11 @@ export async function fillLocator(
   await expect(field).toBeEditable();
 
   // Prefer a single fill() so URL-synced / remounting inputs keep one value.
-  // Fall back to key events for Base UI + Firefox/WebKit.
+  // Fall back to key events for Base UI + Firefox/WebKit, and when fill()
+  // updates the DOM without committing React Hook Form state.
   await field.click();
   await field.fill(value);
+  await field.blur();
   try {
     await expect(field).toHaveValue(value, { timeout: 1_000 });
     return;

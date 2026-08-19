@@ -7,9 +7,9 @@ import (
 	"github.com/opcotech/elemo/internal/repository"
 )
 
-// MakeUserSystemOwner grants the user organization.create on the Installation
+// GrantOrganizationCreate grants the user organization.create on the Installation
 // node so they can create organizations in tests.
-func MakeUserSystemOwner(userID model.ID, db *repository.Neo4jDatabase) error {
+func GrantOrganizationCreate(userID model.ID, db *repository.Neo4jDatabase) error {
 	ctx := context.Background()
 	installationID := model.InstallationID()
 

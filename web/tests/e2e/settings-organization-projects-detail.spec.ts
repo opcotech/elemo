@@ -270,7 +270,7 @@ test.describe("@settings.organization-projects-detail Organization Projects Deta
     expect(await projectDetailsPage.getTitleText()).toContain(project.name);
   });
 
-  test("should not link project list rows without project read permission", async ({
+  test("should not list projects without project read permission", async ({
     page,
   }) => {
     const project = await seedProject();
@@ -286,12 +286,8 @@ test.describe("@settings.organization-projects-detail Organization Projects Deta
     await namespaceDetailsPage.goto(organizationId, namespaceId);
     await namespaceDetailsPage.projects.waitForLoad();
 
-    const projectRow = namespaceDetailsPage.projects.getRowByProjectName(
-      project.name
-    );
-    await expect(projectRow).toBeVisible();
     await expect(
-      projectRow.getByRole("link", { name: project.name })
+      namespaceDetailsPage.projects.getRowByProjectName(project.name)
     ).not.toBeVisible();
   });
 

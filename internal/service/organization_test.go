@@ -280,44 +280,6 @@ func TestOrganizationService_Create(t *testing.T) {
 			wantErr: ErrNoPermission,
 		},
 		{
-			name: "create organization with permission error",
-			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ CreateOrganizationOpts) *baseService {
-					span := mock.NewMockSpan(ctrl)
-					span.EXPECT().End(gomock.Len(0))
-
-					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.organizationService/Create", gomock.Len(0)).Return(ctx, span)
-
-					permSvc := NewMockPermissionService(ctrl)
-					permSvc.EXPECT().CtxUserHas(ctx, model.InstallationID(), gomock.Any()).Return(false)
-
-					licenseSvc := mock.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
-
-					return &baseService{
-						logger:            mock.NewMockLogger(ctrl),
-						tracer:            tracer,
-						organizationRepo:  repository.NewMockOrganizationRepository(ctrl),
-						permissionService: permSvc,
-						licenseService:    licenseSvc,
-					}
-				},
-			},
-			args: args{
-				ctx:   context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
-				owner: userID,
-				opts: CreateOrganizationOpts{
-					Name:    "test-org",
-					Email:   "org@example.com",
-					Logo:    "https://www.gravatar.com/avatar",
-					Website: "https://example.com/",
-					Status:  model.OrganizationStatusActive,
-				},
-			},
-			wantErr: ErrNoPermission,
-		},
-		{
 			name: "create organization with invalid organization",
 			fields: fields{
 				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ CreateOrganizationOpts) *baseService {
@@ -3784,4 +3746,139 @@ func TestOrganizationService_AcceptInvitation(t *testing.T) {
 			require.ErrorIs(t, err, tt.wantErr)
 		})
 	}
+}
+
+func TestOrganizationService_Create_SeedsAuth(t *testing.T) {
+	t.Parallel()
+
+	owner := model.MustNewID(model.ResourceTypeUser)
+	org := testModel.NewRepositoryOrganization()
+	ctx := context.WithValue(context.Background(), pkg.CtxKeyUserID, owner)
+	opts := CreateOrganizationOpts{
+		Name:    "test-org",
+		Email:   "org@example.com",
+		Logo:    "https://www.gravatar.com/avatar",
+		Website: "https://example.com/",
+		Status:  model.OrganizationStatusActive,
+	}
+
+	t.Run("creates role templates and grants owner admin plus org member", func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		span := mock.NewMockSpan(ctrl)
+		span.EXPECT().End(gomock.Len(0))
+		tracer := mock.NewMockTracer(ctrl)
+		tracer.EXPECT().Start(ctx, "service.organizationService/Create", gomock.Len(0)).Return(ctx, span)
+
+		organizationRepo := repository.NewMockOrganizationRepository(ctrl)
+		organizationRepo.EXPECT().Create(ctx, gomock.Any()).Return(org, nil)
+
+		roleRepo := repository.NewMockRoleRepository(ctrl)
+		for _, tmpl := range model.RoleTemplates {
+			roleRepo.EXPECT().Create(ctx, repository.CreateRoleOpts{
+				Key:         tmpl.Key,
+				Name:        tmpl.Name,
+				Description: tmpl.Description,
+				Actions:     tmpl.ActionStrings(),
+				CreatedBy:   owner,
+				BelongsTo:   org.ID,
+			}).Return(&repository.Role{ID: model.MustNewID(model.ResourceTypeRole)}, nil)
+		}
+
+		adminRole := &repository.Role{ID: model.MustNewID(model.ResourceTypeRole)}
+		memberRole := &repository.Role{ID: model.MustNewID(model.ResourceTypeRole)}
+		roleRepo.EXPECT().GetByKey(ctx, org.ID, model.RoleKeyOrgAdmin).Return(adminRole, nil)
+		roleRepo.EXPECT().GetByKey(ctx, org.ID, model.RoleKeyOrgMember).Return(memberRole, nil)
+
+		permSvc := NewMockPermissionService(ctrl)
+		permSvc.EXPECT().CtxUserHas(ctx, model.InstallationID(), model.ActionOrganizationCreate).Return(true)
+		permSvc.EXPECT().GrantRole(ctx, owner, org.ID, adminRole.ID).Return(nil)
+		permSvc.EXPECT().GrantRole(ctx, org.ID, org.ID, memberRole.ID).Return(nil)
+
+		licenseSvc := mock.NewMockLicenseService(ctrl)
+		licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+		licenseSvc.EXPECT().WithinThreshold(ctx, license.QuotaOrganizations).Return(true, nil)
+
+		s := &organizationService{baseService: &baseService{
+			logger:            mock.NewMockLogger(ctrl),
+			tracer:            tracer,
+			organizationRepo:  organizationRepo,
+			roleRepo:          roleRepo,
+			permissionService: permSvc,
+			licenseService:    licenseSvc,
+		}}
+		got, err := s.Create(ctx, owner, opts)
+		require.NoError(t, err)
+		assert.Equal(t, org.ID, got.ID)
+	})
+
+	t.Run("seed failure wraps ErrOrganizationCreate", func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		span := mock.NewMockSpan(ctrl)
+		span.EXPECT().End(gomock.Len(0))
+		tracer := mock.NewMockTracer(ctrl)
+		tracer.EXPECT().Start(ctx, "service.organizationService/Create", gomock.Len(0)).Return(ctx, span)
+
+		organizationRepo := repository.NewMockOrganizationRepository(ctrl)
+		organizationRepo.EXPECT().Create(ctx, gomock.Any()).Return(org, nil)
+
+		roleRepo := repository.NewMockRoleRepository(ctrl)
+		roleRepo.EXPECT().Create(ctx, gomock.Any()).Return(nil, assert.AnError)
+
+		permSvc := NewMockPermissionService(ctrl)
+		permSvc.EXPECT().CtxUserHas(ctx, model.InstallationID(), model.ActionOrganizationCreate).Return(true)
+
+		licenseSvc := mock.NewMockLicenseService(ctrl)
+		licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+		licenseSvc.EXPECT().WithinThreshold(ctx, license.QuotaOrganizations).Return(true, nil)
+
+		s := &organizationService{baseService: &baseService{
+			logger:            mock.NewMockLogger(ctrl),
+			tracer:            tracer,
+			organizationRepo:  organizationRepo,
+			roleRepo:          roleRepo,
+			permissionService: permSvc,
+			licenseService:    licenseSvc,
+		}}
+		_, err := s.Create(ctx, owner, opts)
+		require.ErrorIs(t, err, ErrOrganizationCreate)
+	})
+}
+
+func TestOrganizationService_RemoveMember_DeletesOrgScopedGrants(t *testing.T) {
+	t.Parallel()
+
+	userID := model.MustNewID(model.ResourceTypeUser)
+	orgID := model.MustNewID(model.ResourceTypeOrganization)
+	otherOrgID := model.MustNewID(model.ResourceTypeOrganization)
+	matchingGrant := &Grant{ID: model.MustNewID(model.ResourceTypePermission), Scope: orgID}
+	foreignGrant := &Grant{ID: model.MustNewID(model.ResourceTypePermission), Scope: otherOrgID}
+	ctx := context.WithValue(context.Background(), pkg.CtxKeyUserID, userID)
+
+	ctrl := gomock.NewController(t)
+	span := mock.NewMockSpan(ctrl)
+	span.EXPECT().End(gomock.Len(0))
+	tracer := mock.NewMockTracer(ctrl)
+	tracer.EXPECT().Start(ctx, "service.organizationService/RemoveMember", gomock.Len(0)).Return(ctx, span)
+
+	organizationRepo := repository.NewMockOrganizationRepository(ctrl)
+	organizationRepo.EXPECT().RemoveMember(ctx, orgID, userID).Return(nil)
+
+	permSvc := NewMockPermissionService(ctrl)
+	permSvc.EXPECT().CtxUserHas(ctx, orgID, model.ActionOrganizationMembersManage).Return(true)
+	permSvc.EXPECT().ListByPrincipal(ctx, userID).Return([]*Grant{matchingGrant, foreignGrant}, nil)
+	permSvc.EXPECT().Delete(ctx, matchingGrant.ID).Return(nil)
+
+	licenseSvc := mock.NewMockLicenseService(ctrl)
+	licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+
+	s := &organizationService{baseService: &baseService{
+		logger:            mock.NewMockLogger(ctrl),
+		tracer:            tracer,
+		organizationRepo:  organizationRepo,
+		permissionService: permSvc,
+		licenseService:    licenseSvc,
+	}}
+	require.NoError(t, s.RemoveMember(ctx, orgID, userID))
 }

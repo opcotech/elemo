@@ -1,5 +1,3 @@
-//go:build integration
-
 package service_test
 
 import (
@@ -74,11 +72,19 @@ func (s *LicenseServiceIntegrationTestSuite) TestWithinThreshold() {
 func (s *LicenseServiceIntegrationTestSuite) TestGetLicense() {
 	user, err := s.UserRepo.Create(context.Background(), testModel.NewCreateUserOpts())
 	s.Require().NoError(err)
-	s.Require().NoError(testRepo.MakeUserSystemOwner(user.ID, s.Neo4jDB))
+	s.Require().NoError(testRepo.GrantOrganizationCreate(user.ID, s.Neo4jDB))
 
 	retrievedLicense, err := s.licenseService.GetLicense(context.WithValue(context.Background(), pkg.CtxKeyUserID, user.ID))
 	s.Require().NoError(err)
 	s.Require().Equal(s.license, &retrievedLicense)
+}
+
+func (s *LicenseServiceIntegrationTestSuite) TestGetLicenseWithoutGrant() {
+	user, err := s.UserRepo.Create(context.Background(), testModel.NewCreateUserOpts())
+	s.Require().NoError(err)
+
+	_, err = s.licenseService.GetLicense(context.WithValue(context.Background(), pkg.CtxKeyUserID, user.ID))
+	s.Require().ErrorIs(err, service.ErrNoPermission)
 }
 
 func (s *LicenseServiceIntegrationTestSuite) TestPing() {

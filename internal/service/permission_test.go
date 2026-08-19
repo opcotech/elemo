@@ -295,6 +295,14 @@ func Test_permissionService_CtxUserDelete(t *testing.T) {
 			setup:   func(_ *repository.MockPermissionRepository) {},
 			wantErr: ErrNoUser,
 		},
+		{
+			name: "get not found wraps ErrPermissionDelete and ErrPermissionGet",
+			ctx:  context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
+			setup: func(repo *repository.MockPermissionRepository) {
+				repo.EXPECT().Get(gomock.Any(), grantID).Return(nil, repository.ErrNotFound)
+			},
+			wantErr: ErrPermissionDelete,
+		},
 	}
 
 	for _, tt := range tests {
@@ -313,6 +321,9 @@ func Test_permissionService_CtxUserDelete(t *testing.T) {
 			err := s.CtxUserDelete(tt.ctx, grantID)
 			if tt.wantErr != nil {
 				must.ErrorIs(err, tt.wantErr)
+				if tt.name == "get not found wraps ErrPermissionDelete and ErrPermissionGet" {
+					must.ErrorIs(err, ErrPermissionGet)
+				}
 				return
 			}
 			must.NoError(err)

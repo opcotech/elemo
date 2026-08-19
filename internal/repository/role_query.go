@@ -152,7 +152,7 @@ func (q RoleMemberListQuery) Compile() (QueryPlan, error) {
 		Root: CompiledQuery{
 			Name: "role.list_members",
 			Cypher: `
-			MATCH (:` + q.BelongsTo.Label() + ` {id: $belongs_to_id})-[:` + EdgeKindHasTeam.String() + `]->(r:` + q.RoleID.Label() + ` {id: $role_id})
+			MATCH (:` + q.BelongsTo.Label() + ` {id: $belongs_to_id})-[:` + EdgeKindDefinesRole.String() + `]->(r:` + q.RoleID.Label() + ` {id: $role_id})
 			MATCH (u:` + model.ResourceTypeUser.String() + `)-[:` + EdgeKindMemberOf.String() + `]->(r)` + cursorWherePrefix(bounds.Where, " WHERE ") + `
 			WITH u
 			ORDER BY u.id ` + bounds.Order.Cypher() + `

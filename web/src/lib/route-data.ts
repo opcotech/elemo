@@ -131,14 +131,16 @@ export async function loadProjectDetail(
     v1NamespaceGetOptions({ path: { id: namespaceId } })
   );
 
-  await requireProjectInNamespace(queryClient, namespaceId, projectId);
-
+  // Permission-filtered project lists omit rows the actor cannot read. Check
+  // project.read first so a direct URL becomes Access Denied instead of a 404.
   const permissions = await requireResourcePermission(
     queryClient,
     ResourceType.Project,
     projectId,
     Action.ProjectRead
   );
+
+  await requireProjectInNamespace(queryClient, namespaceId, projectId);
 
   const project = await queryClient.fetchQuery(
     v1ProjectGetOptions({ path: { id: projectId } })

@@ -58,6 +58,8 @@ type UpdateRoleOpts struct {
 }
 
 // RoleService is the interface that provides methods for managing roles.
+//
+//go:generate go tool mockgen -destination=role_mock_gen.go -package=service -mock_names RoleService=MockRoleService . RoleService
 type RoleService interface {
 	// Create creates a new role in the system and assigns it to a resource it
 	// belongs to. The user who created the role is also assigned as a member

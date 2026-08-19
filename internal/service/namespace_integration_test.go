@@ -1,5 +1,3 @@
-//go:build integration
-
 package service_test
 
 import (
@@ -16,7 +14,6 @@ import (
 	"github.com/opcotech/elemo/internal/service"
 	"github.com/opcotech/elemo/internal/testutil"
 	testModel "github.com/opcotech/elemo/internal/testutil/model"
-	testRepo "github.com/opcotech/elemo/internal/testutil/repository"
 )
 
 type NamespaceServiceIntegrationTestSuite struct {
@@ -64,7 +61,6 @@ func (s *NamespaceServiceIntegrationTestSuite) SetupTest() {
 	s.Require().NoError(err)
 
 	s.ctx = context.WithValue(context.Background(), pkg.CtxKeyUserID, s.owner.ID)
-	s.Require().NoError(testRepo.MakeUserSystemOwner(s.owner.ID, s.Neo4jDB))
 
 	s.organization, err = s.OrganizationRepo.Create(context.Background(), testModel.NewCreateOrganizationOpts(s.owner.ID))
 	s.Require().NoError(err)

@@ -788,7 +788,7 @@ func TestUserService_Update(t *testing.T) {
 			want: repoUserToService(testModel.NewUser()),
 		},
 		{
-			name: "update user with no permission",
+			name: "update another user",
 			fields: fields{
 				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ UpdateUserOpts, _ *repository.User) *baseService {
 					span := mock.NewMockSpan(ctrl)
@@ -1171,7 +1171,7 @@ func TestUserService_Delete(t *testing.T) {
 			wantErr: license.ErrLicenseExpired,
 		},
 		{
-			name: "soft delete user with no permission",
+			name: "soft delete another user",
 			fields: fields{
 				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID) *baseService {
 					span := mock.NewMockSpan(ctrl)
@@ -1202,7 +1202,7 @@ func TestUserService_Delete(t *testing.T) {
 			wantErr: ErrNoPermission,
 		},
 		{
-			name: "force delete user with no permission",
+			name: "force delete another user",
 			fields: fields{
 				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID) *baseService {
 					span := mock.NewMockSpan(ctrl)

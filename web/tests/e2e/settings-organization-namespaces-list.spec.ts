@@ -107,10 +107,19 @@ test.describe("@settings.organization-namespaces-list Organization Namespaces Li
     };
   };
 
-  test("should list organization namespaces for members with organization read permission", async ({
+  test("should list organization namespaces for members with namespace read permission", async ({
     page,
+    testConfig,
   }) => {
     const namespace = await createNamespaceViaApi();
+
+    await grantActionsToUser(
+      testConfig,
+      readerUser.email,
+      "Namespace",
+      namespace.id,
+      ["namespace.read"]
+    );
 
     await loginUser(page, {
       email: readerUser.email,
@@ -171,10 +180,21 @@ test.describe("@settings.organization-namespaces-list Organization Namespaces Li
     }
   });
 
-  test("should display namespace description in the list", async ({ page }) => {
+  test("should display namespace description in the list", async ({
+    page,
+    testConfig,
+  }) => {
     const namespace = await createNamespaceViaApi({
       description: "Test description",
     });
+
+    await grantActionsToUser(
+      testConfig,
+      writerUser.email,
+      "Namespace",
+      namespace.id,
+      ["namespace.read"]
+    );
 
     await loginUser(page, {
       email: writerUser.email,
