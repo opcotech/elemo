@@ -62,10 +62,60 @@ configured port.`,
 			logger.Fatal(context.Background(), "failed to initialize system license expiry task handler", slog.Any("error", err))
 		}
 
+		graphDB, searchService, err := initSearchService()
+		if err != nil {
+			logger.Fatal(context.Background(), "failed to initialize search service", slog.Any("error", err))
+		}
+
+		messageQueue, err := queue.NewClient(
+			queue.WithClientConfig(&cfg.Worker),
+			queue.WithClientLogger(logger.Named("message_queue")),
+			queue.WithClientTracer(tracer),
+		)
+		if err != nil {
+			logger.Fatal(context.Background(), "failed to initialize message queue", slog.Any("error", err))
+		}
+
+		searchIndexHandler, err := async.NewSearchIndexTaskHandler(
+			async.WithTaskSearchService(searchService),
+			async.WithTaskGraphDatabase(graphDB),
+			async.WithTaskLogger(logger.Named("search_index_task")),
+			async.WithTaskTracer(tracer),
+		)
+		if err != nil {
+			logger.Fatal(context.Background(), "failed to initialize search index task handler", slog.Any("error", err))
+		}
+
+		reindexBatchSize := cfg.Search.ReindexBatchSize
+		searchReindexHandler, err := async.NewSearchReindexTaskHandler(
+			async.WithTaskSearchService(searchService),
+			async.WithTaskGraphDatabase(graphDB),
+			async.WithTaskQueueClient(messageQueue),
+			async.WithTaskReindexBatchSize(reindexBatchSize),
+			async.WithTaskLogger(logger.Named("search_reindex_task")),
+			async.WithTaskTracer(tracer),
+		)
+		if err != nil {
+			logger.Fatal(context.Background(), "failed to initialize search reindex task handler", slog.Any("error", err))
+		}
+
+		searchReindexBatchHandler, err := async.NewSearchReindexBatchTaskHandler(
+			async.WithTaskSearchService(searchService),
+			async.WithTaskGraphDatabase(graphDB),
+			async.WithTaskLogger(logger.Named("search_reindex_batch_task")),
+			async.WithTaskTracer(tracer),
+		)
+		if err != nil {
+			logger.Fatal(context.Background(), "failed to initialize search reindex batch task handler", slog.Any("error", err))
+		}
+
 		async.SetRateLimiter(cfg.Worker.RateLimit, cfg.Worker.RateLimitBurst)
 		worker, err := async.NewWorker(
 			async.WithWorkerTaskHandler(queue.TaskTypeSystemHealthCheck, systemHealthCheckHandler),
 			async.WithWorkerTaskHandler(queue.TaskTypeSystemLicenseExpiry, systemLicenseExpiryTaskHandler),
+			async.WithWorkerTaskHandler(queue.TaskTypeSearchIndex, searchIndexHandler),
+			async.WithWorkerTaskHandler(queue.TaskTypeSearchReindex, searchReindexHandler),
+			async.WithWorkerTaskHandler(queue.TaskTypeSearchReindexBatch, searchReindexBatchHandler),
 			async.WithWorkerConfig(&cfg.Worker),
 			async.WithWorkerLogger(logger.Named("worker")),
 			async.WithWorkerTracer(tracer),

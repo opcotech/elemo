@@ -6,7 +6,7 @@ import (
 
 func mockSearchIndex(ctrl *gomock.Controller) *MockSearchService {
 	svc := NewMockSearchService(ctrl)
-	svc.EXPECT().Index(gomock.Any(), gomock.Any()).Return(nil)
+	svc.EXPECT().EnqueueIndex(gomock.Any(), gomock.Any()).Return(nil)
 	return svc
 }
 

@@ -81,7 +81,9 @@ function installFrontEnd() {
 
 function reindexSearchIndex() {
   log "reindexing search"
-  docker compose -f "${DOCKER_DEPLOY_DIR}/docker-compose.yml" exec -T elemo-server bin/elemo search reindex
+
+  docker compose -f "${DOCKER_DEPLOY_DIR}/docker-compose.yml" \
+    exec -T elemo-server bin/elemo search reindex --delete-all
 }
 
 # Run preflight

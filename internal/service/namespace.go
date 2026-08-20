@@ -189,18 +189,7 @@ func (s *namespaceService) Create(ctx context.Context, orgID model.ID, opts Crea
 	}
 
 	out := namespaceFromRepository(namespace)
-	if err := s.searchService.Index(ctx, IndexInput{
-		ID:        out.ID,
-		Title:     out.Name,
-		Content:   out.Description,
-		CreatedAt: out.CreatedAt,
-		UpdatedAt: out.UpdatedAt,
-	}); err != nil {
-		s.logger.Warn(ctx, "failed to index search document",
-			log.WithError(err),
-			log.WithValue(out.ID.Composite()),
-		)
-	}
+	s.enqueueSearchIndex(ctx, out.ID)
 	return out, nil
 }
 
@@ -308,18 +297,7 @@ func (s *namespaceService) Update(ctx context.Context, id model.ID, opts UpdateN
 	}
 
 	out := namespaceFromRepository(namespace)
-	if err := s.searchService.Index(ctx, IndexInput{
-		ID:        out.ID,
-		Title:     out.Name,
-		Content:   out.Description,
-		CreatedAt: out.CreatedAt,
-		UpdatedAt: out.UpdatedAt,
-	}); err != nil {
-		s.logger.Warn(ctx, "failed to index search document",
-			log.WithError(err),
-			log.WithValue(out.ID.Composite()),
-		)
-	}
+	s.enqueueSearchIndex(ctx, out.ID)
 	return out, nil
 }
 

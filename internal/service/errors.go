@@ -69,6 +69,7 @@ var (
 	ErrNoUserTokenRepository           = errors.New("no user token repository provided")            // no user token repository provided
 	ErrNoSearchRepository              = errors.New("no search repository provided")                // no search repository provided
 	ErrNoSearchService                 = errors.New("no search service provided")                   // no search service provided
+	ErrNoSearchTaskEnqueuer            = errors.New("no search task enqueuer provided")             // no search task enqueuer provided
 	ErrNoVersionInfo                   = errors.New("no version info provided")                     // no version info provided
 	ErrNotificationCreate              = errors.New("failed to create notification")                // failed to create notification
 	ErrNotificationDelete              = errors.New("failed to delete notification")                // failed to delete notification

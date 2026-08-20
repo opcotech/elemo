@@ -583,19 +583,7 @@ func (s *issueService) Create(ctx context.Context, projectID model.ID, opts Crea
 	}
 
 	out := issueFromRepository(issue)
-	if err := s.searchService.Index(ctx, IndexInput{
-		ID:        out.ID,
-		Title:     out.Title,
-		Content:   out.Description,
-		Key:       out.Key,
-		CreatedAt: out.CreatedAt,
-		UpdatedAt: out.UpdatedAt,
-	}); err != nil {
-		s.logger.Warn(ctx, "failed to index search document",
-			log.WithError(err),
-			log.WithValue(out.ID.Composite()),
-		)
-	}
+	s.enqueueSearchIndex(ctx, out.ID)
 	return out, nil
 }
 
@@ -834,19 +822,7 @@ func (s *issueService) Update(ctx context.Context, id model.ID, opts UpdateIssue
 	}
 
 	out := issueFromRepository(issue)
-	if err := s.searchService.Index(ctx, IndexInput{
-		ID:        out.ID,
-		Title:     out.Title,
-		Content:   out.Description,
-		Key:       out.Key,
-		CreatedAt: out.CreatedAt,
-		UpdatedAt: out.UpdatedAt,
-	}); err != nil {
-		s.logger.Warn(ctx, "failed to index search document",
-			log.WithError(err),
-			log.WithValue(out.ID.Composite()),
-		)
-	}
+	s.enqueueSearchIndex(ctx, out.ID)
 	return out, nil
 }
 

@@ -105,6 +105,8 @@ search:
   api_key: I860A0rxXjyPG6ORX3aJOCjwvVtzmkSfuqYXAy
   read_timeout: 3
   write_timeout: 5
+  reindex_batch_size: 250
+  reindex_concurrency: 4
 
 s3_storage:
   bucket: "elemo"

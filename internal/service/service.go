@@ -240,6 +240,18 @@ func WithSearchService(searchService SearchService) Option {
 	}
 }
 
+// WithSearchTaskEnqueuer sets the queue client used to schedule search index tasks.
+func WithSearchTaskEnqueuer(enqueuer SearchTaskEnqueuer) Option {
+	return func(s *baseService) error {
+		if enqueuer == nil {
+			return ErrNoSearchTaskEnqueuer
+		}
+
+		s.searchTaskEnqueuer = enqueuer
+		return nil
+	}
+}
+
 // WithEmailService sets the email service for the baseService.
 func WithEmailService(emailService EmailService) Option {
 	return func(s *baseService) error {
@@ -288,6 +300,7 @@ type baseService struct {
 	permissionService   PermissionService
 	notificationService NotificationService
 	searchService       SearchService
+	searchTaskEnqueuer  SearchTaskEnqueuer
 	emailService        EmailService
 	staticFileService   StaticFileService
 }

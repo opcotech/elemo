@@ -14,7 +14,6 @@ import (
 	"github.com/opcotech/elemo/internal/pkg/log"
 	"github.com/opcotech/elemo/internal/pkg/tracing"
 	"github.com/opcotech/elemo/internal/repository"
-	"github.com/opcotech/elemo/internal/testutil/mock"
 )
 
 func newSearchServiceForTest(perm PermissionService, repo repository.SearchRepository) *searchService {
@@ -24,7 +23,9 @@ func newSearchServiceForTest(perm PermissionService, repo repository.SearchRepos
 			tracer:            tracing.NoopTracer(),
 			permissionService: perm,
 		},
-		searchRepo: repo,
+		searchRepo:            repo,
+		listSearchableRecords: repository.ListSearchableRecords,
+		listSearchableByIDs:   repository.ListSearchableRecordsByIDs,
 	}
 }
 
@@ -178,27 +179,160 @@ func TestSearchService_Reindex(t *testing.T) {
 			repository.NewMockSearchRepository(ctrl),
 		)
 
-		err := svc.Reindex(context.Background(), SearchReindexSources{})
+		err := svc.Reindex(context.Background(), SearchReindexSources{}, SearchReindexOptions{})
 		require.Error(t, err)
 		assert.ErrorIs(t, err, ErrSearchReindex)
 		assert.ErrorIs(t, err, repository.ErrNoDriver)
 	})
 
-	t.Run("skips nil sources", func(t *testing.T) {
+	t.Run("upserts records in batches", func(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
-		logger := mock.NewMockLogger(ctrl)
-		logger.EXPECT().Warn(gomock.Any(), "skipping nil search reindex source", gomock.Any()).Times(5)
+		repo := repository.NewMockSearchRepository(ctrl)
+		issueID := model.MustNewID(model.ResourceTypeIssue)
+		projectID := model.MustNewID(model.ResourceTypeProject)
 
-		svc := newSearchServiceForTest(
-			NewMockPermissionService(ctrl),
-			repository.NewMockSearchRepository(ctrl),
+		svc := newSearchServiceForTest(NewMockPermissionService(ctrl), repo)
+		svc.listSearchableRecords = func(
+			_ context.Context,
+			_ *repository.Neo4jDatabase,
+			resourceType model.ResourceType,
+			after string,
+			limit int,
+		) ([]repository.SearchableRecord, error) {
+			assert.Equal(t, 2, limit)
+			if resourceType != model.ResourceTypeIssue || after != "" {
+				return []repository.SearchableRecord{}, nil
+			}
+			return []repository.SearchableRecord{{
+				ID:       issueID,
+				Title:    "Bug",
+				Key:      "ELE-1",
+				Ancestry: []model.ID{issueID, projectID},
+			}}, nil
+		}
+		repo.EXPECT().Upsert(gomock.Any(), gomock.Any()).DoAndReturn(
+			func(_ context.Context, docs ...repository.SearchDocument) error {
+				require.Len(t, docs, 1)
+				assert.Equal(t, issueID.SearchKey(), docs[0].ID)
+				assert.Equal(t, "Bug", docs[0].Title)
+				assert.Contains(t, docs[0].ScopeIDs, projectID.Composite())
+				return nil
+			},
 		)
-		svc.logger = logger
 
 		err := svc.Reindex(context.Background(), SearchReindexSources{
 			DB: &repository.Neo4jDatabase{},
-		})
+		}, SearchReindexOptions{BatchSize: 2, Concurrency: 1})
 		require.NoError(t, err)
+	})
+
+	t.Run("delete all runs before listing", func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		repo := repository.NewMockSearchRepository(ctrl)
+		listed := false
+		repo.EXPECT().DeleteAll(gomock.Any()).DoAndReturn(func(context.Context) error {
+			assert.False(t, listed)
+			return nil
+		})
+
+		svc := newSearchServiceForTest(NewMockPermissionService(ctrl), repo)
+		svc.listSearchableRecords = func(
+			_ context.Context,
+			_ *repository.Neo4jDatabase,
+			_ model.ResourceType,
+			_ string,
+			_ int,
+		) ([]repository.SearchableRecord, error) {
+			listed = true
+			return []repository.SearchableRecord{}, nil
+		}
+
+		err := svc.Reindex(context.Background(), SearchReindexSources{
+			DB: &repository.Neo4jDatabase{},
+		}, SearchReindexOptions{DeleteAll: true, Concurrency: 1})
+		require.NoError(t, err)
+		assert.True(t, listed)
+	})
+
+	t.Run("skips delete all by default", func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		repo := repository.NewMockSearchRepository(ctrl)
+		svc := newSearchServiceForTest(NewMockPermissionService(ctrl), repo)
+		svc.listSearchableRecords = func(
+			_ context.Context,
+			_ *repository.Neo4jDatabase,
+			_ model.ResourceType,
+			_ string,
+			_ int,
+		) ([]repository.SearchableRecord, error) {
+			return []repository.SearchableRecord{}, nil
+		}
+
+		err := svc.Reindex(context.Background(), SearchReindexSources{
+			DB: &repository.Neo4jDatabase{},
+		}, SearchReindexOptions{Concurrency: 1})
+		require.NoError(t, err)
+	})
+
+	t.Run("upserts pages concurrently", func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		repo := repository.NewMockSearchRepository(ctrl)
+		first := model.MustNewID(model.ResourceTypeIssue)
+		second := model.MustNewID(model.ResourceTypeIssue)
+
+		svc := newSearchServiceForTest(NewMockPermissionService(ctrl), repo)
+		svc.listSearchableRecords = func(
+			_ context.Context,
+			_ *repository.Neo4jDatabase,
+			resourceType model.ResourceType,
+			after string,
+			limit int,
+		) ([]repository.SearchableRecord, error) {
+			assert.Equal(t, 1, limit)
+			if resourceType != model.ResourceTypeIssue {
+				return []repository.SearchableRecord{}, nil
+			}
+			switch after {
+			case "":
+				return []repository.SearchableRecord{{ID: first, Title: "one", Ancestry: []model.ID{first}}}, nil
+			case first.String():
+				return []repository.SearchableRecord{{ID: second, Title: "two", Ancestry: []model.ID{second}}}, nil
+			default:
+				return []repository.SearchableRecord{}, nil
+			}
+		}
+		repo.EXPECT().Upsert(gomock.Any(), gomock.Any()).Times(2).Return(nil)
+
+		err := svc.Reindex(context.Background(), SearchReindexSources{
+			DB: &repository.Neo4jDatabase{},
+		}, SearchReindexOptions{BatchSize: 1, Concurrency: 2})
+		require.NoError(t, err)
+	})
+
+	t.Run("joins listing errors", func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		repo := repository.NewMockSearchRepository(ctrl)
+		svc := newSearchServiceForTest(NewMockPermissionService(ctrl), repo)
+		svc.listSearchableRecords = func(
+			_ context.Context,
+			_ *repository.Neo4jDatabase,
+			_ model.ResourceType,
+			_ string,
+			_ int,
+		) ([]repository.SearchableRecord, error) {
+			return nil, assert.AnError
+		}
+
+		err := svc.Reindex(context.Background(), SearchReindexSources{
+			DB: &repository.Neo4jDatabase{},
+		}, SearchReindexOptions{Concurrency: 1})
+		require.Error(t, err)
+		assert.ErrorIs(t, err, ErrSearchReindex)
+		assert.ErrorIs(t, err, assert.AnError)
 	})
 }

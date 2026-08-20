@@ -44,12 +44,14 @@ type LogConfig struct {
 
 // SearchConfig is the configuration for the search engine.
 type SearchConfig struct {
-	Host         string        `mapstructure:"host"`
-	Port         int           `mapstructure:"port"`
-	Bucket       string        `mapstructure:"bucket"` // the index or tenant name
-	APIKey       string        `mapstructure:"api_key"`
-	ReadTimeout  time.Duration `mapstructure:"read_timeout"`
-	WriteTimeout time.Duration `mapstructure:"write_timeout"`
+	Host               string        `mapstructure:"host"`
+	Port               int           `mapstructure:"port"`
+	Bucket             string        `mapstructure:"bucket"` // the index or tenant name
+	APIKey             string        `mapstructure:"api_key"`
+	ReadTimeout        time.Duration `mapstructure:"read_timeout"`
+	WriteTimeout       time.Duration `mapstructure:"write_timeout"`
+	ReindexBatchSize   int           `mapstructure:"reindex_batch_size"`
+	ReindexConcurrency int           `mapstructure:"reindex_concurrency"`
 }
 
 // Address returns the host:port of the search engine.

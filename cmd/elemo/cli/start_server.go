@@ -457,6 +457,7 @@ var startServerCmd = &cobra.Command{
 		searchService, err := service.NewSearchService(
 			searchRepo,
 			service.WithPermissionService(permissionService),
+			service.WithSearchTaskEnqueuer(messageQueue),
 			service.WithLogger(logger.Named("search_service")),
 			service.WithTracer(tracer),
 		)

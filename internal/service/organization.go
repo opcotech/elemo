@@ -224,17 +224,7 @@ func (s *organizationService) Create(ctx context.Context, owner model.ID, opts C
 	}
 
 	out := organizationFromRepository(organization)
-	if err := s.searchService.Index(ctx, IndexInput{
-		ID:        out.ID,
-		Title:     out.Name,
-		CreatedAt: out.CreatedAt,
-		UpdatedAt: out.UpdatedAt,
-	}); err != nil {
-		s.logger.Warn(ctx, "failed to index search document",
-			log.WithError(err),
-			log.WithValue(out.ID.Composite()),
-		)
-	}
+	s.enqueueSearchIndex(ctx, out.ID)
 	return out, nil
 }
 
@@ -351,17 +341,7 @@ func (s *organizationService) Update(ctx context.Context, id model.ID, opts Upda
 	}
 
 	out := organizationFromRepository(organization)
-	if err := s.searchService.Index(ctx, IndexInput{
-		ID:        out.ID,
-		Title:     out.Name,
-		CreatedAt: out.CreatedAt,
-		UpdatedAt: out.UpdatedAt,
-	}); err != nil {
-		s.logger.Warn(ctx, "failed to index search document",
-			log.WithError(err),
-			log.WithValue(out.ID.Composite()),
-		)
-	}
+	s.enqueueSearchIndex(ctx, out.ID)
 	return out, nil
 }
 

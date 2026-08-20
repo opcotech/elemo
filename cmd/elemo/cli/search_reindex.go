@@ -7,111 +7,128 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/opcotech/elemo/internal/queue"
 	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/service"
 )
+
+var (
+	searchReindexAsync       bool
+	searchReindexDeleteAll   bool
+	searchReindexBatchSize   int
+	searchReindexConcurrency int
+)
+
+func searchReindexOptions() service.SearchReindexOptions {
+	opts := service.SearchReindexOptions{
+		BatchSize:   searchReindexBatchSize,
+		Concurrency: searchReindexConcurrency,
+		DeleteAll:   searchReindexDeleteAll,
+	}
+	if opts.BatchSize == 0 {
+		opts.BatchSize = cfg.Search.ReindexBatchSize
+	}
+	if opts.Concurrency == 0 {
+		opts.Concurrency = cfg.Search.ReindexConcurrency
+	}
+	return opts
+}
+
+func initSearchService() (*repository.Neo4jDatabase, service.SearchService, error) {
+	graphDB, err := initGraphDatabase()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	_, searchRepo, err := initSearchDatabase()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	permissionRepo, err := repository.NewNeo4jPermissionRepository(
+		repository.WithNeo4jDatabase(graphDB),
+		repository.WithNeo4jRepositoryLogger(logger.Named("permission_repository")),
+		repository.WithNeo4jRepositoryTracer(tracer),
+	)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	permissionService, err := service.NewPermissionService(
+		permissionRepo,
+		service.WithLogger(logger.Named("permission_service")),
+		service.WithTracer(tracer),
+	)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	searchService, err := service.NewSearchService(
+		searchRepo,
+		service.WithPermissionService(permissionService),
+		service.WithLogger(logger.Named("search_service")),
+		service.WithTracer(tracer),
+	)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return graphDB, searchService, nil
+}
 
 // searchReindexCmd backfills the Meilisearch index from Neo4j.
 var searchReindexCmd = &cobra.Command{
 	Use:   "reindex",
 	Short: "Rebuild the search index from Neo4j",
-	Long: `Walk the graph database and upsert them into Meilisearch. Use this to
-backfill an empty index or repair drift after a failed write-through.`,
+	Long: `Walk the graph database and upsert searchable documents into Meilisearch.
+
+By default the command runs in-process. Use --async to enqueue work for
+background workers instead. --delete-all wipes the live index before rebuild,
+which makes search incomplete until the run finishes and can leave a partial
+index if a later batch fails.`,
 	Run: func(_ *cobra.Command, _ []string) {
 		initTracer("cli-search-reindex")
 
-		graphDB, err := initGraphDatabase()
-		if err != nil {
-			logger.Fatal(context.Background(), "failed to initialize graph database", slog.Any("error", err))
+		opts := searchReindexOptions()
+
+		if searchReindexAsync {
+			messageQueue, err := queue.NewClient(
+				queue.WithClientConfig(&cfg.Worker),
+				queue.WithClientLogger(logger.Named("message_queue")),
+				queue.WithClientTracer(tracer),
+			)
+			if err != nil {
+				logger.Fatal(context.Background(), "failed to initialize message queue", slog.Any("error", err))
+			}
+			defer func() {
+				if closeErr := messageQueue.Close(context.Background()); closeErr != nil {
+					logger.Error(context.Background(), "failed to close message queue", slog.Any("error", closeErr))
+				}
+			}()
+
+			task, err := queue.NewSearchReindexTask(queue.SearchReindexTaskPayload{
+				DeleteAll: opts.DeleteAll,
+				BatchSize: opts.BatchSize,
+			})
+			if err != nil {
+				logger.Fatal(context.Background(), "failed to create search reindex task", slog.Any("error", err))
+			}
+			if _, err := messageQueue.Enqueue(context.Background(), task); err != nil {
+				logger.Fatal(context.Background(), "failed to enqueue search reindex", slog.Any("error", err))
+			}
+			logger.Info(context.Background(), "search reindex enqueued")
+			return
 		}
 
-		_, searchRepo, err := initSearchDatabase()
-		if err != nil {
-			logger.Fatal(context.Background(), "failed to initialize search database", slog.Any("error", err))
-		}
-
-		permissionRepo, err := repository.NewNeo4jPermissionRepository(
-			repository.WithNeo4jDatabase(graphDB),
-			repository.WithNeo4jRepositoryLogger(logger.Named("permission_repository")),
-			repository.WithNeo4jRepositoryTracer(tracer),
-		)
-		if err != nil {
-			logger.Fatal(context.Background(), "failed to initialize permission repository", slog.Any("error", err))
-		}
-
-		organizationRepo, err := repository.NewNeo4jOrganizationRepository(
-			repository.WithNeo4jDatabase(graphDB),
-			repository.WithNeo4jRepositoryLogger(logger.Named("organization_repository")),
-			repository.WithNeo4jRepositoryTracer(tracer),
-		)
-		if err != nil {
-			logger.Fatal(context.Background(), "failed to initialize organization repository", slog.Any("error", err))
-		}
-
-		namespaceRepo, err := repository.NewNeo4jNamespaceRepository(
-			repository.WithNeo4jDatabase(graphDB),
-			repository.WithNeo4jRepositoryLogger(logger.Named("namespace_repository")),
-			repository.WithNeo4jRepositoryTracer(tracer),
-		)
-		if err != nil {
-			logger.Fatal(context.Background(), "failed to initialize namespace repository", slog.Any("error", err))
-		}
-
-		projectRepo, err := repository.NewNeo4jProjectRepository(
-			repository.WithNeo4jDatabase(graphDB),
-			repository.WithNeo4jRepositoryLogger(logger.Named("project_repository")),
-			repository.WithNeo4jRepositoryTracer(tracer),
-		)
-		if err != nil {
-			logger.Fatal(context.Background(), "failed to initialize project repository", slog.Any("error", err))
-		}
-
-		issueRepo, err := repository.NewNeo4jIssueRepository(
-			repository.WithNeo4jDatabase(graphDB),
-			repository.WithNeo4jRepositoryLogger(logger.Named("issue_repository")),
-			repository.WithNeo4jRepositoryTracer(tracer),
-		)
-		if err != nil {
-			logger.Fatal(context.Background(), "failed to initialize issue repository", slog.Any("error", err))
-		}
-
-		documentRepo, err := repository.NewNeo4jDocumentRepository(
-			repository.WithNeo4jDatabase(graphDB),
-			repository.WithNeo4jRepositoryLogger(logger.Named("document_repository")),
-			repository.WithNeo4jRepositoryTracer(tracer),
-		)
-		if err != nil {
-			logger.Fatal(context.Background(), "failed to initialize document repository", slog.Any("error", err))
-		}
-
-		permissionService, err := service.NewPermissionService(
-			permissionRepo,
-			service.WithLogger(logger.Named("permission_service")),
-			service.WithTracer(tracer),
-		)
-		if err != nil {
-			logger.Fatal(context.Background(), "failed to initialize permission service", slog.Any("error", err))
-		}
-
-		searchService, err := service.NewSearchService(
-			searchRepo,
-			service.WithPermissionService(permissionService),
-			service.WithLogger(logger.Named("search_service")),
-			service.WithTracer(tracer),
-		)
+		graphDB, searchService, err := initSearchService()
 		if err != nil {
 			logger.Fatal(context.Background(), "failed to initialize search service", slog.Any("error", err))
 		}
 
 		logger.Info(context.Background(), "reindexing search documents")
 		if err := searchService.Reindex(context.Background(), service.SearchReindexSources{
-			DB:           graphDB,
-			Organization: organizationRepo,
-			Namespace:    namespaceRepo,
-			Project:      projectRepo,
-			Issue:        issueRepo,
-			Document:     documentRepo,
-		}); err != nil {
+			DB: graphDB,
+		}, opts); err != nil {
 			logger.Fatal(context.Background(), "failed to reindex search documents", slog.Any("error", err))
 		}
 		logger.Info(context.Background(), "search reindex complete")
@@ -119,5 +136,9 @@ backfill an empty index or repair drift after a failed write-through.`,
 }
 
 func init() {
+	searchReindexCmd.Flags().BoolVar(&searchReindexAsync, "async", false, "enqueue reindex for background workers and return")
+	searchReindexCmd.Flags().BoolVar(&searchReindexDeleteAll, "delete-all", false, "wipe the search index before rebuilding")
+	searchReindexCmd.Flags().IntVar(&searchReindexBatchSize, "batch-size", 0, "documents per upsert (0 uses config/default)")
+	searchReindexCmd.Flags().IntVar(&searchReindexConcurrency, "concurrency", 0, "parallel upsert workers (0 uses config/default)")
 	searchCmd.AddCommand(searchReindexCmd)
 }

@@ -59,6 +59,20 @@ func (mr *MockSearchRepositoryMockRecorder) Delete(ctx any, ids ...any) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockSearchRepository)(nil).Delete), varargs...)
 }
 
+// DeleteAll mocks base method.
+func (m *MockSearchRepository) DeleteAll(ctx context.Context) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteAll", ctx)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteAll indicates an expected call of DeleteAll.
+func (mr *MockSearchRepositoryMockRecorder) DeleteAll(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteAll", reflect.TypeOf((*MockSearchRepository)(nil).DeleteAll), ctx)
+}
+
 // DeleteByScope mocks base method.
 func (m *MockSearchRepository) DeleteByScope(ctx context.Context, scopeID string) error {
 	m.ctrl.T.Helper()

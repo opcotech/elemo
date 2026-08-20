@@ -3,6 +3,7 @@ package async
 import (
 	"github.com/opcotech/elemo/internal/pkg/log"
 	"github.com/opcotech/elemo/internal/pkg/tracing"
+	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/service"
 )
 
@@ -17,6 +18,50 @@ func WithTaskEmailService(emailService service.EmailService) TaskHandlerOption {
 		}
 
 		t.emailService = emailService
+		return nil
+	}
+}
+
+// WithTaskSearchService sets the search service for the worker.
+func WithTaskSearchService(searchService service.SearchService) TaskHandlerOption {
+	return func(t *baseTaskHandler) error {
+		if searchService == nil {
+			return ErrNoSearchService
+		}
+
+		t.searchService = searchService
+		return nil
+	}
+}
+
+// WithTaskGraphDatabase sets the graph database for search tasks.
+func WithTaskGraphDatabase(db *repository.Neo4jDatabase) TaskHandlerOption {
+	return func(t *baseTaskHandler) error {
+		if db == nil {
+			return ErrNoGraphDatabase
+		}
+
+		t.graphDB = db
+		return nil
+	}
+}
+
+// WithTaskQueueClient sets the queue client used to fan out reindex batches.
+func WithTaskQueueClient(client service.SearchTaskEnqueuer) TaskHandlerOption {
+	return func(t *baseTaskHandler) error {
+		if client == nil {
+			return ErrNoQueueClient
+		}
+
+		t.queueClient = client
+		return nil
+	}
+}
+
+// WithTaskReindexBatchSize sets the default batch size for search reindex.
+func WithTaskReindexBatchSize(size int) TaskHandlerOption {
+	return func(t *baseTaskHandler) error {
+		t.reindexBatchSize = size
 		return nil
 	}
 }
@@ -52,7 +97,11 @@ type baseTaskHandler struct {
 	logger log.Logger
 	tracer tracing.Tracer
 
-	emailService service.EmailService
+	emailService     service.EmailService
+	searchService    service.SearchService
+	graphDB          *repository.Neo4jDatabase
+	queueClient      service.SearchTaskEnqueuer
+	reindexBatchSize int
 }
 
 // newBaseTaskHandler creates a new base task handler.

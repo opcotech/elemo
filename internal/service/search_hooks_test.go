@@ -46,13 +46,7 @@ func TestNamespaceService_Create_IndexesSearch(t *testing.T) {
 	licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 	searchSvc := NewMockSearchService(ctrl)
-	searchSvc.EXPECT().Index(ctx, gomock.AssignableToTypeOf(IndexInput{})).DoAndReturn(
-		func(_ context.Context, input IndexInput) error {
-			assert.Equal(t, ns.ID, input.ID)
-			assert.Equal(t, ns.Name, input.Title)
-			return nil
-		},
-	)
+	searchSvc.EXPECT().EnqueueIndex(ctx, ns.ID).Return(nil)
 
 	svc := &namespaceService{baseService: &baseService{
 		logger:            mock.NewMockLogger(ctrl),

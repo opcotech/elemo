@@ -14,6 +14,7 @@ import (
 	reflect "reflect"
 
 	model "github.com/opcotech/elemo/internal/model"
+	repository "github.com/opcotech/elemo/internal/repository"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -55,6 +56,20 @@ func (mr *MockSearchServiceMockRecorder) Delete(ctx, id any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockSearchService)(nil).Delete), ctx, id)
 }
 
+// DeleteAll mocks base method.
+func (m *MockSearchService) DeleteAll(ctx context.Context) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteAll", ctx)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteAll indicates an expected call of DeleteAll.
+func (mr *MockSearchServiceMockRecorder) DeleteAll(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteAll", reflect.TypeOf((*MockSearchService)(nil).DeleteAll), ctx)
+}
+
 // DeleteByScope mocks base method.
 func (m *MockSearchService) DeleteByScope(ctx context.Context, scope model.ID) error {
 	m.ctrl.T.Helper()
@@ -67,6 +82,20 @@ func (m *MockSearchService) DeleteByScope(ctx context.Context, scope model.ID) e
 func (mr *MockSearchServiceMockRecorder) DeleteByScope(ctx, scope any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteByScope", reflect.TypeOf((*MockSearchService)(nil).DeleteByScope), ctx, scope)
+}
+
+// EnqueueIndex mocks base method.
+func (m *MockSearchService) EnqueueIndex(ctx context.Context, id model.ID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "EnqueueIndex", ctx, id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// EnqueueIndex indicates an expected call of EnqueueIndex.
+func (mr *MockSearchServiceMockRecorder) EnqueueIndex(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EnqueueIndex", reflect.TypeOf((*MockSearchService)(nil).EnqueueIndex), ctx, id)
 }
 
 // Index mocks base method.
@@ -83,18 +112,37 @@ func (mr *MockSearchServiceMockRecorder) Index(ctx, input any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Index", reflect.TypeOf((*MockSearchService)(nil).Index), ctx, input)
 }
 
-// Reindex mocks base method.
-func (m *MockSearchService) Reindex(ctx context.Context, sources SearchReindexSources) error {
+// IndexIDs mocks base method.
+func (m *MockSearchService) IndexIDs(ctx context.Context, db *repository.Neo4jDatabase, ids ...model.ID) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Reindex", ctx, sources)
+	varargs := []any{ctx, db}
+	for _, a := range ids {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "IndexIDs", varargs...)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// IndexIDs indicates an expected call of IndexIDs.
+func (mr *MockSearchServiceMockRecorder) IndexIDs(ctx, db any, ids ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, db}, ids...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IndexIDs", reflect.TypeOf((*MockSearchService)(nil).IndexIDs), varargs...)
+}
+
+// Reindex mocks base method.
+func (m *MockSearchService) Reindex(ctx context.Context, sources SearchReindexSources, opts SearchReindexOptions) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Reindex", ctx, sources, opts)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Reindex indicates an expected call of Reindex.
-func (mr *MockSearchServiceMockRecorder) Reindex(ctx, sources any) *gomock.Call {
+func (mr *MockSearchServiceMockRecorder) Reindex(ctx, sources, opts any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Reindex", reflect.TypeOf((*MockSearchService)(nil).Reindex), ctx, sources)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Reindex", reflect.TypeOf((*MockSearchService)(nil).Reindex), ctx, sources, opts)
 }
 
 // Search mocks base method.

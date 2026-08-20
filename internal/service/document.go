@@ -260,18 +260,7 @@ func (s *documentService) Create(ctx context.Context, contextID model.ID, opts C
 	}
 
 	out := documentFromRepository(doc, opts.Content)
-	if err := s.searchService.Index(ctx, IndexInput{
-		ID:        out.ID,
-		Title:     out.Title,
-		Content:   out.Excerpt,
-		CreatedAt: out.CreatedAt,
-		UpdatedAt: out.UpdatedAt,
-	}); err != nil {
-		s.logger.Warn(ctx, "failed to index search document",
-			log.WithError(err),
-			log.WithValue(out.ID.Composite()),
-		)
-	}
+	s.enqueueSearchIndex(ctx, out.ID)
 	return out, nil
 }
 
@@ -418,18 +407,7 @@ func (s *documentService) Update(ctx context.Context, id model.ID, opts UpdateDo
 		if err != nil {
 			return nil, err
 		}
-		if err := s.searchService.Index(ctx, IndexInput{
-			ID:        moved.ID,
-			Title:     moved.Title,
-			Content:   moved.Excerpt,
-			CreatedAt: moved.CreatedAt,
-			UpdatedAt: moved.UpdatedAt,
-		}); err != nil {
-			s.logger.Warn(ctx, "failed to index search document",
-				log.WithError(err),
-				log.WithValue(moved.ID.Composite()),
-			)
-		}
+		s.enqueueSearchIndex(ctx, moved.ID)
 		return moved, nil
 	}
 
@@ -439,18 +417,7 @@ func (s *documentService) Update(ctx context.Context, id model.ID, opts UpdateDo
 	}
 
 	out := documentFromRepository(current, content)
-	if err := s.searchService.Index(ctx, IndexInput{
-		ID:        out.ID,
-		Title:     out.Title,
-		Content:   out.Excerpt,
-		CreatedAt: out.CreatedAt,
-		UpdatedAt: out.UpdatedAt,
-	}); err != nil {
-		s.logger.Warn(ctx, "failed to index search document",
-			log.WithError(err),
-			log.WithValue(out.ID.Composite()),
-		)
-	}
+	s.enqueueSearchIndex(ctx, out.ID)
 	return out, nil
 }
 
@@ -497,18 +464,7 @@ func (s *documentService) MoveLibrary(ctx context.Context, id, libraryID model.I
 	}
 
 	out := documentFromRepository(doc, content)
-	if err := s.searchService.Index(ctx, IndexInput{
-		ID:        out.ID,
-		Title:     out.Title,
-		Content:   out.Excerpt,
-		CreatedAt: out.CreatedAt,
-		UpdatedAt: out.UpdatedAt,
-	}); err != nil {
-		s.logger.Warn(ctx, "failed to index search document",
-			log.WithError(err),
-			log.WithValue(out.ID.Composite()),
-		)
-	}
+	s.enqueueSearchIndex(ctx, out.ID)
 	return out, nil
 }
 

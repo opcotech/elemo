@@ -11,15 +11,16 @@ import (
 
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg"
-	"github.com/opcotech/elemo/internal/pkg/log"
 	"github.com/opcotech/elemo/internal/repository"
 )
 
 const (
-	DefaultSearchPageSize = 20
-	MinSearchPageSize     = 1
-	MaxSearchPageSize     = 100
-	maxSearchFetchRounds  = 8
+	DefaultSearchPageSize           = 20
+	MinSearchPageSize               = 1
+	MaxSearchPageSize               = 100
+	maxSearchFetchRounds            = 8
+	DefaultSearchReindexBatchSize   = 250
+	DefaultSearchReindexConcurrency = 4
 )
 
 var searchableResourceTypes = []model.ResourceType{
@@ -30,16 +31,17 @@ var searchableResourceTypes = []model.ResourceType{
 	model.ResourceTypeDocument,
 }
 
-// SearchReindexSources holds the graph stores Reindex walks. They are
-// call-scoped so SearchService construction does not need them. Nil
-// domain repositories are skipped with a warning.
+// SearchReindexSources holds the graph store Reindex walks. It is
+// call-scoped so SearchService construction does not need it.
 type SearchReindexSources struct {
-	DB           *repository.Neo4jDatabase
-	Organization repository.OrganizationRepository
-	Namespace    repository.NamespaceRepository
-	Project      repository.ProjectRepository
-	Issue        repository.IssueRepository
-	Document     repository.DocumentRepository
+	DB *repository.Neo4jDatabase
+}
+
+// SearchReindexOptions controls a rebuild. Zero values use defaults.
+type SearchReindexOptions struct {
+	BatchSize   int
+	Concurrency int
+	DeleteAll   bool
 }
 
 // IndexInput is the searchable projection of a persisted resource. Ancestry is
@@ -88,19 +90,42 @@ type searchPageToken struct {
 type SearchService interface {
 	// Index upserts a searchable projection. Ancestry is resolved from Neo4j.
 	Index(ctx context.Context, input IndexInput) error
+	// EnqueueIndex schedules current-state indexing for a resource ID.
+	EnqueueIndex(ctx context.Context, id model.ID) error
+	// IndexIDs reads the latest graph projection for the IDs and upserts them.
+	IndexIDs(ctx context.Context, db *repository.Neo4jDatabase, ids ...model.ID) error
 	// Delete removes one document by resource ID.
 	Delete(ctx context.Context, id model.ID) error
 	// DeleteByScope removes every document whose ancestry includes scope.
 	DeleteByScope(ctx context.Context, scope model.ID) error
+	// DeleteAll removes every document in the search index.
+	DeleteAll(ctx context.Context) error
 	// Search returns a page of hits the context user may read.
 	Search(ctx context.Context, q SearchQuery) (Page[*SearchResult], error)
 	// Reindex walks Neo4j and rebuilds the search index.
-	Reindex(ctx context.Context, sources SearchReindexSources) error
+	Reindex(ctx context.Context, sources SearchReindexSources, opts SearchReindexOptions) error
 }
+
+type searchableRecordLister func(
+	ctx context.Context,
+	db *repository.Neo4jDatabase,
+	resourceType model.ResourceType,
+	after string,
+	limit int,
+) ([]repository.SearchableRecord, error)
+
+type searchableRecordByIDsLister func(
+	ctx context.Context,
+	db *repository.Neo4jDatabase,
+	resourceType model.ResourceType,
+	ids []model.ID,
+) ([]repository.SearchableRecord, error)
 
 type searchService struct {
 	*baseService
-	searchRepo repository.SearchRepository
+	searchRepo            repository.SearchRepository
+	listSearchableRecords searchableRecordLister
+	listSearchableByIDs   searchableRecordByIDsLister
 }
 
 func unixSeconds(t *time.Time) int64 {
@@ -108,6 +133,54 @@ func unixSeconds(t *time.Time) int64 {
 		return 0
 	}
 	return t.Unix()
+}
+
+func unixTimePtr(sec int64) *time.Time {
+	if sec <= 0 {
+		return nil
+	}
+	t := time.Unix(sec, 0).UTC()
+	return &t
+}
+
+func buildSearchDocument(input IndexInput, ancestry []model.ID) repository.SearchDocument {
+	if len(ancestry) == 0 {
+		ancestry = []model.ID{input.ID}
+	}
+
+	doc := repository.SearchDocument{
+		ID:        input.ID.SearchKey(),
+		Type:      input.ID.Type.String(),
+		Title:     input.Title,
+		Content:   input.Content,
+		Key:       input.Key,
+		ScopeIDs:  make([]string, 0, len(ancestry)),
+		CreatedAt: unixSeconds(input.CreatedAt),
+		UpdatedAt: unixSeconds(input.UpdatedAt),
+	}
+	for _, scope := range ancestry {
+		doc.ScopeIDs = append(doc.ScopeIDs, scope.Composite())
+		switch scope.Type {
+		case model.ResourceTypeOrganization:
+			doc.OrganizationID = scope.Composite()
+		case model.ResourceTypeNamespace:
+			doc.NamespaceID = scope.Composite()
+		case model.ResourceTypeProject:
+			doc.ProjectID = scope.Composite()
+		}
+	}
+	return doc
+}
+
+func searchDocumentFromRecord(rec repository.SearchableRecord) repository.SearchDocument {
+	return buildSearchDocument(IndexInput{
+		ID:        rec.ID,
+		Title:     rec.Title,
+		Content:   rec.Content,
+		Key:       rec.Key,
+		CreatedAt: unixTimePtr(rec.CreatedAt),
+		UpdatedAt: unixTimePtr(rec.UpdatedAt),
+	}, rec.Ancestry)
 }
 
 func parseOptionalComposite(value string) *model.ID {
@@ -169,35 +242,8 @@ func (s *searchService) Index(ctx context.Context, input IndexInput) error {
 	if err != nil {
 		return errors.Join(ErrSearchIndex, err)
 	}
-	if len(ancestry) == 0 {
-		ancestry = []model.ID{input.ID}
-	}
 
-	scopeIDs := make([]string, 0, len(ancestry))
-	doc := repository.SearchDocument{
-		ID:        input.ID.SearchKey(),
-		Type:      input.ID.Type.String(),
-		Title:     input.Title,
-		Content:   input.Content,
-		Key:       input.Key,
-		ScopeIDs:  make([]string, 0, len(ancestry)),
-		CreatedAt: unixSeconds(input.CreatedAt),
-		UpdatedAt: unixSeconds(input.UpdatedAt),
-	}
-	for _, scope := range ancestry {
-		scopeIDs = append(scopeIDs, scope.Composite())
-		switch scope.Type {
-		case model.ResourceTypeOrganization:
-			doc.OrganizationID = scope.Composite()
-		case model.ResourceTypeNamespace:
-			doc.NamespaceID = scope.Composite()
-		case model.ResourceTypeProject:
-			doc.ProjectID = scope.Composite()
-		}
-	}
-	doc.ScopeIDs = scopeIDs
-
-	if err := s.searchRepo.Upsert(ctx, doc); err != nil {
+	if err := s.searchRepo.Upsert(ctx, buildSearchDocument(input, ancestry)); err != nil {
 		return errors.Join(ErrSearchIndex, err)
 	}
 	return nil
@@ -383,178 +429,6 @@ func (s *searchService) Search(ctx context.Context, q SearchQuery) (Page[*Search
 	return page, nil
 }
 
-func (s *searchService) Reindex(ctx context.Context, sources SearchReindexSources) error {
-	ctx, span := s.tracer.Start(ctx, "service.searchService/Reindex")
-	defer span.End()
-
-	if sources.DB == nil {
-		return errors.Join(ErrSearchReindex, repository.ErrNoDriver)
-	}
-
-	steps := []struct {
-		skip bool
-		kind model.ResourceType
-		run  func() error
-	}{
-		{sources.Organization == nil, model.ResourceTypeOrganization, func() error {
-			return s.reindexOrganizations(ctx, sources)
-		}},
-		{sources.Namespace == nil, model.ResourceTypeNamespace, func() error {
-			return s.reindexNamespaces(ctx, sources)
-		}},
-		{sources.Project == nil, model.ResourceTypeProject, func() error {
-			return s.reindexProjects(ctx, sources)
-		}},
-		{sources.Issue == nil, model.ResourceTypeIssue, func() error {
-			return s.reindexIssues(ctx, sources)
-		}},
-		{sources.Document == nil, model.ResourceTypeDocument, func() error {
-			return s.reindexDocuments(ctx, sources)
-		}},
-	}
-	for _, step := range steps {
-		if step.skip {
-			s.logger.Warn(ctx, "skipping nil search reindex source", log.WithKind(step.kind.String()))
-			continue
-		}
-		if err := step.run(); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (s *searchService) reindexOrganizations(ctx context.Context, sources SearchReindexSources) error {
-	ids, err := repository.ListSearchableIDs(ctx, sources.DB, model.ResourceTypeOrganization)
-	if err != nil {
-		return errors.Join(ErrSearchReindex, err)
-	}
-	for _, id := range ids {
-		org, err := sources.Organization.Get(ctx, id, repository.OrganizationDetailProjection())
-		if err != nil {
-			if errors.Is(err, repository.ErrNotFound) {
-				continue
-			}
-			return errors.Join(ErrSearchReindex, err)
-		}
-		if err := s.Index(ctx, IndexInput{
-			ID:        org.ID,
-			Title:     org.Name,
-			CreatedAt: org.CreatedAt,
-			UpdatedAt: org.UpdatedAt,
-		}); err != nil {
-			return errors.Join(ErrSearchReindex, err)
-		}
-	}
-	return nil
-}
-
-func (s *searchService) reindexNamespaces(ctx context.Context, sources SearchReindexSources) error {
-	ids, err := repository.ListSearchableIDs(ctx, sources.DB, model.ResourceTypeNamespace)
-	if err != nil {
-		return errors.Join(ErrSearchReindex, err)
-	}
-	for _, id := range ids {
-		ns, err := sources.Namespace.Get(ctx, id, repository.NamespaceDetailProjection())
-		if err != nil {
-			if errors.Is(err, repository.ErrNotFound) {
-				continue
-			}
-			return errors.Join(ErrSearchReindex, err)
-		}
-		if err := s.Index(ctx, IndexInput{
-			ID:        ns.ID,
-			Title:     ns.Name,
-			Content:   ns.Description,
-			CreatedAt: ns.CreatedAt,
-			UpdatedAt: ns.UpdatedAt,
-		}); err != nil {
-			return errors.Join(ErrSearchReindex, err)
-		}
-	}
-	return nil
-}
-
-func (s *searchService) reindexProjects(ctx context.Context, sources SearchReindexSources) error {
-	ids, err := repository.ListSearchableIDs(ctx, sources.DB, model.ResourceTypeProject)
-	if err != nil {
-		return errors.Join(ErrSearchReindex, err)
-	}
-	for _, id := range ids {
-		project, err := sources.Project.Get(ctx, id, repository.ProjectDetailProjection())
-		if err != nil {
-			if errors.Is(err, repository.ErrNotFound) {
-				continue
-			}
-			return errors.Join(ErrSearchReindex, err)
-		}
-		if err := s.Index(ctx, IndexInput{
-			ID:        project.ID,
-			Title:     project.Name,
-			Content:   project.Description,
-			Key:       project.Key,
-			CreatedAt: project.CreatedAt,
-			UpdatedAt: project.UpdatedAt,
-		}); err != nil {
-			return errors.Join(ErrSearchReindex, err)
-		}
-	}
-	return nil
-}
-
-func (s *searchService) reindexIssues(ctx context.Context, sources SearchReindexSources) error {
-	ids, err := repository.ListSearchableIDs(ctx, sources.DB, model.ResourceTypeIssue)
-	if err != nil {
-		return errors.Join(ErrSearchReindex, err)
-	}
-	for _, id := range ids {
-		issue, err := sources.Issue.Get(ctx, id, repository.IssueDetailProjection())
-		if err != nil {
-			if errors.Is(err, repository.ErrNotFound) {
-				continue
-			}
-			return errors.Join(ErrSearchReindex, err)
-		}
-		if err := s.Index(ctx, IndexInput{
-			ID:        issue.ID,
-			Title:     issue.Title,
-			Content:   issue.Description,
-			Key:       issue.Key,
-			CreatedAt: issue.CreatedAt,
-			UpdatedAt: issue.UpdatedAt,
-		}); err != nil {
-			return errors.Join(ErrSearchReindex, err)
-		}
-	}
-	return nil
-}
-
-func (s *searchService) reindexDocuments(ctx context.Context, sources SearchReindexSources) error {
-	ids, err := repository.ListSearchableIDs(ctx, sources.DB, model.ResourceTypeDocument)
-	if err != nil {
-		return errors.Join(ErrSearchReindex, err)
-	}
-	for _, id := range ids {
-		doc, err := sources.Document.Get(ctx, id, repository.DocumentDetailProjection())
-		if err != nil {
-			if errors.Is(err, repository.ErrNotFound) {
-				continue
-			}
-			return errors.Join(ErrSearchReindex, err)
-		}
-		if err := s.Index(ctx, IndexInput{
-			ID:        doc.ID,
-			Title:     doc.Title,
-			Content:   doc.Excerpt,
-			CreatedAt: doc.CreatedAt,
-			UpdatedAt: doc.UpdatedAt,
-		}); err != nil {
-			return errors.Join(ErrSearchReindex, err)
-		}
-	}
-	return nil
-}
-
 func normalizeSearchTypes(types []model.ResourceType) ([]model.ResourceType, error) {
 	if len(types) == 0 {
 		out := make([]model.ResourceType, len(searchableResourceTypes))
@@ -640,8 +514,10 @@ func NewSearchService(searchRepo repository.SearchRepository, opts ...Option) (S
 	}
 
 	svc := &searchService{
-		baseService: s,
-		searchRepo:  searchRepo,
+		baseService:           s,
+		searchRepo:            searchRepo,
+		listSearchableRecords: repository.ListSearchableRecords,
+		listSearchableByIDs:   repository.ListSearchableRecordsByIDs,
 	}
 	if svc.searchRepo == nil {
 		return nil, ErrNoSearchRepository

@@ -8,10 +8,8 @@ import (
 	"time"
 
 	"github.com/meilisearch/meilisearch-go"
-	"github.com/neo4j/neo4j-go-driver/v6/neo4j"
 
 	"github.com/opcotech/elemo/internal/config"
-	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/log"
 	"github.com/opcotech/elemo/internal/pkg/tracing"
 	"github.com/opcotech/elemo/internal/pkg/validate"
@@ -102,6 +100,8 @@ type SearchRepository interface {
 	Ping(ctx context.Context) error
 	// EnsureIndex creates the index if needed and applies search settings.
 	EnsureIndex(ctx context.Context) error
+	// DeleteAll removes every document in the index.
+	DeleteAll(ctx context.Context) error
 }
 
 // SearchDatabaseOption configures a SearchDatabase.
@@ -489,30 +489,4 @@ func NewMeilisearchSearchRepository(opts ...SearchRepositoryOption) (*Meilisearc
 	}
 
 	return r, nil
-}
-
-// ListSearchableIDs returns every node ID of resourceType. Used by reindex.
-func ListSearchableIDs(ctx context.Context, db *Neo4jDatabase, resourceType model.ResourceType) ([]model.ID, error) {
-	if db == nil {
-		return nil, ErrNoDriver
-	}
-	if !resourceType.IsAResourceType() {
-		return nil, model.ErrInvalidResourceType
-	}
-
-	cypher := `MATCH (n:` + resourceType.String() + `) RETURN n.id AS id`
-	ids, err := Neo4jExecuteReadAndReadAll(ctx, db, cypher, nil, func(rec *neo4j.Record) (model.ID, error) {
-		raw, err := Neo4jParseValueFromRecord[string](rec, "id")
-		if err != nil {
-			return model.ID{}, err
-		}
-		return model.NewIDFromString(raw, resourceType.String())
-	})
-	if err != nil {
-		return nil, err
-	}
-	if ids == nil {
-		ids = []model.ID{}
-	}
-	return ids, nil
 }

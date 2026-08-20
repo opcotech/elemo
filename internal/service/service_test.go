@@ -545,6 +545,18 @@ func TestWithSearchService(t *testing.T) {
 	})
 }
 
+func TestWithSearchTaskEnqueuer(t *testing.T) {
+	t.Parallel()
+
+	t.Run("return an error if no search task enqueuer is provided", func(t *testing.T) {
+		t.Parallel()
+
+		var s baseService
+		err := WithSearchTaskEnqueuer(nil)(&s)
+		assert.ErrorIs(t, err, ErrNoSearchTaskEnqueuer)
+	})
+}
+
 func Test_newService(t *testing.T) {
 	type args struct {
 		opts []Option

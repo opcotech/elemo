@@ -199,13 +199,8 @@ func (s *SearchServiceIntegrationTestSuite) TestReindex() {
 	s.Require().NoError(err)
 
 	s.Require().NoError(s.searchService.Reindex(s.ctx, service.SearchReindexSources{
-		DB:           s.Neo4jDB,
-		Organization: s.OrganizationRepo,
-		Namespace:    s.NamespaceRepo,
-		Project:      s.ProjectRepo,
-		Issue:        s.IssueRepo,
-		Document:     s.DocumentRepo,
-	}))
+		DB: s.Neo4jDB,
+	}, service.SearchReindexOptions{}))
 
 	page, err := s.searchService.Search(s.userCtx(owner.ID), service.SearchQuery{PageSize: 20})
 	s.Require().NoError(err)
