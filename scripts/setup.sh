@@ -108,6 +108,9 @@ waitAndPrint 5
 setupOAuthClient
 setupDemoData
 
+# Reindex the search index
+reindexSearchIndex
+
 # Tear down services
 if [ "${ELEMO_KEEP_BACKEND}" == "false" ]; then
   docker compose -f "${DOCKER_DEPLOY_DIR}/docker-compose.yml" down
@@ -115,8 +118,5 @@ fi
 
 # Setup the front-end
 installFrontEnd
-
-# Reindex the search index
-reindexSearchIndex
 
 success "the setup finished successfully, now you can run \"make dev\" or \"make start\""
