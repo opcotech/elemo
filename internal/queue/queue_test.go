@@ -14,6 +14,9 @@ func TestTaskType_String(t *testing.T) {
 	}{
 		{"health check task", TaskTypeSystemHealthCheck, "system:health_check"},
 		{"license expiry task", TaskTypeSystemLicenseExpiry, "system:license_expiry"},
+		{"search index task", TaskTypeSearchIndex, "search:index"},
+		{"search reindex task", TaskTypeSearchReindex, "search:reindex"},
+		{"search reindex batch task", TaskTypeSearchReindexBatch, "search:reindex_batch"},
 	}
 	for _, tt := range tests {
 		tt := tt

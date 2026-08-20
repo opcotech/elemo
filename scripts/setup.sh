@@ -79,6 +79,13 @@ function installFrontEnd() {
   pnpm --dir web build
 }
 
+function reindexSearchIndex() {
+  log "reindexing search"
+
+  docker compose -f "${DOCKER_DEPLOY_DIR}/docker-compose.yml" \
+    exec -T elemo-server bin/elemo search reindex --delete-all
+}
+
 # Run preflight
 validateBoolean "ELEMO_KEEP_BACKEND" "${ELEMO_KEEP_BACKEND}"
 validateBoolean "ELEMO_SKIP_IMAGE_BUILD" "${ELEMO_SKIP_IMAGE_BUILD}"
@@ -100,6 +107,9 @@ waitAndPrint 5
 # Create a new OAuth2 client and configure the front-end
 setupOAuthClient
 setupDemoData
+
+# Reindex the search index
+reindexSearchIndex
 
 # Tear down services
 if [ "${ELEMO_KEEP_BACKEND}" == "false" ]; then

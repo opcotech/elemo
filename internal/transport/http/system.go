@@ -93,6 +93,7 @@ func healthStatusToDTO(status map[model.HealthCheckComponent]model.HealthStatus)
 		RelationalDatabase: api.SystemHealthRelationalDatabase(status[model.HealthCheckComponentRelationalDB].String()),
 		License:            api.SystemHealthLicense(status[model.HealthCheckComponentLicense].String()),
 		MessageQueue:       api.SystemHealthMessageQueue(status[model.HealthCheckComponentMessageQueue].String()),
+		Search:             api.SystemHealthSearch(status[model.HealthCheckComponentSearch].String()),
 	}
 }
 

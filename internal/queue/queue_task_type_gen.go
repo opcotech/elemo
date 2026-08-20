@@ -7,11 +7,11 @@ import (
 	"strings"
 )
 
-const _TaskTypeName = "system:health_checksystem:license_expiry"
+const _TaskTypeName = "system:health_checksystem:license_expirysearch:indexsearch:reindexsearch:reindex_batch"
 
-var _TaskTypeIndex = [...]uint8{0, 19, 40}
+var _TaskTypeIndex = [...]uint8{0, 19, 40, 52, 66, 86}
 
-const _TaskTypeLowerName = "system:health_checksystem:license_expiry"
+const _TaskTypeLowerName = "system:health_checksystem:license_expirysearch:indexsearch:reindexsearch:reindex_batch"
 
 func (i TaskType) String() string {
 	i -= 1
@@ -27,20 +27,32 @@ func _TaskTypeNoOp() {
 	var x [1]struct{}
 	_ = x[TaskTypeSystemHealthCheck-(1)]
 	_ = x[TaskTypeSystemLicenseExpiry-(2)]
+	_ = x[TaskTypeSearchIndex-(3)]
+	_ = x[TaskTypeSearchReindex-(4)]
+	_ = x[TaskTypeSearchReindexBatch-(5)]
 }
 
-var _TaskTypeValues = []TaskType{TaskTypeSystemHealthCheck, TaskTypeSystemLicenseExpiry}
+var _TaskTypeValues = []TaskType{TaskTypeSystemHealthCheck, TaskTypeSystemLicenseExpiry, TaskTypeSearchIndex, TaskTypeSearchReindex, TaskTypeSearchReindexBatch}
 
 var _TaskTypeNameToValueMap = map[string]TaskType{
 	_TaskTypeName[0:19]:       TaskTypeSystemHealthCheck,
 	_TaskTypeLowerName[0:19]:  TaskTypeSystemHealthCheck,
 	_TaskTypeName[19:40]:      TaskTypeSystemLicenseExpiry,
 	_TaskTypeLowerName[19:40]: TaskTypeSystemLicenseExpiry,
+	_TaskTypeName[40:52]:      TaskTypeSearchIndex,
+	_TaskTypeLowerName[40:52]: TaskTypeSearchIndex,
+	_TaskTypeName[52:66]:      TaskTypeSearchReindex,
+	_TaskTypeLowerName[52:66]: TaskTypeSearchReindex,
+	_TaskTypeName[66:86]:      TaskTypeSearchReindexBatch,
+	_TaskTypeLowerName[66:86]: TaskTypeSearchReindexBatch,
 }
 
 var _TaskTypeNames = []string{
 	_TaskTypeName[0:19],
 	_TaskTypeName[19:40],
+	_TaskTypeName[40:52],
+	_TaskTypeName[52:66],
+	_TaskTypeName[66:86],
 }
 
 // TaskTypeString retrieves an enum value from the enum constants string name.

@@ -240,6 +240,9 @@ import type {
   V1ProjectUpdateData,
   V1ProjectUpdateErrors,
   V1ProjectUpdateResponses,
+  V1SearchGetData,
+  V1SearchGetErrors,
+  V1SearchGetResponses,
   V1SystemHealthData,
   V1SystemHealthErrors,
   V1SystemHealthResponses,
@@ -2367,6 +2370,25 @@ export const v1PermissionResourceGet = <ThrowOnError extends boolean = false>(
   >({
     security: [{ scheme: "bearer", type: "http" }],
     url: "/v1/permissions/resources/{resourceId}",
+    ...options,
+  });
+
+/**
+ * Search resources
+ *
+ * Search indexed resources the caller is allowed to read. Authorization is evaluated with ReBAC grant scopes and confirmed with a per-hit permission check. total_count is never returned.
+ *
+ */
+export const v1SearchGet = <ThrowOnError extends boolean = false>(
+  options?: Options<V1SearchGetData, ThrowOnError>
+): RequestResult<V1SearchGetResponses, V1SearchGetErrors, ThrowOnError> =>
+  (options?.client ?? client).get<
+    V1SearchGetResponses,
+    V1SearchGetErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: "bearer", type: "http" }],
+    url: "/v1/search",
     ...options,
   });
 

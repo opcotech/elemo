@@ -92,6 +92,8 @@ type PermissionRepository interface {
 	EffectiveActions(ctx context.Context, actor, resource model.ID) ([]model.Action, error)
 	Explain(ctx context.Context, actor, resource model.ID, action model.Action) (*Decision, error)
 	ListVisible(ctx context.Context, actor model.ID, action model.Action, parent model.ID, resourceType model.ResourceType) ([]model.ID, error)
+	ListGrantScopes(ctx context.Context, actor model.ID, action model.Action) ([]model.ID, error)
+	ListScopeAncestry(ctx context.Context, resource model.ID) ([]model.ID, error)
 	LinkInScopeOf(ctx context.Context, child, parent model.ID) error
 	BumpGeneration(ctx context.Context, principal model.ID) error
 }
@@ -530,6 +532,95 @@ func (r *Neo4jPermissionRepository) ListVisible(ctx context.Context, actor model
 	return ids, nil
 }
 
+// ListGrantScopes returns distinct scopes the actor holds action on via a
+// principal (the actor, a team, or an organization) GRANTED edge. It does not
+// expand descendants; callers intersect these IDs with indexed scope ancestry.
+func (r *Neo4jPermissionRepository) ListGrantScopes(ctx context.Context, actor model.ID, action model.Action) ([]model.ID, error) {
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.PermissionRepository/ListGrantScopes")
+	defer span.End()
+
+	if err := actor.Validate(); err != nil {
+		return nil, errors.Join(ErrPermissionRead, err)
+	}
+	if err := action.Validate(); err != nil {
+		return nil, errors.Join(ErrPermissionRead, err)
+	}
+
+	cypher := `
+	MATCH (actor:` + actor.Label() + ` {id: $actor_id})
+	WHERE actor.status IS NULL OR actor.status = $active_status
+	MATCH (actor)-[:` + EdgeKindMemberOf.String() + `*0..1]->(principal)
+	WHERE (principal:User OR principal:Team OR principal:Organization)
+	AND (principal.status IS NULL OR principal.status = $active_status)
+	MATCH (principal)-[g:` + EdgeKindGranted.String() + `]->(scope)
+	WHERE ($action IN coalesce(g.actions, [])) OR (
+		g.role_id IS NOT NULL AND g.role_id <> "" AND EXISTS {
+			MATCH (role:` + model.ResourceTypeRole.String() + ` {id: g.role_id})
+			WHERE $action IN coalesce(role.actions, [])
+		}
+	)
+	RETURN DISTINCT scope`
+
+	params := map[string]any{
+		"actor_id":      actor.String(),
+		"action":        action.String(),
+		"active_status": model.UserStatusActive.String(),
+	}
+
+	ids, err := Neo4jExecuteReadAndReadAll(ctx, r.db, cypher, params, func(rec *neo4j.Record) (model.ID, error) {
+		node, _, err := neo4j.GetRecordValue[neo4j.Node](rec, "scope")
+		if err != nil {
+			return model.ID{}, err
+		}
+		return Neo4jDecodeIDFromLabel(node)
+	})
+	if err != nil {
+		return nil, errors.Join(ErrPermissionRead, err)
+	}
+	if ids == nil {
+		ids = []model.ID{}
+	}
+	return ids, nil
+}
+
+// ListScopeAncestry returns resource and every IN_SCOPE_OF ancestor, nearest
+// first. The walk is acyclic.
+func (r *Neo4jPermissionRepository) ListScopeAncestry(ctx context.Context, resource model.ID) ([]model.ID, error) {
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.PermissionRepository/ListScopeAncestry")
+	defer span.End()
+
+	if err := resource.Validate(); err != nil {
+		return nil, errors.Join(ErrPermissionRead, err)
+	}
+
+	cypher := `
+	MATCH (n:` + resource.Label() + ` {id: $resource_id})
+	MATCH path = (n)-[:` + EdgeKindInScopeOf.String() + `*0..]->(scope)
+	WHERE ` + authzAcyclicPathPredicate("path") + `
+	WITH DISTINCT scope, min(length(path)) AS depth
+	RETURN scope
+	ORDER BY depth`
+
+	params := map[string]any{
+		"resource_id": resource.String(),
+	}
+
+	ids, err := Neo4jExecuteReadAndReadAll(ctx, r.db, cypher, params, func(rec *neo4j.Record) (model.ID, error) {
+		node, _, err := neo4j.GetRecordValue[neo4j.Node](rec, "scope")
+		if err != nil {
+			return model.ID{}, err
+		}
+		return Neo4jDecodeIDFromLabel(node)
+	})
+	if err != nil {
+		return nil, errors.Join(ErrPermissionRead, err)
+	}
+	if ids == nil {
+		ids = []model.ID{}
+	}
+	return ids, nil
+}
+
 // LinkInScopeOf creates (child)-[:IN_SCOPE_OF]->(parent). Self-links and links
 // that would close a cycle return model.ErrGrantCycle.
 func (r *Neo4jPermissionRepository) LinkInScopeOf(ctx context.Context, child, parent model.ID) error {
@@ -756,6 +847,14 @@ func (c *RedisCachedPermissionRepository) Explain(ctx context.Context, actor, re
 
 func (c *RedisCachedPermissionRepository) ListVisible(ctx context.Context, actor model.ID, action model.Action, parent model.ID, resourceType model.ResourceType) ([]model.ID, error) {
 	return c.permissionRepo.ListVisible(ctx, actor, action, parent, resourceType)
+}
+
+func (c *RedisCachedPermissionRepository) ListGrantScopes(ctx context.Context, actor model.ID, action model.Action) ([]model.ID, error) {
+	return c.permissionRepo.ListGrantScopes(ctx, actor, action)
+}
+
+func (c *RedisCachedPermissionRepository) ListScopeAncestry(ctx context.Context, resource model.ID) ([]model.ID, error) {
+	return c.permissionRepo.ListScopeAncestry(ctx, resource)
 }
 
 func (c *RedisCachedPermissionRepository) LinkInScopeOf(ctx context.Context, child, parent model.ID) error {

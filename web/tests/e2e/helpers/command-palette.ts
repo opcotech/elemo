@@ -48,3 +48,22 @@ export async function pressPaletteShortcut(
   await page.keyboard.press(secondKey);
   await page.keyboard.up("Shift");
 }
+
+/**
+ * Search from the command palette and return the matching result item.
+ */
+export async function searchPaletteResult(
+  page: Page,
+  query: string
+): Promise<Locator> {
+  const commandDialog = await openCommandPalette(page);
+  await commandDialog
+    .getByPlaceholder("Search entities, navigation, or commands...")
+    .fill(query);
+  const result = commandDialog
+    .locator('[data-slot="command-item"]')
+    .filter({ hasText: query })
+    .first();
+  await expect(result).toBeVisible({ timeout: 15_000 });
+  return result;
+}

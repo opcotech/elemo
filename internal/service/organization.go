@@ -223,7 +223,9 @@ func (s *organizationService) Create(ctx context.Context, owner model.ID, opts C
 		return nil, errors.Join(ErrOrganizationCreate, err)
 	}
 
-	return organizationFromRepository(organization), nil
+	out := organizationFromRepository(organization)
+	s.enqueueSearchIndex(ctx, out.ID)
+	return out, nil
 }
 
 func (s *organizationService) seedOrganizationAuth(ctx context.Context, owner, orgID model.ID) error {
@@ -338,7 +340,9 @@ func (s *organizationService) Update(ctx context.Context, id model.ID, opts Upda
 		return nil, errors.Join(ErrOrganizationUpdate, err)
 	}
 
-	return organizationFromRepository(organization), nil
+	out := organizationFromRepository(organization)
+	s.enqueueSearchIndex(ctx, out.ID)
+	return out, nil
 }
 
 func (s *organizationService) Delete(ctx context.Context, id model.ID, force bool) error {
@@ -369,6 +373,12 @@ func (s *organizationService) Delete(ctx context.Context, id model.ID, force boo
 		}
 	}
 
+	if err := s.searchService.DeleteByScope(ctx, id); err != nil {
+		s.logger.Warn(ctx, "failed to delete search documents by scope",
+			log.WithError(err),
+			log.WithValue(id.Composite()),
+		)
+	}
 	return nil
 }
 
@@ -871,6 +881,10 @@ func NewOrganizationService(opts ...Option) (OrganizationService, error) {
 
 	if svc.emailService == nil {
 		return nil, ErrNoEmailService
+	}
+
+	if svc.searchService == nil {
+		return nil, ErrNoSearchService
 	}
 
 	return svc, nil

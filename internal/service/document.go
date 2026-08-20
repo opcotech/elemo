@@ -8,6 +8,7 @@ import (
 	"github.com/opcotech/elemo/internal/license"
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg"
+	"github.com/opcotech/elemo/internal/pkg/log"
 	"github.com/opcotech/elemo/internal/pkg/optional"
 	"github.com/opcotech/elemo/internal/pkg/validate"
 	"github.com/opcotech/elemo/internal/repository"
@@ -258,7 +259,9 @@ func (s *documentService) Create(ctx context.Context, contextID model.ID, opts C
 		return nil, errors.Join(ErrDocumentCreate, err)
 	}
 
-	return documentFromRepository(doc, opts.Content), nil
+	out := documentFromRepository(doc, opts.Content)
+	s.enqueueSearchIndex(ctx, out.ID)
+	return out, nil
 }
 
 func (s *documentService) Get(ctx context.Context, id model.ID) (*Document, error) {
@@ -404,6 +407,7 @@ func (s *documentService) Update(ctx context.Context, id model.ID, opts UpdateDo
 		if err != nil {
 			return nil, err
 		}
+		s.enqueueSearchIndex(ctx, moved.ID)
 		return moved, nil
 	}
 
@@ -412,7 +416,9 @@ func (s *documentService) Update(ctx context.Context, id model.ID, opts UpdateDo
 		return nil, errors.Join(ErrDocumentUpdate, err)
 	}
 
-	return documentFromRepository(current, content), nil
+	out := documentFromRepository(current, content)
+	s.enqueueSearchIndex(ctx, out.ID)
+	return out, nil
 }
 
 func (s *documentService) MoveLibrary(ctx context.Context, id, libraryID model.ID) (*Document, error) {
@@ -457,7 +463,9 @@ func (s *documentService) MoveLibrary(ctx context.Context, id, libraryID model.I
 		return nil, errors.Join(ErrDocumentMove, err)
 	}
 
-	return documentFromRepository(doc, content), nil
+	out := documentFromRepository(doc, content)
+	s.enqueueSearchIndex(ctx, out.ID)
+	return out, nil
 }
 
 func (s *documentService) MoveToFolder(ctx context.Context, id model.ID, folderID *model.ID) (*Document, error) {
@@ -593,6 +601,12 @@ func (s *documentService) Delete(ctx context.Context, id model.ID) error {
 		return errors.Join(ErrDocumentDelete, err)
 	}
 
+	if err := s.searchService.Delete(ctx, id); err != nil {
+		s.logger.Warn(ctx, "failed to delete search document",
+			log.WithError(err),
+			log.WithValue(id.Composite()),
+		)
+	}
 	return nil
 }
 
@@ -621,6 +635,10 @@ func NewDocumentService(opts ...Option) (DocumentService, error) {
 
 	if svc.staticFileService == nil {
 		return nil, ErrNoStaticFileService
+	}
+
+	if svc.searchService == nil {
+		return nil, ErrNoSearchService
 	}
 
 	return svc, nil

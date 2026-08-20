@@ -114,6 +114,17 @@ func TestWithNotificationService(t *testing.T) {
 	})
 }
 
+func TestWithSearchService(t *testing.T) {
+	t.Parallel()
+
+	t.Run("nil search service", func(t *testing.T) {
+		t.Parallel()
+		var c baseController
+		err := WithSearchService(nil)(&c)
+		assert.ErrorIs(t, err, ErrNoSearchService)
+	})
+}
+
 func TestWithFolderService(t *testing.T) {
 	t.Parallel()
 

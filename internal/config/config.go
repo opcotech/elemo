@@ -42,6 +42,28 @@ type LogConfig struct {
 	Level string `mapstructure:"level"`
 }
 
+// SearchConfig is the configuration for the search engine.
+type SearchConfig struct {
+	Host               string        `mapstructure:"host"`
+	Port               int           `mapstructure:"port"`
+	Bucket             string        `mapstructure:"bucket"` // the index or tenant name
+	APIKey             string        `mapstructure:"api_key"`
+	ReadTimeout        time.Duration `mapstructure:"read_timeout"`
+	WriteTimeout       time.Duration `mapstructure:"write_timeout"`
+	ReindexBatchSize   int           `mapstructure:"reindex_batch_size"`
+	ReindexConcurrency int           `mapstructure:"reindex_concurrency"`
+}
+
+// Address returns the host:port of the search engine.
+func (c *SearchConfig) Address() string {
+	return fmt.Sprintf("%s:%d", c.Host, c.Port)
+}
+
+// URL returns the HTTP URL of the search engine.
+func (c *SearchConfig) URL() string {
+	return fmt.Sprintf("http://%s", c.Address())
+}
+
 // RedisConfig is the configuration for the Redis database.
 type RedisConfig struct {
 	Host         string        `mapstructure:"host"`
@@ -208,6 +230,7 @@ type Config struct {
 	RelationalDatabase  RelationalDatabaseConfig `mapstructure:"relational_database"`
 	CacheDatabase       CacheDatabaseConfig      `mapstructure:"cache_database"`
 	S3Storage           S3StorageConfig          `mapstructure:"s3_storage"`
+	Search              SearchConfig             `mapstructure:"search"`
 	Tracing             TracingConfig            `mapstructure:"tracing"`
 	SMTP                SMTPConfig               `mapstructure:"smtp"`
 	Template            TemplateConfig           `mapstructure:"template"`

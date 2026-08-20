@@ -4,6 +4,7 @@ volumes:
   neo4j_data: { }
   pg_data: { }
   localstack_data: { }
+  meili_data: { }
 
 networks:
   default:
@@ -97,6 +98,23 @@ services:
     labels:
       - "traefik.enable=false"
 
+  meilisearch:
+    image: getmeili/meilisearch:v1.53
+    container_name: elemo-meilisearch
+    ports:
+      - "7700:7700"
+    environment:
+      - MEILI_ENV=development
+      - MEILI_MASTER_KEY=I860A0rxXjyPG6ORX3aJOCjwvVtzmkSfuqYXAy
+      - MEILI_NO_ANALYTICS=true
+    volumes:
+      - meili_data:/meili_data
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:7700" ]
+      interval: 5s
+      timeout: 5s
+      retries: 3
+
   elemo-server:
     image: elemo-server
     container_name: elemo-server
@@ -115,6 +133,8 @@ services:
       neo4j:
         condition: service_healthy
       postgres:
+        condition: service_healthy
+      meilisearch:
         condition: service_healthy
       smtp:
         condition: service_started
@@ -144,6 +164,8 @@ services:
       neo4j:
         condition: service_healthy
       postgres:
+        condition: service_healthy
+      meilisearch:
         condition: service_healthy
       elemo-server:
         condition: service_started

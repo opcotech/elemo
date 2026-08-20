@@ -162,3 +162,28 @@ func CleanupS3Storage(ctx context.Context, t *testing.T, storage *repository.S3S
 		require.NoError(t, err)
 	}
 }
+
+// NewSearchRepository creates a Meilisearch-backed search repository for tests.
+func NewSearchRepository(t *testing.T, conf *config.SearchConfig) (*repository.SearchDatabase, *repository.MeilisearchSearchRepository) {
+	client, err := repository.NewMeilisearchClient(conf)
+	require.NoError(t, err)
+
+	db, err := repository.NewSearchDatabase(repository.WithSearchClient(client))
+	require.NoError(t, err)
+
+	require.NoError(t, db.Ping(context.Background()))
+
+	repo, err := repository.NewMeilisearchSearchRepository(
+		repository.WithSearchDatabase(db),
+		repository.WithSearchIndex(conf.Bucket),
+	)
+	require.NoError(t, err)
+	require.NoError(t, repo.EnsureIndex(context.Background()))
+
+	return db, repo
+}
+
+// CleanupSearchIndex removes every document from the test index.
+func CleanupSearchIndex(ctx context.Context, t *testing.T, repo *repository.MeilisearchSearchRepository) {
+	require.NoError(t, repo.DeleteAll(ctx))
+}

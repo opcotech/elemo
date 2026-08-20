@@ -525,6 +525,27 @@ func (s *PermissionRepositoryIntegrationTestSuite) TestMemberOfDepthDoesNotAutho
 	s.Assert().True(s.has(outer.ID, project.ID, model.ActionProjectRead))
 }
 
+func (s *PermissionRepositoryIntegrationTestSuite) TestListGrantScopesAndAncestry() {
+	owner := s.createUser()
+	actor := s.createUser()
+	org := s.createOrg(owner.ID)
+	ns, err := s.NamespaceRepo.Create(s.ctx, testModel.NewCreateNamespaceOpts(owner.ID, org.ID))
+	s.Require().NoError(err)
+	project, err := s.ProjectRepo.Create(s.ctx, testModel.NewCreateProjectOpts(ns.ID, owner.ID))
+	s.Require().NoError(err)
+
+	s.grant(actor.ID, project.ID, model.ActionIssueRead)
+	scopes, err := s.PermissionRepo.ListGrantScopes(s.ctx, actor.ID, model.ActionIssueRead)
+	s.Require().NoError(err)
+	s.Require().Len(scopes, 1)
+	s.Assert().Equal(project.ID, scopes[0])
+
+	ancestry, err := s.PermissionRepo.ListScopeAncestry(s.ctx, project.ID)
+	s.Require().NoError(err)
+	s.Require().GreaterOrEqual(len(ancestry), 1)
+	s.Assert().Equal(project.ID, ancestry[0])
+}
+
 func TestPermissionRepositoryIntegrationTestSuite(t *testing.T) {
 	suite.Run(t, new(PermissionRepositoryIntegrationTestSuite))
 }

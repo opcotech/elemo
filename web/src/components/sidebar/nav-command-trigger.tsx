@@ -1,14 +1,12 @@
 import { useNavigate } from "@tanstack/react-router";
 import { SearchIcon } from "lucide-react";
-import { Suspense, lazy, useEffect, useMemo, useState } from "react";
+import { Suspense, lazy, useMemo } from "react";
 
 import { CommandTrigger } from "@/components/command-palette/command-trigger";
 import { openQuickCreate } from "@/components/quick-create/open";
 import { Button } from "@/components/ui/button";
 import { useCommandPalette } from "@/hooks/use-command-palette";
 import type { Command } from "@/lib/commands/registry";
-import { internalPath } from "@/lib/internal-url";
-import type { GlobalSearchEntry } from "@/lib/mock-data/types";
 import { useUiSelector } from "@/lib/ui-store";
 import { cn } from "@/lib/utils";
 
@@ -21,9 +19,6 @@ const CommandPalette = lazy(() =>
 export function NavCommandTrigger({ className }: { className?: string }) {
   const navigate = useNavigate();
   const recentEntities = useUiSelector((state) => state.recentEntities);
-  const [mockEntries, setMockEntries] = useState<
-    readonly GlobalSearchEntry[] | null
-  >(null);
   const {
     open,
     setOpen,
@@ -51,24 +46,6 @@ export function NavCommandTrigger({ className }: { className?: string }) {
     hasProject,
   } = useCommandPalette();
 
-  useEffect(() => {
-    if (!open || mockEntries !== null) return;
-
-    let active = true;
-    void import("@/lib/mock-data/command-fixtures").then(
-      ({ mockCommandSearchEntries }) => {
-        if (active) setMockEntries(mockCommandSearchEntries);
-      },
-      () => {
-        if (active) setMockEntries([]);
-      }
-    );
-
-    return () => {
-      active = false;
-    };
-  }, [mockEntries, open]);
-
   const commands = useMemo<Command[]>(
     () => [
       ...recentEntities.map((entity) => ({
@@ -78,20 +55,6 @@ export function NavCommandTrigger({ className }: { className?: string }) {
         category: "recent",
         keywords: [entity.type],
         action: () => void navigate({ to: entity.href as never }),
-      })),
-      ...(mockEntries ?? []).map((entity) => ({
-        id: `entity-${entity.kind}-${entity.id}`,
-        title: entity.title,
-        description: entity.subtitle,
-        category: "entities",
-        keywords: [...entity.keywords, entity.kind],
-        action: () => {
-          const href =
-            entity.kind === "saved-view"
-              ? `/my-work?view=${entity.id}`
-              : entity.href;
-          void navigate({ to: internalPath(href) as never });
-        },
       })),
       {
         id: "open-home",
@@ -130,9 +93,7 @@ export function NavCommandTrigger({ className }: { className?: string }) {
           void navigate({
             to: "/search",
             search: {
-              page: 1,
               q: "",
-              scope: "global",
               type: "all",
             },
           }),
@@ -271,7 +232,6 @@ export function NavCommandTrigger({ className }: { className?: string }) {
       hasOrganization,
       hasProject,
       navigate,
-      mockEntries,
       recentEntities,
     ]
   );

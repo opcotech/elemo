@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 
 import {
   resolveWorkScope,
-  searchRouteSearchSchema,
   serializeWorkScope,
   workRouteSearchSchema,
   workScopeOptions,
@@ -106,52 +105,5 @@ describe("workRouteSearchSchema", () => {
         namespaceId: "namespace-product",
       })
     ).toEqual({ type: "global" });
-  });
-});
-
-describe("searchRouteSearchSchema", () => {
-  it("coerces pagination and defaults unsupported filters", () => {
-    expect(
-      searchRouteSearchSchema.parse({
-        page: "3",
-        q: "projection",
-        scope: "namespace:namespace-product",
-        type: "work-item",
-      })
-    ).toEqual({
-      page: 3,
-      q: "projection",
-      scope: "namespace:namespace-product",
-      type: "work-item",
-    });
-
-    expect(
-      searchRouteSearchSchema.parse({
-        page: 0,
-        q: 10,
-        type: "organization",
-      })
-    ).toEqual({
-      page: 1,
-      q: "",
-      scope: "global",
-      type: "all",
-    });
-  });
-
-  it("preserves selected search entity and page deep-links", () => {
-    expect(
-      searchRouteSearchSchema.parse({
-        q: "ops",
-        selected: "work:ops-301",
-        page: "2",
-      })
-    ).toEqual({
-      q: "ops",
-      scope: "global",
-      type: "all",
-      selected: "work:ops-301",
-      page: 2,
-    });
   });
 });

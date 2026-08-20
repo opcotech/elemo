@@ -1,11 +1,9 @@
-import { useQueries } from "@tanstack/react-query";
-import { CommandIcon, SearchIcon, SlidersHorizontalIcon } from "lucide-react";
-import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { CommandIcon, SearchIcon } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 
 import { ContentWidth } from "@/components/layout/content-width";
-import { ResponsiveInspectorShell } from "@/components/layout/responsive-inspector-shell";
 import { openQuickCreate } from "@/components/quick-create/open";
-import { MockDataAlert } from "@/components/shared/app-feedback";
 import { AppList, EntityLink } from "@/components/shared/entity-link";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -21,16 +19,31 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { WorkInspector } from "@/components/work/work-inspector";
+import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { useAccessibleNamespaces } from "@/lib/api/accessible-namespaces";
 import { collectedListQuery, cursorPageQuery } from "@/lib/api/cursor-pages";
-import { v1NamespacesProjectsGetOptions } from "@/lib/api/query-options";
+import {
+  v1NamespacesProjectsGetOptions,
+  v1SearchGetOptions,
+} from "@/lib/api/query-options";
 import { v1NamespacesProjectsGet } from "@/lib/api/sdk";
-import { getWorkItem, searchGlobalFixtures } from "@/lib/mock-data";
-import type { Scope, SearchResultKind } from "@/lib/mock-data";
 import { recentEntityLinkType } from "@/lib/recent-entity";
+import {
+  SEARCH_DEBOUNCE_MS,
+  hasActiveSearch,
+  searchQueryFromRoute,
+} from "@/lib/search/params";
+import type { SearchRouteSearch, SearchRouteType } from "@/lib/search/params";
+import {
+  SEARCH_RESOURCE_TYPES,
+  SEARCH_TYPE_LABELS,
+  groupSearchResults,
+  searchResultEntityType,
+  searchResultHref,
+} from "@/lib/search/result";
 import { useUiSelector } from "@/lib/ui-store";
-import type { SearchRouteSearch } from "@/lib/work-route-search";
+
+const ALL_FILTER = "all";
 
 export function SearchPage({
   search,
@@ -41,362 +54,402 @@ export function SearchPage({
 }) {
   const { data: accessibleWorkspace, isLoading: isWorkspaceLoading } =
     useAccessibleNamespaces();
+  const organizations = accessibleWorkspace?.organizations ?? [];
   const namespaces = accessibleWorkspace?.namespaces ?? [];
   const recent = useUiSelector((state) => state.recentEntities);
-  const scope: Scope =
-    search.scope === "global"
-      ? { type: "global" }
-      : { type: "namespace", namespaceId: search.scope };
-  const fixtureKinds =
-    search.type === "all"
-      ? undefined
-      : ([search.type] as readonly SearchResultKind[]);
-  const fixtureResults = searchGlobalFixtures({
-    text: search.q,
-    scope,
-    kinds: fixtureKinds,
-    limit: 100,
-  });
-  const normalizedQuery = search.q.trim().toLowerCase();
-  const projectQueries = useQueries({
-    queries: namespaces.map((namespace) => {
-      const listOptions = v1NamespacesProjectsGetOptions({
-        path: { id: namespace.id },
-      });
-      return {
-        ...collectedListQuery(listOptions, async (pageToken, signal) => {
-          const { data } = await v1NamespacesProjectsGet({
-            path: { id: namespace.id },
-            query: cursorPageQuery(pageToken),
-            signal,
-            throwOnError: true,
-          });
-          return data;
-        }),
-        enabled: search.type === "all" && Boolean(normalizedQuery),
-      };
-    }),
-  });
-  const realNamespaceResults =
-    search.type === "all" && normalizedQuery
-      ? namespaces.filter((namespace) =>
-          [namespace.name, namespace.description, namespace.organizationName]
-            .filter(Boolean)
-            .join(" ")
-            .toLowerCase()
-            .includes(normalizedQuery)
-        )
-      : [];
-  const realProjectResults =
-    search.type === "all" && normalizedQuery
-      ? namespaces.flatMap((namespace, index) =>
-          (projectQueries[index]?.data?.items ?? [])
-            .filter((project) =>
-              [project.name, project.key, project.description]
-                .filter(Boolean)
-                .join(" ")
-                .toLowerCase()
-                .includes(normalizedQuery)
-            )
-            .map((project) => ({ ...project, namespace }))
-        )
-      : [];
-  const pageSize = 20;
-  const pageStart = (search.page - 1) * pageSize;
-  const pagedFixtures = fixtureResults.slice(pageStart, pageStart + pageSize);
-  const selectedItem = search.selected?.startsWith("work:")
-    ? getWorkItem(search.selected.slice(5))
-    : undefined;
-  const total =
-    fixtureResults.length +
-    realNamespaceResults.length +
-    realProjectResults.length;
-  const isSearchLoading =
-    Boolean(search.q) &&
-    search.type === "all" &&
-    (isWorkspaceLoading || projectQueries.some((query) => query.isLoading));
+  const [queryInput, setQueryInput] = useState(search.q);
+  const [previousSearchQ, setPreviousSearchQ] = useState(search.q);
+  if (search.q !== previousSearchQ) {
+    setPreviousSearchQ(search.q);
+    setQueryInput(search.q);
+  }
+  const debouncedQ = useDebouncedValue(queryInput, SEARCH_DEBOUNCE_MS);
+  const qForSearch = queryInput === search.q ? search.q : debouncedQ;
+  const searchForQuery = { ...search, q: qForSearch };
+  const [previousTokens, setPreviousTokens] = useState<string[]>([]);
+  const filterKey = [
+    qForSearch,
+    search.type,
+    search.organization_id ?? "",
+    search.namespace_id ?? "",
+    search.project_id ?? "",
+  ].join("|");
 
-  const groupedFixtures = useMemo(
+  useEffect(() => {
+    setPreviousTokens([]);
+  }, [filterKey]);
+
+  useEffect(() => {
+    if (debouncedQ === search.q || debouncedQ !== queryInput) {
+      return;
+    }
+    onSearchChange({ q: debouncedQ, page_token: undefined });
+  }, [debouncedQ, onSearchChange, queryInput, search.q]);
+
+  const namespacesForOrg = useMemo(
     () =>
-      Map.groupBy(pagedFixtures, (result) =>
-        result.kind === "work-item"
-          ? "Work"
-          : result.kind === "document"
-            ? "Documents"
-            : result.kind === "person"
-              ? "People"
-              : "Saved views"
-      ),
-    [pagedFixtures]
+      search.organization_id
+        ? namespaces.filter(
+            (namespace) => namespace.organizationId === search.organization_id
+          )
+        : namespaces,
+    [namespaces, search.organization_id]
   );
+  const selectedNamespace = namespaces.find(
+    (namespace) => namespace.id === search.namespace_id
+  );
+  const projectListOptions = v1NamespacesProjectsGetOptions({
+    path: { id: search.namespace_id ?? "" },
+  });
+  const { data: projectsPage, isLoading: isProjectsLoading } = useQuery({
+    ...collectedListQuery(projectListOptions, async (pageToken, signal) => {
+      const { data } = await v1NamespacesProjectsGet({
+        path: { id: search.namespace_id ?? "" },
+        query: cursorPageQuery(pageToken),
+        signal,
+        throwOnError: true,
+      });
+      return data;
+    }),
+    enabled: Boolean(search.namespace_id),
+  });
+  const projects = projectsPage?.items ?? [];
+  const active = hasActiveSearch(searchForQuery);
+  const {
+    data: searchPage,
+    isError,
+    isLoading: isSearchLoading,
+  } = useQuery({
+    ...v1SearchGetOptions({
+      query: searchQueryFromRoute(searchForQuery),
+    }),
+    enabled: active,
+  });
+  const items = active ? (searchPage?.items ?? []) : [];
+  const groupedResults = useMemo(() => groupSearchResults(items), [items]);
+  const hasMore = Boolean(searchPage?.page_info.has_more);
+  const nextPageToken = searchPage?.page_info.next_page_token ?? undefined;
+  const canGoPrevious = previousTokens.length > 0 || Boolean(search.page_token);
+
+  function applyFilters(patch: Partial<SearchRouteSearch>) {
+    onSearchChange({ ...patch, page_token: undefined });
+  }
+
+  function handleOrganizationChange(value: string | null) {
+    const organizationId = value && value !== ALL_FILTER ? value : undefined;
+    const namespaceStillValid =
+      selectedNamespace &&
+      (!organizationId || selectedNamespace.organizationId === organizationId);
+    applyFilters({
+      organization_id: organizationId,
+      namespace_id: namespaceStillValid ? search.namespace_id : undefined,
+      project_id: namespaceStillValid ? search.project_id : undefined,
+    });
+  }
+
+  function handleNamespaceChange(value: string | null) {
+    const namespaceId = value && value !== ALL_FILTER ? value : undefined;
+    const namespace = namespaces.find((item) => item.id === namespaceId);
+    applyFilters({
+      namespace_id: namespaceId,
+      organization_id: namespace?.organizationId ?? search.organization_id,
+      project_id: undefined,
+    });
+  }
+
+  function handleProjectChange(value: string | null) {
+    applyFilters({
+      project_id: value && value !== ALL_FILTER ? value : undefined,
+    });
+  }
+
+  const typeItems = {
+    [ALL_FILTER]: SEARCH_TYPE_LABELS.all,
+    ...Object.fromEntries(
+      SEARCH_RESOURCE_TYPES.map((type) => [type, SEARCH_TYPE_LABELS[type]])
+    ),
+  };
+  const organizationItems = {
+    [ALL_FILTER]: "All organizations",
+    ...Object.fromEntries(
+      organizations.map((organization) => [organization.id, organization.name])
+    ),
+  };
+  const namespaceItems = {
+    [ALL_FILTER]: "All namespaces",
+    ...Object.fromEntries(
+      namespacesForOrg.map((namespace) => [namespace.id, namespace.name])
+    ),
+  };
+  const projectItems = {
+    [ALL_FILTER]: "All projects",
+    ...Object.fromEntries(
+      projects.map((project) => [project.id, project.name])
+    ),
+  };
 
   return (
-    <div className="h-[calc(100svh-var(--app-header-height))] min-h-0 overflow-hidden">
-      <ResponsiveInspectorShell
-        className="h-full min-h-0 min-w-0"
-        inspector={
-          selectedItem ? <WorkInspector item={selectedItem} /> : undefined
-        }
-        inspectorTitle={selectedItem?.key}
-        inspectorDescription={selectedItem?.title}
-        open={Boolean(selectedItem)}
-        onOpenChange={(open) => {
-          if (!open) onSearchChange({ selected: undefined });
-        }}
-      >
-        <ContentWidth width="overview" className="max-w-6xl space-y-6">
-          <PageHeader
-            title="Search"
-            description="Find entities and actions across contexts you can access."
-          />
+    <div className="h-[calc(100svh-var(--app-header-height))] min-h-0 overflow-y-auto">
+      <ContentWidth width="overview" className="max-w-6xl space-y-6">
+        <PageHeader
+          title="Search"
+          description="Find entities and actions across contexts you can access."
+        />
 
-          <div className="bg-background sticky top-0 z-20 space-y-3 border-y py-3">
-            <div className="relative">
-              <SearchIcon className="text-muted-foreground absolute top-3 left-3 size-5" />
-              <Input
-                autoFocus
-                value={search.q}
-                onChange={(event) =>
-                  onSearchChange({ q: event.target.value, page: 1 })
-                }
-                placeholder="Search work, projects, documents, people..."
-                className="h-11 pl-10 text-base"
-              />
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Select
-                value={search.scope}
-                onValueChange={(value) =>
-                  onSearchChange({ scope: value ?? "global", page: 1 })
-                }
-                items={{
-                  global: "Everywhere",
-                  ...Object.fromEntries(
-                    namespaces.map((namespace) => [
-                      namespace.id,
-                      namespace.name,
-                    ])
-                  ),
-                }}
-              >
-                <SelectTrigger size="sm">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="global">Everywhere</SelectItem>
-                  {namespaces.map((namespace) => (
-                    <SelectItem key={namespace.id} value={namespace.id}>
-                      {namespace.name}
-                    </SelectItem>
+        <div className="bg-background sticky top-0 z-20 space-y-3 border-y py-3">
+          <div className="relative">
+            <SearchIcon className="text-muted-foreground absolute top-3 left-3 size-5" />
+            <Input
+              autoFocus
+              type="search"
+              value={queryInput}
+              onChange={(event) => setQueryInput(event.target.value)}
+              placeholder="Search organizations, work, documents..."
+              className="h-11 pl-10 text-base"
+              aria-label="Search"
+            />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Select
+              value={search.type}
+              onValueChange={(value) =>
+                applyFilters({
+                  type: (value ?? ALL_FILTER) as SearchRouteType,
+                })
+              }
+              items={typeItems}
+            >
+              <SelectTrigger size="sm" aria-label="Filter by type">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL_FILTER}>
+                  {SEARCH_TYPE_LABELS.all}
+                </SelectItem>
+                {SEARCH_RESOURCE_TYPES.map((type) => (
+                  <SelectItem key={type} value={type}>
+                    {SEARCH_TYPE_LABELS[type]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select
+              value={search.organization_id ?? ALL_FILTER}
+              onValueChange={handleOrganizationChange}
+              items={organizationItems}
+            >
+              <SelectTrigger size="sm" aria-label="Filter by organization">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL_FILTER}>All organizations</SelectItem>
+                {organizations.map((organization) => (
+                  <SelectItem key={organization.id} value={organization.id}>
+                    {organization.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select
+              value={search.namespace_id ?? ALL_FILTER}
+              onValueChange={handleNamespaceChange}
+              items={namespaceItems}
+            >
+              <SelectTrigger size="sm" aria-label="Filter by namespace">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL_FILTER}>All namespaces</SelectItem>
+                {namespacesForOrg.map((namespace) => (
+                  <SelectItem key={namespace.id} value={namespace.id}>
+                    {namespace.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select
+              value={search.project_id ?? ALL_FILTER}
+              onValueChange={handleProjectChange}
+              items={projectItems}
+              disabled={!search.namespace_id || isProjectsLoading}
+            >
+              <SelectTrigger size="sm" aria-label="Filter by project">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL_FILTER}>All projects</SelectItem>
+                {projects.map((project) => (
+                  <SelectItem key={project.id} value={project.id}>
+                    {project.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {!active ? (
+          <div className="grid gap-8 md:grid-cols-2">
+            <Section title="Recent entities">
+              {recent.length > 0 ? (
+                <AppList>
+                  {recent.slice(0, 8).map((entity) => (
+                    <EntityLink
+                      key={`${entity.type}:${entity.id}`}
+                      type={recentEntityLinkType(entity.type)}
+                      href={entity.href}
+                      title={entity.label}
+                    />
                   ))}
-                </SelectContent>
-              </Select>
-              <Select
-                value={search.type}
-                onValueChange={(value) =>
-                  onSearchChange({
-                    type: (value ?? "all") as SearchRouteSearch["type"],
-                    page: 1,
+                </AppList>
+              ) : (
+                <EmptyState
+                  compact
+                  icon={<SearchIcon />}
+                  title="No recent entities"
+                  description="Recently opened entities will appear here."
+                />
+              )}
+            </Section>
+            <Section title="Useful commands">
+              <AppList>
+                <button
+                  type="button"
+                  onClick={() => openQuickCreate()}
+                  className="hover:bg-muted/50 flex w-full items-center gap-3 px-3 py-3 text-left text-sm"
+                >
+                  <CommandIcon className="text-muted-foreground size-4" />
+                  Quick create
+                  <kbd className="text-muted-foreground ml-auto text-xs">C</kbd>
+                </button>
+                <InternalLink
+                  to="/my-work"
+                  className="hover:bg-muted/50 flex items-center gap-3 px-3 py-3 text-sm"
+                >
+                  <CommandIcon className="text-muted-foreground size-4" />
+                  Open My Work
+                </InternalLink>
+                <InternalLink
+                  to="/namespaces"
+                  className="hover:bg-muted/50 flex items-center gap-3 px-3 py-3 text-sm"
+                >
+                  <CommandIcon className="text-muted-foreground size-4" />
+                  Browse namespaces
+                </InternalLink>
+              </AppList>
+            </Section>
+          </div>
+        ) : (isSearchLoading || isWorkspaceLoading) && items.length === 0 ? (
+          <ListSkeleton />
+        ) : isError ? (
+          <EmptyState
+            icon={<SearchIcon />}
+            title="Search failed"
+            description="Try again in a moment, or adjust your filters."
+            action={
+              <Button
+                variant="outline"
+                onClick={() =>
+                  applyFilters({
+                    q: "",
+                    type: "all",
+                    organization_id: undefined,
+                    namespace_id: undefined,
+                    project_id: undefined,
                   })
                 }
-                items={{
-                  all: "All types",
-                  "work-item": "Work",
-                  document: "Documents",
-                  "saved-view": "Saved views",
-                  person: "People",
-                }}
               >
-                <SelectTrigger size="sm">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All types</SelectItem>
-                  <SelectItem value="work-item">Work</SelectItem>
-                  <SelectItem value="document">Documents</SelectItem>
-                  <SelectItem value="saved-view">Saved views</SelectItem>
-                  <SelectItem value="person">People</SelectItem>
-                </SelectContent>
-              </Select>
-              <Button variant="outline" size="sm" disabled>
-                <SlidersHorizontalIcon />
-                More filters
+                Clear search
               </Button>
-              {search.q && (
-                <span className="text-muted-foreground ml-auto self-center text-xs">
-                  {total} {total === 1 ? "result" : "results"}
-                </span>
-              )}
-            </div>
-          </div>
-
-          {!search.q ? (
-            <div className="grid gap-8 md:grid-cols-2">
-              <Section title="Recent entities">
-                {recent.length > 0 ? (
-                  <AppList>
-                    {recent.slice(0, 8).map((entity) => (
-                      <EntityLink
-                        key={`${entity.type}:${entity.id}`}
-                        type={recentEntityLinkType(entity.type)}
-                        href={entity.href}
-                        title={entity.label}
-                      />
-                    ))}
-                  </AppList>
-                ) : (
-                  <EmptyState
-                    compact
-                    icon={<SearchIcon />}
-                    title="No recent entities"
-                    description="Recently opened entities will appear here."
-                  />
-                )}
-              </Section>
-              <Section title="Useful commands">
+            }
+          />
+        ) : items.length === 0 ? (
+          <EmptyState
+            icon={<SearchIcon />}
+            title="No results"
+            description="Try different terms, a broader scope, or another entity type."
+            action={
+              <Button
+                variant="outline"
+                onClick={() =>
+                  applyFilters({
+                    q: "",
+                    type: "all",
+                    organization_id: undefined,
+                    namespace_id: undefined,
+                    project_id: undefined,
+                  })
+                }
+              >
+                Clear search
+              </Button>
+            }
+          />
+        ) : (
+          <div className="space-y-8">
+            {groupedResults.map((group) => (
+              <Section key={group.type} title={SEARCH_TYPE_LABELS[group.type]}>
                 <AppList>
-                  <button
-                    type="button"
-                    onClick={() => openQuickCreate()}
-                    className="hover:bg-muted/50 flex w-full items-center gap-3 px-3 py-3 text-left text-sm"
-                  >
-                    <CommandIcon className="text-muted-foreground size-4" />
-                    Quick create
-                    <kbd className="text-muted-foreground ml-auto text-xs">
-                      C
-                    </kbd>
-                  </button>
-                  <InternalLink
-                    to="/my-work"
-                    className="hover:bg-muted/50 flex items-center gap-3 px-3 py-3 text-sm"
-                  >
-                    <CommandIcon className="text-muted-foreground size-4" />
-                    Open My Work
-                  </InternalLink>
-                  <InternalLink
-                    to="/namespaces"
-                    className="hover:bg-muted/50 flex items-center gap-3 px-3 py-3 text-sm"
-                  >
-                    <CommandIcon className="text-muted-foreground size-4" />
-                    Browse namespaces
-                  </InternalLink>
+                  {group.items.map((item) => {
+                    const href = searchResultHref(item);
+                    if (!href) {
+                      return (
+                        <div
+                          key={`${item.type}:${item.id}`}
+                          className="text-muted-foreground px-3 py-2.5 text-sm"
+                        >
+                          {item.title}
+                        </div>
+                      );
+                    }
+                    return (
+                      <EntityLink
+                        key={`${item.type}:${item.id}`}
+                        type={searchResultEntityType(item)}
+                        href={href}
+                        title={item.title}
+                        subtitle={item.subtitle}
+                      />
+                    );
+                  })}
                 </AppList>
               </Section>
-            </div>
-          ) : isSearchLoading && total === 0 ? (
-            <ListSkeleton />
-          ) : total === 0 ? (
-            <EmptyState
-              icon={<SearchIcon />}
-              title="No results"
-              description="Try different terms, a broader scope, or another entity type."
-              action={
+            ))}
+
+            {(canGoPrevious || hasMore) && (
+              <div className="flex items-center justify-center gap-2">
                 <Button
                   variant="outline"
-                  onClick={() =>
+                  disabled={!canGoPrevious}
+                  onClick={() => {
+                    const previous = previousTokens.at(-1);
+                    setPreviousTokens((stack) => stack.slice(0, -1));
                     onSearchChange({
-                      q: "",
-                      scope: "global",
-                      type: "all",
-                      page: 1,
-                    })
-                  }
+                      page_token: previous || undefined,
+                    });
+                  }}
                 >
-                  Clear search
+                  Previous
                 </Button>
-              }
-            />
-          ) : (
-            <div className="space-y-8">
-              {(realNamespaceResults.length > 0 ||
-                realProjectResults.length > 0) && (
-                <Section title="Namespaces & projects">
-                  <AppList>
-                    {realNamespaceResults.map((namespace) => (
-                      <EntityLink
-                        key={namespace.id}
-                        type="namespace"
-                        href={`/namespaces/${namespace.id}`}
-                        title={namespace.name}
-                        subtitle={namespace.organizationName}
-                      />
-                    ))}
-                    {realProjectResults.map(({ namespace, ...project }) => (
-                      <EntityLink
-                        key={project.id}
-                        type="project"
-                        href={`/namespaces/${namespace.id}/projects/${project.id}`}
-                        title={project.name}
-                        subtitle={`${namespace.name} · ${project.status}`}
-                      />
-                    ))}
-                  </AppList>
-                </Section>
-              )}
-
-              {pagedFixtures.length > 0 && (
-                <>
-                  <MockDataAlert title="Illustrative entity search results">
-                    Some results are illustrative examples. Namespace and
-                    project matches above come from your workspace.
-                  </MockDataAlert>
-                  {[...groupedFixtures.entries()].map(([group, results]) => (
-                    <Section key={group} title={group}>
-                      <AppList>
-                        {results.map((result) => (
-                          <div
-                            key={`${result.kind}:${result.id}`}
-                            onClick={() => {
-                              if (result.kind === "work-item") {
-                                onSearchChange({
-                                  selected: `work:${result.id}`,
-                                });
-                              }
-                            }}
-                          >
-                            <EntityLink
-                              href={
-                                result.kind === "saved-view"
-                                  ? `/my-work?view=${result.id}`
-                                  : result.href
-                              }
-                              type={result.kind}
-                              title={result.title}
-                              subtitle={result.subtitle}
-                            />
-                          </div>
-                        ))}
-                      </AppList>
-                    </Section>
-                  ))}
-                </>
-              )}
-
-              {fixtureResults.length > pageSize && (
-                <div className="flex items-center justify-center gap-2">
-                  <Button
-                    variant="outline"
-                    disabled={search.page <= 1}
-                    onClick={() => onSearchChange({ page: search.page - 1 })}
-                  >
-                    Previous
-                  </Button>
-                  <span className="text-muted-foreground text-sm">
-                    Page {search.page}
-                  </span>
-                  <Button
-                    variant="outline"
-                    disabled={pageStart + pageSize >= fixtureResults.length}
-                    onClick={() => onSearchChange({ page: search.page + 1 })}
-                  >
-                    Next
-                  </Button>
-                </div>
-              )}
-            </div>
-          )}
-        </ContentWidth>
-      </ResponsiveInspectorShell>
+                <Button
+                  variant="outline"
+                  disabled={!hasMore || !nextPageToken}
+                  onClick={() => {
+                    if (!nextPageToken) return;
+                    setPreviousTokens((stack) => [
+                      ...stack,
+                      search.page_token ?? "",
+                    ]);
+                    onSearchChange({ page_token: nextPageToken });
+                  }}
+                >
+                  Next
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+      </ContentWidth>
     </div>
   );
 }

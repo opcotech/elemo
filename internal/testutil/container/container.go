@@ -84,6 +84,24 @@ var (
 			Reuse:   true,
 		}
 	}
+
+	meilisearchContainerRequest = func(name string) testcontainers.GenericContainerRequest {
+		return testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
+				Image:        "getmeili/meilisearch:v1.53",
+				Name:         reusableName(name, "meilisearch"),
+				ExposedPorts: []string{"7700/tcp"},
+				WaitingFor:   wait.ForHTTP("/health").WithPort("7700/tcp").WithStartupTimeout(startupTimeout),
+				Env: map[string]string{
+					"MEILI_ENV":          "development",
+					"MEILI_MASTER_KEY":   "test-master-key-1",
+					"MEILI_NO_ANALYTICS": "true",
+				},
+			},
+			Started: true,
+			Reuse:   true,
+		}
+	}
 )
 
 // reusableName derives a package-scoped container name so suites in the same
@@ -209,6 +227,34 @@ func NewLocalStackContainer(ctx context.Context, t *testing.T, name string) (tes
 		AccessKeyID:     "aws-access-key",
 		SecretAccessKey: "aws-secret-key",
 		BaseEndpoint:    fmt.Sprintf("http://%s:%d", host, int(port.Num())),
+	}
+
+	return container, conf
+}
+
+// NewMeilisearchContainer creates a test container for Meilisearch.
+func NewMeilisearchContainer(ctx context.Context, t *testing.T, name string) (testcontainers.Container, *config.SearchConfig) {
+	container, err := testcontainers.GenericContainer(ctx, meilisearchContainerRequest(name))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	host, err := container.Host(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	port, err := container.MappedPort(ctx, "7700/tcp")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	conf := &config.SearchConfig{
+		Host:        host,
+		Port:        int(port.Num()),
+		Bucket:      "elemo-test",
+		APIKey:      "test-master-key-1",
+		ReadTimeout: 5,
 	}
 
 	return container, conf

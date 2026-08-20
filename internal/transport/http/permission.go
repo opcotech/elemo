@@ -3,7 +3,6 @@ package http
 import (
 	"context"
 	"errors"
-	"strings"
 
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/service"
@@ -102,12 +101,7 @@ func (c *permissionController) V1PermissionResourceGet(ctx context.Context, requ
 	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1PermissionResourceGet")
 	defer span.End()
 
-	parts := strings.Split(request.ResourceId, ":")
-	if len(parts) != 2 {
-		return api.V1PermissionResourceGet400JSONResponse{N400JSONResponse: formatBadRequest(model.ErrInvalidID)}, nil
-	}
-
-	id, err := model.NewIDFromString(parts[1], parts[0])
+	id, err := model.ParseCompositeID(request.ResourceId)
 	if err != nil {
 		return api.V1PermissionResourceGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}

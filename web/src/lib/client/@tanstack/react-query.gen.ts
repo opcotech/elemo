@@ -82,6 +82,7 @@ import {
   v1ProjectsIssuesCreate,
   v1ProjectsIssuesGet,
   v1ProjectUpdate,
+  v1SearchGet,
   v1SystemHealth,
   v1SystemHeartbeat,
   v1SystemLicense,
@@ -332,6 +333,9 @@ import type {
   V1ProjectUpdateData,
   V1ProjectUpdateError,
   V1ProjectUpdateResponse,
+  V1SearchGetData,
+  V1SearchGetError,
+  V1SearchGetResponse,
   V1SystemHealthData,
   V1SystemHealthError,
   V1SystemHealthResponse,
@@ -3038,6 +3042,34 @@ export const v1PermissionResourceGetOptions = (
       return data;
     },
     queryKey: v1PermissionResourceGetQueryKey(options),
+  });
+
+export const v1SearchGetQueryKey = (options?: Options<V1SearchGetData>) =>
+  createQueryKey("v1SearchGet", options);
+
+/**
+ * Search resources
+ *
+ * Search indexed resources the caller is allowed to read. Authorization is evaluated with ReBAC grant scopes and confirmed with a per-hit permission check. total_count is never returned.
+ *
+ */
+export const v1SearchGetOptions = (options?: Options<V1SearchGetData>) =>
+  queryOptions<
+    V1SearchGetResponse,
+    V1SearchGetError,
+    V1SearchGetResponse,
+    ReturnType<typeof v1SearchGetQueryKey>
+  >({
+    queryFn: async ({ queryKey, signal }) => {
+      const { data } = await v1SearchGet({
+        ...options,
+        ...queryKey[0],
+        signal,
+        throwOnError: true,
+      });
+      return data;
+    },
+    queryKey: v1SearchGetQueryKey(options),
   });
 
 export const v1SystemHealthQueryKey = (options?: Options<V1SystemHealthData>) =>

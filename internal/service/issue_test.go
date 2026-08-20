@@ -50,12 +50,14 @@ func TestNewIssueService(t *testing.T) {
 						WithLabelRepository(repository.NewMockLabelRepository(nil)),
 						WithPermissionService(NewMockPermissionService(nil)),
 						WithLicenseService(mock.NewMockLicenseService(nil)),
+						WithSearchService(NewMockSearchService(nil)),
 					}
 				},
 			},
 			want: func(ctrl *gomock.Controller) IssueService {
 				return &issueService{
 					baseService: &baseService{
+						searchService:     NewMockSearchService(nil),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            mock.NewMockTracer(ctrl),
 						issueRepo:         repository.NewMockIssueRepository(nil),
@@ -162,6 +164,23 @@ func TestNewIssueService(t *testing.T) {
 			},
 			wantErr: ErrNoLicenseService,
 		},
+		{
+			name: "new issue service with no search service",
+			args: args{
+				opts: func(ctrl *gomock.Controller) []Option {
+					return []Option{
+						WithLogger(mock.NewMockLogger(ctrl)),
+						WithTracer(mock.NewMockTracer(ctrl)),
+						WithIssueRepository(repository.NewMockIssueRepository(nil)),
+						WithAssignmentRepository(repository.NewMockAssignmentRepository(nil)),
+						WithLabelRepository(repository.NewMockLabelRepository(nil)),
+						WithPermissionService(NewMockPermissionService(nil)),
+						WithLicenseService(mock.NewMockLicenseService(nil)),
+					}
+				},
+			},
+			wantErr: ErrNoSearchService,
+		},
 	}
 	for _, tt := range tests {
 		tt := tt
@@ -230,6 +249,7 @@ func TestIssueService_Create(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     mockSearchIndex(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						issueRepo:         issueRepo,
@@ -272,6 +292,7 @@ func TestIssueService_Create(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     mockSearchIndex(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						issueRepo:         issueRepo,
@@ -307,6 +328,7 @@ func TestIssueService_Create(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(true, nil)
 
 					return &baseService{
+						searchService:  NewMockSearchService(ctrl),
 						logger:         mock.NewMockLogger(ctrl),
 						tracer:         tracer,
 						licenseService: licenseSvc,
@@ -338,6 +360,7 @@ func TestIssueService_Create(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						permissionService: permSvc,
@@ -366,6 +389,7 @@ func TestIssueService_Create(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:  NewMockSearchService(ctrl),
 						logger:         mock.NewMockLogger(ctrl),
 						tracer:         tracer,
 						licenseService: licenseSvc,
@@ -393,6 +417,7 @@ func TestIssueService_Create(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:  NewMockSearchService(ctrl),
 						logger:         mock.NewMockLogger(ctrl),
 						tracer:         tracer,
 						licenseService: licenseSvc,
@@ -427,6 +452,7 @@ func TestIssueService_Create(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						issueRepo:         issueRepo,
@@ -460,6 +486,7 @@ func TestIssueService_Create(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						permissionService: permSvc,
@@ -493,6 +520,7 @@ func TestIssueService_Create(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						permissionService: permSvc,
@@ -574,6 +602,7 @@ func TestIssueService_Get(t *testing.T) {
 					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(true)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						issueRepo:         issueRepo,
@@ -602,6 +631,7 @@ func TestIssueService_Get(t *testing.T) {
 					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(false)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						permissionService: permSvc,
@@ -625,8 +655,9 @@ func TestIssueService_Get(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.issueService/Get", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
-						logger: mock.NewMockLogger(ctrl),
-						tracer: tracer,
+						searchService: NewMockSearchService(ctrl),
+						logger:        mock.NewMockLogger(ctrl),
+						tracer:        tracer,
 					}
 				},
 			},
@@ -654,6 +685,7 @@ func TestIssueService_Get(t *testing.T) {
 					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(true)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						issueRepo:         issueRepo,
@@ -734,6 +766,7 @@ func TestIssueService_GetByKey(t *testing.T) {
 					permSvc.EXPECT().CtxUserHas(ctx, issueID, gomock.Any()).Return(true)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						issueRepo:         issueRepo,
@@ -766,6 +799,7 @@ func TestIssueService_GetByKey(t *testing.T) {
 					permSvc.EXPECT().CtxUserHas(ctx, issueID, gomock.Any()).Return(false)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						issueRepo:         issueRepo,
@@ -791,8 +825,9 @@ func TestIssueService_GetByKey(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.issueService/GetByKey", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
-						logger: mock.NewMockLogger(ctrl),
-						tracer: tracer,
+						searchService: NewMockSearchService(ctrl),
+						logger:        mock.NewMockLogger(ctrl),
+						tracer:        tracer,
 					}
 				},
 			},
@@ -814,8 +849,9 @@ func TestIssueService_GetByKey(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.issueService/GetByKey", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
-						logger: mock.NewMockLogger(ctrl),
-						tracer: tracer,
+						searchService: NewMockSearchService(ctrl),
+						logger:        mock.NewMockLogger(ctrl),
+						tracer:        tracer,
 					}
 				},
 			},
@@ -840,9 +876,10 @@ func TestIssueService_GetByKey(t *testing.T) {
 					issueRepo.EXPECT().GetByKey(ctx, namespaceID, key, repository.IssueDetailProjection()).Return(nil, repository.ErrIssueRead)
 
 					return &baseService{
-						logger:    mock.NewMockLogger(ctrl),
-						tracer:    tracer,
-						issueRepo: issueRepo,
+						searchService: NewMockSearchService(ctrl),
+						logger:        mock.NewMockLogger(ctrl),
+						tracer:        tracer,
+						issueRepo:     issueRepo,
 					}
 				},
 			},
@@ -950,6 +987,7 @@ func TestIssueService_List(t *testing.T) {
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						issueRepo:         issueRepo,
@@ -975,8 +1013,9 @@ func TestIssueService_List(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.issueService/List", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
-						logger: mock.NewMockLogger(ctrl),
-						tracer: tracer,
+						searchService: NewMockSearchService(ctrl),
+						logger:        mock.NewMockLogger(ctrl),
+						tracer:        tracer,
 					}
 				},
 			},
@@ -998,8 +1037,9 @@ func TestIssueService_List(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.issueService/List", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
-						logger: mock.NewMockLogger(ctrl),
-						tracer: tracer,
+						searchService: NewMockSearchService(ctrl),
+						logger:        mock.NewMockLogger(ctrl),
+						tracer:        tracer,
 					}
 				},
 			},
@@ -1021,8 +1061,9 @@ func TestIssueService_List(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.issueService/List", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
-						logger: mock.NewMockLogger(ctrl),
-						tracer: tracer,
+						searchService: NewMockSearchService(ctrl),
+						logger:        mock.NewMockLogger(ctrl),
+						tracer:        tracer,
 					}
 				},
 			},
@@ -1056,6 +1097,7 @@ func TestIssueService_List(t *testing.T) {
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						issueRepo:         issueRepo,
@@ -1167,6 +1209,7 @@ func TestIssueService_ListByNamespace(t *testing.T) {
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						issueRepo:         issueRepo,
@@ -1192,8 +1235,9 @@ func TestIssueService_ListByNamespace(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.issueService/ListByNamespace", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
-						logger: mock.NewMockLogger(ctrl),
-						tracer: tracer,
+						searchService: NewMockSearchService(ctrl),
+						logger:        mock.NewMockLogger(ctrl),
+						tracer:        tracer,
 					}
 				},
 			},
@@ -1215,8 +1259,9 @@ func TestIssueService_ListByNamespace(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.issueService/ListByNamespace", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
-						logger: mock.NewMockLogger(ctrl),
-						tracer: tracer,
+						searchService: NewMockSearchService(ctrl),
+						logger:        mock.NewMockLogger(ctrl),
+						tracer:        tracer,
 					}
 				},
 			},
@@ -1321,9 +1366,10 @@ func TestIssueService_ListByUser(t *testing.T) {
 					}).Return(repository.Page[*repository.PartialIssue]{Items: repoIssues}, nil)
 
 					return &baseService{
-						logger:    mock.NewMockLogger(ctrl),
-						tracer:    tracer,
-						issueRepo: issueRepo,
+						searchService: NewMockSearchService(ctrl),
+						logger:        mock.NewMockLogger(ctrl),
+						tracer:        tracer,
+						issueRepo:     issueRepo,
 					}
 				},
 			},
@@ -1345,8 +1391,9 @@ func TestIssueService_ListByUser(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.issueService/ListByUser", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
-						logger: mock.NewMockLogger(ctrl),
-						tracer: tracer,
+						searchService: NewMockSearchService(ctrl),
+						logger:        mock.NewMockLogger(ctrl),
+						tracer:        tracer,
 					}
 				},
 			},
@@ -1368,8 +1415,9 @@ func TestIssueService_ListByUser(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.issueService/ListByUser", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
-						logger: mock.NewMockLogger(ctrl),
-						tracer: tracer,
+						searchService: NewMockSearchService(ctrl),
+						logger:        mock.NewMockLogger(ctrl),
+						tracer:        tracer,
 					}
 				},
 			},
@@ -1391,8 +1439,9 @@ func TestIssueService_ListByUser(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.issueService/ListByUser", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
-						logger: mock.NewMockLogger(ctrl),
-						tracer: tracer,
+						searchService: NewMockSearchService(ctrl),
+						logger:        mock.NewMockLogger(ctrl),
+						tracer:        tracer,
 					}
 				},
 			},
@@ -1414,8 +1463,9 @@ func TestIssueService_ListByUser(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.issueService/ListByUser", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
-						logger: mock.NewMockLogger(ctrl),
-						tracer: tracer,
+						searchService: NewMockSearchService(ctrl),
+						logger:        mock.NewMockLogger(ctrl),
+						tracer:        tracer,
 					}
 				},
 			},
@@ -1499,6 +1549,7 @@ func TestIssueService_Update(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     mockSearchIndex(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						issueRepo:         issueRepo,
@@ -1528,6 +1579,7 @@ func TestIssueService_Update(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(true, nil)
 
 					return &baseService{
+						searchService:  NewMockSearchService(ctrl),
 						logger:         mock.NewMockLogger(ctrl),
 						tracer:         tracer,
 						licenseService: licenseSvc,
@@ -1559,6 +1611,7 @@ func TestIssueService_Update(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						permissionService: permSvc,
@@ -1587,6 +1640,7 @@ func TestIssueService_Update(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:  NewMockSearchService(ctrl),
 						logger:         mock.NewMockLogger(ctrl),
 						tracer:         tracer,
 						licenseService: licenseSvc,
@@ -1623,6 +1677,7 @@ func TestIssueService_Update(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						issueRepo:         issueRepo,
@@ -1723,6 +1778,7 @@ func TestIssueService_UpdateAssignments(t *testing.T) {
 
 		s := &issueService{
 			baseService: &baseService{
+				searchService:     mockSearchIndex(ctrl),
 				logger:            mock.NewMockLogger(ctrl),
 				tracer:            tracer,
 				issueRepo:         issueRepo,
@@ -1778,6 +1834,7 @@ func TestIssueService_UpdateAssignments(t *testing.T) {
 
 		s := &issueService{
 			baseService: &baseService{
+				searchService:     mockSearchIndex(ctrl),
 				logger:            mock.NewMockLogger(ctrl),
 				tracer:            tracer,
 				issueRepo:         issueRepo,
@@ -1818,6 +1875,7 @@ func TestIssueService_UpdateAssignments(t *testing.T) {
 
 		s := &issueService{
 			baseService: &baseService{
+				searchService:     NewMockSearchService(ctrl),
 				logger:            mock.NewMockLogger(ctrl),
 				tracer:            tracer,
 				permissionService: permSvc,
@@ -1881,6 +1939,7 @@ func TestIssueService_UpdateAssignments(t *testing.T) {
 
 		s := &issueService{
 			baseService: &baseService{
+				searchService:     mockSearchIndex(ctrl),
 				logger:            mock.NewMockLogger(ctrl),
 				tracer:            tracer,
 				issueRepo:         issueRepo,
@@ -1951,6 +2010,7 @@ func TestIssueService_UpdateParent(t *testing.T) {
 
 		s := &issueService{
 			baseService: &baseService{
+				searchService:     mockSearchIndex(ctrl),
 				logger:            mock.NewMockLogger(ctrl),
 				tracer:            tracer,
 				issueRepo:         issueRepo,
@@ -2006,6 +2066,7 @@ func TestIssueService_UpdateParent(t *testing.T) {
 
 		s := &issueService{
 			baseService: &baseService{
+				searchService:     mockSearchIndex(ctrl),
 				logger:            mock.NewMockLogger(ctrl),
 				tracer:            tracer,
 				issueRepo:         issueRepo,
@@ -2041,6 +2102,7 @@ func TestIssueService_UpdateParent(t *testing.T) {
 
 		s := &issueService{
 			baseService: &baseService{
+				searchService:     NewMockSearchService(ctrl),
 				logger:            mock.NewMockLogger(ctrl),
 				tracer:            tracer,
 				permissionService: permSvc,
@@ -2076,6 +2138,7 @@ func TestIssueService_UpdateParent(t *testing.T) {
 
 		s := &issueService{
 			baseService: &baseService{
+				searchService:     NewMockSearchService(ctrl),
 				logger:            mock.NewMockLogger(ctrl),
 				tracer:            tracer,
 				permissionService: permSvc,
@@ -2128,6 +2191,7 @@ func TestIssueService_Delete(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     mockSearchDelete(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						issueRepo:         issueRepo,
@@ -2155,6 +2219,7 @@ func TestIssueService_Delete(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(true, nil)
 
 					return &baseService{
+						searchService:  NewMockSearchService(ctrl),
 						logger:         mock.NewMockLogger(ctrl),
 						tracer:         tracer,
 						licenseService: licenseSvc,
@@ -2185,6 +2250,7 @@ func TestIssueService_Delete(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						permissionService: permSvc,
@@ -2212,6 +2278,7 @@ func TestIssueService_Delete(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:  NewMockSearchService(ctrl),
 						logger:         mock.NewMockLogger(ctrl),
 						tracer:         tracer,
 						licenseService: licenseSvc,
@@ -2245,6 +2312,7 @@ func TestIssueService_Delete(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						issueRepo:         issueRepo,
@@ -2315,6 +2383,7 @@ func TestIssueService_ListRelations(t *testing.T) {
 		permSvc.EXPECT().CtxUserHas(gomock.Any(), issueID, gomock.Any()).Return(true)
 
 		s := &issueService{baseService: &baseService{
+			searchService:     NewMockSearchService(ctrl),
 			logger:            mock.NewMockLogger(ctrl),
 			tracer:            tracer,
 			issueRepo:         issueRepo,
@@ -2352,6 +2421,7 @@ func TestIssueService_ListRelations(t *testing.T) {
 		permSvc.EXPECT().CtxUserHas(gomock.Any(), issueID, gomock.Any()).Return(true)
 
 		s := &issueService{baseService: &baseService{
+			searchService:     NewMockSearchService(ctrl),
 			logger:            mock.NewMockLogger(ctrl),
 			tracer:            tracer,
 			issueRepo:         issueRepo,
@@ -2378,6 +2448,7 @@ func TestIssueService_ListRelations(t *testing.T) {
 		permSvc.EXPECT().CtxUserHas(gomock.Any(), issueID, gomock.Any()).Return(false)
 
 		s := &issueService{baseService: &baseService{
+			searchService:     NewMockSearchService(ctrl),
 			logger:            mock.NewMockLogger(ctrl),
 			tracer:            tracer,
 			permissionService: permSvc,
@@ -2428,6 +2499,7 @@ func TestIssueService_AddRelation(t *testing.T) {
 		licenseSvc.EXPECT().Expired(gomock.Any()).Return(false, nil)
 
 		s := &issueService{baseService: &baseService{
+			searchService:     NewMockSearchService(ctrl),
 			logger:            mock.NewMockLogger(ctrl),
 			tracer:            tracer,
 			issueRepo:         issueRepo,
@@ -2455,6 +2527,7 @@ func TestIssueService_AddRelation(t *testing.T) {
 		licenseSvc.EXPECT().Expired(gomock.Any()).Return(false, nil)
 
 		s := &issueService{baseService: &baseService{
+			searchService:  NewMockSearchService(ctrl),
 			logger:         mock.NewMockLogger(ctrl),
 			tracer:         tracer,
 			licenseService: licenseSvc,
@@ -2477,6 +2550,7 @@ func TestIssueService_AddRelation(t *testing.T) {
 		licenseSvc.EXPECT().Expired(gomock.Any()).Return(false, nil)
 
 		s := &issueService{baseService: &baseService{
+			searchService:  NewMockSearchService(ctrl),
 			logger:         mock.NewMockLogger(ctrl),
 			tracer:         tracer,
 			licenseService: licenseSvc,
@@ -2499,6 +2573,7 @@ func TestIssueService_AddRelation(t *testing.T) {
 		licenseSvc.EXPECT().Expired(gomock.Any()).Return(false, nil)
 
 		s := &issueService{baseService: &baseService{
+			searchService:  NewMockSearchService(ctrl),
 			logger:         mock.NewMockLogger(ctrl),
 			tracer:         tracer,
 			licenseService: licenseSvc,
@@ -2525,6 +2600,7 @@ func TestIssueService_AddRelation(t *testing.T) {
 		licenseSvc.EXPECT().Expired(gomock.Any()).Return(false, nil)
 
 		s := &issueService{baseService: &baseService{
+			searchService:     NewMockSearchService(ctrl),
 			logger:            mock.NewMockLogger(ctrl),
 			tracer:            tracer,
 			permissionService: permSvc,
@@ -2586,6 +2662,7 @@ func TestIssueService_UpdateRelation(t *testing.T) {
 		licenseSvc.EXPECT().Expired(gomock.Any()).Return(false, nil)
 
 		s := &issueService{baseService: &baseService{
+			searchService:     NewMockSearchService(ctrl),
 			logger:            mock.NewMockLogger(ctrl),
 			tracer:            tracer,
 			issueRepo:         issueRepo,
@@ -2625,6 +2702,7 @@ func TestIssueService_UpdateRelation(t *testing.T) {
 		licenseSvc.EXPECT().Expired(gomock.Any()).Return(false, nil)
 
 		s := &issueService{baseService: &baseService{
+			searchService:     NewMockSearchService(ctrl),
 			logger:            mock.NewMockLogger(ctrl),
 			tracer:            tracer,
 			issueRepo:         issueRepo,
@@ -2649,6 +2727,7 @@ func TestIssueService_UpdateRelation(t *testing.T) {
 		licenseSvc.EXPECT().Expired(gomock.Any()).Return(false, nil)
 
 		s := &issueService{baseService: &baseService{
+			searchService:  NewMockSearchService(ctrl),
 			logger:         mock.NewMockLogger(ctrl),
 			tracer:         tracer,
 			licenseService: licenseSvc,
@@ -2671,6 +2750,7 @@ func TestIssueService_UpdateRelation(t *testing.T) {
 		licenseSvc.EXPECT().Expired(gomock.Any()).Return(false, nil)
 
 		s := &issueService{baseService: &baseService{
+			searchService:  NewMockSearchService(ctrl),
 			logger:         mock.NewMockLogger(ctrl),
 			tracer:         tracer,
 			licenseService: licenseSvc,
@@ -2713,6 +2793,7 @@ func TestIssueService_RemoveRelation(t *testing.T) {
 		licenseSvc.EXPECT().Expired(gomock.Any()).Return(false, nil)
 
 		s := &issueService{baseService: &baseService{
+			searchService:     NewMockSearchService(ctrl),
 			logger:            mock.NewMockLogger(ctrl),
 			tracer:            tracer,
 			issueRepo:         issueRepo,
@@ -2749,6 +2830,7 @@ func TestIssueService_RemoveRelation(t *testing.T) {
 		licenseSvc.EXPECT().Expired(gomock.Any()).Return(false, nil)
 
 		s := &issueService{baseService: &baseService{
+			searchService:     NewMockSearchService(ctrl),
 			logger:            mock.NewMockLogger(ctrl),
 			tracer:            tracer,
 			issueRepo:         issueRepo,

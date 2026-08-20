@@ -54,12 +54,14 @@ func TestNewDocumentService(t *testing.T) {
 						WithPermissionService(NewMockPermissionService(nil)),
 						WithLicenseService(mock.NewMockLicenseService(nil)),
 						WithStaticFileService(NewMockStaticFileService(nil)),
+						WithSearchService(NewMockSearchService(nil)),
 					}
 				},
 			},
 			want: func(ctrl *gomock.Controller) DocumentService {
 				return &documentService{
 					baseService: &baseService{
+						searchService:     NewMockSearchService(nil),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            mock.NewMockTracer(ctrl),
 						documentRepo:      repository.NewMockDocumentRepository(nil),
@@ -143,6 +145,22 @@ func TestNewDocumentService(t *testing.T) {
 			},
 			wantErr: ErrNoStaticFileService,
 		},
+		{
+			name: "new document service with no search service",
+			args: args{
+				opts: func(ctrl *gomock.Controller) []Option {
+					return []Option{
+						WithLogger(mock.NewMockLogger(ctrl)),
+						WithTracer(mock.NewMockTracer(ctrl)),
+						WithDocumentRepository(repository.NewMockDocumentRepository(nil)),
+						WithPermissionService(NewMockPermissionService(nil)),
+						WithLicenseService(mock.NewMockLicenseService(nil)),
+						WithStaticFileService(NewMockStaticFileService(nil)),
+					}
+				},
+			},
+			wantErr: ErrNoSearchService,
+		},
 	}
 	for _, tt := range tests {
 		tt := tt
@@ -209,6 +227,7 @@ func TestDocumentService_Create(t *testing.T) {
 					licenseSvc.EXPECT().WithinThreshold(ctx, license.QuotaDocuments).Return(true, nil)
 
 					return &baseService{
+						searchService:     mockSearchIndex(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						documentRepo:      documentRepo,
@@ -238,6 +257,7 @@ func TestDocumentService_Create(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(true, nil)
 
 					return &baseService{
+						searchService:  NewMockSearchService(ctrl),
 						logger:         mock.NewMockLogger(ctrl),
 						tracer:         tracer,
 						licenseService: licenseSvc,
@@ -270,6 +290,7 @@ func TestDocumentService_Create(t *testing.T) {
 					licenseSvc.EXPECT().WithinThreshold(ctx, license.QuotaDocuments).Return(false, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						permissionService: permSvc,
@@ -298,6 +319,7 @@ func TestDocumentService_Create(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:  NewMockSearchService(ctrl),
 						logger:         mock.NewMockLogger(ctrl),
 						tracer:         tracer,
 						licenseService: licenseSvc,
@@ -325,6 +347,7 @@ func TestDocumentService_Create(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:  NewMockSearchService(ctrl),
 						logger:         mock.NewMockLogger(ctrl),
 						tracer:         tracer,
 						licenseService: licenseSvc,
@@ -369,6 +392,7 @@ func TestDocumentService_Create(t *testing.T) {
 					licenseSvc.EXPECT().WithinThreshold(ctx, license.QuotaDocuments).Return(true, nil)
 
 					return &baseService{
+						searchService:     mockSearchIndex(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						documentRepo:      documentRepo,
@@ -404,6 +428,7 @@ func TestDocumentService_Create(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						permissionService: permSvc,
@@ -437,6 +462,7 @@ func TestDocumentService_Create(t *testing.T) {
 					licenseSvc.EXPECT().WithinThreshold(ctx, license.QuotaDocuments).Return(true, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						permissionService: permSvc,
@@ -473,6 +499,7 @@ func TestDocumentService_Create(t *testing.T) {
 					licenseSvc.EXPECT().WithinThreshold(ctx, license.QuotaDocuments).Return(true, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						permissionService: permSvc,
@@ -520,6 +547,7 @@ func TestDocumentService_Create(t *testing.T) {
 					licenseSvc.EXPECT().WithinThreshold(ctx, license.QuotaDocuments).Return(true, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						documentRepo:      documentRepo,
@@ -603,6 +631,7 @@ func TestDocumentService_Get(t *testing.T) {
 					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(true)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						documentRepo:      documentRepo,
@@ -628,8 +657,9 @@ func TestDocumentService_Get(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.documentService/Get", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
-						logger: mock.NewMockLogger(ctrl),
-						tracer: tracer,
+						searchService: NewMockSearchService(ctrl),
+						logger:        mock.NewMockLogger(ctrl),
+						tracer:        tracer,
 					}
 				},
 			},
@@ -657,6 +687,7 @@ func TestDocumentService_Get(t *testing.T) {
 					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(false)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						documentRepo:      documentRepo,
@@ -684,9 +715,10 @@ func TestDocumentService_Get(t *testing.T) {
 					documentRepo.EXPECT().Get(ctx, id, repository.DocumentDetailProjection()).Return(nil, repository.ErrDocumentRead)
 
 					return &baseService{
-						logger:       mock.NewMockLogger(ctrl),
-						tracer:       tracer,
-						documentRepo: documentRepo,
+						searchService: NewMockSearchService(ctrl),
+						logger:        mock.NewMockLogger(ctrl),
+						tracer:        tracer,
+						documentRepo:  documentRepo,
 					}
 				},
 			},
@@ -717,6 +749,7 @@ func TestDocumentService_Get(t *testing.T) {
 					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(true)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						documentRepo:      documentRepo,
@@ -812,6 +845,7 @@ func TestDocumentService_Update(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     mockSearchIndex(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						documentRepo:      documentRepo,
@@ -856,6 +890,7 @@ func TestDocumentService_Update(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     mockSearchIndex(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						documentRepo:      documentRepo,
@@ -897,6 +932,7 @@ func TestDocumentService_Update(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     mockSearchIndex(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						documentRepo:      documentRepo,
@@ -939,6 +975,7 @@ func TestDocumentService_Update(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     mockSearchIndex(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						documentRepo:      documentRepo,
@@ -969,6 +1006,7 @@ func TestDocumentService_Update(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(true, nil)
 
 					return &baseService{
+						searchService:  NewMockSearchService(ctrl),
 						logger:         mock.NewMockLogger(ctrl),
 						tracer:         tracer,
 						licenseService: licenseSvc,
@@ -1003,6 +1041,7 @@ func TestDocumentService_Update(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						documentRepo:      documentRepo,
@@ -1042,6 +1081,7 @@ func TestDocumentService_Update(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						documentRepo:      documentRepo,
@@ -1083,6 +1123,7 @@ func TestDocumentService_Update(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						documentRepo:      documentRepo,
@@ -1166,6 +1207,7 @@ func TestDocumentService_Delete(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     mockSearchDelete(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						documentRepo:      documentRepo,
@@ -1194,6 +1236,7 @@ func TestDocumentService_Delete(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(true, nil)
 
 					return &baseService{
+						searchService:  NewMockSearchService(ctrl),
 						logger:         mock.NewMockLogger(ctrl),
 						tracer:         tracer,
 						licenseService: licenseSvc,
@@ -1227,6 +1270,7 @@ func TestDocumentService_Delete(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						documentRepo:      documentRepo,
@@ -1263,6 +1307,7 @@ func TestDocumentService_Delete(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						documentRepo:      documentRepo,
@@ -1302,6 +1347,7 @@ func TestDocumentService_Delete(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						documentRepo:      documentRepo,
@@ -1368,6 +1414,7 @@ func TestDocumentService_ListLibrary(t *testing.T) {
 		}, nil)
 
 		s := &documentService{baseService: &baseService{
+			searchService:     NewMockSearchService(ctrl),
 			logger:            mock.NewMockLogger(ctrl),
 			tracer:            tracer,
 			documentRepo:      documentRepo,
@@ -1391,8 +1438,9 @@ func TestDocumentService_ListLibrary(t *testing.T) {
 		tracer.EXPECT().Start(ctx, "service.documentService/ListLibrary", gomock.Len(0)).Return(ctx, span)
 
 		s := &documentService{baseService: &baseService{
-			logger: mock.NewMockLogger(ctrl),
-			tracer: tracer,
+			searchService: NewMockSearchService(ctrl),
+			logger:        mock.NewMockLogger(ctrl),
+			tracer:        tracer,
 		}}
 		_, err := s.ListLibrary(ctx, model.MustNewID(model.ResourceTypeProject), LibraryListFilter{}, page)
 		assert.ErrorIs(t, err, model.ErrInvalidID)
@@ -1427,6 +1475,7 @@ func TestDocumentService_ListRelated(t *testing.T) {
 		}, nil)
 
 		s := &documentService{baseService: &baseService{
+			searchService:     NewMockSearchService(ctrl),
 			logger:            mock.NewMockLogger(ctrl),
 			tracer:            tracer,
 			documentRepo:      documentRepo,
@@ -1467,6 +1516,7 @@ func TestDocumentService_Relate(t *testing.T) {
 		permSvc.EXPECT().CtxUserHas(ctx, projectID, gomock.Any()).Return(true)
 
 		s := &documentService{baseService: &baseService{
+			searchService:     NewMockSearchService(ctrl),
 			logger:            mock.NewMockLogger(ctrl),
 			tracer:            tracer,
 			documentRepo:      documentRepo,
@@ -1504,6 +1554,7 @@ func TestDocumentService_Unrelate(t *testing.T) {
 		permSvc.EXPECT().CtxUserHas(ctx, projectID, gomock.Any()).Return(true)
 
 		s := &documentService{baseService: &baseService{
+			searchService:     NewMockSearchService(ctrl),
 			logger:            mock.NewMockLogger(ctrl),
 			tracer:            tracer,
 			documentRepo:      documentRepo,
@@ -1552,6 +1603,7 @@ func TestDocumentService_MoveLibrary(t *testing.T) {
 		staticFileSvc.EXPECT().Get(ctx, moved.FileID).Return(content, nil)
 
 		s := &documentService{baseService: &baseService{
+			searchService:     mockSearchIndex(ctrl),
 			logger:            mock.NewMockLogger(ctrl),
 			tracer:            tracer,
 			documentRepo:      documentRepo,
@@ -1588,6 +1640,7 @@ func TestDocumentService_MoveLibrary(t *testing.T) {
 		staticFileSvc.EXPECT().Get(ctx, repoDoc.FileID).Return(nil, repository.ErrNotFound)
 
 		s := &documentService{baseService: &baseService{
+			searchService:     mockSearchIndex(ctrl),
 			logger:            mock.NewMockLogger(ctrl),
 			tracer:            tracer,
 			documentRepo:      documentRepo,
@@ -1612,8 +1665,9 @@ func TestDocumentService_MoveLibrary(t *testing.T) {
 		tracer.EXPECT().Start(ctx, "service.documentService/MoveLibrary", gomock.Len(0)).Return(ctx, span)
 
 		s := &documentService{baseService: &baseService{
-			logger: mock.NewMockLogger(ctrl),
-			tracer: tracer,
+			searchService: NewMockSearchService(ctrl),
+			logger:        mock.NewMockLogger(ctrl),
+			tracer:        tracer,
 		}}
 		_, err := s.MoveLibrary(ctx, repoDoc.ID, model.MustNewID(model.ResourceTypeProject))
 		assert.ErrorIs(t, err, model.ErrInvalidID)
@@ -1653,6 +1707,7 @@ func TestDocumentService_MoveToFolder(t *testing.T) {
 		staticFileSvc.EXPECT().Get(ctx, moved.FileID).Return(content, nil)
 
 		s := &documentService{baseService: &baseService{
+			searchService:     NewMockSearchService(ctrl),
 			logger:            mock.NewMockLogger(ctrl),
 			tracer:            tracer,
 			documentRepo:      documentRepo,
@@ -1688,6 +1743,7 @@ func TestDocumentService_MoveToFolder(t *testing.T) {
 		staticFileSvc.EXPECT().Get(ctx, repoDoc.FileID).Return(nil, repository.ErrNotFound)
 
 		s := &documentService{baseService: &baseService{
+			searchService:     NewMockSearchService(ctrl),
 			logger:            mock.NewMockLogger(ctrl),
 			tracer:            tracer,
 			documentRepo:      documentRepo,
@@ -1727,6 +1783,7 @@ func TestDocumentService_MoveToFolder(t *testing.T) {
 		staticFileSvc.EXPECT().Get(ctx, cleared.FileID).Return(content, nil)
 
 		s := &documentService{baseService: &baseService{
+			searchService:     NewMockSearchService(ctrl),
 			logger:            mock.NewMockLogger(ctrl),
 			tracer:            tracer,
 			documentRepo:      documentRepo,

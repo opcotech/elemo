@@ -45,12 +45,14 @@ func TestNewNamespaceService(t *testing.T) {
 						WithNamespaceRepository(repository.NewMockNamespaceRepository(nil)),
 						WithPermissionService(NewMockPermissionService(nil)),
 						WithLicenseService(mock.NewMockLicenseService(nil)),
+						WithSearchService(NewMockSearchService(nil)),
 					}
 				},
 			},
 			want: func(ctrl *gomock.Controller) NamespaceService {
 				return &namespaceService{
 					baseService: &baseService{
+						searchService:     NewMockSearchService(nil),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            mock.NewMockTracer(ctrl),
 						namespaceRepo:     repository.NewMockNamespaceRepository(nil),
@@ -115,6 +117,21 @@ func TestNewNamespaceService(t *testing.T) {
 			},
 			wantErr: ErrNoLicenseService,
 		},
+		{
+			name: "new namespace service with no search service",
+			args: args{
+				opts: func(ctrl *gomock.Controller) []Option {
+					return []Option{
+						WithLogger(mock.NewMockLogger(ctrl)),
+						WithTracer(mock.NewMockTracer(ctrl)),
+						WithNamespaceRepository(repository.NewMockNamespaceRepository(nil)),
+						WithPermissionService(NewMockPermissionService(nil)),
+						WithLicenseService(mock.NewMockLicenseService(nil)),
+					}
+				},
+			},
+			wantErr: ErrNoSearchService,
+		},
 	}
 	for _, tt := range tests {
 		tt := tt
@@ -176,6 +193,7 @@ func TestNamespaceService_Create(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     mockSearchIndex(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						namespaceRepo:     namespaceRepo,
@@ -204,6 +222,7 @@ func TestNamespaceService_Create(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(true, nil)
 
 					return &baseService{
+						searchService:  NewMockSearchService(ctrl),
 						logger:         mock.NewMockLogger(ctrl),
 						tracer:         tracer,
 						licenseService: licenseSvc,
@@ -235,6 +254,7 @@ func TestNamespaceService_Create(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						permissionService: permSvc,
@@ -263,6 +283,7 @@ func TestNamespaceService_Create(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:  NewMockSearchService(ctrl),
 						logger:         mock.NewMockLogger(ctrl),
 						tracer:         tracer,
 						licenseService: licenseSvc,
@@ -290,6 +311,7 @@ func TestNamespaceService_Create(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:  NewMockSearchService(ctrl),
 						logger:         mock.NewMockLogger(ctrl),
 						tracer:         tracer,
 						licenseService: licenseSvc,
@@ -329,6 +351,7 @@ func TestNamespaceService_Create(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						namespaceRepo:     namespaceRepo,
@@ -362,6 +385,7 @@ func TestNamespaceService_Create(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						permissionService: permSvc,
@@ -438,6 +462,7 @@ func TestNamespaceService_Get(t *testing.T) {
 					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(true)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						namespaceRepo:     namespaceRepo,
@@ -466,6 +491,7 @@ func TestNamespaceService_Get(t *testing.T) {
 					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(false)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						permissionService: permSvc,
@@ -489,8 +515,9 @@ func TestNamespaceService_Get(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.namespaceService/Get", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
-						logger: mock.NewMockLogger(ctrl),
-						tracer: tracer,
+						searchService: NewMockSearchService(ctrl),
+						logger:        mock.NewMockLogger(ctrl),
+						tracer:        tracer,
 					}
 				},
 			},
@@ -518,6 +545,7 @@ func TestNamespaceService_Get(t *testing.T) {
 					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(true)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						namespaceRepo:     namespaceRepo,
@@ -602,6 +630,7 @@ func TestNamespaceService_List(t *testing.T) {
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						namespaceRepo:     namespaceRepo,
@@ -627,8 +656,9 @@ func TestNamespaceService_List(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.namespaceService/List", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
-						logger: mock.NewMockLogger(ctrl),
-						tracer: tracer,
+						searchService: NewMockSearchService(ctrl),
+						logger:        mock.NewMockLogger(ctrl),
+						tracer:        tracer,
 					}
 				},
 			},
@@ -650,8 +680,9 @@ func TestNamespaceService_List(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.namespaceService/List", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
-						logger: mock.NewMockLogger(ctrl),
-						tracer: tracer,
+						searchService: NewMockSearchService(ctrl),
+						logger:        mock.NewMockLogger(ctrl),
+						tracer:        tracer,
 					}
 				},
 			},
@@ -673,8 +704,9 @@ func TestNamespaceService_List(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.namespaceService/List", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
-						logger: mock.NewMockLogger(ctrl),
-						tracer: tracer,
+						searchService: NewMockSearchService(ctrl),
+						logger:        mock.NewMockLogger(ctrl),
+						tracer:        tracer,
 					}
 				},
 			},
@@ -708,6 +740,7 @@ func TestNamespaceService_List(t *testing.T) {
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						namespaceRepo:     namespaceRepo,
@@ -796,6 +829,7 @@ func TestNamespaceService_ListAccessible(t *testing.T) {
 					).Return(repository.Page[*repository.AccessibleNamespace]{Items: repoAccessible}, nil)
 
 					return &baseService{
+						searchService: NewMockSearchService(ctrl),
 						logger:        mock.NewMockLogger(ctrl),
 						tracer:        tracer,
 						namespaceRepo: namespaceRepo,
@@ -819,8 +853,9 @@ func TestNamespaceService_ListAccessible(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.namespaceService/ListAccessible", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
-						logger: mock.NewMockLogger(ctrl),
-						tracer: tracer,
+						searchService: NewMockSearchService(ctrl),
+						logger:        mock.NewMockLogger(ctrl),
+						tracer:        tracer,
 					}
 				},
 			},
@@ -841,8 +876,9 @@ func TestNamespaceService_ListAccessible(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.namespaceService/ListAccessible", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
-						logger: mock.NewMockLogger(ctrl),
-						tracer: tracer,
+						searchService: NewMockSearchService(ctrl),
+						logger:        mock.NewMockLogger(ctrl),
+						tracer:        tracer,
 					}
 				},
 			},
@@ -922,6 +958,7 @@ func TestNamespaceService_Update(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     mockSearchIndex(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						namespaceRepo:     namespaceRepo,
@@ -951,6 +988,7 @@ func TestNamespaceService_Update(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(true, nil)
 
 					return &baseService{
+						searchService:  NewMockSearchService(ctrl),
 						logger:         mock.NewMockLogger(ctrl),
 						tracer:         tracer,
 						licenseService: licenseSvc,
@@ -982,6 +1020,7 @@ func TestNamespaceService_Update(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						permissionService: permSvc,
@@ -1010,6 +1049,7 @@ func TestNamespaceService_Update(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:  NewMockSearchService(ctrl),
 						logger:         mock.NewMockLogger(ctrl),
 						tracer:         tracer,
 						licenseService: licenseSvc,
@@ -1047,6 +1087,7 @@ func TestNamespaceService_Update(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						namespaceRepo:     namespaceRepo,
@@ -1123,6 +1164,7 @@ func TestNamespaceService_Delete(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     mockSearchDeleteByScope(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						namespaceRepo:     namespaceRepo,
@@ -1150,6 +1192,7 @@ func TestNamespaceService_Delete(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(true, nil)
 
 					return &baseService{
+						searchService:  NewMockSearchService(ctrl),
 						logger:         mock.NewMockLogger(ctrl),
 						tracer:         tracer,
 						licenseService: licenseSvc,
@@ -1180,6 +1223,7 @@ func TestNamespaceService_Delete(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						permissionService: permSvc,
@@ -1207,6 +1251,7 @@ func TestNamespaceService_Delete(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:  NewMockSearchService(ctrl),
 						logger:         mock.NewMockLogger(ctrl),
 						tracer:         tracer,
 						licenseService: licenseSvc,
@@ -1240,6 +1285,7 @@ func TestNamespaceService_Delete(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						namespaceRepo:     namespaceRepo,

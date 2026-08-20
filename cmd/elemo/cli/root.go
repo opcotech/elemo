@@ -168,6 +168,42 @@ func initCacheDatabase() (*repository.RedisDatabase, error) {
 	return db, nil
 }
 
+func initSearchDatabase() (*repository.SearchDatabase, *repository.MeilisearchSearchRepository, error) {
+	client, err := repository.NewMeilisearchClient(&cfg.Search)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	db, err := repository.NewSearchDatabase(
+		repository.WithSearchClient(client),
+		repository.WithSearchDatabaseLogger(logger.Named("meilisearch")),
+		repository.WithSearchDatabaseTracer(tracer),
+	)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if err := db.Ping(context.Background()); err != nil {
+		return nil, nil, err
+	}
+
+	repo, err := repository.NewMeilisearchSearchRepository(
+		repository.WithSearchDatabase(db),
+		repository.WithSearchIndex(cfg.Search.Bucket),
+		repository.WithSearchRepositoryLogger(logger.Named("search_repository")),
+		repository.WithSearchRepositoryTracer(tracer),
+	)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if err := repo.EnsureIndex(context.Background()); err != nil {
+		return nil, nil, err
+	}
+
+	return db, repo, nil
+}
+
 func initGraphDatabase() (*repository.Neo4jDatabase, error) {
 	driver, err := repository.NewNeo4jDriver(&cfg.GraphDatabase)
 	if err != nil {

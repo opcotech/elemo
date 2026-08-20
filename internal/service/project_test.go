@@ -48,12 +48,14 @@ func TestNewProjectService(t *testing.T) {
 						WithProjectRepository(repository.NewMockProjectRepository(nil)),
 						WithPermissionService(NewMockPermissionService(nil)),
 						WithLicenseService(mock.NewMockLicenseService(nil)),
+						WithSearchService(NewMockSearchService(nil)),
 					}
 				},
 			},
 			want: func(ctrl *gomock.Controller) ProjectService {
 				return &projectService{
 					baseService: &baseService{
+						searchService:     NewMockSearchService(nil),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            mock.NewMockTracer(ctrl),
 						projectRepo:       repository.NewMockProjectRepository(nil),
@@ -117,6 +119,21 @@ func TestNewProjectService(t *testing.T) {
 				},
 			},
 			wantErr: ErrNoLicenseService,
+		},
+		{
+			name: "new project service with no search service",
+			args: args{
+				opts: func(ctrl *gomock.Controller) []Option {
+					return []Option{
+						WithLogger(mock.NewMockLogger(ctrl)),
+						WithTracer(mock.NewMockTracer(ctrl)),
+						WithProjectRepository(repository.NewMockProjectRepository(nil)),
+						WithPermissionService(NewMockPermissionService(nil)),
+						WithLicenseService(mock.NewMockLicenseService(nil)),
+					}
+				},
+			},
+			wantErr: ErrNoSearchService,
 		},
 	}
 	for _, tt := range tests {
@@ -183,6 +200,7 @@ func TestProjectService_Create(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     mockSearchIndex(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						projectRepo:       projectRepo,
@@ -227,6 +245,7 @@ func TestProjectService_Create(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     mockSearchIndex(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						projectRepo:       projectRepo,
@@ -277,6 +296,7 @@ func TestProjectService_Create(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     mockSearchIndex(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						projectRepo:       projectRepo,
@@ -310,6 +330,7 @@ func TestProjectService_Create(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(true, nil)
 
 					return &baseService{
+						searchService:  NewMockSearchService(ctrl),
 						logger:         mock.NewMockLogger(ctrl),
 						tracer:         tracer,
 						licenseService: licenseSvc,
@@ -341,6 +362,7 @@ func TestProjectService_Create(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						permissionService: permSvc,
@@ -369,6 +391,7 @@ func TestProjectService_Create(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:  NewMockSearchService(ctrl),
 						logger:         mock.NewMockLogger(ctrl),
 						tracer:         tracer,
 						licenseService: licenseSvc,
@@ -396,6 +419,7 @@ func TestProjectService_Create(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:  NewMockSearchService(ctrl),
 						logger:         mock.NewMockLogger(ctrl),
 						tracer:         tracer,
 						licenseService: licenseSvc,
@@ -439,6 +463,7 @@ func TestProjectService_Create(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						projectRepo:       projectRepo,
@@ -472,6 +497,7 @@ func TestProjectService_Create(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						permissionService: permSvc,
@@ -547,6 +573,7 @@ func TestProjectService_Get(t *testing.T) {
 					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(true)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						projectRepo:       projectRepo,
@@ -575,6 +602,7 @@ func TestProjectService_Get(t *testing.T) {
 					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(false)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						permissionService: permSvc,
@@ -598,8 +626,9 @@ func TestProjectService_Get(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.projectService/Get", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
-						logger: mock.NewMockLogger(ctrl),
-						tracer: tracer,
+						searchService: NewMockSearchService(ctrl),
+						logger:        mock.NewMockLogger(ctrl),
+						tracer:        tracer,
 					}
 				},
 			},
@@ -627,6 +656,7 @@ func TestProjectService_Get(t *testing.T) {
 					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(true)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						projectRepo:       projectRepo,
@@ -701,6 +731,7 @@ func TestProjectService_GetByKey(t *testing.T) {
 					permSvc.EXPECT().CtxUserHas(ctx, repoProject.ID, gomock.Any()).Return(true)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						projectRepo:       projectRepo,
@@ -732,6 +763,7 @@ func TestProjectService_GetByKey(t *testing.T) {
 					permSvc.EXPECT().CtxUserHas(ctx, repoProject.ID, gomock.Any()).Return(false)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						projectRepo:       projectRepo,
@@ -756,8 +788,9 @@ func TestProjectService_GetByKey(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.projectService/GetByKey", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
-						logger: mock.NewMockLogger(ctrl),
-						tracer: tracer,
+						searchService: NewMockSearchService(ctrl),
+						logger:        mock.NewMockLogger(ctrl),
+						tracer:        tracer,
 					}
 				},
 			},
@@ -781,9 +814,10 @@ func TestProjectService_GetByKey(t *testing.T) {
 					projectRepo.EXPECT().GetByKey(ctx, key, repository.ProjectDetailProjection()).Return(nil, repository.ErrProjectRead)
 
 					return &baseService{
-						logger:      mock.NewMockLogger(ctrl),
-						tracer:      tracer,
-						projectRepo: projectRepo,
+						searchService: NewMockSearchService(ctrl),
+						logger:        mock.NewMockLogger(ctrl),
+						tracer:        tracer,
+						projectRepo:   projectRepo,
 					}
 				},
 			},
@@ -864,6 +898,7 @@ func TestProjectService_List(t *testing.T) {
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						projectRepo:       projectRepo,
@@ -889,8 +924,9 @@ func TestProjectService_List(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.projectService/List", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
-						logger: mock.NewMockLogger(ctrl),
-						tracer: tracer,
+						searchService: NewMockSearchService(ctrl),
+						logger:        mock.NewMockLogger(ctrl),
+						tracer:        tracer,
 					}
 				},
 			},
@@ -912,8 +948,9 @@ func TestProjectService_List(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.projectService/List", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
-						logger: mock.NewMockLogger(ctrl),
-						tracer: tracer,
+						searchService: NewMockSearchService(ctrl),
+						logger:        mock.NewMockLogger(ctrl),
+						tracer:        tracer,
 					}
 				},
 			},
@@ -935,8 +972,9 @@ func TestProjectService_List(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.projectService/List", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
-						logger: mock.NewMockLogger(ctrl),
-						tracer: tracer,
+						searchService: NewMockSearchService(ctrl),
+						logger:        mock.NewMockLogger(ctrl),
+						tracer:        tracer,
 					}
 				},
 			},
@@ -970,6 +1008,7 @@ func TestProjectService_List(t *testing.T) {
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						projectRepo:       projectRepo,
@@ -1057,6 +1096,7 @@ func TestProjectService_Update(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     mockSearchIndex(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						projectRepo:       projectRepo,
@@ -1095,6 +1135,7 @@ func TestProjectService_Update(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     mockSearchIndex(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						projectRepo:       projectRepo,
@@ -1124,6 +1165,7 @@ func TestProjectService_Update(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(true, nil)
 
 					return &baseService{
+						searchService:  NewMockSearchService(ctrl),
 						logger:         mock.NewMockLogger(ctrl),
 						tracer:         tracer,
 						licenseService: licenseSvc,
@@ -1155,6 +1197,7 @@ func TestProjectService_Update(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						permissionService: permSvc,
@@ -1183,6 +1226,7 @@ func TestProjectService_Update(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:  NewMockSearchService(ctrl),
 						logger:         mock.NewMockLogger(ctrl),
 						tracer:         tracer,
 						licenseService: licenseSvc,
@@ -1223,6 +1267,7 @@ func TestProjectService_Update(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						projectRepo:       projectRepo,
@@ -1299,6 +1344,7 @@ func TestProjectService_Delete(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     mockSearchDeleteByScope(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						projectRepo:       projectRepo,
@@ -1326,6 +1372,7 @@ func TestProjectService_Delete(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(true, nil)
 
 					return &baseService{
+						searchService:  NewMockSearchService(ctrl),
 						logger:         mock.NewMockLogger(ctrl),
 						tracer:         tracer,
 						licenseService: licenseSvc,
@@ -1356,6 +1403,7 @@ func TestProjectService_Delete(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						permissionService: permSvc,
@@ -1383,6 +1431,7 @@ func TestProjectService_Delete(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:  NewMockSearchService(ctrl),
 						logger:         mock.NewMockLogger(ctrl),
 						tracer:         tracer,
 						licenseService: licenseSvc,
@@ -1416,6 +1465,7 @@ func TestProjectService_Delete(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						projectRepo:       projectRepo,

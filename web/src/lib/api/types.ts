@@ -45,6 +45,8 @@ export type {
   ResourceType,
   Role,
   RoleCreate,
+  SearchPage,
+  SearchResult,
   Team,
   TeamCreate,
   Todo,
@@ -87,6 +89,7 @@ export type {
   V1ProjectsDocumentsCreateData,
   V1ProjectsIssuesCreateData,
   V1ProjectsIssuesGetData,
+  V1SearchGetData,
   V1TodosCreateData,
   V1TodoUpdateData,
 } from "@/lib/client";

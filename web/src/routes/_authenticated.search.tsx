@@ -1,31 +1,50 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useCallback } from "react";
 
 import { SearchPage } from "@/components/pages/search-page";
 import { accessibleNamespacesOptions } from "@/lib/api/accessible-namespaces";
-import { searchRouteSearchSchema } from "@/lib/work-route-search";
+import { v1SearchGetOptions } from "@/lib/api/query-options";
+import {
+  hasActiveSearch,
+  searchQueryFromRoute,
+  searchRouteSearchSchema,
+} from "@/lib/search/params";
+import type { SearchRouteSearch } from "@/lib/search/params";
 
 export const Route = createFileRoute("/_authenticated/search")({
   staticData: { breadcrumb: "Search" },
   validateSearch: searchRouteSearchSchema,
-  loader: ({ context }) =>
-    context.queryClient.fetchQuery(
+  loaderDeps: ({ search }) => search,
+  loader: ({ context, deps }) => {
+    const workspace = context.queryClient.fetchQuery(
       accessibleNamespacesOptions(context.queryClient)
-    ),
+    );
+    if (!hasActiveSearch(deps)) {
+      return workspace;
+    }
+    return Promise.all([
+      workspace,
+      context.queryClient.ensureQueryData(
+        v1SearchGetOptions({
+          query: searchQueryFromRoute(deps),
+        })
+      ),
+    ]);
+  },
   component: SearchRoute,
 });
 
 function SearchRoute() {
   const search = Route.useSearch();
   const navigate = Route.useNavigate();
-  return (
-    <SearchPage
-      search={search}
-      onSearchChange={(patch) =>
-        void navigate({
-          search: (previous) => ({ ...previous, ...patch }),
-          replace: true,
-        })
-      }
-    />
+  const onSearchChange = useCallback(
+    (patch: Partial<SearchRouteSearch>) => {
+      void navigate({
+        search: (previous) => ({ ...previous, ...patch }),
+        replace: true,
+      });
+    },
+    [navigate]
   );
+  return <SearchPage search={search} onSearchChange={onSearchChange} />;
 }

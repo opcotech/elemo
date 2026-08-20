@@ -66,6 +66,7 @@ type server struct {
 	SystemController
 	PermissionController
 	NotificationController
+	SearchController
 }
 
 func (s *server) InternalErrorHandler(err error) *authErrors.Response {
@@ -150,6 +151,10 @@ func NewServer(opts ...ControllerOption) (StrictServer, error) {
 	}
 
 	if s.NotificationController, err = NewNotificationController(opts...); err != nil {
+		return nil, err
+	}
+
+	if s.SearchController, err = NewSearchController(opts...); err != nil {
 		return nil, err
 	}
 

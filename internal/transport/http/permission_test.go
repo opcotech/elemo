@@ -268,7 +268,7 @@ func TestPermissionController_V1PermissionResourceGet(t *testing.T) {
 	t.Parallel()
 
 	orgID := model.MustNewID(model.ResourceTypeOrganization)
-	resourceID := orgID.Type.String() + ":" + orgID.String()
+	resourceID := orgID.Composite()
 
 	t.Run("success", func(t *testing.T) {
 		t.Parallel()

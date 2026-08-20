@@ -20,6 +20,7 @@ type DocumentServiceIntegrationTestSuite struct {
 	testutil.ContainerIntegrationTestSuite
 	testutil.Neo4jContainerIntegrationTestSuite
 	testutil.LocalStackContainerIntegrationTestSuite
+	testutil.SearchContainerIntegrationTestSuite
 
 	documentService   service.DocumentService
 	staticFileService service.StaticFileService
@@ -37,6 +38,7 @@ func (s *DocumentServiceIntegrationTestSuite) SetupSuite() {
 	container := reflect.TypeOf(s).Elem().String()
 	s.SetupNeo4j(&s.ContainerIntegrationTestSuite, container)
 	s.SetupLocalStack(&s.ContainerIntegrationTestSuite, container)
+	s.SetupSearch(&s.ContainerIntegrationTestSuite, container)
 
 	permissionService, err := service.NewPermissionService(s.PermissionRepo)
 	s.Require().NoError(err)
@@ -54,11 +56,18 @@ func (s *DocumentServiceIntegrationTestSuite) SetupSuite() {
 	)
 	s.Require().NoError(err)
 
+	searchService, err := service.NewSearchService(
+		s.SearchRepo,
+		service.WithPermissionService(permissionService),
+	)
+	s.Require().NoError(err)
+
 	s.documentService, err = service.NewDocumentService(
 		service.WithDocumentRepository(s.DocumentRepo),
 		service.WithPermissionService(permissionService),
 		service.WithLicenseService(licenseService),
 		service.WithStaticFileService(s.staticFileService),
+		service.WithSearchService(searchService),
 	)
 	s.Require().NoError(err)
 }
@@ -82,6 +91,7 @@ func (s *DocumentServiceIntegrationTestSuite) SetupTest() {
 }
 
 func (s *DocumentServiceIntegrationTestSuite) TearDownTest() {
+	defer s.CleanupSearch(&s.ContainerIntegrationTestSuite)
 	defer s.CleanupNeo4j(&s.ContainerIntegrationTestSuite)
 	defer s.CleanupLocalStack(&s.ContainerIntegrationTestSuite)
 }
