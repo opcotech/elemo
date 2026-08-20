@@ -198,6 +198,62 @@
     animation-delay: 0.36s;
   }
 
+  .reveal-delay-5 {
+    animation-delay: 0.46s;
+  }
+
+  .preview-stage {
+    position: relative;
+    width: 100vw;
+    margin-left: calc(50% - 50vw);
+    overflow: hidden;
+    padding-inline: clamp(0.75rem, 3vw, 1.5rem);
+    mask-image:
+      linear-gradient(to right, transparent 0%, black 3%, black 97%, transparent 100%),
+      linear-gradient(to bottom, black 0%, black 72%, transparent 100%);
+    -webkit-mask-image:
+      linear-gradient(to right, transparent 0%, black 3%, black 97%, transparent 100%),
+      linear-gradient(to bottom, black 0%, black 72%, transparent 100%);
+    mask-composite: intersect;
+    -webkit-mask-composite: source-in;
+  }
+
+  .preview-glow {
+    position: absolute;
+    inset: 10% 8% 20%;
+    background: radial-gradient(
+      ellipse 55% 45% at 50% 40%,
+      rgb(91 130 232 / 0.28),
+      transparent 70%
+    );
+    filter: blur(48px);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .preview-frame {
+    position: relative;
+    z-index: 1;
+    margin-inline: auto;
+    max-width: min(100%, 1400px);
+    border-radius: 0.75rem 0.75rem 0 0;
+    border: 1px solid rgb(237 242 250 / 0.12);
+    border-bottom: none;
+    background: rgb(16 23 37 / 0.55);
+    box-shadow:
+      0 0 0 1px rgb(91 130 232 / 0.08),
+      0 24px 80px rgb(8 13 24 / 0.55);
+    overflow: hidden;
+    animation: preview-rise 1s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: 0.5s;
+  }
+
+  .preview-image {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
   .cta-primary {
     @apply inline-flex h-12 items-center justify-center gap-2 rounded-xl px-7 text-sm font-medium tracking-wide transition-all duration-200;
     background: #edf2fa;
@@ -260,6 +316,17 @@
       transform: translateY(0);
     }
   }
+
+  @keyframes preview-rise {
+    from {
+      opacity: 0;
+      transform: translateY(28px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -268,11 +335,13 @@
   }
 
   .atmosphere-aurora,
+  .preview-frame,
   .reveal,
   .reveal-delay-1,
   .reveal-delay-2,
   .reveal-delay-3,
-  .reveal-delay-4 {
+  .reveal-delay-4,
+  .reveal-delay-5 {
     animation: none !important;
   }
 
@@ -280,7 +349,9 @@
   .reveal-delay-1,
   .reveal-delay-2,
   .reveal-delay-3,
-  .reveal-delay-4 {
+  .reveal-delay-4,
+  .reveal-delay-5,
+  .preview-frame {
     opacity: 1;
     transform: none;
   }

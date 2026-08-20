@@ -1,0 +1,7 @@
+---
+const umamiWebsiteId = import.meta.env.PUBLIC_UMAMI_WEBSITE_ID;
+---
+
+{umamiWebsiteId && (
+  <script is:inline defer src="https://cloud.umami.is/script.js" data-website-id={umamiWebsiteId}></script>
+)}
