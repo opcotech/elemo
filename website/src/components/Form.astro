@@ -1,0 +1,175 @@
+---
+const formId =
+  import.meta.env.PUBLIC_LOOPS_FORM_ID ?? "cmt1kk82z01dx0jzi4ggbaza4";
+const action = `https://app.loops.so/api/newsletter-form/${formId}`;
+---
+
+<div class="mx-auto w-full max-w-sm">
+  <form method="post" action={action} data-waitlist-form class="flex flex-col gap-3">
+    <input type="hidden" name="userGroup" value="elemo" />
+    <input type="hidden" name="source" value="website" />
+
+    <div class="flex flex-col gap-2 text-left">
+      <label
+        class="px-0.5 text-sm font-medium tracking-wide text-muted-foreground"
+        for="waitlist-email"
+      >
+        Join the waitlist
+      </label>
+      <input
+        id="waitlist-email"
+        class="h-12 w-full rounded-xl border border-white/14 bg-white/4 px-4 text-sm text-foreground placeholder:text-muted-foreground transition-colors focus-visible:border-primary"
+        type="email"
+        name="email"
+        required
+        autocomplete="email"
+        inputmode="email"
+        placeholder="you@example.com"
+      />
+    </div>
+
+    <button
+      class="cta-primary w-full cursor-pointer"
+      type="submit"
+      data-waitlist-submit
+    >
+    <span aria-hidden="true">🚀</span>
+      Sign me up
+    </button>
+
+    <p
+      class="min-h-5 text-center text-sm"
+      data-waitlist-status
+      role="status"
+      aria-live="polite"
+      hidden
+    >
+    </p>
+  </form>
+</div>
+
+<script>
+  const RATE_LIMIT_MS = 60_000;
+  const STORAGE_KEY = "loops-form-timestamp";
+
+  type LoopsResponse = {
+    success?: boolean;
+    message?: string;
+  };
+
+  function setStatus(
+    status: HTMLElement,
+    message: string,
+    kind: "success" | "error",
+  ) {
+    status.hidden = false;
+    status.textContent = message;
+    status.dataset.kind = kind;
+    status.classList.toggle("text-destructive", kind === "error");
+    status.classList.toggle("text-muted-foreground", kind === "success");
+  }
+
+  function enhanceForm(form: HTMLFormElement) {
+    if (form.dataset.enhanced === "true") {
+      return;
+    }
+    form.dataset.enhanced = "true";
+
+    const status = form.querySelector<HTMLElement>("[data-waitlist-status]");
+    const submit = form.querySelector<HTMLButtonElement>(
+      "[data-waitlist-submit]",
+    );
+    if (!status || !submit) {
+      return;
+    }
+
+    const idleLabel = submit.textContent?.trim() || "Notify me";
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+
+      if (!form.reportValidity()) {
+        return;
+      }
+
+      const timestamp = Date.now();
+      const previousTimestamp = Number(localStorage.getItem(STORAGE_KEY) ?? 0);
+      if (previousTimestamp && previousTimestamp + RATE_LIMIT_MS > timestamp) {
+        setStatus(
+          status,
+          "Too many signups, please try again in a little while",
+          "error",
+        );
+        return;
+      }
+
+      const email = new FormData(form).get("email");
+      if (typeof email !== "string" || !email.trim()) {
+        setStatus(status, "Please enter a valid email address.", "error");
+        return;
+      }
+
+      submit.disabled = true;
+      submit.setAttribute("aria-busy", "true");
+      submit.textContent = "Please wait…";
+      status.hidden = true;
+
+      const body = new URLSearchParams();
+      for (const [key, value] of new FormData(form)) {
+        if (typeof value === "string") {
+          body.set(key, value);
+        }
+      }
+
+      try {
+        localStorage.setItem(STORAGE_KEY, String(timestamp));
+
+        const response = await fetch(form.action, {
+          method: "POST",
+          body: body.toString(),
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+        });
+
+        if (response.status === 429) {
+          setStatus(
+            status,
+            "Too many signups, please try again in a little while",
+            "error",
+          );
+          return;
+        }
+
+        const data = (await response.json()) as LoopsResponse;
+        if (response.ok && data.success !== false) {
+          form.reset();
+          setStatus(
+            status,
+            "Thanks! We'll let you know when we launch.",
+            "success",
+          );
+          return;
+        }
+
+        setStatus(
+          status,
+          data.message ?? "Something went wrong, please try again.",
+          "error",
+        );
+        localStorage.removeItem(STORAGE_KEY);
+      } catch {
+        setStatus(status, "Something went wrong, please try again.", "error");
+        localStorage.removeItem(STORAGE_KEY);
+      } finally {
+        submit.disabled = false;
+        submit.removeAttribute("aria-busy");
+        submit.textContent = idleLabel;
+      }
+    });
+  }
+
+  document
+    .querySelectorAll<HTMLFormElement>("[data-waitlist-form]")
+    .forEach(enhanceForm);
+</script>
