@@ -33,6 +33,12 @@ func (s *FolderRepositoryIntegrationTestSuite) SetupTest() {
 	s.Require().NoError(err)
 	s.testOrg, err = s.OrganizationRepo.Create(context.Background(), testModel.NewCreateOrganizationOpts(s.testUser.ID))
 	s.Require().NoError(err)
+	_, err = s.PermissionRepo.Create(context.Background(), testModel.NewCreateGrantOpts(
+		s.testUser.ID,
+		s.testOrg.ID,
+		testModel.OrgAdminActions()...,
+	))
+	s.Require().NoError(err)
 }
 
 func (s *FolderRepositoryIntegrationTestSuite) TearDownTest() {
@@ -54,12 +60,12 @@ func (s *FolderRepositoryIntegrationTestSuite) TestCreateNestedAndList() {
 	s.Require().NotNil(child.Parent)
 	s.Assert().Equal(root.ID, child.Parent.ID)
 
-	rootPage, err := s.FolderRepo.List(context.Background(), s.testOrg.ID, nil, repository.CursorPage{Size: 10})
+	rootPage, err := s.FolderRepo.List(context.Background(), s.testOrg.ID, nil, s.testUser.ID, repository.CursorPage{Size: 10})
 	s.Require().NoError(err)
 	s.Assert().Len(rootPage.Items, 1)
 	s.Assert().Equal(root.ID, rootPage.Items[0].ID)
 
-	childPage, err := s.FolderRepo.List(context.Background(), s.testOrg.ID, &root.ID, repository.CursorPage{Size: 10})
+	childPage, err := s.FolderRepo.List(context.Background(), s.testOrg.ID, &root.ID, s.testUser.ID, repository.CursorPage{Size: 10})
 	s.Require().NoError(err)
 	s.Assert().Len(childPage.Items, 1)
 	s.Assert().Equal(child.ID, childPage.Items[0].ID)

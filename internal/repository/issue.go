@@ -869,7 +869,7 @@ func (r *Neo4jIssueRepository) Create(ctx context.Context, opts CreateIssueOpts)
 		}),
 		(u)-[:` + EdgeKindCreated.String() + ` {id: $created_rel_id, created_at: datetime($created_at)}]->(i),
 		(u)-[:` + EdgeKindWatches.String() + ` {id: $watches_rel_id, created_at: datetime($created_at)}]->(i),
-		(u)-[:` + EdgeKindHasPermission.String() + ` {id: $perm_id, kind: $perm_kind, created_at: datetime($created_at)}]->(i),
+		(i)-[:` + EdgeKindInScopeOf.String() + ` {id: $scope_id, created_at: datetime($created_at)}]->(p),
 		(i)-[:` + EdgeKindBelongsTo.String() + ` {id: $belongs_to_rel_id, created_at: datetime($created_at)}]->(p)`
 
 	params := map[string]any{
@@ -888,8 +888,7 @@ func (r *Neo4jIssueRepository) Create(ctx context.Context, opts CreateIssueOpts)
 		"created_at":        createdAt.Format(time.RFC3339Nano),
 		"created_rel_id":    model.NewRawID(),
 		"watches_rel_id":    model.NewRawID(),
-		"perm_id":           model.NewRawID(),
-		"perm_kind":         model.PermissionKindAll.String(),
+		"scope_id":          model.NewRawID(),
 		"belongs_to_rel_id": model.NewRawID(),
 	}
 

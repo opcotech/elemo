@@ -14,7 +14,6 @@ import (
 	"github.com/opcotech/elemo/internal/service"
 	"github.com/opcotech/elemo/internal/testutil"
 	testModel "github.com/opcotech/elemo/internal/testutil/model"
-	testRepo "github.com/opcotech/elemo/internal/testutil/repository"
 )
 
 type NotificationServiceIntegrationTestSuite struct {
@@ -46,7 +45,6 @@ func (s *NotificationServiceIntegrationTestSuite) SetupTest() {
 	s.testUser, err = s.UserRepo.Create(context.Background(), testModel.NewCreateUserOpts())
 	s.Require().NoError(err)
 	s.testUserContext = context.WithValue(context.Background(), pkg.CtxKeyUserID, s.testUser.ID)
-	s.Require().NoError(testRepo.MakeUserSystemOwner(s.testUser.ID, s.Neo4jDB))
 }
 
 func (s *NotificationServiceIntegrationTestSuite) TearDownTest() {

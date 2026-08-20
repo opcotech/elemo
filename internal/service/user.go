@@ -224,10 +224,6 @@ func (s *userService) Create(ctx context.Context, opts CreateUserOpts) (*User, e
 		return nil, errors.Join(ErrUserCreate, err)
 	}
 
-	if !s.permissionService.CtxUserHasPermission(ctx, model.MustNewNilID(model.ResourceTypeUser), model.PermissionKindCreate) {
-		return nil, errors.Join(ErrUserCreate, ErrNoPermission)
-	}
-
 	// If the newly created user is not active, e.g. a company is migrating
 	// ex-employees, do not check the license quota as that only counts
 	// against active users.
@@ -325,7 +321,7 @@ func (s *userService) Update(ctx context.Context, id model.ID, opts UpdateUserOp
 		return nil, errors.Join(ErrUserUpdate, ErrNoUser)
 	}
 
-	if userID != id && !s.permissionService.CtxUserHasPermission(ctx, id, model.PermissionKindWrite) {
+	if userID != id {
 		return nil, errors.Join(ErrUserUpdate, ErrNoPermission)
 	}
 
@@ -377,8 +373,8 @@ func (s *userService) Delete(ctx context.Context, id model.ID, force bool) error
 		return errors.Join(ErrUserUpdate, ErrNoUser)
 	}
 
-	if userID == id || !s.permissionService.CtxUserHasPermission(ctx, id, model.PermissionKindDelete) {
-		return errors.Join(ErrUserUpdate, ErrNoPermission)
+	if userID != id {
+		return errors.Join(ErrUserDelete, ErrNoPermission)
 	}
 
 	if force {

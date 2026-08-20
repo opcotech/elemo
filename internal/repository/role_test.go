@@ -9,332 +9,53 @@ import (
 	"github.com/opcotech/elemo/internal/pkg/convert"
 	"github.com/opcotech/elemo/internal/pkg/optional"
 	"github.com/opcotech/elemo/internal/testutil/mock"
-	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 )
 
 func TestCachedRoleRepository_Create(t *testing.T) {
-	type fields struct {
-		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, opts CreateRoleOpts) *redisBaseRepository
-		roleRepo  func(ctrl *gomock.Controller, ctx context.Context, opts CreateRoleOpts) RoleRepository
-	}
-	type args struct {
-		ctx  context.Context
-		opts CreateRoleOpts
-	}
 	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr error
+		name      string
+		failIndex int
+		failErr   error
+		repoErr   error
+		wantErr   error
 	}{
-		{
-			name: "add new role",
-			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, opts CreateRoleOpts) *redisBaseRepository {
-					belongsTo := opts.BelongsTo
-					belongsToKey := composeCacheKey(model.ResourceTypeRole.String(), "ListBelongsTo", belongsTo.String(), "*", "*", "*")
-					organizationsKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*")
-					projectsKey := composeCacheKey(model.ResourceTypeProject.String(), "*")
-
-					belongsToKeyResult := new(redis.StringSliceCmd)
-					belongsToKeyResult.SetVal([]string{belongsToKey})
-
-					organizationsKeyResult := new(redis.StringSliceCmd)
-					organizationsKeyResult.SetVal([]string{organizationsKey})
-
-					projectsKeyResult := new(redis.StringSliceCmd)
-					projectsKeyResult.SetVal([]string{projectsKey})
-
-					dbClient := mock.NewUniversalClient(ctrl)
-					dbClient.EXPECT().Keys(ctx, belongsToKey).Return(belongsToKeyResult)
-					dbClient.EXPECT().Keys(ctx, organizationsKey).Return(organizationsKeyResult)
-					dbClient.EXPECT().Keys(ctx, projectsKey).Return(projectsKeyResult)
-
-					db, err := NewRedisDatabase(
-						WithRedisClient(dbClient),
-					)
-					require.NoError(t, err)
-
-					span := mock.NewMockSpan(ctrl)
-					span.EXPECT().End(gomock.Len(0)).Times(3)
-
-					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(3)
-
-					cacheRepo := mock.NewCacheBackend(ctrl)
-					cacheRepo.EXPECT().Delete(ctx, belongsToKey).Return(nil)
-					cacheRepo.EXPECT().Delete(ctx, organizationsKey).Return(nil)
-					cacheRepo.EXPECT().Delete(ctx, projectsKey).Return(nil)
-
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
-					}
-				},
-				roleRepo: func(ctrl *gomock.Controller, ctx context.Context, opts CreateRoleOpts) RoleRepository {
-					repo := NewMockRoleRepository(ctrl)
-					repo.EXPECT().Create(ctx, opts).Return(&Role{}, nil)
-					return repo
-				},
-			},
-			args: args{
-				ctx: context.Background(),
-				opts: CreateRoleOpts{
-					Name:        "test role",
-					Description: "test description",
-					CreatedBy:   model.MustNewID(model.ResourceTypeUser),
-					BelongsTo:   model.MustNewID(model.ResourceTypeOrganization),
-				},
-			},
-		},
-		{
-			name: "add new role with error",
-			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, opts CreateRoleOpts) *redisBaseRepository {
-					belongsTo := opts.BelongsTo
-					belongsToKey := composeCacheKey(model.ResourceTypeRole.String(), "ListBelongsTo", belongsTo.String(), "*", "*", "*")
-					organizationsKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*")
-					projectsKey := composeCacheKey(model.ResourceTypeProject.String(), "*")
-
-					belongsToKeyResult := new(redis.StringSliceCmd)
-					belongsToKeyResult.SetVal([]string{belongsToKey})
-
-					organizationsKeyResult := new(redis.StringSliceCmd)
-					organizationsKeyResult.SetVal([]string{organizationsKey})
-
-					projectsKeyResult := new(redis.StringSliceCmd)
-					projectsKeyResult.SetVal([]string{projectsKey})
-
-					dbClient := mock.NewUniversalClient(ctrl)
-					dbClient.EXPECT().Keys(ctx, belongsToKey).Return(belongsToKeyResult)
-					dbClient.EXPECT().Keys(ctx, organizationsKey).Return(organizationsKeyResult)
-					dbClient.EXPECT().Keys(ctx, projectsKey).Return(projectsKeyResult)
-
-					db, err := NewRedisDatabase(
-						WithRedisClient(dbClient),
-					)
-					require.NoError(t, err)
-
-					span := mock.NewMockSpan(ctrl)
-					span.EXPECT().End(gomock.Len(0)).Times(3)
-
-					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(3)
-
-					cacheRepo := mock.NewCacheBackend(ctrl)
-					cacheRepo.EXPECT().Delete(ctx, belongsToKey).Return(nil)
-					cacheRepo.EXPECT().Delete(ctx, organizationsKey).Return(nil)
-					cacheRepo.EXPECT().Delete(ctx, projectsKey).Return(nil)
-
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
-					}
-				},
-				roleRepo: func(ctrl *gomock.Controller, ctx context.Context, opts CreateRoleOpts) RoleRepository {
-					repo := NewMockRoleRepository(ctrl)
-					repo.EXPECT().Create(ctx, opts).Return(nil, ErrNotFound)
-					return repo
-				},
-			},
-			args: args{
-				ctx: context.Background(),
-				opts: CreateRoleOpts{
-					Name:        "test role",
-					Description: "test description",
-					CreatedBy:   model.MustNewID(model.ResourceTypeUser),
-					BelongsTo:   model.MustNewID(model.ResourceTypeOrganization),
-				},
-			},
-			wantErr: ErrNotFound,
-		},
-		{
-			name: "add new role with belongs to cache error",
-			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, opts CreateRoleOpts) *redisBaseRepository {
-					belongsTo := opts.BelongsTo
-					belongsToKey := composeCacheKey(model.ResourceTypeRole.String(), "ListBelongsTo", belongsTo.String(), "*", "*", "*")
-
-					belongsToKeyResult := new(redis.StringSliceCmd)
-					belongsToKeyResult.SetVal([]string{belongsToKey})
-
-					dbClient := mock.NewUniversalClient(ctrl)
-					dbClient.EXPECT().Keys(ctx, belongsToKey).Return(belongsToKeyResult)
-
-					db, err := NewRedisDatabase(
-						WithRedisClient(dbClient),
-					)
-					require.NoError(t, err)
-
-					span := mock.NewMockSpan(ctrl)
-					span.EXPECT().End(gomock.Len(0)).Times(1)
-
-					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span)
-
-					cacheRepo := mock.NewCacheBackend(ctrl)
-					cacheRepo.EXPECT().Delete(ctx, belongsToKey).Return(ErrCacheDelete)
-
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
-					}
-				},
-				roleRepo: func(ctrl *gomock.Controller, _ context.Context, _ CreateRoleOpts) RoleRepository {
-					repo := NewMockRoleRepository(ctrl)
-					return repo
-				},
-			},
-			args: args{
-				ctx: context.Background(),
-				opts: CreateRoleOpts{
-					Name:        "test role",
-					Description: "test description",
-					CreatedBy:   model.MustNewID(model.ResourceTypeUser),
-					BelongsTo:   model.MustNewID(model.ResourceTypeOrganization),
-				},
-			},
-			wantErr: ErrCacheDelete,
-		},
-		{
-			name: "add new role with organization cache error",
-			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, opts CreateRoleOpts) *redisBaseRepository {
-					belongsTo := opts.BelongsTo
-					belongsToKey := composeCacheKey(model.ResourceTypeRole.String(), "ListBelongsTo", belongsTo.String(), "*", "*", "*")
-					organizationsKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*")
-
-					belongsToKeyResult := new(redis.StringSliceCmd)
-					belongsToKeyResult.SetVal([]string{belongsToKey})
-
-					organizationsKeyResult := new(redis.StringSliceCmd)
-					organizationsKeyResult.SetVal([]string{organizationsKey})
-
-					dbClient := mock.NewUniversalClient(ctrl)
-					dbClient.EXPECT().Keys(ctx, belongsToKey).Return(belongsToKeyResult)
-					dbClient.EXPECT().Keys(ctx, organizationsKey).Return(organizationsKeyResult)
-
-					db, err := NewRedisDatabase(
-						WithRedisClient(dbClient),
-					)
-					require.NoError(t, err)
-
-					span := mock.NewMockSpan(ctrl)
-					span.EXPECT().End(gomock.Len(0)).Times(2)
-
-					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(2)
-
-					cacheRepo := mock.NewCacheBackend(ctrl)
-					cacheRepo.EXPECT().Delete(ctx, belongsToKey).Return(nil)
-					cacheRepo.EXPECT().Delete(ctx, organizationsKey).Return(ErrCacheDelete)
-
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
-					}
-				},
-				roleRepo: func(ctrl *gomock.Controller, _ context.Context, _ CreateRoleOpts) RoleRepository {
-					repo := NewMockRoleRepository(ctrl)
-					return repo
-				},
-			},
-			args: args{
-				ctx: context.Background(),
-				opts: CreateRoleOpts{
-					Name:        "test role",
-					Description: "test description",
-					CreatedBy:   model.MustNewID(model.ResourceTypeUser),
-					BelongsTo:   model.MustNewID(model.ResourceTypeOrganization),
-				},
-			},
-			wantErr: ErrCacheDelete,
-		},
-		{
-			name: "add new role with project cache error",
-			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, opts CreateRoleOpts) *redisBaseRepository {
-					belongsTo := opts.BelongsTo
-					belongsToKey := composeCacheKey(model.ResourceTypeRole.String(), "ListBelongsTo", belongsTo.String(), "*", "*", "*")
-					organizationsKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*")
-					projectsKey := composeCacheKey(model.ResourceTypeProject.String(), "*")
-
-					belongsToKeyResult := new(redis.StringSliceCmd)
-					belongsToKeyResult.SetVal([]string{belongsToKey})
-
-					organizationsKeyResult := new(redis.StringSliceCmd)
-					organizationsKeyResult.SetVal([]string{organizationsKey})
-
-					projectsKeyResult := new(redis.StringSliceCmd)
-					projectsKeyResult.SetVal([]string{projectsKey})
-
-					dbClient := mock.NewUniversalClient(ctrl)
-					dbClient.EXPECT().Keys(ctx, belongsToKey).Return(belongsToKeyResult)
-					dbClient.EXPECT().Keys(ctx, organizationsKey).Return(organizationsKeyResult)
-					dbClient.EXPECT().Keys(ctx, projectsKey).Return(projectsKeyResult)
-
-					db, err := NewRedisDatabase(
-						WithRedisClient(dbClient),
-					)
-					require.NoError(t, err)
-
-					span := mock.NewMockSpan(ctrl)
-					span.EXPECT().End(gomock.Len(0)).Times(3)
-
-					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(3)
-
-					cacheRepo := mock.NewCacheBackend(ctrl)
-					cacheRepo.EXPECT().Delete(ctx, belongsToKey).Return(nil)
-					cacheRepo.EXPECT().Delete(ctx, organizationsKey).Return(nil)
-					cacheRepo.EXPECT().Delete(ctx, projectsKey).Return(ErrCacheDelete)
-
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
-					}
-				},
-				roleRepo: func(ctrl *gomock.Controller, _ context.Context, _ CreateRoleOpts) RoleRepository {
-					repo := NewMockRoleRepository(ctrl)
-					return repo
-				},
-			},
-			args: args{
-				ctx: context.Background(),
-				opts: CreateRoleOpts{
-					Name:        "test role",
-					Description: "test description",
-					CreatedBy:   model.MustNewID(model.ResourceTypeUser),
-					BelongsTo:   model.MustNewID(model.ResourceTypeOrganization),
-				},
-			},
-			wantErr: ErrCacheDelete,
-		},
+		{name: "add new role", failIndex: -1},
+		{name: "add new role with error", failIndex: -1, repoErr: ErrNotFound, wantErr: ErrNotFound},
+		{name: "add new role with belongs to cache error", failIndex: 0, failErr: ErrCacheDelete, wantErr: ErrCacheDelete},
+		{name: "add new role with get by key cache error", failIndex: 1, failErr: ErrCacheDelete, wantErr: ErrCacheDelete},
+		{name: "add new role with organization cache error", failIndex: 2, failErr: ErrCacheDelete, wantErr: ErrCacheDelete},
+		{name: "add new role with project cache error", failIndex: 3, failErr: ErrCacheDelete, wantErr: ErrCacheDelete},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			r := &RedisCachedRoleRepository{
-				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.opts),
-				roleRepo:  tt.fields.roleRepo(ctrl, tt.args.ctx, tt.args.opts),
+
+			ctx := context.Background()
+			opts := CreateRoleOpts{
+				Name:        "test role",
+				Description: "test description",
+				CreatedBy:   model.MustNewID(model.ResourceTypeUser),
+				BelongsTo:   model.MustNewID(model.ResourceTypeOrganization),
 			}
-			_, err := r.Create(tt.args.ctx, tt.args.opts)
+			repo := NewMockRoleRepository(ctrl)
+			if tt.failIndex < 0 {
+				if tt.repoErr != nil {
+					repo.EXPECT().Create(ctx, opts).Return(nil, tt.repoErr)
+				} else {
+					repo.EXPECT().Create(ctx, opts).Return(&Role{}, nil)
+				}
+			}
+
+			r := &RedisCachedRoleRepository{
+				cacheRepo: redisCacheExpectingPatterns(ctrl, ctx, roleCreateCachePatterns(opts.BelongsTo), tt.failIndex, tt.failErr),
+				roleRepo:  repo,
+			}
+			_, err := r.Create(ctx, opts)
 			require.ErrorIs(t, err, tt.wantErr)
 		})
 	}
@@ -604,6 +325,164 @@ func TestCachedRoleRepository_Get(t *testing.T) {
 			got, err := r.Get(tt.args.ctx, tt.args.id, tt.args.belongsTo, RoleDetailProjection())
 			require.ErrorIs(t, err, tt.wantErr)
 			require.Equal(t, want, got)
+		})
+	}
+}
+
+func TestCachedRoleRepository_GetByID(t *testing.T) {
+	tests := []struct {
+		name    string
+		hit     bool
+		getErr  error
+		setErr  error
+		repoErr error
+		wantErr error
+	}{
+		{name: "get uncached role"},
+		{name: "get cached role", hit: true},
+		{name: "get uncached role error", repoErr: ErrNotFound, wantErr: ErrNotFound},
+		{name: "get cached role error", getErr: assert.AnError, wantErr: ErrCacheRead},
+		{name: "get uncached role cache set error", setErr: assert.AnError, wantErr: ErrCacheWrite},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			ctx := context.Background()
+			id := model.MustNewID(model.ResourceTypeRole)
+			role := &Role{ID: id, Name: "test role", Key: "org-admin"}
+			key := composeCacheKey(model.ResourceTypeRole.String(), "GetByID", id.String())
+
+			db, err := NewRedisDatabase(WithRedisClient(mock.NewUniversalClient(ctrl)))
+			require.NoError(t, err)
+			span := mock.NewMockSpan(ctrl)
+			tracer := mock.NewMockTracer(ctrl)
+			cacheRepo := mock.NewCacheBackend(ctrl)
+			repo := NewMockRoleRepository(ctrl)
+
+			switch {
+			case tt.hit:
+				span.EXPECT().End(gomock.Len(0)).Times(1)
+				tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
+				cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Do(func(_ context.Context, _ string, dst any) {
+					*(dst.(**Role)) = role
+				}).Return(nil)
+			case tt.getErr != nil:
+				span.EXPECT().End(gomock.Len(0)).Times(1)
+				tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
+				cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(tt.getErr)
+			default:
+				spanCount := 1
+				tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
+				cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(cache.ErrCacheMiss)
+				if tt.repoErr != nil {
+					repo.EXPECT().GetByID(ctx, id).Return(nil, tt.repoErr)
+				} else {
+					repo.EXPECT().GetByID(ctx, id).Return(role, nil)
+					spanCount++
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Set", gomock.Len(0)).Return(ctx, span)
+					set := cacheRepo.EXPECT().Set(&cache.Item{Ctx: ctx, Key: key, Value: role})
+					if tt.setErr != nil {
+						set.Return(tt.setErr)
+					} else {
+						set.Return(nil)
+					}
+				}
+				span.EXPECT().End(gomock.Len(0)).Times(spanCount)
+			}
+
+			r := &RedisCachedRoleRepository{
+				cacheRepo: &redisBaseRepository{db: db, cache: cacheRepo, tracer: tracer, logger: mock.NewMockLogger(ctrl)},
+				roleRepo:  repo,
+			}
+			got, err := r.GetByID(ctx, id)
+			require.ErrorIs(t, err, tt.wantErr)
+			if tt.wantErr != nil {
+				return
+			}
+			require.Equal(t, role, got)
+		})
+	}
+}
+
+func TestCachedRoleRepository_GetByKey(t *testing.T) {
+	tests := []struct {
+		name    string
+		hit     bool
+		getErr  error
+		setErr  error
+		repoErr error
+		wantErr error
+	}{
+		{name: "get uncached role"},
+		{name: "get cached role", hit: true},
+		{name: "get uncached role error", repoErr: ErrNotFound, wantErr: ErrNotFound},
+		{name: "get cached role error", getErr: assert.AnError, wantErr: ErrCacheRead},
+		{name: "get uncached role cache set error", setErr: assert.AnError, wantErr: ErrCacheWrite},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			ctx := context.Background()
+			belongsTo := model.MustNewID(model.ResourceTypeOrganization)
+			id := model.MustNewID(model.ResourceTypeRole)
+			roleKey := "org-admin"
+			role := &Role{ID: id, Name: "test role", Key: roleKey}
+			cacheKey := composeCacheKey(model.ResourceTypeRole.String(), "GetByKey", belongsTo.String(), roleKey)
+
+			db, err := NewRedisDatabase(WithRedisClient(mock.NewUniversalClient(ctrl)))
+			require.NoError(t, err)
+			span := mock.NewMockSpan(ctrl)
+			tracer := mock.NewMockTracer(ctrl)
+			cacheRepo := mock.NewCacheBackend(ctrl)
+			repo := NewMockRoleRepository(ctrl)
+
+			switch {
+			case tt.hit:
+				span.EXPECT().End(gomock.Len(0)).Times(1)
+				tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
+				cacheRepo.EXPECT().Get(ctx, cacheKey, gomock.Any()).Do(func(_ context.Context, _ string, dst any) {
+					*(dst.(**Role)) = role
+				}).Return(nil)
+			case tt.getErr != nil:
+				span.EXPECT().End(gomock.Len(0)).Times(1)
+				tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
+				cacheRepo.EXPECT().Get(ctx, cacheKey, gomock.Any()).Return(tt.getErr)
+			default:
+				spanCount := 1
+				tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
+				cacheRepo.EXPECT().Get(ctx, cacheKey, gomock.Any()).Return(cache.ErrCacheMiss)
+				if tt.repoErr != nil {
+					repo.EXPECT().GetByKey(ctx, belongsTo, roleKey).Return(nil, tt.repoErr)
+				} else {
+					repo.EXPECT().GetByKey(ctx, belongsTo, roleKey).Return(role, nil)
+					spanCount++
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Set", gomock.Len(0)).Return(ctx, span)
+					set := cacheRepo.EXPECT().Set(&cache.Item{Ctx: ctx, Key: cacheKey, Value: role})
+					if tt.setErr != nil {
+						set.Return(tt.setErr)
+					} else {
+						set.Return(nil)
+					}
+				}
+				span.EXPECT().End(gomock.Len(0)).Times(spanCount)
+			}
+
+			r := &RedisCachedRoleRepository{
+				cacheRepo: &redisBaseRepository{db: db, cache: cacheRepo, tracer: tracer, logger: mock.NewMockLogger(ctrl)},
+				roleRepo:  repo,
+			}
+			got, err := r.GetByKey(ctx, belongsTo, roleKey)
+			require.ErrorIs(t, err, tt.wantErr)
+			if tt.wantErr != nil {
+				return
+			}
+			require.Equal(t, role, got)
 		})
 	}
 }
@@ -882,965 +761,218 @@ func TestCachedRoleRepository_ListBelongsTo(t *testing.T) {
 }
 
 func TestCachedRoleRepository_Update(t *testing.T) {
-	type fields struct {
-		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, role *Role) *redisBaseRepository
-		roleRepo  func(ctrl *gomock.Controller, ctx context.Context, id, belongsTo model.ID, opts UpdateRoleOpts, role *Role) RoleRepository
+	newRole := func(id model.ID) *Role {
+		return &Role{ID: id, Name: "test role", Description: "test description", Key: "org-admin"}
 	}
-	type args struct {
-		ctx       context.Context
-		id        model.ID
-		belongsTo model.ID
-		opts      UpdateRoleOpts
+	opts := UpdateRoleOpts{
+		Name:        optional.Some("updated role"),
+		Description: optional.Some("updated description"),
 	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    *Role
-		wantErr error
-	}{
-		{
-			name: "update role",
-			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, role *Role) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeRole.String(), "Get", id.String(), projectionCacheValue(RoleDetailProjection()))
-					getAllKey := composeCacheKey(model.ResourceTypeRole.String(), "ListBelongsTo", "*")
 
-					getAllKeyCmd := new(redis.StringSliceCmd)
-					getAllKeyCmd.SetVal([]string{getAllKey})
+	t.Run("update role", func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+		ctx := context.Background()
+		id := model.MustNewID(model.ResourceTypeRole)
+		belongsTo := model.MustNewID(model.ResourceTypeOrganization)
+		role := newRole(id)
+		setKey := composeCacheKey(model.ResourceTypeRole.String(), "Get", id.String(), projectionCacheValue(RoleDetailProjection()))
+		repo := NewMockRoleRepository(ctrl)
+		repo.EXPECT().Update(ctx, id, belongsTo, opts).Return(role, nil)
+		r := &RedisCachedRoleRepository{
+			cacheRepo: redisCacheExpectingSetThenPatterns(ctrl, ctx, setKey, role, roleUpdateInvalidatePatterns(id, belongsTo), false, -1, nil),
+			roleRepo:  repo,
+		}
+		got, err := r.Update(ctx, id, belongsTo, opts)
+		require.NoError(t, err)
+		require.Equal(t, role, got)
+	})
 
-					dbClient := mock.NewUniversalClient(ctrl)
-					dbClient.EXPECT().Keys(ctx, getAllKey).Return(getAllKeyCmd)
+	t.Run("update role with error", func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+		ctx := context.Background()
+		id := model.MustNewID(model.ResourceTypeRole)
+		belongsTo := model.MustNewID(model.ResourceTypeOrganization)
+		db, err := NewRedisDatabase(WithRedisClient(mock.NewUniversalClient(ctrl)))
+		require.NoError(t, err)
+		repo := NewMockRoleRepository(ctrl)
+		repo.EXPECT().Update(ctx, id, belongsTo, opts).Return(nil, ErrNotFound)
+		r := &RedisCachedRoleRepository{
+			cacheRepo: &redisBaseRepository{db: db, cache: mock.NewCacheBackend(ctrl), tracer: mock.NewMockTracer(ctrl), logger: mock.NewMockLogger(ctrl)},
+			roleRepo:  repo,
+		}
+		_, err = r.Update(ctx, id, belongsTo, opts)
+		require.ErrorIs(t, err, ErrNotFound)
+	})
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(dbClient),
-					)
-					require.NoError(t, err)
+	t.Run("update role set cache error", func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+		ctx := context.Background()
+		id := model.MustNewID(model.ResourceTypeRole)
+		belongsTo := model.MustNewID(model.ResourceTypeOrganization)
+		role := newRole(id)
+		setKey := composeCacheKey(model.ResourceTypeRole.String(), "Get", id.String(), projectionCacheValue(RoleDetailProjection()))
+		repo := NewMockRoleRepository(ctrl)
+		repo.EXPECT().Update(ctx, id, belongsTo, opts).Return(role, nil)
+		r := &RedisCachedRoleRepository{
+			cacheRepo: redisCacheExpectingSetThenPatterns(ctrl, ctx, setKey, role, nil, true, -1, assert.AnError),
+			roleRepo:  repo,
+		}
+		_, err := r.Update(ctx, id, belongsTo, opts)
+		require.ErrorIs(t, err, ErrCacheWrite)
+	})
 
-					span := mock.NewMockSpan(ctrl)
-					span.EXPECT().End(gomock.Len(0)).Times(2)
+	t.Run("update role delete get all cache error", func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+		ctx := context.Background()
+		id := model.MustNewID(model.ResourceTypeRole)
+		belongsTo := model.MustNewID(model.ResourceTypeOrganization)
+		role := newRole(id)
+		setKey := composeCacheKey(model.ResourceTypeRole.String(), "Get", id.String(), projectionCacheValue(RoleDetailProjection()))
+		repo := NewMockRoleRepository(ctrl)
+		repo.EXPECT().Update(ctx, id, belongsTo, opts).Return(role, nil)
+		r := &RedisCachedRoleRepository{
+			cacheRepo: redisCacheExpectingSetThenPatterns(ctrl, ctx, setKey, role, roleUpdateInvalidatePatterns(id, belongsTo), false, 2, assert.AnError),
+			roleRepo:  repo,
+		}
+		_, err := r.Update(ctx, id, belongsTo, opts)
+		require.ErrorIs(t, err, ErrCacheDelete)
+	})
 
-					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span)
-					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Set", gomock.Len(0)).Return(ctx, span)
-
-					cacheRepo := mock.NewCacheBackend(ctrl)
-					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(nil)
-					cacheRepo.EXPECT().Set(&cache.Item{
-						Ctx:   ctx,
-						Key:   key,
-						Value: role,
-					}).Return(nil)
-
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
-					}
-				},
-				roleRepo: func(ctrl *gomock.Controller, ctx context.Context, id, belongsTo model.ID, opts UpdateRoleOpts, role *Role) RoleRepository {
-					repo := NewMockRoleRepository(ctrl)
-					repo.EXPECT().Update(ctx, id, belongsTo, opts).Return(role, nil)
-					return repo
-				},
-			},
-			args: args{
-				ctx:       context.Background(),
-				id:        model.MustNewID(model.ResourceTypeRole),
-				belongsTo: model.MustNewID(model.ResourceTypeOrganization),
-				opts: UpdateRoleOpts{
-					Name:        optional.Some("updated role"),
-					Description: optional.Some("updated description"),
-				},
-			},
-			want: &Role{
-				ID:          model.MustNewID(model.ResourceTypeRole),
-				Name:        "test role",
-				Description: "test description",
-			},
-		},
-		{
-			name: "update role with error",
-			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ *Role) *redisBaseRepository {
-					db, err := NewRedisDatabase(
-						WithRedisClient(mock.NewUniversalClient(ctrl)),
-					)
-					require.NoError(t, err)
-
-					return &redisBaseRepository{
-						db:     db,
-						cache:  mock.NewCacheBackend(ctrl),
-						tracer: mock.NewMockTracer(ctrl),
-						logger: mock.NewMockLogger(ctrl),
-					}
-				},
-				roleRepo: func(ctrl *gomock.Controller, ctx context.Context, id, belongsTo model.ID, opts UpdateRoleOpts, _ *Role) RoleRepository {
-					repo := NewMockRoleRepository(ctrl)
-					repo.EXPECT().Update(ctx, id, belongsTo, opts).Return(nil, ErrNotFound)
-					return repo
-				},
-			},
-			args: args{
-				ctx:       context.Background(),
-				id:        model.MustNewID(model.ResourceTypeRole),
-				belongsTo: model.MustNewID(model.ResourceTypeOrganization),
-				opts: UpdateRoleOpts{
-					Name:        optional.Some("updated role"),
-					Description: optional.Some("updated description"),
-				},
-			},
-			wantErr: ErrNotFound,
-		},
-		{
-			name: "update role set cache error",
-			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, role *Role) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeRole.String(), "Get", id.String(), projectionCacheValue(RoleDetailProjection()))
-
-					db, err := NewRedisDatabase(
-						WithRedisClient(mock.NewUniversalClient(ctrl)),
-					)
-					require.NoError(t, err)
-
-					span := mock.NewMockSpan(ctrl)
-					span.EXPECT().End(gomock.Len(0)).Times(1)
-
-					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Set", gomock.Len(0)).Return(ctx, span)
-
-					cacheRepo := mock.NewCacheBackend(ctrl)
-					cacheRepo.EXPECT().Set(&cache.Item{
-						Ctx:   ctx,
-						Key:   key,
-						Value: role,
-					}).Return(assert.AnError)
-
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
-					}
-				},
-				roleRepo: func(ctrl *gomock.Controller, ctx context.Context, id, belongsTo model.ID, opts UpdateRoleOpts, role *Role) RoleRepository {
-					repo := NewMockRoleRepository(ctrl)
-					repo.EXPECT().Update(ctx, id, belongsTo, opts).Return(role, nil)
-					return repo
-				},
-			},
-			args: args{
-				ctx:       context.Background(),
-				id:        model.MustNewID(model.ResourceTypeRole),
-				belongsTo: model.MustNewID(model.ResourceTypeOrganization),
-				opts: UpdateRoleOpts{
-					Name:        optional.Some("updated role"),
-					Description: optional.Some("updated description"),
-				},
-			},
-			wantErr: ErrCacheWrite,
-		},
-		{
-			name: "update role delete get all cache error",
-			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, role *Role) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeRole.String(), "Get", id.String(), projectionCacheValue(RoleDetailProjection()))
-					getAllKey := composeCacheKey(model.ResourceTypeRole.String(), "ListBelongsTo", "*")
-
-					getAllKeyCmd := new(redis.StringSliceCmd)
-					getAllKeyCmd.SetVal([]string{getAllKey})
-
-					dbClient := mock.NewUniversalClient(ctrl)
-					dbClient.EXPECT().Keys(ctx, getAllKey).Return(getAllKeyCmd)
-
-					db, err := NewRedisDatabase(
-						WithRedisClient(dbClient),
-					)
-					require.NoError(t, err)
-
-					span := mock.NewMockSpan(ctrl)
-					span.EXPECT().End(gomock.Len(0)).Times(2)
-
-					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span)
-					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Set", gomock.Len(0)).Return(ctx, span)
-
-					cacheRepo := mock.NewCacheBackend(ctrl)
-					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(assert.AnError)
-					cacheRepo.EXPECT().Set(&cache.Item{
-						Ctx:   ctx,
-						Key:   key,
-						Value: role,
-					}).Return(nil)
-
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
-					}
-				},
-				roleRepo: func(ctrl *gomock.Controller, ctx context.Context, id, belongsTo model.ID, opts UpdateRoleOpts, role *Role) RoleRepository {
-					repo := NewMockRoleRepository(ctrl)
-					repo.EXPECT().Update(ctx, id, belongsTo, opts).Return(role, nil)
-					return repo
-				},
-			},
-			args: args{
-				ctx:       context.Background(),
-				id:        model.MustNewID(model.ResourceTypeRole),
-				belongsTo: model.MustNewID(model.ResourceTypeOrganization),
-				opts: UpdateRoleOpts{
-					Name:        optional.Some("updated role"),
-					Description: optional.Some("updated description"),
-				},
-			},
-			wantErr: ErrCacheDelete,
-		},
-	}
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-
-			r := &RedisCachedRoleRepository{
-				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, tt.want),
-				roleRepo:  tt.fields.roleRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.belongsTo, tt.args.opts, tt.want),
-			}
-			got, err := r.Update(tt.args.ctx, tt.args.id, tt.args.belongsTo, tt.args.opts)
-			require.ErrorIs(t, err, tt.wantErr)
-			require.Equal(t, tt.want, got)
-		})
-	}
+	t.Run("update role actions clears authz list caches", func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+		ctx := context.Background()
+		id := model.MustNewID(model.ResourceTypeRole)
+		belongsTo := model.MustNewID(model.ResourceTypeOrganization)
+		role := newRole(id)
+		actionOpts := UpdateRoleOpts{Actions: optional.Some([]string{model.ActionOrganizationRead.String()})}
+		setKey := composeCacheKey(model.ResourceTypeRole.String(), "Get", id.String(), projectionCacheValue(RoleDetailProjection()))
+		patterns := append(roleUpdateInvalidatePatterns(id, belongsTo), permissionCrossCachePatterns()...)
+		repo := NewMockRoleRepository(ctrl)
+		repo.EXPECT().Update(ctx, id, belongsTo, actionOpts).Return(role, nil)
+		r := &RedisCachedRoleRepository{
+			cacheRepo: redisCacheExpectingSetThenPatterns(ctrl, ctx, setKey, role, patterns, false, -1, nil),
+			roleRepo:  repo,
+		}
+		got, err := r.Update(ctx, id, belongsTo, actionOpts)
+		require.NoError(t, err)
+		require.Equal(t, role, got)
+	})
 }
 
 func TestCachedRoleRepository_AddMember(t *testing.T) {
-	type fields struct {
-		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, id, belongsToID model.ID) *redisBaseRepository
-		roleRepo  func(ctrl *gomock.Controller, ctx context.Context, id, memberID, belongsToID model.ID) RoleRepository
-	}
-	type args struct {
-		ctx         context.Context
-		id          model.ID
-		memberID    model.ID
-		belongsToID model.ID
-	}
 	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr error
+		name      string
+		failIndex int
+		failErr   error
+		repoErr   error
+		wantErr   error
 	}{
-		{
-			name: "add member success",
-			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id, belongsToID model.ID) *redisBaseRepository {
-					return redisCacheExpectingPatterns(ctrl, ctx, []string{
-						composeCacheKey(model.ResourceTypeRole.String(), "Get", id.String(), "*"),
-						composeCacheKey(model.ResourceTypeRole.String(), "ListBelongsTo", "*"),
-						composeCacheKey(model.ResourceTypeOrganization.String(), "Get", belongsToID.String(), "*"),
-					}, -1, nil)
-				},
-				roleRepo: func(ctrl *gomock.Controller, ctx context.Context, id, memberID, belongsToID model.ID) RoleRepository {
-					repo := NewMockRoleRepository(ctrl)
-					repo.EXPECT().AddMember(ctx, id, memberID, belongsToID).Return(nil)
-					return repo
-				},
-			},
-			args: args{
-				ctx:         context.Background(),
-				id:          model.MustNewID(model.ResourceTypeRole),
-				memberID:    model.MustNewID(model.ResourceTypeDocument),
-				belongsToID: model.MustNewID(model.ResourceTypeOrganization),
-			},
-		},
-		{
-			name: "add member with role deletion error",
-			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id, belongsToID model.ID) *redisBaseRepository {
-					return redisCacheExpectingPatterns(ctrl, ctx, []string{
-						composeCacheKey(model.ResourceTypeRole.String(), "Get", id.String(), "*"),
-						composeCacheKey(model.ResourceTypeRole.String(), "ListBelongsTo", "*"),
-						composeCacheKey(model.ResourceTypeOrganization.String(), "Get", belongsToID.String(), "*"),
-					}, -1, nil)
-				},
-				roleRepo: func(ctrl *gomock.Controller, ctx context.Context, id, memberID, belongsToID model.ID) RoleRepository {
-					repo := NewMockRoleRepository(ctrl)
-					repo.EXPECT().AddMember(ctx, id, memberID, belongsToID).Return(ErrRoleDelete)
-					return repo
-				},
-			},
-			args: args{
-				ctx:         context.Background(),
-				id:          model.MustNewID(model.ResourceTypeRole),
-				memberID:    model.MustNewID(model.ResourceTypeDocument),
-				belongsToID: model.MustNewID(model.ResourceTypeOrganization),
-			},
-			wantErr: ErrRoleDelete,
-		},
-		{
-			name: "delete role with cache deletion error",
-			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id, _ model.ID) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeRole.String(), "Get", id.String(), "*")
-
-					keyCmd := new(redis.StringSliceCmd)
-					keyCmd.SetVal([]string{key})
-
-					dbClient := mock.NewUniversalClient(ctrl)
-					dbClient.EXPECT().Keys(ctx, key).Return(keyCmd)
-
-					db, err := NewRedisDatabase(
-						WithRedisClient(dbClient),
-					)
-					require.NoError(t, err)
-
-					span := mock.NewMockSpan(ctrl)
-					span.EXPECT().End(gomock.Len(0)).Times(1)
-
-					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span)
-
-					cacheRepo := mock.NewCacheBackend(ctrl)
-					cacheRepo.EXPECT().Delete(ctx, key).Return(ErrCacheDelete)
-
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
-					}
-				},
-				roleRepo: func(ctrl *gomock.Controller, _ context.Context, _, _, _ model.ID) RoleRepository {
-					repo := NewMockRoleRepository(ctrl)
-					return repo
-				},
-			},
-			args: args{
-				ctx:         context.Background(),
-				id:          model.MustNewID(model.ResourceTypeRole),
-				memberID:    model.MustNewID(model.ResourceTypeDocument),
-				belongsToID: model.MustNewID(model.ResourceTypeOrganization),
-			},
-			wantErr: ErrCacheDelete,
-		},
-		{
-			name: "delete role cache by related key error",
-			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id, _ model.ID) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeRole.String(), "Get", id.String(), "*")
-					getAllKey := composeCacheKey(model.ResourceTypeRole.String(), "ListBelongsTo", "*")
-
-					getAllKeyCmd := new(redis.StringSliceCmd)
-					getAllKeyCmd.SetVal([]string{getAllKey})
-
-					keyCmd := new(redis.StringSliceCmd)
-					keyCmd.SetVal([]string{key})
-
-					dbClient := mock.NewUniversalClient(ctrl)
-					dbClient.EXPECT().Keys(ctx, key).Return(keyCmd)
-					dbClient.EXPECT().Keys(ctx, getAllKey).Return(getAllKeyCmd)
-
-					db, err := NewRedisDatabase(
-						WithRedisClient(dbClient),
-					)
-					require.NoError(t, err)
-
-					span := mock.NewMockSpan(ctrl)
-					span.EXPECT().End(gomock.Len(0)).Times(2)
-
-					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(2)
-
-					cacheRepo := mock.NewCacheBackend(ctrl)
-					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
-					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(ErrCacheDelete)
-
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
-					}
-				},
-				roleRepo: func(ctrl *gomock.Controller, _ context.Context, _, _, _ model.ID) RoleRepository {
-					return NewMockRoleRepository(ctrl)
-				},
-			},
-			args: args{
-				ctx:         context.Background(),
-				id:          model.MustNewID(model.ResourceTypeRole),
-				memberID:    model.MustNewID(model.ResourceTypeDocument),
-				belongsToID: model.MustNewID(model.ResourceTypeOrganization),
-			},
-			wantErr: ErrCacheDelete,
-		},
+		{name: "add member success", failIndex: -1},
+		{name: "add member with role deletion error", failIndex: -1, repoErr: ErrRoleDelete, wantErr: ErrRoleDelete},
+		{name: "add member with cache deletion error", failIndex: 0, failErr: ErrCacheDelete, wantErr: ErrCacheDelete},
+		{name: "add member with related cache deletion error", failIndex: 2, failErr: ErrCacheDelete, wantErr: ErrCacheDelete},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			r := &RedisCachedRoleRepository{
-				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.belongsToID),
-				roleRepo:  tt.fields.roleRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.memberID, tt.args.belongsToID),
+			ctx := context.Background()
+			id := model.MustNewID(model.ResourceTypeRole)
+			memberID := model.MustNewID(model.ResourceTypeUser)
+			belongsToID := model.MustNewID(model.ResourceTypeOrganization)
+			repo := NewMockRoleRepository(ctrl)
+			if tt.failIndex < 0 {
+				repo.EXPECT().AddMember(ctx, id, memberID, belongsToID).Return(tt.repoErr)
 			}
-			err := r.AddMember(tt.args.ctx, tt.args.id, tt.args.memberID, tt.args.belongsToID)
+			r := &RedisCachedRoleRepository{
+				cacheRepo: redisCacheExpectingPatterns(ctrl, ctx, roleMemberCachePatterns(id, belongsToID), tt.failIndex, tt.failErr),
+				roleRepo:  repo,
+			}
+			err := r.AddMember(ctx, id, memberID, belongsToID)
 			require.ErrorIs(t, err, tt.wantErr)
 		})
 	}
 }
 
 func TestCachedRoleRepository_RemoveMember(t *testing.T) {
-	type fields struct {
-		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, id, belongsToID model.ID) *redisBaseRepository
-		roleRepo  func(ctrl *gomock.Controller, ctx context.Context, id, memberID, belongsToID model.ID) RoleRepository
-	}
-	type args struct {
-		ctx         context.Context
-		id          model.ID
-		memberID    model.ID
-		belongsToID model.ID
-	}
 	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr error
+		name      string
+		failIndex int
+		failErr   error
+		repoErr   error
+		wantErr   error
 	}{
-		{
-			name: "delete role success",
-			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id, belongsToID model.ID) *redisBaseRepository {
-					return redisCacheExpectingPatterns(ctrl, ctx, []string{
-						composeCacheKey(model.ResourceTypeRole.String(), "Get", id.String(), "*"),
-						composeCacheKey(model.ResourceTypeRole.String(), "ListBelongsTo", "*"),
-						composeCacheKey(model.ResourceTypeOrganization.String(), "Get", belongsToID.String(), "*"),
-					}, -1, nil)
-				},
-				roleRepo: func(ctrl *gomock.Controller, ctx context.Context, id, memberID, belongsToID model.ID) RoleRepository {
-					repo := NewMockRoleRepository(ctrl)
-					repo.EXPECT().RemoveMember(ctx, id, memberID, belongsToID).Return(nil)
-					return repo
-				},
-			},
-			args: args{
-				ctx:         context.Background(),
-				id:          model.MustNewID(model.ResourceTypeRole),
-				memberID:    model.MustNewID(model.ResourceTypeDocument),
-				belongsToID: model.MustNewID(model.ResourceTypeOrganization),
-			},
-		},
-		{
-			name: "delete role with role deletion error",
-			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id, belongsToID model.ID) *redisBaseRepository {
-					return redisCacheExpectingPatterns(ctrl, ctx, []string{
-						composeCacheKey(model.ResourceTypeRole.String(), "Get", id.String(), "*"),
-						composeCacheKey(model.ResourceTypeRole.String(), "ListBelongsTo", "*"),
-						composeCacheKey(model.ResourceTypeOrganization.String(), "Get", belongsToID.String(), "*"),
-					}, -1, nil)
-				},
-				roleRepo: func(ctrl *gomock.Controller, ctx context.Context, id, memberID, belongsToID model.ID) RoleRepository {
-					repo := NewMockRoleRepository(ctrl)
-					repo.EXPECT().RemoveMember(ctx, id, memberID, belongsToID).Return(ErrRoleDelete)
-					return repo
-				},
-			},
-			args: args{
-				ctx:         context.Background(),
-				id:          model.MustNewID(model.ResourceTypeRole),
-				memberID:    model.MustNewID(model.ResourceTypeDocument),
-				belongsToID: model.MustNewID(model.ResourceTypeOrganization),
-			},
-			wantErr: ErrRoleDelete,
-		},
-		{
-			name: "delete role with cache deletion error",
-			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id, _ model.ID) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeRole.String(), "Get", id.String(), "*")
-
-					keyCmd := new(redis.StringSliceCmd)
-					keyCmd.SetVal([]string{key})
-
-					dbClient := mock.NewUniversalClient(ctrl)
-					dbClient.EXPECT().Keys(ctx, key).Return(keyCmd)
-
-					db, err := NewRedisDatabase(
-						WithRedisClient(dbClient),
-					)
-					require.NoError(t, err)
-
-					span := mock.NewMockSpan(ctrl)
-					span.EXPECT().End(gomock.Len(0)).Times(1)
-
-					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span)
-
-					cacheRepo := mock.NewCacheBackend(ctrl)
-					cacheRepo.EXPECT().Delete(ctx, key).Return(ErrCacheDelete)
-
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
-					}
-				},
-				roleRepo: func(ctrl *gomock.Controller, _ context.Context, _, _, _ model.ID) RoleRepository {
-					repo := NewMockRoleRepository(ctrl)
-					return repo
-				},
-			},
-			args: args{
-				ctx:         context.Background(),
-				id:          model.MustNewID(model.ResourceTypeRole),
-				memberID:    model.MustNewID(model.ResourceTypeDocument),
-				belongsToID: model.MustNewID(model.ResourceTypeOrganization),
-			},
-			wantErr: ErrCacheDelete,
-		},
-		{
-			name: "delete role cache by related key error",
-			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id, _ model.ID) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeRole.String(), "Get", id.String(), "*")
-					getAllKey := composeCacheKey(model.ResourceTypeRole.String(), "ListBelongsTo", "*")
-
-					getAllKeyCmd := new(redis.StringSliceCmd)
-					getAllKeyCmd.SetVal([]string{getAllKey})
-
-					keyCmd := new(redis.StringSliceCmd)
-					keyCmd.SetVal([]string{key})
-
-					dbClient := mock.NewUniversalClient(ctrl)
-					dbClient.EXPECT().Keys(ctx, key).Return(keyCmd)
-					dbClient.EXPECT().Keys(ctx, getAllKey).Return(getAllKeyCmd)
-
-					db, err := NewRedisDatabase(
-						WithRedisClient(dbClient),
-					)
-					require.NoError(t, err)
-
-					span := mock.NewMockSpan(ctrl)
-					span.EXPECT().End(gomock.Len(0)).Times(2)
-
-					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(2)
-
-					cacheRepo := mock.NewCacheBackend(ctrl)
-					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
-					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(ErrCacheDelete)
-
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
-					}
-				},
-				roleRepo: func(ctrl *gomock.Controller, _ context.Context, _, _, _ model.ID) RoleRepository {
-					return NewMockRoleRepository(ctrl)
-				},
-			},
-			args: args{
-				ctx:         context.Background(),
-				id:          model.MustNewID(model.ResourceTypeRole),
-				memberID:    model.MustNewID(model.ResourceTypeDocument),
-				belongsToID: model.MustNewID(model.ResourceTypeOrganization),
-			},
-			wantErr: ErrCacheDelete,
-		},
+		{name: "remove member success", failIndex: -1},
+		{name: "remove member with role deletion error", failIndex: -1, repoErr: ErrRoleDelete, wantErr: ErrRoleDelete},
+		{name: "remove member with cache deletion error", failIndex: 0, failErr: ErrCacheDelete, wantErr: ErrCacheDelete},
+		{name: "remove member with related cache deletion error", failIndex: 2, failErr: ErrCacheDelete, wantErr: ErrCacheDelete},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			r := &RedisCachedRoleRepository{
-				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.belongsToID),
-				roleRepo:  tt.fields.roleRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.memberID, tt.args.belongsToID),
+			ctx := context.Background()
+			id := model.MustNewID(model.ResourceTypeRole)
+			memberID := model.MustNewID(model.ResourceTypeUser)
+			belongsToID := model.MustNewID(model.ResourceTypeOrganization)
+			repo := NewMockRoleRepository(ctrl)
+			if tt.failIndex < 0 {
+				repo.EXPECT().RemoveMember(ctx, id, memberID, belongsToID).Return(tt.repoErr)
 			}
-			err := r.RemoveMember(tt.args.ctx, tt.args.id, tt.args.memberID, tt.args.belongsToID)
+			r := &RedisCachedRoleRepository{
+				cacheRepo: redisCacheExpectingPatterns(ctrl, ctx, roleMemberCachePatterns(id, belongsToID), tt.failIndex, tt.failErr),
+				roleRepo:  repo,
+			}
+			err := r.RemoveMember(ctx, id, memberID, belongsToID)
 			require.ErrorIs(t, err, tt.wantErr)
 		})
 	}
 }
 
 func TestCachedRoleRepository_Delete(t *testing.T) {
-	type fields struct {
-		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *redisBaseRepository
-		roleRepo  func(ctrl *gomock.Controller, ctx context.Context, id, belongsTo model.ID) RoleRepository
-	}
-	type args struct {
-		ctx       context.Context
-		id        model.ID
-		belongsTo model.ID
-	}
 	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr error
+		name      string
+		failIndex int
+		failErr   error
+		repoErr   error
+		wantErr   error
 	}{
-		{
-			name: "delete role success",
-			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeRole.String(), "Get", id.String(), "*")
-					getAllKey := composeCacheKey(model.ResourceTypeRole.String(), "ListBelongsTo", "*")
-					organizationKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*")
-					projectKey := composeCacheKey(model.ResourceTypeProject.String(), "*")
-
-					getAllKeyCmd := new(redis.StringSliceCmd)
-					getAllKeyCmd.SetVal([]string{getAllKey})
-
-					organizationKeyCmd := new(redis.StringSliceCmd)
-					organizationKeyCmd.SetVal([]string{organizationKey})
-
-					projectKeyCmd := new(redis.StringSliceCmd)
-					projectKeyCmd.SetVal([]string{projectKey})
-
-					keyCmd := new(redis.StringSliceCmd)
-					keyCmd.SetVal([]string{key})
-
-					dbClient := mock.NewUniversalClient(ctrl)
-					dbClient.EXPECT().Keys(ctx, key).Return(keyCmd)
-					dbClient.EXPECT().Keys(ctx, getAllKey).Return(getAllKeyCmd)
-					dbClient.EXPECT().Keys(ctx, organizationKey).Return(organizationKeyCmd)
-					dbClient.EXPECT().Keys(ctx, projectKey).Return(projectKeyCmd)
-
-					db, err := NewRedisDatabase(
-						WithRedisClient(dbClient),
-					)
-					require.NoError(t, err)
-
-					span := mock.NewMockSpan(ctrl)
-					span.EXPECT().End(gomock.Len(0)).Times(4)
-
-					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(4)
-
-					cacheRepo := mock.NewCacheBackend(ctrl)
-					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
-					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(nil)
-					cacheRepo.EXPECT().Delete(ctx, organizationKey).Return(nil)
-					cacheRepo.EXPECT().Delete(ctx, projectKey).Return(nil)
-
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
-					}
-				},
-				roleRepo: func(ctrl *gomock.Controller, ctx context.Context, id, belongsTo model.ID) RoleRepository {
-					repo := NewMockRoleRepository(ctrl)
-					repo.EXPECT().Delete(ctx, id, belongsTo).Return(nil)
-					return repo
-				},
-			},
-			args: args{
-				ctx:       context.Background(),
-				id:        model.MustNewID(model.ResourceTypeRole),
-				belongsTo: model.MustNewID(model.ResourceTypeOrganization),
-			},
-		},
-		{
-			name: "delete role with role deletion error",
-			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeRole.String(), "Get", id.String(), "*")
-					getAllKey := composeCacheKey(model.ResourceTypeRole.String(), "ListBelongsTo", "*")
-					organizationKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*")
-					projectKey := composeCacheKey(model.ResourceTypeProject.String(), "*")
-
-					getAllKeyCmd := new(redis.StringSliceCmd)
-					getAllKeyCmd.SetVal([]string{getAllKey})
-
-					organizationKeyCmd := new(redis.StringSliceCmd)
-					organizationKeyCmd.SetVal([]string{organizationKey})
-
-					projectKeyCmd := new(redis.StringSliceCmd)
-					projectKeyCmd.SetVal([]string{projectKey})
-
-					keyCmd := new(redis.StringSliceCmd)
-					keyCmd.SetVal([]string{key})
-
-					dbClient := mock.NewUniversalClient(ctrl)
-					dbClient.EXPECT().Keys(ctx, key).Return(keyCmd)
-					dbClient.EXPECT().Keys(ctx, getAllKey).Return(getAllKeyCmd)
-					dbClient.EXPECT().Keys(ctx, organizationKey).Return(organizationKeyCmd)
-					dbClient.EXPECT().Keys(ctx, projectKey).Return(projectKeyCmd)
-
-					db, err := NewRedisDatabase(
-						WithRedisClient(dbClient),
-					)
-					require.NoError(t, err)
-
-					span := mock.NewMockSpan(ctrl)
-					span.EXPECT().End(gomock.Len(0)).Times(4)
-
-					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(4)
-
-					cacheRepo := mock.NewCacheBackend(ctrl)
-					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
-					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(nil)
-					cacheRepo.EXPECT().Delete(ctx, organizationKey).Return(nil)
-					cacheRepo.EXPECT().Delete(ctx, projectKey).Return(nil)
-
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
-					}
-				},
-				roleRepo: func(ctrl *gomock.Controller, ctx context.Context, id, belongsTo model.ID) RoleRepository {
-					repo := NewMockRoleRepository(ctrl)
-					repo.EXPECT().Delete(ctx, id, belongsTo).Return(ErrRoleDelete)
-					return repo
-				},
-			},
-			args: args{
-				ctx:       context.Background(),
-				id:        model.MustNewID(model.ResourceTypeRole),
-				belongsTo: model.MustNewID(model.ResourceTypeOrganization),
-			},
-			wantErr: ErrRoleDelete,
-		},
-		{
-			name: "delete role with cache deletion error",
-			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeRole.String(), "Get", id.String(), "*")
-
-					keyCmd := new(redis.StringSliceCmd)
-					keyCmd.SetVal([]string{key})
-
-					dbClient := mock.NewUniversalClient(ctrl)
-					dbClient.EXPECT().Keys(ctx, key).Return(keyCmd)
-
-					db, err := NewRedisDatabase(
-						WithRedisClient(dbClient),
-					)
-					require.NoError(t, err)
-
-					span := mock.NewMockSpan(ctrl)
-					span.EXPECT().End(gomock.Len(0)).Times(1)
-
-					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span)
-
-					cacheRepo := mock.NewCacheBackend(ctrl)
-					cacheRepo.EXPECT().Delete(ctx, key).Return(ErrCacheDelete)
-
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
-					}
-				},
-				roleRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID) RoleRepository {
-					repo := NewMockRoleRepository(ctrl)
-					return repo
-				},
-			},
-			args: args{
-				ctx:       context.Background(),
-				id:        model.MustNewID(model.ResourceTypeRole),
-				belongsTo: model.MustNewID(model.ResourceTypeOrganization),
-			},
-			wantErr: ErrCacheDelete,
-		},
-		{
-			name: "delete role with get all cache deletion error",
-			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeRole.String(), "Get", id.String(), "*")
-					getAllKey := composeCacheKey(model.ResourceTypeRole.String(), "ListBelongsTo", "*")
-
-					getAllKeyCmd := new(redis.StringSliceCmd)
-					getAllKeyCmd.SetVal([]string{getAllKey})
-
-					keyCmd := new(redis.StringSliceCmd)
-					keyCmd.SetVal([]string{key})
-
-					dbClient := mock.NewUniversalClient(ctrl)
-					dbClient.EXPECT().Keys(ctx, key).Return(keyCmd)
-					dbClient.EXPECT().Keys(ctx, getAllKey).Return(getAllKeyCmd)
-
-					db, err := NewRedisDatabase(
-						WithRedisClient(dbClient),
-					)
-					require.NoError(t, err)
-
-					span := mock.NewMockSpan(ctrl)
-					span.EXPECT().End(gomock.Len(0)).Times(2)
-
-					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(2)
-
-					cacheRepo := mock.NewCacheBackend(ctrl)
-					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
-					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(ErrCacheDelete)
-
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
-					}
-				},
-				roleRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID) RoleRepository {
-					return NewMockRoleRepository(ctrl)
-				},
-			},
-			args: args{
-				ctx:       context.Background(),
-				id:        model.MustNewID(model.ResourceTypeRole),
-				belongsTo: model.MustNewID(model.ResourceTypeOrganization),
-			},
-			wantErr: ErrCacheDelete,
-		},
-		{
-			name: "delete role with organization cache deletion error",
-			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeRole.String(), "Get", id.String(), "*")
-					getAllKey := composeCacheKey(model.ResourceTypeRole.String(), "ListBelongsTo", "*")
-					organizationKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*")
-
-					getAllKeyCmd := new(redis.StringSliceCmd)
-					getAllKeyCmd.SetVal([]string{getAllKey})
-
-					organizationKeyCmd := new(redis.StringSliceCmd)
-					organizationKeyCmd.SetVal([]string{organizationKey})
-
-					keyCmd := new(redis.StringSliceCmd)
-					keyCmd.SetVal([]string{key})
-
-					dbClient := mock.NewUniversalClient(ctrl)
-					dbClient.EXPECT().Keys(ctx, key).Return(keyCmd)
-					dbClient.EXPECT().Keys(ctx, getAllKey).Return(getAllKeyCmd)
-					dbClient.EXPECT().Keys(ctx, organizationKey).Return(organizationKeyCmd)
-
-					db, err := NewRedisDatabase(
-						WithRedisClient(dbClient),
-					)
-					require.NoError(t, err)
-
-					span := mock.NewMockSpan(ctrl)
-					span.EXPECT().End(gomock.Len(0)).Times(3)
-
-					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(3)
-
-					cacheRepo := mock.NewCacheBackend(ctrl)
-					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
-					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(nil)
-					cacheRepo.EXPECT().Delete(ctx, organizationKey).Return(ErrCacheDelete)
-
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
-					}
-				},
-				roleRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID) RoleRepository {
-					return NewMockRoleRepository(ctrl)
-				},
-			},
-			args: args{
-				ctx:       context.Background(),
-				id:        model.MustNewID(model.ResourceTypeRole),
-				belongsTo: model.MustNewID(model.ResourceTypeOrganization),
-			},
-			wantErr: ErrCacheDelete,
-		},
-		{
-			name: "delete role with project cache deletion error",
-			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeRole.String(), "Get", id.String(), "*")
-					getAllKey := composeCacheKey(model.ResourceTypeRole.String(), "ListBelongsTo", "*")
-					organizationKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*")
-					projectKey := composeCacheKey(model.ResourceTypeProject.String(), "*")
-
-					getAllKeyCmd := new(redis.StringSliceCmd)
-					getAllKeyCmd.SetVal([]string{getAllKey})
-
-					organizationKeyCmd := new(redis.StringSliceCmd)
-					organizationKeyCmd.SetVal([]string{organizationKey})
-
-					projectKeyCmd := new(redis.StringSliceCmd)
-					projectKeyCmd.SetVal([]string{projectKey})
-
-					keyCmd := new(redis.StringSliceCmd)
-					keyCmd.SetVal([]string{key})
-
-					dbClient := mock.NewUniversalClient(ctrl)
-					dbClient.EXPECT().Keys(ctx, key).Return(keyCmd)
-					dbClient.EXPECT().Keys(ctx, getAllKey).Return(getAllKeyCmd)
-					dbClient.EXPECT().Keys(ctx, organizationKey).Return(organizationKeyCmd)
-					dbClient.EXPECT().Keys(ctx, projectKey).Return(projectKeyCmd)
-
-					db, err := NewRedisDatabase(
-						WithRedisClient(dbClient),
-					)
-					require.NoError(t, err)
-
-					span := mock.NewMockSpan(ctrl)
-					span.EXPECT().End(gomock.Len(0)).Times(4)
-
-					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(4)
-
-					cacheRepo := mock.NewCacheBackend(ctrl)
-					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
-					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(nil)
-					cacheRepo.EXPECT().Delete(ctx, organizationKey).Return(nil)
-					cacheRepo.EXPECT().Delete(ctx, projectKey).Return(ErrCacheDelete)
-
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
-					}
-				},
-				roleRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID) RoleRepository {
-					return NewMockRoleRepository(ctrl)
-				},
-			},
-			args: args{
-				ctx:       context.Background(),
-				id:        model.MustNewID(model.ResourceTypeRole),
-				belongsTo: model.MustNewID(model.ResourceTypeOrganization),
-			},
-			wantErr: ErrCacheDelete,
-		},
+		{name: "delete role success", failIndex: -1},
+		{name: "delete role with role deletion error", failIndex: -1, repoErr: ErrRoleDelete, wantErr: ErrRoleDelete},
+		{name: "delete role with cache deletion error", failIndex: 0, failErr: ErrCacheDelete, wantErr: ErrCacheDelete},
+		{name: "delete role with get all cache deletion error", failIndex: 3, failErr: ErrCacheDelete, wantErr: ErrCacheDelete},
+		{name: "delete role with organization cache deletion error", failIndex: 4, failErr: ErrCacheDelete, wantErr: ErrCacheDelete},
+		{name: "delete role with project cache deletion error", failIndex: 5, failErr: ErrCacheDelete, wantErr: ErrCacheDelete},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			r := &RedisCachedRoleRepository{
-				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id),
-				roleRepo:  tt.fields.roleRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.belongsTo),
+			ctx := context.Background()
+			id := model.MustNewID(model.ResourceTypeRole)
+			belongsTo := model.MustNewID(model.ResourceTypeOrganization)
+			repo := NewMockRoleRepository(ctrl)
+			if tt.failIndex < 0 {
+				repo.EXPECT().Delete(ctx, id, belongsTo).Return(tt.repoErr)
 			}
-			err := r.Delete(tt.args.ctx, tt.args.id, tt.args.belongsTo)
+			r := &RedisCachedRoleRepository{
+				cacheRepo: redisCacheExpectingPatterns(ctrl, ctx, roleDeleteCachePatterns(id, belongsTo), tt.failIndex, tt.failErr),
+				roleRepo:  repo,
+			}
+			err := r.Delete(ctx, id, belongsTo)
 			require.ErrorIs(t, err, tt.wantErr)
 		})
 	}

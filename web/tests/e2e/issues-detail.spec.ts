@@ -1,6 +1,6 @@
 import { createIssue } from "./api";
 import { expect, test } from "./fixtures";
-import { seedOwnerWorkspace, waitForSuccessToast } from "./helpers";
+import { clickUntilVisible, seedOwnerWorkspace } from "./helpers";
 import type { OwnerWorkspace } from "./helpers/workspace";
 import { WorkItemPage } from "./pages";
 import { USER_DEFAULT_PASSWORD, loginUser } from "./utils/auth";
@@ -57,13 +57,15 @@ test.describe("@issues.detail Issue Detail E2E Tests", () => {
       Object.defineProperty(navigator, "clipboard", {
         configurable: true,
         value: {
-          writeText: () => undefined,
+          writeText: () => Promise.resolve(),
         },
       });
     });
 
-    await workItem.copyLink();
-    await waitForSuccessToast(page, "Copied");
+    await clickUntilVisible(
+      workItem.getCopyLinkButton(),
+      page.locator("[data-sonner-toast]").filter({ hasText: /Copied/i })
+    );
   });
 
   test("should expose more actions including delete", async ({ page }) => {

@@ -7,137 +7,180 @@ import (
 
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg"
-	"github.com/opcotech/elemo/internal/pkg/validate"
 	"github.com/opcotech/elemo/internal/repository"
 )
 
-// Permission represents a permission returned by the service.
-type Permission struct {
+// Grant is a scoped authorization relationship returned by the service.
+type Grant struct {
 	ID        model.ID
-	Kind      model.PermissionKind
-	Subject   model.ID
-	Target    model.ID
+	Principal model.ID
+	Scope     model.ID
+	RoleID    *model.ID
+	Actions   []model.Action
 	CreatedAt *time.Time
 	UpdatedAt *time.Time
 }
 
-// CreatePermissionOpts holds the data required to create a permission.
-type CreatePermissionOpts struct {
-	Kind    model.PermissionKind `json:"kind" validate:"required,min=1,max=5"`
-	Subject model.ID             `json:"subject" validate:"required"`
-	Target  model.ID             `json:"target" validate:"required"`
+// CreateGrantOpts holds the data required to create a grant.
+type CreateGrantOpts struct {
+	Principal model.ID
+	Scope     model.ID
+	RoleID    *model.ID
+	Actions   []model.Action
 }
 
-// Validate validates the create options.
-func (o *CreatePermissionOpts) Validate() error {
-	if err := validate.Struct(o); err != nil {
-		return errors.Join(model.ErrInvalidPermissionDetails, err)
-	}
-	// Allow roles to have permissions on themselves, but reject for all other resource types.
-	if o.Subject.Inner == o.Target.Inner && (o.Subject.Type != model.ResourceTypeRole || o.Target.Type != model.ResourceTypeRole) {
-		return errors.Join(model.ErrInvalidPermissionDetails, model.ErrPermissionSubjectTargetEqual)
-	}
-	if err := o.Subject.Validate(); err != nil {
-		return errors.Join(model.ErrInvalidPermissionDetails, err)
-	}
-	if err := o.Target.Validate(); err != nil {
-		return errors.Join(model.ErrInvalidPermissionDetails, err)
-	}
-	return nil
+// Validate reports whether the grant has a principal, a scope, and either a
+// role or at least one action.
+func (o CreateGrantOpts) Validate() error {
+	return repository.CreateGrantOpts{
+		Principal: o.Principal,
+		Scope:     o.Scope,
+		RoleID:    o.RoleID,
+		Actions:   o.Actions,
+	}.Validate()
 }
 
-// PermissionService serves the business logic of interacting with permissions.
+// PermissionService is the single authorization API for request-time checks,
+// listings, and grant administration.
 //
 //go:generate go tool mockgen -destination=permission_mock_gen.go -package=service -mock_names PermissionService=MockPermissionService . PermissionService
 type PermissionService interface {
-	// Create creates a new permission. If the permission already exists, an
-	// additional permission is created.
-	Create(ctx context.Context, opts CreatePermissionOpts) (*Permission, error)
-	// CtxUserCreate creates a new permission if the user in the context has the
-	// permission to create a new permission. If the permission already exists,
-	// an additional permission is created. If the user in the context does not
-	// have the permission to create a new permission, an error is returned.
-	CtxUserCreate(ctx context.Context, opts CreatePermissionOpts) (*Permission, error)
-	// Get returns the permission with the given ID. If the permission does not
-	// exist, an error is returned.
-	Get(ctx context.Context, id model.ID) (*Permission, error)
-	// GetBySubject returns all permissions where the subject is the given ID.
-	// If no permissions exist, an error is returned.
-	GetBySubject(ctx context.Context, id model.ID) ([]*Permission, error)
-	// GetByTarget returns all permissions where the target is the given ID. If
-	// no permissions exist, an error is returned.
-	GetByTarget(ctx context.Context, id model.ID) ([]*Permission, error)
-	// GetBySubjectAndTarget returns all permissions where the subject and the
-	// target are both provided. If no permissions exist, an error is returned.
-	GetBySubjectAndTarget(ctx context.Context, source, target model.ID) ([]*Permission, error)
-	// HasAnyRelation checks if the subject has any relation to the target. If
-	// the subject does not have any relation to the target, an error is
-	// returned.
-	HasAnyRelation(ctx context.Context, source, target model.ID) (bool, error)
-	// CtxUserHasAnyRelation checks if the user in the context has any relation
-	// to the target. If the user does not have any relation to the target, an
-	// error is returned.
-	CtxUserHasAnyRelation(ctx context.Context, target model.ID) bool
-	// HasSystemRole checks if the subject has the system role. If the subject
-	// does not have the system role, an error is returned.
-	HasSystemRole(ctx context.Context, source model.ID, roles ...model.SystemRole) (bool, error)
-	// CtxUserHasSystemRole checks if the user in the context has the system
-	// role. If the user does not have the system role, an error is returned.
-	CtxUserHasSystemRole(ctx context.Context, roles ...model.SystemRole) bool
-	// HasPermission checks if the subject has the permission to perform the
-	// action on the target. If the subject does not have the permission, an
-	// error is returned.
-	HasPermission(ctx context.Context, subject, target model.ID, kinds ...model.PermissionKind) (bool, error)
-	// CtxUserHasPermission checks if the user in the context has the permission
-	// to perform the action on the target. If the user does not have the
-	// permission, an error is returned.
-	CtxUserHasPermission(ctx context.Context, target model.ID, permissions ...model.PermissionKind) bool
-	// Update updates the permission with the given ID. If the permission does
-	// not exist, an error is returned.
-	Update(ctx context.Context, id model.ID, kind model.PermissionKind) (*Permission, error)
-	// CtxUserUpdate updates the permission with the given ID if the user in the
-	// context has the permission to update the permission. If the permission
-	// does not exist, an error is returned.
-	CtxUserUpdate(ctx context.Context, id model.ID, kind model.PermissionKind) (*Permission, error)
-	// Delete deletes the permission with the given ID. If the permission does
-	// not exist, an error is returned.
+	// Has reports whether actor may perform action on resource, walking
+	// MEMBER_OF (depth 0 or 1) and IN_SCOPE_OF ancestry.
+	Has(ctx context.Context, actor, resource model.ID, action model.Action) (bool, error)
+	// CtxUserHas is Has for the user ID stored in ctx. It returns false when
+	// the user is missing or the check fails.
+	CtxUserHas(ctx context.Context, resource model.ID, action model.Action) bool
+	// EffectiveActions returns the union of grant and role-bundle actions the
+	// actor holds on resource, including inherited scopes.
+	EffectiveActions(ctx context.Context, actor, resource model.ID) ([]model.Action, error)
+	// CtxUserEffectiveActions is EffectiveActions for the user ID stored in
+	// ctx. It returns ErrNoUser when the context has no user ID.
+	CtxUserEffectiveActions(ctx context.Context, resource model.ID) ([]model.Action, error)
+	// Explain returns a Decision for whether actor may perform action on
+	// resource. A deny leaves Principal, Scope, GrantID, and RoleID unset.
+	Explain(ctx context.Context, actor, resource model.ID, action model.Action) (*repository.Decision, error)
+
+	// Create records a grant without checking the caller's existing permissions.
+	Create(ctx context.Context, opts CreateGrantOpts) (*Grant, error)
+	// CtxUserCreate creates a grant for the context user. The caller must hold
+	// permission.manage on the scope and every action being granted, including
+	// those implied by RoleID.
+	CtxUserCreate(ctx context.Context, opts CreateGrantOpts) (*Grant, error)
+	// Get returns a grant by ID.
+	Get(ctx context.Context, id model.ID) (*Grant, error)
+	// ListByPrincipal returns grants issued to principal.
+	ListByPrincipal(ctx context.Context, principal model.ID) ([]*Grant, error)
+	// ListByScope returns grants whose scope is the given resource.
+	ListByScope(ctx context.Context, scope model.ID) ([]*Grant, error)
+	// Delete removes a grant by ID.
 	Delete(ctx context.Context, id model.ID) error
-	// CtxUserDelete deletes the permission with the given ID if the user in the
-	// context has the permission to delete the permission. If the permission
-	// does not exist, an error is returned.
+	// CtxUserDelete deletes a grant if the context user holds permission.manage
+	// on the grant's scope.
 	CtxUserDelete(ctx context.Context, id model.ID) error
+
+	// LinkInScopeOf creates (child)-[:IN_SCOPE_OF]->(parent). It rejects a link
+	// that would introduce a cycle.
+	LinkInScopeOf(ctx context.Context, child, parent model.ID) error
+	// BootstrapCreator grants actions to creator on resource without an
+	// authorization check. Use only when creating a resource for its owner.
+	BootstrapCreator(ctx context.Context, creator, resource model.ID, actions []model.Action) error
+	// GrantRole creates a grant that binds principal to roleID on scope.
+	GrantRole(ctx context.Context, principal, scope model.ID, roleID model.ID) error
+	// BumpGeneration increments the per-principal authz generation key used by
+	// cached membership paths. Evaluator results are not cached.
+	BumpGeneration(ctx context.Context, principal model.ID) error
 }
 
-// permissionService is the concrete implementation of the PermissionService
-// interface.
 type permissionService struct {
 	*baseService
 	permissionRepo repository.PermissionRepository
 }
 
-func permissionFromRepository(p *repository.Permission) *Permission {
-	if p == nil {
+func grantFromRepository(g *repository.Grant) *Grant {
+	if g == nil {
 		return nil
 	}
-	return &Permission{
-		ID:        p.ID,
-		Kind:      p.Kind,
-		Subject:   p.Subject,
-		Target:    p.Target,
-		CreatedAt: p.CreatedAt,
-		UpdatedAt: p.UpdatedAt,
+	return &Grant{
+		ID:        g.ID,
+		Principal: g.Principal,
+		Scope:     g.Scope,
+		RoleID:    g.RoleID,
+		Actions:   g.Actions,
+		CreatedAt: g.CreatedAt,
+		UpdatedAt: g.UpdatedAt,
 	}
 }
 
-func permissionsFromRepository(permissions []*repository.Permission) []*Permission {
-	out := make([]*Permission, len(permissions))
-	for i, p := range permissions {
-		out[i] = permissionFromRepository(p)
+func grantsFromRepository(grants []*repository.Grant) []*Grant {
+	out := make([]*Grant, len(grants))
+	for i, g := range grants {
+		out[i] = grantFromRepository(g)
 	}
 	return out
 }
 
-func (s *permissionService) Create(ctx context.Context, opts CreatePermissionOpts) (*Permission, error) {
+func (s *permissionService) Has(ctx context.Context, actor, resource model.ID, action model.Action) (bool, error) {
+	ctx, span := s.tracer.Start(ctx, "service.permissionService/Has")
+	defer span.End()
+
+	allowed, err := s.permissionRepo.Has(ctx, actor, resource, action)
+	if err != nil {
+		return false, errors.Join(ErrPermissionHasPermission, err)
+	}
+	return allowed, nil
+}
+
+func (s *permissionService) CtxUserHas(ctx context.Context, resource model.ID, action model.Action) bool {
+	ctx, span := s.tracer.Start(ctx, "service.permissionService/CtxUserHas")
+	defer span.End()
+
+	userID, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID)
+	if !ok {
+		return false
+	}
+
+	allowed, err := s.Has(ctx, userID, resource, action)
+	if err != nil && !errors.Is(err, repository.ErrPermissionRead) {
+		return false
+	}
+	return allowed
+}
+
+func (s *permissionService) EffectiveActions(ctx context.Context, actor, resource model.ID) ([]model.Action, error) {
+	ctx, span := s.tracer.Start(ctx, "service.permissionService/EffectiveActions")
+	defer span.End()
+
+	actions, err := s.permissionRepo.EffectiveActions(ctx, actor, resource)
+	if err != nil {
+		return nil, errors.Join(ErrPermissionGet, err)
+	}
+	return actions, nil
+}
+
+func (s *permissionService) CtxUserEffectiveActions(ctx context.Context, resource model.ID) ([]model.Action, error) {
+	ctx, span := s.tracer.Start(ctx, "service.permissionService/CtxUserEffectiveActions")
+	defer span.End()
+
+	userID, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID)
+	if !ok {
+		return nil, ErrNoUser
+	}
+	return s.EffectiveActions(ctx, userID, resource)
+}
+
+func (s *permissionService) Explain(ctx context.Context, actor, resource model.ID, action model.Action) (*repository.Decision, error) {
+	ctx, span := s.tracer.Start(ctx, "service.permissionService/Explain")
+	defer span.End()
+
+	decision, err := s.permissionRepo.Explain(ctx, actor, resource, action)
+	if err != nil {
+		return nil, errors.Join(ErrPermissionHasPermission, err)
+	}
+	return decision, nil
+}
+
+func (s *permissionService) Create(ctx context.Context, opts CreateGrantOpts) (*Grant, error) {
 	ctx, span := s.tracer.Start(ctx, "service.permissionService/Create")
 	defer span.End()
 
@@ -145,230 +188,109 @@ func (s *permissionService) Create(ctx context.Context, opts CreatePermissionOpt
 		return nil, err
 	}
 
-	perm, err := s.permissionRepo.Create(ctx, repository.CreatePermissionOpts{
-		Kind:    opts.Kind,
-		Subject: opts.Subject,
-		Target:  opts.Target,
+	grant, err := s.permissionRepo.Create(ctx, repository.CreateGrantOpts{
+		Principal: opts.Principal,
+		Scope:     opts.Scope,
+		RoleID:    opts.RoleID,
+		Actions:   opts.Actions,
 	})
 	if err != nil {
 		return nil, errors.Join(ErrPermissionCreate, err)
 	}
-
-	return permissionFromRepository(perm), nil
+	_ = s.permissionRepo.BumpGeneration(ctx, opts.Principal)
+	return grantFromRepository(grant), nil
 }
 
-func (s *permissionService) CtxUserCreate(ctx context.Context, opts CreatePermissionOpts) (*Permission, error) {
+func (s *permissionService) heldActions(ctx context.Context, actor, scope model.ID) (map[model.Action]struct{}, error) {
+	actions, err := s.EffectiveActions(ctx, actor, scope)
+	if err != nil {
+		return nil, err
+	}
+	held := make(map[model.Action]struct{}, len(actions))
+	for _, action := range actions {
+		held[action] = struct{}{}
+	}
+	return held, nil
+}
+
+func (s *permissionService) CtxUserCreate(ctx context.Context, opts CreateGrantOpts) (*Grant, error) {
 	ctx, span := s.tracer.Start(ctx, "service.permissionService/CtxUserCreate")
 	defer span.End()
 
-	hasPermission := false
-
-	// If the user has "write" permission on the target, they can give any
-	// permission to the subject they own too (plus "read").
-	if s.CtxUserHasPermission(ctx, opts.Target, model.PermissionKindWrite) {
-		hasPermission = s.CtxUserHasPermission(ctx, opts.Target, opts.Kind)
+	userID, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID)
+	if !ok {
+		return nil, errors.Join(ErrPermissionCreate, ErrNoUser)
 	}
 
-	if hasPermission {
-		return s.Create(ctx, opts)
+	if !s.CtxUserHas(ctx, opts.Scope, model.ActionPermissionManage) {
+		return nil, errors.Join(ErrPermissionCreate, ErrNoPermission)
 	}
 
-	return nil, errors.Join(ErrPermissionCreate, ErrNoPermission)
+	held, err := s.heldActions(ctx, userID, opts.Scope)
+	if err != nil {
+		return nil, errors.Join(ErrPermissionCreate, err)
+	}
+
+	actions := opts.Actions
+	if len(actions) == 0 && opts.RoleID != nil {
+		parsed, parseErr := s.actionsForRole(ctx, *opts.RoleID)
+		if parseErr != nil {
+			return nil, errors.Join(ErrPermissionCreate, parseErr)
+		}
+		actions = parsed
+	}
+
+	for _, action := range actions {
+		if _, ok := held[action]; !ok {
+			return nil, errors.Join(ErrPermissionCreate, model.ErrPrivilegeEscalation)
+		}
+	}
+
+	return s.Create(ctx, opts)
 }
 
-func (s *permissionService) Get(ctx context.Context, id model.ID) (*Permission, error) {
+func (s *permissionService) actionsForRole(ctx context.Context, roleID model.ID) ([]model.Action, error) {
+	if s.roleRepo == nil {
+		return nil, ErrNoRoleRepository
+	}
+	role, err := s.roleRepo.GetByID(ctx, roleID)
+	if err != nil {
+		return nil, err
+	}
+	return model.ParseActions(role.Actions)
+}
+
+func (s *permissionService) Get(ctx context.Context, id model.ID) (*Grant, error) {
 	ctx, span := s.tracer.Start(ctx, "service.permissionService/Get")
 	defer span.End()
 
-	perm, err := s.permissionRepo.Get(ctx, id)
+	grant, err := s.permissionRepo.Get(ctx, id)
 	if err != nil {
 		return nil, errors.Join(ErrPermissionGet, err)
 	}
-
-	return permissionFromRepository(perm), nil
+	return grantFromRepository(grant), nil
 }
 
-func (s *permissionService) GetBySubject(ctx context.Context, id model.ID) ([]*Permission, error) {
-	ctx, span := s.tracer.Start(ctx, "service.permissionService/GetBySubject")
+func (s *permissionService) ListByPrincipal(ctx context.Context, principal model.ID) ([]*Grant, error) {
+	ctx, span := s.tracer.Start(ctx, "service.permissionService/ListByPrincipal")
 	defer span.End()
 
-	permissions, err := s.permissionRepo.GetBySubject(ctx, id)
+	grants, err := s.permissionRepo.ListByPrincipal(ctx, principal)
 	if err != nil {
 		return nil, errors.Join(ErrPermissionGetBySubject, err)
 	}
-
-	return permissionsFromRepository(permissions), nil
+	return grantsFromRepository(grants), nil
 }
 
-func (s *permissionService) GetByTarget(ctx context.Context, id model.ID) ([]*Permission, error) {
-	ctx, span := s.tracer.Start(ctx, "service.permissionService/GetByTarget")
+func (s *permissionService) ListByScope(ctx context.Context, scope model.ID) ([]*Grant, error) {
+	ctx, span := s.tracer.Start(ctx, "service.permissionService/ListByScope")
 	defer span.End()
 
-	permissions, err := s.permissionRepo.GetByTarget(ctx, id)
+	grants, err := s.permissionRepo.ListByScope(ctx, scope)
 	if err != nil {
 		return nil, errors.Join(ErrPermissionGetByTarget, err)
 	}
-
-	return permissionsFromRepository(permissions), nil
-}
-
-func (s *permissionService) GetBySubjectAndTarget(ctx context.Context, source, target model.ID) ([]*Permission, error) {
-	ctx, span := s.tracer.Start(ctx, "service.permissionService/GetBySubjectAndTarget")
-	defer span.End()
-
-	permissions, err := s.permissionRepo.GetBySubjectAndTarget(ctx, source, target)
-	if err != nil {
-		return nil, errors.Join(ErrPermissionGetBySubjectAndTarget, err)
-	}
-
-	return permissionsFromRepository(permissions), nil
-}
-
-func (s *permissionService) HasAnyRelation(ctx context.Context, source, target model.ID) (bool, error) {
-	ctx, span := s.tracer.Start(ctx, "service.permissionService/HasAnyRelation")
-	defer span.End()
-
-	hasAnyRelation, err := s.permissionRepo.HasAnyRelation(ctx, source, target)
-	if err != nil {
-		return false, errors.Join(ErrPermissionHasAnyRelation, err)
-	}
-
-	return hasAnyRelation, nil
-}
-
-func (s *permissionService) CtxUserHasAnyRelation(ctx context.Context, target model.ID) bool {
-	ctx, span := s.tracer.Start(ctx, "service.permissionService/CtxUserHasAnyRelation")
-	defer span.End()
-
-	userID, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID)
-	if !ok {
-		return false
-	}
-
-	hasAnyRelation, err := s.HasAnyRelation(ctx, userID, target)
-	if err != nil {
-		return false
-	}
-
-	return hasAnyRelation
-}
-
-func (s *permissionService) HasSystemRole(ctx context.Context, source model.ID, roles ...model.SystemRole) (bool, error) {
-	ctx, span := s.tracer.Start(ctx, "service.permissionService/HasSystemRole")
-	defer span.End()
-
-	hasSystemRole, err := s.permissionRepo.HasSystemRole(ctx, source, roles...)
-	if err != nil {
-		return false, errors.Join(ErrPermissionHasSystemRole, err)
-	}
-
-	return hasSystemRole, nil
-}
-
-func (s *permissionService) CtxUserHasSystemRole(ctx context.Context, roles ...model.SystemRole) bool {
-	ctx, span := s.tracer.Start(ctx, "service.permissionService/CtxUserHasSystemRole")
-	defer span.End()
-
-	userID, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID)
-	if !ok {
-		return false
-	}
-
-	hasSystemRole, err := s.HasSystemRole(ctx, userID, roles...)
-	if err != nil {
-		return false
-	}
-
-	return hasSystemRole
-}
-
-func (s *permissionService) HasPermission(ctx context.Context, subject, target model.ID, kinds ...model.PermissionKind) (bool, error) {
-	ctx, span := s.tracer.Start(ctx, "service.permissionService/HasPermission")
-	defer span.End()
-
-	// Collect system roles to check for based on permission kinds.
-	roles := []model.SystemRole{
-		model.SystemRoleOwner,
-		model.SystemRoleAdmin,
-		model.SystemRoleSupport,
-	}
-
-	// Limit the roles to check for based on the permission kinds.
-	// - If we have a permission kind of "all" or "delete, the role must be owner.
-	// - If we have a permission kind of "create" or "write", the role must be owner or admin.
-	// - Otherwise, the role can be any system role.
-	for _, kind := range kinds {
-		if kind == model.PermissionKindAll || kind == model.PermissionKindDelete {
-			roles = []model.SystemRole{model.SystemRoleOwner}
-			break
-		}
-
-		if kind == model.PermissionKindCreate || kind == model.PermissionKindWrite {
-			roles = []model.SystemRole{model.SystemRoleOwner, model.SystemRoleAdmin}
-			break
-		}
-	}
-
-	hasSystemRoles, err := s.permissionRepo.HasSystemRole(ctx, subject, roles...)
-	if err != nil {
-		return false, errors.Join(ErrPermissionHasSystemRole, err)
-	}
-
-	hasPermission, err := s.permissionRepo.HasPermission(ctx, subject, target, append(kinds, model.PermissionKindAll)...)
-	if err != nil {
-		return false, errors.Join(ErrPermissionHasPermission, err)
-	}
-
-	return hasSystemRoles || hasPermission, nil
-}
-
-func (s *permissionService) CtxUserHasPermission(ctx context.Context, target model.ID, kinds ...model.PermissionKind) bool {
-	ctx, span := s.tracer.Start(ctx, "service.permissionService/CtxUserHasPermission")
-	defer span.End()
-
-	userID, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID)
-	if !ok {
-		return false
-	}
-
-	hasPerm, err := s.HasPermission(ctx, userID, target, kinds...)
-	if err != nil && !errors.Is(err, repository.ErrPermissionRead) {
-		return false
-	}
-
-	return hasPerm
-}
-
-func (s *permissionService) Update(ctx context.Context, id model.ID, kind model.PermissionKind) (*Permission, error) {
-	ctx, span := s.tracer.Start(ctx, "service.permissionService/Update")
-	defer span.End()
-
-	permission, err := s.permissionRepo.Update(ctx, id, kind)
-	if err != nil {
-		return nil, errors.Join(ErrPermissionUpdate, err)
-	}
-
-	return permissionFromRepository(permission), nil
-}
-
-func (s *permissionService) CtxUserUpdate(ctx context.Context, id model.ID, kind model.PermissionKind) (*Permission, error) {
-	ctx, span := s.tracer.Start(ctx, "service.permissionService/CtxUserUpdate")
-	defer span.End()
-
-	if _, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID); !ok {
-		return nil, errors.Join(ErrPermissionUpdate, ErrNoUser)
-	}
-
-	perm, err := s.Get(ctx, id)
-	if err != nil {
-		return nil, errors.Join(ErrPermissionUpdate, err)
-	}
-
-	if s.CtxUserHasPermission(ctx, perm.Target, model.PermissionKindWrite) {
-		return s.Update(ctx, id, kind)
-	}
-
-	return nil, errors.Join(ErrPermissionUpdate, ErrNoPermission)
+	return grantsFromRepository(grants), nil
 }
 
 func (s *permissionService) Delete(ctx context.Context, id model.ID) error {
@@ -378,7 +300,6 @@ func (s *permissionService) Delete(ctx context.Context, id model.ID) error {
 	if err := s.permissionRepo.Delete(ctx, id); err != nil {
 		return errors.Join(ErrPermissionDelete, err)
 	}
-
 	return nil
 }
 
@@ -390,19 +311,72 @@ func (s *permissionService) CtxUserDelete(ctx context.Context, id model.ID) erro
 		return errors.Join(ErrPermissionDelete, ErrNoUser)
 	}
 
-	perm, err := s.Get(ctx, id)
+	grant, err := s.Get(ctx, id)
 	if err != nil {
 		return errors.Join(ErrPermissionDelete, err)
 	}
 
-	if s.CtxUserHasPermission(ctx, perm.Target, model.PermissionKindDelete) {
-		return s.Delete(ctx, id)
+	if !s.CtxUserHas(ctx, grant.Scope, model.ActionPermissionManage) {
+		return errors.Join(ErrPermissionDelete, ErrNoPermission)
 	}
 
-	return errors.Join(ErrPermissionDelete, ErrNoPermission)
+	return s.Delete(ctx, id)
 }
 
-// NewPermissionService creates a new permission service.
+func (s *permissionService) LinkInScopeOf(ctx context.Context, child, parent model.ID) error {
+	ctx, span := s.tracer.Start(ctx, "service.permissionService/LinkInScopeOf")
+	defer span.End()
+
+	if err := s.permissionRepo.LinkInScopeOf(ctx, child, parent); err != nil {
+		return errors.Join(ErrPermissionCreate, err)
+	}
+	return nil
+}
+
+func (s *permissionService) BootstrapCreator(ctx context.Context, creator, resource model.ID, actions []model.Action) error {
+	ctx, span := s.tracer.Start(ctx, "service.permissionService/BootstrapCreator")
+	defer span.End()
+
+	_, err := s.Create(ctx, CreateGrantOpts{
+		Principal: creator,
+		Scope:     resource,
+		Actions:   actions,
+	})
+	return err
+}
+
+func (s *permissionService) GrantRole(ctx context.Context, principal, scope model.ID, roleID model.ID) error {
+	ctx, span := s.tracer.Start(ctx, "service.permissionService/GrantRole")
+	defer span.End()
+
+	_, err := s.Create(ctx, CreateGrantOpts{
+		Principal: principal,
+		Scope:     scope,
+		RoleID:    &roleID,
+	})
+	return err
+}
+
+func (s *permissionService) BumpGeneration(ctx context.Context, principal model.ID) error {
+	ctx, span := s.tracer.Start(ctx, "service.permissionService/BumpGeneration")
+	defer span.End()
+
+	if err := s.permissionRepo.BumpGeneration(ctx, principal); err != nil {
+		return errors.Join(ErrPermissionUpdate, err)
+	}
+	return nil
+}
+
+func roleTemplateActions(key string) ([]model.Action, error) {
+	tmpl, err := model.RoleTemplateByKey(key)
+	if err != nil {
+		return nil, err
+	}
+	return tmpl.Actions, nil
+}
+
+// NewPermissionService creates a PermissionService that evaluates and
+// administers grants through permissionRepo.
 func NewPermissionService(permissionRepo repository.PermissionRepository, opts ...Option) (PermissionService, error) {
 	s, err := newService(opts...)
 	if err != nil {

@@ -34,13 +34,8 @@ import {
   v1NamespacesProjectsGetOptions,
 } from "@/lib/api/query-options";
 import { v1NamespacesProjectsGet } from "@/lib/api/sdk";
-import type {
-  Namespace,
-  Organization,
-  PartialDocument,
-  Project,
-} from "@/lib/api/types";
-import { can } from "@/lib/auth/permissions";
+import type { Namespace, PartialDocument, Project } from "@/lib/api/types";
+import { Action, can } from "@/lib/auth/permissions";
 import type { DocumentLibrarySearch } from "@/lib/documents/library";
 import { internalPath } from "@/lib/internal-url";
 import { selectAttentionSignals, selectWorkItems } from "@/lib/mock-data";
@@ -50,7 +45,7 @@ export function NamespaceOverviewPage({
   organization,
 }: {
   namespace: Namespace;
-  organization?: Organization;
+  organization?: { id: string; name: string };
 }) {
   const { data: permissions } = usePermissions(
     withResourceType(ResourceType.Namespace, namespace.id)
@@ -69,7 +64,11 @@ export function NamespaceOverviewPage({
   );
   const projects: Project[] = projectsPage?.items ?? [];
   const documents: PartialDocument[] = documentsPage?.items ?? [];
-  const mayWrite = can(permissions, "write");
+  const mayCreateWork = can(permissions, Action.IssueCreate);
+  const mayCreateDocument = can(permissions, Action.DocumentCreate);
+  const mayCreateProject = can(permissions, Action.ProjectCreate);
+  const mayReadDocuments = can(permissions, Action.DocumentRead);
+  const mayAdminister = can(permissions, Action.NamespaceRead);
   const scopedWork = selectWorkItems({
     scope: { type: "namespace", namespaceId: namespace.id },
   });
@@ -92,7 +91,7 @@ export function NamespaceOverviewPage({
         actions={
           <PageActions
             primary={
-              mayWrite ? (
+              mayCreateWork ? (
                 <CreateButton onClick={() => openQuickCreate("work")}>
                   Work
                 </CreateButton>
@@ -103,16 +102,22 @@ export function NamespaceOverviewPage({
               )
             }
             secondary={[
-              {
-                label: "Create project",
-                href: organization
-                  ? `/settings/organizations/${organization.id}/namespaces/${namespace.id}/projects/new`
-                  : undefined,
-              },
-              {
-                label: "View relationships",
-                href: `/relations/namespace/${namespace.id}`,
-              },
+              ...(mayCreateProject && organization
+                ? [
+                    {
+                      label: "Create project",
+                      href: `/settings/organizations/${organization.id}/namespaces/${namespace.id}/projects/new`,
+                    },
+                  ]
+                : []),
+              ...(mayAdminister
+                ? [
+                    {
+                      label: "View relationships",
+                      href: `/relations/namespace/${namespace.id}`,
+                    },
+                  ]
+                : []),
             ]}
           />
         }
@@ -224,23 +229,27 @@ export function NamespaceOverviewPage({
             data-section="documents"
             action={
               <div className="flex items-center gap-2">
-                {mayWrite ? (
+                {mayCreateDocument ? (
                   <AddButton
                     size="sm"
                     onClick={() => openQuickCreate("document")}
                   />
                 ) : null}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  render={
-                    <InternalLink
-                      to={internalPath(`/namespaces/${namespace.id}/documents`)}
-                    />
-                  }
-                >
-                  View all <ArrowRightIcon />
-                </Button>
+                {mayReadDocuments ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    render={
+                      <InternalLink
+                        to={internalPath(
+                          `/namespaces/${namespace.id}/documents`
+                        )}
+                      />
+                    }
+                  >
+                    View all <ArrowRightIcon />
+                  </Button>
+                ) : null}
               </div>
             }
           >
@@ -255,7 +264,7 @@ export function NamespaceOverviewPage({
                 title="No documents"
                 description="Documents that live in this namespace will appear here."
                 action={
-                  mayWrite ? (
+                  mayCreateDocument ? (
                     <CreateButton onClick={() => openQuickCreate("document")} />
                   ) : undefined
                 }
@@ -273,7 +282,7 @@ export function NamespaceProjectsPage({
   organization,
 }: {
   namespace: Namespace;
-  organization?: Organization;
+  organization?: { id: string; name: string };
 }) {
   const [query, setQuery] = useState("");
   const { data: permissions } = usePermissions(
@@ -293,7 +302,7 @@ export function NamespaceProjectsPage({
       return data;
     })
   );
-  const mayWrite = can(permissions, "write");
+  const mayCreateProject = can(permissions, Action.ProjectCreate);
   const projects = useMemo(() => {
     const items: Project[] = projectsPage?.items ?? [];
     const normalized = query.trim().toLowerCase();
@@ -316,7 +325,7 @@ export function NamespaceProjectsPage({
         description={`Real undertakings in ${namespace.name}.`}
         showIcon={false}
         actions={
-          mayWrite && organization ? (
+          mayCreateProject && organization ? (
             <CreateButton
               href={`/settings/organizations/${organization.id}/namespaces/${namespace.id}/projects/new`}
             >
@@ -427,7 +436,9 @@ export function NamespaceDocumentsPage({
   const { data: permissions } = usePermissions(
     withResourceType(ResourceType.Namespace, namespace.id)
   );
-  const mayWrite = can(permissions, "write");
+  const mayWrite =
+    can(permissions, Action.DocumentCreate) ||
+    can(permissions, Action.FolderCreate);
 
   return (
     <DocumentLibraryPage

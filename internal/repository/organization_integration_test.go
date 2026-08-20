@@ -68,13 +68,26 @@ func (s *OrganizationRepositoryIntegrationTestSuite) TestGet() {
 	s.Assert().WithinDuration(*created.CreatedAt, *org.CreatedAt, 100*time.Millisecond)
 }
 
+func (s *OrganizationRepositoryIntegrationTestSuite) grantOrganizationRead(orgID model.ID) {
+	s.T().Helper()
+	_, err := s.PermissionRepo.Create(context.Background(), repository.CreateGrantOpts{
+		Principal: s.testUser.ID,
+		Scope:     orgID,
+		Actions:   []model.Action{model.ActionOrganizationRead},
+	})
+	s.Require().NoError(err)
+}
+
 func (s *OrganizationRepositoryIntegrationTestSuite) TestGetAll() {
-	_, err := s.OrganizationRepo.Create(context.Background(), s.createOpts)
+	org, err := s.OrganizationRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
-	_, err = s.OrganizationRepo.Create(context.Background(), testModel.NewCreateOrganizationOpts(s.testUser.ID))
+	s.grantOrganizationRead(org.ID)
+	org, err = s.OrganizationRepo.Create(context.Background(), testModel.NewCreateOrganizationOpts(s.testUser.ID))
 	s.Require().NoError(err)
-	_, err = s.OrganizationRepo.Create(context.Background(), testModel.NewCreateOrganizationOpts(s.testUser.ID))
+	s.grantOrganizationRead(org.ID)
+	org, err = s.OrganizationRepo.Create(context.Background(), testModel.NewCreateOrganizationOpts(s.testUser.ID))
 	s.Require().NoError(err)
+	s.grantOrganizationRead(org.ID)
 
 	orgs, err := s.OrganizationRepo.List(context.Background(), s.testUser.ID, repository.CursorPage{Size: 10}, repository.OrganizationListProjection())
 	s.Require().NoError(err)

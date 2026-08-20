@@ -8,11 +8,12 @@ import {
   v1NamespacesProjectsGetOptions,
   v1NotificationsGetOptions,
   v1OrganizationRoleGetOptions,
+  v1OrganizationTeamGetOptions,
   v1OrganizationsGetOptions,
   v1OrganizationsNamespacesGetOptions,
   v1ProjectGetOptions,
 } from "@/lib/api/query-options";
-import { ResourceType } from "@/lib/auth/permissions";
+import { Action, ResourceType } from "@/lib/auth/permissions";
 import {
   loadResourcePermissions,
   requireResourcePermission,
@@ -85,7 +86,8 @@ export async function loadNamespaceDetail(
   const permissions = await requireResourcePermission(
     queryClient,
     ResourceType.Namespace,
-    namespaceId
+    namespaceId,
+    Action.NamespaceRead
   );
   return { ...hierarchy, permissions };
 }
@@ -129,13 +131,16 @@ export async function loadProjectDetail(
     v1NamespaceGetOptions({ path: { id: namespaceId } })
   );
 
-  await requireProjectInNamespace(queryClient, namespaceId, projectId);
-
+  // Permission-filtered project lists omit rows the actor cannot read. Check
+  // project.read first so a direct URL becomes Access Denied instead of a 404.
   const permissions = await requireResourcePermission(
     queryClient,
     ResourceType.Project,
-    projectId
+    projectId,
+    Action.ProjectRead
   );
+
+  await requireProjectInNamespace(queryClient, namespaceId, projectId);
 
   const project = await queryClient.fetchQuery(
     v1ProjectGetOptions({ path: { id: projectId } })
@@ -160,6 +165,22 @@ export async function loadOrganizationRole(
   return { organization, role };
 }
 
+export async function loadOrganizationTeam(
+  queryClient: QueryClient,
+  organizationId: string,
+  teamId: string
+) {
+  const [organization, team] = await Promise.all([
+    loadOrganization(queryClient, organizationId),
+    queryClient.fetchQuery(
+      v1OrganizationTeamGetOptions({
+        path: { id: organizationId, team_id: teamId },
+      })
+    ),
+  ]);
+  return { organization, team };
+}
+
 export async function loadAllNamespaces(queryClient: QueryClient) {
   const [workspace] = await Promise.all([
     queryClient.fetchQuery(accessibleNamespacesOptions(queryClient)),
@@ -178,7 +199,7 @@ export async function loadOrganizations(
   );
   const organizations = organizationsPage.items;
   const permissionLoads = [
-    loadResourcePermissions(queryClient, ResourceType.Organization),
+    loadResourcePermissions(queryClient, ResourceType.Installation),
   ];
 
   if (includeRowPermissions) {

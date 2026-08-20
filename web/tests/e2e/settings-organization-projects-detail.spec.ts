@@ -9,9 +9,9 @@ import {
 import { USER_DEFAULT_PASSWORD, loginUser } from "./utils/auth";
 import {
   createUser,
+  grantActionsToUser,
   grantMembershipToUser,
-  grantPermissionToUser,
-  grantSystemOwnerMembershipToUser,
+  grantOrganizationCreateToUser,
 } from "./utils/db";
 import { getRandomString } from "./utils/random";
 
@@ -34,7 +34,7 @@ test.describe("@settings.organization-projects-detail Organization Projects Deta
     writerUser = await createUser(testConfig);
     readerUser = await createUser(testConfig);
 
-    await grantSystemOwnerMembershipToUser(testConfig, ownerUser.email);
+    await grantOrganizationCreateToUser(testConfig, ownerUser.email);
 
     ownerApiClient = await createApiClient(
       ownerUser.email,
@@ -63,19 +63,19 @@ test.describe("@settings.organization-projects-detail Organization Projects Deta
       "Organization",
       organizationId
     );
-    await grantPermissionToUser(
+    await grantActionsToUser(
       testConfig,
       writerUser.email,
       "Organization",
       organizationId,
-      "read"
+      ["organization.read"]
     );
-    await grantPermissionToUser(
+    await grantActionsToUser(
       testConfig,
       writerUser.email,
       "Namespace",
       namespaceId,
-      "read"
+      ["namespace.read"]
     );
 
     await grantMembershipToUser(
@@ -84,19 +84,19 @@ test.describe("@settings.organization-projects-detail Organization Projects Deta
       "Organization",
       organizationId
     );
-    await grantPermissionToUser(
+    await grantActionsToUser(
       testConfig,
       readerUser.email,
       "Organization",
       organizationId,
-      "read"
+      ["organization.read"]
     );
-    await grantPermissionToUser(
+    await grantActionsToUser(
       testConfig,
       readerUser.email,
       "Namespace",
       namespaceId,
-      "read"
+      ["namespace.read"]
     );
   });
 
@@ -123,12 +123,12 @@ test.describe("@settings.organization-projects-detail Organization Projects Deta
   }) => {
     const project = await seedProject();
 
-    await grantPermissionToUser(
+    await grantActionsToUser(
       testConfig,
       readerUser.email,
       "Project",
       project.id,
-      "read"
+      ["project.read", "issue.read", "document.read"]
     );
 
     await loginUser(page, {
@@ -159,26 +159,35 @@ test.describe("@settings.organization-projects-detail Organization Projects Deta
   }) => {
     const project = await seedProject();
 
-    await grantPermissionToUser(
+    await grantActionsToUser(
       testConfig,
       readerUser.email,
       "Project",
       project.id,
-      "read"
+      ["project.read", "issue.read", "document.read"]
     );
-    await grantPermissionToUser(
+    await grantActionsToUser(
       testConfig,
       writerUser.email,
       "Project",
       project.id,
-      "read"
+      ["project.read", "issue.read", "document.read"]
     );
-    await grantPermissionToUser(
+    await grantActionsToUser(
       testConfig,
       writerUser.email,
       "Project",
       project.id,
-      "write"
+      [
+        "project.update",
+        "project.members.manage",
+        "issue.create",
+        "issue.update",
+        "issue.assign",
+        "document.create",
+        "document.update",
+        "folder.create",
+      ]
     );
 
     await loginUser(page, {
@@ -221,12 +230,12 @@ test.describe("@settings.organization-projects-detail Organization Projects Deta
   }) => {
     const project = await seedProject();
 
-    await grantPermissionToUser(
+    await grantActionsToUser(
       testConfig,
       readerUser.email,
       "Project",
       project.id,
-      "read"
+      ["project.read", "issue.read", "document.read"]
     );
 
     await loginUser(page, {
@@ -261,7 +270,7 @@ test.describe("@settings.organization-projects-detail Organization Projects Deta
     expect(await projectDetailsPage.getTitleText()).toContain(project.name);
   });
 
-  test("should not link project list rows without project read permission", async ({
+  test("should not list projects without project read permission", async ({
     page,
   }) => {
     const project = await seedProject();
@@ -277,12 +286,8 @@ test.describe("@settings.organization-projects-detail Organization Projects Deta
     await namespaceDetailsPage.goto(organizationId, namespaceId);
     await namespaceDetailsPage.projects.waitForLoad();
 
-    const projectRow = namespaceDetailsPage.projects.getRowByProjectName(
-      project.name
-    );
-    await expect(projectRow).toBeVisible();
     await expect(
-      projectRow.getByRole("link", { name: project.name })
+      namespaceDetailsPage.projects.getRowByProjectName(project.name)
     ).not.toBeVisible();
   });
 
@@ -314,33 +319,42 @@ test.describe("@settings.organization-projects-detail Organization Projects Deta
   }) => {
     const project = await seedProject();
 
-    await grantPermissionToUser(
+    await grantActionsToUser(
       testConfig,
       writerUser.email,
       "Project",
       project.id,
-      "read"
+      ["project.read", "issue.read", "document.read"]
     );
-    await grantPermissionToUser(
+    await grantActionsToUser(
       testConfig,
       writerUser.email,
       "Project",
       project.id,
-      "write"
+      [
+        "project.update",
+        "project.members.manage",
+        "issue.create",
+        "issue.update",
+        "issue.assign",
+        "document.create",
+        "document.update",
+        "folder.create",
+      ]
     );
-    await grantPermissionToUser(
+    await grantActionsToUser(
       testConfig,
       writerUser.email,
       "Project",
       project.id,
-      "delete"
+      ["project.delete"]
     );
-    await grantPermissionToUser(
+    await grantActionsToUser(
       testConfig,
       readerUser.email,
       "Project",
       project.id,
-      "read"
+      ["project.read", "issue.read", "document.read"]
     );
 
     await loginUser(page, {
@@ -392,19 +406,19 @@ test.describe("@settings.organization-projects-detail Organization Projects Deta
   }) => {
     const project = await seedProject();
 
-    await grantPermissionToUser(
+    await grantActionsToUser(
       testConfig,
       writerUser.email,
       "Project",
       project.id,
-      "read"
+      ["project.read", "issue.read", "document.read"]
     );
-    await grantPermissionToUser(
+    await grantActionsToUser(
       testConfig,
       writerUser.email,
       "Project",
       project.id,
-      "delete"
+      ["project.delete"]
     );
 
     await loginUser(page, {

@@ -12,9 +12,9 @@ import {
 import { USER_DEFAULT_PASSWORD, loginUser } from "./utils/auth";
 import {
   createUser,
+  grantActionsToUser,
   grantMembershipToUser,
-  grantPermissionToUser,
-  grantSystemOwnerMembershipToUser,
+  grantOrganizationCreateToUser,
 } from "./utils/db";
 import { getRandomString } from "./utils/random";
 
@@ -32,9 +32,9 @@ test.describe("@settings.organization-edit Organization Edit E2E Tests", () => {
     memberUser = await createUser(testConfig);
     readOnlyMemberUser = await createUser(testConfig);
 
-    // Grant system owner membership so user can create organizations
-    // Using DB helper since API doesn't allow creating system-level permissions
-    await grantSystemOwnerMembershipToUser(testConfig, ownerUser.email);
+    // Grant organization.create on Installation so the user can create organizations
+    // Using DB helper: Installation grants are not created by bootstrap.
+    await grantOrganizationCreateToUser(testConfig, ownerUser.email);
 
     // Create organization via API first with unique name
     const uniqueId = getRandomString(8);
@@ -56,19 +56,26 @@ test.describe("@settings.organization-edit Organization Edit E2E Tests", () => {
       "Organization",
       organization.id
     );
-    await grantPermissionToUser(
+    await grantActionsToUser(
       testConfig,
       memberUser.email,
       "Organization",
       organization.id,
-      "read"
+      ["organization.read"]
     );
-    await grantPermissionToUser(
+    await grantActionsToUser(
       testConfig,
       memberUser.email,
       "Organization",
       organization.id,
-      "write"
+      [
+        "organization.update",
+        "organization.members.manage",
+        "namespace.create",
+        "role.manage",
+        "team.manage",
+        "permission.manage",
+      ]
     );
 
     // Grant membership to read-only member user with only read permission
@@ -78,12 +85,12 @@ test.describe("@settings.organization-edit Organization Edit E2E Tests", () => {
       "Organization",
       organization.id
     );
-    await grantPermissionToUser(
+    await grantActionsToUser(
       testConfig,
       readOnlyMemberUser.email,
       "Organization",
       organization.id,
-      "read"
+      ["organization.read"]
     );
   });
 

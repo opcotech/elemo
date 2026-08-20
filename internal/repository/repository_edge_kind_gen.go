@@ -7,11 +7,11 @@ import (
 	"strings"
 )
 
-const _EdgeKindName = "ASSIGNED_TOBELONGS_TOCOMMENTEDCREATEDHAS_ATTACHMENTHAS_COMMENTHAS_LABELHAS_NAMESPACEHAS_PERMISSIONHAS_PROJECTHAS_TEAMINVITEDINVITED_TOKIND_OFMEMBER_OFRELATED_TOSPEAKSWATCHESSCOPED_TOLOCATED_IN"
+const _EdgeKindName = "ASSIGNED_TOBELONGS_TOCOMMENTEDCREATEDHAS_ATTACHMENTHAS_COMMENTHAS_LABELHAS_NAMESPACEHAS_PERMISSIONHAS_PROJECTHAS_TEAMINVITEDINVITED_TOKIND_OFMEMBER_OFRELATED_TOSPEAKSWATCHESSCOPED_TOLOCATED_ININ_SCOPE_OFGRANTEDDEFINES_ROLE"
 
-var _EdgeKindIndex = [...]uint8{0, 11, 21, 30, 37, 51, 62, 71, 84, 98, 109, 117, 124, 134, 141, 150, 160, 166, 173, 182, 192}
+var _EdgeKindIndex = [...]uint8{0, 11, 21, 30, 37, 51, 62, 71, 84, 98, 109, 117, 124, 134, 141, 150, 160, 166, 173, 182, 192, 203, 210, 222}
 
-const _EdgeKindLowerName = "assigned_tobelongs_tocommentedcreatedhas_attachmenthas_commenthas_labelhas_namespacehas_permissionhas_projecthas_teaminvitedinvited_tokind_ofmember_ofrelated_tospeakswatchesscoped_tolocated_in"
+const _EdgeKindLowerName = "assigned_tobelongs_tocommentedcreatedhas_attachmenthas_commenthas_labelhas_namespacehas_permissionhas_projecthas_teaminvitedinvited_tokind_ofmember_ofrelated_tospeakswatchesscoped_tolocated_inin_scope_ofgranteddefines_role"
 
 func (i EdgeKind) String() string {
 	i -= 1
@@ -45,9 +45,12 @@ func _EdgeKindNoOp() {
 	_ = x[EdgeKindWatches-(18)]
 	_ = x[EdgeKindScopedTo-(19)]
 	_ = x[EdgeKindLocatedIn-(20)]
+	_ = x[EdgeKindInScopeOf-(21)]
+	_ = x[EdgeKindGranted-(22)]
+	_ = x[EdgeKindDefinesRole-(23)]
 }
 
-var _EdgeKindValues = []EdgeKind{EdgeKindAssignedTo, EdgeKindBelongsTo, EdgeKindCommented, EdgeKindCreated, EdgeKindHasAttachment, EdgeKindHasComment, EdgeKindHasLabel, EdgeKindHasNamespace, EdgeKindHasPermission, EdgeKindHasProject, EdgeKindHasTeam, EdgeKindInvited, EdgeKindInvitedTo, EdgeKindKindOf, EdgeKindMemberOf, EdgeKindRelatedTo, EdgeKindSpeaks, EdgeKindWatches, EdgeKindScopedTo, EdgeKindLocatedIn}
+var _EdgeKindValues = []EdgeKind{EdgeKindAssignedTo, EdgeKindBelongsTo, EdgeKindCommented, EdgeKindCreated, EdgeKindHasAttachment, EdgeKindHasComment, EdgeKindHasLabel, EdgeKindHasNamespace, EdgeKindHasPermission, EdgeKindHasProject, EdgeKindHasTeam, EdgeKindInvited, EdgeKindInvitedTo, EdgeKindKindOf, EdgeKindMemberOf, EdgeKindRelatedTo, EdgeKindSpeaks, EdgeKindWatches, EdgeKindScopedTo, EdgeKindLocatedIn, EdgeKindInScopeOf, EdgeKindGranted, EdgeKindDefinesRole}
 
 var _EdgeKindNameToValueMap = map[string]EdgeKind{
 	_EdgeKindName[0:11]:         EdgeKindAssignedTo,
@@ -90,6 +93,12 @@ var _EdgeKindNameToValueMap = map[string]EdgeKind{
 	_EdgeKindLowerName[173:182]: EdgeKindScopedTo,
 	_EdgeKindName[182:192]:      EdgeKindLocatedIn,
 	_EdgeKindLowerName[182:192]: EdgeKindLocatedIn,
+	_EdgeKindName[192:203]:      EdgeKindInScopeOf,
+	_EdgeKindLowerName[192:203]: EdgeKindInScopeOf,
+	_EdgeKindName[203:210]:      EdgeKindGranted,
+	_EdgeKindLowerName[203:210]: EdgeKindGranted,
+	_EdgeKindName[210:222]:      EdgeKindDefinesRole,
+	_EdgeKindLowerName[210:222]: EdgeKindDefinesRole,
 }
 
 var _EdgeKindNames = []string{
@@ -113,6 +122,9 @@ var _EdgeKindNames = []string{
 	_EdgeKindName[166:173],
 	_EdgeKindName[173:182],
 	_EdgeKindName[182:192],
+	_EdgeKindName[192:203],
+	_EdgeKindName[203:210],
+	_EdgeKindName[210:222],
 }
 
 // EdgeKindString retrieves an enum value from the enum constants string name.

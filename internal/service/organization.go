@@ -117,6 +117,8 @@ func (o *AcceptOrganizationInvitationOpts) Validate() error {
 
 // OrganizationService serves the business logic of interacting with
 // organizations.
+//
+//go:generate go tool mockgen -destination=organization_mock_gen.go -package=service -mock_names OrganizationService=MockOrganizationService . OrganizationService
 type OrganizationService interface {
 	// Create creates a new organization. The owner of the organization is
 	// automatically added as a member of the organization. If the owner
@@ -192,7 +194,7 @@ func (s *organizationService) Create(ctx context.Context, owner model.ID, opts C
 		return nil, errors.Join(ErrOrganizationCreate, err)
 	}
 
-	if !s.permissionService.CtxUserHasPermission(ctx, model.MustNewNilID(model.ResourceTypeOrganization), model.PermissionKindCreate) {
+	if !s.permissionService.CtxUserHas(ctx, model.InstallationID(), model.ActionOrganizationCreate) {
 		return nil, errors.Join(ErrOrganizationCreate, ErrNoPermission)
 	}
 
@@ -217,7 +219,40 @@ func (s *organizationService) Create(ctx context.Context, owner model.ID, opts C
 		return nil, errors.Join(ErrOrganizationCreate, err)
 	}
 
+	if err := s.seedOrganizationAuth(ctx, owner, organization.ID); err != nil {
+		return nil, errors.Join(ErrOrganizationCreate, err)
+	}
+
 	return organizationFromRepository(organization), nil
+}
+
+func (s *organizationService) seedOrganizationAuth(ctx context.Context, owner, orgID model.ID) error {
+	for _, tmpl := range model.RoleTemplates {
+		if _, err := s.roleRepo.Create(ctx, repository.CreateRoleOpts{
+			Key:         tmpl.Key,
+			Name:        tmpl.Name,
+			Description: tmpl.Description,
+			Actions:     tmpl.ActionStrings(),
+			CreatedBy:   owner,
+			BelongsTo:   orgID,
+		}); err != nil {
+			return err
+		}
+	}
+
+	adminRole, err := s.roleRepo.GetByKey(ctx, orgID, model.RoleKeyOrgAdmin)
+	if err != nil {
+		return err
+	}
+	if err := s.permissionService.GrantRole(ctx, owner, orgID, adminRole.ID); err != nil {
+		return err
+	}
+
+	memberRole, err := s.roleRepo.GetByKey(ctx, orgID, model.RoleKeyOrgMember)
+	if err != nil {
+		return err
+	}
+	return s.permissionService.GrantRole(ctx, orgID, orgID, memberRole.ID)
 }
 
 func (s *organizationService) Get(ctx context.Context, id model.ID) (*Organization, error) {
@@ -226,6 +261,10 @@ func (s *organizationService) Get(ctx context.Context, id model.ID) (*Organizati
 
 	if err := id.Validate(); err != nil {
 		return nil, errors.Join(ErrOrganizationGet, err)
+	}
+
+	if !s.permissionService.CtxUserHas(ctx, id, model.ActionOrganizationRead) {
+		return nil, errors.Join(ErrOrganizationGet, ErrNoPermission)
 	}
 
 	organization, err := s.organizationRepo.Get(ctx, id, repository.OrganizationDetailProjection())
@@ -275,7 +314,7 @@ func (s *organizationService) Update(ctx context.Context, id model.ID, opts Upda
 		return nil, errors.Join(ErrOrganizationUpdate, err)
 	}
 
-	if !s.permissionService.CtxUserHasPermission(ctx, id, model.PermissionKindWrite) {
+	if !s.permissionService.CtxUserHas(ctx, id, model.ActionOrganizationUpdate) {
 		return nil, errors.Join(ErrOrganizationUpdate, ErrNoPermission)
 	}
 
@@ -314,7 +353,7 @@ func (s *organizationService) Delete(ctx context.Context, id model.ID, force boo
 		return errors.Join(ErrOrganizationDelete, err)
 	}
 
-	if !s.permissionService.CtxUserHasPermission(ctx, id, model.PermissionKindDelete) {
+	if !s.permissionService.CtxUserHas(ctx, id, model.ActionOrganizationDelete) {
 		return errors.Join(ErrOrganizationDelete, ErrNoPermission)
 	}
 
@@ -349,24 +388,12 @@ func (s *organizationService) AddMember(ctx context.Context, orgID, memberID mod
 		return errors.Join(ErrOrganizationMemberAdd, err)
 	}
 
-	if !s.permissionService.CtxUserHasPermission(ctx, orgID, model.PermissionKindWrite) {
+	if !s.permissionService.CtxUserHas(ctx, orgID, model.ActionOrganizationMembersManage) {
 		return errors.Join(ErrOrganizationMemberAdd, ErrNoPermission)
 	}
 
 	if err := s.organizationRepo.AddMember(ctx, orgID, memberID); err != nil {
 		return errors.Join(ErrOrganizationMemberAdd, err)
-	}
-
-	if _, err := s.permissionService.Create(ctx, CreatePermissionOpts{
-		Subject: memberID,
-		Target:  orgID,
-		Kind:    model.PermissionKindRead,
-	}); err != nil {
-		// Log error but don't fail - member is already added
-		s.logger.Warn(ctx, "failed to assign read permission to new member",
-			log.WithError(err),
-			log.WithUserID(memberID.String()),
-			slog.String("organization_id", orgID.String()))
 	}
 
 	return nil
@@ -385,7 +412,7 @@ func (s *organizationService) ListMembers(ctx context.Context, orgID model.ID, p
 		return Page[*OrganizationMember]{}, errors.Join(ErrOrganizationMembersGet, err)
 	}
 
-	if !s.permissionService.CtxUserHasPermission(ctx, orgID, model.PermissionKindRead) {
+	if !s.permissionService.CtxUserHas(ctx, orgID, model.ActionOrganizationRead) {
 		return Page[*OrganizationMember]{}, errors.Join(ErrOrganizationMembersGet, ErrNoPermission)
 	}
 
@@ -394,32 +421,18 @@ func (s *organizationService) ListMembers(ctx context.Context, orgID model.ID, p
 		return Page[*OrganizationMember]{}, errors.Join(ErrOrganizationMembersGet, err)
 	}
 
-	items := make([]*OrganizationMember, 0, len(members.Items))
-	for _, member := range members.Items {
-		permissions, err := s.permissionService.GetBySubjectAndTarget(ctx, member.ID, orgID)
-		if err != nil {
-			return Page[*OrganizationMember]{}, errors.Join(ErrOrganizationMembersGet, err)
-		}
-
-		virtualRoles := computeVirtualRoles(permissions)
-		allRoles := combineRoles(virtualRoles, member.Roles)
-
-		items = append(items, &OrganizationMember{
+	return mapPage(members, func(member *repository.OrganizationMember) *OrganizationMember {
+		return &OrganizationMember{
 			ID:        member.ID,
 			FirstName: member.FirstName,
 			LastName:  member.LastName,
 			Email:     member.Email,
 			Picture:   member.Picture,
 			Status:    member.Status,
-			Roles:     allRoles,
+			Roles:     member.Roles,
 			CreatedAt: member.CreatedAt,
-		})
-	}
-
-	return Page[*OrganizationMember]{
-		Items:    items,
-		PageInfo: members.PageInfo,
-	}, nil
+		}
+	}), nil
 }
 
 func (s *organizationService) RemoveMember(ctx context.Context, orgID, memberID model.ID) error {
@@ -438,23 +451,25 @@ func (s *organizationService) RemoveMember(ctx context.Context, orgID, memberID 
 		return errors.Join(ErrOrganizationMemberRemove, err)
 	}
 
-	if !s.permissionService.CtxUserHasPermission(ctx, orgID, model.PermissionKindWrite) {
+	if !s.permissionService.CtxUserHas(ctx, orgID, model.ActionOrganizationMembersManage) {
 		return errors.Join(ErrOrganizationMemberRemove, ErrNoPermission)
 	}
 
-	// Remove all permissions for the member on the organization before removing the member
-	permissions, err := s.permissionService.GetBySubjectAndTarget(ctx, memberID, orgID)
+	grants, err := s.permissionService.ListByPrincipal(ctx, memberID)
 	if err != nil && !errors.Is(err, repository.ErrPermissionRead) {
-		s.logger.Warn(ctx, "failed to get permissions when removing member",
+		s.logger.Warn(ctx, "failed to get grants when removing member",
 			log.WithError(err),
 			log.WithUserID(memberID.String()),
 			slog.String("organization_id", orgID.String()))
 	} else {
-		for _, perm := range permissions {
-			if err := s.permissionService.Delete(ctx, perm.ID); err != nil {
-				s.logger.Warn(ctx, "failed to delete permission when removing member",
+		for _, grant := range grants {
+			if grant.Scope != orgID {
+				continue
+			}
+			if err := s.permissionService.Delete(ctx, grant.ID); err != nil {
+				s.logger.Warn(ctx, "failed to delete grant when removing member",
 					log.WithError(err),
-					slog.String("permission_id", perm.ID.String()),
+					slog.String("grant_id", grant.ID.String()),
 					log.WithUserID(memberID.String()),
 					slog.String("organization_id", orgID.String()))
 			}
@@ -507,7 +522,7 @@ func (s *organizationService) InviteMember(ctx context.Context, orgID model.ID, 
 		return errors.Join(ErrOrganizationMemberInvite, err)
 	}
 
-	if !s.permissionService.CtxUserHasPermission(ctx, orgID, model.PermissionKindWrite) {
+	if !s.permissionService.CtxUserHas(ctx, orgID, model.ActionOrganizationMembersManage) {
 		return errors.Join(ErrOrganizationMemberInvite, ErrNoPermission)
 	}
 
@@ -543,7 +558,7 @@ func (s *organizationService) InviteMember(ctx context.Context, orgID model.ID, 
 		}
 	}
 
-	hasPermission, err := s.permissionService.HasPermission(ctx, user.ID, orgID, model.PermissionKindRead)
+	hasPermission, err := s.permissionService.Has(ctx, user.ID, orgID, model.ActionOrganizationRead)
 	if err != nil {
 		return errors.Join(ErrOrganizationMemberInvite, err)
 	}
@@ -638,7 +653,7 @@ func (s *organizationService) RevokeInvitation(ctx context.Context, orgID, userI
 		return errors.Join(ErrOrganizationInviteRevoke, err)
 	}
 
-	if !s.permissionService.CtxUserHasPermission(ctx, orgID, model.PermissionKindWrite) {
+	if !s.permissionService.CtxUserHas(ctx, orgID, model.ActionOrganizationMembersManage) {
 		return errors.Join(ErrOrganizationInviteRevoke, ErrNoPermission)
 	}
 
@@ -796,25 +811,15 @@ func (s *organizationService) AcceptInvitation(ctx context.Context, orgID model.
 		return errors.Join(ErrOrganizationInviteAccept, err)
 	}
 
-	if _, err := s.permissionService.Create(ctx, CreatePermissionOpts{
-		Subject: userID,
-		Target:  orgID,
-		Kind:    model.PermissionKindRead,
-	}); err != nil {
-		s.logger.Warn(ctx, "failed to assign read permission to new member during invitation acceptance",
-			log.WithError(err),
-			log.WithUserID(userID.String()),
-			slog.String("organization_id", orgID.String()))
-	}
-
 	if roleIDStr, ok := tokenData["role_id"].(string); ok && roleIDStr != "" {
 		roleID, err := model.NewIDFromString(roleIDStr, model.ResourceTypeRole.String())
 		if err == nil && !roleID.IsNil() {
-			if s.roleRepo != nil {
-				_, err := s.roleRepo.Get(ctx, roleID, orgID, repository.RoleDetailProjection())
-				if err == nil {
-					_ = s.roleRepo.AddMember(ctx, roleID, userID, orgID)
-				}
+			if err := s.permissionService.GrantRole(ctx, userID, orgID, roleID); err != nil {
+				s.logger.Warn(ctx, "failed to grant role during invitation acceptance",
+					log.WithError(err),
+					log.WithUserID(userID.String()),
+					slog.String("organization_id", orgID.String()),
+					slog.String("role_id", roleID.String()))
 			}
 		}
 	}
@@ -844,6 +849,10 @@ func NewOrganizationService(opts ...Option) (OrganizationService, error) {
 		return nil, ErrNoOrganizationRepository
 	}
 
+	if svc.roleRepo == nil {
+		return nil, ErrNoRoleRepository
+	}
+
 	if svc.userRepo == nil {
 		return nil, ErrNoUserRepository
 	}
@@ -865,64 +874,4 @@ func NewOrganizationService(opts ...Option) (OrganizationService, error) {
 	}
 
 	return svc, nil
-}
-
-// computeVirtualRoles computes virtual roles based on permissions:
-// - owner: if user has `all` permissions OR has `read` AND `write` AND `delete`
-// - admin: if user has `write` permission
-// - member: if user has ONLY `read` permission
-func computeVirtualRoles(permissions []*Permission) []string {
-	virtualRoles := make([]string, 0)
-	hasRead := false
-	hasWrite := false
-	hasDelete := false
-	hasAll := false
-
-	for _, perm := range permissions {
-		switch perm.Kind {
-		case model.PermissionKindAll:
-			hasAll = true
-		case model.PermissionKindRead:
-			hasRead = true
-		case model.PermissionKindWrite:
-			hasWrite = true
-		case model.PermissionKindDelete:
-			hasDelete = true
-		}
-	}
-
-	switch {
-	case hasAll || (hasRead && hasWrite && hasDelete):
-		virtualRoles = append(virtualRoles, "Owner")
-	case hasWrite:
-		virtualRoles = append(virtualRoles, "Admin")
-	case hasRead && !hasWrite && !hasDelete:
-		virtualRoles = append(virtualRoles, "Member")
-	}
-
-	return virtualRoles
-}
-
-// combineRoles combines virtual roles with actual roles, deduplicating
-func combineRoles(virtualRoles, actualRoles []string) []string {
-	roleSet := make(map[string]bool)
-	result := make([]string, 0)
-
-	// Add virtual roles first
-	for _, role := range virtualRoles {
-		if !roleSet[role] {
-			roleSet[role] = true
-			result = append(result, role)
-		}
-	}
-
-	// Add actual roles
-	for _, role := range actualRoles {
-		if !roleSet[role] {
-			roleSet[role] = true
-			result = append(result, role)
-		}
-	}
-
-	return result
 }

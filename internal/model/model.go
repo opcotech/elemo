@@ -16,7 +16,7 @@ type ID struct {
 }
 
 func (id ID) Validate() error {
-	if id.Type < 1 || id.Type > ResourceTypeFolder {
+	if id.Type < 1 || id.Type > ResourceTypeTeam {
 		return ErrInvalidID
 	}
 	return nil

@@ -57,6 +57,8 @@ type DocumentGetQuery struct {
 
 type DocumentListByCreatorQuery struct {
 	CreatedBy  model.ID
+	ActorID    model.ID
+	Action     model.Action
 	Page       CursorPage
 	Order      SortDirection
 	Projection DocumentProjection
@@ -64,6 +66,8 @@ type DocumentListByCreatorQuery struct {
 
 type DocumentListLibraryQuery struct {
 	LibraryID  model.ID
+	ActorID    model.ID
+	Action     model.Action
 	Filter     LibraryListFilter
 	Page       CursorPage
 	Order      SortDirection
@@ -72,6 +76,8 @@ type DocumentListLibraryQuery struct {
 
 type DocumentListRelatedQuery struct {
 	RelatedTo  model.ID
+	ActorID    model.ID
+	Action     model.Action
 	Page       CursorPage
 	Order      SortDirection
 	Projection DocumentProjection
@@ -107,12 +113,13 @@ func (q DocumentListByCreatorQuery) Compile() (QueryPlan, error) {
 		return QueryPlan{}, err
 	}
 
+	authz := applyAuthzVisible(q.ActorID, q.Action, "d", "$user_id", params)
 	return compileDocumentRootQuery(documentRootQueryInput{
 		Root: CompiledQuery{
 			Name: "document.list_by_creator",
 			Cypher: strings.TrimSpace(`
 				MATCH (d:` + model.ResourceTypeDocument.String() + `)<-[:` + EdgeKindCreated.String() + `]-(c:` + q.CreatedBy.Label() + ` {id: $id})
-				` + cursorWherePrefix(bounds.Where, "WHERE ") + `
+				` + whereClause("WHERE ", authz, bounds.Where) + `
 				RETURN d, c
 				ORDER BY d.id ` + bounds.Order.Cypher() + `
 				LIMIT $limit`),
@@ -140,6 +147,7 @@ func (q DocumentListLibraryQuery) Compile() (QueryPlan, error) {
 		return QueryPlan{}, err
 	}
 
+	authz := applyAuthzVisible(q.ActorID, q.Action, "d", "$user_id", params)
 	var match string
 	cursorPrefix := "WHERE "
 	switch {
@@ -164,7 +172,7 @@ func (q DocumentListLibraryQuery) Compile() (QueryPlan, error) {
 		Root: CompiledQuery{
 			Name: "document.list_library",
 			Cypher: strings.TrimSpace(match + `
-				` + cursorWherePrefix(bounds.Where, cursorPrefix) + `
+				` + whereClause(cursorPrefix, authz, bounds.Where) + `
 				RETURN d, c
 				ORDER BY d.id ` + bounds.Order.Cypher() + `
 				LIMIT $limit`),
@@ -186,13 +194,14 @@ func (q DocumentListRelatedQuery) Compile() (QueryPlan, error) {
 		return QueryPlan{}, err
 	}
 
+	authz := applyAuthzVisible(q.ActorID, q.Action, "d", "$user_id", params)
 	return compileDocumentRootQuery(documentRootQueryInput{
 		Root: CompiledQuery{
 			Name: "document.list_related",
 			Cypher: strings.TrimSpace(`
 				MATCH (:` + q.RelatedTo.Label() + ` {id: $id})<-[:` + EdgeKindRelatedTo.String() + `]-(d:` + model.ResourceTypeDocument.String() + `)
 				MATCH (c:` + model.ResourceTypeUser.String() + `)-[:` + EdgeKindCreated.String() + `]->(d)
-				` + cursorWherePrefix(bounds.Where, "WHERE ") + `
+				` + whereClause("WHERE ", authz, bounds.Where) + `
 				RETURN d, c
 				ORDER BY d.id ` + bounds.Order.Cypher() + `
 				LIMIT $limit`),

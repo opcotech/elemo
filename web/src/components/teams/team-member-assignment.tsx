@@ -2,8 +2,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Plus, UserMinus, Users } from "lucide-react";
 import { useState } from "react";
 
-import { RoleMemberAddDialog } from "./role-member-add-dialog";
-import { RoleMemberRemoveDialog } from "./role-member-remove-dialog";
+import { TeamMemberAddDialog } from "./team-member-add-dialog";
+import { TeamMemberRemoveDialog } from "./team-member-remove-dialog";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -22,22 +22,22 @@ import {
   usePermissions,
   withResourceType,
 } from "@/hooks/use-permissions";
-import { v1OrganizationRoleMembersGetOptions } from "@/lib/api/query-options";
+import { v1OrganizationTeamMembersGetOptions } from "@/lib/api/query-options";
 import type { User } from "@/lib/api/types";
-import { can } from "@/lib/auth/permissions";
+import { Action, can } from "@/lib/auth/permissions";
 import { getInitials } from "@/lib/utils";
 
-interface RoleMemberAssignmentProps {
+interface TeamMemberAssignmentProps {
   organizationId: string;
-  roleId: string;
-  roleName: string;
+  teamId: string;
+  teamName: string;
 }
 
-export function RoleMemberAssignment({
+export function TeamMemberAssignment({
   organizationId,
-  roleId,
-  roleName,
-}: RoleMemberAssignmentProps) {
+  teamId,
+  teamName,
+}: TeamMemberAssignmentProps) {
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [removeDialogOpen, setRemoveDialogOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState<User | null>(null);
@@ -45,38 +45,22 @@ export function RoleMemberAssignment({
   const { data: orgPermissions, isLoading: isOrgPermissionsLoading } =
     usePermissions(withResourceType(ResourceType.Organization, organizationId));
 
-  const { data: rolePermissions, isLoading: isRolePermissionsLoading } =
-    usePermissions(withResourceType(ResourceType.Role, roleId));
-
-  const hasOrgWritePermission = can(orgPermissions, "write");
-  const hasRoleWritePermission = can(rolePermissions, "write");
-  const hasWritePermission = hasOrgWritePermission && hasRoleWritePermission;
-  const isPermissionsLoading =
-    isOrgPermissionsLoading || isRolePermissionsLoading;
+  const hasWritePermission = can(orgPermissions, Action.TeamManage);
+  const isPermissionsLoading = isOrgPermissionsLoading;
 
   const {
     data: membersPage,
     isLoading,
     error,
   } = useQuery(
-    v1OrganizationRoleMembersGetOptions({
+    v1OrganizationTeamMembersGetOptions({
       path: {
         id: organizationId,
-        role_id: roleId,
+        team_id: teamId,
       },
     })
   );
   const members = membersPage?.items;
-
-  const handleRemoveClick = (member: User) => {
-    setSelectedMember(member);
-    setRemoveDialogOpen(true);
-  };
-
-  const handleRemoveSuccess = () => {
-    setRemoveDialogOpen(false);
-    setSelectedMember(null);
-  };
 
   const createButton =
     !isPermissionsLoading && hasWritePermission ? (
@@ -96,8 +80,7 @@ export function RoleMemberAssignment({
       ? {
           icon: <Users />,
           title: "No members assigned",
-          description:
-            "Add members to grant them the permissions associated with this role.",
+          description: "Add members so this team can act as a grant principal.",
           action: hasWritePermission ? (
             <Button
               type="button"
@@ -115,9 +98,9 @@ export function RoleMemberAssignment({
   return (
     <>
       <ListContainer
-        data-section="role-members"
+        data-section="team-members"
         title="Members"
-        description="Manage members assigned to this role."
+        description="Manage members of this team."
         isLoading={isLoading || isPermissionsLoading}
         error={error}
         emptyState={emptyState}
@@ -194,7 +177,10 @@ export function RoleMemberAssignment({
                           type="button"
                           variant="destructive-ghost"
                           size="sm"
-                          onClick={() => handleRemoveClick(member)}
+                          onClick={() => {
+                            setSelectedMember(member);
+                            setRemoveDialogOpen(true);
+                          }}
                         >
                           <UserMinus className="h-4 w-4" />
                           <span className="sr-only">Remove member</span>
@@ -209,22 +195,25 @@ export function RoleMemberAssignment({
         )}
       </ListContainer>
 
-      <RoleMemberAddDialog
+      <TeamMemberAddDialog
         organizationId={organizationId}
-        roleId={roleId}
+        teamId={teamId}
         open={addDialogOpen}
         onOpenChange={setAddDialogOpen}
       />
 
       {selectedMember && (
-        <RoleMemberRemoveDialog
+        <TeamMemberRemoveDialog
           member={selectedMember}
-          roleName={roleName}
+          teamName={teamName}
           organizationId={organizationId}
-          roleId={roleId}
+          teamId={teamId}
           open={removeDialogOpen}
           onOpenChange={setRemoveDialogOpen}
-          onSuccess={handleRemoveSuccess}
+          onSuccess={() => {
+            setRemoveDialogOpen(false);
+            setSelectedMember(null);
+          }}
         />
       )}
     </>

@@ -8,22 +8,46 @@ import (
 	"github.com/opcotech/elemo/internal/repository"
 )
 
-// NewCreatePermissionOpts creates repository.CreatePermissionOpts for tests.
-func NewCreatePermissionOpts(subject, target model.ID, kind model.PermissionKind) repository.CreatePermissionOpts {
-	return repository.CreatePermissionOpts{
-		Kind:    kind,
-		Subject: subject,
-		Target:  target,
+// OrgAdminActions returns the org-admin role template actions for tests.
+func OrgAdminActions() []model.Action {
+	tmpl, err := model.RoleTemplateByKey(model.RoleKeyOrgAdmin)
+	if err != nil {
+		panic(err)
+	}
+	return tmpl.Actions
+}
+
+// ProjectViewerActions returns the project-viewer role template actions for tests.
+func ProjectViewerActions() []model.Action {
+	tmpl, err := model.RoleTemplateByKey(model.RoleKeyProjectViewer)
+	if err != nil {
+		panic(err)
+	}
+	return tmpl.Actions
+}
+
+// NewCreateGrantOpts creates repository.CreateGrantOpts for tests.
+func NewCreateGrantOpts(principal, scope model.ID, actions ...model.Action) repository.CreateGrantOpts {
+	if len(actions) == 0 {
+		actions = []model.Action{model.ActionOrganizationRead}
+	}
+	return repository.CreateGrantOpts{
+		Principal: principal,
+		Scope:     scope,
+		Actions:   actions,
 	}
 }
 
-// NewRepositoryPermission creates a repository.Permission for mock returns.
-func NewRepositoryPermission(subject, target model.ID, kind model.PermissionKind) *repository.Permission {
-	return &repository.Permission{
+// NewRepositoryGrant creates a repository.Grant for mock returns.
+func NewRepositoryGrant(principal, scope model.ID, actions ...model.Action) *repository.Grant {
+	if len(actions) == 0 {
+		actions = []model.Action{model.ActionOrganizationRead}
+	}
+	return &repository.Grant{
 		ID:        model.MustNewID(model.ResourceTypePermission),
-		Kind:      kind,
-		Subject:   subject,
-		Target:    target,
+		Principal: principal,
+		Scope:     scope,
+		Actions:   actions,
 		CreatedAt: convert.ToPointer(time.Now().UTC()),
 	}
 }

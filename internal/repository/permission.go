@@ -3,419 +3,341 @@ package repository
 import (
 	"context"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/neo4j/neo4j-go-driver/v6/neo4j"
+
 	"github.com/opcotech/elemo/internal/model"
-	"github.com/opcotech/elemo/internal/pkg/convert"
 )
 
 var (
-	ErrPermissionCreate = errors.New("failed to create permission") // permission cannot be created
-	ErrPermissionDelete = errors.New("failed to delete permission") // permission cannot be deleted
-	ErrPermissionRead   = errors.New("failed to read permission")   // permission cannot be read
-	ErrPermissionUpdate = errors.New("failed to update permission") // permission cannot be updated
+	ErrPermissionCreate = errors.New("failed to create permission")        // grant cannot be created
+	ErrPermissionDelete = errors.New("failed to delete permission")        // grant cannot be deleted
+	ErrPermissionRead   = errors.New("failed to read permission")          // grant cannot be read
+	ErrPermissionUpdate = errors.New("failed to update permission")        // grant cannot be updated
+	ErrInScopeOfLink    = errors.New("failed to link authorization scope") // IN_SCOPE_OF edge cannot be created
 )
 
-// Permission represents a permission persisted by the repository.
-type Permission struct {
-	ID        model.ID             `json:"id"`
-	Kind      model.PermissionKind `json:"kind"`
-	Subject   model.ID             `json:"subject"`
-	Target    model.ID             `json:"target"`
-	CreatedAt *time.Time           `json:"created_at"`
-	UpdatedAt *time.Time           `json:"updated_at"`
+// Grant is a scoped authorization relationship from a principal to a resource.
+type Grant struct {
+	ID        model.ID       `json:"id"`
+	Principal model.ID       `json:"principal"`
+	Scope     model.ID       `json:"scope"`
+	RoleID    *model.ID      `json:"role_id,omitempty"`
+	Actions   []model.Action `json:"actions"`
+	CreatedAt *time.Time     `json:"created_at"`
+	UpdatedAt *time.Time     `json:"updated_at"`
 }
 
-// CreatePermissionOpts holds the data required to create a permission.
-type CreatePermissionOpts struct {
-	Kind    model.PermissionKind
-	Subject model.ID
-	Target  model.ID
+// CreateGrantOpts holds the data required to create a grant.
+type CreateGrantOpts struct {
+	Principal model.ID
+	Scope     model.ID
+	RoleID    *model.ID
+	Actions   []model.Action
+}
+
+// Validate reports whether the grant has a principal, a scope, and either a
+// role or at least one action.
+func (o CreateGrantOpts) Validate() error {
+	if err := o.Principal.Validate(); err != nil {
+		return errors.Join(model.ErrInvalidGrant, err)
+	}
+	if err := o.Scope.Validate(); err != nil {
+		return errors.Join(model.ErrInvalidGrant, err)
+	}
+	if !model.IsPrincipalType(o.Principal.Type) {
+		return errors.Join(model.ErrInvalidGrant, model.ErrNotAPrincipal)
+	}
+	if o.RoleID == nil && len(o.Actions) == 0 {
+		return errors.Join(model.ErrInvalidGrant, model.ErrInvalidAction)
+	}
+	if o.RoleID != nil {
+		if err := o.RoleID.Validate(); err != nil {
+			return errors.Join(model.ErrInvalidGrant, err)
+		}
+		if o.RoleID.Type != model.ResourceTypeRole {
+			return errors.Join(model.ErrInvalidGrant, model.ErrInvalidID)
+		}
+	}
+	for _, action := range o.Actions {
+		if err := action.Validate(); err != nil {
+			return errors.Join(model.ErrInvalidGrant, err)
+		}
+	}
+	return nil
+}
+
+// Decision explains why an authorization check was allowed or denied.
+type Decision struct {
+	Allowed   bool
+	Action    model.Action
+	Actor     model.ID
+	Resource  model.ID
+	Principal *model.ID
+	Scope     *model.ID
+	GrantID   *model.ID
+	RoleID    *model.ID
 }
 
 //go:generate go tool mockgen -source=permission.go -destination=permission_mock_gen.go -package=repository -mock_names "PermissionRepository=MockPermissionRepository"
 type PermissionRepository interface {
-	Create(ctx context.Context, opts CreatePermissionOpts) (*Permission, error)
-	Get(ctx context.Context, id model.ID) (*Permission, error)
-	GetBySubject(ctx context.Context, id model.ID) ([]*Permission, error)
-	GetByTarget(ctx context.Context, id model.ID) ([]*Permission, error)
-	GetBySubjectAndTarget(ctx context.Context, source, target model.ID) ([]*Permission, error)
-	Update(ctx context.Context, id model.ID, kind model.PermissionKind) (*Permission, error)
+	Create(ctx context.Context, opts CreateGrantOpts) (*Grant, error)
+	Get(ctx context.Context, id model.ID) (*Grant, error)
+	ListByPrincipal(ctx context.Context, principal model.ID) ([]*Grant, error)
+	ListByScope(ctx context.Context, scope model.ID) ([]*Grant, error)
 	Delete(ctx context.Context, id model.ID) error
-	HasPermission(ctx context.Context, subject, target model.ID, kinds ...model.PermissionKind) (bool, error)
-	HasAnyRelation(ctx context.Context, source, target model.ID) (bool, error)
-	HasSystemRole(ctx context.Context, source model.ID, roles ...model.SystemRole) (bool, error)
+	Has(ctx context.Context, actor, resource model.ID, action model.Action) (bool, error)
+	EffectiveActions(ctx context.Context, actor, resource model.ID) ([]model.Action, error)
+	Explain(ctx context.Context, actor, resource model.ID, action model.Action) (*Decision, error)
+	ListVisible(ctx context.Context, actor model.ID, action model.Action, parent model.ID, resourceType model.ResourceType) ([]model.ID, error)
+	LinkInScopeOf(ctx context.Context, child, parent model.ID) error
+	BumpGeneration(ctx context.Context, principal model.ID) error
 }
 
-// PermissionRepository is a repository for managing permissions.
+// Neo4jPermissionRepository is a repository for managing grants and evaluating authorization.
 type Neo4jPermissionRepository struct {
 	*neo4jBaseRepository
 }
 
-// scan is a helper function for scanning a permission from a neo4j.Record.
-func (r *Neo4jPermissionRepository) scan(permParam, subjectParam, targetParam string) func(rec *neo4j.Record) (*Permission, error) {
-	return func(rec *neo4j.Record) (*Permission, error) {
-		parsed := new(Permission)
-
-		val, _, err := neo4j.GetRecordValue[neo4j.Relationship](rec, permParam)
+func (r *Neo4jPermissionRepository) scanGrant() func(rec *neo4j.Record) (*Grant, error) {
+	return func(rec *neo4j.Record) (*Grant, error) {
+		rel, _, err := neo4j.GetRecordValue[neo4j.Relationship](rec, "g")
+		if err != nil {
+			return nil, err
+		}
+		principal, _, err := neo4j.GetRecordValue[neo4j.Node](rec, "principal")
+		if err != nil {
+			return nil, err
+		}
+		scope, _, err := neo4j.GetRecordValue[neo4j.Node](rec, "scope")
 		if err != nil {
 			return nil, err
 		}
 
-		subject, _, err := neo4j.GetRecordValue[neo4j.Node](rec, subjectParam)
+		grant := &Grant{
+			Actions: []model.Action{},
+		}
+		grant.ID, err = model.NewIDFromString(rel.GetProperties()["id"].(string), model.ResourceTypePermission.String())
 		if err != nil {
 			return nil, err
 		}
-
-		target, _, err := neo4j.GetRecordValue[neo4j.Node](rec, targetParam)
+		grant.Principal, err = model.NewIDFromString(principal.GetProperties()["id"].(string), domainLabel(principal.Labels))
 		if err != nil {
 			return nil, err
 		}
-
-		// Exclude "id" and "kind" from Neo4jScanIntoStruct to handle them manually. "kind" must be manually
-		// unmarshaled because JSON unmarshaling doesn't properly call UnmarshalText for uint8 types.
-		if err := Neo4jScanIntoStruct(&val, &parsed, []string{"id", "kind"}); err != nil {
+		grant.Scope, err = model.NewIDFromString(scope.GetProperties()["id"].(string), domainLabel(scope.Labels))
+		if err != nil {
 			return nil, err
 		}
-
-		parsed.ID, _ = model.NewIDFromString(val.GetProperties()["id"].(string), model.ResourceTypePermission.String())
-		parsed.Subject, _ = model.NewIDFromString(subject.GetProperties()["id"].(string), subject.Labels[0])
-		parsed.Target, _ = model.NewIDFromString(target.GetProperties()["id"].(string), target.Labels[0])
-
-		// Manually extract and unmarshal kind to ensure proper conversion from string to PermissionKind.
-		kindStr := val.GetProperties()["kind"].(string)
-		if err := parsed.Kind.UnmarshalText([]byte(kindStr)); err != nil {
-			return nil, err
+		if roleID, ok := rel.GetProperties()["role_id"].(string); ok && roleID != "" {
+			id, err := model.NewIDFromString(roleID, model.ResourceTypeRole.String())
+			if err != nil {
+				return nil, err
+			}
+			grant.RoleID = &id
 		}
-
-		return parsed, nil
+		if raw, ok := rel.GetProperties()["actions"].([]any); ok {
+			values := make([]string, 0, len(raw))
+			for _, item := range raw {
+				if s, ok := item.(string); ok {
+					values = append(values, s)
+				}
+			}
+			actions, err := model.ParseActions(values)
+			if err != nil {
+				return nil, err
+			}
+			grant.Actions = actions
+		}
+		if createdAt, err := Neo4jDecodeTime(rel.GetProperties()["created_at"]); err == nil {
+			grant.CreatedAt = createdAt
+		}
+		if raw, ok := rel.GetProperties()["updated_at"]; ok {
+			if updatedAt, err := Neo4jDecodeTime(raw); err == nil {
+				grant.UpdatedAt = updatedAt
+			}
+		}
+		return grant, nil
 	}
 }
 
-// scanSystemLevelPermission is a helper function for scanning a permission from a ResourceType node.
-// The target is preserved as a nil ID (system-level permission) rather than parsing from the node.
-func (r *Neo4jPermissionRepository) scanSystemLevelPermission(target model.ID) func(rec *neo4j.Record) (*Permission, error) {
-	return func(rec *neo4j.Record) (*Permission, error) {
-		val, _, err := neo4j.GetRecordValue[neo4j.Relationship](rec, "p")
-		if err != nil {
-			return nil, err
-		}
-
-		subject, _, err := neo4j.GetRecordValue[neo4j.Node](rec, "s")
-		if err != nil {
-			return nil, err
-		}
-
-		perm := &Permission{}
-		if err := Neo4jScanIntoStruct(&val, &perm, []string{"id"}); err != nil {
-			return nil, err
-		}
-
-		perm.ID, _ = model.NewIDFromString(val.GetProperties()["id"].(string), model.ResourceTypePermission.String())
-		perm.Subject, _ = model.NewIDFromString(subject.GetProperties()["id"].(string), subject.Labels[0])
-		perm.Target = target // Preserve nil ID for system-level permissions
-
-		kindStr := val.GetProperties()["kind"].(string)
-		if err := perm.Kind.UnmarshalText([]byte(kindStr)); err != nil {
-			return nil, err
-		}
-
-		return perm, nil
-	}
-}
-
-// scanSystemRolePermission is a helper function for scanning permissions from system roles.
-// The target is preserved as a nil ID (system-level permission) rather than parsing from the node.
-func (r *Neo4jPermissionRepository) scanSystemRolePermission(target model.ID) func(rec *neo4j.Record) (*Permission, error) {
-	return func(rec *neo4j.Record) (*Permission, error) {
-		val, _, err := neo4j.GetRecordValue[neo4j.Relationship](rec, "p")
-		if err != nil {
-			return nil, err
-		}
-
-		subject, _, err := neo4j.GetRecordValue[neo4j.Node](rec, "s")
-		if err != nil {
-			return nil, err
-		}
-
-		perm := &Permission{}
-		if err := Neo4jScanIntoStruct(&val, &perm, []string{"id"}); err != nil {
-			return nil, err
-		}
-
-		// Generate a new ID for virtual permission (system role permission)
-		perm.ID = model.MustNewID(model.ResourceTypePermission)
-		perm.Subject, _ = model.NewIDFromString(subject.GetProperties()["id"].(string), subject.Labels[0])
-		perm.Target = target // Preserve nil ID for system-level permissions
-
-		kindStr := val.GetProperties()["kind"].(string)
-		if err := perm.Kind.UnmarshalText([]byte(kindStr)); err != nil {
-			return nil, err
-		}
-
-		// Set default CreatedAt if not set by Neo4jScanIntoStruct
-		if perm.CreatedAt == nil {
-			now := time.Now().UTC()
-			perm.CreatedAt = &now
-		}
-
-		return perm, nil
-	}
-}
-
-// getDirectResourceTypePermissions returns direct permissions on a ResourceType node.
-func (r *Neo4jPermissionRepository) getDirectResourceTypePermissions(ctx context.Context, source, target model.ID) ([]*Permission, error) {
-	cypher := `
-	MATCH (s:` + source.Label() + ` {id: $source})-[p:` + EdgeKindHasPermission.String() + `]->(rt:` + model.ResourceTypeKind.String() + ` {id: $target_label})
-	RETURN s, p, rt
-	ORDER BY p.created_at DESC`
-
-	params := map[string]any{
-		"source":       source.String(),
-		"target_label": target.Label(),
-	}
-
-	perms, err := Neo4jExecuteReadAndReadAll(ctx, r.db, cypher, params, r.scanSystemLevelPermission(target))
-	if err != nil {
-		return nil, errors.Join(err, ErrPermissionRead)
-	}
-
-	return perms, nil
-}
-
-// getSystemRolePermissions returns permissions derived from system roles (Owner, Admin, Support).
-func (r *Neo4jPermissionRepository) getSystemRolePermissions(ctx context.Context, source, target model.ID) ([]*Permission, error) {
-	cypher := `
-	MATCH (s:` + source.Label() + ` {id: $source})-[m:` + EdgeKindMemberOf.String() + `]->(r:` + model.ResourceTypeRole.String() + ` {system: true})
-	MATCH (r)-[p:` + EdgeKindHasPermission.String() + `]->(rt:` + model.ResourceTypeKind.String() + ` {id: $target_label})
-	RETURN DISTINCT s, p, rt
-	ORDER BY p.created_at DESC`
-
-	params := map[string]any{
-		"source":       source.String(),
-		"target_label": target.Label(),
-	}
-
-	perms, err := Neo4jExecuteReadAndReadAll(ctx, r.db, cypher, params, r.scanSystemRolePermission(target))
-	if err != nil {
-		return nil, errors.Join(err, ErrPermissionRead)
-	}
-
-	return perms, nil
-}
-
-// Create creates a new permission if it does not already exist between the
-// subject and target. If the permission already exists, no action is taken.
-func (r *Neo4jPermissionRepository) Create(ctx context.Context, opts CreatePermissionOpts) (*Permission, error) {
+// Create records a GRANTED relationship from principal to scope.
+func (r *Neo4jPermissionRepository) Create(ctx context.Context, opts CreateGrantOpts) (*Grant, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.PermissionRepository/Create")
 	defer span.End()
 
-	perm := &Permission{
-		ID:        model.MustNewID(model.ResourceTypePermission),
-		Kind:      opts.Kind,
-		Subject:   opts.Subject,
-		Target:    opts.Target,
-		CreatedAt: convert.ToPointer(time.Now().UTC()),
-		UpdatedAt: nil,
+	if err := opts.Validate(); err != nil {
+		return nil, errors.Join(ErrPermissionCreate, err)
+	}
+
+	createdAt := time.Now().UTC()
+	id := model.MustNewID(model.ResourceTypePermission)
+	roleID := ""
+	if opts.RoleID != nil {
+		roleID = opts.RoleID.String()
 	}
 
 	cypher := `
-	MATCH (subject:` + perm.Subject.Label() + ` {id: $subject})
-	MATCH (target:` + perm.Target.Label() + ` {id: $target})
-	MERGE (subject)-[p:` + EdgeKindHasPermission.String() + ` {id: $id, kind: $kind}]->(target) ON CREATE SET p.created_at = datetime($created_at)
-	`
+	MATCH (principal:` + opts.Principal.Label() + ` {id: $principal_id})
+	MATCH (scope:` + opts.Scope.Label() + ` {id: $scope_id})
+	SET principal:` + model.LabelPrincipal + `
+	CREATE (principal)-[g:` + EdgeKindGranted.String() + ` {
+		id: $id,
+		role_id: $role_id,
+		actions: $actions,
+		created_at: datetime($created_at)
+	}]->(scope)
+	RETURN principal, g, scope`
 
 	params := map[string]any{
-		"id":         perm.ID.String(),
-		"subject":    perm.Subject.String(),
-		"target":     perm.Target.String(),
-		"kind":       perm.Kind.String(),
-		"created_at": perm.CreatedAt.Format(time.RFC3339Nano),
+		"principal_id": opts.Principal.String(),
+		"scope_id":     opts.Scope.String(),
+		"id":           id.String(),
+		"role_id":      roleID,
+		"actions":      model.ActionStrings(opts.Actions),
+		"created_at":   createdAt.Format(time.RFC3339Nano),
 	}
 
-	if err := Neo4jExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
-		return nil, errors.Join(err, ErrPermissionCreate)
+	grant, err := Neo4jExecuteWriteAndReadSingle(ctx, r.db, cypher, params, r.scanGrant())
+	if err != nil {
+		return nil, errors.Join(ErrPermissionCreate, err)
 	}
-
-	return perm, nil
+	return grant, nil
 }
 
-// Get returns an existing permission, its subject and target. If the
-// permission does not exist, an error is returned.
-func (r *Neo4jPermissionRepository) Get(ctx context.Context, id model.ID) (*Permission, error) {
+// Get returns a grant by ID.
+func (r *Neo4jPermissionRepository) Get(ctx context.Context, id model.ID) (*Grant, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.PermissionRepository/Get")
 	defer span.End()
 
-	query, err := PermissionGetQuery(id)
-	if err != nil {
-		return nil, errors.Join(err, ErrPermissionRead)
+	if err := id.Validate(); err != nil {
+		return nil, errors.Join(ErrPermissionRead, err)
 	}
 
-	var perm *Permission
-	err = Neo4jExecuteReadPlan(ctx, r.db, QueryPlan{Root: query}, func(tx neo4j.ManagedTransaction) error {
-		var readErr error
-		perm, _, readErr = Neo4jRunQuerySingle(ctx, tx, query, r.scan("p", "s", "t"))
-		return readErr
-	})
-	if err != nil {
-		return nil, errors.Join(err, ErrPermissionRead)
-	}
+	cypher := `
+	MATCH (principal)-[g:` + EdgeKindGranted.String() + ` {id: $id}]->(scope)
+	RETURN principal, g, scope`
 
-	return perm, nil
+	grant, err := Neo4jExecuteReadAndReadSingle(ctx, r.db, cypher, map[string]any{"id": id.String()}, r.scanGrant())
+	if err != nil {
+		return nil, errors.Join(ErrPermissionRead, err)
+	}
+	return grant, nil
 }
 
-// GetBySubject returns all permissions for a given subject. If no permissions
-// exist, an empty slice is returned.
-func (r *Neo4jPermissionRepository) GetBySubject(ctx context.Context, id model.ID) ([]*Permission, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.PermissionRepository/GetBySubject")
+// ListByPrincipal returns grants issued to principal.
+func (r *Neo4jPermissionRepository) ListByPrincipal(ctx context.Context, principal model.ID) ([]*Grant, error) {
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.PermissionRepository/ListByPrincipal")
 	defer span.End()
 
-	query, err := PermissionGetBySubjectQuery(id)
-	if err != nil {
-		return nil, errors.Join(err, ErrPermissionRead)
+	if err := principal.Validate(); err != nil {
+		return nil, errors.Join(ErrPermissionRead, err)
 	}
 
-	var perms []*Permission
-	err = Neo4jExecuteReadPlan(ctx, r.db, QueryPlan{Root: query}, func(tx neo4j.ManagedTransaction) error {
-		var readErr error
-		perms, _, readErr = Neo4jRunQuery(ctx, tx, query, r.scan("p", "s", "t"))
-		return readErr
-	})
-	if err != nil {
-		return nil, errors.Join(err, ErrPermissionRead)
-	}
+	cypher := `
+	MATCH (principal:` + principal.Label() + ` {id: $principal_id})-[g:` + EdgeKindGranted.String() + `]->(scope)
+	RETURN principal, g, scope`
 
-	return perms, nil
+	grants, err := Neo4jExecuteReadAndReadAll(ctx, r.db, cypher, map[string]any{
+		"principal_id": principal.String(),
+	}, r.scanGrant())
+	if err != nil {
+		return nil, errors.Join(ErrPermissionRead, err)
+	}
+	if grants == nil {
+		grants = []*Grant{}
+	}
+	return grants, nil
 }
 
-// GetByTarget returns all permissions for a given target. If no permissions
-// exist, an empty slice is returned.
-func (r *Neo4jPermissionRepository) GetByTarget(ctx context.Context, id model.ID) ([]*Permission, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.PermissionRepository/GetByTarget")
+// ListByScope returns grants whose scope is the given resource.
+func (r *Neo4jPermissionRepository) ListByScope(ctx context.Context, scope model.ID) ([]*Grant, error) {
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.PermissionRepository/ListByScope")
 	defer span.End()
 
-	query, err := PermissionGetByTargetQuery(id)
-	if err != nil {
-		return nil, errors.Join(err, ErrPermissionRead)
+	if err := scope.Validate(); err != nil {
+		return nil, errors.Join(ErrPermissionRead, err)
 	}
 
-	var perms []*Permission
-	err = Neo4jExecuteReadPlan(ctx, r.db, QueryPlan{Root: query}, func(tx neo4j.ManagedTransaction) error {
-		var readErr error
-		perms, _, readErr = Neo4jRunQuery(ctx, tx, query, r.scan("p", "s", "t"))
-		return readErr
-	})
-	if err != nil {
-		return nil, errors.Join(err, ErrPermissionRead)
-	}
+	cypher := `
+	MATCH (principal)-[g:` + EdgeKindGranted.String() + `]->(scope:` + scope.Label() + ` {id: $scope_id})
+	RETURN principal, g, scope`
 
-	return perms, nil
+	grants, err := Neo4jExecuteReadAndReadAll(ctx, r.db, cypher, map[string]any{
+		"scope_id": scope.String(),
+	}, r.scanGrant())
+	if err != nil {
+		return nil, errors.Join(ErrPermissionRead, err)
+	}
+	if grants == nil {
+		grants = []*Grant{}
+	}
+	return grants, nil
 }
 
-// GetBySubjectAndTarget returns all permissions for a given target that the
-// source has. If no permissions exist, an empty slice is returned. For system
-// level permissions (nil IDs), it checks permissions on ResourceType nodes
-// and system roles.
-func (r *Neo4jPermissionRepository) GetBySubjectAndTarget(ctx context.Context, source, target model.ID) ([]*Permission, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.PermissionRepository/GetBySubjectAndTarget")
+// Delete removes a grant by ID.
+func (r *Neo4jPermissionRepository) Delete(ctx context.Context, id model.ID) error {
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.PermissionRepository/Delete")
 	defer span.End()
 
-	if target.IsNil() {
-		directPerms, err := r.getDirectResourceTypePermissions(ctx, source, target)
-		if err != nil {
-			return nil, err
+	if err := id.Validate(); err != nil {
+		return errors.Join(ErrPermissionDelete, err)
+	}
+
+	cypher := `MATCH ()-[g:` + EdgeKindGranted.String() + ` {id: $id}]->() DELETE g`
+	if err := Neo4jExecuteWriteAndConsume(ctx, r.db, cypher, map[string]any{"id": id.String()}); err != nil {
+		return errors.Join(ErrPermissionDelete, err)
+	}
+	return nil
+}
+
+// Has reports whether actor may perform action on resource via a direct or
+// inherited grant. MEMBER_OF is followed at most one hop; inactive users never
+// match.
+func (r *Neo4jPermissionRepository) Has(ctx context.Context, actor, resource model.ID, action model.Action) (bool, error) {
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.PermissionRepository/Has")
+	defer span.End()
+
+	if err := actor.Validate(); err != nil {
+		return false, errors.Join(ErrPermissionRead, err)
+	}
+	if err := resource.Validate(); err != nil {
+		return false, errors.Join(ErrPermissionRead, err)
+	}
+	if err := action.Validate(); err != nil {
+		return false, errors.Join(ErrPermissionRead, err)
+	}
+
+	cypher := `
+	MATCH (actor:` + actor.Label() + ` {id: $actor_id})
+	WHERE actor.status IS NULL OR actor.status = $active_status
+	MATCH (resource:` + resource.Label() + ` {id: $resource_id})
+	MATCH (actor)-[:` + EdgeKindMemberOf.String() + `*0..1]->(principal)
+	WHERE principal:User OR principal:Team OR principal:Organization
+	AND (principal.status IS NULL OR principal.status = $active_status)
+	MATCH path = (resource)-[:` + EdgeKindInScopeOf.String() + `*0..]->(scope)
+	WHERE ` + authzAcyclicPathPredicate("path") + `
+	MATCH (principal)-[g:` + EdgeKindGranted.String() + `]->(scope)
+	WHERE ($action IN coalesce(g.actions, [])) OR (
+		g.role_id IS NOT NULL AND g.role_id <> "" AND EXISTS {
+			MATCH (role:` + model.ResourceTypeRole.String() + ` {id: g.role_id})
+			WHERE $action IN coalesce(role.actions, [])
 		}
-
-		systemRolePerms, err := r.getSystemRolePermissions(ctx, source, target)
-		if err != nil {
-			return nil, err
-		}
-
-		return deduplicatePermissions(directPerms, systemRolePerms), nil
-	}
-
-	query, err := PermissionGetBySubjectAndTargetQuery(source, target)
-	if err != nil {
-		return nil, errors.Join(err, ErrPermissionRead)
-	}
-
-	var perms []*Permission
-	err = Neo4jExecuteReadPlan(ctx, r.db, QueryPlan{Root: query}, func(tx neo4j.ManagedTransaction) error {
-		var readErr error
-		perms, _, readErr = Neo4jRunQuery(ctx, tx, query, r.scan("p", "s", "t"))
-		return readErr
-	})
-	if err != nil {
-		return nil, errors.Join(err, ErrPermissionRead)
-	}
-
-	return perms, nil
-}
-
-// HasPermission returns true if the subject has the given permission on the
-// target. If the permission does not exist, false is returned.
-// TODO: Refactor this code. This is a mess.
-func (r *Neo4jPermissionRepository) HasPermission(ctx context.Context, subject, target model.ID, kinds ...model.PermissionKind) (bool, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.PermissionRepository/HasPermission")
-	defer span.End()
-
-	hasCreatePermission := false
-	permissions := make([]string, len(kinds))
-	for i, kind := range kinds {
-		if kind == model.PermissionKindCreate {
-			hasCreatePermission = true
-		}
-		permissions[i] = kind.String()
-	}
-
-	var cypher string
-	if hasCreatePermission {
-		cypher = `
-		MATCH (s:` + subject.Label() + ` {id: $subject_id})
-		MATCH (rt:` + model.ResourceTypeKind.String() + ` {id: $target_label})
-		OPTIONAL MATCH (s)-[perm:` + EdgeKindHasPermission.String() + `]->(t) WHERE perm.kind IN $permissions
-		WITH s, rt, perm
-
-		OPTIONAL MATCH st=(s)-[:` + EdgeKindHasPermission.String() + `|` + EdgeKindMemberOf.String() + `*..2]->(t)
-		OPTIONAL MATCH srt=(s)-[:` + EdgeKindHasPermission.String() + `|` + EdgeKindMemberOf.String() + `*..2]->(rt)
-		WITH perm, st, srt
-		WHERE any(r IN relationships(srt) WHERE type(r) = "` + EdgeKindHasPermission.String() + `" AND r.kind IN $permissions)
-
-		RETURN perm IS NOT NULL OR srt IS NOT NULL AS has_permission
-		LIMIT 1`
-	} else {
-		cypher = `
-		MATCH (s:` + subject.Label() + ` {id: $subject_id})
-		MATCH (t:` + target.Label() + ` {id: $target_id})
-		MATCH (rt:` + model.ResourceTypeKind.String() + ` {id: $target_label})
-		OPTIONAL MATCH (s)-[perm:` + EdgeKindHasPermission.String() + `]->(t) WHERE perm.kind IN $permissions
-		WITH s, t, rt, perm
-
-		OPTIONAL MATCH st=(s)-[:` + EdgeKindHasPermission.String() + `|` + EdgeKindMemberOf.String() + `*..2]->(t)
-		OPTIONAL MATCH srt=(s)-[:` + EdgeKindHasPermission.String() + `|` + EdgeKindMemberOf.String() + `*..2]->(rt)
-		WITH perm, st, srt
-		WHERE (
-			any(r IN relationships(st) WHERE type(r) = "` + EdgeKindHasPermission.String() + `" AND r.kind IN $permissions) OR
-			any(r IN relationships(srt) WHERE type(r) = "` + EdgeKindHasPermission.String() + `" AND r.kind IN $permissions)
-		)
-
-		RETURN perm IS NOT NULL OR st IS NOT NULL OR srt IS NOT NULL AS has_permission
-		LIMIT 1`
-	}
+	)
+	RETURN true AS allowed
+	LIMIT 1`
 
 	params := map[string]any{
-		"subject_id":   subject.String(),
-		"target_label": target.Label(),
-		"permissions":  permissions,
+		"actor_id":      actor.String(),
+		"resource_id":   resource.String(),
+		"action":        action.String(),
+		"active_status": model.UserStatusActive.String(),
 	}
 
-	if !hasCreatePermission {
-		params["target_id"] = target.String()
-	}
-
-	hasPermission, err := Neo4jExecuteReadAndReadSingle(ctx, r.db, cypher, params, func(rec *neo4j.Record) (*bool, error) {
-		val, _, err := neo4j.GetRecordValue[bool](rec, "has_permission")
+	allowed, err := Neo4jExecuteReadAndReadSingle(ctx, r.db, cypher, params, func(rec *neo4j.Record) (*bool, error) {
+		val, _, err := neo4j.GetRecordValue[bool](rec, "allowed")
 		if err != nil {
 			return nil, err
 		}
@@ -427,143 +349,250 @@ func (r *Neo4jPermissionRepository) HasPermission(ctx context.Context, subject, 
 		}
 		return false, errors.Join(ErrPermissionRead, err)
 	}
-
-	return *hasPermission, nil
+	return *allowed, nil
 }
 
-// HasAnyRelation returns true if there is a relation between the source and
-// target. If there is no relation, false is returned.
-func (r *Neo4jPermissionRepository) HasAnyRelation(ctx context.Context, source, target model.ID) (bool, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.RelationRepository/HasAnyRelation")
+// EffectiveActions returns the distinct union of grant actions and referenced
+// role actions the actor holds on resource, including inherited scopes.
+func (r *Neo4jPermissionRepository) EffectiveActions(ctx context.Context, actor, resource model.ID) ([]model.Action, error) {
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.PermissionRepository/EffectiveActions")
 	defer span.End()
 
-	if err := source.Validate(); err != nil {
-		return false, errors.Join(ErrRelationRead, err)
+	if err := actor.Validate(); err != nil {
+		return nil, errors.Join(ErrPermissionRead, err)
 	}
-
-	if err := target.Validate(); err != nil {
-		return false, errors.Join(ErrRelationRead, err)
-	}
-
-	// If source and target are the same, they always have a relation (self-relation)
-	if source.String() == target.String() {
-		return true, nil
+	if err := resource.Validate(); err != nil {
+		return nil, errors.Join(ErrPermissionRead, err)
 	}
 
 	cypher := `
-	MATCH (s:` + source.Label() + ` {id: $source_id})
-	MATCH (t:` + target.Label() + ` {id: $target_id})
-	MATCH path = shortestPath((s)-[*]-(t))
-	WITH path
-	WHERE length(path) > 0
-	RETURN count(path) > 0 AS has_relation`
+	MATCH (actor:` + actor.Label() + ` {id: $actor_id})
+	WHERE actor.status IS NULL OR actor.status = $active_status
+	MATCH (resource:` + resource.Label() + ` {id: $resource_id})
+	MATCH (actor)-[:` + EdgeKindMemberOf.String() + `*0..1]->(principal)
+	WHERE principal:User OR principal:Team OR principal:Organization
+	AND (principal.status IS NULL OR principal.status = $active_status)
+	MATCH path = (resource)-[:` + EdgeKindInScopeOf.String() + `*0..]->(scope)
+	WHERE ` + authzAcyclicPathPredicate("path") + `
+	MATCH (principal)-[g:` + EdgeKindGranted.String() + `]->(scope)
+	OPTIONAL MATCH (role:` + model.ResourceTypeRole.String() + ` {id: g.role_id})
+	WITH coalesce(g.actions, []) + coalesce(role.actions, []) AS actions
+	UNWIND actions AS action
+	RETURN DISTINCT action`
 
 	params := map[string]any{
-		"source_id": source.String(),
-		"target_id": target.String(),
+		"actor_id":      actor.String(),
+		"resource_id":   resource.String(),
+		"active_status": model.UserStatusActive.String(),
 	}
 
-	hasRelation, err := Neo4jExecuteReadAndReadSingle(ctx, r.db, cypher, params, func(rec *neo4j.Record) (*bool, error) {
-		val, _, err := neo4j.GetRecordValue[bool](rec, "has_relation")
+	values, err := Neo4jExecuteReadAndReadAll(ctx, r.db, cypher, params, func(rec *neo4j.Record) (*string, error) {
+		val, _, err := neo4j.GetRecordValue[string](rec, "action")
 		if err != nil {
 			return nil, err
 		}
 		return &val, nil
 	})
 	if err != nil {
-		return false, errors.Join(ErrRelationRead, err)
+		if errors.Is(err, ErrNotFound) {
+			return []model.Action{}, nil
+		}
+		return nil, errors.Join(ErrPermissionRead, err)
 	}
 
-	return *hasRelation, nil
+	raw := make([]string, 0, len(values))
+	for _, value := range values {
+		if value != nil && *value != "" {
+			raw = append(raw, *value)
+		}
+	}
+	actions, err := model.ParseActions(raw)
+	if err != nil {
+		return nil, errors.Join(ErrPermissionRead, err)
+	}
+	return actions, nil
 }
 
-// HasSystemRole returns true if there is a relation between the source and
-// target that is a system role. If there is no relation, false is returned.
-func (r *Neo4jPermissionRepository) HasSystemRole(ctx context.Context, source model.ID, roles ...model.SystemRole) (bool, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.RelationRepository/HasAnyRelation")
+// Explain returns why Has allowed or denied the check. On deny, Principal,
+// Scope, GrantID, and RoleID are left nil.
+func (r *Neo4jPermissionRepository) Explain(ctx context.Context, actor, resource model.ID, action model.Action) (*Decision, error) {
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.PermissionRepository/Explain")
 	defer span.End()
 
-	if err := source.Validate(); err != nil {
-		return false, errors.Join(ErrRelationRead, err)
+	decision := &Decision{
+		Action:   action,
+		Actor:    actor,
+		Resource: resource,
 	}
 
-	if len(roles) == 0 {
-		return false, errors.Join(ErrRelationRead, model.ErrInvalidID)
+	allowed, err := r.Has(ctx, actor, resource, action)
+	if err != nil {
+		return nil, err
 	}
-
-	roleIDs := make([]string, len(roles))
-	for i, role := range roles {
-		roleIDs[i] = role.String()
+	decision.Allowed = allowed
+	if !allowed {
+		return decision, nil
 	}
 
 	cypher := `
-	MATCH path = (s:` + source.Label() + ` {id: $source_id})-[:` + EdgeKindMemberOf.String() + `]->(r:` + model.ResourceTypeRole.String() + ` {system: true})
-	WHERE r.id IN $target_ids
-	RETURN count(path) > 0 AS has_system_role
+	MATCH (actor:` + actor.Label() + ` {id: $actor_id})
+	WHERE actor.status IS NULL OR actor.status = $active_status
+	MATCH (resource:` + resource.Label() + ` {id: $resource_id})
+	MATCH (actor)-[:` + EdgeKindMemberOf.String() + `*0..1]->(principal)
+	WHERE principal:User OR principal:Team OR principal:Organization
+	AND (principal.status IS NULL OR principal.status = $active_status)
+	MATCH path = (resource)-[:` + EdgeKindInScopeOf.String() + `*0..]->(scope)
+	WHERE ` + authzAcyclicPathPredicate("path") + `
+	MATCH (principal)-[g:` + EdgeKindGranted.String() + `]->(scope)
+	WHERE ($action IN coalesce(g.actions, [])) OR (
+		g.role_id IS NOT NULL AND g.role_id <> "" AND EXISTS {
+			MATCH (role:` + model.ResourceTypeRole.String() + ` {id: g.role_id})
+			WHERE $action IN coalesce(role.actions, [])
+		}
+	)
+	RETURN principal, g, scope
 	LIMIT 1`
 
 	params := map[string]any{
-		"source_id":  source.String(),
-		"target_ids": roleIDs,
+		"actor_id":      actor.String(),
+		"resource_id":   resource.String(),
+		"action":        action.String(),
+		"active_status": model.UserStatusActive.String(),
 	}
 
-	hasSystemRole, err := Neo4jExecuteReadAndReadSingle(ctx, r.db, cypher, params, func(rec *neo4j.Record) (*bool, error) {
-		val, _, err := neo4j.GetRecordValue[bool](rec, "has_system_role")
+	grant, err := Neo4jExecuteReadAndReadSingle(ctx, r.db, cypher, params, r.scanGrant())
+	if err != nil {
+		if errors.Is(err, ErrNotFound) {
+			return decision, nil
+		}
+		return nil, errors.Join(ErrPermissionRead, err)
+	}
+	decision.Principal = &grant.Principal
+	decision.Scope = &grant.Scope
+	decision.GrantID = &grant.ID
+	decision.RoleID = grant.RoleID
+	return decision, nil
+}
+
+// ListVisible returns IDs of resourceType that actor may perform action on.
+// When parent is the installation, every matching node is considered;
+// otherwise only direct IN_SCOPE_OF children of parent are listed.
+func (r *Neo4jPermissionRepository) ListVisible(ctx context.Context, actor model.ID, action model.Action, parent model.ID, resourceType model.ResourceType) ([]model.ID, error) {
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.PermissionRepository/ListVisible")
+	defer span.End()
+
+	if err := actor.Validate(); err != nil {
+		return nil, errors.Join(ErrPermissionRead, err)
+	}
+	if err := action.Validate(); err != nil {
+		return nil, errors.Join(ErrPermissionRead, err)
+	}
+	if err := parent.Validate(); err != nil {
+		return nil, errors.Join(ErrPermissionRead, err)
+	}
+	if !resourceType.IsAResourceType() {
+		return nil, errors.Join(ErrPermissionRead, model.ErrInvalidResourceType)
+	}
+
+	params := map[string]any{
+		"user_id":       actor.String(),
+		"action":        action.String(),
+		"active_status": model.UserStatusActive.String(),
+	}
+
+	var cypher string
+	if parent.Type == model.ResourceTypeInstallation {
+		cypher = `
+		MATCH (n:` + resourceType.String() + `)
+		WHERE ` + AuthzVisibleExistsClause("n", "$user_id", "$action") + `
+		RETURN n.id AS id`
+	} else {
+		cypher = `
+		MATCH (child:` + resourceType.String() + `)-[:` + EdgeKindInScopeOf.String() + `]->(parent:` + parent.Label() + ` {id: $parent_id})
+		WHERE ` + AuthzVisibleExistsClause("child", "$user_id", "$action") + `
+		RETURN child.id AS id`
+		params["parent_id"] = parent.String()
+	}
+
+	ids, err := Neo4jExecuteReadAndReadAll(ctx, r.db, cypher, params, func(rec *neo4j.Record) (model.ID, error) {
+		raw, err := Neo4jParseValueFromRecord[string](rec, "id")
 		if err != nil {
-			return nil, err
+			return model.ID{}, err
+		}
+		return model.NewIDFromString(raw, resourceType.String())
+	})
+	if err != nil {
+		return nil, errors.Join(ErrPermissionRead, err)
+	}
+	if ids == nil {
+		ids = []model.ID{}
+	}
+	return ids, nil
+}
+
+// LinkInScopeOf creates (child)-[:IN_SCOPE_OF]->(parent). Self-links and links
+// that would close a cycle return model.ErrGrantCycle.
+func (r *Neo4jPermissionRepository) LinkInScopeOf(ctx context.Context, child, parent model.ID) error {
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.PermissionRepository/LinkInScopeOf")
+	defer span.End()
+
+	if err := child.Validate(); err != nil {
+		return errors.Join(ErrInScopeOfLink, err)
+	}
+	if err := parent.Validate(); err != nil {
+		return errors.Join(ErrInScopeOfLink, err)
+	}
+	if child.String() == parent.String() && child.Type == parent.Type {
+		return errors.Join(ErrInScopeOfLink, model.ErrGrantCycle)
+	}
+
+	cycleCypher := `
+	MATCH (child:` + child.Label() + ` {id: $child_id})
+	MATCH (parent:` + parent.Label() + ` {id: $parent_id})
+	OPTIONAL MATCH path = (parent)-[:` + EdgeKindInScopeOf.String() + `*0..]->(child)
+	WHERE path IS NOT NULL
+	RETURN count(path) > 0 AS would_cycle`
+
+	wouldCycle, err := Neo4jExecuteReadAndReadSingle(ctx, r.db, cycleCypher, map[string]any{
+		"child_id":  child.String(),
+		"parent_id": parent.String(),
+	}, func(rec *neo4j.Record) (*bool, error) {
+		val, _, recErr := neo4j.GetRecordValue[bool](rec, "would_cycle")
+		if recErr != nil {
+			return nil, recErr
 		}
 		return &val, nil
 	})
 	if err != nil {
-		return false, errors.Join(ErrSystemRoleRead, err)
+		return errors.Join(ErrInScopeOfLink, err)
 	}
-
-	return *hasSystemRole, nil
-}
-
-// Update updates an existing permission's kind. If the permission does not
-// exist, an error is returned. If the permission's kind is already the same
-// as the one provided, the kind is overwritten and the updated_at timestamp
-// is updated.
-func (r *Neo4jPermissionRepository) Update(ctx context.Context, id model.ID, kind model.PermissionKind) (*Permission, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.PermissionRepository/Update")
-	defer span.End()
+	if wouldCycle != nil && *wouldCycle {
+		return errors.Join(ErrInScopeOfLink, model.ErrGrantCycle)
+	}
 
 	cypher := `
-	MATCH (s)-[p:` + EdgeKindHasPermission.String() + ` {id: $id}]->(t)
-	SET p.kind = $kind, p.updated_at = datetime()
-	RETURN s, p, t
-	`
+	MATCH (child:` + child.Label() + ` {id: $child_id})
+	MATCH (parent:` + parent.Label() + ` {id: $parent_id})
+	MERGE (child)-[rel:` + EdgeKindInScopeOf.String() + `]->(parent)
+	ON CREATE SET rel.id = $rel_id, rel.created_at = datetime($created_at)`
 
 	params := map[string]any{
-		"id":   id.String(),
-		"kind": kind.String(),
+		"child_id":   child.String(),
+		"parent_id":  parent.String(),
+		"rel_id":     model.NewRawID(),
+		"created_at": time.Now().UTC().Format(time.RFC3339Nano),
 	}
-
-	perm, err := Neo4jExecuteWriteAndReadSingle(ctx, r.db, cypher, params, r.scan("p", "s", "t"))
-	if err != nil {
-		return nil, errors.Join(err, ErrPermissionUpdate)
+	if err := Neo4jExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
+		return errors.Join(ErrInScopeOfLink, err)
 	}
-
-	return perm, nil
+	return nil
 }
 
-// Delete deletes an existing permission. If the permission does not exist, no
-// errors are returned.
-func (r *Neo4jPermissionRepository) Delete(ctx context.Context, id model.ID) error {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.PermissionRepository/Delete")
+// BumpGeneration is a no-op on Neo4j; generation is stored in Redis.
+func (r *Neo4jPermissionRepository) BumpGeneration(ctx context.Context, principal model.ID) error {
+	_, span := r.tracer.Start(ctx, "repository.neo4j.PermissionRepository/BumpGeneration")
 	defer span.End()
-
-	cypher := `MATCH (s)-[p:` + EdgeKindHasPermission.String() + ` {id: $id}]->(t) DELETE p`
-
-	params := map[string]any{
-		"id": id.String(),
-	}
-
-	if err := Neo4jExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
-		return errors.Join(err, ErrPermissionDelete)
-	}
-
+	_ = principal
 	return nil
 }
 
@@ -579,122 +608,169 @@ func NewNeo4jPermissionRepository(opts ...Neo4jRepositoryOption) (*Neo4jPermissi
 	}, nil
 }
 
-// deduplicatePermissions merges permissions from different sources, giving precedence to
-// PermissionKindAll ("*") when present. If "*" permission exists, all other permissions are
-// removed as "*" grants all permissions.
-func deduplicatePermissions(directPerms, systemRolePerms []*Permission) []*Permission {
-	permissionMap := make(map[model.PermissionKind]*Permission)
+// authzAcyclicPathPredicate rejects cyclic IN_SCOPE_OF walks. Names are
+// prefixed so the fragment can be embedded in EXISTS subqueries that inherit
+// outer aliases such as n (namespace).
+func authzAcyclicPathPredicate(pathVar string) string {
+	return "ALL(authz_node IN nodes(" + pathVar + ") WHERE size([authz_other IN nodes(" + pathVar + ") WHERE authz_other = authz_node]) = 1)"
+}
 
-	// Add direct permissions first
-	for _, perm := range directPerms {
-		permissionMap[perm.Kind] = perm
-	}
-
-	// Add system role permissions with deduplication logic
-	for _, perm := range systemRolePerms {
-		// If we already have "*" permission and this is not "*", skip it
-		if _, hasAll := permissionMap[model.PermissionKindAll]; hasAll && perm.Kind != model.PermissionKindAll {
-			continue
-		}
-
-		// If we're adding "*" permission, it overrides all others
-		if perm.Kind == model.PermissionKindAll {
-			permissionMap = map[model.PermissionKind]*Permission{
-				model.PermissionKindAll: perm,
+// AuthzVisibleExistsClause returns a Cypher EXISTS fragment that is true when
+// the node bound to resourceAlias is visible to the actor for actionParam.
+// Aliases inside the fragment are prefixed so it can be embedded in queries
+// that already bind n or other names.
+func AuthzVisibleExistsClause(resourceAlias, actorParam, actionParam string) string {
+	return `
+	EXISTS {
+		MATCH (actor:User {id: ` + actorParam + `})
+		WHERE actor.status IS NULL OR actor.status = $active_status
+		MATCH (actor)-[:` + EdgeKindMemberOf.String() + `*0..1]->(principal)
+		WHERE principal:User OR principal:Team OR principal:Organization
+		AND (principal.status IS NULL OR principal.status = $active_status)
+		MATCH path = (` + resourceAlias + `)-[:` + EdgeKindInScopeOf.String() + `*0..]->(scope)
+		WHERE ` + authzAcyclicPathPredicate("path") + `
+		MATCH (principal)-[g:` + EdgeKindGranted.String() + `]->(scope)
+		WHERE (` + actionParam + ` IN coalesce(g.actions, [])) OR (
+			g.role_id IS NOT NULL AND g.role_id <> "" AND EXISTS {
+				MATCH (role:` + model.ResourceTypeRole.String() + ` {id: g.role_id})
+				WHERE ` + actionParam + ` IN coalesce(role.actions, [])
 			}
-			break
-		}
-
-		// Add permission if not already present
-		if _, exists := permissionMap[perm.Kind]; !exists {
-			permissionMap[perm.Kind] = perm
-		}
-	}
-
-	// Convert map to slice
-	result := make([]*Permission, 0, len(permissionMap))
-	for _, perm := range permissionMap {
-		result = append(result, perm)
-	}
-
-	return result
+		)
+	}`
 }
 
-func clearPermissionAllCrossCache(ctx context.Context, r *redisBaseRepository) error {
-	deleteFns := []func(context.Context, *redisBaseRepository, ...string) error{
-		clearRolesPattern,
-		clearUsersPattern,
+func applyAuthzVisible(actor model.ID, action model.Action, alias, actorParam string, params map[string]any) string {
+	if err := actor.Validate(); err != nil {
+		return ""
 	}
-
-	for _, fn := range deleteFns {
-		if err := fn(ctx, r, "*"); err != nil {
-			return err
-		}
+	if actorParam == "" {
+		actorParam = "$user_id"
 	}
-
-	return nil
+	params[strings.TrimPrefix(actorParam, "$")] = actor.String()
+	params["action"] = action.String()
+	params["active_status"] = model.UserStatusActive.String()
+	return AuthzVisibleExistsClause(alias, actorParam, "$action")
 }
 
-// CachedPermissionRepository implements cache clearing on resources that are
-// related dependent on permission changes. This repository does not cache any
-// data to prevent stale permission data. This repository mostly acts as a
-// proxy to the permission repository and clears the cache on any changes.
-//
-// Adding permission caching could be a future improvement, but that's a
-// double-edged sword. It would be a performance improvement, but it would also
-// mean that stale data could be cached.
+// applyAuthzReachableNamespace is true when the actor can namespace.read the
+// bound namespace, or can read at least one descendant project, issue,
+// document, or folder.
+func applyAuthzReachableNamespace(actor model.ID, alias, actorParam string, params map[string]any) string {
+	if err := actor.Validate(); err != nil {
+		return ""
+	}
+	if actorParam == "" {
+		actorParam = "$user_id"
+	}
+	params[strings.TrimPrefix(actorParam, "$")] = actor.String()
+	params["active_status"] = model.UserStatusActive.String()
+	params["namespace_read"] = model.ActionNamespaceRead.String()
+	params["project_read"] = model.ActionProjectRead.String()
+	params["issue_read"] = model.ActionIssueRead.String()
+	params["document_read"] = model.ActionDocumentRead.String()
+
+	inScope := `[:` + EdgeKindInScopeOf.String() + `*1..]`
+	projectDesc := `
+	EXISTS {
+		MATCH desc_path = (authz_project:` + model.ResourceTypeProject.String() + `)-` + inScope + `->(` + alias + `)
+		WHERE ` + authzAcyclicPathPredicate("desc_path") + `
+		AND ` + AuthzVisibleExistsClause("authz_project", actorParam, "$project_read") + `
+	}`
+	issueDesc := `
+	EXISTS {
+		MATCH desc_path = (authz_issue:` + model.ResourceTypeIssue.String() + `)-` + inScope + `->(` + alias + `)
+		WHERE ` + authzAcyclicPathPredicate("desc_path") + `
+		AND ` + AuthzVisibleExistsClause("authz_issue", actorParam, "$issue_read") + `
+	}`
+	documentDesc := `
+	EXISTS {
+		MATCH desc_path = (authz_doc)-` + inScope + `->(` + alias + `)
+		WHERE (authz_doc:` + model.ResourceTypeDocument.String() + ` OR authz_doc:` + model.ResourceTypeFolder.String() + `)
+		AND ` + authzAcyclicPathPredicate("desc_path") + `
+		AND ` + AuthzVisibleExistsClause("authz_doc", actorParam, "$document_read") + `
+	}`
+
+	return "(" + AuthzVisibleExistsClause(alias, actorParam, "$namespace_read") +
+		" OR " + projectDesc +
+		" OR " + issueDesc +
+		" OR " + documentDesc + ")"
+}
+
+func authzGenKey(principal model.ID) string {
+	return composeCacheKey("authz", "gen", principal.String())
+}
+
+// RedisCachedPermissionRepository wraps PermissionRepository and invalidates
+// authz-filtered list caches on grant and ancestry writes. Evaluator methods
+// are not cached.
 type RedisCachedPermissionRepository struct {
 	cacheRepo      *redisBaseRepository
 	permissionRepo PermissionRepository
 }
 
-func (c *RedisCachedPermissionRepository) Create(ctx context.Context, opts CreatePermissionOpts) (*Permission, error) {
-	if err := clearPermissionAllCrossCache(ctx, c.cacheRepo); err != nil {
+func (c *RedisCachedPermissionRepository) Create(ctx context.Context, opts CreateGrantOpts) (*Grant, error) {
+	grant, err := c.permissionRepo.Create(ctx, opts)
+	if err != nil {
 		return nil, err
 	}
-	return c.permissionRepo.Create(ctx, opts)
+	_ = c.BumpGeneration(ctx, opts.Principal)
+	_ = clearPermissionAllCrossCache(ctx, c.cacheRepo)
+	return grant, nil
 }
 
-func (c *RedisCachedPermissionRepository) Get(ctx context.Context, id model.ID) (*Permission, error) {
+func (c *RedisCachedPermissionRepository) Get(ctx context.Context, id model.ID) (*Grant, error) {
 	return c.permissionRepo.Get(ctx, id)
 }
 
-func (c *RedisCachedPermissionRepository) GetBySubject(ctx context.Context, id model.ID) ([]*Permission, error) {
-	return c.permissionRepo.GetBySubject(ctx, id)
+func (c *RedisCachedPermissionRepository) ListByPrincipal(ctx context.Context, principal model.ID) ([]*Grant, error) {
+	return c.permissionRepo.ListByPrincipal(ctx, principal)
 }
 
-func (c *RedisCachedPermissionRepository) GetByTarget(ctx context.Context, id model.ID) ([]*Permission, error) {
-	return c.permissionRepo.GetByTarget(ctx, id)
-}
-
-func (c *RedisCachedPermissionRepository) GetBySubjectAndTarget(ctx context.Context, source, target model.ID) ([]*Permission, error) {
-	return c.permissionRepo.GetBySubjectAndTarget(ctx, source, target)
-}
-
-func (c *RedisCachedPermissionRepository) Update(ctx context.Context, id model.ID, kind model.PermissionKind) (*Permission, error) {
-	if err := clearPermissionAllCrossCache(ctx, c.cacheRepo); err != nil {
-		return nil, err
-	}
-	return c.permissionRepo.Update(ctx, id, kind)
+func (c *RedisCachedPermissionRepository) ListByScope(ctx context.Context, scope model.ID) ([]*Grant, error) {
+	return c.permissionRepo.ListByScope(ctx, scope)
 }
 
 func (c *RedisCachedPermissionRepository) Delete(ctx context.Context, id model.ID) error {
-	if err := clearPermissionAllCrossCache(ctx, c.cacheRepo); err != nil {
+	grant, getErr := c.permissionRepo.Get(ctx, id)
+	if err := c.permissionRepo.Delete(ctx, id); err != nil {
 		return err
 	}
-	return c.permissionRepo.Delete(ctx, id)
+	if getErr == nil && grant != nil {
+		_ = c.BumpGeneration(ctx, grant.Principal)
+	}
+	_ = clearPermissionAllCrossCache(ctx, c.cacheRepo)
+	return nil
 }
 
-func (c *RedisCachedPermissionRepository) HasPermission(ctx context.Context, subject, target model.ID, kinds ...model.PermissionKind) (bool, error) {
-	return c.permissionRepo.HasPermission(ctx, subject, target, kinds...)
+func (c *RedisCachedPermissionRepository) Has(ctx context.Context, actor, resource model.ID, action model.Action) (bool, error) {
+	return c.permissionRepo.Has(ctx, actor, resource, action)
 }
 
-func (c *RedisCachedPermissionRepository) HasAnyRelation(ctx context.Context, source, target model.ID) (bool, error) {
-	return c.permissionRepo.HasAnyRelation(ctx, source, target)
+func (c *RedisCachedPermissionRepository) EffectiveActions(ctx context.Context, actor, resource model.ID) ([]model.Action, error) {
+	return c.permissionRepo.EffectiveActions(ctx, actor, resource)
 }
 
-func (c *RedisCachedPermissionRepository) HasSystemRole(ctx context.Context, source model.ID, roles ...model.SystemRole) (bool, error) {
-	return c.permissionRepo.HasSystemRole(ctx, source, roles...)
+func (c *RedisCachedPermissionRepository) Explain(ctx context.Context, actor, resource model.ID, action model.Action) (*Decision, error) {
+	return c.permissionRepo.Explain(ctx, actor, resource, action)
+}
+
+func (c *RedisCachedPermissionRepository) ListVisible(ctx context.Context, actor model.ID, action model.Action, parent model.ID, resourceType model.ResourceType) ([]model.ID, error) {
+	return c.permissionRepo.ListVisible(ctx, actor, action, parent, resourceType)
+}
+
+func (c *RedisCachedPermissionRepository) LinkInScopeOf(ctx context.Context, child, parent model.ID) error {
+	if err := c.permissionRepo.LinkInScopeOf(ctx, child, parent); err != nil {
+		return err
+	}
+	_ = clearPermissionAllCrossCache(ctx, c.cacheRepo)
+	return nil
+}
+
+func (c *RedisCachedPermissionRepository) BumpGeneration(ctx context.Context, principal model.ID) error {
+	key := authzGenKey(principal)
+	var gen int64
+	_ = c.cacheRepo.Get(ctx, key, &gen)
+	return c.cacheRepo.Set(ctx, key, gen+1)
 }
 
 // NewCachedPermissionRepository returns a new CachedPermissionRepository.
@@ -708,4 +784,38 @@ func NewCachedPermissionRepository(repo PermissionRepository, opts ...RedisRepos
 		cacheRepo:      r,
 		permissionRepo: repo,
 	}, nil
+}
+
+func clearPermissionAllCrossCache(ctx context.Context, r *redisBaseRepository) error {
+	if err := clearRolesPattern(ctx, r, "*"); err != nil {
+		return err
+	}
+	if err := clearUsersPattern(ctx, r, "*"); err != nil {
+		return err
+	}
+	if err := clearOrganizationAllLists(ctx, r); err != nil {
+		return err
+	}
+	if err := clearNamespacesAllLists(ctx, r); err != nil {
+		return err
+	}
+	if err := clearProjectsAllList(ctx, r); err != nil {
+		return err
+	}
+	if err := clearIssueAllForProject(ctx, r); err != nil {
+		return err
+	}
+	if err := clearDocumentAllLibrary(ctx, r); err != nil {
+		return err
+	}
+	if err := clearDocumentAllRelated(ctx, r); err != nil {
+		return err
+	}
+	if err := clearDocumentAllByCreator(ctx, r); err != nil {
+		return err
+	}
+	if err := clearFolderAllLists(ctx, r); err != nil {
+		return err
+	}
+	return nil
 }

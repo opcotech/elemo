@@ -1,11 +1,11 @@
 import { EntityDangerZone } from "@/components/entity-lifecycle/entity-lifecycle";
 import { organizationLifecycleConfig } from "@/components/entity-lifecycle/entity-lifecycle-configs";
 import { v1OrganizationDeleteMutation } from "@/lib/api/mutation-options";
-import type { Organization, Permission } from "@/lib/api/types";
+import type { EffectiveActions, Organization } from "@/lib/api/types";
 
 interface OrganizationDangerZoneProps {
   organization: Organization;
-  permissions: Permission[];
+  permissions: EffectiveActions;
 }
 
 export function OrganizationDangerZone({

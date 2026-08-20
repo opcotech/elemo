@@ -88,9 +88,9 @@ func (o UpdateDocumentOpts) patch() map[string]any {
 type DocumentRepository interface {
 	Create(ctx context.Context, opts CreateDocumentOpts) (*Document, error)
 	Get(ctx context.Context, id model.ID, proj DocumentProjection) (*Document, error)
-	ListByCreator(ctx context.Context, createdBy model.ID, page CursorPage, proj DocumentProjection) (Page[*Document], error)
-	ListLibrary(ctx context.Context, libraryID model.ID, filter LibraryListFilter, page CursorPage, proj DocumentProjection) (Page[*Document], error)
-	ListRelated(ctx context.Context, relatedTo model.ID, page CursorPage, proj DocumentProjection) (Page[*Document], error)
+	ListByCreator(ctx context.Context, createdBy, actor model.ID, page CursorPage, proj DocumentProjection) (Page[*Document], error)
+	ListLibrary(ctx context.Context, libraryID, actor model.ID, filter LibraryListFilter, page CursorPage, proj DocumentProjection) (Page[*Document], error)
+	ListRelated(ctx context.Context, relatedTo, actor model.ID, page CursorPage, proj DocumentProjection) (Page[*Document], error)
 	Update(ctx context.Context, id model.ID, opts UpdateDocumentOpts) (*Document, error)
 	MoveLibrary(ctx context.Context, id, libraryID model.ID) (*Document, error)
 	MoveToFolder(ctx context.Context, id model.ID, folderID *model.ID) (*Document, error)
@@ -455,16 +455,15 @@ func (r *Neo4jDocumentRepository) Create(ctx context.Context, opts CreateDocumen
 			created_at: datetime($created_at)
 		}),
 		(d)-[:` + EdgeKindScopedTo.String() + ` {id: $scoped_rel_id, created_at: datetime($created_at)}]->(lib),
-		(o)-[:` + EdgeKindCreated.String() + ` {id: $created_rel_id, created_at: datetime($created_at)}]->(d),
-		(o)-[:` + EdgeKindHasPermission.String() + ` {id: $perm_id, kind: $perm_kind, created_at: datetime($created_at)}]->(d)`
+		(d)-[:` + EdgeKindInScopeOf.String() + ` {id: $scope_id, created_at: datetime($created_at)}]->(lib),
+		(o)-[:` + EdgeKindCreated.String() + ` {id: $created_rel_id, created_at: datetime($created_at)}]->(d)`
 
 	params := map[string]any{
 		"library_id":     opts.Library.String(),
 		"created_by_id":  opts.CreatedBy.String(),
 		"scoped_rel_id":  model.NewRawID(),
+		"scope_id":       model.NewRawID(),
 		"created_rel_id": model.NewRawID(),
-		"perm_id":        model.NewRawID(),
-		"perm_kind":      model.PermissionKindAll.String(),
 		"id":             id.String(),
 		"title":          opts.Title,
 		"excerpt":        opts.Excerpt,
@@ -522,7 +521,7 @@ func (r *Neo4jDocumentRepository) Get(ctx context.Context, id model.ID, proj Doc
 	return document, nil
 }
 
-func (r *Neo4jDocumentRepository) ListByCreator(ctx context.Context, createdBy model.ID, page CursorPage, proj DocumentProjection) (Page[*Document], error) {
+func (r *Neo4jDocumentRepository) ListByCreator(ctx context.Context, createdBy, actor model.ID, page CursorPage, proj DocumentProjection) (Page[*Document], error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.DocumentRepository/ListByCreator")
 	defer span.End()
 
@@ -532,6 +531,8 @@ func (r *Neo4jDocumentRepository) ListByCreator(ctx context.Context, createdBy m
 	}
 	plan, err := CompileQuery(DocumentListByCreatorQuery{
 		CreatedBy:  createdBy,
+		ActorID:    actor,
+		Action:     model.ActionDocumentRead,
 		Page:       normalized,
 		Order:      SortDirectionDesc,
 		Projection: proj,
@@ -558,7 +559,7 @@ func (r *Neo4jDocumentRepository) ListByCreator(ctx context.Context, createdBy m
 	})
 }
 
-func (r *Neo4jDocumentRepository) ListLibrary(ctx context.Context, libraryID model.ID, filter LibraryListFilter, page CursorPage, proj DocumentProjection) (Page[*Document], error) {
+func (r *Neo4jDocumentRepository) ListLibrary(ctx context.Context, libraryID, actor model.ID, filter LibraryListFilter, page CursorPage, proj DocumentProjection) (Page[*Document], error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.DocumentRepository/ListLibrary")
 	defer span.End()
 
@@ -568,6 +569,8 @@ func (r *Neo4jDocumentRepository) ListLibrary(ctx context.Context, libraryID mod
 	}
 	plan, err := CompileQuery(DocumentListLibraryQuery{
 		LibraryID:  libraryID,
+		ActorID:    actor,
+		Action:     model.ActionDocumentRead,
 		Filter:     filter,
 		Page:       normalized,
 		Order:      SortDirectionDesc,
@@ -595,7 +598,7 @@ func (r *Neo4jDocumentRepository) ListLibrary(ctx context.Context, libraryID mod
 	})
 }
 
-func (r *Neo4jDocumentRepository) ListRelated(ctx context.Context, relatedTo model.ID, page CursorPage, proj DocumentProjection) (Page[*Document], error) {
+func (r *Neo4jDocumentRepository) ListRelated(ctx context.Context, relatedTo, actor model.ID, page CursorPage, proj DocumentProjection) (Page[*Document], error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.DocumentRepository/ListRelated")
 	defer span.End()
 
@@ -605,6 +608,8 @@ func (r *Neo4jDocumentRepository) ListRelated(ctx context.Context, relatedTo mod
 	}
 	plan, err := CompileQuery(DocumentListRelatedQuery{
 		RelatedTo:  relatedTo,
+		ActorID:    actor,
+		Action:     model.ActionDocumentRead,
 		Page:       normalized,
 		Order:      SortDirectionDesc,
 		Projection: proj,
@@ -928,7 +933,7 @@ func (r *RedisCachedDocumentRepository) Get(ctx context.Context, id model.ID, pr
 	return document, nil
 }
 
-func (r *RedisCachedDocumentRepository) ListByCreator(ctx context.Context, createdBy model.ID, page CursorPage, proj DocumentProjection) (Page[*Document], error) {
+func (r *RedisCachedDocumentRepository) ListByCreator(ctx context.Context, createdBy, actor model.ID, page CursorPage, proj DocumentProjection) (Page[*Document], error) {
 	var documents Page[*Document]
 	var err error
 
@@ -937,7 +942,7 @@ func (r *RedisCachedDocumentRepository) ListByCreator(ctx context.Context, creat
 		return Page[*Document]{}, err
 	}
 
-	key := composeCacheKey(model.ResourceTypeDocument.String(), "ListByCreator", createdBy.String(), projectionCacheValue(proj), pageTokenValue(normalized.Token), normalized.Size)
+	key := composeCacheKey(model.ResourceTypeDocument.String(), "ListByCreator", createdBy.String(), actor.String(), projectionCacheValue(proj), pageTokenValue(normalized.Token), normalized.Size)
 	if err = r.cacheRepo.Get(ctx, key, &documents); err != nil {
 		return Page[*Document]{}, err
 	}
@@ -946,7 +951,7 @@ func (r *RedisCachedDocumentRepository) ListByCreator(ctx context.Context, creat
 		return documents, nil
 	}
 
-	if documents, err = r.documentRepo.ListByCreator(ctx, createdBy, normalized, proj); err != nil {
+	if documents, err = r.documentRepo.ListByCreator(ctx, createdBy, actor, normalized, proj); err != nil {
 		return Page[*Document]{}, err
 	}
 
@@ -957,7 +962,7 @@ func (r *RedisCachedDocumentRepository) ListByCreator(ctx context.Context, creat
 	return documents, nil
 }
 
-func (r *RedisCachedDocumentRepository) ListLibrary(ctx context.Context, libraryID model.ID, filter LibraryListFilter, page CursorPage, proj DocumentProjection) (Page[*Document], error) {
+func (r *RedisCachedDocumentRepository) ListLibrary(ctx context.Context, libraryID, actor model.ID, filter LibraryListFilter, page CursorPage, proj DocumentProjection) (Page[*Document], error) {
 	var documents Page[*Document]
 	var err error
 
@@ -966,7 +971,7 @@ func (r *RedisCachedDocumentRepository) ListLibrary(ctx context.Context, library
 		return Page[*Document]{}, err
 	}
 
-	key := composeCacheKey(model.ResourceTypeDocument.String(), "ListLibrary", libraryID.String(), filter.cacheValue(), projectionCacheValue(proj), pageTokenValue(normalized.Token), normalized.Size)
+	key := composeCacheKey(model.ResourceTypeDocument.String(), "ListLibrary", libraryID.String(), actor.String(), filter.cacheValue(), projectionCacheValue(proj), pageTokenValue(normalized.Token), normalized.Size)
 	if err = r.cacheRepo.Get(ctx, key, &documents); err != nil {
 		return Page[*Document]{}, err
 	}
@@ -975,7 +980,7 @@ func (r *RedisCachedDocumentRepository) ListLibrary(ctx context.Context, library
 		return documents, nil
 	}
 
-	if documents, err = r.documentRepo.ListLibrary(ctx, libraryID, filter, normalized, proj); err != nil {
+	if documents, err = r.documentRepo.ListLibrary(ctx, libraryID, actor, filter, normalized, proj); err != nil {
 		return Page[*Document]{}, err
 	}
 
@@ -986,7 +991,7 @@ func (r *RedisCachedDocumentRepository) ListLibrary(ctx context.Context, library
 	return documents, nil
 }
 
-func (r *RedisCachedDocumentRepository) ListRelated(ctx context.Context, relatedTo model.ID, page CursorPage, proj DocumentProjection) (Page[*Document], error) {
+func (r *RedisCachedDocumentRepository) ListRelated(ctx context.Context, relatedTo, actor model.ID, page CursorPage, proj DocumentProjection) (Page[*Document], error) {
 	var documents Page[*Document]
 	var err error
 
@@ -995,7 +1000,7 @@ func (r *RedisCachedDocumentRepository) ListRelated(ctx context.Context, related
 		return Page[*Document]{}, err
 	}
 
-	key := composeCacheKey(model.ResourceTypeDocument.String(), "ListRelated", relatedTo.String(), projectionCacheValue(proj), pageTokenValue(normalized.Token), normalized.Size)
+	key := composeCacheKey(model.ResourceTypeDocument.String(), "ListRelated", relatedTo.String(), actor.String(), projectionCacheValue(proj), pageTokenValue(normalized.Token), normalized.Size)
 	if err = r.cacheRepo.Get(ctx, key, &documents); err != nil {
 		return Page[*Document]{}, err
 	}
@@ -1004,7 +1009,7 @@ func (r *RedisCachedDocumentRepository) ListRelated(ctx context.Context, related
 		return documents, nil
 	}
 
-	if documents, err = r.documentRepo.ListRelated(ctx, relatedTo, normalized, proj); err != nil {
+	if documents, err = r.documentRepo.ListRelated(ctx, relatedTo, actor, normalized, proj); err != nil {
 		return Page[*Document]{}, err
 	}
 

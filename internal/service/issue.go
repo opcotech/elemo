@@ -461,7 +461,7 @@ func (s *issueService) validateParentUpdate(ctx context.Context, issueID model.I
 	if parentID == issueID {
 		return ErrIssueSelfRelation
 	}
-	if !s.permissionService.CtxUserHasPermission(ctx, parentID, model.PermissionKindRead) {
+	if !s.permissionService.CtxUserHas(ctx, parentID, model.ActionIssueRead) {
 		return ErrNoPermission
 	}
 
@@ -518,7 +518,7 @@ func (s *issueService) Create(ctx context.Context, projectID model.ID, opts Crea
 		return nil, errors.Join(ErrIssueCreate, err)
 	}
 
-	if !s.permissionService.CtxUserHasPermission(ctx, projectID, model.PermissionKindWrite) {
+	if !s.permissionService.CtxUserHas(ctx, projectID, model.ActionIssueCreate) {
 		return nil, errors.Join(ErrIssueCreate, ErrNoPermission)
 	}
 
@@ -573,6 +573,14 @@ func (s *issueService) Create(ctx context.Context, projectID model.ID, opts Crea
 		return nil, errors.Join(ErrIssueCreate, err)
 	}
 
+	actions, err := roleTemplateActions(model.RoleKeyIssueMaintainer)
+	if err != nil {
+		return nil, errors.Join(ErrIssueCreate, err)
+	}
+	if err := s.permissionService.BootstrapCreator(ctx, userID, issue.ID, actions); err != nil {
+		return nil, errors.Join(ErrIssueCreate, err)
+	}
+
 	return issueFromRepository(issue), nil
 }
 
@@ -584,7 +592,7 @@ func (s *issueService) Get(ctx context.Context, id model.ID) (*Issue, error) {
 		return nil, errors.Join(ErrIssueGet, err)
 	}
 
-	if !s.permissionService.CtxUserHasPermission(ctx, id, model.PermissionKindRead) {
+	if !s.permissionService.CtxUserHas(ctx, id, model.ActionIssueRead) {
 		return nil, errors.Join(ErrIssueGet, ErrNoPermission)
 	}
 
@@ -613,7 +621,7 @@ func (s *issueService) GetByKey(ctx context.Context, namespaceID model.ID, key s
 		return nil, errors.Join(ErrIssueGet, err)
 	}
 
-	if !s.permissionService.CtxUserHasPermission(ctx, issue.ID, model.PermissionKindRead) {
+	if !s.permissionService.CtxUserHas(ctx, issue.ID, model.ActionIssueRead) {
 		return nil, errors.Join(ErrIssueGet, ErrNoPermission)
 	}
 
@@ -633,12 +641,15 @@ func (s *issueService) List(ctx context.Context, projectID model.ID, page Cursor
 		return Page[*PartialIssue]{}, errors.Join(ErrIssueGetAll, err)
 	}
 
-	if !s.permissionService.CtxUserHasPermission(ctx, projectID, model.PermissionKindRead) {
-		return Page[*PartialIssue]{}, errors.Join(ErrIssueGetAll, ErrNoPermission)
+	userID, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID)
+	if !ok {
+		return Page[*PartialIssue]{}, errors.Join(ErrIssueGetAll, ErrNoUser)
 	}
 
 	issues, err := s.issueRepo.ListForProject(ctx, repository.IssueListQuery{
 		ProjectID:  projectID,
+		ActorID:    userID,
+		Action:     model.ActionIssueRead,
 		Page:       normalized,
 		Projection: repository.IssueListForProjectProjection(),
 	})
@@ -662,12 +673,15 @@ func (s *issueService) ListByNamespace(ctx context.Context, namespaceID model.ID
 		return Page[*PartialIssue]{}, errors.Join(ErrIssueGetAll, err)
 	}
 
-	if !s.permissionService.CtxUserHasPermission(ctx, namespaceID, model.PermissionKindRead) {
-		return Page[*PartialIssue]{}, errors.Join(ErrIssueGetAll, ErrNoPermission)
+	userID, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID)
+	if !ok {
+		return Page[*PartialIssue]{}, errors.Join(ErrIssueGetAll, ErrNoUser)
 	}
 
 	issues, err := s.issueRepo.ListForNamespace(ctx, repository.IssueListForNamespaceQuery{
 		NamespaceID: namespaceID,
+		ActorID:     userID,
+		Action:      model.ActionIssueRead,
 		Page:        normalized,
 		Projection:  repository.IssueListForNamespaceProjection(),
 	})
@@ -696,12 +710,14 @@ func (s *issueService) ListByUser(ctx context.Context, userID model.ID, page Cur
 		return Page[*PartialIssue]{}, errors.Join(ErrIssueGetAll, ErrNoUser)
 	}
 
-	if ctxUserID != userID && !s.permissionService.CtxUserHasPermission(ctx, userID, model.PermissionKindRead) {
+	if ctxUserID != userID {
 		return Page[*PartialIssue]{}, errors.Join(ErrIssueGetAll, ErrNoPermission)
 	}
 
 	issues, err := s.issueRepo.ListForUser(ctx, repository.IssueListForUserQuery{
 		UserID:     userID,
+		ActorID:    ctxUserID,
+		Action:     model.ActionIssueRead,
 		Page:       normalized,
 		Projection: repository.IssueListForUserProjection(),
 	})
@@ -724,7 +740,7 @@ func (s *issueService) Update(ctx context.Context, id model.ID, opts UpdateIssue
 		return nil, errors.Join(ErrIssueUpdate, err)
 	}
 
-	if !s.permissionService.CtxUserHasPermission(ctx, id, model.PermissionKindWrite) {
+	if !s.permissionService.CtxUserHas(ctx, id, model.ActionIssueUpdate) {
 		return nil, errors.Join(ErrIssueUpdate, ErrNoPermission)
 	}
 
@@ -817,7 +833,7 @@ func (s *issueService) Delete(ctx context.Context, id model.ID) error {
 		return errors.Join(ErrIssueDelete, err)
 	}
 
-	if !s.permissionService.CtxUserHasPermission(ctx, id, model.PermissionKindDelete) {
+	if !s.permissionService.CtxUserHas(ctx, id, model.ActionIssueDelete) {
 		return errors.Join(ErrIssueDelete, ErrNoPermission)
 	}
 
@@ -841,7 +857,7 @@ func (s *issueService) ListRelations(ctx context.Context, issueID model.ID, page
 		return Page[*IssueRelation]{}, errors.Join(ErrIssueGetRelations, err)
 	}
 
-	if !s.permissionService.CtxUserHasPermission(ctx, issueID, model.PermissionKindRead) {
+	if !s.permissionService.CtxUserHas(ctx, issueID, model.ActionIssueRead) {
 		return Page[*IssueRelation]{}, errors.Join(ErrIssueGetRelations, ErrNoPermission)
 	}
 
@@ -879,10 +895,10 @@ func (s *issueService) AddRelation(ctx context.Context, issueID, relatedID model
 		return nil, errors.Join(ErrIssueAddRelation, err)
 	}
 
-	if !s.permissionService.CtxUserHasPermission(ctx, issueID, model.PermissionKindWrite) {
+	if !s.permissionService.CtxUserHas(ctx, issueID, model.ActionIssueUpdate) {
 		return nil, errors.Join(ErrIssueAddRelation, ErrNoPermission)
 	}
-	if !s.permissionService.CtxUserHasPermission(ctx, relatedID, model.PermissionKindRead) {
+	if !s.permissionService.CtxUserHas(ctx, relatedID, model.ActionIssueRead) {
 		return nil, errors.Join(ErrIssueAddRelation, ErrNoPermission)
 	}
 
@@ -927,7 +943,7 @@ func (s *issueService) UpdateRelation(ctx context.Context, issueID, relationID m
 		return nil, errors.Join(ErrIssueUpdateRelation, err)
 	}
 
-	if !s.permissionService.CtxUserHasPermission(ctx, issueID, model.PermissionKindWrite) {
+	if !s.permissionService.CtxUserHas(ctx, issueID, model.ActionIssueUpdate) {
 		return nil, errors.Join(ErrIssueUpdateRelation, ErrNoPermission)
 	}
 
@@ -941,7 +957,7 @@ func (s *issueService) UpdateRelation(ctx context.Context, issueID, relationID m
 		return nil, errors.Join(ErrIssueUpdateRelation, repository.ErrNotFound)
 	}
 
-	if !s.permissionService.CtxUserHasPermission(ctx, relatedID, model.PermissionKindRead) {
+	if !s.permissionService.CtxUserHas(ctx, relatedID, model.ActionIssueRead) {
 		return nil, errors.Join(ErrIssueUpdateRelation, ErrNoPermission)
 	}
 
@@ -987,7 +1003,7 @@ func (s *issueService) RemoveRelation(ctx context.Context, issueID, relationID m
 		return errors.Join(ErrIssueRemoveRelation, err)
 	}
 
-	if !s.permissionService.CtxUserHasPermission(ctx, issueID, model.PermissionKindWrite) {
+	if !s.permissionService.CtxUserHas(ctx, issueID, model.ActionIssueUpdate) {
 		return errors.Join(ErrIssueRemoveRelation, ErrNoPermission)
 	}
 
@@ -1001,7 +1017,7 @@ func (s *issueService) RemoveRelation(ctx context.Context, issueID, relationID m
 		return errors.Join(ErrIssueRemoveRelation, repository.ErrNotFound)
 	}
 
-	if !s.permissionService.CtxUserHasPermission(ctx, relatedID, model.PermissionKindRead) {
+	if !s.permissionService.CtxUserHas(ctx, relatedID, model.ActionIssueRead) {
 		return errors.Join(ErrIssueRemoveRelation, ErrNoPermission)
 	}
 

@@ -63,7 +63,7 @@ test.describe("@documents.detail Document Detail E2E Tests", () => {
       Object.defineProperty(navigator, "clipboard", {
         configurable: true,
         value: {
-          writeText: () => undefined,
+          writeText: () => Promise.resolve(),
         },
       });
     });

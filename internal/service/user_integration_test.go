@@ -16,7 +16,6 @@ import (
 	"github.com/opcotech/elemo/internal/service"
 	"github.com/opcotech/elemo/internal/testutil"
 	testModel "github.com/opcotech/elemo/internal/testutil/model"
-	testRepo "github.com/opcotech/elemo/internal/testutil/repository"
 )
 
 func serviceCreateUserOpts() service.CreateUserOpts {
@@ -45,11 +44,9 @@ type UserServiceIntegrationTestSuite struct {
 
 	userService service.UserService
 
-	normalUser        *repository.User
-	normalUserContext context.Context
-
-	systemOwner        *repository.User
-	systemOwnerContext context.Context
+	actor        *repository.User
+	actorContext context.Context
+	other        *repository.User
 }
 
 func (s *UserServiceIntegrationTestSuite) SetupSuite() {
@@ -81,14 +78,12 @@ func (s *UserServiceIntegrationTestSuite) SetupSuite() {
 
 func (s *UserServiceIntegrationTestSuite) SetupTest() {
 	var err error
-	s.systemOwner, err = s.UserRepo.Create(context.Background(), testModel.NewCreateUserOpts())
+	s.actor, err = s.UserRepo.Create(context.Background(), testModel.NewCreateUserOpts())
 	s.Require().NoError(err)
-	s.systemOwnerContext = context.WithValue(context.Background(), pkg.CtxKeyUserID, s.systemOwner.ID)
-	s.Require().NoError(testRepo.MakeUserSystemOwner(s.systemOwner.ID, s.Neo4jDB))
+	s.actorContext = context.WithValue(context.Background(), pkg.CtxKeyUserID, s.actor.ID)
 
-	s.normalUser, err = s.UserRepo.Create(context.Background(), testModel.NewCreateUserOpts())
+	s.other, err = s.UserRepo.Create(context.Background(), testModel.NewCreateUserOpts())
 	s.Require().NoError(err)
-	s.normalUserContext = context.WithValue(context.Background(), pkg.CtxKeyUserID, s.normalUser.ID)
 }
 
 func (s *UserServiceIntegrationTestSuite) TearDownTest() {
@@ -100,92 +95,84 @@ func (s *UserServiceIntegrationTestSuite) TearDownSuite() {
 }
 
 func (s *UserServiceIntegrationTestSuite) TestCreateUser() {
-	_, err := s.userService.Create(s.normalUserContext, serviceCreateUserOpts())
-	s.Assert().ErrorIs(err, service.ErrNoPermission)
-
-	_, err = s.userService.Create(s.systemOwnerContext, serviceCreateUserOpts())
+	_, err := s.userService.Create(s.actorContext, serviceCreateUserOpts())
 	s.Assert().NoError(err)
 }
 
 func (s *UserServiceIntegrationTestSuite) TestGet() {
-	got, err := s.userService.Get(s.normalUserContext, s.systemOwner.ID)
+	got, err := s.userService.Get(s.actorContext, s.other.ID)
 	s.Assert().NoError(err)
 
-	s.Assert().Equal(s.systemOwner.Username, got.Username)
-	s.Assert().Equal(s.systemOwner.Email, got.Email)
-	s.Assert().Equal(s.systemOwner.Password, got.Password)
-	s.Assert().Equal(s.systemOwner.Status, got.Status)
-	s.Assert().Equal(s.systemOwner.FirstName, got.FirstName)
-	s.Assert().Equal(s.systemOwner.LastName, got.LastName)
-	s.Assert().WithinDuration(*s.systemOwner.CreatedAt, *got.CreatedAt, 100*time.Millisecond)
+	s.Assert().Equal(s.other.Username, got.Username)
+	s.Assert().Equal(s.other.Email, got.Email)
+	s.Assert().Equal(s.other.Password, got.Password)
+	s.Assert().Equal(s.other.Status, got.Status)
+	s.Assert().Equal(s.other.FirstName, got.FirstName)
+	s.Assert().Equal(s.other.LastName, got.LastName)
+	s.Assert().WithinDuration(*s.other.CreatedAt, *got.CreatedAt, 100*time.Millisecond)
 	s.Assert().Nil(got.UpdatedAt)
 }
 
 func (s *UserServiceIntegrationTestSuite) TestGetByEmail() {
-	got, err := s.userService.GetByEmail(s.normalUserContext, s.systemOwner.Email)
+	got, err := s.userService.GetByEmail(s.actorContext, s.other.Email)
 	s.Assert().NoError(err)
-	s.Assert().Equal(s.systemOwner.Email, got.Email)
-	s.Assert().Equal(s.systemOwner.Username, got.Username)
+	s.Assert().Equal(s.other.Email, got.Email)
+	s.Assert().Equal(s.other.Username, got.Username)
 }
 
 func (s *UserServiceIntegrationTestSuite) TestGetAll() {
-	users, err := s.userService.List(s.normalUserContext, service.CursorPage{Size: 10})
+	users, err := s.userService.List(s.actorContext, service.CursorPage{Size: 10})
 	s.Assert().NoError(err)
 	s.Assert().Len(users.Items, 2)
 
-	users, err = s.userService.List(s.normalUserContext, service.CursorPage{Size: 1})
+	users, err = s.userService.List(s.actorContext, service.CursorPage{Size: 1})
 	s.Assert().NoError(err)
 	s.Assert().Len(users.Items, 1)
 	s.Assert().True(users.PageInfo.HasMore)
 
-	users, err = s.userService.List(s.normalUserContext, service.CursorPage{Size: 1, Token: users.PageInfo.NextPageToken})
+	users, err = s.userService.List(s.actorContext, service.CursorPage{Size: 1, Token: users.PageInfo.NextPageToken})
 	s.Assert().NoError(err)
 	s.Assert().Len(users.Items, 1)
 }
 
 func (s *UserServiceIntegrationTestSuite) TestUpdate() {
-	created, err := s.userService.Create(s.systemOwnerContext, serviceCreateUserOpts())
-	s.Assert().NoError(err)
-
 	updateOpts := service.UpdateUserOpts{
 		Username: optional.Some("new_username"),
 	}
 
-	_, err = s.userService.Update(s.normalUserContext, created.ID, updateOpts)
+	_, err := s.userService.Update(s.actorContext, s.other.ID, updateOpts)
 	s.Assert().ErrorIs(err, service.ErrNoPermission)
 
-	got, err := s.userService.Update(s.systemOwnerContext, created.ID, updateOpts)
+	got, err := s.userService.Update(s.actorContext, s.actor.ID, updateOpts)
 	s.Assert().NoError(err)
 
 	s.Assert().Equal("new_username", got.Username)
-	s.Assert().Equal(created.Email, got.Email)
+	s.Assert().Equal(s.actor.Email, got.Email)
 	s.Assert().NotNil(got.UpdatedAt)
 }
 
 func (s *UserServiceIntegrationTestSuite) TestDelete() {
-	created, err := s.userService.Create(s.systemOwnerContext, serviceCreateUserOpts())
+	created, err := s.userService.Create(s.actorContext, serviceCreateUserOpts())
 	s.Assert().NoError(err)
+	selfCtx := context.WithValue(context.Background(), pkg.CtxKeyUserID, created.ID)
 
-	err = s.userService.Delete(s.normalUserContext, created.ID, false)
+	err = s.userService.Delete(s.actorContext, created.ID, false)
 	s.Assert().ErrorIs(err, service.ErrNoPermission)
 
-	err = s.userService.Delete(s.systemOwnerContext, s.systemOwner.ID, false)
-	s.Assert().ErrorIs(err, service.ErrNoPermission)
-
-	err = s.userService.Delete(s.systemOwnerContext, created.ID, false)
+	err = s.userService.Delete(selfCtx, created.ID, false)
 	s.Assert().NoError(err)
 
-	got, err := s.userService.Get(s.systemOwnerContext, created.ID)
+	got, err := s.userService.Get(selfCtx, created.ID)
 	s.Assert().NoError(err)
 	s.Assert().Equal(created.Email, got.Email)
 	s.Assert().Equal(password.UnusablePassword, got.Password)
 	s.Assert().Equal(model.UserStatusDeleted, got.Status)
 	s.Assert().NotNil(got.UpdatedAt)
 
-	err = s.userService.Delete(s.systemOwnerContext, created.ID, true)
+	err = s.userService.Delete(selfCtx, created.ID, true)
 	s.Assert().NoError(err)
 
-	_, err = s.userService.Get(s.systemOwnerContext, created.ID)
+	_, err = s.userService.Get(selfCtx, created.ID)
 	s.Assert().ErrorIs(err, repository.ErrNotFound)
 }
 

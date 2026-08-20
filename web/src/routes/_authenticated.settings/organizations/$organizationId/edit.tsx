@@ -9,7 +9,7 @@ import {
 } from "@/components/settings/settings-entity-detail-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { v1OrganizationGetOptions } from "@/lib/api/query-options";
-import { ResourceType } from "@/lib/auth/permissions";
+import { Action, ResourceType } from "@/lib/auth/permissions";
 import { requirePermissionBeforeLoad } from "@/lib/auth/require-auth";
 import { namedEntityBreadcrumb } from "@/lib/breadcrumb";
 import { loadOrganization } from "@/lib/route-data";
@@ -22,7 +22,7 @@ export const Route = createFileRoute(
     requirePermissionBeforeLoad({
       queryClient: context.queryClient,
       resourceType: ResourceType.Organization,
-      permissionKind: "write",
+      action: Action.OrganizationUpdate,
       resourceId: params.organizationId,
     }),
   loader: ({ context, params }) =>

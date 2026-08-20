@@ -4,8 +4,16 @@ import { SettingsOrganizationDetailsPage } from "./pages";
 import { loginUser } from "./utils/auth";
 import { getRandomString } from "./utils/random";
 
+const SEEDED_ROLE_NAMES = [
+  "Organization admin",
+  "Organization member",
+  "Namespace admin",
+  "Project maintainer",
+  "Project viewer",
+];
+
 test.describe("@settings.organization-roles Organization Roles List E2E Tests", () => {
-  test("should show empty state when no roles exist", async ({
+  test("should display seeded role templates on a new organization", async ({
     page,
     ownerPersona,
     createApiClient,
@@ -15,8 +23,8 @@ test.describe("@settings.organization-roles Organization Roles List E2E Tests", 
       ownerPersona.credentials.password
     );
     const organization = await createOrganization(apiClient, {
-      name: `Test Org Roles Empty ${getRandomString(8)}`,
-      email: `test-roles-empty-${getRandomString(8)}@example.com`,
+      name: `Test Org Roles Seeded ${getRandomString(8)}`,
+      email: `test-roles-seeded-${getRandomString(8)}@example.com`,
     });
 
     await loginUser(page, ownerPersona.credentials);
@@ -25,16 +33,10 @@ test.describe("@settings.organization-roles Organization Roles List E2E Tests", 
     await orgDetailsPage.goto(organization.id);
     await orgDetailsPage.roles.waitForLoad();
 
-    // Verify empty state is visible
-    expect(await orgDetailsPage.roles.hasEmptyState()).toBeTruthy();
-    await expect(page.getByText("No roles found")).toBeVisible();
-    await expect(
-      page.getByText(
-        "Roles help organize permissions and member access. Create a role to get started."
-      )
-    ).toBeVisible();
-
-    // Verify create button is visible
+    expect(await orgDetailsPage.roles.hasEmptyState()).toBeFalsy();
+    for (const name of SEEDED_ROLE_NAMES) {
+      await expect(orgDetailsPage.roles.getRowByRoleName(name)).toBeVisible();
+    }
     expect(await orgDetailsPage.roles.hasCreateRoleButton()).toBeTruthy();
   });
 
@@ -52,18 +54,20 @@ test.describe("@settings.organization-roles Organization Roles List E2E Tests", 
       email: `test-roles-list-${getRandomString(8)}@example.com`,
     });
 
-    // Create multiple roles via API
     const roles = [
       {
         name: `Role 1 ${getRandomString(8)}`,
         description: `Description for role 1 ${getRandomString(8)}`,
+        actions: ["project.read"],
       },
       {
         name: `Role 2 ${getRandomString(8)}`,
         description: `Description for role 2 ${getRandomString(8)}`,
+        actions: ["issue.read"],
       },
       {
         name: `Role 3 ${getRandomString(8)}`,
+        actions: ["document.read"],
       },
     ];
 
@@ -75,40 +79,28 @@ test.describe("@settings.organization-roles Organization Roles List E2E Tests", 
 
     await loginUser(page, ownerPersona.credentials);
 
-    // Navigate to organization details page
     const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
     await orgDetailsPage.goto(organization.id);
     await orgDetailsPage.roles.waitForLoad();
 
-    // Verify all roles appear in the table
     for (const role of createdRoles) {
       await expect(
         orgDetailsPage.roles.getRowByRoleName(role.name)
       ).toBeVisible();
-      // Verify role name is displayed
       await expect(
         orgDetailsPage.roles.getRowByRoleName(role.name).getByText(role.name)
       ).toBeVisible();
     }
 
-    // Verify role count matches
     const roleCount = await orgDetailsPage.roles.getRoleCount();
     expect(roleCount).toBeGreaterThanOrEqual(createdRoles.length);
 
-    // Verify role details are displayed
     for (const role of createdRoles) {
       const row = orgDetailsPage.roles.getRowByRoleName(role.name);
-
-      // Verify name
       await expect(row.getByText(role.name)).toBeVisible();
-
-      // Verify description if present
       if (role.description) {
         await expect(row.getByText(role.description)).toBeVisible();
       }
-
-      // Verify member count badge (should show "1 member" for new roles)
-      await expect(row.getByText("1 member")).toBeVisible();
     }
   });
 
@@ -126,18 +118,21 @@ test.describe("@settings.organization-roles Organization Roles List E2E Tests", 
       email: `test-roles-search-${getRandomString(8)}@example.com`,
     });
 
-    // Create multiple roles with different names
+    const unique = getRandomString(8);
     const roles = [
       {
-        name: `Admin Role ${getRandomString(8)}`,
-        description: `Admin description ${getRandomString(8)}`,
+        name: `Zebra ${unique}`,
+        description: `Alpha description ${unique}`,
+        actions: ["project.read"],
       },
       {
-        name: `Developer Role ${getRandomString(8)}`,
-        description: `Developer description ${getRandomString(8)}`,
+        name: `Yak ${unique}`,
+        description: `Beta description ${unique}`,
+        actions: ["issue.read"],
       },
       {
-        name: `Manager Role ${getRandomString(8)}`,
+        name: `Xerus ${unique}`,
+        actions: ["document.read"],
       },
     ];
 
@@ -149,15 +144,11 @@ test.describe("@settings.organization-roles Organization Roles List E2E Tests", 
 
     await loginUser(page, ownerPersona.credentials);
 
-    // Navigate to organization details page
     const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
     await orgDetailsPage.goto(organization.id);
     await orgDetailsPage.roles.waitForLoad();
 
-    // Search for a specific role name
     await orgDetailsPage.roles.search(createdRoles[0].name);
-
-    // Verify only matching role is visible
     await expect(
       orgDetailsPage.roles.getRowByRoleName(createdRoles[0].name)
     ).toBeVisible();
@@ -168,7 +159,6 @@ test.describe("@settings.organization-roles Organization Roles List E2E Tests", 
       await orgDetailsPage.roles.hasRole(createdRoles[2].name)
     ).toBeFalsy();
 
-    // Clear search and verify all roles are visible again
     await orgDetailsPage.roles.search("");
     for (const role of createdRoles) {
       await expect(
@@ -176,8 +166,7 @@ test.describe("@settings.organization-roles Organization Roles List E2E Tests", 
       ).toBeVisible();
     }
 
-    // Test search by partial name
-    await orgDetailsPage.roles.search("Admin");
+    await orgDetailsPage.roles.search("Zebra");
     await expect(
       orgDetailsPage.roles.getRowByRoleName(createdRoles[0].name)
     ).toBeVisible();
@@ -185,8 +174,7 @@ test.describe("@settings.organization-roles Organization Roles List E2E Tests", 
       await orgDetailsPage.roles.hasRole(createdRoles[1].name)
     ).toBeFalsy();
 
-    // Test search by description
-    await orgDetailsPage.roles.search("Developer");
+    await orgDetailsPage.roles.search("Beta");
     await expect(
       orgDetailsPage.roles.getRowByRoleName(createdRoles[1].name)
     ).toBeVisible();

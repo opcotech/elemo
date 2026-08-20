@@ -25,7 +25,7 @@ import {
 import { collectedListQuery, cursorPageQuery } from "@/lib/api/cursor-pages";
 import { v1OrganizationsGetOptions } from "@/lib/api/query-options";
 import { v1OrganizationsGet } from "@/lib/api/sdk";
-import { can } from "@/lib/auth/permissions";
+import { Action, can } from "@/lib/auth/permissions";
 import { zOrganizationStatus } from "@/lib/client/zod.gen";
 
 const organizationTableSkeletonColumns = [
@@ -64,7 +64,7 @@ export function OrganizationList() {
   const organizations = organizationsPage?.items;
 
   const { data: systemPermissions } = usePermissions(
-    withResourceType(ResourceType.Organization)
+    withResourceType(ResourceType.Installation)
   );
   const organizationIds = (organizations || []).map(
     (organization) => organization.id
@@ -73,7 +73,7 @@ export function OrganizationList() {
     ResourceType.Organization,
     organizationIds
   );
-  const canCreate = can(systemPermissions, "create");
+  const canCreate = can(systemPermissions, Action.OrganizationCreate);
 
   const sortedOrganizations = useMemo(() => {
     if (!organizations) return [];

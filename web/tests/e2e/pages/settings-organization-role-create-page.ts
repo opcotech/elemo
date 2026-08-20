@@ -2,7 +2,7 @@ import type { Page } from "@playwright/test";
 
 import { BaseComponent } from "../components/base";
 import { navigateAndWait } from "../helpers";
-import { RoleCreateFormSection, RolePermissionDraftSection } from "../sections";
+import { RoleCreateFormSection } from "../sections";
 
 /**
  * Page Object Model for Organization Role Create page.
@@ -10,12 +10,10 @@ import { RoleCreateFormSection, RolePermissionDraftSection } from "../sections";
  */
 export class SettingsOrganizationRoleCreatePage extends BaseComponent {
   public readonly roleCreateForm: RoleCreateFormSection;
-  public readonly rolePermissionDraft: RolePermissionDraftSection;
 
   constructor(page: Page) {
     super(page);
     this.roleCreateForm = new RoleCreateFormSection(page);
-    this.rolePermissionDraft = new RolePermissionDraftSection(page);
   }
 
   /**

@@ -6,8 +6,8 @@ import { SettingsOrganizationDetailsPage } from "./pages";
 import { USER_DEFAULT_PASSWORD, loginUser } from "./utils/auth";
 import {
   createUser,
-  grantPermissionToUser,
-  grantSystemOwnerMembershipToUser,
+  grantActionsToUser,
+  grantOrganizationCreateToUser,
 } from "./utils/db";
 import { getRandomString } from "./utils/random";
 
@@ -22,8 +22,7 @@ test.describe("@settings.organization-role-delete Organization Role Delete E2E T
     testUser = await createUser(testConfig);
     readOnlyUser = await createUser(testConfig);
 
-    // Grant system owner membership so user can create organizations
-    await grantSystemOwnerMembershipToUser(testConfig, testUser.email);
+    await grantOrganizationCreateToUser(testConfig, testUser.email);
 
     // Create organization via API
     const uniqueId = getRandomString(8);
@@ -38,12 +37,12 @@ test.describe("@settings.organization-role-delete Organization Role Delete E2E T
     organizationId = organization.id;
 
     // Grant read-only user read permission on the organization
-    await grantPermissionToUser(
+    await grantActionsToUser(
       testConfig,
       readOnlyUser.email,
       "Organization",
       organizationId,
-      "read"
+      ["organization.read"]
     );
   });
 
@@ -143,16 +142,17 @@ test.describe("@settings.organization-role-delete Organization Role Delete E2E T
     await dialog.waitFor(`Are you sure you want to delete ${role.name}?`);
 
     // Verify dialog shows consequences
+    const dialogContent = dialog.getContent();
     await expect(
-      page.getByText("The role will be permanently deleted")
+      dialogContent.getByText("The role will be permanently deleted")
     ).toBeVisible();
     await expect(
-      page.getByText(
-        "All members assigned to this role will lose their role assignment"
+      dialogContent.getByText(
+        "Grants that reference this role will no longer include its bundled actions"
       )
     ).toBeVisible();
     await expect(
-      page.getByText("Role permissions will be removed")
+      dialogContent.getByText("This action cannot be undone", { exact: true })
     ).toBeVisible();
 
     // Cancel the dialog
@@ -276,19 +276,12 @@ test.describe("@settings.organization-role-delete Organization Role Delete E2E T
 
     // Create user with delete permission
     const deletePermissionUser = await createUser(testConfig);
-    await grantPermissionToUser(
+    await grantActionsToUser(
       testConfig,
       deletePermissionUser.email,
       "Organization",
       organizationId,
-      "read"
-    );
-    await grantPermissionToUser(
-      testConfig,
-      deletePermissionUser.email,
-      "Role",
-      role.id,
-      "delete"
+      ["organization.read", "role.manage"]
     );
 
     // Login as user with delete permission
@@ -388,30 +381,27 @@ test.describe("@settings.organization-role-delete Organization Role Delete E2E T
     await expect(roleRow).not.toBeVisible();
   });
 
-  test("should show empty state after deleting all roles", async ({
+  test("should keep seeded role templates after deleting a custom role", async ({
     page,
     createApiClient,
   }) => {
-    // Create a fresh organization for this test
     const apiClient = await createApiClient(
       testUser.email,
       USER_DEFAULT_PASSWORD
     );
     const uniqueId = getRandomString(8);
     const testOrg = await createOrganization(apiClient, {
-      name: `Empty State Org ${uniqueId}`,
-      email: `empty-${uniqueId}@example.com`,
+      name: `Templates Org ${uniqueId}`,
+      email: `templates-${uniqueId}@example.com`,
     });
 
-    // Create a single role
-    const roleName = `Only Role ${getRandomString(8)}`;
+    const roleName = `Custom Role ${getRandomString(8)}`;
     await createRole(apiClient, testOrg.id, { name: roleName });
 
     const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
     await orgDetailsPage.goto(testOrg.id);
     await orgDetailsPage.roles.waitForLoad();
 
-    // Delete the role
     const roleRow = orgDetailsPage.roles.getRowByRoleName(roleName);
     const deleteButton = roleRow.getByRole("button", {
       name: /delete role/i,
@@ -423,13 +413,15 @@ test.describe("@settings.organization-role-delete Organization Role Delete E2E T
     await dialog.confirm("Delete");
     await waitForSuccessToast(page, "deleted");
 
-    // Verify empty state is shown
     await orgDetailsPage.roles.waitForLoad();
-    expect(await orgDetailsPage.roles.hasEmptyState()).toBeTruthy();
-    await expect(page.getByText("No roles found")).toBeVisible();
+    expect(await orgDetailsPage.roles.hasRole(roleName)).toBeFalsy();
+    expect(await orgDetailsPage.roles.hasEmptyState()).toBeFalsy();
+    await expect(
+      orgDetailsPage.roles.getRowByRoleName("Organization admin")
+    ).toBeVisible();
   });
 
-  test("should handle deleting role with members", async ({
+  test("should delete a custom role bundle", async ({
     page,
     createApiClient,
   }) => {
@@ -438,18 +430,17 @@ test.describe("@settings.organization-role-delete Organization Role Delete E2E T
       USER_DEFAULT_PASSWORD
     );
     const role = await createRole(apiClient, organizationId, {
-      name: `Role With Members ${getRandomString(8)}`,
+      name: `Custom Bundle ${getRandomString(8)}`,
+      actions: ["project.read"],
     });
 
     const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
     await orgDetailsPage.goto(organizationId);
     await orgDetailsPage.roles.waitForLoad();
 
-    // Verify role shows member count
     const roleRow = orgDetailsPage.roles.getRowByRoleName(role.name);
-    await expect(roleRow.getByText("1 member")).toBeVisible();
+    await expect(roleRow).toBeVisible();
 
-    // Delete role
     const deleteButton = roleRow.getByRole("button", {
       name: /delete role/i,
     });
@@ -457,18 +448,9 @@ test.describe("@settings.organization-role-delete Organization Role Delete E2E T
 
     const dialog = new Dialog(page);
     await dialog.waitFor();
-
-    // Verify warning about members
-    await expect(
-      page.getByText(
-        "All members assigned to this role will lose their role assignment"
-      )
-    ).toBeVisible();
-
     await dialog.confirm("Delete");
     await waitForSuccessToast(page, "deleted");
 
-    // Verify role is removed
     await orgDetailsPage.roles.waitForLoad();
     await expect(roleRow).not.toBeVisible();
   });

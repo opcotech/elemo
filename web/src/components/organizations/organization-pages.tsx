@@ -29,7 +29,7 @@ import { StatusIndicator } from "@/components/ui/status-indicator";
 import { UserAvatarCompact } from "@/components/ui/user-avatar";
 import { useAuth } from "@/hooks/use-auth";
 import { v1OrganizationsDocumentsGetOptions } from "@/lib/api/query-options";
-import { can } from "@/lib/auth/permissions";
+import { Action, can } from "@/lib/auth/permissions";
 import { zUserStatus } from "@/lib/client/zod.gen";
 import type { DocumentLibrarySearch } from "@/lib/documents/library";
 import { formatDate } from "@/lib/format-date";
@@ -54,7 +54,14 @@ export function OrganizationOverviewPage({
     hasReadAccess,
   } = data;
   const organizationId = organization.id;
-  const hasOrgWritePermission = can(permissions, "write");
+  const hasOrgUpdatePermission = can(permissions, Action.OrganizationUpdate);
+  const hasNamespaceCreatePermission = can(permissions, Action.NamespaceCreate);
+  const hasDocumentCreatePermission = can(permissions, Action.DocumentCreate);
+  const hasMembersManagePermission = can(
+    permissions,
+    Action.OrganizationMembersManage
+  );
+  const hasRoleManagePermission = can(permissions, Action.RoleManage);
   const documentCount = organization.document_count ?? 0;
   const { data: documentsPage, isLoading: isDocumentsLoading } = useQuery({
     ...v1OrganizationsDocumentsGetOptions({
@@ -91,7 +98,7 @@ export function OrganizationOverviewPage({
         actions={
           <PageActions
             secondary={[
-              ...(hasOrgWritePermission
+              ...(hasOrgUpdatePermission
                 ? [
                     {
                       label: "Edit organization",
@@ -150,7 +157,7 @@ export function OrganizationOverviewPage({
                     title="No namespaces"
                     description="Namespaces for this organization will appear here."
                     action={
-                      hasOrgWritePermission ? (
+                      hasNamespaceCreatePermission ? (
                         <Button
                           variant="outline"
                           render={
@@ -179,7 +186,7 @@ export function OrganizationOverviewPage({
                 }
                 action={
                   <div className="flex items-center gap-2">
-                    {hasOrgWritePermission ? (
+                    {hasDocumentCreatePermission ? (
                       <AddButton
                         size="sm"
                         onClick={() => openQuickCreate("document")}
@@ -212,7 +219,7 @@ export function OrganizationOverviewPage({
                     title="No documents"
                     description="Documents that live in this organization will appear here."
                     action={
-                      hasOrgWritePermission ? (
+                      hasDocumentCreatePermission ? (
                         <CreateButton
                           onClick={() => openQuickCreate("document")}
                         />
@@ -288,7 +295,7 @@ export function OrganizationOverviewPage({
                     title="No members"
                     description="Members will appear here once they join this organization."
                     action={
-                      hasOrgWritePermission ? (
+                      hasMembersManagePermission ? (
                         <Button
                           variant="outline"
                           render={
@@ -349,7 +356,7 @@ export function OrganizationOverviewPage({
                     title="No roles"
                     description="Roles organize permissions and member access."
                     action={
-                      hasOrgWritePermission ? (
+                      hasRoleManagePermission ? (
                         <Button
                           variant="outline"
                           render={
@@ -426,7 +433,9 @@ export function OrganizationDocumentsPage({
   search: DocumentLibrarySearch;
 }) {
   const { organization, permissions, hasReadAccess } = data;
-  const hasOrgWritePermission = can(permissions, "write");
+  const hasDocumentWritePermission =
+    can(permissions, Action.DocumentCreate) ||
+    can(permissions, Action.FolderCreate);
 
   return (
     <DocumentLibraryPage
@@ -434,7 +443,7 @@ export function OrganizationDocumentsPage({
       libraryId={organization.id}
       libraryName={organization.name}
       search={search}
-      mayWrite={hasOrgWritePermission}
+      mayWrite={hasDocumentWritePermission}
       hasReadAccess={hasReadAccess}
       documentCount={organization.document_count ?? 0}
       limitedAccessTitle="Limited access"

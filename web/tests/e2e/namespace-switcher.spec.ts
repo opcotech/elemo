@@ -1,7 +1,7 @@
 import { createOrganization } from "./api";
 import { expect, test } from "./fixtures";
 import { USER_DEFAULT_PASSWORD, loginUser } from "./utils/auth";
-import { createUser, grantSystemOwnerMembershipToUser } from "./utils/db";
+import { createUser, grantOrganizationCreateToUser } from "./utils/db";
 import { getRandomString } from "./utils/random";
 
 import type { User } from "@/lib/api/types";
@@ -20,7 +20,7 @@ test.describe("@namespace.switcher Namespace Switcher E2E Tests", () => {
 
   test.beforeAll(async ({ testConfig, createApiClient }) => {
     ownerUser = await createUser(testConfig);
-    await grantSystemOwnerMembershipToUser(testConfig, ownerUser.email);
+    await grantOrganizationCreateToUser(testConfig, ownerUser.email);
 
     ownerApiClient = await createApiClient(
       ownerUser.email,

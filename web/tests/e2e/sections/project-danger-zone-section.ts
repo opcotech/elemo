@@ -1,6 +1,7 @@
 import type { Locator, Page } from "@playwright/test";
 
 import { BaseComponent } from "../components/base";
+import { clickUntilVisible } from "../helpers";
 import { SectionContainerMixin } from "../mixins";
 
 /**
@@ -39,6 +40,11 @@ export class ProjectDangerZoneSection extends SectionContainerMixin(
   }
 
   async clickDeleteButton(): Promise<void> {
-    await this.getDeleteButton().click();
+    await clickUntilVisible(
+      this.getDeleteButton(),
+      this.page
+        .getByRole("alertdialog")
+        .or(this.page.locator('[data-slot="alert-dialog-content"]'))
+    );
   }
 }

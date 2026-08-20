@@ -12,7 +12,7 @@ import {
   v1NamespaceGetOptions,
   v1OrganizationGetOptions,
 } from "@/lib/api/query-options";
-import { ResourceType } from "@/lib/auth/permissions";
+import { Action, ResourceType } from "@/lib/auth/permissions";
 import { requirePermissionBeforeLoad } from "@/lib/auth/require-auth";
 import { loadNamespaceHierarchy } from "@/lib/route-data";
 import { withRouteErrors } from "@/lib/route-errors";
@@ -25,13 +25,13 @@ export const Route = createFileRoute(
       requirePermissionBeforeLoad({
         queryClient: context.queryClient,
         resourceType: ResourceType.Organization,
-        permissionKind: "write",
+        action: Action.OrganizationRead,
         resourceId: params.organizationId,
       }),
       requirePermissionBeforeLoad({
         queryClient: context.queryClient,
         resourceType: ResourceType.Namespace,
-        permissionKind: "write",
+        action: Action.NamespaceUpdate,
         resourceId: params.namespaceId,
       }),
     ]),

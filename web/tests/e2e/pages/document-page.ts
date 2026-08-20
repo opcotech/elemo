@@ -1,3 +1,4 @@
+import { expect } from "@playwright/test";
 import type { Locator, Page } from "@playwright/test";
 
 import { BaseComponent } from "../components/base";
@@ -40,10 +41,20 @@ export class DocumentPage extends BaseComponent {
     await this.openChangeLibraryDialog();
     const dialog = this.page.getByRole("dialog", { name: "Change library" });
     const trigger = dialog.getByLabel("Library", { exact: true });
-    await clickUntilVisible(trigger, this.page.getByRole("listbox"));
-    await this.page
-      .getByRole("option", { name: libraryLabel, exact: true })
-      .click();
+    const listbox = this.page.getByRole("listbox");
+    const option = this.page.getByRole("option", {
+      name: libraryLabel,
+      exact: true,
+    });
+    await clickUntilVisible(trigger, listbox);
+    await option.click();
+    try {
+      await expect(trigger).toContainText(libraryLabel, { timeout: 2_000 });
+    } catch {
+      await clickUntilVisible(trigger, listbox);
+      await option.click();
+      await expect(trigger).toContainText(libraryLabel);
+    }
     await dialog.getByRole("button", { name: "Move to library" }).click();
   }
 

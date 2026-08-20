@@ -11,8 +11,8 @@ import { CountBadge } from "@/components/ui/count-badge";
 import { ExternalLink } from "@/components/ui/external-link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TableCell, TableRow } from "@/components/ui/table";
-import type { Organization, Permission } from "@/lib/api/types";
-import { can } from "@/lib/auth/permissions";
+import type { EffectiveActions, Organization } from "@/lib/api/types";
+import { Action, can } from "@/lib/auth/permissions";
 import { zOrganizationStatus } from "@/lib/client/zod.gen";
 
 export function OrganizationRow({
@@ -21,14 +21,14 @@ export function OrganizationRow({
   isPermissionsLoading,
 }: {
   organization: Organization;
-  permissions?: Permission[];
+  permissions?: EffectiveActions;
   isPermissionsLoading: boolean;
 }) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
-  const hasReadPermission = can(permissions, "read");
-  const hasWritePermission = can(permissions, "write");
-  const hasDeletePermission = can(permissions, "delete");
+  const hasReadPermission = can(permissions, Action.OrganizationRead);
+  const hasWritePermission = can(permissions, Action.OrganizationUpdate);
+  const hasDeletePermission = can(permissions, Action.OrganizationDelete);
 
   return (
     <TableRow>

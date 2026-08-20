@@ -18,8 +18,10 @@ import (
 // Role represents a role returned by the service.
 type Role struct {
 	ID          model.ID
+	Key         string
 	Name        string
 	Description string
+	Actions     []model.Action
 	MemberCount *int64
 	Permissions []model.ID
 	CreatedAt   *time.Time
@@ -28,14 +30,21 @@ type Role struct {
 
 // CreateRoleOpts holds the data required to create a role.
 type CreateRoleOpts struct {
-	Name        string `json:"name" validate:"required,min=3,max=120"`
-	Description string `json:"description" validate:"omitempty,min=5,max=500"`
+	Key         string         `json:"key" validate:"omitempty,min=1,max=120"`
+	Name        string         `json:"name" validate:"required,min=3,max=120"`
+	Description string         `json:"description" validate:"omitempty,min=5,max=500"`
+	Actions     []model.Action `json:"actions"`
 }
 
 // Validate validates the create options.
 func (o *CreateRoleOpts) Validate() error {
 	if err := validate.Struct(o); err != nil {
 		return errors.Join(model.ErrInvalidRoleDetails, err)
+	}
+	for _, action := range o.Actions {
+		if err := action.Validate(); err != nil {
+			return errors.Join(model.ErrInvalidRoleDetails, err)
+		}
 	}
 	return nil
 }
@@ -45,9 +54,12 @@ func (o *CreateRoleOpts) Validate() error {
 type UpdateRoleOpts struct {
 	Name        optional.Optional[string]
 	Description optional.Optional[string]
+	Actions     optional.Optional[[]model.Action]
 }
 
 // RoleService is the interface that provides methods for managing roles.
+//
+//go:generate go tool mockgen -destination=role_mock_gen.go -package=service -mock_names RoleService=MockRoleService . RoleService
 type RoleService interface {
 	// Create creates a new role in the system and assigns it to a resource it
 	// belongs to. The user who created the role is also assigned as a member
@@ -71,20 +83,9 @@ type RoleService interface {
 	// RemoveMember removes a member from a role. If the member is not a member
 	// of the role, an error is returned.
 	RemoveMember(ctx context.Context, roleID, memberID, belongsToID model.ID) error
-	// Delete deletes a role from the system. This method does not actually
-	// delete the role from the database to preserve the role's history and
-	// relations unless the force parameter is set to true.
+	// Delete permanently deletes a role that belongs to belongsTo. If the role
+	// does not exist, an error is returned.
 	Delete(ctx context.Context, id, belongsTo model.ID) error
-	// AddPermission adds a permission to a role. The target must be an
-	// organization-scoped resource. The caller must have write permission on the
-	// organization.
-	AddPermission(ctx context.Context, roleID, belongsToID, targetID model.ID, kind model.PermissionKind) error
-	// RemovePermission removes a permission from a role. The permission must
-	// belong to the role. The caller must have write permission on the
-	// organization.
-	RemovePermission(ctx context.Context, roleID, belongsToID, permissionID model.ID) error
-	// GetPermissions returns all permissions assigned to a role.
-	GetPermissions(ctx context.Context, roleID, belongsToID model.ID) ([]*Permission, error)
 }
 
 // roleService implements RoleService interface.
@@ -96,10 +97,13 @@ func roleFromRepository(r *repository.Role) *Role {
 	if r == nil {
 		return nil
 	}
+	actions, _ := model.ParseActions(r.Actions)
 	return &Role{
 		ID:          r.ID,
+		Key:         r.Key,
 		Name:        r.Name,
 		Description: r.Description,
+		Actions:     actions,
 		MemberCount: r.MemberCount,
 		Permissions: r.Permissions,
 		CreatedAt:   r.CreatedAt,
@@ -127,7 +131,7 @@ func (s *roleService) Create(ctx context.Context, owner, belongsTo model.ID, opt
 		return nil, errors.Join(ErrRoleCreate, err)
 	}
 
-	if !s.permissionService.CtxUserHasPermission(ctx, belongsTo, model.PermissionKindWrite) {
+	if !s.permissionService.CtxUserHas(ctx, belongsTo, model.ActionRoleManage) {
 		return nil, errors.Join(ErrRoleCreate, ErrNoPermission)
 	}
 
@@ -136,8 +140,10 @@ func (s *roleService) Create(ctx context.Context, owner, belongsTo model.ID, opt
 	}
 
 	role, err := s.roleRepo.Create(ctx, repository.CreateRoleOpts{
+		Key:         opts.Key,
 		Name:        opts.Name,
 		Description: opts.Description,
+		Actions:     model.ActionStrings(opts.Actions),
 		CreatedBy:   owner,
 		BelongsTo:   belongsTo,
 	})
@@ -156,11 +162,7 @@ func (s *roleService) Get(ctx context.Context, id, belongsTo model.ID) (*Role, e
 		return nil, errors.Join(ErrRoleGet, err)
 	}
 
-	if !s.permissionService.CtxUserHasPermission(ctx, id, model.PermissionKindRead) {
-		return nil, errors.Join(ErrRoleGet, ErrNoPermission)
-	}
-
-	if !s.permissionService.CtxUserHasPermission(ctx, belongsTo, model.PermissionKindRead) {
+	if !s.permissionService.CtxUserHas(ctx, belongsTo, model.ActionOrganizationRead) {
 		return nil, errors.Join(ErrRoleGet, ErrNoPermission)
 	}
 
@@ -185,7 +187,7 @@ func (s *roleService) ListBelongsTo(ctx context.Context, belongsTo model.ID, pag
 		return Page[*Role]{}, errors.Join(ErrRoleGetBelongsTo, err)
 	}
 
-	if !s.permissionService.CtxUserHasPermission(ctx, belongsTo, model.PermissionKindRead) {
+	if !s.permissionService.CtxUserHas(ctx, belongsTo, model.ActionOrganizationRead) {
 		return Page[*Role]{}, errors.Join(ErrRoleGetBelongsTo, ErrNoPermission)
 	}
 
@@ -214,18 +216,28 @@ func (s *roleService) Update(ctx context.Context, id, belongsTo model.ID, opts U
 		return nil, errors.Join(ErrRoleUpdate, err)
 	}
 
-	if !s.permissionService.CtxUserHasPermission(ctx, id, model.PermissionKindWrite) {
+	if !s.permissionService.CtxUserHas(ctx, belongsTo, model.ActionRoleManage) {
 		return nil, errors.Join(ErrRoleUpdate, ErrNoPermission)
 	}
 
-	if !s.permissionService.CtxUserHasPermission(ctx, belongsTo, model.PermissionKindWrite) {
-		return nil, errors.Join(ErrRoleUpdate, ErrNoPermission)
-	}
-
-	role, err := s.roleRepo.Update(ctx, id, belongsTo, repository.UpdateRoleOpts{
+	repoOpts := repository.UpdateRoleOpts{
 		Name:        opts.Name,
 		Description: opts.Description,
-	})
+	}
+	if opts.Actions.Defined {
+		if opts.Actions.Value == nil {
+			repoOpts.Actions = optional.Some([]string{})
+		} else {
+			for _, action := range *opts.Actions.Value {
+				if err := action.Validate(); err != nil {
+					return nil, errors.Join(ErrRoleUpdate, err)
+				}
+			}
+			repoOpts.Actions = optional.Some(model.ActionStrings(*opts.Actions.Value))
+		}
+	}
+
+	role, err := s.roleRepo.Update(ctx, id, belongsTo, repoOpts)
 	if err != nil {
 		return nil, errors.Join(ErrRoleUpdate, err)
 	}
@@ -246,11 +258,7 @@ func (s *roleService) ListMembers(ctx context.Context, id, belongsTo model.ID, p
 		return Page[*User]{}, errors.Join(ErrRoleGetBelongsTo, err)
 	}
 
-	if !s.permissionService.CtxUserHasPermission(ctx, id, model.PermissionKindRead) {
-		return Page[*User]{}, errors.Join(ErrRoleGetBelongsTo, ErrNoPermission)
-	}
-
-	if !s.permissionService.CtxUserHasPermission(ctx, belongsTo, model.PermissionKindRead) {
+	if !s.permissionService.CtxUserHas(ctx, belongsTo, model.ActionTeamManage) {
 		return Page[*User]{}, errors.Join(ErrRoleGetBelongsTo, ErrNoPermission)
 	}
 
@@ -278,11 +286,7 @@ func (s *roleService) AddMember(ctx context.Context, roleID, memberID, belongsTo
 		return errors.Join(ErrRoleAddMember, err)
 	}
 
-	if !s.permissionService.CtxUserHasPermission(ctx, roleID, model.PermissionKindWrite) {
-		return errors.Join(ErrRoleAddMember, ErrNoPermission)
-	}
-
-	if !s.permissionService.CtxUserHasPermission(ctx, belongsToID, model.PermissionKindWrite) {
+	if !s.permissionService.CtxUserHas(ctx, belongsToID, model.ActionTeamManage) {
 		return errors.Join(ErrRoleAddMember, ErrNoPermission)
 	}
 
@@ -339,12 +343,8 @@ func (s *roleService) RemoveMember(ctx context.Context, roleID, memberID, belong
 		return errors.Join(ErrRoleRemoveMember, err)
 	}
 
-	if !s.permissionService.CtxUserHasPermission(ctx, roleID, model.PermissionKindWrite) {
+	if !s.permissionService.CtxUserHas(ctx, belongsToID, model.ActionTeamManage) {
 		return errors.Join(ErrRoleRemoveMember, ErrNoPermission)
-	}
-
-	if !s.permissionService.CtxUserHasPermission(ctx, belongsToID, model.PermissionKindWrite) {
-		return errors.Join(ErrRoleAddMember, ErrNoPermission)
 	}
 
 	err := s.roleRepo.RemoveMember(ctx, roleID, memberID, belongsToID)
@@ -396,11 +396,7 @@ func (s *roleService) Delete(ctx context.Context, id, belongsTo model.ID) error 
 		return errors.Join(ErrRoleDelete, err)
 	}
 
-	if !s.permissionService.CtxUserHasPermission(ctx, id, model.PermissionKindDelete) {
-		return errors.Join(ErrRoleDelete, ErrNoPermission)
-	}
-
-	if !s.permissionService.CtxUserHasPermission(ctx, belongsTo, model.PermissionKindWrite) {
+	if !s.permissionService.CtxUserHas(ctx, belongsTo, model.ActionRoleManage) {
 		return errors.Join(ErrRoleDelete, ErrNoPermission)
 	}
 
@@ -410,117 +406,6 @@ func (s *roleService) Delete(ctx context.Context, id, belongsTo model.ID) error 
 	}
 
 	return nil
-}
-
-func (s *roleService) AddPermission(ctx context.Context, roleID, belongsToID, targetID model.ID, kind model.PermissionKind) error {
-	ctx, span := s.tracer.Start(ctx, "service.roleService/AddPermission")
-	defer span.End()
-
-	if expired, err := s.licenseService.Expired(ctx); expired || err != nil {
-		return errors.Join(ErrRoleAddPermission, license.ErrLicenseExpired)
-	}
-
-	if err := roleID.Validate(); err != nil {
-		return errors.Join(ErrRoleAddPermission, err)
-	}
-
-	if err := belongsToID.Validate(); err != nil {
-		return errors.Join(ErrRoleAddPermission, err)
-	}
-
-	if err := targetID.Validate(); err != nil {
-		return errors.Join(ErrRoleAddPermission, err)
-	}
-
-	if _, err := s.roleRepo.Get(ctx, roleID, belongsToID, repository.RoleDetailProjection()); err != nil {
-		return errors.Join(ErrRoleAddPermission, err)
-	}
-
-	if !s.permissionService.CtxUserHasPermission(ctx, belongsToID, model.PermissionKindWrite) {
-		return errors.Join(ErrRoleAddPermission, ErrNoPermission)
-	}
-
-	if _, err := s.permissionService.Create(ctx, CreatePermissionOpts{
-		Subject: roleID,
-		Target:  targetID,
-		Kind:    kind,
-	}); err != nil {
-		return errors.Join(ErrRoleAddPermission, err)
-	}
-
-	return nil
-}
-
-func (s *roleService) RemovePermission(ctx context.Context, roleID, belongsToID, permissionID model.ID) error {
-	ctx, span := s.tracer.Start(ctx, "service.roleService/RemovePermission")
-	defer span.End()
-
-	if expired, err := s.licenseService.Expired(ctx); expired || err != nil {
-		return errors.Join(ErrRoleRemovePermission, license.ErrLicenseExpired)
-	}
-
-	if err := roleID.Validate(); err != nil {
-		return errors.Join(ErrRoleRemovePermission, err)
-	}
-
-	if err := belongsToID.Validate(); err != nil {
-		return errors.Join(ErrRoleRemovePermission, err)
-	}
-
-	if err := permissionID.Validate(); err != nil {
-		return errors.Join(ErrRoleRemovePermission, err)
-	}
-
-	if _, err := s.roleRepo.Get(ctx, roleID, belongsToID, repository.RoleDetailProjection()); err != nil {
-		return errors.Join(ErrRoleRemovePermission, err)
-	}
-
-	if !s.permissionService.CtxUserHasPermission(ctx, belongsToID, model.PermissionKindWrite) {
-		return errors.Join(ErrRoleRemovePermission, ErrNoPermission)
-	}
-
-	perm, err := s.permissionService.Get(ctx, permissionID)
-	if err != nil {
-		return errors.Join(ErrRoleRemovePermission, err)
-	}
-
-	if perm.Subject.String() != roleID.String() {
-		return errors.Join(ErrRoleRemovePermission, ErrNoPermission)
-	}
-
-	if err := s.permissionService.Delete(ctx, permissionID); err != nil {
-		return errors.Join(ErrRoleRemovePermission, err)
-	}
-
-	return nil
-}
-
-func (s *roleService) GetPermissions(ctx context.Context, roleID, belongsToID model.ID) ([]*Permission, error) {
-	ctx, span := s.tracer.Start(ctx, "service.roleService/GetPermissions")
-	defer span.End()
-
-	if err := roleID.Validate(); err != nil {
-		return nil, errors.Join(ErrRoleGetPermissions, err)
-	}
-
-	if err := belongsToID.Validate(); err != nil {
-		return nil, errors.Join(ErrRoleGetPermissions, err)
-	}
-
-	if _, err := s.roleRepo.Get(ctx, roleID, belongsToID, repository.RoleDetailProjection()); err != nil {
-		return nil, errors.Join(ErrRoleGetPermissions, err)
-	}
-
-	if !s.permissionService.CtxUserHasPermission(ctx, belongsToID, model.PermissionKindRead) {
-		return nil, errors.Join(ErrRoleGetPermissions, ErrNoPermission)
-	}
-
-	permissions, err := s.permissionService.GetBySubject(ctx, roleID)
-	if err != nil {
-		return nil, errors.Join(ErrRoleGetPermissions, err)
-	}
-
-	return permissions, nil
 }
 
 // NewRoleService creates a new RoleService that provides methods

@@ -176,7 +176,8 @@ func TestProjectService_Create(t *testing.T) {
 					}).Return(testModel.NewRepositoryProject(), nil)
 
 					permSvc := NewMockPermissionService(ctrl)
-					permSvc.EXPECT().CtxUserHasPermission(ctx, namespaceID, []model.PermissionKind{model.PermissionKindWrite}).Return(true)
+					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+					permSvc.EXPECT().CtxUserHas(ctx, namespaceID, gomock.Any()).Return(true)
 
 					licenseSvc := mock.NewMockLicenseService(ctrl)
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
@@ -219,7 +220,8 @@ func TestProjectService_Create(t *testing.T) {
 					}).Return(testModel.NewRepositoryProject(), nil)
 
 					permSvc := NewMockPermissionService(ctrl)
-					permSvc.EXPECT().CtxUserHasPermission(ctx, namespaceID, []model.PermissionKind{model.PermissionKindWrite}).Return(true)
+					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+					permSvc.EXPECT().CtxUserHas(ctx, namespaceID, gomock.Any()).Return(true)
 
 					licenseSvc := mock.NewMockLicenseService(ctrl)
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
@@ -268,7 +270,8 @@ func TestProjectService_Create(t *testing.T) {
 					}).Return(testModel.NewRepositoryProject(), nil)
 
 					permSvc := NewMockPermissionService(ctrl)
-					permSvc.EXPECT().CtxUserHasPermission(ctx, namespaceID, []model.PermissionKind{model.PermissionKindWrite}).Return(true)
+					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+					permSvc.EXPECT().CtxUserHas(ctx, namespaceID, gomock.Any()).Return(true)
 
 					licenseSvc := mock.NewMockLicenseService(ctrl)
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
@@ -331,7 +334,8 @@ func TestProjectService_Create(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.projectService/Create", gomock.Len(0)).Return(ctx, span)
 
 					permSvc := NewMockPermissionService(ctrl)
-					permSvc.EXPECT().CtxUserHasPermission(ctx, namespaceID, []model.PermissionKind{model.PermissionKindWrite}).Return(false)
+					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+					permSvc.EXPECT().CtxUserHas(ctx, namespaceID, gomock.Any()).Return(false)
 
 					licenseSvc := mock.NewMockLicenseService(ctrl)
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
@@ -428,7 +432,8 @@ func TestProjectService_Create(t *testing.T) {
 					}).Return(nil, repository.ErrProjectCreate)
 
 					permSvc := NewMockPermissionService(ctrl)
-					permSvc.EXPECT().CtxUserHasPermission(ctx, namespaceID, []model.PermissionKind{model.PermissionKindWrite}).Return(true)
+					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+					permSvc.EXPECT().CtxUserHas(ctx, namespaceID, gomock.Any()).Return(true)
 
 					licenseSvc := mock.NewMockLicenseService(ctrl)
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
@@ -460,7 +465,8 @@ func TestProjectService_Create(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.projectService/Create", gomock.Len(0)).Return(ctx, span)
 
 					permSvc := NewMockPermissionService(ctrl)
-					permSvc.EXPECT().CtxUserHasPermission(ctx, namespaceID, []model.PermissionKind{model.PermissionKindWrite}).Return(true)
+					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+					permSvc.EXPECT().CtxUserHas(ctx, namespaceID, gomock.Any()).Return(true)
 
 					licenseSvc := mock.NewMockLicenseService(ctrl)
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
@@ -537,7 +543,8 @@ func TestProjectService_Get(t *testing.T) {
 					projectRepo.EXPECT().Get(ctx, id, repository.ProjectDetailProjection()).Return(repoProject, nil)
 
 					permSvc := NewMockPermissionService(ctrl)
-					permSvc.EXPECT().CtxUserHasPermission(ctx, id, []model.PermissionKind{model.PermissionKindRead}).Return(true)
+					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(true)
 
 					return &baseService{
 						logger:            mock.NewMockLogger(ctrl),
@@ -564,7 +571,8 @@ func TestProjectService_Get(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.projectService/Get", gomock.Len(0)).Return(ctx, span)
 
 					permSvc := NewMockPermissionService(ctrl)
-					permSvc.EXPECT().CtxUserHasPermission(ctx, id, []model.PermissionKind{model.PermissionKindRead}).Return(false)
+					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(false)
 
 					return &baseService{
 						logger:            mock.NewMockLogger(ctrl),
@@ -615,7 +623,8 @@ func TestProjectService_Get(t *testing.T) {
 					projectRepo.EXPECT().Get(ctx, id, repository.ProjectDetailProjection()).Return(nil, repository.ErrProjectRead)
 
 					permSvc := NewMockPermissionService(ctrl)
-					permSvc.EXPECT().CtxUserHasPermission(ctx, id, []model.PermissionKind{model.PermissionKindRead}).Return(true)
+					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(true)
 
 					return &baseService{
 						logger:            mock.NewMockLogger(ctrl),
@@ -688,7 +697,8 @@ func TestProjectService_GetByKey(t *testing.T) {
 					projectRepo.EXPECT().GetByKey(ctx, key, repository.ProjectDetailProjection()).Return(repoProject, nil)
 
 					permSvc := NewMockPermissionService(ctrl)
-					permSvc.EXPECT().CtxUserHasPermission(ctx, repoProject.ID, []model.PermissionKind{model.PermissionKindRead}).Return(true)
+					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+					permSvc.EXPECT().CtxUserHas(ctx, repoProject.ID, gomock.Any()).Return(true)
 
 					return &baseService{
 						logger:            mock.NewMockLogger(ctrl),
@@ -718,7 +728,8 @@ func TestProjectService_GetByKey(t *testing.T) {
 					projectRepo.EXPECT().GetByKey(ctx, key, repository.ProjectDetailProjection()).Return(repoProject, nil)
 
 					permSvc := NewMockPermissionService(ctrl)
-					permSvc.EXPECT().CtxUserHasPermission(ctx, repoProject.ID, []model.PermissionKind{model.PermissionKindRead}).Return(false)
+					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+					permSvc.EXPECT().CtxUserHas(ctx, repoProject.ID, gomock.Any()).Return(false)
 
 					return &baseService{
 						logger:            mock.NewMockLogger(ctrl),
@@ -808,6 +819,7 @@ func TestProjectService_GetByKey(t *testing.T) {
 
 func TestProjectService_List(t *testing.T) {
 	namespaceID := model.MustNewID(model.ResourceTypeNamespace)
+	userID := model.MustNewID(model.ResourceTypeUser)
 	repoProjects := []*repository.Project{
 		testModel.NewRepositoryProject(),
 		testModel.NewRepositoryProject(),
@@ -843,12 +855,13 @@ func TestProjectService_List(t *testing.T) {
 					projectRepo.EXPECT().List(
 						ctx,
 						namespaceID,
+						userID,
 						repository.CursorPage{Size: 10},
 						repository.ProjectListProjection(),
 					).Return(repository.Page[*repository.Project]{Items: repoProjects}, nil)
 
 					permSvc := NewMockPermissionService(ctrl)
-					permSvc.EXPECT().CtxUserHasPermission(ctx, namespaceID, []model.PermissionKind{model.PermissionKindRead}).Return(true)
+					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
 					return &baseService{
 						logger:            mock.NewMockLogger(ctrl),
@@ -859,29 +872,25 @@ func TestProjectService_List(t *testing.T) {
 				},
 			},
 			args: args{
-				ctx:         context.Background(),
+				ctx:         context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
 				namespaceID: namespaceID,
 				page:        CursorPage{Size: 10},
 			},
 			want: Page[*Project]{Items: want},
 		},
 		{
-			name: "get all projects with no permission",
+			name: "get all projects with no user",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, namespaceID model.ID) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mock.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.projectService/List", gomock.Len(0)).Return(ctx, span)
 
-					permSvc := NewMockPermissionService(ctrl)
-					permSvc.EXPECT().CtxUserHasPermission(ctx, namespaceID, []model.PermissionKind{model.PermissionKindRead}).Return(false)
-
 					return &baseService{
-						logger:            mock.NewMockLogger(ctrl),
-						tracer:            tracer,
-						permissionService: permSvc,
+						logger: mock.NewMockLogger(ctrl),
+						tracer: tracer,
 					}
 				},
 			},
@@ -890,7 +899,7 @@ func TestProjectService_List(t *testing.T) {
 				namespaceID: namespaceID,
 				page:        CursorPage{Size: 10},
 			},
-			wantErr: ErrNoPermission,
+			wantErr: ErrNoUser,
 		},
 		{
 			name: "get all projects with invalid namespaceID",
@@ -952,12 +961,13 @@ func TestProjectService_List(t *testing.T) {
 					projectRepo.EXPECT().List(
 						ctx,
 						namespaceID,
+						userID,
 						repository.CursorPage{Size: 10},
 						repository.ProjectListProjection(),
 					).Return(repository.Page[*repository.Project]{}, repository.ErrProjectRead)
 
 					permSvc := NewMockPermissionService(ctrl)
-					permSvc.EXPECT().CtxUserHasPermission(ctx, namespaceID, []model.PermissionKind{model.PermissionKindRead}).Return(true)
+					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
 					return &baseService{
 						logger:            mock.NewMockLogger(ctrl),
@@ -968,7 +978,7 @@ func TestProjectService_List(t *testing.T) {
 				},
 			},
 			args: args{
-				ctx:         context.Background(),
+				ctx:         context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
 				namespaceID: namespaceID,
 				page:        CursorPage{Size: 10},
 			},
@@ -1040,7 +1050,8 @@ func TestProjectService_Update(t *testing.T) {
 					}, repository.ProjectDetailProjection()).Return(repoProject, nil)
 
 					permSvc := NewMockPermissionService(ctrl)
-					permSvc.EXPECT().CtxUserHasPermission(ctx, id, []model.PermissionKind{model.PermissionKindWrite}).Return(true)
+					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(true)
 
 					licenseSvc := mock.NewMockLicenseService(ctrl)
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
@@ -1077,7 +1088,8 @@ func TestProjectService_Update(t *testing.T) {
 					}, repository.ProjectDetailProjection()).Return(repoProject, nil)
 
 					permSvc := NewMockPermissionService(ctrl)
-					permSvc.EXPECT().CtxUserHasPermission(ctx, id, []model.PermissionKind{model.PermissionKindWrite}).Return(true)
+					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(true)
 
 					licenseSvc := mock.NewMockLicenseService(ctrl)
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
@@ -1136,7 +1148,8 @@ func TestProjectService_Update(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.projectService/Update", gomock.Len(0)).Return(ctx, span)
 
 					permSvc := NewMockPermissionService(ctrl)
-					permSvc.EXPECT().CtxUserHasPermission(ctx, id, []model.PermissionKind{model.PermissionKindWrite}).Return(false)
+					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(false)
 
 					licenseSvc := mock.NewMockLicenseService(ctrl)
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
@@ -1203,7 +1216,8 @@ func TestProjectService_Update(t *testing.T) {
 					}, repository.ProjectDetailProjection()).Return(nil, repository.ErrProjectUpdate)
 
 					permSvc := NewMockPermissionService(ctrl)
-					permSvc.EXPECT().CtxUserHasPermission(ctx, id, []model.PermissionKind{model.PermissionKindWrite}).Return(true)
+					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(true)
 
 					licenseSvc := mock.NewMockLicenseService(ctrl)
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
@@ -1278,7 +1292,8 @@ func TestProjectService_Delete(t *testing.T) {
 					projectRepo.EXPECT().Delete(ctx, id).Return(nil)
 
 					permSvc := NewMockPermissionService(ctrl)
-					permSvc.EXPECT().CtxUserHasPermission(ctx, id, []model.PermissionKind{model.PermissionKindDelete}).Return(true)
+					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(true)
 
 					licenseSvc := mock.NewMockLicenseService(ctrl)
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
@@ -1334,7 +1349,8 @@ func TestProjectService_Delete(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.projectService/Delete", gomock.Len(0)).Return(ctx, span)
 
 					permSvc := NewMockPermissionService(ctrl)
-					permSvc.EXPECT().CtxUserHasPermission(ctx, id, []model.PermissionKind{model.PermissionKindDelete}).Return(false)
+					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(false)
 
 					licenseSvc := mock.NewMockLicenseService(ctrl)
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
@@ -1393,7 +1409,8 @@ func TestProjectService_Delete(t *testing.T) {
 					projectRepo.EXPECT().Delete(ctx, id).Return(repository.ErrProjectDelete)
 
 					permSvc := NewMockPermissionService(ctrl)
-					permSvc.EXPECT().CtxUserHasPermission(ctx, id, []model.PermissionKind{model.PermissionKindDelete}).Return(true)
+					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(true)
 
 					licenseSvc := mock.NewMockLicenseService(ctrl)
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)

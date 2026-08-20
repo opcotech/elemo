@@ -21,8 +21,8 @@ import {
   ResourceType,
   usePermissionsByResourceId,
 } from "@/hooks/use-permissions";
-import type { PartialProject, Permission } from "@/lib/api/types";
-import { can } from "@/lib/auth/permissions";
+import type { EffectiveActions, PartialProject } from "@/lib/api/types";
+import { Action, can } from "@/lib/auth/permissions";
 
 const namespaceProjectsListSkeletonColumns = [
   { header: "Key", skeletonClassName: "h-5 w-16" },
@@ -40,7 +40,7 @@ const namespaceProjectsListSkeletonColumns = [
 
 interface ProjectRowProps {
   project: PartialProject;
-  permissions: Permission[] | undefined;
+  permissions: EffectiveActions | undefined;
   isPermissionsLoading: boolean;
   organizationId: string;
   namespaceId: string;
@@ -55,9 +55,9 @@ function ProjectRow({
   namespaceId,
   onDeleteClick,
 }: ProjectRowProps) {
-  const hasProjectReadPermission = can(permissions, "read");
-  const hasProjectWritePermission = can(permissions, "write");
-  const hasProjectDeletePermission = can(permissions, "delete");
+  const hasProjectReadPermission = can(permissions, Action.ProjectRead);
+  const hasProjectWritePermission = can(permissions, Action.ProjectUpdate);
+  const hasProjectDeletePermission = can(permissions, Action.ProjectDelete);
 
   return (
     <TableRow>
@@ -147,7 +147,7 @@ interface NamespaceProjectsListProps {
   error: unknown;
   organizationId: string;
   namespaceId: string;
-  namespacePermissions: Permission[] | undefined;
+  namespacePermissions: EffectiveActions | undefined;
 }
 
 export function NamespaceProjectsList({
@@ -163,7 +163,7 @@ export function NamespaceProjectsList({
   const [selectedProject, setSelectedProject] = useState<PartialProject | null>(
     null
   );
-  const hasCreatePermission = can(namespacePermissions, "write");
+  const hasCreatePermission = can(namespacePermissions, Action.ProjectCreate);
   const projectPermissionsById = usePermissionsByResourceId(
     ResourceType.Project,
     projects.map((project) => project.id)

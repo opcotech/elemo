@@ -41,11 +41,25 @@ func (m *MockPermissionRepository) EXPECT() *MockPermissionRepositoryMockRecorde
 	return m.recorder
 }
 
+// BumpGeneration mocks base method.
+func (m *MockPermissionRepository) BumpGeneration(ctx context.Context, principal model.ID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "BumpGeneration", ctx, principal)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// BumpGeneration indicates an expected call of BumpGeneration.
+func (mr *MockPermissionRepositoryMockRecorder) BumpGeneration(ctx, principal any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BumpGeneration", reflect.TypeOf((*MockPermissionRepository)(nil).BumpGeneration), ctx, principal)
+}
+
 // Create mocks base method.
-func (m *MockPermissionRepository) Create(ctx context.Context, opts CreatePermissionOpts) (*Permission, error) {
+func (m *MockPermissionRepository) Create(ctx context.Context, opts CreateGrantOpts) (*Grant, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Create", ctx, opts)
-	ret0, _ := ret[0].(*Permission)
+	ret0, _ := ret[0].(*Grant)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -70,11 +84,41 @@ func (mr *MockPermissionRepositoryMockRecorder) Delete(ctx, id any) *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockPermissionRepository)(nil).Delete), ctx, id)
 }
 
+// EffectiveActions mocks base method.
+func (m *MockPermissionRepository) EffectiveActions(ctx context.Context, actor, resource model.ID) ([]model.Action, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "EffectiveActions", ctx, actor, resource)
+	ret0, _ := ret[0].([]model.Action)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// EffectiveActions indicates an expected call of EffectiveActions.
+func (mr *MockPermissionRepositoryMockRecorder) EffectiveActions(ctx, actor, resource any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EffectiveActions", reflect.TypeOf((*MockPermissionRepository)(nil).EffectiveActions), ctx, actor, resource)
+}
+
+// Explain mocks base method.
+func (m *MockPermissionRepository) Explain(ctx context.Context, actor, resource model.ID, action model.Action) (*Decision, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Explain", ctx, actor, resource, action)
+	ret0, _ := ret[0].(*Decision)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Explain indicates an expected call of Explain.
+func (mr *MockPermissionRepositoryMockRecorder) Explain(ctx, actor, resource, action any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Explain", reflect.TypeOf((*MockPermissionRepository)(nil).Explain), ctx, actor, resource, action)
+}
+
 // Get mocks base method.
-func (m *MockPermissionRepository) Get(ctx context.Context, id model.ID) (*Permission, error) {
+func (m *MockPermissionRepository) Get(ctx context.Context, id model.ID) (*Grant, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Get", ctx, id)
-	ret0, _ := ret[0].(*Permission)
+	ret0, _ := ret[0].(*Grant)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -85,117 +129,76 @@ func (mr *MockPermissionRepositoryMockRecorder) Get(ctx, id any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockPermissionRepository)(nil).Get), ctx, id)
 }
 
-// GetBySubject mocks base method.
-func (m *MockPermissionRepository) GetBySubject(ctx context.Context, id model.ID) ([]*Permission, error) {
+// Has mocks base method.
+func (m *MockPermissionRepository) Has(ctx context.Context, actor, resource model.ID, action model.Action) (bool, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetBySubject", ctx, id)
-	ret0, _ := ret[0].([]*Permission)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetBySubject indicates an expected call of GetBySubject.
-func (mr *MockPermissionRepositoryMockRecorder) GetBySubject(ctx, id any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBySubject", reflect.TypeOf((*MockPermissionRepository)(nil).GetBySubject), ctx, id)
-}
-
-// GetBySubjectAndTarget mocks base method.
-func (m *MockPermissionRepository) GetBySubjectAndTarget(ctx context.Context, source, target model.ID) ([]*Permission, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetBySubjectAndTarget", ctx, source, target)
-	ret0, _ := ret[0].([]*Permission)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetBySubjectAndTarget indicates an expected call of GetBySubjectAndTarget.
-func (mr *MockPermissionRepositoryMockRecorder) GetBySubjectAndTarget(ctx, source, target any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBySubjectAndTarget", reflect.TypeOf((*MockPermissionRepository)(nil).GetBySubjectAndTarget), ctx, source, target)
-}
-
-// GetByTarget mocks base method.
-func (m *MockPermissionRepository) GetByTarget(ctx context.Context, id model.ID) ([]*Permission, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetByTarget", ctx, id)
-	ret0, _ := ret[0].([]*Permission)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetByTarget indicates an expected call of GetByTarget.
-func (mr *MockPermissionRepositoryMockRecorder) GetByTarget(ctx, id any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByTarget", reflect.TypeOf((*MockPermissionRepository)(nil).GetByTarget), ctx, id)
-}
-
-// HasAnyRelation mocks base method.
-func (m *MockPermissionRepository) HasAnyRelation(ctx context.Context, source, target model.ID) (bool, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "HasAnyRelation", ctx, source, target)
+	ret := m.ctrl.Call(m, "Has", ctx, actor, resource, action)
 	ret0, _ := ret[0].(bool)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// HasAnyRelation indicates an expected call of HasAnyRelation.
-func (mr *MockPermissionRepositoryMockRecorder) HasAnyRelation(ctx, source, target any) *gomock.Call {
+// Has indicates an expected call of Has.
+func (mr *MockPermissionRepositoryMockRecorder) Has(ctx, actor, resource, action any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HasAnyRelation", reflect.TypeOf((*MockPermissionRepository)(nil).HasAnyRelation), ctx, source, target)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Has", reflect.TypeOf((*MockPermissionRepository)(nil).Has), ctx, actor, resource, action)
 }
 
-// HasPermission mocks base method.
-func (m *MockPermissionRepository) HasPermission(ctx context.Context, subject, target model.ID, kinds ...model.PermissionKind) (bool, error) {
+// LinkInScopeOf mocks base method.
+func (m *MockPermissionRepository) LinkInScopeOf(ctx context.Context, child, parent model.ID) error {
 	m.ctrl.T.Helper()
-	varargs := []any{ctx, subject, target}
-	for _, a := range kinds {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "HasPermission", varargs...)
-	ret0, _ := ret[0].(bool)
+	ret := m.ctrl.Call(m, "LinkInScopeOf", ctx, child, parent)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// LinkInScopeOf indicates an expected call of LinkInScopeOf.
+func (mr *MockPermissionRepositoryMockRecorder) LinkInScopeOf(ctx, child, parent any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LinkInScopeOf", reflect.TypeOf((*MockPermissionRepository)(nil).LinkInScopeOf), ctx, child, parent)
+}
+
+// ListByPrincipal mocks base method.
+func (m *MockPermissionRepository) ListByPrincipal(ctx context.Context, principal model.ID) ([]*Grant, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListByPrincipal", ctx, principal)
+	ret0, _ := ret[0].([]*Grant)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// HasPermission indicates an expected call of HasPermission.
-func (mr *MockPermissionRepositoryMockRecorder) HasPermission(ctx, subject, target any, kinds ...any) *gomock.Call {
+// ListByPrincipal indicates an expected call of ListByPrincipal.
+func (mr *MockPermissionRepositoryMockRecorder) ListByPrincipal(ctx, principal any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]any{ctx, subject, target}, kinds...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HasPermission", reflect.TypeOf((*MockPermissionRepository)(nil).HasPermission), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListByPrincipal", reflect.TypeOf((*MockPermissionRepository)(nil).ListByPrincipal), ctx, principal)
 }
 
-// HasSystemRole mocks base method.
-func (m *MockPermissionRepository) HasSystemRole(ctx context.Context, source model.ID, roles ...model.SystemRole) (bool, error) {
+// ListByScope mocks base method.
+func (m *MockPermissionRepository) ListByScope(ctx context.Context, scope model.ID) ([]*Grant, error) {
 	m.ctrl.T.Helper()
-	varargs := []any{ctx, source}
-	for _, a := range roles {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "HasSystemRole", varargs...)
-	ret0, _ := ret[0].(bool)
+	ret := m.ctrl.Call(m, "ListByScope", ctx, scope)
+	ret0, _ := ret[0].([]*Grant)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// HasSystemRole indicates an expected call of HasSystemRole.
-func (mr *MockPermissionRepositoryMockRecorder) HasSystemRole(ctx, source any, roles ...any) *gomock.Call {
+// ListByScope indicates an expected call of ListByScope.
+func (mr *MockPermissionRepositoryMockRecorder) ListByScope(ctx, scope any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]any{ctx, source}, roles...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HasSystemRole", reflect.TypeOf((*MockPermissionRepository)(nil).HasSystemRole), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListByScope", reflect.TypeOf((*MockPermissionRepository)(nil).ListByScope), ctx, scope)
 }
 
-// Update mocks base method.
-func (m *MockPermissionRepository) Update(ctx context.Context, id model.ID, kind model.PermissionKind) (*Permission, error) {
+// ListVisible mocks base method.
+func (m *MockPermissionRepository) ListVisible(ctx context.Context, actor model.ID, action model.Action, parent model.ID, resourceType model.ResourceType) ([]model.ID, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Update", ctx, id, kind)
-	ret0, _ := ret[0].(*Permission)
+	ret := m.ctrl.Call(m, "ListVisible", ctx, actor, action, parent, resourceType)
+	ret0, _ := ret[0].([]model.ID)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// Update indicates an expected call of Update.
-func (mr *MockPermissionRepositoryMockRecorder) Update(ctx, id, kind any) *gomock.Call {
+// ListVisible indicates an expected call of ListVisible.
+func (mr *MockPermissionRepositoryMockRecorder) ListVisible(ctx, actor, action, parent, resourceType any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockPermissionRepository)(nil).Update), ctx, id, kind)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListVisible", reflect.TypeOf((*MockPermissionRepository)(nil).ListVisible), ctx, actor, action, parent, resourceType)
 }

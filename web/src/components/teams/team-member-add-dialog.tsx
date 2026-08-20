@@ -17,14 +17,14 @@ import {
 } from "@/components/ui/field";
 import { Skeleton } from "@/components/ui/skeleton";
 import { collectedListQuery, cursorPageQuery } from "@/lib/api/cursor-pages";
-import { v1OrganizationRoleMembersAddMutation } from "@/lib/api/mutation-options";
+import { v1OrganizationTeamMembersAddMutation } from "@/lib/api/mutation-options";
 import {
   v1OrganizationMembersGetOptions,
-  v1OrganizationRoleMembersGetOptions,
+  v1OrganizationTeamMembersGetOptions,
 } from "@/lib/api/query-options";
 import {
   v1OrganizationMembersGet,
-  v1OrganizationRoleMembersGet,
+  v1OrganizationTeamMembersGet,
 } from "@/lib/api/sdk";
 import type { OrganizationMember, User } from "@/lib/api/types";
 import { runMutationSuccessWorkflow } from "@/lib/mutation-workflow";
@@ -37,21 +37,21 @@ const memberFormSchema = z.object({
 
 type MemberFormValues = z.infer<typeof memberFormSchema>;
 
-interface RoleMemberAddDialogProps {
+interface TeamMemberAddDialogProps {
   organizationId: string;
-  roleId: string;
+  teamId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void | Promise<void>;
 }
 
-export function RoleMemberAddDialog({
+export function TeamMemberAddDialog({
   organizationId,
-  roleId,
+  teamId,
   open,
   onOpenChange,
   onSuccess,
-}: RoleMemberAddDialogProps) {
+}: TeamMemberAddDialogProps) {
   const queryClient = useQueryClient();
   const router = useRouter();
   const [error, setError] = useState<Error | null>(null);
@@ -83,20 +83,20 @@ export function RoleMemberAddDialog({
       enabled: open,
     });
 
-  const roleMembersOptions = v1OrganizationRoleMembersGetOptions({
+  const teamMembersOptions = v1OrganizationTeamMembersGetOptions({
     path: {
       id: organizationId,
-      role_id: roleId,
+      team_id: teamId,
     },
   });
-  const { data: roleMembersPage, isLoading: isLoadingRoleMembers } = useQuery({
+  const { data: teamMembersPage, isLoading: isLoadingTeamMembers } = useQuery({
     ...collectedListQuery<User>(
-      roleMembersOptions,
+      teamMembersOptions,
       async (pageToken, signal) => {
-        const { data } = await v1OrganizationRoleMembersGet({
+        const { data } = await v1OrganizationTeamMembersGet({
           path: {
             id: organizationId,
-            role_id: roleId,
+            team_id: teamId,
           },
           query: cursorPageQuery(pageToken),
           signal,
@@ -108,20 +108,26 @@ export function RoleMemberAddDialog({
     enabled: open,
   });
 
-  const roleMembersQueryKey = v1OrganizationRoleMembersGetOptions({
+  const teamMembersQueryKey = v1OrganizationTeamMembersGetOptions({
     path: {
       id: organizationId,
-      role_id: roleId,
+      team_id: teamId,
     },
   }).queryKey;
   const mutation = useMutation({
-    ...v1OrganizationRoleMembersAddMutation(),
+    ...v1OrganizationTeamMembersAddMutation(),
     onSuccess: () =>
       runMutationSuccessWorkflow({
         invalidateQueries: [
           () =>
             queryClient.invalidateQueries({
-              queryKey: roleMembersQueryKey,
+              queryKey: teamMembersQueryKey,
+            }),
+          () =>
+            queryClient.invalidateQueries({
+              queryKey: v1OrganizationTeamMembersGetOptions({
+                path: { id: organizationId, team_id: teamId },
+              }).queryKey,
             }),
         ],
         invalidateRouter: () => router.invalidate(),
@@ -130,7 +136,7 @@ export function RoleMemberAddDialog({
             setError(null);
             showSuccessToast(
               "Member added",
-              "Member added to role successfully"
+              "Member added to team successfully"
             );
             form.reset();
             onOpenChange(false);
@@ -146,19 +152,16 @@ export function RoleMemberAddDialog({
 
   useEffect(() => {
     if (open) {
-      // Clear error when dialog opens
       setError(null);
     }
   }, [open]);
 
   const onSubmit = (values: MemberFormValues) => {
-    // Clear previous error when submitting again
     setError(null);
-
     mutation.mutate({
       path: {
         id: organizationId,
-        role_id: roleId,
+        team_id: teamId,
       },
       body: {
         user_id: values.userId,
@@ -168,10 +171,10 @@ export function RoleMemberAddDialog({
 
   const organizationMembers: OrganizationMember[] =
     organizationMembersPage?.items ?? [];
-  const roleMembers: User[] = roleMembersPage?.items ?? [];
+  const teamMembers: User[] = teamMembersPage?.items ?? [];
 
   const availableMembers = organizationMembers.filter(
-    (member) => !roleMembers.some((roleMember) => roleMember.id === member.id)
+    (member) => !teamMembers.some((teamMember) => teamMember.id === member.id)
   );
 
   const memberOptions = availableMembers.map((member) => ({
@@ -182,14 +185,14 @@ export function RoleMemberAddDialog({
     avatarFallback: getInitials(member.first_name, member.last_name),
   }));
 
-  const isLoading = isLoadingMembers || isLoadingRoleMembers;
+  const isLoading = isLoadingMembers || isLoadingTeamMembers;
 
   return (
     <DialogForm
       form={form}
       open={open}
       onOpenChange={onOpenChange}
-      title="Add Member to Role"
+      title="Add Member to Team"
       onSubmit={form.handleSubmit(onSubmit)}
       isPending={mutation.isPending}
       error={error}
@@ -207,8 +210,8 @@ export function RoleMemberAddDialog({
       ) : availableMembers.length === 0 ? (
         <Alert>
           <AlertDescription>
-            {roleMembers && roleMembers.length > 0
-              ? "All organization members are already assigned to this role."
+            {teamMembers.length > 0
+              ? "All organization members are already on this team."
               : "No organization members available to assign."}
           </AlertDescription>
         </Alert>

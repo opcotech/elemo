@@ -2,7 +2,7 @@ import { test as base } from "@playwright/test";
 
 import {
   createAuthenticatedClient,
-  createSystemOwnerClient,
+  createPrivilegedClient,
 } from "../api/client";
 
 import type { Client } from "@/lib/client/client";
@@ -12,18 +12,18 @@ import type { Client } from "@/lib/client/client";
  * Provides authenticated API client to all tests.
  */
 type ApiFixtures = {
-  systemOwnerApiClient: Client;
+  privilegedApiClient: Client;
   createApiClient: (username: string, password: string) => Promise<Client>;
 };
 
 export const test = base.extend<ApiFixtures>({
   /**
-   * Authenticated API client using system owner credentials.
-   * Automatically created for each test.
+   * Authenticated API client using the e2e privileged user
+   * (organization.create on Installation).
    */
   // eslint-disable-next-line no-empty-pattern
-  systemOwnerApiClient: async ({}, use: (client: Client) => Promise<void>) => {
-    const client = await createSystemOwnerClient();
+  privilegedApiClient: async ({}, use: (client: Client) => Promise<void>) => {
+    const client = await createPrivilegedClient();
     await use(client);
   },
 

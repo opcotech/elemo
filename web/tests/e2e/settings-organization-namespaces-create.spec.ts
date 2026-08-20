@@ -8,9 +8,9 @@ import {
 import { USER_DEFAULT_PASSWORD, loginUser } from "./utils/auth";
 import {
   createUser,
+  grantActionsToUser,
   grantMembershipToUser,
-  grantPermissionToUser,
-  grantSystemOwnerMembershipToUser,
+  grantOrganizationCreateToUser,
 } from "./utils/db";
 import { getRandomString } from "./utils/random";
 
@@ -32,7 +32,7 @@ test.describe("@settings.organization-namespaces-create Organization Namespaces 
     writerUser = await createUser(testConfig);
     readerUser = await createUser(testConfig);
 
-    await grantSystemOwnerMembershipToUser(testConfig, ownerUser.email);
+    await grantOrganizationCreateToUser(testConfig, ownerUser.email);
 
     ownerApiClient = await createApiClient(
       ownerUser.email,
@@ -51,19 +51,26 @@ test.describe("@settings.organization-namespaces-create Organization Namespaces 
       "Organization",
       organizationId
     );
-    await grantPermissionToUser(
+    await grantActionsToUser(
       testConfig,
       writerUser.email,
       "Organization",
       organizationId,
-      "read"
+      ["organization.read"]
     );
-    await grantPermissionToUser(
+    await grantActionsToUser(
       testConfig,
       writerUser.email,
       "Organization",
       organizationId,
-      "write"
+      [
+        "organization.update",
+        "organization.members.manage",
+        "namespace.create",
+        "role.manage",
+        "team.manage",
+        "permission.manage",
+      ]
     );
 
     await grantMembershipToUser(
@@ -72,12 +79,12 @@ test.describe("@settings.organization-namespaces-create Organization Namespaces 
       "Organization",
       organizationId
     );
-    await grantPermissionToUser(
+    await grantActionsToUser(
       testConfig,
       readerUser.email,
       "Organization",
       organizationId,
-      "read"
+      ["organization.read"]
     );
   });
 

@@ -62,6 +62,7 @@ type Neo4jContainerIntegrationTestSuite struct {
 	PermissionRepo   *repository.Neo4jPermissionRepository
 	ProjectRepo      *repository.Neo4jProjectRepository
 	RoleRepo         *repository.Neo4jRoleRepository
+	TeamRepo         *repository.Neo4jTeamRepository
 	TodoRepo         *repository.Neo4jTodoRepository
 	UserRepo         *repository.Neo4jUserRepository
 }
@@ -115,6 +116,9 @@ func (s *Neo4jContainerIntegrationTestSuite) SetupNeo4j(ts *ContainerIntegration
 	ts.Require().NoError(err)
 
 	s.RoleRepo, err = repository.NewNeo4jRoleRepository(repository.WithNeo4jDatabase(s.Neo4jDB))
+	ts.Require().NoError(err)
+
+	s.TeamRepo, err = repository.NewNeo4jTeamRepository(repository.WithNeo4jDatabase(s.Neo4jDB))
 	ts.Require().NoError(err)
 
 	s.TodoRepo, err = repository.NewNeo4jTodoRepository(repository.WithNeo4jDatabase(s.Neo4jDB))

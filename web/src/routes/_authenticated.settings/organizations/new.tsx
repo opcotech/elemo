@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { OrganizationCreateForm } from "@/components/organizations/organization-create-form";
 import { PageHeader } from "@/components/ui/page-header";
-import { ResourceType } from "@/lib/auth/permissions";
+import { Action, ResourceType } from "@/lib/auth/permissions";
 import { requirePermissionBeforeLoad } from "@/lib/auth/require-auth";
 
 export const Route = createFileRoute(
@@ -11,8 +11,8 @@ export const Route = createFileRoute(
   beforeLoad: ({ context }) =>
     requirePermissionBeforeLoad({
       queryClient: context.queryClient,
-      resourceType: ResourceType.Organization,
-      permissionKind: "create",
+      resourceType: ResourceType.Installation,
+      action: Action.OrganizationCreate,
     }),
   staticData: {
     breadcrumb: "Create organization",

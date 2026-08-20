@@ -1,3 +1,4 @@
+import { expect } from "@playwright/test";
 import type { Locator, Page } from "@playwright/test";
 
 import { BaseComponent } from "../components/base";
@@ -25,6 +26,19 @@ export class DocumentListSection extends SectionContainerMixin(
 
   async waitForLoad(options?: { timeout?: number }): Promise<void> {
     await this.waitForContainerLoad(options);
+    const container = this.getSectionContainer();
+    const loading = container.locator('[role="status"][aria-busy="true"]');
+    const ready = container
+      .locator('[role="listitem"]')
+      .or(container.getByText("No documents yet"))
+      .or(container.getByText("No documents in this folder"))
+      .or(container.getByText("No related documents"))
+      .or(container.getByText("No document matches"))
+      .or(container.getByText("Limited access"));
+    await expect(async () => {
+      await expect(loading).toHaveCount(0);
+      await expect(ready.first()).toBeVisible();
+    }).toPass({ timeout: options?.timeout ?? 15_000 });
   }
 
   getCreateButton(): Locator {
@@ -151,7 +165,15 @@ export class DocumentListSection extends SectionContainerMixin(
   async selectCreator(label: string): Promise<void> {
     const search = this.page.getByPlaceholder("Search people…");
     await clickUntilVisible(this.getCreatorButton(), search);
-    await search.waitFor();
-    await this.page.getByRole("option", { name: label }).click();
+    await search.click();
+    await search.press("ControlOrMeta+A");
+    await search.press("Backspace");
+    if (label !== "Anyone") {
+      await search.pressSequentially(label, { delay: 10 });
+    }
+    await this.page
+      .getByRole("listbox")
+      .getByRole("option", { name: label })
+      .click();
   }
 }

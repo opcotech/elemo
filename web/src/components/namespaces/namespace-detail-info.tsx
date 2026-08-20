@@ -5,13 +5,13 @@ import { Button } from "@/components/ui/button";
 import { CountBadge } from "@/components/ui/count-badge";
 import { DetailCard } from "@/components/ui/detail-card";
 import { DetailField } from "@/components/ui/detail-field";
-import type { Namespace, Permission } from "@/lib/api/types";
-import { can } from "@/lib/auth/permissions";
+import type { EffectiveActions, Namespace } from "@/lib/api/types";
+import { Action, can } from "@/lib/auth/permissions";
 import { formatDate } from "@/lib/format-date";
 
 interface NamespaceDetailInfoProps {
   namespace: Namespace;
-  permissions: Permission[];
+  permissions: EffectiveActions;
   organizationId: string;
   organizationName: string;
 }
@@ -22,7 +22,7 @@ export function NamespaceDetailInfo({
   organizationId,
   organizationName,
 }: NamespaceDetailInfoProps) {
-  const hasWritePermission = can(permissions, "write");
+  const hasWritePermission = can(permissions, Action.NamespaceUpdate);
 
   const projectCount = namespace.project_count ?? 0;
   const documentCount = namespace.document_count ?? 0;

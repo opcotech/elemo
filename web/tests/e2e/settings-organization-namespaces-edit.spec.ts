@@ -9,9 +9,9 @@ import {
 import { USER_DEFAULT_PASSWORD, loginUser } from "./utils/auth";
 import {
   createUser,
+  grantActionsToUser,
   grantMembershipToUser,
-  grantPermissionToUser,
-  grantSystemOwnerMembershipToUser,
+  grantOrganizationCreateToUser,
 } from "./utils/db";
 import { getRandomString } from "./utils/random";
 
@@ -33,7 +33,7 @@ test.describe("@settings.organization-namespaces-edit Organization Namespaces Ed
     writerUser = await createUser(testConfig);
     readerUser = await createUser(testConfig);
 
-    await grantSystemOwnerMembershipToUser(testConfig, ownerUser.email);
+    await grantOrganizationCreateToUser(testConfig, ownerUser.email);
 
     ownerApiClient = await createApiClient(
       ownerUser.email,
@@ -51,19 +51,26 @@ test.describe("@settings.organization-namespaces-edit Organization Namespaces Ed
       "Organization",
       organizationId
     );
-    await grantPermissionToUser(
+    await grantActionsToUser(
       testConfig,
       writerUser.email,
       "Organization",
       organizationId,
-      "read"
+      ["organization.read"]
     );
-    await grantPermissionToUser(
+    await grantActionsToUser(
       testConfig,
       writerUser.email,
       "Organization",
       organizationId,
-      "write"
+      [
+        "organization.update",
+        "organization.members.manage",
+        "namespace.create",
+        "role.manage",
+        "team.manage",
+        "permission.manage",
+      ]
     );
 
     await grantMembershipToUser(
@@ -72,12 +79,12 @@ test.describe("@settings.organization-namespaces-edit Organization Namespaces Ed
       "Organization",
       organizationId
     );
-    await grantPermissionToUser(
+    await grantActionsToUser(
       testConfig,
       readerUser.email,
       "Organization",
       organizationId,
-      "read"
+      ["organization.read"]
     );
   });
 
@@ -111,12 +118,12 @@ test.describe("@settings.organization-namespaces-edit Organization Namespaces Ed
   }) => {
     const namespace = await createNamespaceViaApi();
 
-    await grantPermissionToUser(
+    await grantActionsToUser(
       testConfig,
       readerUser.email,
       "Namespace",
       namespace.id,
-      "read"
+      ["namespace.read"]
     );
 
     await loginUser(page, {
@@ -139,19 +146,19 @@ test.describe("@settings.organization-namespaces-edit Organization Namespaces Ed
   }) => {
     const namespace = await createNamespaceViaApi();
 
-    await grantPermissionToUser(
+    await grantActionsToUser(
       testConfig,
       writerUser.email,
       "Namespace",
       namespace.id,
-      "read"
+      ["namespace.read"]
     );
-    await grantPermissionToUser(
+    await grantActionsToUser(
       testConfig,
       writerUser.email,
       "Namespace",
       namespace.id,
-      "write"
+      ["namespace.update", "project.create", "document.create", "folder.create"]
     );
 
     await loginUser(page, {
@@ -161,12 +168,19 @@ test.describe("@settings.organization-namespaces-edit Organization Namespaces Ed
 
     const namespaceEditPage = new SettingsOrganizationNamespaceEditPage(page);
     await namespaceEditPage.goto(organizationId, namespace.id);
+    await expect(namespaceEditPage.namespaceForm.getField("Name")).toHaveValue(
+      namespace.name
+    );
+
     const updatedName = `Updated ${getRandomString(6)}`;
-    await namespaceEditPage.namespaceForm.clearField("Name");
+    const updatedDescription = `Updated description ${getRandomString(6)}`;
     await namespaceEditPage.namespaceForm.fillFields({
+      Description: updatedDescription,
       Name: updatedName,
-      Description: `Updated description ${getRandomString(6)}`,
     });
+    await expect(namespaceEditPage.namespaceForm.getField("Name")).toHaveValue(
+      updatedName
+    );
     await namespaceEditPage.namespaceForm.submit("Save Changes");
     await waitForSuccessToast(page, "Namespace updated");
 
@@ -184,19 +198,26 @@ test.describe("@settings.organization-namespaces-edit Organization Namespaces Ed
   }) => {
     const namespace = await createNamespaceViaApi();
 
-    await grantPermissionToUser(
+    await grantActionsToUser(
       testConfig,
       readerUser.email,
       "Namespace",
       namespace.id,
-      "read"
+      ["namespace.read"]
     );
-    await grantPermissionToUser(
+    await grantActionsToUser(
       testConfig,
       writerUser.email,
       "Namespace",
       namespace.id,
-      "write"
+      ["namespace.read"]
+    );
+    await grantActionsToUser(
+      testConfig,
+      writerUser.email,
+      "Namespace",
+      namespace.id,
+      ["namespace.update", "project.create", "document.create", "folder.create"]
     );
 
     // Writer with write permission should see edit button

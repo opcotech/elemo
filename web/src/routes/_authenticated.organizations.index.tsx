@@ -26,7 +26,7 @@ import {
   withResourceType,
 } from "@/hooks/use-permissions";
 import { v1OrganizationsGetOptions } from "@/lib/api/query-options";
-import { can } from "@/lib/auth/permissions";
+import { Action, can } from "@/lib/auth/permissions";
 import { zOrganizationStatus } from "@/lib/client/zod.gen";
 import { loadOrganizations } from "@/lib/route-data";
 import { pluralize } from "@/lib/utils";
@@ -53,9 +53,9 @@ function OrganizationsListPage() {
   );
   const organizations = organizationsPage?.items;
   const { data: systemPermissions } = usePermissions(
-    withResourceType(ResourceType.Organization)
+    withResourceType(ResourceType.Installation)
   );
-  const canCreate = can(systemPermissions, "create");
+  const canCreate = can(systemPermissions, Action.OrganizationCreate);
   const statusFilter = search.status ?? zOrganizationStatus.enum.active;
 
   const filteredOrganizations = useMemo(() => {

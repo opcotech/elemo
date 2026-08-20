@@ -160,6 +160,28 @@ var startServerCmd = &cobra.Command{
 			}
 		}
 
+		var teamRepo repository.TeamRepository
+		{
+			repo, err := repository.NewNeo4jTeamRepository(
+				repository.WithNeo4jDatabase(graphDB),
+				repository.WithNeo4jRepositoryLogger(logger.Named("team_repository")),
+				repository.WithNeo4jRepositoryTracer(tracer),
+			)
+			if err != nil {
+				logger.Fatal(context.Background(), "failed to initialize team repository", slog.Any("error", err))
+			}
+
+			teamRepo, err = repository.NewCachedTeamRepository(
+				repo,
+				repository.WithRedisDatabase(cacheDB),
+				repository.WithRedisRepositoryLogger(logger.Named("cached_team_repository")),
+				repository.WithRedisRepositoryTracer(tracer),
+			)
+			if err != nil {
+				logger.Fatal(context.Background(), "failed to initialize cached team repository", slog.Any("error", err))
+			}
+		}
+
 		var userRepo repository.UserRepository
 		{
 			repo, err := repository.NewNeo4jUserRepository(
@@ -419,6 +441,7 @@ var startServerCmd = &cobra.Command{
 
 		permissionService, err := service.NewPermissionService(
 			permissionRepo,
+			service.WithRoleRepository(roleRepo),
 			service.WithLogger(logger.Named("permission_service")),
 			service.WithTracer(tracer),
 		)
@@ -468,6 +491,17 @@ var startServerCmd = &cobra.Command{
 			logger.Fatal(context.Background(), "failed to initialize role service", slog.Any("error", err))
 		}
 
+		teamService, err := service.NewTeamService(
+			service.WithTeamRepository(teamRepo),
+			service.WithPermissionService(permissionService),
+			service.WithLicenseService(licenseService),
+			service.WithLogger(logger.Named("team_service")),
+			service.WithTracer(tracer),
+		)
+		if err != nil {
+			logger.Fatal(context.Background(), "failed to initialize team service", slog.Any("error", err))
+		}
+
 		userService, err := service.NewUserService(
 			service.WithUserRepository(userRepo),
 			service.WithUserTokenRepository(userTokenRepo),
@@ -482,7 +516,6 @@ var startServerCmd = &cobra.Command{
 
 		todoService, err := service.NewTodoService(
 			service.WithTodoRepository(todoRepo),
-			service.WithPermissionService(permissionService),
 			service.WithLicenseService(licenseService),
 			service.WithLogger(logger.Named("todo_service")),
 			service.WithTracer(tracer),
@@ -610,6 +643,7 @@ var startServerCmd = &cobra.Command{
 			elemoHttp.WithFolderService(folderService),
 			elemoHttp.WithLabelService(labelService),
 			elemoHttp.WithRoleService(roleService),
+			elemoHttp.WithTeamService(teamService),
 			elemoHttp.WithUserService(userService),
 			elemoHttp.WithTodoService(todoService),
 			elemoHttp.WithEmailService(emailService),

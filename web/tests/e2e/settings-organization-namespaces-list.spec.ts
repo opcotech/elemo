@@ -4,9 +4,9 @@ import { SettingsOrganizationDetailsPage } from "./pages";
 import { USER_DEFAULT_PASSWORD, loginUser } from "./utils/auth";
 import {
   createUser,
+  grantActionsToUser,
   grantMembershipToUser,
-  grantPermissionToUser,
-  grantSystemOwnerMembershipToUser,
+  grantOrganizationCreateToUser,
 } from "./utils/db";
 import { getRandomString } from "./utils/random";
 
@@ -28,7 +28,7 @@ test.describe("@settings.organization-namespaces-list Organization Namespaces Li
     writerUser = await createUser(testConfig);
     readerUser = await createUser(testConfig);
 
-    await grantSystemOwnerMembershipToUser(testConfig, ownerUser.email);
+    await grantOrganizationCreateToUser(testConfig, ownerUser.email);
 
     ownerApiClient = await createApiClient(
       ownerUser.email,
@@ -46,19 +46,26 @@ test.describe("@settings.organization-namespaces-list Organization Namespaces Li
       "Organization",
       organizationId
     );
-    await grantPermissionToUser(
+    await grantActionsToUser(
       testConfig,
       writerUser.email,
       "Organization",
       organizationId,
-      "read"
+      ["organization.read"]
     );
-    await grantPermissionToUser(
+    await grantActionsToUser(
       testConfig,
       writerUser.email,
       "Organization",
       organizationId,
-      "write"
+      [
+        "organization.update",
+        "organization.members.manage",
+        "namespace.create",
+        "role.manage",
+        "team.manage",
+        "permission.manage",
+      ]
     );
 
     await grantMembershipToUser(
@@ -67,12 +74,12 @@ test.describe("@settings.organization-namespaces-list Organization Namespaces Li
       "Organization",
       organizationId
     );
-    await grantPermissionToUser(
+    await grantActionsToUser(
       testConfig,
       readerUser.email,
       "Organization",
       organizationId,
-      "read"
+      ["organization.read"]
     );
   });
 
@@ -100,10 +107,19 @@ test.describe("@settings.organization-namespaces-list Organization Namespaces Li
     };
   };
 
-  test("should list organization namespaces for members with organization read permission", async ({
+  test("should list organization namespaces for members with namespace read permission", async ({
     page,
+    testConfig,
   }) => {
     const namespace = await createNamespaceViaApi();
+
+    await grantActionsToUser(
+      testConfig,
+      readerUser.email,
+      "Namespace",
+      namespace.id,
+      ["namespace.read"]
+    );
 
     await loginUser(page, {
       email: readerUser.email,
@@ -164,10 +180,21 @@ test.describe("@settings.organization-namespaces-list Organization Namespaces Li
     }
   });
 
-  test("should display namespace description in the list", async ({ page }) => {
+  test("should display namespace description in the list", async ({
+    page,
+    testConfig,
+  }) => {
     const namespace = await createNamespaceViaApi({
       description: "Test description",
     });
+
+    await grantActionsToUser(
+      testConfig,
+      writerUser.email,
+      "Namespace",
+      namespace.id,
+      ["namespace.read"]
+    );
 
     await loginUser(page, {
       email: writerUser.email,

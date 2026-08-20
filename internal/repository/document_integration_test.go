@@ -36,6 +36,12 @@ func (s *DocumentRepositoryIntegrationTestSuite) SetupTest() {
 	s.Require().NoError(err)
 	s.testOrg, err = s.OrganizationRepo.Create(context.Background(), testModel.NewCreateOrganizationOpts(s.testUser.ID))
 	s.Require().NoError(err)
+	_, err = s.PermissionRepo.Create(context.Background(), testModel.NewCreateGrantOpts(
+		s.testUser.ID,
+		s.testOrg.ID,
+		testModel.OrgAdminActions()...,
+	))
+	s.Require().NoError(err)
 	s.createOpts = testModel.NewCreateDocumentOpts(s.testOrg.ID, s.testUser.ID)
 }
 
@@ -77,11 +83,11 @@ func (s *DocumentRepositoryIntegrationTestSuite) TestGetByCreator() {
 	_, err = s.DocumentRepo.Create(context.Background(), testModel.NewCreateDocumentOpts(s.testOrg.ID, s.testUser.ID))
 	s.Require().NoError(err)
 
-	docs, err := s.DocumentRepo.ListByCreator(context.Background(), s.testUser.ID, repository.CursorPage{Size: 10}, repository.DocumentListProjection())
+	docs, err := s.DocumentRepo.ListByCreator(context.Background(), s.testUser.ID, s.testUser.ID, repository.CursorPage{Size: 10}, repository.DocumentListProjection())
 	s.Require().NoError(err)
 	s.Assert().Len(docs.Items, 2)
 
-	docs, err = s.DocumentRepo.ListByCreator(context.Background(), s.testUser.ID, repository.CursorPage{Size: 1}, repository.DocumentListProjection())
+	docs, err = s.DocumentRepo.ListByCreator(context.Background(), s.testUser.ID, s.testUser.ID, repository.CursorPage{Size: 1}, repository.DocumentListProjection())
 	s.Require().NoError(err)
 	s.Assert().Len(docs.Items, 1)
 	s.Assert().True(docs.PageInfo.HasMore)
@@ -95,7 +101,7 @@ func (s *DocumentRepositoryIntegrationTestSuite) TestListLibrary() {
 	_, err = s.DocumentRepo.Create(context.Background(), testModel.NewCreateDocumentOpts(s.testOrg.ID, s.testUser.ID))
 	s.Require().NoError(err)
 
-	docs, err := s.DocumentRepo.ListLibrary(context.Background(), s.testOrg.ID, repository.LibraryListFilter{All: true}, repository.CursorPage{Size: 10}, repository.DocumentListProjection())
+	docs, err := s.DocumentRepo.ListLibrary(context.Background(), s.testOrg.ID, s.testUser.ID, repository.LibraryListFilter{All: true}, repository.CursorPage{Size: 10}, repository.DocumentListProjection())
 	s.Require().NoError(err)
 	s.Assert().Len(docs.Items, 3)
 }
@@ -113,11 +119,11 @@ func (s *DocumentRepositoryIntegrationTestSuite) TestMoveToFolderAndRelate() {
 	s.Require().NotNil(moved.Folder)
 	s.Assert().Equal(folder.ID, moved.Folder.ID)
 
-	inFolder, err := s.DocumentRepo.ListLibrary(context.Background(), s.testOrg.ID, repository.LibraryListFilter{FolderID: &folder.ID}, repository.CursorPage{Size: 10}, repository.DocumentListProjection())
+	inFolder, err := s.DocumentRepo.ListLibrary(context.Background(), s.testOrg.ID, s.testUser.ID, repository.LibraryListFilter{FolderID: &folder.ID}, repository.CursorPage{Size: 10}, repository.DocumentListProjection())
 	s.Require().NoError(err)
 	s.Assert().Len(inFolder.Items, 1)
 
-	atRoot, err := s.DocumentRepo.ListLibrary(context.Background(), s.testOrg.ID, repository.LibraryListFilter{}, repository.CursorPage{Size: 10}, repository.DocumentListProjection())
+	atRoot, err := s.DocumentRepo.ListLibrary(context.Background(), s.testOrg.ID, s.testUser.ID, repository.LibraryListFilter{}, repository.CursorPage{Size: 10}, repository.DocumentListProjection())
 	s.Require().NoError(err)
 	s.Assert().Empty(atRoot.Items)
 
@@ -177,6 +183,12 @@ func (s *CachedDocumentRepositoryIntegrationTestSuite) SetupTest() {
 	s.Require().NoError(err)
 	s.testOrg, err = s.OrganizationRepo.Create(context.Background(), testModel.NewCreateOrganizationOpts(s.testUser.ID))
 	s.Require().NoError(err)
+	_, err = s.PermissionRepo.Create(context.Background(), testModel.NewCreateGrantOpts(
+		s.testUser.ID,
+		s.testOrg.ID,
+		testModel.OrgAdminActions()...,
+	))
+	s.Require().NoError(err)
 	s.createOpts = testModel.NewCreateDocumentOpts(s.testOrg.ID, s.testUser.ID)
 	s.Require().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }
@@ -211,9 +223,9 @@ func (s *CachedDocumentRepositoryIntegrationTestSuite) TestGet() {
 func (s *CachedDocumentRepositoryIntegrationTestSuite) TestGetByCreator() {
 	_, err := s.documentRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
-	original, err := s.DocumentRepo.ListByCreator(context.Background(), s.testUser.ID, repository.CursorPage{Size: 10}, repository.DocumentListProjection())
+	original, err := s.DocumentRepo.ListByCreator(context.Background(), s.testUser.ID, s.testUser.ID, repository.CursorPage{Size: 10}, repository.DocumentListProjection())
 	s.Require().NoError(err)
-	usingCache, err := s.documentRepo.ListByCreator(context.Background(), s.testUser.ID, repository.CursorPage{Size: 10}, repository.DocumentListProjection())
+	usingCache, err := s.documentRepo.ListByCreator(context.Background(), s.testUser.ID, s.testUser.ID, repository.CursorPage{Size: 10}, repository.DocumentListProjection())
 	s.Require().NoError(err)
 	s.Assert().Equal(original, usingCache)
 	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
@@ -222,9 +234,9 @@ func (s *CachedDocumentRepositoryIntegrationTestSuite) TestGetByCreator() {
 func (s *CachedDocumentRepositoryIntegrationTestSuite) TestListLibrary() {
 	_, err := s.documentRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
-	original, err := s.DocumentRepo.ListLibrary(context.Background(), s.testOrg.ID, repository.LibraryListFilter{All: true}, repository.CursorPage{Size: 10}, repository.DocumentListProjection())
+	original, err := s.DocumentRepo.ListLibrary(context.Background(), s.testOrg.ID, s.testUser.ID, repository.LibraryListFilter{All: true}, repository.CursorPage{Size: 10}, repository.DocumentListProjection())
 	s.Require().NoError(err)
-	usingCache, err := s.documentRepo.ListLibrary(context.Background(), s.testOrg.ID, repository.LibraryListFilter{All: true}, repository.CursorPage{Size: 10}, repository.DocumentListProjection())
+	usingCache, err := s.documentRepo.ListLibrary(context.Background(), s.testOrg.ID, s.testUser.ID, repository.LibraryListFilter{All: true}, repository.CursorPage{Size: 10}, repository.DocumentListProjection())
 	s.Require().NoError(err)
 	s.Assert().Equal(original, usingCache)
 	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)

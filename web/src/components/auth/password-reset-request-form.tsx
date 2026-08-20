@@ -1,7 +1,7 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Mail } from "lucide-react";
-import { useState } from "react";
+import type { FormEvent } from "react";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -18,34 +18,31 @@ import { Spinner } from "@/components/ui/spinner";
 import { v1UserRequestPasswordResetOptions } from "@/lib/api/query-options";
 
 export function PasswordResetRequestForm() {
-  const [email, setEmail] = useState("");
+  const queryClient = useQueryClient();
 
   const {
-    isLoading,
     isPending,
+    isSuccess,
     error,
-    refetch: requestPasswordReset,
-  } = useQuery({
-    enabled: false,
-    ...v1UserRequestPasswordResetOptions({
-      query: {
-        email,
-      },
-    }),
+    mutate: requestPasswordReset,
+  } = useMutation({
+    mutationFn: (email: string) =>
+      queryClient.fetchQuery(
+        v1UserRequestPasswordResetOptions({
+          query: { email },
+        })
+      ),
   });
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    if (!email) {
+    const email = new FormData(e.currentTarget).get("email");
+    if (typeof email !== "string" || email.trim() === "") {
       return;
     }
 
-    await requestPasswordReset();
-  };
-
-  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setEmail(e.target.value);
+    requestPasswordReset(email.trim());
   };
 
   return (
@@ -67,7 +64,7 @@ export function PasswordResetRequestForm() {
               </Alert>
             )}
 
-            {!isPending && !error && (
+            {isSuccess && !error && (
               <Alert variant="success">
                 <AlertDescription>
                   If an account with this email exists, you will receive an
@@ -82,13 +79,12 @@ export function PasswordResetRequestForm() {
                 <Mail className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
                 <Input
                   id="email"
+                  name="email"
                   type="email"
                   placeholder="Enter your email"
-                  value={email}
-                  onChange={handleEmailChange}
                   className="pl-10"
                   required
-                  disabled={isLoading}
+                  disabled={isPending}
                   autoComplete="email"
                 />
               </div>
@@ -98,10 +94,10 @@ export function PasswordResetRequestForm() {
               <Button
                 type="submit"
                 className="flex w-full items-center"
-                disabled={isLoading || !email}
+                disabled={isPending}
                 aria-label="Reset password"
               >
-                {isLoading ? (
+                {isPending ? (
                   <>
                     <Spinner size="xs" className="mr-0.5 text-white" />
                     <span>Resetting password...</span>

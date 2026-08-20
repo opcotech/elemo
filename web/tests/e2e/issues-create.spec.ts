@@ -10,8 +10,8 @@ import { HomePage, WorkItemPage, WorkPage } from "./pages";
 import { USER_DEFAULT_PASSWORD, loginUser } from "./utils/auth";
 import {
   createUser,
+  grantActionsToUser,
   grantMembershipToUser,
-  grantPermissionToUser,
 } from "./utils/db";
 import { getRandomString } from "./utils/random";
 
@@ -35,33 +35,42 @@ test.describe("@issues.create Issue Create E2E Tests", () => {
       "Organization",
       workspace.organizationId
     );
-    await grantPermissionToUser(
+    await grantActionsToUser(
       testConfig,
       writerUser.email,
       "Organization",
       workspace.organizationId,
-      "read"
+      ["organization.read"]
     );
-    await grantPermissionToUser(
+    await grantActionsToUser(
       testConfig,
       writerUser.email,
       "Namespace",
       workspace.namespaceId,
-      "read"
+      ["namespace.read"]
     );
-    await grantPermissionToUser(
+    await grantActionsToUser(
       testConfig,
       writerUser.email,
       "Project",
       workspace.projectId,
-      "read"
+      ["project.read", "issue.read", "document.read"]
     );
-    await grantPermissionToUser(
+    await grantActionsToUser(
       testConfig,
       writerUser.email,
       "Project",
       workspace.projectId,
-      "write"
+      [
+        "project.update",
+        "project.members.manage",
+        "issue.create",
+        "issue.update",
+        "issue.assign",
+        "document.create",
+        "document.update",
+        "folder.create",
+      ]
     );
 
     await grantMembershipToUser(
@@ -70,26 +79,26 @@ test.describe("@issues.create Issue Create E2E Tests", () => {
       "Organization",
       workspace.organizationId
     );
-    await grantPermissionToUser(
+    await grantActionsToUser(
       testConfig,
       readerUser.email,
       "Organization",
       workspace.organizationId,
-      "read"
+      ["organization.read"]
     );
-    await grantPermissionToUser(
+    await grantActionsToUser(
       testConfig,
       readerUser.email,
       "Namespace",
       workspace.namespaceId,
-      "read"
+      ["namespace.read"]
     );
-    await grantPermissionToUser(
+    await grantActionsToUser(
       testConfig,
       readerUser.email,
       "Project",
       workspace.projectId,
-      "read"
+      ["project.read", "issue.read", "document.read"]
     );
   });
 

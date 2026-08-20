@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/danger-zone";
 import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
 import { useDeleteMutation } from "@/hooks/use-delete-mutation";
-import type { Permission } from "@/lib/api/types";
+import type { EffectiveActions } from "@/lib/api/types";
 
 type Navigate = ReturnType<typeof useNavigate>;
 
@@ -36,7 +36,7 @@ export interface EntityLifecycleConfig<TEntity, TContext, TVariables> {
   entityName: string;
   deleteDialog: DeleteDialogConfig<TEntity>;
   dangerZone?: DangerZoneConfig;
-  canDelete: (entity: TEntity, permissions: Permission[]) => boolean;
+  canDelete: (entity: TEntity, permissions: EffectiveActions) => boolean;
   deleteVariables: (entity: TEntity, context: TContext) => TVariables;
   queryKeys: (entity: TEntity, context: TContext) => QueryKey[];
   navigateAfterDelete?: (
@@ -134,7 +134,7 @@ interface EntityDangerZoneProps<
 > {
   entity: TEntity;
   context: TContext;
-  permissions: Permission[];
+  permissions: EffectiveActions;
   config: EntityLifecycleConfig<TEntity, TContext, TVariables> & {
     dangerZone: DangerZoneConfig;
   };

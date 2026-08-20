@@ -25,6 +25,12 @@ type PartialNamespace struct {
 	Name string   `json:"name"`
 }
 
+// PartialOrganization is a lean organization used on accessible namespace lists.
+type PartialOrganization struct {
+	ID   model.ID `json:"id"`
+	Name string   `json:"name"`
+}
+
 // Namespace represents a namespace persisted by the repository.
 type Namespace struct {
 	ID            model.ID   `json:"id"`
@@ -34,6 +40,12 @@ type Namespace struct {
 	DocumentCount *int64     `json:"document_count"`
 	CreatedAt     *time.Time `json:"created_at"`
 	UpdatedAt     *time.Time `json:"updated_at"`
+}
+
+// AccessibleNamespace is a reachable namespace with its owning organization.
+type AccessibleNamespace struct {
+	Namespace
+	Organization PartialOrganization `json:"organization"`
 }
 
 // CreateNamespaceOpts holds the data required to create a namespace.
@@ -73,7 +85,8 @@ func (o UpdateNamespaceOpts) patch() map[string]any {
 type NamespaceRepository interface {
 	Create(ctx context.Context, opts CreateNamespaceOpts) (*Namespace, error)
 	Get(ctx context.Context, id model.ID, proj NamespaceProjection) (*Namespace, error)
-	List(ctx context.Context, orgID model.ID, page CursorPage, proj NamespaceProjection) (Page[*Namespace], error)
+	List(ctx context.Context, orgID, actor model.ID, page CursorPage, proj NamespaceProjection) (Page[*Namespace], error)
+	ListAccessible(ctx context.Context, actor model.ID, page CursorPage, proj NamespaceProjection) (Page[*AccessibleNamespace], error)
 	Update(ctx context.Context, id model.ID, opts UpdateNamespaceOpts) (*Namespace, error)
 	Delete(ctx context.Context, id model.ID) error
 }
@@ -130,7 +143,7 @@ func (r *Neo4jNamespaceRepository) Create(ctx context.Context, opts CreateNamesp
 	MATCH (org:` + opts.OrgID.Label() + ` {id: $org_id})
 	CREATE (ns:` + id.Label() + ` {id: $id, name: $name, description: $description, created_at: datetime($created_at)}),
 		(org)-[:` + EdgeKindHasNamespace.String() + ` {id: $has_ns_id, created_at: datetime($created_at)}]->(ns),
-		(u)-[:` + EdgeKindHasPermission.String() + ` {id: $perm_id, kind: $perm_kind, created_at: datetime($created_at)}]->(ns)`
+		(ns)-[:` + EdgeKindInScopeOf.String() + ` {id: $scope_id, created_at: datetime($created_at)}]->(org)`
 
 	params := map[string]any{
 		"id":          id.String(),
@@ -140,8 +153,7 @@ func (r *Neo4jNamespaceRepository) Create(ctx context.Context, opts CreateNamesp
 		"creator_id":  opts.CreatorID.String(),
 		"org_id":      opts.OrgID.String(),
 		"has_ns_id":   model.NewRawID(),
-		"perm_id":     model.NewRawID(),
-		"perm_kind":   model.PermissionKindAll.String(),
+		"scope_id":    model.NewRawID(),
 	}
 
 	if err := Neo4jExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
@@ -179,7 +191,7 @@ func (r *Neo4jNamespaceRepository) Get(ctx context.Context, id model.ID, proj Na
 	return namespace, nil
 }
 
-func (r *Neo4jNamespaceRepository) List(ctx context.Context, orgID model.ID, page CursorPage, proj NamespaceProjection) (Page[*Namespace], error) {
+func (r *Neo4jNamespaceRepository) List(ctx context.Context, orgID, actor model.ID, page CursorPage, proj NamespaceProjection) (Page[*Namespace], error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.NamespaceRepository/List")
 	defer span.End()
 
@@ -189,6 +201,7 @@ func (r *Neo4jNamespaceRepository) List(ctx context.Context, orgID model.ID, pag
 	}
 	plan, err := CompileQuery(NamespaceListQuery{
 		OrgID:      orgID,
+		ActorID:    actor,
 		Page:       normalized,
 		Order:      SortDirectionDesc,
 		Projection: proj,
@@ -211,6 +224,68 @@ func (r *Neo4jNamespaceRepository) List(ctx context.Context, orgID model.ID, pag
 	}
 
 	return PaginateSlice(namespaces, normalized.Size, func(namespace *Namespace) model.ID {
+		return namespace.ID
+	})
+}
+
+func (r *Neo4jNamespaceRepository) scanAccessible(proj NamespaceProjection) func(rec *neo4j.Record) (*AccessibleNamespace, error) {
+	scanNS := r.scan(proj)
+	return func(rec *neo4j.Record) (*AccessibleNamespace, error) {
+		ns, err := scanNS(rec)
+		if err != nil {
+			return nil, err
+		}
+		accessible := &AccessibleNamespace{Namespace: *ns}
+		orgNode, err := Neo4jRecordOptionalNode(rec, "org")
+		if err != nil {
+			return nil, err
+		}
+		if orgNode == nil {
+			return nil, ErrMalformedResult
+		}
+		accessible.Organization.ID, err = Neo4jDecodeID(*orgNode, model.ResourceTypeOrganization)
+		if err != nil {
+			return nil, err
+		}
+		if name, ok := orgNode.GetProperties()["name"].(string); ok {
+			accessible.Organization.Name = name
+		}
+		return accessible, nil
+	}
+}
+
+func (r *Neo4jNamespaceRepository) ListAccessible(ctx context.Context, actor model.ID, page CursorPage, proj NamespaceProjection) (Page[*AccessibleNamespace], error) {
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.NamespaceRepository/ListAccessible")
+	defer span.End()
+
+	normalized, err := page.Normalize()
+	if err != nil {
+		return Page[*AccessibleNamespace]{}, errors.Join(ErrNamespaceRead, err)
+	}
+	plan, err := CompileQuery(NamespaceListAccessibleQuery{
+		ActorID:    actor,
+		Page:       normalized,
+		Order:      SortDirectionDesc,
+		Projection: proj,
+	})
+	if err != nil {
+		return Page[*AccessibleNamespace]{}, errors.Join(ErrNamespaceRead, err)
+	}
+
+	namespaces := make([]*AccessibleNamespace, 0)
+	err = Neo4jExecuteReadPlan(ctx, r.db, plan, func(tx neo4j.ManagedTransaction) error {
+		var runErr error
+		namespaces, _, runErr = Neo4jRunQuery(ctx, tx, plan.Root, r.scanAccessible(proj))
+		if runErr != nil {
+			return runErr
+		}
+		return nil
+	})
+	if err != nil {
+		return Page[*AccessibleNamespace]{}, errors.Join(ErrNamespaceRead, err)
+	}
+
+	return PaginateSlice(namespaces, normalized.Size, func(namespace *AccessibleNamespace) model.ID {
 		return namespace.ID
 	})
 }
@@ -279,7 +354,10 @@ func clearNamespacesKey(ctx context.Context, r *redisBaseRepository, id model.ID
 }
 
 func clearNamespacesAllLists(ctx context.Context, r *redisBaseRepository) error {
-	return clearNamespacesPattern(ctx, r, "List", "*", "*", "*", "*")
+	if err := clearNamespacesPattern(ctx, r, "List", "*", "*", "*", "*"); err != nil {
+		return err
+	}
+	return clearNamespacesPattern(ctx, r, "ListAccessible", "*", "*", "*", "*")
 }
 
 func clearNamespaceAllCrossCache(ctx context.Context, r *redisBaseRepository) error {
@@ -337,7 +415,7 @@ func (r *RedisCachedNamespaceRepository) Get(ctx context.Context, id model.ID, p
 	return namespace, nil
 }
 
-func (r *RedisCachedNamespaceRepository) List(ctx context.Context, orgID model.ID, page CursorPage, proj NamespaceProjection) (Page[*Namespace], error) {
+func (r *RedisCachedNamespaceRepository) List(ctx context.Context, orgID, actor model.ID, page CursorPage, proj NamespaceProjection) (Page[*Namespace], error) {
 	var namespaces Page[*Namespace]
 	var err error
 
@@ -346,7 +424,7 @@ func (r *RedisCachedNamespaceRepository) List(ctx context.Context, orgID model.I
 		return Page[*Namespace]{}, err
 	}
 
-	key := composeCacheKey(model.ResourceTypeNamespace.String(), "List", orgID.String(), projectionCacheValue(proj), pageTokenValue(normalized.Token), normalized.Size)
+	key := composeCacheKey(model.ResourceTypeNamespace.String(), "List", orgID.String(), actor.String(), projectionCacheValue(proj), pageTokenValue(normalized.Token), normalized.Size)
 	if err = r.cacheRepo.Get(ctx, key, &namespaces); err != nil {
 		return Page[*Namespace]{}, err
 	}
@@ -355,13 +433,43 @@ func (r *RedisCachedNamespaceRepository) List(ctx context.Context, orgID model.I
 		return namespaces, nil
 	}
 
-	namespaces, err = r.namespaceRepo.List(ctx, orgID, normalized, proj)
+	namespaces, err = r.namespaceRepo.List(ctx, orgID, actor, normalized, proj)
 	if err != nil {
 		return Page[*Namespace]{}, err
 	}
 
 	if err = r.cacheRepo.Set(ctx, key, namespaces); err != nil {
 		return Page[*Namespace]{}, err
+	}
+
+	return namespaces, nil
+}
+
+func (r *RedisCachedNamespaceRepository) ListAccessible(ctx context.Context, actor model.ID, page CursorPage, proj NamespaceProjection) (Page[*AccessibleNamespace], error) {
+	var namespaces Page[*AccessibleNamespace]
+	var err error
+
+	normalized, err := normalizedPage(page)
+	if err != nil {
+		return Page[*AccessibleNamespace]{}, err
+	}
+
+	key := composeCacheKey(model.ResourceTypeNamespace.String(), "ListAccessible", actor.String(), projectionCacheValue(proj), pageTokenValue(normalized.Token), normalized.Size)
+	if err = r.cacheRepo.Get(ctx, key, &namespaces); err != nil {
+		return Page[*AccessibleNamespace]{}, err
+	}
+
+	if namespaces.Items != nil {
+		return namespaces, nil
+	}
+
+	namespaces, err = r.namespaceRepo.ListAccessible(ctx, actor, normalized, proj)
+	if err != nil {
+		return Page[*AccessibleNamespace]{}, err
+	}
+
+	if err = r.cacheRepo.Set(ctx, key, namespaces); err != nil {
+		return Page[*AccessibleNamespace]{}, err
 	}
 
 	return namespaces, nil

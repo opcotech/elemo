@@ -86,18 +86,18 @@ func (mr *MockFolderRepositoryMockRecorder) Get(ctx, id any) *gomock.Call {
 }
 
 // List mocks base method.
-func (m *MockFolderRepository) List(ctx context.Context, libraryID model.ID, parentID *model.ID, page CursorPage) (Page[*Folder], error) {
+func (m *MockFolderRepository) List(ctx context.Context, libraryID model.ID, parentID *model.ID, actor model.ID, page CursorPage) (Page[*Folder], error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "List", ctx, libraryID, parentID, page)
+	ret := m.ctrl.Call(m, "List", ctx, libraryID, parentID, actor, page)
 	ret0, _ := ret[0].(Page[*Folder])
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // List indicates an expected call of List.
-func (mr *MockFolderRepositoryMockRecorder) List(ctx, libraryID, parentID, page any) *gomock.Call {
+func (mr *MockFolderRepositoryMockRecorder) List(ctx, libraryID, parentID, actor, page any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockFolderRepository)(nil).List), ctx, libraryID, parentID, page)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockFolderRepository)(nil).List), ctx, libraryID, parentID, actor, page)
 }
 
 // Update mocks base method.

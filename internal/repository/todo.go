@@ -141,27 +141,22 @@ func (r *Neo4jTodoRepository) Create(ctx context.Context, opts CreateTodoOpts) (
 			due_date: datetime($due_date), created_at: datetime($created_at)
 		}),
 		(t)-[:` + EdgeKindBelongsTo.String() + ` {id: $owned_rel_id, created_at: datetime($created_at)}]->(o),
-		(t)<-[:` + EdgeKindCreated.String() + ` {id: $created_rel_id, created_at: datetime($created_at)}]-(c),
-		(o)-[:` + EdgeKindHasPermission.String() + ` {id: $owner_perm_id, kind: $owner_perm_kind, created_at: datetime($created_at)}]->(t)
-	MERGE (c)-[rel:` + EdgeKindHasPermission.String() + `]->(t)
-	ON CREATE SET rel += {id: $creator_perm_id, kind: $creator_perm_kind, created_at: datetime($created_at)}`
+		(t)-[:` + EdgeKindInScopeOf.String() + ` {id: $scope_id, created_at: datetime($created_at)}]->(o),
+		(t)<-[:` + EdgeKindCreated.String() + ` {id: $created_rel_id, created_at: datetime($created_at)}]-(c)`
 
 	params := map[string]any{
-		"id":                id.String(),
-		"title":             opts.Title,
-		"description":       opts.Description,
-		"priority":          opts.Priority.String(),
-		"completed":         opts.Completed,
-		"due_date":          nil,
-		"created_at":        createdAt.Format(time.RFC3339Nano),
-		"owner_id":          opts.OwnedBy.String(),
-		"owned_rel_id":      model.NewRawID(),
-		"owner_perm_id":     model.NewRawID(),
-		"owner_perm_kind":   model.PermissionKindAll.String(),
-		"creator_id":        opts.CreatedBy.String(),
-		"created_rel_id":    model.NewRawID(),
-		"creator_perm_id":   model.NewRawID(),
-		"creator_perm_kind": model.PermissionKindAll.String(),
+		"id":             id.String(),
+		"title":          opts.Title,
+		"description":    opts.Description,
+		"priority":       opts.Priority.String(),
+		"completed":      opts.Completed,
+		"due_date":       nil,
+		"created_at":     createdAt.Format(time.RFC3339Nano),
+		"owner_id":       opts.OwnedBy.String(),
+		"owned_rel_id":   model.NewRawID(),
+		"scope_id":       model.NewRawID(),
+		"creator_id":     opts.CreatedBy.String(),
+		"created_rel_id": model.NewRawID(),
 	}
 
 	if opts.DueDate != nil {

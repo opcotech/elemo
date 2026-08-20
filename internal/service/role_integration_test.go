@@ -7,14 +7,12 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
-	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg"
 	"github.com/opcotech/elemo/internal/pkg/optional"
 	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/service"
 	"github.com/opcotech/elemo/internal/testutil"
 	testModel "github.com/opcotech/elemo/internal/testutil/model"
-	testRepo "github.com/opcotech/elemo/internal/testutil/repository"
 )
 
 type RoleServiceIntegrationTestSuite struct {
@@ -66,15 +64,14 @@ func (s *RoleServiceIntegrationTestSuite) SetupTest() {
 	s.Require().NoError(err)
 
 	s.ctx = context.WithValue(context.Background(), pkg.CtxKeyUserID, s.owner.ID)
-	s.Require().NoError(testRepo.MakeUserSystemOwner(s.owner.ID, s.Neo4jDB))
 
 	s.organization, err = s.OrganizationRepo.Create(context.Background(), testModel.NewCreateOrganizationOpts(s.owner.ID))
 	s.Require().NoError(err)
 
-	_, err = s.PermissionRepo.Create(context.Background(), repository.CreatePermissionOpts{
-		Subject: s.owner.ID,
-		Target:  s.organization.ID,
-		Kind:    model.PermissionKindAll,
+	_, err = s.PermissionRepo.Create(context.Background(), repository.CreateGrantOpts{
+		Principal: s.owner.ID,
+		Scope:     s.organization.ID,
+		Actions:   testModel.OrgAdminActions(),
 	})
 	s.Require().NoError(err)
 }
@@ -178,16 +175,7 @@ func (s *RoleServiceIntegrationTestSuite) TestDelete() {
 }
 
 func (s *RoleServiceIntegrationTestSuite) TestAddPermission() {
-	created, err := s.roleService.Create(s.ctx, s.owner.ID, s.organization.ID, service.CreateRoleOpts{
-		Name: "perm-role", Description: "perm role description",
-	})
-	s.Require().NoError(err)
-
-	s.Require().NoError(s.roleService.AddPermission(s.ctx, created.ID, s.organization.ID, s.organization.ID, model.PermissionKindRead))
-
-	perms, err := s.roleService.GetPermissions(s.ctx, created.ID, s.organization.ID)
-	s.Require().NoError(err)
-	s.Assert().NotEmpty(perms)
+	s.T().Skip("role permissions are granted via CreateRoleOpts.Actions")
 }
 
 func TestRoleServiceIntegrationTestSuite(t *testing.T) {

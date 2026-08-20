@@ -189,9 +189,6 @@ func TestUserService_Create(t *testing.T) {
 					userRepo := repository.NewMockUserRepository(ctrl)
 					userRepo.EXPECT().Create(ctx, gomock.Any()).Return(&repository.User{}, nil)
 
-					permSvc := NewMockPermissionService(ctrl)
-					permSvc.EXPECT().CtxUserHasPermission(ctx, model.MustNewNilID(model.ResourceTypeUser), model.PermissionKindCreate).Return(true)
-
 					licenseSvc := mock.NewMockLicenseService(ctrl)
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 					licenseSvc.EXPECT().WithinThreshold(ctx, license.QuotaUsers).Return(true, nil)
@@ -200,7 +197,7 @@ func TestUserService_Create(t *testing.T) {
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						userRepo:          userRepo,
-						permissionService: permSvc,
+						permissionService: NewMockPermissionService(ctrl),
 						licenseService:    licenseSvc,
 					}
 				},
@@ -237,37 +234,7 @@ func TestUserService_Create(t *testing.T) {
 			},
 			wantErr: ErrUserCreate,
 		},
-		{
-			name: "create user with no permission",
-			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ CreateUserOpts) *baseService {
-					span := mock.NewMockSpan(ctrl)
-					span.EXPECT().End(gomock.Len(0))
 
-					tracer := mock.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.userService/Create", gomock.Len(0)).Return(ctx, span)
-
-					permSvc := NewMockPermissionService(ctrl)
-					permSvc.EXPECT().CtxUserHasPermission(ctx, model.MustNewNilID(model.ResourceTypeUser), model.PermissionKindCreate).Return(false)
-
-					licenseSvc := mock.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
-
-					return &baseService{
-						logger:            mock.NewMockLogger(ctrl),
-						tracer:            tracer,
-						userRepo:          repository.NewMockUserRepository(ctrl),
-						permissionService: permSvc,
-						licenseService:    licenseSvc,
-					}
-				},
-			},
-			args: args{
-				ctx:  context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
-				opts: createUserOptsFromRepo(testModel.NewCreateUserOpts()),
-			},
-			wantErr: ErrNoPermission,
-		},
 		{
 			name: "create user with error",
 			fields: fields{
@@ -281,9 +248,6 @@ func TestUserService_Create(t *testing.T) {
 					userRepo := repository.NewMockUserRepository(ctrl)
 					userRepo.EXPECT().Create(ctx, gomock.Any()).Return(nil, assert.AnError)
 
-					permSvc := NewMockPermissionService(ctrl)
-					permSvc.EXPECT().CtxUserHasPermission(ctx, model.MustNewNilID(model.ResourceTypeUser), model.PermissionKindCreate).Return(true)
-
 					licenseSvc := mock.NewMockLicenseService(ctrl)
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 					licenseSvc.EXPECT().WithinThreshold(ctx, license.QuotaUsers).Return(true, nil)
@@ -292,7 +256,7 @@ func TestUserService_Create(t *testing.T) {
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						userRepo:          userRepo,
-						permissionService: permSvc,
+						permissionService: NewMockPermissionService(ctrl),
 						licenseService:    licenseSvc,
 					}
 				},
@@ -313,9 +277,6 @@ func TestUserService_Create(t *testing.T) {
 					tracer := mock.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.userService/Create", gomock.Len(0)).Return(ctx, span)
 
-					permSvc := NewMockPermissionService(ctrl)
-					permSvc.EXPECT().CtxUserHasPermission(ctx, model.MustNewNilID(model.ResourceTypeUser), model.PermissionKindCreate).Return(true)
-
 					licenseSvc := mock.NewMockLicenseService(ctrl)
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 					licenseSvc.EXPECT().WithinThreshold(ctx, license.QuotaUsers).Return(false, nil)
@@ -324,7 +285,7 @@ func TestUserService_Create(t *testing.T) {
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						userRepo:          repository.NewMockUserRepository(ctrl),
-						permissionService: permSvc,
+						permissionService: NewMockPermissionService(ctrl),
 						licenseService:    licenseSvc,
 					}
 				},
@@ -827,9 +788,9 @@ func TestUserService_Update(t *testing.T) {
 			want: repoUserToService(testModel.NewUser()),
 		},
 		{
-			name: "update user with no permission",
+			name: "update another user",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ UpdateUserOpts, _ *repository.User) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ UpdateUserOpts, _ *repository.User) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
@@ -838,9 +799,6 @@ func TestUserService_Update(t *testing.T) {
 
 					userRepo := repository.NewMockUserRepository(ctrl)
 
-					permSvc := NewMockPermissionService(ctrl)
-					permSvc.EXPECT().CtxUserHasPermission(ctx, id, model.PermissionKindWrite).Return(false)
-
 					licenseSvc := mock.NewMockLicenseService(ctrl)
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
@@ -848,7 +806,7 @@ func TestUserService_Update(t *testing.T) {
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						userRepo:          userRepo,
-						permissionService: permSvc,
+						permissionService: NewMockPermissionService(ctrl),
 						licenseService:    licenseSvc,
 					}
 				},
@@ -1105,9 +1063,6 @@ func TestUserService_Delete(t *testing.T) {
 					userRepo := repository.NewMockUserRepository(ctrl)
 					userRepo.EXPECT().Update(ctx, id, gomock.Any()).Return(new(repository.User), nil)
 
-					permSvc := NewMockPermissionService(ctrl)
-					permSvc.EXPECT().CtxUserHasPermission(ctx, id, model.PermissionKindDelete).Return(true)
-
 					licenseSvc := mock.NewMockLicenseService(ctrl)
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
@@ -1115,14 +1070,14 @@ func TestUserService_Delete(t *testing.T) {
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						userRepo:          userRepo,
-						permissionService: permSvc,
+						permissionService: NewMockPermissionService(ctrl),
 						licenseService:    licenseSvc,
 					}
 				},
 			},
 			args: args{
 				ctx:   context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
-				id:    model.MustNewID(model.ResourceTypeUser),
+				id:    userID,
 				force: false,
 			},
 		},
@@ -1139,9 +1094,6 @@ func TestUserService_Delete(t *testing.T) {
 					userRepo := repository.NewMockUserRepository(ctrl)
 					userRepo.EXPECT().Delete(ctx, id).Return(nil)
 
-					permSvc := NewMockPermissionService(ctrl)
-					permSvc.EXPECT().CtxUserHasPermission(ctx, id, model.PermissionKindDelete).Return(true)
-
 					licenseSvc := mock.NewMockLicenseService(ctrl)
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
@@ -1149,14 +1101,14 @@ func TestUserService_Delete(t *testing.T) {
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						userRepo:          userRepo,
-						permissionService: permSvc,
+						permissionService: NewMockPermissionService(ctrl),
 						licenseService:    licenseSvc,
 					}
 				},
 			},
 			args: args{
 				ctx:   context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
-				id:    model.MustNewID(model.ResourceTypeUser),
+				id:    userID,
 				force: true,
 			},
 		},
@@ -1219,9 +1171,9 @@ func TestUserService_Delete(t *testing.T) {
 			wantErr: license.ErrLicenseExpired,
 		},
 		{
-			name: "soft delete user with no permission",
+			name: "soft delete another user",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
@@ -1230,9 +1182,6 @@ func TestUserService_Delete(t *testing.T) {
 
 					userRepo := repository.NewMockUserRepository(ctrl)
 
-					permSvc := NewMockPermissionService(ctrl)
-					permSvc.EXPECT().CtxUserHasPermission(ctx, id, model.PermissionKindDelete).Return(false)
-
 					licenseSvc := mock.NewMockLicenseService(ctrl)
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
@@ -1240,7 +1189,7 @@ func TestUserService_Delete(t *testing.T) {
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						userRepo:          userRepo,
-						permissionService: permSvc,
+						permissionService: NewMockPermissionService(ctrl),
 						licenseService:    licenseSvc,
 					}
 				},
@@ -1253,9 +1202,9 @@ func TestUserService_Delete(t *testing.T) {
 			wantErr: ErrNoPermission,
 		},
 		{
-			name: "force delete user with no permission",
+			name: "force delete another user",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *baseService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID) *baseService {
 					span := mock.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
@@ -1264,9 +1213,6 @@ func TestUserService_Delete(t *testing.T) {
 
 					userRepo := repository.NewMockUserRepository(ctrl)
 
-					permSvc := NewMockPermissionService(ctrl)
-					permSvc.EXPECT().CtxUserHasPermission(ctx, id, model.PermissionKindDelete).Return(false)
-
 					licenseSvc := mock.NewMockLicenseService(ctrl)
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
@@ -1274,7 +1220,7 @@ func TestUserService_Delete(t *testing.T) {
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						userRepo:          userRepo,
-						permissionService: permSvc,
+						permissionService: NewMockPermissionService(ctrl),
 						licenseService:    licenseSvc,
 					}
 				},
@@ -1328,9 +1274,6 @@ func TestUserService_Delete(t *testing.T) {
 					userRepo := repository.NewMockUserRepository(ctrl)
 					userRepo.EXPECT().Update(ctx, id, gomock.Any()).Return(nil, assert.AnError)
 
-					permSvc := NewMockPermissionService(ctrl)
-					permSvc.EXPECT().CtxUserHasPermission(ctx, id, model.PermissionKindDelete).Return(true)
-
 					licenseSvc := mock.NewMockLicenseService(ctrl)
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
@@ -1338,14 +1281,14 @@ func TestUserService_Delete(t *testing.T) {
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						userRepo:          userRepo,
-						permissionService: permSvc,
+						permissionService: NewMockPermissionService(ctrl),
 						licenseService:    licenseSvc,
 					}
 				},
 			},
 			args: args{
 				ctx:   context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
-				id:    model.MustNewID(model.ResourceTypeUser),
+				id:    userID,
 				force: false,
 			},
 			wantErr: ErrUserDelete,
@@ -1363,9 +1306,6 @@ func TestUserService_Delete(t *testing.T) {
 					userRepo := repository.NewMockUserRepository(ctrl)
 					userRepo.EXPECT().Delete(ctx, id).Return(assert.AnError)
 
-					permSvc := NewMockPermissionService(ctrl)
-					permSvc.EXPECT().CtxUserHasPermission(ctx, id, model.PermissionKindDelete).Return(true)
-
 					licenseSvc := mock.NewMockLicenseService(ctrl)
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
@@ -1373,14 +1313,14 @@ func TestUserService_Delete(t *testing.T) {
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						userRepo:          userRepo,
-						permissionService: permSvc,
+						permissionService: NewMockPermissionService(ctrl),
 						licenseService:    licenseSvc,
 					}
 				},
 			},
 			args: args{
 				ctx:   context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
-				id:    model.MustNewID(model.ResourceTypeUser),
+				id:    userID,
 				force: true,
 			},
 			wantErr: ErrUserDelete,

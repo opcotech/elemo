@@ -5,31 +5,38 @@
 //
 // Organizations
 //   ACME Inc.   — Product (PLAT, MOB) and Operations (INF)
-//   Nova Labs   — Delivery (INTEG), partner org collaborating on PLAT
+//   Nova Labs   — Delivery (INTEG); partner org collaborating on ACME PLAT
 //
 // Logins (password AppleTree123 for every account)
-//   demo@elemo.app       ACME owner, system Owner
+//   demo@elemo.app       ACME org-admin; can create orgs (direct Installation grant)
 //   hector@elemo.app     ACME engineering; also Nova Labs member
 //   priya@elemo.app      ACME operations
 //   luis@elemo.app       ACME mobile
-//   aisha@elemo.app      ACME design (read)
-//   maya@novalabs.dev    Nova Labs owner
-//   jordan@novalabs.dev  Nova engineer; guest write on ACME PLAT
+//   aisha@elemo.app      ACME design
+//   maya@novalabs.dev    Nova Labs org-admin
+//   jordan@novalabs.dev  Nova engineer; not an ACME member (PLAT via Nova grant)
 //   sam@elemo.app        pending ACME invite (not a member yet)
+//
+// Authorization
+//   Access is scoped ReBAC: Principal -[:GRANTED]-> scope, plus IN_SCOPE_OF.
+//   There are no system roles and no wildcard actions. organization.create is a
+//   direct grant on the Installation node for demo@elemo.app (not a role, not
+//   org membership). Nova Labs holds project-viewer on ACME's PLAT project;
+//   Nova members are not members of ACME.
 //
 // Covers: all issue kinds/statuses/priorities, common resolutions, parent
 // issues, relation kinds (except reserved "depends on"), comments,
 // attachments, labels, documents, teams, invitations, and todos.
 //
-// Requires bootstrap.cypher (ResourceTypes + system Roles) to have run first.
+// Requires bootstrap.cypher (Installation + constraints) to have run first.
 // ============================================================================
 
 // ============================================================================
 // 1. Users
 // ============================================================================
 
-// Demo — ACME owner + system Owner
-MERGE (u:User {id: '9bsv0s46s6s002p9ltq0'})
+// Demo — ACME org-admin
+MERGE (u:User:Principal {id: '9bsv0s46s6s002p9ltq0'})
   ON CREATE SET u += {
     username:   'demo',
     email:      'demo@elemo.app',
@@ -45,13 +52,10 @@ MERGE (u:User {id: '9bsv0s46s6s002p9ltq0'})
     links:      ['https://example.com'],
     languages:  ['en'],
     created_at: datetime()
-  }
-WITH u
-MATCH (r:Role {id: 'Owner'})
-CREATE (u)-[:MEMBER_OF {id: '9bsv0s3n4ccg0329pecg', created_at: datetime()}]->(r);
+  };
 
 // Hector — ACME engineer; also joins Nova Labs later
-MERGE (u:User {id: '9bsv0s314mtg02goaimg'})
+MERGE (u:User:Principal {id: '9bsv0s314mtg02goaimg'})
   ON CREATE SET u += {
     username:   'hector-henrik',
     email:      'hector@elemo.app',
@@ -70,7 +74,7 @@ MERGE (u:User {id: '9bsv0s314mtg02goaimg'})
   };
 
 // Maya — Nova Labs owner
-MERGE (u:User {id: 'd9tcjmf92rs8isainivg'})
+MERGE (u:User:Principal {id: 'd9tcjmf92rs8isainivg'})
   ON CREATE SET u += {
     username:   'maya-nova',
     email:      'maya@novalabs.dev',
@@ -89,7 +93,7 @@ MERGE (u:User {id: 'd9tcjmf92rs8isainivg'})
   };
 
 // Jordan — Nova Labs engineer; guest collaborator on ACME PLAT
-MERGE (u:User {id: 'd9tcjmf92rs8isainj00'})
+MERGE (u:User:Principal {id: 'd9tcjmf92rs8isainj00'})
   ON CREATE SET u += {
     username:   'jordan-lee',
     email:      'jordan@novalabs.dev',
@@ -108,7 +112,7 @@ MERGE (u:User {id: 'd9tcjmf92rs8isainj00'})
   };
 
 // Sam — pending ACME invite only (no MEMBER_OF)
-MERGE (u:User {id: 'd9tcjmf92rs8isainj0g'})
+MERGE (u:User:Principal {id: 'd9tcjmf92rs8isainj0g'})
   ON CREATE SET u += {
     username:   'sam-rivera',
     email:      'sam@elemo.app',
@@ -127,7 +131,7 @@ MERGE (u:User {id: 'd9tcjmf92rs8isainj0g'})
   };
 
 // Priya — ACME SRE
-MERGE (u:User {id: 'd9tcjmf92rs8isainm00'})
+MERGE (u:User:Principal {id: 'd9tcjmf92rs8isainm00'})
   ON CREATE SET u += {
     username:   'priya-shah',
     email:      'priya@elemo.app',
@@ -146,7 +150,7 @@ MERGE (u:User {id: 'd9tcjmf92rs8isainm00'})
   };
 
 // Luis — ACME mobile
-MERGE (u:User {id: 'd9tcjmf92rs8isainm0g'})
+MERGE (u:User:Principal {id: 'd9tcjmf92rs8isainm0g'})
   ON CREATE SET u += {
     username:   'luis-ortega',
     email:      'luis@elemo.app',
@@ -165,7 +169,7 @@ MERGE (u:User {id: 'd9tcjmf92rs8isainm0g'})
   };
 
 // Aisha — ACME design (read on Product)
-MERGE (u:User {id: 'd9tcjmf92rs8isainm10'})
+MERGE (u:User:Principal {id: 'd9tcjmf92rs8isainm10'})
   ON CREATE SET u += {
     username:   'aisha-khan',
     email:      'aisha@elemo.app',
@@ -184,7 +188,7 @@ MERGE (u:User {id: 'd9tcjmf92rs8isainm10'})
   };
 
 // Riley — inactive ACME member
-MERGE (u:User {id: 'd9tcjmf92rs8isainm1g'})
+MERGE (u:User:Principal {id: 'd9tcjmf92rs8isainm1g'})
   ON CREATE SET u += {
     username:   'riley-nash',
     email:      'riley@elemo.app',
@@ -206,9 +210,9 @@ MERGE (u:User {id: 'd9tcjmf92rs8isainm1g'})
 // 2. Organizations, memberships, and invitations
 // ============================================================================
 
-// ACME Inc. — owned by demo
+// ACME Inc. — demo is org-admin (granted in section 14)
 MATCH (u:User {id: '9bsv0s46s6s002p9ltq0'})
-MERGE (o:Organization {id: '9bsv0s4vl6gg02sv7jrg'})
+MERGE (o:Organization:Principal {id: '9bsv0s4vl6gg02sv7jrg'})
   ON CREATE SET o += {
     name:       'ACME Inc.',
     email:      'info@example.com',
@@ -218,52 +222,46 @@ MERGE (o:Organization {id: '9bsv0s4vl6gg02sv7jrg'})
     created_at: datetime()
   }
 CREATE
-  (u)-[:MEMBER_OF {id: '9m4e2mr0ui3e8a215n4g', created_at: datetime()}]->(o),
-  (u)-[:HAS_PERMISSION {id: '9bsv0s613svg02gik0r0', created_at: datetime(), kind: '*'}]->(o);
+  (u)-[:MEMBER_OF {id: '9m4e2mr0ui3e8a215n4g', created_at: datetime()}]->(o);
 
-// Hector → ACME (read)
+// Hector → ACME member
 MATCH (u:User {id: '9bsv0s314mtg02goaimg'})
 MATCH (o:Organization {id: '9bsv0s4vl6gg02sv7jrg'})
 CREATE
-  (u)-[:MEMBER_OF {id: '9bsv0s314mtg02goain0', created_at: datetime()}]->(o),
-  (u)-[:HAS_PERMISSION {id: '9bsv0s314mtg02goaing', created_at: datetime(), kind: 'read'}]->(o);
+  (u)-[:MEMBER_OF {id: '9bsv0s314mtg02goain0', created_at: datetime()}]->(o);
 
-// Priya → ACME (write)
+// Priya → ACME member
 MATCH (u:User {id: 'd9tcjmf92rs8isainm00'})
 MATCH (o:Organization {id: '9bsv0s4vl6gg02sv7jrg'})
 CREATE
-  (u)-[:MEMBER_OF {id: 'd9tcjmf92rs8isainm20', created_at: datetime()}]->(o),
-  (u)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainm2g', created_at: datetime(), kind: 'write'}]->(o);
+  (u)-[:MEMBER_OF {id: 'd9tcjmf92rs8isainm20', created_at: datetime()}]->(o);
 
-// Luis → ACME (write)
+// Luis → ACME member
 MATCH (u:User {id: 'd9tcjmf92rs8isainm0g'})
 MATCH (o:Organization {id: '9bsv0s4vl6gg02sv7jrg'})
 CREATE
-  (u)-[:MEMBER_OF {id: 'd9tcjmf92rs8isainm30', created_at: datetime()}]->(o),
-  (u)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainm3g', created_at: datetime(), kind: 'write'}]->(o);
+  (u)-[:MEMBER_OF {id: 'd9tcjmf92rs8isainm30', created_at: datetime()}]->(o);
 
-// Aisha → ACME (read)
+// Aisha → ACME member
 MATCH (u:User {id: 'd9tcjmf92rs8isainm10'})
 MATCH (o:Organization {id: '9bsv0s4vl6gg02sv7jrg'})
 CREATE
-  (u)-[:MEMBER_OF {id: 'd9tcjmf92rs8isainm40', created_at: datetime()}]->(o),
-  (u)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainm4g', created_at: datetime(), kind: 'read'}]->(o);
+  (u)-[:MEMBER_OF {id: 'd9tcjmf92rs8isainm40', created_at: datetime()}]->(o);
 
-// Riley → ACME (read, inactive account)
+// Riley → ACME member (inactive account)
 MATCH (u:User {id: 'd9tcjmf92rs8isainm1g'})
 MATCH (o:Organization {id: '9bsv0s4vl6gg02sv7jrg'})
 CREATE
-  (u)-[:MEMBER_OF {id: 'd9tcjmf92rs8isainm50', created_at: datetime() - duration('P90D')}]->(o),
-  (u)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainm5g', created_at: datetime() - duration('P90D'), kind: 'read'}]->(o);
+  (u)-[:MEMBER_OF {id: 'd9tcjmf92rs8isainm50', created_at: datetime() - duration('P90D')}]->(o);
 
 // Sam → ACME pending invite
 MATCH (u:User {id: 'd9tcjmf92rs8isainj0g'})
 MATCH (o:Organization {id: '9bsv0s4vl6gg02sv7jrg'})
 CREATE (u)-[:INVITED_TO {id: 'd9tcjmf92rs8isainj4g', created_at: datetime()}]->(o);
 
-// Nova Labs — owned by Maya
+// Nova Labs — Maya is org-admin (granted in section 14)
 MATCH (u:User {id: 'd9tcjmf92rs8isainivg'})
-MERGE (o:Organization {id: 'd9tcjmf92rs8isainj10'})
+MERGE (o:Organization:Principal {id: 'd9tcjmf92rs8isainj10'})
   ON CREATE SET o += {
     name:       'Nova Labs',
     email:      'hello@novalabs.dev',
@@ -273,22 +271,19 @@ MERGE (o:Organization {id: 'd9tcjmf92rs8isainj10'})
     created_at: datetime()
   }
 CREATE
-  (u)-[:MEMBER_OF {id: 'd9tcjmf92rs8isainj1g', created_at: datetime()}]->(o),
-  (u)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainj20', created_at: datetime(), kind: '*'}]->(o);
+  (u)-[:MEMBER_OF {id: 'd9tcjmf92rs8isainj1g', created_at: datetime()}]->(o);
 
-// Jordan → Nova Labs (write)
+// Jordan → Nova Labs member
 MATCH (u:User {id: 'd9tcjmf92rs8isainj00'})
 MATCH (o:Organization {id: 'd9tcjmf92rs8isainj10'})
 CREATE
-  (u)-[:MEMBER_OF {id: 'd9tcjmf92rs8isainj2g', created_at: datetime()}]->(o),
-  (u)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainj30', created_at: datetime(), kind: 'write'}]->(o);
+  (u)-[:MEMBER_OF {id: 'd9tcjmf92rs8isainj2g', created_at: datetime()}]->(o);
 
-// Hector → Nova Labs (read) — multi-org membership
+// Hector → Nova Labs member — multi-org membership
 MATCH (u:User {id: '9bsv0s314mtg02goaimg'})
 MATCH (o:Organization {id: 'd9tcjmf92rs8isainj10'})
 CREATE
-  (u)-[:MEMBER_OF {id: 'd9tcjmf92rs8isainj3g', created_at: datetime()}]->(o),
-  (u)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainj40', created_at: datetime(), kind: 'read'}]->(o);
+  (u)-[:MEMBER_OF {id: 'd9tcjmf92rs8isainj3g', created_at: datetime()}]->(o);
 
 // ============================================================================
 // 3. Namespaces and projects
@@ -304,8 +299,7 @@ MERGE (ns:Namespace {id: 'd9tcjmf92rs8isainj50'})
     created_at:  datetime()
   }
 CREATE
-  (o)-[:HAS_NAMESPACE {id: 'd9tcjmf92rs8isainj5g', created_at: datetime()}]->(ns),
-  (u)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainj60', created_at: datetime(), kind: '*'}]->(ns);
+  (o)-[:HAS_NAMESPACE {id: 'd9tcjmf92rs8isainj5g', created_at: datetime()}]->(ns);
 
 // ACME → Operations namespace
 MATCH (u:User {id: '9bsv0s46s6s002p9ltq0'})
@@ -317,8 +311,7 @@ MERGE (ns:Namespace {id: 'd9tcjmf92rs8isainj6g'})
     created_at:  datetime()
   }
 CREATE
-  (o)-[:HAS_NAMESPACE {id: 'd9tcjmf92rs8isainj70', created_at: datetime()}]->(ns),
-  (u)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainj7g', created_at: datetime(), kind: '*'}]->(ns);
+  (o)-[:HAS_NAMESPACE {id: 'd9tcjmf92rs8isainj70', created_at: datetime()}]->(ns);
 
 // Nova Labs → Delivery namespace
 MATCH (u:User {id: 'd9tcjmf92rs8isainivg'})
@@ -330,8 +323,7 @@ MERGE (ns:Namespace {id: 'd9tcjmf92rs8isainj80'})
     created_at:  datetime()
   }
 CREATE
-  (o)-[:HAS_NAMESPACE {id: 'd9tcjmf92rs8isainj8g', created_at: datetime()}]->(ns),
-  (u)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainj90', created_at: datetime(), kind: '*'}]->(ns);
+  (o)-[:HAS_NAMESPACE {id: 'd9tcjmf92rs8isainj8g', created_at: datetime()}]->(ns);
 
 // ACME Product → PLAT project
 MATCH (u:User {id: '9bsv0s46s6s002p9ltq0'})
@@ -347,8 +339,7 @@ MERGE (p:Project {id: 'd9tcjmf92rs8isainj9g'})
     created_at:    datetime()
   }
 CREATE
-  (ns)-[:HAS_PROJECT]->(p),
-  (u)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainja0', created_at: datetime(), kind: '*'}]->(p);
+  (ns)-[:HAS_PROJECT]->(p);
 
 // ACME Product → MOB project
 MATCH (u:User {id: '9bsv0s46s6s002p9ltq0'})
@@ -364,8 +355,7 @@ MERGE (p:Project {id: 'd9tcjmf92rs8isainjag'})
     created_at:    datetime()
   }
 CREATE
-  (ns)-[:HAS_PROJECT]->(p),
-  (u)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainjb0', created_at: datetime(), kind: '*'}]->(p);
+  (ns)-[:HAS_PROJECT]->(p);
 
 // ACME Operations → INF project
 MATCH (u:User {id: '9bsv0s46s6s002p9ltq0'})
@@ -381,8 +371,7 @@ MERGE (p:Project {id: 'd9tcjmf92rs8isainjbg'})
     created_at:    datetime()
   }
 CREATE
-  (ns)-[:HAS_PROJECT]->(p),
-  (u)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainjc0', created_at: datetime(), kind: '*'}]->(p);
+  (ns)-[:HAS_PROJECT]->(p);
 
 // Nova Delivery → INTEG project
 MATCH (u:User {id: 'd9tcjmf92rs8isainivg'})
@@ -398,118 +387,77 @@ MERGE (p:Project {id: 'd9tcjmf92rs8isainjcg'})
     created_at:    datetime()
   }
 CREATE
-  (ns)-[:HAS_PROJECT]->(p),
-  (u)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainjd0', created_at: datetime(), kind: '*'}]->(p);
+  (ns)-[:HAS_PROJECT]->(p);
 
 // ============================================================================
-// 4. Teams / roles
+// 4. Teams
 // ============================================================================
 
-// ACME org team: Engineering (demo, hector, luis); write+read on Product
+// ACME org team: Engineering (demo, hector, luis); namespace-admin on Product
 MATCH (owner:User {id: '9bsv0s46s6s002p9ltq0'})
 MATCH (hector:User {id: '9bsv0s314mtg02goaimg'})
 MATCH (luis:User {id: 'd9tcjmf92rs8isainm0g'})
 MATCH (o:Organization {id: '9bsv0s4vl6gg02sv7jrg'})
-MATCH (ns:Namespace {id: 'd9tcjmf92rs8isainj50'})
-MERGE (r:Role {id: 'd9tcjmf92rs8isainjdg'})
-  ON CREATE SET r += {
+MERGE (t:Team:Principal {id: 'd9tcjmf92rs8isainjdg'})
+  ON CREATE SET t += {
     name:        'Engineering',
     description: 'ACME product engineering team.',
     created_at:  datetime()
   }
 CREATE
-  (o)-[:HAS_TEAM {id: 'd9tcjmf92rs8isainje0', created_at: datetime()}]->(r),
-  (owner)-[:MEMBER_OF {id: 'd9tcjmf92rs8isainjeg', created_at: datetime()}]->(r),
-  (owner)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainjf0', created_at: datetime(), kind: '*'}]->(r),
-  (hector)-[:MEMBER_OF {id: 'd9tcjmf92rs8isainjfg', created_at: datetime()}]->(r),
-  (luis)-[:MEMBER_OF {id: 'd9tcjmf92rs8isainm60', created_at: datetime()}]->(r),
-  (r)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainjg0', created_at: datetime(), kind: 'write'}]->(ns),
-  (r)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainm6g', created_at: datetime(), kind: 'read'}]->(ns);
+  (o)-[:HAS_TEAM {id: 'd9tcjmf92rs8isainje0', created_at: datetime()}]->(t),
+  (t)-[:IN_SCOPE_OF {id: 'd9tcjmf92rs8isait10', created_at: datetime()}]->(o),
+  (owner)-[:MEMBER_OF {id: 'd9tcjmf92rs8isainjeg', created_at: datetime()}]->(t),
+  (hector)-[:MEMBER_OF {id: 'd9tcjmf92rs8isainjfg', created_at: datetime()}]->(t),
+  (luis)-[:MEMBER_OF {id: 'd9tcjmf92rs8isainm60', created_at: datetime()}]->(t);
 
-// ACME org team: Operations (demo, priya); write+read on Operations
+// ACME org team: SRE (demo, priya); namespace-admin on Operations
 MATCH (owner:User {id: '9bsv0s46s6s002p9ltq0'})
 MATCH (priya:User {id: 'd9tcjmf92rs8isainm00'})
 MATCH (o:Organization {id: '9bsv0s4vl6gg02sv7jrg'})
-MATCH (ns:Namespace {id: 'd9tcjmf92rs8isainj6g'})
-MERGE (r:Role {id: 'd9tcjmf92rs8isainm70'})
-  ON CREATE SET r += {
+MERGE (t:Team:Principal {id: 'd9tcjmf92rs8isainm70'})
+  ON CREATE SET t += {
     name:        'SRE',
     description: 'ACME site reliability and infrastructure.',
     created_at:  datetime()
   }
 CREATE
-  (o)-[:HAS_TEAM {id: 'd9tcjmf92rs8isainm7g', created_at: datetime()}]->(r),
-  (owner)-[:MEMBER_OF {id: 'd9tcjmf92rs8isainm80', created_at: datetime()}]->(r),
-  (owner)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainm8g', created_at: datetime(), kind: '*'}]->(r),
-  (priya)-[:MEMBER_OF {id: 'd9tcjmf92rs8isainm90', created_at: datetime()}]->(r),
-  (r)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainm9g', created_at: datetime(), kind: 'write'}]->(ns),
-  (r)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainma0', created_at: datetime(), kind: 'read'}]->(ns);
+  (o)-[:HAS_TEAM {id: 'd9tcjmf92rs8isainm7g', created_at: datetime()}]->(t),
+  (t)-[:IN_SCOPE_OF {id: 'd9tcjmf92rs8isait20', created_at: datetime()}]->(o),
+  (owner)-[:MEMBER_OF {id: 'd9tcjmf92rs8isainm80', created_at: datetime()}]->(t),
+  (priya)-[:MEMBER_OF {id: 'd9tcjmf92rs8isainm90', created_at: datetime()}]->(t);
 
-// ACME org team: Design (demo, aisha); read on Product
+// ACME org team: Design (demo, aisha); project-viewer on Product
 MATCH (owner:User {id: '9bsv0s46s6s002p9ltq0'})
 MATCH (aisha:User {id: 'd9tcjmf92rs8isainm10'})
 MATCH (o:Organization {id: '9bsv0s4vl6gg02sv7jrg'})
-MATCH (ns:Namespace {id: 'd9tcjmf92rs8isainj50'})
-MERGE (r:Role {id: 'd9tcjmf92rs8isainmag'})
-  ON CREATE SET r += {
+MERGE (t:Team:Principal {id: 'd9tcjmf92rs8isainmag'})
+  ON CREATE SET t += {
     name:        'Design',
     description: 'ACME product design.',
     created_at:  datetime()
   }
 CREATE
-  (o)-[:HAS_TEAM {id: 'd9tcjmf92rs8isainmb0', created_at: datetime()}]->(r),
-  (owner)-[:MEMBER_OF {id: 'd9tcjmf92rs8isainmbg', created_at: datetime()}]->(r),
-  (owner)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainmc0', created_at: datetime(), kind: '*'}]->(r),
-  (aisha)-[:MEMBER_OF {id: 'd9tcjmf92rs8isainmcg', created_at: datetime()}]->(r),
-  (r)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainmd0', created_at: datetime(), kind: 'read'}]->(ns);
+  (o)-[:HAS_TEAM {id: 'd9tcjmf92rs8isainmb0', created_at: datetime()}]->(t),
+  (t)-[:IN_SCOPE_OF {id: 'd9tcjmf92rs8isait30', created_at: datetime()}]->(o),
+  (owner)-[:MEMBER_OF {id: 'd9tcjmf92rs8isainmbg', created_at: datetime()}]->(t),
+  (aisha)-[:MEMBER_OF {id: 'd9tcjmf92rs8isainmcg', created_at: datetime()}]->(t);
 
-// ACME PLAT project team: Contractors (demo + jordan); write+read on PLAT
+// ACME PLAT project team: Contractors (demo + jordan); project-maintainer on PLAT
 MATCH (owner:User {id: '9bsv0s46s6s002p9ltq0'})
 MATCH (jordan:User {id: 'd9tcjmf92rs8isainj00'})
 MATCH (p:Project {id: 'd9tcjmf92rs8isainj9g'})
-MERGE (r:Role {id: 'd9tcjmf92rs8isainjgg'})
-  ON CREATE SET r += {
+MERGE (t:Team:Principal {id: 'd9tcjmf92rs8isainjgg'})
+  ON CREATE SET t += {
     name:        'Contractors',
     description: 'External partners collaborating on the platform project.',
     created_at:  datetime()
   }
 CREATE
-  (p)-[:HAS_TEAM {id: 'd9tcjmf92rs8isainjh0', created_at: datetime()}]->(r),
-  (owner)-[:MEMBER_OF {id: 'd9tcjmf92rs8isainjhg', created_at: datetime()}]->(r),
-  (owner)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainji0', created_at: datetime(), kind: '*'}]->(r),
-  (jordan)-[:MEMBER_OF {id: 'd9tcjmf92rs8isainjig', created_at: datetime()}]->(r),
-  (r)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainjj0', created_at: datetime(), kind: 'write'}]->(p),
-  (r)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainmdg', created_at: datetime(), kind: 'read'}]->(p);
-
-// ============================================================================
-// 5. Cross-org collaboration grants
-// ============================================================================
-
-// Jordan guest write+read on ACME PLAT (direct grant; not an ACME org member)
-MATCH (jordan:User {id: 'd9tcjmf92rs8isainj00'})
-MATCH (p:Project {id: 'd9tcjmf92rs8isainj9g'})
-CREATE
-  (jordan)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainjjg', created_at: datetime(), kind: 'write'}]->(p),
-  (jordan)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainme0', created_at: datetime(), kind: 'read'}]->(p);
-
-// Hector read on Nova INTEG
-MATCH (hector:User {id: '9bsv0s314mtg02goaimg'})
-MATCH (p:Project {id: 'd9tcjmf92rs8isainjcg'})
-CREATE (hector)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainjk0', created_at: datetime(), kind: 'read'}]->(p);
-
-// Priya write+read on INF (in addition to Operations namespace via SRE)
-MATCH (priya:User {id: 'd9tcjmf92rs8isainm00'})
-MATCH (p:Project {id: 'd9tcjmf92rs8isainjbg'})
-CREATE
-  (priya)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainmeg', created_at: datetime(), kind: 'write'}]->(p),
-  (priya)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainmf0', created_at: datetime(), kind: 'read'}]->(p);
-
-// Luis write+read on MOB
-MATCH (luis:User {id: 'd9tcjmf92rs8isainm0g'})
-MATCH (p:Project {id: 'd9tcjmf92rs8isainjag'})
-CREATE
-  (luis)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainmfg', created_at: datetime(), kind: 'write'}]->(p),
-  (luis)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainmg0', created_at: datetime(), kind: 'read'}]->(p);
+  (p)-[:HAS_TEAM {id: 'd9tcjmf92rs8isainjh0', created_at: datetime()}]->(t),
+  (t)-[:IN_SCOPE_OF {id: 'd9tcjmf92rs8isait40', created_at: datetime()}]->(p),
+  (owner)-[:MEMBER_OF {id: 'd9tcjmf92rs8isainjhg', created_at: datetime()}]->(t),
+  (jordan)-[:MEMBER_OF {id: 'd9tcjmf92rs8isainjig', created_at: datetime()}]->(t);
 
 // ============================================================================
 // 6. Labels
@@ -584,8 +532,7 @@ MERGE (d:Document {id: 'd9tcjmf92rs8isainjm0'})
   }
 CREATE
   (d)-[:SCOPED_TO {id: 'd9tcjmf92rs8isainjmg', created_at: datetime() - duration('P20D')}]->(ns),
-  (u)-[:CREATED {id: 'd9tcjmf92rs8isainjn0', created_at: datetime() - duration('P20D')}]->(d),
-  (u)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainq70', created_at: datetime() - duration('P20D'), kind: '*'}]->(d);
+  (u)-[:CREATED {id: 'd9tcjmf92rs8isainjn0', created_at: datetime() - duration('P20D')}]->(d);
 
 MATCH (d:Document {id: 'd9tcjmf92rs8isainjm0'})
 MATCH (l:Label {id: 'd9tcjmf92rs8isainmhg'})
@@ -608,8 +555,7 @@ CREATE
   (d)-[:SCOPED_TO {id: 'd9tcjmf92rs8isainjo0', created_at: datetime() - duration('P14D')}]->(ns),
   (d)-[:LOCATED_IN {id: 'd9tcjmf92rs8isainq80', created_at: datetime() - duration('P14D')}]->(arch),
   (d)-[:RELATED_TO {id: 'd9tcjmf92rs8isainq90', created_at: datetime() - duration('P14D')}]->(p),
-  (u)-[:CREATED {id: 'd9tcjmf92rs8isainjog', created_at: datetime() - duration('P14D')}]->(d),
-  (u)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainqa0', created_at: datetime() - duration('P14D'), kind: '*'}]->(d);
+  (u)-[:CREATED {id: 'd9tcjmf92rs8isainjog', created_at: datetime() - duration('P14D')}]->(d);
 
 MATCH (d:Document {id: 'd9tcjmf92rs8isainjng'})
 MATCH (l:Label {id: 'd9tcjmf92rs8isainmig'})
@@ -630,8 +576,7 @@ MERGE (d:Document {id: 'd9tcjmf92rs8isainjp0'})
 CREATE
   (d)-[:SCOPED_TO {id: 'd9tcjmf92rs8isainjpg', created_at: datetime() - duration('P10D')}]->(ns),
   (d)-[:RELATED_TO {id: 'd9tcjmf92rs8isainqb0', created_at: datetime() - duration('P10D')}]->(p),
-  (u)-[:CREATED {id: 'd9tcjmf92rs8isainjq0', created_at: datetime() - duration('P10D')}]->(d),
-  (u)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainqc0', created_at: datetime() - duration('P10D'), kind: '*'}]->(d);
+  (u)-[:CREATED {id: 'd9tcjmf92rs8isainjq0', created_at: datetime() - duration('P10D')}]->(d);
 
 MATCH (d:Document {id: 'd9tcjmf92rs8isainjp0'})
 MATCH (l:Label {id: 'd9tcjmf92rs8isainjlg'})
@@ -650,8 +595,7 @@ MERGE (d:Document {id: 'd9tcjmf92rs8isainmk0'})
   }
 CREATE
   (d)-[:SCOPED_TO {id: 'd9tcjmf92rs8isainmkg', created_at: datetime() - duration('P8D')}]->(ns),
-  (u)-[:CREATED {id: 'd9tcjmf92rs8isainml0', created_at: datetime() - duration('P8D')}]->(d),
-  (u)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainqd0', created_at: datetime() - duration('P8D'), kind: '*'}]->(d);
+  (u)-[:CREATED {id: 'd9tcjmf92rs8isainml0', created_at: datetime() - duration('P8D')}]->(d);
 
 MATCH (d:Document {id: 'd9tcjmf92rs8isainmk0'})
 MATCH (l:Label {id: 'd9tcjmf92rs8isainmi0'})
@@ -674,8 +618,7 @@ CREATE
   (d)-[:SCOPED_TO {id: 'd9tcjmf92rs8isainmm0', created_at: datetime() - duration('P6D')}]->(ns),
   (d)-[:LOCATED_IN {id: 'd9tcjmf92rs8isainqe0', created_at: datetime() - duration('P6D')}]->(guides),
   (d)-[:RELATED_TO {id: 'd9tcjmf92rs8isainqf0', created_at: datetime() - duration('P6D')}]->(p),
-  (u)-[:CREATED {id: 'd9tcjmf92rs8isainmmg', created_at: datetime() - duration('P6D')}]->(d),
-  (u)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainqg0', created_at: datetime() - duration('P6D'), kind: '*'}]->(d);
+  (u)-[:CREATED {id: 'd9tcjmf92rs8isainmmg', created_at: datetime() - duration('P6D')}]->(d);
 
 MATCH (d:Document {id: 'd9tcjmf92rs8isainmlg'})
 MATCH (l:Label {id: 'd9tcjmf92rs8isainmj0'})
@@ -705,7 +648,6 @@ MERGE (i:Issue {id: 'd9tcjmf92rs8isainjqg'})
 CREATE
   (reporter)-[:CREATED {id: 'd9tcjmf92rs8isainjr0', created_at: datetime() - duration('P18D')}]->(i),
   (reporter)-[:WATCHES {id: 'd9tcjmf92rs8isainjrg', created_at: datetime() - duration('P18D')}]->(i),
-  (reporter)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainmn0', created_at: datetime() - duration('P18D'), kind: '*'}]->(i),
   (i)-[:BELONGS_TO {id: 'd9tcjmf92rs8isainjs0', created_at: datetime() - duration('P18D')}]->(p);
 
 MATCH (i:Issue {id: 'd9tcjmf92rs8isainjqg'})
@@ -718,9 +660,7 @@ MATCH (hector:User {id: '9bsv0s314mtg02goaimg'})
 CREATE
   (jordan)-[:ASSIGNED_TO {id: 'd9tcjmf92rs8isainjsg', kind: 'assignee', created_at: datetime() - duration('P16D')}]->(i),
   (hector)-[:ASSIGNED_TO {id: 'd9tcjmf92rs8isainjt0', kind: 'reviewer', created_at: datetime() - duration('P16D')}]->(i),
-  (jordan)-[:WATCHES {id: 'd9tcjmf92rs8isainjtg', created_at: datetime() - duration('P16D')}]->(i),
-  (jordan)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainmng', created_at: datetime() - duration('P16D'), kind: '*'}]->(i),
-  (hector)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainmo0', created_at: datetime() - duration('P16D'), kind: 'read'}]->(i);
+  (jordan)-[:WATCHES {id: 'd9tcjmf92rs8isainjtg', created_at: datetime() - duration('P16D')}]->(i);
 
 // PLAT-2 story — Shared issue board for partners (subtask of epic)
 MATCH (p:Project {id: 'd9tcjmf92rs8isainj9g'})
@@ -743,7 +683,6 @@ MERGE (i:Issue {id: 'd9tcjmf92rs8isainju0'})
 CREATE
   (reporter)-[:CREATED {id: 'd9tcjmf92rs8isainjug', created_at: datetime() - duration('P12D')}]->(i),
   (reporter)-[:WATCHES {id: 'd9tcjmf92rs8isainjv0', created_at: datetime() - duration('P12D')}]->(i),
-  (reporter)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainmog', created_at: datetime() - duration('P12D'), kind: '*'}]->(i),
   (i)-[:BELONGS_TO {id: 'd9tcjmf92rs8isainjvg', created_at: datetime() - duration('P12D')}]->(p),
   (i)-[:RELATED_TO {id: 'd9tcjmf92rs8isaink00', kind: 'subtask of', created_at: datetime() - duration('P12D')}]->(parent);
 
@@ -775,7 +714,6 @@ MERGE (i:Issue {id: 'd9tcjmf92rs8isaink0g'})
 CREATE
   (reporter)-[:CREATED {id: 'd9tcjmf92rs8isaink10', created_at: datetime() - duration('P8D')}]->(i),
   (reporter)-[:WATCHES {id: 'd9tcjmf92rs8isaink1g', created_at: datetime() - duration('P8D')}]->(i),
-  (reporter)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainmp0', created_at: datetime() - duration('P8D'), kind: '*'}]->(i),
   (i)-[:BELONGS_TO {id: 'd9tcjmf92rs8isaink20', created_at: datetime() - duration('P8D')}]->(p);
 
 MATCH (i:Issue {id: 'd9tcjmf92rs8isaink0g'})
@@ -793,8 +731,7 @@ CREATE (bug)-[:RELATED_TO {id: 'd9tcjmf92rs8isaink2g', kind: 'blocks', created_a
 MATCH (i:Issue {id: 'd9tcjmf92rs8isaink0g'})
 MATCH (jordan:User {id: 'd9tcjmf92rs8isainj00'})
 CREATE
-  (jordan)-[:ASSIGNED_TO {id: 'd9tcjmf92rs8isaink30', kind: 'assignee', created_at: datetime() - duration('P7D')}]->(i),
-  (jordan)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainmpg', created_at: datetime() - duration('P7D'), kind: '*'}]->(i);
+  (jordan)-[:ASSIGNED_TO {id: 'd9tcjmf92rs8isaink30', kind: 'assignee', created_at: datetime() - duration('P7D')}]->(i);
 
 // PLAT-4 task — Keyboard-first quick create (subtask of epic)
 MATCH (p:Project {id: 'd9tcjmf92rs8isainj9g'})
@@ -817,7 +754,6 @@ MERGE (i:Issue {id: 'd9tcjmf92rs8isainmq0'})
 CREATE
   (reporter)-[:CREATED {id: 'd9tcjmf92rs8isainmqg', created_at: datetime() - duration('P9D')}]->(i),
   (reporter)-[:WATCHES {id: 'd9tcjmf92rs8isainmr0', created_at: datetime() - duration('P9D')}]->(i),
-  (reporter)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainmrg', created_at: datetime() - duration('P9D'), kind: '*'}]->(i),
   (i)-[:BELONGS_TO {id: 'd9tcjmf92rs8isainms0', created_at: datetime() - duration('P9D')}]->(p),
   (i)-[:RELATED_TO {id: 'd9tcjmf92rs8isainmsg', kind: 'subtask of', created_at: datetime() - duration('P9D')}]->(parent);
 
@@ -834,9 +770,7 @@ MATCH (hector:User {id: '9bsv0s314mtg02goaimg'})
 MATCH (aisha:User {id: 'd9tcjmf92rs8isainm10'})
 CREATE
   (hector)-[:ASSIGNED_TO {id: 'd9tcjmf92rs8isainmt0', kind: 'assignee', created_at: datetime() - duration('P5D')}]->(i),
-  (aisha)-[:ASSIGNED_TO {id: 'd9tcjmf92rs8isainmtg', kind: 'reviewer', created_at: datetime() - duration('P2D')}]->(i),
-  (hector)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainmu0', created_at: datetime() - duration('P5D'), kind: '*'}]->(i),
-  (aisha)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainmug', created_at: datetime() - duration('P2D'), kind: 'read'}]->(i);
+  (aisha)-[:ASSIGNED_TO {id: 'd9tcjmf92rs8isainmtg', kind: 'reviewer', created_at: datetime() - duration('P2D')}]->(i);
 
 // PLAT-5 story — Preserve work context across projections
 MATCH (p:Project {id: 'd9tcjmf92rs8isainj9g'})
@@ -858,7 +792,6 @@ MERGE (i:Issue {id: 'd9tcjmf92rs8isainmv0'})
 CREATE
   (reporter)-[:CREATED {id: 'd9tcjmf92rs8isainmvg', created_at: datetime() - duration('P11D')}]->(i),
   (reporter)-[:WATCHES {id: 'd9tcjmf92rs8isainn00', created_at: datetime() - duration('P11D')}]->(i),
-  (reporter)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainn0g', created_at: datetime() - duration('P11D'), kind: '*'}]->(i),
   (i)-[:BELONGS_TO {id: 'd9tcjmf92rs8isainn10', created_at: datetime() - duration('P11D')}]->(p);
 
 MATCH (i:Issue {id: 'd9tcjmf92rs8isainmv0'})
@@ -889,7 +822,6 @@ MERGE (i:Issue {id: 'd9tcjmf92rs8isainn20'})
 CREATE
   (reporter)-[:CREATED {id: 'd9tcjmf92rs8isainn2g', created_at: datetime() - duration('P5D')}]->(i),
   (reporter)-[:WATCHES {id: 'd9tcjmf92rs8isainn30', created_at: datetime() - duration('P5D')}]->(i),
-  (reporter)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainn3g', created_at: datetime() - duration('P5D'), kind: '*'}]->(i),
   (i)-[:BELONGS_TO {id: 'd9tcjmf92rs8isainn40', created_at: datetime() - duration('P5D')}]->(p);
 
 MATCH (i:Issue {id: 'd9tcjmf92rs8isainn20'})
@@ -917,7 +849,6 @@ MERGE (i:Issue {id: 'd9tcjmf92rs8isainn4g'})
 CREATE
   (reporter)-[:CREATED {id: 'd9tcjmf92rs8isainn50', created_at: datetime() - duration('P12D')}]->(i),
   (reporter)-[:WATCHES {id: 'd9tcjmf92rs8isainn5g', created_at: datetime() - duration('P12D')}]->(i),
-  (reporter)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainn60', created_at: datetime() - duration('P12D'), kind: '*'}]->(i),
   (i)-[:BELONGS_TO {id: 'd9tcjmf92rs8isainn6g', created_at: datetime() - duration('P12D')}]->(p);
 
 MATCH (i:Issue {id: 'd9tcjmf92rs8isainn4g'})
@@ -931,8 +862,7 @@ CREATE (i)-[:HAS_LABEL]->(l);
 MATCH (i:Issue {id: 'd9tcjmf92rs8isainn4g'})
 MATCH (hector:User {id: '9bsv0s314mtg02goaimg'})
 CREATE
-  (hector)-[:ASSIGNED_TO {id: 'd9tcjmf92rs8isainn70', kind: 'assignee', created_at: datetime() - duration('P10D')}]->(i),
-  (hector)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainn7g', created_at: datetime() - duration('P10D'), kind: '*'}]->(i);
+  (hector)-[:ASSIGNED_TO {id: 'd9tcjmf92rs8isainn70', kind: 'assignee', created_at: datetime() - duration('P10D')}]->(i);
 
 // PLAT-8 task — Done, fixed
 MATCH (p:Project {id: 'd9tcjmf92rs8isainj9g'})
@@ -955,7 +885,6 @@ MERGE (i:Issue {id: 'd9tcjmf92rs8isainn80'})
 CREATE
   (reporter)-[:CREATED {id: 'd9tcjmf92rs8isainn8g', created_at: datetime() - duration('P10D')}]->(i),
   (reporter)-[:WATCHES {id: 'd9tcjmf92rs8isainn90', created_at: datetime() - duration('P10D')}]->(i),
-  (reporter)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainn9g', created_at: datetime() - duration('P10D'), kind: '*'}]->(i),
   (i)-[:BELONGS_TO {id: 'd9tcjmf92rs8isainna0', created_at: datetime() - duration('P10D')}]->(p);
 
 MATCH (i:Issue {id: 'd9tcjmf92rs8isainn80'})
@@ -983,7 +912,6 @@ MERGE (i:Issue {id: 'd9tcjmf92rs8isainnag'})
 CREATE
   (reporter)-[:CREATED {id: 'd9tcjmf92rs8isainnb0', created_at: datetime() - duration('P15D')}]->(i),
   (reporter)-[:WATCHES {id: 'd9tcjmf92rs8isainnbg', created_at: datetime() - duration('P15D')}]->(i),
-  (reporter)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainnc0', created_at: datetime() - duration('P15D'), kind: '*'}]->(i),
   (i)-[:BELONGS_TO {id: 'd9tcjmf92rs8isainncg', created_at: datetime() - duration('P15D')}]->(p);
 
 MATCH (i:Issue {id: 'd9tcjmf92rs8isainnag'})
@@ -1010,7 +938,6 @@ MERGE (i:Issue {id: 'd9tcjmf92rs8isainnd0'})
 CREATE
   (reporter)-[:CREATED {id: 'd9tcjmf92rs8isainndg', created_at: datetime() - duration('P4D')}]->(i),
   (reporter)-[:WATCHES {id: 'd9tcjmf92rs8isainne0', created_at: datetime() - duration('P4D')}]->(i),
-  (reporter)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainneg', created_at: datetime() - duration('P4D'), kind: '*'}]->(i),
   (i)-[:BELONGS_TO {id: 'd9tcjmf92rs8isainnf0', created_at: datetime() - duration('P4D')}]->(p);
 
 MATCH (i:Issue {id: 'd9tcjmf92rs8isainnd0'})
@@ -1045,7 +972,6 @@ MERGE (i:Issue {id: 'd9tcjmf92rs8isainnfg'})
 CREATE
   (reporter)-[:CREATED {id: 'd9tcjmf92rs8isainng0', created_at: datetime() - duration('P7D')}]->(i),
   (reporter)-[:WATCHES {id: 'd9tcjmf92rs8isainngg', created_at: datetime() - duration('P7D')}]->(i),
-  (reporter)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainnh0', created_at: datetime() - duration('P7D'), kind: '*'}]->(i),
   (i)-[:BELONGS_TO {id: 'd9tcjmf92rs8isainnhg', created_at: datetime() - duration('P7D')}]->(p);
 
 MATCH (i:Issue {id: 'd9tcjmf92rs8isainnfg'})
@@ -1073,7 +999,6 @@ MERGE (i:Issue {id: 'd9tcjmf92rs8isainni0'})
 CREATE
   (reporter)-[:CREATED {id: 'd9tcjmf92rs8isainnig', created_at: datetime() - duration('P6D')}]->(i),
   (reporter)-[:WATCHES {id: 'd9tcjmf92rs8isainnj0', created_at: datetime() - duration('P6D')}]->(i),
-  (reporter)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainnjg', created_at: datetime() - duration('P6D'), kind: '*'}]->(i),
   (i)-[:BELONGS_TO {id: 'd9tcjmf92rs8isainnk0', created_at: datetime() - duration('P6D')}]->(p),
   (i)-[:RELATED_TO {id: 'd9tcjmf92rs8isainnkg', kind: 'subtask of', created_at: datetime() - duration('P6D')}]->(parent);
 
@@ -1084,8 +1009,7 @@ CREATE (i)-[:HAS_LABEL]->(l);
 MATCH (i:Issue {id: 'd9tcjmf92rs8isainni0'})
 MATCH (luis:User {id: 'd9tcjmf92rs8isainm0g'})
 CREATE
-  (luis)-[:ASSIGNED_TO {id: 'd9tcjmf92rs8isainnl0', kind: 'assignee', created_at: datetime() - duration('P2D')}]->(i),
-  (luis)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainnlg', created_at: datetime() - duration('P2D'), kind: '*'}]->(i);
+  (luis)-[:ASSIGNED_TO {id: 'd9tcjmf92rs8isainnl0', kind: 'assignee', created_at: datetime() - duration('P2D')}]->(i);
 
 // MOB-3 bug
 MATCH (p:Project {id: 'd9tcjmf92rs8isainjag'})
@@ -1107,7 +1031,6 @@ MERGE (i:Issue {id: 'd9tcjmf92rs8isainnm0'})
 CREATE
   (reporter)-[:CREATED {id: 'd9tcjmf92rs8isainnmg', created_at: datetime() - duration('P3D')}]->(i),
   (reporter)-[:WATCHES {id: 'd9tcjmf92rs8isainnn0', created_at: datetime() - duration('P3D')}]->(i),
-  (reporter)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainnng', created_at: datetime() - duration('P3D'), kind: '*'}]->(i),
   (i)-[:BELONGS_TO {id: 'd9tcjmf92rs8isainno0', created_at: datetime() - duration('P3D')}]->(p);
 
 MATCH (i:Issue {id: 'd9tcjmf92rs8isainnm0'})
@@ -1143,7 +1066,6 @@ MERGE (i:Issue {id: 'd9tcjmf92rs8isainnp0'})
 CREATE
   (reporter)-[:CREATED {id: 'd9tcjmf92rs8isainnpg', created_at: datetime() - duration('P9D')}]->(i),
   (reporter)-[:WATCHES {id: 'd9tcjmf92rs8isainnq0', created_at: datetime() - duration('P9D')}]->(i),
-  (reporter)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainnqg', created_at: datetime() - duration('P9D'), kind: '*'}]->(i),
   (i)-[:BELONGS_TO {id: 'd9tcjmf92rs8isainnr0', created_at: datetime() - duration('P9D')}]->(p);
 
 MATCH (i:Issue {id: 'd9tcjmf92rs8isainnp0'})
@@ -1174,7 +1096,6 @@ MERGE (i:Issue {id: 'd9tcjmf92rs8isainnrg'})
 CREATE
   (reporter)-[:CREATED {id: 'd9tcjmf92rs8isainns0', created_at: datetime() - duration('P5D')}]->(i),
   (reporter)-[:WATCHES {id: 'd9tcjmf92rs8isainnsg', created_at: datetime() - duration('P5D')}]->(i),
-  (reporter)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainnt0', created_at: datetime() - duration('P5D'), kind: '*'}]->(i),
   (i)-[:BELONGS_TO {id: 'd9tcjmf92rs8isainntg', created_at: datetime() - duration('P5D')}]->(p);
 
 MATCH (i:Issue {id: 'd9tcjmf92rs8isainnrg'})
@@ -1206,7 +1127,6 @@ MERGE (i:Issue {id: 'd9tcjmf92rs8isainnug'})
 CREATE
   (reporter)-[:CREATED {id: 'd9tcjmf92rs8isainnv0', created_at: datetime() - duration('P9D')}]->(i),
   (reporter)-[:WATCHES {id: 'd9tcjmf92rs8isainnvg', created_at: datetime() - duration('P9D')}]->(i),
-  (reporter)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isaino00', created_at: datetime() - duration('P9D'), kind: '*'}]->(i),
   (i)-[:BELONGS_TO {id: 'd9tcjmf92rs8isaino0g', created_at: datetime() - duration('P9D')}]->(p);
 
 MATCH (i:Issue {id: 'd9tcjmf92rs8isainnug'})
@@ -1216,8 +1136,7 @@ CREATE (i)-[:HAS_LABEL]->(l);
 MATCH (i:Issue {id: 'd9tcjmf92rs8isainnug'})
 MATCH (priya:User {id: 'd9tcjmf92rs8isainm00'})
 CREATE
-  (priya)-[:ASSIGNED_TO {id: 'd9tcjmf92rs8isaino10', kind: 'assignee', created_at: datetime() - duration('P8D')}]->(i),
-  (priya)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isaino1g', created_at: datetime() - duration('P8D'), kind: '*'}]->(i);
+  (priya)-[:ASSIGNED_TO {id: 'd9tcjmf92rs8isaino10', kind: 'assignee', created_at: datetime() - duration('P8D')}]->(i);
 
 // INF-3 bug — blocked
 MATCH (p:Project {id: 'd9tcjmf92rs8isainjbg'})
@@ -1239,7 +1158,6 @@ MERGE (i:Issue {id: 'd9tcjmf92rs8isaino20'})
 CREATE
   (reporter)-[:CREATED {id: 'd9tcjmf92rs8isaino2g', created_at: datetime() - duration('P3D')}]->(i),
   (reporter)-[:WATCHES {id: 'd9tcjmf92rs8isaino30', created_at: datetime() - duration('P3D')}]->(i),
-  (reporter)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isaino3g', created_at: datetime() - duration('P3D'), kind: '*'}]->(i),
   (i)-[:BELONGS_TO {id: 'd9tcjmf92rs8isaino40', created_at: datetime() - duration('P3D')}]->(p);
 
 MATCH (i:Issue {id: 'd9tcjmf92rs8isaino20'})
@@ -1270,7 +1188,6 @@ MERGE (i:Issue {id: 'd9tcjmf92rs8isaino4g'})
 CREATE
   (reporter)-[:CREATED {id: 'd9tcjmf92rs8isaino50', created_at: datetime() - duration('P2D')}]->(i),
   (reporter)-[:WATCHES {id: 'd9tcjmf92rs8isaino5g', created_at: datetime() - duration('P2D')}]->(i),
-  (reporter)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isaino60', created_at: datetime() - duration('P2D'), kind: '*'}]->(i),
   (i)-[:BELONGS_TO {id: 'd9tcjmf92rs8isaino6g', created_at: datetime() - duration('P2D')}]->(p);
 
 MATCH (i:Issue {id: 'd9tcjmf92rs8isaino4g'})
@@ -1303,7 +1220,6 @@ MERGE (i:Issue {id: 'd9tcjmf92rs8isaino7g'})
 CREATE
   (reporter)-[:CREATED {id: 'd9tcjmf92rs8isaino80', created_at: datetime() - duration('P2D')}]->(i),
   (reporter)-[:WATCHES {id: 'd9tcjmf92rs8isaino8g', created_at: datetime() - duration('P2D')}]->(i),
-  (reporter)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isaino90', created_at: datetime() - duration('P2D'), kind: '*'}]->(i),
   (i)-[:BELONGS_TO {id: 'd9tcjmf92rs8isaino9g', created_at: datetime() - duration('P2D')}]->(p),
   (i)-[:RELATED_TO {id: 'd9tcjmf92rs8isainoa0', kind: 'duplicates', created_at: datetime() - duration('P1D')}]->(canonical);
 
@@ -1332,7 +1248,6 @@ MERGE (i:Issue {id: 'd9tcjmf92rs8isainoag'})
 CREATE
   (reporter)-[:CREATED {id: 'd9tcjmf92rs8isainob0', created_at: datetime() - duration('P16D')}]->(i),
   (reporter)-[:WATCHES {id: 'd9tcjmf92rs8isainobg', created_at: datetime() - duration('P16D')}]->(i),
-  (reporter)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainoc0', created_at: datetime() - duration('P16D'), kind: '*'}]->(i),
   (i)-[:BELONGS_TO {id: 'd9tcjmf92rs8isainocg', created_at: datetime() - duration('P16D')}]->(p);
 
 MATCH (i:Issue {id: 'd9tcjmf92rs8isainoag'})
@@ -1363,7 +1278,6 @@ MERGE (i:Issue {id: 'd9tcjmf92rs8isaink3g'})
 CREATE
   (reporter)-[:CREATED {id: 'd9tcjmf92rs8isaink40', created_at: datetime() - duration('P7D')}]->(i),
   (reporter)-[:WATCHES {id: 'd9tcjmf92rs8isaink4g', created_at: datetime() - duration('P7D')}]->(i),
-  (reporter)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainod0', created_at: datetime() - duration('P7D'), kind: '*'}]->(i),
   (i)-[:BELONGS_TO {id: 'd9tcjmf92rs8isaink50', created_at: datetime() - duration('P7D')}]->(p);
 
 MATCH (i:Issue {id: 'd9tcjmf92rs8isaink3g'})
@@ -1380,9 +1294,7 @@ MATCH (hector:User {id: '9bsv0s314mtg02goaimg'})
 CREATE
   (jordan)-[:ASSIGNED_TO {id: 'd9tcjmf92rs8isaink5g', kind: 'assignee', created_at: datetime() - duration('P6D')}]->(i),
   (hector)-[:ASSIGNED_TO {id: 'd9tcjmf92rs8isaink60', kind: 'reviewer', created_at: datetime() - duration('P3D')}]->(i),
-  (hector)-[:WATCHES {id: 'd9tcjmf92rs8isaink6g', created_at: datetime() - duration('P3D')}]->(i),
-  (jordan)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainodg', created_at: datetime() - duration('P6D'), kind: '*'}]->(i),
-  (hector)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainoe0', created_at: datetime() - duration('P3D'), kind: 'read'}]->(i);
+  (hector)-[:WATCHES {id: 'd9tcjmf92rs8isaink6g', created_at: datetime() - duration('P3D')}]->(i);
 
 // INTEG-2 story — related to PLAT-2 and PLAT-10
 MATCH (p:Project {id: 'd9tcjmf92rs8isainjcg'})
@@ -1404,7 +1316,6 @@ MERGE (i:Issue {id: 'd9tcjmf92rs8isainoeg'})
 CREATE
   (reporter)-[:CREATED {id: 'd9tcjmf92rs8isainof0', created_at: datetime() - duration('P4D')}]->(i),
   (reporter)-[:WATCHES {id: 'd9tcjmf92rs8isainofg', created_at: datetime() - duration('P4D')}]->(i),
-  (reporter)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainog0', created_at: datetime() - duration('P4D'), kind: '*'}]->(i),
   (i)-[:BELONGS_TO {id: 'd9tcjmf92rs8isainogg', created_at: datetime() - duration('P4D')}]->(p);
 
 MATCH (i:Issue {id: 'd9tcjmf92rs8isainoeg'})
@@ -1421,8 +1332,7 @@ CREATE
 MATCH (i:Issue {id: 'd9tcjmf92rs8isainoeg'})
 MATCH (jordan:User {id: 'd9tcjmf92rs8isainj00'})
 CREATE
-  (jordan)-[:ASSIGNED_TO {id: 'd9tcjmf92rs8isainoi0', kind: 'assignee', created_at: datetime() - duration('P1D')}]->(i),
-  (jordan)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainoig', created_at: datetime() - duration('P1D'), kind: '*'}]->(i);
+  (jordan)-[:ASSIGNED_TO {id: 'd9tcjmf92rs8isainoi0', kind: 'assignee', created_at: datetime() - duration('P1D')}]->(i);
 
 // INTEG-3 bug — blocked by INTEG-1
 MATCH (p:Project {id: 'd9tcjmf92rs8isainjcg'})
@@ -1445,7 +1355,6 @@ MERGE (i:Issue {id: 'd9tcjmf92rs8isainoj0'})
 CREATE
   (reporter)-[:CREATED {id: 'd9tcjmf92rs8isainojg', created_at: datetime() - duration('P2D')}]->(i),
   (reporter)-[:WATCHES {id: 'd9tcjmf92rs8isainok0', created_at: datetime() - duration('P2D')}]->(i),
-  (reporter)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainokg', created_at: datetime() - duration('P2D'), kind: '*'}]->(i),
   (i)-[:BELONGS_TO {id: 'd9tcjmf92rs8isainol0', created_at: datetime() - duration('P2D')}]->(p),
   (i)-[:RELATED_TO {id: 'd9tcjmf92rs8isainolg', kind: 'blocked by', created_at: datetime() - duration('P2D')}]->(blocker);
 
@@ -1477,7 +1386,6 @@ MERGE (i:Issue {id: 'd9tcjmf92rs8isainom0'})
 CREATE
   (reporter)-[:CREATED {id: 'd9tcjmf92rs8isainomg', created_at: datetime() - duration('P1D')}]->(i),
   (reporter)-[:WATCHES {id: 'd9tcjmf92rs8isainon0', created_at: datetime() - duration('P1D')}]->(i),
-  (reporter)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainong', created_at: datetime() - duration('P1D'), kind: '*'}]->(i),
   (i)-[:BELONGS_TO {id: 'd9tcjmf92rs8isainoo0', created_at: datetime() - duration('P1D')}]->(p);
 
 MATCH (i:Issue {id: 'd9tcjmf92rs8isainom0'})
@@ -1499,8 +1407,7 @@ MERGE (c:Comment {id: 'd9tcjmf92rs8isaink70'})
   }
 CREATE
   (i)-[:HAS_COMMENT {id: 'd9tcjmf92rs8isaink7g', created_at: datetime() - duration('P6D')}]->(c),
-  (jordan)-[:COMMENTED {id: 'd9tcjmf92rs8isaink80', created_at: datetime() - duration('P6D')}]->(c),
-  (jordan)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isaink8g', created_at: datetime() - duration('P6D'), kind: '*'}]->(c);
+  (jordan)-[:COMMENTED {id: 'd9tcjmf92rs8isaink80', created_at: datetime() - duration('P6D')}]->(c);
 
 MATCH (i:Issue {id: 'd9tcjmf92rs8isaink0g'})
 MATCH (demo:User {id: '9bsv0s46s6s002p9ltq0'})
@@ -1512,8 +1419,7 @@ MERGE (c:Comment {id: 'd9tcjmf92rs8isaink90'})
   }
 CREATE
   (i)-[:HAS_COMMENT {id: 'd9tcjmf92rs8isaink9g', created_at: datetime() - duration('P5D')}]->(c),
-  (demo)-[:COMMENTED {id: 'd9tcjmf92rs8isainka0', created_at: datetime() - duration('P5D')}]->(c),
-  (demo)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainkag', created_at: datetime() - duration('P5D'), kind: '*'}]->(c);
+  (demo)-[:COMMENTED {id: 'd9tcjmf92rs8isainka0', created_at: datetime() - duration('P5D')}]->(c);
 
 MATCH (i:Issue {id: 'd9tcjmf92rs8isaink0g'})
 MATCH (priya:User {id: 'd9tcjmf92rs8isainm00'})
@@ -1525,8 +1431,7 @@ MERGE (c:Comment {id: 'd9tcjmf92rs8isainoog'})
   }
 CREATE
   (i)-[:HAS_COMMENT {id: 'd9tcjmf92rs8isainop0', created_at: datetime() - duration('P1D')}]->(c),
-  (priya)-[:COMMENTED {id: 'd9tcjmf92rs8isainopg', created_at: datetime() - duration('P1D')}]->(c),
-  (priya)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainoq0', created_at: datetime() - duration('P1D'), kind: '*'}]->(c);
+  (priya)-[:COMMENTED {id: 'd9tcjmf92rs8isainopg', created_at: datetime() - duration('P1D')}]->(c);
 
 // Comment on INTEG-1
 MATCH (i:Issue {id: 'd9tcjmf92rs8isaink3g'})
@@ -1539,8 +1444,7 @@ MERGE (c:Comment {id: 'd9tcjmf92rs8isainoqg'})
   }
 CREATE
   (i)-[:HAS_COMMENT {id: 'd9tcjmf92rs8isainor0', created_at: datetime() - duration('P1D')}]->(c),
-  (hector)-[:COMMENTED {id: 'd9tcjmf92rs8isainorg', created_at: datetime() - duration('P1D')}]->(c),
-  (hector)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainos0', created_at: datetime() - duration('P1D'), kind: '*'}]->(c);
+  (hector)-[:COMMENTED {id: 'd9tcjmf92rs8isainorg', created_at: datetime() - duration('P1D')}]->(c);
 
 // Comment on Product Handbook
 MATCH (d:Document {id: 'd9tcjmf92rs8isainjm0'})
@@ -1553,8 +1457,7 @@ MERGE (c:Comment {id: 'd9tcjmf92rs8isainosg'})
   }
 CREATE
   (d)-[:HAS_COMMENT {id: 'd9tcjmf92rs8isainot0', created_at: datetime() - duration('P2D')}]->(c),
-  (aisha)-[:COMMENTED {id: 'd9tcjmf92rs8isainotg', created_at: datetime() - duration('P2D')}]->(c),
-  (aisha)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainou0', created_at: datetime() - duration('P2D'), kind: '*'}]->(c);
+  (aisha)-[:COMMENTED {id: 'd9tcjmf92rs8isainotg', created_at: datetime() - duration('P2D')}]->(c);
 
 // Attachment on PLAT-3
 MATCH (i:Issue {id: 'd9tcjmf92rs8isaink0g'})
@@ -1614,8 +1517,7 @@ MERGE (t:Todo {id: 'd9tcjmf92rs8isainkb0'})
   }
 CREATE
   (t)-[:BELONGS_TO {id: 'd9tcjmf92rs8isainkbg', created_at: datetime() - duration('P2D')}]->(demo),
-  (demo)-[:CREATED {id: 'd9tcjmf92rs8isainkc0', created_at: datetime() - duration('P2D')}]->(t),
-  (demo)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainkcg', created_at: datetime() - duration('P2D'), kind: '*'}]->(t);
+  (demo)-[:CREATED {id: 'd9tcjmf92rs8isainkc0', created_at: datetime() - duration('P2D')}]->(t);
 
 MATCH (demo:User {id: '9bsv0s46s6s002p9ltq0'})
 MERGE (t:Todo {id: 'd9tcjmf92rs8isainp30'})
@@ -1629,8 +1531,7 @@ MERGE (t:Todo {id: 'd9tcjmf92rs8isainp30'})
   }
 CREATE
   (t)-[:BELONGS_TO {id: 'd9tcjmf92rs8isainp3g', created_at: datetime() - duration('P1D')}]->(demo),
-  (demo)-[:CREATED {id: 'd9tcjmf92rs8isainp40', created_at: datetime() - duration('P1D')}]->(t),
-  (demo)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainp4g', created_at: datetime() - duration('P1D'), kind: '*'}]->(t);
+  (demo)-[:CREATED {id: 'd9tcjmf92rs8isainp40', created_at: datetime() - duration('P1D')}]->(t);
 
 MATCH (demo:User {id: '9bsv0s46s6s002p9ltq0'})
 MERGE (t:Todo {id: 'd9tcjmf92rs8isainp50'})
@@ -1644,8 +1545,7 @@ MERGE (t:Todo {id: 'd9tcjmf92rs8isainp50'})
   }
 CREATE
   (t)-[:BELONGS_TO {id: 'd9tcjmf92rs8isainp5g', created_at: datetime() - duration('P3D')}]->(demo),
-  (demo)-[:CREATED {id: 'd9tcjmf92rs8isainp60', created_at: datetime() - duration('P3D')}]->(t),
-  (demo)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainp6g', created_at: datetime() - duration('P3D'), kind: '*'}]->(t);
+  (demo)-[:CREATED {id: 'd9tcjmf92rs8isainp60', created_at: datetime() - duration('P3D')}]->(t);
 
 MATCH (demo:User {id: '9bsv0s46s6s002p9ltq0'})
 MERGE (t:Todo {id: 'd9tcjmf92rs8isainp70'})
@@ -1659,8 +1559,7 @@ MERGE (t:Todo {id: 'd9tcjmf92rs8isainp70'})
   }
 CREATE
   (t)-[:BELONGS_TO {id: 'd9tcjmf92rs8isainp7g', created_at: datetime() - duration('P8D')}]->(demo),
-  (demo)-[:CREATED {id: 'd9tcjmf92rs8isainp80', created_at: datetime() - duration('P8D')}]->(t),
-  (demo)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainp8g', created_at: datetime() - duration('P8D'), kind: '*'}]->(t);
+  (demo)-[:CREATED {id: 'd9tcjmf92rs8isainp80', created_at: datetime() - duration('P8D')}]->(t);
 
 MATCH (jordan:User {id: 'd9tcjmf92rs8isainj00'})
 MERGE (t:Todo {id: 'd9tcjmf92rs8isainkd0'})
@@ -1674,8 +1573,7 @@ MERGE (t:Todo {id: 'd9tcjmf92rs8isainkd0'})
   }
 CREATE
   (t)-[:BELONGS_TO {id: 'd9tcjmf92rs8isainkdg', created_at: datetime() - duration('P4D')}]->(jordan),
-  (jordan)-[:CREATED {id: 'd9tcjmf92rs8isainke0', created_at: datetime() - duration('P4D')}]->(t),
-  (jordan)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainkeg', created_at: datetime() - duration('P4D'), kind: '*'}]->(t);
+  (jordan)-[:CREATED {id: 'd9tcjmf92rs8isainke0', created_at: datetime() - duration('P4D')}]->(t);
 
 MATCH (priya:User {id: 'd9tcjmf92rs8isainm00'})
 MERGE (t:Todo {id: 'd9tcjmf92rs8isainp90'})
@@ -1689,8 +1587,7 @@ MERGE (t:Todo {id: 'd9tcjmf92rs8isainp90'})
   }
 CREATE
   (t)-[:BELONGS_TO {id: 'd9tcjmf92rs8isainp9g', created_at: datetime() - duration('P2D')}]->(priya),
-  (priya)-[:CREATED {id: 'd9tcjmf92rs8isainpa0', created_at: datetime() - duration('P2D')}]->(t),
-  (priya)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainpag', created_at: datetime() - duration('P2D'), kind: '*'}]->(t);
+  (priya)-[:CREATED {id: 'd9tcjmf92rs8isainpa0', created_at: datetime() - duration('P2D')}]->(t);
 
 MATCH (maya:User {id: 'd9tcjmf92rs8isainivg'})
 MERGE (t:Todo {id: 'd9tcjmf92rs8isainpb0'})
@@ -1704,5 +1601,207 @@ MERGE (t:Todo {id: 'd9tcjmf92rs8isainpb0'})
   }
 CREATE
   (t)-[:BELONGS_TO {id: 'd9tcjmf92rs8isainpbg', created_at: datetime() - duration('P1D')}]->(maya),
-  (maya)-[:CREATED {id: 'd9tcjmf92rs8isainpc0', created_at: datetime() - duration('P1D')}]->(t),
-  (maya)-[:HAS_PERMISSION {id: 'd9tcjmf92rs8isainpcg', created_at: datetime() - duration('P1D'), kind: '*'}]->(t);
+  (maya)-[:CREATED {id: 'd9tcjmf92rs8isainpc0', created_at: datetime() - duration('P1D')}]->(t);
+
+// ============================================================================
+// 14. Authorization: principals, role templates, GRANTED, IN_SCOPE_OF
+// ============================================================================
+
+MATCH (n)
+WHERE n:User OR n:Team OR n:Organization
+SET n:Principal;
+
+// Direct Installation grant so demo can create orgs. Not a role. Not org membership.
+MATCH (u:User {email: 'demo@elemo.app'})
+MATCH (i:Installation {id: '00000000000000000000'})
+SET u:Principal
+MERGE (u)-[g:GRANTED {id: 'd9tcjmf92rs8isait00'}]->(i)
+ON CREATE SET g.actions = ['organization.create'], g.created_at = datetime();
+
+// Copy RoleTemplates onto each org. None include organization.create.
+UNWIND [
+  {
+    org_id: '9bsv0s4vl6gg02sv7jrg',
+    roles: [
+      {id: 'd9tcjmf92rs8isainr00', key: 'org-admin', name: 'Organization admin', description: 'Full authority within an organization scope, excluding organization.create.', actions: [
+        'organization.read', 'organization.update', 'organization.delete', 'organization.members.manage',
+        'namespace.create', 'namespace.read', 'namespace.update', 'namespace.delete',
+        'project.create', 'project.read', 'project.update', 'project.delete', 'project.members.manage',
+        'issue.create', 'issue.read', 'issue.update', 'issue.delete', 'issue.assign',
+        'document.create', 'document.read', 'document.update', 'document.delete', 'folder.create',
+        'role.manage', 'team.manage', 'permission.manage'
+      ]},
+      {id: 'd9tcjmf92rs8isainr10', key: 'org-member', name: 'Organization member', description: 'Read the organization they belong to.', actions: ['organization.read']},
+      {id: 'd9tcjmf92rs8isainr20', key: 'namespace-admin', name: 'Namespace admin', description: 'Administer a namespace and its descendants.', actions: [
+        'namespace.read', 'namespace.update', 'namespace.delete',
+        'project.create', 'project.read', 'project.update', 'project.delete', 'project.members.manage',
+        'issue.create', 'issue.read', 'issue.update', 'issue.delete', 'issue.assign',
+        'document.create', 'document.read', 'document.update', 'document.delete', 'folder.create',
+        'team.manage', 'permission.manage'
+      ]},
+      {id: 'd9tcjmf92rs8isainr30', key: 'project-maintainer', name: 'Project maintainer', description: 'Maintain a project and its issues and documents.', actions: [
+        'project.read', 'project.update', 'project.delete', 'project.members.manage',
+        'issue.create', 'issue.read', 'issue.update', 'issue.delete', 'issue.assign',
+        'document.create', 'document.read', 'document.update', 'document.delete', 'folder.create',
+        'team.manage', 'permission.manage'
+      ]},
+      {id: 'd9tcjmf92rs8isainr40', key: 'project-viewer', name: 'Project viewer', description: 'Read a project and its issues and documents.', actions: [
+        'project.read', 'issue.read', 'document.read'
+      ]},
+      {id: 'd9tcjmf92rs8isainr50', key: 'issue-maintainer', name: 'Issue maintainer', description: 'Update and assign an issue.', actions: [
+        'issue.read', 'issue.update', 'issue.delete', 'issue.assign'
+      ]},
+      {id: 'd9tcjmf92rs8isainr60', key: 'document-maintainer', name: 'Document maintainer', description: 'Update a document or folder.', actions: [
+        'document.read', 'document.update', 'document.delete', 'folder.create'
+      ]}
+    ]
+  },
+  {
+    org_id: 'd9tcjmf92rs8isainj10',
+    roles: [
+      {id: 'd9tcjmf92rs8isainr80', key: 'org-admin', name: 'Organization admin', description: 'Full authority within an organization scope, excluding organization.create.', actions: [
+        'organization.read', 'organization.update', 'organization.delete', 'organization.members.manage',
+        'namespace.create', 'namespace.read', 'namespace.update', 'namespace.delete',
+        'project.create', 'project.read', 'project.update', 'project.delete', 'project.members.manage',
+        'issue.create', 'issue.read', 'issue.update', 'issue.delete', 'issue.assign',
+        'document.create', 'document.read', 'document.update', 'document.delete', 'folder.create',
+        'role.manage', 'team.manage', 'permission.manage'
+      ]},
+      {id: 'd9tcjmf92rs8isainr90', key: 'org-member', name: 'Organization member', description: 'Read the organization they belong to.', actions: ['organization.read']},
+      {id: 'd9tcjmf92rs8isainra0', key: 'namespace-admin', name: 'Namespace admin', description: 'Administer a namespace and its descendants.', actions: [
+        'namespace.read', 'namespace.update', 'namespace.delete',
+        'project.create', 'project.read', 'project.update', 'project.delete', 'project.members.manage',
+        'issue.create', 'issue.read', 'issue.update', 'issue.delete', 'issue.assign',
+        'document.create', 'document.read', 'document.update', 'document.delete', 'folder.create',
+        'team.manage', 'permission.manage'
+      ]},
+      {id: 'd9tcjmf92rs8isainrb0', key: 'project-maintainer', name: 'Project maintainer', description: 'Maintain a project and its issues and documents.', actions: [
+        'project.read', 'project.update', 'project.delete', 'project.members.manage',
+        'issue.create', 'issue.read', 'issue.update', 'issue.delete', 'issue.assign',
+        'document.create', 'document.read', 'document.update', 'document.delete', 'folder.create',
+        'team.manage', 'permission.manage'
+      ]},
+      {id: 'd9tcjmf92rs8isainrc0', key: 'project-viewer', name: 'Project viewer', description: 'Read a project and its issues and documents.', actions: [
+        'project.read', 'issue.read', 'document.read'
+      ]},
+      {id: 'd9tcjmf92rs8isainrd0', key: 'issue-maintainer', name: 'Issue maintainer', description: 'Update and assign an issue.', actions: [
+        'issue.read', 'issue.update', 'issue.delete', 'issue.assign'
+      ]},
+      {id: 'd9tcjmf92rs8isainre0', key: 'document-maintainer', name: 'Document maintainer', description: 'Update a document or folder.', actions: [
+        'document.read', 'document.update', 'document.delete', 'folder.create'
+      ]}
+    ]
+  }
+] AS spec
+MATCH (o:Organization {id: spec.org_id})
+WITH o, spec
+UNWIND spec.roles AS tmpl
+MERGE (r:Role {id: tmpl.id})
+ON CREATE SET
+  r.key = tmpl.key,
+  r.name = tmpl.name,
+  r.description = tmpl.description,
+  r.actions = tmpl.actions,
+  r.created_at = datetime()
+MERGE (o)-[d:DEFINES_ROLE {id: tmpl.id}]->(r)
+ON CREATE SET d.created_at = datetime()
+MERGE (r)-[s:IN_SCOPE_OF]->(o)
+ON CREATE SET s.id = tmpl.id, s.created_at = datetime();
+
+// Intra-org: demo is ACME org-admin; ACME members inherit org-member via the org principal.
+MATCH (u:User {id: '9bsv0s46s6s002p9ltq0'})
+MATCH (o:Organization {id: '9bsv0s4vl6gg02sv7jrg'})
+MATCH (o)-[:DEFINES_ROLE]->(admin:Role {key: 'org-admin'})
+MERGE (u)-[g:GRANTED {id: '9bsv0s613svg02gik0r0'}]->(o)
+ON CREATE SET g.role_id = admin.id, g.actions = [], g.created_at = datetime();
+
+MATCH (o:Organization {id: '9bsv0s4vl6gg02sv7jrg'})
+MATCH (o)-[:DEFINES_ROLE]->(member:Role {key: 'org-member'})
+MERGE (o)-[g:GRANTED {id: '9bsv0s314mtg02goaing'}]->(o)
+ON CREATE SET g.role_id = member.id, g.actions = [], g.created_at = datetime();
+
+// Intra-org: Maya is Nova org-admin; Nova members inherit org-member via the org principal.
+MATCH (u:User {id: 'd9tcjmf92rs8isainivg'})
+MATCH (o:Organization {id: 'd9tcjmf92rs8isainj10'})
+MATCH (o)-[:DEFINES_ROLE]->(admin:Role {key: 'org-admin'})
+MERGE (u)-[g:GRANTED {id: 'd9tcjmf92rs8isainj20'}]->(o)
+ON CREATE SET g.role_id = admin.id, g.actions = [], g.created_at = datetime();
+
+MATCH (o:Organization {id: 'd9tcjmf92rs8isainj10'})
+MATCH (o)-[:DEFINES_ROLE]->(member:Role {key: 'org-member'})
+MERGE (o)-[g:GRANTED {id: 'd9tcjmf92rs8isainj30'}]->(o)
+ON CREATE SET g.role_id = member.id, g.actions = [], g.created_at = datetime();
+
+// Team grants (HAS_TEAM remains structural ownership).
+MATCH (t:Team {id: 'd9tcjmf92rs8isainjdg'})
+MATCH (ns:Namespace {id: 'd9tcjmf92rs8isainj50'})
+MATCH (:Organization {id: '9bsv0s4vl6gg02sv7jrg'})-[:DEFINES_ROLE]->(r:Role {key: 'namespace-admin'})
+MERGE (t)-[g:GRANTED {id: 'd9tcjmf92rs8isainjg0'}]->(ns)
+ON CREATE SET g.role_id = r.id, g.actions = [], g.created_at = datetime();
+
+MATCH (t:Team {id: 'd9tcjmf92rs8isainm70'})
+MATCH (ns:Namespace {id: 'd9tcjmf92rs8isainj6g'})
+MATCH (:Organization {id: '9bsv0s4vl6gg02sv7jrg'})-[:DEFINES_ROLE]->(r:Role {key: 'namespace-admin'})
+MERGE (t)-[g:GRANTED {id: 'd9tcjmf92rs8isainm9g'}]->(ns)
+ON CREATE SET g.role_id = r.id, g.actions = [], g.created_at = datetime();
+
+MATCH (t:Team {id: 'd9tcjmf92rs8isainmag'})
+MATCH (ns:Namespace {id: 'd9tcjmf92rs8isainj50'})
+MATCH (:Organization {id: '9bsv0s4vl6gg02sv7jrg'})-[:DEFINES_ROLE]->(r:Role {key: 'project-viewer'})
+MERGE (t)-[g:GRANTED {id: 'd9tcjmf92rs8isainmd0'}]->(ns)
+ON CREATE SET g.role_id = r.id, g.actions = [], g.created_at = datetime();
+
+MATCH (t:Team {id: 'd9tcjmf92rs8isainjgg'})
+MATCH (p:Project {id: 'd9tcjmf92rs8isainj9g'})
+MATCH (:Organization {id: '9bsv0s4vl6gg02sv7jrg'})-[:DEFINES_ROLE]->(r:Role {key: 'project-maintainer'})
+MERGE (t)-[g:GRANTED {id: 'd9tcjmf92rs8isainjj0'}]->(p)
+ON CREATE SET g.role_id = r.id, g.actions = [], g.created_at = datetime();
+
+// Cross-org: Nova Labs (not ACME members) can view ACME PLAT.
+MATCH (nova:Organization {id: 'd9tcjmf92rs8isainj10'})
+MATCH (plat:Project {id: 'd9tcjmf92rs8isainj9g'})
+MATCH (nova)-[:DEFINES_ROLE]->(r:Role {key: 'project-viewer'})
+MERGE (nova)-[g:GRANTED {id: 'd9tcjmf92rs8isainjjg'}]->(plat)
+ON CREATE SET g.role_id = r.id, g.actions = [], g.created_at = datetime();
+
+// Nova engineers need more than org-member on INTEG.
+MATCH (jordan:User {id: 'd9tcjmf92rs8isainj00'})
+MATCH (p:Project {id: 'd9tcjmf92rs8isainjcg'})
+MATCH (:Organization {id: 'd9tcjmf92rs8isainj10'})-[:DEFINES_ROLE]->(r:Role {key: 'project-maintainer'})
+MERGE (jordan)-[g:GRANTED {id: 'd9tcjmf92rs8isainjd0'}]->(p)
+ON CREATE SET g.role_id = r.id, g.actions = [], g.created_at = datetime();
+
+MATCH (hector:User {id: '9bsv0s314mtg02goaimg'})
+MATCH (p:Project {id: 'd9tcjmf92rs8isainjcg'})
+MATCH (:Organization {id: 'd9tcjmf92rs8isainj10'})-[:DEFINES_ROLE]->(r:Role {key: 'project-viewer'})
+MERGE (hector)-[g:GRANTED {id: 'd9tcjmf92rs8isainjk0'}]->(p)
+ON CREATE SET g.role_id = r.id, g.actions = [], g.created_at = datetime();
+
+// IN_SCOPE_OF in addition to domain edges (HAS_NAMESPACE, BELONGS_TO, SCOPED_TO, ...).
+MATCH (ns:Namespace)<-[:HAS_NAMESPACE]-(o:Organization)
+MERGE (ns)-[rel:IN_SCOPE_OF]->(o)
+ON CREATE SET rel.id = ns.id, rel.created_at = datetime();
+
+MATCH (p:Project)<-[:HAS_PROJECT]-(ns:Namespace)
+MERGE (p)-[rel:IN_SCOPE_OF]->(ns)
+ON CREATE SET rel.id = p.id, rel.created_at = datetime();
+
+MATCH (i:Issue)-[:BELONGS_TO]->(p:Project)
+MERGE (i)-[rel:IN_SCOPE_OF]->(p)
+ON CREATE SET rel.id = i.id, rel.created_at = datetime();
+
+MATCH (d:Document)-[:SCOPED_TO]->(lib)
+MERGE (d)-[rel:IN_SCOPE_OF]->(lib)
+ON CREATE SET rel.id = d.id, rel.created_at = datetime();
+
+MATCH (f:Folder)-[:SCOPED_TO]->(lib)
+MERGE (f)-[rel:IN_SCOPE_OF]->(lib)
+ON CREATE SET rel.id = f.id, rel.created_at = datetime();
+
+MATCH (t:Todo)-[:BELONGS_TO]->(u:User)
+MERGE (t)-[rel:IN_SCOPE_OF]->(u)
+ON CREATE SET rel.id = t.id, rel.created_at = datetime();
+
+MATCH (parent)-[:HAS_COMMENT]->(c:Comment)
+MERGE (c)-[rel:IN_SCOPE_OF]->(parent)
+ON CREATE SET rel.id = c.id, rel.created_at = datetime();

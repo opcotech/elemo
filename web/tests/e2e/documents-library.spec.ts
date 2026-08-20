@@ -12,8 +12,8 @@ import { DocumentPage, DocumentsListPage } from "./pages";
 import { USER_DEFAULT_PASSWORD, loginUser } from "./utils/auth";
 import {
   createUser,
+  grantActionsToUser,
   grantMembershipToUser,
-  grantPermissionToUser,
 } from "./utils/db";
 import { getRandomString } from "./utils/random";
 
@@ -382,26 +382,26 @@ test.describe("@documents.library Document Library E2E Tests", () => {
       "Organization",
       workspace.organizationId
     );
-    await grantPermissionToUser(
+    await grantActionsToUser(
       testConfig,
       writer.email,
       "Organization",
       workspace.organizationId,
-      "read"
+      ["organization.read"]
     );
-    await grantPermissionToUser(
+    await grantActionsToUser(
       testConfig,
       writer.email,
       "Namespace",
       workspace.namespaceId,
-      "read"
+      ["namespace.read"]
     );
-    await grantPermissionToUser(
+    await grantActionsToUser(
       testConfig,
       writer.email,
       "Namespace",
       workspace.namespaceId,
-      "write"
+      ["namespace.update", "project.create", "document.create", "folder.create"]
     );
     const writerClient = await createAuthenticatedClient(
       writer.email,
@@ -479,8 +479,15 @@ test.describe("@documents.library Document Library E2E Tests", () => {
     await listPage.waitForLoad();
     await expect(listPage.list.getDocumentLink(title)).toHaveCount(0);
 
-    await listPage.gotoOrganization(workspace.organizationId);
-    await listPage.waitForLoad();
-    await expect(listPage.list.getDocumentLink(title)).toBeVisible();
+    await expect(async () => {
+      await listPage.gotoOrganization(workspace.organizationId);
+      await expect(page).toHaveURL(
+        new RegExp(`/organizations/${workspace.organizationId}/documents`)
+      );
+      await listPage.waitForLoad();
+      await expect(listPage.list.getDocumentLink(title)).toBeVisible({
+        timeout: 8_000,
+      });
+    }).toPass({ timeout: 25_000 });
   });
 });

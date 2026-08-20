@@ -126,7 +126,7 @@ func TestCachedFolderRepository_List(t *testing.T) {
 		defer ctrl.Finish()
 
 		ctx := context.Background()
-		key := composeCacheKey(model.ResourceTypeFolder.String(), "List", libraryID.String(), "root", "", limit)
+		key := composeCacheKey(model.ResourceTypeFolder.String(), "List", libraryID.String(), "root", model.MustNewNilID(model.ResourceTypeUser).String(), "", limit)
 
 		db, err := NewRedisDatabase(WithRedisClient(mock.NewUniversalClient(ctrl)))
 		require.NoError(t, err)
@@ -146,7 +146,7 @@ func TestCachedFolderRepository_List(t *testing.T) {
 		}).Return(nil)
 
 		repo := NewMockFolderRepository(ctrl)
-		repo.EXPECT().List(ctx, libraryID, (*model.ID)(nil), CursorPage{Size: limit}).Return(Page[*Folder]{Items: folders}, nil)
+		repo.EXPECT().List(ctx, libraryID, (*model.ID)(nil), model.MustNewNilID(model.ResourceTypeUser), CursorPage{Size: limit}).Return(Page[*Folder]{Items: folders}, nil)
 
 		r := &RedisCachedFolderRepository{
 			cacheRepo: &redisBaseRepository{
@@ -157,7 +157,7 @@ func TestCachedFolderRepository_List(t *testing.T) {
 			},
 			folderRepo: repo,
 		}
-		got, err := r.List(ctx, libraryID, nil, CursorPage{Size: limit})
+		got, err := r.List(ctx, libraryID, nil, model.MustNewNilID(model.ResourceTypeUser), CursorPage{Size: limit})
 		require.NoError(t, err)
 		assert.Equal(t, folders, got.Items)
 	})

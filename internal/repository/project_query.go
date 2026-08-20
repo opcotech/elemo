@@ -46,6 +46,8 @@ type ProjectGetByKeyQuery struct {
 // ProjectListQuery compiles a cursor-paginated project list for a namespace.
 type ProjectListQuery struct {
 	NamespaceID model.ID
+	ActorID     model.ID
+	Action      model.Action
 	Page        CursorPage
 	Order       SortDirection
 	Projection  ProjectProjection
@@ -89,8 +91,9 @@ func (q ProjectListQuery) Compile() (QueryPlan, error) {
 		return QueryPlan{}, err
 	}
 
+	authz := applyAuthzVisible(q.ActorID, q.Action, "p", "$user_id", params)
 	match := `
-	MATCH (:` + q.NamespaceID.Label() + ` {id: $namespace_id})-[:` + EdgeKindHasProject.String() + `]->(p)` + cursorWherePrefix(bounds.Where, " WHERE ") + `
+	MATCH (:` + q.NamespaceID.Label() + ` {id: $namespace_id})-[:` + EdgeKindHasProject.String() + `]->(p)` + whereClause(" WHERE ", authz, bounds.Where) + `
 	WITH p
 	ORDER BY p.id ` + bounds.Order.Cypher() + `
 	LIMIT $limit`
@@ -143,7 +146,7 @@ func compileProjectRoot(in projectRootQueryInput) (QueryPlan, error) {
 			Name: in.Name + ".teams",
 			Cypher: `
 			UNWIND $ids AS pid
-			MATCH (p:` + model.ResourceTypeProject.String() + ` {id: pid})-[:` + EdgeKindHasTeam.String() + `]->(t:` + model.ResourceTypeRole.String() + `)
+			MATCH (p:` + model.ResourceTypeProject.String() + ` {id: pid})-[:` + EdgeKindHasTeam.String() + `]->(t:` + model.ResourceTypeTeam.String() + `)
 			RETURN pid AS project_id, collect(DISTINCT t.id) AS team_ids`,
 			Params: map[string]any{},
 		})

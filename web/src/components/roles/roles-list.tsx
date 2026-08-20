@@ -1,13 +1,11 @@
 import { Link } from "@tanstack/react-router";
-import { Edit, Plus, Shield, Trash2, UserPlus } from "lucide-react";
+import { Edit, Plus, Shield, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { RoleDeleteDialog } from "./role-delete-dialog";
-import { RoleMemberAddDialog } from "./role-member-add-dialog";
 
 import { SettingsResourceTable } from "@/components/settings/settings-resource-table";
 import { Button } from "@/components/ui/button";
-import { CountBadge } from "@/components/ui/count-badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -22,15 +20,16 @@ import {
   ResourceType,
   usePermissionsByResourceId,
 } from "@/hooks/use-permissions";
-import type { Permission, Role } from "@/lib/api/types";
-import { can } from "@/lib/auth/permissions";
+import type { EffectiveActions, Role } from "@/lib/api/types";
+import { Action, can } from "@/lib/auth/permissions";
 
 const rolesListSkeletonColumns = [
   { header: "Name", skeletonClassName: "h-5 w-32" },
+  { header: "Key", skeletonClassName: "h-4 w-24" },
   { header: "Description", skeletonClassName: "h-4 w-48" },
-  { header: "Members", skeletonClassName: "h-6 w-16" },
+  { header: "Actions", skeletonClassName: "h-4 w-40" },
   {
-    header: "Actions",
+    header: "Manage",
     skeletonClassName: "h-8 w-8",
     headerClassName: "text-right",
     cellClassName: "text-right",
@@ -40,10 +39,10 @@ const rolesListSkeletonColumns = [
 
 interface RoleRowProps {
   role: Role;
-  permissions: Permission[] | undefined;
+  permissions: EffectiveActions | undefined;
   isPermissionsLoading: boolean;
   organizationId: string;
-  onAddMemberClick: (role: Role) => void;
+  canManageRoles: boolean;
   onDeleteClick: (role: Role) => void;
 }
 
@@ -52,46 +51,40 @@ function RoleRow({
   permissions,
   isPermissionsLoading,
   organizationId,
-  onAddMemberClick,
+  canManageRoles,
   onDeleteClick,
 }: RoleRowProps) {
-  const hasRoleWritePermission = can(permissions, "write");
-  const hasRoleDeletePermission = can(permissions, "delete");
+  const hasRoleManagePermission =
+    canManageRoles || can(permissions, Action.RoleManage);
 
   return (
     <TableRow>
       <TableCell className="font-medium">{role.name}</TableCell>
+      <TableCell>
+        <span className="font-mono text-xs">{role.key || "—"}</span>
+      </TableCell>
       <TableCell>
         <span className="text-muted-foreground text-sm">
           {role.description || "—"}
         </span>
       </TableCell>
       <TableCell>
-        <CountBadge
-          count={role.member_count ?? 0}
-          singular="member"
-          plural="members"
-        />
+        <span className="text-muted-foreground text-xs">
+          {role.actions?.length
+            ? `${role.actions.length} action${role.actions.length === 1 ? "" : "s"}`
+            : "—"}
+        </span>
       </TableCell>
       <TableCell className="text-right">
         {isPermissionsLoading ? (
           <div className="flex justify-end gap-1">
             <Skeleton className="h-8 w-8" />
             <Skeleton className="h-8 w-8" />
-            <Skeleton className="h-8 w-8" />
           </div>
         ) : (
           <div className="flex items-center justify-end gap-x-1">
-            {hasRoleWritePermission && (
+            {hasRoleManagePermission && (
               <>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onAddMemberClick(role)}
-                >
-                  <UserPlus className="size-4" />
-                  <span className="sr-only">Add member</span>
-                </Button>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -108,17 +101,15 @@ function RoleRow({
                   <Edit className="size-4" />
                   <span className="sr-only">Edit role</span>
                 </Button>
+                <Button
+                  variant="destructive-ghost"
+                  size="sm"
+                  onClick={() => onDeleteClick(role)}
+                >
+                  <Trash2 className="size-4" />
+                  <span className="sr-only">Delete role</span>
+                </Button>
               </>
-            )}
-            {hasRoleDeletePermission && (
-              <Button
-                variant="destructive-ghost"
-                size="sm"
-                onClick={() => onDeleteClick(role)}
-              >
-                <Trash2 className="size-4" />
-                <span className="sr-only">Delete role</span>
-              </Button>
             )}
           </div>
         )}
@@ -132,7 +123,7 @@ interface RolesListProps {
   isLoading: boolean;
   error: unknown;
   organizationId: string;
-  organizationPermissions: Permission[];
+  organizationPermissions: EffectiveActions;
 }
 
 export function RolesList({
@@ -144,11 +135,10 @@ export function RolesList({
 }: RolesListProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [addMemberDialogOpen, setAddMemberDialogOpen] = useState(false);
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
 
-  const hasOrgWritePermission = can(organizationPermissions, "write");
-  const hasCreatePermission = hasOrgWritePermission;
+  const canManageRoles = can(organizationPermissions, Action.RoleManage);
+  const canViewRoles = can(organizationPermissions, Action.OrganizationRead);
   const rolePermissionsById = usePermissionsByResourceId(
     ResourceType.Role,
     roles.map((role) => role.id)
@@ -160,6 +150,7 @@ export function RolesList({
     return roles.filter(
       (role) =>
         role.name.toLowerCase().includes(term) ||
+        role.key.toLowerCase().includes(term) ||
         (role.description && role.description.toLowerCase().includes(term))
     );
   }, [roles, searchTerm]);
@@ -174,12 +165,7 @@ export function RolesList({
     setSelectedRole(null);
   };
 
-  const handleAddMemberClick = (role: Role) => {
-    setSelectedRole(role);
-    setAddMemberDialogOpen(true);
-  };
-
-  const createButton = hasCreatePermission ? (
+  const createButton = canManageRoles ? (
     <Button
       variant="outline"
       size="sm"
@@ -195,12 +181,16 @@ export function RolesList({
     </Button>
   ) : undefined;
 
+  if (!canViewRoles && !canManageRoles) {
+    return null;
+  }
+
   return (
     <>
       <SettingsResourceTable
         dataSection="roles"
         title="Roles"
-        description="Organization roles and their members."
+        description="Inspectable action bundles. Roles have no authority until granted on a scope."
         isLoading={isLoading}
         error={error}
         actionButton={createButton}
@@ -214,7 +204,7 @@ export function RolesList({
           icon: <Shield />,
           title: "No roles found",
           description:
-            "Roles help organize permissions and member access. Create a role to get started.",
+            "Roles bundle inspectable actions that can be granted on a scope.",
           action: createButton,
           searchTitle: "No roles found",
           searchDescription:
@@ -228,10 +218,11 @@ export function RolesList({
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
+              <TableHead>Key</TableHead>
               <TableHead>Description</TableHead>
-              <TableHead>Members</TableHead>
+              <TableHead>Actions</TableHead>
               <TableHead>
-                <span className="sr-only">Actions</span>
+                <span className="sr-only">Manage</span>
               </TableHead>
             </TableRow>
           </TableHeader>
@@ -245,7 +236,7 @@ export function RolesList({
                   permissions={permissionQuery?.data}
                   isPermissionsLoading={permissionQuery?.isLoading ?? true}
                   organizationId={organizationId}
-                  onAddMemberClick={handleAddMemberClick}
+                  canManageRoles={canManageRoles}
                   onDeleteClick={handleDeleteClick}
                 />
               );
@@ -261,16 +252,6 @@ export function RolesList({
           open={deleteDialogOpen}
           onOpenChange={setDeleteDialogOpen}
           onSuccess={handleDeleteSuccess}
-        />
-      )}
-
-      {selectedRole && (
-        <RoleMemberAddDialog
-          organizationId={organizationId}
-          roleId={selectedRole.id}
-          open={addMemberDialogOpen}
-          onOpenChange={setAddMemberDialogOpen}
-          onSuccess={() => setAddMemberDialogOpen(false)}
         />
       )}
     </>

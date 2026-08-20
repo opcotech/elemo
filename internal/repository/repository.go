@@ -47,6 +47,9 @@ const (
 	EdgeKindWatches                           // WATCHES
 	EdgeKindScopedTo                          // SCOPED_TO
 	EdgeKindLocatedIn                         // LOCATED_IN
+	EdgeKindInScopeOf                         // IN_SCOPE_OF
+	EdgeKindGranted                           // GRANTED
+	EdgeKindDefinesRole                       // DEFINES_ROLE
 )
 
 var (

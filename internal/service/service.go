@@ -59,6 +59,19 @@ func WithRoleRepository(roleRepo repository.RoleRepository) Option {
 	}
 }
 
+// WithTeamRepository sets the team repository for the
+// baseService.
+func WithTeamRepository(teamRepo repository.TeamRepository) Option {
+	return func(s *baseService) error {
+		if teamRepo == nil {
+			return ErrNoTeamRepository
+		}
+
+		s.teamRepo = teamRepo
+		return nil
+	}
+}
+
 // WithUserRepository sets the user repository for the baseService.
 func WithUserRepository(userRepo repository.UserRepository) Option {
 	return func(s *baseService) error {
@@ -254,6 +267,7 @@ type baseService struct {
 	documentRepo     repository.DocumentRepository
 	folderRepo       repository.FolderRepository
 	roleRepo         repository.RoleRepository
+	teamRepo         repository.TeamRepository
 	todoRepo         repository.TodoRepository
 	userRepo         repository.UserRepository
 	userTokenRepo    repository.UserTokenRepository

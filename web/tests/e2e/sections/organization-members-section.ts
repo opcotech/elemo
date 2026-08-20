@@ -2,7 +2,7 @@ import { expect } from "@playwright/test";
 import type { Locator, Page } from "@playwright/test";
 
 import { BaseComponent } from "../components/base";
-import { waitForSuccessToast } from "../helpers";
+import { clickUntilVisible, waitForSuccessToast } from "../helpers";
 import {
   DialogMixin,
   EmptyStateMixin,
@@ -65,11 +65,11 @@ export class OrganizationMembersSection extends DialogMixin(
   }
 
   async clickInviteMemberButton(): Promise<void> {
-    const button = this.getInviteMemberButton();
-    await expect(button).toBeVisible();
-    await expect(button).toBeEnabled();
-    await button.click();
-    await this.waitForDialog("Invite Member");
+    const button = this.getInviteMemberButton().first();
+    await clickUntilVisible(
+      button,
+      this.page.getByRole("dialog", { name: "Invite Member" })
+    );
   }
 
   private getRemoveMemberButton(fullName: string): Locator {

@@ -13,7 +13,7 @@ import {
   v1OrganizationGetOptions,
   v1ProjectGetOptions,
 } from "@/lib/api/query-options";
-import { ResourceType } from "@/lib/auth/permissions";
+import { Action, ResourceType } from "@/lib/auth/permissions";
 import { requirePermissionBeforeLoad } from "@/lib/auth/require-auth";
 import { loadProjectHierarchy } from "@/lib/route-data";
 import { withRouteErrors } from "@/lib/route-errors";
@@ -25,7 +25,7 @@ export const Route = createFileRoute(
     requirePermissionBeforeLoad({
       queryClient: context.queryClient,
       resourceType: ResourceType.Project,
-      permissionKind: "write",
+      action: Action.ProjectUpdate,
       resourceId: params.projectId,
     }),
   loader: ({ context, params }) =>

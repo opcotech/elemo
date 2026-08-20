@@ -33,7 +33,7 @@ import type {
   Organization,
   V1OrganizationsNamespacesCreateData,
 } from "@/lib/api/types";
-import { can } from "@/lib/auth/permissions";
+import { Action, can } from "@/lib/auth/permissions";
 import { zNamespaceCreate } from "@/lib/client/zod.gen";
 import { createFormSchema, normalizeFormData } from "@/lib/forms";
 
@@ -76,7 +76,7 @@ export function NamespaceCreateForm({
     if (!showOrganizationSelector) return [];
     return organizations.filter((org, index) => {
       const permissions = permissionQueries[index]?.data;
-      return can(permissions, "write");
+      return can(permissions, Action.NamespaceCreate);
     });
   }, [showOrganizationSelector, organizations, permissionQueries]);
 

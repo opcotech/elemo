@@ -758,11 +758,7 @@ func TestLicenseService_GetLicense(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.licenseService/GetLicense", gomock.Len(0)).Return(ctx, span)
 
 					permissionSvc := NewMockPermissionService(ctrl)
-					permissionSvc.EXPECT().CtxUserHasSystemRole(ctx, []model.SystemRole{
-						model.SystemRoleOwner,
-						model.SystemRoleAdmin,
-						model.SystemRoleSupport,
-					}).Return(true)
+					permissionSvc.EXPECT().CtxUserHas(ctx, model.InstallationID(), model.ActionOrganizationCreate).Return(true)
 
 					return &baseService{
 						logger:            mock.NewMockLogger(ctrl),
@@ -792,11 +788,7 @@ func TestLicenseService_GetLicense(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.licenseService/GetLicense", gomock.Len(0)).Return(ctx, span)
 
 					permissionSvc := NewMockPermissionService(ctrl)
-					permissionSvc.EXPECT().CtxUserHasSystemRole(ctx, []model.SystemRole{
-						model.SystemRoleOwner,
-						model.SystemRoleAdmin,
-						model.SystemRoleSupport,
-					}).Return(false)
+					permissionSvc.EXPECT().CtxUserHas(ctx, model.InstallationID(), model.ActionOrganizationCreate).Return(false)
 
 					return &baseService{
 						logger:            mock.NewMockLogger(ctrl),
@@ -826,11 +818,7 @@ func TestLicenseService_GetLicense(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.licenseService/GetLicense", gomock.Len(0)).Return(ctx, span)
 
 					permissionSvc := NewMockPermissionService(ctrl)
-					permissionSvc.EXPECT().CtxUserHasSystemRole(ctx, []model.SystemRole{
-						model.SystemRoleOwner,
-						model.SystemRoleAdmin,
-						model.SystemRoleSupport,
-					}).Return(false)
+					permissionSvc.EXPECT().CtxUserHas(ctx, model.InstallationID(), model.ActionOrganizationCreate).Return(false)
 
 					return &baseService{
 						logger:            mock.NewMockLogger(ctrl),

@@ -12,7 +12,7 @@ import {
   withResourceType,
 } from "@/hooks/use-permissions";
 import type { Project } from "@/lib/api/types";
-import { can } from "@/lib/auth/permissions";
+import { Action, can } from "@/lib/auth/permissions";
 import { formatDate } from "@/lib/format-date";
 
 interface ProjectDetailInfoProps {
@@ -32,7 +32,7 @@ export function ProjectDetailInfo({
     withResourceType(ResourceType.Project, project.id)
   );
 
-  const hasWritePermission = can(permissions, "write");
+  const hasWritePermission = can(permissions, Action.ProjectUpdate);
 
   const documentCount = project.document_count ?? 0;
   const issueCount = project.issue_count ?? 0;

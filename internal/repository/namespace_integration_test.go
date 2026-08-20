@@ -36,6 +36,12 @@ func (s *NamespaceRepositoryIntegrationTestSuite) SetupTest() {
 	s.Require().NoError(err)
 	s.testOrg, err = s.OrganizationRepo.Create(context.Background(), testModel.NewCreateOrganizationOpts(s.testUser.ID))
 	s.Require().NoError(err)
+	_, err = s.PermissionRepo.Create(context.Background(), testModel.NewCreateGrantOpts(
+		s.testUser.ID,
+		s.testOrg.ID,
+		testModel.OrgAdminActions()...,
+	))
+	s.Require().NoError(err)
 	s.createOpts = testModel.NewCreateNamespaceOpts(s.testUser.ID, s.testOrg.ID)
 }
 
@@ -87,7 +93,7 @@ func (s *NamespaceRepositoryIntegrationTestSuite) TestGetAll() {
 	_, err = s.NamespaceRepo.Create(context.Background(), testModel.NewCreateNamespaceOpts(s.testUser.ID, s.testOrg.ID))
 	s.Require().NoError(err)
 
-	namespaces, err := s.NamespaceRepo.List(context.Background(), s.testOrg.ID, repository.CursorPage{Size: 10}, repository.NamespaceListProjection())
+	namespaces, err := s.NamespaceRepo.List(context.Background(), s.testOrg.ID, s.testUser.ID, repository.CursorPage{Size: 10}, repository.NamespaceListProjection())
 	s.Require().NoError(err)
 	s.Assert().Len(namespaces.Items, 3)
 
@@ -104,9 +110,21 @@ func (s *NamespaceRepositoryIntegrationTestSuite) TestGetAll() {
 	s.Require().NotNil(withRelated.DocumentCount)
 	s.Assert().Equal(int64(1), *withRelated.DocumentCount)
 
-	namespaces, err = s.NamespaceRepo.List(context.Background(), s.testOrg.ID, repository.CursorPage{Size: 2}, repository.NamespaceListProjection())
+	namespaces, err = s.NamespaceRepo.List(context.Background(), s.testOrg.ID, s.testUser.ID, repository.CursorPage{Size: 2}, repository.NamespaceListProjection())
 	s.Require().NoError(err)
 	s.Assert().Len(namespaces.Items, 2)
+}
+
+func (s *NamespaceRepositoryIntegrationTestSuite) TestListAccessible() {
+	created, err := s.NamespaceRepo.Create(context.Background(), s.createOpts)
+	s.Require().NoError(err)
+
+	accessible, err := s.NamespaceRepo.ListAccessible(context.Background(), s.testUser.ID, repository.CursorPage{Size: 10}, repository.NamespaceListProjection())
+	s.Require().NoError(err)
+	s.Require().Len(accessible.Items, 1)
+	s.Assert().Equal(created.ID, accessible.Items[0].ID)
+	s.Assert().Equal(s.testOrg.ID, accessible.Items[0].Organization.ID)
+	s.Assert().Equal(s.testOrg.Name, accessible.Items[0].Organization.Name)
 }
 
 func (s *NamespaceRepositoryIntegrationTestSuite) TestUpdate() {
@@ -160,6 +178,12 @@ func (s *CachedNamespaceRepositoryIntegrationTestSuite) SetupTest() {
 	s.Require().NoError(err)
 	s.testOrg, err = s.OrganizationRepo.Create(context.Background(), testModel.NewCreateOrganizationOpts(s.testUser.ID))
 	s.Require().NoError(err)
+	_, err = s.PermissionRepo.Create(context.Background(), testModel.NewCreateGrantOpts(
+		s.testUser.ID,
+		s.testOrg.ID,
+		testModel.OrgAdminActions()...,
+	))
+	s.Require().NoError(err)
 	s.createOpts = testModel.NewCreateNamespaceOpts(s.testUser.ID, s.testOrg.ID)
 	s.Require().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 0)
 }
@@ -194,9 +218,9 @@ func (s *CachedNamespaceRepositoryIntegrationTestSuite) TestGet() {
 func (s *CachedNamespaceRepositoryIntegrationTestSuite) TestGetAll() {
 	_, err := s.namespaceRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
-	original, err := s.NamespaceRepo.List(context.Background(), s.testOrg.ID, repository.CursorPage{Size: 10}, repository.NamespaceListProjection())
+	original, err := s.NamespaceRepo.List(context.Background(), s.testOrg.ID, s.testUser.ID, repository.CursorPage{Size: 10}, repository.NamespaceListProjection())
 	s.Require().NoError(err)
-	usingCache, err := s.namespaceRepo.List(context.Background(), s.testOrg.ID, repository.CursorPage{Size: 10}, repository.NamespaceListProjection())
+	usingCache, err := s.namespaceRepo.List(context.Background(), s.testOrg.ID, s.testUser.ID, repository.CursorPage{Size: 10}, repository.NamespaceListProjection())
 	s.Require().NoError(err)
 	s.Assert().Equal(original, usingCache)
 	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)

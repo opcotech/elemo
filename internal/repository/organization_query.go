@@ -39,6 +39,7 @@ type OrganizationGetQuery struct {
 
 type OrganizationListQuery struct {
 	UserID     model.ID
+	Action     model.Action
 	Page       CursorPage
 	Order      SortDirection
 	Projection OrganizationProjection
@@ -77,8 +78,9 @@ func (q OrganizationListQuery) Compile() (QueryPlan, error) {
 		return QueryPlan{}, err
 	}
 
+	authz := applyAuthzVisible(q.UserID, q.Action, "o", "$user_id", params)
 	match := `
-	MATCH (u:` + q.UserID.Label() + ` {id: $user_id})-[:` + EdgeKindMemberOf.String() + `]->(o:` + model.ResourceTypeOrganization.String() + `)` + cursorWherePrefix(bounds.Where, " WHERE ") + `
+	MATCH (o:` + model.ResourceTypeOrganization.String() + `)` + whereClause(" WHERE ", authz, bounds.Where) + `
 	WITH o
 	ORDER BY o.id ` + bounds.Order.Cypher() + `
 	LIMIT $limit`
@@ -162,7 +164,7 @@ func compileOrganizationRoot(in organizationRootQueryInput) (QueryPlan, error) {
 			"COUNT { (%s)-[:%s]->(:%s) } AS team_count",
 			in.Alias,
 			EdgeKindHasTeam.String(),
-			model.ResourceTypeRole.String(),
+			model.ResourceTypeTeam.String(),
 		))
 	}
 	if in.Projection.MemberCount {

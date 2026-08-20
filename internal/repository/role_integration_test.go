@@ -64,7 +64,7 @@ func (s *RoleRepositoryIntegrationTestSuite) TestGet() {
 	s.Assert().Equal(s.createOpts.Name, role.Name)
 	s.Assert().Equal(s.createOpts.Description, role.Description)
 	s.Require().NotNil(role.MemberCount)
-	s.Assert().Equal(int64(1), *role.MemberCount)
+	s.Assert().Equal(int64(0), *role.MemberCount)
 	s.Assert().WithinDuration(*created.CreatedAt, *role.CreatedAt, 100*time.Millisecond)
 }
 
@@ -110,7 +110,7 @@ func (s *RoleRepositoryIntegrationTestSuite) TestAddMember() {
 	role, err := s.RoleRepo.Get(context.Background(), created.ID, s.testOrg.ID, repository.RoleDetailProjection())
 	s.Require().NoError(err)
 	s.Require().NotNil(role.MemberCount)
-	s.Assert().Equal(int64(2), *role.MemberCount)
+	s.Assert().Equal(int64(1), *role.MemberCount)
 }
 
 func (s *RoleRepositoryIntegrationTestSuite) TestRemoveMember() {
@@ -198,6 +198,40 @@ func (s *CachedRoleRepositoryIntegrationTestSuite) TestGet() {
 	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
 }
 
+func (s *CachedRoleRepositoryIntegrationTestSuite) TestGetByID() {
+	created, err := s.roleRepo.Create(context.Background(), s.createOpts)
+	s.Require().NoError(err)
+	original, err := s.RoleRepo.GetByID(context.Background(), created.ID)
+	s.Require().NoError(err)
+	usingCache, err := s.roleRepo.GetByID(context.Background(), created.ID)
+	s.Require().NoError(err)
+	s.Assert().Equal(original.ID, usingCache.ID)
+	s.Assert().Equal(original.Name, usingCache.Name)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
+	cached, err := s.roleRepo.GetByID(context.Background(), created.ID)
+	s.Require().NoError(err)
+	s.Assert().Equal(original.ID, cached.ID)
+	s.Assert().Equal(original.Name, cached.Name)
+	s.Assert().Equal(original.Key, cached.Key)
+}
+
+func (s *CachedRoleRepositoryIntegrationTestSuite) TestGetByKey() {
+	created, err := s.roleRepo.Create(context.Background(), s.createOpts)
+	s.Require().NoError(err)
+	original, err := s.RoleRepo.GetByKey(context.Background(), s.testOrg.ID, created.Key)
+	s.Require().NoError(err)
+	usingCache, err := s.roleRepo.GetByKey(context.Background(), s.testOrg.ID, created.Key)
+	s.Require().NoError(err)
+	s.Assert().Equal(original.ID, usingCache.ID)
+	s.Assert().Equal(original.Name, usingCache.Name)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
+	cached, err := s.roleRepo.GetByKey(context.Background(), s.testOrg.ID, created.Key)
+	s.Require().NoError(err)
+	s.Assert().Equal(original.ID, cached.ID)
+	s.Assert().Equal(original.Name, cached.Name)
+	s.Assert().Equal(original.Key, cached.Key)
+}
+
 func (s *CachedRoleRepositoryIntegrationTestSuite) TestGetAllBelongsTo() {
 	_, err := s.roleRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
@@ -218,7 +252,7 @@ func (s *CachedRoleRepositoryIntegrationTestSuite) TestAddMember() {
 	role, err := s.roleRepo.Get(context.Background(), created.ID, s.testOrg.ID, repository.RoleDetailProjection())
 	s.Require().NoError(err)
 	s.Require().NotNil(role.MemberCount)
-	s.Assert().Equal(int64(2), *role.MemberCount)
+	s.Assert().Equal(int64(1), *role.MemberCount)
 }
 
 func (s *CachedRoleRepositoryIntegrationTestSuite) TestRemoveMember() {
@@ -237,18 +271,32 @@ func (s *CachedRoleRepositoryIntegrationTestSuite) TestRemoveMember() {
 func (s *CachedRoleRepositoryIntegrationTestSuite) TestUpdate() {
 	created, err := s.roleRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
+	_, err = s.roleRepo.GetByID(context.Background(), created.ID)
+	s.Require().NoError(err)
+	_, err = s.roleRepo.GetByKey(context.Background(), s.testOrg.ID, created.Key)
+	s.Require().NoError(err)
+	s.Assert().GreaterOrEqual(len(s.Keys(&s.ContainerIntegrationTestSuite, "*")), 2)
 	role, err := s.roleRepo.Update(context.Background(), created.ID, s.testOrg.ID, repository.UpdateRoleOpts{
 		Name: optional.Some("new name"),
 	})
 	s.Require().NoError(err)
 	s.Assert().Equal("new name", role.Name)
-	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
+	updated, err := s.roleRepo.GetByID(context.Background(), created.ID)
+	s.Require().NoError(err)
+	s.Assert().Equal("new name", updated.Name)
+	byKey, err := s.roleRepo.GetByKey(context.Background(), s.testOrg.ID, created.Key)
+	s.Require().NoError(err)
+	s.Assert().Equal("new name", byKey.Name)
 }
 
 func (s *CachedRoleRepositoryIntegrationTestSuite) TestDelete() {
 	created, err := s.roleRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 	_, err = s.roleRepo.Get(context.Background(), created.ID, s.testOrg.ID, repository.RoleDetailProjection())
+	s.Require().NoError(err)
+	_, err = s.roleRepo.GetByID(context.Background(), created.ID)
+	s.Require().NoError(err)
+	_, err = s.roleRepo.GetByKey(context.Background(), s.testOrg.ID, created.Key)
 	s.Require().NoError(err)
 	s.Require().NoError(s.roleRepo.Delete(context.Background(), created.ID, s.testOrg.ID))
 	_, err = s.roleRepo.Get(context.Background(), created.ID, s.testOrg.ID, repository.RoleDetailProjection())

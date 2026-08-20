@@ -10,7 +10,6 @@ import {
 const organization = {
   id: "organization-1",
   name: "Acme",
-  namespaces: ["namespace-1"],
 };
 
 const namespace = {
@@ -61,16 +60,13 @@ function createQueryClient(
 }
 
 describe("operational route loaders", () => {
-  it("loads an accessible namespace after verifying read permission", async () => {
+  it("loads a reachable namespace without requiring namespace.read", async () => {
     const queryClient = createQueryClient((options) => {
       if (isAccessibleNamespacesQuery(options)) {
         return {
           organizations: [organization],
           namespaces: [namespace],
         };
-      }
-      if (queryId(options) === "v1PermissionResourceGet") {
-        return [{ kind: "read" }];
       }
       throw new Error(`Unexpected query ${JSON.stringify(options.queryKey)}`);
     });
@@ -94,24 +90,6 @@ describe("operational route loaders", () => {
     ).rejects.toMatchObject({ isNotFound: true });
   });
 
-  it("redirects to permission-denied when namespace read is forbidden", async () => {
-    const queryClient = createQueryClient((options) => {
-      if (isAccessibleNamespacesQuery(options)) {
-        return {
-          organizations: [organization],
-          namespaces: [namespace],
-        };
-      }
-      return [];
-    });
-
-    await expect(
-      loadNamespaceOperationalContext(queryClient, "namespace-1")
-    ).rejects.toMatchObject({
-      options: { to: "/permission-denied" },
-    });
-  });
-
   it("rejects projects that do not belong to the namespace URL", async () => {
     const queryClient = createQueryClient((options) => {
       if (isAccessibleNamespacesQuery(options)) {
@@ -126,7 +104,7 @@ describe("operational route loaders", () => {
         };
       }
       if (queryId(options) === "v1PermissionResourceGet") {
-        return [{ kind: "read" }];
+        return { actions: ["project.read"] };
       }
       if (queryId(options) === "v1NamespacesProjectsGet") {
         return listedPage([{ id: "other-project", name: "Other" }]);
@@ -142,7 +120,7 @@ describe("operational route loaders", () => {
     ).rejects.toMatchObject({ isNotFound: true });
   });
 
-  it("loads a project that belongs to the namespace hierarchy", async () => {
+  it("loads a project with only project.read", async () => {
     const queryClient = createQueryClient((options) => {
       if (isAccessibleNamespacesQuery(options)) {
         return {
@@ -151,7 +129,7 @@ describe("operational route loaders", () => {
         };
       }
       if (queryId(options) === "v1PermissionResourceGet") {
-        return [{ kind: "read" }];
+        return { actions: ["project.read"] };
       }
       if (queryId(options) === "v1NamespacesProjectsGet") {
         return listedPage([project]);

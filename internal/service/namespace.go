@@ -19,6 +19,12 @@ type PartialNamespace struct {
 	Name string
 }
 
+// PartialOrganization is a lean organization used on accessible namespace lists.
+type PartialOrganization struct {
+	ID   model.ID
+	Name string
+}
+
 // Namespace represents a namespace returned by the service.
 type Namespace struct {
 	ID            model.ID
@@ -28,6 +34,12 @@ type Namespace struct {
 	DocumentCount *int64
 	CreatedAt     *time.Time
 	UpdatedAt     *time.Time
+}
+
+// AccessibleNamespace is a reachable namespace with its owning organization.
+type AccessibleNamespace struct {
+	Namespace
+	Organization PartialOrganization
 }
 
 // CreateNamespaceOpts holds the data required to create a namespace.
@@ -63,6 +75,9 @@ type NamespaceService interface {
 	Get(ctx context.Context, id model.ID) (*Namespace, error)
 	// List returns a cursor-paginated page of namespaces for an organization.
 	List(ctx context.Context, orgID model.ID, page CursorPage) (Page[*Namespace], error)
+	// ListAccessible returns namespaces the actor can reach, each with an
+	// organization stub. Reachability does not require organization.read.
+	ListAccessible(ctx context.Context, page CursorPage) (Page[*AccessibleNamespace], error)
 	// Update updates a namespace. If the namespace does not exist, an error
 	// is returned.
 	Update(ctx context.Context, id model.ID, opts UpdateNamespaceOpts) (*Namespace, error)
@@ -110,6 +125,25 @@ func namespacesFromRepository(namespaces []*repository.Namespace) []*Namespace {
 	return out
 }
 
+func accessibleNamespaceFromRepository(n *repository.AccessibleNamespace) *AccessibleNamespace {
+	if n == nil {
+		return nil
+	}
+
+	ns := namespaceFromRepository(&n.Namespace)
+	if ns == nil {
+		return nil
+	}
+
+	return &AccessibleNamespace{
+		Namespace: *ns,
+		Organization: PartialOrganization{
+			ID:   n.Organization.ID,
+			Name: n.Organization.Name,
+		},
+	}
+}
+
 func (s *namespaceService) Create(ctx context.Context, orgID model.ID, opts CreateNamespaceOpts) (*Namespace, error) {
 	ctx, span := s.tracer.Start(ctx, "service.namespaceService/Create")
 	defer span.End()
@@ -126,7 +160,7 @@ func (s *namespaceService) Create(ctx context.Context, orgID model.ID, opts Crea
 		return nil, errors.Join(ErrNamespaceCreate, err)
 	}
 
-	if !s.permissionService.CtxUserHasPermission(ctx, orgID, model.PermissionKindWrite) {
+	if !s.permissionService.CtxUserHas(ctx, orgID, model.ActionNamespaceCreate) {
 		return nil, errors.Join(ErrNamespaceCreate, ErrNoPermission)
 	}
 
@@ -145,6 +179,14 @@ func (s *namespaceService) Create(ctx context.Context, orgID model.ID, opts Crea
 		return nil, errors.Join(ErrNamespaceCreate, err)
 	}
 
+	actions, err := roleTemplateActions(model.RoleKeyNamespaceAdmin)
+	if err != nil {
+		return nil, errors.Join(ErrNamespaceCreate, err)
+	}
+	if err := s.permissionService.BootstrapCreator(ctx, userID, namespace.ID, actions); err != nil {
+		return nil, errors.Join(ErrNamespaceCreate, err)
+	}
+
 	return namespaceFromRepository(namespace), nil
 }
 
@@ -156,7 +198,7 @@ func (s *namespaceService) Get(ctx context.Context, id model.ID) (*Namespace, er
 		return nil, errors.Join(ErrNamespaceGet, err)
 	}
 
-	if !s.permissionService.CtxUserHasPermission(ctx, id, model.PermissionKindRead) {
+	if !s.permissionService.CtxUserHas(ctx, id, model.ActionNamespaceRead) {
 		return nil, errors.Join(ErrNamespaceGet, ErrNoPermission)
 	}
 
@@ -181,13 +223,15 @@ func (s *namespaceService) List(ctx context.Context, orgID model.ID, page Cursor
 		return Page[*Namespace]{}, errors.Join(ErrNamespaceGetAll, err)
 	}
 
-	if !s.permissionService.CtxUserHasPermission(ctx, orgID, model.PermissionKindRead) {
-		return Page[*Namespace]{}, errors.Join(ErrNamespaceGetAll, ErrNoPermission)
+	userID, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID)
+	if !ok {
+		return Page[*Namespace]{}, errors.Join(ErrNamespaceGetAll, ErrNoUser)
 	}
 
 	namespaces, err := s.namespaceRepo.List(
 		ctx,
 		orgID,
+		userID,
 		normalized,
 		repository.NamespaceListProjection(),
 	)
@@ -196,6 +240,33 @@ func (s *namespaceService) List(ctx context.Context, orgID model.ID, page Cursor
 	}
 
 	return mapPage(namespaces, namespaceFromRepository), nil
+}
+
+func (s *namespaceService) ListAccessible(ctx context.Context, page CursorPage) (Page[*AccessibleNamespace], error) {
+	ctx, span := s.tracer.Start(ctx, "service.namespaceService/ListAccessible")
+	defer span.End()
+
+	normalized, err := page.Normalize()
+	if err != nil {
+		return Page[*AccessibleNamespace]{}, errors.Join(ErrNamespaceGetAll, err)
+	}
+
+	userID, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID)
+	if !ok {
+		return Page[*AccessibleNamespace]{}, errors.Join(ErrNamespaceGetAll, ErrNoUser)
+	}
+
+	namespaces, err := s.namespaceRepo.ListAccessible(
+		ctx,
+		userID,
+		normalized,
+		repository.NamespaceListProjection(),
+	)
+	if err != nil {
+		return Page[*AccessibleNamespace]{}, errors.Join(ErrNamespaceGetAll, err)
+	}
+
+	return mapPage(namespaces, accessibleNamespaceFromRepository), nil
 }
 
 func (s *namespaceService) Update(ctx context.Context, id model.ID, opts UpdateNamespaceOpts) (*Namespace, error) {
@@ -210,7 +281,7 @@ func (s *namespaceService) Update(ctx context.Context, id model.ID, opts UpdateN
 		return nil, errors.Join(ErrNamespaceUpdate, err)
 	}
 
-	if !s.permissionService.CtxUserHasPermission(ctx, id, model.PermissionKindWrite) {
+	if !s.permissionService.CtxUserHas(ctx, id, model.ActionNamespaceUpdate) {
 		return nil, errors.Join(ErrNamespaceUpdate, ErrNoPermission)
 	}
 
@@ -237,7 +308,7 @@ func (s *namespaceService) Delete(ctx context.Context, id model.ID) error {
 		return errors.Join(ErrNamespaceDelete, err)
 	}
 
-	if !s.permissionService.CtxUserHasPermission(ctx, id, model.PermissionKindDelete) {
+	if !s.permissionService.CtxUserHas(ctx, id, model.ActionNamespaceDelete) {
 		return errors.Join(ErrNamespaceDelete, ErrNoPermission)
 	}
 

@@ -7,7 +7,7 @@ import {
   v1NamespacesProjectsGetOptions,
   v1ProjectGetOptions,
 } from "@/lib/api/query-options";
-import { ResourceType } from "@/lib/auth/permissions";
+import { Action, ResourceType } from "@/lib/auth/permissions";
 import { requireResourcePermission } from "@/lib/entity-context";
 import { withRouteErrors } from "@/lib/route-errors";
 
@@ -27,12 +27,6 @@ export async function loadNamespaceOperationalContext(
       throw notFound();
     }
 
-    await requireResourcePermission(
-      queryClient,
-      ResourceType.Namespace,
-      namespaceId
-    );
-
     return {
       namespace: accessibleNamespace,
       organization: accessibleNamespace.organization,
@@ -46,10 +40,16 @@ export async function loadProjectOperationalContext(
   projectId: string
 ) {
   return withRouteErrors(async () => {
-    const { namespace, organization } = await loadNamespaceOperationalContext(
-      queryClient,
-      namespaceId
+    const accessibleWorkspace = await queryClient.fetchQuery(
+      accessibleNamespacesOptions(queryClient)
     );
+    const accessibleNamespace = accessibleWorkspace.namespaces.find(
+      (item) => item.id === namespaceId
+    );
+
+    if (!accessibleNamespace) {
+      throw notFound();
+    }
 
     const projectsPage = await collectListedPage(async (pageToken) =>
       queryClient.fetchQuery(
@@ -70,9 +70,14 @@ export async function loadProjectOperationalContext(
     await requireResourcePermission(
       queryClient,
       ResourceType.Project,
-      projectId
+      projectId,
+      Action.ProjectRead
     );
 
-    return { namespace, organization, project };
+    return {
+      namespace: accessibleNamespace,
+      organization: accessibleNamespace.organization,
+      project,
+    };
   }, "redirect");
 }

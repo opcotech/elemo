@@ -8,21 +8,12 @@ import {
 import { cacheProfiles } from "@/lib/query-client";
 
 const sourceQueries = vi.hoisted(() => ({
-  organizations: vi.fn(),
   namespaces: vi.fn(),
 }));
 
 vi.mock("@/lib/api/query-options", () => ({
-  v1OrganizationsGetOptions: () => ({
-    queryKey: ["organizations"],
-    queryFn: sourceQueries.organizations,
-  }),
-  v1OrganizationsNamespacesGetOptions: ({
-    path,
-  }: {
-    path: { id: string };
-  }) => ({
-    queryKey: ["organization-namespaces", path.id],
+  v1NamespacesGetOptions: () => ({
+    queryKey: ["accessible-namespaces-source"],
     queryFn: sourceQueries.namespaces,
   }),
 }));
@@ -39,13 +30,11 @@ const organization = {
 const namespace = {
   id: "namespace-1",
   name: "Product",
+  organization,
 };
 
 describe("accessible namespace cache", () => {
   beforeEach(() => {
-    sourceQueries.organizations
-      .mockReset()
-      .mockResolvedValue(listedPage([organization]));
     sourceQueries.namespaces
       .mockReset()
       .mockResolvedValue(listedPage([namespace]));
@@ -62,7 +51,6 @@ describe("accessible namespace cache", () => {
     const second = await queryClient.fetchQuery(options);
 
     expect(second).toBe(first);
-    expect(sourceQueries.organizations).toHaveBeenCalledTimes(1);
     expect(sourceQueries.namespaces).toHaveBeenCalledTimes(1);
   });
 
@@ -78,11 +66,10 @@ describe("accessible namespace cache", () => {
     });
     await queryClient.fetchQuery(options);
 
-    expect(sourceQueries.organizations).toHaveBeenCalledTimes(2);
     expect(sourceQueries.namespaces).toHaveBeenCalledTimes(2);
   });
 
-  it("aggregates namespaces with their owning organization metadata", async () => {
+  it("maps reachable namespaces with owning organization stubs", async () => {
     const secondOrganization = {
       id: "organization-2",
       name: "Globex",
@@ -90,13 +77,11 @@ describe("accessible namespace cache", () => {
     const secondNamespace = {
       id: "namespace-2",
       name: "Platform",
+      organization: secondOrganization,
     };
-    sourceQueries.organizations.mockResolvedValue(
-      listedPage([organization, secondOrganization])
+    sourceQueries.namespaces.mockResolvedValue(
+      listedPage([namespace, secondNamespace])
     );
-    sourceQueries.namespaces
-      .mockResolvedValueOnce(listedPage([namespace]))
-      .mockResolvedValueOnce(listedPage([secondNamespace]));
 
     const queryClient = new QueryClient();
     const result = await queryClient.fetchQuery(
@@ -107,30 +92,27 @@ describe("accessible namespace cache", () => {
     expect(result.namespaces).toEqual([
       {
         ...namespace,
-        organization,
         organizationId: organization.id,
         organizationName: organization.name,
       },
       {
         ...secondNamespace,
-        organization: secondOrganization,
         organizationId: secondOrganization.id,
         organizationName: secondOrganization.name,
       },
     ]);
   });
 
-  it("skips namespace fan-out when no organizations are accessible", async () => {
-    sourceQueries.organizations.mockResolvedValue(listedPage([]));
+  it("returns an empty workspace when no namespaces are reachable", async () => {
+    sourceQueries.namespaces.mockResolvedValue(listedPage([]));
     const queryClient = new QueryClient();
 
     await expect(
       queryClient.fetchQuery(accessibleNamespacesOptions(queryClient))
     ).resolves.toEqual({ organizations: [], namespaces: [] });
-    expect(sourceQueries.namespaces).not.toHaveBeenCalled();
   });
 
-  it("does not cache a partially failed aggregation", async () => {
+  it("does not cache a failed reachable-namespace fetch", async () => {
     sourceQueries.namespaces
       .mockRejectedValueOnce(new Error("namespace request failed"))
       .mockResolvedValueOnce(listedPage([namespace]));

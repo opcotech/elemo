@@ -81,7 +81,7 @@ func (s *licenseService) GetLicense(ctx context.Context) (license.License, error
 	ctx, span := s.tracer.Start(ctx, "service.licenseService/GetLicense")
 	defer span.End()
 
-	if !s.permissionService.CtxUserHasSystemRole(ctx, model.SystemRoleOwner, model.SystemRoleAdmin, model.SystemRoleSupport) {
+	if !s.permissionService.CtxUserHas(ctx, model.InstallationID(), model.ActionOrganizationCreate) {
 		return license.License{}, errors.Join(ErrLicenseGet, ErrNoPermission)
 	}
 

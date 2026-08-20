@@ -5,8 +5,6 @@ import { useForm } from "react-hook-form";
 import type { z } from "zod";
 
 import { RoleFormFields, roleFormSchema } from "./role-form-fields";
-import { RoleMemberAssignment } from "./role-member-assignment";
-import { RolePermissionAssignment } from "./role-permission-assignment";
 
 import { FieldProvider } from "@/components/ui/field";
 import { FormCard } from "@/components/ui/form-card";
@@ -28,6 +26,7 @@ import { getDefaultValue } from "@/lib/utils";
 const roleEditFormSchema = createFormSchema(
   zRolePatch.extend({
     name: roleFormSchema.shape.name,
+    key: roleFormSchema.shape.key,
   })
 );
 
@@ -50,7 +49,9 @@ export function RoleEditForm({
     resolver: zodResolver(roleEditFormSchema),
     defaultValues: {
       name: role.name,
+      key: role.key,
       description: getDefaultValue(role.description),
+      actions: role.actions ?? [],
     },
   });
 
@@ -58,10 +59,12 @@ export function RoleEditForm({
     if (!form.formState.isDirty) {
       form.reset({
         name: role.name,
+        key: role.key,
         description: getDefaultValue(role.description),
+        actions: role.actions ?? [],
       });
     }
-  }, [role.name, role.description, form]);
+  }, [role.name, role.key, role.description, role.actions, form]);
 
   const mutation = useFormMutation<
     Role,
@@ -95,10 +98,16 @@ export function RoleEditForm({
         params: { organizationId },
       }),
     transformValues: (values) => {
-      const normalizedBody = normalizePatchData(roleEditFormSchema, values, {
-        name: role.name,
-        description: role.description,
-      });
+      const { key: _key, ...patchValues } = values; // eslint-disable-line @typescript-eslint/no-unused-vars
+      const normalizedBody = normalizePatchData(
+        roleEditFormSchema,
+        patchValues,
+        {
+          name: role.name,
+          description: role.description,
+          actions: role.actions,
+        }
+      );
       return {
         path: {
           id: organizationId,
@@ -122,36 +131,19 @@ export function RoleEditForm({
       isPending={mutation.isPending}
       error={mutation.error || null}
       submitButtonText="Save Changes"
-      description="Update the role details below."
+      description="Update the role name, description, and bundled actions."
     >
       <FieldProvider {...form}>
-        <RoleFormFields control={form.control} isPending={mutation.isPending} />
+        <RoleFormFields
+          control={form.control}
+          isPending={mutation.isPending}
+          keyDisabled
+        />
       </FieldProvider>
     </FormCard>
   );
 }
 
-export function RoleEditFormWithPermissions({
-  role,
-  organizationId,
-  roleId,
-}: RoleEditFormProps) {
-  return (
-    <div className="flex flex-col gap-6">
-      <RoleEditForm
-        role={role}
-        organizationId={organizationId}
-        roleId={roleId}
-      />
-      <RoleMemberAssignment
-        organizationId={organizationId}
-        roleId={roleId}
-        roleName={role.name}
-      />
-      <RolePermissionAssignment
-        organizationId={organizationId}
-        roleId={roleId}
-      />
-    </div>
-  );
+export function RoleEditFormWithPermissions(props: RoleEditFormProps) {
+  return <RoleEditForm {...props} />;
 }

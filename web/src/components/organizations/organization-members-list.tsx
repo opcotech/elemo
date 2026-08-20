@@ -19,8 +19,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { UserAvatarCompact } from "@/components/ui/user-avatar";
-import type { OrganizationMember, Permission } from "@/lib/api/types";
-import { can } from "@/lib/auth/permissions";
+import type { EffectiveActions, OrganizationMember } from "@/lib/api/types";
+import { Action, can } from "@/lib/auth/permissions";
 import { zUserStatus } from "@/lib/client/zod.gen";
 import { sortOrganizationMembers } from "@/lib/organization-members";
 
@@ -75,7 +75,7 @@ export function OrganizationMembersList({
   error: unknown;
   currentUserId?: string | null;
   organizationId: string;
-  organizationPermissions: Permission[];
+  organizationPermissions: EffectiveActions;
 }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [removeMemberDialogOpen, setRemoveMemberDialogOpen] = useState(false);
@@ -84,7 +84,10 @@ export function OrganizationMembersList({
   const [selectedMember, setSelectedMember] =
     useState<OrganizationMember | null>(null);
 
-  const hasOrgWritePermission = can(organizationPermissions, "write");
+  const hasOrgWritePermission = can(
+    organizationPermissions,
+    Action.OrganizationMembersManage
+  );
 
   const handleRemoveClick = (member: OrganizationMember) => {
     setSelectedMember(member);

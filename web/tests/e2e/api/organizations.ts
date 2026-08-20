@@ -1,5 +1,5 @@
 import { withErrorHandling } from "./error-handler";
-import { grantPermission } from "./permissions";
+import { grantActions } from "./permissions";
 import { getRandomString } from "../utils/random";
 
 import type { Client } from "@/lib/client/client";
@@ -9,17 +9,15 @@ import {
   v1OrganizationsCreate,
 } from "@/lib/client/sdk.gen";
 import type {
+  Action,
   Organization,
   OrganizationCreate,
-  PermissionKind,
 } from "@/lib/client/types.gen";
 
 /**
  * Create an organization via API.
  *
- * @param client - Authenticated API client
- * @param orgData - Organization data (name and email are required)
- * @returns Created organization with ID
+ * The authenticated client must have organization.create on Installation.
  */
 export async function createOrganization(
   client: Client,
@@ -50,7 +48,6 @@ export async function createOrganization(
 
   const orgId = response.data.id || "";
 
-  // Fetch the full organization to get all fields
   const orgResponse = await withErrorHandling(
     async () => {
       return await v1OrganizationGet({
@@ -69,18 +66,17 @@ export async function createOrganization(
 }
 
 /**
- * Add a member to an organization with a specific permission.
+ * Add a member to an organization and optionally grant extra actions.
  *
- * @param client - Authenticated API client
- * @param orgId - Organization ID
- * @param userId - User ID to add
- * @param permissionKind - Permission kind (default: "*")
+ * Organization membership already confers organization.read via the org
+ * principal's org-member grant. Pass actions to grant additional capabilities
+ * directly to the user on the organization scope.
  */
 export async function addMemberToOrganization(
   client: Client,
   orgId: string,
   userId: string,
-  permissionKind: PermissionKind = "*"
+  actions: Action[] = []
 ): Promise<void> {
   await withErrorHandling(
     async () => {
@@ -97,6 +93,7 @@ export async function addMemberToOrganization(
     }
   );
 
-  // Grant permission to the user for the organization
-  await grantPermission(client, userId, orgId, "Organization", permissionKind);
+  if (actions.length > 0) {
+    await grantActions(client, userId, orgId, "Organization", actions);
+  }
 }

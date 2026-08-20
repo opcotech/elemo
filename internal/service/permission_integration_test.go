@@ -6,15 +6,13 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/suite"
-	"go.uber.org/mock/gomock"
 
-	"github.com/opcotech/elemo/internal/config"
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg"
+	"github.com/opcotech/elemo/internal/pkg/optional"
 	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/service"
 	"github.com/opcotech/elemo/internal/testutil"
-	"github.com/opcotech/elemo/internal/testutil/mock"
 	testModel "github.com/opcotech/elemo/internal/testutil/model"
 	testRepo "github.com/opcotech/elemo/internal/testutil/repository"
 )
@@ -22,17 +20,8 @@ import (
 type PermissionServiceIntegrationTestSuite struct {
 	testutil.ContainerIntegrationTestSuite
 	testutil.Neo4jContainerIntegrationTestSuite
-	testutil.PgContainerIntegrationTestSuite
 
-	organizationService service.OrganizationService
-	permissionService   service.PermissionService
-	emailService        service.EmailService
-
-	owner        *repository.User
-	guest        *repository.User
-	organization *service.Organization
-	permission   *service.Permission
-	createOpts   service.CreatePermissionOpts
+	permissionService service.PermissionService
 
 	ctx context.Context
 }
@@ -41,312 +30,402 @@ func (s *PermissionServiceIntegrationTestSuite) SetupSuite() {
 	if testing.Short() {
 		s.T().Skip("skipping integration test")
 	}
-	container := reflect.TypeOf(s).Elem().String()
-	s.SetupNeo4j(&s.ContainerIntegrationTestSuite, container)
-	s.SetupPg(&s.ContainerIntegrationTestSuite, container)
+	s.SetupNeo4j(&s.ContainerIntegrationTestSuite, reflect.TypeOf(s).Elem().String())
 
 	var err error
-	s.permissionService, err = service.NewPermissionService(s.PermissionRepo)
-	s.Require().NoError(err)
-
-	licenseService, err := service.NewLicenseService(
-		testutil.ParseLicense(s.T()),
-		s.LicenseRepo,
-		service.WithPermissionService(s.permissionService),
-	)
-	s.Require().NoError(err)
-
-	ctrl := gomock.NewController(s.T())
-	emailSender := mock.NewEmailSender(ctrl)
-
-	smtpConf := &config.SMTPConfig{
-		ClientURL:      "http://localhost:3000",
-		SupportAddress: "support@example.com",
-	}
-	s.emailService, err = service.NewEmailService(emailSender, "templates", smtpConf)
-	s.Require().NoError(err)
-
-	s.organizationService, err = service.NewOrganizationService(
-		service.WithUserRepository(s.UserRepo),
-		service.WithOrganizationRepository(s.OrganizationRepo),
-		service.WithPermissionService(s.permissionService),
-		service.WithLicenseService(licenseService),
-		service.WithUserTokenRepository(s.UserTokenRepository),
-		service.WithEmailService(s.emailService),
+	s.permissionService, err = service.NewPermissionService(
+		s.PermissionRepo,
+		service.WithRoleRepository(s.RoleRepo),
 	)
 	s.Require().NoError(err)
 }
 
 func (s *PermissionServiceIntegrationTestSuite) SetupTest() {
-	var err error
-	s.owner, err = s.UserRepo.Create(context.Background(), testModel.NewCreateUserOpts())
-	s.Require().NoError(err)
-
-	s.guest, err = s.UserRepo.Create(context.Background(), testModel.NewCreateUserOpts())
-	s.Require().NoError(err)
-
-	s.ctx = context.WithValue(context.Background(), pkg.CtxKeyUserID, s.owner.ID)
-	s.Require().NoError(testRepo.MakeUserSystemOwner(s.owner.ID, s.Neo4jDB))
-
-	repoOrgOpts := testModel.NewCreateOrganizationOpts(s.owner.ID)
-	s.organization, err = s.organizationService.Create(s.ctx, s.owner.ID, service.CreateOrganizationOpts{
-		Name:    repoOrgOpts.Name,
-		Email:   repoOrgOpts.Email,
-		Logo:    repoOrgOpts.Logo,
-		Website: repoOrgOpts.Website,
-		Status:  repoOrgOpts.Status,
-	})
-	s.Require().NoError(err)
-
-	s.createOpts = service.CreatePermissionOpts{
-		Subject: s.guest.ID,
-		Target:  s.organization.ID,
-		Kind:    model.PermissionKindRead,
-	}
-	s.permission = nil
+	s.ctx = context.Background()
 }
 
 func (s *PermissionServiceIntegrationTestSuite) TearDownTest() {
 	defer s.CleanupNeo4j(&s.ContainerIntegrationTestSuite)
-	defer s.CleanupPg(&s.ContainerIntegrationTestSuite)
 }
 
 func (s *PermissionServiceIntegrationTestSuite) TearDownSuite() {
 	defer s.CleanupContainers()
 }
 
-func (s *PermissionServiceIntegrationTestSuite) TestCreate() {
-	permission, err := s.permissionService.Create(s.ctx, s.createOpts)
+func (s *PermissionServiceIntegrationTestSuite) createUser() *repository.User {
+	user, err := s.UserRepo.Create(s.ctx, testModel.NewCreateUserOpts())
 	s.Require().NoError(err)
-	s.permission = permission
-
-	s.Require().NotEmpty(permission.ID)
-	s.Assert().NotNil(permission.CreatedAt)
-	s.Assert().Nil(permission.UpdatedAt)
+	return user
 }
 
-func (s *PermissionServiceIntegrationTestSuite) TestCtxUserCreate() {
-	ctx := context.WithValue(context.Background(), pkg.CtxKeyUserID, s.guest.ID)
-	_, err := s.permissionService.CtxUserCreate(ctx, s.createOpts)
-	s.Require().ErrorIs(err, service.ErrNoPermission)
-
-	ctx = context.WithValue(context.Background(), pkg.CtxKeyUserID, s.owner.ID)
-	permission, err := s.permissionService.CtxUserCreate(ctx, s.createOpts)
-	s.Require().NoError(err)
-	s.permission = permission
+func (s *PermissionServiceIntegrationTestSuite) userCtx(userID model.ID) context.Context {
+	return context.WithValue(s.ctx, pkg.CtxKeyUserID, userID)
 }
 
-func (s *PermissionServiceIntegrationTestSuite) TestGetBySubject() {
-	permission, err := s.permissionService.Create(s.ctx, s.createOpts)
+func (s *PermissionServiceIntegrationTestSuite) TestDirectAllowDeny() {
+	owner := s.createUser()
+	guest := s.createUser()
+	org, err := s.OrganizationRepo.Create(s.ctx, testModel.NewCreateOrganizationOpts(owner.ID))
 	s.Require().NoError(err)
-	s.permission = permission
 
-	permissions, err := s.permissionService.GetBySubject(s.ctx, s.guest.ID)
-	s.Require().NoError(err)
-	s.Assert().Len(permissions, 1)
-	s.Assert().Equal(permission.ID, permissions[0].ID)
-}
+	s.Assert().False(s.permissionService.CtxUserHas(s.userCtx(guest.ID), org.ID, model.ActionOrganizationRead))
 
-func (s *PermissionServiceIntegrationTestSuite) TestGetByTarget() {
-	permission, err := s.permissionService.Create(s.ctx, s.createOpts)
-	s.Require().NoError(err)
-	s.permission = permission
-
-	permissions, err := s.permissionService.GetByTarget(s.ctx, s.organization.ID)
-	s.Require().NoError(err)
-	s.Assert().Len(permissions, 2) // +1 for organization owner permission
-
-	userIDs := make([]model.ID, 0, len(permissions))
-	for _, p := range permissions {
-		userIDs = append(userIDs, p.Subject)
-	}
-
-	s.Assert().ElementsMatch([]model.ID{s.owner.ID, s.guest.ID}, userIDs)
-}
-
-func (s *PermissionServiceIntegrationTestSuite) TestGetBySubjectAndTarget() {
-	permission, err := s.permissionService.Create(s.ctx, s.createOpts)
-	s.Require().NoError(err)
-	s.permission = permission
-
-	repoOrgOpts := testModel.NewCreateOrganizationOpts(s.guest.ID)
-	_, err = s.organizationService.Create(s.ctx, s.guest.ID, service.CreateOrganizationOpts{
-		Name:    repoOrgOpts.Name,
-		Email:   repoOrgOpts.Email,
-		Logo:    repoOrgOpts.Logo,
-		Website: repoOrgOpts.Website,
-		Status:  repoOrgOpts.Status,
+	_, err = s.permissionService.Create(s.ctx, service.CreateGrantOpts{
+		Principal: guest.ID,
+		Scope:     org.ID,
+		Actions:   []model.Action{model.ActionOrganizationRead},
 	})
 	s.Require().NoError(err)
 
-	permissions, err := s.permissionService.GetBySubjectAndTarget(s.ctx, s.guest.ID, s.organization.ID)
-	s.Require().NoError(err)
-	s.Assert().Len(permissions, 1)
-	s.Assert().Equal(permission.ID, permissions[0].ID)
+	s.Assert().True(s.permissionService.CtxUserHas(s.userCtx(guest.ID), org.ID, model.ActionOrganizationRead))
+	s.Assert().False(s.permissionService.CtxUserHas(s.userCtx(guest.ID), org.ID, model.ActionOrganizationDelete))
 }
 
-func (s *PermissionServiceIntegrationTestSuite) TestHasAnyRelation() {
-	hasRelation, err := s.permissionService.HasAnyRelation(s.ctx, s.guest.ID, s.organization.ID)
-	s.Require().NoError(err)
-	s.Assert().False(hasRelation)
+func (s *PermissionServiceIntegrationTestSuite) TestOrganizationCreateGrant() {
+	user := s.createUser()
+	ctx := s.userCtx(user.ID)
+	s.Assert().False(s.permissionService.CtxUserHas(ctx, model.InstallationID(), model.ActionOrganizationCreate))
 
-	permission, err := s.permissionService.Create(s.ctx, s.createOpts)
-	s.Require().NoError(err)
-	s.permission = permission
-
-	hasRelation, err = s.permissionService.HasAnyRelation(s.ctx, s.guest.ID, s.organization.ID)
-	s.Require().NoError(err)
-	s.Assert().True(hasRelation)
+	s.Require().NoError(testRepo.GrantOrganizationCreate(user.ID, s.Neo4jDB))
+	s.Assert().True(s.permissionService.CtxUserHas(ctx, model.InstallationID(), model.ActionOrganizationCreate))
 }
 
-func (s *PermissionServiceIntegrationTestSuite) TestCtxUserHasAnyRelation() {
-	ctx := context.WithValue(context.Background(), pkg.CtxKeyUserID, s.guest.ID)
-
-	hasRelation := s.permissionService.CtxUserHasAnyRelation(ctx, s.organization.ID)
-	s.Assert().False(hasRelation)
-
-	permission, err := s.permissionService.Create(ctx, s.createOpts)
+func (s *PermissionServiceIntegrationTestSuite) TestOrgAdminDoesNotIncludeOrganizationCreate() {
+	owner := s.createUser()
+	guest := s.createUser()
+	org, err := s.OrganizationRepo.Create(s.ctx, testModel.NewCreateOrganizationOpts(owner.ID))
 	s.Require().NoError(err)
-	s.permission = permission
 
-	hasRelation = s.permissionService.CtxUserHasAnyRelation(ctx, s.organization.ID)
-	s.Assert().True(hasRelation)
+	tmpl, err := model.RoleTemplateByKey(model.RoleKeyOrgAdmin)
+	s.Require().NoError(err)
+	role, err := s.RoleRepo.Create(s.ctx, repository.CreateRoleOpts{
+		Key:         tmpl.Key,
+		Name:        tmpl.Name,
+		Description: tmpl.Description,
+		Actions:     tmpl.ActionStrings(),
+		CreatedBy:   owner.ID,
+		BelongsTo:   org.ID,
+	})
+	s.Require().NoError(err)
+	s.Require().NoError(s.permissionService.GrantRole(s.ctx, guest.ID, org.ID, role.ID))
+
+	s.Assert().True(s.permissionService.CtxUserHas(s.userCtx(guest.ID), org.ID, model.ActionOrganizationRead))
+	s.Assert().False(s.permissionService.CtxUserHas(s.userCtx(guest.ID), model.InstallationID(), model.ActionOrganizationCreate))
 }
 
-func (s *PermissionServiceIntegrationTestSuite) TestHasSystemRole() {
-	hasSystemRole, err := s.permissionService.HasSystemRole(s.ctx, s.guest.ID, model.SystemRoleOwner)
+func (s *PermissionServiceIntegrationTestSuite) TestAncestorAndChildScope() {
+	owner := s.createUser()
+	actor := s.createUser()
+	org, err := s.OrganizationRepo.Create(s.ctx, testModel.NewCreateOrganizationOpts(owner.ID))
 	s.Require().NoError(err)
-	s.Assert().False(hasSystemRole)
-
-	s.Require().NoError(testRepo.MakeUserSystemOwner(s.guest.ID, s.Neo4jDB))
-
-	hasSystemRole, err = s.permissionService.HasSystemRole(s.ctx, s.guest.ID, model.SystemRoleOwner)
+	ns, err := s.NamespaceRepo.Create(s.ctx, testModel.NewCreateNamespaceOpts(owner.ID, org.ID))
 	s.Require().NoError(err)
-	s.Assert().True(hasSystemRole)
+	project, err := s.ProjectRepo.Create(s.ctx, testModel.NewCreateProjectOpts(ns.ID, owner.ID))
+	s.Require().NoError(err)
+	siblingNS, err := s.NamespaceRepo.Create(s.ctx, testModel.NewCreateNamespaceOpts(owner.ID, org.ID))
+	s.Require().NoError(err)
+
+	_, err = s.permissionService.Create(s.ctx, service.CreateGrantOpts{
+		Principal: actor.ID,
+		Scope:     ns.ID,
+		Actions:   []model.Action{model.ActionProjectRead, model.ActionNamespaceRead},
+	})
+	s.Require().NoError(err)
+
+	ctx := s.userCtx(actor.ID)
+	s.Assert().True(s.permissionService.CtxUserHas(ctx, project.ID, model.ActionProjectRead))
+	s.Assert().False(s.permissionService.CtxUserHas(ctx, siblingNS.ID, model.ActionNamespaceRead))
+	s.Assert().False(s.permissionService.CtxUserHas(ctx, org.ID, model.ActionOrganizationRead))
 }
 
-func (s *PermissionServiceIntegrationTestSuite) TestCtxUserHasSystemRole() {
-	ctx := context.WithValue(context.Background(), pkg.CtxKeyUserID, s.guest.ID)
+func (s *PermissionServiceIntegrationTestSuite) TestTeamGrant() {
+	owner := s.createUser()
+	member := s.createUser()
+	org, err := s.OrganizationRepo.Create(s.ctx, testModel.NewCreateOrganizationOpts(owner.ID))
+	s.Require().NoError(err)
+	ns, err := s.NamespaceRepo.Create(s.ctx, testModel.NewCreateNamespaceOpts(owner.ID, org.ID))
+	s.Require().NoError(err)
+	project, err := s.ProjectRepo.Create(s.ctx, testModel.NewCreateProjectOpts(ns.ID, owner.ID))
+	s.Require().NoError(err)
+	team, err := s.TeamRepo.Create(s.ctx, repository.CreateTeamOpts{
+		Name:      "svc-team",
+		CreatedBy: owner.ID,
+		BelongsTo: org.ID,
+	})
+	s.Require().NoError(err)
 
-	hasSystemRole := s.permissionService.CtxUserHasSystemRole(ctx, model.SystemRoleOwner)
-	s.Assert().False(hasSystemRole)
+	_, err = s.permissionService.Create(s.ctx, service.CreateGrantOpts{
+		Principal: team.ID,
+		Scope:     project.ID,
+		Actions:   []model.Action{model.ActionProjectRead},
+	})
+	s.Require().NoError(err)
 
-	s.Require().NoError(testRepo.MakeUserSystemOwner(s.guest.ID, s.Neo4jDB))
-
-	hasSystemRole = s.permissionService.CtxUserHasSystemRole(ctx, model.SystemRoleOwner)
-	s.Assert().True(hasSystemRole)
+	ctx := s.userCtx(member.ID)
+	s.Assert().False(s.permissionService.CtxUserHas(ctx, project.ID, model.ActionProjectRead))
+	s.Require().NoError(s.TeamRepo.AddMember(s.ctx, team.ID, member.ID, org.ID))
+	s.Assert().True(s.permissionService.CtxUserHas(ctx, project.ID, model.ActionProjectRead))
+	s.Require().NoError(s.TeamRepo.RemoveMember(s.ctx, team.ID, member.ID, org.ID))
+	s.Assert().False(s.permissionService.CtxUserHas(ctx, project.ID, model.ActionProjectRead))
 }
 
-func (s *PermissionServiceIntegrationTestSuite) TestHasPermission() {
-	permission, err := s.permissionService.Create(s.ctx, s.createOpts)
+func (s *PermissionServiceIntegrationTestSuite) TestCreatorWithoutGrantDenied() {
+	owner := s.createUser()
+	org, err := s.OrganizationRepo.Create(s.ctx, testModel.NewCreateOrganizationOpts(owner.ID))
 	s.Require().NoError(err)
-	s.permission = permission
-
-	tests := []struct {
-		userID model.ID
-		kind   model.PermissionKind
-		want   bool
-	}{
-		{s.guest.ID, model.PermissionKindAll, false},
-		{s.guest.ID, model.PermissionKindCreate, false},
-		{s.guest.ID, model.PermissionKindRead, true},
-		{s.guest.ID, model.PermissionKindWrite, false},
-		{s.guest.ID, model.PermissionKindDelete, false},
-		{s.owner.ID, model.PermissionKindAll, true},
-		{s.owner.ID, model.PermissionKindCreate, true},
-		{s.owner.ID, model.PermissionKindRead, true},
-		{s.owner.ID, model.PermissionKindWrite, true},
-		{s.owner.ID, model.PermissionKindDelete, true},
-	}
-
-	for _, tt := range tests {
-		hasPermission, err := s.permissionService.HasPermission(s.ctx, tt.userID, s.organization.ID, tt.kind)
-		s.Assert().NoError(err)
-		s.Assert().Equal(tt.want, hasPermission)
-	}
+	s.Assert().False(s.permissionService.CtxUserHas(s.userCtx(owner.ID), org.ID, model.ActionOrganizationRead))
 }
 
-func (s *PermissionServiceIntegrationTestSuite) TestCtxUserHasPermission() {
-	permission, err := s.permissionService.Create(s.ctx, s.createOpts)
+func (s *PermissionServiceIntegrationTestSuite) TestCtxUserCreateRequiresManageAndHeldActions() {
+	owner := s.createUser()
+	guest := s.createUser()
+	org, err := s.OrganizationRepo.Create(s.ctx, testModel.NewCreateOrganizationOpts(owner.ID))
 	s.Require().NoError(err)
-	s.permission = permission
 
-	tests := []struct {
-		userID model.ID
-		kind   model.PermissionKind
-		want   bool
-	}{
-		{s.guest.ID, model.PermissionKindAll, false},
-		{s.guest.ID, model.PermissionKindCreate, false},
-		{s.guest.ID, model.PermissionKindRead, true},
-		{s.guest.ID, model.PermissionKindWrite, false},
-		{s.guest.ID, model.PermissionKindDelete, false},
-		{s.owner.ID, model.PermissionKindAll, true},
-		{s.owner.ID, model.PermissionKindCreate, true},
-		{s.owner.ID, model.PermissionKindRead, true},
-		{s.owner.ID, model.PermissionKindWrite, true},
-		{s.owner.ID, model.PermissionKindDelete, true},
-	}
-
-	for _, tt := range tests {
-		ctx := context.WithValue(s.ctx, pkg.CtxKeyUserID, tt.userID)
-		hasPermission := s.permissionService.CtxUserHasPermission(ctx, s.organization.ID, tt.kind)
-		s.Assert().Equal(tt.want, hasPermission)
-	}
-}
-
-func (s *PermissionServiceIntegrationTestSuite) TestUpdate() {
-	permission, err := s.permissionService.Create(s.ctx, s.createOpts)
+	_, err = s.permissionService.Create(s.ctx, service.CreateGrantOpts{
+		Principal: owner.ID,
+		Scope:     org.ID,
+		Actions:   []model.Action{model.ActionPermissionManage, model.ActionOrganizationRead},
+	})
 	s.Require().NoError(err)
-	s.permission = permission
 
-	updated, err := s.permissionService.Update(s.ctx, permission.ID, model.PermissionKindWrite)
+	ownerCtx := s.userCtx(owner.ID)
+	_, err = s.permissionService.CtxUserCreate(ownerCtx, service.CreateGrantOpts{
+		Principal: guest.ID,
+		Scope:     org.ID,
+		Actions:   []model.Action{model.ActionOrganizationRead},
+	})
 	s.Require().NoError(err)
-	s.Require().Equal(model.PermissionKindWrite, updated.Kind)
-}
 
-func (s *PermissionServiceIntegrationTestSuite) TestCtxUserUpdate() {
-	permission, err := s.permissionService.Create(s.ctx, s.createOpts)
-	s.Require().NoError(err)
-	s.permission = permission
+	_, err = s.permissionService.CtxUserCreate(ownerCtx, service.CreateGrantOpts{
+		Principal: guest.ID,
+		Scope:     org.ID,
+		Actions:   []model.Action{model.ActionOrganizationCreate},
+	})
+	s.Require().ErrorIs(err, model.ErrPrivilegeEscalation)
 
-	ctx := context.WithValue(context.Background(), pkg.CtxKeyUserID, s.guest.ID)
-	_, err = s.permissionService.CtxUserUpdate(ctx, permission.ID, model.PermissionKindWrite)
+	_, err = s.permissionService.CtxUserCreate(s.userCtx(guest.ID), service.CreateGrantOpts{
+		Principal: guest.ID,
+		Scope:     org.ID,
+		Actions:   []model.Action{model.ActionOrganizationRead},
+	})
 	s.Require().ErrorIs(err, service.ErrNoPermission)
-
-	ctx = context.WithValue(context.Background(), pkg.CtxKeyUserID, s.owner.ID)
-	updated, err := s.permissionService.CtxUserUpdate(ctx, permission.ID, model.PermissionKindWrite)
-	s.Require().NoError(err)
-	s.Require().Equal(model.PermissionKindWrite, updated.Kind)
 }
 
-func (s *PermissionServiceIntegrationTestSuite) TestDelete() {
-	permission, err := s.permissionService.Create(s.ctx, s.createOpts)
-	s.Require().NoError(err)
-	s.permission = permission
-
-	_, err = s.permissionService.Get(s.ctx, permission.ID)
+func (s *PermissionServiceIntegrationTestSuite) TestCtxUserDeleteRequiresManage() {
+	owner := s.createUser()
+	guest := s.createUser()
+	org, err := s.OrganizationRepo.Create(s.ctx, testModel.NewCreateOrganizationOpts(owner.ID))
 	s.Require().NoError(err)
 
-	err = s.permissionService.Delete(s.ctx, permission.ID)
+	_, err = s.permissionService.Create(s.ctx, service.CreateGrantOpts{
+		Principal: owner.ID,
+		Scope:     org.ID,
+		Actions:   []model.Action{model.ActionPermissionManage, model.ActionOrganizationRead},
+	})
 	s.Require().NoError(err)
 
-	_, err = s.permissionService.Get(s.ctx, permission.ID)
-	s.Require().ErrorIs(err, repository.ErrNotFound)
+	grant, err := s.permissionService.Create(s.ctx, service.CreateGrantOpts{
+		Principal: guest.ID,
+		Scope:     org.ID,
+		Actions:   []model.Action{model.ActionOrganizationRead},
+	})
+	s.Require().NoError(err)
+
+	s.Require().ErrorIs(s.permissionService.CtxUserDelete(s.userCtx(guest.ID), grant.ID), service.ErrNoPermission)
+	s.Require().NoError(s.permissionService.CtxUserDelete(s.userCtx(owner.ID), grant.ID))
+	s.Assert().False(s.permissionService.CtxUserHas(s.userCtx(guest.ID), org.ID, model.ActionOrganizationRead))
 }
 
-func (s *PermissionServiceIntegrationTestSuite) TestCtxUserDelete() {
-	permission, err := s.permissionService.Create(s.ctx, s.createOpts)
+func (s *PermissionServiceIntegrationTestSuite) TestRevokeAndDisableDeny() {
+	owner := s.createUser()
+	actor := s.createUser()
+	org, err := s.OrganizationRepo.Create(s.ctx, testModel.NewCreateOrganizationOpts(owner.ID))
 	s.Require().NoError(err)
-	s.permission = permission
 
-	ctx := context.WithValue(context.Background(), pkg.CtxKeyUserID, s.guest.ID)
-	err = s.permissionService.CtxUserDelete(ctx, permission.ID)
-	s.Require().ErrorIs(err, service.ErrNoPermission)
-
-	ctx = context.WithValue(context.Background(), pkg.CtxKeyUserID, s.owner.ID)
-	err = s.permissionService.CtxUserDelete(ctx, permission.ID)
+	grant, err := s.permissionService.Create(s.ctx, service.CreateGrantOpts{
+		Principal: actor.ID,
+		Scope:     org.ID,
+		Actions:   []model.Action{model.ActionOrganizationRead},
+	})
 	s.Require().NoError(err)
+	s.Assert().True(s.permissionService.CtxUserHas(s.userCtx(actor.ID), org.ID, model.ActionOrganizationRead))
+
+	s.Require().NoError(s.permissionService.Delete(s.ctx, grant.ID))
+	s.Assert().False(s.permissionService.CtxUserHas(s.userCtx(actor.ID), org.ID, model.ActionOrganizationRead))
+
+	_, err = s.permissionService.Create(s.ctx, service.CreateGrantOpts{
+		Principal: actor.ID,
+		Scope:     org.ID,
+		Actions:   []model.Action{model.ActionOrganizationRead},
+	})
+	s.Require().NoError(err)
+	_, err = s.UserRepo.Update(s.ctx, actor.ID, repository.UpdateUserOpts{
+		Status: optional.Some(model.UserStatusInactive),
+	})
+	s.Require().NoError(err)
+	s.Assert().False(s.permissionService.CtxUserHas(s.userCtx(actor.ID), org.ID, model.ActionOrganizationRead))
+}
+
+func (s *PermissionServiceIntegrationTestSuite) TestListDoesNotLeakUngrantedOrgs() {
+	owner := s.createUser()
+	stranger := s.createUser()
+	visible, err := s.OrganizationRepo.Create(s.ctx, testModel.NewCreateOrganizationOpts(owner.ID))
+	s.Require().NoError(err)
+	hidden, err := s.OrganizationRepo.Create(s.ctx, testModel.NewCreateOrganizationOpts(owner.ID))
+	s.Require().NoError(err)
+
+	_, err = s.permissionService.Create(s.ctx, service.CreateGrantOpts{
+		Principal: stranger.ID,
+		Scope:     visible.ID,
+		Actions:   []model.Action{model.ActionOrganizationRead},
+	})
+	s.Require().NoError(err)
+
+	page, err := s.OrganizationRepo.List(s.ctx, stranger.ID, repository.CursorPage{Size: 20}, repository.OrganizationListProjection())
+	s.Require().NoError(err)
+	ids := make([]model.ID, 0, len(page.Items))
+	for _, org := range page.Items {
+		ids = append(ids, org.ID)
+	}
+	s.Assert().Contains(ids, visible.ID)
+	s.Assert().NotContains(ids, hidden.ID)
+}
+
+func (s *PermissionServiceIntegrationTestSuite) TestIDORHasWithoutGrant() {
+	owner := s.createUser()
+	stranger := s.createUser()
+	org, err := s.OrganizationRepo.Create(s.ctx, testModel.NewCreateOrganizationOpts(owner.ID))
+	s.Require().NoError(err)
+	_, err = s.permissionService.Create(s.ctx, service.CreateGrantOpts{
+		Principal: owner.ID,
+		Scope:     org.ID,
+		Actions:   []model.Action{model.ActionOrganizationRead},
+	})
+	s.Require().NoError(err)
+
+	allowed, err := s.permissionService.Has(s.ctx, stranger.ID, org.ID, model.ActionOrganizationRead)
+	s.Require().NoError(err)
+	s.Assert().False(allowed)
+}
+
+func (s *PermissionServiceIntegrationTestSuite) TestEffectiveActionsExplainAndListVisible() {
+	owner := s.createUser()
+	actor := s.createUser()
+	org, err := s.OrganizationRepo.Create(s.ctx, testModel.NewCreateOrganizationOpts(owner.ID))
+	s.Require().NoError(err)
+	ns, err := s.NamespaceRepo.Create(s.ctx, testModel.NewCreateNamespaceOpts(owner.ID, org.ID))
+	s.Require().NoError(err)
+	project, err := s.ProjectRepo.Create(s.ctx, testModel.NewCreateProjectOpts(ns.ID, owner.ID))
+	s.Require().NoError(err)
+
+	empty, err := s.permissionService.EffectiveActions(s.ctx, actor.ID, org.ID)
+	s.Require().NoError(err)
+	s.Assert().Empty(empty)
+
+	denied, err := s.permissionService.Explain(s.ctx, actor.ID, org.ID, model.ActionOrganizationRead)
+	s.Require().NoError(err)
+	s.Assert().False(denied.Allowed)
+
+	_, err = s.permissionService.Create(s.ctx, service.CreateGrantOpts{
+		Principal: actor.ID,
+		Scope:     ns.ID,
+		Actions:   []model.Action{model.ActionProjectRead},
+	})
+	s.Require().NoError(err)
+
+	actions, err := s.permissionService.EffectiveActions(s.ctx, actor.ID, project.ID)
+	s.Require().NoError(err)
+	s.Assert().Contains(actions, model.ActionProjectRead)
+
+	explained, err := s.permissionService.Explain(s.ctx, actor.ID, project.ID, model.ActionProjectRead)
+	s.Require().NoError(err)
+	s.Assert().True(explained.Allowed)
+
+	ids, err := s.PermissionRepo.ListVisible(s.ctx, actor.ID, model.ActionProjectRead, ns.ID, model.ResourceTypeProject)
+	s.Require().NoError(err)
+	s.Assert().Contains(ids, project.ID)
+}
+
+func (s *PermissionServiceIntegrationTestSuite) TestLinkInScopeOfCycle() {
+	owner := s.createUser()
+	actor := s.createUser()
+	parent, err := s.OrganizationRepo.Create(s.ctx, testModel.NewCreateOrganizationOpts(owner.ID))
+	s.Require().NoError(err)
+	child, err := s.OrganizationRepo.Create(s.ctx, testModel.NewCreateOrganizationOpts(owner.ID))
+	s.Require().NoError(err)
+
+	s.Require().ErrorIs(s.permissionService.LinkInScopeOf(s.ctx, parent.ID, parent.ID), model.ErrGrantCycle)
+	s.Require().NoError(s.permissionService.LinkInScopeOf(s.ctx, child.ID, parent.ID))
+	_, err = s.permissionService.Create(s.ctx, service.CreateGrantOpts{
+		Principal: actor.ID,
+		Scope:     parent.ID,
+		Actions:   []model.Action{model.ActionOrganizationRead},
+	})
+	s.Require().NoError(err)
+	allowed, err := s.permissionService.Has(s.ctx, actor.ID, child.ID, model.ActionOrganizationRead)
+	s.Require().NoError(err)
+	s.Assert().True(allowed)
+	s.Require().ErrorIs(s.permissionService.LinkInScopeOf(s.ctx, parent.ID, child.ID), model.ErrGrantCycle)
+}
+
+func (s *PermissionServiceIntegrationTestSuite) TestOrgAsPrincipal() {
+	ownerA := s.createUser()
+	ownerB := s.createUser()
+	memberA := s.createUser()
+	orgA, err := s.OrganizationRepo.Create(s.ctx, testModel.NewCreateOrganizationOpts(ownerA.ID))
+	s.Require().NoError(err)
+	orgB, err := s.OrganizationRepo.Create(s.ctx, testModel.NewCreateOrganizationOpts(ownerB.ID))
+	s.Require().NoError(err)
+	s.Require().NoError(s.OrganizationRepo.AddMember(s.ctx, orgA.ID, memberA.ID))
+	nsB, err := s.NamespaceRepo.Create(s.ctx, testModel.NewCreateNamespaceOpts(ownerB.ID, orgB.ID))
+	s.Require().NoError(err)
+	projectB, err := s.ProjectRepo.Create(s.ctx, testModel.NewCreateProjectOpts(nsB.ID, ownerB.ID))
+	s.Require().NoError(err)
+
+	_, err = s.permissionService.Create(s.ctx, service.CreateGrantOpts{
+		Principal: orgA.ID,
+		Scope:     projectB.ID,
+		Actions:   []model.Action{model.ActionProjectRead},
+	})
+	s.Require().NoError(err)
+	allowed, err := s.permissionService.Has(s.ctx, memberA.ID, projectB.ID, model.ActionProjectRead)
+	s.Require().NoError(err)
+	s.Assert().True(allowed)
+}
+
+func (s *PermissionServiceIntegrationTestSuite) TestCtxUserCreateRoleIDEscalation() {
+	owner := s.createUser()
+	actor := s.createUser()
+	guest := s.createUser()
+	org, err := s.OrganizationRepo.Create(s.ctx, testModel.NewCreateOrganizationOpts(owner.ID))
+	s.Require().NoError(err)
+
+	_, err = s.permissionService.Create(s.ctx, service.CreateGrantOpts{
+		Principal: actor.ID,
+		Scope:     org.ID,
+		Actions:   []model.Action{model.ActionPermissionManage, model.ActionOrganizationRead},
+	})
+	s.Require().NoError(err)
+
+	tmpl, err := model.RoleTemplateByKey(model.RoleKeyOrgAdmin)
+	s.Require().NoError(err)
+	role, err := s.RoleRepo.Create(s.ctx, repository.CreateRoleOpts{
+		Key:         tmpl.Key,
+		Name:        tmpl.Name,
+		Description: tmpl.Description,
+		Actions:     tmpl.ActionStrings(),
+		CreatedBy:   owner.ID,
+		BelongsTo:   org.ID,
+	})
+	s.Require().NoError(err)
+
+	_, err = s.permissionService.CtxUserCreate(s.userCtx(actor.ID), service.CreateGrantOpts{
+		Principal: guest.ID,
+		Scope:     org.ID,
+		RoleID:    &role.ID,
+	})
+	s.Require().ErrorIs(err, model.ErrPrivilegeEscalation)
 }
 
 func TestPermissionServiceIntegrationTestSuite(t *testing.T) {

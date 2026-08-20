@@ -96,7 +96,7 @@ type DocumentService interface {
 	Update(ctx context.Context, id model.ID, opts UpdateDocumentOpts) (*Document, error)
 	// MoveLibrary replaces SCOPED_TO and clears LOCATED_IN.
 	MoveLibrary(ctx context.Context, id, libraryID model.ID) (*Document, error)
-	// MoveToFolder sets or clears LOCATED_IN. folderID == nil is library root.
+	// MoveToFolder sets or clears LOCATED_IN. nil folderID is the library root.
 	MoveToFolder(ctx context.Context, id model.ID, folderID *model.ID) (*Document, error)
 	// Relate creates RELATED_TO a project or issue.
 	Relate(ctx context.Context, id, targetID model.ID) error
@@ -160,7 +160,7 @@ func documentFromRepository(d *repository.Document, content []byte) *Document {
 }
 
 // documentContent returns stored file bytes. A missing blob is treated as
-// empty so metadata and location updates can succeed when object storage has no object.
+// empty, so metadata and location updates can succeed when object storage has no object.
 func (s *documentService) documentContent(ctx context.Context, fileID string) ([]byte, error) {
 	content, err := s.staticFileService.Get(ctx, fileID)
 	if err != nil {
@@ -172,11 +172,12 @@ func (s *documentService) documentContent(ctx context.Context, fileID string) ([
 	return content, nil
 }
 
-func (s *documentService) hasDocumentOrLibraryPermission(ctx context.Context, doc *repository.Document, kind model.PermissionKind) bool {
-	if s.permissionService.CtxUserHasPermission(ctx, doc.ID, kind) {
-		return true
-	}
-	return s.permissionService.CtxUserHasPermission(ctx, doc.Library.ID, kind)
+func (s *documentService) hasDocumentPermission(ctx context.Context, docID model.ID, action model.Action) bool {
+	return s.permissionService.CtxUserHas(ctx, docID, action)
+}
+
+func relatedResourceReadAction(id model.ID) (model.Action, bool) {
+	return model.ReadActionFor(id.Type)
 }
 
 func isLibraryID(id model.ID) bool {
@@ -203,10 +204,6 @@ func (s *documentService) Create(ctx context.Context, contextID model.ID, opts C
 		return nil, errors.Join(ErrDocumentCreate, err)
 	}
 
-	if !s.permissionService.CtxUserHasPermission(ctx, contextID, model.PermissionKindWrite) {
-		return nil, errors.Join(ErrDocumentCreate, ErrNoPermission)
-	}
-
 	libraryID := contextID
 	var relatedTo *model.ID
 	switch contextID.Type {
@@ -222,7 +219,7 @@ func (s *documentService) Create(ctx context.Context, contextID model.ID, opts C
 		return nil, errors.Join(ErrDocumentCreate, model.ErrInvalidID)
 	}
 
-	if !s.permissionService.CtxUserHasPermission(ctx, libraryID, model.PermissionKindWrite) {
+	if !s.permissionService.CtxUserHas(ctx, libraryID, model.ActionDocumentCreate) {
 		return nil, errors.Join(ErrDocumentCreate, ErrNoPermission)
 	}
 
@@ -253,6 +250,14 @@ func (s *documentService) Create(ctx context.Context, contextID model.ID, opts C
 		return nil, errors.Join(ErrDocumentCreate, err)
 	}
 
+	actions, err := roleTemplateActions(model.RoleKeyDocumentMaintainer)
+	if err != nil {
+		return nil, errors.Join(ErrDocumentCreate, err)
+	}
+	if err := s.permissionService.BootstrapCreator(ctx, userID, doc.ID, actions); err != nil {
+		return nil, errors.Join(ErrDocumentCreate, err)
+	}
+
 	return documentFromRepository(doc, opts.Content), nil
 }
 
@@ -269,7 +274,7 @@ func (s *documentService) Get(ctx context.Context, id model.ID) (*Document, erro
 		return nil, errors.Join(ErrDocumentGet, err)
 	}
 
-	if !s.hasDocumentOrLibraryPermission(ctx, doc, model.PermissionKindRead) {
+	if !s.hasDocumentPermission(ctx, doc.ID, model.ActionDocumentRead) {
 		return nil, errors.Join(ErrDocumentGet, ErrNoPermission)
 	}
 
@@ -297,11 +302,12 @@ func (s *documentService) ListLibrary(ctx context.Context, libraryID model.ID, f
 		return Page[*PartialDocument]{}, errors.Join(ErrDocumentGetAll, err)
 	}
 
-	if !s.permissionService.CtxUserHasPermission(ctx, libraryID, model.PermissionKindRead) {
-		return Page[*PartialDocument]{}, errors.Join(ErrDocumentGetAll, ErrNoPermission)
+	userID, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID)
+	if !ok {
+		return Page[*PartialDocument]{}, errors.Join(ErrDocumentGetAll, ErrNoUser)
 	}
 
-	documents, err := s.documentRepo.ListLibrary(ctx, libraryID, repository.LibraryListFilter{
+	documents, err := s.documentRepo.ListLibrary(ctx, libraryID, userID, repository.LibraryListFilter{
 		FolderID: filter.FolderID,
 		All:      filter.All,
 	}, normalized, repository.DocumentSummaryProjection())
@@ -328,11 +334,17 @@ func (s *documentService) ListRelated(ctx context.Context, relatedTo model.ID, p
 		return Page[*PartialDocument]{}, errors.Join(ErrDocumentGetAll, err)
 	}
 
-	if !s.permissionService.CtxUserHasPermission(ctx, relatedTo, model.PermissionKindRead) {
+	action, ok := relatedResourceReadAction(relatedTo)
+	if !ok || !s.permissionService.CtxUserHas(ctx, relatedTo, action) {
 		return Page[*PartialDocument]{}, errors.Join(ErrDocumentGetAll, ErrNoPermission)
 	}
 
-	documents, err := s.documentRepo.ListRelated(ctx, relatedTo, normalized, repository.DocumentSummaryProjection())
+	userID, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID)
+	if !ok {
+		return Page[*PartialDocument]{}, errors.Join(ErrDocumentGetAll, ErrNoUser)
+	}
+
+	documents, err := s.documentRepo.ListRelated(ctx, relatedTo, userID, normalized, repository.DocumentSummaryProjection())
 	if err != nil {
 		return Page[*PartialDocument]{}, errors.Join(ErrDocumentGetAll, err)
 	}
@@ -357,7 +369,7 @@ func (s *documentService) Update(ctx context.Context, id model.ID, opts UpdateDo
 		return nil, errors.Join(ErrDocumentUpdate, err)
 	}
 
-	if !s.hasDocumentOrLibraryPermission(ctx, current, model.PermissionKindWrite) {
+	if !s.hasDocumentPermission(ctx, current.ID, model.ActionDocumentUpdate) {
 		return nil, errors.Join(ErrDocumentUpdate, ErrNoPermission)
 	}
 
@@ -428,10 +440,10 @@ func (s *documentService) MoveLibrary(ctx context.Context, id, libraryID model.I
 		return nil, errors.Join(ErrDocumentMove, err)
 	}
 
-	if !s.permissionService.CtxUserHasPermission(ctx, current.Library.ID, model.PermissionKindWrite) {
+	if !s.hasDocumentPermission(ctx, current.ID, model.ActionDocumentUpdate) {
 		return nil, errors.Join(ErrDocumentMove, ErrNoPermission)
 	}
-	if !s.permissionService.CtxUserHasPermission(ctx, libraryID, model.PermissionKindWrite) {
+	if !s.permissionService.CtxUserHas(ctx, libraryID, model.ActionDocumentUpdate) {
 		return nil, errors.Join(ErrDocumentMove, ErrNoPermission)
 	}
 
@@ -469,7 +481,7 @@ func (s *documentService) MoveToFolder(ctx context.Context, id model.ID, folderI
 		return nil, errors.Join(ErrDocumentMove, err)
 	}
 
-	if !s.permissionService.CtxUserHasPermission(ctx, current.Library.ID, model.PermissionKindWrite) {
+	if !s.hasDocumentPermission(ctx, current.ID, model.ActionDocumentUpdate) {
 		return nil, errors.Join(ErrDocumentMove, ErrNoPermission)
 	}
 
@@ -505,10 +517,11 @@ func (s *documentService) Relate(ctx context.Context, id, targetID model.ID) err
 		return errors.Join(ErrDocumentRelate, err)
 	}
 
-	if !s.permissionService.CtxUserHasPermission(ctx, current.Library.ID, model.PermissionKindWrite) {
+	if !s.hasDocumentPermission(ctx, current.ID, model.ActionDocumentUpdate) {
 		return errors.Join(ErrDocumentRelate, ErrNoPermission)
 	}
-	if !s.permissionService.CtxUserHasPermission(ctx, targetID, model.PermissionKindRead) {
+	action, ok := relatedResourceReadAction(targetID)
+	if !ok || !s.permissionService.CtxUserHas(ctx, targetID, action) {
 		return errors.Join(ErrDocumentRelate, ErrNoPermission)
 	}
 
@@ -537,10 +550,11 @@ func (s *documentService) Unrelate(ctx context.Context, id, targetID model.ID) e
 		return errors.Join(ErrDocumentUnrelate, err)
 	}
 
-	if !s.permissionService.CtxUserHasPermission(ctx, current.Library.ID, model.PermissionKindWrite) {
+	if !s.hasDocumentPermission(ctx, current.ID, model.ActionDocumentUpdate) {
 		return errors.Join(ErrDocumentUnrelate, ErrNoPermission)
 	}
-	if !s.permissionService.CtxUserHasPermission(ctx, targetID, model.PermissionKindRead) {
+	action, ok := relatedResourceReadAction(targetID)
+	if !ok || !s.permissionService.CtxUserHas(ctx, targetID, action) {
 		return errors.Join(ErrDocumentUnrelate, ErrNoPermission)
 	}
 
@@ -567,7 +581,7 @@ func (s *documentService) Delete(ctx context.Context, id model.ID) error {
 		return errors.Join(ErrDocumentDelete, err)
 	}
 
-	if !s.hasDocumentOrLibraryPermission(ctx, current, model.PermissionKindDelete) {
+	if !s.hasDocumentPermission(ctx, current.ID, model.ActionDocumentDelete) {
 		return errors.Join(ErrDocumentDelete, ErrNoPermission)
 	}
 

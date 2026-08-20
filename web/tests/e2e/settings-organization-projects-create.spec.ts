@@ -9,9 +9,9 @@ import {
 import { USER_DEFAULT_PASSWORD, loginUser } from "./utils/auth";
 import {
   createUser,
+  grantActionsToUser,
   grantMembershipToUser,
-  grantPermissionToUser,
-  grantSystemOwnerMembershipToUser,
+  grantOrganizationCreateToUser,
 } from "./utils/db";
 import { getRandomString } from "./utils/random";
 
@@ -34,7 +34,7 @@ test.describe("@settings.organization-projects-create Organization Projects Crea
     writerUser = await createUser(testConfig);
     readerUser = await createUser(testConfig);
 
-    await grantSystemOwnerMembershipToUser(testConfig, ownerUser.email);
+    await grantOrganizationCreateToUser(testConfig, ownerUser.email);
 
     ownerApiClient = await createApiClient(
       ownerUser.email,
@@ -63,26 +63,26 @@ test.describe("@settings.organization-projects-create Organization Projects Crea
       "Organization",
       organizationId
     );
-    await grantPermissionToUser(
+    await grantActionsToUser(
       testConfig,
       writerUser.email,
       "Organization",
       organizationId,
-      "read"
+      ["organization.read"]
     );
-    await grantPermissionToUser(
+    await grantActionsToUser(
       testConfig,
       writerUser.email,
       "Namespace",
       namespaceId,
-      "read"
+      ["namespace.read"]
     );
-    await grantPermissionToUser(
+    await grantActionsToUser(
       testConfig,
       writerUser.email,
       "Namespace",
       namespaceId,
-      "write"
+      ["namespace.update", "project.create", "document.create", "folder.create"]
     );
 
     await grantMembershipToUser(
@@ -91,19 +91,19 @@ test.describe("@settings.organization-projects-create Organization Projects Crea
       "Organization",
       organizationId
     );
-    await grantPermissionToUser(
+    await grantActionsToUser(
       testConfig,
       readerUser.email,
       "Organization",
       organizationId,
-      "read"
+      ["organization.read"]
     );
-    await grantPermissionToUser(
+    await grantActionsToUser(
       testConfig,
       readerUser.email,
       "Namespace",
       namespaceId,
-      "read"
+      ["namespace.read"]
     );
   });
 
@@ -161,7 +161,7 @@ test.describe("@settings.organization-projects-create Organization Projects Crea
       )
     );
 
-    // Creator receives Project * permission automatically.
+    // Creator receives project-maintainer actions on the new project.
     const projectDetailsPage = new SettingsOrganizationProjectDetailsPage(page);
     await projectDetailsPage.waitForLoad();
     await projectDetailsPage.projectInfo.waitForLoad();

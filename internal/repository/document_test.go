@@ -830,7 +830,7 @@ func TestCachedDocumentRepository_ListByCreator(t *testing.T) {
 			name: "get uncached documents",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, createdBy model.ID, _, limit int, documents []*Document) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeDocument.String(), "ListByCreator", createdBy.String(), projectionCacheValue(DocumentListProjection()), "", limit)
+					key := composeCacheKey(model.ResourceTypeDocument.String(), "ListByCreator", createdBy.String(), model.MustNewNilID(model.ResourceTypeUser).String(), projectionCacheValue(DocumentListProjection()), "", limit)
 
 					db, err := NewRedisDatabase(
 						WithRedisClient(mock.NewUniversalClient(ctrl)),
@@ -861,7 +861,7 @@ func TestCachedDocumentRepository_ListByCreator(t *testing.T) {
 				},
 				documentRepo: func(ctrl *gomock.Controller, ctx context.Context, createdBy model.ID, _, limit int, documents []*Document) DocumentRepository {
 					repo := NewMockDocumentRepository(ctrl)
-					repo.EXPECT().ListByCreator(ctx, createdBy, CursorPage{Size: limit}, DocumentListProjection()).Return(Page[*Document]{Items: documents}, nil)
+					repo.EXPECT().ListByCreator(ctx, createdBy, model.MustNewNilID(model.ResourceTypeUser), CursorPage{Size: limit}, DocumentListProjection()).Return(Page[*Document]{Items: documents}, nil)
 					return repo
 				},
 			},
@@ -896,7 +896,7 @@ func TestCachedDocumentRepository_ListByCreator(t *testing.T) {
 			name: "get cached documents",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, createdBy model.ID, _, limit int, documents []*Document) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeDocument.String(), "ListByCreator", createdBy.String(), projectionCacheValue(DocumentListProjection()), "", limit)
+					key := composeCacheKey(model.ResourceTypeDocument.String(), "ListByCreator", createdBy.String(), model.MustNewNilID(model.ResourceTypeUser).String(), projectionCacheValue(DocumentListProjection()), "", limit)
 
 					db, err := NewRedisDatabase(
 						WithRedisClient(mock.NewUniversalClient(ctrl)),
@@ -958,7 +958,7 @@ func TestCachedDocumentRepository_ListByCreator(t *testing.T) {
 			name: "get uncached documents error",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, createdBy model.ID, _, limit int, _ []*Document) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeDocument.String(), "ListByCreator", createdBy.String(), projectionCacheValue(DocumentListProjection()), "", limit)
+					key := composeCacheKey(model.ResourceTypeDocument.String(), "ListByCreator", createdBy.String(), model.MustNewNilID(model.ResourceTypeUser).String(), projectionCacheValue(DocumentListProjection()), "", limit)
 
 					db, err := NewRedisDatabase(
 						WithRedisClient(mock.NewUniversalClient(ctrl)),
@@ -983,7 +983,7 @@ func TestCachedDocumentRepository_ListByCreator(t *testing.T) {
 				},
 				documentRepo: func(ctrl *gomock.Controller, ctx context.Context, createdBy model.ID, _, limit int, _ []*Document) DocumentRepository {
 					repo := NewMockDocumentRepository(ctrl)
-					repo.EXPECT().ListByCreator(ctx, createdBy, CursorPage{Size: limit}, DocumentListProjection()).Return(Page[*Document]{}, ErrNotFound)
+					repo.EXPECT().ListByCreator(ctx, createdBy, model.MustNewNilID(model.ResourceTypeUser), CursorPage{Size: limit}, DocumentListProjection()).Return(Page[*Document]{}, ErrNotFound)
 					return repo
 				},
 			},
@@ -997,7 +997,7 @@ func TestCachedDocumentRepository_ListByCreator(t *testing.T) {
 			name: "get get documents cache error",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, createdBy model.ID, _, limit int, _ []*Document) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeDocument.String(), "ListByCreator", createdBy.String(), projectionCacheValue(DocumentListProjection()), "", limit)
+					key := composeCacheKey(model.ResourceTypeDocument.String(), "ListByCreator", createdBy.String(), model.MustNewNilID(model.ResourceTypeUser).String(), projectionCacheValue(DocumentListProjection()), "", limit)
 
 					db, err := NewRedisDatabase(
 						WithRedisClient(mock.NewUniversalClient(ctrl)),
@@ -1034,7 +1034,7 @@ func TestCachedDocumentRepository_ListByCreator(t *testing.T) {
 			name: "get uncached documents cache set error",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, createdBy model.ID, _, limit int, documents []*Document) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeDocument.String(), "ListByCreator", createdBy.String(), projectionCacheValue(DocumentListProjection()), "", limit)
+					key := composeCacheKey(model.ResourceTypeDocument.String(), "ListByCreator", createdBy.String(), model.MustNewNilID(model.ResourceTypeUser).String(), projectionCacheValue(DocumentListProjection()), "", limit)
 
 					db, err := NewRedisDatabase(
 						WithRedisClient(mock.NewUniversalClient(ctrl)),
@@ -1065,7 +1065,7 @@ func TestCachedDocumentRepository_ListByCreator(t *testing.T) {
 				},
 				documentRepo: func(ctrl *gomock.Controller, ctx context.Context, createdBy model.ID, _, limit int, documents []*Document) DocumentRepository {
 					repo := NewMockDocumentRepository(ctrl)
-					repo.EXPECT().ListByCreator(ctx, createdBy, CursorPage{Size: limit}, DocumentListProjection()).Return(Page[*Document]{Items: documents}, nil)
+					repo.EXPECT().ListByCreator(ctx, createdBy, model.MustNewNilID(model.ResourceTypeUser), CursorPage{Size: limit}, DocumentListProjection()).Return(Page[*Document]{Items: documents}, nil)
 					return repo
 				},
 			},
@@ -1086,7 +1086,7 @@ func TestCachedDocumentRepository_ListByCreator(t *testing.T) {
 				cacheRepo:    tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.createdBy, tt.args.offset, testPageSize(tt.args.limit), tt.want),
 				documentRepo: tt.fields.documentRepo(ctrl, tt.args.ctx, tt.args.createdBy, tt.args.offset, testPageSize(tt.args.limit), tt.want),
 			}
-			got, err := r.ListByCreator(tt.args.ctx, tt.args.createdBy, CursorPage{Size: testPageSize(tt.args.limit)}, DocumentListProjection())
+			got, err := r.ListByCreator(tt.args.ctx, tt.args.createdBy, model.MustNewNilID(model.ResourceTypeUser), CursorPage{Size: testPageSize(tt.args.limit)}, DocumentListProjection())
 			assert.ErrorIs(t, err, tt.wantErr)
 			assert.ElementsMatch(t, tt.want, got.Items)
 		})
@@ -1115,7 +1115,7 @@ func TestCachedDocumentRepository_ListLibrary(t *testing.T) {
 			name: "get uncached documents",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, libraryID model.ID, _, limit int, documents []*Document) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeDocument.String(), "ListLibrary", libraryID.String(), "root", projectionCacheValue(DocumentListProjection()), "", limit)
+					key := composeCacheKey(model.ResourceTypeDocument.String(), "ListLibrary", libraryID.String(), model.MustNewNilID(model.ResourceTypeUser).String(), "root", projectionCacheValue(DocumentListProjection()), "", limit)
 
 					db, err := NewRedisDatabase(
 						WithRedisClient(mock.NewUniversalClient(ctrl)),
@@ -1146,7 +1146,7 @@ func TestCachedDocumentRepository_ListLibrary(t *testing.T) {
 				},
 				documentRepo: func(ctrl *gomock.Controller, ctx context.Context, libraryID model.ID, _, limit int, documents []*Document) DocumentRepository {
 					repo := NewMockDocumentRepository(ctrl)
-					repo.EXPECT().ListLibrary(ctx, libraryID, LibraryListFilter{}, CursorPage{Size: limit}, DocumentListProjection()).Return(Page[*Document]{Items: documents}, nil)
+					repo.EXPECT().ListLibrary(ctx, libraryID, model.MustNewNilID(model.ResourceTypeUser), LibraryListFilter{}, CursorPage{Size: limit}, DocumentListProjection()).Return(Page[*Document]{Items: documents}, nil)
 					return repo
 				},
 			},
@@ -1181,7 +1181,7 @@ func TestCachedDocumentRepository_ListLibrary(t *testing.T) {
 			name: "get cached documents",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, libraryID model.ID, _, limit int, documents []*Document) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeDocument.String(), "ListLibrary", libraryID.String(), "root", projectionCacheValue(DocumentListProjection()), "", limit)
+					key := composeCacheKey(model.ResourceTypeDocument.String(), "ListLibrary", libraryID.String(), model.MustNewNilID(model.ResourceTypeUser).String(), "root", projectionCacheValue(DocumentListProjection()), "", limit)
 
 					db, err := NewRedisDatabase(
 						WithRedisClient(mock.NewUniversalClient(ctrl)),
@@ -1243,7 +1243,7 @@ func TestCachedDocumentRepository_ListLibrary(t *testing.T) {
 			name: "get uncached documents error",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, libraryID model.ID, _, limit int, _ []*Document) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeDocument.String(), "ListLibrary", libraryID.String(), "root", projectionCacheValue(DocumentListProjection()), "", limit)
+					key := composeCacheKey(model.ResourceTypeDocument.String(), "ListLibrary", libraryID.String(), model.MustNewNilID(model.ResourceTypeUser).String(), "root", projectionCacheValue(DocumentListProjection()), "", limit)
 
 					db, err := NewRedisDatabase(
 						WithRedisClient(mock.NewUniversalClient(ctrl)),
@@ -1268,7 +1268,7 @@ func TestCachedDocumentRepository_ListLibrary(t *testing.T) {
 				},
 				documentRepo: func(ctrl *gomock.Controller, ctx context.Context, libraryID model.ID, _, limit int, _ []*Document) DocumentRepository {
 					repo := NewMockDocumentRepository(ctrl)
-					repo.EXPECT().ListLibrary(ctx, libraryID, LibraryListFilter{}, CursorPage{Size: limit}, DocumentListProjection()).Return(Page[*Document]{}, ErrNotFound)
+					repo.EXPECT().ListLibrary(ctx, libraryID, model.MustNewNilID(model.ResourceTypeUser), LibraryListFilter{}, CursorPage{Size: limit}, DocumentListProjection()).Return(Page[*Document]{}, ErrNotFound)
 					return repo
 				},
 			},
@@ -1282,7 +1282,7 @@ func TestCachedDocumentRepository_ListLibrary(t *testing.T) {
 			name: "get get documents cache error",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, libraryID model.ID, _, limit int, _ []*Document) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeDocument.String(), "ListLibrary", libraryID.String(), "root", projectionCacheValue(DocumentListProjection()), "", limit)
+					key := composeCacheKey(model.ResourceTypeDocument.String(), "ListLibrary", libraryID.String(), model.MustNewNilID(model.ResourceTypeUser).String(), "root", projectionCacheValue(DocumentListProjection()), "", limit)
 
 					db, err := NewRedisDatabase(
 						WithRedisClient(mock.NewUniversalClient(ctrl)),
@@ -1319,7 +1319,7 @@ func TestCachedDocumentRepository_ListLibrary(t *testing.T) {
 			name: "get uncached documents cache set error",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, libraryID model.ID, _, limit int, documents []*Document) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeDocument.String(), "ListLibrary", libraryID.String(), "root", projectionCacheValue(DocumentListProjection()), "", limit)
+					key := composeCacheKey(model.ResourceTypeDocument.String(), "ListLibrary", libraryID.String(), model.MustNewNilID(model.ResourceTypeUser).String(), "root", projectionCacheValue(DocumentListProjection()), "", limit)
 
 					db, err := NewRedisDatabase(
 						WithRedisClient(mock.NewUniversalClient(ctrl)),
@@ -1350,7 +1350,7 @@ func TestCachedDocumentRepository_ListLibrary(t *testing.T) {
 				},
 				documentRepo: func(ctrl *gomock.Controller, ctx context.Context, libraryID model.ID, _, limit int, documents []*Document) DocumentRepository {
 					repo := NewMockDocumentRepository(ctrl)
-					repo.EXPECT().ListLibrary(ctx, libraryID, LibraryListFilter{}, CursorPage{Size: limit}, DocumentListProjection()).Return(Page[*Document]{Items: documents}, nil)
+					repo.EXPECT().ListLibrary(ctx, libraryID, model.MustNewNilID(model.ResourceTypeUser), LibraryListFilter{}, CursorPage{Size: limit}, DocumentListProjection()).Return(Page[*Document]{Items: documents}, nil)
 					return repo
 				},
 			},
@@ -1371,7 +1371,7 @@ func TestCachedDocumentRepository_ListLibrary(t *testing.T) {
 				cacheRepo:    tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.libraryID, tt.args.offset, testPageSize(tt.args.limit), tt.want),
 				documentRepo: tt.fields.documentRepo(ctrl, tt.args.ctx, tt.args.libraryID, tt.args.offset, testPageSize(tt.args.limit), tt.want),
 			}
-			got, err := r.ListLibrary(tt.args.ctx, tt.args.libraryID, LibraryListFilter{}, CursorPage{Size: testPageSize(tt.args.limit)}, DocumentListProjection())
+			got, err := r.ListLibrary(tt.args.ctx, tt.args.libraryID, model.MustNewNilID(model.ResourceTypeUser), LibraryListFilter{}, CursorPage{Size: testPageSize(tt.args.limit)}, DocumentListProjection())
 			assert.ErrorIs(t, err, tt.wantErr)
 			assert.ElementsMatch(t, tt.want, got.Items)
 		})
@@ -1395,7 +1395,7 @@ func TestCachedDocumentRepository_ListRelated(t *testing.T) {
 		defer ctrl.Finish()
 
 		ctx := context.Background()
-		key := composeCacheKey(model.ResourceTypeDocument.String(), "ListRelated", relatedTo.String(), projectionCacheValue(DocumentListProjection()), "", limit)
+		key := composeCacheKey(model.ResourceTypeDocument.String(), "ListRelated", relatedTo.String(), model.MustNewNilID(model.ResourceTypeUser).String(), projectionCacheValue(DocumentListProjection()), "", limit)
 
 		db, err := NewRedisDatabase(WithRedisClient(mock.NewUniversalClient(ctrl)))
 		require.NoError(t, err)
@@ -1415,7 +1415,7 @@ func TestCachedDocumentRepository_ListRelated(t *testing.T) {
 		}).Return(nil)
 
 		repo := NewMockDocumentRepository(ctrl)
-		repo.EXPECT().ListRelated(ctx, relatedTo, CursorPage{Size: limit}, DocumentListProjection()).Return(Page[*Document]{Items: documents}, nil)
+		repo.EXPECT().ListRelated(ctx, relatedTo, model.MustNewNilID(model.ResourceTypeUser), CursorPage{Size: limit}, DocumentListProjection()).Return(Page[*Document]{Items: documents}, nil)
 
 		r := &RedisCachedDocumentRepository{
 			cacheRepo: &redisBaseRepository{
@@ -1426,7 +1426,7 @@ func TestCachedDocumentRepository_ListRelated(t *testing.T) {
 			},
 			documentRepo: repo,
 		}
-		got, err := r.ListRelated(ctx, relatedTo, CursorPage{Size: limit}, DocumentListProjection())
+		got, err := r.ListRelated(ctx, relatedTo, model.MustNewNilID(model.ResourceTypeUser), CursorPage{Size: limit}, DocumentListProjection())
 		require.NoError(t, err)
 		assert.Equal(t, documents, got.Items)
 	})

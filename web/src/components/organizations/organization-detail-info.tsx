@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button";
 import { DetailCard } from "@/components/ui/detail-card";
 import { DetailField } from "@/components/ui/detail-field";
 import { ExternalLink } from "@/components/ui/external-link";
-import type { Organization, Permission } from "@/lib/api/types";
-import { can } from "@/lib/auth/permissions";
+import type { EffectiveActions, Organization } from "@/lib/api/types";
+import { Action, can } from "@/lib/auth/permissions";
 import { zOrganizationStatus } from "@/lib/client/zod.gen";
 import { formatDate } from "@/lib/format-date";
 
@@ -16,9 +16,9 @@ export function OrganizationDetailInfo({
   permissions,
 }: {
   organization: Organization;
-  permissions: Permission[];
+  permissions: EffectiveActions;
 }) {
-  const hasWritePermission = can(permissions, "write");
+  const hasWritePermission = can(permissions, Action.OrganizationUpdate);
 
   return (
     <DetailCard

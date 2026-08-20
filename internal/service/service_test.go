@@ -479,6 +479,48 @@ func TestWithRoleRepository(t *testing.T) {
 	}
 }
 
+func TestWithTeamRepository(t *testing.T) {
+	type args struct {
+		teamRepo repository.TeamRepository
+	}
+	tests := []struct {
+		name    string
+		argsFn  func(ctrl *gomock.Controller) args
+		wantErr error
+	}{
+		{
+			name: "set the team repository for the baseService",
+			argsFn: func(ctrl *gomock.Controller) args {
+				return args{teamRepo: repository.NewMockTeamRepository(ctrl)}
+			},
+		},
+		{
+			name: "return an error if no team repository is provided",
+			argsFn: func(_ *gomock.Controller) args {
+				return args{teamRepo: nil}
+			},
+			wantErr: ErrNoTeamRepository,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			var s baseService
+			args := tt.argsFn(ctrl)
+			err := WithTeamRepository(args.teamRepo)(&s)
+			require.ErrorIs(t, err, tt.wantErr)
+			if tt.wantErr == nil {
+				assert.Equal(t, args.teamRepo, s.teamRepo)
+			}
+		})
+	}
+}
+
 func TestWithNotificationService(t *testing.T) {
 	t.Parallel()
 
