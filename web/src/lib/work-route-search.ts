@@ -25,18 +25,7 @@ export const workRouteSearchSchema = z.object({
     .optional(),
 });
 
-export const searchRouteSearchSchema = z.object({
-  q: z.string().max(200).catch(""),
-  scope: z.string().max(160).catch("global"),
-  type: z
-    .enum(["all", "work-item", "document", "saved-view", "person"])
-    .catch("all"),
-  selected: z.string().max(160).optional(),
-  page: z.coerce.number().int().min(1).catch(1),
-});
-
 export type WorkRouteSearch = z.infer<typeof workRouteSearchSchema>;
-export type SearchRouteSearch = z.infer<typeof searchRouteSearchSchema>;
 
 export function serializeWorkScope(scope: Scope): string {
   if (scope.type === "global") return "global";

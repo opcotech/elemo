@@ -98,6 +98,14 @@ relational_database:
   max_connection_idle_time: 10
   min_connections: 5
 
+search:
+  host: "127.0.0.1"
+  port: 7700
+  bucket: elemo-test
+  api_key: I860A0rxXjyPG6ORX3aJOCjwvVtzmkSfuqYXAy
+  read_timeout: 3
+  write_timeout: 5
+
 s3_storage:
   bucket: "elemo"
   region: "us-east-1"

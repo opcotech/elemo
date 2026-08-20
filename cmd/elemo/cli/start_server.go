@@ -40,6 +40,11 @@ var startServerCmd = &cobra.Command{
 			logger.Fatal(context.Background(), "failed to initialize cache database", slog.Any("error", err))
 		}
 
+		searchDB, searchRepo, err := initSearchDatabase()
+		if err != nil {
+			logger.Fatal(context.Background(), "failed to initialize search database", slog.Any("error", err))
+		}
+
 		graphDB, err := initGraphDatabase()
 		if err != nil {
 			logger.Fatal(context.Background(), "failed to initialize graph database", slog.Any("error", err))
@@ -449,6 +454,16 @@ var startServerCmd = &cobra.Command{
 			logger.Fatal(context.Background(), "failed to initialize permission service", slog.Any("error", err))
 		}
 
+		searchService, err := service.NewSearchService(
+			searchRepo,
+			service.WithPermissionService(permissionService),
+			service.WithLogger(logger.Named("search_service")),
+			service.WithTracer(tracer),
+		)
+		if err != nil {
+			logger.Fatal(context.Background(), "failed to initialize search service", slog.Any("error", err))
+		}
+
 		licenseService, err := service.NewLicenseService(
 			license,
 			licenseRepo,
@@ -468,6 +483,7 @@ var startServerCmd = &cobra.Command{
 				model.HealthCheckComponentLicense:      licenseService,
 				model.HealthCheckComponentMessageQueue: messageQueue,
 				model.HealthCheckComponentS3Storage:    s3Storage,
+				model.HealthCheckComponentSearch:       searchDB,
 			},
 			versionInfo,
 			service.WithLogger(logger.Named("system_service")),
@@ -551,6 +567,7 @@ var startServerCmd = &cobra.Command{
 			service.WithLicenseService(licenseService),
 			service.WithLogger(logger.Named("namespace_service")),
 			service.WithTracer(tracer),
+			service.WithSearchService(searchService),
 		)
 		if err != nil {
 			logger.Fatal(context.Background(), "failed to initialize namespace service", slog.Any("error", err))
@@ -562,6 +579,7 @@ var startServerCmd = &cobra.Command{
 			service.WithLicenseService(licenseService),
 			service.WithLogger(logger.Named("project_service")),
 			service.WithTracer(tracer),
+			service.WithSearchService(searchService),
 		)
 		if err != nil {
 			logger.Fatal(context.Background(), "failed to initialize project service", slog.Any("error", err))
@@ -575,6 +593,7 @@ var startServerCmd = &cobra.Command{
 			service.WithLicenseService(licenseService),
 			service.WithLogger(logger.Named("issue_service")),
 			service.WithTracer(tracer),
+			service.WithSearchService(searchService),
 		)
 		if err != nil {
 			logger.Fatal(context.Background(), "failed to initialize issue service", slog.Any("error", err))
@@ -587,6 +606,7 @@ var startServerCmd = &cobra.Command{
 			service.WithStaticFileService(staticFileService),
 			service.WithLogger(logger.Named("document_service")),
 			service.WithTracer(tracer),
+			service.WithSearchService(searchService),
 		)
 		if err != nil {
 			logger.Fatal(context.Background(), "failed to initialize document service", slog.Any("error", err))
@@ -622,6 +642,7 @@ var startServerCmd = &cobra.Command{
 			service.WithNotificationService(notificationService),
 			service.WithLogger(logger.Named("organization_service")),
 			service.WithTracer(tracer),
+			service.WithSearchService(searchService),
 		)
 		if err != nil {
 			logger.Fatal(context.Background(), "failed to initialize organization service", slog.Any("error", err))
@@ -651,6 +672,7 @@ var startServerCmd = &cobra.Command{
 			elemoHttp.WithLicenseService(licenseService),
 			elemoHttp.WithPermissionService(permissionService),
 			elemoHttp.WithNotificationService(notificationService),
+			elemoHttp.WithSearchService(searchService),
 			elemoHttp.WithLogger(logger.Named("http_server")),
 			elemoHttp.WithTracer(tracer),
 		)

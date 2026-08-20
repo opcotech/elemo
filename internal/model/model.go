@@ -23,18 +23,16 @@ func (id ID) Validate() error {
 }
 
 func (id ID) Value() (driver.Value, error) {
-	return id.Type.String() + ":" + id.Inner.String(), nil
+	return id.Composite(), nil
 }
 
 func (id *ID) Scan(value any) error {
-	parts := strings.Split(value.(string), ":")
-	if len(parts) != 2 {
-		return ErrInvalidID
+	parsed, err := ParseCompositeID(value.(string))
+	if err != nil {
+		return err
 	}
-
-	var err error
-	*id, err = NewIDFromString(parts[1], parts[0])
-	return err
+	*id = parsed
+	return nil
 }
 
 // String returns the string representation of the ID. The type is not part of
@@ -42,6 +40,34 @@ func (id *ID) Scan(value any) error {
 // label or flag in a database or log aggregation system.
 func (id ID) String() string {
 	return id.Inner.String()
+}
+
+// Composite returns the typed identifier in ResourceType:xid form.
+func (id ID) Composite() string {
+	return id.Type.String() + ":" + id.Inner.String()
+}
+
+// SearchKey returns a Meilisearch-safe primary key (ResourceType_xid).
+func (id ID) SearchKey() string {
+	return id.Type.String() + "_" + id.Inner.String()
+}
+
+// ParseCompositeID parses a ResourceType:xid identifier.
+func ParseCompositeID(value string) (ID, error) {
+	typ, xid, ok := strings.Cut(value, ":")
+	if !ok || typ == "" || xid == "" {
+		return ID{}, ErrInvalidID
+	}
+	return NewIDFromString(xid, typ)
+}
+
+// ParseSearchKey parses a Meilisearch primary key in ResourceType_xid form.
+func ParseSearchKey(value string) (ID, error) {
+	typ, xid, ok := strings.Cut(value, "_")
+	if !ok || typ == "" || xid == "" {
+		return ID{}, ErrInvalidID
+	}
+	return NewIDFromString(xid, typ)
 }
 
 // Label returns the Type of the ID.

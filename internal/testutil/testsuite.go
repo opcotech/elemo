@@ -226,3 +226,22 @@ func (s *LocalStackContainerIntegrationTestSuite) SetupLocalStack(ts *ContainerI
 func (s *LocalStackContainerIntegrationTestSuite) CleanupLocalStack(ts *ContainerIntegrationTestSuite) {
 	testRepo.CleanupS3Storage(context.Background(), ts.T(), s.S3Storage)
 }
+
+// SearchContainerIntegrationTestSuite sets up a Meilisearch container.
+type SearchContainerIntegrationTestSuite struct {
+	SearchDB   *repository.SearchDatabase
+	SearchRepo *repository.MeilisearchSearchRepository
+	SearchConf *config.SearchConfig
+}
+
+func (s *SearchContainerIntegrationTestSuite) SetupSearch(ts *ContainerIntegrationTestSuite, name string) {
+	var searchC testcontainers.Container
+	searchC, s.SearchConf = testContainer.NewMeilisearchContainer(context.Background(), ts.T(), name)
+	ts.AddContainer(searchC)
+
+	s.SearchDB, s.SearchRepo = testRepo.NewSearchRepository(ts.T(), s.SearchConf)
+}
+
+func (s *SearchContainerIntegrationTestSuite) CleanupSearch(ts *ContainerIntegrationTestSuite) {
+	testRepo.CleanupSearchIndex(context.Background(), ts.T(), s.SearchRepo)
+}

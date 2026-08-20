@@ -1,15 +1,20 @@
-import { CheckIcon, ChevronsUpDownIcon, Layers3Icon } from "lucide-react";
+import { useNavigate } from "@tanstack/react-router";
+import { ChevronsUpDownIcon, Layers3Icon } from "lucide-react";
+import { useMemo, useState } from "react";
 
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { InternalLink } from "@/components/ui/internal-link";
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   SidebarMenu,
   SidebarMenuButton,
@@ -23,12 +28,23 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useNavigationContext } from "@/hooks/use-navigation-context";
+import type { AccessibleNamespace } from "@/lib/api/accessible-namespaces";
 import { useAccessibleNamespaces } from "@/lib/api/accessible-namespaces";
 import { internalPath } from "@/lib/internal-url";
 import { uiActions } from "@/lib/ui-store";
 import { cn } from "@/lib/utils";
 
+function namespaceCommandValue(
+  namespace: AccessibleNamespace,
+  organizationName: string
+) {
+  return [namespace.name, organizationName, namespace.id]
+    .filter(Boolean)
+    .join(" ");
+}
+
 export function NamespaceSwitcher() {
+  const navigate = useNavigate();
   const { state: sidebarState, isMobile } = useSidebar();
   const context = useNavigationContext();
   const {
@@ -36,6 +52,7 @@ export function NamespaceSwitcher() {
     isLoading,
     isError,
   } = useAccessibleNamespaces();
+  const [open, setOpen] = useState(false);
   const organizations = accessibleWorkspace?.organizations ?? [];
   const namespaces = accessibleWorkspace?.namespaces ?? [];
   const activeNamespaceId = context.namespaceId;
@@ -44,6 +61,34 @@ export function NamespaceSwitcher() {
   );
   const isCollapsed = sidebarState === "collapsed" && !isMobile;
   const switcherLabel = activeNamespace?.name ?? "Choose namespace";
+  const namespaceGroups = useMemo(
+    () =>
+      organizations
+        .map((organization) => ({
+          organization,
+          namespaces: namespaces.filter(
+            (namespace) => namespace.organizationId === organization.id
+          ),
+        }))
+        .filter((group) => group.namespaces.length > 0),
+    [namespaces, organizations]
+  );
+
+  const selectNamespace = (namespace: AccessibleNamespace) => {
+    const href = internalPath(`/namespaces/${namespace.id}`);
+    uiActions.rememberRecentEntity({
+      id: namespace.id,
+      type: "namespace",
+      label: namespace.name,
+      href,
+      namespaceId: namespace.id,
+    });
+    setOpen(false);
+    void navigate({
+      to: "/namespaces/$namespaceId",
+      params: { namespaceId: namespace.id },
+    });
+  };
 
   if (isLoading && namespaces.length === 0) {
     return (
@@ -67,14 +112,16 @@ export function NamespaceSwitcher() {
   return (
     <SidebarMenu className="group-data-[collapsible=icon]:items-center">
       <SidebarMenuItem className="group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:w-full group-data-[collapsible=icon]:justify-center">
-        <DropdownMenu>
+        <Popover open={open} onOpenChange={setOpen}>
           <Tooltip>
             <TooltipTrigger
               render={
-                <DropdownMenuTrigger
+                <PopoverTrigger
                   render={
                     <SidebarMenuButton
                       size="lg"
+                      role="combobox"
+                      aria-expanded={open}
                       aria-label={`Switch namespace, current: ${switcherLabel}`}
                       className={cn(
                         "border-sidebar-border bg-surface-raised hover:border-primary/25 h-12 border px-2.5 shadow-none",
@@ -105,42 +152,36 @@ export function NamespaceSwitcher() {
               {switcherLabel}
             </TooltipContent>
           </Tooltip>
-          <DropdownMenuContent
+          <PopoverContent
             side={isCollapsed ? "right" : "bottom"}
             align="start"
             sideOffset={8}
-            className="min-w-64"
+            className="min-w-64 gap-0 p-0"
           >
-            {organizations.map((organization, organizationIndex) => {
-              const organizationNamespaces = namespaces.filter(
-                (namespace) => namespace.organizationId === organization.id
-              );
-
-              if (organizationNamespaces.length === 0) {
-                return null;
-              }
-
-              return (
-                <DropdownMenuGroup key={organization.id}>
-                  {organizationIndex > 0 && <DropdownMenuSeparator />}
-                  <DropdownMenuLabel>{organization.name}</DropdownMenuLabel>
-                  {organizationNamespaces.map((namespace) => {
-                    const href = internalPath(`/namespaces/${namespace.id}`);
-                    const isActive = namespace.id === activeNamespaceId;
-
-                    return (
-                      <DropdownMenuItem
+            <Command>
+              <CommandInput placeholder="Search namespaces..." />
+              <CommandList>
+                <CommandEmpty>
+                  {namespaces.length === 0
+                    ? "No namespaces available."
+                    : "No namespace found."}
+                </CommandEmpty>
+                {namespaceGroups.map(({ organization, namespaces: items }) => (
+                  <CommandGroup
+                    key={organization.id}
+                    heading={organization.name}
+                  >
+                    {items.map((namespace) => (
+                      <CommandItem
                         key={namespace.id}
-                        render={<InternalLink to={internalPath(href)} />}
-                        onClick={() =>
-                          uiActions.rememberRecentEntity({
-                            id: namespace.id,
-                            type: "namespace",
-                            label: namespace.name,
-                            href,
-                            namespaceId: namespace.id,
-                          })
+                        value={namespaceCommandValue(
+                          namespace,
+                          organization.name
+                        )}
+                        data-checked={
+                          namespace.id === activeNamespaceId || undefined
                         }
+                        onSelect={() => selectNamespace(namespace)}
                       >
                         <span className="bg-muted text-muted-foreground flex size-6 items-center justify-center rounded-md text-xs font-semibold">
                           {namespace.name.slice(0, 1).toUpperCase()}
@@ -148,22 +189,14 @@ export function NamespaceSwitcher() {
                         <span className="min-w-0 flex-1 truncate">
                           {namespace.name}
                         </span>
-                        {isActive && (
-                          <CheckIcon className="text-primary size-4" />
-                        )}
-                      </DropdownMenuItem>
-                    );
-                  })}
-                </DropdownMenuGroup>
-              );
-            })}
-            {namespaces.length === 0 && (
-              <p className="text-muted-foreground px-2 py-3 text-sm">
-                No namespaces available.
-              </p>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                ))}
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
       </SidebarMenuItem>
     </SidebarMenu>
   );

@@ -17,6 +17,28 @@ func TestRedisConfig_Address(t *testing.T) {
 	assert.Equal(t, "localhost:6379", conf.Address())
 }
 
+func TestSearchConfig_Address(t *testing.T) {
+	t.Parallel()
+
+	conf := SearchConfig{
+		Host: "localhost",
+		Port: 7700,
+	}
+
+	assert.Equal(t, "localhost:7700", conf.Address())
+}
+
+func TestSearchConfig_URL(t *testing.T) {
+	t.Parallel()
+
+	conf := SearchConfig{
+		Host: "localhost",
+		Port: 7700,
+	}
+
+	assert.Equal(t, "http://localhost:7700", conf.URL())
+}
+
 func TestCacheDatabaseConfig_ConnectionURL(t *testing.T) {
 	tests := []struct {
 		name string

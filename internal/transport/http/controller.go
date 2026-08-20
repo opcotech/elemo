@@ -194,6 +194,19 @@ func WithNotificationService(notificationService service.NotificationService) Co
 	}
 }
 
+// WithSearchService sets the search service for the controller.
+func WithSearchService(searchService service.SearchService) ControllerOption {
+	return func(c *baseController) error {
+		if searchService == nil {
+			return ErrNoSearchService
+		}
+
+		c.searchService = searchService
+
+		return nil
+	}
+}
+
 // WithNamespaceService sets the namespace service for the controller.
 func WithNamespaceService(namespaceService service.NamespaceService) ControllerOption {
 	return func(c *baseController) error {
@@ -297,6 +310,7 @@ type baseController struct {
 	licenseService      service.LicenseService
 	permissionService   service.PermissionService
 	notificationService service.NotificationService
+	searchService       service.SearchService
 }
 
 // newController creates a new base controller with the given dependencies

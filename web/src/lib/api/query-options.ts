@@ -1,5 +1,7 @@
 import "@/lib/api/client";
 
+import { keepPreviousData } from "@tanstack/react-query";
+
 import {
   v1DocumentGetOptions as generatedDocumentGetOptions,
   v1IssueGetOptions as generatedIssueGetOptions,
@@ -11,6 +13,7 @@ import {
   v1OrganizationsGetOptions as generatedOrganizationsGetOptions,
   v1PermissionResourceGetOptions as generatedPermissionResourceGetOptions,
   v1ProjectsIssuesGetOptions as generatedProjectsIssuesGetOptions,
+  v1SearchGetOptions as generatedSearchGetOptions,
   v1TodosGetOptions as generatedTodosGetOptions,
   v1UsersIssuesGetOptions as generatedUsersIssuesGetOptions,
 } from "@/lib/client/@tanstack/react-query.gen";
@@ -144,5 +147,15 @@ export function v1LabelsGetOptions(
   return {
     ...generatedLabelsGetOptions(...args),
     ...cacheProfiles.reference,
+  };
+}
+
+export function v1SearchGetOptions(
+  ...args: Parameters<typeof generatedSearchGetOptions>
+) {
+  return {
+    ...generatedSearchGetOptions(...args),
+    ...cacheProfiles.volatile,
+    placeholderData: keepPreviousData,
   };
 }

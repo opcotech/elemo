@@ -60,6 +60,12 @@ type PermissionService interface {
 	// Explain returns a Decision for whether actor may perform action on
 	// resource. A deny leaves Principal, Scope, GrantID, and RoleID unset.
 	Explain(ctx context.Context, actor, resource model.ID, action model.Action) (*repository.Decision, error)
+	// ListGrantScopes returns distinct scopes the actor holds action on.
+	ListGrantScopes(ctx context.Context, actor model.ID, action model.Action) ([]model.ID, error)
+	// CtxUserListGrantScopes is ListGrantScopes for the user ID stored in ctx.
+	CtxUserListGrantScopes(ctx context.Context, action model.Action) ([]model.ID, error)
+	// ListScopeAncestry returns resource and its IN_SCOPE_OF ancestors.
+	ListScopeAncestry(ctx context.Context, resource model.ID) ([]model.ID, error)
 
 	// Create records a grant without checking the caller's existing permissions.
 	Create(ctx context.Context, opts CreateGrantOpts) (*Grant, error)
@@ -178,6 +184,39 @@ func (s *permissionService) Explain(ctx context.Context, actor, resource model.I
 		return nil, errors.Join(ErrPermissionHasPermission, err)
 	}
 	return decision, nil
+}
+
+func (s *permissionService) ListGrantScopes(ctx context.Context, actor model.ID, action model.Action) ([]model.ID, error) {
+	ctx, span := s.tracer.Start(ctx, "service.permissionService/ListGrantScopes")
+	defer span.End()
+
+	scopes, err := s.permissionRepo.ListGrantScopes(ctx, actor, action)
+	if err != nil {
+		return nil, errors.Join(ErrPermissionListGrantScopes, err)
+	}
+	return scopes, nil
+}
+
+func (s *permissionService) CtxUserListGrantScopes(ctx context.Context, action model.Action) ([]model.ID, error) {
+	ctx, span := s.tracer.Start(ctx, "service.permissionService/CtxUserListGrantScopes")
+	defer span.End()
+
+	userID, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID)
+	if !ok {
+		return nil, ErrNoUser
+	}
+	return s.ListGrantScopes(ctx, userID, action)
+}
+
+func (s *permissionService) ListScopeAncestry(ctx context.Context, resource model.ID) ([]model.ID, error) {
+	ctx, span := s.tracer.Start(ctx, "service.permissionService/ListScopeAncestry")
+	defer span.End()
+
+	ids, err := s.permissionRepo.ListScopeAncestry(ctx, resource)
+	if err != nil {
+		return nil, errors.Join(ErrPermissionListScopeAncestry, err)
+	}
+	return ids, nil
 }
 
 func (s *permissionService) Create(ctx context.Context, opts CreateGrantOpts) (*Grant, error) {

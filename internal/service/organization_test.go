@@ -71,10 +71,12 @@ func TestNewOrganizationService(t *testing.T) {
 					WithPermissionService(NewMockPermissionService(nil)),
 					WithLicenseService(mock.NewMockLicenseService(nil)),
 					WithEmailService(mock.NewEmailService(nil)),
+					WithSearchService(NewMockSearchService(nil)),
 				},
 			},
 			want: &organizationService{
 				baseService: &baseService{
+					searchService:     NewMockSearchService(nil),
 					logger:            mock.NewMockLogger(nil),
 					tracer:            mock.NewMockTracer(nil),
 					userRepo:          repository.NewMockUserRepository(nil),
@@ -163,6 +165,23 @@ func TestNewOrganizationService(t *testing.T) {
 			},
 			wantErr: ErrNoUserRepository,
 		},
+		{
+			name: "new organization service with no search service",
+			args: args{
+				opts: []Option{
+					WithLogger(mock.NewMockLogger(nil)),
+					WithTracer(mock.NewMockTracer(nil)),
+					WithUserRepository(repository.NewMockUserRepository(nil)),
+					WithOrganizationRepository(repository.NewMockOrganizationRepository(nil)),
+					WithRoleRepository(repository.NewMockRoleRepository(nil)),
+					WithUserTokenRepository(repository.NewMockUserTokenRepository(nil)),
+					WithPermissionService(NewMockPermissionService(nil)),
+					WithLicenseService(mock.NewMockLicenseService(nil)),
+					WithEmailService(mock.NewEmailService(nil)),
+				},
+			},
+			wantErr: ErrNoSearchService,
+		},
 	}
 	for _, tt := range tests {
 		tt := tt
@@ -220,6 +239,7 @@ func TestOrganizationService_Create(t *testing.T) {
 					licenseSvc.EXPECT().WithinThreshold(ctx, license.QuotaOrganizations).Return(true, nil)
 
 					return &baseService{
+						searchService:     mockSearchIndex(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						organizationRepo:  organizationRepo,
@@ -258,6 +278,7 @@ func TestOrganizationService_Create(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						organizationRepo:  repository.NewMockOrganizationRepository(ctrl),
@@ -293,6 +314,7 @@ func TestOrganizationService_Create(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:    NewMockSearchService(ctrl),
 						logger:           mock.NewMockLogger(ctrl),
 						tracer:           tracer,
 						organizationRepo: repository.NewMockOrganizationRepository(ctrl),
@@ -328,6 +350,7 @@ func TestOrganizationService_Create(t *testing.T) {
 					licenseSvc.EXPECT().WithinThreshold(ctx, license.QuotaOrganizations).Return(true, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						organizationRepo:  organizationRepo,
@@ -367,6 +390,7 @@ func TestOrganizationService_Create(t *testing.T) {
 					licenseSvc.EXPECT().WithinThreshold(ctx, license.QuotaOrganizations).Return(false, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						organizationRepo:  repository.NewMockOrganizationRepository(ctrl),
@@ -402,6 +426,7 @@ func TestOrganizationService_Create(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(true, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						organizationRepo:  repository.NewMockOrganizationRepository(ctrl),
@@ -437,6 +462,7 @@ func TestOrganizationService_Create(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, assert.AnError)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						organizationRepo:  repository.NewMockOrganizationRepository(ctrl),
@@ -506,6 +532,7 @@ func TestOrganizationService_Get(t *testing.T) {
 					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(true)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						organizationRepo:  organizationRepo,
@@ -533,6 +560,7 @@ func TestOrganizationService_Get(t *testing.T) {
 					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(false)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						permissionService: permSvc,
@@ -556,6 +584,7 @@ func TestOrganizationService_Get(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.organizationService/Get", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
+						searchService:    NewMockSearchService(ctrl),
 						logger:           mock.NewMockLogger(ctrl),
 						tracer:           tracer,
 						organizationRepo: repository.NewMockOrganizationRepository(ctrl),
@@ -585,6 +614,7 @@ func TestOrganizationService_Get(t *testing.T) {
 					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(true)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						organizationRepo:  organizationRepo,
@@ -650,6 +680,7 @@ func TestOrganizationService_GetAll(t *testing.T) {
 					organizationRepo.EXPECT().List(ctx, userID, gomock.Any(), repository.OrganizationListProjection()).Return(repository.Page[*repository.Organization]{Items: organizationsToRepository(organizations)}, nil)
 
 					return &baseService{
+						searchService:    NewMockSearchService(ctrl),
 						logger:           mock.NewMockLogger(ctrl),
 						tracer:           tracer,
 						organizationRepo: organizationRepo,
@@ -677,6 +708,7 @@ func TestOrganizationService_GetAll(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.organizationService/List", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
+						searchService:    NewMockSearchService(ctrl),
 						logger:           mock.NewMockLogger(ctrl),
 						tracer:           tracer,
 						organizationRepo: repository.NewMockOrganizationRepository(ctrl),
@@ -701,6 +733,7 @@ func TestOrganizationService_GetAll(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.organizationService/List", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
+						searchService:    NewMockSearchService(ctrl),
 						logger:           mock.NewMockLogger(ctrl),
 						tracer:           tracer,
 						organizationRepo: repository.NewMockOrganizationRepository(ctrl),
@@ -729,6 +762,7 @@ func TestOrganizationService_GetAll(t *testing.T) {
 					organizationRepo.EXPECT().List(ctx, userID, gomock.Any(), repository.OrganizationListProjection()).Return(repository.Page[*repository.Organization]{}, assert.AnError)
 
 					return &baseService{
+						searchService:    NewMockSearchService(ctrl),
 						logger:           mock.NewMockLogger(ctrl),
 						tracer:           tracer,
 						organizationRepo: organizationRepo,
@@ -753,6 +787,7 @@ func TestOrganizationService_GetAll(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.organizationService/List", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
+						searchService:    NewMockSearchService(ctrl),
 						logger:           mock.NewMockLogger(ctrl),
 						tracer:           tracer,
 						organizationRepo: repository.NewMockOrganizationRepository(ctrl),
@@ -826,6 +861,7 @@ func TestOrganizationService_Update(t *testing.T) {
 					licenseSvc.EXPECT().WithinThreshold(ctx, license.QuotaOrganizations).Return(true, nil)
 
 					return &baseService{
+						searchService:     mockSearchIndex(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						organizationRepo:  organizationRepo,
@@ -863,6 +899,7 @@ func TestOrganizationService_Update(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						organizationRepo:  organizationRepo,
@@ -894,6 +931,7 @@ func TestOrganizationService_Update(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:    NewMockSearchService(ctrl),
 						logger:           mock.NewMockLogger(ctrl),
 						tracer:           tracer,
 						organizationRepo: repository.NewMockOrganizationRepository(ctrl),
@@ -930,6 +968,7 @@ func TestOrganizationService_Update(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						organizationRepo:  orgRepo,
@@ -965,6 +1004,7 @@ func TestOrganizationService_Update(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						organizationRepo:  organizationRepo,
@@ -1000,6 +1040,7 @@ func TestOrganizationService_Update(t *testing.T) {
 					licenseSvc.EXPECT().WithinThreshold(ctx, license.QuotaOrganizations).Return(false, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						organizationRepo:  repository.NewMockOrganizationRepository(ctrl),
@@ -1032,6 +1073,7 @@ func TestOrganizationService_Update(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(true, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						organizationRepo:  repository.NewMockOrganizationRepository(ctrl),
@@ -1064,6 +1106,7 @@ func TestOrganizationService_Update(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, assert.AnError)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						organizationRepo:  repository.NewMockOrganizationRepository(ctrl),
@@ -1141,6 +1184,7 @@ func TestOrganizationService_Delete(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     mockSearchDeleteByScope(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						organizationRepo:  organizationRepo,
@@ -1175,6 +1219,7 @@ func TestOrganizationService_Delete(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     mockSearchDeleteByScope(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						organizationRepo:  organizationRepo,
@@ -1203,6 +1248,7 @@ func TestOrganizationService_Delete(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(true, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						organizationRepo:  repository.NewMockOrganizationRepository(ctrl),
@@ -1232,6 +1278,7 @@ func TestOrganizationService_Delete(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, assert.AnError)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						organizationRepo:  repository.NewMockOrganizationRepository(ctrl),
@@ -1266,6 +1313,7 @@ func TestOrganizationService_Delete(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						organizationRepo:  organizationRepo,
@@ -1300,6 +1348,7 @@ func TestOrganizationService_Delete(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						organizationRepo:  organizationRepo,
@@ -1329,6 +1378,7 @@ func TestOrganizationService_Delete(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						organizationRepo:  repository.NewMockOrganizationRepository(ctrl),
@@ -1365,6 +1415,7 @@ func TestOrganizationService_Delete(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						organizationRepo:  organizationRepo,
@@ -1400,6 +1451,7 @@ func TestOrganizationService_Delete(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						organizationRepo:  organizationRepo,
@@ -1468,6 +1520,7 @@ func TestOrganizationService_AddMember(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						organizationRepo:  organizationRepo,
@@ -1499,6 +1552,7 @@ func TestOrganizationService_AddMember(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						organizationRepo:  repository.NewMockOrganizationRepository(ctrl),
@@ -1531,6 +1585,7 @@ func TestOrganizationService_AddMember(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						organizationRepo:  repository.NewMockOrganizationRepository(ctrl),
@@ -1560,6 +1615,7 @@ func TestOrganizationService_AddMember(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						organizationRepo:  repository.NewMockOrganizationRepository(ctrl),
@@ -1589,6 +1645,7 @@ func TestOrganizationService_AddMember(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						organizationRepo:  repository.NewMockOrganizationRepository(ctrl),
@@ -1624,6 +1681,7 @@ func TestOrganizationService_AddMember(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						organizationRepo:  organizationRepo,
@@ -1653,6 +1711,7 @@ func TestOrganizationService_AddMember(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, assert.AnError)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						organizationRepo:  repository.NewMockOrganizationRepository(ctrl),
@@ -1717,6 +1776,7 @@ func TestOrganizationService_ListMembers(t *testing.T) {
 					permissionService.EXPECT().CtxUserHas(ctx, organizationID, gomock.Any()).Return(true)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						organizationRepo:  organizationRepo,
@@ -1803,6 +1863,7 @@ func TestOrganizationService_ListMembers(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.organizationService/ListMembers", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
+						searchService:    NewMockSearchService(ctrl),
 						logger:           mock.NewMockLogger(ctrl),
 						tracer:           tracer,
 						organizationRepo: repository.NewMockOrganizationRepository(ctrl),
@@ -1832,6 +1893,7 @@ func TestOrganizationService_ListMembers(t *testing.T) {
 					permissionService.EXPECT().CtxUserHas(ctx, organizationID, gomock.Any()).Return(true)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						organizationRepo:  organizationRepo,
@@ -1951,6 +2013,7 @@ func TestOrganizationService_RemoveMember(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						organizationRepo:  organizationRepo,
@@ -1982,6 +2045,7 @@ func TestOrganizationService_RemoveMember(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						organizationRepo:  repository.NewMockOrganizationRepository(ctrl),
@@ -2014,6 +2078,7 @@ func TestOrganizationService_RemoveMember(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						organizationRepo:  repository.NewMockOrganizationRepository(ctrl),
@@ -2043,6 +2108,7 @@ func TestOrganizationService_RemoveMember(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						organizationRepo:  repository.NewMockOrganizationRepository(ctrl),
@@ -2072,6 +2138,7 @@ func TestOrganizationService_RemoveMember(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						organizationRepo:  repository.NewMockOrganizationRepository(ctrl),
@@ -2108,6 +2175,7 @@ func TestOrganizationService_RemoveMember(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						organizationRepo:  organizationRepo,
@@ -2137,6 +2205,7 @@ func TestOrganizationService_RemoveMember(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, assert.AnError)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						organizationRepo:  repository.NewMockOrganizationRepository(ctrl),
@@ -2231,6 +2300,7 @@ func TestOrganizationService_InviteMember(t *testing.T) {
 					logger.EXPECT().Warn(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            logger,
 						tracer:            tracer,
 						userRepo:          userRepo,
@@ -2302,6 +2372,7 @@ func TestOrganizationService_InviteMember(t *testing.T) {
 					logger.EXPECT().Warn(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            logger,
 						tracer:            tracer,
 						userRepo:          userRepo,
@@ -2362,6 +2433,7 @@ func TestOrganizationService_InviteMember(t *testing.T) {
 					logger.EXPECT().Warn(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            logger,
 						tracer:            tracer,
 						userRepo:          userRepo,
@@ -2394,6 +2466,7 @@ func TestOrganizationService_InviteMember(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(true, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						organizationRepo:  repository.NewMockOrganizationRepository(ctrl),
@@ -2429,6 +2502,7 @@ func TestOrganizationService_InviteMember(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						organizationRepo:  repository.NewMockOrganizationRepository(ctrl),
@@ -2459,6 +2533,7 @@ func TestOrganizationService_InviteMember(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						organizationRepo:  repository.NewMockOrganizationRepository(ctrl),
@@ -2492,6 +2567,7 @@ func TestOrganizationService_InviteMember(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						organizationRepo:  repository.NewMockOrganizationRepository(ctrl),
@@ -2533,6 +2609,7 @@ func TestOrganizationService_InviteMember(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						userRepo:          userRepo,
@@ -2575,6 +2652,7 @@ func TestOrganizationService_InviteMember(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						userRepo:          userRepo,
@@ -2634,6 +2712,7 @@ func TestOrganizationService_InviteMember(t *testing.T) {
 					logger.EXPECT().Warn(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            logger,
 						tracer:            tracer,
 						userRepo:          userRepo,
@@ -2735,6 +2814,7 @@ func TestOrganizationService_RevokeInvitation(t *testing.T) {
 					logger.EXPECT().Warn(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            logger,
 						tracer:            tracer,
 						userRepo:          userRepo,
@@ -2765,6 +2845,7 @@ func TestOrganizationService_RevokeInvitation(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(true, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						organizationRepo:  repository.NewMockOrganizationRepository(ctrl),
@@ -2799,6 +2880,7 @@ func TestOrganizationService_RevokeInvitation(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						organizationRepo:  repository.NewMockOrganizationRepository(ctrl),
@@ -2833,6 +2915,7 @@ func TestOrganizationService_RevokeInvitation(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						organizationRepo:  repository.NewMockOrganizationRepository(ctrl),
@@ -2865,6 +2948,7 @@ func TestOrganizationService_RevokeInvitation(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						organizationRepo:  repository.NewMockOrganizationRepository(ctrl),
@@ -2900,6 +2984,7 @@ func TestOrganizationService_RevokeInvitation(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            mock.NewMockLogger(ctrl),
 						tracer:            tracer,
 						userRepo:          userRepo,
@@ -2953,6 +3038,7 @@ func TestOrganizationService_RevokeInvitation(t *testing.T) {
 					logger.EXPECT().Info(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            logger,
 						tracer:            tracer,
 						userRepo:          userRepo,
@@ -3004,6 +3090,7 @@ func TestOrganizationService_RevokeInvitation(t *testing.T) {
 					logger.EXPECT().Warn(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            logger,
 						tracer:            tracer,
 						userRepo:          userRepo,
@@ -3109,6 +3196,7 @@ func TestOrganizationService_AcceptInvitation(t *testing.T) {
 					logger.EXPECT().Warn(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            logger,
 						tracer:            tracer,
 						userRepo:          userRepo,
@@ -3177,6 +3265,7 @@ func TestOrganizationService_AcceptInvitation(t *testing.T) {
 					logger.EXPECT().Warn(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            logger,
 						tracer:            tracer,
 						userRepo:          userRepo,
@@ -3245,6 +3334,7 @@ func TestOrganizationService_AcceptInvitation(t *testing.T) {
 					logger.EXPECT().Warn(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            logger,
 						tracer:            tracer,
 						userRepo:          userRepo,
@@ -3273,8 +3363,9 @@ func TestOrganizationService_AcceptInvitation(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.organizationService/AcceptInvitation", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
-						logger: mock.NewMockLogger(ctrl),
-						tracer: tracer,
+						searchService: NewMockSearchService(ctrl),
+						logger:        mock.NewMockLogger(ctrl),
+						tracer:        tracer,
 					}
 				},
 			},
@@ -3297,8 +3388,9 @@ func TestOrganizationService_AcceptInvitation(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.organizationService/AcceptInvitation", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
-						logger: mock.NewMockLogger(ctrl),
-						tracer: tracer,
+						searchService: NewMockSearchService(ctrl),
+						logger:        mock.NewMockLogger(ctrl),
+						tracer:        tracer,
 					}
 				},
 			},
@@ -3321,8 +3413,9 @@ func TestOrganizationService_AcceptInvitation(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.organizationService/AcceptInvitation", gomock.Len(0)).Return(ctx, span)
 
 					return &baseService{
-						logger: mock.NewMockLogger(ctrl),
-						tracer: tracer,
+						searchService: NewMockSearchService(ctrl),
+						logger:        mock.NewMockLogger(ctrl),
+						tracer:        tracer,
 					}
 				},
 			},
@@ -3365,6 +3458,7 @@ func TestOrganizationService_AcceptInvitation(t *testing.T) {
 					userTokenRepo.EXPECT().Get(ctx, userID, model.UserTokenContextInvite).Return(userToken, nil)
 
 					return &baseService{
+						searchService: NewMockSearchService(ctrl),
 						logger:        mock.NewMockLogger(ctrl),
 						tracer:        tracer,
 						userTokenRepo: userTokenRepo,
@@ -3415,6 +3509,7 @@ func TestOrganizationService_AcceptInvitation(t *testing.T) {
 					userTokenRepo.EXPECT().Get(ctx, userID, model.UserTokenContextInvite).Return(userToken, nil)
 
 					return &baseService{
+						searchService: NewMockSearchService(ctrl),
 						logger:        mock.NewMockLogger(ctrl),
 						tracer:        tracer,
 						userTokenRepo: userTokenRepo,
@@ -3468,6 +3563,7 @@ func TestOrganizationService_AcceptInvitation(t *testing.T) {
 					userRepo.EXPECT().Get(ctx, userID, repository.UserDetailProjection()).Return(nil, repository.ErrNotFound)
 
 					return &baseService{
+						searchService: NewMockSearchService(ctrl),
 						logger:        mock.NewMockLogger(ctrl),
 						tracer:        tracer,
 						userRepo:      userRepo,
@@ -3525,6 +3621,7 @@ func TestOrganizationService_AcceptInvitation(t *testing.T) {
 					userRepo.EXPECT().Get(ctx, userID, repository.UserDetailProjection()).Return(user, nil)
 
 					return &baseService{
+						searchService: NewMockSearchService(ctrl),
 						logger:        mock.NewMockLogger(ctrl),
 						tracer:        tracer,
 						userRepo:      userRepo,
@@ -3582,6 +3679,7 @@ func TestOrganizationService_AcceptInvitation(t *testing.T) {
 					userRepo.EXPECT().Get(ctx, userID, repository.UserDetailProjection()).Return(user, nil)
 
 					return &baseService{
+						searchService: NewMockSearchService(ctrl),
 						logger:        mock.NewMockLogger(ctrl),
 						tracer:        tracer,
 						userRepo:      userRepo,
@@ -3618,6 +3716,7 @@ func TestOrganizationService_AcceptInvitation(t *testing.T) {
 					userTokenRepo.EXPECT().Get(ctx, userID, model.UserTokenContextInvite).Return(nil, repository.ErrNotFound)
 
 					return &baseService{
+						searchService: NewMockSearchService(ctrl),
 						logger:        mock.NewMockLogger(ctrl),
 						tracer:        tracer,
 						userTokenRepo: userTokenRepo,
@@ -3689,6 +3788,7 @@ func TestOrganizationService_AcceptInvitation(t *testing.T) {
 					logger.EXPECT().Warn(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 
 					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
 						logger:            logger,
 						tracer:            tracer,
 						userRepo:          userRepo,
@@ -3800,6 +3900,7 @@ func TestOrganizationService_Create_SeedsAuth(t *testing.T) {
 		licenseSvc.EXPECT().WithinThreshold(ctx, license.QuotaOrganizations).Return(true, nil)
 
 		s := &organizationService{baseService: &baseService{
+			searchService:     mockSearchIndex(ctrl),
 			logger:            mock.NewMockLogger(ctrl),
 			tracer:            tracer,
 			organizationRepo:  organizationRepo,
@@ -3834,6 +3935,7 @@ func TestOrganizationService_Create_SeedsAuth(t *testing.T) {
 		licenseSvc.EXPECT().WithinThreshold(ctx, license.QuotaOrganizations).Return(true, nil)
 
 		s := &organizationService{baseService: &baseService{
+			searchService:     NewMockSearchService(ctrl),
 			logger:            mock.NewMockLogger(ctrl),
 			tracer:            tracer,
 			organizationRepo:  organizationRepo,
@@ -3874,6 +3976,7 @@ func TestOrganizationService_RemoveMember_DeletesOrgScopedGrants(t *testing.T) {
 	licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 	s := &organizationService{baseService: &baseService{
+		searchService:     NewMockSearchService(ctrl),
 		logger:            mock.NewMockLogger(ctrl),
 		tracer:            tracer,
 		organizationRepo:  organizationRepo,

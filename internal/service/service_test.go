@@ -533,6 +533,18 @@ func TestWithNotificationService(t *testing.T) {
 	})
 }
 
+func TestWithSearchService(t *testing.T) {
+	t.Parallel()
+
+	t.Run("return an error if no search service is provided", func(t *testing.T) {
+		t.Parallel()
+
+		var s baseService
+		err := WithSearchService(nil)(&s)
+		assert.ErrorIs(t, err, ErrNoSearchService)
+	})
+}
+
 func Test_newService(t *testing.T) {
 	type args struct {
 		opts []Option

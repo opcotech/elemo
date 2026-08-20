@@ -9,6 +9,7 @@ import (
 	"github.com/opcotech/elemo/internal/license"
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg"
+	"github.com/opcotech/elemo/internal/pkg/log"
 	"github.com/opcotech/elemo/internal/pkg/optional"
 	"github.com/opcotech/elemo/internal/pkg/validate"
 	"github.com/opcotech/elemo/internal/repository"
@@ -190,7 +191,21 @@ func (s *projectService) Create(ctx context.Context, namespaceID model.ID, opts 
 		return nil, errors.Join(ErrProjectCreate, err)
 	}
 
-	return projectFromRepository(project), nil
+	out := projectFromRepository(project)
+	if err := s.searchService.Index(ctx, IndexInput{
+		ID:        out.ID,
+		Title:     out.Name,
+		Content:   out.Description,
+		Key:       out.Key,
+		CreatedAt: out.CreatedAt,
+		UpdatedAt: out.UpdatedAt,
+	}); err != nil {
+		s.logger.Warn(ctx, "failed to index search document",
+			log.WithError(err),
+			log.WithValue(out.ID.Composite()),
+		)
+	}
+	return out, nil
 }
 
 func (s *projectService) Get(ctx context.Context, id model.ID) (*Project, error) {
@@ -296,7 +311,21 @@ func (s *projectService) Update(ctx context.Context, id model.ID, opts UpdatePro
 		return nil, errors.Join(ErrProjectUpdate, err)
 	}
 
-	return projectFromRepository(project), nil
+	out := projectFromRepository(project)
+	if err := s.searchService.Index(ctx, IndexInput{
+		ID:        out.ID,
+		Title:     out.Name,
+		Content:   out.Description,
+		Key:       out.Key,
+		CreatedAt: out.CreatedAt,
+		UpdatedAt: out.UpdatedAt,
+	}); err != nil {
+		s.logger.Warn(ctx, "failed to index search document",
+			log.WithError(err),
+			log.WithValue(out.ID.Composite()),
+		)
+	}
+	return out, nil
 }
 
 func (s *projectService) Delete(ctx context.Context, id model.ID) error {
@@ -319,6 +348,12 @@ func (s *projectService) Delete(ctx context.Context, id model.ID) error {
 		return errors.Join(ErrProjectDelete, err)
 	}
 
+	if err := s.searchService.DeleteByScope(ctx, id); err != nil {
+		s.logger.Warn(ctx, "failed to delete search documents by scope",
+			log.WithError(err),
+			log.WithValue(id.Composite()),
+		)
+	}
 	return nil
 }
 
@@ -343,6 +378,10 @@ func NewProjectService(opts ...Option) (ProjectService, error) {
 
 	if svc.licenseService == nil {
 		return nil, ErrNoLicenseService
+	}
+
+	if svc.searchService == nil {
+		return nil, ErrNoSearchService
 	}
 
 	return svc, nil

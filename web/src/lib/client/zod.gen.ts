@@ -183,6 +183,32 @@ export const zPageInfo = z.object({
 });
 
 /**
+ * SearchResult
+ *
+ * A searchable resource the caller is allowed to read.
+ */
+export const zSearchResult = z.object({
+  id: z.string(),
+  type: z.enum(["Organization", "Namespace", "Project", "Issue", "Document"]),
+  title: z.string(),
+  subtitle: z.string().optional(),
+  key: z.string().optional(),
+  organization_id: z.string().nullish(),
+  namespace_id: z.string().nullish(),
+  project_id: z.string().nullish(),
+  created_at: z.iso.datetime(),
+  updated_at: z.iso.datetime().nullish(),
+});
+
+/**
+ * SearchPage
+ */
+export const zSearchPage = z.object({
+  items: z.array(zSearchResult),
+  page_info: zPageInfo,
+});
+
+/**
  * OrganizationPage
  */
 export const zOrganizationPage = z.object({
@@ -716,6 +742,7 @@ export const zSystemHealth = z.object({
   relational_database: z.enum(["healthy", "unhealthy", "unknown"]),
   license: z.enum(["healthy", "unhealthy", "unknown"]),
   message_queue: z.enum(["healthy", "unhealthy", "unknown"]),
+  search: z.enum(["healthy", "unhealthy", "unknown"]),
 });
 
 /**
@@ -1160,6 +1187,38 @@ export const zPageSize = z.int().gte(1).lte(1000).default(100);
  * Opaque continuation token from a previous page_info.next_page_token.
  */
 export const zPageToken = z.string();
+
+/**
+ * Maximum number of search hits to return.
+ */
+export const zSearchPageSize = z.int().gte(1).lte(100).default(20);
+
+/**
+ * Full-text query. Empty returns a filter-only page.
+ */
+export const zSearchQ = z.string();
+
+/**
+ * Restrict results to these resource types.
+ */
+export const zSearchTypes = z.array(
+  z.enum(["Organization", "Namespace", "Project", "Issue", "Document"])
+);
+
+/**
+ * Restrict results to this organization xid.
+ */
+export const zSearchOrganizationId = z.string();
+
+/**
+ * Restrict results to this namespace xid.
+ */
+export const zSearchNamespaceId = z.string();
+
+/**
+ * Restrict results to this project xid.
+ */
+export const zSearchProjectId = z.string();
 
 /**
  * ID of the resource.
@@ -2433,6 +2492,25 @@ export const zV1PermissionResourceGetPath = z.object({
  * OK
  */
 export const zV1PermissionResourceGetResponse = zEffectiveActions;
+
+export const zV1SearchGetQuery = z.object({
+  q: z.string().optional(),
+  types: z
+    .array(
+      z.enum(["Organization", "Namespace", "Project", "Issue", "Document"])
+    )
+    .optional(),
+  organization_id: z.string().optional(),
+  namespace_id: z.string().optional(),
+  project_id: z.string().optional(),
+  page_size: z.int().gte(1).lte(100).optional().default(20),
+  page_token: z.string().optional(),
+});
+
+/**
+ * OK
+ */
+export const zV1SearchGetResponse = zSearchPage;
 
 /**
  * OK

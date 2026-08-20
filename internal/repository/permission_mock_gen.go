@@ -188,6 +188,36 @@ func (mr *MockPermissionRepositoryMockRecorder) ListByScope(ctx, scope any) *gom
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListByScope", reflect.TypeOf((*MockPermissionRepository)(nil).ListByScope), ctx, scope)
 }
 
+// ListGrantScopes mocks base method.
+func (m *MockPermissionRepository) ListGrantScopes(ctx context.Context, actor model.ID, action model.Action) ([]model.ID, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListGrantScopes", ctx, actor, action)
+	ret0, _ := ret[0].([]model.ID)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListGrantScopes indicates an expected call of ListGrantScopes.
+func (mr *MockPermissionRepositoryMockRecorder) ListGrantScopes(ctx, actor, action any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListGrantScopes", reflect.TypeOf((*MockPermissionRepository)(nil).ListGrantScopes), ctx, actor, action)
+}
+
+// ListScopeAncestry mocks base method.
+func (m *MockPermissionRepository) ListScopeAncestry(ctx context.Context, resource model.ID) ([]model.ID, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListScopeAncestry", ctx, resource)
+	ret0, _ := ret[0].([]model.ID)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListScopeAncestry indicates an expected call of ListScopeAncestry.
+func (mr *MockPermissionRepositoryMockRecorder) ListScopeAncestry(ctx, resource any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListScopeAncestry", reflect.TypeOf((*MockPermissionRepository)(nil).ListScopeAncestry), ctx, resource)
+}
+
 // ListVisible mocks base method.
 func (m *MockPermissionRepository) ListVisible(ctx context.Context, actor model.ID, action model.Action, parent model.ID, resourceType model.ResourceType) ([]model.ID, error) {
 	m.ctrl.T.Helper()

@@ -7,7 +7,11 @@ var (
 	ErrAuthNoPermission      = errors.New("no permission")                    // no permission
 	ErrInvalidSwagger        = errors.New("invalid swagger provided")         // invalid swagger provided
 	ErrNoAuthProvider        = errors.New("no auth provider provided")        // no auth provider provided
+	ErrNoDocumentService     = errors.New("no document service provided")     // no document service provided
 	ErrNoEmailService        = errors.New("no email service provided")        // no email service provided
+	ErrNoFolderService       = errors.New("no folder service provided")       // no folder service provided
+	ErrNoIssueService        = errors.New("no issue service provided")        // no issue service provided
+	ErrNoLabelService        = errors.New("no label service provided")        // no label service provided
 	ErrNoLicenseService      = errors.New("no license service provided")      // no license service provided
 	ErrNoLogger              = errors.New("no logger provided")               // no logger provided
 	ErrNoNamespaceService    = errors.New("no namespace service provided")    // no namespace service provided
@@ -15,13 +19,10 @@ var (
 	ErrNoOrganizationService = errors.New("no organization service provided") // no organization service provided
 	ErrNoPermissionService   = errors.New("no permission service provided")   // no permission service provided
 	ErrNoProjectService      = errors.New("no project service provided")      // no project service provided
-	ErrNoIssueService        = errors.New("no issue service provided")        // no issue service provided
-	ErrNoDocumentService     = errors.New("no document service provided")     // no document service provided
-	ErrNoFolderService       = errors.New("no folder service provided")       // no folder service provided
-	ErrNoLabelService        = errors.New("no label service provided")        // no label service provided
 	ErrNoRoleService         = errors.New("no role service provided")         // no role service provided
-	ErrNoTeamService         = errors.New("no team service provided")         // no team service provided
+	ErrNoSearchService       = errors.New("no search service provided")       // no search service provided
 	ErrNoSystemService       = errors.New("no system service provided")       // no system service provided
+	ErrNoTeamService         = errors.New("no team service provided")         // no team service provided
 	ErrNoTodoService         = errors.New("no todo service provided")         // no todo service provided
 	ErrNoTracer              = errors.New("no tracer provided")               // no tracer provided
 	ErrNoUserService         = errors.New("no user service provided")         // no user service provided

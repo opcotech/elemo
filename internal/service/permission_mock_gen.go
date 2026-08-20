@@ -143,6 +143,21 @@ func (mr *MockPermissionServiceMockRecorder) CtxUserHas(ctx, resource, action an
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CtxUserHas", reflect.TypeOf((*MockPermissionService)(nil).CtxUserHas), ctx, resource, action)
 }
 
+// CtxUserListGrantScopes mocks base method.
+func (m *MockPermissionService) CtxUserListGrantScopes(ctx context.Context, action model.Action) ([]model.ID, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CtxUserListGrantScopes", ctx, action)
+	ret0, _ := ret[0].([]model.ID)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CtxUserListGrantScopes indicates an expected call of CtxUserListGrantScopes.
+func (mr *MockPermissionServiceMockRecorder) CtxUserListGrantScopes(ctx, action any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CtxUserListGrantScopes", reflect.TypeOf((*MockPermissionService)(nil).CtxUserListGrantScopes), ctx, action)
+}
+
 // Delete mocks base method.
 func (m *MockPermissionService) Delete(ctx context.Context, id model.ID) error {
 	m.ctrl.T.Helper()
@@ -273,4 +288,34 @@ func (m *MockPermissionService) ListByScope(ctx context.Context, scope model.ID)
 func (mr *MockPermissionServiceMockRecorder) ListByScope(ctx, scope any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListByScope", reflect.TypeOf((*MockPermissionService)(nil).ListByScope), ctx, scope)
+}
+
+// ListGrantScopes mocks base method.
+func (m *MockPermissionService) ListGrantScopes(ctx context.Context, actor model.ID, action model.Action) ([]model.ID, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListGrantScopes", ctx, actor, action)
+	ret0, _ := ret[0].([]model.ID)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListGrantScopes indicates an expected call of ListGrantScopes.
+func (mr *MockPermissionServiceMockRecorder) ListGrantScopes(ctx, actor, action any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListGrantScopes", reflect.TypeOf((*MockPermissionService)(nil).ListGrantScopes), ctx, actor, action)
+}
+
+// ListScopeAncestry mocks base method.
+func (m *MockPermissionService) ListScopeAncestry(ctx context.Context, resource model.ID) ([]model.ID, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListScopeAncestry", ctx, resource)
+	ret0, _ := ret[0].([]model.ID)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListScopeAncestry indicates an expected call of ListScopeAncestry.
+func (mr *MockPermissionServiceMockRecorder) ListScopeAncestry(ctx, resource any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListScopeAncestry", reflect.TypeOf((*MockPermissionService)(nil).ListScopeAncestry), ctx, resource)
 }

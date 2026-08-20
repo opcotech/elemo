@@ -88,6 +88,56 @@ func TestID_Label(t *testing.T) {
 	}
 }
 
+func TestID_Composite(t *testing.T) {
+	t.Parallel()
+
+	id := MustNewID(ResourceTypeIssue)
+	assert.Equal(t, ResourceTypeIssue.String()+":"+id.String(), id.Composite())
+
+	parsed, err := ParseCompositeID(id.Composite())
+	require.NoError(t, err)
+	assert.Equal(t, id, parsed)
+
+	assert.Equal(t, ResourceTypeIssue.String()+"_"+id.String(), id.SearchKey())
+	parsedKey, err := ParseSearchKey(id.SearchKey())
+	require.NoError(t, err)
+	assert.Equal(t, id, parsedKey)
+
+	_, err = ParseCompositeID("not-a-composite")
+	assert.ErrorIs(t, err, ErrInvalidID)
+	_, err = ParseSearchKey("not-a-key")
+	assert.ErrorIs(t, err, ErrInvalidID)
+}
+
+func TestID_Value(t *testing.T) {
+	t.Parallel()
+
+	id := MustNewID(ResourceTypeIssue)
+	got, err := id.Value()
+	require.NoError(t, err)
+	assert.Equal(t, id.Composite(), got)
+}
+
+func TestID_Scan(t *testing.T) {
+	t.Parallel()
+
+	id := MustNewID(ResourceTypeIssue)
+
+	t.Run("valid", func(t *testing.T) {
+		t.Parallel()
+		var scanned ID
+		require.NoError(t, scanned.Scan(id.Composite()))
+		assert.Equal(t, id, scanned)
+	})
+
+	t.Run("malformed", func(t *testing.T) {
+		t.Parallel()
+		var scanned ID
+		err := scanned.Scan("not-a-composite")
+		assert.ErrorIs(t, err, ErrInvalidID)
+	})
+}
+
 func TestNewID(t *testing.T) {
 	type args struct {
 		typ ResourceType

@@ -100,6 +100,8 @@ func classifyServiceError(err error) int {
 		errors.Is(err, model.ErrInvalidIssueDetails),
 		errors.Is(err, model.ErrInvalidDocumentDetails),
 		errors.Is(err, model.ErrInvalidFolderDetails),
+		errors.Is(err, model.ErrInvalidResourceType),
+		errors.Is(err, service.ErrNoUser),
 		errors.Is(err, repository.ErrFolderNameConflict),
 		errors.Is(err, repository.ErrFolderCycle):
 		return http.StatusBadRequest

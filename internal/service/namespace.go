@@ -8,6 +8,7 @@ import (
 	"github.com/opcotech/elemo/internal/license"
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg"
+	"github.com/opcotech/elemo/internal/pkg/log"
 	"github.com/opcotech/elemo/internal/pkg/optional"
 	"github.com/opcotech/elemo/internal/pkg/validate"
 	"github.com/opcotech/elemo/internal/repository"
@@ -187,7 +188,20 @@ func (s *namespaceService) Create(ctx context.Context, orgID model.ID, opts Crea
 		return nil, errors.Join(ErrNamespaceCreate, err)
 	}
 
-	return namespaceFromRepository(namespace), nil
+	out := namespaceFromRepository(namespace)
+	if err := s.searchService.Index(ctx, IndexInput{
+		ID:        out.ID,
+		Title:     out.Name,
+		Content:   out.Description,
+		CreatedAt: out.CreatedAt,
+		UpdatedAt: out.UpdatedAt,
+	}); err != nil {
+		s.logger.Warn(ctx, "failed to index search document",
+			log.WithError(err),
+			log.WithValue(out.ID.Composite()),
+		)
+	}
+	return out, nil
 }
 
 func (s *namespaceService) Get(ctx context.Context, id model.ID) (*Namespace, error) {
@@ -293,7 +307,20 @@ func (s *namespaceService) Update(ctx context.Context, id model.ID, opts UpdateN
 		return nil, errors.Join(ErrNamespaceUpdate, err)
 	}
 
-	return namespaceFromRepository(namespace), nil
+	out := namespaceFromRepository(namespace)
+	if err := s.searchService.Index(ctx, IndexInput{
+		ID:        out.ID,
+		Title:     out.Name,
+		Content:   out.Description,
+		CreatedAt: out.CreatedAt,
+		UpdatedAt: out.UpdatedAt,
+	}); err != nil {
+		s.logger.Warn(ctx, "failed to index search document",
+			log.WithError(err),
+			log.WithValue(out.ID.Composite()),
+		)
+	}
+	return out, nil
 }
 
 func (s *namespaceService) Delete(ctx context.Context, id model.ID) error {
@@ -316,6 +343,12 @@ func (s *namespaceService) Delete(ctx context.Context, id model.ID) error {
 		return errors.Join(ErrNamespaceDelete, err)
 	}
 
+	if err := s.searchService.DeleteByScope(ctx, id); err != nil {
+		s.logger.Warn(ctx, "failed to delete search documents by scope",
+			log.WithError(err),
+			log.WithValue(id.Composite()),
+		)
+	}
 	return nil
 }
 
@@ -340,6 +373,10 @@ func NewNamespaceService(opts ...Option) (NamespaceService, error) {
 
 	if svc.licenseService == nil {
 		return nil, ErrNoLicenseService
+	}
+
+	if svc.searchService == nil {
+		return nil, ErrNoSearchService
 	}
 
 	return svc, nil

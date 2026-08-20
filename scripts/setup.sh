@@ -79,6 +79,11 @@ function installFrontEnd() {
   pnpm --dir web build
 }
 
+function reindexSearchIndex() {
+  log "reindexing search"
+  docker compose -f "${DOCKER_DEPLOY_DIR}/docker-compose.yml" exec -T elemo-server bin/elemo search reindex
+}
+
 # Run preflight
 validateBoolean "ELEMO_KEEP_BACKEND" "${ELEMO_KEEP_BACKEND}"
 validateBoolean "ELEMO_SKIP_IMAGE_BUILD" "${ELEMO_SKIP_IMAGE_BUILD}"
@@ -108,5 +113,8 @@ fi
 
 # Setup the front-end
 installFrontEnd
+
+# Reindex the search index
+reindexSearchIndex
 
 success "the setup finished successfully, now you can run \"make dev\" or \"make start\""

@@ -8,6 +8,7 @@ import (
 	"github.com/opcotech/elemo/internal/license"
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg"
+	"github.com/opcotech/elemo/internal/pkg/log"
 	"github.com/opcotech/elemo/internal/pkg/optional"
 	"github.com/opcotech/elemo/internal/pkg/validate"
 	"github.com/opcotech/elemo/internal/repository"
@@ -581,7 +582,21 @@ func (s *issueService) Create(ctx context.Context, projectID model.ID, opts Crea
 		return nil, errors.Join(ErrIssueCreate, err)
 	}
 
-	return issueFromRepository(issue), nil
+	out := issueFromRepository(issue)
+	if err := s.searchService.Index(ctx, IndexInput{
+		ID:        out.ID,
+		Title:     out.Title,
+		Content:   out.Description,
+		Key:       out.Key,
+		CreatedAt: out.CreatedAt,
+		UpdatedAt: out.UpdatedAt,
+	}); err != nil {
+		s.logger.Warn(ctx, "failed to index search document",
+			log.WithError(err),
+			log.WithValue(out.ID.Composite()),
+		)
+	}
+	return out, nil
 }
 
 func (s *issueService) Get(ctx context.Context, id model.ID) (*Issue, error) {
@@ -818,7 +833,21 @@ func (s *issueService) Update(ctx context.Context, id model.ID, opts UpdateIssue
 		}
 	}
 
-	return issueFromRepository(issue), nil
+	out := issueFromRepository(issue)
+	if err := s.searchService.Index(ctx, IndexInput{
+		ID:        out.ID,
+		Title:     out.Title,
+		Content:   out.Description,
+		Key:       out.Key,
+		CreatedAt: out.CreatedAt,
+		UpdatedAt: out.UpdatedAt,
+	}); err != nil {
+		s.logger.Warn(ctx, "failed to index search document",
+			log.WithError(err),
+			log.WithValue(out.ID.Composite()),
+		)
+	}
+	return out, nil
 }
 
 func (s *issueService) Delete(ctx context.Context, id model.ID) error {
@@ -841,6 +870,12 @@ func (s *issueService) Delete(ctx context.Context, id model.ID) error {
 		return errors.Join(ErrIssueDelete, err)
 	}
 
+	if err := s.searchService.Delete(ctx, id); err != nil {
+		s.logger.Warn(ctx, "failed to delete search document",
+			log.WithError(err),
+			log.WithValue(id.Composite()),
+		)
+	}
 	return nil
 }
 
@@ -1057,6 +1092,10 @@ func NewIssueService(opts ...Option) (IssueService, error) {
 
 	if svc.licenseService == nil {
 		return nil, ErrNoLicenseService
+	}
+
+	if svc.searchService == nil {
+		return nil, ErrNoSearchService
 	}
 
 	return svc, nil

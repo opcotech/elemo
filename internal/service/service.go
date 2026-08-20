@@ -228,6 +228,18 @@ func WithNotificationService(notificationService NotificationService) Option {
 	}
 }
 
+// WithSearchService sets the search service for the baseService.
+func WithSearchService(searchService SearchService) Option {
+	return func(s *baseService) error {
+		if searchService == nil {
+			return ErrNoSearchService
+		}
+
+		s.searchService = searchService
+		return nil
+	}
+}
+
 // WithEmailService sets the email service for the baseService.
 func WithEmailService(emailService EmailService) Option {
 	return func(s *baseService) error {
@@ -275,6 +287,7 @@ type baseService struct {
 	licenseService      LicenseService
 	permissionService   PermissionService
 	notificationService NotificationService
+	searchService       SearchService
 	emailService        EmailService
 	staticFileService   StaticFileService
 }

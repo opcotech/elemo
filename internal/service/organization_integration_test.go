@@ -26,6 +26,7 @@ type OrganizationServiceIntegrationTestSuite struct {
 	testutil.ContainerIntegrationTestSuite
 	testutil.Neo4jContainerIntegrationTestSuite
 	testutil.PgContainerIntegrationTestSuite
+	testutil.SearchContainerIntegrationTestSuite
 
 	organizationService service.OrganizationService
 	emailService        service.EmailService
@@ -43,8 +44,15 @@ func (s *OrganizationServiceIntegrationTestSuite) SetupSuite() {
 	container := reflect.TypeOf(s).Elem().String()
 	s.SetupNeo4j(&s.ContainerIntegrationTestSuite, container)
 	s.SetupPg(&s.ContainerIntegrationTestSuite, container)
+	s.SetupSearch(&s.ContainerIntegrationTestSuite, container)
 
 	permissionService, err := service.NewPermissionService(s.PermissionRepo)
+	s.Require().NoError(err)
+
+	searchService, err := service.NewSearchService(
+		s.SearchRepo,
+		service.WithPermissionService(permissionService),
+	)
 	s.Require().NoError(err)
 
 	licenseService, err := service.NewLicenseService(
@@ -88,6 +96,7 @@ func (s *OrganizationServiceIntegrationTestSuite) SetupSuite() {
 		service.WithLicenseService(licenseService),
 		service.WithUserTokenRepository(s.UserTokenRepository),
 		service.WithEmailService(s.emailService),
+		service.WithSearchService(searchService),
 	)
 	s.Require().NoError(err)
 }
@@ -103,6 +112,7 @@ func (s *OrganizationServiceIntegrationTestSuite) SetupTest() {
 }
 
 func (s *OrganizationServiceIntegrationTestSuite) TearDownTest() {
+	defer s.CleanupSearch(&s.ContainerIntegrationTestSuite)
 	defer s.CleanupNeo4j(&s.ContainerIntegrationTestSuite)
 	defer s.CleanupPg(&s.ContainerIntegrationTestSuite)
 }

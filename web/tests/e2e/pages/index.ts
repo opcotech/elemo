@@ -21,3 +21,4 @@ export { WorkPage } from "./work-page";
 export { WorkItemPage } from "./work-item-page";
 export { ProjectPage } from "./project-page";
 export { HomePage } from "./home-page";
+export { SearchPage } from "./search-page";

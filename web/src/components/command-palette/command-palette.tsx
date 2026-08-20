@@ -1,5 +1,8 @@
+import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 
+import { EntityIcon } from "@/components/shared/entity-link";
 import {
   CommandDialog,
   CommandEmpty,
@@ -10,8 +13,17 @@ import {
   CommandSeparator,
   CommandShortcut,
 } from "@/components/ui/command";
+import { Spinner } from "@/components/ui/spinner";
+import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { useNavigationContext } from "@/hooks/use-navigation-context";
+import { v1SearchGetOptions } from "@/lib/api/query-options";
 import type { Command, CommandContext } from "@/lib/commands/registry";
+import { internalPath } from "@/lib/internal-url";
+import {
+  SEARCH_DEBOUNCE_MS,
+  SEARCH_PALETTE_PAGE_SIZE,
+} from "@/lib/search/params";
+import { searchResultEntityType, searchResultHref } from "@/lib/search/result";
 
 interface CommandPaletteProps {
   open: boolean;
@@ -33,7 +45,20 @@ export function CommandPalette({
   commands: availableCommands,
 }: CommandPaletteProps) {
   const [searchQuery, setSearchQuery] = useState("");
+  const navigate = useNavigate();
   const navigationContext = useNavigationContext();
+  const trimmedQuery = searchQuery.trim();
+  const debouncedQuery = useDebouncedValue(trimmedQuery, SEARCH_DEBOUNCE_MS);
+  const { data, isError, isFetching } = useQuery({
+    ...v1SearchGetOptions({
+      query: {
+        q: debouncedQuery,
+        page_size: SEARCH_PALETTE_PAGE_SIZE,
+      },
+    }),
+    enabled: open && debouncedQuery.length > 0,
+  });
+  const hits = debouncedQuery.length > 0 ? (data?.items ?? []) : [];
 
   // Use provided context or derive from navigation context
   const context: CommandContext | undefined =
@@ -62,7 +87,7 @@ export function CommandPalette({
         : command.context === context);
     if (!isInContext) return false;
 
-    const query = searchQuery.toLowerCase().trim();
+    const query = trimmedQuery.toLowerCase();
     if (!query) return true;
     return (
       command.title.toLowerCase().includes(query) ||
@@ -87,9 +112,16 @@ export function CommandPalette({
   );
 
   const categories = Object.keys(groupedCommands);
+  const showResults = trimmedQuery.length > 0;
+  const searching = showResults && isFetching && hits.length === 0 && !isError;
 
   return (
-    <CommandDialog open={open} onOpenChange={onOpenChange} title={title}>
+    <CommandDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title={title}
+      shouldFilter={false}
+    >
       <CommandInput
         placeholder={placeholder}
         value={searchQuery}
@@ -97,9 +129,61 @@ export function CommandPalette({
       />
       <CommandList>
         <CommandEmpty>{emptyText}</CommandEmpty>
+        {showResults ? (
+          <CommandGroup heading="Results">
+            <CommandItem
+              value="view-all-results"
+              onSelect={() => {
+                onOpenChange(false);
+                void navigate({
+                  to: "/search",
+                  search: { q: trimmedQuery, type: "all" },
+                });
+              }}
+            >
+              View all results
+            </CommandItem>
+            {isError ? (
+              <CommandItem value="search-error" disabled>
+                Search failed. Try again.
+              </CommandItem>
+            ) : null}
+            {searching ? (
+              <CommandItem value="search-loading" disabled>
+                <Spinner size="xs" />
+                Searching…
+              </CommandItem>
+            ) : null}
+            {hits.map((hit) => {
+              const href = searchResultHref(hit);
+              return (
+                <CommandItem
+                  key={`${hit.type}:${hit.id}`}
+                  value={`result-${hit.type}-${hit.id}`}
+                  disabled={!href}
+                  onSelect={() => {
+                    if (!href) return;
+                    onOpenChange(false);
+                    void navigate({ to: internalPath(href) as never });
+                  }}
+                >
+                  <EntityIcon type={searchResultEntityType(hit)} />
+                  <span className="flex min-w-0 flex-1 flex-col">
+                    <span className="truncate">{hit.title}</span>
+                    {hit.subtitle ? (
+                      <span className="text-muted-foreground truncate text-xs">
+                        {hit.subtitle}
+                      </span>
+                    ) : null}
+                  </span>
+                </CommandItem>
+              );
+            })}
+          </CommandGroup>
+        ) : null}
         {categories.map((category, categoryIndex) => (
           <div key={category}>
-            {categoryIndex > 0 && <CommandSeparator />}
+            {(showResults || categoryIndex > 0) && <CommandSeparator />}
             <CommandGroup
               heading={
                 category.charAt(0).toUpperCase() +
@@ -109,6 +193,7 @@ export function CommandPalette({
               {groupedCommands[category].map((command) => (
                 <CommandItem
                   key={command.id}
+                  value={command.id}
                   onSelect={() => handleSelect(command.id)}
                   disabled={command.disabled}
                 >

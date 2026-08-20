@@ -290,6 +290,41 @@ export type PageInfo = {
 };
 
 /**
+ * SearchResult
+ *
+ * A searchable resource the caller is allowed to read.
+ */
+export type SearchResult = {
+  /**
+   * Resource xid.
+   */
+  id: string;
+  type: "Organization" | "Namespace" | "Project" | "Issue" | "Document";
+  title: string;
+  /**
+   * Display subtitle such as an issue key or document excerpt.
+   */
+  subtitle?: string;
+  /**
+   * Human-readable key when the resource has one.
+   */
+  key?: string;
+  organization_id?: string | null;
+  namespace_id?: string | null;
+  project_id?: string | null;
+  created_at: string;
+  updated_at?: string | null;
+};
+
+/**
+ * SearchPage
+ */
+export type SearchPage = {
+  items: Array<SearchResult>;
+  page_info: PageInfo;
+};
+
+/**
  * ProjectPage
  */
 export type ProjectPage = {
@@ -1104,6 +1139,10 @@ export type SystemHealth = {
    * Health of the message queue.
    */
   message_queue: "healthy" | "unhealthy" | "unknown";
+  /**
+   * Health of the search engine.
+   */
+  search: "healthy" | "unhealthy" | "unknown";
 };
 
 /**
@@ -1574,6 +1613,38 @@ export type PageSize = number;
  * Opaque continuation token from a previous page_info.next_page_token.
  */
 export type PageToken = string;
+
+/**
+ * Maximum number of search hits to return.
+ */
+export type SearchPageSize = number;
+
+/**
+ * Full-text query. Empty returns a filter-only page.
+ */
+export type SearchQ = string;
+
+/**
+ * Restrict results to these resource types.
+ */
+export type SearchTypes = Array<
+  "Organization" | "Namespace" | "Project" | "Issue" | "Document"
+>;
+
+/**
+ * Restrict results to this organization xid.
+ */
+export type SearchOrganizationId = string;
+
+/**
+ * Restrict results to this namespace xid.
+ */
+export type SearchNamespaceId = string;
+
+/**
+ * Restrict results to this project xid.
+ */
+export type SearchProjectId = string;
 
 /**
  * ID of the resource.
@@ -6717,6 +6788,71 @@ export type V1PermissionResourceGetResponses = {
 
 export type V1PermissionResourceGetResponse =
   V1PermissionResourceGetResponses[keyof V1PermissionResourceGetResponses];
+
+export type V1SearchGetData = {
+  body?: never;
+  path?: never;
+  query?: {
+    /**
+     * Full-text query. Empty returns a filter-only page.
+     */
+    q?: string;
+    /**
+     * Restrict results to these resource types.
+     */
+    types?: Array<
+      "Organization" | "Namespace" | "Project" | "Issue" | "Document"
+    >;
+    /**
+     * Restrict results to this organization xid.
+     */
+    organization_id?: string;
+    /**
+     * Restrict results to this namespace xid.
+     */
+    namespace_id?: string;
+    /**
+     * Restrict results to this project xid.
+     */
+    project_id?: string;
+    /**
+     * Maximum number of search hits to return.
+     */
+    page_size?: number;
+    /**
+     * Opaque continuation token from a previous page_info.next_page_token.
+     */
+    page_token?: string;
+  };
+  url: "/v1/search";
+};
+
+export type V1SearchGetErrors = {
+  /**
+   * Bad request
+   */
+  400: HttpError;
+  /**
+   * Unauthorized request
+   */
+  401: HttpError;
+  /**
+   * Internal Server Error
+   */
+  500: HttpError;
+};
+
+export type V1SearchGetError = V1SearchGetErrors[keyof V1SearchGetErrors];
+
+export type V1SearchGetResponses = {
+  /**
+   * OK
+   */
+  200: SearchPage;
+};
+
+export type V1SearchGetResponse =
+  V1SearchGetResponses[keyof V1SearchGetResponses];
 
 export type V1SystemHealthData = {
   body?: never;

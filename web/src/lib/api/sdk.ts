@@ -53,6 +53,7 @@ export {
   v1ProjectsDocumentsUnrelate,
   v1ProjectsIssuesCreate,
   v1ProjectsIssuesGet,
+  v1SearchGet,
   v1TodosCreate,
   v1TodosGet,
   v1TodoUpdate,

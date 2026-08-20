@@ -50,6 +50,7 @@ function generateConfigFile() {
     local neo4j_host="neo4j"
     local postgres_host="postgres"
     local localstack_host="localstack"
+    local meilisearch_host="meilisearch"
     local otel_collector_host="otel_collector"
     local smtp_host="smtp"
   else
@@ -58,6 +59,7 @@ function generateConfigFile() {
     local neo4j_host="${host}"
     local postgres_host="${host}"
     local localstack_host="${host}"
+    local meilisearch_host="${host}"
     local otel_collector_host="${host}"
     local smtp_host="${host}"
   fi
@@ -164,6 +166,14 @@ relational_database:
   max_connection_lifetime: 300
   max_connection_idle_time: 10
   min_connections: 5
+
+search:
+  host: "${meilisearch_host}"
+  port: 7700
+  bucket: elemo-dev
+  api_key: I860A0rxXjyPG6ORX3aJOCjwvVtzmkSfuqYXAy
+  read_timeout: 3
+  write_timeout: 5
 
 s3_storage:
   bucket: "elemo"

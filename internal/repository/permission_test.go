@@ -381,6 +381,30 @@ func TestCachedPermissionRepository_Passthrough(t *testing.T) {
 		require.Equal(t, decision, got)
 	})
 
+	t.Run("ListGrantScopes", func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+		inner := NewMockPermissionRepository(ctrl)
+		inner.EXPECT().ListGrantScopes(ctx, actor, model.ActionIssueRead).Return([]model.ID{resource}, nil)
+		r := &RedisCachedPermissionRepository{permissionRepo: inner}
+		got, err := r.ListGrantScopes(ctx, actor, model.ActionIssueRead)
+		require.NoError(t, err)
+		require.Equal(t, []model.ID{resource}, got)
+	})
+
+	t.Run("ListScopeAncestry", func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+		inner := NewMockPermissionRepository(ctrl)
+		inner.EXPECT().ListScopeAncestry(ctx, resource).Return([]model.ID{resource}, nil)
+		r := &RedisCachedPermissionRepository{permissionRepo: inner}
+		got, err := r.ListScopeAncestry(ctx, resource)
+		require.NoError(t, err)
+		require.Equal(t, []model.ID{resource}, got)
+	})
+
 	t.Run("ListVisible", func(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)

@@ -67,6 +67,8 @@ var (
 	ErrNoUser                          = errors.New("no user provided")                             // no user provided
 	ErrNoUserRepository                = errors.New("no user repository provided")                  // no user repository provided
 	ErrNoUserTokenRepository           = errors.New("no user token repository provided")            // no user token repository provided
+	ErrNoSearchRepository              = errors.New("no search repository provided")                // no search repository provided
+	ErrNoSearchService                 = errors.New("no search service provided")                   // no search service provided
 	ErrNoVersionInfo                   = errors.New("no version info provided")                     // no version info provided
 	ErrNotificationCreate              = errors.New("failed to create notification")                // failed to create notification
 	ErrNotificationDelete              = errors.New("failed to delete notification")                // failed to delete notification
@@ -92,6 +94,8 @@ var (
 	ErrPermissionGetBySubject          = errors.New("failed to get permission by subject")          // failed to get permission by subject
 	ErrPermissionGetByTarget           = errors.New("failed to get permission by target")           // failed to get permission by target
 	ErrPermissionHasPermission         = errors.New("failed to check if permission has permission") // failed to check if permission has permission
+	ErrPermissionListGrantScopes       = errors.New("failed to list grant scopes")                  // failed to list grant scopes
+	ErrPermissionListScopeAncestry     = errors.New("failed to list scope ancestry")                // failed to list scope ancestry
 	ErrPermissionUpdate                = errors.New("failed to update permission")                  // failed to update permission
 	ErrProjectCreate                   = errors.New("failed to create project")                     // failed to create project
 	ErrProjectDelete                   = errors.New("failed to delete project")                     // failed to delete project
@@ -120,6 +124,10 @@ var (
 	ErrStaticFileGet                   = errors.New("failed to get static file")                    // failed to get static file
 	ErrStaticFileInvalidPath           = errors.New("invalid static file path is provided")         // invalid static file path was provided
 	ErrStaticFileUpdate                = errors.New("failed to update static file")                 // failed to update static file
+	ErrSearchDelete                    = errors.New("failed to delete search document")             // failed to delete search document
+	ErrSearchGet                       = errors.New("failed to search")                             // failed to search
+	ErrSearchIndex                     = errors.New("failed to index search document")              // failed to index search document
+	ErrSearchReindex                   = errors.New("failed to reindex search documents")           // failed to reindex search documents
 	ErrSystemHealthCheck               = errors.New("system health check failed")                   // system health check failed
 	ErrTodoCreate                      = errors.New("failed to create todo")                        // failed to create todo
 	ErrTodoDelete                      = errors.New("failed to delete todo")                        // failed to delete todo

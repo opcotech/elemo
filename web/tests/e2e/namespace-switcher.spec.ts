@@ -69,48 +69,78 @@ test.describe("@namespace.switcher Namespace Switcher E2E Tests", () => {
     });
     await expect(page.getByRole("heading", { name: "Home" })).toBeVisible();
 
-    const switcher = page.getByRole("button", {
+    const switcher = page.getByRole("combobox", {
       name: /Switch namespace, current:/,
     });
     await expect(switcher).toBeVisible();
     await switcher.click();
 
-    await page.getByRole("menuitem", { name: namespaceAName }).click();
+    await page.getByRole("option", { name: namespaceAName }).click();
     await expect(page).toHaveURL(new RegExp(`/namespaces/${namespaceAId}`));
     await expect(
-      page.getByRole("button", {
+      page.getByRole("combobox", {
         name: `Switch namespace, current: ${namespaceAName}`,
       })
     ).toBeVisible();
 
     await page
-      .getByRole("button", {
+      .getByRole("combobox", {
         name: `Switch namespace, current: ${namespaceAName}`,
       })
       .click();
-    await page.getByRole("menuitem", { name: namespaceBName }).click();
+    await page.getByRole("option", { name: namespaceBName }).click();
     await expect(page).toHaveURL(new RegExp(`/namespaces/${namespaceBId}`));
     await expect(
-      page.getByRole("button", {
+      page.getByRole("combobox", {
         name: `Switch namespace, current: ${namespaceBName}`,
       })
     ).toBeVisible();
 
     // Active namespace shows a check; reopen menu to verify both remain listed
     await page
-      .getByRole("button", {
+      .getByRole("combobox", {
         name: `Switch namespace, current: ${namespaceBName}`,
       })
       .click();
     await expect(
-      page.getByRole("menuitem", { name: namespaceAName })
+      page.getByRole("option", { name: namespaceAName })
     ).toBeVisible();
     await expect(
-      page.getByRole("menuitem", { name: namespaceBName })
+      page.getByRole("option", { name: namespaceBName })
     ).toBeVisible();
     await expect(
-      page.locator('[data-slot="dropdown-menu-label"]').filter({
+      page.locator("[cmdk-group-heading]").filter({
         hasText: organizationName,
+      })
+    ).toBeVisible();
+  });
+
+  test("should filter namespaces by search query", async ({ page }) => {
+    await loginUser(page, {
+      email: ownerUser.email,
+      password: USER_DEFAULT_PASSWORD,
+    });
+    await expect(page.getByRole("heading", { name: "Home" })).toBeVisible();
+
+    await page
+      .getByRole("combobox", {
+        name: /Switch namespace, current:/,
+      })
+      .click();
+
+    await page.getByPlaceholder("Search namespaces...").fill(namespaceBName);
+    await expect(
+      page.getByRole("option", { name: namespaceBName })
+    ).toBeVisible();
+    await expect(
+      page.getByRole("option", { name: namespaceAName })
+    ).toBeHidden();
+
+    await page.getByRole("option", { name: namespaceBName }).click();
+    await expect(page).toHaveURL(new RegExp(`/namespaces/${namespaceBId}`));
+    await expect(
+      page.getByRole("combobox", {
+        name: `Switch namespace, current: ${namespaceBName}`,
       })
     ).toBeVisible();
   });
@@ -126,7 +156,7 @@ test.describe("@namespace.switcher Namespace Switcher E2E Tests", () => {
     });
     await expect(page.getByRole("heading", { name: "Home" })).toBeVisible();
 
-    const switcher = page.getByRole("button", {
+    const switcher = page.getByRole("combobox", {
       name: /Switch namespace, current: Choose namespace/,
     });
     await expect(switcher).toBeVisible();
