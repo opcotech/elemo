@@ -2,14 +2,15 @@ receivers:
   otlp:
     protocols:
       http:
+        endpoint: 0.0.0.0:4318
 
 processors:
   batch:
     timeout: 10s
 
 exporters:
-  jaeger:
-    endpoint: jaeger:14250
+  otlp:
+    endpoint: jaeger:4317
     tls:
       insecure: true
 
@@ -18,4 +19,4 @@ service:
     traces:
       receivers: [ otlp ]
       processors: [ batch ]
-      exporters: [ jaeger ]
+      exporters: [ otlp ]

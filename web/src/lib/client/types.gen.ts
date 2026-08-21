@@ -746,6 +746,14 @@ export type PartialIssue = {
    * Start date of the issue.
    */
   start_date?: string | null;
+  /**
+   * Date when the issue was created.
+   */
+  created_at: string;
+  /**
+   * Date when the issue was updated.
+   */
+  updated_at: string | null;
 };
 
 /**
@@ -1613,6 +1621,42 @@ export type PageSize = number;
  * Opaque continuation token from a previous page_info.next_page_token.
  */
 export type PageToken = string;
+
+/**
+ * Case-insensitive substring search over issue key, title, and description.
+ */
+export type IssueListQ = string;
+
+/**
+ * Match any of the provided statuses.
+ */
+export type IssueListStatus = Array<IssueStatus>;
+
+/**
+ * Match any of the provided priorities.
+ */
+export type IssueListPriority = Array<IssuePriority>;
+
+/**
+ * Sort order in `field:direction` format.
+ */
+export type IssueListOrder =
+  | "rank:asc"
+  | "rank:desc"
+  | "numeric_id:asc"
+  | "numeric_id:desc"
+  | "title:asc"
+  | "title:desc"
+  | "priority:asc"
+  | "priority:desc"
+  | "status:asc"
+  | "status:desc"
+  | "due_date:asc"
+  | "due_date:desc"
+  | "created_at:asc"
+  | "created_at:desc"
+  | "updated_at:asc"
+  | "updated_at:desc";
 
 /**
  * Maximum number of search hits to return.
@@ -2543,6 +2587,38 @@ export type V1UsersIssuesGetData = {
      * Opaque continuation token from a previous page_info.next_page_token.
      */
     page_token?: string;
+    /**
+     * Case-insensitive substring search over issue key, title, and description.
+     */
+    q?: string;
+    /**
+     * Match any of the provided statuses.
+     */
+    status?: Array<IssueStatus>;
+    /**
+     * Match any of the provided priorities.
+     */
+    priority?: Array<IssuePriority>;
+    /**
+     * Sort order in `field:direction` format.
+     */
+    order?:
+      | "rank:asc"
+      | "rank:desc"
+      | "numeric_id:asc"
+      | "numeric_id:desc"
+      | "title:asc"
+      | "title:desc"
+      | "priority:asc"
+      | "priority:desc"
+      | "status:asc"
+      | "status:desc"
+      | "due_date:asc"
+      | "due_date:desc"
+      | "created_at:asc"
+      | "created_at:desc"
+      | "updated_at:asc"
+      | "updated_at:desc";
   };
   url: "/v1/users/{id}/issues";
 };
@@ -5212,6 +5288,38 @@ export type V1NamespacesIssuesGetData = {
      * Opaque continuation token from a previous page_info.next_page_token.
      */
     page_token?: string;
+    /**
+     * Case-insensitive substring search over issue key, title, and description.
+     */
+    q?: string;
+    /**
+     * Match any of the provided statuses.
+     */
+    status?: Array<IssueStatus>;
+    /**
+     * Match any of the provided priorities.
+     */
+    priority?: Array<IssuePriority>;
+    /**
+     * Sort order in `field:direction` format.
+     */
+    order?:
+      | "rank:asc"
+      | "rank:desc"
+      | "numeric_id:asc"
+      | "numeric_id:desc"
+      | "title:asc"
+      | "title:desc"
+      | "priority:asc"
+      | "priority:desc"
+      | "status:asc"
+      | "status:desc"
+      | "due_date:asc"
+      | "due_date:desc"
+      | "created_at:asc"
+      | "created_at:desc"
+      | "updated_at:asc"
+      | "updated_at:desc";
   };
   url: "/v1/namespaces/{id}/issues";
 };
@@ -5464,6 +5572,38 @@ export type V1ProjectsIssuesGetData = {
      * Opaque continuation token from a previous page_info.next_page_token.
      */
     page_token?: string;
+    /**
+     * Case-insensitive substring search over issue key, title, and description.
+     */
+    q?: string;
+    /**
+     * Match any of the provided statuses.
+     */
+    status?: Array<IssueStatus>;
+    /**
+     * Match any of the provided priorities.
+     */
+    priority?: Array<IssuePriority>;
+    /**
+     * Sort order in `field:direction` format.
+     */
+    order?:
+      | "rank:asc"
+      | "rank:desc"
+      | "numeric_id:asc"
+      | "numeric_id:desc"
+      | "title:asc"
+      | "title:desc"
+      | "priority:asc"
+      | "priority:desc"
+      | "status:asc"
+      | "status:desc"
+      | "due_date:asc"
+      | "due_date:desc"
+      | "created_at:asc"
+      | "created_at:desc"
+      | "updated_at:asc"
+      | "updated_at:desc";
   };
   url: "/v1/projects/{id}/issues";
 };

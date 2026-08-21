@@ -1,3 +1,4 @@
+import { useQuery } from "@tanstack/react-query";
 import { UserMinus, UserPlus, Users, X } from "lucide-react";
 import { useMemo, useState } from "react";
 
@@ -5,6 +6,10 @@ import { OrganizationMemberInviteDialog } from "./organization-member-invite-dia
 import { OrganizationMemberInviteRevokeDialog } from "./organization-member-invite-revoke-dialog";
 import { OrganizationMemberRemoveDialog } from "./organization-member-remove-dialog";
 
+import {
+  CursorPaginator,
+  cursorPaginatorProps,
+} from "@/components/shared/cursor-paginator";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ListContainer } from "@/components/ui/list-container";
@@ -19,6 +24,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { UserAvatarCompact } from "@/components/ui/user-avatar";
+import { useCursorPageNav } from "@/hooks/use-cursor-page-nav";
+import { cursorPageQuery } from "@/lib/api/cursor-pages";
+import { v1OrganizationMembersGetOptions } from "@/lib/api/query-options";
 import type { EffectiveActions, OrganizationMember } from "@/lib/api/types";
 import { Action, can } from "@/lib/auth/permissions";
 import { zUserStatus } from "@/lib/client/zod.gen";
@@ -63,16 +71,10 @@ function OrganizationMembersListSkeleton() {
 }
 
 export function OrganizationMembersList({
-  members,
-  isLoading,
-  error,
   currentUserId,
   organizationId,
   organizationPermissions,
 }: {
-  members: OrganizationMember[];
-  isLoading: boolean;
-  error: unknown;
   currentUserId?: string | null;
   organizationId: string;
   organizationPermissions: EffectiveActions;
@@ -83,6 +85,18 @@ export function OrganizationMembersList({
   const [revokeInviteDialogOpen, setRevokeInviteDialogOpen] = useState(false);
   const [selectedMember, setSelectedMember] =
     useState<OrganizationMember | null>(null);
+  const pageNav = useCursorPageNav({ resetKey: searchTerm });
+  const {
+    data: membersPage,
+    isLoading,
+    error,
+  } = useQuery(
+    v1OrganizationMembersGetOptions({
+      path: { id: organizationId },
+      query: cursorPageQuery(pageNav.pageToken),
+    })
+  );
+  const members = membersPage?.items ?? [];
 
   const hasOrgWritePermission = can(
     organizationPermissions,
@@ -277,6 +291,7 @@ export function OrganizationMembersList({
             </TableBody>
           </Table>
         )}
+        <CursorPaginator {...cursorPaginatorProps(membersPage, pageNav)} />
       </ListContainer>
 
       {selectedMember && (

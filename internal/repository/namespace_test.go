@@ -1110,6 +1110,8 @@ func TestCachedNamespaceRepository_Update(t *testing.T) {
 					key := composeCacheKey(model.ResourceTypeNamespace.String(), "Get", id.String(), projectionCacheValue(NamespaceDetailProjection()))
 					getAllKey := composeCacheKey(model.ResourceTypeNamespace.String(), "List", "*", "*", "*", "*")
 					listAccessibleKey := composeCacheKey(model.ResourceTypeNamespace.String(), "ListAccessible", "*", "*", "*", "*")
+					namespaceGenKey := issueListNamespaceGenKey(id)
+					projectionEpochKey := issueListProjectionEpochKey()
 
 					getAllKeyCmd := new(redis.StringSliceCmd)
 					getAllKeyCmd.SetVal([]string{getAllKey})
@@ -1128,14 +1130,19 @@ func TestCachedNamespaceRepository_Update(t *testing.T) {
 					require.NoError(t, err)
 
 					span := mock.NewMockSpan(ctrl)
-					span.EXPECT().End(gomock.Len(0)).Times(3)
+					span.EXPECT().End(gomock.Len(0)).Times(7)
 
 					tracer := mock.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(2)
-					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Set", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span).Times(2)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Set", gomock.Len(0)).Return(ctx, span).Times(3)
 
 					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(nil)
 					cacheRepo.EXPECT().Delete(ctx, listAccessibleKey).Return(nil)
+					cacheRepo.EXPECT().Get(ctx, namespaceGenKey, gomock.Any()).Return(cache.ErrCacheMiss)
+					cacheRepo.EXPECT().Set(&cache.Item{Ctx: ctx, Key: namespaceGenKey, Value: int64(1)}).Return(nil)
+					cacheRepo.EXPECT().Get(ctx, projectionEpochKey, gomock.Any()).Return(cache.ErrCacheMiss)
+					cacheRepo.EXPECT().Set(&cache.Item{Ctx: ctx, Key: projectionEpochKey, Value: int64(1)}).Return(nil)
 					cacheRepo.EXPECT().Set(&cache.Item{
 						Ctx:   ctx,
 						Key:   key,
@@ -1351,6 +1358,8 @@ func TestCachedNamespaceRepository_Delete(t *testing.T) {
 					getAllKey := composeCacheKey(model.ResourceTypeNamespace.String(), "List", "*", "*", "*", "*")
 					listAccessibleKey := composeCacheKey(model.ResourceTypeNamespace.String(), "ListAccessible", "*", "*", "*", "*")
 					organizationKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*")
+					namespaceGenKey := issueListNamespaceGenKey(id)
+					projectionEpochKey := issueListProjectionEpochKey()
 
 					getAllKeyCmd := new(redis.StringSliceCmd)
 					getAllKeyCmd.SetVal([]string{getAllKey})
@@ -1375,16 +1384,22 @@ func TestCachedNamespaceRepository_Delete(t *testing.T) {
 					require.NoError(t, err)
 
 					span := mock.NewMockSpan(ctrl)
-					span.EXPECT().End(gomock.Len(0)).Times(4)
+					span.EXPECT().End(gomock.Len(0)).Times(8)
 
 					tracer := mock.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(4)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span).Times(2)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Set", gomock.Len(0)).Return(ctx, span).Times(2)
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
 					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(nil)
 					cacheRepo.EXPECT().Delete(ctx, listAccessibleKey).Return(nil)
 					cacheRepo.EXPECT().Delete(ctx, organizationKey).Return(nil)
+					cacheRepo.EXPECT().Get(ctx, namespaceGenKey, gomock.Any()).Return(cache.ErrCacheMiss)
+					cacheRepo.EXPECT().Set(&cache.Item{Ctx: ctx, Key: namespaceGenKey, Value: int64(1)}).Return(nil)
+					cacheRepo.EXPECT().Get(ctx, projectionEpochKey, gomock.Any()).Return(cache.ErrCacheMiss)
+					cacheRepo.EXPECT().Set(&cache.Item{Ctx: ctx, Key: projectionEpochKey, Value: int64(1)}).Return(nil)
 
 					return &redisBaseRepository{
 						db:     db,
@@ -1412,6 +1427,8 @@ func TestCachedNamespaceRepository_Delete(t *testing.T) {
 					getAllKey := composeCacheKey(model.ResourceTypeNamespace.String(), "List", "*", "*", "*", "*")
 					listAccessibleKey := composeCacheKey(model.ResourceTypeNamespace.String(), "ListAccessible", "*", "*", "*", "*")
 					organizationKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*")
+					namespaceGenKey := issueListNamespaceGenKey(id)
+					projectionEpochKey := issueListProjectionEpochKey()
 
 					getAllKeyCmd := new(redis.StringSliceCmd)
 					getAllKeyCmd.SetVal([]string{getAllKey})
@@ -1436,16 +1453,22 @@ func TestCachedNamespaceRepository_Delete(t *testing.T) {
 					require.NoError(t, err)
 
 					span := mock.NewMockSpan(ctrl)
-					span.EXPECT().End(gomock.Len(0)).Times(4)
+					span.EXPECT().End(gomock.Len(0)).Times(8)
 
 					tracer := mock.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(4)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span).Times(2)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Set", gomock.Len(0)).Return(ctx, span).Times(2)
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
 					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(nil)
 					cacheRepo.EXPECT().Delete(ctx, listAccessibleKey).Return(nil)
 					cacheRepo.EXPECT().Delete(ctx, organizationKey).Return(nil)
+					cacheRepo.EXPECT().Get(ctx, namespaceGenKey, gomock.Any()).Return(cache.ErrCacheMiss)
+					cacheRepo.EXPECT().Set(&cache.Item{Ctx: ctx, Key: namespaceGenKey, Value: int64(1)}).Return(nil)
+					cacheRepo.EXPECT().Get(ctx, projectionEpochKey, gomock.Any()).Return(cache.ErrCacheMiss)
+					cacheRepo.EXPECT().Set(&cache.Item{Ctx: ctx, Key: projectionEpochKey, Value: int64(1)}).Return(nil)
 
 					return &redisBaseRepository{
 						db:     db,

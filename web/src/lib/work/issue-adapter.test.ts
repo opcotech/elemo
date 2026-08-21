@@ -48,6 +48,8 @@ const baseIssue: Issue = {
     assignees: [],
     reviewers: [],
     labels: [],
+    created_at: "2026-08-01T00:00:00Z",
+    updated_at: "2026-08-10T00:00:00Z",
     namespace: {
       id: "ns-1",
       name: "Engineering",
@@ -145,6 +147,8 @@ describe("issue-adapter", () => {
         title: baseIssue.title,
         status: baseIssue.status,
         priority: baseIssue.priority,
+        created_at: baseIssue.created_at,
+        updated_at: baseIssue.updated_at,
       },
       { namespaceId: "ns-1" }
     );
@@ -176,6 +180,8 @@ describe("issue-adapter", () => {
         title: baseIssue.title,
         status: baseIssue.status,
         priority: baseIssue.priority,
+        created_at: baseIssue.created_at,
+        updated_at: baseIssue.updated_at,
         reported_by: {
           id: "user-reporter",
           first_name: "Reporter",

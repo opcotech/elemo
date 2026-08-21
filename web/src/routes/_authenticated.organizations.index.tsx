@@ -5,6 +5,10 @@ import { useMemo } from "react";
 import { z } from "zod";
 
 import { ContentWidth } from "@/components/layout/content-width";
+import {
+  CursorPaginator,
+  cursorPaginatorProps,
+} from "@/components/shared/cursor-paginator";
 import { AppList, EntityLink } from "@/components/shared/entity-link";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -20,11 +24,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { StatusIndicator } from "@/components/ui/status-indicator";
+import { useCursorPageNav } from "@/hooks/use-cursor-page-nav";
 import {
   ResourceType,
   usePermissions,
   withResourceType,
 } from "@/hooks/use-permissions";
+import { cursorPageQuery } from "@/lib/api/cursor-pages";
 import { v1OrganizationsGetOptions } from "@/lib/api/query-options";
 import { Action, can } from "@/lib/auth/permissions";
 import { zOrganizationStatus } from "@/lib/client/zod.gen";
@@ -48,15 +54,20 @@ export const Route = createFileRoute("/_authenticated/organizations/")({
 function OrganizationsListPage() {
   const search = Route.useSearch();
   const navigate = Route.useNavigate();
+  const statusFilter = search.status ?? zOrganizationStatus.enum.active;
+  const pageNav = useCursorPageNav({
+    resetKey: `${search.q ?? ""}|${statusFilter}`,
+  });
   const { data: organizationsPage, isLoading } = useQuery(
-    v1OrganizationsGetOptions()
+    v1OrganizationsGetOptions({
+      query: cursorPageQuery(pageNav.pageToken),
+    })
   );
   const organizations = organizationsPage?.items;
   const { data: systemPermissions } = usePermissions(
     withResourceType(ResourceType.Installation)
   );
   const canCreate = can(systemPermissions, Action.OrganizationCreate);
-  const statusFilter = search.status ?? zOrganizationStatus.enum.active;
 
   const filteredOrganizations = useMemo(() => {
     if (!organizations) return [];
@@ -160,30 +171,35 @@ function OrganizationsListPage() {
       {isLoading ? (
         <ListSkeleton />
       ) : filteredOrganizations.length > 0 ? (
-        <AppList>
-          {filteredOrganizations.map((organization) => (
-            <EntityLink
-              key={organization.id}
-              type="organization"
-              href={`/organizations/${organization.id}`}
-              title={organization.name}
-              imageUrl={organization.logo}
-              subtitle={
-                <span className="flex items-center gap-2">
-                  <StatusIndicator status={organization.status} />
-                  <span className="truncate">
-                    {organization.email ||
-                      `${organization.member_count ?? 0} ${pluralize(
-                        organization.member_count ?? 0,
-                        "member",
-                        "members"
-                      )}`}
+        <>
+          <AppList>
+            {filteredOrganizations.map((organization) => (
+              <EntityLink
+                key={organization.id}
+                type="organization"
+                href={`/organizations/${organization.id}`}
+                title={organization.name}
+                imageUrl={organization.logo}
+                subtitle={
+                  <span className="flex items-center gap-2">
+                    <StatusIndicator status={organization.status} />
+                    <span className="truncate">
+                      {organization.email ||
+                        `${organization.member_count ?? 0} ${pluralize(
+                          organization.member_count ?? 0,
+                          "member",
+                          "members"
+                        )}`}
+                    </span>
                   </span>
-                </span>
-              }
-            />
-          ))}
-        </AppList>
+                }
+              />
+            ))}
+          </AppList>
+          <CursorPaginator
+            {...cursorPaginatorProps(organizationsPage, pageNav)}
+          />
+        </>
       ) : (
         <EmptyState
           icon={<Building2Icon />}

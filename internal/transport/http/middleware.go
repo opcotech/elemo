@@ -6,23 +6,28 @@ import (
 	"net/http"
 	"reflect"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-oauth2/oauth2/v4"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel/attribute"
 
+	httpMetrics "github.com/slok/go-http-metrics/metrics"
 	httpMetricsProm "github.com/slok/go-http-metrics/metrics/prometheus"
-	httpMetricsMiddleware "github.com/slok/go-http-metrics/middleware"
-	httpMetricsMiddlewareStd "github.com/slok/go-http-metrics/middleware/std"
 
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg"
 	"github.com/opcotech/elemo/internal/pkg/log"
 	"github.com/opcotech/elemo/internal/pkg/tracing"
 )
+
+const httpMetricsService = "elemo"
+
+var httpMetricsRecorder = httpMetricsProm.NewRecorder(httpMetricsProm.Config{})
 
 type ctxCallbackFunc func(w http.ResponseWriter, r *http.Request) any
 
@@ -67,10 +72,37 @@ func WithOtelTracer(next http.Handler) http.Handler {
 }
 
 func WithPrometheusMetrics(next http.Handler) http.Handler {
-	return httpMetricsMiddlewareStd.Handler("", httpMetricsMiddleware.New(httpMetricsMiddleware.Config{
-		Service:  "elemo",
-		Recorder: httpMetricsProm.NewRecorder(httpMetricsProm.Config{}),
-	}), next)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		wrapped := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
+		start := time.Now()
+
+		inflight := httpMetrics.HTTPProperties{Service: httpMetricsService, ID: httpMetricsService}
+		httpMetricsRecorder.AddInflightRequests(r.Context(), inflight, 1)
+		defer httpMetricsRecorder.AddInflightRequests(r.Context(), inflight, -1)
+
+		next.ServeHTTP(wrapped, r)
+
+		handlerID := r.URL.Path
+		if rc := chi.RouteContext(r.Context()); rc != nil {
+			if pattern := rc.RoutePattern(); pattern != "" {
+				handlerID = pattern
+			}
+		}
+
+		status := wrapped.Status()
+		if status == 0 {
+			status = http.StatusOK
+		}
+
+		props := httpMetrics.HTTPReqProperties{
+			Service: httpMetricsService,
+			ID:      handlerID,
+			Method:  r.Method,
+			Code:    strconv.Itoa(status),
+		}
+		httpMetricsRecorder.ObserveHTTPRequestDuration(r.Context(), props, time.Since(start))
+		httpMetricsRecorder.ObserveHTTPResponseSize(r.Context(), props, int64(wrapped.BytesWritten()))
+	})
 }
 
 // WithTracedMiddleware returns an HTTP middleware that traces the middleware

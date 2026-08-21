@@ -326,7 +326,13 @@ func TestIssueController_V1ProjectsIssuesGet(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		c := newTestIssueController(t, service.NewMockIssueService(ctrl))
+		is := service.NewMockIssueService(ctrl)
+		is.EXPECT().List(gomock.Any(), projectID, gomock.Any()).Return(
+			service.Page[*service.PartialIssue]{},
+			errors.Join(service.ErrIssueGetAll, repository.ErrInvalidCursor),
+		)
+
+		c := newTestIssueController(t, is)
 		resp, err := c.V1ProjectsIssuesGet(context.Background(), api.V1ProjectsIssuesGetRequestObject{
 			Id: projectID.String(),
 			Params: api.V1ProjectsIssuesGetParams{

@@ -82,8 +82,11 @@ type IssueListQuery struct {
 	ProjectID  model.ID
 	ActorID    model.ID
 	Action     model.Action
+	ScopeIDs   []model.ID
+	SortField  IssueListSortField
 	Page       CursorPage
 	Order      SortDirection
+	Filter     IssueListFilter
 	Projection IssueListProjection
 }
 
@@ -92,8 +95,11 @@ type IssueListForNamespaceQuery struct {
 	NamespaceID model.ID
 	ActorID     model.ID
 	Action      model.Action
+	ScopeIDs    []model.ID
+	SortField   IssueListSortField
 	Page        CursorPage
 	Order       SortDirection
+	Filter      IssueListFilter
 	Projection  IssueListProjection
 }
 
@@ -102,8 +108,11 @@ type IssueListForUserQuery struct {
 	UserID     model.ID
 	ActorID    model.ID
 	Action     model.Action
+	ScopeIDs   []model.ID
+	SortField  IssueListSortField
 	Page       CursorPage
 	Order      SortDirection
+	Filter     IssueListFilter
 	Projection IssueListProjection
 }
 
@@ -189,22 +198,50 @@ func (q IssueListQuery) Compile() (QueryPlan, error) {
 	if err := q.ProjectID.Validate(); err != nil {
 		return QueryPlan{}, err
 	}
+	for _, scopeID := range q.ScopeIDs {
+		if err := scopeID.Validate(); err != nil {
+			return QueryPlan{}, err
+		}
+	}
+
+	sort := IssueListSort{
+		Field:     q.SortField,
+		Direction: q.Order,
+	}.normalize()
+	filter := normalizeIssueListFilter(q.Filter)
+	cursorHash := issueListCursorHash(q.ProjectID, filter, sort)
+
 	params := map[string]any{
 		"project_id": q.ProjectID.String(),
+		"scope_ids":  issueListScopeIDs(q.ScopeIDs),
 	}
-	bounds, err := compileCursorBounds("i", q.Page, q.Order, params)
+	normalizedPage, err := q.Page.Normalize()
 	if err != nil {
 		return QueryPlan{}, err
 	}
+	params["limit"] = normalizedPage.FetchLimit()
+	var cursorWhere string
+	if normalizedPage.Token != nil {
+		cursor, decodeErr := decodeIssueListCursor(*normalizedPage.Token, cursorHash, sort)
+		if decodeErr != nil {
+			return QueryPlan{}, decodeErr
+		}
+		cursorWhere, err = issueListCursorWhere("i", sort, cursor, params)
+		if err != nil {
+			return QueryPlan{}, err
+		}
+	}
 
-	authz := applyAuthzVisible(q.ActorID, q.Action, "i", "$user_id", params)
+	authz := issueListProjectAuthz(q.ScopeIDs)
+	filterWhere := issueListFilterWhere("i", "p", filter, params)
+
 	root := CompiledQuery{
 		Name: "issue.list_for_project",
 		Cypher: `
 		MATCH (p:` + q.ProjectID.Label() + ` {id: $project_id})<-[:` + EdgeKindBelongsTo.String() + `]-(i:` + model.ResourceTypeIssue.String() + `)
-		WHERE true` + whereClause(" AND ", authz, bounds.Where) + `
+		WHERE true` + whereClause(" AND ", authz, filterWhere, cursorWhere) + `
 		WITH p, i
-		ORDER BY i.id ` + bounds.Order.Cypher() + `
+		` + issueListOrderClause("i", sort) + `
 		LIMIT $limit
 		OPTIONAL MATCH (n:` + model.ResourceTypeNamespace.String() + `)-[:` + EdgeKindHasProject.String() + `]->(p)
 		OPTIONAL MATCH (u:` + model.ResourceTypeUser.String() + `)-[:` + EdgeKindCreated.String() + `]->(i)
@@ -223,22 +260,52 @@ func (q IssueListForNamespaceQuery) Compile() (QueryPlan, error) {
 	if err := q.NamespaceID.Validate(); err != nil {
 		return QueryPlan{}, err
 	}
+	for _, scopeID := range q.ScopeIDs {
+		if err := scopeID.Validate(); err != nil {
+			return QueryPlan{}, err
+		}
+	}
+
+	sort := IssueListSort{
+		Field:     q.SortField,
+		Direction: q.Order,
+	}.normalize()
+	filter := normalizeIssueListFilter(q.Filter)
+	cursorHash := issueListCursorHash(q.NamespaceID, filter, sort)
+
 	params := map[string]any{
 		"namespace_id": q.NamespaceID.String(),
+		"scope_ids":    issueListScopeIDs(q.ScopeIDs),
 	}
-	bounds, err := compileCursorBounds("i", q.Page, q.Order, params)
+	normalizedPage, err := q.Page.Normalize()
 	if err != nil {
 		return QueryPlan{}, err
 	}
+	params["limit"] = normalizedPage.FetchLimit()
+	var cursorWhere string
+	if normalizedPage.Token != nil {
+		cursor, decodeErr := decodeIssueListCursor(*normalizedPage.Token, cursorHash, sort)
+		if decodeErr != nil {
+			return QueryPlan{}, decodeErr
+		}
+		cursorWhere, err = issueListCursorWhere("i", sort, cursor, params)
+		if err != nil {
+			return QueryPlan{}, err
+		}
+	}
 
-	authz := applyAuthzVisible(q.ActorID, q.Action, "i", "$user_id", params)
+	authz := issueListProjectAuthz(q.ScopeIDs)
+	filterWhere := issueListFilterWhere("i", "p", filter, params)
+
 	root := CompiledQuery{
 		Name: "issue.list_for_namespace",
 		Cypher: `
-		MATCH (n:` + q.NamespaceID.Label() + ` {id: $namespace_id})-[:` + EdgeKindHasProject.String() + `]->(p:` + model.ResourceTypeProject.String() + `)<-[:` + EdgeKindBelongsTo.String() + `]-(i:` + model.ResourceTypeIssue.String() + `)
-		WHERE true` + whereClause(" AND ", authz, bounds.Where) + `
+		MATCH (n:` + q.NamespaceID.Label() + ` {id: $namespace_id})-[:` + EdgeKindHasProject.String() + `]->(p:` + model.ResourceTypeProject.String() + `)
+		WHERE true` + whereClause(" AND ", authz) + `
+		MATCH (p)<-[:` + EdgeKindBelongsTo.String() + `]-(i:` + model.ResourceTypeIssue.String() + `)
+		WHERE true` + whereClause(" AND ", filterWhere, cursorWhere) + `
 		WITH n, p, i
-		ORDER BY i.id ` + bounds.Order.Cypher() + `
+		` + issueListOrderClause("i", sort) + `
 		LIMIT $limit
 		OPTIONAL MATCH (u:` + model.ResourceTypeUser.String() + `)-[:` + EdgeKindCreated.String() + `]->(i)
 		RETURN i, p, n, u`,
@@ -256,26 +323,53 @@ func (q IssueListForUserQuery) Compile() (QueryPlan, error) {
 	if err := q.UserID.Validate(); err != nil {
 		return QueryPlan{}, err
 	}
+	for _, scopeID := range q.ScopeIDs {
+		if err := scopeID.Validate(); err != nil {
+			return QueryPlan{}, err
+		}
+	}
+
+	sort := IssueListSort{
+		Field:     q.SortField,
+		Direction: q.Order,
+	}.normalize()
+	filter := normalizeIssueListFilter(q.Filter)
+	cursorHash := issueListCursorHash(q.UserID, filter, sort)
+
 	params := map[string]any{
 		"user_id":       q.UserID.String(),
 		"assignee_kind": model.AssignmentKindAssignee.String(),
+		"scope_ids":     issueListScopeIDs(q.ScopeIDs),
 	}
-	bounds, err := compileCursorBounds("i", q.Page, q.Order, params)
+	normalizedPage, err := q.Page.Normalize()
 	if err != nil {
 		return QueryPlan{}, err
 	}
+	params["limit"] = normalizedPage.FetchLimit()
+	var cursorWhere string
+	if normalizedPage.Token != nil {
+		cursor, decodeErr := decodeIssueListCursor(*normalizedPage.Token, cursorHash, sort)
+		if decodeErr != nil {
+			return QueryPlan{}, decodeErr
+		}
+		cursorWhere, err = issueListCursorWhere("i", sort, cursor, params)
+		if err != nil {
+			return QueryPlan{}, err
+		}
+	}
 
-	authz := applyAuthzVisible(q.ActorID, q.Action, "i", "$actor_id", params)
+	authz := issueListProjectAuthz(q.ScopeIDs)
+	filterWhere := issueListFilterWhere("i", "p", filter, params)
 	root := CompiledQuery{
 		Name: "issue.list_for_user",
 		Cypher: `
 		MATCH (assignee:` + q.UserID.Label() + ` {id: $user_id})-[a:` + EdgeKindAssignedTo.String() + ` {kind: $assignee_kind}]->(i:` + model.ResourceTypeIssue.String() + `)
 		MATCH (i)-[:` + EdgeKindBelongsTo.String() + `]->(p:` + model.ResourceTypeProject.String() + `)
-		OPTIONAL MATCH (n:` + model.ResourceTypeNamespace.String() + `)-[:` + EdgeKindHasProject.String() + `]->(p)
-		WHERE true` + whereClause(" AND ", authz, bounds.Where) + `
-		WITH n, p, i
-		ORDER BY i.id ` + bounds.Order.Cypher() + `
+		WHERE true` + whereClause(" AND ", authz, filterWhere, cursorWhere) + `
+		WITH p, i
+		` + issueListOrderClause("i", sort) + `
 		LIMIT $limit
+		OPTIONAL MATCH (n:` + model.ResourceTypeNamespace.String() + `)-[:` + EdgeKindHasProject.String() + `]->(p)
 		OPTIONAL MATCH (u:` + model.ResourceTypeUser.String() + `)-[:` + EdgeKindCreated.String() + `]->(i)
 		RETURN i, p, n, u`,
 		Params: params,
@@ -442,6 +536,23 @@ func IssueRelationByIDQuery(relationID model.ID) (CompiledQuery, error) {
 			RETURN r, startNode(r).id AS source_id, endNode(r).id AS target_id`,
 		Params: map[string]any{"id": relationID.String()},
 	}, nil
+}
+
+func issueListScopeIDs(ids []model.ID) []string {
+	out := make([]string, 0, len(ids))
+	for _, id := range ids {
+		out = append(out, id.String())
+	}
+	return out
+}
+
+// issueListProjectAuthz is a per-project EXISTS predicate. Callers should apply
+// it before expanding issues so authorization is not re-evaluated per row.
+func issueListProjectAuthz(scopeIDs []model.ID) string {
+	if len(scopeIDs) == 0 {
+		return ""
+	}
+	return listScopeAuthz("p")
 }
 
 // IssueRelationListQuery compiles a cursor-paginated relation list for an issue.

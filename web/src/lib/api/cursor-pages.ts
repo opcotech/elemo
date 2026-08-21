@@ -51,6 +51,38 @@ export function cursorPageQuery(pageToken?: string) {
   };
 }
 
+export function cursorPageQueryWith<TQuery extends Record<string, unknown>>(
+  query: TQuery,
+  pageToken?: string
+): TQuery & { page_size: number; page_token?: string } {
+  return {
+    ...query,
+    page_size: DEFAULT_LIST_PAGE_SIZE,
+    ...(pageToken ? { page_token: pageToken } : {}),
+  };
+}
+
+export function nextCursorPageToken<T>(
+  page: CursorPage<T> | null | undefined
+): string | undefined {
+  if (!page?.page_info?.has_more) {
+    return undefined;
+  }
+  return page.page_info.next_page_token ?? undefined;
+}
+
+export function flattenCursorPages<T>(
+  pages: readonly (CursorPage<T> | null | undefined)[]
+): T[] {
+  const out: T[] = [];
+  for (const page of pages) {
+    if (page?.items?.length) {
+      out.push(...page.items);
+    }
+  }
+  return out;
+}
+
 export async function collectListedPage<T>(
   fetchPage: (pageToken?: string) => Promise<CursorPage<T> | null | undefined>,
   maxPages = MAX_CURSOR_PAGES

@@ -128,17 +128,127 @@ func redisCacheExpectingSetThenPatterns(ctrl *gomock.Controller, ctx context.Con
 }
 
 //nolint:revive // test cache factories take gomock.Controller first
-func redisCacheExpectingBumpThenPatterns(ctrl *gomock.Controller, ctx context.Context, principal model.ID, patterns []string) *redisBaseRepository {
+func redisCacheExpectingPatternsThenIssueAuthzEpochBump(ctrl *gomock.Controller, ctx context.Context, patterns []string, failIndex int, failErr error, bumpCount int) *redisBaseRepository {
+	client := mock.NewUniversalClient(ctrl)
+	backend := mock.NewCacheBackend(ctrl)
+	span := mock.NewMockSpan(ctrl)
+	tracer := mock.NewMockTracer(ctrl)
+
+	count := 0
+	for i, pattern := range patterns {
+		count++
+		cmd := new(redis.StringSliceCmd)
+		cmd.SetVal([]string{pattern})
+		client.EXPECT().Keys(ctx, pattern).Return(cmd)
+		if i == failIndex {
+			backend.EXPECT().Delete(ctx, pattern).Return(failErr)
+			bumpCount = 0
+			break
+		}
+		backend.EXPECT().Delete(ctx, pattern).Return(nil)
+	}
+
+	authzEpochKey := issueListAuthzEpochKey()
+	for i := 0; i < bumpCount; i++ {
+		count += 2
+		tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
+		tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Set", gomock.Len(0)).Return(ctx, span)
+		backend.EXPECT().Get(ctx, authzEpochKey, gomock.Any()).Return(cache.ErrCacheMiss)
+		backend.EXPECT().Set(&cache.Item{Ctx: ctx, Key: authzEpochKey, Value: int64(1)}).Return(nil)
+	}
+
+	span.EXPECT().End(gomock.Len(0)).Times(count)
+	tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(count - (2 * bumpCount))
+
+	db, err := NewRedisDatabase(WithRedisClient(client))
+	if err != nil {
+		panic(err)
+	}
+
+	return &redisBaseRepository{
+		db:     db,
+		cache:  backend,
+		tracer: tracer,
+		logger: mock.NewMockLogger(ctrl),
+	}
+}
+
+//nolint:revive // test cache factories take gomock.Controller first
+func redisCacheExpectingSetThenPatternsThenIssueAuthzEpochBump(ctrl *gomock.Controller, ctx context.Context, setKey string, setValue any, patterns []string, failOnSet bool, failIndex int, failErr error, bumpCount int) *redisBaseRepository {
+	client := mock.NewUniversalClient(ctrl)
+	backend := mock.NewCacheBackend(ctrl)
+	span := mock.NewMockSpan(ctrl)
+	tracer := mock.NewMockTracer(ctrl)
+
+	count := 1
+	tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Set", gomock.Len(0)).Return(ctx, span)
+	if failOnSet {
+		backend.EXPECT().Set(&cache.Item{Ctx: ctx, Key: setKey, Value: setValue}).Return(failErr)
+		span.EXPECT().End(gomock.Len(0)).Times(1)
+		db, err := NewRedisDatabase(WithRedisClient(client))
+		if err != nil {
+			panic(err)
+		}
+		return &redisBaseRepository{
+			db:     db,
+			cache:  backend,
+			tracer: tracer,
+			logger: mock.NewMockLogger(ctrl),
+		}
+	}
+	backend.EXPECT().Set(&cache.Item{Ctx: ctx, Key: setKey, Value: setValue}).Return(nil)
+
+	for i, pattern := range patterns {
+		count++
+		cmd := new(redis.StringSliceCmd)
+		cmd.SetVal([]string{pattern})
+		client.EXPECT().Keys(ctx, pattern).Return(cmd)
+		if i == failIndex {
+			backend.EXPECT().Delete(ctx, pattern).Return(failErr)
+			bumpCount = 0
+			break
+		}
+		backend.EXPECT().Delete(ctx, pattern).Return(nil)
+	}
+
+	authzEpochKey := issueListAuthzEpochKey()
+	for i := 0; i < bumpCount; i++ {
+		count += 2
+		tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
+		tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Set", gomock.Len(0)).Return(ctx, span)
+		backend.EXPECT().Get(ctx, authzEpochKey, gomock.Any()).Return(cache.ErrCacheMiss)
+		backend.EXPECT().Set(&cache.Item{Ctx: ctx, Key: authzEpochKey, Value: int64(1)}).Return(nil)
+	}
+
+	span.EXPECT().End(gomock.Len(0)).Times(count)
+	tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(count - 1 - (2 * bumpCount))
+
+	db, err := NewRedisDatabase(WithRedisClient(client))
+	if err != nil {
+		panic(err)
+	}
+
+	return &redisBaseRepository{
+		db:     db,
+		cache:  backend,
+		tracer: tracer,
+		logger: mock.NewMockLogger(ctrl),
+	}
+}
+
+//nolint:revive // test cache factories take gomock.Controller first
+func redisCacheExpectingBumpThenPatternsAndIssueAuthzEpoch(ctrl *gomock.Controller, ctx context.Context, principal model.ID, patterns []string) *redisBaseRepository {
 	client := mock.NewUniversalClient(ctrl)
 	backend := mock.NewCacheBackend(ctrl)
 	span := mock.NewMockSpan(ctrl)
 	tracer := mock.NewMockTracer(ctrl)
 
 	genKey := authzGenKey(principal)
-	count := 2 + len(patterns)
+	issueEpochKey := issueListAuthzEpochKey()
+	count := 4 + len(patterns)
 	span.EXPECT().End(gomock.Len(0)).Times(count)
-	tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
-	tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Set", gomock.Len(0)).Return(ctx, span)
+	tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span).Times(2)
+	tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Set", gomock.Len(0)).Return(ctx, span).Times(2)
 	tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(len(patterns))
 
 	backend.EXPECT().Get(ctx, genKey, gomock.Any()).Return(cache.ErrCacheMiss)
@@ -149,6 +259,8 @@ func redisCacheExpectingBumpThenPatterns(ctrl *gomock.Controller, ctx context.Co
 		client.EXPECT().Keys(ctx, pattern).Return(cmd)
 		backend.EXPECT().Delete(ctx, pattern).Return(nil)
 	}
+	backend.EXPECT().Get(ctx, issueEpochKey, gomock.Any()).Return(cache.ErrCacheMiss)
+	backend.EXPECT().Set(&cache.Item{Ctx: ctx, Key: issueEpochKey, Value: int64(1)}).Return(nil)
 
 	db, err := NewRedisDatabase(WithRedisClient(client))
 	if err != nil {
@@ -239,7 +351,6 @@ func permissionCrossCachePatterns() []string {
 		composeCacheKey(model.ResourceTypeNamespace.String(), "List", "*", "*", "*", "*"),
 		composeCacheKey(model.ResourceTypeNamespace.String(), "ListAccessible", "*", "*", "*", "*"),
 		composeCacheKey(model.ResourceTypeProject.String(), "*", "List", "*"),
-		composeCacheKey(model.ResourceTypeIssue.String(), "*", "ListFor*", "*"),
 		composeCacheKey(model.ResourceTypeDocument.String(), "ListLibrary", "*"),
 		composeCacheKey(model.ResourceTypeDocument.String(), "ListRelated", "*"),
 		composeCacheKey(model.ResourceTypeDocument.String(), "ListByCreator", "*"),

@@ -50,9 +50,13 @@ func TestCachedRoleRepository_Create(t *testing.T) {
 					repo.EXPECT().Create(ctx, opts).Return(&Role{}, nil)
 				}
 			}
+			bumpCount := 1
+			if tt.repoErr != nil {
+				bumpCount = 0
+			}
 
 			r := &RedisCachedRoleRepository{
-				cacheRepo: redisCacheExpectingPatterns(ctrl, ctx, roleCreateCachePatterns(opts.BelongsTo), tt.failIndex, tt.failErr),
+				cacheRepo: redisCacheExpectingPatternsThenIssueAuthzEpochBump(ctrl, ctx, roleCreateCachePatterns(opts.BelongsTo), tt.failIndex, tt.failErr, bumpCount),
 				roleRepo:  repo,
 			}
 			_, err := r.Create(ctx, opts)
@@ -781,7 +785,7 @@ func TestCachedRoleRepository_Update(t *testing.T) {
 		repo := NewMockRoleRepository(ctrl)
 		repo.EXPECT().Update(ctx, id, belongsTo, opts).Return(role, nil)
 		r := &RedisCachedRoleRepository{
-			cacheRepo: redisCacheExpectingSetThenPatterns(ctrl, ctx, setKey, role, roleUpdateInvalidatePatterns(id, belongsTo), false, -1, nil),
+			cacheRepo: redisCacheExpectingSetThenPatternsThenIssueAuthzEpochBump(ctrl, ctx, setKey, role, roleUpdateInvalidatePatterns(id, belongsTo), false, -1, nil, 1),
 			roleRepo:  repo,
 		}
 		got, err := r.Update(ctx, id, belongsTo, opts)
@@ -820,7 +824,7 @@ func TestCachedRoleRepository_Update(t *testing.T) {
 		repo := NewMockRoleRepository(ctrl)
 		repo.EXPECT().Update(ctx, id, belongsTo, opts).Return(role, nil)
 		r := &RedisCachedRoleRepository{
-			cacheRepo: redisCacheExpectingSetThenPatterns(ctrl, ctx, setKey, role, nil, true, -1, assert.AnError),
+			cacheRepo: redisCacheExpectingSetThenPatternsThenIssueAuthzEpochBump(ctrl, ctx, setKey, role, nil, true, -1, assert.AnError, 1),
 			roleRepo:  repo,
 		}
 		_, err := r.Update(ctx, id, belongsTo, opts)
@@ -839,7 +843,7 @@ func TestCachedRoleRepository_Update(t *testing.T) {
 		repo := NewMockRoleRepository(ctrl)
 		repo.EXPECT().Update(ctx, id, belongsTo, opts).Return(role, nil)
 		r := &RedisCachedRoleRepository{
-			cacheRepo: redisCacheExpectingSetThenPatterns(ctrl, ctx, setKey, role, roleUpdateInvalidatePatterns(id, belongsTo), false, 2, assert.AnError),
+			cacheRepo: redisCacheExpectingSetThenPatternsThenIssueAuthzEpochBump(ctrl, ctx, setKey, role, roleUpdateInvalidatePatterns(id, belongsTo), false, 2, assert.AnError, 1),
 			roleRepo:  repo,
 		}
 		_, err := r.Update(ctx, id, belongsTo, opts)
@@ -860,7 +864,7 @@ func TestCachedRoleRepository_Update(t *testing.T) {
 		repo := NewMockRoleRepository(ctrl)
 		repo.EXPECT().Update(ctx, id, belongsTo, actionOpts).Return(role, nil)
 		r := &RedisCachedRoleRepository{
-			cacheRepo: redisCacheExpectingSetThenPatterns(ctrl, ctx, setKey, role, patterns, false, -1, nil),
+			cacheRepo: redisCacheExpectingSetThenPatternsThenIssueAuthzEpochBump(ctrl, ctx, setKey, role, patterns, false, -1, nil, 2),
 			roleRepo:  repo,
 		}
 		got, err := r.Update(ctx, id, belongsTo, actionOpts)
@@ -895,8 +899,12 @@ func TestCachedRoleRepository_AddMember(t *testing.T) {
 			if tt.failIndex < 0 {
 				repo.EXPECT().AddMember(ctx, id, memberID, belongsToID).Return(tt.repoErr)
 			}
+			bumpCount := 1
+			if tt.repoErr != nil {
+				bumpCount = 0
+			}
 			r := &RedisCachedRoleRepository{
-				cacheRepo: redisCacheExpectingPatterns(ctrl, ctx, roleMemberCachePatterns(id, belongsToID), tt.failIndex, tt.failErr),
+				cacheRepo: redisCacheExpectingPatternsThenIssueAuthzEpochBump(ctrl, ctx, roleMemberCachePatterns(id, belongsToID), tt.failIndex, tt.failErr, bumpCount),
 				roleRepo:  repo,
 			}
 			err := r.AddMember(ctx, id, memberID, belongsToID)
@@ -931,8 +939,12 @@ func TestCachedRoleRepository_RemoveMember(t *testing.T) {
 			if tt.failIndex < 0 {
 				repo.EXPECT().RemoveMember(ctx, id, memberID, belongsToID).Return(tt.repoErr)
 			}
+			bumpCount := 1
+			if tt.repoErr != nil {
+				bumpCount = 0
+			}
 			r := &RedisCachedRoleRepository{
-				cacheRepo: redisCacheExpectingPatterns(ctrl, ctx, roleMemberCachePatterns(id, belongsToID), tt.failIndex, tt.failErr),
+				cacheRepo: redisCacheExpectingPatternsThenIssueAuthzEpochBump(ctrl, ctx, roleMemberCachePatterns(id, belongsToID), tt.failIndex, tt.failErr, bumpCount),
 				roleRepo:  repo,
 			}
 			err := r.RemoveMember(ctx, id, memberID, belongsToID)
@@ -968,8 +980,12 @@ func TestCachedRoleRepository_Delete(t *testing.T) {
 			if tt.failIndex < 0 {
 				repo.EXPECT().Delete(ctx, id, belongsTo).Return(tt.repoErr)
 			}
+			bumpCount := 1
+			if tt.repoErr != nil {
+				bumpCount = 0
+			}
 			r := &RedisCachedRoleRepository{
-				cacheRepo: redisCacheExpectingPatterns(ctrl, ctx, roleDeleteCachePatterns(id, belongsTo), tt.failIndex, tt.failErr),
+				cacheRepo: redisCacheExpectingPatternsThenIssueAuthzEpochBump(ctrl, ctx, roleDeleteCachePatterns(id, belongsTo), tt.failIndex, tt.failErr, bumpCount),
 				roleRepo:  repo,
 			}
 			err := r.Delete(ctx, id, belongsTo)

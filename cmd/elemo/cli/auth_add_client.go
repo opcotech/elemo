@@ -8,10 +8,10 @@ import (
 	authStore "github.com/gabor-boros/go-oauth2-pg"
 	"github.com/go-oauth2/oauth2/v4/models"
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/spf13/cobra"
 
 	"github.com/opcotech/elemo/internal/model"
+	"github.com/opcotech/elemo/internal/repository"
 )
 
 // authAddClient represents the addClient command
@@ -56,8 +56,13 @@ elemo auth add-client --domain example.com --public`,
 			logger.Fatal(context.Background(), "failed to initialize relational database", slog.Any("error", err))
 		}
 
+		pgxPool, ok := repository.AsPgxPool(relDBPool)
+		if !ok {
+			logger.Fatal(context.Background(), "auth store requires a pgx connection pool")
+		}
+
 		clientStore, err := authStore.NewClientStore(
-			authStore.WithClientStoreConnPool(relDBPool.(*pgxpool.Pool)),
+			authStore.WithClientStoreConnPool(pgxPool),
 			authStore.WithClientStoreTable(authStore.DefaultClientStoreTable),
 			authStore.WithClientStoreLogger(&authStoreLogger{
 				logger: logger.Named("auth_store"),

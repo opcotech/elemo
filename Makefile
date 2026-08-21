@@ -101,10 +101,20 @@ start.backend: ## Start backend services
 	$(call log, starting backend services)
 	@docker compose -f deploy/docker/docker-compose.yml up -d --force-recreate
 
+.PHONY: start.monitoring
+start.monitoring: ## Start Jaeger/Prometheus/Grafana monitoring stack
+	$(call log, starting monitoring services)
+	@docker compose -f deploy/docker/docker-compose.monitoring.yml up -d --force-recreate
+
 .PHONY: start.frontend
 start.frontend: build.frontend ## Start front-end app
 	$(call log, starting front-end app)
 	@$(PNPM_RUN) start
+
+.PHONY: demo.prefill
+demo.prefill: ## Prefill a mature-company demo workload (destructive)
+	$(call log, prefill demo workload)
+	@$(GO_EXEC) run ./tools/workload-prefill -config configs/development/config.local.gen.yml -yes
 
 .PHONY: stop
 stop: stop.backend ## Stop backend services
@@ -113,6 +123,11 @@ stop: stop.backend ## Stop backend services
 stop.backend: ## Stop backend service
 	$(call log, stopping backend services)
 	@docker compose -f deploy/docker/docker-compose.yml stop
+
+.PHONY: stop.monitoring
+stop.monitoring: ## Stop Jaeger/Prometheus/Grafana monitoring stack
+	$(call log, stopping monitoring services)
+	@docker compose -f deploy/docker/docker-compose.monitoring.yml stop
 
 .PHONY: test
 test: test.backend test.frontend test.k6 ## Run all k6, backend and front-end tests
@@ -175,6 +190,14 @@ test.k6: ## Run k6 tests
 	@$(MAKE) start.backend
 	@k6 run '$(ROOT_DIR)/tests/main.js'
 	@trap "$(MAKE) stop.backend" EXIT
+
+.PHONY: test.k6.work-item-latency
+test.k6.work-item-latency: ## Run authenticated issue-list latency benchmark
+	$(call log, execute work-item latency k6 benchmark)
+	@k6 run \
+		-e K6_CONFIG=tests/config/work-item-latency.json \
+		-e BASE_URL=$${BASE_URL:-http://127.0.0.1:35478} \
+		'$(ROOT_DIR)/tests/main.js'
 
 .PHONY: lint
 lint: lint.backend lint.frontend ## Run linters for the backend and front-end

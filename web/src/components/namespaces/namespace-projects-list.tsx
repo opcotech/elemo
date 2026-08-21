@@ -1,9 +1,14 @@
+import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Edit, Folder, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { ProjectDeleteDialog } from "@/components/projects/project-delete-dialog";
 import { SettingsResourceTable } from "@/components/settings/settings-resource-table";
+import {
+  CursorPaginator,
+  cursorPaginatorProps,
+} from "@/components/shared/cursor-paginator";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConditionalLink } from "@/components/ui/conditional-link";
@@ -17,10 +22,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { TableSkeleton } from "@/components/ui/table-skeleton";
+import { useCursorPageNav } from "@/hooks/use-cursor-page-nav";
 import {
   ResourceType,
   usePermissionsByResourceId,
 } from "@/hooks/use-permissions";
+import { cursorPageQuery } from "@/lib/api/cursor-pages";
+import { v1NamespacesProjectsGetOptions } from "@/lib/api/query-options";
 import type { EffectiveActions, PartialProject } from "@/lib/api/types";
 import { Action, can } from "@/lib/auth/permissions";
 
@@ -142,18 +150,12 @@ function ProjectRow({
 }
 
 interface NamespaceProjectsListProps {
-  projects: PartialProject[];
-  isLoading: boolean;
-  error: unknown;
   organizationId: string;
   namespaceId: string;
   namespacePermissions: EffectiveActions | undefined;
 }
 
 export function NamespaceProjectsList({
-  projects,
-  isLoading,
-  error,
   organizationId,
   namespaceId,
   namespacePermissions,
@@ -163,6 +165,18 @@ export function NamespaceProjectsList({
   const [selectedProject, setSelectedProject] = useState<PartialProject | null>(
     null
   );
+  const pageNav = useCursorPageNav({ resetKey: searchTerm });
+  const {
+    data: projectsPage,
+    isLoading,
+    error,
+  } = useQuery(
+    v1NamespacesProjectsGetOptions({
+      path: { id: namespaceId },
+      query: cursorPageQuery(pageNav.pageToken),
+    })
+  );
+  const projects = projectsPage?.items ?? [];
   const hasCreatePermission = can(namespacePermissions, Action.ProjectCreate);
   const projectPermissionsById = usePermissionsByResourceId(
     ResourceType.Project,
@@ -265,6 +279,7 @@ export function NamespaceProjectsList({
             })}
           </TableBody>
         </Table>
+        <CursorPaginator {...cursorPaginatorProps(projectsPage, pageNav)} />
       </SettingsResourceTable>
 
       {selectedProject && (

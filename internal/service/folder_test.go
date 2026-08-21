@@ -218,9 +218,11 @@ func TestFolderService_List(t *testing.T) {
 
 		permSvc := NewMockPermissionService(ctrl)
 		permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+		permSvc.EXPECT().CtxUserListGrantScopes(ctx, model.ActionDocumentRead).Return([]model.ID{libraryID}, nil)
+		permSvc.EXPECT().ListScopeAncestry(ctx, libraryID).Return([]model.ID{libraryID}, nil)
 
 		folderRepo := repository.NewMockFolderRepository(ctrl)
-		folderRepo.EXPECT().List(ctx, libraryID, (*model.ID)(nil), userID, gomock.Any()).Return(repository.Page[*repository.Folder]{
+		folderRepo.EXPECT().List(ctx, libraryID, (*model.ID)(nil), userID, nil, gomock.Any()).Return(repository.Page[*repository.Folder]{
 			Items: []*repository.Folder{repoFolder},
 		}, nil)
 

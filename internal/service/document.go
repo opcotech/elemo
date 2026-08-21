@@ -310,7 +310,15 @@ func (s *documentService) ListLibrary(ctx context.Context, libraryID model.ID, f
 		return Page[*PartialDocument]{}, errors.Join(ErrDocumentGetAll, ErrNoUser)
 	}
 
-	documents, err := s.documentRepo.ListLibrary(ctx, libraryID, userID, repository.LibraryListFilter{
+	scopeIDs, allowed, err := resolvedListScopeIDs(ctx, s.permissionService, libraryID, model.ActionDocumentRead)
+	if err != nil {
+		return Page[*PartialDocument]{}, errors.Join(ErrDocumentGetAll, err)
+	}
+	if !allowed {
+		return repository.EmptyPage[*PartialDocument](), nil
+	}
+
+	documents, err := s.documentRepo.ListLibrary(ctx, libraryID, userID, scopeIDs, repository.LibraryListFilter{
 		FolderID: filter.FolderID,
 		All:      filter.All,
 	}, normalized, repository.DocumentSummaryProjection())

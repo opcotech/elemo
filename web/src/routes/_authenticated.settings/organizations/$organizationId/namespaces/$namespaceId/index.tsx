@@ -1,4 +1,3 @@
-import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { NamespaceDangerZone } from "@/components/namespaces/namespace-danger-zone";
@@ -11,9 +10,6 @@ import {
 } from "@/components/settings/settings-entity-detail-state";
 import { SettingsNotFound } from "@/components/settings/settings-not-found";
 import { PageHeader } from "@/components/ui/page-header";
-import { collectedListQuery, cursorPageQuery } from "@/lib/api/cursor-pages";
-import { v1NamespacesProjectsGetOptions } from "@/lib/api/query-options";
-import { v1NamespacesProjectsGet } from "@/lib/api/sdk";
 import { entityBreadcrumb } from "@/lib/breadcrumb";
 import { loadNamespaceDetail } from "@/lib/route-data";
 import { isAccessDeniedRouteData, withRouteErrors } from "@/lib/route-errors";
@@ -49,24 +45,6 @@ function NamespaceDetailPage() {
   }
 
   const { namespace, organization, permissions } = data;
-  const listOptions = v1NamespacesProjectsGetOptions({
-    path: { id: namespaceId },
-  });
-  const {
-    data: projectsPage,
-    isLoading,
-    error,
-  } = useQuery(
-    collectedListQuery(listOptions, async (pageToken, signal) => {
-      const { data: projectsData } = await v1NamespacesProjectsGet({
-        path: { id: namespaceId },
-        query: cursorPageQuery(pageToken),
-        signal,
-        throwOnError: true,
-      });
-      return projectsData;
-    })
-  );
 
   return (
     <div className="space-y-6">
@@ -80,9 +58,6 @@ function NamespaceDetailPage() {
       />
 
       <NamespaceProjectsList
-        projects={projectsPage?.items ?? []}
-        isLoading={isLoading}
-        error={error}
         organizationId={organizationId}
         namespaceId={namespaceId}
         namespacePermissions={permissions}

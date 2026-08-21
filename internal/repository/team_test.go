@@ -49,9 +49,13 @@ func TestCachedTeamRepository_Create(t *testing.T) {
 					repo.EXPECT().Create(ctx, opts).Return(&Team{}, nil)
 				}
 			}
+			bumpCount := 1
+			if tt.repoErr != nil {
+				bumpCount = 0
+			}
 
 			r := &RedisCachedTeamRepository{
-				cacheRepo: redisCacheExpectingPatterns(ctrl, ctx, teamCreateCachePatterns(opts.BelongsTo), tt.failIndex, tt.failErr),
+				cacheRepo: redisCacheExpectingPatternsThenIssueAuthzEpochBump(ctrl, ctx, teamCreateCachePatterns(opts.BelongsTo), tt.failIndex, tt.failErr, bumpCount),
 				teamRepo:  repo,
 			}
 			_, err := r.Create(ctx, opts)
@@ -608,8 +612,12 @@ func TestCachedTeamRepository_AddMember(t *testing.T) {
 			if tt.failIndex < 0 {
 				repo.EXPECT().AddMember(ctx, id, memberID, belongsToID).Return(tt.repoErr)
 			}
+			bumpCount := 1
+			if tt.repoErr != nil {
+				bumpCount = 0
+			}
 			r := &RedisCachedTeamRepository{
-				cacheRepo: redisCacheExpectingPatterns(ctrl, ctx, teamMemberCachePatterns(id, belongsToID), tt.failIndex, tt.failErr),
+				cacheRepo: redisCacheExpectingPatternsThenIssueAuthzEpochBump(ctrl, ctx, teamMemberCachePatterns(id, belongsToID), tt.failIndex, tt.failErr, bumpCount),
 				teamRepo:  repo,
 			}
 			err := r.AddMember(ctx, id, memberID, belongsToID)
@@ -644,8 +652,12 @@ func TestCachedTeamRepository_RemoveMember(t *testing.T) {
 			if tt.failIndex < 0 {
 				repo.EXPECT().RemoveMember(ctx, id, memberID, belongsToID).Return(tt.repoErr)
 			}
+			bumpCount := 1
+			if tt.repoErr != nil {
+				bumpCount = 0
+			}
 			r := &RedisCachedTeamRepository{
-				cacheRepo: redisCacheExpectingPatterns(ctrl, ctx, teamMemberCachePatterns(id, belongsToID), tt.failIndex, tt.failErr),
+				cacheRepo: redisCacheExpectingPatternsThenIssueAuthzEpochBump(ctrl, ctx, teamMemberCachePatterns(id, belongsToID), tt.failIndex, tt.failErr, bumpCount),
 				teamRepo:  repo,
 			}
 			err := r.RemoveMember(ctx, id, memberID, belongsToID)
@@ -681,8 +693,12 @@ func TestCachedTeamRepository_Delete(t *testing.T) {
 			if tt.failIndex < 0 {
 				repo.EXPECT().Delete(ctx, id, belongsTo).Return(tt.repoErr)
 			}
+			bumpCount := 1
+			if tt.repoErr != nil {
+				bumpCount = 0
+			}
 			r := &RedisCachedTeamRepository{
-				cacheRepo: redisCacheExpectingPatterns(ctrl, ctx, teamDeleteCachePatterns(id), tt.failIndex, tt.failErr),
+				cacheRepo: redisCacheExpectingPatternsThenIssueAuthzEpochBump(ctrl, ctx, teamDeleteCachePatterns(id), tt.failIndex, tt.failErr, bumpCount),
 				teamRepo:  repo,
 			}
 			err := r.Delete(ctx, id, belongsTo)

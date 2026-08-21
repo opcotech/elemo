@@ -58,7 +58,6 @@ type DocumentGetQuery struct {
 type DocumentListByCreatorQuery struct {
 	CreatedBy  model.ID
 	ActorID    model.ID
-	Action     model.Action
 	Page       CursorPage
 	Order      SortDirection
 	Projection DocumentProjection
@@ -67,7 +66,7 @@ type DocumentListByCreatorQuery struct {
 type DocumentListLibraryQuery struct {
 	LibraryID  model.ID
 	ActorID    model.ID
-	Action     model.Action
+	ScopeIDs   []model.ID
 	Filter     LibraryListFilter
 	Page       CursorPage
 	Order      SortDirection
@@ -113,13 +112,16 @@ func (q DocumentListByCreatorQuery) Compile() (QueryPlan, error) {
 		return QueryPlan{}, err
 	}
 
-	authz := applyAuthzVisible(q.ActorID, q.Action, "d", "$user_id", params)
+	params["user_id"] = q.ActorID.String()
+	params["active_status"] = model.UserStatusActive.String()
+	params["reachable_actions"] = []string{model.ActionDocumentRead.String()}
 	return compileDocumentRootQuery(documentRootQueryInput{
 		Root: CompiledQuery{
 			Name: "document.list_by_creator",
-			Cypher: strings.TrimSpace(`
+			Cypher: strings.TrimSpace(grantScopeIDsCollectCypher("$user_id", "$reachable_actions") + `
 				MATCH (d:` + model.ResourceTypeDocument.String() + `)<-[:` + EdgeKindCreated.String() + `]-(c:` + q.CreatedBy.Label() + ` {id: $id})
-				` + whereClause("WHERE ", authz, bounds.Where) + `
+				WHERE size(scope_ids) > 0 AND EXISTS { MATCH (d)-[:` + EdgeKindInScopeOf.String() + `*0..4]->(scope) WHERE scope.id IN scope_ids }
+				` + cursorWherePrefix(bounds.Where, " AND ") + `
 				RETURN d, c
 				ORDER BY d.id ` + bounds.Order.Cypher() + `
 				LIMIT $limit`),
@@ -138,16 +140,22 @@ func (q DocumentListLibraryQuery) Compile() (QueryPlan, error) {
 			return QueryPlan{}, err
 		}
 	}
+	for _, scopeID := range q.ScopeIDs {
+		if err := scopeID.Validate(); err != nil {
+			return QueryPlan{}, err
+		}
+	}
 
 	params := map[string]any{
-		"id": q.LibraryID.String(),
+		"id":      q.LibraryID.String(),
+		"user_id": q.ActorID.String(),
 	}
 	bounds, err := compileCursorBounds("d", q.Page, q.Order, params)
 	if err != nil {
 		return QueryPlan{}, err
 	}
 
-	authz := applyAuthzVisible(q.ActorID, q.Action, "d", "$user_id", params)
+	authz := applyListScopeAuthz("d", q.ScopeIDs, params)
 	var match string
 	cursorPrefix := "WHERE "
 	switch {

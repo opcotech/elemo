@@ -409,7 +409,14 @@ func (r *RedisCachedTeamRepository) Create(ctx context.Context, opts CreateTeamO
 		return nil, err
 	}
 
-	return r.teamRepo.Create(ctx, opts)
+	team, err := r.teamRepo.Create(ctx, opts)
+	if err != nil {
+		return nil, err
+	}
+	if err := bumpIssueListAuthzEpoch(ctx, r.cacheRepo); err != nil {
+		return nil, err
+	}
+	return team, nil
 }
 
 func (r *RedisCachedTeamRepository) Get(ctx context.Context, id, belongsTo model.ID, proj TeamProjection) (*Team, error) {
@@ -501,7 +508,10 @@ func (r *RedisCachedTeamRepository) AddMember(ctx context.Context, teamID, membe
 		return err
 	}
 
-	return r.teamRepo.AddMember(ctx, teamID, memberID, belongsToID)
+	if err := r.teamRepo.AddMember(ctx, teamID, memberID, belongsToID); err != nil {
+		return err
+	}
+	return bumpIssueListAuthzEpoch(ctx, r.cacheRepo)
 }
 
 func (r *RedisCachedTeamRepository) RemoveMember(ctx context.Context, teamID, memberID, belongsToID model.ID) error {
@@ -518,7 +528,10 @@ func (r *RedisCachedTeamRepository) RemoveMember(ctx context.Context, teamID, me
 		return err
 	}
 
-	return r.teamRepo.RemoveMember(ctx, teamID, memberID, belongsToID)
+	if err := r.teamRepo.RemoveMember(ctx, teamID, memberID, belongsToID); err != nil {
+		return err
+	}
+	return bumpIssueListAuthzEpoch(ctx, r.cacheRepo)
 }
 
 func (r *RedisCachedTeamRepository) Delete(ctx context.Context, id, belongsTo model.ID) error {
@@ -534,7 +547,10 @@ func (r *RedisCachedTeamRepository) Delete(ctx context.Context, id, belongsTo mo
 		return err
 	}
 
-	return r.teamRepo.Delete(ctx, id, belongsTo)
+	if err := r.teamRepo.Delete(ctx, id, belongsTo); err != nil {
+		return err
+	}
+	return bumpIssueListAuthzEpoch(ctx, r.cacheRepo)
 }
 
 // NewCachedTeamRepository returns a new CachedTeamRepository.

@@ -4,10 +4,12 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/optional"
+	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/service"
 	"github.com/opcotech/elemo/internal/transport/http/api"
 )
@@ -82,8 +84,17 @@ func (c *issueController) V1ProjectsIssuesGet(ctx context.Context, request api.V
 	if err != nil {
 		return api.V1ProjectsIssuesGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
+	listOpts, err := issueListOptionsFromParams(
+		request.Params.Q,
+		request.Params.Status,
+		request.Params.Priority,
+		request.Params.Order,
+	)
+	if err != nil {
+		return api.V1ProjectsIssuesGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
+	}
 
-	page, err := c.issueService.List(ctx, projectID, pageParams)
+	page, err := c.issueService.List(service.WithIssueListOptions(ctx, listOpts), projectID, pageParams)
 	if err != nil {
 		switch classifyServiceError(err) {
 		case http.StatusBadRequest:
@@ -123,8 +134,17 @@ func (c *issueController) V1NamespacesIssuesGet(ctx context.Context, request api
 	if err != nil {
 		return api.V1NamespacesIssuesGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
+	listOpts, err := issueListOptionsFromParams(
+		request.Params.Q,
+		request.Params.Status,
+		request.Params.Priority,
+		request.Params.Order,
+	)
+	if err != nil {
+		return api.V1NamespacesIssuesGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
+	}
 
-	page, err := c.issueService.ListByNamespace(ctx, namespaceID, pageParams)
+	page, err := c.issueService.ListByNamespace(service.WithIssueListOptions(ctx, listOpts), namespaceID, pageParams)
 	if err != nil {
 		switch classifyServiceError(err) {
 		case http.StatusBadRequest:
@@ -164,8 +184,17 @@ func (c *issueController) V1UsersIssuesGet(ctx context.Context, request api.V1Us
 	if err != nil {
 		return api.V1UsersIssuesGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
+	listOpts, err := issueListOptionsFromParams(
+		request.Params.Q,
+		request.Params.Status,
+		request.Params.Priority,
+		request.Params.Order,
+	)
+	if err != nil {
+		return api.V1UsersIssuesGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
+	}
 
-	page, err := c.issueService.ListByUser(ctx, userID, pageParams)
+	page, err := c.issueService.ListByUser(service.WithIssueListOptions(ctx, listOpts), userID, pageParams)
 	if err != nil {
 		switch classifyServiceError(err) {
 		case http.StatusBadRequest:
@@ -752,4 +781,101 @@ func issueRelationToDTO(relation *service.IssueRelation) api.IssueRelation {
 		Related:   related,
 		CreatedAt: createdAt,
 	}
+}
+
+func issueListOptionsFromParams(
+	q *api.IssueListQ,
+	status *api.IssueListStatus,
+	priority *api.IssueListPriority,
+	order any,
+) (service.IssueListOptions, error) {
+	opts := service.IssueListOptions{
+		Sort: repository.IssueListSort{
+			Field:     repository.IssueListSortFieldRank,
+			Direction: repository.SortDirectionAsc,
+		},
+	}
+
+	if q != nil {
+		opts.Filter.Text = strings.TrimSpace(string(*q))
+	}
+
+	if status != nil {
+		opts.Filter.Statuses = make([]model.IssueStatus, 0, len(*status))
+		for _, raw := range *status {
+			parsed, err := model.IssueStatusString(string(raw))
+			if err != nil {
+				return service.IssueListOptions{}, err
+			}
+			opts.Filter.Statuses = append(opts.Filter.Statuses, parsed)
+		}
+	}
+
+	if priority != nil {
+		opts.Filter.Priorities = make([]model.IssuePriority, 0, len(*priority))
+		for _, raw := range *priority {
+			parsed, err := model.IssuePriorityString(string(raw))
+			if err != nil {
+				return service.IssueListOptions{}, err
+			}
+			opts.Filter.Priorities = append(opts.Filter.Priorities, parsed)
+		}
+	}
+
+	var orderValue string
+	switch typed := order.(type) {
+	case *api.V1ProjectsIssuesGetParamsOrder:
+		if typed != nil {
+			orderValue = string(*typed)
+		}
+	case *api.V1NamespacesIssuesGetParamsOrder:
+		if typed != nil {
+			orderValue = string(*typed)
+		}
+	case *api.V1UsersIssuesGetParamsOrder:
+		if typed != nil {
+			orderValue = string(*typed)
+		}
+	}
+
+	if orderValue == "" {
+		return opts, nil
+	}
+
+	field, directionRaw, found := strings.Cut(orderValue, ":")
+	if !found {
+		return service.IssueListOptions{}, repository.ErrUnsupportedOrder
+	}
+
+	switch field {
+	case "numeric_id":
+		opts.Sort.Field = repository.IssueListSortFieldRank
+	case "rank":
+		opts.Sort.Field = repository.IssueListSortFieldRank
+	case "title":
+		opts.Sort.Field = repository.IssueListSortFieldTitle
+	case "priority":
+		opts.Sort.Field = repository.IssueListSortFieldPriority
+	case "status":
+		opts.Sort.Field = repository.IssueListSortFieldStatus
+	case "due_date":
+		opts.Sort.Field = repository.IssueListSortFieldDueDate
+	case "created_at":
+		opts.Sort.Field = repository.IssueListSortFieldCreatedAt
+	case "updated_at":
+		opts.Sort.Field = repository.IssueListSortFieldUpdatedAt
+	default:
+		return service.IssueListOptions{}, repository.ErrUnsupportedOrder
+	}
+
+	switch directionRaw {
+	case "asc":
+		opts.Sort.Direction = repository.SortDirectionAsc
+	case "desc":
+		opts.Sort.Direction = repository.SortDirectionDesc
+	default:
+		return service.IssueListOptions{}, repository.ErrUnsupportedOrder
+	}
+
+	return opts, nil
 }

@@ -5,6 +5,10 @@ import { useMemo, useState } from "react";
 
 import { OrganizationRow } from "./organization-row";
 
+import {
+  CursorPaginator,
+  cursorPaginatorProps,
+} from "@/components/shared/cursor-paginator";
 import { Button } from "@/components/ui/button";
 import { ListContainer } from "@/components/ui/list-container";
 import { SearchInput } from "@/components/ui/search-input";
@@ -16,15 +20,15 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { TableSkeletonRows } from "@/components/ui/table-skeleton";
+import { useCursorPageNav } from "@/hooks/use-cursor-page-nav";
 import {
   ResourceType,
   usePermissions,
   usePermissionsByResourceId,
   withResourceType,
 } from "@/hooks/use-permissions";
-import { collectedListQuery, cursorPageQuery } from "@/lib/api/cursor-pages";
+import { cursorPageQuery } from "@/lib/api/cursor-pages";
 import { v1OrganizationsGetOptions } from "@/lib/api/query-options";
-import { v1OrganizationsGet } from "@/lib/api/sdk";
 import { Action, can } from "@/lib/auth/permissions";
 import { zOrganizationStatus } from "@/lib/client/zod.gen";
 
@@ -45,20 +49,14 @@ const organizationTableSkeletonColumns = [
 
 export function OrganizationList() {
   const [searchTerm, setSearchTerm] = useState("");
-
-  const listOptions = v1OrganizationsGetOptions();
+  const pageNav = useCursorPageNav({ resetKey: searchTerm });
   const {
     data: organizationsPage,
     isLoading,
     error,
   } = useQuery(
-    collectedListQuery(listOptions, async (pageToken, signal) => {
-      const { data } = await v1OrganizationsGet({
-        query: cursorPageQuery(pageToken),
-        signal,
-        throwOnError: true,
-      });
-      return data;
+    v1OrganizationsGetOptions({
+      query: cursorPageQuery(pageNav.pageToken),
     })
   );
   const organizations = organizationsPage?.items;
@@ -184,6 +182,7 @@ export function OrganizationList() {
           )}
         </TableBody>
       </Table>
+      <CursorPaginator {...cursorPaginatorProps(organizationsPage, pageNav)} />
     </ListContainer>
   );
 }

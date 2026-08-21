@@ -1,4 +1,9 @@
-import type { Query, QueryClient, QueryKey } from "@tanstack/react-query";
+import type {
+  InfiniteData,
+  Query,
+  QueryClient,
+  QueryKey,
+} from "@tanstack/react-query";
 
 import {
   v1IssueGetOptions,
@@ -23,7 +28,7 @@ export type IssueCacheSnapshot = {
   previousByKey: Issue | undefined;
   previousProjectLists: {
     queryKey: QueryKey;
-    data: PartialIssuePage | undefined;
+    data: unknown;
   }[];
 };
 
@@ -76,15 +81,28 @@ function isPartialIssuePage(data: unknown): data is PartialIssuePage {
   );
 }
 
+function isInfinitePartialIssuePage(
+  data: unknown
+): data is InfiniteData<PartialIssuePage> {
+  if (
+    typeof data !== "object" ||
+    data === null ||
+    !Array.isArray((data as { pages?: unknown[] }).pages)
+  ) {
+    return false;
+  }
+  return (data as { pages: unknown[] }).pages.every(isPartialIssuePage);
+}
+
 export function patchProjectIssuesCaches(
   queryClient: QueryClient,
   projectId: string,
   issueId: string,
   updater: (issue: PartialIssue) => PartialIssue
-): { queryKey: QueryKey; data: PartialIssuePage | undefined }[] {
+): { queryKey: QueryKey; data: unknown }[] {
   const previousEntries: {
     queryKey: QueryKey;
-    data: PartialIssuePage | undefined;
+    data: unknown;
   }[] = [];
 
   for (const query of queryClient.getQueryCache().getAll()) {
@@ -93,19 +111,30 @@ export function patchProjectIssuesCaches(
     }
 
     const queryKey = query.queryKey;
-    const data = queryClient.getQueryData<PartialIssuePage>(queryKey);
+    const data = queryClient.getQueryData(queryKey);
     previousEntries.push({ queryKey, data });
 
-    if (!isPartialIssuePage(data)) {
+    if (isPartialIssuePage(data)) {
+      queryClient.setQueryData<PartialIssuePage>(queryKey, {
+        ...data,
+        items: data.items.map((issue) =>
+          issue.id === issueId ? updater(issue) : issue
+        ),
+      });
       continue;
     }
 
-    queryClient.setQueryData<PartialIssuePage>(queryKey, {
-      ...data,
-      items: data.items.map((issue) =>
-        issue.id === issueId ? updater(issue) : issue
-      ),
-    });
+    if (isInfinitePartialIssuePage(data)) {
+      queryClient.setQueryData<InfiniteData<PartialIssuePage>>(queryKey, {
+        ...data,
+        pages: data.pages.map((page) => ({
+          ...page,
+          items: page.items.map((issue) =>
+            issue.id === issueId ? updater(issue) : issue
+          ),
+        })),
+      });
+    }
   }
 
   return previousEntries;

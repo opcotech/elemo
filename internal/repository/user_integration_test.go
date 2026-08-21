@@ -187,7 +187,7 @@ func (s *CachedUserRepositoryIntegrationTestSuite) TestCreate() {
 	s.Assert().NotNil(user.CreatedAt)
 	s.Assert().Nil(user.UpdatedAt)
 
-	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 0)
+	s.Assert().Len(cacheKeysWithoutIssueListGeneration(s.Keys(&s.ContainerIntegrationTestSuite, "*")), 0)
 }
 
 func (s *CachedUserRepositoryIntegrationTestSuite) TestGet() {
@@ -201,13 +201,13 @@ func (s *CachedUserRepositoryIntegrationTestSuite) TestGet() {
 	s.Require().NoError(err)
 
 	s.Assert().Equal(original, usingCache)
-	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
+	s.Assert().Len(cacheKeysWithoutIssueListGeneration(s.Keys(&s.ContainerIntegrationTestSuite, "*")), 1)
 
 	cached, err := s.userRepo.Get(context.Background(), created.ID, repository.UserDetailProjection())
 	s.Require().NoError(err)
 
 	s.Assert().Equal(usingCache.ID, cached.ID)
-	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
+	s.Assert().Len(cacheKeysWithoutIssueListGeneration(s.Keys(&s.ContainerIntegrationTestSuite, "*")), 1)
 }
 
 func (s *CachedUserRepositoryIntegrationTestSuite) TestGetByEmail() {
@@ -221,13 +221,13 @@ func (s *CachedUserRepositoryIntegrationTestSuite) TestGetByEmail() {
 	s.Require().NoError(err)
 
 	s.Assert().Equal(original, usingCache)
-	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
+	s.Assert().Len(cacheKeysWithoutIssueListGeneration(s.Keys(&s.ContainerIntegrationTestSuite, "*")), 1)
 
 	cached, err := s.userRepo.GetByEmail(context.Background(), created.Email, repository.UserDetailProjection())
 	s.Require().NoError(err)
 
 	s.Assert().Equal(usingCache.ID, cached.ID)
-	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
+	s.Assert().Len(cacheKeysWithoutIssueListGeneration(s.Keys(&s.ContainerIntegrationTestSuite, "*")), 1)
 }
 
 func (s *CachedUserRepositoryIntegrationTestSuite) TestGetAll() {
@@ -243,7 +243,7 @@ func (s *CachedUserRepositoryIntegrationTestSuite) TestGetAll() {
 	s.Require().NoError(err)
 
 	s.Assert().Equal(originalUsers, usingCacheUsers)
-	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
+	s.Assert().Len(cacheKeysWithoutIssueListGeneration(s.Keys(&s.ContainerIntegrationTestSuite, "*")), 1)
 
 	cachedUsers, err := s.userRepo.List(context.Background(), repository.CursorPage{Size: 10}, repository.UserListProjection())
 	s.Require().NoError(err)
@@ -269,7 +269,7 @@ func (s *CachedUserRepositoryIntegrationTestSuite) TestUpdate() {
 	s.Assert().ElementsMatch([]model.Language{model.LanguageEN}, user.Languages)
 	s.Assert().NotNil(user.UpdatedAt)
 
-	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
+	s.Assert().Len(cacheKeysWithoutIssueListGeneration(s.Keys(&s.ContainerIntegrationTestSuite, "*")), 1)
 }
 
 func (s *CachedUserRepositoryIntegrationTestSuite) TestDelete() {
@@ -279,14 +279,14 @@ func (s *CachedUserRepositoryIntegrationTestSuite) TestDelete() {
 	_, err = s.userRepo.Get(context.Background(), created.ID, repository.UserDetailProjection())
 	s.Require().NoError(err)
 
-	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
+	s.Assert().Len(cacheKeysWithoutIssueListGeneration(s.Keys(&s.ContainerIntegrationTestSuite, "*")), 1)
 
 	s.Require().NoError(s.userRepo.Delete(context.Background(), created.ID))
 
 	_, err = s.userRepo.Get(context.Background(), created.ID, repository.UserDetailProjection())
 	s.Assert().ErrorIs(err, repository.ErrNotFound)
 
-	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 0)
+	s.Assert().Len(cacheKeysWithoutIssueListGeneration(s.Keys(&s.ContainerIntegrationTestSuite, "*")), 0)
 }
 
 func TestCachedUserRepositoryIntegrationTestSuite(t *testing.T) {

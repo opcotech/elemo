@@ -1,6 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { CommandIcon, SearchIcon } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { ContentWidth } from "@/components/layout/content-width";
 import { openQuickCreate } from "@/components/quick-create/open";
@@ -21,12 +21,17 @@ import {
 } from "@/components/ui/select";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { useAccessibleNamespaces } from "@/lib/api/accessible-namespaces";
-import { collectedListQuery, cursorPageQuery } from "@/lib/api/cursor-pages";
+import {
+  collectedListQuery,
+  cursorPageQuery,
+  flattenCursorPages,
+  nextCursorPageToken,
+} from "@/lib/api/cursor-pages";
 import {
   v1NamespacesProjectsGetOptions,
   v1SearchGetOptions,
 } from "@/lib/api/query-options";
-import { v1NamespacesProjectsGet } from "@/lib/api/sdk";
+import { v1NamespacesProjectsGet, v1SearchGet } from "@/lib/api/sdk";
 import { recentEntityLinkType } from "@/lib/recent-entity";
 import {
   SEARCH_DEBOUNCE_MS,
@@ -65,8 +70,7 @@ export function SearchPage({
   }
   const debouncedQ = useDebouncedValue(queryInput, SEARCH_DEBOUNCE_MS);
   const qForSearch = queryInput === search.q ? search.q : debouncedQ;
-  const searchForQuery = { ...search, q: qForSearch };
-  const [previousTokens, setPreviousTokens] = useState<string[]>([]);
+  const searchForQuery = { ...search, q: qForSearch, page_token: undefined };
   const filterKey = [
     qForSearch,
     search.type,
@@ -74,10 +78,8 @@ export function SearchPage({
     search.namespace_id ?? "",
     search.project_id ?? "",
   ].join("|");
-
-  useEffect(() => {
-    setPreviousTokens([]);
-  }, [filterKey]);
+  const scrollRootRef = useRef<HTMLDivElement | null>(null);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (debouncedQ === search.q || debouncedQ !== queryInput) {
@@ -115,21 +117,70 @@ export function SearchPage({
   });
   const projects = projectsPage?.items ?? [];
   const active = hasActiveSearch(searchForQuery);
+  const searchQuery = searchQueryFromRoute(searchForQuery);
+  const searchListOptions = v1SearchGetOptions({
+    query: searchQuery,
+  });
   const {
-    data: searchPage,
-    isError,
-    isLoading: isSearchLoading,
-  } = useQuery({
-    ...v1SearchGetOptions({
-      query: searchQueryFromRoute(searchForQuery),
-    }),
+    data: searchPages,
+    error: searchError,
+    isPending: isSearchPending,
+    isFetchingNextPage,
+    fetchNextPage,
+    hasNextPage,
+  } = useInfiniteQuery({
+    staleTime: searchListOptions.staleTime,
+    gcTime: searchListOptions.gcTime,
+    queryKey: [...searchListOptions.queryKey, "infinite"],
+    initialPageParam: undefined as string | undefined,
+    queryFn: async ({ pageParam, signal }) => {
+      const { data } = await v1SearchGet({
+        query: {
+          ...searchQuery,
+          ...(pageParam ? { page_token: pageParam } : {}),
+        },
+        signal,
+        throwOnError: true,
+      });
+      return data;
+    },
+    getNextPageParam: (lastPage) => nextCursorPageToken(lastPage),
     enabled: active,
   });
-  const items = active ? (searchPage?.items ?? []) : [];
+  const items = active ? flattenCursorPages(searchPages?.pages ?? []) : [];
   const groupedResults = useMemo(() => groupSearchResults(items), [items]);
-  const hasMore = Boolean(searchPage?.page_info.has_more);
-  const nextPageToken = searchPage?.page_info.next_page_token ?? undefined;
-  const canGoPrevious = previousTokens.length > 0 || Boolean(search.page_token);
+  const isError = Boolean(searchError);
+
+  useEffect(() => {
+    if (!active || !hasNextPage || isFetchingNextPage || isSearchPending) {
+      return;
+    }
+    const root = scrollRootRef.current;
+    const sentinel = sentinelRef.current;
+    if (!sentinel) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((entry) => entry.isIntersecting)) {
+          return;
+        }
+        void fetchNextPage();
+      },
+      { root, rootMargin: "0px 0px 80px 0px" }
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [
+    active,
+    fetchNextPage,
+    filterKey,
+    hasNextPage,
+    isFetchingNextPage,
+    isSearchPending,
+    items.length,
+  ]);
 
   function applyFilters(patch: Partial<SearchRouteSearch>) {
     onSearchChange({ ...patch, page_token: undefined });
@@ -189,7 +240,10 @@ export function SearchPage({
   };
 
   return (
-    <div className="h-[calc(100svh-var(--app-header-height))] min-h-0 overflow-y-auto">
+    <div
+      ref={scrollRootRef}
+      className="h-[calc(100svh-var(--app-header-height))] min-h-0 overflow-y-auto"
+    >
       <ContentWidth width="overview" className="max-w-6xl space-y-6">
         <PageHeader
           title="Search"
@@ -339,7 +393,7 @@ export function SearchPage({
               </AppList>
             </Section>
           </div>
-        ) : (isSearchLoading || isWorkspaceLoading) && items.length === 0 ? (
+        ) : (isSearchPending || isWorkspaceLoading) && items.length === 0 ? (
           <ListSkeleton />
         ) : isError ? (
           <EmptyState
@@ -416,37 +470,13 @@ export function SearchPage({
               </Section>
             ))}
 
-            {(canGoPrevious || hasMore) && (
-              <div className="flex items-center justify-center gap-2">
-                <Button
-                  variant="outline"
-                  disabled={!canGoPrevious}
-                  onClick={() => {
-                    const previous = previousTokens.at(-1);
-                    setPreviousTokens((stack) => stack.slice(0, -1));
-                    onSearchChange({
-                      page_token: previous || undefined,
-                    });
-                  }}
-                >
-                  Previous
-                </Button>
-                <Button
-                  variant="outline"
-                  disabled={!hasMore || !nextPageToken}
-                  onClick={() => {
-                    if (!nextPageToken) return;
-                    setPreviousTokens((stack) => [
-                      ...stack,
-                      search.page_token ?? "",
-                    ]);
-                    onSearchChange({ page_token: nextPageToken });
-                  }}
-                >
-                  Next
-                </Button>
-              </div>
-            )}
+            {hasNextPage ? (
+              <div
+                ref={sentinelRef}
+                className="h-px w-full shrink-0"
+                aria-hidden
+              />
+            ) : null}
           </div>
         )}
       </ContentWidth>

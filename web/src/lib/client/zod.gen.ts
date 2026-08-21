@@ -548,6 +548,8 @@ export const zPartialIssue = z.object({
   namespace: zPartialNamespace.nullish(),
   due_date: z.iso.datetime().nullish(),
   start_date: z.iso.datetime().nullish(),
+  created_at: z.iso.datetime(),
+  updated_at: z.iso.datetime().nullable(),
 });
 
 /**
@@ -1189,6 +1191,45 @@ export const zPageSize = z.int().gte(1).lte(1000).default(100);
 export const zPageToken = z.string();
 
 /**
+ * Case-insensitive substring search over issue key, title, and description.
+ */
+export const zIssueListQ = z.string().max(500);
+
+/**
+ * Match any of the provided statuses.
+ */
+export const zIssueListStatus = z.array(zIssueStatus);
+
+/**
+ * Match any of the provided priorities.
+ */
+export const zIssueListPriority = z.array(zIssuePriority);
+
+/**
+ * Sort order in `field:direction` format.
+ */
+export const zIssueListOrder = z
+  .enum([
+    "rank:asc",
+    "rank:desc",
+    "numeric_id:asc",
+    "numeric_id:desc",
+    "title:asc",
+    "title:desc",
+    "priority:asc",
+    "priority:desc",
+    "status:asc",
+    "status:desc",
+    "due_date:asc",
+    "due_date:desc",
+    "created_at:asc",
+    "created_at:desc",
+    "updated_at:asc",
+    "updated_at:desc",
+  ])
+  .default("rank:asc");
+
+/**
  * Maximum number of search hits to return.
  */
 export const zSearchPageSize = z.int().gte(1).lte(100).default(20);
@@ -1560,6 +1601,30 @@ export const zV1UsersIssuesGetPath = z.object({
 export const zV1UsersIssuesGetQuery = z.object({
   page_size: z.int().gte(1).lte(1000).optional().default(100),
   page_token: z.string().optional(),
+  q: z.string().max(500).optional(),
+  status: z.array(zIssueStatus).optional(),
+  priority: z.array(zIssuePriority).optional(),
+  order: z
+    .enum([
+      "rank:asc",
+      "rank:desc",
+      "numeric_id:asc",
+      "numeric_id:desc",
+      "title:asc",
+      "title:desc",
+      "priority:asc",
+      "priority:desc",
+      "status:asc",
+      "status:desc",
+      "due_date:asc",
+      "due_date:desc",
+      "created_at:asc",
+      "created_at:desc",
+      "updated_at:asc",
+      "updated_at:desc",
+    ])
+    .optional()
+    .default("rank:asc"),
 });
 
 /**
@@ -2162,6 +2227,30 @@ export const zV1NamespacesIssuesGetPath = z.object({
 export const zV1NamespacesIssuesGetQuery = z.object({
   page_size: z.int().gte(1).lte(1000).optional().default(100),
   page_token: z.string().optional(),
+  q: z.string().max(500).optional(),
+  status: z.array(zIssueStatus).optional(),
+  priority: z.array(zIssuePriority).optional(),
+  order: z
+    .enum([
+      "rank:asc",
+      "rank:desc",
+      "numeric_id:asc",
+      "numeric_id:desc",
+      "title:asc",
+      "title:desc",
+      "priority:asc",
+      "priority:desc",
+      "status:asc",
+      "status:desc",
+      "due_date:asc",
+      "due_date:desc",
+      "created_at:asc",
+      "created_at:desc",
+      "updated_at:asc",
+      "updated_at:desc",
+    ])
+    .optional()
+    .default("rank:asc"),
 });
 
 /**
@@ -2215,6 +2304,30 @@ export const zV1ProjectsIssuesGetPath = z.object({
 export const zV1ProjectsIssuesGetQuery = z.object({
   page_size: z.int().gte(1).lte(1000).optional().default(100),
   page_token: z.string().optional(),
+  q: z.string().max(500).optional(),
+  status: z.array(zIssueStatus).optional(),
+  priority: z.array(zIssuePriority).optional(),
+  order: z
+    .enum([
+      "rank:asc",
+      "rank:desc",
+      "numeric_id:asc",
+      "numeric_id:desc",
+      "title:asc",
+      "title:desc",
+      "priority:asc",
+      "priority:desc",
+      "status:asc",
+      "status:desc",
+      "due_date:asc",
+      "due_date:desc",
+      "created_at:asc",
+      "created_at:desc",
+      "updated_at:asc",
+      "updated_at:desc",
+    ])
+    .optional()
+    .default("rank:asc"),
 });
 
 /**

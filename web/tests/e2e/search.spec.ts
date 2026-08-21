@@ -51,15 +51,17 @@ test.describe("@search Search E2E Tests", () => {
     });
 
     const searchPage = new SearchPage(page);
-    await searchPage.goto({
-      q: title,
-      type: "Issue",
-      namespace_id: workspace.namespaceId,
-    });
-    await expect(searchPage.getTypeFilter()).toContainText("Issues");
-    await expect(searchPage.getResultLink(title)).toBeVisible({
-      timeout: 15_000,
-    });
+    await expect(async () => {
+      await searchPage.goto({
+        q: title,
+        type: "Issue",
+        namespace_id: workspace.namespaceId,
+      });
+      await expect(searchPage.getTypeFilter()).toContainText("Issues");
+      await expect(searchPage.getResultLink(title)).toBeVisible({
+        timeout: 5_000,
+      });
+    }).toPass({ timeout: 30_000 });
     await searchPage.getResultLink(title).click();
 
     const workItem = new WorkItemPage(page);

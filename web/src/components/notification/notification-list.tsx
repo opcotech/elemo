@@ -4,6 +4,10 @@ import { useMemo } from "react";
 
 import { NotificationItem } from "@/components/notification";
 import {
+  CursorPaginator,
+  cursorPaginatorProps,
+} from "@/components/shared/cursor-paginator";
+import {
   Empty,
   EmptyDescription,
   EmptyHeader,
@@ -12,11 +16,16 @@ import {
 } from "@/components/ui/empty";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useCursorPageNav } from "@/hooks/use-cursor-page-nav";
+import { cursorPageQuery } from "@/lib/api/cursor-pages";
 import { v1NotificationsGetOptions } from "@/lib/api/query-options";
 
 export function NotificationList() {
+  const pageNav = useCursorPageNav();
   const { data: notificationsPage, isLoading } = useQuery({
-    ...v1NotificationsGetOptions(),
+    ...v1NotificationsGetOptions({
+      query: cursorPageQuery(pageNav.pageToken),
+    }),
   });
   const notifications = notificationsPage?.items;
 
@@ -61,6 +70,9 @@ export function NotificationList() {
               notification={notification}
             />
           ))}
+          <CursorPaginator
+            {...cursorPaginatorProps(notificationsPage, pageNav)}
+          />
         </div>
       </ScrollArea>
     </div>

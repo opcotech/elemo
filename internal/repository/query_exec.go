@@ -6,8 +6,11 @@ import (
 	"time"
 
 	"github.com/neo4j/neo4j-go-driver/v6/neo4j"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/opcotech/elemo/internal/pkg/log"
+	"github.com/opcotech/elemo/internal/pkg/metrics"
 )
 
 // Neo4jRecordReader decodes a single Neo4j record into T.
@@ -37,14 +40,18 @@ func Neo4jExecuteReadPlan(ctx context.Context, db *Neo4jDatabase, plan QueryPlan
 }
 
 // Neo4jRunQuery executes a compiled query and collects all records via reader.
-func Neo4jRunQuery[T any](ctx context.Context, tx neo4j.ManagedTransaction, query CompiledQuery, reader Neo4jRecordReader[T]) ([]T, *QuerySummary, error) {
+func Neo4jRunQuery[T any](ctx context.Context, tx neo4j.ManagedTransaction, query CompiledQuery, reader Neo4jRecordReader[T]) (items []T, qs *QuerySummary, err error) {
 	started := time.Now()
+	defer func() {
+		metrics.ObserveNeo4jQuery(query.Name, time.Since(started), len(items), err)
+	}()
+
 	result, err := tx.Run(ctx, query.Cypher, query.Params)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	items := make([]T, 0)
+	items = make([]T, 0)
 	for result.Next(ctx) {
 		item, err := reader(result.Record())
 		if err != nil {
@@ -64,14 +71,22 @@ func Neo4jRunQuery[T any](ctx context.Context, tx neo4j.ManagedTransaction, quer
 		return nil, nil, err
 	}
 
-	qs := &QuerySummary{
+	qs = &QuerySummary{
 		Name:                 query.Name,
 		Fingerprint:          query.Fingerprint(),
 		Counters:             summary.Counters(),
 		ResultAvailableAfter: summary.ResultAvailableAfter(),
 		ResultConsumedAfter:  summary.ResultConsumedAfter(),
 	}
-	_ = started
+	if span := trace.SpanFromContext(ctx); span.IsRecording() {
+		span.SetAttributes(
+			attribute.String("db.neo4j.query.name", qs.Name),
+			attribute.String("db.neo4j.query.fingerprint", qs.Fingerprint),
+			attribute.Int64("db.neo4j.query.result_available_ms", qs.ResultAvailableAfter.Milliseconds()),
+			attribute.Int64("db.neo4j.query.result_consumed_ms", qs.ResultConsumedAfter.Milliseconds()),
+			attribute.Int64("db.neo4j.query.elapsed_ms", time.Since(started).Milliseconds()),
+		)
+	}
 
 	return items, qs, nil
 }

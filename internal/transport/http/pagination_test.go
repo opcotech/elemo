@@ -40,12 +40,14 @@ func TestCursorPageFromParams(t *testing.T) {
 		assert.ErrorIs(t, err, repository.ErrInvalidPageSize)
 	})
 
-	t.Run("rejects invalid cursor", func(t *testing.T) {
+	t.Run("passes through opaque cursor", func(t *testing.T) {
 		t.Parallel()
 
-		_, err := cursorPageFromParams(convert.ToPointer(10), convert.ToPointer("not-a-token"))
-		require.Error(t, err)
-		assert.ErrorIs(t, err, repository.ErrInvalidCursor)
+		token := "not-a-token"
+		got, err := cursorPageFromParams(convert.ToPointer(10), &token)
+		require.NoError(t, err)
+		require.NotNil(t, got.Token)
+		assert.Equal(t, token, *got.Token)
 	})
 
 	t.Run("keeps valid cursor", func(t *testing.T) {

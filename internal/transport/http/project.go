@@ -3,6 +3,7 @@ package http
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/optional"
@@ -330,6 +331,11 @@ func partialNamespaceToDTO(namespace *service.PartialNamespace) *api.PartialName
 }
 
 func partialIssueToDTO(issue *service.PartialIssue) api.PartialIssue {
+	createdAt := time.Time{}
+	if issue.CreatedAt != nil {
+		createdAt = *issue.CreatedAt
+	}
+
 	ni := api.PartialIssue{
 		Id:        issue.ID.String(),
 		Key:       issue.Key,
@@ -345,6 +351,8 @@ func partialIssueToDTO(issue *service.PartialIssue) api.PartialIssue {
 		Namespace: partialNamespaceToDTO(issue.Namespace),
 		DueDate:   issue.DueDate,
 		StartDate: issue.StartDate,
+		CreatedAt: createdAt,
+		UpdatedAt: issue.UpdatedAt,
 	}
 
 	if issue.ReportedBy != nil {

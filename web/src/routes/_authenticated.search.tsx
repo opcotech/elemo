@@ -26,7 +26,7 @@ export const Route = createFileRoute("/_authenticated/search")({
       workspace,
       context.queryClient.ensureQueryData(
         v1SearchGetOptions({
-          query: searchQueryFromRoute(deps),
+          query: searchQueryFromRoute({ ...deps, page_token: undefined }),
         })
       ),
     ]);

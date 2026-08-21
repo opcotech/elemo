@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CompactWorkList } from "@/components/work/work-list";
+import { cursorPageQuery } from "@/lib/api/cursor-pages";
 import { v1NotificationsGetOptions } from "@/lib/api/query-options";
 import {
   getWorkItem,
@@ -20,13 +21,19 @@ export const Route = createFileRoute("/_authenticated/inbox")({
     breadcrumb: "Inbox",
   },
   loader: ({ context }) =>
-    context.queryClient.fetchQuery(v1NotificationsGetOptions()),
+    context.queryClient.fetchQuery(
+      v1NotificationsGetOptions({
+        query: cursorPageQuery(),
+      })
+    ),
   component: InboxPage,
 });
 
 function InboxPage() {
   const { data: notificationsPage } = useSuspenseQuery(
-    v1NotificationsGetOptions()
+    v1NotificationsGetOptions({
+      query: cursorPageQuery(),
+    })
   );
   const notifications = notificationsPage?.items;
 

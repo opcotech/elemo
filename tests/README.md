@@ -1,44 +1,34 @@
-The following folders and files are included in the starter templates:
+# k6 tests
 
-### common
+## Work-item latency benchmark
 
-The `common` folder serves as a suitable location for storing re-usable functions.
+`test.k6.work-item-latency` runs an authenticated benchmark over project,
+namespace, and user issue-list endpoints. It records cold and warm page-1 and
+collect-all timings, payload bytes, and cache speedup tags per scope/page.
 
-An example of such a function can be found in `utils.js`, namely `randomIntBetween` (note the use of the `export`
-keyword to allow it to be imported elsewhere). This function can be used to add a random `sleep` "think-time"
-in `scripts/getSystemHealth.js`.
+Required environment variables:
 
-### config
+- `AUTH_CLIENT_ID`
+- `AUTH_CLIENT_SECRET`
 
-It is often useful to separate test configuration from JavaScript code, particularly when the code is being kept under
-source control.
+Optional overrides:
 
-The contents of `test.json` will be merged with `options` set directly in the entry-point script (`main.js`). One of the
-more useful properties to store in this JSON file are [Scenario](https://k6.io/docs/using-k6/scenarios/) definitions.
+- `K6_USER_EMAIL` (default `demo@meridian.example`)
+- `K6_USER_PASSWORD` (default `AppleTree123`)
+- `K6_PROJECT_ID`, `K6_NAMESPACE_ID`, `K6_USER_ID` (auto-discovered when empty)
+- `K6_ISSUE_Q`, `K6_ISSUE_STATUS`, `K6_ISSUE_PRIORITY`, `K6_ISSUE_ORDER`
+- `K6_ISSUE_PAGE_SIZE` (default `100`)
+- `K6_ISSUE_MAX_PAGES` (default `10`)
+- `K6_SCOPES` (comma-separated subset of `project,namespace,user`)
+- `BASE_URL` (default `http://127.0.0.1:35478`)
 
-The current `test.json` contains a single scenario that will run the exported function in `scenarios/scenario1.js` as
-determined by the scenario's `exec` property that expects the name of an exported function to execute.
+Run:
 
-Note that it is necessary to re-export this function in the entry-point script (`main.js`) in order to make it
-accessible.
+```bash
+make start.backend start.monitoring
+make demo.prefill
+make test.k6.work-item-latency
+```
 
-### scenarios
-
-Scripts in the `scenarios` folder contain exported functions that can be used as entry-points for Scenarios (i.e.
-the `exec` property in `test.json`). These functions will in turn call exported functions provided by the `scripts`
-themselves. This layer of abstraction allows for some customization of what should be executed; perhaps there is a need
-to loop over a set of API functions - this might not be desirable to define in the scripts themselves. The order in
-which script functions are called can also be changed more easily if this code is separated out.
-
-### scripts
-
-The `scripts` folder can be used to store code that performs actual automation.
-
-In the example script `getSystemHealth.js`, a GET request is made and a [check](https://k6.io/docs/using-k6/checks/) is
-used to validate the response status code. A subsequent `sleep` statement is then used to apply "think-time" based on a
-random value between the global `PAUSE_MIN` and `PAUSE_MAX` variables defined in the entry-point script `main.js`.
-
-### Examples
-
-The v2 branch of the [k6-example-woocommerce](https://github.com/grafana/k6-example-woocommerce/tree/v2) repository
-implements the `vanilla` template.
+Use `tests/config/work-item-latency.json` as the default benchmark scenario
+configuration. `tests/main.js` can load another config by setting `K6_CONFIG`.

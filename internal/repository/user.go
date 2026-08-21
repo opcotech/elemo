@@ -628,6 +628,12 @@ func (r *RedisCachedUserRepository) Update(ctx context.Context, id model.ID, opt
 	if err = clearUserAll(ctx, r.cacheRepo); err != nil {
 		return nil, err
 	}
+	if err = bumpIssueListUserGeneration(ctx, r.cacheRepo, id); err != nil {
+		return nil, err
+	}
+	if err = bumpIssueListProjectionEpoch(ctx, r.cacheRepo); err != nil {
+		return nil, err
+	}
 
 	return user, nil
 }
@@ -646,6 +652,12 @@ func (r *RedisCachedUserRepository) Delete(ctx context.Context, id model.ID) err
 	}
 
 	if err := clearUserAllCrossCache(ctx, r.cacheRepo); err != nil {
+		return err
+	}
+	if err := bumpIssueListUserGeneration(ctx, r.cacheRepo, id); err != nil {
+		return err
+	}
+	if err := bumpIssueListProjectionEpoch(ctx, r.cacheRepo); err != nil {
 		return err
 	}
 

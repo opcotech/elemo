@@ -1,5 +1,6 @@
 import { createOrganization } from "./api";
 import { expect, test } from "./fixtures";
+import { fillLocator } from "./helpers";
 import { USER_DEFAULT_PASSWORD, loginUser } from "./utils/auth";
 import { createUser, grantOrganizationCreateToUser } from "./utils/db";
 import { getRandomString } from "./utils/random";
@@ -35,7 +36,7 @@ test.describe("@namespace.switcher Namespace Switcher E2E Tests", () => {
     });
     organizationId = organization.id;
 
-    namespaceAName = `Namespace A ${uniqueId}`;
+    namespaceAName = `Alpha NS ${uniqueId}`;
     const namespaceAResponse = await v1OrganizationsNamespacesCreate({
       client: ownerApiClient,
       path: { id: organizationId },
@@ -47,7 +48,7 @@ test.describe("@namespace.switcher Namespace Switcher E2E Tests", () => {
     });
     namespaceAId = namespaceAResponse.data.id ?? "";
 
-    namespaceBName = `Namespace B ${uniqueId}`;
+    namespaceBName = `Zulu NS ${uniqueId}`;
     const namespaceBResponse = await v1OrganizationsNamespacesCreate({
       client: ownerApiClient,
       path: { id: organizationId },
@@ -128,7 +129,9 @@ test.describe("@namespace.switcher Namespace Switcher E2E Tests", () => {
       })
       .click();
 
-    await page.getByPlaceholder("Search namespaces...").fill(namespaceBName);
+    const search = page.getByPlaceholder("Search namespaces...");
+    await expect(search).toBeVisible();
+    await fillLocator(search, "Zulu");
     await expect(
       page.getByRole("option", { name: namespaceBName })
     ).toBeVisible();

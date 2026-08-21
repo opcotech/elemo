@@ -51,7 +51,7 @@ function generateConfigFile() {
     local postgres_host="postgres"
     local localstack_host="localstack"
     local meilisearch_host="meilisearch"
-    local otel_collector_host="otel_collector"
+    local otel_collector_host="otelcollector"
     local smtp_host="smtp"
   else
     local suffix=".local"

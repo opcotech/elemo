@@ -102,6 +102,37 @@ describe("document list helpers", () => {
     ).toEqual(["a", "b", "c"]);
   });
 
+  it("breaks date-sort ties by title", () => {
+    const earlyZulu = document({
+      id: "z",
+      title: "Zulu",
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-05-01T00:00:00Z",
+    });
+    const earlyAlpha = document({
+      id: "y",
+      title: "Alpha",
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-05-01T00:00:00Z",
+    });
+
+    expect(
+      sortDocuments([earlyZulu, earlyAlpha], "created-asc").map(
+        (item) => item.id
+      )
+    ).toEqual(["y", "z"]);
+    expect(
+      sortDocuments([earlyZulu, earlyAlpha], "created-desc").map(
+        (item) => item.id
+      )
+    ).toEqual(["y", "z"]);
+    expect(
+      sortDocuments([earlyZulu, earlyAlpha], "updated-desc").map(
+        (item) => item.id
+      )
+    ).toEqual(["y", "z"]);
+  });
+
   it("filters then sorts visible documents", () => {
     expect(
       visibleDocuments([beta, alpha, gamma], "plan", "title-asc").map(

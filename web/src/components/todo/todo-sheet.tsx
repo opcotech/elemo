@@ -6,6 +6,10 @@ import { useMemo } from "react";
 
 import { TodoItem } from "./todo-item";
 
+import {
+  CursorPaginator,
+  cursorPaginatorProps,
+} from "@/components/shared/cursor-paginator";
 import { AppList } from "@/components/shared/entity-link";
 import { AddTodoForm } from "@/components/todo/add-todo-form";
 import { EditTodoForm } from "@/components/todo/edit-todo-form";
@@ -20,21 +24,16 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
-import { collectedListQuery, cursorPageQuery } from "@/lib/api/cursor-pages";
+import { useCursorPageNav } from "@/hooks/use-cursor-page-nav";
+import { cursorPageQuery } from "@/lib/api/cursor-pages";
 import { v1TodosGetOptions } from "@/lib/api/query-options";
-import { v1TodosGet } from "@/lib/api/sdk";
 import { uiActions, useUiSelector } from "@/lib/ui-store";
 
 export function TodoSheet() {
-  const listOptions = v1TodosGetOptions();
+  const pageNav = useCursorPageNav();
   const { data: todosPage, isLoading } = useQuery(
-    collectedListQuery(listOptions, async (pageToken, signal) => {
-      const { data } = await v1TodosGet({
-        query: cursorPageQuery(pageToken),
-        signal,
-        throwOnError: true,
-      });
-      return data;
+    v1TodosGetOptions({
+      query: cursorPageQuery(pageNav.pageToken),
     })
   );
   const todos = todosPage?.items ?? [];
@@ -126,6 +125,7 @@ export function TodoSheet() {
             </div>
           )}
         </ScrollArea>
+        <CursorPaginator {...cursorPaginatorProps(todosPage, pageNav)} />
       </SheetContent>
 
       <AddTodoForm

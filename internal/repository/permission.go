@@ -743,48 +743,78 @@ func applyAuthzVisible(actor model.ID, action model.Action, alias, actorParam st
 	return AuthzVisibleExistsClause(alias, actorParam, "$action")
 }
 
-// applyAuthzReachableNamespace is true when the actor can namespace.read the
-// bound namespace, or can read at least one descendant project, issue,
-// document, or folder.
-func applyAuthzReachableNamespace(actor model.ID, alias, actorParam string, params map[string]any) string {
-	if err := actor.Validate(); err != nil {
+func listScopeAuthz(alias string) string {
+	return "EXISTS { MATCH (" + alias + ")-[:" + EdgeKindInScopeOf.String() + "*0..4]->(scope) WHERE scope.id IN $scope_ids }"
+}
+
+func applyListScopeAuthz(alias string, scopeIDs []model.ID, params map[string]any) string {
+	if len(scopeIDs) == 0 {
 		return ""
 	}
-	if actorParam == "" {
-		actorParam = "$user_id"
+	params["scope_ids"] = issueListScopeIDs(scopeIDs)
+	return listScopeAuthz(alias)
+}
+
+func grantScopeIDsCollectCypher(actorIDParam, actionsParam string) string {
+	return `
+	MATCH (actor:` + model.ResourceTypeUser.String() + ` {id: ` + actorIDParam + `})
+	WHERE actor.status IS NULL OR actor.status = $active_status
+	MATCH (actor)-[:` + EdgeKindMemberOf.String() + `*0..1]->(principal)
+	WHERE (principal:User OR principal:Team OR principal:Organization)
+	AND (principal.status IS NULL OR principal.status = $active_status)
+	MATCH (principal)-[g:` + EdgeKindGranted.String() + `]->(grant_scope)
+	WHERE ANY(authz_action IN ` + actionsParam + ` WHERE authz_action IN coalesce(g.actions, [])) OR (
+		g.role_id IS NOT NULL AND g.role_id <> "" AND EXISTS {
+			MATCH (role:` + model.ResourceTypeRole.String() + ` {id: g.role_id})
+			WHERE ANY(authz_action IN ` + actionsParam + ` WHERE authz_action IN coalesce(role.actions, []))
+		}
+	)
+	WITH collect(DISTINCT grant_scope.id) AS scope_ids`
+}
+
+func namespaceReachableActions() []string {
+	return []string{
+		model.ActionNamespaceRead.String(),
+		model.ActionProjectRead.String(),
+		model.ActionIssueRead.String(),
+		model.ActionDocumentRead.String(),
 	}
-	params[strings.TrimPrefix(actorParam, "$")] = actor.String()
+}
+
+func applyNamespaceReachableGrantParams(actor model.ID, params map[string]any) error {
+	if err := actor.Validate(); err != nil {
+		return err
+	}
+	params["user_id"] = actor.String()
 	params["active_status"] = model.UserStatusActive.String()
-	params["namespace_read"] = model.ActionNamespaceRead.String()
-	params["project_read"] = model.ActionProjectRead.String()
-	params["issue_read"] = model.ActionIssueRead.String()
-	params["document_read"] = model.ActionDocumentRead.String()
+	params["reachable_actions"] = namespaceReachableActions()
+	return nil
+}
 
-	inScope := `[:` + EdgeKindInScopeOf.String() + `*1..]`
-	projectDesc := `
-	EXISTS {
-		MATCH desc_path = (authz_project:` + model.ResourceTypeProject.String() + `)-` + inScope + `->(` + alias + `)
-		WHERE ` + authzAcyclicPathPredicate("desc_path") + `
-		AND ` + AuthzVisibleExistsClause("authz_project", actorParam, "$project_read") + `
-	}`
-	issueDesc := `
-	EXISTS {
-		MATCH desc_path = (authz_issue:` + model.ResourceTypeIssue.String() + `)-` + inScope + `->(` + alias + `)
-		WHERE ` + authzAcyclicPathPredicate("desc_path") + `
-		AND ` + AuthzVisibleExistsClause("authz_issue", actorParam, "$issue_read") + `
-	}`
-	documentDesc := `
-	EXISTS {
-		MATCH desc_path = (authz_doc)-` + inScope + `->(` + alias + `)
-		WHERE (authz_doc:` + model.ResourceTypeDocument.String() + ` OR authz_doc:` + model.ResourceTypeFolder.String() + `)
-		AND ` + authzAcyclicPathPredicate("desc_path") + `
-		AND ` + AuthzVisibleExistsClause("authz_doc", actorParam, "$document_read") + `
-	}`
-
-	return "(" + AuthzVisibleExistsClause(alias, actorParam, "$namespace_read") +
-		" OR " + projectDesc +
-		" OR " + issueDesc +
-		" OR " + documentDesc + ")"
+// namespaceReachableFromGrantsCypher binds distinct Namespace nodes the actor
+// can reach from grant scopes. It starts at GRANTED edges and walks to
+// namespaces; it does not MATCH every Namespace then filter descendants.
+func namespaceReachableFromGrantsCypher() string {
+	return `
+	MATCH (actor:` + model.ResourceTypeUser.String() + ` {id: $user_id})
+	WHERE actor.status IS NULL OR actor.status = $active_status
+	MATCH (actor)-[:` + EdgeKindMemberOf.String() + `*0..1]->(principal)
+	WHERE (principal:User OR principal:Team OR principal:Organization)
+	AND (principal.status IS NULL OR principal.status = $active_status)
+	MATCH (principal)-[g:` + EdgeKindGranted.String() + `]->(scope)
+	WHERE ANY(authz_action IN $reachable_actions WHERE authz_action IN coalesce(g.actions, [])) OR (
+		g.role_id IS NOT NULL AND g.role_id <> "" AND EXISTS {
+			MATCH (role:` + model.ResourceTypeRole.String() + ` {id: g.role_id})
+			WHERE ANY(authz_action IN $reachable_actions WHERE authz_action IN coalesce(role.actions, []))
+		}
+	)
+	WITH DISTINCT scope
+	OPTIONAL MATCH (ns_down:` + model.ResourceTypeNamespace.String() + `)-[:` + EdgeKindInScopeOf.String() + `*0..4]->(scope)
+	OPTIONAL MATCH (scope)-[:` + EdgeKindInScopeOf.String() + `*1..4]->(ns_up:` + model.ResourceTypeNamespace.String() + `)
+	WITH collect(DISTINCT ns_down) + collect(DISTINCT ns_up) AS found
+	UNWIND found AS ns
+	WITH DISTINCT ns
+	WHERE ns IS NOT NULL`
 }
 
 func authzGenKey(principal model.ID) string {
@@ -901,7 +931,7 @@ func clearPermissionAllCrossCache(ctx context.Context, r *redisBaseRepository) e
 	if err := clearProjectsAllList(ctx, r); err != nil {
 		return err
 	}
-	if err := clearIssueAllForProject(ctx, r); err != nil {
+	if err := bumpIssueListAuthzEpoch(ctx, r); err != nil {
 		return err
 	}
 	if err := clearDocumentAllLibrary(ctx, r); err != nil {

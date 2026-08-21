@@ -111,15 +111,21 @@ export function sortDocuments(
     }
 
     if (sort === "updated-desc") {
-      return (
+      const updatedDelta =
         documentTime(documentUpdatedAt(right)) -
-        documentTime(documentUpdatedAt(left))
-      );
+        documentTime(documentUpdatedAt(left));
+      return updatedDelta !== 0
+        ? updatedDelta
+        : left.title.localeCompare(right.title);
     }
 
     const leftTime = documentTime(left.created_at);
     const rightTime = documentTime(right.created_at);
-    return sort === "created-asc" ? leftTime - rightTime : rightTime - leftTime;
+    const createdDelta =
+      sort === "created-asc" ? leftTime - rightTime : rightTime - leftTime;
+    return createdDelta !== 0
+      ? createdDelta
+      : left.title.localeCompare(right.title);
   });
   return items;
 }

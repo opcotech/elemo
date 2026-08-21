@@ -51,6 +51,22 @@ export async function loadProjectOperationalContext(
       throw notFound();
     }
 
+    const projectResultPromise = queryClient
+      .fetchQuery(v1ProjectGetOptions({ path: { id: projectId } }))
+      .then(
+        (project) => ({ project }) as const,
+        (error) => ({ error }) as const
+      );
+    const permissionResultPromise = requireResourcePermission(
+      queryClient,
+      ResourceType.Project,
+      projectId,
+      Action.ProjectRead
+    ).then(
+      () => ({ ok: true }) as const,
+      (error) => ({ error }) as const
+    );
+
     const projectsPage = await collectListedPage(async (pageToken) =>
       queryClient.fetchQuery(
         v1NamespacesProjectsGetOptions({
@@ -64,20 +80,20 @@ export async function loadProjectOperationalContext(
       throw notFound();
     }
 
-    const project = await queryClient.fetchQuery(
-      v1ProjectGetOptions({ path: { id: projectId } })
-    );
-    await requireResourcePermission(
-      queryClient,
-      ResourceType.Project,
-      projectId,
-      Action.ProjectRead
-    );
+    const projectResult = await projectResultPromise;
+    if ("error" in projectResult) {
+      throw projectResult.error;
+    }
+
+    const permissionResult = await permissionResultPromise;
+    if ("error" in permissionResult) {
+      throw permissionResult.error;
+    }
 
     return {
       namespace: accessibleNamespace,
       organization: accessibleNamespace.organization,
-      project,
+      project: projectResult.project,
     };
   }, "redirect");
 }

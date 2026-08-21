@@ -2,7 +2,7 @@ import { expect } from "@playwright/test";
 import type { Locator, Page } from "@playwright/test";
 
 import { BaseComponent } from "../components/base";
-import { clickUntilVisible } from "../helpers";
+import { clickUntilVisible, waitForAnimations } from "../helpers";
 import { EmptyStateMixin, SearchMixin, SectionContainerMixin } from "../mixins";
 
 /**
@@ -157,9 +157,17 @@ export class DocumentListSection extends SectionContainerMixin(
   async selectSort(
     label: "Updated" | "Created" | "Oldest" | "Title"
   ): Promise<void> {
-    const option = this.page.getByRole("menuitemradio", { name: label });
+    const option = this.getMenu().getByRole("menuitemradio", {
+      name: label,
+      exact: true,
+    });
+    await this.page.keyboard.press("Escape");
     await clickUntilVisible(this.getSortButton(), option);
-    await option.click();
+    await waitForAnimations(this.getMenu());
+    await option.evaluate((element: HTMLElement) => {
+      element.click();
+    });
+    await expect(this.getSortButton()).toContainText(label);
   }
 
   async selectCreator(label: string): Promise<void> {
@@ -175,5 +183,6 @@ export class DocumentListSection extends SectionContainerMixin(
       .getByRole("listbox")
       .getByRole("option", { name: label })
       .click();
+    await expect(this.getCreatorButton()).toContainText(label);
   }
 }

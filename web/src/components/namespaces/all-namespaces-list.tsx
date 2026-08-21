@@ -1,4 +1,4 @@
-import { useQueries } from "@tanstack/react-query";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Edit, Folder, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -6,6 +6,10 @@ import { useMemo, useState } from "react";
 import { NamespaceDeleteDialog } from "./namespace-delete-dialog";
 
 import { SettingsResourceTable } from "@/components/settings/settings-resource-table";
+import {
+  CursorPaginator,
+  cursorPaginatorProps,
+} from "@/components/shared/cursor-paginator";
 import { Button } from "@/components/ui/button";
 import { ConditionalLink } from "@/components/ui/conditional-link";
 import { CountBadge } from "@/components/ui/count-badge";
@@ -20,12 +24,17 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { TableSkeleton } from "@/components/ui/table-skeleton";
+import { useCursorPageNav } from "@/hooks/use-cursor-page-nav";
 import {
   ResourceType,
   usePermissionsByResourceId,
   withResourceType,
 } from "@/hooks/use-permissions";
-import { v1PermissionResourceGetOptions } from "@/lib/api/query-options";
+import { cursorPageQuery } from "@/lib/api/cursor-pages";
+import {
+  v1NamespacesGetOptions,
+  v1PermissionResourceGetOptions,
+} from "@/lib/api/query-options";
 import type { EffectiveActions, Namespace } from "@/lib/api/types";
 import { Action, can } from "@/lib/auth/permissions";
 
@@ -152,21 +161,32 @@ function AllNamespaceRow({
 
 interface AllNamespacesListProps {
   organizations: { id: string; name: string }[];
-  namespaces: NamespaceWithOrganization[];
-  isLoading: boolean;
-  error: unknown;
 }
 
-export function AllNamespacesList({
-  organizations,
-  namespaces,
-  isLoading,
-  error,
-}: AllNamespacesListProps) {
+export function AllNamespacesList({ organizations }: AllNamespacesListProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedNamespace, setSelectedNamespace] =
     useState<NamespaceWithOrganization | null>(null);
+  const pageNav = useCursorPageNav({ resetKey: searchTerm });
+  const {
+    data: namespacesPage,
+    isLoading,
+    error,
+  } = useQuery(
+    v1NamespacesGetOptions({
+      query: cursorPageQuery(pageNav.pageToken),
+    })
+  );
+  const namespaces = useMemo(
+    () =>
+      (namespacesPage?.items ?? []).map((namespace) => ({
+        ...namespace,
+        organizationId: namespace.organization.id,
+        organizationName: namespace.organization.name,
+      })),
+    [namespacesPage?.items]
+  );
 
   const permissionQueries = useQueries({
     queries:
@@ -283,6 +303,7 @@ export function AllNamespacesList({
             })}
           </TableBody>
         </Table>
+        <CursorPaginator {...cursorPaginatorProps(namespacesPage, pageNav)} />
       </SettingsResourceTable>
 
       {selectedNamespace && (

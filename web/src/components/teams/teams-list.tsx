@@ -1,3 +1,4 @@
+import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Edit, Plus, Trash2, Users } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -5,6 +6,10 @@ import { useMemo, useState } from "react";
 import { TeamDeleteDialog } from "./team-delete-dialog";
 
 import { SettingsResourceTable } from "@/components/settings/settings-resource-table";
+import {
+  CursorPaginator,
+  cursorPaginatorProps,
+} from "@/components/shared/cursor-paginator";
 import { Button } from "@/components/ui/button";
 import { CountBadge } from "@/components/ui/count-badge";
 import {
@@ -16,6 +21,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { TableSkeleton } from "@/components/ui/table-skeleton";
+import { useCursorPageNav } from "@/hooks/use-cursor-page-nav";
+import { cursorPageQuery } from "@/lib/api/cursor-pages";
+import { v1OrganizationTeamsGetOptions } from "@/lib/api/query-options";
 import type { EffectiveActions, Team } from "@/lib/api/types";
 import { Action, can } from "@/lib/auth/permissions";
 
@@ -33,23 +41,29 @@ const teamsListSkeletonColumns = [
 ] as const;
 
 interface TeamsListProps {
-  teams: Team[];
-  isLoading: boolean;
-  error: unknown;
   organizationId: string;
   organizationPermissions: EffectiveActions;
 }
 
 export function TeamsList({
-  teams,
-  isLoading,
-  error,
   organizationId,
   organizationPermissions,
 }: TeamsListProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
+  const pageNav = useCursorPageNav({ resetKey: searchTerm });
+  const {
+    data: teamsPage,
+    isLoading,
+    error,
+  } = useQuery(
+    v1OrganizationTeamsGetOptions({
+      path: { id: organizationId },
+      query: cursorPageQuery(pageNav.pageToken),
+    })
+  );
+  const teams = teamsPage?.items ?? [];
 
   const canManageTeams = can(organizationPermissions, Action.TeamManage);
 
@@ -172,6 +186,7 @@ export function TeamsList({
             ))}
           </TableBody>
         </Table>
+        <CursorPaginator {...cursorPaginatorProps(teamsPage, pageNav)} />
       </SettingsResourceTable>
 
       {selectedTeam && (

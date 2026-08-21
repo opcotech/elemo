@@ -914,9 +914,26 @@ func TestIssueService_GetByKey(t *testing.T) {
 	}
 }
 
+func TestListGrantCoversRoot(t *testing.T) {
+	t.Parallel()
+
+	root := model.MustNewID(model.ResourceTypeProject)
+	namespace := model.MustNewID(model.ResourceTypeNamespace)
+	org := model.MustNewID(model.ResourceTypeOrganization)
+	other := model.MustNewID(model.ResourceTypeProject)
+	ancestry := []model.ID{root, namespace, org}
+
+	assert.True(t, listGrantCoversRoot([]model.ID{org}, ancestry))
+	assert.True(t, listGrantCoversRoot([]model.ID{root}, ancestry))
+	assert.False(t, listGrantCoversRoot([]model.ID{other}, ancestry))
+	assert.False(t, listGrantCoversRoot(nil, ancestry))
+	assert.False(t, listGrantCoversRoot([]model.ID{org}, nil))
+}
+
 func TestIssueService_List(t *testing.T) {
 	projectID := model.MustNewID(model.ResourceTypeProject)
 	userID := model.MustNewID(model.ResourceTypeUser)
+	scopeIDs := []model.ID{projectID}
 	repoIssueA := testModel.NewRepositoryIssue(userID)
 	repoIssueB := testModel.NewRepositoryIssue(userID)
 	repoIssues := []*repository.PartialIssue{
@@ -979,12 +996,61 @@ func TestIssueService_List(t *testing.T) {
 						ProjectID:  projectID,
 						ActorID:    userID,
 						Action:     model.ActionIssueRead,
+						ScopeIDs:   nil,
+						SortField:  repository.IssueListSortFieldRank,
 						Page:       repository.CursorPage{Size: 10},
+						Order:      repository.SortDirectionAsc,
 						Projection: repository.IssueListForProjectProjection(),
 					}).Return(repository.Page[*repository.PartialIssue]{Items: repoIssues}, nil)
 
 					permSvc := NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+					permSvc.EXPECT().CtxUserListGrantScopes(ctx, model.ActionIssueRead).Return(scopeIDs, nil)
+					permSvc.EXPECT().ListScopeAncestry(ctx, projectID).Return([]model.ID{projectID}, nil)
+
+					return &baseService{
+						searchService:     NewMockSearchService(ctrl),
+						logger:            mock.NewMockLogger(ctrl),
+						tracer:            tracer,
+						issueRepo:         issueRepo,
+						permissionService: permSvc,
+					}
+				},
+			},
+			args: args{
+				ctx:       context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
+				projectID: projectID,
+				page:      CursorPage{Size: 10},
+			},
+			want: want,
+		},
+		{
+			name: "list issues with grant that does not cover the project",
+			fields: fields{
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, projectID model.ID) *baseService {
+					span := mock.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
+
+					tracer := mock.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.issueService/List", gomock.Len(0)).Return(ctx, span)
+
+					otherProjectID := model.MustNewID(model.ResourceTypeProject)
+					issueRepo := repository.NewMockIssueRepository(ctrl)
+					issueRepo.EXPECT().ListForProject(ctx, repository.IssueListQuery{
+						ProjectID:  projectID,
+						ActorID:    userID,
+						Action:     model.ActionIssueRead,
+						ScopeIDs:   []model.ID{otherProjectID},
+						SortField:  repository.IssueListSortFieldRank,
+						Page:       repository.CursorPage{Size: 10},
+						Order:      repository.SortDirectionAsc,
+						Projection: repository.IssueListForProjectProjection(),
+					}).Return(repository.Page[*repository.PartialIssue]{Items: repoIssues}, nil)
+
+					permSvc := NewMockPermissionService(ctrl)
+					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+					permSvc.EXPECT().CtxUserListGrantScopes(ctx, model.ActionIssueRead).Return([]model.ID{otherProjectID}, nil)
+					permSvc.EXPECT().ListScopeAncestry(ctx, projectID).Return([]model.ID{projectID}, nil)
 
 					return &baseService{
 						searchService:     NewMockSearchService(ctrl),
@@ -1089,12 +1155,17 @@ func TestIssueService_List(t *testing.T) {
 						ProjectID:  projectID,
 						ActorID:    userID,
 						Action:     model.ActionIssueRead,
+						ScopeIDs:   nil,
+						SortField:  repository.IssueListSortFieldRank,
 						Page:       repository.CursorPage{Size: 10},
+						Order:      repository.SortDirectionAsc,
 						Projection: repository.IssueListForProjectProjection(),
 					}).Return(repository.Page[*repository.PartialIssue]{}, repository.ErrIssueRead)
 
 					permSvc := NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+					permSvc.EXPECT().CtxUserListGrantScopes(ctx, model.ActionIssueRead).Return(scopeIDs, nil)
+					permSvc.EXPECT().ListScopeAncestry(ctx, projectID).Return([]model.ID{projectID}, nil)
 
 					return &baseService{
 						searchService:     NewMockSearchService(ctrl),
@@ -1139,6 +1210,7 @@ func TestIssueService_List(t *testing.T) {
 func TestIssueService_ListByNamespace(t *testing.T) {
 	namespaceID := model.MustNewID(model.ResourceTypeNamespace)
 	userID := model.MustNewID(model.ResourceTypeUser)
+	scopeIDs := []model.ID{namespaceID}
 	repoIssueA := testModel.NewRepositoryIssue(userID)
 	repoIssueB := testModel.NewRepositoryIssue(userID)
 	repoIssues := []*repository.PartialIssue{
@@ -1201,12 +1273,17 @@ func TestIssueService_ListByNamespace(t *testing.T) {
 						NamespaceID: namespaceID,
 						ActorID:     userID,
 						Action:      model.ActionIssueRead,
+						ScopeIDs:    nil,
+						SortField:   repository.IssueListSortFieldRank,
 						Page:        repository.CursorPage{Size: 10},
+						Order:       repository.SortDirectionAsc,
 						Projection:  repository.IssueListForNamespaceProjection(),
 					}).Return(repository.Page[*repository.PartialIssue]{Items: repoIssues}, nil)
 
 					permSvc := NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+					permSvc.EXPECT().CtxUserListGrantScopes(ctx, model.ActionIssueRead).Return(scopeIDs, nil)
+					permSvc.EXPECT().ListScopeAncestry(ctx, namespaceID).Return([]model.ID{namespaceID}, nil)
 
 					return &baseService{
 						searchService:     NewMockSearchService(ctrl),
@@ -1299,6 +1376,7 @@ func TestIssueService_ListByNamespace(t *testing.T) {
 func TestIssueService_ListByUser(t *testing.T) {
 	userID := model.MustNewID(model.ResourceTypeUser)
 	otherUserID := model.MustNewID(model.ResourceTypeUser)
+	scopeIDs := []model.ID{model.MustNewID(model.ResourceTypeProject)}
 	repoIssueA := testModel.NewRepositoryIssue(userID)
 	repoIssueB := testModel.NewRepositoryIssue(userID)
 	repoIssues := []*repository.PartialIssue{
@@ -1361,15 +1439,22 @@ func TestIssueService_ListByUser(t *testing.T) {
 						UserID:     userID,
 						ActorID:    userID,
 						Action:     model.ActionIssueRead,
+						ScopeIDs:   scopeIDs,
+						SortField:  repository.IssueListSortFieldRank,
 						Page:       repository.CursorPage{Size: 10},
+						Order:      repository.SortDirectionAsc,
 						Projection: repository.IssueListForUserProjection(),
 					}).Return(repository.Page[*repository.PartialIssue]{Items: repoIssues}, nil)
 
+					permSvc := NewMockPermissionService(ctrl)
+					permSvc.EXPECT().CtxUserListGrantScopes(ctx, model.ActionIssueRead).Return(scopeIDs, nil)
+
 					return &baseService{
-						searchService: NewMockSearchService(ctrl),
-						logger:        mock.NewMockLogger(ctrl),
-						tracer:        tracer,
-						issueRepo:     issueRepo,
+						searchService:     NewMockSearchService(ctrl),
+						logger:            mock.NewMockLogger(ctrl),
+						tracer:            tracer,
+						issueRepo:         issueRepo,
+						permissionService: permSvc,
 					}
 				},
 			},

@@ -203,7 +203,7 @@ func (s *CachedTeamRepositoryIntegrationTestSuite) TestCreate() {
 	team, err := s.teamRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 	s.Assert().NotNil(team.CreatedAt)
-	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 0)
+	s.Assert().Len(cacheKeysWithoutIssueListGeneration(s.Keys(&s.ContainerIntegrationTestSuite, "*")), 0)
 }
 
 func (s *CachedTeamRepositoryIntegrationTestSuite) TestGet() {
@@ -214,7 +214,7 @@ func (s *CachedTeamRepositoryIntegrationTestSuite) TestGet() {
 	usingCache, err := s.teamRepo.Get(context.Background(), created.ID, s.testOrg.ID, repository.TeamDetailProjection())
 	s.Require().NoError(err)
 	s.Assert().Equal(original, usingCache)
-	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
+	s.Assert().Len(cacheKeysWithoutIssueListGeneration(s.Keys(&s.ContainerIntegrationTestSuite, "*")), 1)
 	cached, err := s.teamRepo.Get(context.Background(), created.ID, s.testOrg.ID, repository.TeamDetailProjection())
 	s.Require().NoError(err)
 	s.Assert().Equal(original.ID, cached.ID)
@@ -230,7 +230,7 @@ func (s *CachedTeamRepositoryIntegrationTestSuite) TestListBelongsTo() {
 	usingCache, err := s.teamRepo.ListBelongsTo(context.Background(), s.testOrg.ID, repository.CursorPage{Size: 10}, repository.TeamListProjection())
 	s.Require().NoError(err)
 	s.Assert().Equal(original, usingCache)
-	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
+	s.Assert().Len(cacheKeysWithoutIssueListGeneration(s.Keys(&s.ContainerIntegrationTestSuite, "*")), 1)
 }
 
 func (s *CachedTeamRepositoryIntegrationTestSuite) TestAddMember() {
@@ -263,7 +263,7 @@ func (s *CachedTeamRepositoryIntegrationTestSuite) TestUpdate() {
 	s.Require().NoError(err)
 	_, err = s.teamRepo.Get(context.Background(), created.ID, s.testOrg.ID, repository.TeamDetailProjection())
 	s.Require().NoError(err)
-	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
+	s.Assert().Len(cacheKeysWithoutIssueListGeneration(s.Keys(&s.ContainerIntegrationTestSuite, "*")), 1)
 	team, err := s.teamRepo.Update(context.Background(), created.ID, s.testOrg.ID, repository.UpdateTeamOpts{
 		Name: optional.Some("new name"),
 	})

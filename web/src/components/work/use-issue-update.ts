@@ -149,6 +149,8 @@ function resolveParentIssue(
     assignees: [],
     reviewers: [],
     labels: [],
+    created_at: new Date(0).toISOString(),
+    updated_at: new Date(0).toISOString(),
   };
 }
 

@@ -101,18 +101,18 @@ func (mr *MockDocumentRepositoryMockRecorder) ListByCreator(ctx, createdBy, acto
 }
 
 // ListLibrary mocks base method.
-func (m *MockDocumentRepository) ListLibrary(ctx context.Context, libraryID, actor model.ID, filter LibraryListFilter, page CursorPage, proj DocumentProjection) (Page[*Document], error) {
+func (m *MockDocumentRepository) ListLibrary(ctx context.Context, libraryID, actor model.ID, scopeIDs []model.ID, filter LibraryListFilter, page CursorPage, proj DocumentProjection) (Page[*Document], error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListLibrary", ctx, libraryID, actor, filter, page, proj)
+	ret := m.ctrl.Call(m, "ListLibrary", ctx, libraryID, actor, scopeIDs, filter, page, proj)
 	ret0, _ := ret[0].(Page[*Document])
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ListLibrary indicates an expected call of ListLibrary.
-func (mr *MockDocumentRepositoryMockRecorder) ListLibrary(ctx, libraryID, actor, filter, page, proj any) *gomock.Call {
+func (mr *MockDocumentRepositoryMockRecorder) ListLibrary(ctx, libraryID, actor, scopeIDs, filter, page, proj any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListLibrary", reflect.TypeOf((*MockDocumentRepository)(nil).ListLibrary), ctx, libraryID, actor, filter, page, proj)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListLibrary", reflect.TypeOf((*MockDocumentRepository)(nil).ListLibrary), ctx, libraryID, actor, scopeIDs, filter, page, proj)
 }
 
 // ListRelated mocks base method.
