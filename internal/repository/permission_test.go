@@ -158,7 +158,7 @@ func TestCachedPermissionRepository_Create(t *testing.T) {
 		inner := NewMockPermissionRepository(ctrl)
 		inner.EXPECT().Create(ctx, opts).Return(grant, nil)
 		r := &RedisCachedPermissionRepository{
-			cacheRepo:      redisCacheExpectingBumpThenPatterns(ctrl, ctx, opts.Principal, permissionCrossCachePatterns()),
+			cacheRepo:      redisCacheExpectingBumpThenPatternsAndIssueAuthzEpoch(ctrl, ctx, opts.Principal, permissionCrossCachePatterns()),
 			permissionRepo: inner,
 		}
 		got, err := r.Create(ctx, opts)
@@ -200,7 +200,7 @@ func TestCachedPermissionRepository_Delete(t *testing.T) {
 		inner.EXPECT().Get(ctx, id).Return(grant, nil)
 		inner.EXPECT().Delete(ctx, id).Return(nil)
 		r := &RedisCachedPermissionRepository{
-			cacheRepo:      redisCacheExpectingBumpThenPatterns(ctrl, ctx, grant.Principal, permissionCrossCachePatterns()),
+			cacheRepo:      redisCacheExpectingBumpThenPatternsAndIssueAuthzEpoch(ctrl, ctx, grant.Principal, permissionCrossCachePatterns()),
 			permissionRepo: inner,
 		}
 		require.NoError(t, r.Delete(ctx, id))
@@ -228,7 +228,7 @@ func TestCachedPermissionRepository_Delete(t *testing.T) {
 		inner.EXPECT().Get(ctx, id).Return(nil, ErrNotFound)
 		inner.EXPECT().Delete(ctx, id).Return(nil)
 		r := &RedisCachedPermissionRepository{
-			cacheRepo:      redisCacheExpectingPatterns(ctrl, ctx, permissionCrossCachePatterns(), -1, nil),
+			cacheRepo:      redisCacheExpectingPatternsThenIssueAuthzEpochBump(ctrl, ctx, permissionCrossCachePatterns(), -1, nil, 1),
 			permissionRepo: inner,
 		}
 		require.NoError(t, r.Delete(ctx, id))
@@ -249,7 +249,7 @@ func TestCachedPermissionRepository_LinkInScopeOf(t *testing.T) {
 		inner := NewMockPermissionRepository(ctrl)
 		inner.EXPECT().LinkInScopeOf(ctx, child, parent).Return(nil)
 		r := &RedisCachedPermissionRepository{
-			cacheRepo:      redisCacheExpectingPatterns(ctrl, ctx, permissionCrossCachePatterns(), -1, nil),
+			cacheRepo:      redisCacheExpectingPatternsThenIssueAuthzEpochBump(ctrl, ctx, permissionCrossCachePatterns(), -1, nil, 1),
 			permissionRepo: inner,
 		}
 		require.NoError(t, r.LinkInScopeOf(ctx, child, parent))

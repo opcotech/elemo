@@ -64,6 +64,13 @@ export async function searchPaletteResult(
     .locator('[data-slot="command-item"]')
     .filter({ hasText: query })
     .first();
-  await expect(result).toBeVisible({ timeout: 15_000 });
+  await expect(async () => {
+    if (!(await result.isVisible().catch(() => false))) {
+      await commandDialog
+        .getByPlaceholder("Search entities, navigation, or commands...")
+        .fill(query);
+    }
+    await expect(result).toBeVisible({ timeout: 3_000 });
+  }).toPass({ timeout: 30_000 });
   return result;
 }

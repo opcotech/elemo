@@ -12,6 +12,10 @@ import { DocumentSummaryList } from "@/components/documents/document-summary-lis
 import { ContentWidth } from "@/components/layout/content-width";
 import { openQuickCreate } from "@/components/quick-create/open";
 import { MockDataAlert } from "@/components/shared/app-feedback";
+import {
+  CursorPaginator,
+  cursorPaginatorProps,
+} from "@/components/shared/cursor-paginator";
 import { EntityHeader, PageActions } from "@/components/shared/entity-header";
 import { AppList, EntityLink } from "@/components/shared/entity-link";
 import { Button } from "@/components/ui/button";
@@ -23,17 +27,17 @@ import { ListSkeleton } from "@/components/ui/list-skeleton";
 import { Section } from "@/components/ui/section";
 import { StatusIndicator } from "@/components/ui/status-indicator";
 import { CompactWorkList } from "@/components/work/work-list";
+import { useCursorPageNav } from "@/hooks/use-cursor-page-nav";
 import {
   ResourceType,
   usePermissions,
   withResourceType,
 } from "@/hooks/use-permissions";
-import { collectedListQuery, cursorPageQuery } from "@/lib/api/cursor-pages";
+import { cursorPageQuery } from "@/lib/api/cursor-pages";
 import {
   v1NamespacesDocumentsGetOptions,
   v1NamespacesProjectsGetOptions,
 } from "@/lib/api/query-options";
-import { v1NamespacesProjectsGet } from "@/lib/api/sdk";
 import type { Namespace, PartialDocument, Project } from "@/lib/api/types";
 import { Action, can } from "@/lib/auth/permissions";
 import type { DocumentLibrarySearch } from "@/lib/documents/library";
@@ -288,18 +292,11 @@ export function NamespaceProjectsPage({
   const { data: permissions } = usePermissions(
     withResourceType(ResourceType.Namespace, namespace.id)
   );
-  const listOptions = v1NamespacesProjectsGetOptions({
-    path: { id: namespace.id },
-  });
+  const pageNav = useCursorPageNav({ resetKey: query });
   const { data: projectsPage, isLoading } = useQuery(
-    collectedListQuery<Project>(listOptions, async (pageToken, signal) => {
-      const { data } = await v1NamespacesProjectsGet({
-        path: { id: namespace.id },
-        query: cursorPageQuery(pageToken),
-        signal,
-        throwOnError: true,
-      });
-      return data;
+    v1NamespacesProjectsGetOptions({
+      path: { id: namespace.id },
+      query: cursorPageQuery(pageNav.pageToken),
     })
   );
   const mayCreateProject = can(permissions, Action.ProjectCreate);
@@ -355,55 +352,58 @@ export function NamespaceProjectsPage({
       {isLoading ? (
         <ListSkeleton />
       ) : projects.length > 0 ? (
-        <AppList>
-          {projects.map((project, index) => (
-            <InternalLink
-              key={project.id}
-              to={internalPath(
-                `/namespaces/${namespace.id}/projects/${project.id}`
-              )}
-              className="hover:bg-muted/40 focus-visible:ring-ring grid gap-3 px-4 py-4 outline-none focus-visible:ring-2 focus-visible:ring-inset sm:grid-cols-[minmax(0,1fr)_9rem_10rem]"
-            >
-              <div className="flex min-w-0 gap-3">
-                {project.logo ? (
-                  <img
-                    src={project.logo}
-                    alt=""
-                    className="bg-muted size-10 shrink-0 rounded-lg object-cover"
-                  />
-                ) : (
-                  <span className="bg-muted text-muted-foreground flex size-10 shrink-0 items-center justify-center rounded-lg">
-                    <FolderKanbanIcon className="size-5" />
-                  </span>
+        <>
+          <AppList>
+            {projects.map((project, index) => (
+              <InternalLink
+                key={project.id}
+                to={internalPath(
+                  `/namespaces/${namespace.id}/projects/${project.id}`
                 )}
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <h2 className="truncate font-medium">{project.name}</h2>
-                    <span className="text-muted-foreground font-mono text-xs">
-                      {project.key}
+                className="hover:bg-muted/40 focus-visible:ring-ring grid gap-3 px-4 py-4 outline-none focus-visible:ring-2 focus-visible:ring-inset sm:grid-cols-[minmax(0,1fr)_9rem_10rem]"
+              >
+                <div className="flex min-w-0 gap-3">
+                  {project.logo ? (
+                    <img
+                      src={project.logo}
+                      alt=""
+                      className="bg-muted size-10 shrink-0 rounded-lg object-cover"
+                    />
+                  ) : (
+                    <span className="bg-muted text-muted-foreground flex size-10 shrink-0 items-center justify-center rounded-lg">
+                      <FolderKanbanIcon className="size-5" />
                     </span>
+                  )}
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h2 className="truncate font-medium">{project.name}</h2>
+                      <span className="text-muted-foreground font-mono text-xs">
+                        {project.key}
+                      </span>
+                    </div>
+                    <p className="text-muted-foreground mt-1 line-clamp-2 text-sm">
+                      {project.description ||
+                        "No project outcome has been added."}
+                    </p>
                   </div>
-                  <p className="text-muted-foreground mt-1 line-clamp-2 text-sm">
-                    {project.description ||
-                      "No project outcome has been added."}
-                  </p>
                 </div>
-              </div>
-              <div className="text-sm">
-                <span className="text-muted-foreground block text-xs">
-                  State
-                </span>
-                <StatusIndicator status={project.status} />
-              </div>
-              <div className="text-sm">
-                <span className="text-muted-foreground block text-xs">
-                  Position
-                </span>
-                {index + 1} of {projectsPage?.items.length ?? projects.length}
-              </div>
-            </InternalLink>
-          ))}
-        </AppList>
+                <div className="text-sm">
+                  <span className="text-muted-foreground block text-xs">
+                    State
+                  </span>
+                  <StatusIndicator status={project.status} />
+                </div>
+                <div className="text-sm">
+                  <span className="text-muted-foreground block text-xs">
+                    Position
+                  </span>
+                  {index + 1} of {projectsPage?.items.length ?? projects.length}
+                </div>
+              </InternalLink>
+            ))}
+          </AppList>
+          <CursorPaginator {...cursorPaginatorProps(projectsPage, pageNav)} />
+        </>
       ) : (
         <EmptyState
           icon={<FolderKanbanIcon />}

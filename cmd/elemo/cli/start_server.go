@@ -2,6 +2,7 @@ package cli
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"sync"
 	"time"
@@ -11,7 +12,6 @@ import (
 	authStore "github.com/gabor-boros/go-oauth2-pg"
 	authManager "github.com/go-oauth2/oauth2/v4/manage"
 	authServer "github.com/go-oauth2/oauth2/v4/server"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/spf13/cobra"
 
 	"github.com/opcotech/elemo/internal/model"
@@ -709,9 +709,14 @@ func initAuthProvider(pool repository.PGPool) (*authServer.Server, error) {
 		logger: logger.Named("auth_store"),
 	}
 
+	pgxPool, ok := repository.AsPgxPool(pool)
+	if !ok {
+		return nil, errors.New("auth store requires a pgx connection pool")
+	}
+
 	clientStore, err := authStore.NewClientStore(
 		authStore.WithClientStoreTable(authStore.DefaultClientStoreTable),
-		authStore.WithClientStoreConnPool(pool.(*pgxpool.Pool)),
+		authStore.WithClientStoreConnPool(pgxPool),
 		authStore.WithClientStoreLogger(storeLogger),
 	)
 	if err != nil {
@@ -724,7 +729,7 @@ func initAuthProvider(pool repository.PGPool) (*authServer.Server, error) {
 
 	tokenStore, err := authStore.NewTokenStore(
 		authStore.WithTokenStoreTable(authStore.DefaultTokenStoreTable),
-		authStore.WithTokenStoreConnPool(pool.(*pgxpool.Pool)),
+		authStore.WithTokenStoreConnPool(pgxPool),
 		authStore.WithTokenStoreLogger(storeLogger),
 	)
 	if err != nil {

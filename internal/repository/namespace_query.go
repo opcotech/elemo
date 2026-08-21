@@ -68,14 +68,17 @@ func (q NamespaceListQuery) Compile() (QueryPlan, error) {
 	params := map[string]any{
 		"org_id": q.OrgID.String(),
 	}
+	if err := applyNamespaceReachableGrantParams(q.ActorID, params); err != nil {
+		return QueryPlan{}, err
+	}
 	bounds, err := compileCursorBounds("ns", q.Page, q.Order, params)
 	if err != nil {
 		return QueryPlan{}, err
 	}
 
-	authz := applyAuthzReachableNamespace(q.ActorID, "ns", "$user_id", params)
-	match := `
-	MATCH (org:` + q.OrgID.Label() + ` {id: $org_id})-[:` + EdgeKindHasNamespace.String() + `]->(ns:` + model.ResourceTypeNamespace.String() + `)` + whereClause(" WHERE ", authz, bounds.Where) + `
+	match := namespaceReachableFromGrantsCypher() + `
+	MATCH (org:` + q.OrgID.Label() + ` {id: $org_id})-[:` + EdgeKindHasNamespace.String() + `]->(ns)` +
+		cursorWherePrefix(bounds.Where, " WHERE ") + `
 	WITH ns
 	ORDER BY ns.id ` + bounds.Order.Cypher() + `
 	LIMIT $limit`
@@ -94,14 +97,16 @@ func (q NamespaceListAccessibleQuery) Compile() (QueryPlan, error) {
 		return QueryPlan{}, err
 	}
 	params := map[string]any{}
+	if err := applyNamespaceReachableGrantParams(q.ActorID, params); err != nil {
+		return QueryPlan{}, err
+	}
 	bounds, err := compileCursorBounds("ns", q.Page, q.Order, params)
 	if err != nil {
 		return QueryPlan{}, err
 	}
 
-	authz := applyAuthzReachableNamespace(q.ActorID, "ns", "$user_id", params)
-	match := `
-	MATCH (ns:` + model.ResourceTypeNamespace.String() + `)` + whereClause(" WHERE ", authz, bounds.Where) + `
+	match := namespaceReachableFromGrantsCypher() +
+		cursorWherePrefix(bounds.Where, " AND ") + `
 	WITH ns
 	ORDER BY ns.id ` + bounds.Order.Cypher() + `
 	LIMIT $limit

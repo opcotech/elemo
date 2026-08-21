@@ -92,7 +92,7 @@ export function v1ProjectsIssuesGetOptions(
 ) {
   return {
     ...generatedProjectsIssuesGetOptions(...args),
-    ...cacheProfiles.volatile,
+    ...cacheProfiles.entity,
   };
 }
 
@@ -101,7 +101,7 @@ export function v1NamespacesIssuesGetOptions(
 ) {
   return {
     ...generatedNamespacesIssuesGetOptions(...args),
-    ...cacheProfiles.volatile,
+    ...cacheProfiles.entity,
   };
 }
 
@@ -110,7 +110,7 @@ export function v1UsersIssuesGetOptions(
 ) {
   return {
     ...generatedUsersIssuesGetOptions(...args),
-    ...cacheProfiles.volatile,
+    ...cacheProfiles.entity,
   };
 }
 

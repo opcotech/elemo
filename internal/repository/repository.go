@@ -22,6 +22,7 @@ import (
 
 	"github.com/opcotech/elemo/internal/config"
 	"github.com/opcotech/elemo/internal/pkg/log"
+	"github.com/opcotech/elemo/internal/pkg/metrics"
 	"github.com/opcotech/elemo/internal/pkg/tracing"
 	"github.com/opcotech/elemo/internal/pkg/validate"
 )
@@ -272,8 +273,15 @@ type Neo4jPropertyGetter interface {
 	GetProperties() map[string]any
 }
 
+func observeUncompiledNeo4j(started time.Time, err error) {
+	metrics.ObserveNeo4jQuery(metrics.Neo4jUncompiledQuery, time.Since(started), 0, err)
+}
+
 // Neo4jExecuteAndConsumeResult executes a query and consumes its result.
-func Neo4jExecuteAndConsumeResult(ctx context.Context, tx neo4j.ManagedTransaction, query string, params map[string]any) error {
+func Neo4jExecuteAndConsumeResult(ctx context.Context, tx neo4j.ManagedTransaction, query string, params map[string]any) (err error) {
+	started := time.Now()
+	defer func() { observeUncompiledNeo4j(started, err) }()
+
 	result, err := tx.Run(ctx, query, params)
 	if err != nil {
 		return err
@@ -310,13 +318,16 @@ func Neo4jExecuteReadAndReadSingle[T any](ctx context.Context, db *Neo4jDatabase
 		}
 	}(ctx, session)
 
-	return neo4j.ExecuteRead(ctx, session, func(tx neo4j.ManagedTransaction) (*T, error) {
+	return neo4j.ExecuteRead(ctx, session, func(tx neo4j.ManagedTransaction) (res *T, err error) {
+		started := time.Now()
+		defer func() { observeUncompiledNeo4j(started, err) }()
+
 		result, err := tx.Run(ctx, query, params)
 		if err != nil {
 			return nil, err
 		}
 
-		res, err := neo4j.SingleT(ctx, result, reader)
+		res, err = neo4j.SingleT(ctx, result, reader)
 		if err != nil {
 			if errors.As(err, &ErrNoMoreRecords) {
 				err = ErrNotFound
@@ -338,13 +349,16 @@ func Neo4jExecuteWriteAndReadSingle[T any](ctx context.Context, db *Neo4jDatabas
 		}
 	}(ctx, session)
 
-	return neo4j.ExecuteWrite(ctx, session, func(tx neo4j.ManagedTransaction) (*T, error) {
+	return neo4j.ExecuteWrite(ctx, session, func(tx neo4j.ManagedTransaction) (res *T, err error) {
+		started := time.Now()
+		defer func() { observeUncompiledNeo4j(started, err) }()
+
 		result, err := tx.Run(ctx, query, params)
 		if err != nil {
 			return nil, err
 		}
 
-		res, err := neo4j.SingleT(ctx, result, reader)
+		res, err = neo4j.SingleT(ctx, result, reader)
 		if err != nil {
 			if errors.As(err, &ErrNoMoreRecords) {
 				err = ErrNotFound
@@ -366,13 +380,16 @@ func Neo4jExecuteReadAndReadAll[T any](ctx context.Context, db *Neo4jDatabase, q
 		}
 	}(ctx, session)
 
-	return neo4j.ExecuteRead(ctx, session, func(tx neo4j.ManagedTransaction) ([]T, error) {
+	return neo4j.ExecuteRead(ctx, session, func(tx neo4j.ManagedTransaction) (res []T, err error) {
+		started := time.Now()
+		defer func() { observeUncompiledNeo4j(started, err) }()
+
 		result, err := tx.Run(ctx, query, params)
 		if err != nil {
 			return nil, err
 		}
 
-		res := make([]T, 0)
+		res = make([]T, 0)
 		for result.Next(ctx) {
 			r, err := reader(result.Record())
 			if err != nil {
@@ -403,13 +420,16 @@ func Neo4jExecuteWriteAndReadAll[T any](ctx context.Context, db *Neo4jDatabase, 
 		}
 	}(ctx, session)
 
-	return neo4j.ExecuteWrite(ctx, session, func(tx neo4j.ManagedTransaction) ([]T, error) {
+	return neo4j.ExecuteWrite(ctx, session, func(tx neo4j.ManagedTransaction) (res []T, err error) {
+		started := time.Now()
+		defer func() { observeUncompiledNeo4j(started, err) }()
+
 		result, err := tx.Run(ctx, query, params)
 		if err != nil {
 			return nil, err
 		}
 
-		res := make([]T, 0)
+		res = make([]T, 0)
 		for result.Next(ctx) {
 			r, err := reader(result.Record())
 			if err != nil {
@@ -479,7 +499,9 @@ func NewPool(ctx context.Context, conf *config.RelationalDatabaseConfig) (PGPool
 		return nil, errors.Join(ErrInvalidPool, err)
 	}
 
-	return pool, nil
+	instrumented := newInstrumentedPGPool(pool)
+	registerPGPoolStats(instrumented)
+	return instrumented, nil
 }
 
 // PGDatabaseOption configures a Postgres database.
@@ -811,6 +833,24 @@ func (r *redisBaseRepository) Set(ctx context.Context, key string, val any) erro
 		Ctx:   ctx,
 		Key:   key,
 		Value: val,
+	}
+
+	if err := r.cache.Set(item); err != nil && !errors.Is(err, cache.ErrCacheMiss) {
+		return errors.Join(ErrCacheWrite, err)
+	}
+
+	return nil
+}
+
+func (r *redisBaseRepository) SetWithTTL(ctx context.Context, key string, val any, ttl time.Duration) error {
+	ctx, span := r.tracer.Start(ctx, "repository.redisBaseRepository/Set")
+	defer span.End()
+
+	item := &cache.Item{
+		Ctx:   ctx,
+		Key:   key,
+		Value: val,
+		TTL:   ttl,
 	}
 
 	if err := r.cache.Set(item); err != nil && !errors.Is(err, cache.ErrCacheMiss) {

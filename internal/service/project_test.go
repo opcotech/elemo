@@ -890,12 +890,15 @@ func TestProjectService_List(t *testing.T) {
 						ctx,
 						namespaceID,
 						userID,
+						nil,
 						repository.CursorPage{Size: 10},
 						repository.ProjectListProjection(),
 					).Return(repository.Page[*repository.Project]{Items: repoProjects}, nil)
 
 					permSvc := NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+					permSvc.EXPECT().CtxUserListGrantScopes(ctx, model.ActionProjectRead).Return([]model.ID{namespaceID}, nil)
+					permSvc.EXPECT().ListScopeAncestry(ctx, namespaceID).Return([]model.ID{namespaceID}, nil)
 
 					return &baseService{
 						searchService:     NewMockSearchService(ctrl),
@@ -1000,12 +1003,15 @@ func TestProjectService_List(t *testing.T) {
 						ctx,
 						namespaceID,
 						userID,
+						nil,
 						repository.CursorPage{Size: 10},
 						repository.ProjectListProjection(),
 					).Return(repository.Page[*repository.Project]{}, repository.ErrProjectRead)
 
 					permSvc := NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+					permSvc.EXPECT().CtxUserListGrantScopes(ctx, model.ActionProjectRead).Return([]model.ID{namespaceID}, nil)
+					permSvc.EXPECT().ListScopeAncestry(ctx, namespaceID).Return([]model.ID{namespaceID}, nil)
 
 					return &baseService{
 						searchService:     NewMockSearchService(ctrl),

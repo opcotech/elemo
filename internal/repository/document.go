@@ -89,7 +89,7 @@ type DocumentRepository interface {
 	Create(ctx context.Context, opts CreateDocumentOpts) (*Document, error)
 	Get(ctx context.Context, id model.ID, proj DocumentProjection) (*Document, error)
 	ListByCreator(ctx context.Context, createdBy, actor model.ID, page CursorPage, proj DocumentProjection) (Page[*Document], error)
-	ListLibrary(ctx context.Context, libraryID, actor model.ID, filter LibraryListFilter, page CursorPage, proj DocumentProjection) (Page[*Document], error)
+	ListLibrary(ctx context.Context, libraryID, actor model.ID, scopeIDs []model.ID, filter LibraryListFilter, page CursorPage, proj DocumentProjection) (Page[*Document], error)
 	ListRelated(ctx context.Context, relatedTo, actor model.ID, page CursorPage, proj DocumentProjection) (Page[*Document], error)
 	Update(ctx context.Context, id model.ID, opts UpdateDocumentOpts) (*Document, error)
 	MoveLibrary(ctx context.Context, id, libraryID model.ID) (*Document, error)
@@ -532,7 +532,6 @@ func (r *Neo4jDocumentRepository) ListByCreator(ctx context.Context, createdBy, 
 	plan, err := CompileQuery(DocumentListByCreatorQuery{
 		CreatedBy:  createdBy,
 		ActorID:    actor,
-		Action:     model.ActionDocumentRead,
 		Page:       normalized,
 		Order:      SortDirectionDesc,
 		Projection: proj,
@@ -559,7 +558,7 @@ func (r *Neo4jDocumentRepository) ListByCreator(ctx context.Context, createdBy, 
 	})
 }
 
-func (r *Neo4jDocumentRepository) ListLibrary(ctx context.Context, libraryID, actor model.ID, filter LibraryListFilter, page CursorPage, proj DocumentProjection) (Page[*Document], error) {
+func (r *Neo4jDocumentRepository) ListLibrary(ctx context.Context, libraryID, actor model.ID, scopeIDs []model.ID, filter LibraryListFilter, page CursorPage, proj DocumentProjection) (Page[*Document], error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.DocumentRepository/ListLibrary")
 	defer span.End()
 
@@ -570,7 +569,7 @@ func (r *Neo4jDocumentRepository) ListLibrary(ctx context.Context, libraryID, ac
 	plan, err := CompileQuery(DocumentListLibraryQuery{
 		LibraryID:  libraryID,
 		ActorID:    actor,
-		Action:     model.ActionDocumentRead,
+		ScopeIDs:   scopeIDs,
 		Filter:     filter,
 		Page:       normalized,
 		Order:      SortDirectionDesc,
@@ -962,7 +961,7 @@ func (r *RedisCachedDocumentRepository) ListByCreator(ctx context.Context, creat
 	return documents, nil
 }
 
-func (r *RedisCachedDocumentRepository) ListLibrary(ctx context.Context, libraryID, actor model.ID, filter LibraryListFilter, page CursorPage, proj DocumentProjection) (Page[*Document], error) {
+func (r *RedisCachedDocumentRepository) ListLibrary(ctx context.Context, libraryID, actor model.ID, scopeIDs []model.ID, filter LibraryListFilter, page CursorPage, proj DocumentProjection) (Page[*Document], error) {
 	var documents Page[*Document]
 	var err error
 
@@ -980,7 +979,7 @@ func (r *RedisCachedDocumentRepository) ListLibrary(ctx context.Context, library
 		return documents, nil
 	}
 
-	if documents, err = r.documentRepo.ListLibrary(ctx, libraryID, actor, filter, normalized, proj); err != nil {
+	if documents, err = r.documentRepo.ListLibrary(ctx, libraryID, actor, scopeIDs, filter, normalized, proj); err != nil {
 		return Page[*Document]{}, err
 	}
 

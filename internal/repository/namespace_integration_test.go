@@ -201,7 +201,7 @@ func (s *CachedNamespaceRepositoryIntegrationTestSuite) TestCreate() {
 	ns, err := s.namespaceRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 	s.Assert().NotNil(ns.CreatedAt)
-	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 0)
+	s.Assert().Len(cacheKeysWithoutIssueListGeneration(s.Keys(&s.ContainerIntegrationTestSuite, "*")), 0)
 }
 
 func (s *CachedNamespaceRepositoryIntegrationTestSuite) TestGet() {
@@ -212,7 +212,7 @@ func (s *CachedNamespaceRepositoryIntegrationTestSuite) TestGet() {
 	usingCache, err := s.namespaceRepo.Get(context.Background(), created.ID, repository.NamespaceDetailProjection())
 	s.Require().NoError(err)
 	s.Assert().Equal(original, usingCache)
-	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
+	s.Assert().Len(cacheKeysWithoutIssueListGeneration(s.Keys(&s.ContainerIntegrationTestSuite, "*")), 1)
 }
 
 func (s *CachedNamespaceRepositoryIntegrationTestSuite) TestGetAll() {
@@ -223,7 +223,7 @@ func (s *CachedNamespaceRepositoryIntegrationTestSuite) TestGetAll() {
 	usingCache, err := s.namespaceRepo.List(context.Background(), s.testOrg.ID, s.testUser.ID, repository.CursorPage{Size: 10}, repository.NamespaceListProjection())
 	s.Require().NoError(err)
 	s.Assert().Equal(original, usingCache)
-	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
+	s.Assert().Len(cacheKeysWithoutIssueListGeneration(s.Keys(&s.ContainerIntegrationTestSuite, "*")), 1)
 }
 
 func (s *CachedNamespaceRepositoryIntegrationTestSuite) TestUpdate() {
@@ -234,7 +234,7 @@ func (s *CachedNamespaceRepositoryIntegrationTestSuite) TestUpdate() {
 	})
 	s.Require().NoError(err)
 	s.Assert().Equal("new name", ns.Name)
-	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
+	s.Assert().Len(cacheKeysWithoutIssueListGeneration(s.Keys(&s.ContainerIntegrationTestSuite, "*")), 1)
 }
 
 func (s *CachedNamespaceRepositoryIntegrationTestSuite) TestDelete() {
@@ -245,7 +245,7 @@ func (s *CachedNamespaceRepositoryIntegrationTestSuite) TestDelete() {
 	s.Require().NoError(s.namespaceRepo.Delete(context.Background(), created.ID))
 	_, err = s.namespaceRepo.Get(context.Background(), created.ID, repository.NamespaceDetailProjection())
 	s.Assert().ErrorIs(err, repository.ErrNotFound)
-	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 0)
+	s.Assert().Len(cacheKeysWithoutIssueListGeneration(s.Keys(&s.ContainerIntegrationTestSuite, "*")), 0)
 }
 
 func TestCachedNamespaceRepositoryIntegrationTestSuite(t *testing.T) {

@@ -12,7 +12,7 @@ export const Route = createFileRoute("/_authenticated/settings/namespaces/")({
 });
 
 function NamespacesSettingsPage() {
-  const { organizations, namespaces } = Route.useLoaderData();
+  const { organizations } = Route.useLoaderData();
 
   return (
     <div className="space-y-6">
@@ -24,12 +24,7 @@ function NamespacesSettingsPage() {
         </p>
       </div>
 
-      <AllNamespacesList
-        organizations={organizations}
-        namespaces={namespaces}
-        isLoading={false}
-        error={null}
-      />
+      <AllNamespacesList organizations={organizations} />
     </div>
   );
 }

@@ -489,6 +489,12 @@ func (r *RedisCachedNamespaceRepository) Update(ctx context.Context, id model.ID
 	if err := clearNamespacesAllLists(ctx, r.cacheRepo); err != nil {
 		return nil, err
 	}
+	if err := bumpIssueListNamespaceGeneration(ctx, r.cacheRepo, id); err != nil {
+		return nil, err
+	}
+	if err := bumpIssueListProjectionEpoch(ctx, r.cacheRepo); err != nil {
+		return nil, err
+	}
 
 	return namespace, nil
 }
@@ -503,6 +509,12 @@ func (r *RedisCachedNamespaceRepository) Delete(ctx context.Context, id model.ID
 	}
 
 	if err := clearNamespaceAllCrossCache(ctx, r.cacheRepo); err != nil {
+		return err
+	}
+	if err := bumpIssueListNamespaceGeneration(ctx, r.cacheRepo, id); err != nil {
+		return err
+	}
+	if err := bumpIssueListProjectionEpoch(ctx, r.cacheRepo); err != nil {
 		return err
 	}
 

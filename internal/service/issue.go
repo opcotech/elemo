@@ -16,6 +16,29 @@ import (
 
 const assignmentSyncPageSize = 1000
 
+type issueListOptionsContextKey struct{}
+
+type IssueListOptions struct {
+	Filter repository.IssueListFilter
+	Sort   repository.IssueListSort
+}
+
+func WithIssueListOptions(ctx context.Context, opts IssueListOptions) context.Context {
+	return context.WithValue(ctx, issueListOptionsContextKey{}, opts)
+}
+
+func issueListOptionsFromContext(ctx context.Context) IssueListOptions {
+	if opts, ok := ctx.Value(issueListOptionsContextKey{}).(IssueListOptions); ok {
+		return opts
+	}
+	return IssueListOptions{
+		Sort: repository.IssueListSort{
+			Field:     repository.IssueListSortFieldRank,
+			Direction: repository.SortDirectionAsc,
+		},
+	}
+}
+
 // PartialAssignee is a lean assignment of a user to an issue.
 type PartialAssignee struct {
 	ID        model.ID
@@ -43,6 +66,8 @@ type PartialIssue struct {
 	ReportedBy  *PartialUser
 	DueDate     *time.Time
 	StartDate   *time.Time
+	CreatedAt   *time.Time
+	UpdatedAt   *time.Time
 }
 
 // Issue represents an issue returned by the service.
@@ -231,6 +256,8 @@ func partialIssueFromRepository(i *repository.PartialIssue) *PartialIssue {
 		ReportedBy:  partialUserFromRepository(i.ReportedBy),
 		DueDate:     i.DueDate,
 		StartDate:   i.StartDate,
+		CreatedAt:   i.CreatedAt,
+		UpdatedAt:   i.UpdatedAt,
 	}
 }
 
@@ -648,12 +675,24 @@ func (s *issueService) List(ctx context.Context, projectID model.ID, page Cursor
 	if !ok {
 		return Page[*PartialIssue]{}, errors.Join(ErrIssueGetAll, ErrNoUser)
 	}
+	scopeIDs, allowed, err := resolvedListScopeIDs(ctx, s.permissionService, projectID, model.ActionIssueRead)
+	if err != nil {
+		return Page[*PartialIssue]{}, errors.Join(ErrIssueGetAll, err)
+	}
+	if !allowed {
+		return repository.EmptyPage[*PartialIssue](), nil
+	}
+	listOpts := issueListOptionsFromContext(ctx)
 
 	issues, err := s.issueRepo.ListForProject(ctx, repository.IssueListQuery{
 		ProjectID:  projectID,
 		ActorID:    userID,
 		Action:     model.ActionIssueRead,
+		ScopeIDs:   scopeIDs,
+		SortField:  listOpts.Sort.Field,
 		Page:       normalized,
+		Order:      listOpts.Sort.Direction,
+		Filter:     listOpts.Filter,
 		Projection: repository.IssueListForProjectProjection(),
 	})
 	if err != nil {
@@ -680,12 +719,24 @@ func (s *issueService) ListByNamespace(ctx context.Context, namespaceID model.ID
 	if !ok {
 		return Page[*PartialIssue]{}, errors.Join(ErrIssueGetAll, ErrNoUser)
 	}
+	scopeIDs, allowed, err := resolvedListScopeIDs(ctx, s.permissionService, namespaceID, model.ActionIssueRead)
+	if err != nil {
+		return Page[*PartialIssue]{}, errors.Join(ErrIssueGetAll, err)
+	}
+	if !allowed {
+		return repository.EmptyPage[*PartialIssue](), nil
+	}
+	listOpts := issueListOptionsFromContext(ctx)
 
 	issues, err := s.issueRepo.ListForNamespace(ctx, repository.IssueListForNamespaceQuery{
 		NamespaceID: namespaceID,
 		ActorID:     userID,
 		Action:      model.ActionIssueRead,
+		ScopeIDs:    scopeIDs,
+		SortField:   listOpts.Sort.Field,
 		Page:        normalized,
+		Order:       listOpts.Sort.Direction,
+		Filter:      listOpts.Filter,
 		Projection:  repository.IssueListForNamespaceProjection(),
 	})
 	if err != nil {
@@ -716,12 +767,24 @@ func (s *issueService) ListByUser(ctx context.Context, userID model.ID, page Cur
 	if ctxUserID != userID {
 		return Page[*PartialIssue]{}, errors.Join(ErrIssueGetAll, ErrNoPermission)
 	}
+	scopeIDs, err := s.permissionService.CtxUserListGrantScopes(ctx, model.ActionIssueRead)
+	if err != nil {
+		return Page[*PartialIssue]{}, errors.Join(ErrIssueGetAll, err)
+	}
+	if len(scopeIDs) == 0 {
+		return repository.EmptyPage[*PartialIssue](), nil
+	}
+	listOpts := issueListOptionsFromContext(ctx)
 
 	issues, err := s.issueRepo.ListForUser(ctx, repository.IssueListForUserQuery{
 		UserID:     userID,
 		ActorID:    ctxUserID,
 		Action:     model.ActionIssueRead,
+		ScopeIDs:   scopeIDs,
+		SortField:  listOpts.Sort.Field,
 		Page:       normalized,
+		Order:      listOpts.Sort.Direction,
+		Filter:     listOpts.Filter,
 		Projection: repository.IssueListForUserProjection(),
 	})
 	if err != nil {

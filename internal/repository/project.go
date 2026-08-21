@@ -94,7 +94,7 @@ type ProjectRepository interface {
 	Create(ctx context.Context, opts CreateProjectOpts) (*Project, error)
 	Get(ctx context.Context, id model.ID, proj ProjectProjection) (*Project, error)
 	GetByKey(ctx context.Context, key string, proj ProjectProjection) (*Project, error)
-	List(ctx context.Context, namespaceID, actor model.ID, page CursorPage, proj ProjectProjection) (Page[*Project], error)
+	List(ctx context.Context, namespaceID, actor model.ID, scopeIDs []model.ID, page CursorPage, proj ProjectProjection) (Page[*Project], error)
 	Update(ctx context.Context, id model.ID, opts UpdateProjectOpts, proj ProjectProjection) (*Project, error)
 	Delete(ctx context.Context, id model.ID) error
 }
@@ -335,7 +335,7 @@ func (r *Neo4jProjectRepository) GetByKey(ctx context.Context, key string, proj 
 	return projects[0], nil
 }
 
-func (r *Neo4jProjectRepository) List(ctx context.Context, namespaceID, actor model.ID, page CursorPage, proj ProjectProjection) (Page[*Project], error) {
+func (r *Neo4jProjectRepository) List(ctx context.Context, namespaceID, actor model.ID, scopeIDs []model.ID, page CursorPage, proj ProjectProjection) (Page[*Project], error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.ProjectRepository/List")
 	defer span.End()
 
@@ -347,7 +347,7 @@ func (r *Neo4jProjectRepository) List(ctx context.Context, namespaceID, actor mo
 	plan, err := CompileQuery(ProjectListQuery{
 		NamespaceID: namespaceID,
 		ActorID:     actor,
-		Action:      model.ActionProjectRead,
+		ScopeIDs:    scopeIDs,
 		Page:        normalizedPage,
 		Order:       SortDirectionDesc,
 		Projection:  proj,
@@ -474,11 +474,11 @@ func projectGetByKeyCacheKey(key string, proj ProjectProjection) (string, error)
 	return plan.CacheKey(model.ResourceTypeProject.String(), "GetByKey", key), nil
 }
 
-func projectListCacheKey(namespaceID, actor model.ID, page CursorPage, proj ProjectProjection) (string, error) {
+func projectListCacheKey(namespaceID, actor model.ID, scopeIDs []model.ID, page CursorPage, proj ProjectProjection) (string, error) {
 	plan, err := CompileQuery(ProjectListQuery{
 		NamespaceID: namespaceID,
 		ActorID:     actor,
-		Action:      model.ActionProjectRead,
+		ScopeIDs:    scopeIDs,
 		Page:        page,
 		Order:       SortDirectionDesc,
 		Projection:  proj,
@@ -496,8 +496,20 @@ func (r *RedisCachedProjectRepository) Create(ctx context.Context, opts CreatePr
 	if err := clearProjectsAllCrossCache(ctx, r.cacheRepo); err != nil {
 		return nil, err
 	}
-
-	return r.projectRepo.Create(ctx, opts)
+	project, err := r.projectRepo.Create(ctx, opts)
+	if err != nil {
+		return nil, err
+	}
+	if err := bumpIssueListNamespaceGeneration(ctx, r.cacheRepo, opts.NamespaceID); err != nil {
+		return nil, err
+	}
+	if err := bumpIssueListProjectGeneration(ctx, r.cacheRepo, project.ID); err != nil {
+		return nil, err
+	}
+	if err := bumpIssueListProjectionEpoch(ctx, r.cacheRepo); err != nil {
+		return nil, err
+	}
+	return project, nil
 }
 
 func (r *RedisCachedProjectRepository) Get(ctx context.Context, id model.ID, proj ProjectProjection) (*Project, error) {
@@ -554,11 +566,11 @@ func (r *RedisCachedProjectRepository) GetByKey(ctx context.Context, key string,
 	return project, nil
 }
 
-func (r *RedisCachedProjectRepository) List(ctx context.Context, namespaceID, actor model.ID, page CursorPage, proj ProjectProjection) (Page[*Project], error) {
+func (r *RedisCachedProjectRepository) List(ctx context.Context, namespaceID, actor model.ID, scopeIDs []model.ID, page CursorPage, proj ProjectProjection) (Page[*Project], error) {
 	var projects Page[*Project]
 	var err error
 
-	key, err := projectListCacheKey(namespaceID, actor, page, proj)
+	key, err := projectListCacheKey(namespaceID, actor, scopeIDs, page, proj)
 	if err != nil {
 		return Page[*Project]{}, err
 	}
@@ -570,7 +582,7 @@ func (r *RedisCachedProjectRepository) List(ctx context.Context, namespaceID, ac
 		return projects, nil
 	}
 
-	if projects, err = r.projectRepo.List(ctx, namespaceID, actor, page, proj); err != nil {
+	if projects, err = r.projectRepo.List(ctx, namespaceID, actor, scopeIDs, page, proj); err != nil {
 		return Page[*Project]{}, err
 	}
 
@@ -607,7 +619,10 @@ func (r *RedisCachedProjectRepository) Update(ctx context.Context, id model.ID, 
 	if err := clearProjectsAllCrossCache(ctx, r.cacheRepo); err != nil {
 		return nil, err
 	}
-	if err := clearIssueAllForProject(ctx, r.cacheRepo); err != nil {
+	if err := bumpIssueListProjectGeneration(ctx, r.cacheRepo, id); err != nil {
+		return nil, err
+	}
+	if err := bumpIssueListProjectionEpoch(ctx, r.cacheRepo); err != nil {
 		return nil, err
 	}
 
@@ -630,7 +645,10 @@ func (r *RedisCachedProjectRepository) Delete(ctx context.Context, id model.ID) 
 	if err := clearProjectsAllCrossCache(ctx, r.cacheRepo); err != nil {
 		return err
 	}
-	if err := clearIssueAllForProject(ctx, r.cacheRepo); err != nil {
+	if err := bumpIssueListProjectGeneration(ctx, r.cacheRepo, id); err != nil {
+		return err
+	}
+	if err := bumpIssueListProjectionEpoch(ctx, r.cacheRepo); err != nil {
 		return err
 	}
 

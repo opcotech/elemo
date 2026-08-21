@@ -1,3 +1,4 @@
+import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Edit, Plus, Shield, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -5,6 +6,10 @@ import { useMemo, useState } from "react";
 import { RoleDeleteDialog } from "./role-delete-dialog";
 
 import { SettingsResourceTable } from "@/components/settings/settings-resource-table";
+import {
+  CursorPaginator,
+  cursorPaginatorProps,
+} from "@/components/shared/cursor-paginator";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -16,10 +21,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { TableSkeleton } from "@/components/ui/table-skeleton";
+import { useCursorPageNav } from "@/hooks/use-cursor-page-nav";
 import {
   ResourceType,
   usePermissionsByResourceId,
 } from "@/hooks/use-permissions";
+import { cursorPageQuery } from "@/lib/api/cursor-pages";
+import { v1OrganizationRolesGetOptions } from "@/lib/api/query-options";
 import type { EffectiveActions, Role } from "@/lib/api/types";
 import { Action, can } from "@/lib/auth/permissions";
 
@@ -119,23 +127,29 @@ function RoleRow({
 }
 
 interface RolesListProps {
-  roles: Role[];
-  isLoading: boolean;
-  error: unknown;
   organizationId: string;
   organizationPermissions: EffectiveActions;
 }
 
 export function RolesList({
-  roles,
-  isLoading,
-  error,
   organizationId,
   organizationPermissions,
 }: RolesListProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
+  const pageNav = useCursorPageNav({ resetKey: searchTerm });
+  const {
+    data: rolesPage,
+    isLoading,
+    error,
+  } = useQuery(
+    v1OrganizationRolesGetOptions({
+      path: { id: organizationId },
+      query: cursorPageQuery(pageNav.pageToken),
+    })
+  );
+  const roles = rolesPage?.items ?? [];
 
   const canManageRoles = can(organizationPermissions, Action.RoleManage);
   const canViewRoles = can(organizationPermissions, Action.OrganizationRead);
@@ -243,6 +257,7 @@ export function RolesList({
             })}
           </TableBody>
         </Table>
+        <CursorPaginator {...cursorPaginatorProps(rolesPage, pageNav)} />
       </SettingsResourceTable>
 
       {selectedRole && (

@@ -94,6 +94,23 @@ func TestCompileDocumentListLibraryQuery(t *testing.T) {
 			if !tt.filter.All && tt.filter.FolderID == nil {
 				assert.Contains(t, plan.Root.Cypher, "NOT (d)-[:LOCATED_IN]->(:Folder)")
 			}
+			assert.NotContains(t, plan.Root.Cypher, "GRANTED")
+			assert.NotContains(t, plan.Root.Cypher, "AuthzVisible")
 		})
 	}
+
+	t.Run("narrow grants use scope_ids EXISTS", func(t *testing.T) {
+		t.Parallel()
+		scopeID := model.MustNewID(model.ResourceTypeProject)
+		plan, err := CompileQuery(DocumentListLibraryQuery{
+			LibraryID: libraryID,
+			ScopeIDs:  []model.ID{scopeID},
+			Filter:    LibraryListFilter{All: true},
+			Page:      CursorPage{Size: 10},
+		})
+		require.NoError(t, err)
+		assert.Contains(t, plan.Root.Cypher, "scope.id IN $scope_ids")
+		assert.NotContains(t, plan.Root.Cypher, "MATCH path =")
+		assert.Equal(t, []string{scopeID.String()}, plan.Root.Params["scope_ids"])
+	})
 }

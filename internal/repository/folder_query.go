@@ -13,7 +13,7 @@ type FolderGetQuery struct {
 type FolderListQuery struct {
 	LibraryID model.ID
 	ActorID   model.ID
-	Action    model.Action
+	ScopeIDs  []model.ID
 	ParentID  *model.ID
 	Page      CursorPage
 	Order     SortDirection
@@ -50,16 +50,22 @@ func (q FolderListQuery) Compile() (QueryPlan, error) {
 			return QueryPlan{}, err
 		}
 	}
+	for _, scopeID := range q.ScopeIDs {
+		if err := scopeID.Validate(); err != nil {
+			return QueryPlan{}, err
+		}
+	}
 
 	params := map[string]any{
 		"library_id": q.LibraryID.String(),
+		"user_id":    q.ActorID.String(),
 	}
 	bounds, err := compileCursorBounds("f", q.Page, q.Order, params)
 	if err != nil {
 		return QueryPlan{}, err
 	}
 
-	authz := applyAuthzVisible(q.ActorID, q.Action, "f", "$user_id", params)
+	authz := applyListScopeAuthz("f", q.ScopeIDs, params)
 	var match string
 	cursorPrefix := "WHERE "
 	if q.ParentID != nil {

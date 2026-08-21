@@ -71,7 +71,7 @@ type UpdateFolderOpts struct {
 type FolderRepository interface {
 	Create(ctx context.Context, opts CreateFolderOpts) (*Folder, error)
 	Get(ctx context.Context, id model.ID) (*Folder, error)
-	List(ctx context.Context, libraryID model.ID, parentID *model.ID, actor model.ID, page CursorPage) (Page[*Folder], error)
+	List(ctx context.Context, libraryID model.ID, parentID *model.ID, actor model.ID, scopeIDs []model.ID, page CursorPage) (Page[*Folder], error)
 	Update(ctx context.Context, id model.ID, opts UpdateFolderOpts) (*Folder, error)
 	Delete(ctx context.Context, id model.ID) error
 }
@@ -292,7 +292,7 @@ func (r *Neo4jFolderRepository) Get(ctx context.Context, id model.ID) (*Folder, 
 	return folder, nil
 }
 
-func (r *Neo4jFolderRepository) List(ctx context.Context, libraryID model.ID, parentID *model.ID, actor model.ID, page CursorPage) (Page[*Folder], error) {
+func (r *Neo4jFolderRepository) List(ctx context.Context, libraryID model.ID, parentID *model.ID, actor model.ID, scopeIDs []model.ID, page CursorPage) (Page[*Folder], error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.FolderRepository/List")
 	defer span.End()
 
@@ -303,7 +303,7 @@ func (r *Neo4jFolderRepository) List(ctx context.Context, libraryID model.ID, pa
 	plan, err := CompileQuery(FolderListQuery{
 		LibraryID: libraryID,
 		ActorID:   actor,
-		Action:    model.ActionDocumentRead,
+		ScopeIDs:  scopeIDs,
 		ParentID:  parentID,
 		Page:      normalized,
 		Order:     SortDirectionDesc,
@@ -474,7 +474,7 @@ func (r *RedisCachedFolderRepository) Get(ctx context.Context, id model.ID) (*Fo
 	return folder, nil
 }
 
-func (r *RedisCachedFolderRepository) List(ctx context.Context, libraryID model.ID, parentID *model.ID, actor model.ID, page CursorPage) (Page[*Folder], error) {
+func (r *RedisCachedFolderRepository) List(ctx context.Context, libraryID model.ID, parentID *model.ID, actor model.ID, scopeIDs []model.ID, page CursorPage) (Page[*Folder], error) {
 	var folders Page[*Folder]
 	var err error
 
@@ -496,7 +496,7 @@ func (r *RedisCachedFolderRepository) List(ctx context.Context, libraryID model.
 		return folders, nil
 	}
 
-	if folders, err = r.folderRepo.List(ctx, libraryID, parentID, actor, normalized); err != nil {
+	if folders, err = r.folderRepo.List(ctx, libraryID, parentID, actor, scopeIDs, normalized); err != nil {
 		return Page[*Folder]{}, err
 	}
 

@@ -1,0 +1,22 @@
+{
+  "scenarios": {
+    "work-item-latency": {
+      "exec": "workItemLatency",
+      "executor": "per-vu-iterations",
+      "vus": 1,
+      "iterations": 1,
+      "maxDuration": "15m"
+    }
+  },
+  "thresholds": {
+    "http_req_failed": [
+      "rate<0.01"
+    ],
+    "issue_list_page1_duration{cache_state:cold}": [
+      "p(95)<8000"
+    ],
+    "issue_list_collect_duration{cache_state:cold}": [
+      "p(95)<30000"
+    ]
+  }
+}

@@ -195,7 +195,9 @@ export async function loadOrganizations(
   includeRowPermissions = false
 ) {
   const organizationsPage = await queryClient.fetchQuery(
-    v1OrganizationsGetOptions()
+    v1OrganizationsGetOptions({
+      query: cursorPageQuery(),
+    })
   );
   const organizations = organizationsPage.items;
   const permissionLoads = [
@@ -226,7 +228,15 @@ export async function loadOrganizationsWithPermissions(
 
 export function prefetchAuthenticatedChrome(queryClient: QueryClient) {
   void Promise.all([
-    queryClient.prefetchQuery(v1OrganizationsGetOptions()),
-    queryClient.prefetchQuery(v1NotificationsGetOptions()),
+    queryClient.prefetchQuery(
+      v1OrganizationsGetOptions({
+        query: cursorPageQuery(),
+      })
+    ),
+    queryClient.prefetchQuery(
+      v1NotificationsGetOptions({
+        query: cursorPageQuery(),
+      })
+    ),
   ]);
 }

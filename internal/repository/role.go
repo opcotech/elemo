@@ -555,7 +555,14 @@ func (r *RedisCachedRoleRepository) Create(ctx context.Context, opts CreateRoleO
 		return nil, err
 	}
 
-	return r.roleRepo.Create(ctx, opts)
+	role, err := r.roleRepo.Create(ctx, opts)
+	if err != nil {
+		return nil, err
+	}
+	if err := bumpIssueListAuthzEpoch(ctx, r.cacheRepo); err != nil {
+		return nil, err
+	}
+	return role, nil
 }
 
 func (r *RedisCachedRoleRepository) Get(ctx context.Context, id, belongsTo model.ID, proj RoleProjection) (*Role, error) {
@@ -688,6 +695,9 @@ func (r *RedisCachedRoleRepository) Update(ctx context.Context, id, belongsTo mo
 			return nil, err
 		}
 	}
+	if err := bumpIssueListAuthzEpoch(ctx, r.cacheRepo); err != nil {
+		return nil, err
+	}
 
 	return role, nil
 }
@@ -704,7 +714,10 @@ func (r *RedisCachedRoleRepository) AddMember(ctx context.Context, roleID, membe
 		return err
 	}
 
-	return r.roleRepo.AddMember(ctx, roleID, memberID, belongsToID)
+	if err := r.roleRepo.AddMember(ctx, roleID, memberID, belongsToID); err != nil {
+		return err
+	}
+	return bumpIssueListAuthzEpoch(ctx, r.cacheRepo)
 }
 
 func (r *RedisCachedRoleRepository) RemoveMember(ctx context.Context, roleID, memberID, belongsToID model.ID) error {
@@ -719,7 +732,10 @@ func (r *RedisCachedRoleRepository) RemoveMember(ctx context.Context, roleID, me
 		return err
 	}
 
-	return r.roleRepo.RemoveMember(ctx, roleID, memberID, belongsToID)
+	if err := r.roleRepo.RemoveMember(ctx, roleID, memberID, belongsToID); err != nil {
+		return err
+	}
+	return bumpIssueListAuthzEpoch(ctx, r.cacheRepo)
 }
 
 func (r *RedisCachedRoleRepository) Delete(ctx context.Context, id, belongsTo model.ID) error {
@@ -736,7 +752,10 @@ func (r *RedisCachedRoleRepository) Delete(ctx context.Context, id, belongsTo mo
 		return err
 	}
 
-	return r.roleRepo.Delete(ctx, id, belongsTo)
+	if err := r.roleRepo.Delete(ctx, id, belongsTo); err != nil {
+		return err
+	}
+	return bumpIssueListAuthzEpoch(ctx, r.cacheRepo)
 }
 
 // NewCachedRoleRepository returns a new CachedRoleRepository.

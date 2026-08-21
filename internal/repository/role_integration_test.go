@@ -184,7 +184,7 @@ func (s *CachedRoleRepositoryIntegrationTestSuite) TestCreate() {
 	role, err := s.roleRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 	s.Assert().NotNil(role.CreatedAt)
-	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 0)
+	s.Assert().Len(cacheKeysWithoutIssueListGeneration(s.Keys(&s.ContainerIntegrationTestSuite, "*")), 0)
 }
 
 func (s *CachedRoleRepositoryIntegrationTestSuite) TestGet() {
@@ -195,7 +195,7 @@ func (s *CachedRoleRepositoryIntegrationTestSuite) TestGet() {
 	usingCache, err := s.roleRepo.Get(context.Background(), created.ID, s.testOrg.ID, repository.RoleDetailProjection())
 	s.Require().NoError(err)
 	s.Assert().Equal(original, usingCache)
-	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
+	s.Assert().Len(cacheKeysWithoutIssueListGeneration(s.Keys(&s.ContainerIntegrationTestSuite, "*")), 1)
 }
 
 func (s *CachedRoleRepositoryIntegrationTestSuite) TestGetByID() {
@@ -207,7 +207,7 @@ func (s *CachedRoleRepositoryIntegrationTestSuite) TestGetByID() {
 	s.Require().NoError(err)
 	s.Assert().Equal(original.ID, usingCache.ID)
 	s.Assert().Equal(original.Name, usingCache.Name)
-	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
+	s.Assert().Len(cacheKeysWithoutIssueListGeneration(s.Keys(&s.ContainerIntegrationTestSuite, "*")), 1)
 	cached, err := s.roleRepo.GetByID(context.Background(), created.ID)
 	s.Require().NoError(err)
 	s.Assert().Equal(original.ID, cached.ID)
@@ -224,7 +224,7 @@ func (s *CachedRoleRepositoryIntegrationTestSuite) TestGetByKey() {
 	s.Require().NoError(err)
 	s.Assert().Equal(original.ID, usingCache.ID)
 	s.Assert().Equal(original.Name, usingCache.Name)
-	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
+	s.Assert().Len(cacheKeysWithoutIssueListGeneration(s.Keys(&s.ContainerIntegrationTestSuite, "*")), 1)
 	cached, err := s.roleRepo.GetByKey(context.Background(), s.testOrg.ID, created.Key)
 	s.Require().NoError(err)
 	s.Assert().Equal(original.ID, cached.ID)
@@ -240,7 +240,7 @@ func (s *CachedRoleRepositoryIntegrationTestSuite) TestGetAllBelongsTo() {
 	usingCache, err := s.roleRepo.ListBelongsTo(context.Background(), s.testOrg.ID, repository.CursorPage{Size: 10}, repository.RoleListProjection())
 	s.Require().NoError(err)
 	s.Assert().Equal(original, usingCache)
-	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
+	s.Assert().Len(cacheKeysWithoutIssueListGeneration(s.Keys(&s.ContainerIntegrationTestSuite, "*")), 1)
 }
 
 func (s *CachedRoleRepositoryIntegrationTestSuite) TestAddMember() {
@@ -301,7 +301,7 @@ func (s *CachedRoleRepositoryIntegrationTestSuite) TestDelete() {
 	s.Require().NoError(s.roleRepo.Delete(context.Background(), created.ID, s.testOrg.ID))
 	_, err = s.roleRepo.Get(context.Background(), created.ID, s.testOrg.ID, repository.RoleDetailProjection())
 	s.Assert().ErrorIs(err, repository.ErrNotFound)
-	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 0)
+	s.Assert().Len(cacheKeysWithoutIssueListGeneration(s.Keys(&s.ContainerIntegrationTestSuite, "*")), 0)
 }
 
 func TestCachedRoleRepositoryIntegrationTestSuite(t *testing.T) {

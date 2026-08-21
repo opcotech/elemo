@@ -48,6 +48,8 @@ linters:
           alias: sdktrace
         - pkg: go.opentelemetry.io/otel/semconv/v1.17.0
           alias: semconv
+        - pkg: github.com/slok/go-http-metrics/metrics
+          alias: httpMetrics
         - pkg: github.com/slok/go-http-metrics/metrics/prometheus
           alias: httpMetricsProm
         - pkg: github.com/slok/go-http-metrics/middleware

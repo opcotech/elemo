@@ -10,6 +10,7 @@ import (
 
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/convert"
+	"github.com/opcotech/elemo/internal/pkg/metrics"
 	"github.com/opcotech/elemo/internal/pkg/optional"
 )
 
@@ -54,6 +55,8 @@ type PartialIssue struct {
 	ReportedBy  *PartialUser        `json:"reported_by"`
 	DueDate     *time.Time          `json:"due_date"`
 	StartDate   *time.Time          `json:"start_date"`
+	CreatedAt   *time.Time          `json:"created_at"`
+	UpdatedAt   *time.Time          `json:"updated_at"`
 }
 
 // Issue represents an issue persisted by the repository.
@@ -389,6 +392,8 @@ func decodePartialIssueNode(node neo4j.Node, projectKey string) (*PartialIssue, 
 		Priority    string     `json:"priority"`
 		DueDate     *time.Time `json:"due_date"`
 		StartDate   *time.Time `json:"start_date"`
+		CreatedAt   *time.Time `json:"created_at"`
+		UpdatedAt   *time.Time `json:"updated_at"`
 	}
 	if err := Neo4jScanIntoStruct(&node, &tempIssue, []string{"id"}); err != nil {
 		return nil, err
@@ -422,6 +427,8 @@ func decodePartialIssueNode(node neo4j.Node, projectKey string) (*PartialIssue, 
 		Labels:      make([]PartialLabel, 0),
 		DueDate:     tempIssue.DueDate,
 		StartDate:   tempIssue.StartDate,
+		CreatedAt:   tempIssue.CreatedAt,
+		UpdatedAt:   tempIssue.UpdatedAt,
 	}, nil
 }
 
@@ -995,16 +1002,18 @@ func (r *Neo4jIssueRepository) ListForProject(ctx context.Context, query IssueLi
 		return Page[*PartialIssue]{}, errors.Join(ErrIssueRead, err)
 	}
 	query.Page = page
-	if query.Order == SortDirectionUnknown {
-		query.Order = SortDirectionDesc
-	}
+	sort := IssueListSort{Field: query.SortField, Direction: query.Order}.normalize()
+	filter := normalizeIssueListFilter(query.Filter)
+	query.SortField = sort.Field
+	query.Order = sort.Direction
+	query.Filter = filter
 
 	plan, err := CompileQuery(query)
 	if err != nil {
 		return Page[*PartialIssue]{}, errors.Join(ErrIssueRead, err)
 	}
 
-	return r.executePartialIssueList(ctx, plan, page)
+	return r.executePartialIssueList(ctx, plan, page, sort, issueListCursorHash(query.ProjectID, filter, sort))
 }
 
 func (r *Neo4jIssueRepository) ListForNamespace(ctx context.Context, query IssueListForNamespaceQuery) (Page[*PartialIssue], error) {
@@ -1016,16 +1025,18 @@ func (r *Neo4jIssueRepository) ListForNamespace(ctx context.Context, query Issue
 		return Page[*PartialIssue]{}, errors.Join(ErrIssueRead, err)
 	}
 	query.Page = page
-	if query.Order == SortDirectionUnknown {
-		query.Order = SortDirectionDesc
-	}
+	sort := IssueListSort{Field: query.SortField, Direction: query.Order}.normalize()
+	filter := normalizeIssueListFilter(query.Filter)
+	query.SortField = sort.Field
+	query.Order = sort.Direction
+	query.Filter = filter
 
 	plan, err := CompileQuery(query)
 	if err != nil {
 		return Page[*PartialIssue]{}, errors.Join(ErrIssueRead, err)
 	}
 
-	return r.executePartialIssueList(ctx, plan, page)
+	return r.executePartialIssueList(ctx, plan, page, sort, issueListCursorHash(query.NamespaceID, filter, sort))
 }
 
 func (r *Neo4jIssueRepository) ListForUser(ctx context.Context, query IssueListForUserQuery) (Page[*PartialIssue], error) {
@@ -1037,19 +1048,21 @@ func (r *Neo4jIssueRepository) ListForUser(ctx context.Context, query IssueListF
 		return Page[*PartialIssue]{}, errors.Join(ErrIssueRead, err)
 	}
 	query.Page = page
-	if query.Order == SortDirectionUnknown {
-		query.Order = SortDirectionDesc
-	}
+	sort := IssueListSort{Field: query.SortField, Direction: query.Order}.normalize()
+	filter := normalizeIssueListFilter(query.Filter)
+	query.SortField = sort.Field
+	query.Order = sort.Direction
+	query.Filter = filter
 
 	plan, err := CompileQuery(query)
 	if err != nil {
 		return Page[*PartialIssue]{}, errors.Join(ErrIssueRead, err)
 	}
 
-	return r.executePartialIssueList(ctx, plan, page)
+	return r.executePartialIssueList(ctx, plan, page, sort, issueListCursorHash(query.UserID, filter, sort))
 }
 
-func (r *Neo4jIssueRepository) executePartialIssueList(ctx context.Context, plan QueryPlan, page CursorPage) (Page[*PartialIssue], error) {
+func (r *Neo4jIssueRepository) executePartialIssueList(ctx context.Context, plan QueryPlan, page CursorPage, sort IssueListSort, cursorHash string) (Page[*PartialIssue], error) {
 	rows := make([]*issueListRow, 0)
 	if err := Neo4jExecuteReadPlan(ctx, r.db, plan, func(tx neo4j.ManagedTransaction) error {
 		rootRows, _, err := Neo4jRunQuery(ctx, tx, plan.Root, func(record *neo4j.Record) (*issueListRow, error) {
@@ -1121,21 +1134,31 @@ func (r *Neo4jIssueRepository) executePartialIssueList(ctx context.Context, plan
 		return Page[*PartialIssue]{}, errors.Join(ErrIssueRead, err)
 	}
 
-	pagedRows, err := PaginateSlice(rows, page.Size, func(row *issueListRow) model.ID {
-		return row.issue.ID
-	})
-	if err != nil {
-		return Page[*PartialIssue]{}, errors.Join(ErrIssueRead, err)
+	hasMore := len(rows) > page.Size
+	if hasMore {
+		rows = rows[:page.Size]
 	}
 
-	items := make([]*PartialIssue, 0, len(pagedRows.Items))
-	for _, row := range pagedRows.Items {
+	items := make([]*PartialIssue, 0, len(rows))
+	for _, row := range rows {
 		items = append(items, row.issue)
 	}
 
+	var nextPageToken *string
+	if hasMore && len(rows) > 0 {
+		token, err := encodeIssueListCursor(rows[len(rows)-1].issue, sort, cursorHash)
+		if err != nil {
+			return Page[*PartialIssue]{}, errors.Join(ErrIssueRead, err)
+		}
+		nextPageToken = &token
+	}
+
 	return Page[*PartialIssue]{
-		Items:    items,
-		PageInfo: pagedRows.PageInfo,
+		Items: items,
+		PageInfo: PageInfo{
+			HasMore:       hasMore,
+			NextPageToken: nextPageToken,
+		},
 	}, nil
 }
 
@@ -1490,24 +1513,8 @@ func clearIssuesKey(ctx context.Context, r *redisBaseRepository, id model.ID) er
 	return clearIssuesPattern(ctx, r, "Get", id.String(), "*")
 }
 
-func clearIssueForProject(ctx context.Context, r *redisBaseRepository, projectID model.ID) error {
-	return clearIssuesPattern(ctx, r, "*", "ListForProject", projectID.String(), "*")
-}
-
-func clearIssueAllForProject(ctx context.Context, r *redisBaseRepository) error {
-	return clearIssuesPattern(ctx, r, "*", "ListFor*", "*")
-}
-
-func clearIssueAllForNamespace(ctx context.Context, r *redisBaseRepository) error {
-	return clearIssuesPattern(ctx, r, "*", "ListForNamespace", "*")
-}
-
 func clearIssueForIssue(ctx context.Context, r *redisBaseRepository, issueID model.ID) error {
 	return clearIssuesPattern(ctx, r, "*", "ListForIssue", issueID.String(), "*")
-}
-
-func clearIssueAllForIssue(ctx context.Context, r *redisBaseRepository) error {
-	return clearIssuesPattern(ctx, r, "*", "ListForIssue", "*")
 }
 
 func clearIssueWatchers(ctx context.Context, r *redisBaseRepository, issueID model.ID) error {
@@ -1530,12 +1537,7 @@ func clearIssueRelationPair(ctx context.Context, r *redisBaseRepository, source,
 			return err
 		}
 	}
-
-	if err := clearIssueAllForIssue(ctx, r); err != nil {
-		return err
-	}
-
-	return clearIssueAllForProject(ctx, r)
+	return nil
 }
 
 func clearIssueGetByKey(ctx context.Context, r *redisBaseRepository, issueKey string) error {
@@ -1560,6 +1562,105 @@ func clearIssueAllCrossCache(ctx context.Context, r *redisBaseRepository) error 
 	return nil
 }
 
+const (
+	issueListDefaultCacheTTL = 5 * time.Minute
+	issueListGenPrefix       = "issue:list:gen"
+)
+
+func issueListProjectGenKey(projectID model.ID) string {
+	return composeCacheKey(issueListGenPrefix, "project", projectID.String())
+}
+
+func issueListNamespaceGenKey(namespaceID model.ID) string {
+	return composeCacheKey(issueListGenPrefix, "namespace", namespaceID.String())
+}
+
+func issueListUserGenKey(userID model.ID) string {
+	return composeCacheKey(issueListGenPrefix, "user", userID.String())
+}
+
+func issueListAuthzEpochKey() string {
+	return composeCacheKey(issueListGenPrefix, "authz_epoch")
+}
+
+func issueListProjectionEpochKey() string {
+	return composeCacheKey(issueListGenPrefix, "projection_epoch")
+}
+
+func issueListReadGeneration(ctx context.Context, r *redisBaseRepository, key string) int64 {
+	var gen int64
+	_ = r.Get(ctx, key, &gen)
+	return gen
+}
+
+func bumpIssueListGeneration(ctx context.Context, r *redisBaseRepository, key string) error {
+	gen := issueListReadGeneration(ctx, r, key)
+	return r.Set(ctx, key, gen+1)
+}
+
+func bumpIssueListProjectGeneration(ctx context.Context, r *redisBaseRepository, projectID model.ID) error {
+	return bumpIssueListGeneration(ctx, r, issueListProjectGenKey(projectID))
+}
+
+func bumpIssueListNamespaceGeneration(ctx context.Context, r *redisBaseRepository, namespaceID model.ID) error {
+	return bumpIssueListGeneration(ctx, r, issueListNamespaceGenKey(namespaceID))
+}
+
+func bumpIssueListUserGeneration(ctx context.Context, r *redisBaseRepository, userID model.ID) error {
+	return bumpIssueListGeneration(ctx, r, issueListUserGenKey(userID))
+}
+
+func bumpIssueListAuthzEpoch(ctx context.Context, r *redisBaseRepository) error {
+	return bumpIssueListGeneration(ctx, r, issueListAuthzEpochKey())
+}
+
+func bumpIssueListProjectionEpoch(ctx context.Context, r *redisBaseRepository) error {
+	return bumpIssueListGeneration(ctx, r, issueListProjectionEpochKey())
+}
+
+func issueListCurrentEpochs(ctx context.Context, r *redisBaseRepository) (authz int64, projection int64) {
+	authz = issueListReadGeneration(ctx, r, issueListAuthzEpochKey())
+	projection = issueListReadGeneration(ctx, r, issueListProjectionEpochKey())
+	return
+}
+
+func issueAssigneeIDs(issue *Issue) []model.ID {
+	if issue == nil {
+		return nil
+	}
+	ids := make([]model.ID, 0, len(issue.Assignments))
+	seen := make(map[string]struct{}, len(issue.Assignments))
+	for _, assignment := range issue.Assignments {
+		if assignment.Kind != model.AssignmentKindAssignee {
+			continue
+		}
+		key := assignment.ID.String()
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
+		ids = append(ids, assignment.ID)
+	}
+	return ids
+}
+
+func uniqueIDs(ids []model.ID) []model.ID {
+	if len(ids) <= 1 {
+		return ids
+	}
+	seen := make(map[string]struct{}, len(ids))
+	out := make([]model.ID, 0, len(ids))
+	for _, id := range ids {
+		key := id.String()
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
+		out = append(out, id)
+	}
+	return out
+}
+
 // RedisCachedIssueRepository implements caching on the IssueRepository.
 type RedisCachedIssueRepository struct {
 	cacheRepo *redisBaseRepository
@@ -1567,29 +1668,29 @@ type RedisCachedIssueRepository struct {
 }
 
 func (r *RedisCachedIssueRepository) Create(ctx context.Context, opts CreateIssueOpts) (*Issue, error) {
-	if err := clearIssueForProject(ctx, r.cacheRepo, opts.ProjectID); err != nil {
+	issue, err := r.issueRepo.Create(ctx, opts)
+	if err != nil {
 		return nil, err
 	}
 
-	if err := clearIssueAllForNamespace(ctx, r.cacheRepo); err != nil {
+	if err := bumpIssueListProjectGeneration(ctx, r.cacheRepo, opts.ProjectID); err != nil {
 		return nil, err
 	}
-
-	if opts.Parent != nil {
-		if err := clearIssueForIssue(ctx, r.cacheRepo, *opts.Parent); err != nil {
+	if issue.Namespace != nil {
+		if err := bumpIssueListNamespaceGeneration(ctx, r.cacheRepo, issue.Namespace.ID); err != nil {
 			return nil, err
 		}
 	}
-
+	for _, assigneeID := range uniqueIDs(issueAssigneeIDs(issue)) {
+		if err := bumpIssueListUserGeneration(ctx, r.cacheRepo, assigneeID); err != nil {
+			return nil, err
+		}
+	}
 	if err := clearIssueAllCrossCache(ctx, r.cacheRepo); err != nil {
 		return nil, err
 	}
 
-	if err := clearIssueAllGetByKey(ctx, r.cacheRepo); err != nil {
-		return nil, err
-	}
-
-	return r.issueRepo.Create(ctx, opts)
+	return issue, nil
 }
 
 func (r *RedisCachedIssueRepository) Get(ctx context.Context, id model.ID, proj IssueProjection) (*Issue, error) {
@@ -1648,11 +1749,39 @@ func issueListForProjectCacheKey(query IssueListQuery) (string, error) {
 	return plan.CacheKey(model.ResourceTypeIssue.String(), "ListForProject", query.ProjectID.String()), nil
 }
 
-func (r *RedisCachedIssueRepository) ListForProject(ctx context.Context, query IssueListQuery) (Page[*PartialIssue], error) {
-	var issues Page[*PartialIssue]
-	var err error
+func issueListForProjectScopedCacheKey(ctx context.Context, cacheRepo *redisBaseRepository, query IssueListQuery) (string, error) {
+	baseKey, err := issueListForProjectCacheKey(query)
+	if err != nil {
+		return "", err
+	}
+	authzEpoch, projectionEpoch := issueListCurrentEpochs(ctx, cacheRepo)
+	projectGen := issueListReadGeneration(ctx, cacheRepo, issueListProjectGenKey(query.ProjectID))
+	return composeCacheKey(
+		baseKey,
+		"g", projectGen,
+		"ae", authzEpoch,
+		"pe", projectionEpoch,
+	), nil
+}
 
-	key, err := issueListForProjectCacheKey(query)
+func observeIssueListCall(scope string, started time.Time, hit bool, err error) {
+	result := metrics.ResultMiss
+	if err != nil {
+		result = metrics.ResultError
+	} else if hit {
+		result = metrics.ResultHit
+	}
+	metrics.ObserveIssueList(scope, result, time.Since(started))
+}
+
+func (r *RedisCachedIssueRepository) ListForProject(ctx context.Context, query IssueListQuery) (issues Page[*PartialIssue], err error) {
+	started := time.Now()
+	hit := false
+	defer func() {
+		observeIssueListCall(metrics.IssueListScopeProject, started, hit, err)
+	}()
+
+	key, err := issueListForProjectScopedCacheKey(ctx, r.cacheRepo, query)
 	if err != nil {
 		return Page[*PartialIssue]{}, err
 	}
@@ -1661,6 +1790,7 @@ func (r *RedisCachedIssueRepository) ListForProject(ctx context.Context, query I
 	}
 
 	if issues.Items != nil {
+		hit = true
 		return issues, nil
 	}
 
@@ -1668,7 +1798,7 @@ func (r *RedisCachedIssueRepository) ListForProject(ctx context.Context, query I
 		return Page[*PartialIssue]{}, err
 	}
 
-	if err = r.cacheRepo.Set(ctx, key, issues); err != nil {
+	if err = r.cacheRepo.SetWithTTL(ctx, key, issues, issueListDefaultCacheTTL); err != nil {
 		return Page[*PartialIssue]{}, err
 	}
 
@@ -1683,11 +1813,29 @@ func issueListForNamespaceCacheKey(query IssueListForNamespaceQuery) (string, er
 	return plan.CacheKey(model.ResourceTypeIssue.String(), "ListForNamespace", query.NamespaceID.String()), nil
 }
 
-func (r *RedisCachedIssueRepository) ListForNamespace(ctx context.Context, query IssueListForNamespaceQuery) (Page[*PartialIssue], error) {
-	var issues Page[*PartialIssue]
-	var err error
+func issueListForNamespaceScopedCacheKey(ctx context.Context, cacheRepo *redisBaseRepository, query IssueListForNamespaceQuery) (string, error) {
+	baseKey, err := issueListForNamespaceCacheKey(query)
+	if err != nil {
+		return "", err
+	}
+	authzEpoch, projectionEpoch := issueListCurrentEpochs(ctx, cacheRepo)
+	namespaceGen := issueListReadGeneration(ctx, cacheRepo, issueListNamespaceGenKey(query.NamespaceID))
+	return composeCacheKey(
+		baseKey,
+		"g", namespaceGen,
+		"ae", authzEpoch,
+		"pe", projectionEpoch,
+	), nil
+}
 
-	key, err := issueListForNamespaceCacheKey(query)
+func (r *RedisCachedIssueRepository) ListForNamespace(ctx context.Context, query IssueListForNamespaceQuery) (issues Page[*PartialIssue], err error) {
+	started := time.Now()
+	hit := false
+	defer func() {
+		observeIssueListCall(metrics.IssueListScopeNamespace, started, hit, err)
+	}()
+
+	key, err := issueListForNamespaceScopedCacheKey(ctx, r.cacheRepo, query)
 	if err != nil {
 		return Page[*PartialIssue]{}, err
 	}
@@ -1696,6 +1844,7 @@ func (r *RedisCachedIssueRepository) ListForNamespace(ctx context.Context, query
 	}
 
 	if issues.Items != nil {
+		hit = true
 		return issues, nil
 	}
 
@@ -1703,7 +1852,7 @@ func (r *RedisCachedIssueRepository) ListForNamespace(ctx context.Context, query
 		return Page[*PartialIssue]{}, err
 	}
 
-	if err = r.cacheRepo.Set(ctx, key, issues); err != nil {
+	if err = r.cacheRepo.SetWithTTL(ctx, key, issues, issueListDefaultCacheTTL); err != nil {
 		return Page[*PartialIssue]{}, err
 	}
 
@@ -1718,11 +1867,29 @@ func issueListForUserCacheKey(query IssueListForUserQuery) (string, error) {
 	return plan.CacheKey(model.ResourceTypeIssue.String(), "ListForUser", query.UserID.String()), nil
 }
 
-func (r *RedisCachedIssueRepository) ListForUser(ctx context.Context, query IssueListForUserQuery) (Page[*PartialIssue], error) {
-	var issues Page[*PartialIssue]
-	var err error
+func issueListForUserScopedCacheKey(ctx context.Context, cacheRepo *redisBaseRepository, query IssueListForUserQuery) (string, error) {
+	baseKey, err := issueListForUserCacheKey(query)
+	if err != nil {
+		return "", err
+	}
+	authzEpoch, projectionEpoch := issueListCurrentEpochs(ctx, cacheRepo)
+	userGen := issueListReadGeneration(ctx, cacheRepo, issueListUserGenKey(query.UserID))
+	return composeCacheKey(
+		baseKey,
+		"g", userGen,
+		"ae", authzEpoch,
+		"pe", projectionEpoch,
+	), nil
+}
 
-	key, err := issueListForUserCacheKey(query)
+func (r *RedisCachedIssueRepository) ListForUser(ctx context.Context, query IssueListForUserQuery) (issues Page[*PartialIssue], err error) {
+	started := time.Now()
+	hit := false
+	defer func() {
+		observeIssueListCall(metrics.IssueListScopeUser, started, hit, err)
+	}()
+
+	key, err := issueListForUserScopedCacheKey(ctx, r.cacheRepo, query)
 	if err != nil {
 		return Page[*PartialIssue]{}, err
 	}
@@ -1731,6 +1898,7 @@ func (r *RedisCachedIssueRepository) ListForUser(ctx context.Context, query Issu
 	}
 
 	if issues.Items != nil {
+		hit = true
 		return issues, nil
 	}
 
@@ -1738,7 +1906,7 @@ func (r *RedisCachedIssueRepository) ListForUser(ctx context.Context, query Issu
 		return Page[*PartialIssue]{}, err
 	}
 
-	if err = r.cacheRepo.Set(ctx, key, issues); err != nil {
+	if err = r.cacheRepo.SetWithTTL(ctx, key, issues, issueListDefaultCacheTTL); err != nil {
 		return Page[*PartialIssue]{}, err
 	}
 
@@ -1783,14 +1951,6 @@ func (r *RedisCachedIssueRepository) AddWatcher(ctx context.Context, issue model
 		return err
 	}
 
-	if err := clearIssueAllForIssue(ctx, r.cacheRepo); err != nil {
-		return err
-	}
-
-	if err := clearIssueAllForProject(ctx, r.cacheRepo); err != nil {
-		return err
-	}
-
 	return r.issueRepo.AddWatcher(ctx, issue, user)
 }
 
@@ -1824,14 +1984,6 @@ func (r *RedisCachedIssueRepository) RemoveWatcher(ctx context.Context, issue mo
 	}
 
 	if err := clearIssueWatchers(ctx, r.cacheRepo, issue); err != nil {
-		return err
-	}
-
-	if err := clearIssueAllForIssue(ctx, r.cacheRepo); err != nil {
-		return err
-	}
-
-	if err := clearIssueAllForProject(ctx, r.cacheRepo); err != nil {
 		return err
 	}
 
@@ -1931,6 +2083,10 @@ func (r *RedisCachedIssueRepository) RemoveRelationByID(ctx context.Context, rel
 }
 
 func (r *RedisCachedIssueRepository) Update(ctx context.Context, id model.ID, opts UpdateIssueOpts, proj IssueProjection) (*Issue, error) {
+	before, _ := r.issueRepo.Get(ctx, id, IssueProjection{
+		Assignments: true,
+	})
+
 	issue, err := r.issueRepo.Update(ctx, id, opts, proj)
 	if err != nil {
 		return nil, err
@@ -1947,8 +2103,29 @@ func (r *RedisCachedIssueRepository) Update(ctx context.Context, id model.ID, op
 		}
 	}
 
-	if err := clearIssueAllForProject(ctx, r.cacheRepo); err != nil {
+	if err := bumpIssueListProjectGeneration(ctx, r.cacheRepo, issue.Project.ID); err != nil {
 		return nil, err
+	}
+	if issue.Namespace != nil {
+		if err := bumpIssueListNamespaceGeneration(ctx, r.cacheRepo, issue.Namespace.ID); err != nil {
+			return nil, err
+		}
+	}
+	if before != nil && before.Project != nil && before.Project.ID != issue.Project.ID {
+		if err := bumpIssueListProjectGeneration(ctx, r.cacheRepo, before.Project.ID); err != nil {
+			return nil, err
+		}
+	}
+	if before != nil && before.Namespace != nil && (issue.Namespace == nil || before.Namespace.ID != issue.Namespace.ID) {
+		if err := bumpIssueListNamespaceGeneration(ctx, r.cacheRepo, before.Namespace.ID); err != nil {
+			return nil, err
+		}
+	}
+	assignees := uniqueIDs(append(issueAssigneeIDs(before), issueAssigneeIDs(issue)...))
+	for _, assigneeID := range assignees {
+		if err := bumpIssueListUserGeneration(ctx, r.cacheRepo, assigneeID); err != nil {
+			return nil, err
+		}
 	}
 
 	if err := clearIssueAllCrossCache(ctx, r.cacheRepo); err != nil {
@@ -1960,11 +2137,20 @@ func (r *RedisCachedIssueRepository) Update(ctx context.Context, id model.ID, op
 			return nil, err
 		}
 	}
+	if before != nil && before.Key != "" && before.Key != issue.Key {
+		if err := clearIssueGetByKey(ctx, r.cacheRepo, before.Key); err != nil {
+			return nil, err
+		}
+	}
 
 	return issue, nil
 }
 
 func (r *RedisCachedIssueRepository) Delete(ctx context.Context, id model.ID) error {
+	issue, _ := r.issueRepo.Get(ctx, id, IssueProjection{
+		Assignments: true,
+	})
+
 	if err := clearIssuesKey(ctx, r.cacheRepo, id); err != nil {
 		return err
 	}
@@ -1977,14 +2163,6 @@ func (r *RedisCachedIssueRepository) Delete(ctx context.Context, id model.ID) er
 		return err
 	}
 
-	if err := clearIssueAllForIssue(ctx, r.cacheRepo); err != nil {
-		return err
-	}
-
-	if err := clearIssueAllForProject(ctx, r.cacheRepo); err != nil {
-		return err
-	}
-
 	if err := clearIssueAllGetByKey(ctx, r.cacheRepo); err != nil {
 		return err
 	}
@@ -1993,7 +2171,27 @@ func (r *RedisCachedIssueRepository) Delete(ctx context.Context, id model.ID) er
 		return err
 	}
 
-	return r.issueRepo.Delete(ctx, id)
+	if err := r.issueRepo.Delete(ctx, id); err != nil {
+		return err
+	}
+
+	if issue != nil && issue.Project != nil {
+		if err := bumpIssueListProjectGeneration(ctx, r.cacheRepo, issue.Project.ID); err != nil {
+			return err
+		}
+	}
+	if issue != nil && issue.Namespace != nil {
+		if err := bumpIssueListNamespaceGeneration(ctx, r.cacheRepo, issue.Namespace.ID); err != nil {
+			return err
+		}
+	}
+	for _, assigneeID := range uniqueIDs(issueAssigneeIDs(issue)) {
+		if err := bumpIssueListUserGeneration(ctx, r.cacheRepo, assigneeID); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // NewCachedIssueRepository returns a new CachedIssueRepository.

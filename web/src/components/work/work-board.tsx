@@ -22,7 +22,14 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { PlusIcon } from "lucide-react";
-import { useEffect, useId, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 import { issuePriorityLabels } from "./priority-ribbon";
 import type { BoardItemMove, BoardMoveGroup } from "./use-board-issue-move";
@@ -130,6 +137,8 @@ function BoardColumn({
   dragEnabled: boolean;
 }) {
   const headingId = useId();
+  const scrollRootRef = useRef<HTMLDivElement | null>(null);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
   const [visibleCount, setVisibleCount] = useState(COLUMN_PAGE_SIZE);
   const visibleItems = items.slice(0, visibleCount);
   const remaining = items.length - visibleItems.length;
@@ -138,6 +147,39 @@ function BoardColumn({
     data: { type: "column", columnKey },
     disabled: !dragEnabled,
   });
+  const setScrollRootRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      scrollRootRef.current = node;
+      setNodeRef(node);
+    },
+    [setNodeRef]
+  );
+
+  useEffect(() => {
+    if (remaining <= 0) {
+      return;
+    }
+
+    const root = scrollRootRef.current;
+    const sentinel = sentinelRef.current;
+    if (!root || !sentinel) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((entry) => entry.isIntersecting)) {
+          return;
+        }
+        setVisibleCount((count) =>
+          Math.min(count + COLUMN_PAGE_SIZE, items.length)
+        );
+      },
+      { root, rootMargin: "0px 0px 80px 0px" }
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [items.length, remaining]);
 
   return (
     <section
@@ -166,7 +208,10 @@ function BoardColumn({
           <PlusIcon />
         </Button>
       </header>
-      <div ref={setNodeRef} className="min-h-20 space-y-2 overflow-y-auto p-2">
+      <div
+        ref={setScrollRootRef}
+        className="min-h-20 space-y-2 overflow-y-auto p-2"
+      >
         <SortableContext
           id={columnKey}
           items={visibleItems.map((item) => item.id)}
@@ -188,15 +233,7 @@ function BoardColumn({
           </p>
         )}
         {remaining > 0 && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="w-full"
-            onClick={() => setVisibleCount((count) => count + COLUMN_PAGE_SIZE)}
-          >
-            Show {Math.min(remaining, COLUMN_PAGE_SIZE)} more
-          </Button>
+          <div ref={sentinelRef} className="h-px w-full shrink-0" aria-hidden />
         )}
       </div>
     </section>

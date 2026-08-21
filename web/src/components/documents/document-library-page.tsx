@@ -20,6 +20,10 @@ import { FolderRenameDialog } from "./folder-rename-dialog";
 
 import { ContentWidth } from "@/components/layout/content-width";
 import { openQuickCreate } from "@/components/quick-create/open";
+import {
+  CursorPaginator,
+  cursorPaginatorProps,
+} from "@/components/shared/cursor-paginator";
 import { EntityHeader } from "@/components/shared/entity-header";
 import { AppList } from "@/components/shared/entity-link";
 import {
@@ -51,19 +55,14 @@ import {
   ItemTitle,
 } from "@/components/ui/item";
 import { ListSkeleton } from "@/components/ui/list-skeleton";
-import { collectedListQuery, cursorPageQuery } from "@/lib/api/cursor-pages";
+import { useCursorPageNav } from "@/hooks/use-cursor-page-nav";
+import { cursorPageQuery } from "@/lib/api/cursor-pages";
 import {
   v1NamespacesDocumentsGetOptions,
   v1NamespacesFoldersGetOptions,
   v1OrganizationsDocumentsGetOptions,
   v1OrganizationsFoldersGetOptions,
 } from "@/lib/api/query-options";
-import {
-  v1NamespacesDocumentsGet,
-  v1NamespacesFoldersGet,
-  v1OrganizationsDocumentsGet,
-  v1OrganizationsFoldersGet,
-} from "@/lib/api/sdk";
 import type { Folder, PartialDocument } from "@/lib/api/types";
 import {
   ALL_DOCUMENT_CREATORS,
@@ -129,69 +128,48 @@ export function DocumentLibraryPage({
     : folderId
       ? { folder_id: folderId }
       : {};
+  const documentsNav = useCursorPageNav({
+    resetKey: `${kind}:${libraryId}:${folderId ?? ""}:${showAll}:${query}`,
+  });
   const listOptions =
     kind === "organization"
       ? v1OrganizationsDocumentsGetOptions({
           path: { id: libraryId },
-          query: documentsQuery,
+          query: {
+            ...cursorPageQuery(documentsNav.pageToken),
+            ...documentsQuery,
+          },
         })
       : v1NamespacesDocumentsGetOptions({
           path: { id: libraryId },
-          query: documentsQuery,
+          query: {
+            ...cursorPageQuery(documentsNav.pageToken),
+            ...documentsQuery,
+          },
         });
   const folderListOptions =
     kind === "organization"
       ? v1OrganizationsFoldersGetOptions({
           path: { id: libraryId },
-          query: folderId ? { parent_id: folderId } : {},
+          query: {
+            ...cursorPageQuery(),
+            ...(folderId ? { parent_id: folderId } : {}),
+          },
         })
       : v1NamespacesFoldersGetOptions({
           path: { id: libraryId },
-          query: folderId ? { parent_id: folderId } : {},
+          query: {
+            ...cursorPageQuery(),
+            ...(folderId ? { parent_id: folderId } : {}),
+          },
         });
 
   const { data: documentsPage, isLoading: isDocumentsLoading } = useQuery({
-    ...collectedListQuery<PartialDocument>(
-      listOptions,
-      async (pageToken, signal) => {
-        const get =
-          kind === "organization"
-            ? v1OrganizationsDocumentsGet
-            : v1NamespacesDocumentsGet;
-        const { data } = await get({
-          path: { id: libraryId },
-          query: {
-            ...cursorPageQuery(pageToken),
-            ...documentsQuery,
-          },
-          signal,
-          throwOnError: true,
-        });
-        return data;
-      }
-    ),
+    ...listOptions,
     enabled: hasReadAccess,
   });
   const { data: foldersPage, isLoading: isFoldersLoading } = useQuery({
-    ...collectedListQuery<Folder>(
-      folderListOptions,
-      async (pageToken, signal) => {
-        const get =
-          kind === "organization"
-            ? v1OrganizationsFoldersGet
-            : v1NamespacesFoldersGet;
-        const { data } = await get({
-          path: { id: libraryId },
-          query: {
-            ...cursorPageQuery(pageToken),
-            ...(folderId ? { parent_id: folderId } : {}),
-          },
-          signal,
-          throwOnError: true,
-        });
-        return data;
-      }
-    ),
+    ...folderListOptions,
     enabled: hasReadAccess && !showAll,
   });
   const { data: folderPath } = useQuery({
@@ -392,6 +370,9 @@ export function DocumentLibraryPage({
                   }
                 />
               ) : null}
+              <CursorPaginator
+                {...cursorPaginatorProps(documentsPage, documentsNav)}
+              />
             </>
           ) : (
             <EmptyState

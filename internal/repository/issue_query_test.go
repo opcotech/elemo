@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/opcotech/elemo/internal/model"
@@ -73,6 +74,27 @@ func TestIssueListForNamespaceQuery_Compile(t *testing.T) {
 		require.Len(t, plan.Loaders, 3)
 	})
 
+	t.Run("authz filters projects before expanding issues", func(t *testing.T) {
+		t.Parallel()
+
+		scopeID := model.MustNewID(model.ResourceTypeProject)
+		plan, err := CompileQuery(IssueListForNamespaceQuery{
+			NamespaceID: namespaceID,
+			ScopeIDs:    []model.ID{scopeID},
+			Page:        CursorPage{Size: 10},
+			Projection:  IssueListForNamespaceProjection(),
+		})
+		require.NoError(t, err)
+		cypher := plan.Root.Cypher
+		assert.Contains(t, cypher, ")-[:HAS_PROJECT]->(p:")
+		assert.Contains(t, cypher, "EXISTS { MATCH (p)-[:IN_SCOPE_OF*0..4]->(scope)")
+		assert.NotContains(t, cypher, "MATCH path =")
+		assert.Contains(t, cypher, "MATCH (p)<-[:BELONGS_TO]-(i:")
+		assert.Greater(t, strings.Index(cypher, "EXISTS {"), strings.Index(cypher, "HAS_PROJECT"))
+		assert.Greater(t, strings.Index(cypher, "BELONGS_TO"), strings.Index(cypher, "EXISTS {"))
+		assert.Equal(t, []string{scopeID.String()}, plan.Root.Params["scope_ids"])
+	})
+
 	t.Run("invalid namespace id", func(t *testing.T) {
 		t.Parallel()
 
@@ -102,6 +124,7 @@ func TestIssueListForUserQuery_Compile(t *testing.T) {
 		assert.Contains(t, plan.Root.Cypher, "ASSIGNED_TO")
 		assert.Contains(t, plan.Root.Cypher, "{kind: $assignee_kind}")
 		assert.Contains(t, plan.Root.Cypher, "RETURN i, p, n, u")
+		assert.Less(t, strings.Index(plan.Root.Cypher, "LIMIT $limit"), strings.Index(plan.Root.Cypher, "OPTIONAL MATCH (n:Namespace)"))
 		assert.Equal(t, userID.String(), plan.Root.Params["user_id"])
 		assert.Equal(t, model.AssignmentKindAssignee.String(), plan.Root.Params["assignee_kind"])
 		assert.Equal(t, 11, plan.Root.Params["limit"])
@@ -112,19 +135,22 @@ func TestIssueListForUserQuery_Compile(t *testing.T) {
 		t.Parallel()
 
 		actorID := model.MustNewID(model.ResourceTypeUser)
+		scopeID := model.MustNewID(model.ResourceTypeProject)
 		plan, err := CompileQuery(IssueListForUserQuery{
 			UserID:     userID,
 			ActorID:    actorID,
 			Action:     model.ActionIssueRead,
+			ScopeIDs:   []model.ID{scopeID},
 			Page:       CursorPage{Size: 10},
 			Projection: IssueListForUserProjection(),
 		})
 		require.NoError(t, err)
 		assert.Contains(t, plan.Root.Cypher, "EXISTS {")
-		assert.Contains(t, plan.Root.Cypher, "ALL(authz_node IN nodes(path)")
-		assert.NotContains(t, plan.Root.Cypher, "ALL(n IN")
+		assert.Contains(t, plan.Root.Cypher, "MATCH (p)-[:IN_SCOPE_OF*0..4]->(scope)")
+		assert.NotContains(t, plan.Root.Cypher, "MATCH path =")
+		assert.Contains(t, plan.Root.Cypher, "scope.id IN $scope_ids")
 		assert.Equal(t, userID.String(), plan.Root.Params["user_id"])
-		assert.Equal(t, actorID.String(), plan.Root.Params["actor_id"])
+		assert.Equal(t, []string{scopeID.String()}, plan.Root.Params["scope_ids"])
 	})
 
 	t.Run("invalid user id", func(t *testing.T) {

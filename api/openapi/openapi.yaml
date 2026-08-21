@@ -1249,6 +1249,15 @@ components:
           format: date-time
           description: Start date of the issue.
           nullable: true
+        created_at:
+          type: string
+          format: date-time
+          description: Date when the issue was created.
+        updated_at:
+          type: string
+          format: date-time
+          description: Date when the issue was updated.
+          nullable: true
       required:
         - id
         - key
@@ -1260,6 +1269,8 @@ components:
         - assignees
         - reviewers
         - labels
+        - created_at
+        - updated_at
     IssueKind:
       type: string
       enum:
@@ -2623,6 +2634,61 @@ components:
       schema:
         type: string
       description: Opaque continuation token from a previous page_info.next_page_token.
+    issue_list_q:
+      name: q
+      in: query
+      required: false
+      schema:
+        type: string
+        maxLength: 500
+      description: Case-insensitive substring search over issue key, title, and description.
+    issue_list_status:
+      name: status
+      in: query
+      required: false
+      style: form
+      explode: true
+      schema:
+        type: array
+        items:
+          $ref: "#/components/schemas/IssueStatus"
+      description: Match any of the provided statuses.
+    issue_list_priority:
+      name: priority
+      in: query
+      required: false
+      style: form
+      explode: true
+      schema:
+        type: array
+        items:
+          $ref: "#/components/schemas/IssuePriority"
+      description: Match any of the provided priorities.
+    issue_list_order:
+      name: order
+      in: query
+      required: false
+      schema:
+        type: string
+        default: rank:asc
+        enum:
+          - rank:asc
+          - rank:desc
+          - numeric_id:asc
+          - numeric_id:desc
+          - title:asc
+          - title:desc
+          - priority:asc
+          - priority:desc
+          - status:asc
+          - status:desc
+          - due_date:asc
+          - due_date:desc
+          - created_at:asc
+          - created_at:desc
+          - updated_at:asc
+          - updated_at:desc
+      description: Sort order in `field:direction` format.
     search_page_size:
       name: page_size
       in: query
@@ -3919,6 +3985,10 @@ paths:
       parameters:
         - $ref: "#/components/parameters/page_size"
         - $ref: "#/components/parameters/page_token"
+        - $ref: "#/components/parameters/issue_list_q"
+        - $ref: "#/components/parameters/issue_list_status"
+        - $ref: "#/components/parameters/issue_list_priority"
+        - $ref: "#/components/parameters/issue_list_order"
   /v1/labels:
     get:
       summary: List labels
@@ -5467,6 +5537,10 @@ paths:
       parameters:
         - $ref: "#/components/parameters/page_size"
         - $ref: "#/components/parameters/page_token"
+        - $ref: "#/components/parameters/issue_list_q"
+        - $ref: "#/components/parameters/issue_list_status"
+        - $ref: "#/components/parameters/issue_list_priority"
+        - $ref: "#/components/parameters/issue_list_order"
   "/v1/namespaces/{id}/issues/{key}":
     parameters:
       - $ref: "#/components/parameters/id"
@@ -5612,6 +5686,10 @@ paths:
       parameters:
         - $ref: "#/components/parameters/page_size"
         - $ref: "#/components/parameters/page_token"
+        - $ref: "#/components/parameters/issue_list_q"
+        - $ref: "#/components/parameters/issue_list_status"
+        - $ref: "#/components/parameters/issue_list_priority"
+        - $ref: "#/components/parameters/issue_list_order"
     post:
       summary: Create issue in project
       operationId: v1ProjectsIssuesCreate

@@ -1,7 +1,6 @@
 package http
 
 import (
-	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/service"
 	"github.com/opcotech/elemo/internal/transport/http/api"
 )
@@ -19,11 +18,6 @@ func cursorPageFromParams(pageSize *int, pageToken *string) (service.CursorPage,
 	}.Normalize()
 	if err != nil {
 		return service.CursorPage{}, err
-	}
-	if page.Token != nil {
-		if _, err := repository.DecodeCursor(*page.Token); err != nil {
-			return service.CursorPage{}, err
-		}
 	}
 	return page, nil
 }

@@ -1,3 +1,4 @@
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { ChevronsUpDownIcon, Layers3Icon } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -5,6 +6,10 @@ import { z } from "zod";
 
 import { ContentWidth } from "@/components/layout/content-width";
 import { NamespaceEntitySubtitle } from "@/components/namespaces/namespace-entity-subtitle";
+import {
+  CursorPaginator,
+  cursorPaginatorProps,
+} from "@/components/shared/cursor-paginator";
 import { AppList, EntityLink } from "@/components/shared/entity-link";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,10 +30,13 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { SearchInput } from "@/components/ui/search-input";
+import { useCursorPageNav } from "@/hooks/use-cursor-page-nav";
 import {
   accessibleNamespacesOptions,
   useAccessibleNamespaces,
 } from "@/lib/api/accessible-namespaces";
+import { cursorPageQuery } from "@/lib/api/cursor-pages";
+import { v1NamespacesGetOptions } from "@/lib/api/query-options";
 import { cn } from "@/lib/utils";
 
 const namespacesListSearchSchema = z.object({
@@ -122,9 +130,25 @@ function OrganizationFilter({
 function NamespacesListPage() {
   const search = Route.useSearch();
   const navigate = Route.useNavigate();
-  const { data: accessibleWorkspace, isLoading } = useAccessibleNamespaces();
-  const namespaces = accessibleWorkspace?.namespaces ?? [];
+  const { data: accessibleWorkspace } = useAccessibleNamespaces();
   const organizations = accessibleWorkspace?.organizations ?? [];
+  const pageNav = useCursorPageNav({
+    resetKey: `${search.q ?? ""}|${search.organization ?? ""}`,
+  });
+  const { data: namespacesPage, isLoading } = useQuery(
+    v1NamespacesGetOptions({
+      query: cursorPageQuery(pageNav.pageToken),
+    })
+  );
+  const namespaces = useMemo(
+    () =>
+      (namespacesPage?.items ?? []).map((namespace) => ({
+        ...namespace,
+        organizationId: namespace.organization.id,
+        organizationName: namespace.organization.name,
+      })),
+    [namespacesPage?.items]
+  );
 
   const filteredNamespaces = useMemo(() => {
     const query = search.q?.trim().toLowerCase() ?? "";
@@ -191,24 +215,27 @@ function NamespacesListPage() {
       {isLoading ? (
         <ListSkeleton />
       ) : filteredNamespaces.length > 0 ? (
-        <AppList>
-          {filteredNamespaces.map((namespace) => (
-            <EntityLink
-              key={namespace.id}
-              type="namespace"
-              href={`/namespaces/${namespace.id}`}
-              title={namespace.name}
-              subtitle={
-                <NamespaceEntitySubtitle
-                  description={namespace.description}
-                  organizationName={namespace.organizationName}
-                  projectCount={namespace.project_count ?? 0}
-                  documentCount={namespace.document_count ?? 0}
-                />
-              }
-            />
-          ))}
-        </AppList>
+        <>
+          <AppList>
+            {filteredNamespaces.map((namespace) => (
+              <EntityLink
+                key={namespace.id}
+                type="namespace"
+                href={`/namespaces/${namespace.id}`}
+                title={namespace.name}
+                subtitle={
+                  <NamespaceEntitySubtitle
+                    description={namespace.description}
+                    organizationName={namespace.organizationName}
+                    projectCount={namespace.project_count ?? 0}
+                    documentCount={namespace.document_count ?? 0}
+                  />
+                }
+              />
+            ))}
+          </AppList>
+          <CursorPaginator {...cursorPaginatorProps(namespacesPage, pageNav)} />
+        </>
       ) : (
         <EmptyState
           icon={<Layers3Icon />}

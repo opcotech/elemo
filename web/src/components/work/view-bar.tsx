@@ -26,6 +26,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import type { SavedView, Scope, WorkLayout } from "@/lib/mock-data";
 import {
   resolveWorkScope,
@@ -219,8 +224,8 @@ export function ViewBar({
         </div>
 
         <div className="ml-auto flex flex-wrap items-center gap-1">
-          <DropdownMenu>
-            <DropdownMenuTrigger
+          <Popover>
+            <PopoverTrigger
               render={
                 <Button
                   variant={search.filter ? "secondary" : "ghost"}
@@ -231,9 +236,9 @@ export function ViewBar({
             >
               <FilterIcon aria-hidden />
               <span className="hidden md:inline">Filter</span>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="min-w-72 p-3">
-              <div className="text-muted-foreground px-2.5 py-1.5 text-xs font-medium">
+            </PopoverTrigger>
+            <PopoverContent align="end" className="min-w-72">
+              <div className="text-muted-foreground text-xs font-medium">
                 Natural-language filter
               </div>
               <Input
@@ -244,11 +249,11 @@ export function ViewBar({
                 placeholder="Key, title, label, status..."
                 aria-label="Filter work"
               />
-              <p className="text-muted-foreground mt-2 px-1 text-xs">
+              <p className="text-muted-foreground text-xs">
                 Matches work identity, summary, and labels.
               </p>
-            </DropdownMenuContent>
-          </DropdownMenu>
+            </PopoverContent>
+          </Popover>
 
           <ViewMenuButton
             icon={GroupIcon}

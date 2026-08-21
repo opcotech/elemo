@@ -1407,9 +1407,11 @@ func TestDocumentService_ListLibrary(t *testing.T) {
 
 		permSvc := NewMockPermissionService(ctrl)
 		permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+		permSvc.EXPECT().CtxUserListGrantScopes(ctx, model.ActionDocumentRead).Return([]model.ID{libraryID}, nil)
+		permSvc.EXPECT().ListScopeAncestry(ctx, libraryID).Return([]model.ID{libraryID}, nil)
 
 		documentRepo := repository.NewMockDocumentRepository(ctrl)
-		documentRepo.EXPECT().ListLibrary(ctx, libraryID, userID, repository.LibraryListFilter{}, gomock.Any(), repository.DocumentSummaryProjection()).Return(repository.Page[*repository.Document]{
+		documentRepo.EXPECT().ListLibrary(ctx, libraryID, userID, nil, repository.LibraryListFilter{}, gomock.Any(), repository.DocumentSummaryProjection()).Return(repository.Page[*repository.Document]{
 			Items: []*repository.Document{repoDoc},
 		}, nil)
 

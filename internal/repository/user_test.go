@@ -1294,15 +1294,20 @@ func TestCachedUserRepository_Update(t *testing.T) {
 					require.NoError(t, err)
 
 					span := mock.NewMockSpan(ctrl)
-					span.EXPECT().End(gomock.Len(0)).Times(3)
+					span.EXPECT().End(gomock.Len(0)).Times(7)
 
 					tracer := mock.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(2)
-					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Set", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span).Times(2)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Set", gomock.Len(0)).Return(ctx, span).Times(3)
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, byEmailKey).Return(nil)
 					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(nil)
+					cacheRepo.EXPECT().Get(ctx, issueListUserGenKey(id), gomock.Any()).Return(cache.ErrCacheMiss)
+					cacheRepo.EXPECT().Set(&cache.Item{Ctx: ctx, Key: issueListUserGenKey(id), Value: int64(1)}).Return(nil)
+					cacheRepo.EXPECT().Get(ctx, issueListProjectionEpochKey(), gomock.Any()).Return(cache.ErrCacheMiss)
+					cacheRepo.EXPECT().Set(&cache.Item{Ctx: ctx, Key: issueListProjectionEpochKey(), Value: int64(1)}).Return(nil)
 					cacheRepo.EXPECT().Set(&cache.Item{
 						Ctx:   ctx,
 						Key:   key,
@@ -1653,10 +1658,12 @@ func TestCachedUserRepository_Delete(t *testing.T) {
 					require.NoError(t, err)
 
 					span := mock.NewMockSpan(ctrl)
-					span.EXPECT().End(gomock.Len(0)).Times(5)
+					span.EXPECT().End(gomock.Len(0)).Times(9)
 
 					tracer := mock.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(5)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span).Times(2)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Set", gomock.Len(0)).Return(ctx, span).Times(2)
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
@@ -1664,6 +1671,10 @@ func TestCachedUserRepository_Delete(t *testing.T) {
 					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(nil)
 					cacheRepo.EXPECT().Delete(ctx, organizationsKey).Return(nil)
 					cacheRepo.EXPECT().Delete(ctx, rolesKey).Return(nil)
+					cacheRepo.EXPECT().Get(ctx, issueListUserGenKey(id), gomock.Any()).Return(cache.ErrCacheMiss)
+					cacheRepo.EXPECT().Set(&cache.Item{Ctx: ctx, Key: issueListUserGenKey(id), Value: int64(1)}).Return(nil)
+					cacheRepo.EXPECT().Get(ctx, issueListProjectionEpochKey(), gomock.Any()).Return(cache.ErrCacheMiss)
+					cacheRepo.EXPECT().Set(&cache.Item{Ctx: ctx, Key: issueListProjectionEpochKey(), Value: int64(1)}).Return(nil)
 
 					return &redisBaseRepository{
 						db:     db,
@@ -1721,10 +1732,12 @@ func TestCachedUserRepository_Delete(t *testing.T) {
 					require.NoError(t, err)
 
 					span := mock.NewMockSpan(ctrl)
-					span.EXPECT().End(gomock.Len(0)).Times(5)
+					span.EXPECT().End(gomock.Len(0)).Times(9)
 
 					tracer := mock.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(5)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span).Times(2)
+					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Set", gomock.Len(0)).Return(ctx, span).Times(2)
 
 					cacheRepo := mock.NewCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
@@ -1732,6 +1745,10 @@ func TestCachedUserRepository_Delete(t *testing.T) {
 					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(nil)
 					cacheRepo.EXPECT().Delete(ctx, organizationsKey).Return(nil)
 					cacheRepo.EXPECT().Delete(ctx, rolesKey).Return(nil)
+					cacheRepo.EXPECT().Get(ctx, issueListUserGenKey(id), gomock.Any()).Return(cache.ErrCacheMiss)
+					cacheRepo.EXPECT().Set(&cache.Item{Ctx: ctx, Key: issueListUserGenKey(id), Value: int64(1)}).Return(nil)
+					cacheRepo.EXPECT().Get(ctx, issueListProjectionEpochKey(), gomock.Any()).Return(cache.ErrCacheMiss)
+					cacheRepo.EXPECT().Set(&cache.Item{Ctx: ctx, Key: issueListProjectionEpochKey(), Value: int64(1)}).Return(nil)
 
 					return &redisBaseRepository{
 						db:     db,

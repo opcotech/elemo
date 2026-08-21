@@ -1146,7 +1146,7 @@ func TestCachedDocumentRepository_ListLibrary(t *testing.T) {
 				},
 				documentRepo: func(ctrl *gomock.Controller, ctx context.Context, libraryID model.ID, _, limit int, documents []*Document) DocumentRepository {
 					repo := NewMockDocumentRepository(ctrl)
-					repo.EXPECT().ListLibrary(ctx, libraryID, model.MustNewNilID(model.ResourceTypeUser), LibraryListFilter{}, CursorPage{Size: limit}, DocumentListProjection()).Return(Page[*Document]{Items: documents}, nil)
+					repo.EXPECT().ListLibrary(ctx, libraryID, model.MustNewNilID(model.ResourceTypeUser), nil, LibraryListFilter{}, CursorPage{Size: limit}, DocumentListProjection()).Return(Page[*Document]{Items: documents}, nil)
 					return repo
 				},
 			},
@@ -1268,7 +1268,7 @@ func TestCachedDocumentRepository_ListLibrary(t *testing.T) {
 				},
 				documentRepo: func(ctrl *gomock.Controller, ctx context.Context, libraryID model.ID, _, limit int, _ []*Document) DocumentRepository {
 					repo := NewMockDocumentRepository(ctrl)
-					repo.EXPECT().ListLibrary(ctx, libraryID, model.MustNewNilID(model.ResourceTypeUser), LibraryListFilter{}, CursorPage{Size: limit}, DocumentListProjection()).Return(Page[*Document]{}, ErrNotFound)
+					repo.EXPECT().ListLibrary(ctx, libraryID, model.MustNewNilID(model.ResourceTypeUser), nil, LibraryListFilter{}, CursorPage{Size: limit}, DocumentListProjection()).Return(Page[*Document]{}, ErrNotFound)
 					return repo
 				},
 			},
@@ -1350,7 +1350,7 @@ func TestCachedDocumentRepository_ListLibrary(t *testing.T) {
 				},
 				documentRepo: func(ctrl *gomock.Controller, ctx context.Context, libraryID model.ID, _, limit int, documents []*Document) DocumentRepository {
 					repo := NewMockDocumentRepository(ctrl)
-					repo.EXPECT().ListLibrary(ctx, libraryID, model.MustNewNilID(model.ResourceTypeUser), LibraryListFilter{}, CursorPage{Size: limit}, DocumentListProjection()).Return(Page[*Document]{Items: documents}, nil)
+					repo.EXPECT().ListLibrary(ctx, libraryID, model.MustNewNilID(model.ResourceTypeUser), nil, LibraryListFilter{}, CursorPage{Size: limit}, DocumentListProjection()).Return(Page[*Document]{Items: documents}, nil)
 					return repo
 				},
 			},
@@ -1371,7 +1371,7 @@ func TestCachedDocumentRepository_ListLibrary(t *testing.T) {
 				cacheRepo:    tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.libraryID, tt.args.offset, testPageSize(tt.args.limit), tt.want),
 				documentRepo: tt.fields.documentRepo(ctrl, tt.args.ctx, tt.args.libraryID, tt.args.offset, testPageSize(tt.args.limit), tt.want),
 			}
-			got, err := r.ListLibrary(tt.args.ctx, tt.args.libraryID, model.MustNewNilID(model.ResourceTypeUser), LibraryListFilter{}, CursorPage{Size: testPageSize(tt.args.limit)}, DocumentListProjection())
+			got, err := r.ListLibrary(tt.args.ctx, tt.args.libraryID, model.MustNewNilID(model.ResourceTypeUser), nil, LibraryListFilter{}, CursorPage{Size: testPageSize(tt.args.limit)}, DocumentListProjection())
 			assert.ErrorIs(t, err, tt.wantErr)
 			assert.ElementsMatch(t, tt.want, got.Items)
 		})

@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { PlusIcon, SearchIcon } from "lucide-react";
 import {
   Suspense,
@@ -29,7 +29,12 @@ import {
   WorkInspectorSkeleton,
   WorkSurfaceLayoutSkeleton,
 } from "@/components/work/work-surface-skeletons";
-import { collectedListQuery, cursorPageQuery } from "@/lib/api/cursor-pages";
+import {
+  MAX_CURSOR_PAGES,
+  cursorPageQueryWith,
+  flattenCursorPages,
+  nextCursorPageToken,
+} from "@/lib/api/cursor-pages";
 import {
   v1NamespacesIssuesGetOptions,
   v1ProjectsIssuesGetOptions,
@@ -57,6 +62,10 @@ import type {
   WorkStatus,
 } from "@/lib/mock-data";
 import { issuesToWorkItems } from "@/lib/work/issue-adapter";
+import {
+  buildIssueListApiQuery,
+  issueListClientOnlyFilters,
+} from "@/lib/work/issue-list-query";
 import { resolveWorkScope } from "@/lib/work-route-search";
 import type { WorkRouteSearch } from "@/lib/work-route-search";
 
@@ -157,23 +166,58 @@ function useListedWorkItems({
   search: WorkRouteSearch;
   activeViewFilters?: WorkFilters;
 }) {
-  const {
-    data: issuesPage,
+  const { data, error, isPending, isFetchingNextPage, fetchNextPage } =
+    useInfiniteQuery({
+      staleTime: listOptions.staleTime as number | undefined,
+      gcTime: listOptions.gcTime as number | undefined,
+      queryKey: [...listOptions.queryKey, "progressive"],
+      initialPageParam: undefined as string | undefined,
+      queryFn: ({ pageParam, signal }) => fetchPage(pageParam, signal),
+      getNextPageParam: (lastPage) => nextCursorPageToken(lastPage),
+    });
+
+  const pages = data?.pages ?? [];
+  const lastPage = pages[pages.length - 1];
+  const hasMorePages =
+    Boolean(nextCursorPageToken(lastPage)) && pages.length < MAX_CURSOR_PAGES;
+  const collectionComplete =
+    !hasMorePages || (Boolean(error) && pages.length > 0);
+
+  useEffect(() => {
+    if (isPending || isFetchingNextPage || !hasMorePages) {
+      return;
+    }
+    if (error && pages.length > 0) {
+      return;
+    }
+    void fetchNextPage();
+  }, [
     error,
+    fetchNextPage,
+    hasMorePages,
+    isFetchingNextPage,
     isPending,
-  } = useQuery(collectedListQuery(listOptions, fetchPage));
+    pages.length,
+  ]);
 
   const items = useMemo(() => {
-    return queryWorkItems(toWorkItems(issuesPage?.items ?? []), {
-      filters: {
-        ...activeViewFilters,
-        ...(search.filter ? { text: search.filter } : {}),
-      },
+    const mergedItems = flattenCursorPages(pages);
+    return queryWorkItems(toWorkItems(mergedItems), {
+      filters: issueListClientOnlyFilters(activeViewFilters),
       sort: [parseWorkSort(search.sort)],
     });
-  }, [activeViewFilters, issuesPage, search.filter, search.sort, toWorkItems]);
+  }, [activeViewFilters, pages, search, toWorkItems]);
 
-  return { items, error, isPending };
+  const hasFirstPage = pages.length > 0;
+  const surfacedError = hasFirstPage ? undefined : error;
+
+  return {
+    items,
+    error: surfacedError,
+    isPending: !hasFirstPage && isPending,
+    isLoadingMore: hasMorePages || isFetchingNextPage,
+    isCollectionComplete: collectionComplete,
+  };
 }
 
 function WorkSurfaceBody({
@@ -186,6 +230,8 @@ function WorkSurfaceBody({
   usesApiIssues,
   issuesError,
   issuesPending,
+  issuesLoadingMore,
+  issuesCollectionComplete,
   search,
   onSearchChange,
   savedViews,
@@ -199,6 +245,8 @@ function WorkSurfaceBody({
   usesApiIssues: boolean;
   issuesError?: unknown;
   issuesPending?: boolean;
+  issuesLoadingMore?: boolean;
+  issuesCollectionComplete?: boolean;
   search: WorkRouteSearch;
   onSearchChange: (patch: SearchPatch) => void;
   savedViews: ReturnType<typeof selectSavedViews>;
@@ -376,6 +424,11 @@ function WorkSurfaceBody({
                 issues.
               </MockDataAlert>
             )}
+            {usesApiIssues && issuesLoadingMore ? (
+              <p className="text-muted-foreground shrink-0 text-xs">
+                Loading more issues in the background...
+              </p>
+            ) : null}
             <div className="min-h-0 min-w-0 flex-1 overflow-hidden">
               {issuesPending ? (
                 <WorkSurfaceLayoutSkeleton layout={search.layout} />
@@ -389,29 +442,39 @@ function WorkSurfaceBody({
                 </div>
               ) : displayItems.length === 0 ? (
                 <div className="h-full overflow-auto">
-                  <EmptyState
-                    icon={<SearchIcon />}
-                    title={search.filter ? "No query matches" : "No work yet"}
-                    description={
-                      search.filter
-                        ? "The current filter does not match work in this scope."
-                        : "Create work in this context to get started."
-                    }
-                    action={
-                      search.filter ? (
-                        <Button
-                          variant="outline"
-                          onClick={() => onSearchChange({ filter: undefined })}
-                        >
-                          Clear filter
-                        </Button>
-                      ) : (
-                        <Button onClick={() => openQuickCreate("work")}>
-                          Quick create
-                        </Button>
-                      )
-                    }
-                  />
+                  {usesApiIssues && !issuesCollectionComplete ? (
+                    <EmptyState
+                      icon={<SearchIcon />}
+                      title="Loading more work"
+                      description="Still collecting additional pages that may match the current filters."
+                    />
+                  ) : (
+                    <EmptyState
+                      icon={<SearchIcon />}
+                      title={search.filter ? "No query matches" : "No work yet"}
+                      description={
+                        search.filter
+                          ? "The current filter does not match work in this scope."
+                          : "Create work in this context to get started."
+                      }
+                      action={
+                        search.filter ? (
+                          <Button
+                            variant="outline"
+                            onClick={() =>
+                              onSearchChange({ filter: undefined })
+                            }
+                          >
+                            Clear filter
+                          </Button>
+                        ) : (
+                          <Button onClick={() => openQuickCreate("work")}>
+                            Quick create
+                          </Button>
+                        )
+                      }
+                    />
+                  )}
                 </div>
               ) : search.layout === "board" ? (
                 <Suspense
@@ -486,6 +549,10 @@ function ProjectWorkSurface({
     [scope]
   );
   const activeView = savedViews.find((view) => view.id === search.view);
+  const issueListQuery = useMemo(
+    () => buildIssueListApiQuery(search, activeView?.filters),
+    [activeView?.filters, search]
+  );
   const toWorkItems = useCallback(
     (issues: readonly PartialIssue[]) =>
       issuesToWorkItems(issues, {
@@ -498,15 +565,17 @@ function ProjectWorkSurface({
     items: scopedItems,
     error: issuesError,
     isPending: issuesPending,
+    isLoadingMore: issuesLoadingMore,
+    isCollectionComplete: issuesCollectionComplete,
   } = useListedWorkItems({
     listOptions: v1ProjectsIssuesGetOptions({
       path: { id: projectScope.projectId },
-      query: cursorPageQuery(),
+      query: cursorPageQueryWith(issueListQuery),
     }),
     fetchPage: async (pageToken, signal) => {
       const { data } = await v1ProjectsIssuesGet({
         path: { id: projectScope.projectId },
-        query: cursorPageQuery(pageToken),
+        query: cursorPageQueryWith(issueListQuery, pageToken),
         signal,
         throwOnError: true,
       });
@@ -528,6 +597,8 @@ function ProjectWorkSurface({
       usesApiIssues
       issuesError={issuesError}
       issuesPending={issuesPending}
+      issuesLoadingMore={issuesLoadingMore}
+      issuesCollectionComplete={issuesCollectionComplete}
       search={search}
       onSearchChange={onSearchChange}
       savedViews={savedViews}
@@ -558,6 +629,10 @@ function NamespaceWorkSurface({
     [scope]
   );
   const activeView = savedViews.find((view) => view.id === search.view);
+  const issueListQuery = useMemo(
+    () => buildIssueListApiQuery(search, activeView?.filters),
+    [activeView?.filters, search]
+  );
   const toWorkItems = useCallback(
     (issues: readonly PartialIssue[]) =>
       issuesToWorkItems(issues, { namespaceId: namespaceScope.namespaceId }),
@@ -567,15 +642,17 @@ function NamespaceWorkSurface({
     items: scopedItems,
     error: issuesError,
     isPending: issuesPending,
+    isLoadingMore: issuesLoadingMore,
+    isCollectionComplete: issuesCollectionComplete,
   } = useListedWorkItems({
     listOptions: v1NamespacesIssuesGetOptions({
       path: { id: namespaceScope.namespaceId },
-      query: cursorPageQuery(),
+      query: cursorPageQueryWith(issueListQuery),
     }),
     fetchPage: async (pageToken, signal) => {
       const { data } = await v1NamespacesIssuesGet({
         path: { id: namespaceScope.namespaceId },
-        query: cursorPageQuery(pageToken),
+        query: cursorPageQueryWith(issueListQuery, pageToken),
         signal,
         throwOnError: true,
       });
@@ -597,6 +674,8 @@ function NamespaceWorkSurface({
       usesApiIssues
       issuesError={issuesError}
       issuesPending={issuesPending}
+      issuesLoadingMore={issuesLoadingMore}
+      issuesCollectionComplete={issuesCollectionComplete}
       search={search}
       onSearchChange={onSearchChange}
       savedViews={savedViews}
@@ -626,6 +705,10 @@ function PersonWorkSurface({
     [scope]
   );
   const activeView = savedViews.find((view) => view.id === search.view);
+  const issueListQuery = useMemo(
+    () => buildIssueListApiQuery(search, activeView?.filters),
+    [activeView?.filters, search]
+  );
   const toWorkItems = useCallback(
     (issues: readonly PartialIssue[]) => issuesToWorkItems(issues),
     []
@@ -634,15 +717,17 @@ function PersonWorkSurface({
     items: scopedItems,
     error: issuesError,
     isPending: issuesPending,
+    isLoadingMore: issuesLoadingMore,
+    isCollectionComplete: issuesCollectionComplete,
   } = useListedWorkItems({
     listOptions: v1UsersIssuesGetOptions({
       path: { id: personScope.personId },
-      query: cursorPageQuery(),
+      query: cursorPageQueryWith(issueListQuery),
     }),
     fetchPage: async (pageToken, signal) => {
       const { data } = await v1UsersIssuesGet({
         path: { id: personScope.personId },
-        query: cursorPageQuery(pageToken),
+        query: cursorPageQueryWith(issueListQuery, pageToken),
         signal,
         throwOnError: true,
       });
@@ -664,6 +749,8 @@ function PersonWorkSurface({
       usesApiIssues
       issuesError={issuesError}
       issuesPending={issuesPending}
+      issuesLoadingMore={issuesLoadingMore}
+      issuesCollectionComplete={issuesCollectionComplete}
       search={search}
       onSearchChange={onSearchChange}
       savedViews={savedViews}

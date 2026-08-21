@@ -3,6 +3,7 @@ package repository_test
 import (
 	"context"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -13,6 +14,17 @@ import (
 	testModel "github.com/opcotech/elemo/internal/testutil/model"
 	"github.com/stretchr/testify/suite"
 )
+
+func cacheKeysWithoutIssueListGeneration(keys []string) []string {
+	filtered := make([]string, 0, len(keys))
+	for _, key := range keys {
+		if strings.HasPrefix(key, "issue:list:gen:") {
+			continue
+		}
+		filtered = append(filtered, key)
+	}
+	return filtered
+}
 
 type IssueRepositoryIntegrationTestSuite struct {
 	testutil.ContainerIntegrationTestSuite
@@ -396,7 +408,7 @@ func (s *CachedIssueRepositoryIntegrationTestSuite) TestCreate() {
 	issue, err := s.issueRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 	s.Assert().NotNil(issue.CreatedAt)
-	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 0)
+	s.Assert().Len(cacheKeysWithoutIssueListGeneration(s.Keys(&s.ContainerIntegrationTestSuite, "*")), 0)
 }
 
 func (s *CachedIssueRepositoryIntegrationTestSuite) TestGet() {
@@ -407,7 +419,7 @@ func (s *CachedIssueRepositoryIntegrationTestSuite) TestGet() {
 	usingCache, err := s.issueRepo.Get(context.Background(), created.ID, repository.IssueDetailProjection())
 	s.Require().NoError(err)
 	s.Assert().Equal(original, usingCache)
-	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
+	s.Assert().Len(cacheKeysWithoutIssueListGeneration(s.Keys(&s.ContainerIntegrationTestSuite, "*")), 1)
 }
 
 func (s *CachedIssueRepositoryIntegrationTestSuite) TestGetByKey() {
@@ -418,7 +430,7 @@ func (s *CachedIssueRepositoryIntegrationTestSuite) TestGetByKey() {
 	usingCache, err := s.issueRepo.GetByKey(context.Background(), s.testNamespace.ID, created.Key, repository.IssueDetailProjection())
 	s.Require().NoError(err)
 	s.Assert().Equal(original, usingCache)
-	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
+	s.Assert().Len(cacheKeysWithoutIssueListGeneration(s.Keys(&s.ContainerIntegrationTestSuite, "*")), 1)
 }
 
 func (s *CachedIssueRepositoryIntegrationTestSuite) TestGetAllForProject() {
@@ -429,7 +441,7 @@ func (s *CachedIssueRepositoryIntegrationTestSuite) TestGetAllForProject() {
 	usingCache, err := s.issueRepo.ListForProject(context.Background(), repository.IssueListQuery{ProjectID: s.testProject.ID, Page: repository.CursorPage{Size: 10}, Projection: repository.IssueListForProjectProjection()})
 	s.Require().NoError(err)
 	s.Assert().Equal(original, usingCache)
-	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
+	s.Assert().Len(cacheKeysWithoutIssueListGeneration(s.Keys(&s.ContainerIntegrationTestSuite, "*")), 1)
 }
 
 func (s *CachedIssueRepositoryIntegrationTestSuite) TestUpdate() {
@@ -440,7 +452,7 @@ func (s *CachedIssueRepositoryIntegrationTestSuite) TestUpdate() {
 	}, repository.IssueDetailProjection())
 	s.Require().NoError(err)
 	s.Assert().Equal("new title", issue.Title)
-	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
+	s.Assert().Len(cacheKeysWithoutIssueListGeneration(s.Keys(&s.ContainerIntegrationTestSuite, "*")), 1)
 }
 
 func (s *CachedIssueRepositoryIntegrationTestSuite) TestUpdateInvalidatesProjectList() {
@@ -482,7 +494,7 @@ func (s *CachedIssueRepositoryIntegrationTestSuite) TestGetAllForNamespace() {
 	})
 	s.Require().NoError(err)
 	s.Assert().Equal(original, usingCache)
-	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
+	s.Assert().Len(cacheKeysWithoutIssueListGeneration(s.Keys(&s.ContainerIntegrationTestSuite, "*")), 1)
 }
 
 func (s *CachedIssueRepositoryIntegrationTestSuite) TestGetAllForUser() {
@@ -505,7 +517,7 @@ func (s *CachedIssueRepositoryIntegrationTestSuite) TestGetAllForUser() {
 	usingCache, err := s.issueRepo.ListForUser(context.Background(), query)
 	s.Require().NoError(err)
 	s.Assert().Equal(original, usingCache)
-	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
+	s.Assert().Len(cacheKeysWithoutIssueListGeneration(s.Keys(&s.ContainerIntegrationTestSuite, "*")), 1)
 }
 
 func (s *CachedIssueRepositoryIntegrationTestSuite) TestDelete() {
@@ -516,7 +528,7 @@ func (s *CachedIssueRepositoryIntegrationTestSuite) TestDelete() {
 	s.Require().NoError(s.issueRepo.Delete(context.Background(), created.ID))
 	_, err = s.issueRepo.Get(context.Background(), created.ID, repository.IssueDetailProjection())
 	s.Assert().ErrorIs(err, repository.ErrNotFound)
-	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 0)
+	s.Assert().Len(cacheKeysWithoutIssueListGeneration(s.Keys(&s.ContainerIntegrationTestSuite, "*")), 0)
 }
 
 func TestCachedIssueRepositoryIntegrationTestSuite(t *testing.T) {

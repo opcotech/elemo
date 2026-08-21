@@ -1,4 +1,3 @@
-import { MarkdownContent } from "./markdown-content";
 import { PriorityRibbon } from "./priority-ribbon";
 import { dateLabel, workItemPath } from "./utils";
 import { WorkLabelBadges } from "./work-label-badges";
@@ -57,11 +56,9 @@ function WorkIdentity({
         </p>
       )}
       {!compact && (
-        <MarkdownContent
-          markdown={item.summary}
-          size="xs"
-          className="mt-1 line-clamp-2"
-        />
+        <p className="text-muted-foreground mt-1 line-clamp-2 text-xs whitespace-pre-wrap">
+          {item.summary}
+        </p>
       )}
       <WorkLabelBadges
         labelIds={item.labelIds}

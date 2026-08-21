@@ -1,6 +1,6 @@
 import type { QueryClient } from "@tanstack/react-query";
 
-import { collectListedPage, cursorPageQuery } from "@/lib/api/cursor-pages";
+import { cursorPageQuery } from "@/lib/api/cursor-pages";
 import {
   v1OrganizationGetOptions,
   v1OrganizationMembersGetOptions,
@@ -48,48 +48,42 @@ export async function loadOrganizationWorkspace(
     };
   }
 
-  const [membersPage, namespaces, roles, teams] = await Promise.all([
-    collectListedPage(async (pageToken) =>
+  const [membersPage, namespacesPage, rolesPage, teamsPage] = await Promise.all(
+    [
       queryClient.fetchQuery(
         v1OrganizationMembersGetOptions({
           path: { id: organizationId },
-          query: cursorPageQuery(pageToken),
+          query: cursorPageQuery(),
         })
-      )
-    ),
-    collectListedPage(async (pageToken) =>
+      ),
       queryClient.fetchQuery(
         v1OrganizationsNamespacesGetOptions({
           path: { id: organizationId },
-          query: cursorPageQuery(pageToken),
+          query: cursorPageQuery(),
         })
-      )
-    ),
-    collectListedPage(async (pageToken) =>
+      ),
       queryClient.fetchQuery(
         v1OrganizationRolesGetOptions({
           path: { id: organizationId },
-          query: cursorPageQuery(pageToken),
+          query: cursorPageQuery(),
         })
-      )
-    ),
-    collectListedPage(async (pageToken) =>
+      ),
       queryClient.fetchQuery(
         v1OrganizationTeamsGetOptions({
           path: { id: organizationId },
-          query: cursorPageQuery(pageToken),
+          query: cursorPageQuery(),
         })
-      )
-    ),
-  ]);
+      ),
+    ]
+  );
 
   return {
     organization,
     permissions,
-    members: membersPage.items,
-    namespaces: namespaces.items,
-    roles: roles.items,
-    teams: teams.items,
+    members: membersPage.items ?? [],
+    namespaces: namespacesPage.items ?? [],
+    roles: rolesPage.items ?? [],
+    teams: teamsPage.items ?? [],
     hasReadAccess: true as const,
   };
 }

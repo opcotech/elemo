@@ -10,6 +10,10 @@ services:
     container_name: elemo-otel-collector
     command:
       - "--config=/etc/otel-collector-config.yaml"
+    networks:
+      default:
+        aliases:
+          - otelcollector
     volumes:
       - ./otel/collector-config.yaml:/etc/otel-collector-config.yaml
     ports:
@@ -18,6 +22,8 @@ services:
   jaeger:
     image: jaegertracing/all-in-one:latest
     container_name: elemo-jaeger
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
     depends_on:
       otel_collector:
         condition: service_started
@@ -26,7 +32,7 @@ services:
       - "14250:14250"
 
   prometheus:
-    image: prom/prometheus:latest
+    image: prom/prometheus:v3.14.0
     container_name: elemo-prometheus
     command:
       - --config.file=/etc/prometheus.yaml
@@ -41,7 +47,7 @@ services:
       - "9090:9090"
 
   grafana:
-    image: grafana/grafana:latest
+    image: grafana/grafana:13.2.0
     container_name: elemo-grafana
     depends_on:
       jaeger:
@@ -50,10 +56,13 @@ services:
         condition: service_started
     volumes:
       - ./grafana/grafana-datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
+      - ./grafana/grafana-dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
     environment:
       - GF_AUTH_ANONYMOUS_ENABLED=true
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
       - GF_AUTH_DISABLE_LOGIN_FORM=true
       - GF_FEATURE_TOGGLES_ENABLE=traceqlEditor
+      - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/var/lib/grafana/dashboards/elemo-overview.json
     ports:
       - "8000:3000"

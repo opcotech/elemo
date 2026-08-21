@@ -199,7 +199,15 @@ func (s *folderService) List(ctx context.Context, libraryID model.ID, parentID *
 		return Page[*Folder]{}, errors.Join(ErrFolderGetAll, ErrNoUser)
 	}
 
-	folders, err := s.folderRepo.List(ctx, libraryID, parentID, userID, normalized)
+	scopeIDs, allowed, err := resolvedListScopeIDs(ctx, s.permissionService, libraryID, model.ActionDocumentRead)
+	if err != nil {
+		return Page[*Folder]{}, errors.Join(ErrFolderGetAll, err)
+	}
+	if !allowed {
+		return repository.EmptyPage[*Folder](), nil
+	}
+
+	folders, err := s.folderRepo.List(ctx, libraryID, parentID, userID, scopeIDs, normalized)
 	if err != nil {
 		return Page[*Folder]{}, errors.Join(ErrFolderGetAll, err)
 	}

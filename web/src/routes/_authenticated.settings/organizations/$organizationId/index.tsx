@@ -40,15 +40,7 @@ function OrganizationDetailPage() {
   const { user } = useAuth();
   const { organizationId } = Route.useParams();
   const currentUserId = user?.id ?? null;
-  const {
-    organization,
-    members,
-    namespaces,
-    roles,
-    teams,
-    permissions,
-    hasReadAccess,
-  } = Route.useLoaderData();
+  const { organization, permissions, hasReadAccess } = Route.useLoaderData();
 
   return (
     <div className="space-y-6">
@@ -62,34 +54,22 @@ function OrganizationDetailPage() {
       {hasReadAccess && (
         <>
           <NamespacesList
-            namespaces={namespaces}
-            isLoading={false}
-            error={null}
             organizationId={organizationId}
             organizationPermissions={permissions}
           />
 
           <OrganizationMembersList
-            members={members}
-            isLoading={false}
-            error={null}
             currentUserId={currentUserId}
             organizationId={organizationId}
             organizationPermissions={permissions}
           />
 
           <RolesList
-            roles={roles}
-            isLoading={false}
-            error={null}
             organizationId={organizationId}
             organizationPermissions={permissions}
           />
 
           <TeamsList
-            teams={teams}
-            isLoading={false}
-            error={null}
             organizationId={organizationId}
             organizationPermissions={permissions}
           />

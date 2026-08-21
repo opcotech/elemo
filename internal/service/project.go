@@ -254,10 +254,19 @@ func (s *projectService) List(ctx context.Context, namespaceID model.ID, page Cu
 		return Page[*Project]{}, errors.Join(ErrProjectGetAll, ErrNoUser)
 	}
 
+	scopeIDs, allowed, err := resolvedListScopeIDs(ctx, s.permissionService, namespaceID, model.ActionProjectRead)
+	if err != nil {
+		return Page[*Project]{}, errors.Join(ErrProjectGetAll, err)
+	}
+	if !allowed {
+		return repository.EmptyPage[*Project](), nil
+	}
+
 	projects, err := s.projectRepo.List(
 		ctx,
 		namespaceID,
 		userID,
+		scopeIDs,
 		normalized,
 		repository.ProjectListProjection(),
 	)

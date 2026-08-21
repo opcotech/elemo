@@ -47,7 +47,7 @@ type ProjectGetByKeyQuery struct {
 type ProjectListQuery struct {
 	NamespaceID model.ID
 	ActorID     model.ID
-	Action      model.Action
+	ScopeIDs    []model.ID
 	Page        CursorPage
 	Order       SortDirection
 	Projection  ProjectProjection
@@ -83,15 +83,21 @@ func (q ProjectListQuery) Compile() (QueryPlan, error) {
 	if err := q.NamespaceID.Validate(); err != nil {
 		return QueryPlan{}, err
 	}
+	for _, scopeID := range q.ScopeIDs {
+		if err := scopeID.Validate(); err != nil {
+			return QueryPlan{}, err
+		}
+	}
 	params := map[string]any{
 		"namespace_id": q.NamespaceID.String(),
+		"user_id":      q.ActorID.String(),
 	}
 	bounds, err := compileCursorBounds("p", q.Page, q.Order, params)
 	if err != nil {
 		return QueryPlan{}, err
 	}
 
-	authz := applyAuthzVisible(q.ActorID, q.Action, "p", "$user_id", params)
+	authz := applyListScopeAuthz("p", q.ScopeIDs, params)
 	match := `
 	MATCH (:` + q.NamespaceID.Label() + ` {id: $namespace_id})-[:` + EdgeKindHasProject.String() + `]->(p)` + whereClause(" WHERE ", authz, bounds.Where) + `
 	WITH p

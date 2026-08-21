@@ -15,6 +15,10 @@ import { ContentWidth } from "@/components/layout/content-width";
 import { openQuickCreate } from "@/components/quick-create/open";
 import { ActivityFeed } from "@/components/shared/activity-feed";
 import { MockDataAlert } from "@/components/shared/app-feedback";
+import {
+  CursorPaginator,
+  cursorPaginatorProps,
+} from "@/components/shared/cursor-paginator";
 import { EntityHeader, PageActions } from "@/components/shared/entity-header";
 import { RelationList } from "@/components/shared/relation-list";
 import { Button } from "@/components/ui/button";
@@ -31,16 +35,16 @@ import { PropertyList } from "@/components/ui/property-list";
 import { Section } from "@/components/ui/section";
 import { StatusIndicator } from "@/components/ui/status-indicator";
 import { CompactWorkList } from "@/components/work/work-list";
+import { useCursorPageNav } from "@/hooks/use-cursor-page-nav";
 import {
   ResourceType,
   usePermissions,
   withResourceType,
 } from "@/hooks/use-permissions";
-import { collectedListQuery, cursorPageQuery } from "@/lib/api/cursor-pages";
+import { cursorPageQuery } from "@/lib/api/cursor-pages";
 import { v1ProjectsDocumentsGetOptions } from "@/lib/api/query-options";
 import {
   v1ProjectsDocumentsCreate,
-  v1ProjectsDocumentsGet,
   v1ProjectsDocumentsRelate,
   v1ProjectsDocumentsUnrelate,
 } from "@/lib/api/sdk";
@@ -357,18 +361,13 @@ export function ProjectDocumentsPage({
       );
     },
   });
-  const listOptions = v1ProjectsDocumentsGetOptions({
-    path: { id: project.id },
+  const pageNav = useCursorPageNav({
+    resetKey: `${query}|${sort}|${creatorId}`,
   });
   const { data: documentsPage, isLoading } = useQuery(
-    collectedListQuery(listOptions, async (pageToken, signal) => {
-      const { data } = await v1ProjectsDocumentsGet({
-        path: { id: project.id },
-        query: cursorPageQuery(pageToken),
-        signal,
-        throwOnError: true,
-      });
-      return data;
+    v1ProjectsDocumentsGetOptions({
+      path: { id: project.id },
+      query: cursorPageQuery(pageNav.pageToken),
     })
   );
   const documents = useMemo(
@@ -417,30 +416,33 @@ export function ProjectDocumentsPage({
       {isLoading ? (
         <ListSkeleton />
       ) : documents.length > 0 ? (
-        <DocumentList
-          documents={documents}
-          onRename={
-            mayWrite
-              ? (document) => {
-                  setRenamingDocument(document);
-                }
-              : undefined
-          }
-          onUnlink={
-            mayWrite
-              ? (document) => {
-                  void unlinkMutation.mutateAsync(document);
-                }
-              : undefined
-          }
-          onDelete={
-            mayWrite
-              ? (document) => {
-                  setDeletingDocument(document);
-                }
-              : undefined
-          }
-        />
+        <>
+          <DocumentList
+            documents={documents}
+            onRename={
+              mayWrite
+                ? (document) => {
+                    setRenamingDocument(document);
+                  }
+                : undefined
+            }
+            onUnlink={
+              mayWrite
+                ? (document) => {
+                    void unlinkMutation.mutateAsync(document);
+                  }
+                : undefined
+            }
+            onDelete={
+              mayWrite
+                ? (document) => {
+                    setDeletingDocument(document);
+                  }
+                : undefined
+            }
+          />
+          <CursorPaginator {...cursorPaginatorProps(documentsPage, pageNav)} />
+        </>
       ) : (
         <EmptyState
           icon={<FileTextIcon />}
