@@ -34,8 +34,10 @@ import {
   createRichTextExtensions,
   editorValueFrom,
   preventLinkNavigation,
+  resolveRichTextFeatures,
 } from "@/components/ui/rich-text-extensions";
 import type {
+  RichTextEditorFeatures,
   RichTextEditorValue,
   RichTextMentionItem,
 } from "@/components/ui/rich-text-extensions";
@@ -47,7 +49,11 @@ import {
 import type { LinkDialogDraft } from "@/components/ui/rich-text-link";
 import { cn } from "@/lib/utils";
 
-export type { RichTextEditorValue, RichTextMentionItem };
+export type {
+  RichTextEditorFeatures,
+  RichTextEditorValue,
+  RichTextMentionItem,
+};
 
 interface RichTextEditorProps {
   content?: string;
@@ -59,6 +65,7 @@ interface RichTextEditorProps {
   fallback?: ReactNode;
   autoFocus?: boolean;
   mentionItems?: readonly RichTextMentionItem[];
+  features?: Partial<RichTextEditorFeatures>;
   onChange?: (value: RichTextEditorValue) => void;
   onReady?: () => void;
 }
@@ -112,9 +119,20 @@ export function RichTextEditor({
   fallback,
   autoFocus = false,
   mentionItems = [],
+  features: featuresProp,
   onChange,
   onReady,
 }: RichTextEditorProps) {
+  const features = useMemo(
+    () => resolveRichTextFeatures(featuresProp),
+    [
+      featuresProp?.emoji,
+      featuresProp?.headings,
+      featuresProp?.history,
+      featuresProp?.horizontalRule,
+      featuresProp?.tables,
+    ]
+  );
   const mentionItemsRef = useRef(mentionItems);
   mentionItemsRef.current = mentionItems;
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
@@ -125,8 +143,9 @@ export function RichTextEditor({
       createRichTextExtensions({
         placeholder,
         getMentionItems: () => mentionItemsRef.current,
+        features,
       }),
-    [placeholder]
+    [placeholder, features]
   );
 
   const editor = useEditor({
@@ -202,9 +221,15 @@ export function RichTextEditor({
         italic: current.isActive("italic"),
         underline: current.isActive("underline"),
         strike: current.isActive("strike"),
-        heading1: current.isActive("heading", { level: 1 }),
-        heading2: current.isActive("heading", { level: 2 }),
-        heading3: current.isActive("heading", { level: 3 }),
+        heading1: features.headings
+          ? current.isActive("heading", { level: 1 })
+          : false,
+        heading2: features.headings
+          ? current.isActive("heading", { level: 2 })
+          : false,
+        heading3: features.headings
+          ? current.isActive("heading", { level: 3 })
+          : false,
         bulletList: current.isActive("bulletList"),
         orderedList: current.isActive("orderedList"),
         taskList: current.isActive("taskList"),
@@ -215,17 +240,19 @@ export function RichTextEditor({
           (current.getAttributes("codeBlock").language as string | undefined) ??
           "plaintext",
         link: current.isActive("link"),
-        canUndo: current.can().undo(),
-        canRedo: current.can().redo(),
-        canAddRow: current.can().addRowAfter(),
-        canDeleteRow: current.can().deleteRow(),
-        canAddColumn: current.can().addColumnAfter(),
-        canDeleteColumn: current.can().deleteColumn(),
+        canUndo: features.history ? current.can().undo() : false,
+        canRedo: features.history ? current.can().redo() : false,
+        canAddRow: features.tables ? current.can().addRowAfter() : false,
+        canDeleteRow: features.tables ? current.can().deleteRow() : false,
+        canAddColumn: features.tables ? current.can().addColumnAfter() : false,
+        canDeleteColumn: features.tables ? current.can().deleteColumn() : false,
       };
     },
   });
 
   const controlsDisabled = disabled || !editable;
+  const showTrailingExtras =
+    features.horizontalRule || features.tables || features.emoji;
 
   const openLinkDialog = () => {
     if (!editor) {
@@ -255,52 +282,60 @@ export function RichTextEditor({
         <div className="border-border bg-card/95 sticky top-0 z-10 flex min-h-10 flex-wrap items-center gap-0.5 rounded-t-xl border-b px-2 py-1.5 backdrop-blur">
           {editor ? (
             <>
-              <ToolbarButton
-                label="Undo"
-                disabled={controlsDisabled || !toolbarState?.canUndo}
-                onClick={() => editor.chain().focus().undo().run()}
-              >
-                <Undo2Icon />
-              </ToolbarButton>
-              <ToolbarButton
-                label="Redo"
-                disabled={controlsDisabled || !toolbarState?.canRedo}
-                onClick={() => editor.chain().focus().redo().run()}
-              >
-                <Redo2Icon />
-              </ToolbarButton>
-              <ToolbarDivider />
-              <ToolbarButton
-                label="Heading 1"
-                active={toolbarState?.heading1}
-                disabled={controlsDisabled}
-                onClick={() =>
-                  editor.chain().focus().toggleHeading({ level: 1 }).run()
-                }
-              >
-                <Heading1Icon />
-              </ToolbarButton>
-              <ToolbarButton
-                label="Heading 2"
-                active={toolbarState?.heading2}
-                disabled={controlsDisabled}
-                onClick={() =>
-                  editor.chain().focus().toggleHeading({ level: 2 }).run()
-                }
-              >
-                <Heading2Icon />
-              </ToolbarButton>
-              <ToolbarButton
-                label="Heading 3"
-                active={toolbarState?.heading3}
-                disabled={controlsDisabled}
-                onClick={() =>
-                  editor.chain().focus().toggleHeading({ level: 3 }).run()
-                }
-              >
-                <Heading3Icon />
-              </ToolbarButton>
-              <ToolbarDivider />
+              {features.history ? (
+                <>
+                  <ToolbarButton
+                    label="Undo"
+                    disabled={controlsDisabled || !toolbarState?.canUndo}
+                    onClick={() => editor.chain().focus().undo().run()}
+                  >
+                    <Undo2Icon />
+                  </ToolbarButton>
+                  <ToolbarButton
+                    label="Redo"
+                    disabled={controlsDisabled || !toolbarState?.canRedo}
+                    onClick={() => editor.chain().focus().redo().run()}
+                  >
+                    <Redo2Icon />
+                  </ToolbarButton>
+                  <ToolbarDivider />
+                </>
+              ) : null}
+              {features.headings ? (
+                <>
+                  <ToolbarButton
+                    label="Heading 1"
+                    active={toolbarState?.heading1}
+                    disabled={controlsDisabled}
+                    onClick={() =>
+                      editor.chain().focus().toggleHeading({ level: 1 }).run()
+                    }
+                  >
+                    <Heading1Icon />
+                  </ToolbarButton>
+                  <ToolbarButton
+                    label="Heading 2"
+                    active={toolbarState?.heading2}
+                    disabled={controlsDisabled}
+                    onClick={() =>
+                      editor.chain().focus().toggleHeading({ level: 2 }).run()
+                    }
+                  >
+                    <Heading2Icon />
+                  </ToolbarButton>
+                  <ToolbarButton
+                    label="Heading 3"
+                    active={toolbarState?.heading3}
+                    disabled={controlsDisabled}
+                    onClick={() =>
+                      editor.chain().focus().toggleHeading({ level: 3 }).run()
+                    }
+                  >
+                    <Heading3Icon />
+                  </ToolbarButton>
+                  <ToolbarDivider />
+                </>
+              ) : null}
               <ToolbarButton
                 label="Bold"
                 active={toolbarState?.bold}
@@ -422,62 +457,78 @@ export function RichTextEditor({
               >
                 <LinkIcon />
               </ToolbarButton>
-              <ToolbarDivider />
-              <ToolbarButton
-                label="Horizontal rule"
-                disabled={controlsDisabled}
-                onClick={() => editor.chain().focus().setHorizontalRule().run()}
-              >
-                <MinusIcon />
-              </ToolbarButton>
-              <ToolbarButton
-                label="Insert table"
-                disabled={controlsDisabled}
-                onClick={() =>
-                  editor
-                    .chain()
-                    .focus()
-                    .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
-                    .run()
-                }
-              >
-                <TableIcon />
-              </ToolbarButton>
-              <ToolbarButton
-                label="Add row"
-                disabled={controlsDisabled || !toolbarState?.canAddRow}
-                onClick={() => editor.chain().focus().addRowAfter().run()}
-              >
-                <BetweenHorizontalEndIcon />
-              </ToolbarButton>
-              <ToolbarButton
-                label="Delete row"
-                disabled={controlsDisabled || !toolbarState?.canDeleteRow}
-                onClick={() => editor.chain().focus().deleteRow().run()}
-              >
-                <TableRowsSplitIcon />
-              </ToolbarButton>
-              <ToolbarButton
-                label="Add column"
-                disabled={controlsDisabled || !toolbarState?.canAddColumn}
-                onClick={() => editor.chain().focus().addColumnAfter().run()}
-              >
-                <BetweenVerticalEndIcon />
-              </ToolbarButton>
-              <ToolbarButton
-                label="Delete column"
-                disabled={controlsDisabled || !toolbarState?.canDeleteColumn}
-                onClick={() => editor.chain().focus().deleteColumn().run()}
-              >
-                <TableColumnsSplitIcon />
-              </ToolbarButton>
-              <ToolbarButton
-                label="Insert emoji"
-                disabled={controlsDisabled}
-                onClick={() => editor.chain().focus().insertContent(":").run()}
-              >
-                <SmileIcon />
-              </ToolbarButton>
+              {showTrailingExtras ? <ToolbarDivider /> : null}
+              {features.horizontalRule ? (
+                <ToolbarButton
+                  label="Horizontal rule"
+                  disabled={controlsDisabled}
+                  onClick={() =>
+                    editor.chain().focus().setHorizontalRule().run()
+                  }
+                >
+                  <MinusIcon />
+                </ToolbarButton>
+              ) : null}
+              {features.tables ? (
+                <>
+                  <ToolbarButton
+                    label="Insert table"
+                    disabled={controlsDisabled}
+                    onClick={() =>
+                      editor
+                        .chain()
+                        .focus()
+                        .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
+                        .run()
+                    }
+                  >
+                    <TableIcon />
+                  </ToolbarButton>
+                  <ToolbarButton
+                    label="Add row"
+                    disabled={controlsDisabled || !toolbarState?.canAddRow}
+                    onClick={() => editor.chain().focus().addRowAfter().run()}
+                  >
+                    <BetweenHorizontalEndIcon />
+                  </ToolbarButton>
+                  <ToolbarButton
+                    label="Delete row"
+                    disabled={controlsDisabled || !toolbarState?.canDeleteRow}
+                    onClick={() => editor.chain().focus().deleteRow().run()}
+                  >
+                    <TableRowsSplitIcon />
+                  </ToolbarButton>
+                  <ToolbarButton
+                    label="Add column"
+                    disabled={controlsDisabled || !toolbarState?.canAddColumn}
+                    onClick={() =>
+                      editor.chain().focus().addColumnAfter().run()
+                    }
+                  >
+                    <BetweenVerticalEndIcon />
+                  </ToolbarButton>
+                  <ToolbarButton
+                    label="Delete column"
+                    disabled={
+                      controlsDisabled || !toolbarState?.canDeleteColumn
+                    }
+                    onClick={() => editor.chain().focus().deleteColumn().run()}
+                  >
+                    <TableColumnsSplitIcon />
+                  </ToolbarButton>
+                </>
+              ) : null}
+              {features.emoji ? (
+                <ToolbarButton
+                  label="Insert emoji"
+                  disabled={controlsDisabled}
+                  onClick={() =>
+                    editor.chain().focus().insertContent(":").run()
+                  }
+                >
+                  <SmileIcon />
+                </ToolbarButton>
+              ) : null}
             </>
           ) : null}
         </div>

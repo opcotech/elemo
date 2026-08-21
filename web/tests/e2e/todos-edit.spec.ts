@@ -79,7 +79,7 @@ test.describe("@todos.edit Todo edit E2E Tests", () => {
 
     await todoSheet.clickEditItem(title);
     const editDialog = await todoForm.waitForEditDialog();
-    await fillLocator(editDialog.getByLabel("Description"), updatedDescription);
+    await todoForm.fillDescription(editDialog, updatedDescription);
     await todoForm.submitEdit();
     await waitForSuccessToast(page, "Todo updated successfully");
 
