@@ -88,13 +88,24 @@ export class TodoFormSection extends DialogMixin(Form) {
   ): Promise<void> {
     await fillLocator(dialog.getByLabel("Title"), fields.title);
     if (fields.description !== undefined) {
-      await fillLocator(dialog.getByLabel("Description"), fields.description);
+      await this.fillDescription(dialog, fields.description);
     }
     if (fields.priority) {
       await dialog
         .getByRole("combobox")
         .click(options?.force ? { force: true } : undefined);
       await this.page.getByRole("option", { name: fields.priority }).click();
+    }
+  }
+
+  async fillDescription(dialog: Locator, description: string): Promise<void> {
+    const editor = dialog.getByLabel("Description");
+    await expect(editor).toBeVisible();
+    await editor.click();
+    await editor.press("ControlOrMeta+A");
+    await editor.press("Backspace");
+    if (description.length > 0) {
+      await editor.pressSequentially(description, { delay: 10 });
     }
   }
 

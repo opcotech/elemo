@@ -54,8 +54,30 @@ export interface RichTextEditorValue {
   plainText: string;
 }
 
+export type RichTextEditorFeatures = {
+  headings: boolean;
+  history: boolean;
+  tables: boolean;
+  emoji: boolean;
+  horizontalRule: boolean;
+};
+
+export const DEFAULT_RICH_TEXT_FEATURES: RichTextEditorFeatures = {
+  headings: true,
+  history: true,
+  tables: true,
+  emoji: true,
+  horizontalRule: true,
+};
+
 export type RichTextPlaceholder =
   string | ((props: { node: { type: { name: string } } }) => string);
+
+export function resolveRichTextFeatures(
+  features?: Partial<RichTextEditorFeatures>
+): RichTextEditorFeatures {
+  return { ...DEFAULT_RICH_TEXT_FEATURES, ...features };
+}
 
 function filterMentionItems(
   items: readonly RichTextMentionItem[],
@@ -132,10 +154,15 @@ export function preventLinkNavigation(
 export function createRichTextExtensions(options: {
   placeholder: RichTextPlaceholder;
   getMentionItems: () => readonly RichTextMentionItem[];
+  features?: Partial<RichTextEditorFeatures>;
 }): AnyExtension[] {
-  return [
+  const features = resolveRichTextFeatures(options.features);
+
+  const extensions: AnyExtension[] = [
     StarterKit.configure({
-      heading: { levels: [1, 2, 3] },
+      heading: features.headings ? { levels: [1, 2, 3] } : false,
+      undoRedo: features.history ? {} : false,
+      horizontalRule: features.horizontalRule ? {} : false,
       codeBlock: false,
     }),
     CodeBlockLowlight.configure({
@@ -153,15 +180,23 @@ export function createRichTextExtensions(options: {
       },
     }),
     Underline,
-    Emoji.configure({
-      enableEmoticons: false,
-      suggestion: {
-        items: ({ query }) => filterEmojiItems(query),
-        render: createSuggestionListRenderer((item) => ({
-          name: item.id,
-        })),
-      },
-    }),
+  ];
+
+  if (features.emoji) {
+    extensions.push(
+      Emoji.configure({
+        enableEmoticons: false,
+        suggestion: {
+          items: ({ query }) => filterEmojiItems(query),
+          render: createSuggestionListRenderer((item) => ({
+            name: item.id,
+          })),
+        },
+      })
+    );
+  }
+
+  extensions.push(
     Mention.configure({
       HTMLAttributes: {
         class: "mention",
@@ -174,13 +209,21 @@ export function createRichTextExtensions(options: {
           label: item.label,
         })),
       },
-    }),
-    Table.configure({
-      resizable: false,
-    }),
-    TableRow,
-    TableHeader,
-    TableCell,
+    })
+  );
+
+  if (features.tables) {
+    extensions.push(
+      Table.configure({
+        resizable: false,
+      }),
+      TableRow,
+      TableHeader,
+      TableCell
+    );
+  }
+
+  extensions.push(
     TaskList,
     TaskItem.configure({
       nested: true,
@@ -192,6 +235,8 @@ export function createRichTextExtensions(options: {
     }),
     Placeholder.configure({
       placeholder: options.placeholder,
-    }),
-  ];
+    })
+  );
+
+  return extensions;
 }

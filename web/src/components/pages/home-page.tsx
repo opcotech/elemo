@@ -22,6 +22,7 @@ import { InternalLink } from "@/components/ui/internal-link";
 import { ListSkeleton } from "@/components/ui/list-skeleton";
 import { PageHeader } from "@/components/ui/page-header";
 import { Section } from "@/components/ui/section";
+import { MarkdownContent } from "@/components/work/markdown-content";
 import { CompactWorkList } from "@/components/work/work-list";
 import { useAuth } from "@/hooks/use-auth";
 import type { AccessibleNamespace } from "@/lib/api/accessible-namespaces";
@@ -249,9 +250,16 @@ export function HomePage() {
                             <span className="block truncate text-sm font-medium">
                               {todo.title}
                             </span>
-                            <span className="text-muted-foreground block truncate text-xs">
-                              {todo.description || "No description"}
-                            </span>
+                            <MarkdownContent
+                              markdown={todo.description}
+                              size="xs"
+                              className="block truncate"
+                              empty={
+                                <span className="text-muted-foreground block truncate text-xs">
+                                  No description
+                                </span>
+                              }
+                            />
                           </span>
                           <TodoPriorityRibbon
                             priority={todo.priority}

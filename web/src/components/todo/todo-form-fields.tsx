@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import type { Control, FieldValues, Path } from "react-hook-form";
 import type { z } from "zod";
@@ -14,6 +15,8 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
+import type { RichTextEditorValue } from "@/components/ui/rich-text-editor";
 import {
   Select,
   SelectContent,
@@ -21,11 +24,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import type { TodoPriority } from "@/lib/api/types";
 import { zTodoCreate } from "@/lib/client/zod.gen";
 import { createFormSchema } from "@/lib/forms";
-import { getDefaultValue } from "@/lib/utils";
+import { cn, getDefaultValue } from "@/lib/utils";
 
 export const todoCreateFormSchema = createFormSchema(
   zTodoCreate.omit({ owned_by: true })
@@ -53,6 +55,58 @@ function pastDisabledDays() {
   return [{ before: new Date(new Date().setHours(0, 0, 0, 0)) }];
 }
 
+function TodoDescriptionEditor({
+  value,
+  onChange,
+  placeholder,
+  compact,
+}: {
+  value: string | null | undefined;
+  onChange: (markdown: string) => void;
+  placeholder: string;
+  compact: boolean;
+}) {
+  const markdown = getDefaultValue(value);
+  const lastEmittedRef = useRef(markdown);
+  const [editorKey, setEditorKey] = useState(0);
+  const [seed, setSeed] = useState(markdown);
+
+  useEffect(() => {
+    if (markdown === lastEmittedRef.current) {
+      return;
+    }
+    lastEmittedRef.current = markdown;
+    setSeed(markdown);
+    setEditorKey((key) => key + 1);
+  }, [markdown]);
+
+  const handleChange = (next: RichTextEditorValue) => {
+    lastEmittedRef.current = next.markdown;
+    onChange(next.markdown);
+  };
+
+  return (
+    <RichTextEditor
+      key={editorKey}
+      content={seed}
+      placeholder={placeholder}
+      aria-label="Description"
+      className={cn(
+        compact &&
+          "[&_.ProseMirror]:min-h-24 [&_.rich-text-editor__fallback]:min-h-24"
+      )}
+      features={{
+        headings: false,
+        history: false,
+        tables: false,
+        emoji: false,
+        horizontalRule: false,
+      }}
+      onChange={handleChange}
+    />
+  );
+}
+
 export function TodoFormFields<TFieldValues extends FieldValues>({
   control,
   titlePlaceholder = "Enter todo title",
@@ -69,17 +123,12 @@ export function TodoFormFields<TFieldValues extends FieldValues>({
         render={({ field }) => (
           <Field>
             <FieldLabel>Description</FieldLabel>
-            <FieldControl>
-              <Textarea
-                placeholder={descriptionPlaceholder}
-                className={
-                  descriptionRows >= 6 ? "min-h-40 resize-y" : undefined
-                }
-                rows={descriptionRows}
-                {...field}
-                value={getDefaultValue(field.value)}
-              />
-            </FieldControl>
+            <TodoDescriptionEditor
+              value={field.value}
+              onChange={field.onChange}
+              placeholder={descriptionPlaceholder}
+              compact={descriptionRows < 6}
+            />
             <FieldError />
           </Field>
         )}

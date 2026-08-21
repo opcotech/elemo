@@ -6,6 +6,7 @@ import { TodoPriorityRibbon } from "./todo-priority-ribbon";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { MarkdownContent } from "@/components/work/markdown-content";
 import {
   v1TodoDeleteMutation,
   v1TodoUpdateMutation,
@@ -181,14 +182,14 @@ export function TodoItem({ todo, onSuccess }: TodoItemProps) {
         </p>
 
         {todo.description && (
-          <p
+          <MarkdownContent
+            markdown={todo.description}
+            size="xs"
             className={cn(
-              "text-muted-foreground mt-0.5 line-clamp-1 text-xs",
+              "mt-0.5 line-clamp-1",
               todo.completed && "line-through"
             )}
-          >
-            {todo.description}
-          </p>
+          />
         )}
 
         <div className="mt-1.5 flex flex-wrap items-center gap-2">
